@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest — Wawe Journal</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ============================================================
+     BACKTEST SAYFASI - EK STİLLER
+     styles.css içindeki değişkenleri ve bileşenleri kullanır
+     ============================================================ */
+
+  .bt-toolbar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: end;
+    margin-bottom: 1rem;
+  }
+
+  .bt-chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .bt-chart-card:hover {
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 4px 16px rgba(139,92,246,0.08);
+  }
+  #bt-chart { width: 100%; height: 380px; }
+
+  .bt-controls-row {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .bt-controls-row .bt-divider {
+    width: 1px;
+    height: 22px;
+    background: var(--border2);
+  }
+  .bt-speed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .bt-speed input[type="range"] {
+    width: 100px;
+    accent-color: var(--accent);
+  }
+
+  .bt-trade-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+
+  .btn-buy, .btn-sell {
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    color: #fff;
+  }
+  .btn-buy:hover:not(:disabled), .btn-sell:hover:not(:disabled) {
+    transform: translateY(-1px);
+    opacity: 0.92;
+  }
+  .btn-buy:active:not(:disabled), .btn-sell:active:not(:disabled) { transform: scale(0.97); }
+  .btn-buy {
+    background: linear-gradient(135deg, var(--green), #16a34a);
+    box-shadow: 0 4px 12px var(--green-glow);
+  }
+  .btn-sell {
+    background: linear-gradient(135deg, var(--red), #dc2626);
+    box-shadow: 0 4px 12px var(--red-glow);
+  }
+  .btn-buy:disabled, .btn-sell:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .bt-field-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bt-field-inline label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .bt-field-inline input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 0.55rem 0.7rem;
+    width: 72px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .bt-field-inline input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .bt-log-section h3 {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    background: none;
+    -webkit-text-fill-color: var(--muted);
+  }
+
+  .bt-empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 2rem 0;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .bt-status-banner {
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .bt-status-banner.show { display: block; }
+  .bt-status-banner.error {
+    color: var(--red);
+    border-color: rgba(239,68,68,0.25);
+    background: rgba(239,68,68,0.06);
+  }
+
+  @media (max-width: 640px) {
+    .bt-trade-panel { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="dashboard.html" class="nav-logo">
+      <span class="logo-icon">📈</span>
+      Wawe<span>Journal</span>
+    </a>
+    <div class="nav-links">
+      <a href="dashboard.html">Panel</a>
+      <a href="trades.html">İşlemler</a>
+      <a href="calendar.html">Takvim</a>
+      <a href="strategies.html">Stratejiler</a>
+      <a href="backtest.html" class="active">Backtest</a>
+    </div>
+    <div class="nav-right">
+      <div class="user-avatar">TR</div>
+    </div>
+  </nav>
+
+  <main class="dashboard-main">
+
+    <div class="page-header">
+      <div>
+        <h1>Backtest</h1>
+        <p class="subtitle">Geçmiş veri üzerinde bar-by-bar strateji testi</p>
+      </div>
+    </div>
+
+    <div id="btStatusBanner" class="bt-status-banner"></div>
+
+    <div class="bt-toolbar">
+      <div class="field" style="margin-bottom:0;">
+        <label>Varlık türü</label>
+        <select id="btAssetClass">
+          <option value="crypto">Kripto</option>
+          <option value="forex">Forex</option>
+          <option value="stock">Hisse</option>
+          <option value="index">Index</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Sembol</label>
+        <input type="text" id="btSymbol" value="BTCUSDT" style="width:140px;">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Zaman dilimi</label>
+        <select id="btInterval">
+          <option value="15m">15 dakika</option>
+          <option value="1h">1 saat</option>
+          <option value="4h">4 saat</option>
+          <option value="1d" selected>1 gün</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btLoadBtn">Veriyi yükle</button>
+    </div>
+
+    <div class="bt-chart-card">
+      <div class="chart-header">
+        <h3>Fiyat grafiği</h3>
+        <span class="chart-badge" id="btDataBadge">Veri yüklenmedi</span>
+      </div>
+      <div id="bt-chart"></div>
+    </div>
+
+    <div class="bt-controls-row">
+      <button class="btn btn-ghost" id="btPlayBtn">▶ Oynat</button>
+      <button class="btn btn-ghost" id="btStepBtn">1 bar ilerle</button>
+      <button class="btn btn-ghost" id="btResetBtn">Sıfırla</button>
+      <div class="bt-divider"></div>
+      <div class="bt-speed">
+        Hız
+        <input type="range" id="btSpeed" min="100" max="1200" step="100" value="400">
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Pozisyon</div>
+        <div class="stat-value" id="btPosStatus" style="font-size:1.1rem;">Yok</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Anlık PnL</div>
+        <div class="stat-value" id="btOpenPnl">–</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Toplam PnL</div>
+        <div class="stat-value" id="btTotalPnl">%0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Win rate</div>
+        <div class="stat-value" id="btWinRate">–</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">İşlem sayısı</div>
+        <div class="stat-value" id="btTradeCount">0</div>
+      </div>
+    </div>
+
+    <div class="bt-trade-panel">
+      <button class="btn-buy" id="btBuyBtn">↑ Al</button>
+      <button class="btn-sell" id="btSellBtn">↓ Sat</button>
+      <button class="btn btn-ghost" id="btCloseBtn">✕ Pozisyonu kapat</button>
+      <div class="bt-field-inline">
+        <label>TP %</label>
+        <input type="number" id="btTpPct" value="2" min="0.1" step="0.1">
+      </div>
+      <div class="bt-field-inline">
+        <label>SL %</label>
+        <input type="number" id="btSlPct" value="1" min="0.1" step="0.1">
+      </div>
+    </div>
+
+    <div class="bt-log-section">
+      <h3>İşlem geçmişi</h3>
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table class="ww-table">
+          <thead>
+            <tr>
+              <th>Yön</th><th>Giriş</th><th>Çıkış</th><th>Sebep</th><th>PnL</th>
+            </tr>
+          </thead>
+          <tbody id="btTradeLogBody"></tbody>
+        </table>
+        <div id="btEmptyState" class="bt-empty-state">Henüz işlem yok. Grafik üzerinde ilerleyip Al / Sat ile pozisyon aç.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  /* ============================================================
+     1) SUPABASE AYARLARI
+     ============================================================ */
+  const SUPABASE_URL = 'https://odasapyhtdopbnlfhwde.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+  let supabaseClient = null;
+  try {
+    if (SUPABASE_URL.indexOf('SENIN-PROJE') === -1) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch (e) { console.warn('Supabase başlatılamadı', e); }
+
+  /* ============================================================
+     2) VERİ ÇEKME
+     - Kripto: Binance public API, key gerekmiyor.
+     - Forex / Hisse / Index: Twelve Data, Supabase Edge Function
+       üzerinden ('get-candles') — key'i client'ta tutma.
+     ============================================================ */
+  const BINANCE_INTERVAL_MAP = { '15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d' };
+
+  async function fetchBinance(symbol, interval) {
+    const iv = BINANCE_INTERVAL_MAP[interval] || '1d';
+    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${iv}&limit=300`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Binance isteği başarısız (' + res.status + ')');
+    const raw = await res.json();
+    return raw.map(function (k) {
+      return {
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4])
+      };
+    });
+  }
+
+  async function fetchTwelveData(symbol, interval) {
+    if (!supabaseClient) {
+      throw new Error('Forex/hisse/index verisi için Supabase Edge Function bağlantısı gerekiyor.');
+    }
+    const { data, error } = await supabaseClient.functions.invoke('get-candles', { body: { symbol: symbol, interval: interval } });
+    if (error) throw error;
+    return data.values.reverse().map(function (v) {
+      return {
+        time: Math.floor(new Date(v.datetime).getTime() / 1000),
+        open: parseFloat(v.open),
+        high: parseFloat(v.high),
+        low: parseFloat(v.low),
+        close: parseFloat(v.close)
+      };
+    });
+  }
+
+  async function fetchCandles(assetClass, symbol, interval) {
+    if (assetClass === 'crypto') return fetchBinance(symbol, interval);
+    return fetchTwelveData(symbol, interval);
+  }
+
+  /* ============================================================
+     3) GRAFİK
+     ============================================================ */
+  const btChartContainer = document.getElementById('bt-chart');
+  const btChart = LightweightCharts.createChart(btChartContainer, {
+    width: btChartContainer.clientWidth,
+    height: 380,
+    layout: { background: { color: 'transparent' }, textColor: '#8b8b9e' },
+    grid: { vertLines: { color: 'rgba(123,110,246,0.06)' }, horzLines: { color: 'rgba(123,110,246,0.06)' } },
+    rightPriceScale: { borderColor: 'rgba(123,110,246,0.12)' },
+    timeScale: { borderColor: 'rgba(123,110,246,0.12)' },
+    crosshair: { mode: 0 }
+  });
+  const btSeries = btChart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#ef4444',
+    borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+    wickUpColor: '#22c55e', wickDownColor: '#ef4444'
+  });
+  window.addEventListener('resize', function () {
+    btChart.applyOptions({ width: btChartContainer.clientWidth });
+  });
+
+  /* ============================================================
+     4) REPLAY + POZİSYON MOTORU
+     ============================================================ */
+  let btFullData = [];
+  let btVisibleCount = 0;
+  let btPosition = null;
+  let btTrades = [];
+  let btPlayTimer = null;
+
+  const el = function (id) { return document.getElementById(id); };
+  const posStatusEl = el('btPosStatus');
+  const openPnlEl = el('btOpenPnl');
+  const totalPnlEl = el('btTotalPnl');
+  const winRateEl = el('btWinRate');
+  const tradeCountEl = el('btTradeCount');
+  const tradeLogBody = el('btTradeLogBody');
+  const emptyState = el('btEmptyState');
+  const buyBtn = el('btBuyBtn');
+  const sellBtn = el('btSellBtn');
+  const closeBtn = el('btCloseBtn');
+  const playBtn = el('btPlayBtn');
+  const statusBanner = el('btStatusBanner');
+  const dataBadge = el('btDataBadge');
+
+  function showStatus(msg, isError) {
+    statusBanner.textContent = msg;
+    statusBanner.className = 'bt-status-banner show' + (isError ? ' error' : '');
+  }
+  function hideStatus() { statusBanner.className = 'bt-status-banner'; }
+
+  function currentBar() { return btFullData[btVisibleCount - 1]; }
+
+  function openPosition(side) {
+    if (btPosition || btVisibleCount >= btFullData.length) return;
+    const entry = currentBar().close;
+    const tpPct = parseFloat(el('btTpPct').value) || 2;
+    const slPct = parseFloat(el('btSlPct').value) || 1;
+    let tp, sl;
+    if (side === 'long') {
+      tp = entry * (1 + tpPct / 100);
+      sl = entry * (1 - slPct / 100);
+    } else {
+      tp = entry * (1 - tpPct / 100);
+      sl = entry * (1 + slPct / 100);
+    }
+    btPosition = { side: side, entry: entry, tp: tp, sl: sl, entryIndex: btVisibleCount - 1 };
+    render();
+  }
+
+  function pnlPct(exitPrice) {
+    if (!btPosition) return 0;
+    const raw = btPosition.side === 'long'
+      ? (exitPrice - btPosition.entry) / btPosition.entry
+      : (btPosition.entry - exitPrice) / btPosition.entry;
+    return raw * 100;
+  }
+
+  async function closePosition(exitPrice, reason) {
+    if (!btPosition) return;
+    const pnl = pnlPct(exitPrice);
+    const trade = {
+      side: btPosition.side,
+      entry: btPosition.entry,
+      exit: exitPrice,
+      entryTime: btFullData[btPosition.entryIndex].time,
+      exitTime: currentBar().time,
+      pnl: pnl,
+      reason: reason
+    };
+    btTrades.push(trade);
+    btPosition = null;
+    render();
+    await saveTradeToSupabase(trade);
+  }
+
+  async function saveTradeToSupabase(trade) {
+    if (!supabaseClient) return;
+    try {
+      const { data: userData } = await supabaseClient.auth.getUser();
+      const userId = userData && userData.user ? userData.user.id : null;
+      if (!userId) return;
+      await supabaseClient.from('backtest_trades').insert({
+        user_id: userId,
+        symbol: el('btSymbol').value,
+        side: trade.side,
+        entry_price: trade.entry,
+        exit_price: trade.exit,
+        entry_time: new Date(trade.entryTime * 1000).toISOString(),
+        exit_time: new Date(trade.exitTime * 1000).toISOString(),
+        pnl_pct: trade.pnl,
+        exit_reason: trade.reason
+      });
+    } catch (e) { console.warn('Trade Supabase\'e kaydedilemedi', e); }
+  }
+
+  function checkAutoExit(bar) {
+    if (!btPosition) return;
+    if (btPosition.side === 'long') {
+      if (bar.low <= btPosition.sl) { closePosition(btPosition.sl, 'SL'); return; }
+      if (bar.high >= btPosition.tp) { closePosition(btPosition.tp, 'TP'); return; }
+    } else {
+      if (bar.high >= btPosition.sl) { closePosition(btPosition.sl, 'SL'); return; }
+      if (bar.low <= btPosition.tp) { closePosition(btPosition.tp, 'TP'); return; }
+    }
+  }
+
+  function step() {
+    if (btVisibleCount >= btFullData.length) { pause(); return; }
+    const bar = btFullData[btVisibleCount];
+    btSeries.update(bar);
+    btVisibleCount++;
+    checkAutoExit(bar);
+    render();
+  }
+
+  function play() {
+    if (btPlayTimer || btFullData.length === 0) return;
+    playBtn.textContent = '⏸ Duraklat';
+    const speed = parseInt(el('btSpeed').value, 10);
+    btPlayTimer = setInterval(step, speed);
+  }
+  function pause() {
+    clearInterval(btPlayTimer);
+    btPlayTimer = null;
+    playBtn.textContent = '▶ Oynat';
+  }
+
+  function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+
+  function render() {
+    if (btFullData.length === 0) {
+      posStatusEl.textContent = 'Yok';
+      buyBtn.disabled = true; sellBtn.disabled = true; closeBtn.disabled = true;
+      return;
+    }
+    const bar = currentBar();
+    if (btPosition) {
+      const live = pnlPct(bar.close);
+      posStatusEl.textContent = (btPosition.side === 'long' ? 'Long' : 'Short') + ' @ ' + btPosition.entry.toFixed(2);
+      openPnlEl.textContent = fmtPct(live);
+      openPnlEl.className = 'stat-value ' + (live >= 0 ? 'positive' : 'negative');
+      buyBtn.disabled = true; sellBtn.disabled = true; closeBtn.disabled = false;
+    } else {
+      posStatusEl.textContent = 'Yok';
+      openPnlEl.textContent = '–';
+      openPnlEl.className = 'stat-value';
+      buyBtn.disabled = btVisibleCount >= btFullData.length;
+      sellBtn.disabled = btVisibleCount >= btFullData.length;
+      closeBtn.disabled = true;
+    }
+
+    const totalPnl = btTrades.reduce(function (sum, t) { return sum + t.pnl; }, 0);
+    totalPnlEl.textContent = fmtPct(totalPnl);
+    totalPnlEl.className = 'stat-value ' + (totalPnl > 0 ? 'positive' : (totalPnl < 0 ? 'negative' : ''));
+
+    tradeCountEl.textContent = btTrades.length;
+
+    if (btTrades.length > 0) {
+      const wins = btTrades.filter(function (t) { return t.pnl > 0; }).length;
+      winRateEl.textContent = Math.round((wins / btTrades.length) * 100) + '%';
+    } else {
+      winRateEl.textContent = '–';
+    }
+
+    if (btTrades.length === 0) {
+      tradeLogBody.innerHTML = '';
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+      tradeLogBody.innerHTML = btTrades.slice().reverse().map(function (t) {
+        const pnlClass = t.pnl >= 0 ? 'trade-pnl positive' : 'trade-pnl negative';
+        const badgeClass = t.side === 'long' ? 'badge badge-long' : 'badge badge-short';
+        const sideLabel = t.side === 'long' ? 'LONG' : 'SHORT';
+        return '<tr>' +
+          '<td><span class="' + badgeClass + '">' + sideLabel + '</span></td>' +
+          '<td>' + t.entry.toFixed(2) + '</td>' +
+          '<td>' + t.exit.toFixed(2) + '</td>' +
+          '<td>' + t.reason + '</td>' +
+          '<td class="' + pnlClass + '">' + fmtPct(t.pnl) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+  }
+
+  /* ============================================================
+     5) EVENT BAĞLANTILARI
+     ============================================================ */
+  el('btLoadBtn').addEventListener('click', async function () {
+    pause();
+    hideStatus();
+    const assetClass = el('btAssetClass').value;
+    const symbol = el('btSymbol').value.trim();
+    const interval = el('btInterval').value;
+    if (!symbol) { showStatus('Bir sembol gir.', true); return; }
+
+    this.disabled = true;
+    this.textContent = 'Yükleniyor…';
+    try {
+      const data = await fetchCandles(assetClass, symbol, interval);
+      if (!data || data.length < 30) throw new Error('Yeterli veri gelmedi.');
+      btFullData = data;
+      btVisibleCount = Math.min(60, btFullData.length - 1);
+      btPosition = null;
+      btTrades = [];
+      btSeries.setData(btFullData.slice(0, btVisibleCount));
+      render();
+      dataBadge.textContent = symbol + ' · ' + btFullData.length + ' bar';
+      showStatus(symbol + ' için ' + btFullData.length + ' bar yüklendi. Oynat veya adım adım ilerlet.');
+    } catch (err) {
+      showStatus(err.message || 'Veri çekilemedi.', true);
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Veriyi yükle';
+    }
+  });
+
+  el('btStepBtn').addEventListener('click', step);
+  el('btResetBtn').addEventListener('click', function () {
+    pause();
+    if (btFullData.length === 0) return;
+    btVisibleCount = Math.min(60, btFullData.length - 1);
+    btPosition = null;
+    btTrades = [];
+    btSeries.setData(btFullData.slice(0, btVisibleCount));
+    render();
+  });
+  playBtn.addEventListener('click', function () { if (btPlayTimer) pause(); else play(); });
+  el('btSpeed').addEventListener('input', function () { if (btPlayTimer) { pause(); play(); } });
+  buyBtn.addEventListener('click', function () { openPosition('long'); });
+  sellBtn.addEventListener('click', function () { openPosition('short'); });
+  closeBtn.addEventListener('click', function () { if (btPosition) closePosition(currentBar().close, 'Manuel'); });
+
+  render();
+  </script>
+
+</body>
+</html>

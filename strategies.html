@@ -1,0 +1,2970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="resim.svg">
+  
+  <script>
+  (function() {
+    if (document.body) {
+      var savedTheme = localStorage.getItem('ww_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        var savedTheme = localStorage.getItem('ww_theme');
+        if (savedTheme === 'light') {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+      });
+    }
+  })();
+  </script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  
+  <style>
+    /* ============================================================
+       STRATEGIES SAYFASI - DASHBOARD TASARIMI
+       ============================================================ */
+    
+    .strategies-main {
+      padding: 0.9rem 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Page Header - Dashboard ile aynı */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.2rem;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .page-header h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .page-header .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* ⭐ Zaman aralığı filtresi */
+    .time-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 3px;
+    }
+    .time-filter-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 0.4rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .time-filter-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .time-filter-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(139,92,246,0.35);
+    }
+
+    /* ⭐ Export butonları */
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 12.5px;
+      padding: 0.58rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-export:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      transform: translateY(-1px);
+    }
+
+    /* Stats Grid - Dashboard ile aynı */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      border-color: var(--accent2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(139,92,246,0.15);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+    }
+    .stat-card .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+      font-family: 'DM Mono', monospace;
+    }
+    .stat-card .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .stat-card .stat-value.pos { color: var(--green); }
+    .stat-card .stat-value.neg { color: var(--red); }
+
+    /* Strategy Cards Grid */
+    .strategies-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Strategy Cards Grid - Skeleton */
+    .strategies-grid-skeleton {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      min-height: 200px;
+      position: relative;
+      overflow: hidden;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    body.light-theme .strategies-grid-skeleton .skeleton-strategy-card::after {
+      background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card .skeleton-line {
+      height: 12px;
+      background: var(--border);
+      border-radius: 4px;
+      opacity: 0.3;
+      margin-bottom: 8px;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card .skeleton-line-sm {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      opacity: 0.2;
+      margin-bottom: 6px;
+      width: 60%;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card .skeleton-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-top: 12px;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card .skeleton-stats .skeleton-stat-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.5rem;
+      min-height: 40px;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card .skeleton-stats .skeleton-stat-box .skeleton-line {
+      height: 6px;
+      margin-bottom: 4px;
+    }
+    .strategies-grid-skeleton .skeleton-strategy-card .skeleton-stats .skeleton-stat-box .skeleton-line:last-child {
+      width: 70%;
+      margin-bottom: 0;
+    }
+
+    .strategy-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      animation: card-in 0.3s ease both;
+      cursor: pointer;
+    }
+    .strategy-card:hover {
+      border-color: var(--accent2);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(139,92,246,0.12);
+    }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sc-top { padding: 1rem 1rem 0.7rem; flex: 1; }
+    
+    .sc-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+      gap: 0.5rem;
+    }
+    .sc-name-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      min-width: 0;
+    }
+    .sc-color-bar {
+      width: 3px;
+      height: 36px;
+      border-radius: 99px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .sc-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 0.1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sc-desc {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .sc-wr-dot {
+      flex-shrink: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 4px;
+      background: var(--muted);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.04);
+    }
+    .sc-wr-dot.pos {
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(34,197,94,0.5), 0 0 0 3px rgba(34,197,94,0.12);
+    }
+    .sc-wr-dot.neg {
+      background: var(--red);
+      box-shadow: 0 0 8px rgba(239,68,68,0.5), 0 0 0 3px rgba(239,68,68,0.12);
+    }
+
+    .sc-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-bottom: 0.7rem;
+    }
+    .sc-stat {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.45rem 0.55rem;
+    }
+    .sc-stat-lbl {
+      font-size: 9px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.15rem;
+      font-weight: 600;
+      font-family: 'DM Mono', monospace;
+    }
+    .sc-stat-val {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .sc-stat-val.pos { color: var(--green); }
+    .sc-stat-val.neg { color: var(--red); }
+
+    /* ⭐ En iyi enstrüman etiketi - sembol ile birlikte */
+    .sc-instrument-tag {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.35rem 0.55rem;
+      margin-bottom: 0.6rem;
+      font-size: 10.5px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--muted);
+    }
+    .sc-instrument-tag .tag-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .sc-instrument-tag .tag-symbol {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: 9px;
+      color: var(--accent2);
+      background: rgba(139,92,246,0.08);
+      padding: 0.05rem 0.4rem;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+    .sc-instrument-tag .tag-pnl {
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    .sc-instrument-tag .tag-pnl.pos { color: var(--green); }
+    .sc-instrument-tag .tag-pnl.neg { color: var(--red); }
+
+    .sc-spark {
+      height: 42px;
+      margin: 0 -2px;
+      position: relative;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .sc-spark.clickable:hover {
+      background: rgba(139,92,246,0.06);
+    }
+    .sc-spark-hint {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 8px;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.15s;
+      font-family: 'DM Mono', monospace;
+      pointer-events: none;
+    }
+    .sc-spark.clickable:hover .sc-spark-hint { opacity: 0.7; }
+
+    .sc-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .dir-pills { display: flex; gap: 4px; }
+    .dp {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 99px;
+    }
+    .dp-long { background: rgba(34,197,94,0.12); color: var(--green); }
+    .dp-short { background: rgba(239,68,68,0.12); color: var(--red); }
+
+    .sc-actions { display: flex; gap: 2px; }
+    .sc-btn {
+      background: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+      padding: 0;
+    }
+    .sc-btn:hover { background: rgba(139,92,246,0.1); color: var(--accent2); }
+    .sc-btn.danger:hover { background: rgba(239,68,68,0.1); color: var(--red); }
+
+    /* Add Card */
+    .strategy-card-add {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 2rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      min-height: 200px;
+    }
+    .strategy-card-add:hover {
+      border-color: var(--accent);
+      background: rgba(139,92,246,0.03);
+      border-style: solid;
+    }
+    .add-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: var(--accent2);
+    }
+    .add-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Empty State */
+    .empty-strategies {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(139,92,246,0.07);
+      border: 1px solid rgba(139,92,246,0.15);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+    .empty-strategies h3 {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+      font-family: 'Syne', sans-serif;
+    }
+    .empty-strategies p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      opacity: 0.6;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* Add Strategy Button - Dashboard btn stili */
+    .btn-add-strategy {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+    }
+    .btn-add-strategy:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139,92,246,0.5);
+    }
+
+    /* Comparison Section - Dashboard chart ile aynı */
+    .comparison-section {
+      margin-top: 1.25rem;
+    }
+    .comparison-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.85rem;
+      font-family: 'Syne', sans-serif;
+    }
+    .comparison-title em {
+      font-style: normal;
+      color: var(--accent2);
+    }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .comparison-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .comparison-card-header {
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Syne', sans-serif !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .comparison-chart-inner {
+      height: 200px;
+      padding: 0.75rem;
+    }
+
+    /* Comparison Section - Skeleton */
+    .comparison-skeleton {
+      margin-top: 1.25rem;
+    }
+    .comparison-skeleton .comparison-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.85rem;
+      font-family: 'Syne', sans-serif;
+      opacity: 0.5;
+    }
+    .comparison-skeleton .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .comparison-skeleton .comparison-card-skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      min-height: 200px;
+      position: relative;
+    }
+    .comparison-skeleton .comparison-card-skeleton::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    body.light-theme .comparison-skeleton .comparison-card-skeleton::after {
+      background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-header {
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid var(--border);
+      height: 36px;
+      background: var(--border);
+      opacity: 0.3;
+      border-radius: 0;
+    }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area {
+      height: 164px;
+      padding: 0.75rem;
+    }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 6px;
+      width: 80%;
+      height: 100%;
+      margin: 0 auto;
+    }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar {
+      flex: 1;
+      background: var(--border);
+      border-radius: 3px 3px 0 0;
+      min-height: 8px;
+      opacity: 0.3;
+    }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(1) { height: 30%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(2) { height: 55%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(3) { height: 80%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(4) { height: 45%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(5) { height: 70%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(6) { height: 25%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(7) { height: 90%; }
+    .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(8) { height: 50%; }
+
+    /* Modal - Dashboard ile aynı */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(6px);
+      z-index: 400;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      max-width: 460px;
+      width: 100%;
+      overflow: hidden;
+      animation: modal-in 0.2s ease;
+    }
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.96) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 1.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+      font-family: 'Syne', sans-serif;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 1.25rem 1.35rem; }
+    .modal-field { margin-bottom: 0.9rem; }
+    .modal-field label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .modal-field input[type="text"],
+    .modal-field textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    .modal-field input[type="text"]:focus,
+    .modal-field textarea:focus { border-color: var(--accent); }
+    .modal-field input[type="color"] {
+      width: 100%;
+      height: 44px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      cursor: pointer;
+    }
+    .modal-footer {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: flex-end;
+      padding: 0.9rem 1.35rem 1.25rem;
+    }
+    .btn-modal-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 0.55rem 1.15rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-modal-cancel:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .btn-modal-confirm {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 0.55rem 1.35rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+    }
+    .btn-modal-confirm:hover {
+      box-shadow: 0 6px 18px rgba(139,92,246,0.5);
+      transform: translateY(-1px);
+    }
+
+    /* ⭐ Büyük detay modalı (strateji detay & equity curve) */
+    .modal-box.modal-box-lg {
+      max-width: 880px;
+    }
+    .modal-box.modal-box-md {
+      max-width: 620px;
+    }
+    .detail-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .detail-metric-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0.6rem 0.7rem;
+    }
+    .detail-metric-lbl {
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 0.25rem;
+    }
+    .detail-metric-val {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .detail-metric-val.pos { color: var(--green); }
+    .detail-metric-val.neg { color: var(--red); }
+    .detail-section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 1.1rem 0 0.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .detail-table-wrap {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    table.detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+    }
+    table.detail-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      text-align: left;
+      padding: 0.5rem 0.7rem;
+      border-bottom: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+    }
+    table.detail-table tbody td {
+      padding: 0.45rem 0.7rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    table.detail-table tbody tr:last-child td { border-bottom: none; }
+    table.detail-table tbody tr:hover { background: rgba(139,92,246,0.04); }
+    table.detail-table td.pos { color: var(--green); font-weight: 600; }
+    table.detail-table td.neg { color: var(--red); font-weight: 600; }
+    .detail-empty-note {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .equity-chart-wrap {
+      height: 360px;
+      padding: 0.5rem 0.25rem;
+    }
+    .detail-header-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .detail-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       NAV - GÜNCELLENDİ (Premium Dropdown + Plan Badge EKLENDİ)
+       ============================================================ */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .nav-logo span { color: var(--accent); }
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(139,92,246,0.1);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      margin-left: 1.5rem;
+    }
+    .nav-links a {
+      padding: 0.3rem 0.7rem;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .nav-links a:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+    }
+    .nav-links a.active {
+      color: var(--accent);
+      background: rgba(139,92,246,0.08);
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: auto;
+    }
+
+    /* ⭐ PREMIUM DROPDOWN */
+    .nav-dropdown {
+      position: relative;
+    }
+    .nav-dropdown-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .nav-dropdown-btn:hover {
+      color: var(--accent);
+      background: rgba(139,92,246,0.06);
+    }
+    .nav-dropdown-btn .dropdown-arrow {
+      font-size: 7px;
+      transition: transform 0.2s ease;
+      margin-left: 2px;
+    }
+    .nav-dropdown-btn.active .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+    .nav-dropdown-menu {
+      position: absolute;
+      top: 38px;
+      right: 0;
+      min-width: 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 300;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .nav-dropdown-menu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .nav-dropdown-menu .menu-label {
+      padding: 0.3rem 1rem;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      opacity: 0.5;
+    }
+    .nav-dropdown-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.45rem 1rem;
+      color: var(--text);
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-dropdown-menu a:hover {
+      background: rgba(139,92,246,0.06);
+      color: var(--accent);
+    }
+    .nav-dropdown-menu a .premium-icon {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+    }
+    .nav-dropdown-menu .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 12px;
+    }
+
+    /* ⭐ PLAN BADGE */
+    .plan-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0.2rem 0.7rem 0.2rem 0.5rem;
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+      color: var(--green);
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+    .plan-badge.premium {
+      background: rgba(139,92,246,0.12);
+      border: 1px solid rgba(139,92,246,0.25);
+      color: var(--accent2);
+    }
+    .plan-badge .plan-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    .plan-badge.premium .plan-dot {
+      background: var(--accent2);
+      box-shadow: 0 0 8px rgba(139,92,246,0.4);
+    }
+    .plan-badge .plan-text {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .user-avatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 45px;
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-width: 160px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s ease;
+      z-index: 250;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .dropdown-item:hover {
+      background: rgba(139,92,246,0.1);
+      color: var(--accent);
+    }
+    .dropdown-item:first-child {
+      border-radius: 12px 12px 0 0;
+    }
+    .dropdown-item:last-child {
+      border-radius: 0 0 12px 12px;
+    }
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      z-index: 100;
+      background: transparent;
+      border: none;
+      padding: 8px;
+    }
+    .nav-toggle span {
+      width: 25px;
+      height: 2px;
+      background: var(--text);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .nav-toggle.open span:nth-child(2) { opacity: 0; }
+    .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+    .nav-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 97;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .nav-backdrop.open { opacity: 1; visibility: visible; }
+
+    .nav-menu {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 80%;
+      max-width: 300px;
+      height: 100vh;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border);
+      z-index: 98;
+      padding: 80px 2rem 2rem;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .nav-menu.open { right: 0; }
+    .nav-menu-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .nav-menu-inner a {
+      padding: 12px 16px;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .nav-menu-inner a:hover { background: rgba(139,92,246,0.08); color: var(--accent); }
+    .nav-menu-inner a.active { color: var(--accent); background: rgba(139,92,246,0.12); }
+    .nav-menu-inner hr { border: none; border-top: 1px solid var(--border); margin: 0.5rem 0; }
+    .nav-menu-inner button {
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .nav-menu-inner button:hover { background: rgba(139,92,246,0.08); color: var(--accent); }
+    .mobile-premium-label {
+      padding: 0.5rem 1rem 0.25rem;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      opacity: 0.6;
+    }
+    .nav-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 12px;
+    }
+
+    @media (max-width: 767px) {
+      .nav-links { display: none !important; }
+      .nav-dropdown { display: none !important; }
+      .nav-toggle { display: flex; }
+      .nav-right { margin-left: auto; }
+      .nav { padding: 0 1rem; height: 48px; }
+      .plan-badge { padding: 0.15rem 0.5rem 0.15rem 0.35rem; font-size: 8px; }
+      .plan-badge .plan-dot { width: 4px; height: 4px; }
+    }
+
+    @media (max-width: 900px) {
+      .strategies-grid { grid-template-columns: repeat(2, 1fr); }
+      .strategies-grid-skeleton { grid-template-columns: repeat(2, 1fr); }
+      .comparison-grid { grid-template-columns: 1fr; }
+      .comparison-skeleton .comparison-grid { grid-template-columns: 1fr; }
+      .detail-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .strategies-grid { grid-template-columns: 1fr; }
+      .strategies-grid-skeleton { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .page-header { flex-direction: column; align-items: stretch; }
+      .btn-add-strategy { justify-content: center; }
+      .page-header-actions { justify-content: stretch; }
+      .time-filter-group { justify-content: space-between; }
+      .detail-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .modal-box.modal-box-lg, .modal-box.modal-box-md { max-width: 96vw; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       NAV - GÜNCELLENDİ (Premium Dropdown + Plan Badge EKLENDİ)
+       ============================================================ -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+          <polyline points="2,16 7,9 12,13 19,4" stroke="#a78bfa" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      Wawe<span data-i18n="app_name">Journal</span>
+    </a>
+    
+    <div class="nav-links">
+      <a href="dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="trades.html" data-i18n="nav.trades">İşlemler</a>
+      <a href="strategies.html" class="active" data-i18n="nav.strategies">Stratejiler</a>
+      <a href="calendar.html" data-i18n="nav.calendar">Takvim</a>
+      <span id="admin-link" style="display:none;"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+    </div>
+    
+    <div class="nav-right">
+      <!-- ⭐ PREMIUM DROPDOWN -->
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-btn" id="premium-dropdown-btn">
+          💎 Premium <span class="dropdown-arrow">▼</span>
+        </button>
+        <div class="nav-dropdown-menu" id="premium-dropdown-menu">
+          <div class="menu-label">✨ Premium Özellikler</div>
+          <a href="premium-dashboard.html"><span class="premium-icon">📊</span> Premium Dashboard</a>
+          <a href="#"><span class="premium-icon">🎨</span> Tema Özelleştirme</a>
+          <a href="#"><span class="premium-icon">🔔</span> Over Trade Uyarısı</a>
+          <div class="dropdown-divider"></div>
+          <a href="settings.html#panel-plan" style="color:var(--accent);">
+            <span class="premium-icon">💎</span> Premium'a Geç
+          </a>
+        </div>
+      </div>
+      
+      <!-- ⭐ PLAN BADGE -->
+      <div class="plan-badge" id="plan-badge">
+        <span class="plan-dot"></span>
+        <span class="plan-text" id="plan-text">Ücretsiz</span>
+      </div>
+      
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div class="dropdown-menu" id="dropdown-menu">
+        <a href="settings.html" class="dropdown-item" data-i18n="nav.profile">Profil</a>
+        <a href="settings.html" class="dropdown-item" data-i18n="nav.settings">Ayarlar</a>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item" id="logout-dropdown-btn" data-i18n="nav.logout">Çıkış Yap</button>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="nav-backdrop" id="nav-backdrop"></div>
+  <div class="nav-menu" id="nav-menu">
+    <div class="nav-menu-inner">
+      <a href="dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="trades.html" data-i18n="nav.trades">İşlemler</a>
+      <a href="strategies.html" class="active" data-i18n="nav.strategies">Stratejiler</a>
+      <a href="calendar.html" data-i18n="nav.calendar">Takvim</a>
+      <div class="nav-divider"></div>
+      <div class="mobile-premium-label">💎 Premium</div>
+      <a href="premium-dashboard.html">Premium Dashboard</a>
+      <a href="#">Gelişmiş Grafikler</a>
+      <a href="#">Tema Özelleştirme</a>
+      <a href="#">Premium Haberler</a>
+      <a href="#">Çoklu Para Birimi</a>
+      <a href="#">Over Trade Uyarısı</a>
+      <span id="admin-link-mobile" style="display:none;"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+      <hr>
+      <button id="logout-btn-mobile" data-i18n="nav.logout">Çıkış Yap</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main class="strategies-main">
+
+    <!-- Page Header - Dashboard ile aynı -->
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="strategies.title">Strateji <em data-i18n="strategies.title_em">Paneli</em></h1>
+        <p class="subtitle" data-i18n="strategies.subtitle">Tüm trading stratejilerinin performansını takip et.</p>
+      </div>
+      <div class="page-header-actions">
+        <!-- ⭐ Zaman aralığı filtresi -->
+        <div class="time-filter-group" id="time-filter-group">
+          <button class="time-filter-btn active" data-range="all">Tümü</button>
+          <button class="time-filter-btn" data-range="7d">7G</button>
+          <button class="time-filter-btn" data-range="30d">30G</button>
+          <button class="time-filter-btn" data-range="90d">90G</button>
+          <button class="time-filter-btn" data-range="month">Bu Ay</button>
+        </div>
+        <!-- ⭐ Export butonları -->
+        <button id="export-all-csv" class="btn-export" title="Tüm stratejileri CSV olarak indir">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+        <button id="export-all-pdf" class="btn-export" title="Tüm stratejileri PDF olarak indir">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </button>
+        <button id="open-add-strategy-modal" class="btn-add-strategy">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span data-i18n="strategies.add_button">Yeni Strateji Ekle</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Grid - SKELETON -->
+    <div class="stats-grid" id="summary-stats-skeleton" style="display:grid;">
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+    </div>
+
+    <!-- Stats Grid - GERÇEK -->
+    <div class="stats-grid" id="summary-stats-bar" style="display:none;">
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.total_strategies">Toplam Strateji</div>
+        <div class="stat-value" id="stat-total-strategies">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.total_trades">Toplam İşlem</div>
+        <div class="stat-value" id="stat-total-trades">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.best_wr">En Yüksek WR</div>
+        <div class="stat-value" id="stat-best-wr">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.total_pnl">Toplam K/Z</div>
+        <div class="stat-value" id="stat-total-pnl">—</div>
+      </div>
+    </div>
+
+    <!-- Strategies Grid - SKELETON -->
+    <div class="strategies-grid-skeleton" id="strategies-grid-skeleton">
+      <div class="skeleton-strategy-card">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line-sm"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+      <div class="skeleton-strategy-card">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line-sm"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+      <div class="skeleton-strategy-card">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line-sm"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategies Grid - GERÇEK -->
+    <div id="strategies-list-container" style="display:none;">
+      <!-- JS ile doldurulacak -->
+    </div>
+
+    <!-- Comparison Charts - SKELETON -->
+    <div class="comparison-skeleton" id="comparison-skeleton">
+      <div class="comparison-title">Strateji <em>Karşılaştırma</em></div>
+      <div class="comparison-grid">
+        <div class="comparison-card-skeleton">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart-area">
+            <div class="skeleton-bar-group">
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="comparison-card-skeleton">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart-area">
+            <div class="skeleton-bar-group">
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison Charts - GERÇEK -->
+    <div id="comparison-section" class="comparison-section" style="display:none;">
+      <div class="comparison-title" data-i18n="strategies.comparison.title">Strateji <em data-i18n="strategies.comparison.title_em">Karşılaştırma</em></div>
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header" data-i18n="strategies.comparison.win_rate">Win Rate Karşılaştırması</div>
+          <div class="comparison-chart-inner">
+            <canvas id="winrate-comparison-chart"></canvas>
+          </div>
+        </div>
+        <div class="comparison-card">
+          <div class="comparison-card-header" data-i18n="strategies.comparison.pnl">Toplam K/Z Karşılaştırması</div>
+          <div class="comparison-chart-inner">
+            <canvas id="pnl-comparison-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============================================================
+       MODALS
+       ============================================================ -->
+  <div id="add-strategy-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 data-i18n="strategies.modal.add_title">Yeni Strateji Ekle</h3>
+        <button id="close-add-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.name">Strateji Adı *</label>
+          <input type="text" id="new-strategy-name" data-i18n-placeholder="strategies.modal.name_placeholder" />
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.description">Açıklama (isteğe bağlı)</label>
+          <textarea id="new-strategy-desc" rows="3" data-i18n-placeholder="strategies.modal.desc_placeholder"></textarea>
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.color">Renk</label>
+          <input type="color" id="new-strategy-color" value="#8b5cf6" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-add-strategy" class="btn-modal-cancel" data-i18n="common.cancel">İptal</button>
+        <button id="confirm-add-strategy" class="btn-modal-confirm" data-i18n="strategies.modal.add_confirm">Strateji Ekle →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="edit-strategy-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 data-i18n="strategies.modal.edit_title">Strateji Düzenle</h3>
+        <button id="close-edit-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-strategy-id" />
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.name">Strateji Adı *</label>
+          <input type="text" id="edit-strategy-name" />
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.description">Açıklama</label>
+          <textarea id="edit-strategy-desc" rows="3"></textarea>
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.color">Renk</label>
+          <input type="color" id="edit-strategy-color" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-edit-strategy" class="btn-modal-cancel" data-i18n="common.cancel">İptal</button>
+        <button id="confirm-edit-strategy" class="btn-modal-confirm" data-i18n="common.save">Kaydet →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⭐ Strateji Detay Modalı (kart tıklama) -->
+  <div id="strategy-detail-modal" class="modal-overlay">
+    <div class="modal-box modal-box-lg">
+      <div class="modal-header">
+        <div class="detail-header-info">
+          <span class="detail-color-dot" id="detail-color-dot"></span>
+          <h3 id="detail-strategy-name">Strateji Detayı</h3>
+        </div>
+        <button id="close-detail-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body">
+        <!-- JS ile doldurulacak -->
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <div style="display:flex; gap:0.5rem;">
+          <button id="detail-export-csv" class="btn-export" style="padding:0.55rem 1rem;" data-i18n="strategies.detail.export_csv">CSV İndir</button>
+          <button id="detail-export-pdf" class="btn-export" style="padding:0.55rem 1rem;" data-i18n="strategies.detail.export_pdf">PDF İndir</button>
+        </div>
+        <button id="close-detail-modal-btn" class="btn-modal-cancel" data-i18n="common.close">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⭐ Equity Curve Modalı (sparkline tıklama) -->
+  <div id="equity-curve-modal" class="modal-overlay">
+    <div class="modal-box modal-box-md">
+      <div class="modal-header">
+        <div class="detail-header-info">
+          <span class="detail-color-dot" id="equity-color-dot"></span>
+          <h3 id="equity-strategy-name">Equity Curve</h3>
+        </div>
+        <button id="close-equity-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="equity-chart-wrap">
+          <canvas id="equity-curve-canvas"></canvas>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="close-equity-modal-btn" class="btn-modal-cancel" data-i18n="common.close">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS
+       ============================================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // ⭐ PREMIUM DROPDOWN TOGGLE
+    document.addEventListener('DOMContentLoaded', function() {
+      var dropdownBtn = document.getElementById('premium-dropdown-btn');
+      var dropdownMenu = document.getElementById('premium-dropdown-menu');
+      
+      if (dropdownBtn && dropdownMenu) {
+        dropdownBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          this.classList.toggle('active');
+          dropdownMenu.classList.toggle('open');
+        });
+        
+        document.addEventListener('click', function() {
+          dropdownBtn.classList.remove('active');
+          dropdownMenu.classList.remove('open');
+        });
+        
+        dropdownMenu.addEventListener('click', function(e) {
+          e.stopPropagation();
+        });
+      }
+    });
+
+    // ⭐ PLAN BADGE GÜNCELLEME
+    async function updatePlanBadge() {
+      var badge = document.getElementById('plan-badge');
+      var text = document.getElementById('plan-text');
+      if (!badge || !text) return;
+      
+      try {
+        var planData = await getUserPlan();
+        var isPremium = planData.plan === 'premium';
+        
+        if (isPremium) {
+          badge.classList.add('premium');
+          text.textContent = 'Premium';
+        } else {
+          badge.classList.remove('premium');
+          text.textContent = 'Ücretsiz';
+        }
+      } catch (e) {
+        // Sessizce geç
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(updatePlanBadge, 500);
+    });
+
+    i18n.onChange(function() {
+      updatePlanBadge();
+    });
+
+    function setChartTheme() {
+      try {
+        var isLightTheme = document.body.classList.contains('light-theme');
+        if (isLightTheme) {
+          Chart.defaults.color = '#1e293b';
+          Chart.defaults.borderColor = 'rgba(0,0,0,0.08)';
+        } else {
+          Chart.defaults.color = '#e8e8f0';
+          Chart.defaults.borderColor = '#1e1e2e';
+        }
+        Chart.defaults.font.family = "'DM Sans', sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.font.weight = '500';
+      } catch(e) {}
+    }
+    
+    setChartTheme();
+    
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.attributeName === 'class') {
+          setChartTheme();
+          if (typeof renderComparisonCharts === 'function') {
+            renderComparisonCharts();
+          }
+        }
+      });
+    });
+    observer.observe(document.body, { attributes: true });
+
+    var currentUser = null;
+    var strategiesList = [];
+    var allTradesForStats = [];
+    var sparkCharts = {};
+    var currentTimeRange = 'all';
+    var equityChartInstance = null;
+
+    // ============================================================
+    // SKELETON GÖSTER/GİZLE
+    // ============================================================
+    function showStrategySkeleton() {
+      var el1 = document.getElementById('summary-stats-skeleton');
+      var el2 = document.getElementById('summary-stats-bar');
+      var el3 = document.getElementById('strategies-grid-skeleton');
+      var el4 = document.getElementById('strategies-list-container');
+      var el5 = document.getElementById('comparison-skeleton');
+      var el6 = document.getElementById('comparison-section');
+      
+      if (el1) el1.style.display = 'grid';
+      if (el2) el2.style.display = 'none';
+      if (el3) el3.style.display = 'grid';
+      if (el4) el4.style.display = 'none';
+      if (el5) el5.style.display = 'block';
+      if (el6) el6.style.display = 'none';
+    }
+
+    function hideStrategySkeleton() {
+      var el1 = document.getElementById('summary-stats-skeleton');
+      var el2 = document.getElementById('summary-stats-bar');
+      var el3 = document.getElementById('strategies-grid-skeleton');
+      var el4 = document.getElementById('strategies-list-container');
+      var el5 = document.getElementById('comparison-skeleton');
+      var el6 = document.getElementById('comparison-section');
+      
+      if (el1) el1.style.display = 'none';
+      if (el2) el2.style.display = 'grid';
+      if (el3) el3.style.display = 'none';
+      if (el4) el4.style.display = 'block';
+      if (el5) el5.style.display = 'none';
+      if (el6) el6.style.display = 'block';
+    }
+
+    async function updateNavbarAvatar() {
+      var userAvatar = document.getElementById('user-avatar');
+      if (!userAvatar) return;
+      try {
+        var { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
+        var { data: profile } = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
+        if (profile && profile.avatar_url) {
+          userAvatar.innerHTML = '<img src="' + profile.avatar_url + '" alt="avatar">';
+        } else {
+          var initial = (user.user_metadata && user.user_metadata.username) ? user.user_metadata.username.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+          userAvatar.textContent = initial;
+        }
+      } catch(e) {}
+    }
+
+    (async function() {
+      try {
+        showStrategySkeleton();
+        
+        currentUser = await requireAuth();
+        if (!currentUser) return;
+        
+        await updateNavbarAvatar();
+        await updatePlanBadge();
+        
+        if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
+          var adminLink = document.getElementById('admin-link');
+          if (adminLink) adminLink.style.display = 'inline';
+          var adminLinkMobile = document.getElementById('admin-link-mobile');
+          if (adminLinkMobile) adminLinkMobile.style.display = 'block';
+        }
+        
+        var userAvatar = document.getElementById('user-avatar');
+        var dropdownMenu = document.getElementById('dropdown-menu');
+        if (userAvatar && dropdownMenu) {
+          userAvatar.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+          });
+          document.addEventListener('click', function(e) {
+            if (!userAvatar.contains(e.target) && !dropdownMenu.contains(e.target)) {
+              dropdownMenu.classList.remove('show');
+            }
+          });
+        }
+        
+        var logoutDropdownBtn = document.getElementById('logout-dropdown-btn');
+        if (logoutDropdownBtn) {
+          logoutDropdownBtn.addEventListener('click', async function() {
+            try { localStorage.removeItem('ww_last_active_push'); } catch(e) {}
+            await sb.auth.signOut();
+            window.location.href = 'index.html';
+          });
+        }
+        
+        await loadAllData();
+        setupTimeFilterButtons();
+        setupExportButtons();
+        setupDetailAndEquityModals();
+      } catch(e) {}
+    })();
+
+    async function loadAllData() {
+      try {
+        var { data: strategies } = await sb
+          .from('strategies').select('*')
+          .eq('user_id', currentUser.id).order('name');
+        strategiesList = strategies || [];
+
+        var { data: trades } = await sb
+          .from('trades').select('*')
+          .eq('user_id', currentUser.id);
+        allTradesForStats = trades || [];
+
+        renderStrategiesGrid();
+        renderComparisonCharts();
+        hideStrategySkeleton();
+      } catch(e) {}
+    }
+
+    // ============================================================
+    // ZAMAN ARALIĞI FİLTRESİ
+    // ============================================================
+    function filterTradesByRange(trades, range) {
+      if (!range || range === 'all') return trades;
+      var now = new Date();
+      var cutoff = null;
+      if (range === '7d') {
+        cutoff = new Date(now); cutoff.setDate(now.getDate() - 7);
+      } else if (range === '30d') {
+        cutoff = new Date(now); cutoff.setDate(now.getDate() - 30);
+      } else if (range === '90d') {
+        cutoff = new Date(now); cutoff.setDate(now.getDate() - 90);
+      } else if (range === 'month') {
+        cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      if (!cutoff) return trades;
+      return trades.filter(function(t) {
+        if (!t.trade_date) return false;
+        return new Date(t.trade_date) >= cutoff;
+      });
+    }
+
+    function setupTimeFilterButtons() {
+      var btns = document.querySelectorAll('.time-filter-btn');
+      btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          btns.forEach(function(b) { b.classList.remove('active'); });
+          this.classList.add('active');
+          currentTimeRange = this.dataset.range;
+          renderStrategiesGrid();
+          renderComparisonCharts();
+        });
+      });
+    }
+
+    // ============================================================
+    // TRADE PNL YARDIMCI FONKSİYONLARI
+    // ============================================================
+    function getTradeMultiplier(t) {
+      var mult = t.multiplier || 100000;
+      if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined' && INSTRUMENT_MULTIPLIERS[t.instrument]) {
+        mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
+      }
+      return mult;
+    }
+
+    function getTradePnL(t) {
+      try {
+        return calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', getTradeMultiplier(t));
+      } catch(e) {
+        return 0;
+      }
+    }
+
+    function colorToRgba(hex, alpha) {
+      try {
+        var r = parseInt(hex.slice(1,3),16);
+        var g = parseInt(hex.slice(3,5),16);
+        var b = parseInt(hex.slice(5,7),16);
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+      } catch(e) { 
+        return hex; 
+      }
+    }
+
+    // ============================================================
+    // DÜZELTİLMİŞ: getStrategyPerformance - sembol bilgisi eklendi
+    // ============================================================
+    function getStrategyPerformance(strategyId) {
+      try {
+        var rawStrategyTrades = allTradesForStats.filter(function(t) { return t.strategy_id === strategyId; });
+        var strategyTrades = filterTradesByRange(rawStrategyTrades, currentTimeRange);
+        var closedTrades = strategyTrades.filter(function(t) { return t.exit_price; });
+        var totalPnL = 0, wins = 0, losses = 0, openTrades = 0;
+        var longCount = 0, shortCount = 0;
+
+        strategyTrades.forEach(function(t) {
+          var dir = (t.direction || '').toLowerCase();
+          if (dir === 'long' || dir === 'buy') longCount++; else shortCount++;
+          if (!t.exit_price) { openTrades++; return; }
+          var pnl = getTradePnL(t);
+          totalPnL += pnl;
+          if (pnl > 0) wins++; else if (pnl < 0) losses++;
+        });
+
+        var total = closedTrades.length;
+        var winRate = total > 0 ? parseFloat(((wins / total) * 100).toFixed(1)) : 0;
+
+        var sorted = closedTrades.slice().sort(function(a, b) { return new Date(a.trade_date) - new Date(b.trade_date); });
+
+        var cumulative = 0, peak = 0, maxDrawdown = 0;
+        var grossProfit = 0, grossLoss = 0, winAmounts = [], lossAmounts = [];
+        var curWinStreak = 0, curLossStreak = 0, maxWinStreak = 0, maxLossStreak = 0;
+        var pnlSeries = [];
+        var tradesDetail = [];
+        var instrumentMap = {};
+
+        sorted.forEach(function(t) {
+          var pnl = getTradePnL(t);
+          cumulative += pnl;
+          pnlSeries.push(cumulative);
+          if (cumulative > peak) peak = cumulative;
+          var dd = peak - cumulative;
+          if (dd > maxDrawdown) maxDrawdown = dd;
+
+          if (pnl > 0) {
+            grossProfit += pnl; winAmounts.push(pnl);
+            curWinStreak++; curLossStreak = 0;
+            if (curWinStreak > maxWinStreak) maxWinStreak = curWinStreak;
+          } else if (pnl < 0) {
+            grossLoss += Math.abs(pnl); lossAmounts.push(Math.abs(pnl));
+            curLossStreak++; curWinStreak = 0;
+            if (curLossStreak > maxLossStreak) maxLossStreak = curLossStreak;
+          } else {
+            curWinStreak = 0; curLossStreak = 0;
+          }
+
+          // ⭐ DÜZELTİLDİ: Sembol bilgisi eklendi
+          var instrumentKey = (t.instrument || 'Diğer');
+          var symbolKey = (t.symbol || '—');
+          var key = instrumentKey + ':' + symbolKey;
+          
+          if (!instrumentMap[key]) {
+            instrumentMap[key] = { 
+              instrument: instrumentKey, 
+              symbol: symbolKey,
+              trades: 0, 
+              wins: 0, 
+              pnl: 0,
+              count: 0
+            };
+          }
+          instrumentMap[key].trades++;
+          instrumentMap[key].pnl += pnl;
+          if (pnl > 0) instrumentMap[key].wins++;
+          instrumentMap[key].count++;
+
+          tradesDetail.push({
+            trade_date: t.trade_date,
+            instrument: t.instrument || '—',
+            symbol: t.symbol || '—',
+            direction: t.direction || '—',
+            entry_price: t.entry_price,
+            exit_price: t.exit_price,
+            lot: t.lot,
+            pnl: pnl
+          });
+        });
+
+        // Enstrüman-sembol bazlı kırılım (en iyi ve en kötü)
+        var instrumentBreakdown = Object.keys(instrumentMap).map(function(k) {
+          var d = instrumentMap[k];
+          return {
+            instrument: d.instrument,
+            symbol: d.symbol,
+            trades: d.trades,
+            pnl: d.pnl,
+            winRate: d.trades ? parseFloat(((d.wins / d.trades) * 100).toFixed(1)) : 0
+          };
+        }).sort(function(a, b) { return b.pnl - a.pnl; });
+
+        // En iyi enstrüman (sembol ile birlikte)
+        var bestInstrument = instrumentBreakdown.length ? instrumentBreakdown[0] : null;
+        var worstInstrument = instrumentBreakdown.length ? instrumentBreakdown[instrumentBreakdown.length - 1] : null;
+
+        var profitFactor = grossLoss > 0 ? parseFloat((grossProfit / grossLoss).toFixed(2)) : (grossProfit > 0 ? null : 0);
+        var avgWin = winAmounts.length ? grossProfit / winAmounts.length : 0;
+        var avgLoss = lossAmounts.length ? grossLoss / lossAmounts.length : 0;
+        var avgRR = avgLoss > 0 ? parseFloat((avgWin / avgLoss).toFixed(2)) : (avgWin > 0 ? null : 0);
+
+        return { 
+          totalTrades: total, 
+          totalTradesWithOpen: strategyTrades.length,
+          wins: wins, 
+          losses: losses, 
+          openTrades: openTrades, 
+          totalPnL: totalPnL, 
+          winRate: winRate,
+          pnlSeries: pnlSeries, 
+          longCount: longCount, 
+          shortCount: shortCount,
+          profitFactor: profitFactor,
+          avgWin: avgWin,
+          avgLoss: avgLoss,
+          avgRR: avgRR,
+          maxWinStreak: maxWinStreak,
+          maxLossStreak: maxLossStreak,
+          maxDrawdown: maxDrawdown,
+          instrumentBreakdown: instrumentBreakdown,
+          bestInstrument: bestInstrument,
+          worstInstrument: worstInstrument,
+          tradesDetail: tradesDetail
+        };
+      } catch(e) {
+        return { 
+          totalTrades: 0, totalTradesWithOpen: 0, wins: 0, losses: 0, openTrades: 0, totalPnL: 0, winRate: 0, 
+          pnlSeries: [], longCount: 0, shortCount: 0, profitFactor: 0, avgWin: 0, avgLoss: 0, avgRR: 0,
+          maxWinStreak: 0, maxLossStreak: 0, maxDrawdown: 0, instrumentBreakdown: [], bestInstrument: null,
+          worstInstrument: null, tradesDetail: []
+        };
+      }
+    }
+
+    // ============================================================
+    // DÜZELTİLMİŞ: FORMATLAMA FONKSİYONLARI
+    // ============================================================
+    function formatCurrencyFixed(value) {
+      var num = parseFloat(value) || 0;
+      var currency = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
+      var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Eğer değer negatif ise eksi işareti başa gelir: -$257,60
+      if (num < 0) {
+        return '-' + currency + formatted;
+      }
+      return currency + formatted;
+    }
+
+    // ⭐ DÜZELTİLDİ: formatCurrency fonksiyonu eğer script.js'de varsa onu kullan, yoksa yukarıdaki
+    var formatCurrencySafe = (typeof formatCurrency === 'function') ? formatCurrency : formatCurrencyFixed;
+
+    function fmtDate(dateStr) {
+      try {
+        var d = new Date(dateStr);
+        return d.toLocaleDateString('tr-TR');
+      } catch(e) { return dateStr || '—'; }
+    }
+
+    function makeChartDefaults() {
+      try {
+        var isLight = document.body.classList.contains('light-theme');
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(10,10,15,.95)',
+              borderColor: 'rgba(139,92,246,0.25)',
+              borderWidth: 1,
+              titleFont: { family: 'DM Sans', size: 11, weight: '600' },
+              bodyFont: { family: 'DM Mono', size: 11 },
+              padding: 10,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)', drawBorder: false },
+              ticks: { color: isLight ? '#475569' : '#e8e8f0', font: { family: 'DM Mono', size: 9 }, maxRotation: 0 },
+              border: { display: false }
+            },
+            y: {
+              grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)', drawBorder: false },
+              ticks: { color: isLight ? '#475569' : '#e8e8f0', font: { family: 'DM Mono', size: 9 } },
+              border: { display: false }
+            }
+          }
+        };
+      } catch(e) {
+        return {};
+      }
+    }
+
+    function drawSparkline(canvasId, data, color) {
+      try {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        if (sparkCharts[canvasId]) { try { sparkCharts[canvasId].destroy(); } catch(e) {} }
+        var ctx = canvas.getContext('2d');
+        var isNeg = data.length > 0 && data[data.length - 1] < 0;
+        var lineColor = isNeg ? '#ef4444' : color;
+        sparkCharts[canvasId] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.map(function(_, i) { return i; }),
+            datasets: [{
+              data: data,
+              borderColor: lineColor,
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.4,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: { x: { display: false }, y: { display: false } },
+            animation: { duration: 700 }
+          }
+        });
+      } catch(e) {}
+    }
+
+    async function renderStrategiesGrid() {
+      var container = document.getElementById('strategies-list-container');
+      if (!container) return;
+      container.style.display = 'block';
+
+      if (strategiesList.length === 0) {
+        var compSection = document.getElementById('comparison-section');
+        var statsBar = document.getElementById('summary-stats-bar');
+        if (compSection) compSection.style.display = 'none';
+        if (statsBar) statsBar.style.display = 'none';
+        container.innerHTML = '\n          <div class="empty-strategies">\n            <div class="empty-icon">📭</div>\n            <h3 data-i18n="strategies.empty.title">Henüz strateji eklenmemiş</h3>\n            <p data-i18n="strategies.empty.desc">"Yeni Strateji Ekle" butonu ile ilk stratejini oluştur.</p>\n          </div>';
+        i18n.apply();
+        return;
+      }
+
+      var compSection2 = document.getElementById('comparison-section');
+      var statsBar2 = document.getElementById('summary-stats-bar');
+      if (compSection2) compSection2.style.display = 'block';
+      if (statsBar2) statsBar2.style.display = 'grid';
+
+      var totalTradeCount = 0, bestWR = 0, totalPnLAll = 0;
+      strategiesList.forEach(function(s) {
+        var p = getStrategyPerformance(s.id);
+        if (!p) return;
+        totalTradeCount += p.totalTradesWithOpen;
+        if (p.winRate > bestWR) bestWR = p.winRate;
+        totalPnLAll += p.totalPnL;
+      });
+
+      var totalStrategiesEl = document.getElementById('stat-total-strategies');
+      var totalTradesEl = document.getElementById('stat-total-trades');
+      var bestWrEl = document.getElementById('stat-best-wr');
+      var pnlEl = document.getElementById('stat-total-pnl');
+      
+      if (totalStrategiesEl) totalStrategiesEl.textContent = strategiesList.length;
+      if (totalTradesEl) totalTradesEl.textContent = totalTradeCount;
+      if (bestWrEl) bestWrEl.textContent = bestWR + '%';
+      if (pnlEl) {
+        pnlEl.textContent = formatCurrencySafe(totalPnLAll);
+        pnlEl.className = 'stat-value ' + (totalPnLAll >= 0 ? 'pos' : 'neg');
+      }
+
+      var cards = strategiesList.map(function(s) {
+        var perf = getStrategyPerformance(s.id);
+        var sparkId = 'spark-' + s.id;
+        var hasData = perf && perf.totalTrades > 0;
+
+        var descriptionHtml = '';
+        if (s.description) {
+          descriptionHtml = '<div class="sc-desc">' + escapeHtml(s.description.substring(0,40)) + (s.description.length > 40 ? '…' : '') + '</div>';
+        } else {
+          descriptionHtml = '<div class="sc-desc" style="opacity:.4" data-i18n="strategies.card.no_description">Açıklama Yok</div>';
+        }
+
+        // ⭐ DÜZELTİLDİ: en iyi enstrüman etiketi - sembol ile birlikte gösteriliyor
+        var instrumentTagHtml = '';
+        if (hasData && perf.bestInstrument) {
+          var bi = perf.bestInstrument;
+          var displayName = bi.instrument + ' ' + bi.symbol;
+          instrumentTagHtml = '<div class="sc-instrument-tag" title="En iyi enstrüman">' +
+            '<span>🏆 <span class="tag-name">' + escapeHtml(displayName) + '</span></span>' +
+            '<span class="tag-pnl ' + (bi.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrencySafe(bi.pnl) + '</span>' +
+            '</div>';
+        }
+
+        var sparkHtml = '';
+        if (hasData && perf.pnlSeries.length > 1) {
+          sparkHtml = '<div class="sc-spark clickable" data-id="' + s.id + '" title="Equity curve\'yi büyüt"><span class="sc-spark-hint">büyüt ⤢</span><canvas id="' + sparkId + '"></canvas></div>';
+        } else {
+          sparkHtml = '<div class="sc-spark" style="display:flex;align-items:center;justify-content:center;opacity:.3;font-size:11px;color:var(--muted)"><span data-i18n="strategies.card.no_data">Veri Yok</span></div>';
+        }
+
+        var wrDotClass = hasData ? (perf.winRate >= 50 ? 'pos' : 'neg') : '';
+        var wrDotHtml = hasData
+          ? '<span class="sc-wr-dot ' + wrDotClass + '" title="' + i18n.t('strategies.card.win_rate') + ': ' + perf.winRate + '%"></span>'
+          : '<span style="font-size:13px;color:var(--muted);padding-right:4px;">—</span>';
+
+        return '\n          <div class="strategy-card" data-id="' + s.id + '">\n            <div class="sc-top">\n              <div class="sc-header">\n                <div class="sc-name-row">\n                  <div class="sc-color-bar" style="background:' + s.color + '"></div>\n                  <div>\n                    <div class="sc-name">' + escapeHtml(s.name) + '</div>\n                    ' + descriptionHtml + '\n                  </div>\n                </div>\n                ' + wrDotHtml + '\n              </div>\n\n              <div class="sc-stats">\n                <div class="sc-stat">\n                  <div class="sc-stat-lbl" data-i18n="strategies.card.trades">İşlem</div>\n                  <div class="sc-stat-val">' + (perf ? perf.totalTradesWithOpen : 0) + '</div>\n                </div>\n                <div class="sc-stat">\n                  <div class="sc-stat-lbl" data-i18n="strategies.card.win_rate">Win Rate</div>\n                  <div class="sc-stat-val">' + (hasData ? perf.winRate + '%' : '—') + '</div>\n                </div>\n                <div class="sc-stat">\n                  <div class="sc-stat-lbl" data-i18n="strategies.card.pnl">K/Z</div>\n                  <div class="sc-stat-val">' + (hasData ? formatCurrencySafe(perf.totalPnL) : '—') + '</div>\n                </div>\n              </div>\n\n              ' + instrumentTagHtml + '\n              ' + sparkHtml + '\n            </div>\n\n            <div class="sc-footer">\n              <div class="dir-pills">\n                ' + (perf && perf.longCount > 0 ? '<span class="dp dp-long">Long ' + perf.longCount + '</span>' : '') + '\n                ' + (perf && perf.shortCount > 0 ? '<span class="dp dp-short">Short ' + perf.shortCount + '</span>' : '') + '\n                ' + (!perf || (perf.longCount === 0 && perf.shortCount === 0) ? '<span style="font-size:11px;color:var(--muted)">—</span>' : '') + '\n              </div>\n              <div class="sc-actions">\n                <button class="sc-btn edit-strategy-btn" data-id="' + s.id + '" aria-label="' + i18n.t('trades.edit') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>\n                <button class="sc-btn danger delete-strategy-btn" data-id="' + s.id + '" aria-label="' + i18n.t('trades.delete') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>\n              </div>\n            </div>\n          </div>';
+      });
+
+      cards.push('\n        <div class="strategy-card-add" id="add-card-shortcut">\n          <div class="add-icon">\n            <svg width="18" height="18" viewBox="0 0 14 14" fill="none">\n              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\n            </svg>\n          </div>\n          <span class="add-label" data-i18n="strategies.add_button">Yeni Strateji Ekle</span>\n        </div>');
+
+      container.innerHTML = '<div class="strategies-grid">' + cards.join('') + '</div>';
+
+      for (var sIdx = 0; sIdx < strategiesList.length; sIdx++) {
+        var s = strategiesList[sIdx];
+        var perf = getStrategyPerformance(s.id);
+        var sparkId = 'spark-' + s.id;
+
+        if (perf && perf.totalTrades > 0 && perf.pnlSeries.length > 1) {
+          drawSparkline(sparkId, perf.pnlSeries, s.color);
+        }
+      }
+
+      var editBtns = document.querySelectorAll('.edit-strategy-btn');
+      editBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) { 
+          e.stopPropagation();
+          openEditModal(this.dataset.id); 
+        });
+      });
+      
+      var deleteBtns = document.querySelectorAll('.delete-strategy-btn');
+      deleteBtns.forEach(function(btn) {
+        btn.addEventListener('click', async function(e) {
+          e.stopPropagation();
+          if (confirm(i18n.t('strategies.delete_confirm'))) {
+            var ok = await deleteStrategy(this.dataset.id);
+            if (ok) await loadAllData();
+          }
+        });
+      });
+
+      var strategyCards = document.querySelectorAll('.strategy-card');
+      strategyCards.forEach(function(cardEl) {
+        cardEl.addEventListener('click', function(e) {
+          if (e.target.closest('.sc-btn')) return;
+          if (e.target.closest('.sc-spark.clickable')) {
+            openEquityModal(this.dataset.id);
+            return;
+          }
+          openDetailModal(this.dataset.id);
+        });
+      });
+
+      var addShortcut = document.getElementById('add-card-shortcut');
+      if (addShortcut) {
+        addShortcut.addEventListener('click', function() {
+          var nameEl = document.getElementById('new-strategy-name');
+          var descEl = document.getElementById('new-strategy-desc');
+          var colorEl = document.getElementById('new-strategy-color');
+          var modalEl = document.getElementById('add-strategy-modal');
+          if (nameEl) nameEl.value = '';
+          if (descEl) descEl.value = '';
+          if (colorEl) colorEl.value = '#8b5cf6';
+          if (modalEl) modalEl.style.display = 'flex';
+        });
+      }
+      
+      i18n.apply();
+    }
+
+    async function renderComparisonCharts() {
+      try {
+        if (!strategiesList.length) return;
+        var labels = [], wrData = [], pnlData = [], colors = [];
+
+        for (var sIdx2 = 0; sIdx2 < strategiesList.length; sIdx2++) {
+          var s = strategiesList[sIdx2];
+          var perf = getStrategyPerformance(s.id);
+          if (perf && perf.totalTrades > 0) {
+            labels.push(s.name.length > 12 ? s.name.slice(0,10) + '..' : s.name);
+            wrData.push(perf.winRate);
+            pnlData.push(perf.totalPnL);
+            colors.push(s.color);
+          }
+        }
+        if (!wrData.length) return;
+
+        var def = makeChartDefaults();
+
+        var winCtx = document.getElementById('winrate-comparison-chart');
+        if (winCtx) {
+          var winCtx2d = winCtx.getContext('2d');
+          if (window.winrateChart) { try { window.winrateChart.destroy(); } catch(e) {} }
+          window.winrateChart = new Chart(winCtx2d, {
+            type: 'bar',
+            data: { 
+              labels: labels, 
+              datasets: [{
+                data: wrData,
+                backgroundColor: colors.map(function(c) { return colorToRgba(c, 0.6); }),
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 5,
+                borderSkipped: false
+              }]
+            },
+            options: {
+              plugins: { 
+                legend: { display: false },
+                tooltip: { callbacks: { label: function(ctx) { return ' ' + ctx.raw + '%'; } } }
+              },
+              scales: { 
+                x: { grid: { color: def.scales ? def.scales.x.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 } } },
+                y: { max: 100, ticks: { callback: function(v) { return v + '%'; } } }
+              },
+              responsive: true,
+              maintainAspectRatio: false
+            }
+          });
+        }
+
+        var pnlCtx = document.getElementById('pnl-comparison-chart');
+        if (pnlCtx) {
+          var pnlCtx2d = pnlCtx.getContext('2d');
+          if (window.pnlChart) { try { window.pnlChart.destroy(); } catch(e) {} }
+          window.pnlChart = new Chart(pnlCtx2d, {
+            type: 'bar',
+            data: { 
+              labels: labels, 
+              datasets: [{
+                data: pnlData,
+                backgroundColor: pnlData.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.55)' : 'rgba(239,68,68,0.55)'; }),
+                borderColor: pnlData.map(function(v) { return v >= 0 ? '#22c55e' : '#ef4444'; }),
+                borderWidth: 1,
+                borderRadius: 5,
+                borderSkipped: false
+              }]
+            },
+            options: {
+              plugins: { 
+                legend: { display: false },
+                tooltip: { callbacks: { label: function(ctx) { return ' ' + formatCurrencySafe(ctx.raw); } } }
+              },
+              scales: { 
+                x: { grid: { color: def.scales ? def.scales.x.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 } } },
+                y: { ticks: { callback: function(v) { return formatCurrencySafe(v); } } }
+              },
+              responsive: true,
+              maintainAspectRatio: false
+            }
+          });
+        }
+      } catch(e) {}
+    }
+
+    async function openEditModal(strategyId) {
+      try {
+        var s = strategiesList.find(function(x) { return x.id === strategyId; });
+        if (!s) return;
+        var idEl = document.getElementById('edit-strategy-id');
+        var nameEl = document.getElementById('edit-strategy-name');
+        var descEl = document.getElementById('edit-strategy-desc');
+        var colorEl = document.getElementById('edit-strategy-color');
+        var modalEl = document.getElementById('edit-strategy-modal');
+        
+        if (idEl) idEl.value = s.id;
+        if (nameEl) nameEl.value = s.name;
+        if (descEl) descEl.value = s.description || '';
+        if (colorEl) colorEl.value = s.color || '#8b5cf6';
+        if (modalEl) modalEl.style.display = 'flex';
+      } catch(e) {}
+    }
+
+    // ============================================================
+    // STRATEJİ DETAY MODALI - DÜZELTİLDİ (i18n eklendi)
+    // ============================================================
+    var currentDetailStrategyId = null;
+
+    function openDetailModal(strategyId) {
+      try {
+        var s = strategiesList.find(function(x) { return x.id === strategyId; });
+        if (!s) return;
+        currentDetailStrategyId = strategyId;
+        var perf = getStrategyPerformance(strategyId);
+
+        var nameEl = document.getElementById('detail-strategy-name');
+        var dotEl = document.getElementById('detail-color-dot');
+        if (nameEl) nameEl.textContent = s.name;
+        if (dotEl) dotEl.style.background = s.color;
+
+        var body = document.getElementById('detail-modal-body');
+        if (!body) return;
+
+        if (perf.totalTrades === 0) {
+          body.innerHTML = '<div class="detail-empty-note">Bu strateji için seçili zaman aralığında kapanmış işlem bulunmuyor.</div>';
+          var modalEl = document.getElementById('strategy-detail-modal');
+          if (modalEl) modalEl.style.display = 'flex';
+          return;
+        }
+
+        var pfDisplay = (perf.profitFactor === null) ? '∞' : perf.profitFactor;
+        var rrDisplay = (perf.avgRR === null) ? '∞' : perf.avgRR;
+
+        // ⭐ DÜZELTİLDİ: Tüm metrikler i18n ile değiştirildi
+        var metricsHtml = '\n          <div class="detail-metrics-grid">\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.profit_factor">Profit Factor</div><div class="detail-metric-val ' + (perf.profitFactor !== null && perf.profitFactor >= 1 ? 'pos' : (perf.profitFactor !== null ? 'neg' : 'pos')) + '">' + pfDisplay + '</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_rr">Ort. R:R</div><div class="detail-metric-val">' + rrDisplay + '</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_drawdown">Maks. Drawdown</div><div class="detail-metric-val neg">' + formatCurrencySafe(perf.maxDrawdown) + '</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.win_rate">Win Rate</div><div class="detail-metric-val ' + (perf.winRate >= 50 ? 'pos' : 'neg') + '">' + perf.winRate + '%</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_win_streak">Maks. Kazanma Serisi</div><div class="detail-metric-val pos">' + perf.maxWinStreak + '</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_loss_streak">Maks. Kaybetme Serisi</div><div class="detail-metric-val neg">' + perf.maxLossStreak + '</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_win">Ort. Kazanç</div><div class="detail-metric-val pos">' + formatCurrencySafe(perf.avgWin) + '</div></div>\n            <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_loss">Ort. Kayıp</div><div class="detail-metric-val neg">' + formatCurrencySafe(perf.avgLoss) + '</div></div>\n          </div>';
+
+        // ⭐ DÜZELTİLDİ: Enstrüman kırılımı - i18n eklendi
+        var instrumentRows = perf.instrumentBreakdown.map(function(ib) {
+          var displayName = ib.instrument + ' ' + ib.symbol;
+          return '<tr><td>' + escapeHtml(displayName) + '</td><td>' + ib.trades + '</td><td>' + ib.winRate + '%</td><td class="' + (ib.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrencySafe(ib.pnl) + '</td></tr>';
+        }).join('');
+
+        var instrumentHtml = '\n          <div class="detail-section-title" data-i18n="strategies.detail.instrument_breakdown">Enstrüman Kırılımı</div>\n          <div class="detail-table-wrap" style="max-height:160px;">\n            <table class="detail-table">\n              <thead><tr><th data-i18n="strategies.detail.instrument">Enstrüman · Sembol</th><th data-i18n="strategies.detail.trades">İşlem</th><th data-i18n="strategies.detail.win_rate">Win Rate</th><th data-i18n="strategies.detail.pnl">K/Z</th></tr></thead>\n              <tbody>' + (instrumentRows || '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Veri yok</td></tr>') + '</tbody>\n            </table>\n          </div>';
+
+        // ⭐ DÜZELTİLDİ: İşlem listesi - i18n eklendi
+        var tradeRows = perf.tradesDetail.slice().reverse().map(function(t) {
+          return '<tr>' +
+            '<td>' + fmtDate(t.trade_date) + '</td>' +
+            '<td>' + escapeHtml(t.symbol) + '</td>' +
+            '<td>' + escapeHtml(t.instrument) + '</td>' +
+            '<td>' + escapeHtml(t.direction) + '</td>' +
+            '<td>' + (t.entry_price != null ? t.entry_price : '—') + '</td>' +
+            '<td>' + (t.exit_price != null ? t.exit_price : '—') + '</td>' +
+            '<td>' + (t.lot != null ? t.lot : '—') + '</td>' +
+            '<td class="' + (t.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrencySafe(t.pnl) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        var tradesHtml = '\n          <div class="detail-section-title" data-i18n="strategies.detail.trade_list">İşlem Listesi (' + perf.tradesDetail.length + ')</div>\n          <div class="detail-table-wrap">\n            <table class="detail-table">\n              <thead><tr><th data-i18n="strategies.detail.date">Tarih</th><th data-i18n="strategies.detail.symbol">Sembol</th><th data-i18n="strategies.detail.instrument">Enstrüman</th><th data-i18n="strategies.detail.direction">Yön</th><th data-i18n="strategies.detail.entry">Giriş</th><th data-i18n="strategies.detail.exit">Çıkış</th><th data-i18n="strategies.detail.lot">Lot</th><th data-i18n="strategies.detail.pnl">K/Z</th></tr></thead>\n              <tbody>' + (tradeRows || '<tr><td colspan="8" style="text-align:center;color:var(--muted);">İşlem yok</td></tr>') + '</tbody>\n            </table>\n          </div>';
+
+        body.innerHTML = metricsHtml + instrumentHtml + tradesHtml;
+
+        var modalEl2 = document.getElementById('strategy-detail-modal');
+        if (modalEl2) modalEl2.style.display = 'flex';
+        
+        // i18n'i uygula
+        i18n.apply();
+      } catch(e) {}
+    }
+
+    // ============================================================
+    // EQUITY CURVE MODALI
+    // ============================================================
+    function openEquityModal(strategyId) {
+      try {
+        var s = strategiesList.find(function(x) { return x.id === strategyId; });
+        if (!s) return;
+        var perf = getStrategyPerformance(s.id);
+        if (!perf.pnlSeries.length) return;
+
+        var nameEl = document.getElementById('equity-strategy-name');
+        var dotEl = document.getElementById('equity-color-dot');
+        if (nameEl) nameEl.textContent = s.name + ' — Equity Curve';
+        if (dotEl) dotEl.style.background = s.color;
+
+        var modalEl = document.getElementById('equity-curve-modal');
+        if (modalEl) modalEl.style.display = 'flex';
+
+        var canvas = document.getElementById('equity-curve-canvas');
+        if (!canvas) return;
+        if (equityChartInstance) { try { equityChartInstance.destroy(); } catch(e) {} }
+
+        var def = makeChartDefaults();
+        var labels = perf.tradesDetail.map(function(t, i) { return fmtDate(t.trade_date); });
+        var isNeg = perf.pnlSeries[perf.pnlSeries.length - 1] < 0;
+        var lineColor = isNeg ? '#ef4444' : s.color;
+
+        var ctx = canvas.getContext('2d');
+        equityChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Kümülatif K/Z',
+              data: perf.pnlSeries,
+              borderColor: lineColor,
+              backgroundColor: colorToRgba(lineColor, 0.12),
+              borderWidth: 2,
+              pointRadius: 2,
+              pointHoverRadius: 5,
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: def.plugins ? def.plugins.tooltip.backgroundColor : 'rgba(10,10,15,.95)',
+                borderColor: 'rgba(139,92,246,0.25)',
+                borderWidth: 1,
+                callbacks: { label: function(ctx2) { return ' ' + formatCurrencySafe(ctx2.raw); } }
+              }
+            },
+            scales: {
+              x: { grid: { color: def.scales ? def.scales.x.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+              y: { grid: { color: def.scales ? def.scales.y.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { callback: function(v) { return formatCurrencySafe(v); } } }
+            }
+          }
+        });
+      } catch(e) {}
+    }
+
+    function setupDetailAndEquityModals() {
+      var detailModal = document.getElementById('strategy-detail-modal');
+      var equityModal = document.getElementById('equity-curve-modal');
+
+      ['close-detail-modal', 'close-detail-modal-btn'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('click', function() { if (detailModal) detailModal.style.display = 'none'; });
+      });
+      ['close-equity-modal', 'close-equity-modal-btn'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('click', function() { if (equityModal) equityModal.style.display = 'none'; });
+      });
+      if (detailModal) {
+        detailModal.addEventListener('click', function(e) { if (e.target === detailModal) detailModal.style.display = 'none'; });
+      }
+      if (equityModal) {
+        equityModal.addEventListener('click', function(e) { if (e.target === equityModal) equityModal.style.display = 'none'; });
+      }
+
+      var detailCsvBtn = document.getElementById('detail-export-csv');
+      if (detailCsvBtn) {
+        detailCsvBtn.addEventListener('click', function() {
+          if (currentDetailStrategyId) exportStrategyCSV(currentDetailStrategyId);
+        });
+      }
+      var detailPdfBtn = document.getElementById('detail-export-pdf');
+      if (detailPdfBtn) {
+        detailPdfBtn.addEventListener('click', function() {
+          if (currentDetailStrategyId) exportStrategyPDF(currentDetailStrategyId);
+        });
+      }
+    }
+
+    // ============================================================
+    // CSV / PDF EXPORT - DÜZELTİLDİ (dil desteği)
+    // ============================================================
+    function downloadBlob(content, filename, mimeType) {
+      try {
+        var blob = new Blob([content], { type: mimeType });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 200);
+      } catch(e) {}
+    }
+
+    function csvEscape(val) {
+      var s = (val === null || val === undefined) ? '' : String(val);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    // ⭐ DÜZELTİLDİ: PDF dil desteği
+    function getCurrentLanguage() {
+      try {
+        if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
+          return i18n.getCurrentLanguage();
+        }
+      } catch(e) {}
+      return 'en';
+    }
+
+    function getLangLabel(lang) {
+      var map = { 'tr': 'Türkçe', 'en': 'English', 'de': 'Deutsch' };
+      return map[lang] || 'English';
+    }
+
+    function exportStrategyCSV(strategyId) {
+      try {
+        var s = strategiesList.find(function(x) { return x.id === strategyId; });
+        var perf = getStrategyPerformance(strategyId);
+        var rows = [['Tarih','Sembol','Enstrüman','Yön','Giriş','Çıkış','Lot','K/Z']];
+        perf.tradesDetail.forEach(function(t) {
+          rows.push([fmtDate(t.trade_date), t.symbol, t.instrument, t.direction, t.entry_price, t.exit_price, t.lot, t.pnl.toFixed(2)]);
+        });
+        rows.push([]);
+        var pfDisplay = (perf.profitFactor === null) ? 'Sonsuz' : perf.profitFactor;
+        rows.push(['Özet']);
+        rows.push(['Toplam İşlem', perf.totalTradesWithOpen]);
+        rows.push(['Win Rate', perf.winRate + '%']);
+        rows.push(['Toplam K/Z', perf.totalPnL.toFixed(2)]);
+        rows.push(['Profit Factor', pfDisplay]);
+        rows.push(['Maks. Drawdown', perf.maxDrawdown.toFixed(2)]);
+
+        var csvContent = rows.map(function(r) { return r.map(csvEscape).join(','); }).join('\r\n');
+        downloadBlob('\uFEFF' + csvContent, (s ? s.name : 'strateji') + '_islemler.csv', 'text/csv;charset=utf-8;');
+        showToast('CSV indirildi');
+      } catch(e) { showToast('CSV oluşturulamadı', 'error'); }
+    }
+
+    function exportAllStrategiesCSV() {
+      try {
+        var rows = [['Strateji','Toplam İşlem','Win Rate','Toplam K/Z','Profit Factor','Ort. R:R','Maks. Drawdown','En İyi Enstrüman']];
+        strategiesList.forEach(function(s) {
+          var perf = getStrategyPerformance(s.id);
+          var bestInst = perf.bestInstrument ? (perf.bestInstrument.instrument + ' ' + perf.bestInstrument.symbol) : '—';
+          rows.push([
+            s.name,
+            perf.totalTradesWithOpen,
+            perf.winRate + '%',
+            perf.totalPnL.toFixed(2),
+            perf.profitFactor === null ? 'Sonsuz' : perf.profitFactor,
+            perf.avgRR === null ? 'Sonsuz' : perf.avgRR,
+            perf.maxDrawdown.toFixed(2),
+            bestInst
+          ]);
+        });
+        var csvContent = rows.map(function(r) { return r.map(csvEscape).join(','); }).join('\r\n');
+        downloadBlob('\uFEFF' + csvContent, 'strateji_ozeti.csv', 'text/csv;charset=utf-8;');
+        showToast('CSV indirildi');
+      } catch(e) { showToast('CSV oluşturulamadı', 'error'); }
+    }
+
+    // ⭐ DÜZELTİLDİ: PDF - seçili dilde oluşturuluyor
+    function exportStrategyPDF(strategyId) {
+      try {
+        var lang = getCurrentLanguage();
+        var s = strategiesList.find(function(x) { return x.id === strategyId; });
+        var perf = getStrategyPerformance(strategyId);
+        var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+        if (!jsPDFCtor) { showToast('PDF kütüphanesi yüklenemedi', 'error'); return; }
+        var doc = new jsPDFCtor();
+
+        var title = (s ? s.name : 'Strategy') + ' - Performance Report';
+        var createdLabel = 'Created: ';
+        var tradesLabel = 'Total Trades', winRateLabel = 'Win Rate', pnlLabel = 'Total P&L';
+        var pfLabel = 'Profit Factor', rrLabel = 'Avg R:R', ddLabel = 'Max Drawdown';
+        var winStreakLabel = 'Max Win Streak', lossStreakLabel = 'Max Loss Streak';
+        var bestInstLabel = 'Best Instrument';
+        var dateLabel = 'Date', symbolLabel = 'Symbol', instrumentLabel = 'Instrument';
+        var directionLabel = 'Direction', entryLabel = 'Entry', exitLabel = 'Exit';
+        var lotLabel = 'Lot', pnlShortLabel = 'P&L';
+
+        if (lang === 'tr') {
+          title = (s ? s.name : 'Strateji') + ' - Performans Raporu';
+          createdLabel = 'Oluşturulma: ';
+          tradesLabel = 'Toplam İşlem'; winRateLabel = 'Win Rate'; pnlLabel = 'Toplam K/Z';
+          pfLabel = 'Profit Factor'; rrLabel = 'Ort. R:R'; ddLabel = 'Maks. Drawdown';
+          winStreakLabel = 'Maks. Kazanma Serisi'; lossStreakLabel = 'Maks. Kaybetme Serisi';
+          bestInstLabel = 'En İyi Enstrüman';
+          dateLabel = 'Tarih'; symbolLabel = 'Sembol'; instrumentLabel = 'Enstrüman';
+          directionLabel = 'Yön'; entryLabel = 'Giriş'; exitLabel = 'Çıkış';
+          lotLabel = 'Lot'; pnlShortLabel = 'K/Z';
+        } else if (lang === 'de') {
+          title = (s ? s.name : 'Strategie') + ' - Leistungsbericht';
+          createdLabel = 'Erstellt: ';
+          tradesLabel = 'Gesamt Trades'; winRateLabel = 'Win-Rate'; pnlLabel = 'Gesamt P&L';
+          pfLabel = 'Profit Faktor'; rrLabel = 'Durch. R:R'; ddLabel = 'Max. Drawdown';
+          winStreakLabel = 'Max. Gewinnserie'; lossStreakLabel = 'Max. Verlustserie';
+          bestInstLabel = 'Bestes Instrument';
+          dateLabel = 'Datum'; symbolLabel = 'Symbol'; instrumentLabel = 'Instrument';
+          directionLabel = 'Richtung'; entryLabel = 'Einstieg'; exitLabel = 'Ausstieg';
+          lotLabel = 'Lot'; pnlShortLabel = 'P&L';
+        }
+
+        doc.setFontSize(16);
+        doc.text(title, 14, 18);
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(createdLabel + new Date().toLocaleDateString(lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US')), 14, 24);
+        doc.setTextColor(0);
+
+        var pfDisplay = (perf.profitFactor === null) ? '∞' : String(perf.profitFactor);
+        var rrDisplay = (perf.avgRR === null) ? '∞' : String(perf.avgRR);
+        var bestInst = perf.bestInstrument ? (perf.bestInstrument.instrument + ' ' + perf.bestInstrument.symbol) : '—';
+
+        var summaryLines = [
+          [tradesLabel, String(perf.totalTradesWithOpen)],
+          [winRateLabel, perf.winRate + '%'],
+          [pnlLabel, perf.totalPnL.toFixed(2)],
+          [pfLabel, pfDisplay],
+          [rrLabel, rrDisplay],
+          [ddLabel, perf.maxDrawdown.toFixed(2)],
+          [winStreakLabel, String(perf.maxWinStreak)],
+          [lossStreakLabel, String(perf.maxLossStreak)],
+          [bestInstLabel, bestInst]
+        ];
+
+        var y = 34;
+        doc.setFontSize(10);
+        summaryLines.forEach(function(line) {
+          doc.text(line[0] + ':', 14, y);
+          doc.text(line[1], 80, y);
+          y += 6.5;
+        });
+
+        if (doc.autoTable) {
+          var body = perf.tradesDetail.map(function(t) {
+            return [fmtDate(t.trade_date), t.symbol, t.instrument, t.direction, String(t.entry_price != null ? t.entry_price : '-'), String(t.exit_price != null ? t.exit_price : '-'), String(t.lot != null ? t.lot : '-'), t.pnl.toFixed(2)];
+          });
+          doc.autoTable({
+            startY: y + 4,
+            head: [[dateLabel, symbolLabel, instrumentLabel, directionLabel, entryLabel, exitLabel, lotLabel, pnlShortLabel]],
+            body: body,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [139, 92, 246] },
+            margin: { left: 14, right: 14 }
+          });
+        }
+
+        doc.save((s ? s.name : 'strateji') + '_rapor.pdf');
+        showToast('PDF indirildi');
+      } catch(e) { showToast('PDF oluşturulamadı', 'error'); }
+    }
+
+    // ⭐ DÜZELTİLDİ: Tüm stratejiler PDF - dil desteği
+    function exportAllStrategiesPDF() {
+      try {
+        var lang = getCurrentLanguage();
+        var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+        if (!jsPDFCtor) { showToast('PDF kütüphanesi yüklenemedi', 'error'); return; }
+        var doc = new jsPDFCtor();
+
+        var title = 'Strategy Performance Summary';
+        var createdLabel = 'Created: ';
+        if (lang === 'tr') {
+          title = 'Strateji Performans Özeti';
+          createdLabel = 'Oluşturulma: ';
+        } else if (lang === 'de') {
+          title = 'Strategie-Leistungsübersicht';
+          createdLabel = 'Erstellt: ';
+        }
+
+        doc.setFontSize(16);
+        doc.text(title, 14, 18);
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(createdLabel + new Date().toLocaleDateString(lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US')), 14, 24);
+        doc.setTextColor(0);
+
+        var body = strategiesList.map(function(s) {
+          var perf = getStrategyPerformance(s.id);
+          var bestInst = perf.bestInstrument ? (perf.bestInstrument.instrument + ' ' + perf.bestInstrument.symbol) : '—';
+          return [
+            s.name,
+            String(perf.totalTradesWithOpen),
+            perf.winRate + '%',
+            perf.totalPnL.toFixed(2),
+            perf.profitFactor === null ? '∞' : String(perf.profitFactor),
+            perf.maxDrawdown.toFixed(2),
+            bestInst
+          ];
+        });
+
+        if (doc.autoTable) {
+          var headers = ['Strategy','Trades','Win Rate','Total P&L','Profit Factor','Max Drawdown','Best Instrument'];
+          if (lang === 'tr') {
+            headers = ['Strateji','İşlem','Win Rate','Toplam K/Z','Profit Factor','Maks. Drawdown','En İyi Enstrüman'];
+          } else if (lang === 'de') {
+            headers = ['Strategie','Trades','Win-Rate','Gesamt P&L','Profit Faktor','Max. Drawdown','Bestes Instrument'];
+          }
+          doc.autoTable({
+            startY: 30,
+            head: [headers],
+            body: body,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [139, 92, 246] },
+            margin: { left: 14, right: 14 }
+          });
+        }
+
+        var filename = 'strateji_ozeti.pdf';
+        if (lang === 'tr') filename = 'strateji_ozeti.pdf';
+        else if (lang === 'de') filename = 'strategie_zusammenfassung.pdf';
+        else filename = 'strategy_summary.pdf';
+        doc.save(filename);
+        showToast('PDF indirildi');
+      } catch(e) { showToast('PDF oluşturulamadı', 'error'); }
+    }
+
+    function setupExportButtons() {
+      var csvBtn = document.getElementById('export-all-csv');
+      if (csvBtn) csvBtn.addEventListener('click', exportAllStrategiesCSV);
+      var pdfBtn = document.getElementById('export-all-pdf');
+      if (pdfBtn) pdfBtn.addEventListener('click', exportAllStrategiesPDF);
+    }
+
+    var addModal = document.getElementById('add-strategy-modal');
+    var editModal = document.getElementById('edit-strategy-modal');
+
+    var openAddBtn = document.getElementById('open-add-strategy-modal');
+    if (openAddBtn) {
+      openAddBtn.addEventListener('click', function() {
+        var nameEl = document.getElementById('new-strategy-name');
+        var descEl = document.getElementById('new-strategy-desc');
+        var colorEl = document.getElementById('new-strategy-color');
+        if (nameEl) nameEl.value = '';
+        if (descEl) descEl.value = '';
+        if (colorEl) colorEl.value = '#8b5cf6';
+        if (addModal) addModal.style.display = 'flex';
+      });
+    }
+
+    var closeAddIds = ['close-add-modal', 'cancel-add-strategy'];
+    closeAddIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('click', function() { 
+          if (addModal) addModal.style.display = 'none'; 
+        });
+      }
+    });
+    
+    var closeEditIds = ['close-edit-modal', 'cancel-edit-strategy'];
+    closeEditIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('click', function() { 
+          if (editModal) editModal.style.display = 'none'; 
+        });
+      }
+    });
+
+    if (addModal) {
+      addModal.addEventListener('click', function(e) { 
+        if (e.target === addModal) addModal.style.display = 'none'; 
+      });
+    }
+    
+    if (editModal) {
+      editModal.addEventListener('click', function(e) { 
+        if (e.target === editModal) editModal.style.display = 'none'; 
+      });
+    }
+
+    var confirmAddBtn = document.getElementById('confirm-add-strategy');
+    if (confirmAddBtn) {
+      confirmAddBtn.addEventListener('click', async function() {
+        var nameEl = document.getElementById('new-strategy-name');
+        var descEl = document.getElementById('new-strategy-desc');
+        var colorEl = document.getElementById('new-strategy-color');
+        var name = nameEl ? nameEl.value.trim() : '';
+        var desc = descEl ? descEl.value.trim() : '';
+        var color = colorEl ? colorEl.value : '#8b5cf6';
+        if (!name) { 
+          showToast(i18n.t('strategies.error_name_required'), 'error'); 
+          return; 
+        }
+        var result = await addStrategy(name, desc, color);
+        if (result) { 
+          if (addModal) addModal.style.display = 'none'; 
+          await loadAllData(); 
+        }
+      });
+    }
+
+    var confirmEditBtn = document.getElementById('confirm-edit-strategy');
+    if (confirmEditBtn) {
+      confirmEditBtn.addEventListener('click', async function() {
+        var idEl = document.getElementById('edit-strategy-id');
+        var nameEl = document.getElementById('edit-strategy-name');
+        var descEl = document.getElementById('edit-strategy-desc');
+        var colorEl = document.getElementById('edit-strategy-color');
+        var id = idEl ? idEl.value : '';
+        var name = nameEl ? nameEl.value.trim() : '';
+        var desc = descEl ? descEl.value.trim() : '';
+        var color = colorEl ? colorEl.value : '#8b5cf6';
+        if (!name) { 
+          showToast(i18n.t('strategies.error_name_required'), 'error'); 
+          return; 
+        }
+        try {
+          var { error } = await sb.from('strategies').update({ name: name, description: desc || null, color: color }).eq('id', id);
+          if (error) { 
+            showToast(i18n.t('strategies.error_update') + error.message, 'error'); 
+            return; 
+          }
+          showToast(i18n.t('strategies.updated'));
+          if (editModal) editModal.style.display = 'none';
+          await loadAllData();
+        } catch(e) {}
+      });
+    }
+
+    var navToggle = document.getElementById('nav-toggle');
+    var navMenu = document.getElementById('nav-menu');
+    var navBackdrop = document.getElementById('nav-backdrop');
+    
+    function openMenu() { 
+      if (navToggle) navToggle.classList.add('open'); 
+      if (navMenu) navMenu.classList.add('open'); 
+      if (navBackdrop) navBackdrop.classList.add('open'); 
+      document.body.style.overflow = 'hidden'; 
+    }
+    
+    function closeMenu() { 
+      if (navToggle) navToggle.classList.remove('open'); 
+      if (navMenu) navMenu.classList.remove('open'); 
+      if (navBackdrop) navBackdrop.classList.remove('open'); 
+      document.body.style.overflow = ''; 
+    }
+    
+    if (navToggle) {
+      navToggle.addEventListener('click', function() {
+        if (navMenu && navMenu.classList.contains('open')) {
+          closeMenu();
+        } else {
+          openMenu();
+        }
+      });
+    }
+    
+    if (navBackdrop) navBackdrop.addEventListener('click', closeMenu);
+    
+    var logoutMobile = document.getElementById('logout-btn-mobile');
+    if (logoutMobile) {
+      logoutMobile.addEventListener('click', function() { 
+        closeMenu(); 
+        var logoutBtn = document.getElementById('logout-dropdown-btn');
+        if (logoutBtn) logoutBtn.click(); 
+      });
+    }
+  </script>
+</body>
+</html>

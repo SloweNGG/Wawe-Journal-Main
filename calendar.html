@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title data-i18n="calendar.title">Takvim - Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="resim.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  
+  <script>
+    (function() {
+      if (document.body) {
+        var savedTheme = localStorage.getItem('ww_theme');
+        if (savedTheme === 'light') {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          var savedTheme = localStorage.getItem('ww_theme');
+          if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+          } else {
+            document.body.classList.remove('light-theme');
+          }
+        });
+      }
+    })();
+  </script>
+  
+  <style>
+    /* ============================================================
+       CALENDAR SAYFASI ÖZEL STİLLER
+       ============================================================ */
+    
+    .calendar-page-main {
+      padding: 0.9rem 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .calendar-page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .calendar-page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.2rem;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .calendar-page-header .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .calendar-page-header .back-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      padding-top: 0.3rem;
+    }
+    .calendar-page-header .back-link:hover {
+      color: var(--accent2);
+      transform: translateX(-2px);
+    }
+
+    /* Ana Takvim Kartı */
+    .calendar-main-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Takvim Header */
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .cal-header .cal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cal-header .cal-title .cal-icon-wrap {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(192,132,252,0.1));
+      border: 1px solid rgba(139,92,246,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .cal-header .cal-title .cal-icon-wrap svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--accent2);
+    }
+
+    .cal-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 3px;
+      overflow: hidden;
+    }
+    .cal-nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.35rem 0.9rem;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s;
+      border-radius: 40px;
+      white-space: nowrap;
+    }
+    .cal-nav-btn:hover {
+      color: var(--accent);
+      background: rgba(139,92,246,0.06);
+    }
+    .cal-nav-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+    .cal-nav-btn.month-label {
+      cursor: default;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 100px;
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+    .cal-nav-btn.month-label:hover {
+      background: transparent;
+      color: var(--text);
+    }
+    .cal-nav-btn.today-btn {
+      background: rgba(139,92,246,0.08);
+      color: var(--accent);
+      font-size: 10px;
+      padding: 0.2rem 0.7rem;
+    }
+    .cal-nav-btn.today-btn:hover {
+      background: rgba(139,92,246,0.15);
+    }
+
+    /* Gün Başlıkları */
+    .cal-day-names {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-bottom: 0.5rem;
+    }
+    .cal-day-names .dname {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      padding: 4px 0;
+    }
+
+    /* Gün Gridi - Gerçek */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    /* Gün Gridi - Skeleton */
+    .cal-grid-skeleton {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    .cal-grid-skeleton .skeleton-day {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: var(--border);
+      opacity: 0.15;
+      min-height: 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cal-grid-skeleton .skeleton-day::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    body.light-theme .cal-grid-skeleton .skeleton-day::after {
+      background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+
+    .cal-day {
+      position: relative;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      min-height: 80px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    .cal-day:hover {
+      border-color: var(--accent);
+      transform: scale(1.02);
+      z-index: 2;
+      box-shadow: 0 6px 20px rgba(139,92,246,0.15);
+    }
+    .cal-day .day-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: 10px;
+      pointer-events: none;
+    }
+    .cal-day .day-bg.show {
+      opacity: 1;
+    }
+    .cal-day .day-bg.glow {
+      filter: blur(2px);
+    }
+
+    .cal-day .day-number {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      position: relative;
+      z-index: 1;
+    }
+    .cal-day .day-pnl {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+      margin-top: 2px;
+    }
+    .cal-day .day-pnl.positive {
+      color: var(--green);
+    }
+    .cal-day .day-pnl.negative {
+      color: var(--red);
+    }
+    .cal-day .day-trade-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      position: relative;
+      z-index: 1;
+      margin-top: 2px;
+    }
+
+    /* PnL Bar */
+    .cal-day .day-pnl-bar {
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      right: 10%;
+      height: 2.5px;
+      border-radius: 99px;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: scaleX(0.3);
+      z-index: 1;
+    }
+    .cal-day .day-pnl-bar.show {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+    .cal-day .day-pnl-bar.positive {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green-glow);
+    }
+    .cal-day .day-pnl-bar.negative {
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red-glow);
+    }
+
+    /* Bugün - basit ve sağlam border */
+    .cal-day.today {
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 20px rgba(139,92,246,0.2), inset 0 0 20px rgba(139,92,246,0.03);
+      position: relative;
+      z-index: 3;
+    }
+    .cal-day.today .day-number {
+      color: var(--accent);
+    }
+
+    /* Renk skalası */
+    .cal-day.color-0 .day-bg { background: transparent; }
+    .cal-day.color-1 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02)); }
+    .cal-day.color-2 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.04)); }
+    .cal-day.color-3 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.28), rgba(34,197,94,0.06)); }
+    .cal-day.color-4 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(34,197,94,0.1)); }
+    .cal-day.color-neg1 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.02)); }
+    .cal-day.color-neg2 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.16), rgba(239,68,68,0.04)); }
+    .cal-day.color-neg3 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.28), rgba(239,68,68,0.06)); }
+    .cal-day.color-neg4 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.45), rgba(239,68,68,0.1)); }
+
+    /* Boş günler */
+    .cal-day.empty {
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: default;
+      min-height: 60px;
+    }
+    .cal-day.empty:hover {
+      transform: none;
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .cal-day.empty .day-texture {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+      background-size: 8px 8px;
+      opacity: 0.1;
+      pointer-events: none;
+      border-radius: 10px;
+    }
+
+    /* Özet Kartları - Gerçek */
+    .calendar-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Özet Kartları - Skeleton */
+    .calendar-summary-skeleton {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .calendar-summary-skeleton .skeleton-stat {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      min-height: 52px;
+      position: relative;
+      overflow: hidden;
+    }
+    .calendar-summary-skeleton .skeleton-stat::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
+      background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
+      background-size: 200% 100%;
+      animation: skeletonShimmer 1.8s ease-in-out infinite;
+    }
+    .calendar-summary-skeleton .skeleton-stat .skeleton-line {
+      height: 8px;
+      background: var(--border);
+      border-radius: 99px;
+      opacity: 0.3;
+      margin-bottom: 4px;
+    }
+    .calendar-summary-skeleton .skeleton-stat .skeleton-line:last-child {
+      width: 60%;
+      margin-bottom: 0;
+    }
+
+    .summary-mini-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .summary-mini-card .s-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .summary-mini-card .s-icon.trades {
+      background: rgba(139,92,246,0.12);
+      color: var(--accent2);
+    }
+    .summary-mini-card .s-icon.pnl {
+      background: rgba(34,197,94,0.1);
+      color: var(--green);
+    }
+    .summary-mini-card .s-icon.winrate {
+      background: rgba(251,191,36,0.1);
+      color: var(--yellow);
+    }
+    .summary-mini-card .s-icon.best {
+      background: rgba(34,197,94,0.08);
+      color: var(--green);
+    }
+    .summary-mini-card .s-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .summary-mini-card .s-info .s-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .summary-mini-card .s-info .s-value {
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .summary-mini-card .s-info .s-value.positive {
+      color: var(--green);
+    }
+    .summary-mini-card .s-info .s-value.negative {
+      color: var(--red);
+    }
+
+    /* Popup */
+    .calendar-day-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--surface);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 16px;
+      padding: 1.25rem;
+      min-width: 280px;
+      max-width: 380px;
+      z-index: 500;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.08);
+      backdrop-filter: blur(16px);
+    }
+    .calendar-day-popup.active {
+      display: block;
+      animation: popupIn 0.25s ease;
+    }
+    @keyframes popupIn {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    .calendar-day-popup .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    .calendar-day-popup .popup-header h4 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+    }
+    .calendar-day-popup .popup-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .calendar-day-popup .popup-close:hover {
+      color: var(--text);
+    }
+    .calendar-day-popup .popup-body {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .calendar-day-popup .popup-body::-webkit-scrollbar {
+      width: 3px;
+    }
+    .calendar-day-popup .popup-body::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 99px;
+    }
+    .calendar-day-popup .popup-trade {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .calendar-day-popup .popup-trade:last-child {
+      border-bottom: none;
+    }
+    .calendar-day-popup .popup-trade .pt-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .calendar-day-popup .popup-trade .pt-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .calendar-day-popup .popup-trade .pt-badge.long {
+      background: rgba(34,197,94,0.15);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+    .calendar-day-popup .popup-trade .pt-badge.short {
+      background: rgba(239,68,68,0.15);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+    .calendar-day-popup .popup-trade .pt-symbol {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .calendar-day-popup .popup-trade .pt-pnl {
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+    }
+    .calendar-day-popup .popup-trade .pt-pnl.positive {
+      color: var(--green);
+    }
+    .calendar-day-popup .popup-trade .pt-pnl.negative {
+      color: var(--red);
+    }
+    .calendar-day-popup .popup-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 1.5rem 0;
+    }
+    .calendar-popup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 499;
+    }
+    .calendar-popup-overlay.active {
+      display: block;
+    }
+
+    /* Açık tema uyumluluğu */
+    body.light-theme .cal-day.color-1 .day-bg { background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02)); }
+    body.light-theme .cal-day.color-2 .day-bg { background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(16,185,129,0.04)); }
+    body.light-theme .cal-day.color-3 .day-bg { background: linear-gradient(135deg, rgba(16,185,129,0.24), rgba(16,185,129,0.06)); }
+    body.light-theme .cal-day.color-4 .day-bg { background: linear-gradient(135deg, rgba(16,185,129,0.4), rgba(16,185,129,0.1)); }
+    body.light-theme .cal-day.color-neg1 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02)); }
+    body.light-theme .cal-day.color-neg2 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.14), rgba(239,68,68,0.04)); }
+    body.light-theme .cal-day.color-neg3 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.24), rgba(239,68,68,0.06)); }
+    body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.4), rgba(239,68,68,0.1)); }
+
+    /* ============================================================
+       NAV - GÜNCELLENDİ (Premium Dropdown + Plan Badge EKLENDİ)
+       ============================================================ */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .nav-logo span { color: var(--accent); }
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(139,92,246,0.1);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      margin-left: 1.5rem;
+    }
+    .nav-links a {
+      padding: 0.3rem 0.7rem;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .nav-links a:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+    }
+    .nav-links a.active {
+      color: var(--accent);
+      background: rgba(139,92,246,0.08);
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: auto;
+    }
+
+    /* ⭐ PREMIUM DROPDOWN */
+    .nav-dropdown {
+      position: relative;
+    }
+    .nav-dropdown-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .nav-dropdown-btn:hover {
+      color: var(--accent);
+      background: rgba(139,92,246,0.06);
+    }
+    .nav-dropdown-btn .dropdown-arrow {
+      font-size: 7px;
+      transition: transform 0.2s ease;
+      margin-left: 2px;
+    }
+    .nav-dropdown-btn.active .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+    .nav-dropdown-menu {
+      position: absolute;
+      top: 38px;
+      right: 0;
+      min-width: 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 300;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .nav-dropdown-menu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .nav-dropdown-menu .menu-label {
+      padding: 0.3rem 1rem;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      opacity: 0.5;
+    }
+    .nav-dropdown-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.45rem 1rem;
+      color: var(--text);
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .nav-dropdown-menu a:hover {
+      background: rgba(139,92,246,0.06);
+      color: var(--accent);
+    }
+    .nav-dropdown-menu a .premium-icon {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+    }
+    .nav-dropdown-menu .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 12px;
+    }
+
+    /* ⭐ PLAN BADGE */
+    .plan-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0.2rem 0.7rem 0.2rem 0.5rem;
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+      color: var(--green);
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+    .plan-badge.premium {
+      background: rgba(139,92,246,0.12);
+      border: 1px solid rgba(139,92,246,0.25);
+      color: var(--accent2);
+    }
+    .plan-badge .plan-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    .plan-badge.premium .plan-dot {
+      background: var(--accent2);
+      box-shadow: 0 0 8px rgba(139,92,246,0.4);
+    }
+    .plan-badge .plan-text {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .user-avatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 45px;
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-width: 160px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s ease;
+      z-index: 250;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .dropdown-item:hover {
+      background: rgba(139,92,246,0.1);
+      color: var(--accent);
+    }
+    .dropdown-item:first-child {
+      border-radius: 12px 12px 0 0;
+    }
+    .dropdown-item:last-child {
+      border-radius: 0 0 12px 12px;
+    }
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      z-index: 100;
+      background: transparent;
+      border: none;
+      padding: 8px;
+    }
+    .nav-toggle span {
+      width: 25px;
+      height: 2px;
+      background: var(--text);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .nav-toggle.open span:nth-child(2) { opacity: 0; }
+    .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+    .nav-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 97;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .nav-backdrop.open { opacity: 1; visibility: visible; }
+
+    .nav-menu {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 80%;
+      max-width: 300px;
+      height: 100vh;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border);
+      z-index: 98;
+      padding: 80px 2rem 2rem;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .nav-menu.open { right: 0; }
+    .nav-menu-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .nav-menu-inner a {
+      padding: 12px 16px;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .nav-menu-inner a:hover { background: rgba(139,92,246,0.08); color: var(--accent); }
+    .nav-menu-inner a.active { color: var(--accent); background: rgba(139,92,246,0.12); }
+    .nav-menu-inner hr { border: none; border-top: 1px solid var(--border); margin: 0.5rem 0; }
+    .nav-menu-inner button {
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .nav-menu-inner button:hover { background: rgba(139,92,246,0.08); color: var(--accent); }
+    .mobile-premium-label {
+      padding: 0.5rem 1rem 0.25rem;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      opacity: 0.6;
+    }
+    .nav-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 12px;
+    }
+
+    @media (max-width: 767px) {
+      .nav-links { display: none !important; }
+      .nav-dropdown { display: none !important; }
+      .nav-toggle { display: flex; }
+      .nav-right { margin-left: auto; }
+      .nav { padding: 0 1rem; height: 48px; }
+      .plan-badge { padding: 0.15rem 0.5rem 0.15rem 0.35rem; font-size: 8px; }
+      .plan-badge .plan-dot { width: 4px; height: 4px; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .calendar-page-main {
+        padding: 1rem;
+      }
+      .cal-day {
+        min-height: 60px;
+        padding: 4px 6px;
+      }
+      .cal-day .day-number {
+        font-size: 12px;
+      }
+      .cal-day .day-pnl {
+        font-size: 8px;
+      }
+      .cal-day .day-trade-count {
+        font-size: 7px;
+      }
+      .calendar-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .calendar-summary-skeleton {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .cal-header .cal-title {
+        font-size: 1.1rem;
+      }
+      .cal-header .cal-title .cal-icon-wrap {
+        width: 30px;
+        height: 30px;
+      }
+      .cal-header .cal-title .cal-icon-wrap svg {
+        width: 16px;
+        height: 16px;
+      }
+      .cal-nav-btn.month-label {
+        min-width: 70px;
+        font-size: 11px;
+      }
+      .cal-nav-btn {
+        padding: 0.25rem 0.6rem;
+        font-size: 10px;
+      }
+      .calendar-day-popup {
+        min-width: 220px;
+        max-width: 280px;
+        padding: 1rem;
+      }
+    }
+    @media (max-width: 480px) {
+      .cal-day {
+        min-height: 48px;
+        padding: 3px 4px;
+      }
+      .cal-day .day-number {
+        font-size: 10px;
+      }
+      .cal-day .day-pnl {
+        font-size: 7px;
+      }
+      .cal-day .day-trade-count {
+        font-size: 6px;
+      }
+      .calendar-summary-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+      .calendar-summary-skeleton {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+      .summary-mini-card {
+        padding: 0.5rem 0.6rem;
+      }
+      .summary-mini-card .s-icon {
+        width: 24px;
+        height: 24px;
+      }
+      .summary-mini-card .s-icon svg {
+        width: 14px;
+        height: 14px;
+      }
+      .summary-mini-card .s-info .s-value {
+        font-size: 0.85rem;
+      }
+      .cal-day.today {
+        border-width: 1.5px;
+      }
+      .calendar-summary-skeleton .skeleton-stat {
+        padding: 0.5rem 0.6rem;
+        min-height: 42px;
+      }
+      .calendar-summary-skeleton .skeleton-stat .skeleton-line {
+        height: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       NAV - GÜNCELLENDİ (Premium Dropdown + Plan Badge EKLENDİ)
+       ============================================================ -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+          <polyline points="2,16 7,9 12,13 19,4" stroke="#a78bfa" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      Wawe<span data-i18n="app_name">Journal</span>
+    </a>
+    
+    <div class="nav-links">
+      <a href="dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="trades.html" data-i18n="nav.trades">İşlemler</a>
+      <a href="strategies.html" data-i18n="nav.strategies">Stratejiler</a>
+      <a href="calendar.html" class="active" data-i18n="nav.calendar">Takvim</a>
+      <span id="admin-link" style="display:none;"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+    </div>
+    
+    <div class="nav-right">
+      <!-- ⭐ PREMIUM DROPDOWN -->
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-btn" id="premium-dropdown-btn">
+          💎 Premium <span class="dropdown-arrow">▼</span>
+        </button>
+        <div class="nav-dropdown-menu" id="premium-dropdown-menu">
+          <div class="menu-label">✨ Premium Özellikler</div>
+          <a href="premium-dashboard.html"><span class="premium-icon">📊</span> Premium Dashboard</a>
+          <a href="#"><span class="premium-icon">🎨</span> Tema Özelleştirme</a>
+          <a href="#"><span class="premium-icon">🔔</span> Over Trade Uyarısı</a>
+          <div class="dropdown-divider"></div>
+          <a href="settings.html#panel-plan" style="color:var(--accent);">
+            <span class="premium-icon">💎</span> Premium'a Geç
+          </a>
+        </div>
+      </div>
+      
+      <!-- ⭐ PLAN BADGE -->
+      <div class="plan-badge" id="plan-badge">
+        <span class="plan-dot"></span>
+        <span class="plan-text" id="plan-text">Ücretsiz</span>
+      </div>
+      
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div class="dropdown-menu" id="dropdown-menu">
+        <a href="settings.html" class="dropdown-item" data-i18n="nav.profile">Profil</a>
+        <a href="settings.html" class="dropdown-item" data-i18n="nav.settings">Ayarlar</a>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item" id="logout-dropdown-btn" data-i18n="nav.logout">Çıkış Yap</button>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="nav-backdrop" id="nav-backdrop"></div>
+  <div class="nav-menu" id="nav-menu">
+    <div class="nav-menu-inner">
+      <a href="dashboard.html" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="trades.html" data-i18n="nav.trades">İşlemler</a>
+      <a href="strategies.html" data-i18n="nav.strategies">Stratejiler</a>
+      <a href="calendar.html" class="active" data-i18n="nav.calendar">Takvim</a>
+      <div class="nav-divider"></div>
+      <div class="mobile-premium-label">💎 Premium</div>
+      <a href="premium-dashboard.html">Premium Dashboard</a>
+      <a href="#">Tema Özelleştirme</a>
+      <a href="#">Over Trade Uyarısı</a>
+      <span id="admin-link-mobile" style="display:none;"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+      <hr>
+      <button id="logout-btn-mobile" data-i18n="nav.logout">Çıkış Yap</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main class="calendar-page-main">
+
+    <!-- HEADER - DASHBOARD İLE AYNI -->
+    <div class="calendar-page-header">
+      <div>
+        <h1 data-i18n="calendar.title">Takvim</h1>
+        <p class="subtitle" data-i18n="calendar.subtitle">Tüm işlemlerini ay bazında görüntüle</p>
+      </div>
+      <a href="dashboard.html" class="back-link" data-i18n="calendar.back_to_dashboard">← Dashboard'a Dön</a>
+    </div>
+
+    <div class="calendar-main-card">
+      <!-- Takvim Header -->
+      <div class="cal-header">
+        <div class="cal-title">
+          <span class="cal-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </span>
+          <span id="calendar-month-label">Ocak 2026</span>
+        </div>
+        <div class="cal-nav-group">
+          <button class="cal-nav-btn" id="cal-prev">‹</button>
+          <button class="cal-nav-btn month-label" id="cal-week-label">Hafta 3</button>
+          <button class="cal-nav-btn" id="cal-next">›</button>
+          <button class="cal-nav-btn today-btn" id="cal-today" data-i18n="calendar.today">Bugün</button>
+        </div>
+      </div>
+
+      <!-- Gün Başlıkları -->
+      <div class="cal-day-names" id="cal-day-names">
+        <!-- JS ile doldurulacak -->
+      </div>
+
+      <!-- Gün Gridi - SKELETON -->
+      <div class="cal-grid-skeleton" id="cal-grid-skeleton">
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+      </div>
+
+      <!-- Gün Gridi - GERÇEK -->
+      <div class="cal-grid" id="cal-grid" style="display:none;">
+        <!-- JS ile doldurulacak -->
+      </div>
+
+      <!-- Özet Kartları - SKELETON -->
+      <div class="calendar-summary-skeleton" id="calendar-summary-skeleton">
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+      </div>
+
+      <!-- Özet Kartları - GERÇEK -->
+      <div class="calendar-summary-grid" id="calendar-summary" style="display:none;">
+        <div class="summary-mini-card">
+          <div class="s-icon trades">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="trades.stats.trade_count">İşlem</span>
+            <span class="s-value" id="cal-summary-trades">0</span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon pnl">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="dashboard.stats.total_pnl">Toplam K/Z</span>
+            <span class="s-value" id="cal-summary-pnl">+$0</span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon winrate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="dashboard.stats.win_rate">Win Rate</span>
+            <span class="s-value" id="cal-summary-winrate">0%</span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon best">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="calendar.best_day">En İyi Gün</span>
+            <span class="s-value" id="cal-summary-best">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============================================================
+       POPUP
+       ============================================================ -->
+  <div class="calendar-popup-overlay" id="calendar-popup-overlay"></div>
+  <div class="calendar-day-popup" id="calendar-day-popup">
+    <div class="popup-header">
+      <h4 id="popup-date-title">15 Ocak 2026</h4>
+      <button class="popup-close" id="popup-close">✕</button>
+    </div>
+    <div class="popup-body" id="popup-body"></div>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS
+       ============================================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // ⭐ PREMIUM DROPDOWN TOGGLE
+    document.addEventListener('DOMContentLoaded', function() {
+      var dropdownBtn = document.getElementById('premium-dropdown-btn');
+      var dropdownMenu = document.getElementById('premium-dropdown-menu');
+      
+      if (dropdownBtn && dropdownMenu) {
+        dropdownBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          this.classList.toggle('active');
+          dropdownMenu.classList.toggle('open');
+        });
+        
+        document.addEventListener('click', function() {
+          dropdownBtn.classList.remove('active');
+          dropdownMenu.classList.remove('open');
+        });
+        
+        dropdownMenu.addEventListener('click', function(e) {
+          e.stopPropagation();
+        });
+      }
+    });
+
+    // ⭐ PLAN BADGE GÜNCELLEME
+    async function updatePlanBadge() {
+      var badge = document.getElementById('plan-badge');
+      var text = document.getElementById('plan-text');
+      if (!badge || !text) return;
+      
+      try {
+        var planData = await getUserPlan();
+        var isPremium = planData.plan === 'premium';
+        
+        if (isPremium) {
+          badge.classList.add('premium');
+          text.textContent = 'Premium';
+        } else {
+          badge.classList.remove('premium');
+          text.textContent = 'Ücretsiz';
+        }
+      } catch (e) {
+        // Sessizce geç
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(updatePlanBadge, 500);
+    });
+
+    i18n.onChange(function() {
+      updatePlanBadge();
+    });
+
+    (function() {
+      // ============================================================
+      // ENSTRÜMAN ÇARPANLARI
+      // ============================================================
+      var INSTRUMENT_MULTIPLIERS = {
+        forex:  100000,
+        gold:   100,
+        index:  10,
+        crypto: 1,
+        other:  1
+      };
+
+      // ============================================================
+      // PnL HESAPLAMA
+      // ============================================================
+      function calcTradePnL(t) {
+        try {
+          if (!t.entry_price || !t.exit_price || !t.lot) return 0;
+          var mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
+          var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
+          return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
+        } catch(e) {
+          return 0;
+        }
+      }
+
+      function formatCurrency(value) {
+        try {
+          var num = parseFloat(value) || 0;
+          var sign = num >= 0 ? '+' : '';
+          var currency = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '$';
+          return sign + currency + num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } catch(e) {
+          return (value >= 0 ? '+' : '') + value.toFixed(2);
+        }
+      }
+
+      // ============================================================
+      // TEMA DEĞİŞİMİ
+      // ============================================================
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.attributeName === 'class') {
+            if (typeof renderCalendar === 'function') renderCalendar();
+          }
+        });
+      });
+      observer.observe(document.body, { attributes: true });
+
+      // ============================================================
+      // SKELETON GÖSTER/GİZLE
+      // ============================================================
+      function showCalendarSkeleton() {
+        var el1 = document.getElementById('cal-grid-skeleton');
+        var el2 = document.getElementById('cal-grid');
+        var el3 = document.getElementById('calendar-summary-skeleton');
+        var el4 = document.getElementById('calendar-summary');
+        
+        if (el1) el1.style.display = 'grid';
+        if (el2) el2.style.display = 'none';
+        if (el3) el3.style.display = 'grid';
+        if (el4) el4.style.display = 'none';
+      }
+
+      function hideCalendarSkeleton() {
+        var el1 = document.getElementById('cal-grid-skeleton');
+        var el2 = document.getElementById('cal-grid');
+        var el3 = document.getElementById('calendar-summary-skeleton');
+        var el4 = document.getElementById('calendar-summary');
+        
+        if (el1) el1.style.display = 'none';
+        if (el2) el2.style.display = 'grid';
+        if (el3) el3.style.display = 'none';
+        if (el4) el4.style.display = 'grid';
+      }
+
+      // ============================================================
+      // TAKVİM FONKSİYONLARI
+      // ============================================================
+      
+      var calendarTrades = [];
+      var currentMonth = new Date().getMonth();
+      var currentYear = new Date().getFullYear();
+
+      function getMonthName(month, lang) {
+        var names = {
+          tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+          en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+          de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+        };
+        return (names[lang] || names.en)[month];
+      }
+
+      function getDayNames(lang) {
+        var names = {
+          tr: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+          en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          de: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+        };
+        return names[lang] || names.en;
+      }
+
+      var calendarRenderTimeout = null;
+
+      function renderCalendar() {
+        try {
+          hideCalendarSkeleton();
+
+          var lang = i18n.getCurrentLanguage();
+          var monthLabel = document.getElementById('calendar-month-label');
+          var weekLabel = document.getElementById('cal-week-label');
+          var dayNamesContainer = document.getElementById('cal-day-names');
+          var grid = document.getElementById('cal-grid');
+
+          var monthName = getMonthName(currentMonth, lang);
+          if (monthLabel) monthLabel.textContent = monthName + ' ' + currentYear;
+
+          var firstDay = new Date(currentYear, currentMonth, 1);
+          var weekNumber = Math.ceil((firstDay.getDay() + 1) / 7) + 1;
+          if (weekLabel) weekLabel.textContent = i18n.t('calendar.week') + ' ' + weekNumber;
+
+          var dayNames = getDayNames(lang);
+          if (dayNamesContainer) {
+            dayNamesContainer.innerHTML = dayNames.map(function(name) {
+              return '<div class="dname">' + name + '</div>';
+            }).join('');
+          }
+
+          var daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+          var firstDayOfWeek = firstDay.getDay();
+          var startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+          var html = '';
+          var totalTrades = 0;
+          var totalPnl = 0;
+          var wins = 0;
+          var bestDay = { date: '', pnl: -Infinity };
+
+          for (var i = 0; i < startOffset; i++) {
+            html += '<div class="cal-day empty"><div class="day-texture"></div></div>';
+          }
+
+          for (var d = 1; d <= daysInMonth; d++) {
+            var dateObj = new Date(currentYear, currentMonth, d);
+            var dateStr = dateObj.toISOString().split('T')[0];
+            var isToday = dateStr === new Date().toISOString().split('T')[0];
+
+            var dayTrades = calendarTrades.filter(function(t) { return t.trade_date === dateStr; });
+            var hasTrade = dayTrades.length > 0;
+
+            var dayPnl = 0;
+            for (var j = 0; j < dayTrades.length; j++) {
+              var t = dayTrades[j];
+              if (t.exit_price) {
+                var pnl = calcTradePnL(t);
+                dayPnl += pnl;
+              }
+            }
+
+            totalTrades += dayTrades.length;
+            totalPnl += dayPnl;
+            if (dayPnl > 0) wins++;
+            if (hasTrade && dayPnl > bestDay.pnl) {
+              bestDay = { date: dateStr, pnl: dayPnl };
+            }
+
+            var colorClass = '';
+            if (hasTrade && dayPnl > 0) {
+              var absPnl = Math.abs(dayPnl);
+              if (absPnl > 1000) colorClass = 'color-4';
+              else if (absPnl > 500) colorClass = 'color-3';
+              else if (absPnl > 100) colorClass = 'color-2';
+              else colorClass = 'color-1';
+            } else if (hasTrade && dayPnl < 0) {
+              var absPnl2 = Math.abs(dayPnl);
+              if (absPnl2 > 1000) colorClass = 'color-neg4';
+              else if (absPnl2 > 500) colorClass = 'color-neg3';
+              else if (absPnl2 > 100) colorClass = 'color-neg2';
+              else colorClass = 'color-neg1';
+            }
+
+            var todayClass = isToday ? 'today' : '';
+            var pnlText = hasTrade && dayPnl !== 0 ? (dayPnl > 0 ? '+' : '') + dayPnl.toFixed(0) : '';
+            var pnlClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
+            var barClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
+            var tradeCountText = hasTrade ? (dayTrades.length + ' ' + i18n.t('trades.stats.trade_count')) : '';
+
+            html += '\n            <div class="cal-day ' + colorClass + ' ' + todayClass + '" data-date="' + dateStr + '" onclick="openDayPopup(\'' + dateStr + '\')">\n              <div class="day-bg ' + (colorClass ? 'show' : '') + '"></div>\n              <div class="day-bg glow ' + (colorClass ? 'show' : '') + '"></div>\n              <div class="day-number">' + d + '</div>\n              ' + (pnlText ? '<div class="day-pnl ' + pnlClass + '">' + pnlText + '</div>' : '') + '\n              ' + (tradeCountText ? '<div class="day-trade-count">' + tradeCountText + '</div>' : '') + '\n              <div class="day-pnl-bar ' + (hasTrade ? 'show' : '') + ' ' + barClass + '"></div>\n            </div>\n          ';
+          }
+
+          if (grid) grid.innerHTML = html;
+
+          var winRate = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
+          var tradesEl = document.getElementById('cal-summary-trades');
+          if (tradesEl) tradesEl.textContent = totalTrades;
+          
+          var pnlEl = document.getElementById('cal-summary-pnl');
+          if (pnlEl) {
+            pnlEl.textContent = formatCurrency(totalPnl);
+            pnlEl.className = 's-value' + (totalPnl >= 0 ? ' positive' : ' negative');
+          }
+          
+          var winrateEl = document.getElementById('cal-summary-winrate');
+          if (winrateEl) winrateEl.textContent = winRate + '%';
+          
+          var bestEl = document.getElementById('cal-summary-best');
+          if (bestEl) bestEl.textContent = bestDay.pnl > -Infinity ? formatCurrency(bestDay.pnl) : '—';
+        } catch(e) {}
+      }
+
+      function openDayPopup(dateStr) {
+        try {
+          var overlay = document.getElementById('calendar-popup-overlay');
+          var popup = document.getElementById('calendar-day-popup');
+          var title = document.getElementById('popup-date-title');
+          var body = document.getElementById('popup-body');
+
+          var date = new Date(dateStr + 'T00:00:00');
+          var lang = i18n.getCurrentLanguage();
+          if (title) title.textContent = date.toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' });
+
+          var dayTrades = calendarTrades.filter(function(t) { return t.trade_date === dateStr; });
+
+          if (body) {
+            if (dayTrades.length === 0) {
+              body.innerHTML = '<div class="popup-empty">' + i18n.t('calendar.no_trades') + '</div>';
+            } else {
+              body.innerHTML = dayTrades.map(function(t) {
+                var pnl = t.exit_price ? calcTradePnL(t) : null;
+                var pnlText = pnl !== null ? formatCurrency(pnl) : i18n.t('trades.open');
+                var pnlClass = pnl !== null ? (pnl >= 0 ? 'positive' : 'negative') : '';
+                var isLong = t.direction === 'LONG' || t.direction === 'BUY';
+                var badgeClass = isLong ? 'long' : 'short';
+                var badgeText = isLong ? 'L' : 'S';
+                return '<div class="popup-trade">\n              <div class="pt-left">\n                <span class="pt-badge ' + badgeClass + '">' + badgeText + '</span>\n                <span class="pt-symbol">' + (t.symbol || '—') + '</span>\n              </div>\n              <span class="pt-pnl ' + pnlClass + '">' + pnlText + '</span>\n            </div>';
+              }).join('');
+            }
+          }
+
+          if (overlay) overlay.classList.add('active');
+          if (popup) popup.classList.add('active');
+        } catch(e) {}
+      }
+
+      function closeDayPopup() {
+        var overlay = document.getElementById('calendar-popup-overlay');
+        var popup = document.getElementById('calendar-day-popup');
+        if (overlay) overlay.classList.remove('active');
+        if (popup) popup.classList.remove('active');
+      }
+
+      var closeBtn = document.getElementById('popup-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeDayPopup);
+      
+      var popupOverlay = document.getElementById('calendar-popup-overlay');
+      if (popupOverlay) popupOverlay.addEventListener('click', closeDayPopup);
+
+      var prevBtn = document.getElementById('cal-prev');
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+          if (currentMonth === 0) {
+            currentMonth = 11;
+            currentYear--;
+          } else {
+            currentMonth--;
+          }
+          showCalendarSkeleton();
+          if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
+          calendarRenderTimeout = setTimeout(renderCalendar, 200);
+        });
+      }
+
+      var nextBtn = document.getElementById('cal-next');
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+          if (currentMonth === 11) {
+            currentMonth = 0;
+            currentYear++;
+          } else {
+            currentMonth++;
+          }
+          showCalendarSkeleton();
+          if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
+          calendarRenderTimeout = setTimeout(renderCalendar, 200);
+        });
+      }
+
+      var todayBtn = document.getElementById('cal-today');
+      if (todayBtn) {
+        todayBtn.addEventListener('click', function() {
+          var today = new Date();
+          currentMonth = today.getMonth();
+          currentYear = today.getFullYear();
+          showCalendarSkeleton();
+          if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
+          calendarRenderTimeout = setTimeout(renderCalendar, 200);
+        });
+      }
+
+      function loadCalendarTrades(trades) {
+        calendarTrades = trades || [];
+        showCalendarSkeleton();
+        if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
+        calendarRenderTimeout = setTimeout(renderCalendar, 200);
+      }
+
+      // ============================================================
+      // NAVBAR / AUTH
+      // ============================================================
+
+      async function updateNavbarAvatar() {
+        var userAvatar = document.getElementById('user-avatar');
+        if (!userAvatar) return;
+        try {
+          var { data: { user } } = await sb.auth.getUser();
+          if (!user) return;
+          var { data: profile } = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
+          if (profile && profile.avatar_url) {
+            userAvatar.innerHTML = '<img src="' + profile.avatar_url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            userAvatar.style.background = 'transparent';
+            userAvatar.style.border = '2px solid rgba(255,255,255,0.1)';
+          } else {
+            var initial = (user.user_metadata && user.user_metadata.username) ? user.user_metadata.username.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+            userAvatar.innerHTML = initial;
+            userAvatar.style.background = 'linear-gradient(135deg, var(--accent), var(--accent2))';
+            userAvatar.style.border = '2px solid rgba(255,255,255,0.1)';
+            userAvatar.style.display = 'flex';
+            userAvatar.style.alignItems = 'center';
+            userAvatar.style.justifyContent = 'center';
+            userAvatar.style.fontSize = '13px';
+            userAvatar.style.fontWeight = '700';
+            userAvatar.style.color = '#fff';
+          }
+        } catch (e) {}
+      }
+
+      (async function() {
+        try {
+          showCalendarSkeleton();
+
+          var user = await requireAuth();
+          if (!user) return;
+
+          await updateNavbarAvatar();
+
+          await updatePlanBadge();
+
+          if (typeof isAdmin === 'function' && isAdmin(user)) {
+            var adminLink = document.getElementById('admin-link');
+            if (adminLink) adminLink.style.display = 'inline';
+            var adminLinkMobile = document.getElementById('admin-link-mobile');
+            if (adminLinkMobile) adminLinkMobile.style.display = 'block';
+          }
+
+          var { data: trades, error } = await sb
+            .from('trades')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('trade_date', { ascending: true });
+
+          if (error) {
+            if (typeof showToast === 'function') showToast(i18n.t('toast.load_error') + error.message, 'error');
+            hideCalendarSkeleton();
+            return;
+          }
+
+          loadCalendarTrades(trades || []);
+        } catch (e) {}
+      })();
+
+      i18n.onChange(function() {
+        renderCalendar();
+      });
+
+      // ============================================================
+      // NAVBAR DROPDOWN / MOBILE
+      // ============================================================
+
+      var userAvatar = document.getElementById('user-avatar');
+      var dropdownMenu = document.getElementById('dropdown-menu');
+      if (userAvatar && dropdownMenu) {
+        userAvatar.addEventListener('click', function(e) {
+          e.stopPropagation();
+          dropdownMenu.classList.toggle('show');
+        });
+        document.addEventListener('click', function(e) {
+          if (!userAvatar.contains(e.target) && !dropdownMenu.contains(e.target)) {
+            dropdownMenu.classList.remove('show');
+          }
+        });
+      }
+
+      var logoutDropdownBtn = document.getElementById('logout-dropdown-btn');
+      if (logoutDropdownBtn) {
+        logoutDropdownBtn.addEventListener('click', async function() {
+          try { localStorage.removeItem('ww_last_active_push'); } catch(e) {}
+          await sb.auth.signOut();
+          window.location.href = 'index.html';
+        });
+      }
+
+      var navToggle = document.getElementById('nav-toggle');
+      var navMenu = document.getElementById('nav-menu');
+      var navBackdrop = document.getElementById('nav-backdrop');
+      
+      function openMenu() { 
+        if (navToggle) navToggle.classList.add('open'); 
+        if (navMenu) navMenu.classList.add('open'); 
+        if (navBackdrop) navBackdrop.classList.add('open'); 
+        document.body.style.overflow = 'hidden'; 
+      }
+      
+      function closeMenu() { 
+        if (navToggle) navToggle.classList.remove('open'); 
+        if (navMenu) navMenu.classList.remove('open'); 
+        if (navBackdrop) navBackdrop.classList.remove('open'); 
+        document.body.style.overflow = ''; 
+      }
+      
+      if (navToggle) {
+        navToggle.addEventListener('click', function() {
+          if (navMenu && navMenu.classList.contains('open')) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        });
+      }
+      
+      if (navBackdrop) navBackdrop.addEventListener('click', closeMenu);
+      
+      var logoutMobile = document.getElementById('logout-btn-mobile');
+      if (logoutMobile) {
+        logoutMobile.addEventListener('click', function() { 
+          closeMenu(); 
+          var logoutBtn = document.getElementById('logout-dropdown-btn');
+          if (logoutBtn) logoutBtn.click(); 
+        });
+      }
+
+    })();
+  </script>
+</body>
+</html>
