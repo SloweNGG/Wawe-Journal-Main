@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title data-i18n="addtrade.title">İşlem Ekle – Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="resim.svg">
+  
+<script>
+  (function() {
+    if (document.body) {
+      var savedTheme = localStorage.getItem('ww_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        var savedTheme = localStorage.getItem('ww_theme');
+        if (savedTheme === 'light') {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+      });
+    }
+  })();
+</script>
+
+<!-- ============================================================
+     ⭐ DİL KALICILIĞI - Sayfa yüklenmeden önce dil geri yükleme
+     ============================================================ -->
+<script>
+  (function() {
+    var savedLang = localStorage.getItem('ww_language');
+    if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+      document.documentElement.setAttribute('data-lang', savedLang);
+      document.documentElement.lang = savedLang;
+      console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
+    } else {
+      localStorage.setItem('ww_language', 'en');
+      document.documentElement.setAttribute('data-lang', 'en');
+      document.documentElement.lang = 'en';
+      console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
+    }
+  })();
+</script>
+
+  
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/components/navbar.css" />
+  <style>
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.2rem;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .page-header .subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    
+    .import-banner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .import-banner:hover {
+      border-color: var(--accent);
+      border-style: solid;
+      background: rgba(139,92,246,0.03);
+    }
+    .import-banner-icon {
+      width: 38px;
+      height: 38px;
+      background: rgba(139,92,246,0.12);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .import-banner-text p {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin: 0 0 2px;
+    }
+    .import-banner-text span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .import-banner-badge {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(139,92,246,0.12);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    #csv-file { display: none; }
+    
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .form-section {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section:last-child { border-bottom: none; }
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Mono', monospace;
+    }
+    .section-label svg { opacity: 0.8; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .field label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .field input, .field select, .field textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
+    }
+    .field input[type="text"], .field input[type="date"], .field input[type="number"] {
+      font-family: 'DM Mono', monospace;
+    }
+    .field textarea {
+      resize: vertical;
+      min-height: 72px;
+      line-height: 1.5;
+    }
+    .field select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b80' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      cursor: pointer;
+    }
+    .field select option { background: var(--surface); }
+    
+    .dir-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .dir-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .dir-btn:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .dir-btn.long.active {
+      background: rgba(34,197,94,0.1);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+    .dir-btn.short.active {
+      background: rgba(239,68,68,0.1);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    #direction-hidden { display: none; }
+    
+    /* ============================================================
+       STRATEJİ KUTUCUKLARI - YENİ TASARIM
+       ============================================================ */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .strategy-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .strategy-chip:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(139,92,246,0.04);
+      transform: translateY(-1px);
+    }
+    .strategy-chip.active {
+      border-color: var(--accent);
+      background: rgba(139,92,246,0.12);
+      color: var(--accent2);
+      box-shadow: 0 0 0 2px rgba(139,92,246,0.15);
+    }
+    .strategy-chip .chip-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .strategy-chip .chip-check {
+      margin-left: auto;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .strategy-chip.active .chip-check {
+      opacity: 1;
+      color: var(--accent);
+    }
+    .strategy-chip .chip-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .strategy-chip-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0.5rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .strategy-chip-empty a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .strategy-chip-empty a:hover { text-decoration: underline; }
+    
+    .strategy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .strategy-header .s-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .strategy-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .strategy-actions button {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .strategy-actions button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .strategy-actions button svg { width: 12px; height: 12px; }
+    
+    #strategy-id-hidden { display: none; }
+
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      padding: 1rem 1.5rem;
+      background: rgba(139,92,246,0.04);
+      border-top: 1px solid var(--border);
+    }
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .preview-item .p-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: 'DM Mono', monospace;
+    }
+    .preview-item .p-val {
+      font-size: 1.1rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+    }
+    .preview-item .p-val.pos { color: var(--green); }
+    .preview-item .p-val.neg { color: var(--red); }
+    .preview-item .p-val.accent { color: var(--accent); }
+    .preview-divider {
+      width: 1px;
+      height: 36px;
+      background: var(--border);
+    }
+    
+    .save-btn-wrap {
+      padding: 1.25rem 1.5rem;
+    }
+    .save-btn {
+      width: 100%;
+      padding: 0.8rem;
+      justify-content: center;
+    }
+    
+    .import-log {
+      display: none;
+      margin-top: 0.75rem;
+      font-size: 11px;
+      color: var(--muted);
+      max-height: 150px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.15);
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+    }
+    .error-msg {
+      display: none;
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 599px) {
+      main { padding: 1rem !important; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .form-section { padding: 1rem; }
+      .preview-bar { gap: 1rem; }
+      .strategy-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    }
+    
+    /* Loading overlay for bulk import */
+    .bulk-import-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .bulk-import-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .bulk-import-overlay .bulk-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .bulk-import-overlay .bulk-box h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    .bulk-import-overlay .bulk-box p {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 1rem;
+    }
+    .bulk-import-overlay .bulk-box textarea {
+      width: 100%;
+      min-height: 200px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }
+    .bulk-import-overlay .bulk-box textarea:focus {
+      border-color: var(--accent);
+    }
+    .bulk-import-overlay .bulk-box .bulk-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      justify-content: flex-end;
+    }
+    .bulk-import-overlay .bulk-box .bulk-actions button {
+      padding: 0.5rem 1.2rem;
+    }
+    .bulk-import-overlay .bulk-box .bulk-progress {
+      margin-top: 0.75rem;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .bulk-import-overlay .bulk-box .bulk-progress .bulk-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .bulk-import-overlay .bulk-box .bulk-progress .bulk-bar .bulk-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body style="display:flex;flex-direction:column;min-height:100vh;">
+
+  <!-- ============================================================
+       NAVBAR CONTAINER
+       ============================================================ -->
+  <div id="navbar-container"></div>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:800px;">
+
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="addtrade.title">Yeni işlem ekle</h1>
+        <p class="subtitle" data-i18n="addtrade.subtitle">İşlem detaylarını gir, anlık K/Z hesaplamasını gör</p>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="bulk-import-btn" style="font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.bulk_import">
+          📋 Toplu Ekle
+        </button>
+        <a href="trades.html" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Geri
+        </a>
+      </div>
+    </div>
+
+    <!-- CSV İmport Banner -->
+    <div class="import-banner" id="import-banner-trigger" role="button" tabindex="0">
+      <div class="import-banner-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div class="import-banner-text">
+        <p data-i18n="addtrade.import_title">Toplu içe aktarma (CSV)</p>
+        <span data-i18n="addtrade.import_desc">MT4/MT5 veya Excel'den dışa aktardığınız dosyayı yükleyin</span>
+      </div>
+      <span class="import-banner-badge">CSV</span>
+    </div>
+    <input type="file" id="csv-file" accept=".csv" />
+
+    <div id="import-progress" style="display:none;align-items:center;gap:8px;margin-bottom:0.75rem;font-size:12px;color:var(--muted);">
+      <div class="spinner" style="width:18px;height:18px;"></div>
+      <span data-i18n="addtrade.import_processing">İşleniyor…</span>
+    </div>
+    <div class="import-log" id="import-log"></div>
+
+    <div class="form-card">
+
+      <!-- İŞLEM DETAYLARI -->
+      <div class="form-section">
+        <div class="section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span data-i18n="addtrade.section_trade_details">İşlem Detayları</span>
+        </div>
+
+        <!-- ⭐ DEFTER SEÇİMİ -->
+        <div class="field" style="margin-bottom:12px;">
+          <label data-i18n="addtrade.notebook">Defter Seç *</label>
+          <select id="notebook-select">
+            <option value="">— Defter Seç —</option>
+          </select>
+        </div>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label data-i18n="addtrade.instrument_type">Enstrüman tipi *</label>
+          <select id="instrument">
+            <option value="forex" data-i18n="addtrade.instrument_forex">Forex (çarpan: 100.000)</option>
+            <option value="gold" data-i18n="addtrade.instrument_gold">Altın / XAUUSD (çarpan: 100)</option>
+            <option value="index" data-i18n="addtrade.instrument_index">Endeks (çarpan: 10)</option>
+            <option value="crypto" data-i18n="addtrade.instrument_crypto">Kripto (çarpan: 1)</option>
+            <option value="other" data-i18n="addtrade.instrument_other">Diğer / Manuel</option>
+          </select>
+        </div>
+
+        <div class="field" id="custom-multiplier-wrap" style="display:none;margin-bottom:12px;">
+          <label data-i18n="addtrade.custom_multiplier">Manuel çarpan *</label>
+          <input type="text" inputmode="decimal" id="custom-multiplier" placeholder="1000" />
+        </div>
+
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="field">
+            <label data-i18n="addtrade.symbol">Sembol *</label>
+            <input type="text" id="symbol" placeholder="EURUSD, BTCUSDT…" style="text-transform:uppercase;" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.lot">Lot *</label>
+            <input type="text" inputmode="decimal" id="lot" placeholder="0.10" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="addtrade.direction">Yön *</label>
+          <div class="dir-toggle">
+            <button type="button" class="dir-btn long active" id="btn-long" onclick="setDirection('LONG')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span data-i18n="addtrade.long">Long · Alış</span>
+            </button>
+            <button type="button" class="dir-btn short" id="btn-short" onclick="setDirection('SHORT')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+              <span data-i18n="addtrade.short">Short · Satış</span>
+            </button>
+          </div>
+          <input type="hidden" id="direction" value="LONG" />
+        </div>
+      </div>
+
+      <!-- FİYATLAR -->
+      <div class="form-section">
+        <div class="section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span data-i18n="addtrade.section_prices">Fiyatlar</span>
+        </div>
+
+        <div class="grid-3" style="margin-bottom:12px;">
+          <div class="field">
+            <label data-i18n="addtrade.entry_price">Giriş fiyatı *</label>
+            <input type="text" inputmode="decimal" id="entry" placeholder="1.08500" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.exit_price">Çıkış fiyatı</label>
+            <input type="text" inputmode="decimal" id="exit" placeholder="1.09000" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.date">Tarih *</label>
+            <input type="date" id="trade-date" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label data-i18n="addtrade.stop_loss">Stop loss</label>
+            <input type="text" inputmode="decimal" id="sl" placeholder="1.08000" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.take_profit">Take profit</label>
+            <input type="text" inputmode="decimal" id="tp" placeholder="1.09500" />
+          </div>
+        </div>
+      </div>
+
+      <!-- STRATEJİ & NOTLAR -->
+      <div class="form-section">
+        <div class="section-label" style="margin-bottom:0.75rem;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span data-i18n="addtrade.section_strategy_notes">Strateji &amp; Notlar</span>
+        </div>
+
+        <!-- Strateji Kutucukları - YENİ TASARIM -->
+        <div class="strategy-header">
+          <span class="s-label" data-i18n="addtrade.select_strategy_label">Strateji seç</span>
+          <div class="strategy-actions">
+            <button type="button" id="refresh-strategies-btn" title="Stratejileri Yenile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span data-i18n="addtrade.refresh">Yenile</span>
+            </button>
+            <button type="button" id="clear-strategy-btn" title="Seçimi Temizle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span>Temizle</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="strategy-grid" id="strategy-grid">
+          <div class="strategy-chip-empty">
+            <span data-i18n="addtrade.loading_strategies">Stratejiler yükleniyor...</span>
+          </div>
+        </div>
+        <input type="hidden" id="strategy-id-hidden" value="" />
+
+        <div class="field" style="margin-top:0.75rem;">
+          <label data-i18n="addtrade.notes">Notlar</label>
+          <textarea id="notes" rows="3" data-i18n-placeholder="addtrade.notes_placeholder" placeholder="Strateji notları, gözlemler, psikolojik durum…"></textarea>
+        </div>
+      </div>
+
+      <!-- ÖN İZLEME -->
+      <div class="preview-bar" id="preview-bar" style="display:none;">
+        <div class="preview-item" id="preview-pnl-wrap" style="display:none;">
+          <span class="p-label" data-i18n="addtrade.estimated_pnl">Tahmini K/Z</span>
+          <span class="p-val" id="preview-pnl">—</span>
+        </div>
+        <div class="preview-divider" id="preview-divider" style="display:none;"></div>
+        <div class="preview-item" id="preview-rr-wrap" style="display:none;">
+          <span class="p-label" data-i18n="addtrade.risk_reward">Risk / Reward</span>
+          <span class="p-val accent" id="preview-rr">—</span>
+        </div>
+      </div>
+
+      <div class="form-section" style="padding-top:0;padding-bottom:0;border:none;" id="err-wrap">
+        <p class="error-msg" id="err"></p>
+      </div>
+
+      <div class="save-btn-wrap">
+        <button class="btn btn-primary save-btn" id="save-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span data-i18n="common.save">Kaydet</span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ============================================================
+       BULK IMPORT MODAL
+       ============================================================ -->
+  <div class="bulk-import-overlay" id="bulk-import-overlay">
+    <div class="bulk-box">
+      <h3>📋 Toplu İşlem Ekle</h3>
+      <p>Her satıra bir işlem gelecek şekilde aşağıdaki formatta girin:</p>
+      <p style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;">
+        sembol,yön,lot,giriş,çıkış,tarih,not<br>
+        EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem
+      </p>
+      <textarea id="bulk-textarea" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem&#10;XAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Altın işlemi"></textarea>
+      <div class="bulk-progress" id="bulk-progress" style="display:none;">
+        <span id="bulk-status">İşleniyor...</span>
+        <div class="bulk-bar"><div class="bulk-fill" id="bulk-fill"></div></div>
+      </div>
+      <div class="bulk-actions">
+        <button class="btn btn-ghost" id="bulk-cancel-btn" style="font-size:12px;padding:0.4rem 1rem;">İptal</button>
+        <button class="btn btn-primary" id="bulk-confirm-btn" style="font-size:12px;padding:0.4rem 1.2rem;">📤 İşlemleri Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
+  <script src="/components/navbar.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof loadNavbar === 'function') {
+        loadNavbar('navbar-container');
+      }
+    });
+  </script>
+  <script>
+    // ============================================================
+    // ⭐ GÜVENLİK: INSTRUMENT_MULTIPLIERS KONTROLÜ
+    // ============================================================
+    if (typeof INSTRUMENT_MULTIPLIERS === 'undefined') {
+      window.INSTRUMENT_MULTIPLIERS = {
+        forex: 100000,
+        gold: 100,
+        index: 10,
+        crypto: 1,
+        other: 1
+      };
+    }
+
+    // ============================================================
+    // ⭐ GÜVENLİK: HTML SANITIZE
+    // ============================================================
+    function sanitizeHTML(str) {
+      if (!str) return '';
+      var temp = document.createElement('div');
+      temp.textContent = str;
+      return temp.innerHTML;
+    }
+
+    var currentUser = null;
+    var importLogs = [];
+    var strategiesList = [];
+
+    // ============================================================
+    // ⭐ DEFTER LİSTESİNİ YÜKLE
+    // ============================================================
+    async function loadNotebookSelect() {
+      var select = document.getElementById('notebook-select');
+      if (!select) return;
+      
+      try {
+        var notebooks = await getNotebooks();
+        var activeId = getActiveNotebookId();
+        
+        select.innerHTML = '<option value="">— Defter Seç —</option>';
+        
+        notebooks.forEach(function(n) {
+          var option = document.createElement('option');
+          option.value = n.id;
+          option.textContent = n.name + (n.is_default ? ' ⭐' : '');
+          if (n.id === activeId || n.is_default) {
+            option.selected = true;
+          }
+          select.appendChild(option);
+        });
+        
+        // Eğer hiç defter yoksa
+        if (notebooks.length === 0) {
+          select.innerHTML = '<option value="">Önce defter oluşturun</option>';
+        }
+      } catch (e) {
+        console.error('loadNotebookSelect hatası:', e);
+      }
+    }
+
+    // ============================================================
+    // STRATEJİ KUTUCUKLARI (GÜVENLİ)
+    // ============================================================
+    async function loadStrategyGrid() {
+      var grid = document.getElementById('strategy-grid');
+      if (!grid) return;
+
+      try {
+        var strategies = await getUserStrategies();
+        strategiesList = strategies;
+
+        if (!strategies || strategies.length === 0) {
+          grid.innerHTML = '\n            <div class="strategy-chip-empty">\n              <span data-i18n="addtrade.no_strategies">Henüz strateji eklenmemiş.</span>\n              <a href="strategies.html" data-i18n="addtrade.create_strategy">Strateji oluştur →</a>\n            </div>\n          ';
+          if (typeof i18n !== 'undefined') i18n.apply();
+          return;
+        }
+
+        var currentSelected = document.getElementById('strategy-id-hidden').value;
+
+        var html = '';
+        for (var sIdx = 0; sIdx < strategies.length; sIdx++) {
+          var s = strategies[sIdx];
+          var isActive = s.id === currentSelected;
+          // ⭐ Güvenli: sanitizeHTML ile temizle
+          var safeName = sanitizeHTML(s.name.length > 15 ? s.name.slice(0,12)+'..' : s.name);
+          var safeColor = sanitizeHTML(s.color || '#8b5cf6');
+          var safeTitle = sanitizeHTML(s.description || s.name);
+          
+          html += '\n            <div class="strategy-chip ' + (isActive ? 'active' : '') + '" \n                 data-id="' + s.id + '" \n                 onclick="selectStrategy(\'' + s.id + '\')"\n                 title="' + safeTitle + '">\n              <span class="chip-color" style="background:' + safeColor + '"></span>\n              <span class="chip-name">' + safeName + '</span>\n              <span class="chip-check">✓</span>\n            </div>\n          ';
+        }
+
+        grid.innerHTML = html;
+        if (typeof i18n !== 'undefined') i18n.apply();
+
+      } catch (e) {
+        grid.innerHTML = '\n          <div class="strategy-chip-empty">\n            <span style="color:var(--red);">⚠️ Stratejiler yüklenemedi</span>\n          </div>\n        ';
+      }
+    }
+
+    function selectStrategy(id) {
+      var chips = document.querySelectorAll('.strategy-chip');
+      chips.forEach(function(chip) {
+        chip.classList.toggle('active', chip.dataset.id === id);
+      });
+      var hiddenEl = document.getElementById('strategy-id-hidden');
+      if (hiddenEl) hiddenEl.value = id;
+    }
+
+    function clearStrategy() {
+      document.querySelectorAll('.strategy-chip').forEach(function(chip) { chip.classList.remove('active'); });
+      var hiddenEl = document.getElementById('strategy-id-hidden');
+      if (hiddenEl) hiddenEl.value = '';
+    }
+
+    var clearBtn = document.getElementById('clear-strategy-btn');
+    if (clearBtn) clearBtn.addEventListener('click', clearStrategy);
+
+    // ============================================================
+    // REFRESH STRATEGIES
+    // ============================================================
+    var refreshBtn = document.getElementById('refresh-strategies-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadStrategyGrid);
+
+    // ============================================================
+    // DIRECTION TOGGLE
+    // ============================================================
+    window.setDirection = function(val) {
+      var dirEl = document.getElementById('direction');
+      if (dirEl) dirEl.value = val;
+      var longBtn = document.getElementById('btn-long');
+      var shortBtn = document.getElementById('btn-short');
+      if (longBtn) longBtn.classList.toggle('active', val === 'LONG');
+      if (shortBtn) shortBtn.classList.toggle('active', val === 'SHORT');
+      updatePreview();
+    };
+
+    // ============================================================
+    // INSTRUMENT CHANGE
+    // ============================================================
+    var instrumentEl = document.getElementById('instrument');
+    if (instrumentEl) {
+      instrumentEl.addEventListener('change', function() {
+        var customWrap = document.getElementById('custom-multiplier-wrap');
+        if (customWrap) customWrap.style.display = this.value === 'other' ? 'flex' : 'none';
+        updatePreview();
+      });
+    }
+
+    // ============================================================
+    // PREVIEW - calcPnL ve calcRR fonksiyonları script.js'den çağrılır
+    // ============================================================
+    var previewInputs = ['entry', 'exit', 'lot', 'instrument', 'custom-multiplier', 'sl', 'tp'];
+    previewInputs.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
+      }
+    });
+
+    function getMultiplier() {
+      var instEl = document.getElementById('instrument');
+      var inst = instEl ? instEl.value : 'forex';
+      if (inst === 'other') {
+        var customEl = document.getElementById('custom-multiplier');
+        var v = customEl ? parseFloat(customEl.value) : null;
+        return isNaN(v) ? null : v;
+      }
+      if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined') {
+        return INSTRUMENT_MULTIPLIERS[inst] || 1;
+      }
+      return 1;
+    }
+
+    function updatePreview() {
+      var entryEl = document.getElementById('entry');
+      var exitEl = document.getElementById('exit');
+      var lotEl = document.getElementById('lot');
+      var dirEl = document.getElementById('direction');
+      var slEl = document.getElementById('sl');
+      var tpEl = document.getElementById('tp');
+      
+      var entry = entryEl ? entryEl.value : '';
+      var exit = exitEl ? exitEl.value : '';
+      var lot = lotEl ? lotEl.value : '';
+      var dir = dirEl ? dirEl.value : '';
+      var sl = slEl ? slEl.value : '';
+      var tp = tpEl ? tpEl.value : '';
+      var mult = getMultiplier();
+
+      var bar = document.getElementById('preview-bar');
+      var pnlWrap = document.getElementById('preview-pnl-wrap');
+      var rrWrap = document.getElementById('preview-rr-wrap');
+      var divider = document.getElementById('preview-divider');
+      var pnlEl = document.getElementById('preview-pnl');
+      var rrEl = document.getElementById('preview-rr');
+
+      var hasPnl = false;
+      var hasRr = false;
+
+      if (entry && lot && dir && mult !== null) {
+        if (exit) {
+          var pnl = 0;
+          try {
+            if (typeof calcPnL !== 'undefined') {
+              pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
+            } else {
+              var direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
+              pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+            }
+          } catch(e) {}
+          if (pnlEl) {
+            pnlEl.textContent = formatCurrency(pnl);
+            pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
+          }
+          hasPnl = true;
+        }
+        if (sl && tp) {
+          var rr = null;
+          try {
+            if (typeof calcRR !== 'undefined') {
+              rr = calcRR(entry, sl, tp, dir);
+            } else {
+              var e = parseFloat(entry);
+              var s = parseFloat(sl);
+              var t = parseFloat(tp);
+              var risk = Math.abs(e - s);
+              var reward = Math.abs(t - e);
+              if (risk > 0) rr = (reward / risk).toFixed(2);
+            }
+          } catch(e) {}
+          if (rr !== null && rrEl) {
+            rrEl.textContent = '1 : ' + rr;
+            hasRr = true;
+          }
+        }
+      }
+
+      if (pnlWrap) pnlWrap.style.display = hasPnl ? 'flex' : 'none';
+      if (rrWrap) rrWrap.style.display = hasRr ? 'flex' : 'none';
+      if (divider) divider.style.display = (hasPnl && hasRr) ? 'block' : 'none';
+      if (bar) bar.style.display = (hasPnl || hasRr) ? 'flex' : 'none';
+    }
+
+    // ============================================================
+    // CSV IMPORT (GÜVENLİ)
+    // ============================================================
+    var importBanner = document.getElementById('import-banner-trigger');
+    if (importBanner) {
+      importBanner.addEventListener('click', function() {
+        var csvFile = document.getElementById('csv-file');
+        if (csvFile) csvFile.click();
+      });
+    }
+    
+    var csvFileInput = document.getElementById('csv-file');
+    if (csvFileInput) {
+      csvFileInput.addEventListener('change', async function() {
+        if (this.files && this.files[0]) await importCSV(this.files[0]);
+      });
+    }
+
+    function validateAndFormatDate(dateString, rowNumber) {
+      if (!dateString || !dateString.trim()) {
+        importLogs.push('⚠️ Satır ' + (rowNumber || '?') + ': Tarih boş, bugün kullanıldı.');
+        return new Date().toISOString().split('T')[0];
+      }
+      dateString = dateString.trim();
+      var d = new Date(dateString);
+      if (!isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return d.toISOString().split('T')[0];
+      }
+
+      var p = dateString.split('.');
+      if (p.length === 3) {
+        var dmy = new Date(p[2] + '-' + p[1] + '-' + p[0]);
+        if (!isNaN(dmy.getTime())) return dmy.toISOString().split('T')[0];
+      }
+      p = dateString.split('/');
+      if (p.length === 3) {
+        var mdy = new Date(p[2] + '-' + p[0] + '-' + p[1]);
+        if (!isNaN(mdy.getTime())) return mdy.toISOString().split('T')[0];
+        var dmy2 = new Date(p[2] + '-' + p[1] + '-' + p[0]);
+        if (!isNaN(dmy2.getTime())) return dmy2.toISOString().split('T')[0];
+      }
+      importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + sanitizeHTML(dateString) + '", bugün kullanıldı.');
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function renderImportLog() {
+      var el = document.getElementById('import-log');
+      if (el) {
+        if (importLogs.length > 0) {
+          el.style.display = 'block';
+          // ⭐ Güvenli render
+          el.innerHTML = importLogs.map(function(l) { 
+            return '<div>' + sanitizeHTML(l) + '</div>'; 
+          }).join('');
+        } else {
+          el.style.display = 'none';
+          el.innerHTML = '';
+        }
+      }
+    }
+
+    async function importCSV(file) {
+      var progressDiv = document.getElementById('import-progress');
+      if (progressDiv) progressDiv.style.display = 'flex';
+      importLogs = [];
+      renderImportLog();
+
+      try {
+        var text = await file.text();
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+
+        if (lines.length < 2) {
+          showToast(i18n.t('addtrade.csv_no_data'), 'error');
+          if (progressDiv) progressDiv.style.display = 'none';
+          return;
+        }
+
+        var headers = lines[0].split(',').map(function(h) { return h.trim().toLowerCase(); });
+        var imported = 0, failed = 0;
+
+        for (var i = 1; i < lines.length; i++) {
+          var values = lines[i].split(',');
+          if (values.length < 5) {
+            importLogs.push('⚠️ Satır ' + i + ': Yetersiz sütun (' + values.length + '), atlandı.');
+            failed++; continue;
+          }
+
+          var row = {};
+          for (var hIdx = 0; hIdx < headers.length; hIdx++) {
+            row[headers[hIdx]] = values[hIdx] ? values[hIdx].trim() : '';
+          }
+
+          var symbol = (row.symbol || row.sembol || '').toUpperCase();
+          var direction = (row.yon || row.direction || '').toUpperCase();
+          var lot = parseFloat(row.lot || 0);
+          var entry = parseFloat(row.entry || row.giris || row.entry_price || 0);
+          var exit = parseFloat(row.exit || row.cikis || row.exit_price) || null;
+          var rawDate = row.tarih || row.date || '';
+          var tradeDate = validateAndFormatDate(rawDate, i);
+
+          if (!symbol || !direction || !lot || !entry) {
+            importLogs.push('❌ Satır ' + i + ': Zorunlu alan eksik, atlandı.');
+            failed++; continue;
+          }
+
+          var finalDir = 'SHORT';
+          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
+          else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
+          else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + sanitizeHTML(direction) + '", SHORT olarak kaydedildi.');
+
+          var trade = {
+            user_id: currentUser.id, symbol: symbol, direction: finalDir,
+            instrument: 'forex', lot: lot, entry_price: entry,
+            exit_price: exit, trade_date: tradeDate,
+            notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR')
+          };
+
+          var { error } = await sb.from('trades').insert([trade]);
+          if (error) { 
+            importLogs.push('❌ Satır ' + i + ': ' + sanitizeHTML(error.message)); 
+            failed++; 
+          } else {
+            imported++;
+          }
+        }
+
+        renderImportLog();
+        if (progressDiv) progressDiv.style.display = 'none';
+        if (csvFileInput) csvFileInput.value = '';
+
+        var msg = imported + ' işlem içe aktarıldı' + (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
+        showToast(msg, failed > 0 ? 'error' : 'success');
+        if (imported > 0) setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
+      } catch(e) {
+        if (progressDiv) progressDiv.style.display = 'none';
+        showToast('CSV okuma hatası: ' + sanitizeHTML(e.message), 'error');
+      }
+    }
+
+    // ============================================================
+    // BULK IMPORT (TOPLU EKLEME) - GÜVENLİ
+    // ============================================================
+    var bulkOverlay = document.getElementById('bulk-import-overlay');
+    var bulkTextarea = document.getElementById('bulk-textarea');
+    var bulkProgress = document.getElementById('bulk-progress');
+    var bulkFill = document.getElementById('bulk-fill');
+    var bulkStatus = document.getElementById('bulk-status');
+
+    var bulkImportBtn = document.getElementById('bulk-import-btn');
+    if (bulkImportBtn) {
+      bulkImportBtn.addEventListener('click', function() {
+        if (bulkOverlay) bulkOverlay.classList.add('active');
+        if (bulkTextarea) bulkTextarea.value = '';
+        if (bulkProgress) bulkProgress.style.display = 'none';
+      });
+    }
+
+    var bulkCancelBtn = document.getElementById('bulk-cancel-btn');
+    if (bulkCancelBtn) {
+      bulkCancelBtn.addEventListener('click', function() {
+        if (bulkOverlay) bulkOverlay.classList.remove('active');
+      });
+    }
+
+    if (bulkOverlay) {
+      bulkOverlay.addEventListener('click', function(e) {
+        if (e.target === bulkOverlay) bulkOverlay.classList.remove('active');
+      });
+    }
+
+    var bulkConfirmBtn = document.getElementById('bulk-confirm-btn');
+    if (bulkConfirmBtn) {
+      bulkConfirmBtn.addEventListener('click', async function() {
+        if (!bulkTextarea) return;
+        var text = bulkTextarea.value.trim();
+        if (!text) {
+          showToast('Lütfen en az bir işlem girin!', 'error');
+          return;
+        }
+
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+        if (lines.length === 0) {
+          showToast('Lütfen en az bir işlem girin!', 'error');
+          return;
+        }
+
+        var trades = [];
+        var errors = [];
+        var defaultDate = new Date().toISOString().split('T')[0];
+
+        for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+          var parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
+          if (parts.length < 5) {
+            errors.push('Satır ' + (lineIdx+1) + ': Yetersiz alan (' + parts.length + ' alan, en az 5 gerekli)');
+            continue;
+          }
+
+          var symbol = parts[0].toUpperCase();
+          var direction = parts[1].toUpperCase();
+          var lot = parseFloat(parts[2]);
+          var entry = parseFloat(parts[3]);
+          var exit = parts[4] ? parseFloat(parts[4]) : null;
+          var date = parts[5] ? validateAndFormatDate(parts[5], lineIdx+1) : defaultDate;
+          var notes = parts[6] || 'Toplu ekleme - ' + new Date().toLocaleString('tr-TR');
+
+          if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
+            errors.push('Satır ' + (lineIdx+1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş)');
+            continue;
+          }
+
+          var finalDir = 'SHORT';
+          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
+
+          trades.push({
+            user_id: currentUser.id,
+            symbol: symbol,
+            direction: finalDir,
+            instrument: 'forex',
+            lot: lot,
+            entry_price: entry,
+            exit_price: exit,
+            trade_date: date,
+            notes: notes || null,
+            multiplier: 100000
+          });
+        }
+
+        if (errors.length > 0) {
+          showToast(errors.length + ' hata var!', 'error');
+          if (bulkProgress) bulkProgress.style.display = 'block';
+          if (bulkFill) {
+            bulkFill.style.width = '100%';
+            bulkFill.style.background = 'var(--red)';
+          }
+          if (bulkStatus) bulkStatus.textContent = '❌ ' + errors.length + ' hata: ' + errors.join('; ');
+          setTimeout(function() { 
+            if (bulkProgress) bulkProgress.style.display = 'none'; 
+            if (bulkFill) bulkFill.style.width = '0%'; 
+          }, 3000);
+          return;
+        }
+
+        if (trades.length === 0) {
+          showToast('Geçerli işlem bulunamadı!', 'error');
+          return;
+        }
+
+        if (bulkProgress) bulkProgress.style.display = 'block';
+        if (bulkFill) {
+          bulkFill.style.width = '0%';
+          bulkFill.style.background = 'linear-gradient(90deg, var(--accent), var(--accent2))';
+        }
+        if (bulkStatus) bulkStatus.textContent = '0 / ' + trades.length + ' işlem ekleniyor...';
+
+        var success = 0;
+        var failed = 0;
+
+        for (var tIdx = 0; tIdx < trades.length; tIdx++) {
+          var trade = trades[tIdx];
+          var { error } = await sb.from('trades').insert([trade]);
+          if (error) {
+            failed++;
+            errors.push('Satır ' + (tIdx+1) + ': ' + sanitizeHTML(error.message));
+          } else {
+            success++;
+          }
+          var progress = ((tIdx + 1) / trades.length) * 100;
+          if (bulkFill) bulkFill.style.width = progress + '%';
+          if (bulkStatus) bulkStatus.textContent = success + ' / ' + trades.length + ' işlem eklendi (' + failed + ' başarısız)';
+        }
+
+        if (errors.length > 0) {
+          if (bulkFill) {
+            bulkFill.style.background = 'var(--red)';
+          }
+          if (bulkStatus) bulkStatus.textContent = '⚠️ ' + success + ' işlem eklendi, ' + failed + ' hata!';
+          setTimeout(function() { 
+            if (bulkProgress) bulkProgress.style.display = 'none'; 
+            if (bulkFill) bulkFill.style.width = '0%'; 
+          }, 3000);
+          showToast(success + ' işlem eklendi, ' + failed + ' hata!', 'error');
+        } else {
+          if (bulkFill) {
+            bulkFill.style.width = '100%';
+            bulkFill.style.background = 'var(--green)';
+          }
+          if (bulkStatus) bulkStatus.textContent = '✅ ' + success + ' işlem başarıyla eklendi!';
+          setTimeout(function() {
+            if (bulkOverlay) bulkOverlay.classList.remove('active');
+            if (bulkProgress) bulkProgress.style.display = 'none';
+            if (bulkFill) bulkFill.style.width = '0%';
+            window.location.href = 'trades.html';
+          }, 1500);
+          showToast(success + ' işlem başarıyla eklendi!', 'success');
+        }
+      });
+    }
+
+    // ============================================================
+    // SAVE TRADE (GÜVENLİ) - DEFTER KONTROLÜ EKLENDİ
+    // ============================================================
+    var saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async function() {
+        var symbolEl = document.getElementById('symbol');
+        var directionEl = document.getElementById('direction');
+        var instrumentEl = document.getElementById('instrument');
+        var lotEl = document.getElementById('lot');
+        var entryEl = document.getElementById('entry');
+        var exitEl = document.getElementById('exit');
+        var slEl = document.getElementById('sl');
+        var tpEl = document.getElementById('tp');
+        var tradeDateEl = document.getElementById('trade-date');
+        var notesEl = document.getElementById('notes');
+        var strategyIdEl = document.getElementById('strategy-id-hidden');
+        var notebookSelect = document.getElementById('notebook-select');
+        var errEl = document.getElementById('err');
+        
+        var symbol = symbolEl ? symbolEl.value.trim().toUpperCase() : '';
+        var direction = directionEl ? directionEl.value : '';
+        var instrument = instrumentEl ? instrumentEl.value : 'forex';
+        var lot = lotEl ? parseFloat(lotEl.value) : 0;
+        var entry = entryEl ? parseFloat(entryEl.value) : 0;
+        var exit = exitEl ? parseFloat(exitEl.value) : null;
+        var sl = slEl ? parseFloat(slEl.value) : null;
+        var tp = tpEl ? parseFloat(tpEl.value) : null;
+        var tradeDate = tradeDateEl ? tradeDateEl.value : '';
+        var notes = notesEl ? notesEl.value.trim() : '';
+        var strategyId = strategyIdEl ? strategyIdEl.value || null : null;
+        var mult = getMultiplier();
+        
+        // ⭐ DEFTER KONTROLÜ
+        var notebookId = notebookSelect ? notebookSelect.value : '';
+        
+        if (errEl) errEl.style.display = 'none';
+
+        // ⭐ VALIDASYON
+        if (!symbol || !direction || !lot || !entry || !tradeDate) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.required_fields');
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+        
+        // ⭐ DEFTER KONTROLÜ
+        if (!notebookId) {
+          if (errEl) {
+            errEl.textContent = 'Lütfen bir defter seçin!';
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+        
+        if (instrument === 'other' && !mult) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.custom_multiplier_required');
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+
+        var btn = document.getElementById('save-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto;"></div>';
+        }
+
+        var pnl = null;
+        var rr = null;
+        try {
+          if (typeof calcPnL !== 'undefined' && exit) {
+            pnl = calcPnL(entry, exit, lot, direction, 'other', mult);
+          }
+          if (typeof calcRR !== 'undefined' && sl && tp) {
+            rr = calcRR(entry, sl, tp, direction);
+          }
+        } catch(e) {}
+
+        var { error } = await sb.from('trades').insert([{
+          user_id: currentUser.id, 
+          symbol: symbol, 
+          direction: direction, 
+          instrument: instrument, 
+          lot: lot,
+          entry_price: entry, 
+          exit_price: exit, 
+          stop_loss: sl, 
+          take_profit: tp,
+          trade_date: tradeDate, 
+          notes: notes || null, 
+          pnl: pnl,
+          rr_ratio: rr ? parseFloat(rr) : null, 
+          multiplier: mult, 
+          strategy_id: strategyId,
+          notebook_id: notebookId
+        }]);
+
+        if (error) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.save_error') + sanitizeHTML(error.message);
+            errEl.style.display = 'block';
+          }
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> ' + i18n.t('common.save');
+          }
+          return;
+        }
+
+        showToast(i18n.t('addtrade.save_success'));
+        setTimeout(function() { window.location.href = 'trades.html'; }, 1200);
+      });
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    (async function() {
+      try {
+        currentUser = await requireAuth();
+        if (!currentUser) return;
+        
+        var dateEl = document.getElementById('trade-date');
+        if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+
+        if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
+          var adminLink = document.getElementById('admin-link');
+          if (adminLink) adminLink.style.display = 'inline';
+          var adminLinkMobile = document.getElementById('admin-link-mobile');
+          if (adminLinkMobile) adminLinkMobile.style.display = 'block';
+        }
+
+        // ⭐ DEFTER LİSTESİNİ YÜKLE
+        await loadNotebookSelect();
+        await loadStrategyGrid();
+      } catch(e) {}
+    })();
+
+    // ============================================================
+    // DECIMAL FIX
+    // ============================================================
+    if (typeof applyDecimalFix === 'function') {
+      applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
+    }
+
+  </script>
+</body>
+</html>

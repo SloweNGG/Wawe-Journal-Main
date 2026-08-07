@@ -1,0 +1,32 @@
+<div class="s-card danger-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="settings.danger_zone">Tehlikeli Bölge</h2>
+      <p data-i18n="settings.danger_desc">Geri alınamaz işlemler</p>
+    </div>
+  </div>
+  <div class="s-card-body">
+    <div class="danger-action-row">
+      <div>
+        <div class="danger-action-desc" style="font-weight:500; color:var(--text); margin-bottom:.25rem;" data-i18n="settings.delete_all_trades">Tüm İşlem Verilerini Sil</div>
+        <div class="danger-action-desc" data-i18n="settings.delete_all_trades_warning">Kaydettiğin tüm trade verileri kalıcı olarak silinir. Bu işlem geri alınamaz.</div>
+      </div>
+      <button class="btn-outline-danger" id="delete-data-btn" data-i18n="settings.delete_data">Verileri Sil</button>
+    </div>
+    <div style="height:1px; background:rgba(239,68,68,0.15); margin:.75rem 0;"></div>
+    <div class="danger-action-row">
+      <div>
+        <div class="danger-action-desc" style="font-weight:500; color:var(--text); margin-bottom:.25rem;" data-i18n="settings.deactivate_account">Hesabımı Devre Dışı Bırak</div>
+        <div class="danger-action-desc" data-i18n="settings.deactivate_account_warning">Hesabın devre dışı bırakılır ve giriş yapamazsın. Verilerin saklanır.</div>
+      </div>
+      <button class="btn-outline-danger" id="deactivate-account-btn" data-i18n="settings.deactivate">Hesabı Devre Dışı Bırak</button>
+    </div>
+  </div>
+</div>

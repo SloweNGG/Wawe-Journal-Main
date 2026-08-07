@@ -1,0 +1,52 @@
+<div class="s-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="12" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="settings.profile_info">Profil Bilgileri</h2>
+      <p data-i18n="settings.profile_desc">Hesabının genel bilgileri ve fotoğrafın</p>
+    </div>
+  </div>
+  <div class="s-card-body">
+    
+    <div class="avatar-upload-section">
+      <div class="avatar-upload-title" data-i18n="settings.profile_photo">Profil Fotoğrafı</div>
+      <div class="avatar-upload-container">
+        <div class="avatar-preview" id="avatar-preview">
+          <span class="avatar-placeholder" id="avatar-placeholder">?</span>
+          <img id="avatar-img" style="display:none;" />
+        </div>
+        <div class="avatar-buttons">
+          <input type="file" id="avatar-file" accept="image/*" style="display:none;" />
+          <button class="btn-upload" id="upload-avatar-btn" data-i18n="settings.upload_photo">Fotoğraf Yükle</button>
+          <button class="btn-remove-avatar" id="remove-avatar-btn" data-i18n="settings.remove_photo">Kaldır</button>
+        </div>
+      </div>
+      <div class="upload-progress" id="upload-progress">
+        <div class="spinner-small"></div>
+        <span data-i18n="settings.uploading">Yükleniyor...</span>
+      </div>
+    </div>
+    
+    <div class="info-row">
+      <span class="info-label" data-i18n="settings.username">Kullanıcı Adı</span>
+      <span class="info-value" id="profile-username">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="settings.email">E-posta</span>
+      <span class="info-value" id="profile-email">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="settings.account_created">Hesap Oluşturma</span>
+      <span class="info-value" id="profile-created">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label" data-i18n="settings.account_status">Hesap Durumu</span>
+      <span class="info-badge" data-i18n="settings.active">Aktif</span>
+    </div>
+  </div>
+</div>
