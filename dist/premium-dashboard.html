@@ -8,6 +8,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="/components/navbar.css" />
+
+
+  <!-- Quick Add Modal -->
+<link rel="stylesheet" href="quick-add-modal.css" />
+<script src="quick-modal-i18n.js"></script>
+<script src="quick-add.js"></script>
   
   <!-- ⭐ LUCIDE ICONS -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -1823,18 +1829,8 @@
 
         await updateNavbarAvatar();
 
-        // ⭐ AKTİF DEFTERE GÖRE FİLTRELE
-        var activeNotebookId = getActiveNotebookId();
         var { data, error } = await sb.from('trades').select('*').eq('user_id', user.id).order('trade_date', { ascending: true });
-        
         if (error) { showToast('Veriler yüklenemedi', 'error'); return; }
-
-        // ⭐ AKTİF DEFTERE GÖRE FİLTRELE (client-side)
-        if (data && activeNotebookId !== 'all') {
-          data = data.filter(function(t) {
-            return t.notebook_id === activeNotebookId;
-          });
-        }
 
         allTrades = data || [];
 
@@ -1911,6 +1907,243 @@
       }
     });
 
+
+
+    // ════════════════════════════════════════════════════════════════
+// RENDER CHARTS - TÜM GRAFİKLER
+// ════════════════════════════════════════════════════════════════
+function renderCharts(trades) {
+    if (!trades || !trades.length) {
+        // Boş durumda grafikleri temizle
+        var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol', 'chart-direction', 'chart-hourly', 'chart-dow', 'chart-rr', 'chart-lot'];
+        chartIds.forEach(function(id) {
+            if (charts[id]) {
+                try { charts[id].destroy(); } catch(e) {}
+                delete charts[id];
+            }
+            var canvas = document.getElementById(id);
+            if (canvas) {
+                var parent = canvas.parentElement;
+                if (parent) {
+                    parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:11px;font-family:\'DM Sans\',sans-serif;">Yeterli veri yok</div>';
+                }
+            }
+        });
+        return;
+    }
+
+    renderCumulativeChart(trades);
+    renderWinLossChart(trades);
+    renderDailyChart(trades);
+    renderSymbolChart(trades);
+    renderDirectionChart(trades);
+    renderHourlyChart(trades);
+    renderDowChart(trades);
+    renderRRChart(trades);
+    renderLotChart(trades);
+}
+
+// ════════════════════════════════════════════════════════════════
+// WIN/LOSS CHART
+// ════════════════════════════════════════════════════════════════
+function renderWinLossChart(trades) {
+    var canvas = document.getElementById('chart-winloss');
+    if (!canvas) return;
+    if (charts['chart-winloss']) { try { charts['chart-winloss'].destroy(); } catch(e) {} delete charts['chart-winloss']; }
+
+    var wins = 0, losses = 0, open = 0;
+    trades.forEach(function(t) {
+        if (!t.exit_price) open++;
+        else if (calcTradePnL(t) > 0) wins++;
+        else losses++;
+    });
+
+    charts['chart-winloss'] = new Chart(canvas, {
+        type: 'doughnut',
+        data: { labels: ['Kazanan', 'Kaybeden', 'Açık'], datasets: [{ data: [wins, losses, open], backgroundColor: ['#22c55e', '#ef4444', '#64748b'], borderWidth: 0, cutout: '68%' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12, padding: 8 } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// DAILY CHART
+// ════════════════════════════════════════════════════════════════
+function renderDailyChart(trades) {
+    var canvas = document.getElementById('chart-daily');
+    if (!canvas) return;
+    if (charts['chart-daily']) { try { charts['chart-daily'].destroy(); } catch(e) {} delete charts['chart-daily']; }
+
+    var days = {};
+    var now = new Date();
+    for (var i = 29; i >= 0; i--) {
+        var d = new Date(now);
+        d.setDate(d.getDate() - i);
+        days[d.toISOString().split('T')[0]] = 0;
+    }
+    trades.forEach(function(t) {
+        if (t.exit_price && days[t.trade_date] !== undefined) {
+            days[t.trade_date] += calcTradePnL(t);
+        }
+    });
+    var dailyLabels = Object.keys(days).map(function(d) { var dt = new Date(d); return dt.getDate() + '/' + (dt.getMonth() + 1); });
+    var dailyData = Object.values(days);
+
+    charts['chart-daily'] = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: dailyLabels, datasets: [{ data: dailyData, backgroundColor: dailyData.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'; }), borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 } } }, y: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 }, callback: function(v) { return formatCurrency(v); } } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// SYMBOL CHART
+// ════════════════════════════════════════════════════════════════
+function renderSymbolChart(trades) {
+    var canvas = document.getElementById('chart-symbol');
+    if (!canvas) return;
+    if (charts['chart-symbol']) { try { charts['chart-symbol'].destroy(); } catch(e) {} delete charts['chart-symbol']; }
+
+    var symbolMap = {};
+    trades.forEach(function(t) {
+        if (t.exit_price) {
+            symbolMap[t.symbol] = (symbolMap[t.symbol] || 0) + calcTradePnL(t);
+        }
+    });
+    var sortedSymbols = Object.entries(symbolMap).sort(function(a, b) { return Math.abs(b[1]) - Math.abs(a[1]); }).slice(0, 8);
+
+    charts['chart-symbol'] = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: sortedSymbols.map(function(s) { return s[0]; }), datasets: [{ data: sortedSymbols.map(function(s) { return s[1]; }), backgroundColor: sortedSymbols.map(function(s) { return s[1] >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'; }), borderRadius: 4 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 }, callback: function(v) { return formatCurrency(v); } } }, y: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 } } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// DIRECTION CHART
+// ════════════════════════════════════════════════════════════════
+function renderDirectionChart(trades) {
+    var canvas = document.getElementById('chart-direction');
+    if (!canvas) return;
+    if (charts['chart-direction']) { try { charts['chart-direction'].destroy(); } catch(e) {} delete charts['chart-direction']; }
+
+    var longs = 0, shorts = 0;
+    trades.forEach(function(t) {
+        if (t.direction === 'LONG' || t.direction === 'BUY') longs++;
+        else shorts++;
+    });
+
+    charts['chart-direction'] = new Chart(canvas, {
+        type: 'doughnut',
+        data: { labels: ['Long', 'Short'], datasets: [{ data: [longs, shorts], backgroundColor: ['#8b5cf6', '#f97316'], borderWidth: 0, cutout: '68%' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12, padding: 8 } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// HOURLY CHART
+// ════════════════════════════════════════════════════════════════
+function renderHourlyChart(trades) {
+    var canvas = document.getElementById('chart-hourly');
+    if (!canvas) return;
+    if (charts['chart-hourly']) { try { charts['chart-hourly'].destroy(); } catch(e) {} delete charts['chart-hourly']; }
+
+    var hourMap = {};
+    for (var h = 0; h < 24; h++) hourMap[h] = 0;
+    trades.forEach(function(t) {
+        if (t.exit_price) {
+            var hour = new Date(t.trade_date).getHours();
+            hourMap[hour] = (hourMap[hour] || 0) + calcTradePnL(t);
+        }
+    });
+    var labels = [];
+    for (var h = 0; h < 24; h++) labels.push(h + ':00');
+    var data = Object.values(hourMap);
+
+    charts['chart-hourly'] = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: data, backgroundColor: data.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'; }), borderRadius: 3 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 8 }, maxTicksLimit: 12 } }, y: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 8 }, callback: function(v) { return formatCurrency(v); } } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// DAY OF WEEK CHART
+// ════════════════════════════════════════════════════════════════
+function renderDowChart(trades) {
+    var canvas = document.getElementById('chart-dow');
+    if (!canvas) return;
+    if (charts['chart-dow']) { try { charts['chart-dow'].destroy(); } catch(e) {} delete charts['chart-dow']; }
+
+    var dowMap = {};
+    var dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    for (var d = 0; d < 7; d++) dowMap[d] = 0;
+    trades.forEach(function(t) {
+        if (t.exit_price) {
+            var dow = new Date(t.trade_date).getDay();
+            dowMap[dow] = (dowMap[dow] || 0) + calcTradePnL(t);
+        }
+    });
+    var data = Object.values(dowMap);
+
+    charts['chart-dow'] = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: dayNames, datasets: [{ data: data, backgroundColor: data.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'; }), borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 } } }, y: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 }, callback: function(v) { return formatCurrency(v); } } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// RR RATIO CHART
+// ════════════════════════════════════════════════════════════════
+function renderRRChart(trades) {
+    var canvas = document.getElementById('chart-rr');
+    if (!canvas) return;
+    if (charts['chart-rr']) { try { charts['chart-rr'].destroy(); } catch(e) {} delete charts['chart-rr']; }
+
+    var rrData = {};
+    trades.forEach(function(t) {
+        if (t.exit_price && t.rr_ratio) {
+            var key = parseFloat(t.rr_ratio).toFixed(1);
+            rrData[key] = (rrData[key] || 0) + 1;
+        }
+    });
+    var labels = Object.keys(rrData).sort();
+    var data = labels.map(function(k) { return rrData[k]; });
+
+    charts['chart-rr'] = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: data, backgroundColor: 'rgba(139,92,246,0.6)', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 } } }, y: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 } } } } }
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// LOT SIZE CHART
+// ════════════════════════════════════════════════════════════════
+function renderLotChart(trades) {
+    var canvas = document.getElementById('chart-lot');
+    if (!canvas) return;
+    if (charts['chart-lot']) { try { charts['chart-lot'].destroy(); } catch(e) {} delete charts['chart-lot']; }
+
+    var lotMap = {};
+    trades.forEach(function(t) {
+        if (t.exit_price) {
+            var key = parseFloat(t.lot || 0).toFixed(2);
+            lotMap[key] = (lotMap[key] || 0) + calcTradePnL(t);
+        }
+    });
+    var sortedLots = Object.entries(lotMap).sort(function(a, b) { return parseFloat(a[0]) - parseFloat(b[0]); });
+    var labels = sortedLots.map(function(s) { return s[0]; });
+    var data = sortedLots.map(function(s) { return s[1]; });
+
+    charts['chart-lot'] = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: data, backgroundColor: data.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'; }), borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 } } }, y: { grid: { color: GRID_LINE_COLOR }, ticks: { color: WHITE, font: { size: 9 }, callback: function(v) { return formatCurrency(v); } } } } }
+    });
+}
+
+
     injectSkeletonMarkup();
     loadPremiumData();
 
@@ -1926,3 +2159,4 @@
   </script>
 </body>
 </html>
+

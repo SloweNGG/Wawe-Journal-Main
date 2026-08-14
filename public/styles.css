@@ -4,21 +4,34 @@
 
 /* Koyu Tema (Varsayılan) */
 :root {
-  --bg: #0a0a0f;
-  --bg2: #0f0f17;
-  --surface: #111118;
-  --surface2: #1a1a24;
-  --border: #1e1e2e;
+  --bg: #08080c;
+  --bg2: #0d0d14;
+  --surface: #14141f;
+  --surface2: #1c1c2c;
+  --border: #232334;
   --text: #e8e8f0;
   --text2: #b8b8c8;
   --muted: #6b6b80;
+
   --accent: #7c6dfa;
   --accent2: #9b8bfa;
   --accent-glow: rgba(124,109,250,0.15);
+
+  --accent-secondary: #fa6d9b;
+  --accent-secondary-bg: rgba(250,109,155,0.12);
+
+  --accent-tertiary: #6dd0fa;
+  --accent-tertiary-bg: rgba(109,208,250,0.12);
+
   --green: #22c55e;
   --green-bg: rgba(34,197,94,0.12);
   --red: #ef4444;
   --red-bg: rgba(239,68,68,0.12);
+  --yellow: #f5b642;
+  --yellow-bg: rgba(245,182,66,0.12);
+
+  --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+
   --radius: 12px;
   --radius-sm: 8px;
   --shadow: 0 4px 24px rgba(0,0,0,0.3);
@@ -38,9 +51,26 @@ body.light-theme {
   --text: #1a1a2e;
   --text2: #4a4a5e;
   --muted: #6b6b80;
-  --accent: #7c6dfa;
+
+  --accent: #6c5ce7;
   --accent2: #6b5bd6;
   --accent-glow: rgba(124,109,250,0.1);
+
+  --accent-secondary: #e0558a;
+  --accent-secondary-bg: rgba(224,85,138,0.08);
+
+  --accent-tertiary: #3aa8d8;
+  --accent-tertiary-bg: rgba(58,168,216,0.08);
+
+  --green: #16a34a;
+  --green-bg: rgba(22,163,74,0.1);
+  --red: #dc2626;
+  --red-bg: rgba(220,38,38,0.1);
+  --yellow: #d97706;
+  --yellow-bg: rgba(217,119,6,0.1);
+
+  --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+
   --shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
 

@@ -33,12 +33,16 @@
      ============================================================ -->
 <script>
   (function() {
+    // localStorage'dan kayıtlı dili oku
     var savedLang = localStorage.getItem('ww_language');
+    
+    // Kayıtlı dil varsa ve geçerliyse kullan, yoksa varsayılan 'en'
     if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
       document.documentElement.setAttribute('data-lang', savedLang);
       document.documentElement.lang = savedLang;
       console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
     } else {
+      // Kayıtlı dil yoksa varsayılanı 'en' yap ve localStorage'a kaydet
       localStorage.setItem('ww_language', 'en');
       document.documentElement.setAttribute('data-lang', 'en');
       document.documentElement.lang = 'en';
@@ -46,6 +50,7 @@
     }
   })();
 </script>
+
 
   
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -575,14 +580,6 @@
           <span data-i18n="addtrade.section_trade_details">İşlem Detayları</span>
         </div>
 
-        <!-- ⭐ DEFTER SEÇİMİ -->
-        <div class="field" style="margin-bottom:12px;">
-          <label data-i18n="addtrade.notebook">Defter Seç *</label>
-          <select id="notebook-select">
-            <option value="">— Defter Seç —</option>
-          </select>
-        </div>
-
         <div class="field" style="margin-bottom:12px;">
           <label data-i18n="addtrade.instrument_type">Enstrüman tipi *</label>
           <select id="instrument">
@@ -758,9 +755,7 @@
     });
   </script>
   <script>
-    // ============================================================
-    // ⭐ GÜVENLİK: INSTRUMENT_MULTIPLIERS KONTROLÜ
-    // ============================================================
+    // ⭐ INSTRUMENT_MULTIPLIERS kontrolü - eğer tanımlı değilse varsayılan değerleri ata
     if (typeof INSTRUMENT_MULTIPLIERS === 'undefined') {
       window.INSTRUMENT_MULTIPLIERS = {
         forex: 100000,
@@ -771,54 +766,12 @@
       };
     }
 
-    // ============================================================
-    // ⭐ GÜVENLİK: HTML SANITIZE
-    // ============================================================
-    function sanitizeHTML(str) {
-      if (!str) return '';
-      var temp = document.createElement('div');
-      temp.textContent = str;
-      return temp.innerHTML;
-    }
-
     var currentUser = null;
     var importLogs = [];
     var strategiesList = [];
 
     // ============================================================
-    // ⭐ DEFTER LİSTESİNİ YÜKLE
-    // ============================================================
-    async function loadNotebookSelect() {
-      var select = document.getElementById('notebook-select');
-      if (!select) return;
-      
-      try {
-        var notebooks = await getNotebooks();
-        var activeId = getActiveNotebookId();
-        
-        select.innerHTML = '<option value="">— Defter Seç —</option>';
-        
-        notebooks.forEach(function(n) {
-          var option = document.createElement('option');
-          option.value = n.id;
-          option.textContent = n.name + (n.is_default ? ' ⭐' : '');
-          if (n.id === activeId || n.is_default) {
-            option.selected = true;
-          }
-          select.appendChild(option);
-        });
-        
-        // Eğer hiç defter yoksa
-        if (notebooks.length === 0) {
-          select.innerHTML = '<option value="">Önce defter oluşturun</option>';
-        }
-      } catch (e) {
-        console.error('loadNotebookSelect hatası:', e);
-      }
-    }
-
-    // ============================================================
-    // STRATEJİ KUTUCUKLARI (GÜVENLİ)
+    // STRATEJİ KUTUCUKLARI
     // ============================================================
     async function loadStrategyGrid() {
       var grid = document.getElementById('strategy-grid');
@@ -830,7 +783,7 @@
 
         if (!strategies || strategies.length === 0) {
           grid.innerHTML = '\n            <div class="strategy-chip-empty">\n              <span data-i18n="addtrade.no_strategies">Henüz strateji eklenmemiş.</span>\n              <a href="strategies.html" data-i18n="addtrade.create_strategy">Strateji oluştur →</a>\n            </div>\n          ';
-          if (typeof i18n !== 'undefined') i18n.apply();
+          i18n.apply();
           return;
         }
 
@@ -840,16 +793,11 @@
         for (var sIdx = 0; sIdx < strategies.length; sIdx++) {
           var s = strategies[sIdx];
           var isActive = s.id === currentSelected;
-          // ⭐ Güvenli: sanitizeHTML ile temizle
-          var safeName = sanitizeHTML(s.name.length > 15 ? s.name.slice(0,12)+'..' : s.name);
-          var safeColor = sanitizeHTML(s.color || '#8b5cf6');
-          var safeTitle = sanitizeHTML(s.description || s.name);
-          
-          html += '\n            <div class="strategy-chip ' + (isActive ? 'active' : '') + '" \n                 data-id="' + s.id + '" \n                 onclick="selectStrategy(\'' + s.id + '\')"\n                 title="' + safeTitle + '">\n              <span class="chip-color" style="background:' + safeColor + '"></span>\n              <span class="chip-name">' + safeName + '</span>\n              <span class="chip-check">✓</span>\n            </div>\n          ';
+          html += '\n            <div class="strategy-chip ' + (isActive ? 'active' : '') + '" \n                 data-id="' + s.id + '" \n                 onclick="selectStrategy(\'' + s.id + '\')"\n                 title="' + (s.description || s.name) + '">\n              <span class="chip-color" style="background:' + (s.color || '#8b5cf6') + '"></span>\n              <span class="chip-name">' + (s.name.length > 15 ? s.name.slice(0,12)+'..' : s.name) + '</span>\n              <span class="chip-check">✓</span>\n            </div>\n          ';
         }
 
         grid.innerHTML = html;
-        if (typeof i18n !== 'undefined') i18n.apply();
+        i18n.apply();
 
       } catch (e) {
         grid.innerHTML = '\n          <div class="strategy-chip-empty">\n            <span style="color:var(--red);">⚠️ Stratejiler yüklenemedi</span>\n          </div>\n        ';
@@ -1002,7 +950,7 @@
     }
 
     // ============================================================
-    // CSV IMPORT (GÜVENLİ)
+    // CSV IMPORT
     // ============================================================
     var importBanner = document.getElementById('import-banner-trigger');
     if (importBanner) {
@@ -1042,7 +990,7 @@
         var dmy2 = new Date(p[2] + '-' + p[1] + '-' + p[0]);
         if (!isNaN(dmy2.getTime())) return dmy2.toISOString().split('T')[0];
       }
-      importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + sanitizeHTML(dateString) + '", bugün kullanıldı.');
+      importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + dateString + '", bugün kullanıldı.');
       return new Date().toISOString().split('T')[0];
     }
 
@@ -1051,10 +999,7 @@
       if (el) {
         if (importLogs.length > 0) {
           el.style.display = 'block';
-          // ⭐ Güvenli render
-          el.innerHTML = importLogs.map(function(l) { 
-            return '<div>' + sanitizeHTML(l) + '</div>'; 
-          }).join('');
+          el.innerHTML = importLogs.map(function(l) { return '<div>' + l + '</div>'; }).join('');
         } else {
           el.style.display = 'none';
           el.innerHTML = '';
@@ -1109,7 +1054,7 @@
           var finalDir = 'SHORT';
           if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
           else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
-          else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + sanitizeHTML(direction) + '", SHORT olarak kaydedildi.');
+          else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + direction + '", SHORT olarak kaydedildi.');
 
           var trade = {
             user_id: currentUser.id, symbol: symbol, direction: finalDir,
@@ -1120,7 +1065,7 @@
 
           var { error } = await sb.from('trades').insert([trade]);
           if (error) { 
-            importLogs.push('❌ Satır ' + i + ': ' + sanitizeHTML(error.message)); 
+            importLogs.push('❌ Satır ' + i + ': ' + error.message); 
             failed++; 
           } else {
             imported++;
@@ -1136,12 +1081,12 @@
         if (imported > 0) setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
       } catch(e) {
         if (progressDiv) progressDiv.style.display = 'none';
-        showToast('CSV okuma hatası: ' + sanitizeHTML(e.message), 'error');
+        showToast('CSV okuma hatası: ' + e.message, 'error');
       }
     }
 
     // ============================================================
-    // BULK IMPORT (TOPLU EKLEME) - GÜVENLİ
+    // BULK IMPORT (TOPLU EKLEME)
     // ============================================================
     var bulkOverlay = document.getElementById('bulk-import-overlay');
     var bulkTextarea = document.getElementById('bulk-textarea');
@@ -1263,7 +1208,7 @@
           var { error } = await sb.from('trades').insert([trade]);
           if (error) {
             failed++;
-            errors.push('Satır ' + (tIdx+1) + ': ' + sanitizeHTML(error.message));
+            errors.push('Satır ' + (tIdx+1) + ': ' + error.message);
           } else {
             success++;
           }
@@ -1300,7 +1245,7 @@
     }
 
     // ============================================================
-    // SAVE TRADE (GÜVENLİ) - DEFTER KONTROLÜ EKLENDİ
+    // SAVE TRADE
     // ============================================================
     var saveBtn = document.getElementById('save-btn');
     if (saveBtn) {
@@ -1316,7 +1261,6 @@
         var tradeDateEl = document.getElementById('trade-date');
         var notesEl = document.getElementById('notes');
         var strategyIdEl = document.getElementById('strategy-id-hidden');
-        var notebookSelect = document.getElementById('notebook-select');
         var errEl = document.getElementById('err');
         
         var symbol = symbolEl ? symbolEl.value.trim().toUpperCase() : '';
@@ -1332,12 +1276,8 @@
         var strategyId = strategyIdEl ? strategyIdEl.value || null : null;
         var mult = getMultiplier();
         
-        // ⭐ DEFTER KONTROLÜ
-        var notebookId = notebookSelect ? notebookSelect.value : '';
-        
         if (errEl) errEl.style.display = 'none';
 
-        // ⭐ VALIDASYON
         if (!symbol || !direction || !lot || !entry || !tradeDate) {
           if (errEl) {
             errEl.textContent = i18n.t('addtrade.required_fields');
@@ -1345,16 +1285,6 @@
           }
           return;
         }
-        
-        // ⭐ DEFTER KONTROLÜ
-        if (!notebookId) {
-          if (errEl) {
-            errEl.textContent = 'Lütfen bir defter seçin!';
-            errEl.style.display = 'block';
-          }
-          return;
-        }
-        
         if (instrument === 'other' && !mult) {
           if (errEl) {
             errEl.textContent = i18n.t('addtrade.custom_multiplier_required');
@@ -1381,27 +1311,15 @@
         } catch(e) {}
 
         var { error } = await sb.from('trades').insert([{
-          user_id: currentUser.id, 
-          symbol: symbol, 
-          direction: direction, 
-          instrument: instrument, 
-          lot: lot,
-          entry_price: entry, 
-          exit_price: exit, 
-          stop_loss: sl, 
-          take_profit: tp,
-          trade_date: tradeDate, 
-          notes: notes || null, 
-          pnl: pnl,
-          rr_ratio: rr ? parseFloat(rr) : null, 
-          multiplier: mult, 
-          strategy_id: strategyId,
-          notebook_id: notebookId
+          user_id: currentUser.id, symbol: symbol, direction: direction, instrument: instrument, lot: lot,
+          entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp,
+          trade_date: tradeDate, notes: notes || null, pnl: pnl,
+          rr_ratio: rr ? parseFloat(rr) : null, multiplier: mult, strategy_id: strategyId
         }]);
 
         if (error) {
           if (errEl) {
-            errEl.textContent = i18n.t('addtrade.save_error') + sanitizeHTML(error.message);
+            errEl.textContent = i18n.t('addtrade.save_error') + error.message;
             errEl.style.display = 'block';
           }
           if (btn) {
@@ -1434,8 +1352,6 @@
           if (adminLinkMobile) adminLinkMobile.style.display = 'block';
         }
 
-        // ⭐ DEFTER LİSTESİNİ YÜKLE
-        await loadNotebookSelect();
         await loadStrategyGrid();
       } catch(e) {}
     })();
@@ -1443,9 +1359,7 @@
     // ============================================================
     // DECIMAL FIX
     // ============================================================
-    if (typeof applyDecimalFix === 'function') {
-      applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
-    }
+    applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
 
   </script>
 </body>

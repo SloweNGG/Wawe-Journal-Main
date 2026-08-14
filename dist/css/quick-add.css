@@ -1,0 +1,1165 @@
+/* ============================================================
+   QUICK ADD MODAL — FAB + MODAL
+   ------------------------------------------------------------
+   Bu dosya, işlem günlüğü uygulamasındaki "Hızlı Ekle" FAB
+   butonunu ve modalını (form, sekmeler, CSV/bulk import) kapsar.
+
+   Bağımlılıklar (üst düzey stylesheet'te tanımlı olmalı):
+     --accent, --accent2  : marka vurgu renkleri (mor gradient)
+     --surface, --surface2: yüzey arka planları
+     --border, --border2  : kenarlık renkleri
+     --text, --muted       : metin renkleri
+     --green, --red         : durum renkleri (buy/sell, pos/neg)
+   ============================================================ */
+
+:root {
+  /* Bileşene özel yazı tipi ve boyut değişkenleri — tekrarı azaltır,
+     tipografiyi tek yerden yönetmeyi sağlar. */
+  --qa-font-display: 'Syne', sans-serif;
+  --qa-font-body: 'DM Sans', sans-serif;
+  --qa-font-mono: 'DM Mono', monospace;
+  --qa-font-numeric: 'Inter', sans-serif;
+
+  /* Sticky header/tabs yığılmasını önlemek için referans yükseklikler. */
+  --qa-header-h: 60px;
+  --qa-header-h-mobile: 52px;
+}
+
+/* Kutu modeli tutarlılığı — sadece bu bileşenin kapsadığı öğeler için. */
+.quick-add-fab,
+.quick-add-overlay,
+.quick-add-overlay *,
+.quick-add-overlay *::before,
+.quick-add-overlay *::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   FAB — Floating Action Button
+   ============================================================ */
+.quick-add-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 999;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid var(--border2);
+  color: var(--accent2);
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 300;
+  line-height: 1;
+}
+.quick-add-fab:hover {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.quick-add-fab:active {
+  transform: scale(0.94);
+  background: rgba(139, 92, 246, 0.14);
+}
+.quick-add-fab:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 3px;
+}
+.quick-add-fab svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+@media (max-width: 768px) {
+  .quick-add-fab {
+    bottom: 1.25rem;
+    right: 1.25rem;
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+  .quick-add-fab svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ============================================================
+   MODAL OVERLAY
+   ============================================================ */
+.quick-add-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: modalFadeIn 0.25s ease;
+}
+.quick-add-overlay.active {
+  display: flex;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ============================================================
+   MODAL CONTAINER
+   ============================================================ */
+.quick-add-modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.quick-add-modal::-webkit-scrollbar {
+  width: 4px;
+}
+.quick-add-modal::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 99px;
+}
+
+/* ============================================================
+   MODAL HEADER
+   ============================================================ */
+.quick-add-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--qa-header-h);
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 3;
+  border-radius: 20px 20px 0 0;
+}
+.quick-add-header h2 {
+  font-family: var(--qa-font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.quick-add-header .close-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.2s;
+  line-height: 1;
+}
+.quick-add-header .close-btn:hover {
+  color: var(--text);
+}
+.quick-add-header .close-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   TABS (Manuel / CSV İçe Aktar / Toplu Yapıştır)
+   ============================================================ */
+.quick-add-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  background: var(--surface);
+  gap: 2px;
+  position: sticky;
+  top: var(--qa-header-h);
+  z-index: 2;
+}
+.quick-tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: var(--qa-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0.7rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.quick-tab:hover {
+  color: var(--text);
+}
+.quick-tab.active {
+  color: var(--accent2);
+  border-bottom-color: var(--accent);
+}
+.quick-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.quick-tab-content {
+  display: none;
+  animation: tabFadeIn 0.25s ease;
+}
+.quick-tab-content.active {
+  display: block;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   MODAL BODY
+   ============================================================ */
+.quick-add-body {
+  padding: 1.5rem;
+}
+
+/* ============================================================
+   FORM ALANLARI (genel)
+   ============================================================ */
+.quick-add-field {
+  margin-bottom: 1.25rem;
+}
+.quick-add-field:last-child {
+  margin-bottom: 0;
+}
+
+.quick-add-field label {
+  display: block;
+  font-family: var(--qa-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.quick-add-field input,
+.quick-add-field select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  font-family: var(--qa-font-body);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.quick-add-field input:focus,
+.quick-add-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+.quick-add-field input::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+.quick-add-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b80' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.quick-add-field select option {
+  background: var(--surface2);
+}
+
+/* ============================================================
+   ENSTRÜMAN TİPİ — GRID
+   ============================================================ */
+.quick-add-instrument-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.quick-add-instrument-btn {
+  padding: 0.5rem 0.3rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--qa-font-body);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+.quick-add-instrument-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+.quick-add-instrument-btn.active {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--accent2);
+}
+.quick-add-instrument-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.quick-add-instrument-btn .inst-label {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   YÖN TOGGLE (Buy / Sell)
+   ============================================================ */
+.quick-add-side-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.quick-add-side-btn {
+  padding: 0.7rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--qa-font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.quick-add-side-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+.quick-add-side-btn.active-buy {
+  border-color: var(--green);
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--green);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.05);
+}
+.quick-add-side-btn.active-sell {
+  border-color: var(--red);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--red);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.05);
+}
+.quick-add-side-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.quick-add-side-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+/* ============================================================
+   P&L INPUT — $ ile
+   ============================================================ */
+.quick-add-pnl-wrap {
+  position: relative;
+}
+.quick-add-pnl-wrap .currency-symbol {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--qa-font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  pointer-events: none;
+}
+.quick-add-pnl-wrap input {
+  padding-left: 32px;
+}
+.quick-add-pnl-wrap .pnl-suffix {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ============================================================
+   LOT INPUT
+   ============================================================ */
+.quick-add-lot-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.quick-add-lot-wrap input {
+  flex: 1;
+}
+.quick-add-lot-wrap .lot-presets {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.quick-add-lot-wrap .lot-preset {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-family: var(--qa-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.quick-add-lot-wrap .lot-preset:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.quick-add-lot-wrap .lot-preset.active {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent2);
+}
+.quick-add-lot-wrap .lot-preset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ============================================================
+   R/R RATIO
+   ============================================================ */
+.quick-add-rr-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quick-add-rr-wrap .rr-label {
+  font-family: var(--qa-font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.quick-add-rr-wrap input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  color: var(--text);
+  font-family: var(--qa-font-body);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.quick-add-rr-wrap input:focus {
+  border-color: var(--accent);
+}
+.quick-add-rr-wrap .rr-presets {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.quick-add-rr-wrap .rr-preset {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-family: var(--qa-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.quick-add-rr-wrap .rr-preset:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.quick-add-rr-wrap .rr-preset.active {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent2);
+}
+.quick-add-rr-wrap .rr-preset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ============================================================
+   STRATEJİ — SELECT (basit dropdown + hızlı oluştur)
+   ============================================================ */
+.quick-add-strategy-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.quick-add-strategy-wrap select {
+  flex: 1;
+}
+.quick-add-strategy-wrap .create-strategy-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.quick-add-strategy-wrap .create-strategy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.quick-add-strategy-wrap .create-strategy-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   STRATEJİ — CHIP GRID (çoklu/hızlı seçim)
+   ============================================================ */
+.quick-strategy-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.quick-strategy-header label {
+  display: block;
+  font-family: var(--qa-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.quick-strategy-actions {
+  display: flex;
+  gap: 4px;
+}
+.quick-strategy-action {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--qa-font-body);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.quick-strategy-action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.quick-strategy-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.quick-strategy-action svg {
+  width: 12px;
+  height: 12px;
+}
+
+.quick-strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 6px;
+}
+.quick-strategy-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 11px;
+  font-family: var(--qa-font-body);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quick-strategy-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(139, 92, 246, 0.04);
+  transform: translateY(-1px);
+}
+.quick-strategy-chip.active {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--accent2);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+.quick-strategy-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.quick-strategy-chip .chip-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.quick-strategy-chip .chip-check {
+  margin-left: auto;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.quick-strategy-chip.active .chip-check {
+  opacity: 1;
+  color: var(--accent);
+}
+.quick-strategy-chip .chip-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quick-strategy-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 0.5rem;
+  font-family: var(--qa-font-body);
+}
+.quick-strategy-empty a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.quick-strategy-empty a:hover,
+.quick-strategy-empty a:focus-visible {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   NOTES
+   ============================================================ */
+.quick-add-notes textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  font-family: var(--qa-font-body);
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  min-height: 56px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.quick-add-notes textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+.quick-add-notes textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* ============================================================
+   ÖN İZLEME (P&L)
+   ============================================================ */
+.quick-add-preview {
+  display: none;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(139, 92, 246, 0.04);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.quick-add-preview.visible {
+  display: flex;
+}
+.quick-add-preview .preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.quick-add-preview .preview-item .p-label {
+  font-size: 8px;
+  font-family: var(--qa-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.quick-add-preview .preview-item .p-val {
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--qa-font-numeric);
+  color: var(--text);
+}
+.quick-add-preview .preview-item .p-val.pos { color: var(--green); }
+.quick-add-preview .preview-item .p-val.neg { color: var(--red); }
+.quick-add-preview .preview-item .p-val.accent { color: var(--accent2); }
+.quick-add-preview .preview-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+/* ============================================================
+   CSV İÇE AKTARMA ALANI
+   ============================================================ */
+.quick-import-area {
+  text-align: center;
+  padding: 1rem 0.5rem;
+}
+.quick-import-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.75rem;
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-import-icon svg {
+  stroke: var(--accent);
+}
+.quick-import-area p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.quick-import-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  color: var(--text);
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quick-import-btn:hover {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.04);
+}
+.quick-import-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.quick-import-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+.quick-import-status .status-badge {
+  font-weight: 600;
+  color: var(--accent);
+}
+.quick-import-log {
+  margin-top: 0.75rem;
+  font-size: 11px;
+  color: var(--muted);
+  max-height: 120px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-family: var(--qa-font-mono);
+  text-align: left;
+}
+.quick-import-log div {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.quick-import-log div:last-child {
+  border-bottom: none;
+}
+
+/* ============================================================
+   TOPLU YAPIŞTIRMA ALANI
+   ============================================================ */
+.quick-bulk-area textarea {
+  width: 100%;
+  min-height: 120px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem;
+  color: var(--text);
+  font-family: var(--qa-font-mono);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+}
+.quick-bulk-area textarea:focus {
+  border-color: var(--accent);
+}
+.quick-bulk-progress {
+  margin-top: 0.75rem;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--qa-font-body);
+}
+.quick-bulk-progress .quick-bulk-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.quick-bulk-progress .quick-bulk-bar .quick-bulk-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.quick-bulk-log {
+  margin-top: 0.75rem;
+  font-size: 11px;
+  color: var(--muted);
+  max-height: 120px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-family: var(--qa-font-mono);
+  text-align: left;
+}
+.quick-bulk-log div {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.quick-bulk-log div:last-child {
+  border-bottom: none;
+}
+
+/* ============================================================
+   MODAL FOOTER
+   ============================================================ */
+.quick-add-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border-radius: 0 0 20px 20px;
+}
+.quick-add-footer .btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  color: var(--muted);
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0.55rem 1.4rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quick-add-footer .btn-cancel:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+.quick-add-footer .btn-cancel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.quick-add-footer .btn-save {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 40px;
+  color: #fff;
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.55rem 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
+}
+.quick-add-footer .btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.4);
+}
+.quick-add-footer .btn-save:active {
+  transform: scale(0.96);
+}
+.quick-add-footer .btn-save:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.quick-add-footer .btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   LOADING STATE
+   ============================================================ */
+.quick-add-loading {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-family: var(--qa-font-body);
+}
+.quick-add-loading.active {
+  display: flex;
+}
+.quick-add-loading .spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   HATA MESAJI
+   ============================================================ */
+.quick-add-error {
+  display: none;
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 12px;
+  font-family: var(--qa-font-body);
+  margin-bottom: 0.75rem;
+}
+.quick-add-error.active {
+  display: block;
+}
+
+/* ============================================================
+   ERİŞİLEBİLİRLİK — Hareket azaltma tercihi
+   ------------------------------------------------------------
+   Yükleme spinner'ı fonksiyonel geri bildirim olduğu için
+   korunur; geri kalan tüm dekoratif animasyon/geçişler
+   "prefers-reduced-motion" tercihine saygı gösterir.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .quick-add-fab,
+  .quick-add-overlay,
+  .quick-add-overlay * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .quick-add-loading .spinner {
+    animation-duration: 600ms !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ============================================================
+   MOBİL — 600px VE ALTI
+   ============================================================ */
+@media (max-width: 600px) {
+  .quick-add-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .quick-add-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 20px 20px 0 0;
+    animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .quick-add-modal::-webkit-scrollbar {
+    width: 2px;
+  }
+  @keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .quick-add-header {
+    min-height: var(--qa-header-h-mobile);
+    padding: 1rem 1.25rem;
+  }
+  .quick-add-header h2 {
+    font-size: 1rem;
+  }
+  .quick-add-tabs {
+    top: var(--qa-header-h-mobile);
+    padding: 0 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .quick-add-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .quick-tab {
+    font-size: 11px;
+    padding: 0.6rem 0.4rem;
+    white-space: nowrap;
+  }
+
+  .quick-add-body {
+    padding: 1.25rem;
+  }
+  .quick-add-field {
+    margin-bottom: 1rem;
+  }
+  .quick-add-field input,
+  .quick-add-field select {
+    font-size: 14px;
+    padding: 0.65rem 0.9rem;
+  }
+
+  .quick-add-instrument-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  .quick-add-instrument-btn {
+    font-size: 10px;
+    padding: 0.4rem 0.3rem;
+  }
+
+  .quick-add-side-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 13px;
+  }
+
+  .quick-add-lot-wrap .lot-presets,
+  .quick-add-rr-wrap .rr-presets {
+    display: none;
+  }
+
+  .quick-add-strategy-wrap .create-strategy-btn {
+    font-size: 12px;
+    padding: 0.6rem 0.8rem;
+  }
+  .quick-strategy-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .quick-import-area p {
+    font-size: 12px;
+  }
+  .quick-bulk-area textarea {
+    min-height: 100px;
+    font-size: 11px;
+  }
+
+  .quick-add-preview {
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .quick-add-preview .preview-item .p-val {
+    font-size: 0.85rem;
+  }
+
+  .quick-add-footer {
+    padding: 0.75rem 1.25rem 1rem;
+  }
+  .quick-add-footer .btn-cancel,
+  .quick-add-footer .btn-save {
+    font-size: 12px;
+    padding: 0.5rem 1.2rem;
+  }
+}
+
+/* ============================================================
+   MOBİL — 400px VE ALTI (dar ekranlar)
+   ============================================================ */
+@media (max-width: 400px) {
+  .quick-add-instrument-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .quick-strategy-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+}

@@ -1,0 +1,888 @@
+/* ============================================================
+   DASHBOARD ÖZEL STILLER
+   ============================================================ */
+
+.goal-edit-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin-left: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--muted);
+  transition: all 0.2s;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.goal-edit-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.goal-edit-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.kpi-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 1rem;
+  border-right: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.goal-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.goal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(6px);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.goal-modal-overlay.active {
+  display: flex;
+}
+.goal-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  max-width: min(380px, 92vw);
+  width: 100%;
+  overflow: hidden;
+}
+.goal-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.goal-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.goal-modal-header h3 svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--accent2);
+}
+.goal-modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.goal-modal-body {
+  padding: 1.25rem;
+}
+.goal-modal-body label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+.goal-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  outline: none;
+}
+.goal-input:focus {
+  border-color: var(--accent);
+}
+.goal-modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.welcome-msg {
+  color: var(--accent) !important;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: welcomeGlow 1.5s ease-out;
+}
+@keyframes welcomeGlow {
+  0% { text-shadow: 0 0 0px var(--accent); opacity: 0.5; }
+  50% { text-shadow: 0 0 12px var(--accent), 0 0 8px var(--accent2); opacity: 1; }
+  100% { text-shadow: 0 0 0px var(--accent); opacity: 1; }
+}
+
+.date-filter-group {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  overflow: hidden;
+  padding: 2px;
+  flex-wrap: wrap;
+}
+.date-filter-option {
+  padding: 0.3rem 0.8rem;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 40px;
+  transition: all 0.2s;
+  min-height: 32px;
+}
+.date-filter-option:hover {
+  color: var(--accent);
+}
+.date-filter-option.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+}
+
+.add-trade-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 40px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(139,92,246,0.3);
+  text-decoration: none;
+}
+.add-trade-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139,92,246,0.5);
+}
+.add-trade-btn:active {
+  transform: scale(0.94);
+}
+.add-trade-btn svg {
+  stroke: white;
+  stroke-width: 2.5;
+  width: 18px;
+  height: 18px;
+}
+
+.export-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 0.3rem 0.9rem;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.export-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.trade-row {
+  display: grid;
+  grid-template-columns: 28px 80px 50px 100px 1fr 70px 80px 24px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.trade-row:hover {
+  background: rgba(139,92,246,0.06);
+}
+.trade-strategy {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trade-note-indicator {
+  font-size: 12px;
+  opacity: 0.6;
+  cursor: pointer;
+  min-width: 24px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.trade-note {
+  display: none;
+  padding: 0.6rem 0.8rem;
+  margin-top: -0.3rem;
+  margin-bottom: 0.3rem;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border-left: 2px solid var(--accent);
+  line-height: 1.5;
+}
+.trade-note.show {
+  display: block;
+}
+
+.mini-calendar-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.mini-calendar-card:hover {
+  border-color: rgba(139,92,246,0.3);
+  box-shadow: 0 4px 16px rgba(139,92,246,0.08);
+}
+.mini-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+.mini-cal-header .mini-cal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mini-cal-header .mini-cal-title svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--accent);
+}
+.mini-cal-header .mini-cal-link {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 32px;
+}
+.mini-cal-header .mini-cal-link:hover {
+  color: var(--accent2);
+  transform: translateX(2px);
+}
+.mini-cal-header .mini-cal-link svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+.mini-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.mini-cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  cursor: default;
+  min-height: 36px;
+}
+.mini-cal-day .day-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 6px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
+}
+.mini-cal-day .day-number {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.mini-cal-day .day-pnl-small {
+  font-family: 'Inter', sans-serif;
+  font-size: 6px;
+  font-weight: 500;
+  line-height: 1;
+  margin-top: 1px;
+}
+.mini-cal-day .day-pnl-small.positive {
+  color: var(--green);
+}
+.mini-cal-day .day-pnl-small.negative {
+  color: var(--red);
+}
+.mini-cal-day.win {
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(34,197,94,0.2);
+}
+.mini-cal-day.win:hover {
+  background: rgba(34,197,94,0.2);
+  border-color: rgba(34,197,94,0.35);
+  transform: scale(1.05);
+  box-shadow: 0 2px 12px rgba(34,197,94,0.15);
+}
+.mini-cal-day.win .day-number {
+  color: var(--green);
+}
+.mini-cal-day.loss {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.2);
+}
+.mini-cal-day.loss:hover {
+  background: rgba(239,68,68,0.2);
+  border-color: rgba(239,68,68,0.35);
+  transform: scale(1.05);
+  box-shadow: 0 2px 12px rgba(239,68,68,0.15);
+}
+.mini-cal-day.loss .day-number {
+  color: var(--red);
+}
+.mini-cal-day.empty-day {
+  background: var(--surface2);
+  border-color: var(--border);
+  opacity: 0.5;
+}
+.mini-cal-day.empty-day:hover {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+.mini-cal-day.today {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(139,92,246,0.2);
+}
+.mini-cal-day.today .day-number {
+  color: var(--accent);
+}
+body.light-theme .mini-cal-day.win {
+  background: rgba(16,185,129,0.08);
+  border-color: rgba(16,185,129,0.15);
+}
+body.light-theme .mini-cal-day.win:hover {
+  background: rgba(16,185,129,0.16);
+}
+body.light-theme .mini-cal-day.loss {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.15);
+}
+body.light-theme .mini-cal-day.loss:hover {
+  background: rgba(239,68,68,0.16);
+}
+
+.dashboard-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.strategy-tags-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.strategy-tags-card:hover {
+  border-color: rgba(139,92,246,0.3);
+}
+.strategy-tags-title {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  font-family: 'DM Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.strategy-tags-title svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--accent2);
+}
+.strategy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.25rem 0.7rem;
+  margin: 0.2rem;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  transition: all 0.2s;
+}
+.strategy-pill:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.pill-positive { border-left: 2px solid var(--green); }
+.pill-negative { border-left: 2px solid var(--red); }
+.pill-neutral { border-left: 2px solid var(--accent); }
+
+.best-worst {
+  margin-top: 0.75rem;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.best-worst svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--accent2);
+  stroke-width: 2;
+}
+.best-worst .bw-count {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.trade-note-indicator svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+}
+.trade-note-indicator:hover svg {
+  stroke: var(--accent);
+}
+
+.chart-wrap canvas {
+  transition: opacity 0.3s ease;
+}
+.chart-wrap canvas.chart-ready {
+  opacity: 1;
+}
+
+/* ============================================================
+   MOBIL RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .trade-row {
+    grid-template-columns: 24px 65px 40px 80px 1fr 60px 70px 20px;
+    gap: 0.3rem;
+    padding: 0.5rem 0.6rem;
+  }
+  .trade-strategy { font-size: 8px; white-space: normal; }
+  .trade-symbol { font-size: 0.75rem; }
+  .trade-pnl { font-size: 0.7rem; }
+  .dashboard-grid-2col {
+    grid-template-columns: 1fr;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .trade-row {
+    grid-template-columns: 20px 55px 35px 70px 1fr 50px 60px 18px;
+    gap: 0.2rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  .trade-symbol { font-size: 0.65rem; }
+  .trade-pnl { font-size: 0.65rem; }
+  .trade-direction { font-size: 8px; }
+  .trade-date { font-size: 0.55rem; }
+  .trade-strategy { font-size: 7px; }
+  .trade-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 8px;
+  }
+  .trade-note-indicator svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .date-filter-group { 
+    width: 100%; 
+    justify-content: stretch; 
+  }
+  .date-filter-option { 
+    flex: 1; 
+    text-align: center; 
+    padding: 0.2rem 0.4rem;
+    font-size: 10px;
+    min-height: 28px;
+  }
+  
+  .mini-cal-day {
+    min-height: 30px;
+    padding: 3px 1px;
+  }
+  .mini-cal-day .day-number {
+    font-size: 9px;
+  }
+  .mini-cal-day .day-name {
+    font-size: 5px;
+  }
+  
+  .header-actions {
+    gap: 0.3rem;
+    width: 100%;
+  }
+  .export-btn {
+    font-size: 10px;
+    padding: 0.2rem 0.6rem;
+    min-height: 28px;
+  }
+  .export-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .add-trade-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .add-trade-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .page-header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+  .stat-card {
+    padding: 0.5rem 0.6rem;
+  }
+  .stat-card .stat-value {
+    font-size: 1.1rem;
+  }
+  .stat-card .stat-label {
+    font-size: 8px;
+  }
+  
+  .kpi-bar {
+    padding: 0.4rem 0.6rem;
+    gap: 0.3rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .kpi-item {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3rem;
+    padding-right: 0;
+    width: 100%;
+  }
+  .kpi-item:last-child {
+    border-bottom: none;
+  }
+  
+  .chart-card {
+    padding: 0.5rem 0.6rem;
+  }
+  .chart-wrap {
+    height: 160px;
+  }
+  .chart-wrap--tall { height: 180px; }
+  .chart-wrap--doughnut { height: 160px; }
+  
+  .charts-top-grid,
+  .charts-bottom-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .dashboard-grid-2col {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .trade-row {
+    grid-template-columns: 18px 45px 30px 55px 1fr 40px 45px 16px;
+    gap: 0.15rem;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.6rem;
+    border-radius: 6px;
+  }
+  .trade-symbol { font-size: 0.55rem; }
+  .trade-pnl { font-size: 0.55rem; }
+  .trade-direction { font-size: 7px; }
+  .trade-date { font-size: 0.45rem; }
+  .trade-strategy { font-size: 6px; }
+  .trade-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 7px;
+  }
+  .trade-bar-container { height: 2px; }
+  .trade-note-indicator svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem;
+  }
+  .stat-card {
+    padding: 0.4rem 0.5rem;
+  }
+  .stat-card .stat-value {
+    font-size: 0.95rem;
+  }
+  .stat-card .stat-label {
+    font-size: 7px;
+  }
+  
+  .date-filter-option {
+    font-size: 9px;
+    padding: 0.15rem 0.3rem;
+    min-height: 24px;
+  }
+  
+  .mini-cal-day {
+    min-height: 24px;
+    padding: 2px 1px;
+  }
+  .mini-cal-day .day-number {
+    font-size: 8px;
+  }
+  .mini-cal-day .day-name {
+    font-size: 4px;
+  }
+  .mini-cal-day .day-pnl-small {
+    font-size: 4px;
+  }
+  
+  .mini-cal-header .mini-cal-title {
+    font-size: 0.65rem;
+  }
+  .mini-cal-header .mini-cal-link {
+    font-size: 8px;
+    min-height: 28px;
+  }
+  
+  .export-btn {
+    font-size: 9px;
+    padding: 0.15rem 0.4rem;
+    min-height: 24px;
+  }
+  .export-btn svg {
+    width: 10px;
+    height: 10px;
+  }
+  .add-trade-btn {
+    width: 26px;
+    height: 26px;
+  }
+  .add-trade-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .page-header h1 {
+    font-size: 1.1rem;
+  }
+  .welcome-msg {
+    font-size: 0.7rem;
+  }
+  
+  .chart-wrap {
+    height: 140px;
+  }
+  .chart-wrap--tall { height: 160px; }
+  .chart-wrap--doughnut { height: 140px; }
+  
+  .strategy-pill {
+    font-size: 9px;
+    padding: 0.15rem 0.5rem;
+  }
+  
+  .goal-modal {
+    max-width: 96vw;
+  }
+  .goal-modal-header h3 {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .trade-row {
+    grid-template-columns: 14px 35px 24px 40px 1fr 30px 34px 12px;
+    gap: 0.1rem;
+    padding: 0.25rem 0.3rem;
+    font-size: 0.5rem;
+  }
+  .trade-symbol { font-size: 0.45rem; }
+  .trade-pnl { font-size: 0.45rem; }
+  .trade-direction { font-size: 6px; }
+  .trade-date { font-size: 0.4rem; }
+  .trade-strategy { font-size: 5px; }
+  .trade-icon {
+    width: 12px;
+    height: 12px;
+    font-size: 6px;
+  }
+  .trade-note-indicator svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.2rem;
+  }
+  .stat-card {
+    padding: 0.3rem 0.4rem;
+  }
+  .stat-card .stat-value {
+    font-size: 0.8rem;
+  }
+  .stat-card .stat-label {
+    font-size: 6px;
+  }
+  .stat-card .stat-trend {
+    font-size: 6px;
+  }
+  
+  .date-filter-option {
+    font-size: 8px;
+    padding: 0.1rem 0.2rem;
+  }
+  
+  .mini-cal-day {
+    min-height: 20px;
+    padding: 1px;
+  }
+  .mini-cal-day .day-number {
+    font-size: 7px;
+  }
+  .mini-cal-day .day-name {
+    font-size: 3px;
+  }
+  
+  .kpi-label {
+    font-size: 7px;
+  }
+  .kpi-value {
+    font-size: 0.7rem;
+  }
+  
+  .page-header h1 {
+    font-size: 1rem;
+  }
+  
+  .chart-wrap {
+    height: 120px;
+  }
+  .chart-wrap--tall { height: 140px; }
+  .chart-wrap--doughnut { height: 120px; }
+}
+
+@media (max-width: 767px) {
+  .date-filter-option,
+  .export-btn,
+  .add-trade-btn,
+  .goal-edit-btn,
+  .mini-cal-header .mini-cal-link,
+  .strategy-pill,
+  .trade-note-indicator {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .date-filter-option {
+    min-height: 32px;
+  }
+  .export-btn {
+    min-height: 32px;
+  }
+  .add-trade-btn {
+    min-height: 36px;
+    min-width: 36px;
+  }
+  .trade-note-indicator {
+    min-height: 32px;
+    min-width: 32px;
+  }
+}

@@ -1,0 +1,206 @@
+<!-- ============================================================
+     QUICK ADD MODAL - HIZLI İŞLEM EKLEME
+     Tüm add-trade özellikleri burada - SORUNSUZ ÇALIŞIR
+     ============================================================ -->
+
+<!-- FAB -->
+<button class="quick-add-fab" id="quick-add-fab" aria-label="Hızlı İşlem Ekle" title="Hızlı İşlem Ekle">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<!-- MODAL -->
+<div class="quick-add-overlay" id="quick-add-overlay">
+  <div class="quick-add-modal">
+    
+    <!-- HEADER -->
+    <div class="quick-add-header">
+      <h2>📝 Hızlı İşlem Ekle</h2>
+      <button class="close-btn" id="quick-add-close">✕</button>
+    </div>
+    
+    <!-- BODY -->
+    <div class="quick-add-body">
+      
+      <!-- Hata mesajı -->
+      <div class="quick-add-error" id="quick-add-error"></div>
+      
+      <!-- Enstrüman Tipi -->
+      <div class="quick-add-field">
+        <label>Enstrüman Tipi *</label>
+        <div class="quick-add-instrument-grid" id="quick-instrument-grid">
+          <button class="quick-add-instrument-btn active" data-instrument="forex" data-multiplier="100000">
+            Forex
+            <span class="inst-label">100.000</span>
+          </button>
+          <button class="quick-add-instrument-btn" data-instrument="gold" data-multiplier="100">
+            Altın
+            <span class="inst-label">100</span>
+          </button>
+          <button class="quick-add-instrument-btn" data-instrument="index" data-multiplier="10">
+            Endeks
+            <span class="inst-label">10</span>
+          </button>
+          <button class="quick-add-instrument-btn" data-instrument="crypto" data-multiplier="1">
+            Kripto
+            <span class="inst-label">1</span>
+          </button>
+          <button class="quick-add-instrument-btn" data-instrument="other" data-multiplier="1">
+            Diğer
+            <span class="inst-label">Manuel</span>
+          </button>
+        </div>
+        <div id="quick-custom-multiplier-wrap" style="display:none;margin-top:8px;">
+          <input type="text" inputmode="decimal" id="quick-custom-multiplier" placeholder="Çarpan (örn: 1000)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;">
+        </div>
+      </div>
+      
+      <!-- Sembol + Lot -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Sembol *</label>
+          <input type="text" id="quick-symbol" placeholder="EURUSD, BTCUSDT..." style="text-transform:uppercase;" autofocus>
+        </div>
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Lot *</label>
+          <div class="quick-add-lot-wrap">
+            <input type="text" inputmode="decimal" id="quick-lot" placeholder="0.10" value="1.00">
+            <div class="lot-presets">
+              <button class="lot-preset" data-lot="0.01">0.01</button>
+              <button class="lot-preset" data-lot="0.10">0.10</button>
+              <button class="lot-preset active" data-lot="1.00">1.00</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Yön (Buy/Sell) -->
+      <div class="quick-add-field">
+        <label>Yön *</label>
+        <div class="quick-add-side-toggle">
+          <button class="quick-add-side-btn active-buy" data-side="BUY" id="quick-side-buy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+            <span>Buy ↑</span>
+          </button>
+          <button class="quick-add-side-btn" data-side="SELL" id="quick-side-sell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/>
+              <polyline points="16 17 22 17 22 11"/>
+            </svg>
+            <span>Sell ↓</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Giriş + Çıkış Fiyatları -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Giriş Fiyatı *</label>
+          <input type="text" inputmode="decimal" id="quick-entry" placeholder="1.08500">
+        </div>
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Çıkış Fiyatı</label>
+          <input type="text" inputmode="decimal" id="quick-exit" placeholder="1.09000">
+        </div>
+      </div>
+      
+      <!-- SL + TP -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Stop Loss</label>
+          <input type="text" inputmode="decimal" id="quick-sl" placeholder="1.08000">
+        </div>
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Take Profit</label>
+          <input type="text" inputmode="decimal" id="quick-tp" placeholder="1.09500">
+        </div>
+      </div>
+      
+      <!-- P&L (Okunabilir) + R/R -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>P&L *</label>
+          <div class="quick-add-pnl-wrap">
+            <span class="currency-symbol">$</span>
+            <input type="text" inputmode="decimal" id="quick-pnl" placeholder="0.00">
+            <span class="pnl-suffix">USD</span>
+          </div>
+        </div>
+        <div class="quick-add-field" style="margin-bottom:0;">
+          <label>Risk / Reward</label>
+          <div class="quick-add-rr-wrap">
+            <span class="rr-label">1 :</span>
+            <input type="text" inputmode="decimal" id="quick-rr" placeholder="2" value="2">
+            <div class="rr-presets">
+              <button class="rr-preset" data-rr="0.5">0.5</button>
+              <button class="rr-preset active" data-rr="2">2</button>
+              <button class="rr-preset" data-rr="3">3</button>
+              <button class="rr-preset" data-rr="5">5</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Ön İzleme -->
+      <div class="quick-add-preview" id="quick-preview">
+        <div class="preview-item" id="quick-preview-pnl">
+          <span class="p-label">Tahmini K/Z</span>
+          <span class="p-val" id="quick-preview-pnl-val">—</span>
+        </div>
+        <div class="preview-divider" id="quick-preview-divider"></div>
+        <div class="preview-item" id="quick-preview-rr">
+          <span class="p-label">Risk / Reward</span>
+          <span class="p-val accent" id="quick-preview-rr-val">—</span>
+        </div>
+      </div>
+      
+      <!-- Strateji -->
+      <div class="quick-add-field">
+        <label>Strateji</label>
+        <div class="quick-add-strategy-wrap">
+          <select id="quick-strategy">
+            <option value="">— Strateji Yok —</option>
+          </select>
+          <button class="create-strategy-btn" id="quick-create-strategy">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="7" y1="1" x2="7" y2="13"/>
+              <line x1="1" y1="7" x2="13" y2="7"/>
+            </svg>
+            <span>Yeni</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Notlar -->
+      <div class="quick-add-field quick-add-notes">
+        <label>Notlar</label>
+        <textarea id="quick-notes" placeholder="Strateji notları, gözlemler, psikolojik durum…" rows="2"></textarea>
+      </div>
+      
+      <!-- Tarih -->
+      <div class="quick-add-field" style="margin-bottom:0;">
+        <label>Tarih</label>
+        <input type="date" id="quick-date">
+      </div>
+      
+      <!-- Loading -->
+      <div class="quick-add-loading" id="quick-add-loading">
+        <div class="spinner"></div>
+        <span>İşlem kaydediliyor...</span>
+      </div>
+      
+    </div>
+    
+    <!-- FOOTER -->
+    <div class="quick-add-footer">
+      <button class="btn-cancel" id="quick-add-cancel">İptal</button>
+      <button class="btn-save" id="quick-add-save">💾 Kaydet</button>
+    </div>
+    
+  </div>
+</div>

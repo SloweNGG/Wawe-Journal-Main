@@ -1,0 +1,20 @@
+# Wawe Journal - Robots.txt
+# https://wawejournal.com
+
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /settings/
+Disallow: /login.html
+Disallow: /register.html
+Disallow: /forgot-password.html
+Disallow: /update-password.html
+Disallow: /api/
+
+Sitemap: https://wawejournal.com/sitemap.xml
+
+User-agent: AhrefsBot
+Crawl-delay: 5
+
+User-agent: SemrushBot
+Crawl-delay: 5

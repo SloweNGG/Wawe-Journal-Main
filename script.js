@@ -461,16 +461,25 @@ document.addEventListener('DOMContentLoaded', () => {
 // HESAPLAMA FONKSİYONLARI
 // ============================================================
 
+// ⭐ DÜZELTİLMİŞ calcPnL() - exitNum === 0 kontrolü kaldırıldı!
 function calcPnL(entry, exit, lot, direction, instrument, customMultiplier) {
   const entryNum = parseFloat(entry);
   const exitNum = parseFloat(exit);
   const lotNum = parseFloat(lot);
   
-  if (isNaN(entryNum) || isNaN(exitNum) || isNaN(lotNum) || exitNum === 0) return 0;
-  if (!entryNum || !exitNum || !lotNum) return 0;
+  // Eğer exit null, undefined veya boş string ise 0 döndür (açık işlem)
+  if (exit === null || exit === undefined || exit === '') return 0;
   
+  // NaN kontrolleri
+  if (isNaN(entryNum) || isNaN(exitNum) || isNaN(lotNum)) return 0;
+  
+  // Entry veya lot 0 ise 0 döndür
+  if (entryNum === 0 || lotNum === 0) return 0;
+  
+  // Multiplier ve direction hesapla
   const multiplier = customMultiplier ?? INSTRUMENT_MULTIPLIERS[instrument] ?? 1;
   const dir = (direction?.toUpperCase() === 'LONG' || direction?.toUpperCase() === 'BUY') ? 1 : -1;
+  
   return dir * (exitNum - entryNum) * lotNum * multiplier;
 }
 
@@ -2416,19 +2425,90 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updateNotificationUI();
   });
   
-  //  Periyodik bildirim kontrolü (her 5 dakika) - SESSİZ
+  // Periyodik bildirim kontrolü (her 5 dakika) - SESSİZ
   setInterval(() => {
     window.notificationManager.checkAll();
   }, 5 * 60 * 1000);
   
-  //  İlk kontrol (3 saniye sonra) - SESSİZ
+  // İlk kontrol (3 saniye sonra) - SESSİZ
   setTimeout(() => {
     window.notificationManager.checkAll();
   }, 3000);
 });
 
-//  Dışa aktarılan fonksiyonlar
+
+// Dışa aktarılan fonksiyonlar
 window.NotificationManager = NotificationManager;
 window.NOTIFICATION_TYPES = NOTIFICATION_TYPES;
 
 console.log('✅ Wawe Journal script loaded! (Bildirim sistemi aktif)');
+
+
+// ============================================================
+// ⭐ GLOBAL FONKSİYONLARI window'a ATA - dashboard.js için
+// ============================================================
+window.requireAuth = requireAuth;
+window.requireAuthSilent = requireAuthSilent;
+window.requireAdmin = requireAdmin;
+window.isAdmin = isAdmin;
+window.calcPnL = calcPnL;
+window.calcRR = calcRR;
+window.formatCurrency = formatCurrency;
+window.formatCurrencyPDF = formatCurrencyPDF;
+window.showToast = showToast;
+window.getUserPlan = getUserPlan;
+window.getUserPlanSilent = getUserPlanSilent;
+window.getStrategiesMap = getStrategiesMap;
+window.sanitizeHTML = sanitizeHTML;
+window.escapeHtml = escapeHtml;
+window.getCurrencySymbol = getCurrencySymbol;
+window.setCurrencySymbol = setCurrencySymbol;
+window.applyDecimalFix = applyDecimalFix;
+window.selectPayMethod = selectPayMethod;
+window.checkOvertrade = checkOvertrade;
+window.renderOvertradeWarning = renderOvertradeWarning;
+window.dismissOvertradeWarning = dismissOvertradeWarning;
+window.checkAndRenderOvertrade = checkAndRenderOvertrade;
+window.loadOvertradeSettingsUI = loadOvertradeSettingsUI;
+window.getOvertradeSettings = getOvertradeSettings;
+window.saveOvertradeSettings = saveOvertradeSettings;
+window.clearDismissedOvertradeWarnings = clearDismissedOvertradeWarnings;
+window.isOvertradeWarningDismissed = isOvertradeWarningDismissed;
+window.dismissNotification = dismissNotification;
+window.clearAllNotifications = clearAllNotifications;
+window.toggleNotificationPanel = toggleNotificationPanel;
+window.updateNotificationUI = updateNotificationUI;
+window.debounce = debounce;
+window.throttle = throttle;
+window.upgradeToPremium = upgradeToPremium;
+window.cancelPremium = cancelPremium;
+window.isPremium = isPremium;
+window.hasFeature = hasFeature;
+window.createNowPaymentInvoice = createNowPaymentInvoice;
+window.loadReferencesToPage = loadReferencesToPage;
+window.uploadReferenceImage = uploadReferenceImage;
+window.fetchPremiumNews = fetchPremiumNews;
+window.getSystemSettings = getSystemSettings;
+window.getThemeSettings = getThemeSettings;
+window.saveThemeSettings = saveThemeSettings;
+window.applyThemeSettings = applyThemeSettings;
+window.loadFontSize = loadFontSize;
+window.applyFontSize = applyFontSize;
+window.loadThemeCustomization = loadThemeCustomization;
+window.canCustomizeTheme = canCustomizeTheme;
+window.getUserStrategies = getUserStrategies;
+window.clearStrategiesCache = clearStrategiesCache;
+window.addStrategy = addStrategy;
+window.deleteStrategy = deleteStrategy;
+window.updateStrategy = updateStrategy;
+window.calculateStrategyPerformance = calculateStrategyPerformance;
+window.getInstrumentMultiplier = getInstrumentMultiplier;
+window.loadPlatformStats = loadPlatformStats;
+window.NotificationManager = NotificationManager;
+window.NOTIFICATION_TYPES = NOTIFICATION_TYPES;
+window.sb = sb;
+window.WW_CONFIG = WW_CONFIG;
+
+console.log('✅ Tüm global fonksiyonlar window\'a atandı!');
+console.log('📦 requireAuth:', typeof window.requireAuth === 'function' ? '✅' : '❌');
+console.log('🔑 sb:', window.sb ? '✅' : '❌');

@@ -1,0 +1,16 @@
+{
+  "name": "Wawe Journal",
+  "short_name": "Wawe",
+  "description": "Professional Trading Journal for Traders",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#7c6dfa",
+  "icons": [
+    {
+      "src": "resim.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ]
+}
