@@ -17,6 +17,9 @@
 //    sırası ve bayrak güncellemesi senkronize edildi.
 // 4) data-notes attribute'una konan metin tırnak karakterleri yüzünden
 //    HTML attribute'unu bozabiliyordu -> attribute-safe escape eklendi.
+// 5) ⭐ TOOLTIP DÜZELTİLDİ - interaction ve hover ayarları eklendi
+// 6) ⭐ TOOLTIP ANİMASYONU EKLENDİ - update('none') kaldırıldı
+// 7) ⭐ animations.opacity eklendi - tooltip opacity sorunu çözüldü
 // ============================================================
 
 
@@ -716,7 +719,7 @@
       charts['chart-cumulative'].data.labels = cumLabels;
       charts['chart-cumulative'].data.datasets[0].data = cumData;
       charts['chart-cumulative'].data.datasets[0].pointBackgroundColor = cumColors;
-      charts['chart-cumulative'].update('none');
+      charts['chart-cumulative'].update();
     }
 
     var wins = 0, losses = 0, open = 0;
@@ -727,7 +730,7 @@
     });
     if (charts['chart-winloss']) {
       charts['chart-winloss'].data.datasets[0].data = [wins, losses, open];
-      charts['chart-winloss'].update('none');
+      charts['chart-winloss'].update();
     }
 
     var days = {};
@@ -749,7 +752,7 @@
       charts['chart-daily'].data.labels = dailyLabels;
       charts['chart-daily'].data.datasets[0].data = dailyData;
       charts['chart-daily'].data.datasets[0].backgroundColor = dailyData.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'; });
-      charts['chart-daily'].update('none');
+      charts['chart-daily'].update();
     }
 
     var symbolMap = {};
@@ -761,7 +764,7 @@
       charts['chart-symbol'].data.labels = sortedSymbols.map(function(s) { return s[0]; });
       charts['chart-symbol'].data.datasets[0].data = sortedSymbols.map(function(s) { return s[1]; });
       charts['chart-symbol'].data.datasets[0].backgroundColor = sortedSymbols.map(function(s) { return s[1] >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'; });
-      charts['chart-symbol'].update('none');
+      charts['chart-symbol'].update();
     }
 
     var longs = 0, shorts = 0;
@@ -771,7 +774,7 @@
     });
     if (charts['chart-direction']) {
       charts['chart-direction'].data.datasets[0].data = [longs, shorts];
-      charts['chart-direction'].update('none');
+      charts['chart-direction'].update();
     }
 
     var firstPnL = cumData[0] || 0;
@@ -784,6 +787,7 @@
     }
   }
 
+  // ⭐ TOOLTIP DÜZELTİLDİ - Chart oluşturma fonksiyonu
   function renderCharts(trades) {
     if (!isPageVisible) return;
     if (!trades || !trades.length) {
@@ -805,6 +809,36 @@
 
       var isMobile = window.innerWidth < 768;
       var isTablet = window.innerWidth < 1024;
+
+      // ⭐ TOOLTIP KONFIGÜRASYONU - animation ve animations.opacity eklendi
+      var tooltipConfig = {
+        enabled: true,
+        mode: 'index',
+        intersect: false,
+        animation: { duration: 200, easing: 'easeOutQuart' },
+        animations: {
+          opacity: {
+            duration: 200,
+            easing: 'easeOutQuart'
+          }
+        },
+        backgroundColor: 'rgba(10,10,15,0.92)',
+        borderColor: 'rgba(139,92,246,0.25)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { family: "'DM Sans', sans-serif", size: 12, weight: '600' },
+        bodyFont: { family: "'DM Mono', monospace", size: 11 },
+        bodySpacing: 4,
+        titleColor: '#e8e8f0',
+        bodyColor: '#b8b8c8'
+      };
+
+      // ⭐ Ortak interaction ayarları
+      var interactionConfig = {
+        mode: 'index',
+        intersect: false,
+      };
 
       // Cumulative Chart
       var cum = 0;
@@ -837,12 +871,10 @@
       else maxTicks = Math.min(10, totalPoints);
 
       var pointRadius = totalPoints > 50 ? 0 : (totalPoints > 20 ? 1.5 : 3);
-      var pointHoverRadius = totalPoints > 50 ? 3 : (totalPoints > 20 ? 4 : 5);
+      var pointHoverRadius = totalPoints > 50 ? 4 : (totalPoints > 20 ? 5 : 6);
 
       var ctx1 = safeEl('chart-cumulative');
       if (ctx1 && typeof Chart !== 'undefined') {
-        // Guard: Chart.js zaten bu canvas'ta bir instance görüyorsa
-        // (örn. önceki destroy tam işlenmediyse) onu da temizle.
         var existing1 = Chart.getChart ? Chart.getChart(ctx1) : null;
         if (existing1) { try { existing1.destroy(); } catch (e) {} }
 
@@ -859,19 +891,19 @@
               pointRadius: pointRadius,
               pointHoverRadius: pointHoverRadius,
               pointBackgroundColor: cumColors,
-              borderWidth: 2
+              borderWidth: 2,
+              hoverBorderWidth: 3
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 300 : 500 },
-            interaction: { mode: 'index', intersect: false },
+            interaction: interactionConfig,
             plugins: {
               legend: { display: false },
               tooltip: {
-                titleFont: { size: 12, weight: 'bold' },
-                bodyFont: { size: 11 },
+                ...tooltipConfig,
                 callbacks: {
                   title: function(items) {
                     var idx = items[0].dataIndex;
@@ -889,8 +921,13 @@
               }
             },
             scales: {
-              x: { ticks: { font: { size: isMobile ? 9 : 10, weight: '500' }, maxRotation: 0, autoSkip: true, maxTicksLimit: maxTicks }, grid: { display: !isMobile } },
-              y: { ticks: { font: { size: isMobile ? 9 : 11, weight: '500' }, maxTicksLimit: isMobile ? 4 : 6, callback: function(v) { return formatCurrency(v); } } }
+              x: { 
+                ticks: { font: { size: isMobile ? 9 : 10, weight: '500' }, maxRotation: 0, autoSkip: true, maxTicksLimit: maxTicks }, 
+                grid: { display: !isMobile } 
+              },
+              y: { 
+                ticks: { font: { size: isMobile ? 9 : 11, weight: '500' }, maxTicksLimit: isMobile ? 4 : 6, callback: function(v) { return formatCurrency(v); } } 
+              }
             }
           }
         });
@@ -912,15 +949,40 @@
           type: 'doughnut',
           data: {
             labels: ['Kazanan', 'Kaybeden', 'Açık'],
-            datasets: [{ data: [wins, losses, open], backgroundColor: ['#22c55e', '#ef4444', '#64748b'], borderWidth: 0, cutout: '68%' }]
+            datasets: [{ 
+              data: [wins, losses, open], 
+              backgroundColor: ['#22c55e', '#ef4444', '#64748b'], 
+              borderWidth: 2,
+              borderColor: 'rgba(10,10,15,0.5)',
+              hoverOffset: 8,
+              cutout: '68%' 
+            }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 200 : 400 },
+            interaction: interactionConfig,
             plugins: {
-              legend: { position: 'bottom', labels: { font: { size: 11, weight: '500' }, boxWidth: 12, padding: 10 } },
-              tooltip: { titleFont: { size: 12, weight: 'bold' }, bodyFont: { size: 11 } }
+              legend: { 
+                position: 'bottom', 
+                labels: { 
+                  font: { size: 11, weight: '500' }, 
+                  boxWidth: 12, 
+                  padding: 10,
+                  color: document.body.classList.contains('light-theme') ? '#1e293b' : '#e8e8f0'
+                } 
+              },
+              tooltip: {
+                ...tooltipConfig,
+                callbacks: {
+                  label: function(item) {
+                    var total = item.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                    var percent = total > 0 ? ((item.raw / total) * 100).toFixed(1) : 0;
+                    return item.label + ': ' + item.raw + ' (' + percent + '%)';
+                  }
+                }
+              }
             }
           }
         });
@@ -954,6 +1016,9 @@
             datasets: [{
               data: dailyData,
               backgroundColor: dailyData.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'; }),
+              borderColor: dailyData.map(function(v) { return v >= 0 ? '#22c55e' : '#ef4444'; }),
+              borderWidth: 1,
+              hoverBackgroundColor: dailyData.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)'; }),
               borderRadius: 4
             }]
           },
@@ -961,10 +1026,27 @@
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 200 : 400 },
-            plugins: { legend: { display: false }, tooltip: { titleFont: { size: 12, weight: 'bold' }, bodyFont: { size: 11 } } },
+            interaction: interactionConfig,
+            plugins: { 
+              legend: { display: false }, 
+              tooltip: {
+                ...tooltipConfig,
+                callbacks: {
+                  label: function(item) {
+                    var val = item.raw;
+                    var sign = val >= 0 ? '+' : '';
+                    return 'K/Z: ' + sign + formatCurrency(val);
+                  }
+                }
+              }
+            },
             scales: {
-              x: { ticks: { font: { size: 10, weight: '500' }, maxRotation: 45, autoSkip: true, maxTicksLimit: 6 } },
-              y: { ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } } }
+              x: { 
+                ticks: { font: { size: 10, weight: '500' }, maxRotation: 45, autoSkip: true, maxTicksLimit: 6 } 
+              },
+              y: { 
+                ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } } 
+              }
             }
           }
         });
@@ -988,6 +1070,9 @@
             datasets: [{
               data: sortedSymbols.map(function(s) { return s[1]; }),
               backgroundColor: sortedSymbols.map(function(s) { return s[1] >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'; }),
+              borderColor: sortedSymbols.map(function(s) { return s[1] >= 0 ? '#22c55e' : '#ef4444'; }),
+              borderWidth: 1,
+              hoverBackgroundColor: sortedSymbols.map(function(s) { return s[1] >= 0 ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)'; }),
               borderRadius: 4
             }]
           },
@@ -996,10 +1081,27 @@
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 200 : 400 },
-            plugins: { legend: { display: false }, tooltip: { titleFont: { size: 12, weight: 'bold' }, bodyFont: { size: 11 } } },
+            interaction: interactionConfig,
+            plugins: { 
+              legend: { display: false }, 
+              tooltip: {
+                ...tooltipConfig,
+                callbacks: {
+                  label: function(item) {
+                    var val = item.raw;
+                    var sign = val >= 0 ? '+' : '';
+                    return item.label + ': ' + sign + formatCurrency(val);
+                  }
+                }
+              }
+            },
             scales: {
-              x: { ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } } },
-              y: { ticks: { font: { size: 11, weight: '500' } } }
+              x: { 
+                ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } } 
+              },
+              y: { 
+                ticks: { font: { size: 11, weight: '500' } } 
+              }
             }
           }
         });
@@ -1020,15 +1122,40 @@
           type: 'doughnut',
           data: {
             labels: ['Long', 'Short'],
-            datasets: [{ data: [longs, shorts], backgroundColor: ['#8b5cf6', '#f97316'], borderWidth: 0, cutout: '68%' }]
+            datasets: [{ 
+              data: [longs, shorts], 
+              backgroundColor: ['#8b5cf6', '#f97316'], 
+              borderWidth: 2,
+              borderColor: 'rgba(10,10,15,0.5)',
+              hoverOffset: 8,
+              cutout: '68%' 
+            }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 200 : 400 },
+            interaction: interactionConfig,
             plugins: {
-              legend: { position: 'bottom', labels: { font: { size: 11, weight: '500' }, boxWidth: 12, padding: 10 } },
-              tooltip: { titleFont: { size: 12, weight: 'bold' }, bodyFont: { size: 11 } }
+              legend: { 
+                position: 'bottom', 
+                labels: { 
+                  font: { size: 11, weight: '500' }, 
+                  boxWidth: 12, 
+                  padding: 10,
+                  color: document.body.classList.contains('light-theme') ? '#1e293b' : '#e8e8f0'
+                } 
+              },
+              tooltip: {
+                ...tooltipConfig,
+                callbacks: {
+                  label: function(item) {
+                    var total = item.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                    var percent = total > 0 ? ((item.raw / total) * 100).toFixed(1) : 0;
+                    return item.label + ': ' + item.raw + ' (' + percent + '%)';
+                  }
+                }
+              }
             }
           }
         });
@@ -1534,12 +1661,13 @@
         return;
       }
 
+      // ⭐ DEĞİŞİKLİK BURADA: limit(200) KALDIRILDI
       var { data: recentData, error: recentError } = await sb
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
-        .order('trade_date', { ascending: true })
-        .limit(200);
+        .order('trade_date', { ascending: true });
+        // .limit(200);  // <-- Bu satır artık yok!
 
       if (recentError) {
         showToast('Veriler yüklenemedi: ' + recentError.message, 'error');
@@ -1635,7 +1763,5 @@
     // Dashboard'u başlat (biraz gecikmeli - navbar'ın yüklenmesini bekle)
     setTimeout(initDashboard, 150);
   });
-
-  
 
 })();
