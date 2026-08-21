@@ -3,7 +3,7 @@ pages_build_output_dir = "dist"
 compatibility_date = "2024-01-01"
 
 [env.production.vars]
-VITE_SUPABASE_URL = "https://odasapyhtdopbnlfhwde.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg"
+VITE_SUPABASE_URL = ""
+VITE_SUPABASE_ANON_KEY = ""
 VITE_APP_URL = "https://wawejournal.com"
 VITE_APP_NAME = "Wawe Journal"

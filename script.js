@@ -163,10 +163,6 @@ async function getUserPlanSilent() {
       const expires = new Date(data.plan_expires_at);
       
       if (isNaN(expires.getTime()) || now > expires) {
-        await sb
-          .from('user_profiles')
-          .update({ plan: 'free', plan_expires_at: null })
-          .eq('id', session.user.id);
         return { plan: 'free', features: FEATURES.free };
       }
     }
@@ -422,7 +418,7 @@ async function requireAuthSilent() {
 async function requireAdmin() {
   const user = await requireAuth();
   if (!user) return null;
-  if (user.user_metadata?.role !== 'admin') {
+  if (!isAdmin(user)) {
     window.location.href = 'dashboard.html';
     return null;
   }
@@ -430,7 +426,9 @@ async function requireAdmin() {
 }
 
 function isAdmin(user) {
-  return user?.user_metadata?.role === 'admin';
+  // app_metadata can only be changed with Supabase's server-side admin API.
+  // user_metadata is user-editable and must never authorize an admin action.
+  return user?.app_metadata?.role === 'admin';
 }
 
 const ACTIVE_THROTTLE_MS = 5 * 60 * 1000;
@@ -930,18 +928,10 @@ async function getUserPlan() {
       const expires = new Date(data.plan_expires_at);
       
       if (isNaN(expires.getTime())) {
-        await sb
-          .from('user_profiles')
-          .update({ plan: 'free', plan_expires_at: null })
-          .eq('id', user.id);
         return { plan: 'free', features: FEATURES.free };
       }
       
       if (now > expires) {
-        await sb
-          .from('user_profiles')
-          .update({ plan: 'free', plan_expires_at: null })
-          .eq('id', user.id);
         showToast(i18n.t('premium.expired'), 'info');
         return { plan: 'free', features: FEATURES.free };
       }
@@ -1125,27 +1115,6 @@ async function upgradeToPremium(planType, amount, currency, payMethod) {
   }
 }
 
-async function updateUserPlan(userId, plan, expiresAt) {
-  try {
-    const { error } = await sb
-      .from('user_profiles')
-      .update({
-        plan: plan,
-        plan_expires_at: expiresAt
-      })
-      .eq('id', userId);
-    
-    if (error) {
-      console.error('updateUserPlan hatası:', error);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error('updateUserPlan hatası:', error);
-    return false;
-  }
-}
-
 async function cancelPremium() {
   try {
     const user = await requireAuth();
@@ -1160,22 +1129,9 @@ async function cancelPremium() {
       return true;
     }
     
-    const { error } = await sb
-      .from('user_profiles')
-      .update({ plan: 'free', plan_expires_at: null })
-      .eq('id', user.id);
-    
-    if (error) {
-      console.error('cancelPremium hatası:', error);
-      showToast('Abonelik iptal edilemedi: ' + error.message, 'error');
-      return false;
-    }
-    
-    if (typeof clearStrategiesCache === 'function') {
-      clearStrategiesCache();
-    }
-    
-    showToast('Aboneliğiniz iptal edildi.', 'success');
+    // NOWPayments is a one-time crypto payment. There is no recurring
+    // subscription to cancel, and the browser must never change plan fields.
+    showToast('Otomatik yenileme yok. Premium erişiminiz bitiş tarihine kadar devam eder.', 'info');
     return true;
   } catch (error) {
     console.error('cancelPremium hatası:', error);

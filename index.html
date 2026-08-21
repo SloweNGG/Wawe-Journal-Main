@@ -819,6 +819,35 @@
     </div>
   </section>
 
+  <!-- ⭐ DASHBOARD MOCKUP SHOWCASE (macOS window) -->
+  <div class="mockup-section reveal">
+    <div class="mockup-section-inner">
+      <div class="mockup-glow"></div>
+      <div class="macos-mockup">
+        <div class="macos-mockup-bar">
+          <div class="macos-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="macos-url-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span class="url-text">app.wawejournal.com/dashboard</span>
+          </div>
+        </div>
+        <div class="macos-mockup-screen">
+          <div class="mockup-skeleton" id="mockup-skeleton">
+            <div class="spinner"></div>
+          </div>
+          <img id="dashboard-mockup-img" alt="Wawe Journal Dashboard" style="display:none;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="glow-line"></div>
 
   <!-- ⭐ PSYCHOLOGY QUOTE -->
@@ -1119,7 +1148,7 @@
           if (settings.maintenance_mode) {
             var { data: { session } } = await sb.auth.getSession();
             if (session) {
-              var role = session.user?.user_metadata?.role;
+              var role = session.user?.app_metadata?.role;
               if (role === 'admin') return;
             }
             window.location.href = 'maintenance.html';
@@ -1483,6 +1512,44 @@
       });
     }, { threshold: 0.08 });
     document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+
+    // ============================================================
+    // ⭐ DASHBOARD MOCKUP IMAGE
+    // (Şimdilik placeholder gösteriyor. Admin panel adımında
+    //  getSystemSettings() içine 'dashboard_mockup_url' alanı
+    //  eklenince, admin panelden yüklenen görsel otomatik burada
+    //  görünecek — başka hiçbir yeri değiştirmemize gerek yok.)
+    // ============================================================
+    (function() {
+      var DEFAULT_MOCKUP_URL = 'https://placehold.co/1600x1000/111118/7c6dfa?text=Dashboard+Preview';
+
+      function loadDashboardMockupImage() {
+        var img = document.getElementById('dashboard-mockup-img');
+        var skeleton = document.getElementById('mockup-skeleton');
+        if (!img) return;
+
+        var url = DEFAULT_MOCKUP_URL;
+        try {
+          var settings = getSystemSettings();
+          if (settings && settings.dashboard_mockup_url) {
+            url = settings.dashboard_mockup_url;
+          }
+        } catch (e) {}
+
+        img.onload = function() {
+          img.style.display = 'block';
+          if (skeleton) skeleton.style.display = 'none';
+        };
+        img.onerror = function() {
+          if (img.src !== DEFAULT_MOCKUP_URL) {
+            img.src = DEFAULT_MOCKUP_URL;
+          }
+        };
+        img.src = url;
+      }
+
+      loadDashboardMockupImage();
+    })();
 
     // ============================================================
     // STATS LOAD

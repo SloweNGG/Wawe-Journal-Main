@@ -10,10 +10,10 @@
   <link rel="stylesheet" href="/components/navbar.css" />
   
   <!-- DASHBOARD CSS -->
-  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="interface/dashboard/css/dashboard.css" />
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
-  <link rel="stylesheet" href="css/quick-add.css" />
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css" />
   
   <!-- LUCIDE ICONS -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -21,11 +21,16 @@
   <script>
     (function() {
       var savedTheme = localStorage.getItem('ww_theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-      } else {
-        document.body.classList.remove('light-theme');
-      }
+      var isLight = savedTheme === 'light';
+      document.documentElement.classList.toggle('light-theme-pending', isLight);
+      document.addEventListener('DOMContentLoaded', function() {
+        if (isLight) {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+        document.documentElement.classList.remove('light-theme-pending');
+      });
     })();
   </script>
 
@@ -44,6 +49,13 @@
       }
     })();
   </script>
+
+  <style>
+    /* Body henüz light-theme class'ını almadan önceki flash'ı önlemek için */
+    html.light-theme-pending body {
+      background: #f4f4f9;
+    }
+  </style>
 </head>
 <body>
 
@@ -325,11 +337,11 @@
   <script src="/components/navbar.js"></script>
   
   <!-- 5. QUICK ADD (i18n + modal) -->
-  <script src="js/quick-modal-i18n.js"></script>
-  <script src="js/quick-add.js"></script>
+  <script src="interface/quick-add/js/quick-modal-i18n.js"></script>
+  <script src="interface/quick-add/js/quick-add.js"></script>
   
   <!-- 6. ⭐ DASHBOARD JS (charts değişkeni burada tanımlanır) -->
-  <script src="js/dashboard.js"></script>
+  <script src="interface/dashboard/js/dashboard.js"></script>
   
   <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
   <script>

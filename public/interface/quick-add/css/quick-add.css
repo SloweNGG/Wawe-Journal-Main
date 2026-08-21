@@ -1,0 +1,820 @@
+/* ============================================================
+   QUICK ADD MODAL — FAB + MODAL
+   ------------------------------------------------------------
+   Sade / profesyonel yeniden tasarım.
+
+   Tema renkleri (site paletinden):
+     Mor           #7c6dfa
+     Mor Açık      #9b8bfa
+     Koyu Arka Plan #0a0a0f
+     Kart Arka Planı #111118
+     Metin Beyaz   #e8e8f0
+     Yeşil         #22c55e
+     Kırmızı       #ef4444
+
+   Not: Bu değerler global stylesheet'te --accent, --accent2,
+   --surface, --surface2, --border, --border2, --text, --muted,
+   --green, --red olarak tanımlı olmalı. Bu dosya, güvenlik
+   amacıyla kendi scoped fallback'lerini de tanımlar; global
+   değerler eksikse veya uyuşmazsa bile modal doğru renklerde
+   görünür.
+   ============================================================ */
+
+:root {
+  --qa-font-display: 'Syne', sans-serif;
+  --qa-font-body: 'DM Sans', sans-serif;
+  --qa-font-mono: 'DM Mono', monospace;
+  --qa-font-numeric: 'Inter', sans-serif;
+
+  --qa-header-h: 56px;
+  --qa-header-h-mobile: 50px;
+
+  /* Scoped renk fallback'leri — site paletiyle birebir */
+  --qa-accent: var(--accent, #7c6dfa);
+  --qa-accent-light: var(--accent2, #9b8bfa);
+  --qa-accent-tint: rgba(124, 109, 250, 0.08);
+  --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
+  --qa-surface: var(--surface, #111118);
+  --qa-surface2: var(--surface2, #15151d);
+  --qa-border: var(--border, rgba(232, 232, 240, 0.07));
+  --qa-border-strong: var(--border2, rgba(232, 232, 240, 0.14));
+  --qa-text: var(--text, #e8e8f0);
+  --qa-muted: var(--muted, #6f6f80);
+  --qa-green: var(--green, #22c55e);
+  --qa-red: var(--red, #ef4444);
+
+  /* Tutarlı yarıçap ölçeği — üç değer, tüm bileşen bunları kullanır */
+  --qa-r-sm: 8px;
+  --qa-r-md: 12px;
+  --qa-r-lg: 18px;
+}
+
+.quick-add-fab,
+.quick-add-overlay,
+.quick-add-overlay *,
+.quick-add-overlay *::before,
+.quick-add-overlay *::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   FAB
+   ============================================================ */
+.quick-add-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 999;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--qa-surface);
+  border: 1px solid var(--qa-border-strong);
+  color: var(--qa-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.quick-add-fab:hover {
+  border-color: var(--qa-accent);
+  color: var(--qa-accent-light);
+  background: var(--qa-accent-tint);
+}
+.quick-add-fab:active {
+  background: var(--qa-accent-tint-strong);
+}
+.quick-add-fab:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: 3px;
+}
+.quick-add-fab svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 768px) {
+  .quick-add-fab {
+    bottom: 1.25rem;
+    right: 1.25rem;
+    width: 46px;
+    height: 46px;
+  }
+  .quick-add-fab svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ============================================================
+   MODAL OVERLAY
+   ============================================================ */
+.quick-add-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 15, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: qaFadeIn 0.18s ease;
+}
+.quick-add-overlay.active { display: flex; }
+
+@keyframes qaFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================================
+   MODAL CONTAINER
+   Sinyal öğesi: sol kenarda ince bir "durum rayı". Varsayılan
+   mor; JS istenirse .quick-add-modal üzerine .rail-pos /
+   .rail-neg class'ı ekleyerek P&L işaretine göre yeşile/kırmızıya
+   çevirebilir (bkz. .preview-rail aynı mantığı önizleme
+   kutusunda tekrar eder).
+   ============================================================ */
+.quick-add-modal {
+  background: var(--qa-surface);
+  border: 1px solid var(--qa-border);
+  border-left: 3px solid var(--qa-accent);
+  border-radius: var(--qa-r-lg);
+  max-width: 480px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--qa-border-strong) transparent;
+}
+.quick-add-modal::-webkit-scrollbar { width: 4px; }
+.quick-add-modal::-webkit-scrollbar-thumb {
+  background: var(--qa-border-strong);
+  border-radius: 99px;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.quick-add-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--qa-header-h);
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid var(--qa-border);
+  position: sticky;
+  top: 0;
+  background: var(--qa-surface);
+  z-index: 3;
+  border-radius: 0 var(--qa-r-lg) 0 0;
+}
+.quick-add-header h2 {
+  font-family: var(--qa-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--qa-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.quick-add-header .close-btn {
+  background: transparent;
+  border: none;
+  color: var(--qa-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--qa-r-sm);
+  display: flex;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.quick-add-header .close-btn svg { width: 17px; height: 17px; }
+.quick-add-header .close-btn:hover {
+  color: var(--qa-text);
+  background: var(--qa-surface2);
+}
+.quick-add-header .close-btn:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   TABS (varsa — CSV / Toplu Yapıştır sekmeleri)
+   ============================================================ */
+.quick-add-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--qa-border);
+  padding: 0 1.35rem;
+  background: var(--qa-surface);
+  gap: 4px;
+  position: sticky;
+  top: var(--qa-header-h);
+  z-index: 2;
+}
+.quick-tab {
+  background: transparent;
+  border: none;
+  color: var(--qa-muted);
+  font-family: var(--qa-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0.65rem 0.4rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease;
+}
+.quick-tab:hover { color: var(--qa-text); }
+.quick-tab.active {
+  color: var(--qa-accent-light);
+  border-bottom-color: var(--qa-accent);
+}
+.quick-tab:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: -2px;
+}
+.quick-tab-content { display: none; }
+.quick-tab-content.active { display: block; }
+
+/* ============================================================
+   BODY
+   ============================================================ */
+.quick-add-body { padding: 1.35rem; }
+
+.quick-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ============================================================
+   FORM ALANLARI
+   ============================================================ */
+.quick-add-field { margin-bottom: 1.1rem; }
+.quick-add-row .quick-add-field { margin-bottom: 0; }
+.quick-add-field:last-child { margin-bottom: 0; }
+
+.quick-add-field label {
+  display: block;
+  font-family: var(--qa-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--qa-muted);
+  margin-bottom: 0.4rem;
+}
+
+.quick-add-field input,
+.quick-add-field select {
+  width: 100%;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  padding: 0.68rem 0.85rem;
+  color: var(--qa-text);
+  font-family: var(--qa-font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.quick-add-field input:focus,
+.quick-add-field select:focus {
+  border-color: var(--qa-accent);
+}
+.quick-add-field input::placeholder { color: var(--qa-muted); opacity: 0.6; }
+.quick-add-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236f6f80' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.quick-add-field select option { background: var(--qa-surface2); }
+
+/* ============================================================
+   ENSTRÜMAN TİPİ
+   ============================================================ */
+.quick-add-instrument-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.quick-add-instrument-btn {
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  background: transparent;
+  color: var(--qa-muted);
+  font-family: var(--qa-font-body);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.quick-add-instrument-btn:hover { color: var(--qa-text); }
+.quick-add-instrument-btn.active {
+  border-color: var(--qa-accent);
+  background: var(--qa-accent-tint);
+  color: var(--qa-accent-light);
+}
+.quick-add-instrument-btn:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: 1px;
+}
+.quick-add-instrument-btn .inst-label {
+  display: block;
+  font-size: 9px;
+  color: var(--qa-muted);
+  font-weight: 400;
+  margin-top: 1px;
+}
+.quick-add-instrument-btn.active .inst-label { color: var(--qa-accent-light); opacity: 0.7; }
+
+#quick-custom-multiplier-wrap input {
+  width: 100%;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  padding: 0.6rem 0.85rem;
+  color: var(--qa-text);
+  font-family: var(--qa-font-mono);
+  font-size: 13px;
+  outline: none;
+}
+#quick-custom-multiplier-wrap input:focus { border-color: var(--qa-accent); }
+
+/* ============================================================
+   YÖN (Buy / Sell) — tek stroke, düz renk, glow yok
+   ============================================================ */
+.quick-add-side-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.quick-add-side-btn {
+  padding: 0.62rem 1rem;
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  background: var(--qa-surface2);
+  color: var(--qa-muted);
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.quick-add-side-btn:hover { color: var(--qa-text); }
+.quick-add-side-btn.active-buy {
+  border-color: var(--qa-green);
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--qa-green);
+}
+.quick-add-side-btn.active-sell {
+  border-color: var(--qa-red);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--qa-red);
+}
+.quick-add-side-btn:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: 2px;
+}
+.quick-add-side-btn svg { width: 15px; height: 15px; }
+
+/* ============================================================
+   P&L INPUT
+   ============================================================ */
+.quick-add-pnl-wrap { position: relative; }
+.quick-add-pnl-wrap .currency-symbol {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--qa-font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--qa-muted);
+  pointer-events: none;
+}
+.quick-add-pnl-wrap input { padding-left: 28px; }
+.quick-add-pnl-wrap .pnl-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--qa-muted);
+  pointer-events: none;
+}
+
+/* ============================================================
+   LOT
+   ============================================================ */
+.quick-add-lot-wrap { display: flex; gap: 6px; align-items: center; }
+.quick-add-lot-wrap input { flex: 1; }
+.quick-add-lot-wrap .lot-presets { display: flex; gap: 4px; flex-shrink: 0; }
+.quick-add-lot-wrap .lot-preset {
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  font-family: var(--qa-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--qa-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.quick-add-lot-wrap .lot-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
+.quick-add-lot-wrap .lot-preset.active {
+  border-color: var(--qa-accent);
+  background: var(--qa-accent-tint);
+  color: var(--qa-accent-light);
+}
+.quick-add-lot-wrap .lot-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
+
+/* ============================================================
+   R/R RATIO
+   ============================================================ */
+.quick-add-rr-wrap { display: flex; align-items: center; gap: 8px; }
+.quick-add-rr-wrap .rr-label {
+  font-family: var(--qa-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--qa-text);
+  flex-shrink: 0;
+}
+.quick-add-rr-wrap input {
+  flex: 1;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  padding: 0.65rem 0.85rem;
+  color: var(--qa-text);
+  font-family: var(--qa-font-body);
+  font-size: 14px;
+  outline: none;
+}
+.quick-add-rr-wrap input:focus { border-color: var(--qa-accent); }
+.quick-add-rr-wrap .rr-presets { display: flex; gap: 4px; flex-shrink: 0; }
+.quick-add-rr-wrap .rr-preset {
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  font-family: var(--qa-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--qa-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.quick-add-rr-wrap .rr-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
+.quick-add-rr-wrap .rr-preset.active {
+  border-color: var(--qa-accent);
+  background: var(--qa-accent-tint);
+  color: var(--qa-accent-light);
+}
+.quick-add-rr-wrap .rr-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
+
+/* ============================================================
+   STRATEJİ — yalnızca dropdown
+   ============================================================ */
+.quick-add-strategy-wrap { display: flex; gap: 8px; align-items: center; }
+.quick-add-strategy-wrap select { flex: 1; }
+.quick-add-strategy-wrap .create-strategy-btn {
+  background: transparent;
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  width: 38px;
+  height: 38px;
+  color: var(--qa-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.quick-add-strategy-wrap .create-strategy-btn svg { width: 15px; height: 15px; }
+.quick-add-strategy-wrap .create-strategy-btn:hover { border-color: var(--qa-accent); color: var(--qa-accent-light); }
+.quick-add-strategy-wrap .create-strategy-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+
+/* ============================================================
+   NOTLAR
+   ============================================================ */
+.quick-add-notes textarea {
+  width: 100%;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  padding: 0.68rem 0.85rem;
+  color: var(--qa-text);
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  outline: none;
+  resize: vertical;
+  min-height: 52px;
+  transition: border-color 0.15s ease;
+}
+.quick-add-notes textarea:focus { border-color: var(--qa-accent); }
+.quick-add-notes textarea::placeholder { color: var(--qa-muted); opacity: 0.6; }
+
+/* ============================================================
+   ÖN İZLEME — imza öğesi: renkli durum rayı modal kenarını yankılar
+   ============================================================ */
+.quick-add-preview {
+  display: none;
+  align-items: center;
+  gap: 1.25rem;
+  position: relative;
+  padding: 0.7rem 1rem 0.7rem 1.1rem;
+  background: var(--qa-surface2);
+  border-radius: var(--qa-r-sm);
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+.quick-add-preview.visible { display: flex; }
+.quick-add-preview .preview-rail {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--qa-accent);
+}
+.quick-add-preview.rail-pos .preview-rail { background: var(--qa-green); }
+.quick-add-preview.rail-neg .preview-rail { background: var(--qa-red); }
+.quick-add-preview .preview-item { display: flex; flex-direction: column; gap: 2px; }
+.quick-add-preview .preview-item .p-label {
+  font-size: 8px;
+  font-family: var(--qa-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--qa-muted);
+}
+.quick-add-preview .preview-item .p-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--qa-font-numeric);
+  color: var(--qa-text);
+}
+.quick-add-preview .preview-item .p-val.pos { color: var(--qa-green); }
+.quick-add-preview .preview-item .p-val.neg { color: var(--qa-red); }
+.quick-add-preview .preview-item .p-val.accent { color: var(--qa-accent-light); }
+.quick-add-preview .preview-divider { width: 1px; height: 26px; background: var(--qa-border-strong); }
+
+/* ============================================================
+   CSV İÇE AKTARMA (varsa)
+   ============================================================ */
+.quick-import-area { text-align: center; padding: 1rem 0.5rem; }
+.quick-import-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 0.75rem;
+  background: var(--qa-accent-tint);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-md);
+  display: flex; align-items: center; justify-content: center;
+}
+.quick-import-icon svg { stroke: var(--qa-accent-light); width: 24px; height: 24px; }
+.quick-import-area p {
+  font-size: 12.5px;
+  color: var(--qa-muted);
+  margin-bottom: 1rem;
+  max-width: 300px;
+  margin-left: auto; margin-right: auto;
+}
+.quick-import-btn {
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  padding: 0.55rem 1.4rem;
+  color: var(--qa-text);
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.quick-import-btn:hover { border-color: var(--qa-accent); }
+.quick-import-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-import-status {
+  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+  margin-top: 0.75rem; padding: 0.5rem;
+  background: var(--qa-surface2); border-radius: var(--qa-r-sm);
+  font-size: 12px; color: var(--qa-text);
+}
+.quick-import-status .status-badge { font-weight: 600; color: var(--qa-accent-light); }
+.quick-import-log {
+  margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
+  max-height: 120px; overflow-y: auto;
+  background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
+  font-family: var(--qa-font-mono); text-align: left;
+}
+.quick-import-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.quick-import-log div:last-child { border-bottom: none; }
+
+/* ============================================================
+   TOPLU YAPIŞTIRMA (varsa)
+   ============================================================ */
+.quick-bulk-area textarea {
+  width: 100%; min-height: 110px;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  padding: 0.65rem;
+  color: var(--qa-text);
+  font-family: var(--qa-font-mono);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+}
+.quick-bulk-area textarea:focus { border-color: var(--qa-accent); }
+.quick-bulk-progress { margin-top: 0.75rem; font-size: 12px; color: var(--qa-muted); font-family: var(--qa-font-body); }
+.quick-bulk-progress .quick-bulk-bar {
+  width: 100%; height: 3px; background: var(--qa-border-strong);
+  border-radius: 99px; overflow: hidden; margin-top: 4px;
+}
+.quick-bulk-progress .quick-bulk-bar .quick-bulk-fill {
+  height: 100%; background: var(--qa-accent);
+  border-radius: 99px; width: 0%; transition: width 0.25s ease;
+}
+.quick-bulk-log {
+  margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
+  max-height: 120px; overflow-y: auto;
+  background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
+  font-family: var(--qa-font-mono); text-align: left;
+}
+.quick-bulk-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.quick-bulk-log div:last-child { border-bottom: none; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.quick-add-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 1rem 1.35rem 1.15rem;
+  border-top: 1px solid var(--qa-border);
+  position: sticky;
+  bottom: 0;
+  background: var(--qa-surface);
+  border-radius: 0 0 var(--qa-r-lg) var(--qa-r-lg);
+}
+.quick-add-footer .btn-cancel {
+  background: transparent;
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-sm);
+  color: var(--qa-muted);
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0.55rem 1.2rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.quick-add-footer .btn-cancel:hover { border-color: var(--qa-border-strong); color: var(--qa-text); }
+.quick-add-footer .btn-cancel:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-add-footer .btn-save {
+  background: var(--qa-accent);
+  border: 1px solid var(--qa-accent);
+  border-radius: var(--qa-r-sm);
+  color: #fff;
+  font-family: var(--qa-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.55rem 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.quick-add-footer .btn-save svg { width: 15px; height: 15px; }
+.quick-add-footer .btn-save:hover { background: var(--qa-accent-light); transform: translateY(-1px); }
+.quick-add-footer .btn-save:active { transform: translateY(0); }
+.quick-add-footer .btn-save:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.quick-add-footer .btn-save:disabled {
+  opacity: 0.5; cursor: not-allowed; transform: none !important;
+}
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+.quick-add-loading {
+  display: none; align-items: center; gap: 8px;
+  padding: 0.5rem 0; color: var(--qa-muted);
+  font-size: 13px; font-family: var(--qa-font-body);
+}
+.quick-add-loading.active { display: flex; }
+.quick-add-loading .spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--qa-border-strong);
+  border-top-color: var(--qa-accent);
+  border-radius: 50%;
+  animation: qaSpin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes qaSpin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   HATA MESAJI
+   ============================================================ */
+.quick-add-error {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--qa-red);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: var(--qa-r-sm);
+  padding: 0.6rem 0.85rem;
+  font-size: 12px;
+  font-family: var(--qa-font-body);
+  margin-bottom: 0.9rem;
+}
+.quick-add-error.active { display: flex; }
+.quick-add-error svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* ============================================================
+   ERİŞİLEBİLİRLİK
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .quick-add-fab,
+  .quick-add-overlay,
+  .quick-add-overlay * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .quick-add-loading .spinner {
+    animation-duration: 600ms !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ============================================================
+   MOBİL — 600px VE ALTI
+   ============================================================ */
+@media (max-width: 600px) {
+  .quick-add-overlay { padding: 0; align-items: flex-end; }
+  .quick-add-modal {
+    max-width: 100%;
+    max-height: 94vh;
+    border-radius: var(--qa-r-lg) var(--qa-r-lg) 0 0;
+    border-left: 1px solid var(--qa-border);
+    border-top: 3px solid var(--qa-accent);
+    animation: qaSlideUp 0.22s ease;
+  }
+  @keyframes qaSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .quick-add-header { min-height: var(--qa-header-h-mobile); padding: 0.9rem 1.1rem; }
+  .quick-add-tabs { top: var(--qa-header-h-mobile); padding: 0 0.75rem; overflow-x: auto; scrollbar-width: none; }
+  .quick-add-tabs::-webkit-scrollbar { display: none; }
+  .quick-tab { font-size: 11px; padding: 0.55rem 0.4rem; white-space: nowrap; }
+
+  .quick-add-body { padding: 1.1rem; }
+  .quick-add-field { margin-bottom: 0.9rem; }
+  .quick-add-row { gap: 8px; }
+  .quick-add-field input,
+  .quick-add-field select { font-size: 14px; padding: 0.6rem 0.8rem; }
+
+  .quick-add-instrument-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .quick-add-instrument-btn { font-size: 10px; padding: 0.4rem 0.25rem; }
+
+  .quick-add-side-btn { padding: 0.58rem 0.7rem; font-size: 12.5px; }
+
+  .quick-add-lot-wrap .lot-presets,
+  .quick-add-rr-wrap .rr-presets { display: none; }
+
+  .quick-import-area p { font-size: 12px; }
+  .quick-bulk-area textarea { min-height: 90px; font-size: 11px; }
+
+  .quick-add-preview { gap: 0.75rem; padding: 0.6rem 0.75rem 0.6rem 0.95rem; }
+  .quick-add-preview .preview-item .p-val { font-size: 0.85rem; }
+
+  .quick-add-footer { padding: 0.7rem 1.1rem 0.9rem; }
+  .quick-add-footer .btn-cancel,
+  .quick-add-footer .btn-save { font-size: 12.5px; padding: 0.5rem 1.1rem; }
+}
+
+/* ============================================================
+   MOBİL — 400px VE ALTI
+   ============================================================ */
+@media (max-width: 400px) {
+  .quick-add-instrument-grid { grid-template-columns: repeat(2, 1fr); }
+}

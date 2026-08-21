@@ -1,6 +1,6 @@
 /* ============================================================
    WAWE JOURNAL – index.css
-   ANA SAYFAYA ÖZEL STİLLER (HAMBURGER MENÜLÜ) - MOBIL OPTIMIZE
+   ANA SAYFAYA ÖZEL STİLLER - MOBIL OPTIMIZE
    ============================================================ */
 
 :root {
@@ -29,7 +29,6 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
-  /* ⭐ KOYU TEMA BOZULMASINI ENGELLE */
   color-scheme: dark;
 }
 
@@ -50,7 +49,7 @@ body {
 }
 
 /* ============================================================
-   NAVIGATION - DESKTOP & HAMBURGER MENU
+   NAVIGATION - HAMBURGER MENU KALDIRILDI
    ============================================================ */
 nav.nav {
   position: fixed;
@@ -90,121 +89,18 @@ nav.nav {
   display: flex; align-items: center; justify-content: center;
 }
 
-/* Desktop nav links */
+/* ⭐ Login / Sign Up - HER ZAMAN GÖSTER */
 .nav-links {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: clamp(0.4rem, 1vw, 0.75rem);
 }
 
-/* Hamburger buton (mobilde görünür) */
-.hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  cursor: pointer;
-  z-index: 100;
-  background: transparent;
-  border: none;
-  padding: 8px;
-  min-width: 44px;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-}
-
-.hamburger span {
-  width: 25px;
-  height: 2px;
-  background: var(--text);
-  transition: all 0.3s ease;
-  border-radius: 2px;
-}
-
-.hamburger.active span:nth-child(1) {
-  transform: rotate(45deg) translate(5px, 5px);
-}
-.hamburger.active span:nth-child(2) {
-  opacity: 0;
-}
-.hamburger.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(5px, -5px);
-}
-
-/* Mobil menü overlay */
-.mobile-menu {
-  position: fixed;
-  top: 0;
-  right: -100%;
-  width: min(300px, 80vw);
-  height: 100vh;
-  background: rgba(17,17,24,0.98);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid var(--border);
-  z-index: 98;
-  padding: clamp(60px, 15vh, 80px) clamp(1rem, 3vw, 2rem) 2rem;
-  transition: right 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.mobile-menu.active {
-  right: 0;
-}
-
-.mobile-menu a,
-.mobile-menu button {
-  width: 100%;
-  text-align: left;
-  padding: clamp(10px, 1.5vw, 12px) clamp(12px, 2vw, 16px);
-  font-size: clamp(14px, 1.5vw, 16px);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  text-decoration: none;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 500;
-  transition: all 0.2s;
-  cursor: pointer;
-  min-height: 44px;
-}
-
-.mobile-menu a:hover,
-.mobile-menu button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(124,109,250,0.05);
-}
-
-.mobile-menu .btn-register-mobile {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.mobile-menu .btn-register-mobile:hover {
-  opacity: 0.85;
-}
-
-/* Overlay arka plan */
+/* ⭐ HAMBURGER MENU TAMAMEN KALDIRILDI */
+.hamburger,
+.mobile-menu,
 .menu-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 97;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.menu-overlay.active {
-  opacity: 1;
-  visibility: visible;
+  display: none !important;
 }
 
 /* Desktop butonlar */
@@ -281,29 +177,57 @@ nav.nav {
   grid-row: 1;
 }
 
+/* ⭐ GRAFIK ANIMASYONU - SADECE PC'DE */
 .hero-chart-wrap {
-  grid-column: 2;
-  grid-row: 1;
-  position: relative;
-  height: clamp(200px, 40vh, 360px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: none;
 }
 
-.hero-chart-wrap::before {
-  content: '';
-  position: absolute;
-  inset: -10%;
-  background: radial-gradient(circle at 50% 55%, rgba(124,109,250,0.10) 0%, transparent 65%);
-  pointer-events: none;
-  z-index: -1;
+/* PC'de grafiği göster */
+@media (min-width: 901px) {
+  .hero-chart-wrap {
+    display: flex !important;
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    height: clamp(200px, 40vh, 360px);
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .hero-chart-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -10%;
+    background: radial-gradient(circle at 50% 55%, rgba(124,109,250,0.10) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  #hero-chart-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  
+  .hero-mockup-wrap {
+    display: flex !important;
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
-#hero-chart-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
+/* Mobilde grafik ANIMASYONU KALDIR - sadece mockup göster */
+@media (max-width: 900px) {
+  .hero-chart-wrap {
+    display: none !important;
+  }
+  
+  .hero-mockup-wrap {
+    display: flex !important;
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 1.5rem;
+  }
 }
 
 .hero-float-card {
@@ -367,18 +291,29 @@ nav.nav {
 }
 .hfc-green { color: var(--green); }
 
+/* ⭐ PLATFORM STATS - KUTUSUZ, SADECE YAZI */
 .hero-stats {
   grid-column: 1 / -1;
   grid-row: 2;
-  display: flex;
-  gap: clamp(1rem, 3vw, 3rem);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.75rem, 2vw, 1.5rem);
   padding-top: clamp(1.5rem, 3vh, 2.5rem);
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
   margin-top: clamp(0.75rem, 2vh, 1.5rem);
 }
 
-.hstat { display: flex; flex-direction: column; gap: 2px; }
+.hstat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+  text-align: left;
+}
+
 .hstat-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: clamp(1.2rem, 3vw, 1.6rem);
@@ -390,6 +325,31 @@ nav.nav {
   color: var(--muted);
   letter-spacing: .8px;
   text-transform: uppercase;
+}
+
+/* ⭐ Mobilde 2'li grid - KUTU YOK */
+@media (max-width: 480px) {
+  .hero-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    padding-top: 1rem !important;
+  }
+  
+  .hstat {
+    padding: 0.3rem 0.2rem;
+    background: transparent !important;
+    border: none !important;
+    text-align: center;
+  }
+  
+  .hstat-val {
+    font-size: 0.9rem !important;
+  }
+  
+  .hstat-label {
+    font-size: 6.5px !important;
+    letter-spacing: 0.3px !important;
+  }
 }
 
 .hero-badge {
@@ -452,11 +412,28 @@ nav.nav {
   margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
 }
 
+/* ⭐ Start Free / Login - mobilde yan yana */
 .hero-actions {
   display: flex;
   align-items: center;
   gap: clamp(0.5rem, 1vw, 1rem);
   flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .hero-actions {
+    flex-direction: row !important;
+    width: 100%;
+    gap: 0.5rem !important;
+  }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-ghost {
+    width: auto !important;
+    flex: 1;
+    justify-content: center;
+    font-size: 12px !important;
+    padding: 10px 16px !important;
+  }
 }
 
 .btn-primary {
@@ -493,6 +470,214 @@ nav.nav {
   min-height: 44px;
 }
 .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+/* ============================================================
+   ⭐ MACOS MOCKUP - KÜÇÜK VE UYUMLU (HER YERDE GÖSTER)
+   ============================================================ */
+.mockup-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 clamp(0.75rem, 2vw, 2rem) clamp(1.5rem, 4vh, 3rem);
+  position: relative;
+  z-index: 2;
+}
+
+.mockup-section-inner {
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.mockup-glow {
+  position: absolute;
+  inset: -6% -2%;
+  background: radial-gradient(ellipse at 50% 40%, rgba(124,109,250,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.5;
+}
+
+.macos-mockup {
+  border-radius: clamp(10px, 1.2vw, 14px);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 
+    0 12px 40px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(124,109,250,0.04);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  max-width: 100%;
+}
+
+.macos-mockup:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 18px 50px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(124,109,250,0.08);
+}
+
+.macos-mockup-bar {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.3rem, 0.8vw, 0.6rem);
+  padding: clamp(5px, 0.6vw, 8px) clamp(8px, 1vw, 12px);
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.macos-dots {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.macos-dots .dot {
+  width: clamp(7px, 0.7vw, 9px);
+  height: clamp(7px, 0.7vw, 9px);
+  border-radius: 50%;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.dot-red    { background: #ff5f57; }
+.dot-yellow { background: #febc2e; }
+.dot-green  { background: #28c840; }
+
+.macos-dots .dot:hover {
+  transform: scale(1.15);
+}
+
+.macos-url-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: clamp(2px, 0.4vw, 4px) clamp(6px, 0.8vw, 10px);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(7px, 0.6vw, 9px);
+  color: var(--muted);
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.macos-url-bar svg {
+  width: 8px;
+  height: 8px;
+  stroke: var(--muted);
+  flex-shrink: 0;
+}
+
+.macos-url-bar .url-text {
+  font-size: clamp(7px, 0.6vw, 9px);
+}
+
+.macos-mockup-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9.2;
+  background: #0d0d13;
+  overflow: hidden;
+}
+
+.macos-mockup-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.mockup-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #111118, #0d0d13);
+}
+
+.mockup-skeleton .spinner {
+  width: 20px; 
+  height: 20px;
+}
+
+/* ============================================================
+   RESPONSIVE - MACOS MOCKUP
+   ============================================================ */
+@media (max-width: 1024px) {
+  .mockup-section-inner {
+    max-width: 580px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mockup-section {
+    padding: 0 1rem 2rem;
+  }
+  .mockup-section-inner {
+    max-width: 100%;
+  }
+  .macos-mockup-screen {
+    aspect-ratio: 16 / 10;
+  }
+  .macos-url-bar {
+    max-width: 40%;
+  }
+  .macos-mockup:hover {
+    transform: translateY(-1px);
+  }
+  .macos-url-bar .url-text {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 480px) {
+  .macos-mockup-bar {
+    padding: 4px 6px;
+  }
+  .macos-url-bar .url-text {
+    display: none;
+  }
+  .macos-url-bar {
+    max-width: 30%;
+  }
+  .macos-mockup-screen {
+    aspect-ratio: 16 / 12;
+  }
+  .macos-dots .dot {
+    width: 6px;
+    height: 6px;
+  }
+  .macos-dots {
+    gap: 3px;
+  }
+  .mockup-glow {
+    opacity: 0.2;
+  }
+}
+
+@media (max-width: 374px) {
+  .macos-mockup-screen {
+    aspect-ratio: 16 / 13;
+  }
+  .macos-dots .dot {
+    width: 5px;
+    height: 5px;
+  }
+  .macos-dots {
+    gap: 2px;
+  }
+  .macos-mockup-bar {
+    padding: 3px 5px;
+  }
+  .macos-url-bar {
+    padding: 2px 4px;
+    font-size: 6px;
+  }
+}
 
 .section {
   max-width: 1200px;
@@ -919,30 +1104,17 @@ footer.site-footer {
 }
 
 /* ============================================================
-   RESPONSIVE - MOBIL HAMBURGER MENU
+   RESPONSIVE - GENEL
    ============================================================ */
 
-/* 768px ve altı - tablet ve telefon */
+/* 768px ve altı - tablet */
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;  
-  }
-  
-  .hamburger {
-    display: flex;
-  }
-  
   nav.nav {
     padding: 0 1rem;
   }
   
   .hero {
     padding: 100px 1rem 40px;
-  }
-  
-  .hero-stats {
-    gap: 1.5rem;
-    flex-wrap: wrap;
   }
   
   .features-grid {
@@ -978,10 +1150,6 @@ footer.site-footer {
     display: none;
   }
   
-  .hero-chart-wrap {
-    height: 220px;
-  }
-
   .psych-card {
     padding: 1.5rem 1.25rem;
   }
@@ -1036,12 +1204,6 @@ footer.site-footer {
     padding: 100px 1.25rem 50px;
   }
   .hero-left { grid-column: 1; grid-row: 1; }
-  .hero-chart-wrap {
-    grid-column: 1;
-    grid-row: 2;
-    height: clamp(180px, 40vw, 260px);
-    margin-top: 1.5rem;
-  }
   .hero-stats { grid-column: 1; grid-row: 3; }
 }
 
@@ -1054,15 +1216,6 @@ footer.site-footer {
   
   .hero h1 {
     font-size: 2.2rem;
-  }
-  
-  .hero-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .hero-chart-wrap {
-    height: 160px;
   }
   
   .hero-float-card {
@@ -1085,32 +1238,12 @@ footer.site-footer {
   .references-grid {
     grid-template-columns: 1fr;
   }
-  
-  .btn-primary,
-  .btn-ghost {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .hero-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  .hero-actions .btn-primary,
-  .hero-actions .btn-ghost {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 /* 374px ve altı - ultra küçük telefonlar */
 @media (max-width: 374px) {
   .hero h1 {
     font-size: 1.8rem;
-  }
-  
-  .hero-chart-wrap {
-    height: 130px;
   }
   
   .features-grid {
@@ -1167,10 +1300,7 @@ footer.site-footer {
   .btn-login,
   .btn-register,
   .btn-social,
-  .hamburger,
   .social-link,
-  .mobile-menu a,
-  .mobile-menu button,
   .ref-social-link {
     min-height: 44px;
     min-width: 44px;
@@ -1186,7 +1316,6 @@ footer.site-footer {
    FLUID TYPOGRAPHY - EXTRA SAFETY
    ============================================================ */
 
-/* Başlıklar için ekstra clamp */
 .hero h1 .l1,
 .hero h1 .l2,
 .hero h1 .l3 {
@@ -1197,7 +1326,6 @@ footer.site-footer {
   font-size: clamp(1.5rem, 6vw, 3.8rem);
 }
 
-/* Butonlar için touch-friendly padding */
 @media (pointer: coarse) {
   .btn-primary,
   .btn-ghost,

@@ -110,9 +110,9 @@ function showMsg(message, type) {
 }
 
 function isAdmin(user) {
-  if (!user) return false;
-  var admins = ['admin@wawejournal.com', 'wawe@wawejournal.com'];
-  return admins.indexOf(user.email) !== -1 || (user.user_metadata && user.user_metadata.role === 'admin');
+  // Do not use a hard-coded email address or user_metadata here. Both are
+  // unsuitable for authorization; app_metadata is server-managed.
+  return !!(user && user.app_metadata && user.app_metadata.role === 'admin');
 }
 
 function safeEl(id) {
@@ -835,35 +835,10 @@ window.cancelPremium = async function() {
       return false;
     }
     
-    console.log('🔄 Plan free yapılıyor...');
-    var updateResult = await sb.from('user_profiles').update({ 
-      plan: 'free', 
-      plan_expires_at: null 
-    }).eq('id', userId);
-    
-    if (updateResult.error) {
-      console.error('❌ Güncelleme hatası:', updateResult.error);
-      showMsg('Abonelik iptal edilemedi: ' + updateResult.error.message, 'error');
-      return false;
-    }
-    
-    console.log('✅ Abonelik iptal edildi!');
-    
-    if (typeof clearStrategiesCache === 'function') {
-      clearStrategiesCache();
-    }
-    
-    window.SETTINGS_STATE.isPremium = false;
-    
-    if (typeof updateBadge === 'function') {
-      await updateBadge();
-    }
-    
-    if (typeof renderPlan === 'function') {
-      await renderPlan();
-    }
-    
-    showMsg(t('settings.cancel_premium_success') || '✅ Aboneliğiniz iptal edildi.', 'success');
+    // NOWPayments is a one-time crypto payment. There is no recurring
+    // subscription to cancel, and the browser must never change plan fields.
+    console.log('ℹ️ Otomatik yenileme yok; plan değişikliği yapılmadı.');
+    showMsg('Otomatik yenileme yok. Premium erişiminiz ' + expiryDate + ' tarihine kadar devam eder.', 'info');
     return true;
     
   } catch (error) {
@@ -972,7 +947,6 @@ async function renderPlan() {
     window.SETTINGS_STATE.isPremium = isPremium;
     
     if (isPremium && expiresAt && new Date() > expiresAt) {
-      await sb.from('user_profiles').update({ plan: 'free', plan_expires_at: null }).eq('id', user.id);
       window.SETTINGS_STATE.isPremium = false;
       renderPlan();
       return;
@@ -1762,8 +1736,7 @@ async function checkAndActivatePremium() {
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
     
     if (isPremium && expiresAt && new Date() > expiresAt) {
-      console.log('⏰ Premium süresi dolmuş, free yapılıyor...');
-      await sb.from('user_profiles').update({ plan: 'free', plan_expires_at: null }).eq('id', user.id);
+      console.log('⏰ Premium süresi dolmuş; erişim yerelde ücretsiz olarak değerlendiriliyor.');
       window.SETTINGS_STATE.isPremium = false;
       return;
     }

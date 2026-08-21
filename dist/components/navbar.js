@@ -1,9 +1,11 @@
 // ============================================================
 // NAVBAR.JS - GÜVENLİK GÜNCELLEMESİ (XSS KORUMALI)
+// FONT OYNAMALARI DÜZELTİLDİ - BATCH i18n GÜNCELLEMESİ
+// ⭐ AKTİF LİNK FLASH ÖNLENDİ - requestAnimationFrame KULLANIMI
 // LUCIDE ICONS + AVATAR DROPDOWN FİX
 // ============================================================
 
-console.log('🧭 Navbar yükleniyor (GÜVENLİK GÜNCELLENDİ)...');
+console.log('🧭 Navbar yükleniyor (GÜVENLİK GÜNCELLENDİ - FONT SABİT - AKTİF LİNK HIZLI)...');
 
 // ============================================================
 // ⭐ GÜVENLİK: HTML SANITIZE
@@ -27,9 +29,18 @@ function sanitizeURL(url) {
 }
 
 // ============================================================
-// NAVBAR HTML - i18n ETİKETLERİ İLE + LUCIDE ICONS
+// ⭐ NAVBAR HTML - i18n ETİKETLERİ İLE + LUCIDE ICONS
 // ============================================================
-function getNavbarHTML() {
+function getNavbarHTML(translations) {
+  // ⭐ Eğer translations varsa, direkt kullan, yoksa i18n'den al
+  var t = function(key) {
+    if (translations && translations[key]) return translations[key];
+    if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
+      return i18n.t(key);
+    }
+    return key;
+  };
+
   return `
     <nav class="nav">
       <a href="/index.html" class="nav-logo" title="Wawe Journal - Ana Sayfa">
@@ -39,11 +50,11 @@ function getNavbarHTML() {
       </a>
       
       <div class="nav-links">
-        <a href="/dashboard.html" data-i18n="nav.dashboard" data-page="dashboard">Dashboard</a>
-        <a href="/trades.html" data-i18n="nav.trades" data-page="trades">İşlemler</a>
-        <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">Stratejiler</a>
-        <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">Takvim</a>
-        <span id="admin-link" style="display:none;"><a href="/admin.html" data-i18n="nav.admin" data-page="admin">Admin</a></span>
+        <a href="/dashboard.html" data-i18n="nav.dashboard" data-page="dashboard">${t('nav.dashboard')}</a>
+        <a href="/trades.html" data-i18n="nav.trades" data-page="trades">${t('nav.trades')}</a>
+        <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">${t('nav.strategies')}</a>
+        <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">${t('nav.calendar')}</a>
+        <span id="admin-link" style="display:none;"><a href="/admin.html" data-i18n="nav.admin" data-page="admin">${t('nav.admin')}</a></span>
       </div>
       
       <div class="nav-right">
@@ -51,27 +62,27 @@ function getNavbarHTML() {
         <div class="nav-dropdown">
           <button class="nav-dropdown-btn" id="premium-dropdown-btn">
             <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.premium">Premium</span>
+            <span data-i18n="nav.premium">${t('nav.premium')}</span>
             <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
           </button>
           <div class="nav-dropdown-menu" id="premium-dropdown-menu">
             <div class="menu-label" data-i18n="nav.premium_features">✨ Premium Özellikler</div>
             <a href="/premium-dashboard.html">
               <i data-lucide="layout-dashboard" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.premium_dashboard">Premium Dashboard</span>
+              <span data-i18n="nav.premium_dashboard">${t('nav.premium_dashboard')}</span>
             </a>
             <a href="/settings/index.html#panel-appearance">
               <i data-lucide="palette" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
+              <span data-i18n="nav.theme_customization">${t('nav.theme_customization')}</span>
             </a>
             <a href="/settings/index.html#panel-overtrade">
               <i data-lucide="bell" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
+              <span data-i18n="nav.overtrade_alert">${t('nav.overtrade_alert')}</span>
             </a>
             <div class="dropdown-divider"></div>
             <a href="/settings/index.html#panel-plan" style="color:var(--accent); font-weight:700;">
               <i data-lucide="rocket" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
+              <span data-i18n="nav.upgrade_premium">${t('nav.upgrade_premium')}</span>
             </a>
           </div>
         </div>
@@ -84,16 +95,16 @@ function getNavbarHTML() {
           </button>
           <div class="bell-panel" id="bell-panel">
             <div class="bell-panel-header">
-              <h3 data-i18n="nav.notifications">🔔 Bildirimler</h3>
+              <h3 data-i18n="nav.notifications">🔔 ${t('nav.notifications')}</h3>
               <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read">✓ Okundu</button>
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read">✓ ${t('nav.mark_read')}</button>
                 <button class="bell-panel-close" id="bell-panel-close">✕</button>
               </div>
             </div>
             <div class="bell-panel-body" id="bell-panel-body">
               <div class="bell-panel-empty">
                 <span class="empty-icon">🔕</span>
-                <span data-i18n="nav.no_notifications">Yeni bildirim yok</span>
+                <span data-i18n="nav.no_notifications">${t('nav.no_notifications')}</span>
               </div>
             </div>
           </div>
@@ -102,7 +113,7 @@ function getNavbarHTML() {
         <!-- ⭐ PLAN BADGE -->
         <div class="plan-badge" id="plan-badge">
           <span class="plan-dot"></span>
-          <span class="plan-text" id="plan-text">Ücretsiz</span>
+          <span class="plan-text" id="plan-text">${t('nav.free_badge') || 'Ücretsiz'}</span>
         </div>
         
         <!-- ⭐ USER AVATAR -->
@@ -114,21 +125,21 @@ function getNavbarHTML() {
         <div class="dropdown-menu" id="dropdown-menu">
           <a href="/settings/index.html#panel-profile" class="dropdown-item" data-i18n="nav.profile">
             <i data-lucide="user" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.profile">Profil</span>
+            <span data-i18n="nav.profile">${t('nav.profile')}</span>
           </a>
           <a href="/settings/index.html" class="dropdown-item" data-i18n="nav.settings">
             <i data-lucide="settings" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.settings">Ayarlar</span>
+            <span data-i18n="nav.settings">${t('nav.settings')}</span>
           </a>
           <div class="dropdown-divider"></div>
           <a href="/settings/index.html#panel-plan" class="dropdown-item" style="color:var(--accent2);">
             <i data-lucide="crown" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.upgrade_premium">Premium'a Geç</span>
+            <span data-i18n="nav.upgrade_premium">${t('nav.upgrade_premium')}</span>
           </a>
           <div class="dropdown-divider"></div>
           <button class="dropdown-item" id="logout-dropdown-btn" data-i18n="nav.logout">
             <i data-lucide="log-out" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.logout">Çıkış Yap</span>
+            <span data-i18n="nav.logout">${t('nav.logout')}</span>
           </button>
         </div>
         
@@ -144,51 +155,51 @@ function getNavbarHTML() {
     <div class="nav-menu" id="nav-menu">
       <div class="nav-menu-inner">
         <a href="/index.html" data-i18n="nav.home">
-          <i data-lucide="home" style="width:16px;height:16px;"></i> Ana Sayfa
+          <i data-lucide="home" style="width:16px;height:16px;"></i> ${t('nav.home')}
         </a>
         <a href="/dashboard.html" data-i18n="nav.dashboard">
-          <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> Dashboard
+          <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${t('nav.dashboard')}
         </a>
         <a href="/trades.html" data-i18n="nav.trades">
-          <i data-lucide="list" style="width:16px;height:16px;"></i> İşlemler
+          <i data-lucide="list" style="width:16px;height:16px;"></i> ${t('nav.trades')}
         </a>
         <a href="/strategies.html" data-i18n="nav.strategies">
-          <i data-lucide="target" style="width:16px;height:16px;"></i> Stratejiler
+          <i data-lucide="target" style="width:16px;height:16px;"></i> ${t('nav.strategies')}
         </a>
         <a href="/calendar.html" data-i18n="nav.calendar">
-          <i data-lucide="calendar" style="width:16px;height:16px;"></i> Takvim
+          <i data-lucide="calendar" style="width:16px;height:16px;"></i> ${t('nav.calendar')}
         </a>
         
         <div class="nav-divider"></div>
         
-        <div class="mobile-premium-label" data-i18n="nav.premium">💎 Premium</div>
+        <div class="mobile-premium-label" data-i18n="nav.premium">💎 ${t('nav.premium')}</div>
         <a href="/premium-dashboard.html" data-i18n="nav.premium_dashboard">
-          <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> Premium Dashboard
+          <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${t('nav.premium_dashboard')}
         </a>
         <a href="/settings/index.html#panel-appearance" data-i18n="nav.theme_customization">
-          <i data-lucide="palette" style="width:16px;height:16px;"></i> Tema Özelleştirme
+          <i data-lucide="palette" style="width:16px;height:16px;"></i> ${t('nav.theme_customization')}
         </a>
         <a href="/settings/index.html#panel-overtrade" data-i18n="nav.overtrade_alert">
-          <i data-lucide="bell" style="width:16px;height:16px;"></i> Over Trade Uyarısı
+          <i data-lucide="bell" style="width:16px;height:16px;"></i> ${t('nav.overtrade_alert')}
         </a>
         <a href="/settings/index.html#panel-plan" style="color:var(--accent); font-weight:700;" data-i18n="nav.upgrade_premium">
-          <i data-lucide="rocket" style="width:16px;height:16px;"></i> Premium'a Geç →
+          <i data-lucide="rocket" style="width:16px;height:16px;"></i> ${t('nav.upgrade_premium')}
         </a>
         
-        <span id="admin-link-mobile" style="display:none;"><a href="/admin.html" data-i18n="nav.admin">Admin</a></span>
+        <span id="admin-link-mobile" style="display:none;"><a href="/admin.html" data-i18n="nav.admin">${t('nav.admin')}</a></span>
         <hr>
         
         <a href="/settings/index.html#panel-profile" data-i18n="nav.profile">
-          <i data-lucide="user" style="width:16px;height:16px;"></i> Profil
+          <i data-lucide="user" style="width:16px;height:16px;"></i> ${t('nav.profile')}
         </a>
         <a href="/settings/index.html" data-i18n="nav.settings">
-          <i data-lucide="settings" style="width:16px;height:16px;"></i> Ayarlar
+          <i data-lucide="settings" style="width:16px;height:16px;"></i> ${t('nav.settings')}
         </a>
         
         <hr>
         
         <button id="logout-btn-mobile" data-i18n="nav.logout">
-          <i data-lucide="log-out" style="width:16px;height:16px;"></i> Çıkış Yap
+          <i data-lucide="log-out" style="width:16px;height:16px;"></i> ${t('nav.logout')}
         </button>
       </div>
     </div>
@@ -196,7 +207,7 @@ function getNavbarHTML() {
 }
 
 // ============================================================
-// ⭐ i18n METİNLERİNİ GÜNCELLE - GÜVENLİ
+// ⭐ i18n METİNLERİNİ BATCH OLARAK GÜNCELLE - FONT OYNAMALARINI ÖNLE
 // ============================================================
 function updateNavbarI18n() {
   if (typeof i18n === 'undefined' || typeof i18n.t !== 'function') {
@@ -204,46 +215,64 @@ function updateNavbarI18n() {
     return;
   }
   
-  console.log('🌐 Navbar i18n metinleri güncelleniyor... Mevcut dil:', i18n.getCurrentLanguage());
+  console.log('🌐 Navbar i18n metinleri batch olarak güncelleniyor... Mevcut dil:', i18n.getCurrentLanguage());
   
-  const elements = document.querySelectorAll('[data-i18n]');
-  let updatedCount = 0;
+  // ⭐ Batch toplama - DOM değişikliklerini minimize et
+  var textUpdates = [];
+  var placeholderUpdates = [];
+  var htmlUpdates = [];
   
-  elements.forEach(function(el) {
-    const key = el.getAttribute('data-i18n');
-    const translation = i18n.t(key);
-    // ⭐ GÜVENLİ: sadece çeviri varsa ve farklıysa güncelle
-    if (translation && translation !== key) {
-      // ⭐ textContent ile güvenli
-      el.textContent = translation;
-      updatedCount++;
+  // ⭐ textContent güncellemeleri
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    var translation = i18n.t(key);
+    if (translation && translation !== key && el.textContent !== translation) {
+      textUpdates.push({ el: el, translation: translation });
     }
   });
   
-  const placeholders = document.querySelectorAll('[data-i18n-placeholder]');
-  placeholders.forEach(function(el) {
-    const key = el.getAttribute('data-i18n-placeholder');
-    const translation = i18n.t(key);
-    if (translation && translation !== key) {
-      el.setAttribute('placeholder', translation);
-      updatedCount++;
+  // ⭐ placeholder güncellemeleri
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n-placeholder');
+    var translation = i18n.t(key);
+    if (translation && translation !== key && el.getAttribute('placeholder') !== translation) {
+      placeholderUpdates.push({ el: el, translation: translation });
     }
   });
   
-  const htmlElements = document.querySelectorAll('[data-i18n-html]');
-  htmlElements.forEach(function(el) {
-    const key = el.getAttribute('data-i18n-html');
-    const translation = i18n.t(key);
-    if (translation && translation !== key) {
-      // ⭐ GÜVENLİ: sanitize ile temizle
-      el.innerHTML = sanitizeHTML(translation);
-      updatedCount++;
+  // ⭐ innerHTML güncellemeleri (güvenli)
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n-html');
+    var translation = i18n.t(key);
+    if (translation && translation !== key && el.innerHTML !== translation) {
+      htmlUpdates.push({ el: el, translation: sanitizeHTML(translation) });
     }
   });
   
+  // ⭐ Tek seferde uygula - reflow'u minimize et
+  if (textUpdates.length > 0) {
+    textUpdates.forEach(function(item) {
+      item.el.textContent = item.translation;
+    });
+  }
+  
+  if (placeholderUpdates.length > 0) {
+    placeholderUpdates.forEach(function(item) {
+      item.el.setAttribute('placeholder', item.translation);
+    });
+  }
+  
+  if (htmlUpdates.length > 0) {
+    htmlUpdates.forEach(function(item) {
+      item.el.innerHTML = item.translation;
+    });
+  }
+  
+  // ⭐ Badge'i güncelle (senkron)
   updateNavbarBadgeSync();
   
-  console.log(`✅ Navbar i18n metinleri güncellendi! (${updatedCount} element)`);
+  var total = textUpdates.length + placeholderUpdates.length + htmlUpdates.length;
+  console.log(`✅ Navbar i18n metinleri güncellendi! (${total} element, ${textUpdates.length} text, ${placeholderUpdates.length} placeholder, ${htmlUpdates.length} html)`);
 }
 
 // ============================================================
@@ -342,65 +371,111 @@ async function updateNavbarBadge() {
 }
 
 // ============================================================
-// ⭐ AKTİF SAYFA LİNKİNİ BELİRLE (GÜVENLİ)
+// ⭐ AKTİF SAYFA LİNKİNİ BELİRLE - HIZLI VE OPTİMİZE
 // ============================================================
 function setActiveNavLink() {
   var currentPath = window.location.pathname;
   
+  // ⭐ SADECE görünür linkleri bul (navbar içinde)
   var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
   
+  // ⭐ Önce TÜM linklerden active sınıfını kaldır (hızlı)
   navLinks.forEach(function(link) {
-    var href = link.getAttribute('href');
     link.classList.remove('active');
-    
-    // ⭐ GÜVENLİ: href null veya geçersiz olabilir
+  });
+  
+  // ⭐ Sonra DOĞRU linke active ekle
+  var found = false;
+  
+  navLinks.forEach(function(link) {
+    if (found) return;
+    var href = link.getAttribute('href');
     if (!href) return;
     
+    // Ana sayfa kontrolü
     if (currentPath === '/' || currentPath === '/index.html') {
       if (href === '/index.html' || href === '/') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath === '/dashboard.html' || currentPath.includes('/dashboard')) {
+    
+    // Dashboard kontrolü
+    if (currentPath === '/dashboard.html' || currentPath.includes('/dashboard')) {
       if (href === '/dashboard.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath === '/trades.html' || currentPath.includes('/trades')) {
+    
+    // Trades kontrolü
+    if (currentPath === '/trades.html' || currentPath.includes('/trades')) {
       if (href === '/trades.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath === '/strategies.html' || currentPath.includes('/strategies')) {
+    
+    // Strategies kontrolü
+    if (currentPath === '/strategies.html' || currentPath.includes('/strategies')) {
       if (href === '/strategies.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath === '/calendar.html' || currentPath.includes('/calendar')) {
+    
+    // Calendar kontrolü
+    if (currentPath === '/calendar.html' || currentPath.includes('/calendar')) {
       if (href === '/calendar.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath.includes('/settings/')) {
+    
+    // Settings kontrolü
+    if (currentPath.includes('/settings/')) {
       if (href === '/settings/index.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath === '/premium-dashboard.html' || currentPath.includes('/premium-dashboard')) {
+    
+    // Premium Dashboard kontrolü
+    if (currentPath === '/premium-dashboard.html' || currentPath.includes('/premium-dashboard')) {
       if (href === '/premium-dashboard.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (currentPath === '/admin.html' || currentPath.includes('/admin')) {
+    
+    // Admin kontrolü
+    if (currentPath === '/admin.html' || currentPath.includes('/admin')) {
       if (href === '/admin.html') {
         link.classList.add('active');
+        found = true;
+        return;
       }
     }
-    else if (href !== '/' && currentPath.includes(href.replace('/', ''))) {
+    
+    // Fallback: href currentPath ile eşleşiyorsa
+    if (href === currentPath) {
       link.classList.add('active');
+      found = true;
+      return;
     }
-    else if (href === currentPath) {
+    
+    // Fallback: href currentPath'in son kısmıyla eşleşiyorsa
+    if (href !== '/' && currentPath.includes(href.replace('/', ''))) {
       link.classList.add('active');
+      found = true;
+      return;
     }
   });
 }
@@ -636,7 +711,7 @@ function initNavEvents() {
 }
 
 // ============================================================
-// ⭐ NAVBAR'YI YÜKLE (GÜVENLİ)
+// ⭐ NAVBAR'YI YÜKLE - FONT OYNAMALARINI ÖNLE - AKTİF LİNK HEMEN
 // ============================================================
 function loadNavbar(containerId) {
   var container = document.getElementById(containerId);
@@ -645,49 +720,69 @@ function loadNavbar(containerId) {
     return;
   }
   
-  container.innerHTML = getNavbarHTML();
-  console.log('✅ Navbar HTML yüklendi!');
+  console.log('📦 Navbar yükleniyor...');
   
-  // ⭐ SIRALAMA ÖNEMLİ!
-  // 1. Önce i18n metinlerini güncelle
-  updateNavbarI18n();
-  
-  // 2. Badge'i hemen güncelle (state'ten)
-  updateNavbarBadgeSync();
-  
-  // 3. Event'leri bağla (avatar dahil - delegation ile çalışır)
-  setTimeout(function() {
-    initNavEvents();
-  }, 50);
-  
-  // 4. Aktif linki ayarla
-  setTimeout(function() {
-    setActiveNavLink();
-  }, 80);
-  
-  // 5. Avatar'ı yükle (içerik değişse bile event delegation çalışır)
-  setTimeout(function() {
-    loadNavbarAvatar();
-  }, 120);
-  
-  // 6. Badge'i DB'den güncelle (arka planda)
-  setTimeout(function() {
-    updateNavbarBadge();
-  }, 200);
-  
-  // 7. i18n değişimlerini dinle
-  if (typeof i18n !== 'undefined' && i18n.onChange) {
-    i18n.onChange(function(lang) {
-      console.log(`🌐 [Navbar] Dil değişti: ${lang}, navbar güncelleniyor...`);
-      updateNavbarI18n();
-      updateNavbarBadgeSync();
-      setTimeout(setActiveNavLink, 50);
-      // Lucide icons'ları yeniden oluştur
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
+  // ⭐ 1. Önce i18n metinlerini hazırla (batch)
+  var translations = {};
+  if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
+    var keys = new Set();
+    document.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-html]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n') || el.getAttribute('data-i18n-placeholder') || el.getAttribute('data-i18n-html');
+      if (key) keys.add(key);
+    });
+    
+    var navbarKeys = [
+      'nav.dashboard', 'nav.trades', 'nav.strategies', 'nav.calendar', 'nav.admin',
+      'nav.premium', 'nav.premium_dashboard', 'nav.theme_customization', 'nav.overtrade_alert',
+      'nav.upgrade_premium', 'nav.notifications', 'nav.mark_read', 'nav.no_notifications',
+      'nav.profile', 'nav.settings', 'nav.logout', 'nav.home', 'nav.premium_badge', 
+      'nav.free_badge'
+    ];
+    navbarKeys.forEach(function(key) { keys.add(key); });
+    
+    keys.forEach(function(key) {
+      translations[key] = i18n.t(key);
     });
   }
+  
+  // ⭐ 2. HTML'i hazırlanmış çevirilerle birlikte enjekte et
+  container.innerHTML = getNavbarHTML(translations);
+  console.log('✅ Navbar HTML yüklendi! (çevirilerle birlikte)');
+  
+  // ⭐ 3. HEMEN aktif linki ayarla (DOM değişiminden hemen sonra)
+  // ⭐ requestAnimationFrame ile bir sonraki paint'ten önce çalıştır
+  if (window.requestAnimationFrame) {
+    requestAnimationFrame(function() {
+      setActiveNavLink();
+      console.log('✅ Aktif link HEMEN ayarlandı!');
+    });
+  } else {
+    setTimeout(function() {
+      setActiveNavLink();
+      console.log('✅ Aktif link HEMEN ayarlandı!');
+    }, 0);
+  }
+  
+  // ⭐ 4. Tüm linklere 'loaded' sınıfını ekle (görünür yap)
+  requestAnimationFrame(function() {
+    document.querySelectorAll('.nav-links a').forEach(function(link) {
+      link.classList.add('loaded');
+    });
+  });
+  
+  // ⭐ 5. Geri kalan işlemleri sırayla yap (hafif gecikmeli)
+  setTimeout(function() {
+    // Event'leri bağla
+    initNavEvents();
+    
+    // Avatar'ı yükle
+    loadNavbarAvatar();
+    
+    // Badge'i güncelle
+    updateNavbarBadge();
+    
+    console.log('✅ Navbar tamamen yüklendi!');
+  }, 50);
 }
 
 // ============================================================
@@ -752,4 +847,4 @@ window.refreshNavbar = function() {
   }
 };
 
-console.log('✅ navbar.js yüklendi! (GÜVENLİK GÜNCELLENDİ + LUCIDE ICONS + AVATAR DROPDOWN FİX)');
+console.log('✅ navbar.js yüklendi! (FONT SABİT - BATCH i18n - AKTİF LİNK HIZLI - LUCIDE ICONS - AVATAR DROPDOWN FİX)');

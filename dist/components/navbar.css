@@ -1,8 +1,20 @@
 /* ============================================================
    NAVBAR - TEK DOSYA (components/navbar.css)
    Tüm sayfalarda aynı navbar tasarımı
-   MOBIL OPTIMIZE - AVATAR & BADGE DÜZELTİLDİ
+   FONT BOYUTLARI SABİTLENDİ - ANİMASYONLAR KALDIRILDI
+   ⭐ AKTİF LİNK FLASH ÖNLENDİ - KAYMA OLMAZ
    ============================================================ */
+
+/* ============================================================
+   ROOT DEĞİŞKENLER - TUTARLI FONT BOYUTLARI
+   ============================================================ */
+
+:root {
+  --nav-font-size: 14px;
+  --nav-font-size-sm: 12px;
+  --nav-font-size-xs: 10px;
+  --nav-line-height: 1.5;
+}
 
 /* ============================================================
    NAVIGATION - SABİT VE OYNAMAYAN
@@ -28,6 +40,16 @@
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 32px -16px rgba(0,0,0,0.4);
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  /* ⭐ FONT BOYUTU SABİT - ANİMASYON YOK */
+  font-size: var(--nav-font-size);
+  line-height: var(--nav-line-height);
+  animation: none !important;
+}
+
+/* ⭐ Navbar içindeki tüm elementler parent'ından devralsın */
+.nav * {
+  animation: none !important;
+  line-height: inherit;
 }
 
 body.light-theme .nav {
@@ -36,7 +58,98 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   NAV LOGO
+   ⭐ NAV LINKS - FLASH ÖNLEYİCİ (KAYMA OLMAZ)
+   ============================================================ */
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  margin-left: 1.5rem;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  justify-content: flex-start;
+}
+
+/* ⭐ Linkler - görünmez başlar, yer kaplar, kayma olmaz */
+.nav-links a {
+  position: relative;
+  color: var(--muted);
+  font-size: 0.8125rem; /* 13px → 0.8125rem */
+  font-weight: 500;
+  padding: 0.45rem 0.6rem;
+  border-radius: 7px;
+  text-decoration: none;
+  white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+  min-width: 72px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+  /* ⭐ FLASH ÖNLEYİCİ - görünmez ama yer kaplar, KAYMA OLMAZ */
+  visibility: hidden;
+  opacity: 0;
+  animation: none !important;
+  /* ⭐ YUMUŞAK GEÇİŞ - sadece opacity ve renk değişir, konum sabit */
+  transition: visibility 0.15s ease, 
+              opacity 0.2s ease,
+              color 0.15s ease, 
+              background-color 0.15s ease;
+}
+
+/* ⭐ Navbar yüklendikten sonra görünür ol - KAYMA YOK */
+.nav-links a.loaded {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ⭐ Aktif link - hemen görünür, ANİMASYONSUZ */
+.nav-links a.active {
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: var(--accent2);
+  background: rgba(139,92,246,0.1);
+  transition: none !important;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 0%;
+  height: 2.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  transform: translateX(-50%);
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 6px rgba(139,92,246,0.1);
+}
+
+.nav-links a:hover {
+  color: var(--accent2);
+  background: rgba(139,92,246,0.08);
+}
+
+.nav-links a:hover::after {
+  width: 22px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ⭐ Aktif link çizgisi - hemen göster, ANİMASYONSUZ */
+.nav-links a.active::after {
+  width: 24px !important;
+  box-shadow: 0 0 14px var(--accent-glow), 0 0 30px rgba(139,92,246,0.1);
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  transition: none !important;
+}
+
+/* ============================================================
+   NAV LOGO - SABİT BOYUT
    ============================================================ */
 
 .nav-logo {
@@ -46,6 +159,7 @@ body.light-theme .nav {
   text-decoration: none;
   flex-shrink: 0;
   transition: opacity 0.25s cubic-bezier(0.4,0,0.2,1);
+  font-size: inherit;
 }
 
 .nav-logo:hover { opacity: 0.85; }
@@ -99,76 +213,6 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   NAV LINKS
-   ============================================================ */
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-  margin-left: 1.5rem;
-  flex-wrap: nowrap;
-  overflow: hidden;
-  justify-content: flex-start;
-}
-
-.nav-links a {
-  position: relative;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 0.45rem 0.6rem;
-  border-radius: 7px;
-  text-decoration: none;
-  transition: color 0.25s cubic-bezier(0.4,0,0.2,1), background-color 0.25s cubic-bezier(0.4,0,0.2,1);
-  white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
-  min-width: 72px;
-  text-align: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  isolation: isolate;
-}
-
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 2px;
-  width: 0%;
-  height: 2.5px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-  transform: translateX(-50%);
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 6px rgba(139,92,246,0.1);
-}
-
-.nav-links a:hover {
-  color: var(--accent2);
-  background: rgba(139,92,246,0.08);
-}
-
-.nav-links a:hover::after {
-  width: 22px;
-  box-shadow: 0 0 12px var(--accent-glow);
-}
-
-.nav-links a.active {
-  color: var(--accent2);
-  background: rgba(139,92,246,0.1);
-}
-
-.nav-links a.active::after {
-  width: 24px;
-  box-shadow: 0 0 14px var(--accent-glow), 0 0 30px rgba(139,92,246,0.1);
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-}
-
-/* ============================================================
    📓 NOTEBOOK SELECTOR - DEFTER SEÇİCİ
    ============================================================ */
 
@@ -189,7 +233,7 @@ body.light-theme .nav {
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px → 0.8125rem */
   font-weight: 500;
   color: var(--text);
   min-height: 32px;
@@ -283,7 +327,7 @@ body.light-theme .nav {
   border: none;
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px → 0.8125rem */
   font-weight: 400;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -313,7 +357,7 @@ body.light-theme .nav {
 }
 
 .nav-notebook-item-badge {
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   opacity: 0.7;
   margin-left: auto;
 }
@@ -321,7 +365,7 @@ body.light-theme .nav {
 .nav-notebook-item-check {
   color: var(--accent);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px → 0.875rem */
   margin-left: auto;
 }
 
@@ -329,7 +373,7 @@ body.light-theme .nav {
   padding: 1.5rem 1rem;
   text-align: center;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   font-family: 'DM Sans', sans-serif;
 }
 
@@ -357,7 +401,7 @@ body.light-theme .nav {
   border: none;
   color: var(--muted);
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -400,7 +444,7 @@ body.light-theme .nav {
   padding: 0.2rem 0.7rem 0.2rem 0.5rem;
   border-radius: 20px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
+  font-size: 0.625rem; /* 10px → 0.625rem */
   font-weight: 600;
   background: rgba(34,197,94,0.1);
   border: 1px solid rgba(34,197,94,0.2);
@@ -432,7 +476,7 @@ body.light-theme .nav {
 }
 
 .plan-badge .plan-text {
-  font-size: 10px;
+  font-size: 0.625rem; /* 10px → 0.625rem */
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -454,7 +498,7 @@ body.light-theme .nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   font-weight: 700;
   color: #fff;
   cursor: pointer;
@@ -599,7 +643,7 @@ body.light-theme .nav {
   border: 1px solid rgba(34,197,94,0.25);
   color: var(--green);
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
+  font-size: 0.625rem; /* 10px → 0.625rem */
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 20px;
@@ -630,7 +674,7 @@ body.light-theme .nav {
 
 .bell-panel-empty {
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   color: var(--muted);
   text-align: center;
   padding: 1.5rem 0.5rem;
@@ -680,7 +724,7 @@ body.light-theme .nav {
   padding: 10px 14px;
   color: var(--muted);
   text-decoration: none;
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px → 0.8125rem */
   font-family: 'DM Sans', sans-serif;
   transition: background-color 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
   cursor: pointer;
@@ -719,7 +763,7 @@ body.light-theme .nav {
   border: none;
   color: var(--muted);
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   font-weight: 500;
   padding: 0.3rem 0.7rem;
   border-radius: 6px;
@@ -734,7 +778,7 @@ body.light-theme .nav {
 }
 
 .nav-dropdown-btn .dropdown-arrow {
-  font-size: 10px;
+  font-size: 0.625rem; /* 10px → 0.625rem */
   transition: transform 0.2s ease;
   margin-left: 2px;
 }
@@ -770,7 +814,7 @@ body.light-theme .nav {
 
 .nav-dropdown-menu .menu-label {
   padding: 0.3rem 1rem;
-  font-size: 9px;
+  font-size: 0.5625rem; /* 9px → 0.5625rem */
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -786,7 +830,7 @@ body.light-theme .nav {
   color: var(--text);
   text-decoration: none;
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px → 0.75rem */
   font-weight: 500;
   transition: all 0.15s ease;
 }
@@ -898,7 +942,7 @@ body.light-theme .nav {
   color: var(--muted);
   text-decoration: none;
   border-radius: 9px;
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px → 0.875rem */
   font-weight: 500;
   background: none;
   border: none;
@@ -941,7 +985,7 @@ body.light-theme .nav {
 
 .nav-menu-inner .mobile-premium-label {
   padding: 0.5rem 1rem 0.25rem;
-  font-size: 10px;
+  font-size: 0.625rem; /* 10px → 0.625rem */
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -956,7 +1000,7 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE - SABİT FONT BOYUTLARI
    ============================================================ */
 
 /* 767px ve altı - tablet ve telefon */
@@ -986,17 +1030,18 @@ body.light-theme .nav {
     height: 56px;
     min-height: 56px;
     max-height: 56px;
+    font-size: var(--nav-font-size-sm);
   }
   
   .nav-notebook-name {
     max-width: 80px;
-    font-size: 11px;
+    font-size: 0.6875rem; /* 11px → 0.6875rem */
   }
   
   .nav-notebook-btn {
     padding: 0.2rem 0.5rem;
     min-height: 28px;
-    font-size: 12px;
+    font-size: 0.75rem; /* 12px → 0.75rem */
   }
   
   .nav-notebook-dropdown {
@@ -1026,7 +1071,7 @@ body.light-theme .nav {
   .user-avatar {
     width: 28px;
     height: 28px;
-    font-size: 11px;
+    font-size: 0.6875rem; /* 11px → 0.6875rem */
   }
   
   .nav-bell-btn {
@@ -1041,13 +1086,17 @@ body.light-theme .nav {
   
   .plan-badge {
     height: 24px;
-    font-size: 8px;
+    font-size: 0.5rem; /* 8px → 0.5rem */
     padding: 0.1rem 0.4rem 0.1rem 0.3rem;
   }
   
   .plan-badge .plan-dot {
     width: 4px;
     height: 4px;
+  }
+  
+  .plan-badge .plan-text {
+    font-size: 0.5rem; /* 8px → 0.5rem */
   }
   
   .bell-panel {
@@ -1067,6 +1116,7 @@ body.light-theme .nav {
     height: 48px;
     min-height: 48px;
     max-height: 48px;
+    font-size: var(--nav-font-size-xs);
   }
   
   .nav-right {
@@ -1075,13 +1125,13 @@ body.light-theme .nav {
   
   .nav-notebook-name {
     max-width: 60px;
-    font-size: 10px;
+    font-size: 0.625rem; /* 10px → 0.625rem */
   }
   
   .nav-notebook-btn {
     padding: 0.15rem 0.4rem;
     min-height: 24px;
-    font-size: 11px;
+    font-size: 0.6875rem; /* 11px → 0.6875rem */
   }
   
   .nav-notebook-dropdown {
@@ -1107,7 +1157,7 @@ body.light-theme .nav {
   .user-avatar {
     width: 26px;
     height: 26px;
-    font-size: 10px;
+    font-size: 0.625rem; /* 10px → 0.625rem */
   }
   
   .nav-bell-btn {
@@ -1131,13 +1181,17 @@ body.light-theme .nav {
   
   .plan-badge {
     height: 22px;
-    font-size: 7px;
+    font-size: 0.4375rem; /* 7px → 0.4375rem */
     padding: 0.05rem 0.3rem 0.05rem 0.2rem;
   }
   
   .plan-badge .plan-dot {
     width: 3px;
     height: 3px;
+  }
+  
+  .plan-badge .plan-text {
+    font-size: 0.4375rem; /* 7px → 0.4375rem */
   }
   
   .bell-panel {
@@ -1160,7 +1214,7 @@ body.light-theme .nav {
   }
   
   .dropdown-item {
-    font-size: 12px;
+    font-size: 0.75rem; /* 12px → 0.75rem */
     padding: 8px 12px;
   }
 }
@@ -1204,7 +1258,7 @@ body.light-theme .nav {
   .user-avatar {
     width: 24px;
     height: 24px;
-    font-size: 9px;
+    font-size: 0.5625rem; /* 9px → 0.5625rem */
   }
   
   .nav-bell-btn {
@@ -1266,15 +1320,17 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   SAYFA GEÇİŞ ANİMASYONLARI
+   SAYFA GEÇİŞ ANİMASYONLARI - SADECE İÇERİK
    ============================================================ */
 
+/* ⭐ Navbar hariç tüm içerik animasyonlu */
 .main,
 .dashboard-main,
 .calendar-page-main,
 .strategies-main,
 .settings-wrap,
-.settings-panels {
+.settings-panels,
+.page-content {
   animation: fadeInContent 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
@@ -1289,23 +1345,11 @@ body.light-theme .nav {
   }
 }
 
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  animation: none !important;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
+/* ⭐ Navbar'ı animasyonlardan tamamen izole et */
+.nav,
 .nav * {
   animation: none !important;
-}
-
-.dashboard-main,
-.calendar-page-main,
-.strategies-main,
-.settings-wrap {
-  padding-top: 0.5rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .page-exit {

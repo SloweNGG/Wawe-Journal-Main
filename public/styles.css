@@ -265,25 +265,6 @@ body.light-theme h4, body.light-theme h5 {
   margin: 0;
 }
 
-.welcome-msg {
-  color: var(--accent) !important;
-  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
-  font-weight: 500;
-  animation: welcomeGlow 1.5s ease-out;
-}
-@keyframes welcomeGlow {
-  0% { text-shadow: 0 0 0px var(--accent); opacity: 0.5; }
-  50% { text-shadow: 0 0 12px var(--accent), 0 0 8px var(--accent2); opacity: 1; }
-  100% { text-shadow: 0 0 0px var(--accent); opacity: 1; }
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
 /* ============================================================
    DASHBOARD SAYFASI
    ============================================================ */
@@ -376,14 +357,6 @@ body.light-theme h4, body.light-theme h5 {
   gap: 0.5rem;
   backdrop-filter: blur(4px);
 }
-.kpi-item {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding-right: 0.75rem;
-  border-right: 1px solid var(--border);
-}
-.kpi-item:last-child { border-right: none; padding-right: 0; }
 .kpi-label {
   font-size: clamp(7px, 0.6vw, 9px);
   letter-spacing: 0.08em;
@@ -488,16 +461,6 @@ body.light-theme h4, body.light-theme h5 {
 .chart-wrap--doughnut { height: clamp(150px, 22vw, 200px); }
 
 /* Streak & Strategy */
-.dashboard-grid-2col {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-}
-@media (min-width: 900px) {
-  .dashboard-grid-2col { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-}
-
 .streak-card, .strategy-tags-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -553,103 +516,15 @@ body.light-theme h4, body.light-theme h5 {
   color: var(--muted);
   font-family: 'DM Sans', sans-serif;
 }
-.strategy-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: clamp(0.15rem, 0.3vw, 0.25rem) clamp(0.4rem, 0.8vw, 0.7rem);
-  margin: clamp(0.1rem, 0.2vw, 0.2rem);
-  font-size: clamp(9px, 0.8vw, 11px);
-  font-family: 'DM Mono', monospace;
-  transition: all 0.2s;
-}
-.strategy-pill:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
-}
-.pill-positive { border-left: 2px solid var(--green); }
-.pill-negative { border-left: 2px solid var(--red); }
-.pill-neutral { border-left: 2px solid var(--accent); }
-.best-worst {
-  margin-top: 0.5rem;
-  font-size: clamp(9px, 0.8vw, 10px);
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-}
-.best-worst span { color: var(--text); font-weight: 500; }
 
 /* ============================================================
-   TRADE LIST - MOBIL OPTIMIZE
+   TRADE LIST - MOBIL OPTIMIZE (Sadece temel stiller, detaylar dashboard.css'te)
    ============================================================ */
 
 .trade-list {
   display: flex;
   flex-direction: column;
   gap: clamp(0.3rem, 0.6vw, 0.5rem);
-}
-
-/* Desktop trade row */
-.trade-row {
-  display: grid;
-  grid-template-columns: 28px 80px 50px 100px 1fr 70px 80px 24px;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0.8rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  transition: all 0.2s;
-  cursor: pointer;
-}
-.trade-row:hover {
-  background: rgba(139,92,246,0.04);
-  border-color: rgba(139,92,246,0.2);
-  transform: translateX(2px);
-}
-
-/* Mobile trade row - 480px altı */
-@media (max-width: 480px) {
-  .trade-row {
-    grid-template-columns: 20px 50px 35px 60px 1fr 45px 50px 18px;
-    gap: 0.2rem;
-    padding: 0.4rem 0.5rem;
-    font-size: 0.7rem;
-  }
-  .trade-symbol { font-size: 0.65rem; }
-  .trade-pnl { font-size: 0.65rem; }
-  .trade-direction { font-size: 8px; }
-  .trade-date { font-size: 0.5rem; }
-  .trade-strategy { font-size: 7px; }
-  .trade-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 8px;
-  }
-}
-
-/* Ultra small phones 320-374px */
-@media (max-width: 374px) {
-  .trade-row {
-    grid-template-columns: 16px 40px 28px 45px 1fr 35px 40px 14px;
-    gap: 0.15rem;
-    padding: 0.3rem 0.35rem;
-    font-size: 0.6rem;
-    border-radius: 6px;
-  }
-  .trade-symbol { font-size: 0.55rem; }
-  .trade-pnl { font-size: 0.55rem; }
-  .trade-direction { font-size: 7px; }
-  .trade-date { font-size: 0.45rem; }
-  .trade-strategy { font-size: 6px; }
-  .trade-icon {
-    width: 14px;
-    height: 14px;
-    font-size: 7px;
-  }
-  .trade-bar-container { height: 2px; }
 }
 
 .trade-icon {
@@ -729,249 +604,6 @@ body.light-theme h4, body.light-theme h5 {
   text-align: right;
   font-family: 'DM Mono', monospace;
 }
-.trade-strategy {
-  font-size: clamp(7px, 0.8vw, 10px);
-  font-family: 'DM Mono', monospace;
-  color: var(--accent2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.trade-note-indicator {
-  font-size: clamp(10px, 1vw, 12px);
-  opacity: 0.6;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  min-width: 18px;
-  min-height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.trade-note-indicator:hover { opacity: 1; }
-.trade-note {
-  display: none;
-  padding: clamp(0.4rem, 0.6vw, 0.6rem) clamp(0.5rem, 0.8vw, 0.8rem);
-  margin-top: -0.2rem;
-  margin-bottom: 0.2rem;
-  background: var(--surface2);
-  border-radius: 8px;
-  font-size: clamp(9px, 0.8vw, 11px);
-  color: var(--text-muted);
-  border-left: 2px solid var(--accent);
-  line-height: 1.5;
-  font-family: 'DM Sans', sans-serif;
-}
-.trade-note.show { display: block; }
-
-/* ============================================================
-   DATE FILTER & EXPORT
-   ============================================================ */
-
-.date-filter-group {
-  display: flex;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 40px;
-  overflow: hidden;
-  padding: 2px;
-  flex-wrap: wrap;
-}
-.date-filter-option {
-  padding: clamp(0.2rem, 0.4vw, 0.3rem) clamp(0.4rem, 0.8vw, 1rem);
-  font-size: clamp(9px, 0.8vw, 11px);
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  border-radius: 40px;
-  transition: all 0.2s;
-  min-height: 32px;
-}
-.date-filter-option:hover { color: var(--accent); }
-.date-filter-option.active {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-
-.export-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: clamp(0.2rem, 0.4vw, 0.35rem) clamp(0.4rem, 0.8vw, 0.8rem);
-  font-size: clamp(9px, 0.8vw, 11px);
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.2s;
-  min-height: 32px;
-}
-.export-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
-}
-
-.add-trade-btn {
-  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
-  border: none;
-  border-radius: 40px;
-  width: clamp(28px, 4vw, 34px);
-  height: clamp(28px, 4vw, 34px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-.add-trade-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px var(--accent-glow);
-}
-.add-trade-btn svg { stroke: white; stroke-width: 2.5; }
-
-/* ============================================================
-   MİNİ TAKVİM (DASHBOARD)
-   ============================================================ */
-
-.mini-calendar-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: clamp(0.5rem, 1vw, 0.85rem);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.mini-calendar-card:hover {
-  border-color: rgba(139,92,246,0.3);
-  box-shadow: 0 4px 16px rgba(139,92,246,0.08);
-}
-.mini-cal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-.mini-cal-header .mini-cal-title {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(0.6rem, 0.8vw, 0.75rem);
-  font-weight: 600;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.mini-cal-header .mini-cal-link {
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(8px, 0.7vw, 10px);
-  font-weight: 500;
-  color: var(--accent);
-  text-decoration: none;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  min-height: 32px;
-}
-.mini-cal-header .mini-cal-link:hover {
-  color: var(--accent2);
-  transform: translateX(2px);
-}
-.mini-cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: clamp(2px, 0.4vw, 4px);
-}
-.mini-cal-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(2px, 0.3vw, 4px) 1px;
-  border-radius: 6px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
-  cursor: default;
-  min-height: clamp(24px, 4vw, 36px);
-}
-.mini-cal-day .day-name {
-  font-family: 'DM Mono', monospace;
-  font-size: clamp(4px, 0.5vw, 6px);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  line-height: 1;
-}
-.mini-cal-day .day-number {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(8px, 1vw, 11px);
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.2;
-}
-.mini-cal-day .day-pnl-small {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(4px, 0.4vw, 6px);
-  font-weight: 500;
-  line-height: 1;
-  margin-top: 1px;
-}
-.mini-cal-day .day-pnl-small.positive { color: var(--green); }
-.mini-cal-day .day-pnl-small.negative { color: var(--red); }
-.mini-cal-day.win {
-  background: rgba(34,197,94,0.12);
-  border-color: rgba(34,197,94,0.2);
-}
-.mini-cal-day.win:hover {
-  background: rgba(34,197,94,0.2);
-  border-color: rgba(34,197,94,0.35);
-  transform: scale(1.05);
-  box-shadow: 0 2px 12px rgba(34,197,94,0.15);
-}
-.mini-cal-day.win .day-number { color: var(--green); }
-.mini-cal-day.loss {
-  background: rgba(239,68,68,0.12);
-  border-color: rgba(239,68,68,0.2);
-}
-.mini-cal-day.loss:hover {
-  background: rgba(239,68,68,0.2);
-  border-color: rgba(239,68,68,0.35);
-  transform: scale(1.05);
-  box-shadow: 0 2px 12px rgba(239,68,68,0.15);
-}
-.mini-cal-day.loss .day-number { color: var(--red); }
-.mini-cal-day.empty-day {
-  background: var(--surface2);
-  border-color: var(--border);
-  opacity: 0.5;
-}
-.mini-cal-day.empty-day:hover {
-  transform: none;
-  box-shadow: none;
-  opacity: 0.6;
-}
-.mini-cal-day.today {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(139,92,246,0.2);
-}
-.mini-cal-day.today .day-number { color: var(--accent); }
-
-body.light-theme .mini-cal-day.win {
-  background: rgba(16,185,129,0.08);
-  border-color: rgba(16,185,129,0.15);
-}
-body.light-theme .mini-cal-day.win:hover { background: rgba(16,185,129,0.16); }
-body.light-theme .mini-cal-day.loss {
-  background: rgba(239,68,68,0.08);
-  border-color: rgba(239,68,68,0.15);
-}
-body.light-theme .mini-cal-day.loss:hover { background: rgba(239,68,68,0.16); }
 
 /* ============================================================
    DETAYLI TAKVİM SAYFASI (calendar.html)
@@ -1850,7 +1482,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   max-width: min(400px, calc(100vw - 1rem));
   font-family: 'DM Sans', sans-serif;
   margin: 0 auto;
-  /* Safe area desteği */
   padding-bottom: max(clamp(0.5rem, 0.8vw, 0.75rem), env(safe-area-inset-bottom, 0.5rem));
 }
 @media (min-width: 600px) {
@@ -2685,19 +2316,6 @@ body.light-theme .skeleton-stat::after {
   .cal-day .day-number { font-size: 8px; }
   .cal-day .day-pnl { font-size: 5px; }
   .cal-day .day-trade-count { font-size: 4px; }
-  
-  .trade-row {
-    grid-template-columns: 14px 35px 24px 40px 1fr 30px 34px 12px;
-    gap: 0.1rem;
-    padding: 0.25rem 0.3rem;
-    font-size: 0.55rem;
-  }
-  .trade-symbol { font-size: 0.5rem; }
-  .trade-pnl { font-size: 0.5rem; }
-  .trade-direction { font-size: 6px; }
-  .trade-date { font-size: 0.4rem; }
-  .trade-strategy { font-size: 5px; }
-  .trade-icon { width: 12px; height: 12px; font-size: 6px; }
   
   .mini-cal-day { min-height: 20px; padding: 1px; }
   .mini-cal-day .day-number { font-size: 7px; }
