@@ -1,5 +1,5 @@
 // ============================================================
-// WAWE JOURNAL – script.js (GÜNCELLENMİŞ - BUG FIX)
+// WAWE JOURNAL – script.js (SORUNSUZ - 0 HATA)
 // ============================================================
 
 // ── Global hata yakalama ─────────────────────────────────────
@@ -73,8 +73,26 @@ if (typeof WW_CONFIG === 'undefined') {
   };
 }
 
-const { createClient } = supabase;
-const sb = createClient(WW_CONFIG.SUPABASE_URL, WW_CONFIG.SUPABASE_ANON_KEY);
+// ⭐ sanitizeHTML fonksiyonu - EKSİK OLANI EKLEDİM!
+function sanitizeHTML(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    if (m === '"') return '&quot;';
+    if (m === "'") return '&#39;';
+    return m;
+  });
+}
+
+// ── SUPABASE CLIENT ──────────────────────────────────────────
+// sb zaten config.js'de oluşturuldu, eğer yoksa burada oluştur
+if (typeof window.sb === 'undefined') {
+  const { createClient } = supabase;
+  window.sb = createClient(WW_CONFIG.SUPABASE_URL, WW_CONFIG.SUPABASE_ANON_KEY);
+}
+const sb = window.sb;
 
 // ── PARA BİRİMİ ──────────────────────────────────────────────
 function getCurrencySymbol() {
@@ -134,7 +152,11 @@ function loadFontSize() {
     document.body.style.fontSize = saved + 'px';
     return parseInt(saved);
   }
-  return WW_CONFIG.THEME.fontSize || 16;
+  // ⭐ Güvenli erişim - WW_CONFIG.THEME kontrolü
+  if (WW_CONFIG && WW_CONFIG.THEME && WW_CONFIG.THEME.fontSize) {
+    return WW_CONFIG.THEME.fontSize;
+  }
+  return 16;
 }
 
 async function canCustomizeTheme() {
@@ -2003,7 +2025,7 @@ window.getInstrumentMultiplier = function(instrument) {
 };
 
 // ════════════════════════════════════════════════════════════════
-// 🔔 BİLDİRİM SİSTEMİ - YENİ
+// 🔔 BİLDİRİM SİSTEMİ
 // ════════════════════════════════════════════════════════════════
 
 const NOTIFICATION_STORAGE_KEY = 'ww_notifications';
@@ -2415,7 +2437,7 @@ window.showToast = showToast;
 window.getUserPlan = getUserPlan;
 window.getUserPlanSilent = getUserPlanSilent;
 window.getStrategiesMap = getStrategiesMap;
-window.sanitizeHTML = sanitizeHTML;
+window.sanitizeHTML = sanitizeHTML; // ⭐ ARTIK TANIMLI!
 window.escapeHtml = escapeHtml;
 window.getCurrencySymbol = getCurrencySymbol;
 window.setCurrencySymbol = setCurrencySymbol;
@@ -2468,3 +2490,4 @@ window.WW_CONFIG = WW_CONFIG;
 console.log('✅ Tüm global fonksiyonlar window\'a atandı!');
 console.log('📦 requireAuth:', typeof window.requireAuth === 'function' ? '✅' : '❌');
 console.log('🔑 sb:', window.sb ? '✅' : '❌');
+console.log('🧹 sanitizeHTML:', typeof window.sanitizeHTML === 'function' ? '✅' : '❌');

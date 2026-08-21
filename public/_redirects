@@ -1,2 +1,11 @@
 # SPA yönlendirmeleri - wawejournal.com
 /*    /index.html    200
+
+# ⭐ STATIC DOSYALARI - DOĞRUDAN SERVIS ET
+/assets/*    /assets/:splat    200
+/*.js        /:splat.js        200
+/*.css       /:splat.css       200
+/*.svg       /:splat.svg       200
+/*.png       /:splat.png       200
+/*.jpg       /:splat.jpg       200
+/*.webmanifest    /:splat.webmanifest    200

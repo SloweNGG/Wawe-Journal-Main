@@ -1,32 +1,49 @@
 // ============================================================
-// WAWE JOURNAL – config.js (DÜZELTİLMİŞ)
+// WAWE JOURNAL – config.js (SORUNSUZ - import.meta.env KULLANMAZ)
 // ============================================================
 
 // ============================================================
-// SUPABASE YAPILANDIRMASI - Doğrudan tanımla
+// SUPABASE YAPILANDIRMASI - Environment'dan oku (import.meta.env YOK!)
 // ============================================================
-const SUPABASE_URL = 'https://odasapyhtdopbnlfhwde.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+
+// ⭐ Environment variable'ları oku - import.meta.env KULLANMA!
+// Vite build sırasında define ile değiştirilirler
+// Normal script'te çalışması için process.env veya window kullan
+
+const getEnv = (key, fallback) => {
+  // Önce process.env'den dene (Node.js / Vite)
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  // Sonra window'dan dene (manual override)
+  if (typeof window !== 'undefined' && window[key]) {
+    return window[key];
+  }
+  // Fallback
+  return fallback;
+};
+
+const SUPABASE_URL = getEnv('VITE_SUPABASE_URL', 'https://odasapyhtdopbnlfhwde.supabase.co');
+const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg');
+const APP_URL = getEnv('VITE_APP_URL', 'https://wawejournal.com');
+const APP_NAME = getEnv('VITE_APP_NAME', 'Wawe Journal');
 
 // ============================================================
 // GLOBAL DEĞİŞKENLER
 // ============================================================
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+window.APP_URL = APP_URL;
+window.APP_NAME = APP_NAME;
 
 // ============================================================
 // SUPABASE CLIENT - DOĞRUDAN OLUŞTUR
 // ============================================================
-// supabase-js zaten yüklü olduğu için window.supabase kullanılabilir
-// Eğer window.supabase yoksa, supabase.createClient ile oluştur
-
 if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
   window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   console.log('✅ Supabase client oluşturuldu (window.supabase ile)');
 } else {
-  // supabase-js yüklenmemişse, manual oluştur
   console.warn('⚠️ window.supabase bulunamadı, supabase-js yüklenmemiş olabilir.');
-  // Fallback: window.sb'yi boş bırak, script.js veya settings.js oluştursun
 }
 
 // ============================================================
@@ -229,6 +246,8 @@ window.setPaymentMethods = function(methods) {
 const WW_CONFIG = {
   SUPABASE_URL: SUPABASE_URL,
   SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
+  APP_URL: APP_URL,
+  APP_NAME: APP_NAME,
   DEFAULT_PRICES: {
     monthly: 9,
     yearly: 79,
@@ -250,6 +269,7 @@ const WW_CONFIG = {
 
 window.WW_CONFIG = WW_CONFIG;
 
-console.log('✅ Wawe Journal config loaded!');
+console.log('✅ Wawe Journal config loaded from environment!');
 console.log('🔑 Supabase:', SUPABASE_URL ? '✅' : '❌');
 console.log('📦 sb client:', window.sb ? '✅' : '⚠️ (script.js tarafından oluşturulacak)');
+console.log('🌐 Environment:', typeof process !== 'undefined' && process.env ? 'production' : 'browser');

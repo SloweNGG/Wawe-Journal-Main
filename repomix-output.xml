@@ -119,6 +119,7 @@ public/
   register.html
   resim.svg
   robots.txt
+  script.js
   site.webmanifest
   sitemap.xml
   strategies.html
@@ -147,7 +148,6 @@ config.secret.js
 env.example
 index.html
 package.json
-script.js
 setting.json
 vite.config.js
 wrangler.toml
@@ -155,6 +155,185 @@ wrangler.toml
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="public/script.js">
+function safeLocalStorageGet(key, defaultValue)
+⋮----
+function safeLocalStorageSet(key, value)
+⋮----
+function safeLocalStorageRemove(key)
+⋮----
+function sanitizeHTML(str)
+⋮----
+function getCurrencySymbol()
+⋮----
+function setCurrencySymbol(symbol)
+⋮----
+function getThemeSettings()
+⋮----
+function saveThemeSettings(settings)
+⋮----
+function applyThemeSettings(settings)
+⋮----
+function applyFontSize(size)
+⋮----
+function loadFontSize()
+⋮----
+async function canCustomizeTheme()
+⋮----
+async function getUserPlanSilent()
+⋮----
+async function loadThemeCustomization()
+⋮----
+function updatePreview()
+⋮----
+async function requireAuth()
+⋮----
+async function requireAuthSilent()
+⋮----
+async function requireAdmin()
+⋮----
+function isAdmin(user)
+⋮----
+async function throttledUpdateLastActive(userId)
+⋮----
+function calcPnL(entry, exit, lot, direction, instrument, customMultiplier)
+⋮----
+// NaN kontrolleri
+⋮----
+// Entry veya lot 0 ise 0 döndür
+⋮----
+// Multiplier ve direction hesapla
+⋮----
+function calcRR(entry, sl, tp, direction)
+⋮----
+function formatCurrency(value)
+⋮----
+function formatCurrencyPDF(value)
+⋮----
+function formatDate(dateStr)
+⋮----
+function directionBadge(direction)
+⋮----
+function fixDecimalInput(el)
+⋮----
+function applyDecimalFix(ids)
+⋮----
+function isValidEmail(email)
+⋮----
+function showToast(message, type)
+⋮----
+function destroyChart(id)
+⋮----
+async function uploadReferenceImage(file)
+⋮----
+async function loadReferencesToPage(containerId)
+⋮----
+// ── ESCAPE HTML ──────────────────────────────────────────────
+function escapeHtml(str)
+⋮----
+// ── PLATFORM İSTATİSTİKLERİ ──────────────────────────────────
+async function loadPlatformStats()
+⋮----
+async function getUserStrategies(forceRefresh)
+⋮----
+function clearStrategiesCache()
+⋮----
+async function addStrategy(name, description, color)
+⋮----
+async function deleteStrategy(strategyId)
+⋮----
+async function updateStrategy(strategyId, updates)
+⋮----
+function calculateStrategyPerformance(trades, strategyId)
+⋮----
+async function getStrategiesMap()
+⋮----
+function colorizeTotalPnL(totalPnL)
+⋮----
+async function getUserPlan()
+⋮----
+async function hasFeature(featureName)
+⋮----
+async function isPremium()
+⋮----
+async function requirePremium()
+⋮----
+function getSystemSettings()
+⋮----
+function selectPayMethod(method)
+⋮----
+async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
+⋮----
+async function upgradeToPremium(planType, amount, currency, payMethod)
+⋮----
+async function cancelPremium()
+⋮----
+async function fetchPremiumNews(forceRefresh)
+⋮----
+function getMockNews()
+⋮----
+function getCategoryName(category)
+⋮----
+function getTimeAgo(date)
+⋮----
+// ⭐ Sessiz OverTrade kontrolü - yönlendirme YAPMAZ
+⋮----
+// Sessiz plan kontrolü - yönlendirme yapmaz
+⋮----
+// Sessiz plan kontrolü - yönlendirme yapmaz
+⋮----
+function debounce(func, wait)
+⋮----
+function throttle(func, limit)
+⋮----
+class NotificationManager
+⋮----
+loadFromStorage()
+⋮----
+saveToStorage()
+⋮----
+add(notification)
+⋮----
+markAsRead(id)
+⋮----
+markAllAsRead()
+⋮----
+clearAll()
+⋮----
+getUnreadCount()
+⋮----
+getAll()
+⋮----
+getUnread()
+⋮----
+onUpdate(callback)
+⋮----
+notifyListeners()
+⋮----
+startAutoCleanup()
+⋮----
+addOvertradeWarning(warnings)
+⋮----
+addPremiumExpiring(daysLeft)
+⋮----
+addPremiumUpgraded(planType)
+⋮----
+addSystemNotification(title, description, icon = 'ℹ️')
+⋮----
+async checkAndNotifyOvertrade()
+⋮----
+async checkAndNotifyPremiumExpiry()
+⋮----
+async checkAll()
+⋮----
+// ⭐ Zaman formatı yardımcısı
+function getTimeAgoSimple(timestamp)
+</file>
+
+<file path="public/components/page-transition.js">
+// Eski event'leri temizlemek için clone
+</file>
 
 <file path="public/interface/admin/css/admin.css">
 .admin-main,
@@ -1711,406 +1890,6 @@ async function updatePlanBadge()
 async function initTrades()
 </file>
 
-<file path="public/quick-add-modal.html">
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>Quick Add — Önizleme</title>
-
-
-  <link rel="stylesheet" href="css/quick-modal.css">
-
-
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500;600&family=Inter:wght@600&display=swap" rel="stylesheet">
-
-  <style>
-    /* ⭐ SADECE BU SAYFA İÇİN GEREKLİ (preview) */
-    * { box-sizing: border-box; }
-    body{margin:0;background:#0a0a0f;min-height:100vh;font-family:'DM Sans',sans-serif;}
-    .page-hint{color:#6f6f80;font-size:13px;text-align:center;padding:2rem 1rem 0;font-family:'DM Sans',sans-serif;}
-  </style>
-</head>
-<body>
-  <p class="page-hint">FAB butonuna tıklayın · Yön ve preset butonları etkileşimlidir</p>
-
-
-  <button class="quick-add-fab" id="quick-add-fab" aria-label="Hızlı İşlem Ekle" title="Hızlı İşlem Ekle">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  </button>
-
-
-  <div class="quick-add-overlay active" id="quick-add-overlay">
-    <div class="quick-add-modal">
-      <div class="quick-add-header">
-        <h2>Yeni İşlem</h2>
-        <button class="close-btn" id="quick-add-close" aria-label="Kapat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="quick-add-body">
-        <div class="quick-add-field">
-          <label>Enstrüman Tipi</label>
-          <div class="quick-add-instrument-grid" id="quick-instrument-grid">
-            <button class="quick-add-instrument-btn active" data-instrument="forex">Forex<span class="inst-label">100.000</span></button>
-            <button class="quick-add-instrument-btn" data-instrument="gold">Altın<span class="inst-label">100</span></button>
-            <button class="quick-add-instrument-btn" data-instrument="index">Endeks<span class="inst-label">10</span></button>
-            <button class="quick-add-instrument-btn" data-instrument="crypto">Kripto<span class="inst-label">1</span></button>
-            <button class="quick-add-instrument-btn" data-instrument="other">Diğer<span class="inst-label">Manuel</span></button>
-          </div>
-        </div>
-
-        <div class="quick-add-row">
-          <div class="quick-add-field">
-            <label>Sembol</label>
-            <input type="text" placeholder="EURUSD, BTCUSDT..." style="text-transform:uppercase;" value="EURUSD">
-          </div>
-          <div class="quick-add-field">
-            <label>Lot</label>
-            <div class="quick-add-lot-wrap">
-              <input type="text" value="1.00">
-              <div class="lot-presets">
-                <button class="lot-preset" data-lot="0.01">0.01</button>
-                <button class="lot-preset" data-lot="0.10">0.10</button>
-                <button class="lot-preset active" data-lot="1.00">1.00</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="quick-add-field">
-          <label>Yön</label>
-          <div class="quick-add-side-toggle">
-            <button class="quick-add-side-btn active-buy" data-side="BUY" id="quick-side-buy">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
-              <span>Buy</span>
-            </button>
-            <button class="quick-add-side-btn" data-side="SELL" id="quick-side-sell">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 18"/><polyline points="15 18 21 18 21 12"/></svg>
-              <span>Sell</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="quick-add-row">
-          <div class="quick-add-field"><label>Giriş Fiyatı</label><input type="text" value="1.08500"></div>
-          <div class="quick-add-field"><label>Çıkış Fiyatı</label><input type="text" value="1.09000"></div>
-        </div>
-        <div class="quick-add-row">
-          <div class="quick-add-field"><label>Stop Loss</label><input type="text" value="1.08000"></div>
-          <div class="quick-add-field"><label>Take Profit</label><input type="text" value="1.09500"></div>
-        </div>
-
-        <div class="quick-add-row">
-          <div class="quick-add-field">
-            <label>P&amp;L</label>
-            <div class="quick-add-pnl-wrap"><span class="currency-symbol">$</span><input type="text" value="500.00"><span class="pnl-suffix">USD</span></div>
-          </div>
-          <div class="quick-add-field">
-            <label>Risk / Reward</label>
-            <div class="quick-add-rr-wrap">
-              <span class="rr-label">1 :</span><input type="text" value="2">
-              <div class="rr-presets">
-                <button class="rr-preset" data-rr="0.5">0.5</button>
-                <button class="rr-preset active" data-rr="2">2</button>
-                <button class="rr-preset" data-rr="3">3</button>
-                <button class="rr-preset" data-rr="5">5</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="quick-add-preview visible rail-pos" id="quick-preview">
-          <div class="preview-rail"></div>
-          <div class="preview-item"><span class="p-label">Tahmini K/Z</span><span class="p-val pos">+$500.00</span></div>
-          <div class="preview-divider"></div>
-          <div class="preview-item"><span class="p-label">Risk / Reward</span><span class="p-val accent">1 : 2</span></div>
-        </div>
-
-        <div class="quick-add-field">
-          <label>Strateji</label>
-          <div class="quick-add-strategy-wrap">
-            <select><option>— Strateji Yok —</option><option>Breakout</option><option>Trend Takibi</option></select>
-            <button class="create-strategy-btn" title="Yeni strateji ekle">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="quick-add-field quick-add-notes">
-          <label>Notlar</label>
-          <textarea rows="2" placeholder="Strateji notları, gözlemler, psikolojik durum…"></textarea>
-        </div>
-
-        <div class="quick-add-field"><label>Tarih</label><input type="date" value="2026-08-18"></div>
-      </div>
-
-      <div class="quick-add-footer">
-        <button class="btn-cancel">İptal</button>
-        <button class="btn-save">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Kaydet</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-
-  <script src="js/quick-modal.js"></script>
-</body>
-</html>
-</file>
-
-<file path="supabase/migrations/202608190001_security_baseline.sql">
-begin;
-
-
-
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
-$$;
-
-revoke all on function public.is_admin() from public;
-grant execute on function public.is_admin() to authenticated;
-
-
-
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  insert into public.user_profiles (
-    id,
-    email,
-    username,
-    plan,
-    role,
-    is_active
-  ) values (
-    new.id,
-    new.email,
-    coalesce(nullif(trim(new.raw_user_meta_data ->> 'username'), ''), split_part(new.email, '@', 1)),
-    'free',
-    'user',
-    true
-  ) on conflict (id) do nothing;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
-
-
-
-create or replace function public.prevent_profile_privilege_changes()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  if auth.role() = 'service_role' then
-    return new;
-  end if;
-
-  if new.plan is distinct from old.plan
-     or new.plan_expires_at is distinct from old.plan_expires_at
-     or new.role is distinct from old.role
-     or new.is_active is distinct from old.is_active then
-    raise exception 'Subscription, role, and account-status fields are server-managed';
-  end if;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists protect_user_profile_privileges on public.user_profiles;
-create trigger protect_user_profile_privileges
-  before update on public.user_profiles
-  for each row execute procedure public.prevent_profile_privilege_changes();
-
-
-
-do $$
-declare
-  target_table text;
-  policy_name text;
-begin
-  foreach target_table in array array[
-    'user_profiles', 'trades', 'strategies', 'backtest_trades', 'references', 'payments'
-  ] loop
-    if to_regclass('public.' || target_table) is not null then
-      execute format('alter table public.%I enable row level security', target_table);
-      for policy_name in
-        select policyname from pg_policies
-        where schemaname = 'public' and tablename = target_table
-      loop
-        execute format('drop policy if exists %I on public.%I', policy_name, target_table);
-      end loop;
-    end if;
-  end loop;
-end;
-$$;
-
-
-
-create policy "profiles_select_own_or_admin" on public.user_profiles
-  for select to authenticated
-  using (id = auth.uid() or public.is_admin());
-
-create policy "profiles_update_own_or_admin" on public.user_profiles
-  for update to authenticated
-  using (id = auth.uid() or public.is_admin())
-  with check (id = auth.uid() or public.is_admin());
-
-
-create policy "trades_select_own_or_admin" on public.trades
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-create policy "trades_insert_own" on public.trades
-  for insert to authenticated with check (user_id = auth.uid());
-create policy "trades_update_own_or_admin" on public.trades
-  for update to authenticated
-  using (user_id = auth.uid() or public.is_admin())
-  with check (user_id = auth.uid() or public.is_admin());
-create policy "trades_delete_own_or_admin" on public.trades
-  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
-
-create policy "strategies_select_own_or_admin" on public.strategies
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-create policy "strategies_insert_own" on public.strategies
-  for insert to authenticated with check (user_id = auth.uid());
-create policy "strategies_update_own_or_admin" on public.strategies
-  for update to authenticated
-  using (user_id = auth.uid() or public.is_admin())
-  with check (user_id = auth.uid() or public.is_admin());
-create policy "strategies_delete_own_or_admin" on public.strategies
-  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
-
-create policy "backtest_trades_select_own_or_admin" on public.backtest_trades
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-create policy "backtest_trades_insert_own" on public.backtest_trades
-  for insert to authenticated with check (user_id = auth.uid());
-create policy "backtest_trades_update_own_or_admin" on public.backtest_trades
-  for update to authenticated
-  using (user_id = auth.uid() or public.is_admin())
-  with check (user_id = auth.uid() or public.is_admin());
-create policy "backtest_trades_delete_own_or_admin" on public.backtest_trades
-  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
-
-
-create policy "references_read_active_or_admin" on public.references
-  for select to anon, authenticated
-  using (is_active = true or public.is_admin());
-create policy "references_insert_admin" on public.references
-  for insert to authenticated with check (public.is_admin());
-create policy "references_update_admin" on public.references
-  for update to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "references_delete_admin" on public.references
-  for delete to authenticated using (public.is_admin());
-
-
-
-create policy "payments_select_own_or_admin" on public.payments
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-
-
-alter table storage.objects enable row level security;
-drop policy if exists "avatars_select_own" on storage.objects;
-drop policy if exists "avatars_insert_own" on storage.objects;
-drop policy if exists "avatars_update_own" on storage.objects;
-drop policy if exists "avatars_delete_own" on storage.objects;
-create policy "avatars_select_own" on storage.objects
-  for select to authenticated
-  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-create policy "avatars_insert_own" on storage.objects
-  for insert to authenticated
-  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-create policy "avatars_update_own" on storage.objects
-  for update to authenticated
-  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\')
-  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-create policy "avatars_delete_own" on storage.objects
-  for delete to authenticated
-  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-
-commit;
-</file>
-
-<file path="supabase/migrations/README.md">
-# Supabase migrations
-
-`202608190001_security_baseline.sql` is a security hardening migration for
-the existing Wawe Journal schema. It assumes these existing tables and columns:
-
-- `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
-- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
-- `references(is_active)`, `payments(user_id)`
-
-It has intentionally not been run against the hosted project: no database
-admin credential or Supabase CLI login is available in this workspace.
-
-The browser-side writes to `plan` and `plan_expires_at` have been removed from
-the source. Apply the migration in the Supabase SQL Editor or with a linked
-Supabase CLI project only after deploying that client change. Verify the first
-registration and admin account immediately after applying it.
-</file>
-
-<file path="supabase/ADMIN_ROLE.md">
-# Admin role assignment
-
-The app authorizes admins exclusively through `auth.users.raw_app_meta_data`.
-Do not add `role: admin` to `user_metadata`; users can change that data from a
-browser session.
-
-In the Supabase SQL Editor, first identify the intended account:
-
-```sql
-select id, email, raw_app_meta_data
-from auth.users
-order by created_at;
-```
-
-Then replace the placeholder UUID and execute:
-
-```sql
-update auth.users
-set raw_app_meta_data =
-  coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
-where id = '<ADMIN_USER_UUID>';
-```
-
-For revocation:
-
-```sql
-update auth.users
-set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - 'role'
-where id = '<ADMIN_USER_UUID>';
-```
-
-The affected user must sign out and sign in again so their JWT contains the
-new `app_metadata.role` value. The `user_profiles.role` column is display data
-only and is not used for authorization.
-</file>
-
-<file path="public/components/page-transition.js">
-// Eski event'leri temizlemek için clone
-</file>
-
 <file path="public/settings/css/settings.css">
 .settings-wrap {
 ⋮----
@@ -2412,95 +2191,6 @@ body.light-theme .panel-glow.overtrade-glow {
 .sidebar-nav-item,
 ⋮----
 .lang-compact-btn,
-</file>
-
-<file path="public/settings/js/settings.js">
-function getLucideIcon(name, size)
-⋮----
-function getSb()
-⋮----
-function showMsg(message, type)
-⋮----
-function isAdmin(user)
-⋮----
-function safeEl(id)
-⋮----
-function t(key, params)
-⋮----
-function sanitizeHTML(str)
-⋮----
-async function getCurrentUser()
-⋮----
-async function getSession()
-⋮----
-async function loadPanelContent(panelId, url)
-⋮----
-// ============================================================
-// PANEL INIT
-// ============================================================
-function initPanel(panelId)
-⋮----
-async function uploadAvatar(file)
-⋮----
-async function updateAvatar(url)
-⋮----
-async function loadAvatar()
-⋮----
-function updateAvatarElements(url)
-⋮----
-function initProfile()
-⋮----
-async function loadProfileData()
-⋮----
-async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
-⋮----
-function showConfirmModal(title, message, warning, onConfirm, onCancel)
-⋮----
-async function renderPlan()
-⋮----
-function startTimer(expiresAt)
-⋮----
-function initPassword()
-⋮----
-// ============================================================
-// TEHLİKELİ BÖLGE
-// ============================================================
-function initDanger()
-⋮----
-function initAppearance()
-⋮----
-function loadThemeCustomizationFallback()
-⋮----
-function setupThemeEventsFallback()
-⋮----
-function updatePreview()
-⋮----
-function saveTheme()
-⋮----
-function resetTheme()
-⋮----
-function initLanguageSelector()
-⋮----
-function initCurrencySelector()
-⋮----
-function initOvertrade()
-⋮----
-async function updateBadge()
-⋮----
-function initNavEvents()
-⋮----
-function initPanelClickEvents()
-⋮----
-function initAvatarPopup()
-⋮----
-function closePopup()
-⋮----
-// ============================================================
-// CONFIRM MODAL - INIT
-// ============================================================
-function initConfirmModal()
-⋮----
-async function checkAndActivatePremium()
 </file>
 
 <file path="public/settings/panels/appearance.html">
@@ -4449,6 +4139,15 @@ async function checkAndActivatePremium()
 <file path="public/_redirects">
 # SPA yönlendirmeleri - wawejournal.com
 /*    /index.html    200
+
+# ⭐ STATIC DOSYALARI - DOĞRUDAN SERVIS ET
+/assets/*    /assets/:splat    200
+/*.js        /:splat.js        200
+/*.css       /:splat.css       200
+/*.svg       /:splat.svg       200
+/*.png       /:splat.png       200
+/*.jpg       /:splat.jpg       200
+/*.webmanifest    /:splat.webmanifest    200
 </file>
 
 <file path="public/.gitattributes">
@@ -4613,179 +4312,6 @@ supabase/.temp/
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script src="script.js"></script>
-</body>
-</html>
-</file>
-
-<file path="public/admin.html">
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Admin Panel – Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
-
-
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar.css" />
-
-
-  <link rel="stylesheet" href="interface/admin/css/admin.css" />
-
-
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
-
-
-  <div id="navbar-container"></div>
-
-
-  <main class="admin-main" id="main-content">
-    <div style="display:flex;justify-content:center;padding:4rem;flex-direction:column;align-items:center;gap:1rem;">
-      <div class="spinner"></div>
-      <p style="color:var(--muted);">Admin panel yükleniyor...</p>
-    </div>
-  </main>
-
-
-  <div class="toast-container" id="toast-container"></div>
-
-
-  <div id="ref-modal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2 id="ref-modal-title">Yeni Referans Ekle</h2>
-        <button class="modal-close" id="close-ref-modal">✕</button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="ref-id" />
-        <div class="field-row">
-          <div class="field">
-            <label>İsim *</label>
-            <input type="text" id="ref-name" placeholder="Ahmet Yılmaz" />
-          </div>
-          <div class="field">
-            <label>Ünvan / Pozisyon</label>
-            <input type="text" id="ref-title" placeholder="Forex Trader" />
-          </div>
-        </div>
-        <div class="field">
-          <label>Açıklama</label>
-          <textarea id="ref-desc" rows="3" placeholder="Bu kişi hakkında kısa bilgi..."></textarea>
-        </div>
-        <div class="section-divider">Profil Fotoğrafı</div>
-        <div class="avatar-upload">
-          <div class="avatar-preview-sm">
-            <img id="ref-image-preview-img" src="https://placehold.co/64x64?text=Photo" />
-          </div>
-          <div class="avatar-actions">
-            <input type="file" id="ref-image-file" accept="image/*" style="display:none;" />
-            <button type="button" class="btn btn-ghost btn-sm" id="upload-image-btn">Resim Seç</button>
-            <button type="button" class="btn btn-danger btn-sm" id="remove-image-btn">Kaldır</button>
-            <input type="hidden" id="ref-image" value="" />
-          </div>
-        </div>
-        <div class="field-row" style="margin-top:0.75rem;">
-          <div class="field"><label>Sıralama</label><input type="number" id="ref-order" value="0" /></div>
-          <div class="field"><label>Durum</label><select id="ref-active"><option value="true">✓ Aktif</option><option value="false">○ Pasif</option></select></div>
-        </div>
-        <div class="section-divider">Sosyal Medya</div>
-        <div class="field-row">
-          <div class="field"><label>Instagram</label><input type="text" id="ref-insta" placeholder="https://instagram.com/..." /></div>
-          <div class="field"><label>Twitter / X</label><input type="text" id="ref-twitter" placeholder="https://twitter.com/..." /></div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label>YouTube</label><input type="text" id="ref-youtube" placeholder="https://youtube.com/..." /></div>
-          <div class="field"><label>LinkedIn</label><input type="text" id="ref-linkedin" placeholder="https://linkedin.com/..." /></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancel-ref-btn">İptal</button>
-        <button class="btn btn-primary" id="save-ref-btn">Kaydet</button>
-      </div>
-    </div>
-  </div>
-
-
-
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/config.js"></script>
-  <script src="/i18n.js"></script>
-
-
-  <script src="/script.js"></script>
-
-
-  <script src="/components/navbar.js"></script>
-
-
-  <script src="interface/admin/js/admin-core.js"></script>
-  <script src="interface/admin/js/admin-data.js"></script>
-  <script src="interface/admin/js/admin-dashboard.js"></script>
-
-
-  <script>
-    console.log('🚀 Admin başlatılıyor...');
-
-    // ⭐ Her script'in yüklendiğini kontrol et
-    console.log('📦 script.js loaded:', typeof sb !== 'undefined' ? '✅' : '❌');
-    console.log('📦 navbar.js loaded:', typeof loadNavbar !== 'undefined' ? '✅' : '❌');
-    console.log('📦 admin-core.js loaded:', typeof adminState !== 'undefined' ? '✅' : '❌');
-    console.log('📦 initAdmin loaded:', typeof initAdmin !== 'undefined' ? '✅' : '❌');
-    console.log('📦 admin-data.js loaded:', typeof loadUsers !== 'undefined' ? '✅' : '❌');
-    console.log('📦 admin-dashboard.js loaded:', typeof loadAnalyticsData !== 'undefined' ? '✅' : '❌');
-
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('📄 DOM yüklendi!');
-
-      // Navbar
-      if (typeof loadNavbar === 'function') {
-        try {
-          loadNavbar('navbar-container');
-          console.log('✅ Navbar yüklendi!');
-        } catch(e) {
-          console.warn('⚠️ Navbar hatası:', e);
-        }
-      }
-
-      // Lucide
-      if (typeof lucide !== 'undefined') {
-        try {
-          lucide.createIcons();
-          console.log('✅ Lucide icons initialized!');
-        } catch(e) {
-          console.warn('⚠️ Lucide hatası:', e);
-        }
-      }
-
-      // ⭐ Admin - initAdmin kontrolü
-      if (typeof initAdmin === 'function') {
-        console.log('⏳ initAdmin başlatılıyor...');
-        setTimeout(function() {
-          try {
-            initAdmin();
-          } catch(e) {
-            console.error('❌ Admin panel hatası:', e);
-            alert('Admin panel hatası: ' + e.message);
-          }
-        }, 500);
-      } else {
-        console.error('❌ initAdmin fonksiyonu bulunamadı!');
-        console.log('💡 admin-core.js dosyasının yolu: /js/admin/admin-core.js');
-        console.log('💡 Dosyanın var olduğundan emin ol!');
-        alert('admin-core.js yüklenemedi! Dosya yolunu kontrol et.');
-      }
-    });
-  </script>
 </body>
 </html>
 </file>
@@ -5442,7 +4968,7 @@ supabase/.temp/
 </file>
 
 <file path="public/config.js">
-
+const getEnv = (key, fallback) =>
 </file>
 
 <file path="public/contact.html">
@@ -6257,233 +5783,6 @@ syncStorageOnly(lang)
 getSavedLanguage()
 ⋮----
 resolveLanguageConflict(dbLang)
-</file>
-
-<file path="public/index.css">
-:root {
-⋮----
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-⋮----
-html { scroll-behavior: smooth; }
-⋮----
-body {
-⋮----
-*, *::before, *::after {
-⋮----
-#stars-canvas {
-⋮----
-nav.nav {
-⋮----
-.nav-logo {
-.nav-logo span { color: var(--accent); }
-⋮----
-.logo-icon {
-⋮----
-.nav-links {
-⋮----
-.hamburger {
-⋮----
-.hamburger span {
-⋮----
-.hamburger.active span:nth-child(1) {
-.hamburger.active span:nth-child(2) {
-.hamburger.active span:nth-child(3) {
-⋮----
-.mobile-menu {
-⋮----
-.mobile-menu.active {
-⋮----
-.mobile-menu a,
-⋮----
-.mobile-menu a:hover,
-⋮----
-.mobile-menu .btn-register-mobile {
-⋮----
-.mobile-menu .btn-register-mobile:hover {
-⋮----
-.menu-overlay {
-⋮----
-.menu-overlay.active {
-⋮----
-.btn-login {
-.btn-login:hover { border-color: var(--accent); color: var(--accent); }
-⋮----
-.btn-register {
-.btn-register:hover { opacity: .85; box-shadow: 0 0 20px rgba(124,109,250,.35); }
-⋮----
-.btn-social {
-.btn-social:hover {
-⋮----
-.hero {
-⋮----
-.hero-left {
-⋮----
-.hero-chart-wrap {
-⋮----
-.hero-chart-wrap::before {
-⋮----
-#hero-chart-canvas {
-⋮----
-.hero-float-card {
-⋮----
-.hfc-top {
-.hfc-mid {
-.hfc-bot {
-⋮----
-.hfc-label {
-.hfc-value {
-.hfc-green { color: var(--green); }
-⋮----
-.hero-stats {
-⋮----
-.hstat { display: flex; flex-direction: column; gap: 2px; }
-.hstat-val {
-.hstat-label {
-⋮----
-.hero-badge {
-⋮----
-.badge-dot {
-⋮----
-.hero h1 {
-.hero h1 .l1 { display: block; color: var(--text); }
-.hero h1 .l2 {
-.hero h1 .l3 {
-⋮----
-.hero-sub {
-⋮----
-.hero-actions {
-⋮----
-.btn-primary {
-.btn-primary:hover {
-⋮----
-.btn-ghost {
-.btn-ghost:hover { border-color: var(--accent); color: var(--text); }
-⋮----
-.section {
-⋮----
-.section-tag {
-.section-tag::before {
-⋮----
-.section-title {
-.section-title em { font-style: normal; color: var(--accent); }
-⋮----
-.section-desc {
-⋮----
-.glow-line {
-⋮----
-.features-grid {
-⋮----
-.feat-card {
-⋮----
-.feat-card::before {
-⋮----
-.feat-card:hover::before {
-⋮----
-.feat-card:hover {
-⋮----
-.feat-num {
-⋮----
-.feat-icon {
-.feat-card:hover .feat-icon {
-.feat-icon svg {
-⋮----
-.feat-card h3 {
-⋮----
-.feat-card p {
-⋮----
-.references-grid {
-⋮----
-.reference-card {
-.reference-card:hover {
-⋮----
-.ref-image img {
-⋮----
-.ref-info h3       { font-size: clamp(0.8rem, 1vw, 0.9rem); font-weight: 600; margin-bottom: .2rem; }
-.ref-title         { font-size: clamp(0.65rem, 0.8vw, 0.72rem); color: var(--accent); margin-bottom: .4rem; font-family: 'JetBrains Mono', monospace; }
-.ref-desc          { font-size: clamp(0.7rem, 0.8vw, 0.78rem); color: var(--muted); line-height: 1.5; margin-bottom: .7rem; }
-.ref-social        { display: flex; gap: .6rem; flex-wrap: wrap; }
-.ref-social-link   { color: var(--muted); transition: color .2s; display: inline-flex; align-items: center; min-height: 32px; min-width: 32px; justify-content: center; }
-.ref-social-link:hover { color: var(--accent); }
-⋮----
-.loading-spinner { display: flex; justify-content: center; padding: 2rem; }
-.spinner {
-⋮----
-.cta-wrap {
-.cta-banner {
-.cta-banner::before {
-.cta-banner h2 {
-.cta-banner p {
-⋮----
-footer.site-footer {
-.footer-container {
-⋮----
-.footer-logo {
-.footer-logo span { color: var(--accent); }
-.footer-desc { font-size: clamp(11px, 0.9vw, 12px); color: var(--muted); line-height: 1.7; }
-⋮----
-.footer-col h4 {
-.footer-col ul { list-style: none; }
-.footer-col ul li { margin-bottom: clamp(0.3rem, 0.6vw, 0.5rem); }
-.footer-col ul li a,
-.footer-col ul li a:hover { color: var(--accent); }
-⋮----
-.footer-bottom-bar {
-.footer-bottom-bar p {
-.footer-social { display: flex; gap: clamp(0.4rem, 0.8vw, 0.75rem); flex-wrap: wrap; }
-.social-link {
-.social-link:hover { border-color: var(--accent); color: var(--accent); }
-⋮----
-.reveal {
-.reveal.visible { opacity: 1; transform: none; }
-⋮----
-.psych-card {
-.psych-card::before {
-⋮----
-/* ============================================================
-   ⭐ PLAN KARTLARI - ÖZEL STİLLER
-   ============================================================ */
-.plan-card-home .plan-price {
-⋮----
-.plan-card-home .plan-price span {
-⋮----
-#monthly-price-value,
-⋮----
-.plan-card-home.premium .plan-price {
-⋮----
-.plan-card-home.premium .plan-price span {
-⋮----
-.plan-card-home .plan-features-list li {
-.plan-card-home .plan-features-list.open li {
-.plan-card-home .plan-features-list.open li:nth-child(1)  { transition-delay: 0.02s; }
-.plan-card-home .plan-features-list.open li:nth-child(2)  { transition-delay: 0.05s; }
-.plan-card-home .plan-features-list.open li:nth-child(3)  { transition-delay: 0.08s; }
-.plan-card-home .plan-features-list.open li:nth-child(4)  { transition-delay: 0.11s; }
-.plan-card-home .plan-features-list.open li:nth-child(5)  { transition-delay: 0.14s; }
-.plan-card-home .plan-features-list.open li:nth-child(6)  { transition-delay: 0.17s; }
-.plan-card-home .plan-features-list.open li:nth-child(7)  { transition-delay: 0.20s; }
-.plan-card-home .plan-features-list.open li:nth-child(8)  { transition-delay: 0.23s; }
-.plan-card-home .plan-features-list.open li:nth-child(9)  { transition-delay: 0.26s; }
-.plan-card-home .plan-features-list.open li:nth-child(10) { transition-delay: 0.29s; }
-⋮----
-.plans-grid {
-.plan-card-home.premium {
-.plan-card-home.premium:hover {
-⋮----
-.hfc-mid, .hfc-bot {
-⋮----
-.hero-left { grid-column: 1; grid-row: 1; }
-⋮----
-.hero-stats { grid-column: 1; grid-row: 3; }
-⋮----
-.btn-primary,
-⋮----
-.hero-actions .btn-primary,
-⋮----
-.social-link span {
-⋮----
-.ref-social-link {
-⋮----
-.hero h1 .l1,
 </file>
 
 <file path="public/login.html">
@@ -8043,6 +7342,158 @@ footer.site-footer {
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script src="script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="public/quick-add-modal.html">
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Quick Add — Önizleme</title>
+
+
+  <link rel="stylesheet" href="css/quick-modal.css">
+
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500;600&family=Inter:wght@600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ⭐ SADECE BU SAYFA İÇİN GEREKLİ (preview) */
+    * { box-sizing: border-box; }
+    body{margin:0;background:#0a0a0f;min-height:100vh;font-family:'DM Sans',sans-serif;}
+    .page-hint{color:#6f6f80;font-size:13px;text-align:center;padding:2rem 1rem 0;font-family:'DM Sans',sans-serif;}
+  </style>
+</head>
+<body>
+  <p class="page-hint">FAB butonuna tıklayın · Yön ve preset butonları etkileşimlidir</p>
+
+
+  <button class="quick-add-fab" id="quick-add-fab" aria-label="Hızlı İşlem Ekle" title="Hızlı İşlem Ekle">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+
+  <div class="quick-add-overlay active" id="quick-add-overlay">
+    <div class="quick-add-modal">
+      <div class="quick-add-header">
+        <h2>Yeni İşlem</h2>
+        <button class="close-btn" id="quick-add-close" aria-label="Kapat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="quick-add-body">
+        <div class="quick-add-field">
+          <label>Enstrüman Tipi</label>
+          <div class="quick-add-instrument-grid" id="quick-instrument-grid">
+            <button class="quick-add-instrument-btn active" data-instrument="forex">Forex<span class="inst-label">100.000</span></button>
+            <button class="quick-add-instrument-btn" data-instrument="gold">Altın<span class="inst-label">100</span></button>
+            <button class="quick-add-instrument-btn" data-instrument="index">Endeks<span class="inst-label">10</span></button>
+            <button class="quick-add-instrument-btn" data-instrument="crypto">Kripto<span class="inst-label">1</span></button>
+            <button class="quick-add-instrument-btn" data-instrument="other">Diğer<span class="inst-label">Manuel</span></button>
+          </div>
+        </div>
+
+        <div class="quick-add-row">
+          <div class="quick-add-field">
+            <label>Sembol</label>
+            <input type="text" placeholder="EURUSD, BTCUSDT..." style="text-transform:uppercase;" value="EURUSD">
+          </div>
+          <div class="quick-add-field">
+            <label>Lot</label>
+            <div class="quick-add-lot-wrap">
+              <input type="text" value="1.00">
+              <div class="lot-presets">
+                <button class="lot-preset" data-lot="0.01">0.01</button>
+                <button class="lot-preset" data-lot="0.10">0.10</button>
+                <button class="lot-preset active" data-lot="1.00">1.00</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-add-field">
+          <label>Yön</label>
+          <div class="quick-add-side-toggle">
+            <button class="quick-add-side-btn active-buy" data-side="BUY" id="quick-side-buy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
+              <span>Buy</span>
+            </button>
+            <button class="quick-add-side-btn" data-side="SELL" id="quick-side-sell">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 18"/><polyline points="15 18 21 18 21 12"/></svg>
+              <span>Sell</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-add-row">
+          <div class="quick-add-field"><label>Giriş Fiyatı</label><input type="text" value="1.08500"></div>
+          <div class="quick-add-field"><label>Çıkış Fiyatı</label><input type="text" value="1.09000"></div>
+        </div>
+        <div class="quick-add-row">
+          <div class="quick-add-field"><label>Stop Loss</label><input type="text" value="1.08000"></div>
+          <div class="quick-add-field"><label>Take Profit</label><input type="text" value="1.09500"></div>
+        </div>
+
+        <div class="quick-add-row">
+          <div class="quick-add-field">
+            <label>P&amp;L</label>
+            <div class="quick-add-pnl-wrap"><span class="currency-symbol">$</span><input type="text" value="500.00"><span class="pnl-suffix">USD</span></div>
+          </div>
+          <div class="quick-add-field">
+            <label>Risk / Reward</label>
+            <div class="quick-add-rr-wrap">
+              <span class="rr-label">1 :</span><input type="text" value="2">
+              <div class="rr-presets">
+                <button class="rr-preset" data-rr="0.5">0.5</button>
+                <button class="rr-preset active" data-rr="2">2</button>
+                <button class="rr-preset" data-rr="3">3</button>
+                <button class="rr-preset" data-rr="5">5</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-add-preview visible rail-pos" id="quick-preview">
+          <div class="preview-rail"></div>
+          <div class="preview-item"><span class="p-label">Tahmini K/Z</span><span class="p-val pos">+$500.00</span></div>
+          <div class="preview-divider"></div>
+          <div class="preview-item"><span class="p-label">Risk / Reward</span><span class="p-val accent">1 : 2</span></div>
+        </div>
+
+        <div class="quick-add-field">
+          <label>Strateji</label>
+          <div class="quick-add-strategy-wrap">
+            <select><option>— Strateji Yok —</option><option>Breakout</option><option>Trend Takibi</option></select>
+            <button class="create-strategy-btn" title="Yeni strateji ekle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-add-field quick-add-notes">
+          <label>Notlar</label>
+          <textarea rows="2" placeholder="Strateji notları, gözlemler, psikolojik durum…"></textarea>
+        </div>
+
+        <div class="quick-add-field"><label>Tarih</label><input type="date" value="2026-08-18"></div>
+      </div>
+
+      <div class="quick-add-footer">
+        <button class="btn-cancel">İptal</button>
+        <button class="btn-save">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Kaydet</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/quick-modal.js"></script>
 </body>
 </html>
 </file>
@@ -10031,6 +9482,250 @@ async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<R
 // ⭐ CORS - OPTIONS
 </file>
 
+<file path="supabase/migrations/202608190001_security_baseline.sql">
+begin;
+
+
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
+
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.user_profiles (
+    id,
+    email,
+    username,
+    plan,
+    role,
+    is_active
+  ) values (
+    new.id,
+    new.email,
+    coalesce(nullif(trim(new.raw_user_meta_data ->> 'username'), ''), split_part(new.email, '@', 1)),
+    'free',
+    'user',
+    true
+  ) on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+
+
+
+create or replace function public.prevent_profile_privilege_changes()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  if new.plan is distinct from old.plan
+     or new.plan_expires_at is distinct from old.plan_expires_at
+     or new.role is distinct from old.role
+     or new.is_active is distinct from old.is_active then
+    raise exception 'Subscription, role, and account-status fields are server-managed';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_user_profile_privileges on public.user_profiles;
+create trigger protect_user_profile_privileges
+  before update on public.user_profiles
+  for each row execute procedure public.prevent_profile_privilege_changes();
+
+
+
+do $$
+declare
+  target_table text;
+  policy_name text;
+begin
+  foreach target_table in array array[
+    'user_profiles', 'trades', 'strategies', 'backtest_trades', 'references', 'payments'
+  ] loop
+    if to_regclass('public.' || target_table) is not null then
+      execute format('alter table public.%I enable row level security', target_table);
+      for policy_name in
+        select policyname from pg_policies
+        where schemaname = 'public' and tablename = target_table
+      loop
+        execute format('drop policy if exists %I on public.%I', policy_name, target_table);
+      end loop;
+    end if;
+  end loop;
+end;
+$$;
+
+
+
+create policy "profiles_select_own_or_admin" on public.user_profiles
+  for select to authenticated
+  using (id = auth.uid() or public.is_admin());
+
+create policy "profiles_update_own_or_admin" on public.user_profiles
+  for update to authenticated
+  using (id = auth.uid() or public.is_admin())
+  with check (id = auth.uid() or public.is_admin());
+
+
+create policy "trades_select_own_or_admin" on public.trades
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy "trades_insert_own" on public.trades
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "trades_update_own_or_admin" on public.trades
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+create policy "trades_delete_own_or_admin" on public.trades
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+create policy "strategies_select_own_or_admin" on public.strategies
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy "strategies_insert_own" on public.strategies
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "strategies_update_own_or_admin" on public.strategies
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+create policy "strategies_delete_own_or_admin" on public.strategies
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+create policy "backtest_trades_select_own_or_admin" on public.backtest_trades
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy "backtest_trades_insert_own" on public.backtest_trades
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "backtest_trades_update_own_or_admin" on public.backtest_trades
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+create policy "backtest_trades_delete_own_or_admin" on public.backtest_trades
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+
+create policy "references_read_active_or_admin" on public.references
+  for select to anon, authenticated
+  using (is_active = true or public.is_admin());
+create policy "references_insert_admin" on public.references
+  for insert to authenticated with check (public.is_admin());
+create policy "references_update_admin" on public.references
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "references_delete_admin" on public.references
+  for delete to authenticated using (public.is_admin());
+
+
+
+create policy "payments_select_own_or_admin" on public.payments
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+
+
+alter table storage.objects enable row level security;
+drop policy if exists "avatars_select_own" on storage.objects;
+drop policy if exists "avatars_insert_own" on storage.objects;
+drop policy if exists "avatars_update_own" on storage.objects;
+drop policy if exists "avatars_delete_own" on storage.objects;
+create policy "avatars_select_own" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+create policy "avatars_insert_own" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+create policy "avatars_update_own" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\')
+  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+create policy "avatars_delete_own" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+
+commit;
+</file>
+
+<file path="supabase/migrations/README.md">
+# Supabase migrations
+
+`202608190001_security_baseline.sql` is a security hardening migration for
+the existing Wawe Journal schema. It assumes these existing tables and columns:
+
+- `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
+- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
+- `references(is_active)`, `payments(user_id)`
+
+It has intentionally not been run against the hosted project: no database
+admin credential or Supabase CLI login is available in this workspace.
+
+The browser-side writes to `plan` and `plan_expires_at` have been removed from
+the source. Apply the migration in the Supabase SQL Editor or with a linked
+Supabase CLI project only after deploying that client change. Verify the first
+registration and admin account immediately after applying it.
+</file>
+
+<file path="supabase/ADMIN_ROLE.md">
+# Admin role assignment
+
+The app authorizes admins exclusively through `auth.users.raw_app_meta_data`.
+Do not add `role: admin` to `user_metadata`; users can change that data from a
+browser session.
+
+In the Supabase SQL Editor, first identify the intended account:
+
+```sql
+select id, email, raw_app_meta_data
+from auth.users
+order by created_at;
+```
+
+Then replace the placeholder UUID and execute:
+
+```sql
+update auth.users
+set raw_app_meta_data =
+  coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+where id = '<ADMIN_USER_UUID>';
+```
+
+For revocation:
+
+```sql
+update auth.users
+set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - 'role'
+where id = '<ADMIN_USER_UUID>';
+```
+
+The affected user must sign out and sign in again so their JWT contains the
+new `app_metadata.role` value. The `user_profiles.role` column is display data
+only and is not used for authorization.
+</file>
+
 <file path=".env.example">
 # Supabase (gerekli)
 VITE_SUPABASE_URL=https://odasapyhtdopbnlfhwde.supabase.co
@@ -10060,18 +9755,6 @@ VITE_APP_NAME=Wawe Journal
   "deno.lint": true,
   "deno.unstable": true
 }
-</file>
-
-<file path="wrangler.toml">
-name = "wawe-journal"
-pages_build_output_dir = "dist"
-compatibility_date = "2024-01-01"
-
-[env.production.vars]
-VITE_SUPABASE_URL = ""
-VITE_SUPABASE_ANON_KEY = ""
-VITE_APP_URL = "https://wawejournal.com"
-VITE_APP_NAME = "Wawe Journal"
 </file>
 
 <file path="public/components/navbar.css">
@@ -10370,6 +10053,95 @@ function initNavEvents()
 // Mobile Logout
 ⋮----
 function loadNavbar(containerId)
+</file>
+
+<file path="public/settings/js/settings.js">
+function getLucideIcon(name, size)
+⋮----
+function getSb()
+⋮----
+function showMsg(message, type)
+⋮----
+function isAdmin(user)
+⋮----
+function safeEl(id)
+⋮----
+function t(key, params)
+⋮----
+function sanitizeHTML(str)
+⋮----
+async function getCurrentUser()
+⋮----
+async function getSession()
+⋮----
+async function loadPanelContent(panelId, url)
+⋮----
+// ============================================================
+// PANEL INIT
+// ============================================================
+function initPanel(panelId)
+⋮----
+async function uploadAvatar(file)
+⋮----
+async function updateAvatar(url)
+⋮----
+async function loadAvatar()
+⋮----
+function updateAvatarElements(url)
+⋮----
+function initProfile()
+⋮----
+async function loadProfileData()
+⋮----
+async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
+⋮----
+function showConfirmModal(title, message, warning, onConfirm, onCancel)
+⋮----
+async function renderPlan()
+⋮----
+function startTimer(expiresAt)
+⋮----
+function initPassword()
+⋮----
+// ============================================================
+// TEHLİKELİ BÖLGE
+// ============================================================
+function initDanger()
+⋮----
+function initAppearance()
+⋮----
+function loadThemeCustomizationFallback()
+⋮----
+function setupThemeEventsFallback()
+⋮----
+function updatePreview()
+⋮----
+function saveTheme()
+⋮----
+function resetTheme()
+⋮----
+function initLanguageSelector()
+⋮----
+function initCurrencySelector()
+⋮----
+function initOvertrade()
+⋮----
+async function updateBadge()
+⋮----
+function initNavEvents()
+⋮----
+function initPanelClickEvents()
+⋮----
+function initAvatarPopup()
+⋮----
+function closePopup()
+⋮----
+// ============================================================
+// CONFIRM MODAL - INIT
+// ============================================================
+function initConfirmModal()
+⋮----
+async function checkAndActivatePremium()
 </file>
 
 <file path="public/add-trade.html">
@@ -11739,6 +11511,467 @@ function loadNavbar(containerId)
   </script>
 </body>
 </html>
+</file>
+
+<file path="public/admin.html">
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Admin Panel – Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="/resim.svg">
+
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/components/navbar.css" />
+
+
+  <link rel="stylesheet" href="interface/admin/css/admin.css" />
+
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+
+  <div id="navbar-container"></div>
+
+
+  <main class="admin-main" id="main-content">
+    <div style="display:flex;justify-content:center;padding:4rem;flex-direction:column;align-items:center;gap:1rem;">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);">Admin panel yükleniyor...</p>
+    </div>
+  </main>
+
+
+  <div class="toast-container" id="toast-container"></div>
+
+
+  <div id="ref-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="ref-modal-title">Yeni Referans Ekle</h2>
+        <button class="modal-close" id="close-ref-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ref-id" />
+        <div class="field-row">
+          <div class="field">
+            <label>İsim *</label>
+            <input type="text" id="ref-name" placeholder="Ahmet Yılmaz" />
+          </div>
+          <div class="field">
+            <label>Ünvan / Pozisyon</label>
+            <input type="text" id="ref-title" placeholder="Forex Trader" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Açıklama</label>
+          <textarea id="ref-desc" rows="3" placeholder="Bu kişi hakkında kısa bilgi..."></textarea>
+        </div>
+        <div class="section-divider">Profil Fotoğrafı</div>
+        <div class="avatar-upload">
+          <div class="avatar-preview-sm">
+            <img id="ref-image-preview-img" src="https://placehold.co/64x64?text=Photo" />
+          </div>
+          <div class="avatar-actions">
+            <input type="file" id="ref-image-file" accept="image/*" style="display:none;" />
+            <button type="button" class="btn btn-ghost btn-sm" id="upload-image-btn">Resim Seç</button>
+            <button type="button" class="btn btn-danger btn-sm" id="remove-image-btn">Kaldır</button>
+            <input type="hidden" id="ref-image" value="" />
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:0.75rem;">
+          <div class="field"><label>Sıralama</label><input type="number" id="ref-order" value="0" /></div>
+          <div class="field"><label>Durum</label><select id="ref-active"><option value="true">✓ Aktif</option><option value="false">○ Pasif</option></select></div>
+        </div>
+        <div class="section-divider">Sosyal Medya</div>
+        <div class="field-row">
+          <div class="field"><label>Instagram</label><input type="text" id="ref-insta" placeholder="https://instagram.com/..." /></div>
+          <div class="field"><label>Twitter / X</label><input type="text" id="ref-twitter" placeholder="https://twitter.com/..." /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>YouTube</label><input type="text" id="ref-youtube" placeholder="https://youtube.com/..." /></div>
+          <div class="field"><label>LinkedIn</label><input type="text" id="ref-linkedin" placeholder="https://linkedin.com/..." /></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancel-ref-btn">İptal</button>
+        <button class="btn btn-primary" id="save-ref-btn">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/i18n.js"></script>
+
+
+  <script src="/script.js"></script>
+
+
+  <script src="/components/navbar.js"></script>
+
+
+  <script src="interface/admin/js/admin-core.js"></script>
+  <script src="interface/admin/js/admin-data.js"></script>
+  <script src="interface/admin/js/admin-dashboard.js"></script>
+
+
+  <script>
+    console.log('🚀 Admin başlatılıyor...');
+
+    // ⭐ Her script'in yüklendiğini kontrol et
+    console.log('📦 script.js loaded:', typeof sb !== 'undefined' ? '✅' : '❌');
+    console.log('📦 navbar.js loaded:', typeof loadNavbar !== 'undefined' ? '✅' : '❌');
+    console.log('📦 admin-core.js loaded:', typeof adminState !== 'undefined' ? '✅' : '❌');
+    console.log('📦 initAdmin loaded:', typeof initAdmin !== 'undefined' ? '✅' : '❌');
+    console.log('📦 admin-data.js loaded:', typeof loadUsers !== 'undefined' ? '✅' : '❌');
+    console.log('📦 admin-dashboard.js loaded:', typeof loadAnalyticsData !== 'undefined' ? '✅' : '❌');
+
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📄 DOM yüklendi!');
+
+      // Navbar
+      if (typeof loadNavbar === 'function') {
+        try {
+          loadNavbar('navbar-container');
+          console.log('✅ Navbar yüklendi!');
+        } catch(e) {
+          console.warn('⚠️ Navbar hatası:', e);
+        }
+      }
+
+      // Lucide
+      if (typeof lucide !== 'undefined') {
+        try {
+          lucide.createIcons();
+          console.log('✅ Lucide icons initialized!');
+        } catch(e) {
+          console.warn('⚠️ Lucide hatası:', e);
+        }
+      }
+
+      // ⭐ Admin - initAdmin kontrolü
+      if (typeof initAdmin === 'function') {
+        console.log('⏳ initAdmin başlatılıyor...');
+        setTimeout(function() {
+          try {
+            initAdmin();
+          } catch(e) {
+            console.error('❌ Admin panel hatası:', e);
+            alert('Admin panel hatası: ' + e.message);
+          }
+        }, 500);
+      } else {
+        console.error('❌ initAdmin fonksiyonu bulunamadı!');
+        console.log('💡 admin-core.js dosyasının yolu: /js/admin/admin-core.js');
+        console.log('💡 Dosyanın var olduğundan emin ol!');
+        alert('admin-core.js yüklenemedi! Dosya yolunu kontrol et.');
+      }
+    });
+  </script>
+</body>
+</html>
+</file>
+
+<file path="public/index.css">
+:root {
+⋮----
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+⋮----
+html { scroll-behavior: smooth; }
+⋮----
+body {
+⋮----
+*, *::before, *::after {
+⋮----
+#stars-canvas {
+⋮----
+nav.nav {
+⋮----
+.nav-logo {
+.nav-logo span { color: var(--accent); }
+⋮----
+.logo-icon {
+⋮----
+.nav-links {
+⋮----
+.hamburger,
+⋮----
+.btn-login {
+.btn-login:hover { border-color: var(--accent); color: var(--accent); }
+⋮----
+.btn-register {
+.btn-register:hover { opacity: .85; box-shadow: 0 0 20px rgba(124,109,250,.35); }
+⋮----
+.btn-social {
+.btn-social:hover {
+⋮----
+.hero {
+⋮----
+.hero-left {
+⋮----
+.hero-chart-wrap {
+⋮----
+.hero-chart-wrap::before {
+⋮----
+#hero-chart-canvas {
+⋮----
+.hero-mockup-wrap {
+⋮----
+/* Mobilde grafik ANIMASYONU KALDIR - sadece mockup göster */
+⋮----
+.hero-float-card {
+⋮----
+.hfc-top {
+.hfc-mid {
+.hfc-bot {
+⋮----
+.hfc-label {
+.hfc-value {
+.hfc-green { color: var(--green); }
+⋮----
+.hero-stats {
+⋮----
+.hstat {
+⋮----
+.hstat-val {
+.hstat-label {
+⋮----
+.hero-badge {
+⋮----
+.badge-dot {
+⋮----
+.hero h1 {
+.hero h1 .l1 { display: block; color: var(--text); }
+.hero h1 .l2 {
+.hero h1 .l3 {
+⋮----
+.hero-sub {
+⋮----
+.hero-actions {
+⋮----
+.hero-actions .btn-primary,
+⋮----
+.btn-primary {
+.btn-primary:hover {
+⋮----
+.btn-ghost {
+.btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+⋮----
+.mockup-section {
+⋮----
+.mockup-section-inner {
+⋮----
+.mockup-glow {
+⋮----
+.macos-mockup {
+⋮----
+.macos-mockup:hover {
+⋮----
+.macos-mockup-bar {
+⋮----
+.macos-dots {
+⋮----
+.macos-dots .dot {
+.dot-red    { background: #ff5f57; }
+.dot-yellow { background: #febc2e; }
+.dot-green  { background: #28c840; }
+⋮----
+.macos-dots .dot:hover {
+⋮----
+.macos-url-bar {
+⋮----
+.macos-url-bar svg {
+⋮----
+.macos-url-bar .url-text {
+⋮----
+.macos-mockup-screen {
+⋮----
+.macos-mockup-screen img {
+⋮----
+.mockup-skeleton {
+⋮----
+.mockup-skeleton .spinner {
+⋮----
+.section {
+⋮----
+.section-tag {
+.section-tag::before {
+⋮----
+.section-title {
+.section-title em { font-style: normal; color: var(--accent); }
+⋮----
+.section-desc {
+⋮----
+.glow-line {
+⋮----
+.features-grid {
+⋮----
+.feat-card {
+⋮----
+.feat-card::before {
+⋮----
+.feat-card:hover::before {
+⋮----
+.feat-card:hover {
+⋮----
+.feat-num {
+⋮----
+.feat-icon {
+.feat-card:hover .feat-icon {
+.feat-icon svg {
+⋮----
+.feat-card h3 {
+⋮----
+.feat-card p {
+⋮----
+.references-grid {
+⋮----
+.reference-card {
+.reference-card:hover {
+⋮----
+.ref-image img {
+⋮----
+.ref-info h3       { font-size: clamp(0.8rem, 1vw, 0.9rem); font-weight: 600; margin-bottom: .2rem; }
+.ref-title         { font-size: clamp(0.65rem, 0.8vw, 0.72rem); color: var(--accent); margin-bottom: .4rem; font-family: 'JetBrains Mono', monospace; }
+.ref-desc          { font-size: clamp(0.7rem, 0.8vw, 0.78rem); color: var(--muted); line-height: 1.5; margin-bottom: .7rem; }
+.ref-social        { display: flex; gap: .6rem; flex-wrap: wrap; }
+.ref-social-link   { color: var(--muted); transition: color .2s; display: inline-flex; align-items: center; min-height: 32px; min-width: 32px; justify-content: center; }
+.ref-social-link:hover { color: var(--accent); }
+⋮----
+.loading-spinner { display: flex; justify-content: center; padding: 2rem; }
+.spinner {
+⋮----
+.cta-wrap {
+.cta-banner {
+.cta-banner::before {
+.cta-banner h2 {
+.cta-banner p {
+⋮----
+footer.site-footer {
+.footer-container {
+⋮----
+.footer-logo {
+.footer-logo span { color: var(--accent); }
+.footer-desc { font-size: clamp(11px, 0.9vw, 12px); color: var(--muted); line-height: 1.7; }
+⋮----
+.footer-col h4 {
+.footer-col ul { list-style: none; }
+.footer-col ul li { margin-bottom: clamp(0.3rem, 0.6vw, 0.5rem); }
+.footer-col ul li a,
+.footer-col ul li a:hover { color: var(--accent); }
+⋮----
+.footer-bottom-bar {
+.footer-bottom-bar p {
+.footer-social { display: flex; gap: clamp(0.4rem, 0.8vw, 0.75rem); flex-wrap: wrap; }
+.social-link {
+.social-link:hover { border-color: var(--accent); color: var(--accent); }
+⋮----
+.reveal {
+.reveal.visible { opacity: 1; transform: none; }
+⋮----
+.psych-card {
+.psych-card::before {
+⋮----
+/* ============================================================
+   ⭐ PLAN KARTLARI - ÖZEL STİLLER
+   ============================================================ */
+.plan-card-home .plan-price {
+⋮----
+.plan-card-home .plan-price span {
+⋮----
+#monthly-price-value,
+⋮----
+.plan-card-home.premium .plan-price {
+⋮----
+.plan-card-home.premium .plan-price span {
+⋮----
+.plan-card-home .plan-features-list li {
+.plan-card-home .plan-features-list.open li {
+.plan-card-home .plan-features-list.open li:nth-child(1)  { transition-delay: 0.02s; }
+.plan-card-home .plan-features-list.open li:nth-child(2)  { transition-delay: 0.05s; }
+.plan-card-home .plan-features-list.open li:nth-child(3)  { transition-delay: 0.08s; }
+.plan-card-home .plan-features-list.open li:nth-child(4)  { transition-delay: 0.11s; }
+.plan-card-home .plan-features-list.open li:nth-child(5)  { transition-delay: 0.14s; }
+.plan-card-home .plan-features-list.open li:nth-child(6)  { transition-delay: 0.17s; }
+.plan-card-home .plan-features-list.open li:nth-child(7)  { transition-delay: 0.20s; }
+.plan-card-home .plan-features-list.open li:nth-child(8)  { transition-delay: 0.23s; }
+.plan-card-home .plan-features-list.open li:nth-child(9)  { transition-delay: 0.26s; }
+.plan-card-home .plan-features-list.open li:nth-child(10) { transition-delay: 0.29s; }
+⋮----
+.plans-grid {
+.plan-card-home.premium {
+.plan-card-home.premium:hover {
+⋮----
+.hfc-mid, .hfc-bot {
+⋮----
+.hero-left { grid-column: 1; grid-row: 1; }
+.hero-stats { grid-column: 1; grid-row: 3; }
+⋮----
+.social-link span {
+⋮----
+.btn-primary,
+⋮----
+.ref-social-link {
+⋮----
+.hero h1 .l1,
+</file>
+
+<file path="package.json">
+{
+  "name": "wawe-journal",
+  "version": "2.0.0",
+  "description": "Wawe Journal - Professional Trading Journal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "chart.js": "^4.4.0",
+    "jspdf": "^4.2.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.12.4",
+    "terser": "^5.49.0",
+    "vite": "^6.4.3",
+    "wrangler": "^4.125.0"
+  },
+  "author": "WaweDev",
+  "license": "MIT"
+}
+</file>
+
+<file path="vite.config.js">
+
+</file>
+
+<file path="wrangler.toml">
+name = "wawe-journal"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-01-01"
+
+[env.production.vars]
+VITE_SUPABASE_URL = "https://odasapyhtdopbnlfhwde.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg"
+VITE_APP_URL = "https://wawejournal.com"
+VITE_APP_NAME = "Wawe Journal"
 </file>
 
 <file path="public/calendar.html">
@@ -13146,36 +13379,41 @@ function loadNavbar(containerId)
 </html>
 </file>
 
-<file path="package.json">
-{
-  "name": "wawe-journal",
-  "version": "2.0.0",
-  "description": "Wawe Journal - Professional Trading Journal",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "serve": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "chart.js": "^4.4.0",
-    "jspdf": "^4.2.1"
-  },
-  "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.12.4",
-    "terser": "^5.49.0",
-    "vite": "^6.4.3",
-    "wrangler": "^4.35.0"
-  },
-  "author": "WaweDev",
-  "license": "MIT"
-}
+<file path="supabase/functions/nowpayment-webhook/index.ts">
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+⋮----
+// ⭐ Supabase client
+// FIX: ANON_KEY yerine SERVICE_ROLE_KEY kullanıyoruz.
+// Bu fonksiyon, webhook'u çağıran kişi kim olursa olsun *başka* bir user_id'nin
+⋮----
+// ⭐ CORS headers
+⋮----
+function getCorsHeaders(origin: string | null)
+⋮----
+function getPlanDuration(planType: string): number
+⋮----
+async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean>
+⋮----
+// ⭐ IP kontrolü — ARTIK BLOKLAMIYOR, sadece izliyor/logluyor.
+// FIX: NOWPayments IPN bildirimlerini sabit/tek bir IP adresinden göndermiyor
+// (gerçek prod loglarında 51.75.77.69 görüldü, başka entegratörlerde farklı
+// IP'ler görülüyor). NOWPayments resmi olarak sabit bir IP listesi yayınlamıyor,
+⋮----
+function logUnexpectedIP(request: Request): void
+⋮----
+function isInvoiceProcessed(invoiceId: string, status: string): boolean
+⋮----
+async function sendTelegramNotification(userId: string, email: string, planType: string, expiresAt: Date)
+⋮----
+async function processPayment(userId: string, planType: string, invoiceId: string, payload: any)
+⋮----
+// ⭐ CORS - OPTIONS
 </file>
 
-<file path="vite.config.js">
-
+<file path=".gitignore">
+Add-Content .gitignore "node_modules/"
+node_modules
 </file>
 
 <file path="public/premium-dashboard.html">
@@ -15605,49 +15843,10 @@ body { font-size: 13px; }
 .theme-preview-box {
 </file>
 
-<file path="supabase/functions/nowpayment-webhook/index.ts">
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-⋮----
-// ⭐ Supabase client
-// FIX: ANON_KEY yerine SERVICE_ROLE_KEY kullanıyoruz.
-// Bu fonksiyon, webhook'u çağıran kişi kim olursa olsun *başka* bir user_id'nin
-⋮----
-// ⭐ CORS headers
-⋮----
-function getCorsHeaders(origin: string | null)
-⋮----
-function getPlanDuration(planType: string): number
-⋮----
-async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean>
-⋮----
-// ⭐ IP kontrolü — ARTIK BLOKLAMIYOR, sadece izliyor/logluyor.
-// FIX: NOWPayments IPN bildirimlerini sabit/tek bir IP adresinden göndermiyor
-// (gerçek prod loglarında 51.75.77.69 görüldü, başka entegratörlerde farklı
-// IP'ler görülüyor). NOWPayments resmi olarak sabit bir IP listesi yayınlamıyor,
-⋮----
-function logUnexpectedIP(request: Request): void
-⋮----
-function isInvoiceProcessed(invoiceId: string, status: string): boolean
-⋮----
-async function sendTelegramNotification(userId: string, email: string, planType: string, expiresAt: Date)
-⋮----
-async function processPayment(userId: string, planType: string, invoiceId: string, payload: any)
-⋮----
-// ⭐ CORS - OPTIONS
-</file>
-
-<file path=".gitignore">
-Add-Content .gitignore "node_modules/"
-node_modules
-</file>
-
 <file path="index.html">
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script type="module" src="/@vite/client"></script>
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
@@ -16464,6 +16663,35 @@ node_modules
     </div>
   </section>
 
+  <!-- ⭐ DASHBOARD MOCKUP SHOWCASE (macOS window) -->
+  <div class="mockup-section reveal">
+    <div class="mockup-section-inner">
+      <div class="mockup-glow"></div>
+      <div class="macos-mockup">
+        <div class="macos-mockup-bar">
+          <div class="macos-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="macos-url-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span class="url-text">app.wawejournal.com/dashboard</span>
+          </div>
+        </div>
+        <div class="macos-mockup-screen">
+          <div class="mockup-skeleton" id="mockup-skeleton">
+            <div class="spinner"></div>
+          </div>
+          <img id="dashboard-mockup-img" alt="Wawe Journal Dashboard" style="display:none;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="glow-line"></div>
 
   <!-- ⭐ PSYCHOLOGY QUOTE -->
@@ -16747,6 +16975,9 @@ node_modules
   <script src="config.js"></script>
   <script src="i18n.js"></script>
   <script src="script.js"></script>
+
+
+
 
   <script>
     // ============================================================
@@ -17130,6 +17361,40 @@ node_modules
     document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
 
     // ============================================================
+    // ⭐ DASHBOARD MOCKUP IMAGE
+    // ============================================================
+    (function() {
+      var DEFAULT_MOCKUP_URL = 'https://placehold.co/1600x1000/111118/7c6dfa?text=Dashboard+Preview';
+
+      function loadDashboardMockupImage() {
+        var img = document.getElementById('dashboard-mockup-img');
+        var skeleton = document.getElementById('mockup-skeleton');
+        if (!img) return;
+
+        var url = DEFAULT_MOCKUP_URL;
+        try {
+          var settings = getSystemSettings();
+          if (settings && settings.dashboard_mockup_url) {
+            url = settings.dashboard_mockup_url;
+          }
+        } catch (e) {}
+
+        img.onload = function() {
+          img.style.display = 'block';
+          if (skeleton) skeleton.style.display = 'none';
+        };
+        img.onerror = function() {
+          if (img.src !== DEFAULT_MOCKUP_URL) {
+            img.src = DEFAULT_MOCKUP_URL;
+          }
+        };
+        img.src = url;
+      }
+
+      loadDashboardMockupImage();
+    })();
+
+    // ============================================================
     // STATS LOAD
     // ============================================================
     async function loadStats() {
@@ -17450,179 +17715,6 @@ node_modules
 
 </body>
 </html>
-</file>
-
-<file path="script.js">
-function safeLocalStorageGet(key, defaultValue)
-⋮----
-function safeLocalStorageSet(key, value)
-⋮----
-function safeLocalStorageRemove(key)
-⋮----
-function getCurrencySymbol()
-⋮----
-function setCurrencySymbol(symbol)
-⋮----
-function getThemeSettings()
-⋮----
-function saveThemeSettings(settings)
-⋮----
-function applyThemeSettings(settings)
-⋮----
-function applyFontSize(size)
-⋮----
-function loadFontSize()
-⋮----
-async function canCustomizeTheme()
-⋮----
-async function getUserPlanSilent()
-⋮----
-async function loadThemeCustomization()
-⋮----
-function updatePreview()
-⋮----
-async function requireAuth()
-⋮----
-async function requireAuthSilent()
-⋮----
-async function requireAdmin()
-⋮----
-function isAdmin(user)
-⋮----
-async function throttledUpdateLastActive(userId)
-⋮----
-function calcPnL(entry, exit, lot, direction, instrument, customMultiplier)
-⋮----
-// NaN kontrolleri
-⋮----
-// Entry veya lot 0 ise 0 döndür
-⋮----
-// Multiplier ve direction hesapla
-⋮----
-function calcRR(entry, sl, tp, direction)
-⋮----
-function formatCurrency(value)
-⋮----
-function formatCurrencyPDF(value)
-⋮----
-function formatDate(dateStr)
-⋮----
-function directionBadge(direction)
-⋮----
-function fixDecimalInput(el)
-⋮----
-function applyDecimalFix(ids)
-⋮----
-function isValidEmail(email)
-⋮----
-function showToast(message, type)
-⋮----
-function destroyChart(id)
-⋮----
-async function uploadReferenceImage(file)
-⋮----
-async function loadReferencesToPage(containerId)
-⋮----
-// ── ESCAPE HTML ──────────────────────────────────────────────
-function escapeHtml(str)
-⋮----
-// ── PLATFORM İSTATİSTİKLERİ ──────────────────────────────────
-async function loadPlatformStats()
-⋮----
-async function getUserStrategies(forceRefresh)
-⋮----
-function clearStrategiesCache()
-⋮----
-async function addStrategy(name, description, color)
-⋮----
-async function deleteStrategy(strategyId)
-⋮----
-async function updateStrategy(strategyId, updates)
-⋮----
-function calculateStrategyPerformance(trades, strategyId)
-⋮----
-async function getStrategiesMap()
-⋮----
-function colorizeTotalPnL(totalPnL)
-⋮----
-async function getUserPlan()
-⋮----
-async function hasFeature(featureName)
-⋮----
-async function isPremium()
-⋮----
-async function requirePremium()
-⋮----
-function getSystemSettings()
-⋮----
-function selectPayMethod(method)
-⋮----
-async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
-⋮----
-async function upgradeToPremium(planType, amount, currency, payMethod)
-⋮----
-async function cancelPremium()
-⋮----
-async function fetchPremiumNews(forceRefresh)
-⋮----
-function getMockNews()
-⋮----
-function getCategoryName(category)
-⋮----
-function getTimeAgo(date)
-⋮----
-// ⭐ Sessiz OverTrade kontrolü - yönlendirme YAPMAZ
-⋮----
-// Sessiz plan kontrolü - yönlendirme yapmaz
-⋮----
-// Sessiz plan kontrolü - yönlendirme yapmaz
-⋮----
-function debounce(func, wait)
-⋮----
-function throttle(func, limit)
-⋮----
-class NotificationManager
-⋮----
-loadFromStorage()
-⋮----
-saveToStorage()
-⋮----
-add(notification)
-⋮----
-markAsRead(id)
-⋮----
-markAllAsRead()
-⋮----
-clearAll()
-⋮----
-getUnreadCount()
-⋮----
-getAll()
-⋮----
-getUnread()
-⋮----
-onUpdate(callback)
-⋮----
-notifyListeners()
-⋮----
-startAutoCleanup()
-⋮----
-addOvertradeWarning(warnings)
-⋮----
-addPremiumExpiring(daysLeft)
-⋮----
-addPremiumUpgraded(planType)
-⋮----
-addSystemNotification(title, description, icon = 'ℹ️')
-⋮----
-async checkAndNotifyOvertrade()
-⋮----
-async checkAndNotifyPremiumExpiry()
-⋮----
-async checkAll()
-⋮----
-// ⭐ Zaman formatı yardımcısı
-function getTimeAgoSimple(timestamp)
 </file>
 
 </files>
