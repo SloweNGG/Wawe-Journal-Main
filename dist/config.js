@@ -47,6 +47,87 @@ if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
 }
 
 // ============================================================
+// ⭐ EKSİK OLANLAR EKLENDİ!
+// ============================================================
+
+// ── INSTRUMENT_MULTIPLIERS ──────────────────────────────────
+window.INSTRUMENT_MULTIPLIERS = {
+  forex: 100000,
+  gold: 100,
+  index: 10,
+  crypto: 1,
+  other: 1
+};
+
+// ── FEATURES ────────────────────────────────────────────────
+window.FEATURES = {
+  free: {
+    label: '🆓 Free',
+    maxTrades: Infinity,
+    maxStrategies: Infinity,
+    premiumDashboard: false,
+    dragDropPanels: false,
+    advancedCharts: false,
+    themeCustomization: false,
+    detailedPdf: false,
+    advancedOvertrade: false,
+    multiCurrency: false,
+    lightTheme: false,
+    prioritySupport: false,
+    noAds: false,
+    infiniteStorage: false,
+    community: false,
+    calendar: true,
+    monthlyGoal: true,
+    strategyComparison: true,
+    csvImport: true,
+    basicPdf: true,
+    multiLanguage: true,
+    basicOvertrade: true,
+    trades: true,
+    strategies: true,
+    basicCharts: true
+  },
+  premium: {
+    label: '💎 Premium',
+    maxTrades: Infinity,
+    maxStrategies: Infinity,
+    premiumDashboard: true,
+    dragDropPanels: true,
+    advancedCharts: true,
+    themeCustomization: true,
+    detailedPdf: true,
+    advancedOvertrade: true,
+    multiCurrency: true,
+    lightTheme: true,
+    prioritySupport: true,
+    noAds: true,
+    infiniteStorage: true,
+    community: true,
+    calendar: true,
+    monthlyGoal: true,
+    strategyComparison: true,
+    csvImport: true,
+    basicPdf: true,
+    multiLanguage: true,
+    basicOvertrade: true,
+    trades: true,
+    strategies: true,
+    basicCharts: true
+  }
+};
+
+// ── NOTIFICATION_TYPES ──────────────────────────────────────
+window.NOTIFICATION_TYPES = {
+  OVERTRADE_WARNING: 'overtrade_warning',
+  OVERTRADE_CRITICAL: 'overtrade_critical',
+  PREMIUM_EXPIRING: 'premium_expiring',
+  PREMIUM_EXPIRED: 'premium_expired',
+  PREMIUM_UPGRADED: 'premium_upgraded',
+  SYSTEM: 'system'
+};
+
+// ============================================================
 // 💰 FİYAT FONKSİYONLARI - GLOBAL
 // ============================================================
 
@@ -273,3 +354,6 @@ console.log('✅ Wawe Journal config loaded from environment!');
 console.log('🔑 Supabase:', SUPABASE_URL ? '✅' : '❌');
 console.log('📦 sb client:', window.sb ? '✅' : '⚠️ (script.js tarafından oluşturulacak)');
 console.log('🌐 Environment:', typeof process !== 'undefined' && process.env ? 'production' : 'browser');
+console.log('📊 INSTRUMENT_MULTIPLIERS:', window.INSTRUMENT_MULTIPLIERS ? '✅' : '❌');
+console.log('🎯 FEATURES:', window.FEATURES ? '✅' : '❌');
+console.log('🔔 NOTIFICATION_TYPES:', window.NOTIFICATION_TYPES ? '✅' : '❌');

@@ -904,7 +904,7 @@ body.light-theme .panel-glow.prices-glow {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -969,7 +969,7 @@ body.light-theme .panel-glow.prices-glow {
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(6px);
-  z-index: 400;
+  z-index: var(--z-modal);
   display: none;
   align-items: center;
   justify-content: center;

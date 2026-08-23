@@ -96,6 +96,26 @@ public/
       plan.html
       profile-info.html
     index.html
+  src/
+    core/
+      config.js
+      storage.js
+      supabase.js
+      utils.js
+    features/
+      notifications.js
+      overtrade.js
+      theme.js
+    services/
+      payment.js
+      stats.js
+      user.js
+    utils/
+      helpers.js
+      ui.js
+      validation.js
+    pricing.js
+    script.js
   _redirects
   .gitattributes
   .gitignore
@@ -156,138 +176,42 @@ wrangler.toml
 <files>
 This section contains the contents of the repository's files.
 
-<file path="public/script.js">
-function safeLocalStorageGet(key, defaultValue)
+<file path="public/src/core/config.js">
+
+</file>
+
+<file path="public/src/core/storage.js">
+export function safeLocalStorageGet(key, defaultValue)
 ⋮----
-function safeLocalStorageSet(key, value)
+export function safeLocalStorageSet(key, value)
 ⋮----
-function safeLocalStorageRemove(key)
+export function safeLocalStorageRemove(key)
 ⋮----
-function sanitizeHTML(str)
+export function getCurrencySymbol()
 ⋮----
-function getCurrencySymbol()
+export function setCurrencySymbol(symbol)
+</file>
+
+<file path="public/src/core/supabase.js">
+export async function requireAuth()
 ⋮----
-function setCurrencySymbol(symbol)
+export async function requireAuthSilent()
 ⋮----
-function getThemeSettings()
+export async function requireAdmin()
 ⋮----
-function saveThemeSettings(settings)
+export function isAdmin(user)
 ⋮----
-function applyThemeSettings(settings)
+export async function throttledUpdateLastActive(userId)
+</file>
+
+<file path="public/src/core/utils.js">
+
+</file>
+
+<file path="public/src/features/notifications.js">
+export function getTimeAgoSimple(timestamp)
 ⋮----
-function applyFontSize(size)
-⋮----
-function loadFontSize()
-⋮----
-async function canCustomizeTheme()
-⋮----
-async function getUserPlanSilent()
-⋮----
-async function loadThemeCustomization()
-⋮----
-function updatePreview()
-⋮----
-async function requireAuth()
-⋮----
-async function requireAuthSilent()
-⋮----
-async function requireAdmin()
-⋮----
-function isAdmin(user)
-⋮----
-async function throttledUpdateLastActive(userId)
-⋮----
-function calcPnL(entry, exit, lot, direction, instrument, customMultiplier)
-⋮----
-// NaN kontrolleri
-⋮----
-// Entry veya lot 0 ise 0 döndür
-⋮----
-// Multiplier ve direction hesapla
-⋮----
-function calcRR(entry, sl, tp, direction)
-⋮----
-function formatCurrency(value)
-⋮----
-function formatCurrencyPDF(value)
-⋮----
-function formatDate(dateStr)
-⋮----
-function directionBadge(direction)
-⋮----
-function fixDecimalInput(el)
-⋮----
-function applyDecimalFix(ids)
-⋮----
-function isValidEmail(email)
-⋮----
-function showToast(message, type)
-⋮----
-function destroyChart(id)
-⋮----
-async function uploadReferenceImage(file)
-⋮----
-async function loadReferencesToPage(containerId)
-⋮----
-// ── ESCAPE HTML ──────────────────────────────────────────────
-function escapeHtml(str)
-⋮----
-// ── PLATFORM İSTATİSTİKLERİ ──────────────────────────────────
-async function loadPlatformStats()
-⋮----
-async function getUserStrategies(forceRefresh)
-⋮----
-function clearStrategiesCache()
-⋮----
-async function addStrategy(name, description, color)
-⋮----
-async function deleteStrategy(strategyId)
-⋮----
-async function updateStrategy(strategyId, updates)
-⋮----
-function calculateStrategyPerformance(trades, strategyId)
-⋮----
-async function getStrategiesMap()
-⋮----
-function colorizeTotalPnL(totalPnL)
-⋮----
-async function getUserPlan()
-⋮----
-async function hasFeature(featureName)
-⋮----
-async function isPremium()
-⋮----
-async function requirePremium()
-⋮----
-function getSystemSettings()
-⋮----
-function selectPayMethod(method)
-⋮----
-async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
-⋮----
-async function upgradeToPremium(planType, amount, currency, payMethod)
-⋮----
-async function cancelPremium()
-⋮----
-async function fetchPremiumNews(forceRefresh)
-⋮----
-function getMockNews()
-⋮----
-function getCategoryName(category)
-⋮----
-function getTimeAgo(date)
-⋮----
-// ⭐ Sessiz OverTrade kontrolü - yönlendirme YAPMAZ
-⋮----
-// Sessiz plan kontrolü - yönlendirme yapmaz
-⋮----
-// Sessiz plan kontrolü - yönlendirme yapmaz
-⋮----
-function debounce(func, wait)
-⋮----
-function throttle(func, limit)
-⋮----
-class NotificationManager
+export class NotificationManager
 ⋮----
 loadFromStorage()
 ⋮----
@@ -327,8 +251,155 @@ async checkAndNotifyPremiumExpiry()
 ⋮----
 async checkAll()
 ⋮----
-// ⭐ Zaman formatı yardımcısı
-function getTimeAgoSimple(timestamp)
+export function updateNotificationUI()
+⋮----
+export function dismissNotification(id)
+⋮----
+export function clearAllNotifications()
+⋮----
+export function toggleNotificationPanel()
+</file>
+
+<file path="public/src/features/overtrade.js">
+export function getOvertradeSettings()
+⋮----
+export function saveOvertradeSettings(settings)
+⋮----
+export function getDismissedOvertradeWarnings()
+⋮----
+export function setDismissedOvertradeWarnings(dismissedArray)
+⋮----
+export function dismissOvertradeWarning(warningId)
+⋮----
+export function isOvertradeWarningDismissed(warningId)
+⋮----
+export function clearDismissedOvertradeWarnings()
+⋮----
+export function checkOvertrade(trades)
+⋮----
+export function renderOvertradeWarning(warnings, containerId)
+⋮----
+export async function checkAndRenderOvertrade(containerId)
+⋮----
+export async function loadOvertradeSettingsUI(containerId)
+</file>
+
+<file path="public/src/features/theme.js">
+export function getThemeSettings()
+⋮----
+export function saveThemeSettings(settings)
+⋮----
+export function applyThemeSettings(settings)
+⋮----
+export function applyFontSize(size)
+⋮----
+export function loadFontSize()
+⋮----
+export async function canCustomizeTheme()
+⋮----
+export async function loadThemeCustomization()
+⋮----
+function updatePreview()
+</file>
+
+<file path="public/src/services/payment.js">
+export function getSystemSettings()
+⋮----
+export function selectPayMethod(method)
+⋮----
+export async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
+⋮----
+export async function upgradeToPremium(planType, amount, currency, payMethod)
+⋮----
+export async function cancelPremium()
+</file>
+
+<file path="public/src/services/stats.js">
+export async function loadPlatformStats()
+⋮----
+export async function uploadReferenceImage(file)
+⋮----
+export async function loadReferencesToPage(containerId)
+</file>
+
+<file path="public/src/services/user.js">
+export async function getUserPlan()
+⋮----
+export async function getUserPlanSilent()
+⋮----
+export async function isPremium()
+⋮----
+export async function hasFeature(featureName)
+⋮----
+export async function requirePremium()
+⋮----
+export async function getUserStrategies(forceRefresh)
+⋮----
+export function clearStrategiesCache()
+⋮----
+export async function addStrategy(name, description, color)
+⋮----
+export async function deleteStrategy(strategyId)
+⋮----
+export async function updateStrategy(strategyId, updates)
+⋮----
+export function calculateStrategyPerformance(trades, strategyId)
+⋮----
+export async function getStrategiesMap()
+</file>
+
+<file path="public/src/utils/helpers.js">
+export function sanitizeHTML(str)
+⋮----
+export function escapeHtml(str)
+⋮----
+export function calcPnL(entry, exit, lot, direction, instrument, customMultiplier)
+⋮----
+export function calcRR(entry, sl, tp, direction)
+⋮----
+export function formatCurrency(value)
+⋮----
+export function formatCurrencyPDF(value)
+⋮----
+export function formatDate(dateStr)
+⋮----
+export function getInstrumentMultiplier(instrument)
+</file>
+
+<file path="public/src/utils/ui.js">
+export function showToast(message, type)
+⋮----
+export function destroyChart(id)
+⋮----
+export function directionBadge(direction)
+⋮----
+export function fixDecimalInput(el)
+⋮----
+export function applyDecimalFix(ids)
+</file>
+
+<file path="public/src/utils/validation.js">
+export function isValidEmail(email)
+</file>
+
+<file path="public/src/pricing.js">
+export function getMonthlyPrice()
+⋮----
+export function getYearlyPrice()
+⋮----
+export function setMonthlyPrice(price)
+⋮----
+export function setYearlyPrice(price)
+⋮----
+export function updateHomePrices()
+⋮----
+export function adminUpdatePrices(monthly, yearly)
+⋮----
+export function resetPrices()
+</file>
+
+<file path="public/src/script.js">
+
 </file>
 
 <file path="public/components/page-transition.js">
@@ -961,6 +1032,13 @@ function closePopover()
 .trade-row {
 .trade-row:hover {
 .trade-strategy {
+.trade-symbol { font-size: clamp(0.55rem, 2vw, 0.8rem); }
+.trade-pnl { font-size: clamp(0.55rem, 2vw, 0.75rem); }
+.trade-direction { font-size: clamp(7px, 1.8vw, 9px); }
+.trade-date { font-size: clamp(0.45rem, 1.6vw, 0.6rem); }
+.trade-icon {
+.trade-bar-container { height: clamp(2px, 0.5vw, 3px); }
+⋮----
 .trade-note-indicator {
 .trade-note {
 .trade-note.show {
@@ -1017,61 +1095,28 @@ body.light-theme .mini-cal-day.loss:hover {
 .chart-wrap canvas {
 .chart-wrap canvas.chart-ready {
 ⋮----
-.trade-strategy { font-size: 8px; white-space: normal; }
-.trade-symbol { font-size: 0.75rem; }
-.trade-pnl { font-size: 0.7rem; }
-⋮----
-.stats-grid {
-⋮----
-.trade-symbol { font-size: 0.65rem; }
-.trade-pnl { font-size: 0.65rem; }
-.trade-direction { font-size: 8px; }
-.trade-date { font-size: 0.55rem; }
-.trade-strategy { font-size: 7px; }
-.trade-icon {
-⋮----
-.page-header {
-.page-header h1 {
-⋮----
+.stat-card .stat-trend {
+.stat-trend.positive {
+.stat-trend.negative {
 .stat-card {
 .stat-card .stat-value {
 .stat-card .stat-label {
+.stats-grid {
+⋮----
+.chart-wrap { height: clamp(120px, 30vw, 220px); }
+.chart-wrap--tall { height: clamp(140px, 34vw, 240px); }
+.chart-wrap--doughnut { height: clamp(120px, 28vw, 200px); }
+.page-header h1 { font-size: clamp(1rem, 4vw, 1.5rem); }
+.kpi-label { font-size: clamp(7px, 1.8vw, 10px); }
+.kpi-value { font-size: clamp(0.7rem, 2.5vw, 1rem); }
+⋮----
+.page-header {
 ⋮----
 .kpi-bar {
 ⋮----
 .kpi-item:last-child {
 ⋮----
-.chart-card {
-.chart-wrap {
-.chart-wrap--tall { height: 180px; }
-.chart-wrap--doughnut { height: 160px; }
-⋮----
 .charts-top-grid,
-⋮----
-.trade-symbol { font-size: 0.55rem; }
-.trade-pnl { font-size: 0.55rem; }
-.trade-direction { font-size: 7px; }
-.trade-date { font-size: 0.45rem; }
-.trade-strategy { font-size: 6px; }
-⋮----
-.trade-bar-container { height: 2px; }
-⋮----
-.chart-wrap--tall { height: 160px; }
-.chart-wrap--doughnut { height: 140px; }
-⋮----
-.trade-symbol { font-size: 0.45rem; }
-.trade-pnl { font-size: 0.45rem; }
-.trade-direction { font-size: 6px; }
-.trade-date { font-size: 0.4rem; }
-.trade-strategy { font-size: 5px; }
-⋮----
-.stat-card .stat-trend {
-⋮----
-.kpi-label {
-.kpi-value {
-⋮----
-.chart-wrap--tall { height: 140px; }
-.chart-wrap--doughnut { height: 120px; }
 ⋮----
 .date-filter-option,
 </file>
@@ -2539,6 +2584,47 @@ body.light-theme .panel-glow.overtrade-glow {
   </script>
 
   <style>
+    /* ⭐ GRİ KUTULARI KÖKTEN KAPAT */
+    *:focus,
+    *:focus-visible,
+    *:focus-within {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+
+    button:focus,
+    button:focus-visible,
+    a:focus,
+    a:focus-visible,
+    input:focus,
+    input:focus-visible,
+    select:focus,
+    select:focus-visible,
+    textarea:focus,
+    textarea:focus-visible,
+    .sidebar-nav-item:focus,
+    .sidebar-nav-item:focus-visible,
+    .settings-tab-btn:focus,
+    .settings-tab-btn:focus-visible,
+    .lang-compact-btn:focus,
+    .lang-compact-btn:focus-visible,
+    .currency-btn:focus,
+    .currency-btn:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+
+    .sidebar-nav-item:hover,
+    .settings-tab-btn:hover,
+    .lang-compact-btn:hover,
+    .currency-btn:hover {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+
     /* ============================================================
        SETTINGS WRAP
        ============================================================ */
@@ -4094,10 +4180,16 @@ body.light-theme .panel-glow.overtrade-glow {
 
 
 
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
   <script src="/config.js"></script>
   <script src="/i18n.js"></script>
-  <script src="/script.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
 
 
   <script src="/components/navbar.js"></script>
@@ -4124,6 +4216,7 @@ body.light-theme .panel-glow.overtrade-glow {
     });
   </script>
 
+
   <script src="js/settings.js"></script>
 
   <style>
@@ -4134,20 +4227,6 @@ body.light-theme .panel-glow.overtrade-glow {
 
 </body>
 </html>
-</file>
-
-<file path="public/_redirects">
-# SPA yönlendirmeleri - wawejournal.com
-/*    /index.html    200
-
-# ⭐ STATIC DOSYALARI - DOĞRUDAN SERVIS ET
-/assets/*    /assets/:splat    200
-/*.js        /:splat.js        200
-/*.css       /:splat.css       200
-/*.svg       /:splat.svg       200
-/*.png       /:splat.png       200
-/*.jpg       /:splat.jpg       200
-/*.webmanifest    /:splat.webmanifest    200
 </file>
 
 <file path="public/.gitattributes">
@@ -4967,10 +5046,6 @@ supabase/.temp/
 </html>
 </file>
 
-<file path="public/config.js">
-const getEnv = (key, fallback) =>
-</file>
-
 <file path="public/contact.html">
 <!DOCTYPE html>
 <html lang="tr">
@@ -5654,38 +5729,25 @@ const getEnv = (key, fallback) =>
 
   <div class="toast-container" id="toast-container"></div>
 
+
+
+
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
   <script src="config.js"></script>
-  <script src="script.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
+
+
   <script>
-    function showToast(message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-
-      const icons = { error: '❌', success: '✅', info: 'ℹ️' };
-
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-        <span>${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-      `;
-
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 400);
-      }, duration);
-    }
+    // showToast ve isValidEmail zaten script.js'den window'a atanıyor
 
     function hasTurkishChars(str) {
       return /[ığüşöçİĞÜŞÖÇ]/.test(str);
-    }
-
-    function isValidEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
     const resetBtn = document.getElementById('reset-btn');
@@ -5712,7 +5774,7 @@ const getEnv = (key, fallback) =>
         return;
       }
 
-      if (!isValidEmail(email)) {
+      if (!window.isValidEmail(email)) {
         errEl.textContent = 'Please enter a valid email address.';
         errEl.classList.add('show');
         return;
@@ -5845,7 +5907,6 @@ resolveLanguageConflict(dbLang)
       background: var(--bg);
       padding: 1.5rem;
       min-height: 100vh;
-      /* ⭐ KOYU TEMA BOZULMASINI ENGELLE */
       color-scheme: dark;
     }
 
@@ -6143,7 +6204,7 @@ resolveLanguageConflict(dbLang)
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       LOGIN BUTONU - KÜÇÜLTÜLMÜŞ
+       LOGIN BUTONU
        ═══════════════════════════════════════════════════════════════ */
     .btn-primary {
       width: 100%;
@@ -6420,31 +6481,20 @@ resolveLanguageConflict(dbLang)
 
 
 
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
   <script src="config.js"></script>
-  <script src="script.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
+
+
   <script>
-    function showToast(message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-
-      const icons = { error: '❌', success: '✅', info: 'ℹ️' };
-
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-        <span>${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-      `;
-
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 400);
-      }, duration);
-    }
+    // showToast zaten script.js'den window'a atanıyor
+    // isValidEmail zaten script.js'den window'a atanıyor
 
     function hasTurkishChars(str) {
       return /[ığüşöçİĞÜŞÖÇ]/.test(str);
@@ -6464,7 +6514,7 @@ resolveLanguageConflict(dbLang)
         const { data, error } = await sb.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: 'http://localhost:3000/dashboard.html',
+            redirectTo: window.location.origin + '/dashboard.html',
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',
@@ -6474,7 +6524,7 @@ resolveLanguageConflict(dbLang)
 
         if (error) {
           console.error('Google login error:', error);
-          showToast('Google login failed. Please try again.', 'error');
+          window.showToast('Google login failed. Please try again.', 'error');
           btn.disabled = false;
           btn.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
@@ -6488,7 +6538,7 @@ resolveLanguageConflict(dbLang)
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-        showToast('An unexpected error occurred. Please try again.', 'error');
+        window.showToast('An unexpected error occurred. Please try again.', 'error');
         btn.disabled = false;
         btn.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
@@ -6516,17 +6566,17 @@ resolveLanguageConflict(dbLang)
       email = email.toLowerCase();
 
       if (!email || !password) {
-        showToast('Email and password are required.', 'error');
+        window.showToast('Email and password are required.', 'error');
         return;
       }
 
       if (hasTurkishChars(email)) {
-        showToast('Email cannot contain Turkish characters.', 'error');
+        window.showToast('Email cannot contain Turkish characters.', 'error');
         return;
       }
 
-      if (!isValidEmail(email)) {
-        showToast('Please enter a valid email address.', 'error');
+      if (!window.isValidEmail(email)) {
+        window.showToast('Please enter a valid email address.', 'error');
         return;
       }
 
@@ -6537,7 +6587,7 @@ resolveLanguageConflict(dbLang)
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
       if (error) {
-        showToast('Invalid email or password.', 'error');
+        window.showToast('Invalid email or password.', 'error');
         btn.disabled = false;
         btn.textContent = 'Login';
         return;
@@ -6551,13 +6601,13 @@ resolveLanguageConflict(dbLang)
 
       if (profileError || !profile || profile.is_active === false) {
         await sb.auth.signOut();
-        showToast('Your account has been deactivated.', 'error');
+        window.showToast('Your account has been deactivated.', 'error');
         btn.disabled = false;
         btn.textContent = 'Login';
         return;
       }
 
-      showToast('Welcome back! 🎉', 'success');
+      window.showToast('Welcome back! 🎉', 'success');
       setTimeout(() => window.location.href = 'dashboard.html', 800);
     });
 
@@ -6849,13 +6899,10 @@ resolveLanguageConflict(dbLang)
 
   <div class="notif-panel" id="notifPanel">
     <div class="notif-panel-header">
-
       <h4 data-i18n="nav.notifications">🔔 Bildirimler</h4>
-
       <button class="notif-clear-all" id="notifClearAll" data-i18n="nav.clear_all">Tümünü Temizle</button>
     </div>
     <div class="notif-panel-body" id="notifBody">
-
       <div class="notif-empty" data-i18n="nav.no_notifications">
         <span class="empty-icon">📭</span>
         Henüz bildirim yok.
@@ -6869,111 +6916,21 @@ resolveLanguageConflict(dbLang)
 
 <script>
   (function() {
-    // ⭐ Bildirim yöneticisi
-    class NotificationManager {
-      constructor() {
-        this.notifications = [];
-        this.listeners = [];
-        this.loadFromStorage();
-        this.startAutoCleanup();
-      }
+    // ⭐ window.notificationManager zaten src/features/notifications.js'den gelir
 
-      loadFromStorage() {
-        try {
-          const saved = localStorage.getItem('ww_notifications');
-          if (saved) {
-            this.notifications = JSON.parse(saved);
-            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-            this.notifications = this.notifications.filter(n => n.timestamp > sevenDaysAgo);
-            this.saveToStorage();
-          }
-        } catch (e) {
-          this.notifications = [];
-        }
-      }
+    function getTimeAgoSimple(timestamp) {
+      const diff = Date.now() - timestamp;
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
 
-      saveToStorage() {
-        try {
-          localStorage.setItem('ww_notifications', JSON.stringify(this.notifications));
-        } catch (e) {}
-      }
-
-      add(notification) {
-        const newNotif = {
-          id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-          timestamp: Date.now(),
-          read: false,
-          ...notification
-        };
-        this.notifications.unshift(newNotif);
-        if (this.notifications.length > 100) {
-          this.notifications = this.notifications.slice(0, 100);
-        }
-        this.saveToStorage();
-        this.notifyListeners();
-        return newNotif;
-      }
-
-      markAsRead(id) {
-        const notif = this.notifications.find(n => n.id === id);
-        if (notif) {
-          notif.read = true;
-          this.saveToStorage();
-          this.notifyListeners();
-        }
-      }
-
-      markAllAsRead() {
-        this.notifications.forEach(n => n.read = true);
-        this.saveToStorage();
-        this.notifyListeners();
-      }
-
-      clearAll() {
-        this.notifications = [];
-        this.saveToStorage();
-        this.notifyListeners();
-      }
-
-      getUnreadCount() {
-        return this.notifications.filter(n => !n.read).length;
-      }
-
-      getAll() {
-        return this.notifications;
-      }
-
-      getUnread() {
-        return this.notifications.filter(n => !n.read);
-      }
-
-      onUpdate(callback) {
-        this.listeners.push(callback);
-      }
-
-      notifyListeners() {
-        this.listeners.forEach(cb => cb(this.notifications));
-      }
-
-      startAutoCleanup() {
-        setInterval(() => {
-          const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-          const before = this.notifications.length;
-          this.notifications = this.notifications.filter(n => n.timestamp > sevenDaysAgo);
-          if (before !== this.notifications.length) {
-            this.saveToStorage();
-            this.notifyListeners();
-          }
-        }, 10 * 60 * 1000);
-      }
+      if (days > 0) return days + ' gün önce';
+      if (hours > 0) return hours + ' saat önce';
+      if (minutes > 0) return minutes + ' dakika önce';
+      return 'az önce';
     }
 
-    // ⭐ Global notification manager
-    if (!window.notificationManager) {
-      window.notificationManager = new NotificationManager();
-    }
-
-    // ⭐ i18n uyumlu UI güncellemesi
     function updateNotificationUI() {
       const badge = document.getElementById('notifBadge');
       const bell = document.getElementById('notifBell');
@@ -6981,7 +6938,14 @@ resolveLanguageConflict(dbLang)
 
       if (!badge || !bell) return;
 
-      const count = window.notificationManager.getUnreadCount();
+      // ⭐ window.notificationManager kullan (src/features/notifications.js'den)
+      const nm = window.notificationManager;
+      if (!nm) {
+        console.warn('⚠️ notificationManager bulunamadı');
+        return;
+      }
+
+      const count = nm.getUnreadCount();
 
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
@@ -6993,10 +6957,9 @@ resolveLanguageConflict(dbLang)
       }
 
       if (body) {
-        const notifications = window.notificationManager.getAll();
+        const notifications = nm.getAll();
         if (notifications.length === 0) {
-          // ⭐ i18n uyumlu boş mesaj
-          const emptyText = (typeof i18n !== 'undefined' && i18n.t('nav.no_notifications')) || 'Henüz bildirim yok.';
+          const emptyText = (typeof i18n !== 'undefined' && i18n.t && i18n.t('nav.no_notifications')) || 'Henüz bildirim yok.';
           body.innerHTML = `
             <div class="notif-empty">
               <span class="empty-icon">📭</span>
@@ -7016,11 +6979,11 @@ resolveLanguageConflict(dbLang)
               <div class="notif-item" data-id="${n.id}" ${isRead}>
                 <div class="notif-icon ${iconClass}">${n.icon || 'ℹ️'}</div>
                 <div class="notif-content">
-                  <div class="notif-title">${n.title}</div>
-                  <div class="notif-desc">${n.description}</div>
+                  <div class="notif-title">${n.title || 'Bildirim'}</div>
+                  <div class="notif-desc">${n.description || ''}</div>
                   <span class="notif-time">${timeAgo}</span>
                 </div>
-                <button class="notif-close" onclick="dismissNotification('${n.id}')">✕</button>
+                <button class="notif-close" onclick="window.dismissNotification('${n.id}')">✕</button>
               </div>
             `;
           }).join('');
@@ -7028,51 +6991,20 @@ resolveLanguageConflict(dbLang)
       }
     }
 
-    // ⭐ Zaman formatı
-    function getTimeAgoSimple(timestamp) {
-      const diff = Date.now() - timestamp;
-      const seconds = Math.floor(diff / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
-
-      if (days > 0) return days + ' gün önce';
-      if (hours > 0) return hours + ' saat önce';
-      if (minutes > 0) return minutes + ' dakika önce';
-      return 'az önce';
-    }
-
-    // ⭐ Bildirim kapat
-    window.dismissNotification = function(id) {
-      window.notificationManager.markAsRead(id);
-      updateNotificationUI();
-    };
-
-    // ⭐ Tüm bildirimleri temizle
-    window.clearAllNotifications = function() {
-      window.notificationManager.clearAll();
-      updateNotificationUI();
-    };
-
-    // ⭐ Panel aç/kapat
-    window.toggleNotificationPanel = function() {
-      const panel = document.getElementById('notifPanel');
-      if (panel) {
-        panel.classList.toggle('open');
-        if (panel.classList.contains('open')) {
-          window.notificationManager.markAllAsRead();
-          updateNotificationUI();
-        }
-      }
-    };
-
     // ⭐ Event listener'lar
     document.addEventListener('DOMContentLoaded', function() {
       const bell = document.getElementById('notifBell');
       if (bell) {
         bell.addEventListener('click', function(e) {
           e.stopPropagation();
-          window.toggleNotificationPanel();
+          const panel = document.getElementById('notifPanel');
+          if (panel) {
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open') && window.notificationManager) {
+              window.notificationManager.markAllAsRead();
+              updateNotificationUI();
+            }
+          }
         });
       }
 
@@ -7090,10 +7022,10 @@ resolveLanguageConflict(dbLang)
       if (clearBtn) {
         clearBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          // ⭐ i18n uyumlu onay
-          const confirmText = (typeof i18n !== 'undefined' && i18n.t('nav.confirm_clear_all')) || 'Tüm bildirimleri temizlemek istediğinize emin misiniz?';
-          if (confirm(confirmText)) {
-            window.clearAllNotifications();
+          const confirmText = (typeof i18n !== 'undefined' && i18n.t && i18n.t('nav.confirm_clear_all')) || 'Tüm bildirimleri temizlemek istediğinize emin misiniz?';
+          if (confirm(confirmText) && window.notificationManager) {
+            window.notificationManager.clearAll();
+            updateNotificationUI();
           }
         });
       }
@@ -7105,31 +7037,20 @@ resolveLanguageConflict(dbLang)
         });
       }
 
-      setTimeout(updateNotificationUI, 300);
+      setTimeout(updateNotificationUI, 500);
 
-      window.notificationManager.onUpdate(function() {
-        updateNotificationUI();
-      });
-
-      // ⭐ Over Trade bildirim kontrolü
-      setInterval(() => {
-        if (window.notificationManager && typeof window.notificationManager.checkAll === 'function') {
-          window.notificationManager.checkAll();
-        }
-      }, 5 * 60 * 1000);
-
-      setTimeout(() => {
-        if (window.notificationManager && typeof window.notificationManager.checkAll === 'function') {
-          window.notificationManager.checkAll();
-        }
-      }, 3000);
+      // ⭐ notificationManager değişikliklerini dinle
+      if (window.notificationManager) {
+        window.notificationManager.onUpdate(function() {
+          updateNotificationUI();
+        });
+      }
     });
 
     // ⭐ Global export
-    window.NotificationManager = NotificationManager;
     window.updateNotificationUI = updateNotificationUI;
 
-    console.log('✅ Notification bell loaded! (i18n uyumlu)');
+    console.log('✅ Notification bell loaded! (modüler uyumlu)');
   })();
 </script>
 </file>
@@ -7354,7 +7275,7 @@ resolveLanguageConflict(dbLang)
   <title>Quick Add — Önizleme</title>
 
 
-  <link rel="stylesheet" href="css/quick-modal.css">
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css">
 
 
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500;600&family=Inter:wght@600&display=swap" rel="stylesheet">
@@ -7493,6 +7414,20 @@ resolveLanguageConflict(dbLang)
   </div>
 
 
+
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
+
+
   <script src="js/quick-modal.js"></script>
 </body>
 </html>
@@ -7555,7 +7490,6 @@ resolveLanguageConflict(dbLang)
       background: var(--bg);
       padding: 1.5rem;
       min-height: 100vh;
-      /* ⭐ KOYU TEMA BOZULMASINI ENGELLE */
       color-scheme: dark;
     }
 
@@ -7832,7 +7766,7 @@ resolveLanguageConflict(dbLang)
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       SIGN UP BUTONU - KÜÇÜLTÜLMÜŞ
+       SIGN UP BUTONU
        ═══════════════════════════════════════════════════════════════ */
     .btn-primary {
       width: 100%;
@@ -8141,34 +8075,22 @@ resolveLanguageConflict(dbLang)
        ═══════════════════════════════════════════════════════════════ -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SCRIPTS
-       ═══════════════════════════════════════════════════════════════ -->
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2. CORE KONFİG (ES5) -->
   <script src="config.js"></script>
-  <script src="script.js"></script>
+
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+
+  <!-- 4. ⭐ SAYFA BAŞLATICI -->
   <script>
-    function showToast(message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-
-      const icons = { error: '❌', success: '✅', info: 'ℹ️' };
-
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-        <span>${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-      `;
-
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 400);
-      }, duration);
-    }
+    // showToast ve isValidEmail zaten script.js'den window'a atanıyor
 
     function hasTurkishChars(str) {
       return /[ığüşöçİĞÜŞÖÇ]/.test(str);
@@ -8188,7 +8110,7 @@ resolveLanguageConflict(dbLang)
         const { data, error } = await sb.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: 'http://localhost:3000/dashboard.html',
+            redirectTo: window.location.origin + '/dashboard.html',
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',
@@ -8198,7 +8120,7 @@ resolveLanguageConflict(dbLang)
 
         if (error) {
           console.error('Google sign up error:', error);
-          showToast('Google sign up failed. Please try again.', 'error');
+          window.showToast('Google sign up failed. Please try again.', 'error');
           btn.disabled = false;
           btn.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
@@ -8212,7 +8134,7 @@ resolveLanguageConflict(dbLang)
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-        showToast('An unexpected error occurred. Please try again.', 'error');
+        window.showToast('An unexpected error occurred. Please try again.', 'error');
         btn.disabled = false;
         btn.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
@@ -8237,37 +8159,37 @@ resolveLanguageConflict(dbLang)
       email = email.toLowerCase();
 
       if (!username) {
-        showToast('Username is required.', 'error');
+        window.showToast('Username is required.', 'error');
         return;
       }
 
       if (username.length < 3) {
-        showToast('Username must be at least 3 characters.', 'error');
+        window.showToast('Username must be at least 3 characters.', 'error');
         return;
       }
 
       if (!email || !password) {
-        showToast('Email and password are required.', 'error');
+        window.showToast('Email and password are required.', 'error');
         return;
       }
 
       if (hasTurkishChars(email)) {
-        showToast('Email cannot contain Turkish characters.', 'error');
+        window.showToast('Email cannot contain Turkish characters.', 'error');
         return;
       }
 
-      if (!isValidEmail(email)) {
-        showToast('Please enter a valid email address.', 'error');
+      if (!window.isValidEmail(email)) {
+        window.showToast('Please enter a valid email address.', 'error');
         return;
       }
 
       if (password.length < 6) {
-        showToast('Password must be at least 6 characters.', 'error');
+        window.showToast('Password must be at least 6 characters.', 'error');
         return;
       }
 
       if (password !== pass2) {
-        showToast('Passwords do not match.', 'error');
+        window.showToast('Passwords do not match.', 'error');
         return;
       }
 
@@ -8284,13 +8206,13 @@ resolveLanguageConflict(dbLang)
       });
 
       if (error) {
-        showToast(error.message, 'error');
+        window.showToast(error.message, 'error');
         btn.disabled = false;
         btn.textContent = 'Sign Up';
         return;
       }
 
-      showToast('Registration successful! You can now log in. 🎉', 'success');
+      window.showToast('Registration successful! You can now log in. 🎉', 'success');
       setTimeout(() => window.location.href = 'login.html', 1500);
     });
 
@@ -8329,6 +8251,181 @@ Crawl-delay: 5
 
 User-agent: SemrushBot
 Crawl-delay: 5
+</file>
+
+<file path="public/script.js">
+function safeLocalStorageGet(key, defaultValue)
+⋮----
+function safeLocalStorageSet(key, value)
+⋮----
+function safeLocalStorageRemove(key)
+⋮----
+function sanitizeHTML(str)
+⋮----
+function getCurrencySymbol()
+⋮----
+function setCurrencySymbol(symbol)
+⋮----
+function getThemeSettings()
+⋮----
+function saveThemeSettings(settings)
+⋮----
+function applyThemeSettings(settings)
+⋮----
+function applyFontSize(size)
+⋮----
+function loadFontSize()
+⋮----
+async function canCustomizeTheme()
+⋮----
+async function getUserPlanSilent()
+⋮----
+async function loadThemeCustomization()
+⋮----
+function updatePreview()
+⋮----
+async function requireAuth()
+⋮----
+async function requireAuthSilent()
+⋮----
+async function requireAdmin()
+⋮----
+function isAdmin(user)
+⋮----
+async function throttledUpdateLastActive(userId)
+⋮----
+function calcPnL(entry, exit, lot, direction, instrument, customMultiplier)
+⋮----
+// NaN kontrolleri
+⋮----
+// Entry veya lot 0 ise 0 döndür
+⋮----
+// Multiplier ve direction hesapla
+⋮----
+function calcRR(entry, sl, tp, direction)
+⋮----
+function formatCurrency(value)
+⋮----
+function formatCurrencyPDF(value)
+⋮----
+function formatDate(dateStr)
+⋮----
+function directionBadge(direction)
+⋮----
+function fixDecimalInput(el)
+⋮----
+function applyDecimalFix(ids)
+⋮----
+function isValidEmail(email)
+⋮----
+function showToast(message, type)
+⋮----
+function destroyChart(id)
+⋮----
+async function uploadReferenceImage(file)
+⋮----
+async function loadReferencesToPage(containerId)
+⋮----
+// ── ESCAPE HTML ──────────────────────────────────────────────
+function escapeHtml(str)
+⋮----
+// ── PLATFORM İSTATİSTİKLERİ ──────────────────────────────────
+async function loadPlatformStats()
+⋮----
+async function getUserStrategies(forceRefresh)
+⋮----
+function clearStrategiesCache()
+⋮----
+async function addStrategy(name, description, color)
+⋮----
+async function deleteStrategy(strategyId)
+⋮----
+async function updateStrategy(strategyId, updates)
+⋮----
+function calculateStrategyPerformance(trades, strategyId)
+⋮----
+async function getStrategiesMap()
+⋮----
+function colorizeTotalPnL(totalPnL)
+⋮----
+async function getUserPlan()
+⋮----
+async function hasFeature(featureName)
+⋮----
+async function isPremium()
+⋮----
+async function requirePremium()
+⋮----
+function getSystemSettings()
+⋮----
+function selectPayMethod(method)
+⋮----
+async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
+⋮----
+async function upgradeToPremium(planType, amount, currency, payMethod)
+⋮----
+async function cancelPremium()
+⋮----
+async function fetchPremiumNews(forceRefresh)
+⋮----
+function getMockNews()
+⋮----
+function getCategoryName(category)
+⋮----
+function getTimeAgo(date)
+⋮----
+// ⭐ Sessiz OverTrade kontrolü - yönlendirme YAPMAZ
+⋮----
+// Sessiz plan kontrolü - yönlendirme yapmaz
+⋮----
+// Sessiz plan kontrolü - yönlendirme yapmaz
+⋮----
+function debounce(func, wait)
+⋮----
+function throttle(func, limit)
+⋮----
+class NotificationManager
+⋮----
+loadFromStorage()
+⋮----
+saveToStorage()
+⋮----
+add(notification)
+⋮----
+markAsRead(id)
+⋮----
+markAllAsRead()
+⋮----
+clearAll()
+⋮----
+getUnreadCount()
+⋮----
+getAll()
+⋮----
+getUnread()
+⋮----
+onUpdate(callback)
+⋮----
+notifyListeners()
+⋮----
+startAutoCleanup()
+⋮----
+addOvertradeWarning(warnings)
+⋮----
+addPremiumExpiring(daysLeft)
+⋮----
+addPremiumUpgraded(planType)
+⋮----
+addSystemNotification(title, description, icon = 'ℹ️')
+⋮----
+async checkAndNotifyOvertrade()
+⋮----
+async checkAndNotifyPremiumExpiry()
+⋮----
+async checkAll()
+⋮----
+// ⭐ Zaman formatı yardımcısı
+function getTimeAgoSimple(timestamp)
 </file>
 
 <file path="public/site.webmanifest">
@@ -9130,31 +9227,22 @@ Crawl-delay: 5
 
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2. CORE KONFİG (ES5) -->
   <script src="config.js"></script>
-  <script src="script.js"></script>
+
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+
+  <!-- 4. ⭐ SAYFA BAŞLATICI -->
   <script>
-    function showToast(message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-
-      const icons = { error: '❌', success: '✅', info: 'ℹ️' };
-
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-        <span>${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-      `;
-
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 400);
-      }, duration);
-    }
+    // showToast zaten script.js'den window'a atanıyor
 
     function checkStrength(password) {
       const bars = [
@@ -10142,6 +10230,20 @@ function closePopup()
 function initConfirmModal()
 ⋮----
 async function checkAndActivatePremium()
+</file>
+
+<file path="public/_redirects">
+# SPA yönlendirmeleri - wawejournal.com
+/*    /index.html    200
+
+# ⭐ STATIC DOSYALARI - DOĞRUDAN SERVIS ET
+/assets/*    /assets/:splat    200
+/*.js        /:splat.js        200
+/*.css       /:splat.css       200
+/*.svg       /:splat.svg       200
+/*.png       /:splat.png       200
+/*.jpg       /:splat.jpg       200
+/*.webmanifest    /:splat.webmanifest    200
 </file>
 
 <file path="public/add-trade.html">
@@ -11613,12 +11715,17 @@ async function checkAndActivatePremium()
 
 
 
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+
   <script src="/config.js"></script>
   <script src="/i18n.js"></script>
 
 
-  <script src="/script.js"></script>
+  <script type="module" src="/src/script.js"></script>
 
 
   <script src="/components/navbar.js"></script>
@@ -11684,6 +11791,10 @@ async function checkAndActivatePremium()
   </script>
 </body>
 </html>
+</file>
+
+<file path="public/config.js">
+const getEnv = (key, fallback) =>
 </file>
 
 <file path="public/index.css">
@@ -11930,50 +12041,6 @@ footer.site-footer {
 .hero h1 .l1,
 </file>
 
-<file path="package.json">
-{
-  "name": "wawe-journal",
-  "version": "2.0.0",
-  "description": "Wawe Journal - Professional Trading Journal",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "serve": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "chart.js": "^4.4.0",
-    "jspdf": "^4.2.1"
-  },
-  "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.12.4",
-    "terser": "^5.49.0",
-    "vite": "^6.4.3",
-    "wrangler": "^4.125.0"
-  },
-  "author": "WaweDev",
-  "license": "MIT"
-}
-</file>
-
-<file path="vite.config.js">
-
-</file>
-
-<file path="wrangler.toml">
-name = "wawe-journal"
-pages_build_output_dir = "dist"
-compatibility_date = "2024-01-01"
-
-[env.production.vars]
-VITE_SUPABASE_URL = "https://odasapyhtdopbnlfhwde.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg"
-VITE_APP_URL = "https://wawejournal.com"
-VITE_APP_NAME = "Wawe Journal"
-</file>
-
 <file path="public/calendar.html">
 <!DOCTYPE html>
 <html lang="en">
@@ -11994,7 +12061,7 @@ VITE_APP_NAME = "Wawe Journal"
   <link rel="stylesheet" href="interface/calendar/css/calendar.css" />
 
 
-  <link rel="stylesheet" href="css/quick-add.css" />
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css" />
 
 
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -12191,11 +12258,23 @@ VITE_APP_NAME = "Wawe Journal"
   </div>
 
 
+
+
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
+
+
   <script src="/components/navbar.js"></script>
+
+
   <script src="quick-modal-i18n.js"></script>
   <script src="js/quick-add.js"></script>
 
@@ -12554,7 +12633,7 @@ VITE_APP_NAME = "Wawe Journal"
   <script src="/i18n.js"></script>
 
 
-  <script src="/script.js"></script>
+  <script type="module" src="/src/script.js"></script>
 
 
   <script src="/components/navbar.js"></script>
@@ -12936,10 +13015,19 @@ VITE_APP_NAME = "Wawe Journal"
 
 
 
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
 
 
   <script src="/components/navbar.js"></script>
@@ -13037,7 +13125,7 @@ VITE_APP_NAME = "Wawe Journal"
   <link rel="stylesheet" href="interface/trades/css/trades.css" />
 
 
-  <link rel="stylesheet" href="css/quick-add.css" />
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css" />
 
 
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -13302,10 +13390,18 @@ VITE_APP_NAME = "Wawe Journal"
   </div>
 
 
+
+
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
+
+
+  <script type="module" src="/src/script.js"></script>
 
 
   <script src="/components/navbar.js"></script>
@@ -13314,8 +13410,8 @@ VITE_APP_NAME = "Wawe Journal"
   <script src="interface/trades/js/trades.js"></script>
 
 
-  <script src="js/quick-modal-i18n.js"></script>
-  <script src="js/quick-add.js"></script>
+  <script src="interface/quick-add/js/quick-modal-i18n.js"></script>
+  <script src="interface/quick-add/js/quick-add.js"></script>
 
 
   <script>
@@ -13349,21 +13445,6 @@ VITE_APP_NAME = "Wawe Journal"
       }
     })();
   </script>
-
-
-<script>
-  // ⭐ Trades sayfasında P&L hesaplamasını düzelt
-  // Bu, trades.js'deki render fonksiyonunu override eder
-  document.addEventListener('DOMContentLoaded', function() {
-    // Mevcut loadTrades fonksiyonunu bekle
-    setTimeout(function() {
-      if (typeof loadTrades === 'function') {
-        // loadTrades zaten var, sorun yok
-        console.log('✅ Trades sayfası yüklendi');
-      }
-    }, 1000);
-  });
-</script>
 
 
   <script>
@@ -13414,6 +13495,50 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
 <file path=".gitignore">
 Add-Content .gitignore "node_modules/"
 node_modules
+</file>
+
+<file path="package.json">
+{
+  "name": "wawe-journal",
+  "version": "2.0.0",
+  "description": "Wawe Journal - Professional Trading Journal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "chart.js": "^4.4.0",
+    "jspdf": "^4.2.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.12.4",
+    "terser": "^5.49.0",
+    "vite": "^6.4.3",
+    "wrangler": "^4.125.0"
+  },
+  "author": "WaweDev",
+  "license": "MIT"
+}
+</file>
+
+<file path="vite.config.js">
+
+</file>
+
+<file path="wrangler.toml">
+name = "wawe-journal"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-01-01"
+
+[env.production.vars]
+VITE_SUPABASE_URL = "https://odasapyhtdopbnlfhwde.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg"
+VITE_APP_URL = "https://wawejournal.com"
+VITE_APP_NAME = "Wawe Journal"
 </file>
 
 <file path="public/premium-dashboard.html">
@@ -14119,7 +14244,7 @@ node_modules
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
+  <script type="module" src="/src/script.js"></script>
 
 
   <script src="/components/navbar.js"></script>

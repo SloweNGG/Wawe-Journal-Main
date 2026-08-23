@@ -5,7 +5,7 @@
   <title>Quick Add — Önizleme</title>
   
   <!-- ⭐ CSS BAĞLANTISI (DOĞRU YOL) -->
-  <link rel="stylesheet" href="css/quick-modal.css">
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css">
   
   <!-- ⭐ FONTS -->
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500;600&family=Inter:wght@600&display=swap" rel="stylesheet">
@@ -143,7 +143,21 @@
     </div>
   </div>
 
-  <!-- ⭐ JS BAĞLANTISI (DOĞRU YOL) -->
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 2. CORE KONFİG (ES5) -->
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+  
+  <!-- 4. QUICK ADD JS (ES5) -->
   <script src="js/quick-modal.js"></script>
 </body>
 </html>

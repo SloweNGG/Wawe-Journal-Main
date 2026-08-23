@@ -57,7 +57,6 @@
       background: var(--bg);
       padding: 1.5rem;
       min-height: 100vh;
-      /* ⭐ KOYU TEMA BOZULMASINI ENGELLE */
       color-scheme: dark;
     }
 
@@ -355,7 +354,7 @@
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       LOGIN BUTONU - KÜÇÜLTÜLMÜŞ
+       LOGIN BUTONU
        ═══════════════════════════════════════════════════════════════ */
     .btn-primary {
       width: 100%;
@@ -629,35 +628,24 @@
        ═══════════════════════════════════════════════════════════════ -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       SCRIPTS
-       ═══════════════════════════════════════════════════════════════ -->
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 2. CORE KONFİG (ES5) -->
   <script src="config.js"></script>
-  <script src="script.js"></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+  
+  <!-- 4. ⭐ SAYFA BAŞLATICI -->
   <script>
-    function showToast(message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-
-      const icons = { error: '❌', success: '✅', info: 'ℹ️' };
-
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-        <span>${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-      `;
-
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 400);
-      }, duration);
-    }
-
+    // showToast zaten script.js'den window'a atanıyor
+    // isValidEmail zaten script.js'den window'a atanıyor
+    
     function hasTurkishChars(str) {
       return /[ığüşöçİĞÜŞÖÇ]/.test(str);
     }
@@ -676,7 +664,7 @@
         const { data, error } = await sb.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: 'http://localhost:3000/dashboard.html',
+            redirectTo: window.location.origin + '/dashboard.html',
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',
@@ -686,7 +674,7 @@
 
         if (error) {
           console.error('Google login error:', error);
-          showToast('Google login failed. Please try again.', 'error');
+          window.showToast('Google login failed. Please try again.', 'error');
           btn.disabled = false;
           btn.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
@@ -700,7 +688,7 @@
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-        showToast('An unexpected error occurred. Please try again.', 'error');
+        window.showToast('An unexpected error occurred. Please try again.', 'error');
         btn.disabled = false;
         btn.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
@@ -728,17 +716,17 @@
       email = email.toLowerCase();
 
       if (!email || !password) {
-        showToast('Email and password are required.', 'error');
+        window.showToast('Email and password are required.', 'error');
         return;
       }
 
       if (hasTurkishChars(email)) {
-        showToast('Email cannot contain Turkish characters.', 'error');
+        window.showToast('Email cannot contain Turkish characters.', 'error');
         return;
       }
 
-      if (!isValidEmail(email)) {
-        showToast('Please enter a valid email address.', 'error');
+      if (!window.isValidEmail(email)) {
+        window.showToast('Please enter a valid email address.', 'error');
         return;
       }
 
@@ -749,7 +737,7 @@
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
       if (error) {
-        showToast('Invalid email or password.', 'error');
+        window.showToast('Invalid email or password.', 'error');
         btn.disabled = false;
         btn.textContent = 'Login';
         return;
@@ -763,13 +751,13 @@
 
       if (profileError || !profile || profile.is_active === false) {
         await sb.auth.signOut();
-        showToast('Your account has been deactivated.', 'error');
+        window.showToast('Your account has been deactivated.', 'error');
         btn.disabled = false;
         btn.textContent = 'Login';
         return;
       }
 
-      showToast('Welcome back! 🎉', 'success');
+      window.showToast('Welcome back! 🎉', 'success');
       setTimeout(() => window.location.href = 'dashboard.html', 800);
     });
 

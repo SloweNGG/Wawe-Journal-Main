@@ -1,5 +1,5 @@
 <!-- ============================================================
-   NOTIFICATION BELL - BİLDİRİM BİLEŞENİ (i18n UYUMLU)
+   NOTIFICATION BELL - BİLDİRİM BİLEŞENİ (MODÜLER UYUMLU)
    Tüm sayfalarda avatarın yanına eklenir.
    ============================================================ -->
 
@@ -270,7 +270,7 @@
 </style>
 
 <!-- ============================================================
-   HTML YAPISI - i18n ETİKETLERİ EKLENDİ
+   HTML YAPISI
    ============================================================ -->
 <div class="notif-bell-wrapper">
   <!-- Bildirim Butonu -->
@@ -282,13 +282,10 @@
   <!-- Bildirim Paneli -->
   <div class="notif-panel" id="notifPanel">
     <div class="notif-panel-header">
-      <!-- ⭐ i18n ile "Bildirimler" -->
       <h4 data-i18n="nav.notifications">🔔 Bildirimler</h4>
-      <!-- ⭐ i18n ile "Tümünü Temizle" -->
       <button class="notif-clear-all" id="notifClearAll" data-i18n="nav.clear_all">Tümünü Temizle</button>
     </div>
     <div class="notif-panel-body" id="notifBody">
-      <!-- ⭐ i18n ile boş bildirim mesajı -->
       <div class="notif-empty" data-i18n="nav.no_notifications">
         <span class="empty-icon">📭</span>
         Henüz bildirim yok.
@@ -298,115 +295,25 @@
 </div>
 
 <!-- ============================================================
-   JAVASCRIPT - i18n UYUMLU
+   ⭐ JAVASCRIPT - window NOTIFICATION MANAGER KULLANIR
    ============================================================ -->
 <script>
   (function() {
-    // ⭐ Bildirim yöneticisi
-    class NotificationManager {
-      constructor() {
-        this.notifications = [];
-        this.listeners = [];
-        this.loadFromStorage();
-        this.startAutoCleanup();
-      }
-
-      loadFromStorage() {
-        try {
-          const saved = localStorage.getItem('ww_notifications');
-          if (saved) {
-            this.notifications = JSON.parse(saved);
-            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-            this.notifications = this.notifications.filter(n => n.timestamp > sevenDaysAgo);
-            this.saveToStorage();
-          }
-        } catch (e) {
-          this.notifications = [];
-        }
-      }
-
-      saveToStorage() {
-        try {
-          localStorage.setItem('ww_notifications', JSON.stringify(this.notifications));
-        } catch (e) {}
-      }
-
-      add(notification) {
-        const newNotif = {
-          id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-          timestamp: Date.now(),
-          read: false,
-          ...notification
-        };
-        this.notifications.unshift(newNotif);
-        if (this.notifications.length > 100) {
-          this.notifications = this.notifications.slice(0, 100);
-        }
-        this.saveToStorage();
-        this.notifyListeners();
-        return newNotif;
-      }
-
-      markAsRead(id) {
-        const notif = this.notifications.find(n => n.id === id);
-        if (notif) {
-          notif.read = true;
-          this.saveToStorage();
-          this.notifyListeners();
-        }
-      }
-
-      markAllAsRead() {
-        this.notifications.forEach(n => n.read = true);
-        this.saveToStorage();
-        this.notifyListeners();
-      }
-
-      clearAll() {
-        this.notifications = [];
-        this.saveToStorage();
-        this.notifyListeners();
-      }
-
-      getUnreadCount() {
-        return this.notifications.filter(n => !n.read).length;
-      }
-
-      getAll() {
-        return this.notifications;
-      }
-
-      getUnread() {
-        return this.notifications.filter(n => !n.read);
-      }
-
-      onUpdate(callback) {
-        this.listeners.push(callback);
-      }
-
-      notifyListeners() {
-        this.listeners.forEach(cb => cb(this.notifications));
-      }
-
-      startAutoCleanup() {
-        setInterval(() => {
-          const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-          const before = this.notifications.length;
-          this.notifications = this.notifications.filter(n => n.timestamp > sevenDaysAgo);
-          if (before !== this.notifications.length) {
-            this.saveToStorage();
-            this.notifyListeners();
-          }
-        }, 10 * 60 * 1000);
-      }
+    // ⭐ window.notificationManager zaten src/features/notifications.js'den gelir
+    
+    function getTimeAgoSimple(timestamp) {
+      const diff = Date.now() - timestamp;
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      
+      if (days > 0) return days + ' gün önce';
+      if (hours > 0) return hours + ' saat önce';
+      if (minutes > 0) return minutes + ' dakika önce';
+      return 'az önce';
     }
 
-    // ⭐ Global notification manager
-    if (!window.notificationManager) {
-      window.notificationManager = new NotificationManager();
-    }
-
-    // ⭐ i18n uyumlu UI güncellemesi
     function updateNotificationUI() {
       const badge = document.getElementById('notifBadge');
       const bell = document.getElementById('notifBell');
@@ -414,7 +321,14 @@
       
       if (!badge || !bell) return;
       
-      const count = window.notificationManager.getUnreadCount();
+      // ⭐ window.notificationManager kullan (src/features/notifications.js'den)
+      const nm = window.notificationManager;
+      if (!nm) {
+        console.warn('⚠️ notificationManager bulunamadı');
+        return;
+      }
+      
+      const count = nm.getUnreadCount();
       
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
@@ -426,10 +340,9 @@
       }
       
       if (body) {
-        const notifications = window.notificationManager.getAll();
+        const notifications = nm.getAll();
         if (notifications.length === 0) {
-          // ⭐ i18n uyumlu boş mesaj
-          const emptyText = (typeof i18n !== 'undefined' && i18n.t('nav.no_notifications')) || 'Henüz bildirim yok.';
+          const emptyText = (typeof i18n !== 'undefined' && i18n.t && i18n.t('nav.no_notifications')) || 'Henüz bildirim yok.';
           body.innerHTML = `
             <div class="notif-empty">
               <span class="empty-icon">📭</span>
@@ -449,11 +362,11 @@
               <div class="notif-item" data-id="${n.id}" ${isRead}>
                 <div class="notif-icon ${iconClass}">${n.icon || 'ℹ️'}</div>
                 <div class="notif-content">
-                  <div class="notif-title">${n.title}</div>
-                  <div class="notif-desc">${n.description}</div>
+                  <div class="notif-title">${n.title || 'Bildirim'}</div>
+                  <div class="notif-desc">${n.description || ''}</div>
                   <span class="notif-time">${timeAgo}</span>
                 </div>
-                <button class="notif-close" onclick="dismissNotification('${n.id}')">✕</button>
+                <button class="notif-close" onclick="window.dismissNotification('${n.id}')">✕</button>
               </div>
             `;
           }).join('');
@@ -461,51 +374,20 @@
       }
     }
 
-    // ⭐ Zaman formatı
-    function getTimeAgoSimple(timestamp) {
-      const diff = Date.now() - timestamp;
-      const seconds = Math.floor(diff / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
-      
-      if (days > 0) return days + ' gün önce';
-      if (hours > 0) return hours + ' saat önce';
-      if (minutes > 0) return minutes + ' dakika önce';
-      return 'az önce';
-    }
-
-    // ⭐ Bildirim kapat
-    window.dismissNotification = function(id) {
-      window.notificationManager.markAsRead(id);
-      updateNotificationUI();
-    };
-
-    // ⭐ Tüm bildirimleri temizle
-    window.clearAllNotifications = function() {
-      window.notificationManager.clearAll();
-      updateNotificationUI();
-    };
-
-    // ⭐ Panel aç/kapat
-    window.toggleNotificationPanel = function() {
-      const panel = document.getElementById('notifPanel');
-      if (panel) {
-        panel.classList.toggle('open');
-        if (panel.classList.contains('open')) {
-          window.notificationManager.markAllAsRead();
-          updateNotificationUI();
-        }
-      }
-    };
-
     // ⭐ Event listener'lar
     document.addEventListener('DOMContentLoaded', function() {
       const bell = document.getElementById('notifBell');
       if (bell) {
         bell.addEventListener('click', function(e) {
           e.stopPropagation();
-          window.toggleNotificationPanel();
+          const panel = document.getElementById('notifPanel');
+          if (panel) {
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open') && window.notificationManager) {
+              window.notificationManager.markAllAsRead();
+              updateNotificationUI();
+            }
+          }
         });
       }
       
@@ -523,10 +405,10 @@
       if (clearBtn) {
         clearBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          // ⭐ i18n uyumlu onay
-          const confirmText = (typeof i18n !== 'undefined' && i18n.t('nav.confirm_clear_all')) || 'Tüm bildirimleri temizlemek istediğinize emin misiniz?';
-          if (confirm(confirmText)) {
-            window.clearAllNotifications();
+          const confirmText = (typeof i18n !== 'undefined' && i18n.t && i18n.t('nav.confirm_clear_all')) || 'Tüm bildirimleri temizlemek istediğinize emin misiniz?';
+          if (confirm(confirmText) && window.notificationManager) {
+            window.notificationManager.clearAll();
+            updateNotificationUI();
           }
         });
       }
@@ -538,30 +420,19 @@
         });
       }
       
-      setTimeout(updateNotificationUI, 300);
+      setTimeout(updateNotificationUI, 500);
       
-      window.notificationManager.onUpdate(function() {
-        updateNotificationUI();
-      });
-      
-      // ⭐ Over Trade bildirim kontrolü
-      setInterval(() => {
-        if (window.notificationManager && typeof window.notificationManager.checkAll === 'function') {
-          window.notificationManager.checkAll();
-        }
-      }, 5 * 60 * 1000);
-      
-      setTimeout(() => {
-        if (window.notificationManager && typeof window.notificationManager.checkAll === 'function') {
-          window.notificationManager.checkAll();
-        }
-      }, 3000);
+      // ⭐ notificationManager değişikliklerini dinle
+      if (window.notificationManager) {
+        window.notificationManager.onUpdate(function() {
+          updateNotificationUI();
+        });
+      }
     });
 
     // ⭐ Global export
-    window.NotificationManager = NotificationManager;
     window.updateNotificationUI = updateNotificationUI;
 
-    console.log('✅ Notification bell loaded! (i18n uyumlu)');
+    console.log('✅ Notification bell loaded! (modüler uyumlu)');
   })();
 </script>

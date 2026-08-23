@@ -44,6 +44,47 @@
   </script>
   
   <style>
+    /* ⭐ GRİ KUTULARI KÖKTEN KAPAT */
+    *:focus,
+    *:focus-visible,
+    *:focus-within {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+    
+    button:focus,
+    button:focus-visible,
+    a:focus,
+    a:focus-visible,
+    input:focus,
+    input:focus-visible,
+    select:focus,
+    select:focus-visible,
+    textarea:focus,
+    textarea:focus-visible,
+    .sidebar-nav-item:focus,
+    .sidebar-nav-item:focus-visible,
+    .settings-tab-btn:focus,
+    .settings-tab-btn:focus-visible,
+    .lang-compact-btn:focus,
+    .lang-compact-btn:focus-visible,
+    .currency-btn:focus,
+    .currency-btn:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+    
+    .sidebar-nav-item:hover,
+    .settings-tab-btn:hover,
+    .lang-compact-btn:hover,
+    .currency-btn:hover {
+      outline: none !important;
+      box-shadow: none !important;
+      border-color: transparent !important;
+    }
+
     /* ============================================================
        SETTINGS WRAP
        ============================================================ */
@@ -1597,17 +1638,23 @@
   </div>
 
   <!-- ============================================================
-       SCRIPTS
+       ⭐ SCRIPTS - GÜNCELLENDİ
        ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="/config.js"></script>
   <script src="/i18n.js"></script>
-  <script src="/script.js"></script>
   
-  <!-- ⭐ NAVBAR JS -->
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar.js"></script>
   
-  <!-- ⭐ LUCIDE ICONS INIT -->
+  <!-- 5. LUCIDE ICONS INIT -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
@@ -1617,7 +1664,7 @@
     });
   </script>
   
-  <!-- ⭐ NAVBAR'ı YÜKLE -->
+  <!-- 6. NAVBAR'ı YÜKLE -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
@@ -1629,6 +1676,7 @@
     });
   </script>
   
+  <!-- 7. SETTINGS JS (ES5 - AYNI KALIR) -->
   <script src="js/settings.js"></script>
   
   <style>

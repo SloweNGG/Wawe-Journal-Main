@@ -601,7 +601,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
   padding: 1.25rem;
   min-width: 280px;
   max-width: 380px;
-  z-index: 500;
+  z-index: var(--z-modal);
   box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.08);
   backdrop-filter: blur(16px);
 }
@@ -737,7 +737,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
   inset: 0;
   background: rgba(0,0,0,0.5);
   backdrop-filter: blur(4px);
-  z-index: 499;
+  z-index: calc(var(--z-modal) - 1);
 }
 .calendar-popup-overlay.active {
   display: block;
@@ -756,8 +756,8 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   .calendar-page-main { padding: 1rem; }
   .cal-day { min-height: 60px; padding: 4px 6px; }
   .cal-day .day-number { font-size: 12px; }
-  .cal-day .day-pnl { font-size: 8px; }
-  .cal-day .day-trade-count { font-size: 7px; }
+  .cal-day .day-pnl { font-size: 10px; }
+  .cal-day .day-trade-count { font-size: 9px; }
   .calendar-summary-grid { grid-template-columns: repeat(2, 1fr); }
   .calendar-summary-skeleton { grid-template-columns: repeat(2, 1fr); }
   .cal-header .cal-title { font-size: 1.1rem; }
@@ -770,8 +770,8 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 @media (max-width: 480px) {
   .cal-day { min-height: 48px; padding: 3px 4px; }
   .cal-day .day-number { font-size: 10px; }
-  .cal-day .day-pnl { font-size: 7px; }
-  .cal-day .day-trade-count { font-size: 6px; }
+  .cal-day .day-pnl { font-size: 10px; }
+  .cal-day .day-trade-count { font-size: 9px; }
   .calendar-summary-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
   .calendar-summary-skeleton { grid-template-columns: 1fr 1fr; gap: 4px; }
   .summary-mini-card { padding: 0.5rem 0.6rem; }

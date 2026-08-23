@@ -318,24 +318,33 @@
   </div>
 
   <!-- ============================================================
-       SCRIPTS
+       ⭐ SCRIPTS - GÜNCELLENDİ
        ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
   
-  <!-- ✅ NAVBAR JAVASCRIPT -->
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar.js"></script>
   
-  <!-- ⭐ QUICK ADD JS -->
+  <!-- 5. QUICK ADD (ES5) -->
   <script src="interface/quick-add/js/quick-modal-i18n.js"></script>
   <script src="interface/quick-add/js/quick-add.js"></script>
   
-  <!-- ⭐ STRATEGIES JS -->
+  <!-- 6. STRATEGIES JS (ES5 - AYNI KALIR) -->
   <script src="interface/strategies/js/strategies.js"></script>
-  
-  <!-- ⭐ QUICK ADD MANUEL BAŞLATICI -->
+
+  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
   <script>
     (function() {
       function createManualFAB() {
@@ -368,7 +377,7 @@
     })();
   </script>
   
-  <!-- ⭐ LUCIDE ICONS INIT -->
+  <!-- 8. LUCIDE ICONS INIT -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
@@ -378,7 +387,7 @@
     });
   </script>
   
-  <!-- ⭐ INIT -->
+  <!-- 9. INIT -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {

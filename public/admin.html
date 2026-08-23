@@ -94,25 +94,30 @@
     </div>
   </div>
 
-  <!-- ⭐ TÜM SCRIPTS BODY SONUNDA -->
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
   
-  <!-- SUPABASE & CONFIG -->
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="/config.js"></script>
   <script src="/i18n.js"></script>
   
-  <!-- SCRIPT.JS -->
-  <script src="/script.js"></script>
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
   
-  <!-- NAVBAR -->
+  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar.js"></script>
   
-  <!-- ⭐ ADMIN MODÜLLERİ - YOLLARI KONTROL ET! -->
+  <!-- 5. ADMIN MODÜLLERİ (ES5 - AYNI KALIR) -->
   <script src="interface/admin/js/admin-core.js"></script>
   <script src="interface/admin/js/admin-data.js"></script>
   <script src="interface/admin/js/admin-dashboard.js"></script>
   
-  <!-- BAŞLAT -->
+  <!-- 6. BAŞLAT -->
   <script>
     console.log('🚀 Admin başlatılıyor...');
     

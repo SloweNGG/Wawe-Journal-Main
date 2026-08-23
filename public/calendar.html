@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="interface/calendar/css/calendar.css" />
   
   <!-- QUICK ADD CSS -->
-  <link rel="stylesheet" href="css/quick-add.css" />
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css" />
   
   <!-- LUCIDE ICONS -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -213,19 +213,31 @@
     <div class="popup-body" id="popup-body"></div>
   </div>
 
-  <!-- SCRIPTS -->
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar.js"></script>
+  
+  <!-- 5. QUICK ADD (ES5) -->
   <script src="quick-modal-i18n.js"></script>
   <script src="js/quick-add.js"></script>
   
-  <!-- CALENDAR JS -->
+  <!-- 6. CALENDAR JS (ES5 - AYNI KALIR) -->
   <script src="interface/calendar/js/calendar.js"></script>
   
-  <!-- INIT -->
+  <!-- 7. INIT -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {

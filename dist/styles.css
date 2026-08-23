@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap');
+
 /* ============================================================
    ⭐ TEMA - CSS YÜKLENİR YÜKLENMEZ UYGULANIR (FLAŞ ÖNLEYİCİ)
    ============================================================ */
@@ -75,8 +77,7 @@ body.light-theme {
 }
 
 /* Tema geçişinde yumuşak animasyon */
-body,
-body * {
+body {
   transition: background-color 0.15s ease, 
               border-color 0.15s ease, 
               color 0.15s ease,
@@ -87,8 +88,6 @@ body * {
    WAWE JOURNAL – styles.css
    TÜM SAYFALAR UYUMLU | KOYU / AÇIK TEMA | TAM GENİŞLİK
    ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap');
 
 /* ============================================================
    ⭐ NAVBAR - TAMAMEN navbar.css TARAFINDAN YÖNETİLİR
@@ -155,6 +154,45 @@ body.light-theme {
 /* ============================================================
    SCROLLBAR SABİTLEME - SAYFA KAYMASINI ÖNLE
    ============================================================ */
+/* Canonical token overrides: kept together so every page receives one palette. */
+:root {
+  --bg2: #0d0d14;
+  --border2: rgba(123,110,246,0.2);
+  --text2: #b8b8c8;
+  --text-muted: #8b8b9e;
+  --muted: #8b8b9e;
+  --accent-secondary: #ec4899;
+  --accent-secondary-bg: rgba(236,72,153,0.12);
+  --accent-tertiary: #06b6d4;
+  --accent-tertiary-bg: rgba(6,182,212,0.12);
+  --green-bg: rgba(34,197,94,0.12);
+  --red-bg: rgba(239,68,68,0.12);
+  --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-display: 'Syne', sans-serif;
+  --z-sticky: 200;
+  --z-popover: 400;
+  --z-modal: 1000;
+  --z-toast: 1100;
+}
+
+body.light-theme {
+  --bg2: #ececf2;
+  --text2: #4a4a5e;
+  --text-muted: #334155;
+  --muted: #64748b;
+  --accent-secondary: #ec4899;
+  --accent-secondary-bg: rgba(236,72,153,0.08);
+  --accent-tertiary: #06b6d4;
+  --accent-tertiary-bg: rgba(6,182,212,0.08);
+  --green-bg: rgba(16,185,129,0.1);
+  --red-bg: rgba(239,68,68,0.1);
+  --shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+
 html {
   overflow-y: scroll;
 }
@@ -998,7 +1036,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(0.75rem, 1.5vw, 1.25rem);
   min-width: min(280px, 85vw);
   max-width: min(380px, 92vw);
-  z-index: 500;
+  z-index: var(--z-modal);
   box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.08);
   backdrop-filter: blur(16px);
 }
@@ -1100,7 +1138,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   inset: 0;
   background: rgba(0,0,0,0.5);
   backdrop-filter: blur(4px);
-  z-index: 499;
+  z-index: calc(var(--z-modal) - 1);
 }
 .calendar-popup-overlay.active { display: block; }
 
@@ -1478,7 +1516,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   left: clamp(0.5rem, 1vw, 1rem);
   transform: translateY(8px);
   transition: opacity 0.3s, transform 0.3s;
-  z-index: 9999;
+  z-index: var(--z-toast);
   max-width: min(400px, calc(100vw - 1rem));
   font-family: 'DM Sans', sans-serif;
   margin: 0 auto;
@@ -1540,7 +1578,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: none;
   align-items: center;
   justify-content: center;
@@ -2068,7 +2106,7 @@ body.light-theme .skeleton-stat::after {
   visibility: hidden;
   transform: translateY(-8px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 9999;
+  z-index: var(--z-popover);
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   pointer-events: none;
 }
@@ -2308,21 +2346,21 @@ body.light-theme .skeleton-stat::after {
   }
   .stat-card { padding: 0.4rem 0.5rem; }
   .stat-card .stat-value { font-size: 0.95rem; }
-  .stat-card .stat-label { font-size: 7px; }
+  .stat-card .stat-label { font-size: 10px; }
   
   .page-header h1 { font-size: 1rem; }
   
   .cal-day { min-height: 34px; padding: 2px; }
-  .cal-day .day-number { font-size: 8px; }
-  .cal-day .day-pnl { font-size: 5px; }
-  .cal-day .day-trade-count { font-size: 4px; }
+  .cal-day .day-number { font-size: 10px; }
+  .cal-day .day-pnl { font-size: 10px; }
+  .cal-day .day-trade-count { font-size: 9px; }
   
   .mini-cal-day { min-height: 20px; padding: 1px; }
-  .mini-cal-day .day-number { font-size: 7px; }
-  .mini-cal-day .day-name { font-size: 3px; }
+  .mini-cal-day .day-number { font-size: 10px; }
+  .mini-cal-day .day-name { font-size: 9px; }
   
-  .cal-nav-btn { font-size: 8px; padding: 0.15rem 0.3rem; }
-  .cal-nav-btn.month-label { font-size: 8px; min-width: 44px; }
+  .cal-nav-btn { font-size: 10px; padding: 0.25rem 0.4rem; }
+  .cal-nav-btn.month-label { font-size: 10px; min-width: 50px; }
   .cal-header .cal-title { font-size: 0.85rem; }
   .cal-header .cal-title .cal-icon-wrap { width: 22px; height: 22px; }
   .cal-header .cal-title .cal-icon-wrap svg { width: 12px; height: 12px; }
@@ -2403,5 +2441,14 @@ body.light-theme .skeleton-stat::after {
   }
   .theme-preview-box {
     padding: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

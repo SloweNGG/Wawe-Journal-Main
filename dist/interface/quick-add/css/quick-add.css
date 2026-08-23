@@ -64,7 +64,7 @@
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  z-index: 999;
+  z-index: var(--z-popover);
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -116,7 +116,7 @@
   background: rgba(10, 10, 15, 0.82);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: none;
   align-items: center;
   justify-content: center;

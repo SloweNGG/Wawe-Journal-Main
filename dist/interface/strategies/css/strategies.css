@@ -670,7 +670,7 @@ body.light-theme .comparison-skeleton .comparison-card-skeleton::after {
   inset: 0;
   background: rgba(0,0,0,0.85);
   backdrop-filter: blur(6px);
-  z-index: 400;
+  z-index: var(--z-modal);
   display: none;
   align-items: center;
   justify-content: center;

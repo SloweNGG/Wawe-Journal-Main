@@ -1,5 +1,5 @@
 // ============================================================
-// SETTINGS.JS - GÜNCELLENMİŞ (GÜVENLİK + PERFORMANS)
+// SETTINGS.JS - GÜNCELLENMİŞ (GÜVENLİK + PERFORMANS + PARA BİRİMİ)
 // ============================================================
 
 console.log('🔧 settings.js yükleniyor... (GÜVENLİK GÜNCELLENDİ)');
@@ -110,8 +110,6 @@ function showMsg(message, type) {
 }
 
 function isAdmin(user) {
-  // Do not use a hard-coded email address or user_metadata here. Both are
-  // unsuitable for authorization; app_metadata is server-managed.
   return !!(user && user.app_metadata && user.app_metadata.role === 'admin');
 }
 
@@ -126,7 +124,6 @@ function t(key, params) {
   return key;
 }
 
-// ⭐ Güvenli HTML sanitize
 function sanitizeHTML(str) {
   if (!str) return '';
   const temp = document.createElement('div');
@@ -170,7 +167,6 @@ async function loadPanelContent(panelId, url) {
     var html = await res.text();
     var panel = document.getElementById(panelId);
     if (panel) {
-      // ⭐ Güvenli render
       panel.innerHTML = html;
       console.log('✅ Panel yüklendi: ' + panelId);
       
@@ -426,7 +422,6 @@ async function uploadAvatar(file) {
     return null;
   }
   
-  // ⭐ Güvenli dosya adı
   var ext = file.name.split('.').pop();
   var fileName = 'avatars/' + user.id + '_' + Date.now() + '.' + ext;
   
@@ -835,8 +830,6 @@ window.cancelPremium = async function() {
       return false;
     }
     
-    // NOWPayments is a one-time crypto payment. There is no recurring
-    // subscription to cancel, and the browser must never change plan fields.
     console.log('ℹ️ Otomatik yenileme yok; plan değişikliği yapılmadı.');
     showMsg('Otomatik yenileme yok. Premium erişiminiz ' + expiryDate + ' tarihine kadar devam eder.', 'info');
     return true;
@@ -861,7 +854,6 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   
   if (!modal || !titleEl || !messageEl) return;
   
-  // ⭐ Güvenli içerik
   titleEl.textContent = sanitizeHTML(title) || '⚠️ Dikkat!';
   messageEl.textContent = sanitizeHTML(message) || 'Bu işlem geri alınamaz. Devam etmek istediğinize emin misiniz?';
   
@@ -1449,7 +1441,7 @@ function initLanguageSelector() {
 }
 
 // ============================================================
-// ⭐ PARA BİRİMİ SEÇİCİ
+// ⭐ PARA BİRİMİ SEÇİCİ - GÜNCELLENMİŞ (EVENT FIRLATIR)
 // ============================================================
 function initCurrencySelector() {
   console.log('💰 Para birimi seçici başlatılıyor...');
@@ -1463,15 +1455,42 @@ function initCurrencySelector() {
     } else {
       btn.classList.remove('active');
     }
+    
     btn.addEventListener('click', function() {
       var currency = this.dataset.currency;
+      
+      // ⭐ localStorage'a kaydet
       localStorage.setItem('ww_currency', currency);
+      
+      // ⭐ window.setCurrencySymbol'u çağır (event fırlatır)
+      if (typeof window.setCurrencySymbol === 'function') {
+        window.setCurrencySymbol(currency);
+      }
+      
+      // ⭐ UI'ı güncelle
       btns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
-      showMsg('Para birimi değiştirildi!', 'success');
-      setTimeout(function() { location.reload(); }, 500);
+      
+      // ⭐ Event fırlat (güvence için)
+      try {
+        window.dispatchEvent(new CustomEvent('currencyChanged', { 
+          detail: { symbol: currency } 
+        }));
+      } catch(e) {}
+      
+      // ⭐ Sayfadaki tüm para birimi gösterimlerini güncelle
+      document.querySelectorAll('.currency-display, .currency-symbol, [data-currency-display]').forEach(function(el) {
+        el.textContent = currency;
+      });
+      
+      showMsg('Para birimi değiştirildi! ✅', 'success');
+      
+      // ⭐ Sayfayı yenile (tüm formatCurrency çağrılarını güncellemek için)
+      setTimeout(function() { location.reload(); }, 800);
     });
   });
+  
+  console.log('✅ Para birimi seçici başlatıldı!');
 }
 
 // ============================================================

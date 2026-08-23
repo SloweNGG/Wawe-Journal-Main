@@ -318,7 +318,7 @@
   </div>
 
   <!-- ============================================================
-       ⭐ SCRIPTS - SIRASI DÜZELTİLDİ
+       ⭐ SCRIPTS - GÜNCELLENDİ
        ============================================================ -->
   
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
@@ -326,21 +326,21 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
-  <!-- 2. CORE KONFİG VE İ18N -->
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="/config.js"></script>
   <script src="/i18n.js"></script>
   
-  <!-- 3. CORE SCRIPT (requireAuth, calcPnL, formatCurrency, showToast vs.) -->
-  <script src="/script.js"></script>
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
   
-  <!-- 4. NAVBAR -->
+  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar.js"></script>
   
-  <!-- 5. QUICK ADD (i18n + modal) -->
+  <!-- 5. QUICK ADD (ES5) -->
   <script src="interface/quick-add/js/quick-modal-i18n.js"></script>
   <script src="interface/quick-add/js/quick-add.js"></script>
   
-  <!-- 6. ⭐ DASHBOARD JS (charts değişkeni burada tanımlanır) -->
+  <!-- 6. ⭐ DASHBOARD JS (ES5 - AYNI KALIR) -->
   <script src="interface/dashboard/js/dashboard.js"></script>
   
   <!-- 7. QUICK ADD MANUEL BAŞLATICI -->

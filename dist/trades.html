@@ -16,8 +16,8 @@
   <!-- TRADES CSS -->
   <link rel="stylesheet" href="interface/trades/css/trades.css" />
   
-  <!-- ⭐ QUICK ADD MODAL CSS - DÜZELTİLDİ -->
-  <link rel="stylesheet" href="css/quick-add.css" />
+  <!-- ⭐ QUICK ADD MODAL CSS -->
+  <link rel="stylesheet" href="interface/quick-add/css/quick-add.css" />
   
   <!-- LUCIDE ICONS -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -281,23 +281,31 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="config.js"></script>
   <script src="i18n.js"></script>
-  <script src="script.js"></script>
   
-  <!-- NAVBAR JAVASCRIPT -->
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js"></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar.js"></script>
   
-  <!-- TRADES JAVASCRIPT -->
+  <!-- 5. TRADES JS (ES5 - AYNI KALIR) -->
   <script src="interface/trades/js/trades.js"></script>
   
-  <!-- ⭐ QUICK ADD MODAL JS - DÜZELTİLDİ -->
-  <script src="js/quick-modal-i18n.js"></script>
-  <script src="js/quick-add.js"></script>
+  <!-- 6. QUICK ADD (ES5) -->
+  <script src="interface/quick-add/js/quick-modal-i18n.js"></script>
+  <script src="interface/quick-add/js/quick-add.js"></script>
 
-  <!-- ⭐ QUICK ADD MANUEL BAŞLATICI -->
+  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
   <script>
     (function() {
       function createManualFAB() {
@@ -330,22 +338,7 @@
     })();
   </script>
 
-
-<script>
-  // ⭐ Trades sayfasında P&L hesaplamasını düzelt
-  // Bu, trades.js'deki render fonksiyonunu override eder
-  document.addEventListener('DOMContentLoaded', function() {
-    // Mevcut loadTrades fonksiyonunu bekle
-    setTimeout(function() {
-      if (typeof loadTrades === 'function') {
-        // loadTrades zaten var, sorun yok
-        console.log('✅ Trades sayfası yüklendi');
-      }
-    }, 1000);
-  });
-</script>
-  
-  <!-- LUCIDE ICONS INIT -->
+  <!-- 8. LUCIDE ICONS INIT -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
