@@ -4,8 +4,125 @@
 
 console.log('📅 calendar.js yükleniyor...');
 
-// ⭐ INSTRUMENT_MULTIPLIERS zaten script.js'de global olarak tanımlı!
-// Tekrar tanımlama, sadece kullan.
+// ============================================================
+// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ============================================================
+
+(function initTheme() {
+  var savedTheme = localStorage.getItem('ww_theme');
+  var savedFontSize = localStorage.getItem('ww_font_size');
+  var customTheme = localStorage.getItem('ww_custom_theme');
+  
+  // 1. Body class'ını ayarla
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+  
+  // 2. Font size
+  if (savedFontSize) {
+    document.body.style.fontSize = savedFontSize + 'px';
+  }
+  
+  // 3. Custom theme (sadece dark)
+  if (savedTheme !== 'light' && customTheme) {
+    try {
+      var settings = JSON.parse(customTheme);
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) {
+        document.body.style.fontSize = settings.fontSize + 'px';
+      }
+    } catch(e) {}
+  }
+  
+  console.log('🎨 [calendar.js] Tema ayarlandı:', savedTheme || 'dark');
+})();
+
+// ============================================================
+// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// ============================================================
+
+(function listenThemeChanges() {
+  console.log('🎨 [Calendar] Tema izleyici başlatıldı...');
+  
+  // Storage değişikliklerini dinle (diğer sekmelerden)
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'ww_theme') {
+      console.log('🔄 [Calendar] Tema değişikliği algılandı:', e.newValue);
+      var isLight = e.newValue === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      
+      var customTheme = localStorage.getItem('ww_custom_theme');
+      if (customTheme && !isLight) {
+        try {
+          var settings = JSON.parse(customTheme);
+          var root = document.documentElement;
+          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+          if (settings.surfaceColor) {
+            root.style.setProperty('--surface', settings.surfaceColor);
+            root.style.setProperty('--surface2', settings.surfaceColor);
+          }
+          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+        } catch(e) {}
+      }
+      
+      // Takvimi yeniden render et
+      if (typeof renderCalendar === 'function') {
+        setTimeout(function() { renderCalendar(); }, 100);
+      }
+    }
+  });
+  
+  // Custom event - aynı sayfadaki tema değişimleri için
+  document.addEventListener('themeChanged', function(e) {
+    console.log('🔄 [Calendar] ThemeChanged event yakalandı');
+    if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
+      var settings = e.detail.settings;
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+      
+      if (typeof renderCalendar === 'function') {
+        setTimeout(function() { renderCalendar(); }, 100);
+      }
+    }
+  });
+  
+  // Sayfa görünür olduğunda tema kontrol et
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      var savedTheme = localStorage.getItem('ww_theme');
+      var isLight = savedTheme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      
+      if (typeof renderCalendar === 'function') {
+        setTimeout(function() { renderCalendar(); }, 100);
+      }
+    }
+  });
+  
+  console.log('✅ [Calendar] Tema izleyici yüklendi!');
+})();
+
+// ============================================================
+// INSTRUMENT_MULTIPLIERS - script.js'den gelir
+// ============================================================
 
 // ============================================================
 // PnL HESAPLAMA
@@ -13,8 +130,7 @@ console.log('📅 calendar.js yükleniyor...');
 function calcTradePnL(t) {
   try {
     if (!t.entry_price || !t.exit_price || !t.lot) return 0;
-    // script.js'deki global INSTRUMENT_MULTIPLIERS'ı kullan
-    var mult = t.multiplier || window.INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
+    var mult = t.multiplier || window.INSTRUMENT_MULTIPLIERS?.[t.instrument] || 100000;
     var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
     return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
   } catch(e) {
@@ -112,17 +228,6 @@ function sanitizeHTML(str) {
 }
 
 // ============================================================
-// TEMA DEĞİŞİMİ
-// ============================================================
-var observer = new MutationObserver(function(mutations) {
-  mutations.forEach(function(mutation) {
-    if (mutation.attributeName === 'class') {
-      if (typeof renderCalendar === 'function') renderCalendar();
-    }
-  });
-});
-
-// ============================================================
 // SKELETON GÖSTER/GİZLE
 // ============================================================
 function showCalendarSkeleton() {
@@ -167,7 +272,7 @@ function renderCalendar() {
   try {
     hideCalendarSkeleton();
 
-    var lang = i18n.getCurrentLanguage();
+    var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
     var monthLabel = document.getElementById('calendar-month-label');
     var dayNamesContainer = document.getElementById('cal-day-names');
     var grid = document.getElementById('cal-grid');
@@ -256,7 +361,7 @@ function renderCalendar() {
       var pnlClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       var barClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       
-      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + i18n.t('trades.stats.trade_count')) : '';
+      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.stats.trade_count') : 'işlem')) : '';
       var ariaLabel = d + ' ' + monthName + (hasTrade ? ', ' + dayTrades.length + ' işlem, ' + pnlDisplay : ', işlem yok');
 
       html += '\n        <div class="cal-day ' + colorClass + ' ' + todayClass + ' ' + weekendClass2 + '" data-date="' + dateStr + '" role="button" tabindex="0" aria-label="' + ariaLabel + '" onclick="openDayPopup(\'' + dateStr + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openDayPopup(\'' + dateStr + '\');}">\n          <div class="day-bg ' + (colorClass ? 'show' : '') + '"></div>\n          <div class="day-bg glow ' + (colorClass ? 'show' : '') + '"></div>\n          <div class="day-number">' + d + '</div>\n          ' + (pnlDisplay ? '<div class="day-pnl ' + pnlClass + '">' + pnlDisplay + '</div>' : '') + '\n          ' + (tradeCountText ? '<div class="day-trade-count">' + tradeCountText + '</div>' : '') + '\n          <div class="day-pnl-bar ' + (hasTrade ? 'show' : '') + ' ' + barClass + '"></div>\n        </div>\n      ';
@@ -314,12 +419,13 @@ function renderPopupTrades() {
     return currentPopupFilter === 'long' ? isLong : !isLong;
   });
   if (filtered.length === 0) {
-    body.innerHTML = '<div class="popup-empty">' + i18n.t('calendar.no_trades') + '</div>';
+    var noText = typeof i18n !== 'undefined' && i18n.t ? i18n.t('calendar.no_trades') : 'İşlem yok';
+    body.innerHTML = '<div class="popup-empty">' + noText + '</div>';
     return;
   }
   body.innerHTML = filtered.map(function(t) {
     var pnl = t.exit_price ? calcTradePnL(t) : null;
-    var pnlText = pnl !== null ? formatCurrency(pnl) : i18n.t('trades.open');
+    var pnlText = pnl !== null ? formatCurrency(pnl) : (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.open') : 'Açık');
     var pnlClass = pnl !== null ? (pnl >= 0 ? 'positive' : 'negative') : '';
     var isLong = t.direction === 'LONG' || t.direction === 'BUY';
     var badgeClass = isLong ? 'long' : 'short';
@@ -337,7 +443,7 @@ function openDayPopup(dateStr) {
     var filterBar = document.getElementById('popup-filter');
 
     var date = new Date(dateStr + 'T00:00:00');
-    var lang = i18n.getCurrentLanguage();
+    var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
     if (title) title.textContent = date.toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' });
 
     currentPopupDateTrades = calendarTrades.filter(function(t) { return t.trade_date === dateStr; });
@@ -393,11 +499,6 @@ async function initCalendar() {
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
       return;
-    }
-    
-    // Observer'ı başlat
-    if (document.body) {
-      observer.observe(document.body, { attributes: true });
     }
     
     // Event listener'lar
@@ -486,7 +587,7 @@ async function initCalendar() {
       function renderMonthsGrid() {
         if (!yearLabel || !monthsGrid) return;
         yearLabel.textContent = jumpPopoverYear;
-        var lang = i18n.getCurrentLanguage();
+        var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
         var html = '';
         for (var m = 0; m < 12; m++) {
           var isCurrent = (m === currentMonth && jumpPopoverYear === currentYear);
@@ -548,7 +649,10 @@ async function initCalendar() {
       .order('trade_date', { ascending: true });
     
     if (error) {
-      if (typeof showToast === 'function') showToast(i18n.t('toast.load_error') + error.message, 'error');
+      if (typeof showToast === 'function') {
+        var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error') : 'Veri yüklenemedi: ';
+        showToast(errMsg + error.message, 'error');
+      }
       hideCalendarSkeleton();
       return;
     }

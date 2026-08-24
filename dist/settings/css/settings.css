@@ -1531,7 +1531,7 @@ body.light-theme .panel-glow.overtrade-glow {
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: var(--z-modal);
+  z-index: 1000;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1666,7 +1666,7 @@ body.light-theme .panel-glow.overtrade-glow {
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  z-index: var(--z-modal);
+  z-index: 2000;
   display: none;
   align-items: center;
   justify-content: center;

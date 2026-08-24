@@ -23,7 +23,7 @@
    TİPOGRAFİ - INDEX İLE AYNI
    ============================================================ */
 .page-card h1 {
-  font-family: var(--font-display);
+  font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(1.3rem, 5vw, 2.8rem);
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -35,7 +35,7 @@
 }
 
 .page-card h2 {
-  font-family: var(--font-display);
+  font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(1rem, 2.5vw, 1.3rem);
   font-weight: 600;
   margin: clamp(1rem, 2vh, 1.75rem) 0 clamp(0.4rem, 0.8vw, 0.75rem);
@@ -44,7 +44,7 @@
 }
 
 .page-card h3 {
-  font-family: var(--font-display);
+  font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(0.85rem, 1.5vw, 1rem);
   font-weight: 600;
   margin: clamp(0.75rem, 1.5vh, 1.25rem) 0 clamp(0.3rem, 0.6vw, 0.5rem);
@@ -84,7 +84,7 @@
   margin-bottom: clamp(0.75rem, 1.5vh, 1.5rem);
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 /* ============================================================
@@ -110,7 +110,7 @@
   text-decoration: none;
   transition: all .2s;
   background: transparent;
-  font-family: var(--font-display);
+  font-family: 'Space Grotesk', sans-serif;
   min-height: 40px;
 }
 .back-link .btn-ghost:hover {

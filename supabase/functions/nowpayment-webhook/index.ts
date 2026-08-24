@@ -7,28 +7,19 @@ const NOWPAYMENTS_IPN_SECRET = Deno.env.get('NOWPAYMENTS_IPN_SECRET') || '';
 const NOWPAYMENTS_ENV = Deno.env.get('NOWPAYMENTS_ENV') || 'production';
 const ALLOWED_IPS = Deno.env.get('NOWPAYMENTS_ALLOWED_IPS')?.split(',') || [];
 
-// ⭐ Telegram ayarları
-// FIX: hardcoded bot token / chat id fallback KALDIRILDI.
-// O token artık bu konuşmada görünür durumda olduğu için sızmış sayılır —
-// BotFather üzerinden /revoke ile derhal iptal edip yeni bir token üret,
-// ardından Supabase project secrets içine TELEGRAM_BOT_TOKEN olarak ekle.
-// UYARI: Buraya token'ı sabit (hardcoded) fallback olarak YAZMA — daha önce
-// bu dosyada açıkta kalmış bir token vardı. Değer olmadan (boş string) bırak,
-// gerçek token'ı sadece Supabase Dashboard > Edge Functions > Secrets
-// içine TELEGRAM_BOT_TOKEN olarak ekle. Eski token hâlâ aktifse BotFather'da
-// /revoke ile iptal edip yenisini oluştur.
+// ⭐ Telegram ayarları — sadece env'den okunuyor, hardcoded fallback YOK.
+// Gerçek değerleri Supabase Dashboard > Edge Functions > Secrets içine
+// TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID olarak ekle. Eğer bu token daha
+// önce herhangi bir yerde (kod, log, ekran görüntüsü) açığa çıktıysa,
+// BotFather'da /revoke ile iptal edip yenisini oluştur.
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID') || '';
 
-// ⭐ Supabase client
-// FIX: ANON_KEY yerine SERVICE_ROLE_KEY kullanıyoruz.
-// Bu fonksiyon, webhook'u çağıran kişi kim olursa olsun *başka* bir user_id'nin
-// user_profiles satırını update etmesi gerekiyor. ANON key ile bu, RLS
-// politikaları tarafından sessizce (veya hata ile) engellenir. SERVICE_ROLE_KEY
-// RLS'i bypass eder ve sadece sunucu tarafında (bu edge function içinde)
-// kullanılmalı — asla client koduna koyma.
-// SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY, Supabase tarafından edge
-// function'lara otomatik enjekte edilir; genelde ekstra secret set etmen gerekmez.
+// ⭐ Supabase client — SERVICE_ROLE_KEY kullanılıyor çünkü bu fonksiyon
+// webhook'u çağıran kim olursa olsun *başka* bir user_id'nin user_profiles
+// satırını update etmesi gerekiyor. ANON key RLS tarafından engellenirdi.
+// SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY genelde Supabase tarafından
+// edge function'lara otomatik enjekte edilir.
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -76,6 +67,19 @@ function getPlanDuration(planType: string): number {
   return 30;
 }
 
+// ⭐ Sabit zamanlı (constant-time) string karşılaştırma.
+// Normal === karşılaştırması karakter karakter erken çıkış yapabildiği için
+// teorik olarak timing-attack ile imzanın tahmin edilmesine küçük bir zemin
+// oluşturabilir. Bu, karşılaştırma süresini içerikten bağımsız hale getirir.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 // ⭐ Verify HMAC signature
 async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean> {
   try {
@@ -101,7 +105,7 @@ async function verifySignature(payload: string, signature: string, secret: strin
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
 
-    const isValid = computedSignature === signature;
+    const isValid = timingSafeEqual(computedSignature, signature);
 
     if (!isValid) {
       console.warn('⚠️ Signature mismatch:', { computed: computedSignature.slice(0, 10), received: signature.slice(0, 10) });
@@ -114,15 +118,12 @@ async function verifySignature(payload: string, signature: string, secret: strin
   }
 }
 
-// ⭐ IP kontrolü — ARTIK BLOKLAMIYOR, sadece izliyor/logluyor.
-// FIX: NOWPayments IPN bildirimlerini sabit/tek bir IP adresinden göndermiyor
-// (gerçek prod loglarında 51.75.77.69 görüldü, başka entegratörlerde farklı
-// IP'ler görülüyor). NOWPayments resmi olarak sabit bir IP listesi yayınlamıyor,
-// bu yüzden IP whitelist'i sert bir blok (403) olarak kullanmak er ya da geç
-// gerçek bir ödemeyi bloklar — tam olarak şimdi yaşadığın sorun bu.
-// Gerçek güvenlik katmanı zaten x-nowpayments-sig imza doğrulaması (aşağıda).
-// IP kontrolünü tamamen kaldırmak istemedim, sadece artık isteği reddetmiyor,
-// beklenmedik bir IP geldiğinde sadece log'a düşürüyor — izlemek istersen orada.
+// ⭐ IP kontrolü — bloklamıyor, sadece izliyor/logluyor.
+// NOWPayments IPN bildirimlerini sabit/tek bir IP adresinden göndermiyor ve
+// resmi olarak sabit bir IP listesi yayınlamıyor, bu yüzden IP whitelist'ini
+// sert bir blok olarak kullanmak er ya da geç gerçek bir ödemeyi keser.
+// Gerçek güvenlik katmanı x-nowpayments-sig imza doğrulamasıdır (aşağıda,
+// ARTIK ZORUNLU).
 function logUnexpectedIP(request: Request): void {
   if (ALLOWED_IPS.length === 0) return;
 
@@ -137,12 +138,8 @@ function logUnexpectedIP(request: Request): void {
   }
 }
 
-// ⭐ Replay attack koruması
-// NOT: Bu Map, function instance hafızasında tutuluyor. Edge function'lar
-// birden fazla izole instance'da çalışabildiği ve soğuk başlangıçlarda
-// sıfırlandığı için bu koruma "best effort"tur, %100 garanti değildir.
-// Kalıcı/garantili koruma istersen invoice_id'yi bir DB tablosuna
-// UNIQUE constraint ile yazmalısın.
+// ⭐ Replay attack koruması (in-memory, best-effort — asıl garanti processPayment
+// içindeki DB tabanlı idempotency kontrolüdür, aşağıda).
 const processedInvoices = new Map<string, { timestamp: number, status: string }>();
 
 function isInvoiceProcessed(invoiceId: string, status: string): boolean {
@@ -211,13 +208,10 @@ async function sendTelegramNotification(userId: string, email: string, planType:
 
 // ⭐ Process payment
 async function processPayment(userId: string, planType: string, invoiceId: string, payload: any) {
-  // ⭐ FIX: Kalıcı idempotency kontrolü — bu invoice_id daha önce 'finished'
-  // olarak işlenmiş mi diye DB'den bak. In-memory Map (processedInvoices)
-  // sadece 5 dakikalık ve function instance'ı yeniden başlarsa sıfırlanıyor;
-  // NOWPayments aynı 'finished' bildirimini birden fazla kez (recurrent
-  // notification) gönderebildiği için, 5 dakikadan geç gelen veya instance
-  // restart sonrası gelen tekrar bir çağrı süreyi bir daha uzatıyordu
-  // (1 aylık planın 60 gün görünmesinin sebebi buydu).
+  // ⭐ Kalıcı idempotency kontrolü — bu invoice_id daha önce 'finished' olarak
+  // işlenmiş mi diye DB'den bak. In-memory Map sadece 5 dakikalık ve instance
+  // restart'ta sıfırlanıyor; NOWPayments aynı 'finished' bildirimini birden
+  // fazla kez gönderebildiği için asıl garanti burası.
   const { data: existingPayment } = await supabase
     .from('payments')
     .select('id')
@@ -321,29 +315,37 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 2. IP KONTROLÜ (SADECE PRODUCTION) — artık bloklamıyor, sadece logluyor.
-    // Asıl doğrulama aşağıdaki x-nowpayments-sig imza kontrolünde yapılıyor.
+    // ⭐ 2. IP KONTROLÜ (SADECE PRODUCTION) — bloklamıyor, sadece logluyor.
+    // Asıl doğrulama aşağıdaki imza kontrolünde yapılıyor.
     if (NOWPAYMENTS_ENV === 'production') {
       logUnexpectedIP(req);
     }
 
-    // ⭐ 3. RAW BODY VE İMZA KONTROLÜ
+    // ⭐ 3. IPN SECRET ZORUNLU — FAIL CLOSED.
+    // Önceki halde "if (NOWPAYMENTS_IPN_SECRET) { ...imza kontrolü... }"
+    // şeklindeydi: secret env'de tanımlı değilse imza kontrolü tamamen
+    // atlanıyor ve webhook imzasız her isteği kabul ediyordu. IP kontrolü
+    // artık bloklamadığına göre bu, tek gerçek güvenlik katmanının
+    // yanlışlıkla kapanabilmesi demekti. Şimdi secret yoksa fonksiyon
+    // hemen 503 ile duruyor, güvensiz moda asla düşmüyor.
+    if (!NOWPAYMENTS_IPN_SECRET) {
+      console.error('❌ NOWPAYMENTS_IPN_SECRET not configured — refusing to process webhook');
+      return new Response(JSON.stringify({ error: 'Webhook not configured' }), {
+        status: 503,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // ⭐ 4. RAW BODY
     let rawBody = await req.text();
 
-    // FIX: Bazı istemci/proxy zincirleri body'nin başına görünmez bir
-    // UTF-8 BOM (\uFEFF) karakteri ekleyebiliyor. Bu karakter JSON
-    // spesifikasyonunda geçerli bir boşluk sayılmadığı için JSON.parse
-    // içerik tamamen doğru olsa bile "Unexpected token" hatası fırlatır.
-    // Ayrıca baştaki/sondaki whitespace'i de temizliyoruz.
+    // Bazı istemci/proxy zincirleri body'nin başına görünmez bir UTF-8 BOM
+    // (\uFEFF) karakteri ekleyebiliyor; bu JSON.parse'ı bozabilir.
     if (rawBody.charCodeAt(0) === 0xFEFF) {
       rawBody = rawBody.slice(1);
     }
     rawBody = rawBody.trim();
 
-    // FIX: Body'nin gerçekte ne geldiğini function log'larına yazıyoruz.
-    // Bu satır sayesinde "Invalid JSON" hatası tekrar alınırsa, Supabase
-    // Dashboard > Edge Functions > nowpayment-webhook > Logs kısmında
-    // gerçek ham içeriği görüp kesin sebebi tespit edebilirsin.
     console.log(`📩 Raw body (len=${rawBody.length}):`, rawBody.slice(0, 1000));
 
     if (!rawBody) {
@@ -354,29 +356,29 @@ serve(async (req) => {
       });
     }
 
+    // ⭐ 5. İMZA KONTROLÜ — ARTIK KOŞULSUZ ZORUNLU (secret'ın varlığı 3. adımda
+    // zaten garanti edildi).
     const signature = req.headers.get('x-nowpayments-sig');
 
-    if (NOWPAYMENTS_IPN_SECRET) {
-      if (!signature) {
-        console.error('❌ Signature missing');
-        return new Response(JSON.stringify({ error: 'Signature required' }), {
-          status: 401,
-          headers: { ...headers, 'Content-Type': 'application/json' }
-        });
-      }
-
-      const isValid = await verifySignature(rawBody, signature, NOWPAYMENTS_IPN_SECRET);
-      if (!isValid) {
-        console.error('❌ Invalid signature');
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-          status: 401,
-          headers: { ...headers, 'Content-Type': 'application/json' }
-        });
-      }
-      console.log('✅ Signature verified');
+    if (!signature) {
+      console.error('❌ Signature missing');
+      return new Response(JSON.stringify({ error: 'Signature required' }), {
+        status: 401,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
     }
 
-    // ⭐ 4. JSON PARSE
+    const isValid = await verifySignature(rawBody, signature, NOWPAYMENTS_IPN_SECRET);
+    if (!isValid) {
+      console.error('❌ Invalid signature');
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 401,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+    console.log('✅ Signature verified');
+
+    // ⭐ 6. JSON PARSE
     let payload;
     try {
       payload = JSON.parse(rawBody);
@@ -396,7 +398,7 @@ serve(async (req) => {
       pay_amount: payload.pay_amount
     }, null, 2));
 
-    // ⭐ 5. VERİ ÇIKARMA
+    // ⭐ 7. VERİ ÇIKARMA
     const {
       invoice_id,
       order_id,
@@ -412,7 +414,7 @@ serve(async (req) => {
     const invoiceId = invoice_id || order_id || 'unknown';
     const status = payment_status || ipn_type || 'unknown';
 
-    // ⭐ 6. REPLAY ATTACK KONTROLÜ
+    // ⭐ 8. REPLAY ATTACK KONTROLÜ
     if (isInvoiceProcessed(invoiceId, status)) {
       return new Response(JSON.stringify({
         success: true,
@@ -423,7 +425,7 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 7. USER ID VE PLAN TYPE ÇIKARMA
+    // ⭐ 9. USER ID VE PLAN TYPE ÇIKARMA
     let userId: string | null = null;
     let planType: string | null = null;
 
@@ -439,7 +441,7 @@ serve(async (req) => {
       userId = payload.user_id;
     }
 
-    // ⭐ 8. VALİDASYON
+    // ⭐ 10. VALİDASYON
     if (!userId || !planType) {
       console.warn('⚠️ Missing userId or planType:', { userId, planType, order_id });
       console.log('📦 Full payload:', JSON.stringify(payload, null, 2));
@@ -454,13 +456,13 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 9. STATUS KONTROLÜ
+    // ⭐ 11. STATUS KONTROLÜ
     const isFinished = status === PAYMENT_STATUS.FINISHED;
     const isFailed = status === PAYMENT_STATUS.FAILED ||
                      status === PAYMENT_STATUS.EXPIRED ||
                      status === PAYMENT_STATUS.REFUNDED;
 
-    // ⭐ 10. İŞLEME
+    // ⭐ 12. İŞLEME
     if (isFinished && userId && planType) {
       try {
         const result = await processPayment(userId, planType, invoiceId, payload);
@@ -492,7 +494,7 @@ serve(async (req) => {
       }
     }
 
-    // ⭐ 11. FAILED/EXPIRED
+    // ⭐ 13. FAILED/EXPIRED
     if (isFailed) {
       console.warn(`⚠️ Payment ${invoiceId} ${status}`);
 
@@ -518,7 +520,7 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 12. CONFIRMING/CONFIRMED
+    // ⭐ 14. CONFIRMING/CONFIRMED
     console.log(`⏳ Payment ${invoiceId} is ${status}, waiting for finalization...`);
     return new Response(JSON.stringify({
       success: true,
@@ -542,4 +544,3 @@ serve(async (req) => {
     });
   }
 });
-

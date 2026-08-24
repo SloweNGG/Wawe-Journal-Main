@@ -16,54 +16,60 @@ const API_URL = NOWPAYMENTS_ENV === 'sandbox'
   : 'https://api.nowpayments.io/v1';
 
 // ⭐ Rate Limiting
+// NOT: Bu Map, Deno edge function instance'ı her yeniden başladığında (cold start)
+// veya birden fazla instance paralel çalıştığında sıfırlanır / paylaşılmaz.
+// Gerçek bir korumaya ihtiyaç varsa (ör. Upstash Redis) kalıcı bir store'a taşınmalı.
 const rateLimitStore = new Map<string, { count: number, resetTime: number }>();
 const RATE_LIMIT_WINDOW = parseInt(Deno.env.get('RATE_LIMIT_WINDOW') || '60000');
 const RATE_LIMIT_MAX = parseInt(Deno.env.get('RATE_LIMIT_MAX') || '10');
+
+// ⭐ JWT'den kullanıcı kimliğini çıkarır (İMZA DOĞRULAMASI YAPMAZ — sadece payload okur).
+// Gerçek doğrulama supabaseClient.auth.getUser(token) ile aşağıda yapılıyor.
+function getUserIdFromToken(req: Request): string | null {
+  const auth = req.headers.get('authorization');
+  if (!auth || !auth.startsWith('Bearer ')) return null;
+  try {
+    const token = auth.substring(7);
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.sub || null;
+  } catch (e) {
+    return null;
+  }
+}
 
 function getClientId(req: Request): string {
   const cfIp = req.headers.get('cf-connecting-ip');
   const forwardedIp = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
   const ip = cfIp || forwardedIp?.split(',')[0] || realIp || 'unknown';
-  
-  // Authorization header'dan user id al
-  const auth = req.headers.get('authorization');
-  let userId = 'anonymous';
-  if (auth && auth.startsWith('Bearer ')) {
-    try {
-      const token = auth.substring(7);
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.sub) userId = payload.sub;
-      }
-    } catch (e) {}
-  }
-  
+
+  const userId = getUserIdFromToken(req) || 'anonymous';
   return `${userId}:${ip}`;
 }
 
 function checkRateLimit(clientId: string): { allowed: boolean, remaining: number, resetIn: number } {
   const now = Date.now();
   const record = rateLimitStore.get(clientId);
-  
+
   if (!record || now > record.resetTime) {
     const resetTime = now + RATE_LIMIT_WINDOW;
     rateLimitStore.set(clientId, { count: 1, resetTime });
     return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetIn: RATE_LIMIT_WINDOW };
   }
-  
+
   if (record.count >= RATE_LIMIT_MAX) {
     const resetIn = record.resetTime - now;
     return { allowed: false, remaining: 0, resetIn };
   }
-  
+
   record.count++;
   rateLimitStore.set(clientId, record);
-  return { 
-    allowed: true, 
-    remaining: RATE_LIMIT_MAX - record.count, 
-    resetIn: record.resetTime - now 
+  return {
+    allowed: true,
+    remaining: RATE_LIMIT_MAX - record.count,
+    resetIn: record.resetTime - now
   };
 }
 
@@ -89,35 +95,36 @@ function validatePlanType(planType: string): boolean {
   return VALID_PLANS.includes(planType);
 }
 
-function validateAmount(amount: number): boolean {
-  return amount > 0 && amount < 100000;
-}
-
 function validateCurrency(currency: string): boolean {
   return VALID_CURRENCIES.includes(currency) || VALID_PAY_CURRENCIES.includes(currency);
 }
 
-// ⭐ Price validation
+// ⭐ Price validation — TEK doğruluk kaynağı: server. Client'tan gelen amount hiç kullanılmıyor.
 function getPlanPrice(planType: string, currency: string): number {
-  // Price'ları environment'dan al veya sabit değerler kullan
   const prices: Record<string, Record<string, number>> = {
     monthly: { USD: 9, EUR: 8, GBP: 7, TRY: 250 },
     yearly: { USD: 79, EUR: 70, GBP: 62, TRY: 2200 },
     premium: { USD: 9, EUR: 8, GBP: 7, TRY: 250 }
   };
-  
+
   return prices[planType]?.[currency] || prices[planType]?.USD || 0;
 }
 
-// ⭐ Supabase client (opsiyonel)
+// ⭐ Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 let supabaseClient: any = null;
+let supabaseAdminClient: any = null;
 
 try {
   if (supabaseUrl && supabaseAnonKey) {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    // Service role client: RLS'i bypass eder, sadece server-side yazımlar için (payments insert).
+    if (supabaseServiceKey) {
+      supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey);
+    }
   }
 } catch (e) {
   console.warn('⚠️ Supabase client initialization failed:', e);
@@ -127,7 +134,7 @@ try {
 async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(timeoutId);
@@ -141,12 +148,12 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeout: numb
 serve(async (req) => {
   const origin = req.headers.get('origin') || '';
   const headers = getCorsHeaders(origin);
-  
+
   // ⭐ CORS - OPTIONS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204, 
-      headers 
+    return new Response(null, {
+      status: 204,
+      headers
     });
   }
 
@@ -168,13 +175,58 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 3. RATE LIMITING
+    // ⭐ 3. GERÇEK KİMLİK DOĞRULAMA — Authorization header ZORUNLU.
+    // userId artık request body'den DEĞİL, doğrulanmış JWT'den alınıyor.
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!supabaseClient) {
+      console.error('❌ Supabase client not configured, cannot verify user');
+      return new Response(JSON.stringify({ error: 'Auth service not configured' }), {
+        status: 503,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const jwt = authHeader.substring(7);
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(jwt);
+
+    if (authError || !authData?.user) {
+      console.warn('⛔ Invalid or expired token');
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 401,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const userId = authData.user.id; // <-- artık body'den değil, doğrulanmış oturumdan geliyor
+
+    // FIX: auth.getUser(jwt) yalnızca token'ın kime ait olduğunu doğrular,
+    // supabaseClient'ın kendisini o kullanıcı olarak "oturum açmış" hale
+    // GETİRMEZ. Bu client hâlâ anon rolüyle sorgu atıyor. RLS policy'lerin
+    // "id = auth.uid()" gibi kontroller içerdiği durumlarda (user_profiles
+    // tablosundaki gibi), auth.uid() PostgREST tarafında JWT header'ından
+    // okunur — bu header eksikse auth.uid() null döner ve satır asla
+    // eşleşmez (kullanıcı gerçekten var olsa bile "not found" gibi görünür).
+    // Bu yüzden aşağıdaki sorgu için kullanıcının JWT'sini taşıyan AYRI bir
+    // client oluşturuyoruz.
+    const { createClient: createUserScopedClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
+    const userScopedClient = createUserScopedClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } }
+    });
+
+    // ⭐ 4. RATE LIMITING
     const clientId = getClientId(req);
     const rateLimit = checkRateLimit(clientId);
-    
+
     if (!rateLimit.allowed) {
       console.warn(`⛔ Rate limit exceeded for ${clientId}`);
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'Rate limit exceeded',
         retry_after: Math.ceil(rateLimit.resetIn / 1000)
       }), {
@@ -189,7 +241,7 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 4. REQUEST BODY PARSE
+    // ⭐ 5. REQUEST BODY PARSE
     let body;
     try {
       body = await req.json();
@@ -200,94 +252,69 @@ serve(async (req) => {
       });
     }
 
-    const { 
-      userId, 
-      planType, 
-      amount, 
-      currency, 
-      payCurrency, 
-      successUrl, 
-      cancelUrl 
+    const {
+      planType,
+      currency,
+      payCurrency,
+      successUrl,
+      cancelUrl
     } = body;
+    // NOT: amount ve userId kasıtlı olarak body'den okunmuyor.
+    // amount -> server fiyat tablosundan hesaplanıyor (aşağıda).
+    // userId -> yukarıda JWT'den doğrulandı.
 
-    // ⭐ 5. VALIDASYONLAR
-    if (!userId || typeof userId !== 'string') {
-      return new Response(JSON.stringify({ error: 'Valid userId is required' }), {
-        status: 400,
-        headers: { ...headers, 'Content-Type': 'application/json' }
-      });
-    }
-
+    // ⭐ 6. VALIDASYONLAR
     if (!planType || !validatePlanType(planType)) {
-      return new Response(JSON.stringify({ 
-        error: 'Invalid planType. Allowed: monthly, yearly, premium' 
+      return new Response(JSON.stringify({
+        error: 'Invalid planType. Allowed: monthly, yearly, premium'
       }), {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' }
       });
     }
 
-    // ⭐ 6. PRICE VALIDASYONU
     const priceCurrency = currency || 'USD';
     if (!validateCurrency(priceCurrency)) {
-      return new Response(JSON.stringify({ 
-        error: 'Invalid currency. Allowed: USD, EUR, GBP, TRY' 
+      return new Response(JSON.stringify({
+        error: 'Invalid currency. Allowed: USD, EUR, GBP, TRY'
       }), {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' }
       });
     }
 
-    const expectedPrice = getPlanPrice(planType, priceCurrency);
-    const providedAmount = amount || expectedPrice;
-
-    // Fiyat doğrulama (client tarafından gönderilen fiyatı kontrol et)
-    if (providedAmount !== expectedPrice) {
-      console.warn(`⚠️ Price mismatch: Expected ${expectedPrice}, got ${providedAmount}`);
-      // Client'ın gönderdiği fiyatı kullanma, server tarafındaki fiyatı kullan
-      // return new Response(JSON.stringify({ 
-      //   error: 'Invalid amount',
-      //   expected: expectedPrice
-      // }), {
-      //   status: 400,
-      //   headers: { ...headers, 'Content-Type': 'application/json' }
-      // });
-    }
-
-    const finalAmount = expectedPrice; // Server tarafındaki fiyatı kullan
+    const finalAmount = getPlanPrice(planType, priceCurrency); // TEK fiyat kaynağı: server
     const payCurrencyFinal = payCurrency || 'BTC';
-    
+
     if (!VALID_PAY_CURRENCIES.includes(payCurrencyFinal)) {
-      return new Response(JSON.stringify({ 
-        error: 'Invalid pay currency. Allowed: BTC, LTC, ETH, XRP, BCH, DOGE' 
+      return new Response(JSON.stringify({
+        error: 'Invalid pay currency. Allowed: BTC, LTC, ETH, XRP, BCH, DOGE'
       }), {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' }
       });
     }
 
-    // ⭐ 7. KULLANICI DOĞRULAMA (Opsiyonel)
-    if (supabaseClient) {
-      try {
-        const { data: user, error } = await supabaseClient
-          .from('user_profiles')
-          .select('id, plan')
-          .eq('id', userId)
-          .single();
-        
-        if (error || !user) {
-          console.warn(`⚠️ User ${userId} not found in database`);
-          // Yine de devam et - belki yeni kullanıcı
-        }
-      } catch (e) {
-        console.warn('⚠️ User validation failed:', e);
-      }
+    // ⭐ 7. KULLANICI VERİTABANINDA VAR MI — artık işlemi engelliyor, sadece uyarmıyor.
+    // userScopedClient kullanılıyor ki RLS "id = auth.uid()" kontrolü doğru çalışsın.
+    const { data: userProfile, error: userError } = await userScopedClient
+      .from('user_profiles')
+      .select('id, plan')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !userProfile) {
+      console.warn(`⛔ User ${userId} not found in database`);
+      return new Response(JSON.stringify({ error: 'User profile not found' }), {
+        status: 404,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log(`📝 Creating invoice: User ${userId}, Plan ${planType}, Amount ${finalAmount} ${priceCurrency}`);
 
     // ⭐ 8. WEBHOOK URL
-    const webhookUrl = NOWPAYMENTS_WEBHOOK_URL || 
+    const webhookUrl = NOWPAYMENTS_WEBHOOK_URL ||
       'https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/nowpayment-webhook';
 
     // ⭐ 9. ORDER ID
@@ -324,12 +351,11 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error('❌ NowPayments API error:', data);
-      
-      // Hata mesajını güvenli şekilde ilet
+
       const errorMessage = data.message || 'Payment creation failed';
       const errorCode = data.code || response.status;
-      
-      return new Response(JSON.stringify({ 
+
+      return new Response(JSON.stringify({
         error: errorMessage,
         code: errorCode,
         details: data.details || null
@@ -341,28 +367,28 @@ serve(async (req) => {
 
     console.log(`✅ Invoice created: ${data.invoice_id}`);
 
-    // ⭐ 11. PAYMENT LOG (opsiyonel)
-    if (supabaseClient) {
-      try {
-        await supabaseClient
-          .from('payments')
-          .insert([{
-            user_id: userId,
-            invoice_id: data.invoice_id,
-            order_id: orderId,
-            amount: finalAmount,
-            currency: priceCurrency,
-            plan_type: planType,
-            payment_status: 'pending',
-            pay_currency: payCurrencyFinal,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }]);
-        console.log('📝 Payment log created');
-      } catch (e) {
-        console.warn('⚠️ Failed to log payment:', e);
-        // Log hatası kritik değil, devam et
-      }
+    // ⭐ 11. PAYMENT LOG — RLS'i bypass etmesi gerektiği için service role client kullanılıyor.
+    // (Anon key ile insert RLS'e takılabilir; payments tablosunda client insert policy'si yok.)
+    const writerClient = supabaseAdminClient || supabaseClient;
+    try {
+      await writerClient
+        .from('payments')
+        .insert([{
+          user_id: userId,
+          invoice_id: data.invoice_id,
+          order_id: orderId,
+          amount: finalAmount,
+          currency: priceCurrency,
+          plan_type: planType,
+          payment_status: 'pending',
+          pay_currency: payCurrencyFinal,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+      console.log('📝 Payment log created');
+    } catch (e) {
+      console.warn('⚠️ Failed to log payment:', e);
+      // Log hatası kritik değil, invoice zaten oluşturuldu, devam et.
     }
 
     // ⭐ 12. RESPONSE
@@ -391,9 +417,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ create-payment error:', error);
-    
+
     if (error.name === 'AbortError') {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'Request timeout',
         details: 'Payment service took too long to respond'
       }), {
@@ -402,7 +428,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
     }), {

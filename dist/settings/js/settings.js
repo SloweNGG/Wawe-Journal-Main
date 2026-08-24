@@ -1,8 +1,185 @@
 // ============================================================
-// SETTINGS.JS - GÜNCELLENMİŞ (GÜVENLİK + PERFORMANS + PARA BİRİMİ)
+// SETTINGS.JS - SADE VE ÇALIŞAN VERSİYON
 // ============================================================
 
-console.log('🔧 settings.js yükleniyor... (GÜVENLİK GÜNCELLENDİ)');
+console.log('🔧 settings.js yükleniyor...');
+
+// ============================================================
+// ⭐ TEMA KONTROLÜ - EN BAŞTA ÇALIŞIR
+// ============================================================
+
+(function() {
+  var savedTheme = localStorage.getItem('ww_theme');
+  var savedFontSize = localStorage.getItem('ww_font_size');
+  var customTheme = localStorage.getItem('ww_custom_theme');
+  
+  // Body class'ını ayarla
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+  
+  // Font size
+  if (savedFontSize) {
+    document.body.style.fontSize = savedFontSize + 'px';
+  }
+  
+  // Custom theme (sadece dark)
+  if (savedTheme !== 'light' && customTheme) {
+    try {
+      var settings = JSON.parse(customTheme);
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+    } catch(e) {}
+  }
+  
+  console.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
+})();
+
+// ============================================================
+// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// ============================================================
+
+(function() {
+  // Storage değişikliklerini dinle
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'ww_theme') {
+      var isLight = e.newValue === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      
+      // Checkbox'ı güncelle
+      var cb = document.getElementById('theme-toggle');
+      if (cb) cb.checked = isLight;
+      
+      // Icon'u güncelle
+      var icon = document.getElementById('theme-icon');
+      var label = document.getElementById('theme-label');
+      var desc = document.getElementById('theme-desc');
+      
+      if (isLight) {
+        if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+        if (label) label.textContent = 'Açık Tema';
+        if (desc) desc.textContent = 'Aydınlık ve ferah arayüz';
+      } else {
+        if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        if (label) label.textContent = 'Koyu Tema';
+        if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
+      }
+      
+      // Custom theme uygula (dark ise)
+      if (!isLight) {
+        var ct = localStorage.getItem('ww_custom_theme');
+        if (ct) {
+          try {
+            var s = JSON.parse(ct);
+            var root = document.documentElement;
+            if (s.backgroundColor) root.style.setProperty('--bg', s.backgroundColor);
+            if (s.surfaceColor) {
+              root.style.setProperty('--surface', s.surfaceColor);
+              root.style.setProperty('--surface2', s.surfaceColor);
+            }
+            if (s.borderColor) root.style.setProperty('--border', s.borderColor);
+            if (s.textColor) root.style.setProperty('--text', s.textColor);
+            if (s.fontSize) document.body.style.fontSize = s.fontSize + 'px';
+          } catch(e) {}
+        }
+      }
+    }
+  });
+  
+  // ThemeChanged event
+  document.addEventListener('themeChanged', function(e) {
+    if (e.detail && e.detail.settings) {
+      var isLight = document.body.classList.contains('light-theme');
+      if (!isLight) {
+        var s = e.detail.settings;
+        var root = document.documentElement;
+        if (s.backgroundColor) root.style.setProperty('--bg', s.backgroundColor);
+        if (s.surfaceColor) {
+          root.style.setProperty('--surface', s.surfaceColor);
+          root.style.setProperty('--surface2', s.surfaceColor);
+        }
+        if (s.borderColor) root.style.setProperty('--border', s.borderColor);
+        if (s.textColor) root.style.setProperty('--text', s.textColor);
+        if (s.fontSize) document.body.style.fontSize = s.fontSize + 'px';
+      }
+    }
+  });
+  
+  console.log('✅ [settings] Tema izleyici yüklendi!');
+})();
+
+// ============================================================
+// ⭐ TOGGLE THEME - HTML'den çağrılır
+// ============================================================
+
+window.toggleTheme = function() {
+  var cb = document.getElementById('theme-toggle');
+  if (!cb) return;
+  
+  var isLight = cb.checked;
+  
+  // Body class'ını değiştir
+  document.body.classList.toggle('light-theme', isLight);
+  localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
+  
+  // Icon ve etiketleri güncelle
+  var icon = document.getElementById('theme-icon');
+  var label = document.getElementById('theme-label');
+  var desc = document.getElementById('theme-desc');
+  
+  if (isLight) {
+    if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+    if (label) label.textContent = 'Açık Tema';
+    if (desc) desc.textContent = 'Aydınlık ve ferah arayüz';
+  } else {
+    if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    if (label) label.textContent = 'Koyu Tema';
+    if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
+  }
+  
+  // Custom theme uygula (dark ise)
+  if (!isLight) {
+    var customTheme = localStorage.getItem('ww_custom_theme');
+    if (customTheme) {
+      try {
+        var settings = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+      } catch(e) {}
+    }
+  } else {
+    // Light tema - font size'ı koru
+    var savedFontSize = localStorage.getItem('ww_font_size');
+    if (savedFontSize) {
+      document.body.style.fontSize = savedFontSize + 'px';
+    }
+  }
+  
+  // Event fırlat
+  try {
+    window.dispatchEvent(new CustomEvent('themeChanged', { 
+      detail: { settings: { isLight: isLight } } 
+    }));
+  } catch(e) {}
+  
+  console.log('🎨 Tema değiştirildi:', isLight ? 'light' : 'dark');
+};
 
 // ============================================================
 // ⭐ LUCIDE SVG ICON HELPER - GÜVENLİ
@@ -10,17 +187,15 @@ console.log('🔧 settings.js yükleniyor... (GÜVENLİK GÜNCELLENDİ)');
 function getLucideIcon(name, size) {
   size = size || 16;
   
-  // ⭐ Güvenlik: Sadece geçerli icon isimlerine izin ver
   const VALID_ICONS = [
     'upload', 'edit', 'image', 'bar-chart-3', 'refresh-cw', 
     'trending-up', 'palette', 'file-text', 'newspaper', 'bell',
     'gem', 'rocket', 'clipboard', 'user', 'lock', 'alert-triangle',
     'credit-card', 'dollar-sign', 'check', 'rotate-ccw', 'globe',
-    'target', 'settings', 'refresh', 'sun', 'moon'
+    'target', 'settings', 'refresh'
   ];
   
   if (!VALID_ICONS.includes(name)) {
-    console.warn('⚠️ Geçersiz icon ismi:', name);
     return `<span style="color:var(--muted);font-size:${size}px;">◻</span>`;
   }
   
@@ -48,9 +223,7 @@ function getLucideIcon(name, size) {
     'globe': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
     'target': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
     'settings': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-    'refresh': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
-    'sun': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
-    'moon': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+    'refresh': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
   };
   
   return icons[name] || `<span style="color:var(--muted);font-size:${size}px;">◻</span>`;
@@ -70,7 +243,7 @@ if (!window.SETTINGS_STATE) {
 }
 
 // ============================================================
-// PREMIUM FEATURES - LUCIDE ICON NAME
+// PREMIUM FEATURES
 // ============================================================
 const PREMIUM_FEATURES = [
   { iconName: 'bar-chart-3', text: 'Premium Dashboard' },
@@ -157,7 +330,7 @@ async function getSession() {
 }
 
 // ============================================================
-// PANEL LOADER - GÜVENLİ
+// PANEL LOADER
 // ============================================================
 async function loadPanelContent(panelId, url) {
   try {
@@ -340,28 +513,6 @@ window.togglePassword = function(inputId, btn) {
   }
 };
 
-window.toggleTheme = function() {
-  var cb = safeEl('theme-toggle');
-  if (!cb) return;
-  var isLight = cb.checked;
-  document.body.classList.toggle('light-theme', isLight);
-  localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
-  
-  var icon = safeEl('theme-icon');
-  var label = safeEl('theme-label');
-  var desc = safeEl('theme-desc');
-  
-  if (isLight) {
-    if (icon) icon.innerHTML = getLucideIcon('sun', 20);
-    if (label) label.textContent = t('settings.light_theme');
-    if (desc) desc.textContent = t('settings.light_theme_desc');
-  } else {
-    if (icon) icon.innerHTML = getLucideIcon('moon', 20);
-    if (label) label.textContent = t('settings.dark_theme');
-    if (desc) desc.textContent = t('settings.dark_theme_desc');
-  }
-};
-
 // ============================================================
 // ⭐ FİYAT FONKSİYONLARI
 // ============================================================
@@ -394,7 +545,7 @@ window.getPaymentMethods = function() {
 };
 
 // ============================================================
-// ⭐ AVATAR FONKSİYONLARI - GÜVENLİ
+// ⭐ AVATAR FONKSİYONLARI
 // ============================================================
 async function uploadAvatar(file) {
   if (!file || !file.type.startsWith('image/')) {
@@ -842,7 +993,7 @@ window.cancelPremium = async function() {
 };
 
 // ============================================================
-// ⭐ CONFIRM MODAL - GÜVENLİ
+// ⭐ CONFIRM MODAL
 // ============================================================
 function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   var modal = document.getElementById('confirm-modal');
@@ -912,7 +1063,7 @@ window.selectPayMethod = function(method) {
 };
 
 // ============================================================
-// ⭐ PLAN PANEL - GÜVENLİ
+// ⭐ PLAN PANEL
 // ============================================================
 async function renderPlan() {
   var container = safeEl('plan-container');
@@ -1237,6 +1388,20 @@ function loadThemeCustomizationFallback() {
   var container = document.getElementById('theme-customization-container');
   if (!container) return;
   
+  // ⭐ TEMA KONTROLÜ - LIGHT THEME'DE ÖZELLEŞTİRME KAPALI
+  var isLight = document.body.classList.contains('light-theme');
+  
+  if (isLight) {
+    container.innerHTML = '<div class="ot-premium-locked" style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">' +
+      '<div class="lock-icon" style="font-size:3rem;margin-bottom:0.75rem;">☀️</div>' +
+      '<h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Açık Tema Aktif</h3>' +
+      '<p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1.25rem;line-height:1.6;">Renk özelleştirme sadece <strong>Koyu Tema</strong> aktifken çalışır. Font boyutunu ayarlamak için yukarıdaki kaydırıcıyı kullanabilirsiniz.</p>' +
+      '<button onclick="document.getElementById(\'theme-toggle\').click()" class="btn-premium-cta" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;padding:0.65rem 1.8rem;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);text-decoration:none;">🌙 Koyu Temaya Geç</button>' +
+      '</div>';
+    return;
+  }
+  
+  // ⭐ Dark tema - Premium kontrolü yap
   getUserPlanSilent().then(function(result) {
     var isPremium = result.plan === 'premium';
     
@@ -1250,7 +1415,7 @@ function loadThemeCustomizationFallback() {
       };
       
       container.innerHTML = '<div style="display:flex;flex-direction:column;gap:1rem;padding:1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">' +
-        '<div style="display:flex;align-items:center;gap:0.75rem;color:var(--text);"><span style="font-size:1.5rem;">' + getLucideIcon('palette', 24) + '</span><div><h4 style="font-family:\'Syne\',sans-serif;font-size:0.95rem;margin:0;">Tema Özelleştirme</h4><p style="font-size:12px;color:var(--muted);margin:0;">Renkleri ve font boyutunu kişiselleştir</p></div></div>' +
+        '<div style="display:flex;align-items:center;gap:0.75rem;color:var(--text);"><span style="font-size:1.5rem;">🎨</span><div><h4 style="font-family:\'Syne\',sans-serif;font-size:0.95rem;margin:0;">Tema Özelleştirme</h4><p style="font-size:12px;color:var(--muted);margin:0;">Renkleri ve font boyutunu kişiselleştir</p></div></div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">' +
         '<div class="field" style="margin:0;"><label>Arka Plan</label><input type="color" id="custom-bg-color" value="' + sanitizeHTML(settings.backgroundColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
         '<div class="field" style="margin:0;"><label>Kart Rengi</label><input type="color" id="custom-surface-color" value="' + sanitizeHTML(settings.surfaceColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
@@ -1258,7 +1423,7 @@ function loadThemeCustomizationFallback() {
         '<div class="field" style="margin:0;"><label>Metin Rengi</label><input type="color" id="custom-text-color" value="' + sanitizeHTML(settings.textColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
         '</div>' +
         '<div class="field" style="margin:0;"><label>Font Boyutu: <span id="font-size-display">' + settings.fontSize + 'px</span></label><input type="range" id="custom-font-size" min="12" max="24" step="1" value="' + settings.fontSize + '" style="width:100%;accent-color:var(--accent);"></div>' +
-        '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;"><button class="btn btn-primary" id="save-custom-theme-btn" style="display:inline-flex;gap:0.5rem;align-items:center;">' + getLucideIcon('check', 14) + ' Kaydet</button><button class="btn btn-ghost" id="reset-custom-theme-btn" style="display:inline-flex;gap:0.5rem;align-items:center;">' + getLucideIcon('rotate-ccw', 14) + ' Sıfırla</button></div>' +
+        '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;"><button class="btn btn-primary" id="save-custom-theme-btn" style="display:inline-flex;gap:0.5rem;align-items:center;">💾 Kaydet</button><button class="btn btn-ghost" id="reset-custom-theme-btn" style="display:inline-flex;gap:0.5rem;align-items:center;">↺ Sıfırla</button></div>' +
         '<div id="theme-preview-box" style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);"><p style="color:var(--text);font-size:' + settings.fontSize + 'px;margin:0;"><strong>Önizleme:</strong> Bu metin seçtiğin renklerle görüntüleniyor.</p><div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;"><span style="background:var(--accent);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;">Accent</span><span style="background:var(--green);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;">Win</span><span style="background:var(--red);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;">Loss</span></div></div>' +
         '</div>';
       
@@ -1266,15 +1431,15 @@ function loadThemeCustomizationFallback() {
       
     } else {
       container.innerHTML = '<div class="ot-premium-locked" style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">' +
-        '<div class="lock-icon" style="font-size:3rem;margin-bottom:0.75rem;">' + getLucideIcon('lock', 32) + '</div>' +
+        '<div class="lock-icon" style="font-size:3rem;margin-bottom:0.75rem;">🔒</div>' +
         '<h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Tema Özelleştirme</h3>' +
         '<p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1.25rem;line-height:1.6;">Renkleri, font boyutunu ve arka planı kişiselleştir. Bu özellik sadece Premium üyelere özeldir.</p>' +
-        '<a href="#panel-plan" class="btn-premium-cta" onclick="window.switchPanel(\'panel-plan\')" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;padding:0.65rem 1.8rem;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);text-decoration:none;">' + getLucideIcon('gem', 14) + ' Premium\'a Geç</a>' +
+        '<a href="#panel-plan" class="btn-premium-cta" onclick="window.switchPanel(\'panel-plan\')" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;padding:0.65rem 1.8rem;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);text-decoration:none;">💎 Premium\'a Geç</a>' +
         '</div>';
     }
   }).catch(function(err) {
     console.error('❌ Premium kontrol hatası:', err);
-    container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ Tema özelleştirme yüklenirken hata oluştu.</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">' + getLucideIcon('refresh', 14) + ' Yenile</button></div>';
+    container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ Tema özelleştirme yüklenirken hata oluştu.</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 Yenile</button></div>';
   });
 }
 
@@ -1307,6 +1472,20 @@ function setupThemeEventsFallback() {
   }
   
   function saveTheme() {
+    var isLight = document.body.classList.contains('light-theme');
+    
+    if (isLight) {
+      // Light tema - sadece font size kaydedilir
+      var fontOnly = { fontSize: parseInt(fontSize.value) };
+      if (typeof saveThemeSettings === 'function') {
+        saveThemeSettings(fontOnly);
+      } else if (typeof window.saveThemeSettings === 'function') {
+        window.saveThemeSettings(fontOnly);
+      }
+      showMsg('✅ Font boyutu kaydedildi! (Renkler light tema ile sınırlıdır)', 'success');
+      return;
+    }
+    
     var settings = {
       backgroundColor: bgColor ? bgColor.value : '#0a0a0f',
       surfaceColor: surfaceColor ? surfaceColor.value : '#111118',
@@ -1360,7 +1539,7 @@ function setupThemeEventsFallback() {
 }
 
 // ============================================================
-// ⭐ DİL SEÇİCİ - DÜZELTİLDİ
+// ⭐ DİL SEÇİCİ
 // ============================================================
 function initLanguageSelector() {
   console.log('🌐 Dil seçici başlatılıyor...');
@@ -1441,7 +1620,7 @@ function initLanguageSelector() {
 }
 
 // ============================================================
-// ⭐ PARA BİRİMİ SEÇİCİ - GÜNCELLENMİŞ (EVENT FIRLATIR)
+// ⭐ PARA BİRİMİ SEÇİCİ
 // ============================================================
 function initCurrencySelector() {
   console.log('💰 Para birimi seçici başlatılıyor...');
@@ -1459,33 +1638,27 @@ function initCurrencySelector() {
     btn.addEventListener('click', function() {
       var currency = this.dataset.currency;
       
-      // ⭐ localStorage'a kaydet
       localStorage.setItem('ww_currency', currency);
       
-      // ⭐ window.setCurrencySymbol'u çağır (event fırlatır)
       if (typeof window.setCurrencySymbol === 'function') {
         window.setCurrencySymbol(currency);
       }
       
-      // ⭐ UI'ı güncelle
       btns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
       
-      // ⭐ Event fırlat (güvence için)
       try {
         window.dispatchEvent(new CustomEvent('currencyChanged', { 
           detail: { symbol: currency } 
         }));
       } catch(e) {}
       
-      // ⭐ Sayfadaki tüm para birimi gösterimlerini güncelle
       document.querySelectorAll('.currency-display, .currency-symbol, [data-currency-display]').forEach(function(el) {
         el.textContent = currency;
       });
       
       showMsg('Para birimi değiştirildi! ✅', 'success');
       
-      // ⭐ Sayfayı yenile (tüm formatCurrency çağrılarını güncellemek için)
       setTimeout(function() { location.reload(); }, 800);
     });
   });
@@ -1510,7 +1683,7 @@ function initOvertrade() {
     window.loadOvertradeSettingsUI('overtrade-settings-container');
   } else {
     console.error('❌ loadOvertradeSettingsUI fonksiyonu bulunamadı!');
-    container.innerHTML = '<div style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><div style="font-size:2.5rem;margin-bottom:0.75rem;">' + getLucideIcon('alert-triangle', 32) + '</div><h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Sistem Hatası</h3><p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1rem;">Over Trade sistemi yüklenemedi. Lütfen sayfayı yenileyin.</p><button onclick="location.reload()" class="btn btn-primary" style="display:inline-flex;">' + getLucideIcon('refresh', 14) + ' Yenile</button></div>';
+    container.innerHTML = '<div style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><div style="font-size:2.5rem;margin-bottom:0.75rem;">⚠️</div><h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Sistem Hatası</h3><p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1rem;">Over Trade sistemi yüklenemedi. Lütfen sayfayı yenileyin.</p><button onclick="location.reload()" class="btn btn-primary" style="display:inline-flex;">🔄 Yenile</button></div>';
   }
 }
 
@@ -1822,17 +1995,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     await checkAndActivatePremium();
     
+    // ⭐ TEMA BAŞLAT - ÖNEMLİ!
+    // Checkbox durumunu güncelle
+    var cb = document.getElementById('theme-toggle');
+    if (cb) {
+      var savedTheme = localStorage.getItem('ww_theme');
+      cb.checked = savedTheme === 'light';
+      
+      var icon = document.getElementById('theme-icon');
+      var label = document.getElementById('theme-label');
+      var desc = document.getElementById('theme-desc');
+      
+      if (savedTheme === 'light') {
+        if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+        if (label) label.textContent = 'Açık Tema';
+        if (desc) desc.textContent = 'Aydınlık ve ferah arayüz';
+      } else {
+        if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        if (label) label.textContent = 'Koyu Tema';
+        if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
+      }
+    }
+    
     initNavEvents();
     initPanelClickEvents();
     initAvatarPopup();
     initConfirmModal();
-    
-    var isLight = localStorage.getItem('ww_theme') === 'light';
-    var themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      themeToggle.checked = isLight;
-      if (isLight) document.body.classList.add('light-theme');
-    }
     
     var glow = document.getElementById('panel-glow');
     if (glow) glow.className = 'panel-glow profile-glow';
@@ -1918,5 +2106,6 @@ window.settings = {
   updateBadge: updateBadge,
   initLanguageSelector: initLanguageSelector,
   loadAvatar: loadAvatar,
-  sanitizeHTML: sanitizeHTML
+  sanitizeHTML: sanitizeHTML,
+  toggleTheme: window.toggleTheme
 };

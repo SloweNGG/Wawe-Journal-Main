@@ -4,8 +4,115 @@
 // SADECE TRADES İÇERİĞİNİ YÖNETİR - NAVBAR'A MÜDAHALE ETMEZ
 // ============================================================
 
+// ============================================================
+// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ============================================================
+
 (function() {
   'use strict';
+
+  // ============================================================
+  // ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN
+  // ============================================================
+  
+  (function initTheme() {
+    var savedTheme = localStorage.getItem('ww_theme');
+    var savedFontSize = localStorage.getItem('ww_font_size');
+    var customTheme = localStorage.getItem('ww_custom_theme');
+    
+    // 1. Body class'ını ayarla
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+    
+    // 2. Font size
+    if (savedFontSize) {
+      document.body.style.fontSize = savedFontSize + 'px';
+    }
+    
+    // 3. Custom theme (sadece dark)
+    if (savedTheme !== 'light' && customTheme) {
+      try {
+        var settings = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) {
+          document.body.style.fontSize = settings.fontSize + 'px';
+        }
+      } catch(e) {}
+    }
+    
+    console.log('🎨 [trades.js] Tema ayarlandı:', savedTheme || 'dark');
+  })();
+
+  // ============================================================
+  // ⭐ TEMA DEĞİŞİMİNİ DİNLE
+  // ============================================================
+  
+  (function listenThemeChanges() {
+    console.log('🎨 [Trades] Tema izleyici başlatıldı...');
+    
+    // Storage değişikliklerini dinle (diğer sekmelerden)
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'ww_theme') {
+        console.log('🔄 [Trades] Tema değişikliği algılandı:', e.newValue);
+        var isLight = e.newValue === 'light';
+        document.body.classList.toggle('light-theme', isLight);
+        
+        var customTheme = localStorage.getItem('ww_custom_theme');
+        if (customTheme && !isLight) {
+          try {
+            var settings = JSON.parse(customTheme);
+            var root = document.documentElement;
+            if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+            if (settings.surfaceColor) {
+              root.style.setProperty('--surface', settings.surfaceColor);
+              root.style.setProperty('--surface2', settings.surfaceColor);
+            }
+            if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+            if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+            if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+          } catch(e) {}
+        }
+        
+        // Tabloyu yeniden render et
+        if (typeof applyFiltersAndSort === 'function') {
+          setTimeout(function() { applyFiltersAndSort(); }, 100);
+        }
+      }
+    });
+    
+    // Custom event - aynı sayfadaki tema değişimleri için
+    document.addEventListener('themeChanged', function(e) {
+      console.log('🔄 [Trades] ThemeChanged event yakalandı');
+      if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
+        var settings = e.detail.settings;
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+        
+        if (typeof applyFiltersAndSort === 'function') {
+          setTimeout(function() { applyFiltersAndSort(); }, 100);
+        }
+      }
+    });
+    
+    console.log('✅ [Trades] Tema izleyici yüklendi!');
+  })();
 
   // ============================================================
   // GÜVENLİ ELEMENT ALICI

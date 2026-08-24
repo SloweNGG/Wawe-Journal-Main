@@ -1,5 +1,5 @@
 // ============================================================
-// WAWE JOURNAL - THEME FEATURE
+// WAWE JOURNAL - THEME FEATURE (GÜNCELLENDİ)
 // ============================================================
 
 import { safeLocalStorageGet, safeLocalStorageSet } from '../core/storage.js';
@@ -18,8 +18,23 @@ export function getThemeSettings() {
 
 export function saveThemeSettings(settings) {
   try {
+    // ⭐ LIGHT THEME KONTROLÜ
+    const isLightTheme = document.body.classList.contains('light-theme');
+    
+    if (isLightTheme) {
+      // Light tema açıkken sadece font size kaydedilebilir
+      const fontOnly = { fontSize: settings.fontSize || 16 };
+      safeLocalStorageSet('ww_custom_theme', JSON.stringify(fontOnly));
+      applyThemeSettings(fontOnly);
+      if (typeof showToast === 'function') {
+        showToast('✅ Font boyutu güncellendi!', 'success');
+      }
+      return;
+    }
+    
     safeLocalStorageSet('ww_custom_theme', JSON.stringify(settings));
     applyThemeSettings(settings);
+    
     // ⭐ Event fırlat - diğer sayfaları güncellemek için
     try {
       window.dispatchEvent(new CustomEvent('themeChanged', { 
@@ -31,6 +46,21 @@ export function saveThemeSettings(settings) {
 
 export function applyThemeSettings(settings) {
   const root = document.documentElement;
+  
+  // ⭐ EĞER LIGHT THEME AKTİFSE, CSS DEĞİŞKENLERİNİ DEĞİŞTİRME!
+  const isLightTheme = document.body.classList.contains('light-theme');
+  
+  if (isLightTheme) {
+    // Light tema aktifken özel renkler uygulanamaz
+    // Sadece font size uygulanabilir
+    if (settings.fontSize) {
+      document.body.style.fontSize = settings.fontSize + 'px';
+      safeLocalStorageSet('ww_font_size', settings.fontSize);
+    }
+    return; // ⭐ ÇIKIŞ YAP - CSS değişkenlerini değiştirme!
+  }
+  
+  // Sadece dark tema için CSS değişkenlerini uygula
   if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
   if (settings.surfaceColor) {
     root.style.setProperty('--surface', settings.surfaceColor);
@@ -88,6 +118,9 @@ export async function loadThemeCustomization() {
   const settings = getThemeSettings();
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15);border-radius:8px;padding:0.6rem 0.9rem;font-size:12px;color:var(--text);">
+        ⚠️ <strong>Not:</strong> Renk özelleştirme sadece <strong>Koyu Tema</strong> aktifken çalışır. Açık tema aktifken sadece font boyutu değiştirilebilir.
+      </div>
       <div class="field">
         <label>Arka Plan Rengi</label>
         <div style="display:flex;align-items:center;gap:0.75rem;">
@@ -214,6 +247,16 @@ export async function loadThemeCustomization() {
   fontSize.addEventListener('input', updatePreview);
 
   document.getElementById('save-custom-theme-btn').addEventListener('click', function() {
+    const isLight = document.body.classList.contains('light-theme');
+    
+    if (isLight) {
+      // Light tema aktifken sadece font size kaydedilir
+      const fontOnly = { fontSize: parseInt(fontSize.value) };
+      saveThemeSettings(fontOnly);
+      showToast('✅ Font boyutu kaydedildi! (Renkler light tema ile sınırlıdır)', 'success');
+      return;
+    }
+    
     const settings = {
       backgroundColor: bgColor.value,
       surfaceColor: surfaceColor.value,
@@ -235,6 +278,22 @@ export async function loadThemeCustomization() {
     updatePreview();
     saveThemeSettings(defaultSettings);
     showToast('↺ Tema varsayılan ayarlara döndürüldü.', 'success');
+  });
+
+  // ⭐ Tema değişimini dinle - sayfa içinde güncelle
+  document.addEventListener('themeChanged', function(e) {
+    if (e.detail && e.detail.settings) {
+      // Sadece dark tema ise güncelle
+      if (!document.body.classList.contains('light-theme')) {
+        const s = e.detail.settings;
+        if (s.backgroundColor) bgColor.value = s.backgroundColor;
+        if (s.surfaceColor) surfaceColor.value = s.surfaceColor;
+        if (s.borderColor) borderColor.value = s.borderColor;
+        if (s.textColor) textColor.value = s.textColor;
+        if (s.fontSize) fontSize.value = s.fontSize;
+        updatePreview();
+      }
+    }
   });
 
   updatePreview();

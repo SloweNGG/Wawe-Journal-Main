@@ -1,5 +1,5 @@
 // ============================================================
-// WAWE JOURNAL - PAYMENT SERVICE
+// WAWE JOURNAL - PAYMENT SERVICE (GÜNCELLENDİ)
 // ============================================================
 
 import { sb, requireAuth } from '../core/supabase.js';
@@ -126,7 +126,10 @@ export async function upgradeToPremium(planType, amount, currency, payMethod) {
   }
 }
 
+// ⭐⭐⭐ CANCEL PREMIUM - GERÇEKTEN İPTAL EDEN VERSİYON ⭐⭐⭐
 export async function cancelPremium() {
+  console.log('💎 [cancelPremium] ÇAĞRILDI!');
+  
   try {
     const user = await requireAuth();
     if (!user) {
@@ -134,16 +137,103 @@ export async function cancelPremium() {
       return false;
     }
     
-    const { plan } = await getUserPlan();
-    if (plan !== 'premium') {
+    // Kullanıcının plan bilgisini al
+    const { data: profile, error: profileError } = await sb
+      .from('user_profiles')
+      .select('plan, plan_expires_at')
+      .eq('id', user.id)
+      .single();
+    
+    if (profileError) {
+      console.error('❌ Profil sorgusu hatası:', profileError);
+      showToast('Profil bilgileri alınamadı.', 'error');
+      return false;
+    }
+    
+    console.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
+    
+    // Zaten premium değilse
+    if (!profile || profile.plan !== 'premium') {
       showToast('Zaten premium aboneliğiniz yok.', 'info');
       return true;
     }
     
-    showToast('Otomatik yenileme yok. Premium erişiminiz bitiş tarihine kadar devam eder.', 'info');
+    // Onay mesajı
+    const expiryDate = profile.plan_expires_at ? 
+      new Date(profile.plan_expires_at).toLocaleDateString('tr-TR', { 
+        day: '2-digit', 
+        month: 'long', 
+        year: 'numeric' 
+      }) : 'belirsiz';
+    
+    const confirmTitle = '⚠️ Premium Aboneliğini İptal Et';
+    const confirmMessage = 'Premium aboneliğinizi iptal etmek istediğinize emin misiniz?';
+    const confirmWarning = '📅 Bitiş tarihi: ' + expiryDate + '\n\nBu işlem geri alınamaz!';
+    
+    // Confirm modal'ı göster
+    const confirmed = await new Promise(function(resolve) {
+      // showConfirmModal zaten window'da tanımlı
+      if (typeof window.showConfirmModal === 'function') {
+        window.showConfirmModal(
+          confirmTitle,
+          confirmMessage,
+          confirmWarning,
+          function() { resolve(true); },
+          function() { resolve(false); }
+        );
+      } else {
+        // Fallback
+        resolve(confirm(confirmTitle + '\n\n' + confirmMessage + '\n\n' + confirmWarning));
+      }
+    });
+    
+    if (!confirmed) {
+      console.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
+      return false;
+    }
+    
+    // ⭐⭐⭐ PLANI ÜCRETSİZ YAP - ASIL İPTAL BURADA! ⭐⭐⭐
+    console.log('🔄 Plan free\'e düşürülüyor...');
+    
+    const { error: updateError } = await sb
+      .from('user_profiles')
+      .update({ 
+        plan: 'free',
+        plan_expires_at: null
+      })
+      .eq('id', user.id);
+    
+    if (updateError) {
+      console.error('❌ Plan güncelleme hatası:', updateError);
+      showToast('Abonelik iptal edilemedi: ' + updateError.message, 'error');
+      return false;
+    }
+    
+    console.log('✅ Abonelik iptal edildi!');
+    
+    // LocalStorage'ı temizle
+    try {
+      localStorage.removeItem('ww_user_plan');
+    } catch(e) {}
+    
+    showToast('✅ Premium aboneliğiniz iptal edildi.', 'success');
+    
+    // ⭐ Plan panelini yenile (settings.js'deki renderPlan fonksiyonunu çağır)
+    setTimeout(function() {
+      if (typeof window.renderPlan === 'function') {
+        window.renderPlan();
+      }
+      if (typeof window.updateBadge === 'function') {
+        window.updateBadge();
+      }
+      // Sayfayı yenile
+      location.reload();
+    }, 500);
+    
     return true;
+    
   } catch (error) {
-    console.error('cancelPremium hatası:', error);
+    console.error('❌ Abonelik iptal hatası:', error);
     showToast('Abonelik iptal edilemedi: ' + error.message, 'error');
     return false;
   }

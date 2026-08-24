@@ -4,7 +4,134 @@
 
 console.log('📊 strategies.js yükleniyor...');
 
-// ⭐ GÜVENLİK: HTML SANITIZE
+// ============================================================
+// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ============================================================
+
+(function initTheme() {
+  var savedTheme = localStorage.getItem('ww_theme');
+  var savedFontSize = localStorage.getItem('ww_font_size');
+  var customTheme = localStorage.getItem('ww_custom_theme');
+  
+  // 1. Body class'ını ayarla
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+  
+  // 2. Font size
+  if (savedFontSize) {
+    document.body.style.fontSize = savedFontSize + 'px';
+  }
+  
+  // 3. Custom theme (sadece dark)
+  if (savedTheme !== 'light' && customTheme) {
+    try {
+      var settings = JSON.parse(customTheme);
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) {
+        document.body.style.fontSize = settings.fontSize + 'px';
+      }
+    } catch(e) {}
+  }
+  
+  console.log('🎨 [strategies.js] Tema ayarlandı:', savedTheme || 'dark');
+})();
+
+// ============================================================
+// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// ============================================================
+
+(function listenThemeChanges() {
+  console.log('🎨 [Strategies] Tema izleyici başlatıldı...');
+  
+  // Storage değişikliklerini dinle (diğer sekmelerden)
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'ww_theme') {
+      console.log('🔄 [Strategies] Tema değişikliği algılandı:', e.newValue);
+      var isLight = e.newValue === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      
+      var customTheme = localStorage.getItem('ww_custom_theme');
+      if (customTheme && !isLight) {
+        try {
+          var settings = JSON.parse(customTheme);
+          var root = document.documentElement;
+          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+          if (settings.surfaceColor) {
+            root.style.setProperty('--surface', settings.surfaceColor);
+            root.style.setProperty('--surface2', settings.surfaceColor);
+          }
+          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+        } catch(e) {}
+      }
+      
+      // Grafikleri yeniden render et
+      setChartTheme();
+      if (typeof renderComparisonCharts === 'function') {
+        setTimeout(function() { renderComparisonCharts(); }, 100);
+      }
+      if (typeof renderStrategiesGrid === 'function') {
+        setTimeout(function() { renderStrategiesGrid(); }, 150);
+      }
+    }
+  });
+  
+  // Custom event - aynı sayfadaki tema değişimleri için
+  document.addEventListener('themeChanged', function(e) {
+    console.log('🔄 [Strategies] ThemeChanged event yakalandı');
+    if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
+      var settings = e.detail.settings;
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+      
+      setChartTheme();
+      if (typeof renderComparisonCharts === 'function') {
+        setTimeout(function() { renderComparisonCharts(); }, 100);
+      }
+      if (typeof renderStrategiesGrid === 'function') {
+        setTimeout(function() { renderStrategiesGrid(); }, 150);
+      }
+    }
+  });
+  
+  // Sayfa görünür olduğunda tema kontrol et
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      var savedTheme = localStorage.getItem('ww_theme');
+      var isLight = savedTheme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      
+      setChartTheme();
+      if (typeof renderComparisonCharts === 'function') {
+        setTimeout(function() { renderComparisonCharts(); }, 100);
+      }
+    }
+  });
+  
+  console.log('✅ [Strategies] Tema izleyici yüklendi!');
+})();
+
+// ============================================================
+// GÜVENLİK: HTML SANITIZE
+// ============================================================
 function sanitizeHTML(str) {
   if (!str) return '';
   var temp = document.createElement('div');
@@ -100,7 +227,7 @@ async function updatePlanBadge() {
 }
 
 // ============================================================
-// TEMA DEĞİŞİMİ
+// TEMA DEĞİŞİMİ - CHART
 // ============================================================
 function setChartTheme() {
   try {
@@ -118,6 +245,7 @@ function setChartTheme() {
   } catch(e) {}
 }
 
+// ⭐ Chart tema observer - body class değişimini izle
 setChartTheme();
 
 var observer = new MutationObserver(function(mutations) {
@@ -911,11 +1039,120 @@ function exportAllStrategiesCSV() {
 }
 
 function exportStrategyPDF(strategyId) {
-  // ... (önceki mesajdaki gibi)
+  try {
+    var s = strategiesList.find(function(x) { return x.id === strategyId; });
+    var perf = getStrategyPerformance(strategyId);
+    var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var margin = 12;
+    var y = margin + 5;
+
+    doc.setFillColor(10, 10, 15);
+    doc.rect(0, 0, pageW, 6, 'F');
+    doc.setFillColor(139, 92, 246);
+    doc.rect(0, 0, pageW, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Strateji Raporu: ' + sanitizeHTML(s.name), margin, y);
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 107, 128);
+    doc.text('Wawe Journal · ' + new Date().toLocaleDateString('tr-TR'), margin, y);
+    y += 10;
+
+    var data = [
+      ['Toplam İşlem', perf.totalTradesWithOpen],
+      ['Win Rate', perf.winRate + '%'],
+      ['Toplam K/Z', formatCurrencySafe(perf.totalPnL)],
+      ['Profit Factor', perf.profitFactor === null ? 'Sonsuz' : perf.profitFactor],
+      ['Maks. Drawdown', formatCurrencySafe(perf.maxDrawdown)]
+    ];
+    data.forEach(function(row) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(107, 107, 128);
+      doc.text(row[0] + ':', margin, y);
+      var x2 = doc.getStringUnitWidth(row[0] + ':') * 7 / 0.3528 + margin + 4;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(232, 232, 240);
+      doc.text(row[1], x2, y);
+      y += 5;
+    });
+    y += 5;
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 92, 246);
+    doc.text('İşlem Listesi', margin, y);
+    y += 4;
+    var tableRows = perf.tradesDetail.slice(0, 15).map(function(t) {
+      return [fmtDate(t.trade_date), sanitizeHTML(t.symbol), sanitizeHTML(t.direction), t.entry_price, t.exit_price, t.pnl.toFixed(2)];
+    });
+    doc.autoTable({
+      startY: y,
+      head: [['Tarih', 'Sembol', 'Yön', 'Giriş', 'Çıkış', 'K/Z']],
+      body: tableRows,
+      theme: 'dark',
+      headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 5 },
+      bodyStyles: { textColor: [232, 232, 240], fontSize: 5 },
+      columnStyles: { 5: { textColor: function(cell) { return cell.raw >= 0 ? [34,197,94] : [239,68,68]; } } },
+      margin: { left: margin, right: margin },
+      styles: { cellPadding: 1.5 }
+    });
+    doc.save((s ? sanitizeHTML(s.name) : 'strateji') + '_rapor.pdf');
+    showToast('PDF indirildi');
+  } catch(e) { showToast('PDF oluşturulamadı', 'error'); }
 }
 
 function exportAllStrategiesPDF() {
-  // ... (önceki mesajdaki gibi)
+  try {
+    var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var margin = 12;
+    var y = margin + 5;
+
+    doc.setFillColor(10, 10, 15);
+    doc.rect(0, 0, pageW, 6, 'F');
+    doc.setFillColor(139, 92, 246);
+    doc.rect(0, 0, pageW, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tüm Stratejiler Özet Raporu', margin, y);
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 107, 128);
+    doc.text('Wawe Journal · ' + new Date().toLocaleDateString('tr-TR'), margin, y);
+    y += 10;
+
+    var tableData = strategiesList.map(function(s) {
+      var perf = getStrategyPerformance(s.id);
+      return [
+        sanitizeHTML(s.name),
+        perf.totalTradesWithOpen,
+        perf.winRate + '%',
+        formatCurrencySafe(perf.totalPnL),
+        perf.profitFactor === null ? '∞' : perf.profitFactor
+      ];
+    });
+
+    doc.autoTable({
+      startY: y,
+      head: [['Strateji', 'İşlem', 'Win Rate', 'K/Z', 'PF']],
+      body: tableData,
+      theme: 'dark',
+      headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 6 },
+      bodyStyles: { textColor: [232, 232, 240], fontSize: 6 },
+      columnStyles: { 3: { textColor: function(cell) { return cell.raw.startsWith('-') ? [239,68,68] : [34,197,94]; } } },
+      margin: { left: margin, right: margin },
+      styles: { cellPadding: 2 }
+    });
+    doc.save('tum_stratejiler_ozet.pdf');
+    showToast('PDF indirildi');
+  } catch(e) { showToast('PDF oluşturulamadı', 'error'); }
 }
 
 function setupExportButtons() {
