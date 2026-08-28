@@ -1,5 +1,5 @@
 // ============================================================
-// WAWE JOURNAL - USER SERVICE
+// WAWE JOURNAL - USER SERVICE (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
 import { sb, requireAuth } from '../core/supabase.js';
@@ -8,90 +8,105 @@ import { safeLocalStorageGet } from '../core/storage.js';
 import { calcPnL } from '../utils/helpers.js';
 import { showToast } from '../utils/ui.js';
 
-// ── PLAN & PREMIUM ──────────────────────────────────────────
-export async function getUserPlan() {
-  try {
-    const user = await requireAuth();
-    if (!user) return { plan: 'free', features: FEATURES.free };
-    
-    const { data, error } = await sb
-      .from('user_profiles')
-      .select('plan, plan_expires_at')
-      .eq('id', user.id)
-      .single();
-    
-    if (error || !data || data.plan === 'free') {
-      return { plan: 'free', features: FEATURES.free };
-    }
-    
-    if (data.plan === 'premium' && data.plan_expires_at) {
-      const now = new Date();
-      const expires = new Date(data.plan_expires_at);
-      
-      if (isNaN(expires.getTime()) || now > expires) {
-        showToast(i18n.t('premium.expired'), 'info');
-        return { plan: 'free', features: FEATURES.free };
-      }
-    }
-    
-    if (data.plan !== 'premium') {
-      return { plan: 'free', features: FEATURES.free };
-    }
-    
-    return { plan: data.plan, features: FEATURES.premium };
-    
-  } catch (error) {
-    console.warn('getUserPlan hatası, free döndürülüyor:', error);
-    return { plan: 'free', features: FEATURES.free };
-  }
-}
+// ⭐ PERFORMANS: Plan cache
+var planCache = null;
+var planCacheTime = 0;
+var PLAN_CACHE_TTL = 5 * 60 * 1000; // 5 dakika
 
-export async function getUserPlanSilent() {
+// ── PLAN & PREMIUM ──────────────────────────────────────────
+
+// ⭐ TEK FONKSİYON - silent parametresi ile
+async function getUserPlanInternal(silent) {
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) return { plan: 'free', features: FEATURES.free };
+    // Cache kontrolü
+    var now = Date.now();
+    if (planCache && (now - planCacheTime) < PLAN_CACHE_TTL) {
+      return planCache;
+    }
     
-    const { data, error } = await sb
+    var sessionData = await sb.auth.getSession();
+    var session = sessionData && sessionData.data ? sessionData.data.session : null;
+    
+    if (!session) {
+      var freeResult = { plan: 'free', features: FEATURES.free };
+      planCache = freeResult;
+      planCacheTime = now;
+      return freeResult;
+    }
+    
+    var { data, error } = await sb
       .from('user_profiles')
       .select('plan, plan_expires_at')
       .eq('id', session.user.id)
       .single();
     
     if (error || !data || data.plan === 'free') {
-      return { plan: 'free', features: FEATURES.free };
+      var freeResult2 = { plan: 'free', features: FEATURES.free };
+      planCache = freeResult2;
+      planCacheTime = now;
+      return freeResult2;
     }
     
     if (data.plan === 'premium' && data.plan_expires_at) {
-      const now = new Date();
-      const expires = new Date(data.plan_expires_at);
+      var nowDate = new Date();
+      var expires = new Date(data.plan_expires_at);
       
-      if (isNaN(expires.getTime()) || now > expires) {
-        return { plan: 'free', features: FEATURES.free };
+      if (isNaN(expires.getTime()) || nowDate > expires) {
+        if (!silent) {
+          showToast(i18n.t('premium.expired'), 'info');
+        }
+        var freeResult3 = { plan: 'free', features: FEATURES.free };
+        planCache = freeResult3;
+        planCacheTime = now;
+        return freeResult3;
       }
     }
     
-    return { plan: data.plan || 'free', features: data.plan === 'premium' ? FEATURES.premium : FEATURES.free };
+    if (data.plan !== 'premium') {
+      var freeResult4 = { plan: 'free', features: FEATURES.free };
+      planCache = freeResult4;
+      planCacheTime = now;
+      return freeResult4;
+    }
+    
+    var premiumResult = { plan: data.plan, features: FEATURES.premium };
+    planCache = premiumResult;
+    planCacheTime = now;
+    return premiumResult;
+    
   } catch (error) {
-    return { plan: 'free', features: FEATURES.free };
+    console.warn('getUserPlan hatası, free döndürülüyor:', error);
+    var fallbackResult = { plan: 'free', features: FEATURES.free };
+    planCache = fallbackResult;
+    planCacheTime = Date.now();
+    return fallbackResult;
   }
 }
 
+export async function getUserPlan() {
+  return getUserPlanInternal(false);
+}
+
+export async function getUserPlanSilent() {
+  return getUserPlanInternal(true);
+}
+
 export async function isPremium() {
-  const { plan } = await getUserPlan();
+  var { plan } = await getUserPlan();
   return plan === 'premium';
 }
 
 export async function hasFeature(featureName) {
-  const { features } = await getUserPlan();
+  var { features } = await getUserPlan();
   return features[featureName] === true;
 }
 
 export async function requirePremium() {
   try {
-    const user = await requireAuth();
+    var user = await requireAuth();
     if (!user) return null;
     
-    const { plan } = await getUserPlan();
+    var { plan } = await getUserPlan();
     if (plan !== 'premium') {
       showToast('💎 Bu özellik sadece Premium üyelere özeldir!', 'error');
       window.location.href = 'settings.html#panel-plan';
@@ -108,22 +123,24 @@ export async function requirePremium() {
 }
 
 // ── STRATEJİ YÖNETİMİ ──────────────────────────────────────
-let strategiesCache = null;
-let strategiesCacheTime = 0;
+
+var strategiesCache = null;
+var strategiesCacheTime = 0;
 
 export async function getUserStrategies(forceRefresh) {
   forceRefresh = forceRefresh || false;
-  const user = await requireAuth();
+  var user = await requireAuth();
   if (!user) return [];
   
-  const now = Date.now();
+  var now = Date.now();
   if (!forceRefresh && strategiesCache && (now - strategiesCacheTime) < STRATEGIES_CACHE_TTL) {
     return strategiesCache;
   }
   
-  const { data, error } = await sb
+  // ⭐ SADECE GEREKLİ KOLONLAR
+  var { data, error } = await sb
     .from('strategies')
-    .select('*')
+    .select('id, name, description, color, user_id, is_active, created_at')
     .eq('user_id', user.id)
     .eq('is_active', true)
     .order('name', { ascending: true });
@@ -144,7 +161,7 @@ export function clearStrategiesCache() {
 
 export async function addStrategy(name, description, color) {
   color = color || '#7c6dfa';
-  const user = await requireAuth();
+  var user = await requireAuth();
   if (!user) return null;
   
   if (!name || name.trim() === '') {
@@ -152,7 +169,7 @@ export async function addStrategy(name, description, color) {
     return null;
   }
   
-  const { data, error } = await sb
+  var { data, error } = await sb
     .from('strategies')
     .insert([{
       user_id: user.id,
@@ -175,7 +192,7 @@ export async function addStrategy(name, description, color) {
 }
 
 export async function deleteStrategy(strategyId) {
-  const { error } = await sb
+  var { error } = await sb
     .from('strategies')
     .delete()
     .eq('id', strategyId);
@@ -191,7 +208,7 @@ export async function deleteStrategy(strategyId) {
 }
 
 export async function updateStrategy(strategyId, updates) {
-  const { error } = await sb
+  var { error } = await sb
     .from('strategies')
     .update(updates)
     .eq('id', strategyId);
@@ -207,25 +224,25 @@ export async function updateStrategy(strategyId, updates) {
 }
 
 export function calculateStrategyPerformance(trades, strategyId) {
-  const strategyTrades = trades.filter(function(t) { 
+  var strategyTrades = trades.filter(function(t) { 
     return t.strategy_id === strategyId && t.exit_price; 
   });
   if (strategyTrades.length === 0) return null;
   
-  let totalPnL = 0;
-  let wins = 0;
-  let losses = 0;
+  var totalPnL = 0;
+  var wins = 0;
+  var losses = 0;
   
   strategyTrades.forEach(function(t) {
-    const mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
-    const pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', mult);
+    var mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
+    var pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', mult);
     totalPnL += pnl;
     if (pnl > 0) wins++;
     else if (pnl < 0) losses++;
   });
   
-  const total = strategyTrades.length;
-  const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+  var total = strategyTrades.length;
+  var winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
   
   return {
     totalTrades: total,
@@ -238,8 +255,8 @@ export function calculateStrategyPerformance(trades, strategyId) {
 }
 
 export async function getStrategiesMap() {
-  const strategies = await getUserStrategies();
-  const map = {};
+  var strategies = await getUserStrategies();
+  var map = {};
   strategies.forEach(function(s) { map[s.id] = s.name; });
   return map;
 }

@@ -1,11 +1,8 @@
 // ============================================================
-// NAVBAR.JS - GÜVENLİK GÜNCELLEMESİ (XSS KORUMALI)
-// FONT OYNAMALARI DÜZELTİLDİ - BATCH i18n GÜNCELLEMESİ
-// ⭐ AKTİF LİNK FLASH ÖNLENDİ - requestAnimationFrame KULLANIMI
-// LUCIDE ICONS + AVATAR DROPDOWN FİX
+// NAVBAR.JS - GÜVENLİK + CACHE + LAZY LOAD
 // ============================================================
 
-console.log('🧭 Navbar yükleniyor (GÜVENLİK GÜNCELLENDİ - FONT SABİT - AKTİF LİNK HIZLI)...');
+console.log('🧭 Navbar yükleniyor (CACHE + LAZY LOAD)...');
 
 // ============================================================
 // ⭐ GÜVENLİK: HTML SANITIZE
@@ -29,10 +26,38 @@ function sanitizeURL(url) {
 }
 
 // ============================================================
-// ⭐ NAVBAR HTML - i18n ETİKETLERİ İLE + LUCIDE ICONS
+// ⭐ LUCIDE ICONS - DEFER YÜKLEME
+// ============================================================
+function loadLucideIcons() {
+  if (typeof lucide !== 'undefined') {
+    try {
+      lucide.createIcons();
+      console.log('✅ Lucide icons re-created!');
+    } catch(e) {}
+    return;
+  }
+  
+  var script = document.createElement('script');
+  script.src = 'https://unpkg.com/lucide@latest';
+  script.defer = true;
+  script.onload = function() {
+    if (typeof lucide !== 'undefined') {
+      try {
+        lucide.createIcons();
+        console.log('✅ Lucide icons loaded and created!');
+      } catch(e) {}
+    }
+  };
+  script.onerror = function() {
+    console.warn('⚠️ Lucide icons could not be loaded');
+  };
+  document.head.appendChild(script);
+}
+
+// ============================================================
+// ⭐ NAVBAR HTML - i18n ETİKETLERİ İLE
 // ============================================================
 function getNavbarHTML(translations) {
-  // ⭐ Eğer translations varsa, direkt kullan, yoksa i18n'den al
   var t = function(key) {
     if (translations && translations[key]) return translations[key];
     if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
@@ -58,7 +83,6 @@ function getNavbarHTML(translations) {
       </div>
       
       <div class="nav-right">
-        <!-- ⭐ PREMIUM DROPDOWN -->
         <div class="nav-dropdown">
           <button class="nav-dropdown-btn" id="premium-dropdown-btn">
             <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
@@ -87,7 +111,6 @@ function getNavbarHTML(translations) {
           </div>
         </div>
 
-        <!-- ⭐ BİLDİRİM ÇANI -->
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
           <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler">
             <i data-lucide="bell" style="width:18px;height:18px;"></i>
@@ -110,18 +133,15 @@ function getNavbarHTML(translations) {
           </div>
         </div>
         
-        <!-- ⭐ PLAN BADGE -->
         <div class="plan-badge" id="plan-badge">
           <span class="plan-dot"></span>
           <span class="plan-text" id="plan-text">${t('nav.free_badge') || 'Ücretsiz'}</span>
         </div>
         
-        <!-- ⭐ USER AVATAR -->
         <div class="user-avatar" id="user-avatar">
           <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
         </div>
         
-        <!-- ⭐ DROPDOWN MENU -->
         <div class="dropdown-menu" id="dropdown-menu">
           <a href="/settings/index.html#panel-profile" class="dropdown-item" data-i18n="nav.profile">
             <i data-lucide="user" style="width:16px;height:16px;"></i>
@@ -143,14 +163,12 @@ function getNavbarHTML(translations) {
           </button>
         </div>
         
-        <!-- ⭐ MOBILE TOGGLE -->
         <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
           <span class="bar"></span><span class="bar"></span><span class="bar"></span>
         </button>
       </div>
     </nav>
 
-    <!-- ⭐ MOBILE MENU -->
     <div class="nav-backdrop" id="nav-backdrop"></div>
     <div class="nav-menu" id="nav-menu">
       <div class="nav-menu-inner">
@@ -207,7 +225,7 @@ function getNavbarHTML(translations) {
 }
 
 // ============================================================
-// ⭐ i18n METİNLERİNİ BATCH OLARAK GÜNCELLE - FONT OYNAMALARINI ÖNLE
+// ⭐ i18n METİNLERİNİ BATCH GÜNCELLE
 // ============================================================
 function updateNavbarI18n() {
   if (typeof i18n === 'undefined' || typeof i18n.t !== 'function') {
@@ -215,14 +233,12 @@ function updateNavbarI18n() {
     return;
   }
   
-  console.log('🌐 Navbar i18n metinleri batch olarak güncelleniyor... Mevcut dil:', i18n.getCurrentLanguage());
+  console.log('🌐 Navbar i18n metinleri batch olarak güncelleniyor...');
   
-  // ⭐ Batch toplama - DOM değişikliklerini minimize et
   var textUpdates = [];
   var placeholderUpdates = [];
   var htmlUpdates = [];
   
-  // ⭐ textContent güncellemeleri
   document.querySelectorAll('[data-i18n]').forEach(function(el) {
     var key = el.getAttribute('data-i18n');
     var translation = i18n.t(key);
@@ -231,7 +247,6 @@ function updateNavbarI18n() {
     }
   });
   
-  // ⭐ placeholder güncellemeleri
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
     var key = el.getAttribute('data-i18n-placeholder');
     var translation = i18n.t(key);
@@ -240,7 +255,6 @@ function updateNavbarI18n() {
     }
   });
   
-  // ⭐ innerHTML güncellemeleri (güvenli)
   document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
     var key = el.getAttribute('data-i18n-html');
     var translation = i18n.t(key);
@@ -249,7 +263,6 @@ function updateNavbarI18n() {
     }
   });
   
-  // ⭐ Tek seferde uygula - reflow'u minimize et
   if (textUpdates.length > 0) {
     textUpdates.forEach(function(item) {
       item.el.textContent = item.translation;
@@ -268,58 +281,132 @@ function updateNavbarI18n() {
     });
   }
   
-  // ⭐ Badge'i güncelle (senkron)
   updateNavbarBadgeSync();
   
   var total = textUpdates.length + placeholderUpdates.length + htmlUpdates.length;
-  console.log(`✅ Navbar i18n metinleri güncellendi! (${total} element, ${textUpdates.length} text, ${placeholderUpdates.length} placeholder, ${htmlUpdates.length} html)`);
+  console.log(`✅ Navbar i18n güncellendi! (${total} element)`);
 }
 
 // ============================================================
-// ⭐ PLAN BADGE GÜNCELLE - SENKRON (GÜVENLİ)
+// ⭐ AVATAR UYGULA (CACHE DESTEKLİ)
 // ============================================================
-function updateNavbarBadgeSync() {
+function applyAvatarToNav(url) {
+  var navAvatar = document.getElementById('user-avatar');
+  if (!navAvatar) return;
+  
+  var user = window.SETTINGS_STATE?.currentUser || null;
+  var initial = user?.user_metadata?.username?.charAt(0)?.toUpperCase() || 
+               user?.email?.charAt(0)?.toUpperCase() || '?';
+  
+  if (url) {
+    var safeUrl = sanitizeURL(url);
+    if (safeUrl) {
+      navAvatar.innerHTML = '<img src="' + safeUrl + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      navAvatar.style.background = 'transparent';
+      return;
+    }
+  }
+  
+  navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
+  navAvatar.style.background = 'var(--surface2)';
+}
+
+// ============================================================
+// ⭐ AVATAR YÜKLE (CACHE DESTEKLİ)
+// ============================================================
+async function loadNavbarAvatar() {
   try {
-    var badge = document.getElementById('plan-badge');
-    var text = document.getElementById('plan-text');
-    if (!badge || !text) return;
+    var sb = window.sb || window.supabase;
+    if (!sb) return;
     
-    var isPremium = window.SETTINGS_STATE?.isPremium || false;
+    // ⭐ CACHE KONTROLÜ
+    var cachedAvatar = sessionStorage.getItem('ww_avatar_url');
+    var cachedTime = sessionStorage.getItem('ww_avatar_time');
+    var now = Date.now();
     
-    if (isPremium) {
-      badge.classList.add('premium');
-    } else {
-      badge.classList.remove('premium');
+    if (cachedAvatar && cachedTime && (now - parseInt(cachedTime)) < 300000) {
+      applyAvatarToNav(cachedAvatar);
+      return;
     }
     
-    // ⭐ GÜVENLİ: Çeviri bulunamazsa mevcut metni koru
-    var premiumText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
-      ? i18n.t('nav.premium_badge') 
-      : null;
-    var freeText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
-      ? i18n.t('nav.free_badge') 
-      : null;
+    var { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
     
-    // ⭐ GÜVENLİ: textContent ile
-    if (isPremium) {
-      text.textContent = premiumText || text.textContent || 'Premium';
-    } else {
-      text.textContent = freeText || text.textContent || 'Ücretsiz';
+    if (window.SETTINGS_STATE) {
+      window.SETTINGS_STATE.currentUser = user;
     }
+    
+    var { data: profile } = await sb
+      .from('user_profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .single();
+    
+    var avatarUrl = profile?.avatar_url || null;
+    
+    if (avatarUrl) {
+      sessionStorage.setItem('ww_avatar_url', avatarUrl);
+      sessionStorage.setItem('ww_avatar_time', String(now));
+    }
+    
+    applyAvatarToNav(avatarUrl);
     
   } catch (e) {
-    // Sessizce geç
+    var fallbackAvatar = sessionStorage.getItem('ww_avatar_url');
+    if (fallbackAvatar) {
+      applyAvatarToNav(fallbackAvatar);
+    }
   }
 }
 
 // ============================================================
-// ⭐ PLAN BADGE GÜNCELLE - ASENKRON (GÜVENLİ)
+// ⭐ PLAN BADGE UI GÜNCELLE
+// ============================================================
+function updateBadgeUI(isPremium) {
+  var badge = document.getElementById('plan-badge');
+  var text = document.getElementById('plan-text');
+  if (!badge || !text) return;
+  
+  if (window.SETTINGS_STATE) {
+    window.SETTINGS_STATE.isPremium = isPremium;
+  }
+  
+  if (isPremium) {
+    badge.classList.add('premium');
+  } else {
+    badge.classList.remove('premium');
+  }
+  
+  var premiumText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
+    ? i18n.t('nav.premium_badge') : null;
+  var freeText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
+    ? i18n.t('nav.free_badge') : null;
+  
+  if (isPremium) {
+    text.textContent = premiumText || text.textContent || 'Premium';
+  } else {
+    text.textContent = freeText || text.textContent || 'Ücretsiz';
+  }
+}
+
+// ============================================================
+// ⭐ PLAN BADGE GÜNCELLE (CACHE DESTEKLİ)
 // ============================================================
 async function updateNavbarBadge() {
   try {
     var badge = document.getElementById('plan-badge');
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
+    
+    // ⭐ CACHE KONTROLÜ
+    var cachedPlan = sessionStorage.getItem('ww_user_plan');
+    var cachedTime = sessionStorage.getItem('ww_user_plan_time');
+    var now = Date.now();
+    
+    if (cachedPlan && cachedTime && (now - parseInt(cachedTime)) < 300000) {
+      updateBadgeUI(cachedPlan === 'premium');
+      return;
+    }
     
     var sb = window.sb || window.supabase;
     if (!sb) {
@@ -341,9 +428,28 @@ async function updateNavbarBadge() {
     
     var isPremium = profile?.plan === 'premium';
     
-    if (window.SETTINGS_STATE) {
-      window.SETTINGS_STATE.isPremium = isPremium;
+    sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
+    sessionStorage.setItem('ww_user_plan_time', String(now));
+    
+    updateBadgeUI(isPremium);
+    
+  } catch (e) {
+    var fallbackPlan = sessionStorage.getItem('ww_user_plan');
+    if (fallbackPlan) {
+      updateBadgeUI(fallbackPlan === 'premium');
+    } else {
+      updateNavbarBadgeSync();
     }
+  }
+}
+
+function updateNavbarBadgeSync() {
+  try {
+    var badge = document.getElementById('plan-badge');
+    var text = document.getElementById('plan-text');
+    if (!badge || !text) return;
+    
+    var isPremium = window.SETTINGS_STATE?.isPremium || false;
     
     if (isPremium) {
       badge.classList.add('premium');
@@ -351,13 +457,10 @@ async function updateNavbarBadge() {
       badge.classList.remove('premium');
     }
     
-    // ⭐ GÜVENLİ: textContent ile
     var premiumText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
-      ? i18n.t('nav.premium_badge') 
-      : null;
+      ? i18n.t('nav.premium_badge') : null;
     var freeText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
-      ? i18n.t('nav.free_badge') 
-      : null;
+      ? i18n.t('nav.free_badge') : null;
     
     if (isPremium) {
       text.textContent = premiumText || text.textContent || 'Premium';
@@ -365,26 +468,20 @@ async function updateNavbarBadge() {
       text.textContent = freeText || text.textContent || 'Ücretsiz';
     }
     
-  } catch (e) {
-    updateNavbarBadgeSync();
-  }
+  } catch (e) {}
 }
 
 // ============================================================
-// ⭐ AKTİF SAYFA LİNKİNİ BELİRLE - HIZLI VE OPTİMİZE
+// ⭐ AKTİF LİNK
 // ============================================================
 function setActiveNavLink() {
   var currentPath = window.location.pathname;
-  
-  // ⭐ SADECE görünür linkleri bul (navbar içinde)
   var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
   
-  // ⭐ Önce TÜM linklerden active sınıfını kaldır (hızlı)
   navLinks.forEach(function(link) {
     link.classList.remove('active');
   });
   
-  // ⭐ Sonra DOĞRU linke active ekle
   var found = false;
   
   navLinks.forEach(function(link) {
@@ -392,7 +489,6 @@ function setActiveNavLink() {
     var href = link.getAttribute('href');
     if (!href) return;
     
-    // Ana sayfa kontrolü
     if (currentPath === '/' || currentPath === '/index.html') {
       if (href === '/index.html' || href === '/') {
         link.classList.add('active');
@@ -401,7 +497,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Dashboard kontrolü
     if (currentPath === '/dashboard.html' || currentPath.includes('/dashboard')) {
       if (href === '/dashboard.html') {
         link.classList.add('active');
@@ -410,7 +505,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Trades kontrolü
     if (currentPath === '/trades.html' || currentPath.includes('/trades')) {
       if (href === '/trades.html') {
         link.classList.add('active');
@@ -419,7 +513,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Strategies kontrolü
     if (currentPath === '/strategies.html' || currentPath.includes('/strategies')) {
       if (href === '/strategies.html') {
         link.classList.add('active');
@@ -428,7 +521,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Calendar kontrolü
     if (currentPath === '/calendar.html' || currentPath.includes('/calendar')) {
       if (href === '/calendar.html') {
         link.classList.add('active');
@@ -437,7 +529,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Settings kontrolü
     if (currentPath.includes('/settings/')) {
       if (href === '/settings/index.html') {
         link.classList.add('active');
@@ -446,7 +537,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Premium Dashboard kontrolü
     if (currentPath === '/premium-dashboard.html' || currentPath.includes('/premium-dashboard')) {
       if (href === '/premium-dashboard.html') {
         link.classList.add('active');
@@ -455,7 +545,6 @@ function setActiveNavLink() {
       }
     }
     
-    // Admin kontrolü
     if (currentPath === '/admin.html' || currentPath.includes('/admin')) {
       if (href === '/admin.html') {
         link.classList.add('active');
@@ -464,14 +553,12 @@ function setActiveNavLink() {
       }
     }
     
-    // Fallback: href currentPath ile eşleşiyorsa
     if (href === currentPath) {
       link.classList.add('active');
       found = true;
       return;
     }
     
-    // Fallback: href currentPath'in son kısmıyla eşleşiyorsa
     if (href !== '/' && currentPath.includes(href.replace('/', ''))) {
       link.classList.add('active');
       found = true;
@@ -481,47 +568,7 @@ function setActiveNavLink() {
 }
 
 // ============================================================
-// ⭐ AVATAR YÜKLE (GÜVENLİ)
-// ============================================================
-async function loadNavbarAvatar() {
-  try {
-    var sb = window.sb || window.supabase;
-    if (!sb) return;
-    
-    var { data: { user } } = await sb.auth.getUser();
-    if (!user) return;
-    
-    var { data: profile } = await sb
-      .from('user_profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-    
-    var navAvatar = document.getElementById('user-avatar');
-    if (!navAvatar) return;
-    
-    if (profile && profile.avatar_url) {
-      // ⭐ GÜVENLİ: sanitizeURL ile URL temizle
-      var safeUrl = sanitizeURL(profile.avatar_url);
-      if (safeUrl) {
-        navAvatar.innerHTML = '<img src="' + safeUrl + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-        navAvatar.style.background = 'transparent';
-      } else {
-        var initial = user.user_metadata?.username?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?';
-        navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
-        navAvatar.style.background = 'var(--surface2)';
-      }
-    } else {
-      var initial2 = user.user_metadata?.username?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?';
-      navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial2) + '</span>';
-      navAvatar.style.background = 'var(--surface2)';
-    }
-    
-  } catch (e) {}
-}
-
-// ============================================================
-// ⭐ AVATAR DROPDOWN - EVENT DELEGATION (GÜVENLİ)
+// ⭐ AVATAR DROPDOWN
 // ============================================================
 var avatarDropdownInitialized = false;
 
@@ -531,14 +578,12 @@ function setupAvatarDropdown() {
   
   console.log('👤 Avatar dropdown event delegation kuruluyor...');
   
-  // ⭐ Event Delegation - document seviyesinde
   document.addEventListener('click', function(e) {
     var avatar = document.getElementById('user-avatar');
     var dropdown = document.getElementById('dropdown-menu');
     
     if (!avatar || !dropdown) return;
     
-    // Avatar'a tıklandı mı?
     if (e.target && e.target.closest && e.target.closest('#user-avatar')) {
       e.stopPropagation();
       e.preventDefault();
@@ -546,19 +591,16 @@ function setupAvatarDropdown() {
       return;
     }
     
-    // Dropdown dışına tıklandı mı?
     if (e.target && e.target.closest && !e.target.closest('#dropdown-menu')) {
       dropdown.classList.remove('show');
       return;
     }
     
-    // Dropdown içine tıklandıysa kapatma
     if (e.target && e.target.closest && e.target.closest('#dropdown-menu')) {
       return;
     }
   }, true);
   
-  // ⭐ ESC tuşu ile kapat
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       var dropdown = document.getElementById('dropdown-menu');
@@ -570,21 +612,16 @@ function setupAvatarDropdown() {
 }
 
 // ============================================================
-// ⭐ NAVBAR EVENT'LERİ (GÜVENLİ)
+// ⭐ NAVBAR EVENT'LERİ
 // ============================================================
 function initNavEvents() {
   console.log('🔗 Navbar event\'leri bağlanıyor...');
   
-  // ⭐ LUCIDE ICONS'ları yeniden oluştur
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-    console.log('✅ Lucide icons re-created!');
-  }
+  // ⭐ LUCIDE ICONS - LAZY LOAD
+  loadLucideIcons();
   
-  // ⭐ AVATAR DROPDOWN - Event Delegation (SADECE 1 KERE)
   setupAvatarDropdown();
   
-  // Premium Dropdown
   var ddBtn = document.getElementById('premium-dropdown-btn');
   var ddMenu = document.getElementById('premium-dropdown-menu');
   
@@ -609,7 +646,6 @@ function initNavEvents() {
     });
   }
   
-  // Bell Panel
   var bellBtn = document.getElementById('overtrade-bell-btn');
   var bellPanel = document.getElementById('bell-panel');
   
@@ -632,7 +668,6 @@ function initNavEvents() {
     });
   }
   
-  // Bell Close
   var bellClose = document.getElementById('bell-panel-close');
   if (bellClose) {
     var newBellClose = bellClose.cloneNode(true);
@@ -645,7 +680,6 @@ function initNavEvents() {
     });
   }
   
-  // Logout
   var logoutBtn = document.getElementById('logout-dropdown-btn');
   if (logoutBtn) {
     var newLogoutBtn = logoutBtn.cloneNode(true);
@@ -660,7 +694,6 @@ function initNavEvents() {
     });
   }
   
-  // Mobile Toggle
   var toggle = document.getElementById('nav-toggle');
   var menu = document.getElementById('nav-menu');
   var backdrop = document.getElementById('nav-backdrop');
@@ -687,7 +720,6 @@ function initNavEvents() {
     }
   }
   
-  // Mobile Logout
   var logoutMobile = document.getElementById('logout-btn-mobile');
   if (logoutMobile) {
     var newLogoutMobile = logoutMobile.cloneNode(true);
@@ -711,7 +743,7 @@ function initNavEvents() {
 }
 
 // ============================================================
-// ⭐ NAVBAR'YI YÜKLE - FONT OYNAMALARINI ÖNLE - AKTİF LİNK HEMEN
+// ⭐ NAVBAR'YI YÜKLE
 // ============================================================
 function loadNavbar(containerId) {
   var container = document.getElementById(containerId);
@@ -722,7 +754,6 @@ function loadNavbar(containerId) {
   
   console.log('📦 Navbar yükleniyor...');
   
-  // ⭐ 1. Önce i18n metinlerini hazırla (batch)
   var translations = {};
   if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
     var keys = new Set();
@@ -745,42 +776,31 @@ function loadNavbar(containerId) {
     });
   }
   
-  // ⭐ 2. HTML'i hazırlanmış çevirilerle birlikte enjekte et
   container.innerHTML = getNavbarHTML(translations);
-  console.log('✅ Navbar HTML yüklendi! (çevirilerle birlikte)');
+  console.log('✅ Navbar HTML yüklendi!');
   
-  // ⭐ 3. HEMEN aktif linki ayarla (DOM değişiminden hemen sonra)
-  // ⭐ requestAnimationFrame ile bir sonraki paint'ten önce çalıştır
   if (window.requestAnimationFrame) {
     requestAnimationFrame(function() {
       setActiveNavLink();
-      console.log('✅ Aktif link HEMEN ayarlandı!');
+      console.log('✅ Aktif link ayarlandı!');
     });
   } else {
     setTimeout(function() {
       setActiveNavLink();
-      console.log('✅ Aktif link HEMEN ayarlandı!');
+      console.log('✅ Aktif link ayarlandı!');
     }, 0);
   }
   
-  // ⭐ 4. Tüm linklere 'loaded' sınıfını ekle (görünür yap)
   requestAnimationFrame(function() {
     document.querySelectorAll('.nav-links a').forEach(function(link) {
       link.classList.add('loaded');
     });
   });
   
-  // ⭐ 5. Geri kalan işlemleri sırayla yap (hafif gecikmeli)
   setTimeout(function() {
-    // Event'leri bağla
     initNavEvents();
-    
-    // Avatar'ı yükle
     loadNavbarAvatar();
-    
-    // Badge'i güncelle
     updateNavbarBadge();
-    
     console.log('✅ Navbar tamamen yüklendi!');
   }, 50);
 }
@@ -805,29 +825,23 @@ document.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('load', function() {
     setTimeout(setActiveNavLink, 100);
     setTimeout(updateNavbarBadge, 150);
-    // Lucide icons'ları yeniden oluştur
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-    }
+    loadLucideIcons();
   });
   
-  // ⭐ Storage event ile diğer sekmelerdeki dil değişikliklerini yakala
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_language' && e.newValue) {
       console.log(`🔄 Storage event: Dil değişti (${e.oldValue} → ${e.newValue})`);
       setTimeout(function() {
         updateNavbarI18n();
         updateNavbarBadgeSync();
-        if (typeof lucide !== 'undefined') {
-          lucide.createIcons();
-        }
+        loadLucideIcons();
       }, 100);
     }
   });
 });
 
 // ============================================================
-// ⭐ GLOBAL FONKSİYONLAR
+// ⭐ GLOBAL
 // ============================================================
 window.setActiveNavLink = setActiveNavLink;
 window.updateNavbarI18n = updateNavbarI18n;
@@ -836,15 +850,14 @@ window.updateNavbarBadgeSync = updateNavbarBadgeSync;
 window.loadNavbar = loadNavbar;
 window.sanitizeHTML = sanitizeHTML;
 window.sanitizeURL = sanitizeURL;
+window.loadLucideIcons = loadLucideIcons;
 
 window.refreshNavbar = function() {
   updateNavbarI18n();
   updateNavbarBadgeSync();
   setActiveNavLink();
   loadNavbarAvatar();
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
+  loadLucideIcons();
 };
 
-console.log('✅ navbar.js yüklendi! (FONT SABİT - BATCH i18n - AKTİF LİNK HIZLI - LUCIDE ICONS - AVATAR DROPDOWN FİX)');
+console.log('✅ navbar.js yüklendi! (CACHE + LAZY LOAD)');

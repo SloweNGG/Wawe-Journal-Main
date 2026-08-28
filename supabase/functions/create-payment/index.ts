@@ -5,10 +5,18 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 const NOWPAYMENTS_API_KEY = Deno.env.get('NOWPAYMENTS_API_KEY') || '';
 const NOWPAYMENTS_ENV = Deno.env.get('NOWPAYMENTS_ENV') || 'production';
 const NOWPAYMENTS_WEBHOOK_URL = Deno.env.get('NOWPAYMENTS_WEBHOOK_URL') || '';
-const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
+
+// ⭐ CORS - WILDCARD DESTEKLİ (TÜM Cloudflare Pages preview'ları kabul et)
+const ALLOWED_ORIGINS = [
   'https://your-domain.com',
   'https://wawejournal.com',
-  'http://localhost:5173'
+  'https://wawe-journal.pages.dev',
+  'https://*.wawe-journal.pages.dev',   // ⭐ TÜM PREVIEW URL'LER
+  'https://*.pages.dev',                // ⭐ TÜM pages.dev alt alanları
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:4200',
+  'http://localhost:4173'
 ];
 
 const API_URL = NOWPAYMENTS_ENV === 'sandbox'
@@ -16,15 +24,11 @@ const API_URL = NOWPAYMENTS_ENV === 'sandbox'
   : 'https://api.nowpayments.io/v1';
 
 // ⭐ Rate Limiting
-// NOT: Bu Map, Deno edge function instance'ı her yeniden başladığında (cold start)
-// veya birden fazla instance paralel çalıştığında sıfırlanır / paylaşılmaz.
-// Gerçek bir korumaya ihtiyaç varsa (ör. Upstash Redis) kalıcı bir store'a taşınmalı.
 const rateLimitStore = new Map<string, { count: number, resetTime: number }>();
 const RATE_LIMIT_WINDOW = parseInt(Deno.env.get('RATE_LIMIT_WINDOW') || '60000');
 const RATE_LIMIT_MAX = parseInt(Deno.env.get('RATE_LIMIT_MAX') || '10');
 
-// ⭐ JWT'den kullanıcı kimliğini çıkarır (İMZA DOĞRULAMASI YAPMAZ — sadece payload okur).
-// Gerçek doğrulama supabaseClient.auth.getUser(token) ile aşağıda yapılıyor.
+// ⭐ JWT'den kullanıcı kimliğini çıkarır
 function getUserIdFromToken(req: Request): string | null {
   const auth = req.headers.get('authorization');
   if (!auth || !auth.startsWith('Bearer ')) return null;
@@ -44,7 +48,6 @@ function getClientId(req: Request): string {
   const forwardedIp = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
   const ip = cfIp || forwardedIp?.split(',')[0] || realIp || 'unknown';
-
   const userId = getUserIdFromToken(req) || 'anonymous';
   return `${userId}:${ip}`;
 }
@@ -73,11 +76,27 @@ function checkRateLimit(clientId: string): { allowed: boolean, remaining: number
   };
 }
 
-// ⭐ CORS Headers
+// ⭐ CORS Headers - WILDCARD DESTEKLİ
 function getCorsHeaders(origin: string | null) {
-  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+  // Önce tam eşleşme kontrolü
+  let isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+  
+  // Wildcard kontrolü (*.pages.dev gibi)
+  if (!isAllowed && origin) {
+    for (let i = 0; i < ALLOWED_ORIGINS.length; i++) {
+      const pattern = ALLOWED_ORIGINS[i];
+      if (pattern.includes('*')) {
+        const regex = new RegExp('^' + pattern.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
+        if (regex.test(origin)) {
+          isAllowed = true;
+          break;
+        }
+      }
+    }
+  }
+  
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': isAllowed ? origin : (ALLOWED_ORIGINS[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -99,14 +118,12 @@ function validateCurrency(currency: string): boolean {
   return VALID_CURRENCIES.includes(currency) || VALID_PAY_CURRENCIES.includes(currency);
 }
 
-// ⭐ Price validation — TEK doğruluk kaynağı: server. Client'tan gelen amount hiç kullanılmıyor.
 function getPlanPrice(planType: string, currency: string): number {
   const prices: Record<string, Record<string, number>> = {
     monthly: { USD: 9, EUR: 8, GBP: 7, TRY: 250 },
     yearly: { USD: 79, EUR: 70, GBP: 62, TRY: 2200 },
     premium: { USD: 9, EUR: 8, GBP: 7, TRY: 250 }
   };
-
   return prices[planType]?.[currency] || prices[planType]?.USD || 0;
 }
 
@@ -121,7 +138,6 @@ try {
   if (supabaseUrl && supabaseAnonKey) {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-    // Service role client: RLS'i bypass eder, sadece server-side yazımlar için (payments insert).
     if (supabaseServiceKey) {
       supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey);
     }
@@ -175,8 +191,7 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 3. GERÇEK KİMLİK DOĞRULAMA — Authorization header ZORUNLU.
-    // userId artık request body'den DEĞİL, doğrulanmış JWT'den alınıyor.
+    // ⭐ 3. GERÇEK KİMLİK DOĞRULAMA
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
@@ -186,7 +201,7 @@ serve(async (req) => {
     }
 
     if (!supabaseClient) {
-      console.error('❌ Supabase client not configured, cannot verify user');
+      console.error('❌ Supabase client not configured');
       return new Response(JSON.stringify({ error: 'Auth service not configured' }), {
         status: 503,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -204,17 +219,9 @@ serve(async (req) => {
       });
     }
 
-    const userId = authData.user.id; // <-- artık body'den değil, doğrulanmış oturumdan geliyor
+    const userId = authData.user.id;
 
-    // FIX: auth.getUser(jwt) yalnızca token'ın kime ait olduğunu doğrular,
-    // supabaseClient'ın kendisini o kullanıcı olarak "oturum açmış" hale
-    // GETİRMEZ. Bu client hâlâ anon rolüyle sorgu atıyor. RLS policy'lerin
-    // "id = auth.uid()" gibi kontroller içerdiği durumlarda (user_profiles
-    // tablosundaki gibi), auth.uid() PostgREST tarafında JWT header'ından
-    // okunur — bu header eksikse auth.uid() null döner ve satır asla
-    // eşleşmez (kullanıcı gerçekten var olsa bile "not found" gibi görünür).
-    // Bu yüzden aşağıdaki sorgu için kullanıcının JWT'sini taşıyan AYRI bir
-    // client oluşturuyoruz.
+    // ⭐ User-scoped client for RLS
     const { createClient: createUserScopedClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
     const userScopedClient = createUserScopedClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${jwt}` } }
@@ -252,16 +259,7 @@ serve(async (req) => {
       });
     }
 
-    const {
-      planType,
-      currency,
-      payCurrency,
-      successUrl,
-      cancelUrl
-    } = body;
-    // NOT: amount ve userId kasıtlı olarak body'den okunmuyor.
-    // amount -> server fiyat tablosundan hesaplanıyor (aşağıda).
-    // userId -> yukarıda JWT'den doğrulandı.
+    const { planType, currency, payCurrency, successUrl, cancelUrl } = body;
 
     // ⭐ 6. VALIDASYONLAR
     if (!planType || !validatePlanType(planType)) {
@@ -283,7 +281,7 @@ serve(async (req) => {
       });
     }
 
-    const finalAmount = getPlanPrice(planType, priceCurrency); // TEK fiyat kaynağı: server
+    const finalAmount = getPlanPrice(planType, priceCurrency);
     const payCurrencyFinal = payCurrency || 'BTC';
 
     if (!VALID_PAY_CURRENCIES.includes(payCurrencyFinal)) {
@@ -295,8 +293,7 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 7. KULLANICI VERİTABANINDA VAR MI — artık işlemi engelliyor, sadece uyarmıyor.
-    // userScopedClient kullanılıyor ki RLS "id = auth.uid()" kontrolü doğru çalışsın.
+    // ⭐ 7. KULLANICI KONTROLÜ
     const { data: userProfile, error: userError } = await userScopedClient
       .from('user_profiles')
       .select('id, plan')
@@ -351,13 +348,9 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error('❌ NowPayments API error:', data);
-
-      const errorMessage = data.message || 'Payment creation failed';
-      const errorCode = data.code || response.status;
-
       return new Response(JSON.stringify({
-        error: errorMessage,
-        code: errorCode,
+        error: data.message || 'Payment creation failed',
+        code: data.code || response.status,
         details: data.details || null
       }), {
         status: response.status,
@@ -367,8 +360,7 @@ serve(async (req) => {
 
     console.log(`✅ Invoice created: ${data.invoice_id}`);
 
-    // ⭐ 11. PAYMENT LOG — RLS'i bypass etmesi gerektiği için service role client kullanılıyor.
-    // (Anon key ile insert RLS'e takılabilir; payments tablosunda client insert policy'si yok.)
+    // ⭐ 11. PAYMENT LOG
     const writerClient = supabaseAdminClient || supabaseClient;
     try {
       await writerClient
@@ -388,7 +380,6 @@ serve(async (req) => {
       console.log('📝 Payment log created');
     } catch (e) {
       console.warn('⚠️ Failed to log payment:', e);
-      // Log hatası kritik değil, invoice zaten oluşturuldu, devam et.
     }
 
     // ⭐ 12. RESPONSE

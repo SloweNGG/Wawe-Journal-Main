@@ -1,5 +1,5 @@
 // ============================================================
-// STRATEGIES.JS - STRATEJİ SAYFASI ÖZEL FONKSİYONLAR
+// STRATEGIES.JS - STRATEJİ SAYFASI ÖZEL FONKSİYONLAR (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
 console.log('📊 strategies.js yükleniyor...');
@@ -13,19 +13,16 @@ console.log('📊 strategies.js yükleniyor...');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
   
-  // 1. Body class'ını ayarla
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
   } else {
     document.body.classList.remove('light-theme');
   }
   
-  // 2. Font size
   if (savedFontSize) {
     document.body.style.fontSize = savedFontSize + 'px';
   }
   
-  // 3. Custom theme (sadece dark)
   if (savedTheme !== 'light' && customTheme) {
     try {
       var settings = JSON.parse(customTheme);
@@ -53,7 +50,6 @@ console.log('📊 strategies.js yükleniyor...');
 (function listenThemeChanges() {
   console.log('🎨 [Strategies] Tema izleyici başlatıldı...');
   
-  // Storage değişikliklerini dinle (diğer sekmelerden)
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
       console.log('🔄 [Strategies] Tema değişikliği algılandı:', e.newValue);
@@ -76,7 +72,6 @@ console.log('📊 strategies.js yükleniyor...');
         } catch(e) {}
       }
       
-      // Grafikleri yeniden render et
       setChartTheme();
       if (typeof renderComparisonCharts === 'function') {
         setTimeout(function() { renderComparisonCharts(); }, 100);
@@ -87,7 +82,6 @@ console.log('📊 strategies.js yükleniyor...');
     }
   });
   
-  // Custom event - aynı sayfadaki tema değişimleri için
   document.addEventListener('themeChanged', function(e) {
     console.log('🔄 [Strategies] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
@@ -112,7 +106,6 @@ console.log('📊 strategies.js yükleniyor...');
     }
   });
   
-  // Sayfa görünür olduğunda tema kontrol et
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
@@ -149,6 +142,14 @@ var sparkCharts = {};
 var currentTimeRange = 'all';
 var equityChartInstance = null;
 var currentDetailStrategyId = null;
+
+// ⭐ PERFORMANS: Strateji verilerini cache'le
+var strategyDataCache = {};
+var strategyDataCacheTime = 0;
+var STRATEGY_DATA_CACHE_TTL = 30000; // 30 saniye
+
+// ⭐ PERFORMANS: Tüm işlemleri strateji bazında grupla
+var tradesByStrategy = {};
 
 // ============================================================
 // SKELETON GÖSTER/GİZLE
@@ -245,7 +246,6 @@ function setChartTheme() {
   } catch(e) {}
 }
 
-// ⭐ Chart tema observer - body class değişimini izle
 setChartTheme();
 
 var observer = new MutationObserver(function(mutations) {
@@ -314,17 +314,27 @@ function filterTradesByRange(trades, range) {
 }
 
 // ============================================================
-// getStrategyPerformance
+// ⭐ OPTİMİZE EDİLMİŞ getStrategyPerformance
 // ============================================================
 function getStrategyPerformance(strategyId) {
+  // Cache kontrolü
+  var now = Date.now();
+  if (strategyDataCache[strategyId] && (now - strategyDataCacheTime) < STRATEGY_DATA_CACHE_TTL) {
+    return strategyDataCache[strategyId];
+  }
+
   try {
-    var rawStrategyTrades = allTradesForStats.filter(function(t) { return t.strategy_id === strategyId; });
-    var strategyTrades = filterTradesByRange(rawStrategyTrades, currentTimeRange);
-    var closedTrades = strategyTrades.filter(function(t) { return t.exit_price; });
+    // ⭐ Doğrudan gruplanmış veriden al - FİLTRELEME YAPMA
+    var strategyTrades = tradesByStrategy[strategyId] || [];
+    
+    // Zaman aralığı filtrelemesi
+    var filteredTrades = filterTradesByRange(strategyTrades, currentTimeRange);
+    
+    var closedTrades = filteredTrades.filter(function(t) { return t.exit_price; });
     var totalPnL = 0, wins = 0, losses = 0, openTrades = 0;
     var longCount = 0, shortCount = 0;
 
-    strategyTrades.forEach(function(t) {
+    filteredTrades.forEach(function(t) {
       var dir = (t.direction || '').toLowerCase();
       if (dir === 'long' || dir === 'buy') longCount++; else shortCount++;
       if (!t.exit_price) { openTrades++; return; }
@@ -415,9 +425,9 @@ function getStrategyPerformance(strategyId) {
     var avgLoss = lossAmounts.length ? grossLoss / lossAmounts.length : 0;
     var avgRR = avgLoss > 0 ? parseFloat((avgWin / avgLoss).toFixed(2)) : (avgWin > 0 ? null : 0);
 
-    return { 
+    var result = { 
       totalTrades: total, 
-      totalTradesWithOpen: strategyTrades.length,
+      totalTradesWithOpen: filteredTrades.length,
       wins: wins, 
       losses: losses, 
       openTrades: openTrades, 
@@ -438,6 +448,12 @@ function getStrategyPerformance(strategyId) {
       worstInstrument: worstInstrument,
       tradesDetail: tradesDetail
     };
+
+    // Cache'e kaydet
+    strategyDataCache[strategyId] = result;
+    strategyDataCacheTime = now;
+
+    return result;
   } catch(e) {
     return { 
       totalTrades: 0, totalTradesWithOpen: 0, wins: 0, losses: 0, openTrades: 0, totalPnL: 0, winRate: 0, 
@@ -542,7 +558,7 @@ function drawSparkline(canvasId, data, color) {
 }
 
 // ============================================================
-// RENDER STRATEGIES GRID
+// ⭐ OPTİMİZE EDİLMİŞ RENDER STRATEGIES GRID
 // ============================================================
 function renderStrategiesGrid() {
   var container = document.getElementById('strategies-list-container');
@@ -1163,24 +1179,44 @@ function setupExportButtons() {
 }
 
 // ============================================================
-// LOAD ALL DATA
+// ⭐ OPTİMİZE EDİLMİŞ LOAD ALL DATA
 // ============================================================
 async function loadAllData() {
   try {
+    // ⭐ STRATEJİLERİ ÇEK
     var { data: strategies } = await sb
-      .from('strategies').select('*')
-      .eq('user_id', currentUser.id).order('name');
+      .from('strategies')
+      .select('id, name, description, color, user_id, is_active, created_at')
+      .eq('user_id', currentUser.id)
+      .order('name');
     strategiesList = strategies || [];
 
+    // ⭐ İŞLEMLERİ ÇEK - SADECE GEREKLİ KOLONLAR
     var { data: trades } = await sb
-      .from('trades').select('*')
-      .eq('user_id', currentUser.id);
+      .from('trades')
+      .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
+      .eq('user_id', currentUser.id)
+      .limit(1000); // ⭐ MAX 1000 İŞLEM
     allTradesForStats = trades || [];
+
+    // ⭐ İŞLEMLERİ STRATEJİ BAZINDA GRUPLA - OPTİMİZASYON
+    tradesByStrategy = {};
+    allTradesForStats.forEach(function(t) {
+      var sid = t.strategy_id || 'unassigned';
+      if (!tradesByStrategy[sid]) tradesByStrategy[sid] = [];
+      tradesByStrategy[sid].push(t);
+    });
+
+    // ⭐ CACHE'İ TEMİZLE (yeni veri geldi)
+    strategyDataCache = {};
+    strategyDataCacheTime = 0;
 
     renderStrategiesGrid();
     renderComparisonCharts();
     hideStrategySkeleton();
-  } catch(e) {}
+  } catch(e) {
+    console.error('loadAllData hatası:', e);
+  }
 }
 
 function setupTimeFilterButtons() {
@@ -1190,6 +1226,11 @@ function setupTimeFilterButtons() {
       btns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
       currentTimeRange = this.dataset.range;
+      
+      // ⭐ Cache'i temizle (zaman aralığı değişti)
+      strategyDataCache = {};
+      strategyDataCacheTime = 0;
+      
       renderStrategiesGrid();
       renderComparisonCharts();
     });

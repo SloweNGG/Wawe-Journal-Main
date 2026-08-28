@@ -1,47 +1,78 @@
 // ============================================================
-// WAWE JOURNAL - STATS SERVICE
+// WAWE JOURNAL - STATS SERVICE (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
 import { sb } from '../core/supabase.js';
 import { escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/ui.js';
 
+// ⭐ PERFORMANS: Stats cache
+var statsCache = null;
+var statsCacheTime = 0;
+var STATS_CACHE_TTL = 5 * 60 * 1000; // 5 dakika
+
 export async function loadPlatformStats() {
   try {
-    const { data: totalUsers, error: e1 } = await sb.rpc('get_total_users_count');
-    const { data: totalTrades, error: e2 } = await sb.rpc('get_total_trades_count');
-    const { data: todayUsers, error: e3 } = await sb.rpc('get_today_users_count');
-    const { data: todayTrades, error: e4 } = await sb.rpc('get_today_trades_count');
-
-    const totalUsersEl = document.getElementById('stat-total-users');
-    const totalTradesEl = document.getElementById('stat-total-trades');
-    const todayUsersEl = document.getElementById('stat-today-users');
-    const todayTradesEl = document.getElementById('stat-today-trades');
+    // Cache kontrolü
+    var now = Date.now();
+    if (statsCache && (now - statsCacheTime) < STATS_CACHE_TTL) {
+      updateStatsUI(statsCache);
+      return;
+    }
     
-    if (totalUsersEl) totalUsersEl.textContent = totalUsers ?? 0;
-    if (totalTradesEl) totalTradesEl.textContent = totalTrades ?? 0;
-    if (todayUsersEl) todayUsersEl.textContent = todayUsers ?? 0;
-    if (todayTradesEl) todayTradesEl.textContent = todayTrades ?? 0;
+    // ⭐ PARALEL SORGULAR - Promise.all ile
+    var [totalUsersResult, totalTradesResult, todayUsersResult, todayTradesResult] = await Promise.all([
+      sb.from('user_profiles').select('*', { count: 'exact', head: true }),
+      sb.from('trades').select('*', { count: 'exact', head: true }),
+      sb.from('user_profiles').select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString()),
+      sb.from('trades').select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
+    ]);
+    
+    var stats = {
+      totalUsers: totalUsersResult.count || 0,
+      totalTrades: totalTradesResult.count || 0,
+      todayUsers: todayUsersResult.count || 0,
+      todayTrades: todayTradesResult.count || 0
+    };
+    
+    statsCache = stats;
+    statsCacheTime = now;
+    updateStatsUI(stats);
+    
   } catch(e) {
-    const totalUsersEl = document.getElementById('stat-total-users');
-    const totalTradesEl = document.getElementById('stat-total-trades');
-    const todayUsersEl = document.getElementById('stat-today-users');
-    const todayTradesEl = document.getElementById('stat-today-trades');
-    if (totalUsersEl) totalUsersEl.textContent = '0';
-    if (totalTradesEl) totalTradesEl.textContent = '0';
-    if (todayUsersEl) todayUsersEl.textContent = '0';
-    if (todayTradesEl) todayTradesEl.textContent = '0';
+    console.warn('loadPlatformStats hatası:', e);
+    var fallbackStats = {
+      totalUsers: 0,
+      totalTrades: 0,
+      todayUsers: 0,
+      todayTrades: 0
+    };
+    updateStatsUI(fallbackStats);
   }
+}
+
+function updateStatsUI(stats) {
+  var totalUsersEl = document.getElementById('stat-total-users');
+  var totalTradesEl = document.getElementById('stat-total-trades');
+  var todayUsersEl = document.getElementById('stat-today-users');
+  var todayTradesEl = document.getElementById('stat-today-trades');
+  
+  if (totalUsersEl) totalUsersEl.textContent = stats.totalUsers || 0;
+  if (totalTradesEl) totalTradesEl.textContent = stats.totalTrades || 0;
+  if (todayUsersEl) todayUsersEl.textContent = stats.todayUsers || 0;
+  if (todayTradesEl) todayTradesEl.textContent = stats.todayTrades || 0;
 }
 
 export async function uploadReferenceImage(file) {
   if (!file) return null;
   
-  const fileExt = file.name.split('.').pop();
-  const fileName = Date.now() + '_' + Math.random().toString(36).substring(7) + '.' + fileExt;
-  const filePath = 'references/' + fileName;
+  var fileExt = file.name.split('.').pop();
+  var fileName = Date.now() + '_' + Math.random().toString(36).substring(7) + '.' + fileExt;
+  var filePath = 'references/' + fileName;
   
-  const { error: uploadError } = await sb.storage
+  var { error: uploadError } = await sb.storage
     .from('references-images')
     .upload(filePath, file);
   
@@ -50,21 +81,23 @@ export async function uploadReferenceImage(file) {
     return null;
   }
   
-  const { data: urlData } = sb.storage
+  var { data: urlData } = sb.storage
     .from('references-images')
     .getPublicUrl(filePath);
   
   return urlData.publicUrl;
 }
 
+// ⭐ OPTİMİZE EDİLMİŞ REFERENCES
 export async function loadReferencesToPage(containerId) {
   containerId = containerId || 'references-grid';
-  const container = document.getElementById(containerId);
+  var container = document.getElementById(containerId);
   if (!container) return;
   
-  const { data, error } = await sb
+  // ⭐ SADECE GEREKLİ KOLONLAR
+  var { data, error } = await sb
     .from('references')
-    .select('*')
+    .select('id, name, title, description, image_url, instagram, twitter, youtube, linkedin, display_order')
     .eq('is_active', true)
     .order('display_order', { ascending: true });
   

@@ -1,11 +1,11 @@
 // ============================================================
-// CALENDAR.JS - TAKVİM ÖZEL FONKSİYONLAR
+// CALENDAR.JS - TAKVİM ÖZEL FONKSİYONLAR (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
 console.log('📅 calendar.js yükleniyor...');
 
 // ============================================================
-// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN
 // ============================================================
 
 (function initTheme() {
@@ -13,19 +13,16 @@ console.log('📅 calendar.js yükleniyor...');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
   
-  // 1. Body class'ını ayarla
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
   } else {
     document.body.classList.remove('light-theme');
   }
   
-  // 2. Font size
   if (savedFontSize) {
     document.body.style.fontSize = savedFontSize + 'px';
   }
   
-  // 3. Custom theme (sadece dark)
   if (savedTheme !== 'light' && customTheme) {
     try {
       var settings = JSON.parse(customTheme);
@@ -53,7 +50,6 @@ console.log('📅 calendar.js yükleniyor...');
 (function listenThemeChanges() {
   console.log('🎨 [Calendar] Tema izleyici başlatıldı...');
   
-  // Storage değişikliklerini dinle (diğer sekmelerden)
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
       console.log('🔄 [Calendar] Tema değişikliği algılandı:', e.newValue);
@@ -76,14 +72,12 @@ console.log('📅 calendar.js yükleniyor...');
         } catch(e) {}
       }
       
-      // Takvimi yeniden render et
       if (typeof renderCalendar === 'function') {
         setTimeout(function() { renderCalendar(); }, 100);
       }
     }
   });
   
-  // Custom event - aynı sayfadaki tema değişimleri için
   document.addEventListener('themeChanged', function(e) {
     console.log('🔄 [Calendar] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
@@ -104,7 +98,6 @@ console.log('📅 calendar.js yükleniyor...');
     }
   });
   
-  // Sayfa görünür olduğunda tema kontrol et
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
@@ -268,6 +261,11 @@ var jumpPopoverYear = currentYear;
 var lastNavDirection = null;
 var calendarRenderTimeout = null;
 
+// ⭐ PERFORMANS: Gün bazında gruplanmış veri
+var tradesByDate = {};
+var calendarRenderCache = {};
+var CALENDAR_CACHE_TTL = 30000; // 30 saniye
+
 function renderCalendar() {
   try {
     hideCalendarSkeleton();
@@ -281,8 +279,8 @@ function renderCalendar() {
     if (monthLabel) monthLabel.textContent = monthName + ' ' + currentYear;
 
     var firstDay = new Date(currentYear, currentMonth, 1);
-
     var dayNames = getDayNames(lang);
+    
     if (dayNamesContainer) {
       dayNamesContainer.innerHTML = dayNames.map(function(name, idx) {
         var weekendClass = (idx === 5 || idx === 6) ? ' weekend' : '';
@@ -314,7 +312,8 @@ function renderCalendar() {
       var dow = dateObj.getDay();
       var isWeekend = (dow === 0 || dow === 6);
 
-      var dayTrades = calendarTrades.filter(function(t) { return t.trade_date === dateStr; });
+      // ⭐ DOĞRUDAN GRUPLANMIŞ VERİDEN AL - FİLTRELEME YOK
+      var dayTrades = tradesByDate[dateStr] || [];
       var hasTrade = dayTrades.length > 0;
 
       var dayPnl = 0;
@@ -446,7 +445,8 @@ function openDayPopup(dateStr) {
     var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
     if (title) title.textContent = date.toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' });
 
-    currentPopupDateTrades = calendarTrades.filter(function(t) { return t.trade_date === dateStr; });
+    // ⭐ DOĞRUDAN GRUPLANMIŞ VERİDEN AL
+    currentPopupDateTrades = tradesByDate[dateStr] || [];
     currentPopupFilter = 'all';
 
     if (filterBar) {
@@ -484,9 +484,42 @@ function goToMonth(month, year, direction) {
 
 function loadCalendarTrades(trades) {
   calendarTrades = trades || [];
+  
+  // ⭐ İŞLEMLERİ GÜN BAZINDA GRUPLA - OPTİMİZASYON
+  tradesByDate = {};
+  calendarTrades.forEach(function(t) {
+    if (t.trade_date) {
+      if (!tradesByDate[t.trade_date]) tradesByDate[t.trade_date] = [];
+      tradesByDate[t.trade_date].push(t);
+    }
+  });
+  
   showCalendarSkeleton();
   if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
   calendarRenderTimeout = setTimeout(renderCalendar, 200);
+}
+
+// ============================================================
+// ⭐ OPTİMİZE EDİLMİŞ LOAD TRADES
+// ============================================================
+async function loadCalendarTradesFromDB(userId) {
+  // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
+  var { data, error } = await sb
+    .from('trades')
+    .select('id,trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,symbol')
+    .eq('user_id', userId)
+    .order('trade_date', { ascending: true })
+    .limit(1000); // ⭐ MAX 1000 İŞLEM
+  
+  if (error) {
+    if (typeof showToast === 'function') {
+      var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error') : 'Veri yüklenemedi: ';
+      showToast(errMsg + error.message, 'error');
+    }
+    return null;
+  }
+  
+  return data || [];
 }
 
 // ============================================================
@@ -642,22 +675,14 @@ async function initCalendar() {
     var user = await requireAuth();
     if (!user) return;
     
-    var { data: trades, error } = await sb
-      .from('trades')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('trade_date', { ascending: true });
-    
-    if (error) {
-      if (typeof showToast === 'function') {
-        var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error') : 'Veri yüklenemedi: ';
-        showToast(errMsg + error.message, 'error');
-      }
+    // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
+    var tradesData = await loadCalendarTradesFromDB(user.id);
+    if (tradesData === null) {
       hideCalendarSkeleton();
       return;
     }
     
-    loadCalendarTrades(trades || []);
+    loadCalendarTrades(tradesData || []);
     
     // i18n değişimlerini dinle
     if (typeof i18n !== 'undefined' && i18n.onChange) {
@@ -681,4 +706,4 @@ window.calcTradePnL = calcTradePnL;
 window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;
 
-console.log('✅ calendar.js yüklendi!');
+console.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');

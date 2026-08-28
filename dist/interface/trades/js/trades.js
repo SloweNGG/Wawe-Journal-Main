@@ -1,18 +1,14 @@
 // ============================================================
-// TRADES - ANA JS DOSYASI
+// TRADES - ANA JS DOSYASI (OPTİMİZE EDİLMİŞ)
 // script.js'deki tüm global fonksiyonları kullanır
 // SADECE TRADES İÇERİĞİNİ YÖNETİR - NAVBAR'A MÜDAHALE ETMEZ
-// ============================================================
-
-// ============================================================
-// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
 // ============================================================
 
 (function() {
   'use strict';
 
   // ============================================================
-  // ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN
+  // ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN
   // ============================================================
   
   (function initTheme() {
@@ -20,19 +16,16 @@
     var savedFontSize = localStorage.getItem('ww_font_size');
     var customTheme = localStorage.getItem('ww_custom_theme');
     
-    // 1. Body class'ını ayarla
     if (savedTheme === 'light') {
       document.body.classList.add('light-theme');
     } else {
       document.body.classList.remove('light-theme');
     }
     
-    // 2. Font size
     if (savedFontSize) {
       document.body.style.fontSize = savedFontSize + 'px';
     }
     
-    // 3. Custom theme (sadece dark)
     if (savedTheme !== 'light' && customTheme) {
       try {
         var settings = JSON.parse(customTheme);
@@ -60,7 +53,6 @@
   (function listenThemeChanges() {
     console.log('🎨 [Trades] Tema izleyici başlatıldı...');
     
-    // Storage değişikliklerini dinle (diğer sekmelerden)
     window.addEventListener('storage', function(e) {
       if (e.key === 'ww_theme') {
         console.log('🔄 [Trades] Tema değişikliği algılandı:', e.newValue);
@@ -83,14 +75,12 @@
           } catch(e) {}
         }
         
-        // Tabloyu yeniden render et
         if (typeof applyFiltersAndSort === 'function') {
           setTimeout(function() { applyFiltersAndSort(); }, 100);
         }
       }
     });
     
-    // Custom event - aynı sayfadaki tema değişimleri için
     document.addEventListener('themeChanged', function(e) {
       console.log('🔄 [Trades] ThemeChanged event yakalandı');
       if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
@@ -136,6 +126,11 @@
   var strategyNames = {};
   var strategiesList = [];
   var expandedNotes = new Set();
+
+  // ⭐ PERFORMANS: Strateji isimlerini cache'le
+  var strategyNamesCache = {};
+  var strategyNamesCacheTime = 0;
+  var STRATEGY_NAMES_CACHE_TTL = 300000; // 5 dakika
 
   // ============================================================
   // PAGINATION DEĞİŞKENLERİ
@@ -244,11 +239,20 @@
   }
 
   // ============================================================
-  // STRATEJİ LİSTESİ
+  // ⭐ OPTİMİZE EDİLMİŞ STRATEJİ LİSTESİ
   // ============================================================
   
   async function loadStrategyNames() {
     try {
+      // Cache kontrolü
+      var now = Date.now();
+      if (strategyNamesCacheTime > 0 && (now - strategyNamesCacheTime) < STRATEGY_NAMES_CACHE_TTL) {
+        strategiesList = strategyNamesCache.list || [];
+        strategyNames = strategyNamesCache.map || {};
+        updateStrategySelect();
+        return;
+      }
+
       if (typeof requireAuth !== 'function') return;
       var user = await requireAuth();
       if (!user) return;
@@ -266,19 +270,32 @@
         strategiesList = data;
         strategyNames = {};
         data.forEach(function(s) { strategyNames[s.id] = s.name; });
+        
+        // Cache'e kaydet
+        strategyNamesCache = {
+          list: strategiesList,
+          map: strategyNames
+        };
+        strategyNamesCacheTime = now;
       }
       
-      var strategySelect = safeEl('edit-strategy');
-      if (strategySelect) {
-        strategySelect.innerHTML = '<option value="">— Strateji Seç —</option>';
-        strategiesList.forEach(function(s) {
-          var option = document.createElement('option');
-          option.value = s.id;
-          option.textContent = sanitizeHTML(s.name);
-          strategySelect.appendChild(option);
-        });
-      }
-    } catch (e) {}
+      updateStrategySelect();
+    } catch (e) {
+      console.warn('loadStrategyNames hatası:', e);
+    }
+  }
+
+  function updateStrategySelect() {
+    var strategySelect = safeEl('edit-strategy');
+    if (!strategySelect) return;
+    
+    strategySelect.innerHTML = '<option value="">— Strateji Seç —</option>';
+    strategiesList.forEach(function(s) {
+      var option = document.createElement('option');
+      option.value = s.id;
+      option.textContent = sanitizeHTML(s.name);
+      strategySelect.appendChild(option);
+    });
   }
 
   // ============================================================
@@ -306,7 +323,9 @@
       if (countEl) countEl.textContent = trades.length;
       var rrEl = safeEl('stat-rr');
       if (rrEl) rrEl.textContent = avgRR ? '1:' + avgRR : '—';
-    } catch(e) {}
+    } catch(e) {
+      console.warn('renderStats hatası:', e);
+    }
   }
 
   // ============================================================
@@ -373,7 +392,7 @@
   window.toggleSelectAll = toggleSelectAll;
 
   // ============================================================
-  // PAGINATION RENDER (i18n UYUMLU)
+  // PAGINATION RENDER
   // ============================================================
   
   function renderPagination() {
@@ -468,7 +487,7 @@
   }
 
   // ============================================================
-  // FİLTRELEME VE SIRALAMA
+  // ⭐ OPTİMİZE EDİLMİŞ FİLTRELEME VE SIRALAMA
   // ============================================================
   
   function applyFiltersAndSort() {
@@ -488,12 +507,31 @@
       else if (result === 'loss') trades = trades.filter(function(t) { return t.exit_price && getTradePnL(t) < 0; });
       else if (result === 'open') trades = trades.filter(function(t) { return !t.exit_price; });
       
+      // ⭐ Sıralama - optimize edildi
       switch (sort) {
-        case 'date_desc': trades.sort(function(a,b) { return new Date(b.trade_date) - new Date(a.trade_date); }); break;
-        case 'date_asc': trades.sort(function(a,b) { return new Date(a.trade_date) - new Date(b.trade_date); }); break;
-        case 'pnl_desc': trades.sort(function(a,b) { return (getTradePnL(b)||0) - (getTradePnL(a)||0); }); break;
-        case 'pnl_asc': trades.sort(function(a,b) { return (getTradePnL(a)||0) - (getTradePnL(b)||0); }); break;
-        case 'symbol_asc': trades.sort(function(a,b) { return (a.symbol||'').localeCompare(b.symbol||''); }); break;
+        case 'date_desc': 
+          trades.sort(function(a,b) { 
+            var da = a.trade_date ? new Date(a.trade_date).getTime() : 0;
+            var db = b.trade_date ? new Date(b.trade_date).getTime() : 0;
+            return db - da; 
+          }); 
+          break;
+        case 'date_asc': 
+          trades.sort(function(a,b) { 
+            var da = a.trade_date ? new Date(a.trade_date).getTime() : 0;
+            var db = b.trade_date ? new Date(b.trade_date).getTime() : 0;
+            return da - db; 
+          }); 
+          break;
+        case 'pnl_desc': 
+          trades.sort(function(a,b) { return (getTradePnL(b)||0) - (getTradePnL(a)||0); }); 
+          break;
+        case 'pnl_asc': 
+          trades.sort(function(a,b) { return (getTradePnL(a)||0) - (getTradePnL(b)||0); }); 
+          break;
+        case 'symbol_asc': 
+          trades.sort(function(a,b) { return (a.symbol||'').localeCompare(b.symbol||''); }); 
+          break;
       }
 
       totalItems = trades.length;
@@ -758,6 +796,27 @@
   }
 
   // ============================================================
+  // ⭐ OPTİMİZE EDİLMİŞ LOAD TRADES
+  // ============================================================
+  
+  async function loadTrades(userId) {
+    // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
+    var { data, error } = await sb
+      .from('trades')
+      .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+      .eq('user_id', userId)
+      .order('trade_date', { ascending: false })
+      .limit(1000); // ⭐ MAX 1000 İŞLEM
+    
+    if (error) {
+      showToast('Veriler yüklenemedi: ' + error.message, 'error');
+      return null;
+    }
+    
+    return data || [];
+  }
+
+  // ============================================================
   // INIT
   // ============================================================
   
@@ -765,7 +824,6 @@
     try {
       showTableSkeleton();
       
-      // Auth kontrolü
       if (typeof requireAuth !== 'function') {
         console.warn('⚠️ requireAuth fonksiyonu bulunamadı, script.js yüklenmemiş olabilir.');
         hideTableSkeleton();
@@ -778,7 +836,6 @@
         return;
       }
       
-      // Admin link
       if (typeof isAdmin === 'function' && isAdmin(user)) {
         var adminLink = safeEl('admin-link');
         var adminLinkMobile = safeEl('admin-link-mobile');
@@ -786,15 +843,12 @@
         if (adminLinkMobile) adminLinkMobile.style.display = 'block';
       }
       
-      // Load strategy names
       await loadStrategyNames();
       
-      // Update plan badge
       try {
         await updatePlanBadge();
       } catch (e) {}
       
-      // Load trades - sb kontrolü
       if (typeof sb === 'undefined') {
         console.error('❌ sb (Supabase) tanımlı değil!');
         var wrap = safeEl('table-wrap');
@@ -803,20 +857,14 @@
         return;
       }
       
-      var { data, error } = await sb
-        .from('trades')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('trade_date', { ascending: false });
-      
-      if (error) { 
-        var wrap2 = safeEl('table-wrap');
-        if (wrap2) wrap2.innerHTML = '<p style="color:var(--red);text-align:center;padding:2rem;">Veriler yüklenemedi: ' + error.message + '</p>';
+      // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
+      var tradesData = await loadTrades(user.id);
+      if (tradesData === null) {
         hideTableSkeleton();
-        return; 
+        return;
       }
       
-      allTrades = data || [];
+      allTrades = tradesData;
       totalItems = allTrades.length;
       totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
       currentPage = 1;
@@ -1047,7 +1095,6 @@
   // ============================================================
   
   document.addEventListener('DOMContentLoaded', function() {
-    // Lucide icons - sadece trades içindekiler
     if (typeof lucide !== 'undefined') {
       var tradeIcons = document.querySelectorAll('.trades-page [data-lucide]');
       if (tradeIcons.length > 0) {
@@ -1055,7 +1102,6 @@
       }
     }
     
-    // Navbar'ı yükle (boşsa)
     if (typeof loadNavbar === 'function') {
       var container = document.getElementById('navbar-container');
       if (container && container.innerHTML.trim() === '') {
@@ -1063,10 +1109,9 @@
       }
     }
     
-    // Trades'ı başlat
     setTimeout(initTrades, 150);
   });
 
 })();
 
-console.log('✅ trades.js yüklendi! (NAVBAR\'A MÜDAHALE ETMEZ)');
+console.log('✅ trades.js yüklendi! (OPTİMİZE EDİLDİ)');

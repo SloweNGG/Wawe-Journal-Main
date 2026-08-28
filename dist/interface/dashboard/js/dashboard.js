@@ -1,27 +1,8 @@
 // ============================================================
-// DASHBOARD - ANA JS DOSYASI
+// DASHBOARD - ANA JS DOSYASI (OPTİMİZE EDİLMİŞ)
 // script.js'deki tüm global fonksiyonları kullanır
 // SADECE DASHBOARD İÇERİĞİNİ YÖNETİR - NAVBAR'A MÜDAHALE ETMEZ
 // ============================================================
-// DÜZELTMELER (bu sürümde):
-// 1) Grafiklere tıklanamama sorunu: destroyAllCharts() artık senkron ve
-//    her chart instance'ı destroy edildikten HEMEN sonra referansı siliniyor.
-//    Aynı canvas'a "Canvas is already in use" hatasıyla ikinci Chart
-//    oluşturulması engellendi (guard eklendi).
-// 2) Resize sonrası canvas'ın CSS boyutu ile iç çözünürlüğü uyuşmuyordu
-//    (tıklama koordinatları kayıyordu) -> window resize'da chart.resize()
-//    çağrısı eklendi.
-// 3) chartRafId yarış durumu: hızlı filtre değişiminde eski rAF her zaman
-//    iptal ediliyordu ama chartsInitialized bayrağı geç güncelleniyordu,
-//    bu da bazen eski veriyle çizim yapılmasına sebep oluyordu -> render
-//    sırası ve bayrak güncellemesi senkronize edildi.
-// 4) data-notes attribute'una konan metin tırnak karakterleri yüzünden
-//    HTML attribute'unu bozabiliyordu -> attribute-safe escape eklendi.
-// 5) ⭐ TOOLTIP DÜZELTİLDİ - interaction ve hover ayarları eklendi
-// 6) ⭐ TOOLTIP ANİMASYONU EKLENDİ - update('none') kaldırıldı
-// 7) ⭐ animations.opacity eklendi - tooltip opacity sorunu çözüldü
-// ============================================================
-
 
 (function() {
   'use strict';
@@ -92,7 +73,6 @@
       if (typeof window.calcPnL === 'function') {
         return window.calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
       }
-      // Fallback hesaplama
       var mult = t.multiplier || 100000;
       var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
       return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
@@ -131,9 +111,6 @@
     return temp.innerHTML;
   }
 
-  // HTML attribute içine güvenle koymak için: sanitizeHTML çıktısı bile
-  // tırnak (") karakteri içerebiliyordu ve data-notes="..." attribute'unu
-  // kırıyordu. Bunu ayrıca escape ediyoruz.
   function escapeAttr(str) {
     if (!str) return '';
     return String(str)
@@ -172,9 +149,11 @@
   var chartRafId = null;
   var isPageVisible = true;
   var chartsInitialized = false;
-  // Chart oluşturma/silme sırasında yarış durumunu engellemek için kilit.
   var chartsBusy = false;
   var resizeDebounceId = null;
+
+  // ⭐ İLK YÜKLEME KONTROLÜ - grafiklerin sadece 1 kez render olması için
+  var chartsRenderedOnce = false;
 
   // ============================================================
   // CHART THEME
@@ -519,8 +498,6 @@
 
       var safeSymbol = sanitizeHTML(t.symbol || '—');
       var safeStrategy = sanitizeHTML(strategyName);
-      // data-* attribute'larına yazılan metinler artık ayrıca escapeAttr()
-      // ile geçiriliyor; içindeki tırnak karakterleri attribute'u kırmıyor.
       var safeNotePreviewAttr = escapeAttr(notePreview);
       var safeNotesAttr = escapeAttr(t.notes || '');
       var safeNotePreviewHtml = sanitizeHTML(notePreview);
@@ -680,10 +657,6 @@
   // CHART FUNCTIONS
   // ============================================================
 
-  // Chart destroy işlemini senkron ve güvenli hale getirir. Her chart
-  // instance'ı silindiği anda referansı da siliniyor, böylece aynı
-  // canvas için "Canvas is already in use" hatası (asıl "grafiklere
-  // temas edememe" bug'ının kaynağı) tekrar oluşamıyor.
   function destroyAllCharts() {
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol', 'chart-direction'];
     chartIds.forEach(function(id) {
@@ -787,7 +760,6 @@
     }
   }
 
-  // ⭐ TOOLTIP DÜZELTİLDİ - Chart oluşturma fonksiyonu
   function renderCharts(trades) {
     if (!isPageVisible) return;
     if (!trades || !trades.length) {
@@ -795,12 +767,11 @@
       return;
     }
 
-    // Kilit: destroy + create arasında başka bir renderCharts/updateCharts
-    // çağrısı (örn. hızlı filtre tıklaması veya resize event'i) araya girip
-    // aynı canvas için ikinci bir Chart instance oluşturamasın. Bu, "grafiklere
-    // tıklanamıyor / tepki vermiyor" bug'ının kök nedeniydi: canvas üzerinde
-    // birden fazla Chart.js instance'ı üst üste biniyor ve olay dinleyicileri
-    // (hover/click) yanlış/eski instance'a bağlı kalıyordu.
+    // ⭐ SADECE 1 KERE RENDER ET
+    if (chartsRenderedOnce) {
+      return;
+    }
+
     if (chartsBusy) return;
     chartsBusy = true;
 
@@ -810,7 +781,6 @@
       var isMobile = window.innerWidth < 768;
       var isTablet = window.innerWidth < 1024;
 
-      // ⭐ TOOLTIP KONFIGÜRASYONU - animation ve animations.opacity eklendi
       var tooltipConfig = {
         enabled: true,
         mode: 'index',
@@ -834,7 +804,6 @@
         bodyColor: '#b8b8c8'
       };
 
-      // ⭐ Ortak interaction ayarları
       var interactionConfig = {
         mode: 'index',
         intersect: false,
@@ -1162,24 +1131,10 @@
       }
 
       chartsInitialized = true;
+      chartsRenderedOnce = true; // ⭐ SADECE 1 KERE RENDER
     } finally {
       chartsBusy = false;
     }
-  }
-
-  // Pencere boyutu değiştiğinde (mobil <-> masaüstü geçişi, sidebar açılıp
-  // kapanması vb.) canvas'ların CSS boyutu değişiyor ama Chart.js bunu
-  // otomatik yakalamayabiliyordu; bu da grafik üzerindeki tıklama/hover
-  // koordinatlarının görselle uyuşmamasına (yani "temas edememe" hissine)
-  // yol açıyordu. Debounce'lu bir resize() çağrısı ekliyoruz.
-  function handleResize() {
-    if (resizeDebounceId) clearTimeout(resizeDebounceId);
-    resizeDebounceId = setTimeout(function() {
-      if (!chartsInitialized) return;
-      Object.keys(charts).forEach(function(id) {
-        try { charts[id].resize(); } catch (e) {}
-      });
-    }, 150);
   }
 
   // ============================================================
@@ -1530,23 +1485,24 @@
       renderStreak(filtered);
       await renderStrategyTags(filtered);
 
-      // rAF yarış durumu düzeltmesi: önceki zamanlanmış çizim iptal edilir
-      // ve YENİ çizim, chartsInitialized bayrağının o anki (güncel) haline
-      // göre değil, çağrıldığı anda tekrar değerlendirilerek yapılır. Böylece
-      // hızlı filtre değişimlerinde eski veri ile çizim yapılması engellenir.
-      if (chartRafId) cancelAnimationFrame(chartRafId);
-      chartRafId = requestAnimationFrame(function() {
-        chartRafId = null;
-        if (chartsInitialized) {
-          updateCharts(filtered);
-        } else {
+      // ⭐ SADECE GRAFİKLER DAHA ÖNCE RENDER EDİLMEDİYSE
+      if (!chartsRenderedOnce && filtered.length > 0) {
+        if (chartRafId) cancelAnimationFrame(chartRafId);
+        chartRafId = requestAnimationFrame(function() {
+          chartRafId = null;
           renderCharts(filtered);
-        }
-      });
+        });
+      } else if (chartsInitialized && filtered.length > 0) {
+        // Sadece güncelle (yeniden render değil)
+        if (chartRafId) cancelAnimationFrame(chartRafId);
+        chartRafId = requestAnimationFrame(function() {
+          chartRafId = null;
+          updateCharts(filtered);
+        });
+      }
 
       loadMiniCalendar(allTrades);
 
-      // ⭐ NAVBAR'I GÜNCELLEME - SADECE PLAN BADGE
       try {
         await updatePlanBadge();
       } catch (e) {}
@@ -1556,6 +1512,27 @@
       console.error('Refresh hatası:', e);
       hideSkeletons();
     }
+  }
+
+  // ============================================================
+  // LOAD TRADES - OPTİMİZE EDİLMİŞ TEK SORGU
+  // ============================================================
+
+  async function loadTrades(userId) {
+    // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
+    var { data, error } = await sb
+      .from('trades')
+      .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+      .eq('user_id', userId)
+      .order('trade_date', { ascending: true })
+      .limit(1000); // ⭐ MAX 1000 İŞLEM
+
+    if (error) {
+      showToast('Veriler yüklenemedi: ' + error.message, 'error');
+      return null;
+    }
+
+    return data || [];
   }
 
   // ============================================================
@@ -1586,27 +1563,16 @@
         themeObserver.observe(document.body, { attributes: true });
       } catch (e) {}
 
-      // Visibility change
+      // Visibility change - sadece görünür olduğunda güncelle, render etme
       document.addEventListener('visibilitychange', function() {
         isPageVisible = !document.hidden;
-        if (isPageVisible && allTrades.length > 0) {
-          if (chartRafId) cancelAnimationFrame(chartRafId);
-          chartRafId = requestAnimationFrame(function() {
-            chartRafId = null;
-            var topGrid = safeEl('charts-top-grid');
-            if (topGrid && topGrid.style.display !== 'none') {
-              if (chartsInitialized) {
-                updateCharts(filterByDate(allTrades, currentRange));
-              } else {
-                renderCharts(filterByDate(allTrades, currentRange));
-              }
-            }
-          });
+        if (isPageVisible && allTrades.length > 0 && chartsInitialized) {
+          var topGrid = safeEl('charts-top-grid');
+          if (topGrid && topGrid.style.display !== 'none') {
+            updateCharts(filterByDate(allTrades, currentRange));
+          }
         }
       });
-
-      // Resize dinleyici: canvas boyutu/tıklama koordinatları senkron kalsın.
-      window.addEventListener('resize', handleResize);
 
       // Load monthly target
       loadMonthlyTarget();
@@ -1641,7 +1607,7 @@
         if (adminLinkMobile) adminLinkMobile.style.display = 'block';
       }
 
-      // Plan badge - dashboard içindeki plan badge (navbar'da zaten var ama yine de güncelle)
+      // Plan badge
       try {
         await updatePlanBadge();
       } catch (e) {}
@@ -1654,39 +1620,21 @@
         }
       } catch (e) {}
 
-      // Load trades - sb kontrolü
+      // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
       if (typeof sb === 'undefined') {
         console.error('❌ sb (Supabase) tanımlı değil!');
         hideSkeletons();
         return;
       }
 
-      // ⭐ DEĞİŞİKLİK BURADA: limit(200) KALDIRILDI
-      var { data: recentData, error: recentError } = await sb
-        .from('trades')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('trade_date', { ascending: true });
-        // .limit(200);  // <-- Bu satır artık yok!
-
-      if (recentError) {
-        showToast('Veriler yüklenemedi: ' + recentError.message, 'error');
+      var tradesData = await loadTrades(user.id);
+      if (tradesData === null) {
         hideSkeletons();
         return;
       }
-      allTrades = recentData || [];
 
-      var { data: statsData, error: statsError } = await sb
-        .from('trades')
-        .select('exit_price, entry_price, lot, direction, instrument, multiplier, trade_date, rr_ratio')
-        .eq('user_id', user.id)
-        .not('exit_price', 'is', null);
-
-      if (!statsError && statsData) {
-        allTradesFullStats = statsData;
-      } else {
-        allTradesFullStats = allTrades.filter(function(t) { return t.exit_price; });
-      }
+      allTrades = tradesData;
+      allTradesFullStats = allTrades.filter(function(t) { return t.exit_price; });
 
       // Date filter buttons
       dateFilterOptions.forEach(function(option) {
@@ -1740,10 +1688,8 @@
   // ============================================================
 
   document.addEventListener('DOMContentLoaded', function() {
-    // ⭐ LUCIDE ICONS - NAVBAR ZATEN YAPILIYOR, BURADA TEKRAR YAPMA
-    // Sadece dashboard içindeki lucide icon'lar varsa onları yenile
+    // ⭐ LUCIDE ICONS - Sadece dashboard içindeki icon'lar
     if (typeof lucide !== 'undefined') {
-      // Sadece dashboard içindeki icon'ları tazele, navbar'a müdahale etme
       var dashboardIcons = document.querySelectorAll('.dashboard-main [data-lucide]');
       if (dashboardIcons.length > 0) {
         lucide.createIcons();
@@ -1751,9 +1697,7 @@
     }
 
     // ⭐ NAVBAR'IN YÜKLENMESİNİ BEKLE
-    // Navbar zaten navbar.js tarafından yükleniyor, burada tekrar yükleme!
     if (typeof loadNavbar === 'function') {
-      // Sadece navbar-container boşsa yükle
       var container = document.getElementById('navbar-container');
       if (container && container.innerHTML.trim() === '') {
         loadNavbar('navbar-container');

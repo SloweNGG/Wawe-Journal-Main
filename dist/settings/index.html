@@ -5,6 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title data-i18n="settings.title">Ayarlar – Wawe Journal</title>
   <link rel="icon" type="image/svg+xml" href="/resim.svg">
+  
+  <!-- ⭐ PREFETCH - ÖN YÜKLEME (HIZLI SAYFA GEÇİŞİ) -->
+  <link rel="prefetch" href="/dashboard.html">
+  <link rel="prefetch" href="/trades.html">
+  <link rel="prefetch" href="/strategies.html">
+  <link rel="prefetch" href="/calendar.html">
+  <link rel="prefetch" href="/settings/index.html">
+  <link rel="prefetch" href="/premium-dashboard.html">
+  
+  <!-- ⭐ SERVICE WORKER - OFFLINE DESTEĞİ -->
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      fetch('/sw.js', { method: 'HEAD' })
+        .then(function(response) {
+          if (response.ok) {
+            navigator.serviceWorker.register('/sw.js')
+              .then(function(registration) {
+                console.log('✅ Service Worker registered:', registration);
+              })
+              .catch(function(error) {
+                console.log('❌ Service Worker registration failed:', error);
+              });
+          } else {
+            console.log('ℹ️ sw.js dosyası mevcut değil, Service Worker atlanıyor');
+          }
+        })
+        .catch(function() {
+          console.log('ℹ️ sw.js kontrol edilemedi, Service Worker atlanıyor');
+        });
+    });
+  }
+  </script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
