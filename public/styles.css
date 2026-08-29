@@ -1,84 +1,125 @@
 /* ============================================================
-   ⭐ TEMA - CSS YÜKLENİR YÜKLENMEZ UYGULANIR (FLAŞ ÖNLEYİCİ)
+   WAWE JOURNAL – styles.css
+   ⭐ FIX 4.1: chart-wrap boyutları KALDIRILDI (dashboard.css'te)
+   ⭐ FIX 4.2: mini-cal-day boyutları KALDIRILDI (dashboard.css'te)
+   ⭐ FIX 4.3: .stat-card::before accent-color kullanıyor
+   ⭐ FIX: Tema değişkenleri TEK BLOK'ta toplandı (çakışma yok)
+   ⭐ FAZ 1.3: Space Grotesk ve JetBrains Mono eklendi
+   ⭐ FAZ 1.1: --radius-lg eklendi (index.css'ten taşındı)
+   ⭐ FAZ 2.1: Z-INDEX SKALASI eklendi
+   ⭐ FAZ 2.3: Panel-glow ortak kısmı eklendi
    ============================================================ */
 
-/* Koyu Tema (Varsayılan) */
-:root {
-  --bg: #08080c;
-  --bg2: #0d0d14;
-  --surface: #14141f;
-  --surface2: #1c1c2c;
-  --border: #232334;
-  --text: #e8e8f0;
-  --text2: #b8b8c8;
-  --muted: #6b6b80;
+/* ============================================================
+   TEMA DEĞİŞKENLERİ - TEK BLOK (ÇAKIŞMA YOK)
+   ============================================================ */
 
-  --accent: #7c6dfa;
-  --accent2: #9b8bfa;
-  --accent-glow: rgba(124,109,250,0.15);
+:root {
+  /* KOYU TEMA (Varsayılan) */
+  --bg: #07070c;
+  --bg2: #0d0d14;
+  --surface: #0e0e16;
+  --surface2: #161620;
+  --border: rgba(123,110,246,0.12);
+  --border2: rgba(123,110,246,0.2);
+
+  --accent: #8b5cf6;
+  --accent2: #c084fc;
+  --accent3: #a78bfa;
+  --accent-glow: rgba(139,92,246,0.4);
 
   --accent-secondary: #fa6d9b;
   --accent-secondary-bg: rgba(250,109,155,0.12);
-
   --accent-tertiary: #6dd0fa;
   --accent-tertiary-bg: rgba(109,208,250,0.12);
 
   --green: #22c55e;
   --green-bg: rgba(34,197,94,0.12);
+  --green-glow: rgba(34,197,94,0.3);
   --red: #ef4444;
   --red-bg: rgba(239,68,68,0.12);
-  --yellow: #f5b642;
+  --red-glow: rgba(239,68,68,0.3);
+  --yellow: #fbbf24;
   --yellow-bg: rgba(245,182,66,0.12);
+  --cyan: #06b6d4;
+  --pink: #ec4899;
+
+  --text: #f1f1f8;
+  --text-muted: #8b8b9e;
+  --muted: #8b8b9e;
 
   --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
 
   --radius: 12px;
   --radius-sm: 8px;
+  --radius-lg: 20px;
   --shadow: 0 4px 24px rgba(0,0,0,0.3);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --font: 'DM Sans', sans-serif;
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Syne', sans-serif;
+
+  /* ⭐ FAZ 2.1: Z-INDEX SKALASI - TEK KAYNAK */
+  --z-backdrop: 150;
+  --z-menu: 160;
+  --z-sticky: 200;
+  --z-dropdown: 300;
+  --z-bell: 400;
+  --z-popover: 500;
+  --z-fab: 999;
+  --z-modal-overlay: 1000;
+  --z-modal-content: 1001;
+  --z-avatar-popup: 2000;
+  --z-toast: 9999;
 }
 
-/* Açık Tema - body.light-theme ile aktif olur */
+/* ============================================================
+   AÇIK TEMA - TEK BLOK
+   ============================================================ */
+
 body.light-theme {
   --bg: #f4f4f9;
   --bg2: #ececf2;
   --surface: #ffffff;
   --surface2: #f1f1f6;
   --border: #e2e2ea;
-  --text: #1a1a2e;
-  --text2: #4a4a5e;
-  --muted: #6b6b80;
+  --border2: rgba(139,92,246,0.35);
 
   --accent: #6c5ce7;
   --accent2: #6b5bd6;
+  --accent3: #c084fc;
   --accent-glow: rgba(124,109,250,0.1);
 
   --accent-secondary: #e0558a;
   --accent-secondary-bg: rgba(224,85,138,0.08);
-
   --accent-tertiary: #3aa8d8;
   --accent-tertiary-bg: rgba(58,168,216,0.08);
 
-  --green: #16a34a;
-  --green-bg: rgba(22,163,74,0.1);
+  --green: #10b981;
+  --green-bg: rgba(16,185,129,0.1);
+  --green-glow: rgba(16,185,129,0.25);
   --red: #dc2626;
   --red-bg: rgba(220,38,38,0.1);
+  --red-glow: rgba(239,68,68,0.25);
   --yellow: #d97706;
   --yellow-bg: rgba(217,119,6,0.1);
+
+  --text: #0f172a;
+  --text-muted: #334155;
+  --muted: #64748b;
 
   --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
 
   --shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
 
-/* Tema geçişinde yumuşak animasyon */
+/* ============================================================
+   TEMA GEÇİŞİ (TEK TANIM)
+   ============================================================ */
 body,
 body * {
-  transition: background-color 0.15s ease, 
-              border-color 0.15s ease, 
+  transition: background-color 0.15s ease,
+              border-color 0.15s ease,
               color 0.15s ease,
               box-shadow 0.15s ease;
 }
@@ -88,69 +129,13 @@ body * {
    TÜM SAYFALAR UYUMLU | KOYU / AÇIK TEMA | TAM GENİŞLİK
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap');
+/* ⭐ FAZ 1.3: Space Grotesk ve JetBrains Mono eklendi */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ============================================================
    ⭐ NAVBAR - TAMAMEN navbar.css TARAFINDAN YÖNETİLİR
    ============================================================ */
 /* Bu dosyada navbar ile ilgili HİÇBİR KURAL OLMAMALIDIR! */
-/* Tüm navbar stilleri components/navbar.css dosyasındadır */
-
-/* ============================================================
-   TEMA DEĞİŞKENLERİ
-   ============================================================ */
-
-:root {
-  /* KOYU TEMA (Varsayılan) */
-  --bg:        #07070c;
-  --surface:   #0e0e16;
-  --surface2:  #161620;
-  --border:    rgba(123,110,246,0.12);
-  --border2:   rgba(123,110,246,0.2);
-  
-  --accent:    #8b5cf6;
-  --accent2:   #c084fc;
-  --accent3:   #a78bfa;
-  --accent-glow: rgba(139,92,246,0.4);
-  
-  --green:     #22c55e;
-  --green-glow: rgba(34,197,94,0.3);
-  --red:       #ef4444;
-  --red-glow:  rgba(239,68,68,0.3);
-  --yellow:    #fbbf24;
-  --cyan:      #06b6d4;
-  --pink:      #ec4899;
-  
-  --text:      #f1f1f8;
-  --text-muted: #8b8b9e;
-  --muted:     #d3d3e0;
-  
-  --radius:    12px;
-  --radius-sm: 8px;
-}
-
-/* AÇIK TEMA */
-body.light-theme {
-  --bg:        #ffffff;
-  --surface:   #f8fafc;
-  --surface2:  #f1f5f9;
-  --border:    rgba(139,92,246,0.2);
-  --border2:   rgba(139,92,246,0.35);
-  
-  --accent:    #8b5cf6;
-  --accent2:   #a855f7;
-  --accent3:   #c084fc;
-  --accent-glow: rgba(139,92,246,0.35);
-  
-  --green:     #10b981;
-  --green-glow: rgba(16,185,129,0.25);
-  --red:       #ef4444;
-  --red-glow:  rgba(239,68,68,0.25);
-  
-  --text:      #0f172a;
-  --text-muted: #334155;
-  --muted:     #64748b;
-}
 
 /* ============================================================
    SCROLLBAR SABİTLEME - SAYFA KAYMASINI ÖNLE
@@ -177,7 +162,6 @@ body {
   -webkit-font-smoothing: antialiased;
   position: relative;
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.2s ease;
 }
 
 body::before {
@@ -192,10 +176,6 @@ body::before {
 body.light-theme::before {
   background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(139,92,246,0.04) 0%, transparent 50%),
               radial-gradient(ellipse 50% 30% at 80% 70%, rgba(192,132,252,0.02) 0%, transparent 50%);
-}
-
-body, body * {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
 }
 
 /* ============================================================
@@ -231,11 +211,6 @@ body.light-theme h4, body.light-theme h5 {
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
 }
-
-/* ============================================================
-   ⭐ NAVBAR - TAMAMEN KALDIRILDI
-   ============================================================ */
-/* navbar stilleri components/navbar.css dosyasındadır */
 
 /* ============================================================
    SAYFA HEADER (ORTAK)
@@ -300,6 +275,7 @@ body.light-theme h4, body.light-theme h5 {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(139,92,246,0.15);
 }
+/* ⭐ FIX 4.3: accent-color kullanılıyor (fallback ile) */
 .stat-card::before {
   content: '';
   position: absolute;
@@ -307,7 +283,7 @@ body.light-theme h4, body.light-theme h5 {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  background: var(--accent-color, var(--accent));
 }
 .stat-card .stat-label {
   font-size: clamp(8px, 0.8vw, 10px);
@@ -324,11 +300,11 @@ body.light-theme h4, body.light-theme h5 {
   line-height: 1.1;
   word-break: break-word;
 }
-.stat-card .stat-value.positive { 
+.stat-card .stat-value.positive {
   color: var(--green);
   text-shadow: 0 0 8px var(--green-glow);
 }
-.stat-card .stat-value.negative { 
+.stat-card .stat-value.negative {
   color: var(--red);
   text-shadow: 0 0 8px var(--red-glow);
 }
@@ -368,11 +344,11 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(0.7rem, 1.2vw, 0.9rem);
   font-weight: 600;
 }
-.kpi-value.positive { 
+.kpi-value.positive {
   color: var(--green);
   text-shadow: 0 0 6px var(--green-glow);
 }
-.kpi-value.negative { 
+.kpi-value.negative {
   color: var(--red);
   text-shadow: 0 0 6px var(--red-glow);
 }
@@ -452,13 +428,7 @@ body.light-theme h4, body.light-theme h5 {
   background: rgba(239,68,68,0.1);
   color: var(--red);
 }
-.chart-wrap {
-  position: relative;
-  width: 100%;
-  height: clamp(150px, 25vw, 200px);
-}
-.chart-wrap--tall { height: clamp(170px, 28vw, 220px); }
-.chart-wrap--doughnut { height: clamp(150px, 22vw, 200px); }
+/* ⭐ FIX 4.1: chart-wrap boyutları KALDIRILDI - dashboard.css'te tek kaynak */
 
 /* Streak & Strategy */
 .streak-card, .strategy-tags-card {
@@ -493,11 +463,11 @@ body.light-theme h4, body.light-theme h5 {
   background: var(--border);
   transition: all 0.2s;
 }
-.streak-dot.win { 
+.streak-dot.win {
   background: var(--green);
   box-shadow: 0 0 6px var(--green-glow);
 }
-.streak-dot.loss { 
+.streak-dot.loss {
   background: var(--red);
   box-shadow: 0 0 6px var(--red-glow);
 }
@@ -518,7 +488,7 @@ body.light-theme h4, body.light-theme h5 {
 }
 
 /* ============================================================
-   TRADE LIST - MOBIL OPTIMIZE (Sadece temel stiller, detaylar dashboard.css'te)
+   TRADE LIST - MOBIL OPTIMIZE
    ============================================================ */
 
 .trade-list {
@@ -558,11 +528,11 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(7px, 0.8vw, 10px);
   font-weight: 600;
 }
-.trade-direction.long { 
+.trade-direction.long {
   color: var(--green);
   text-shadow: 0 0 4px rgba(34,197,94,0.3);
 }
-.trade-direction.short { 
+.trade-direction.short {
   color: var(--red);
   text-shadow: 0 0 4px rgba(239,68,68,0.3);
 }
@@ -577,11 +547,11 @@ body.light-theme h4, body.light-theme h5 {
   height: 100%;
   border-radius: 99px;
 }
-.trade-bar.positive { 
+.trade-bar.positive {
   background: var(--green);
   box-shadow: 0 0 6px var(--green-glow);
 }
-.trade-bar.negative { 
+.trade-bar.negative {
   background: var(--red);
   box-shadow: 0 0 6px var(--red-glow);
 }
@@ -590,11 +560,11 @@ body.light-theme h4, body.light-theme h5 {
   font-weight: 600;
   text-align: right;
 }
-.trade-pnl.positive { 
+.trade-pnl.positive {
   color: var(--green);
   text-shadow: 0 0 6px var(--green-glow);
 }
-.trade-pnl.negative { 
+.trade-pnl.negative {
   color: var(--red);
   text-shadow: 0 0 6px var(--red-glow);
 }
@@ -823,7 +793,7 @@ body.light-theme h4, body.light-theme h5 {
   box-shadow: 0 0 8px var(--red-glow);
 }
 
-/* ⭐ Bugün */
+/* Bugün */
 .cal-day.today {
   border-color: transparent;
   position: relative;
@@ -998,7 +968,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(0.75rem, 1.5vw, 1.25rem);
   min-width: min(280px, 85vw);
   max-width: min(380px, 92vw);
-  z-index: 500;
+  z-index: var(--z-popover);
   box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.08);
   backdrop-filter: blur(16px);
 }
@@ -1100,7 +1070,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   inset: 0;
   background: rgba(0,0,0,0.5);
   backdrop-filter: blur(4px);
-  z-index: 499;
+  z-index: calc(var(--z-popover) - 1);
 }
 .calendar-popup-overlay.active { display: block; }
 
@@ -1153,7 +1123,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .ww-table tbody tr { transition: all 0.15s; }
 .ww-table tbody tr:hover td { background: rgba(139,92,246,0.04); }
 
-/* Tablo scroll indicator - taşma olduğunda göster */
+/* Tablo scroll indicator */
 .ww-table-wrapper {
   position: relative;
   overflow-x: auto;
@@ -1283,7 +1253,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .auth-box {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: clamp(1rem, 2vw, 1.75rem);
   width: 100%;
   max-width: min(420px, 92vw);
@@ -1385,9 +1355,9 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: 1px solid var(--border);
   color: var(--muted);
 }
-.btn-ghost:hover { 
-  border-color: var(--accent); 
-  color: var(--accent); 
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
   background: rgba(139,92,246,0.05);
   box-shadow: 0 0 12px var(--accent-glow);
 }
@@ -1407,9 +1377,9 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   gap: 4px;
   min-height: 36px;
 }
-.btn-login:hover { 
-  border-color: var(--accent); 
-  color: var(--accent); 
+.btn-login:hover {
+  border-color: var(--accent);
+  color: var(--accent);
   background: rgba(139,92,246,0.05);
   box-shadow: 0 0 12px var(--accent-glow);
 }
@@ -1430,8 +1400,8 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   box-shadow: 0 4px 12px var(--accent-glow);
   min-height: 36px;
 }
-.btn-register:hover { 
-  transform: translateY(-1px); 
+.btn-register:hover {
+  transform: translateY(-1px);
   box-shadow: 0 6px 20px var(--accent-glow);
 }
 
@@ -1447,13 +1417,13 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: 2px clamp(4px, 0.5vw, 7px);
   display: inline-block;
 }
-.badge-long  { 
-  background: rgba(34,197,94,0.15); 
+.badge-long {
+  background: rgba(34,197,94,0.15);
   color: var(--green);
   border: 1px solid rgba(34,197,94,0.3);
 }
-.badge-short { 
-  background: rgba(239,68,68,0.15); 
+.badge-short {
+  background: rgba(239,68,68,0.15);
   color: var(--red);
   border: 1px solid rgba(239,68,68,0.3);
 }
@@ -1478,7 +1448,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   left: clamp(0.5rem, 1vw, 1rem);
   transform: translateY(8px);
   transition: opacity 0.3s, transform 0.3s;
-  z-index: 9999;
+  z-index: var(--z-toast);
   max-width: min(400px, calc(100vw - 1rem));
   font-family: 'DM Sans', sans-serif;
   margin: 0 auto;
@@ -1493,11 +1463,11 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   }
 }
 .ww-toast--visible { opacity: 1; transform: translateY(0); }
-.ww-toast--success { 
+.ww-toast--success {
   border-left: 3px solid var(--green);
   box-shadow: 0 0 20px rgba(34,197,94,0.15);
 }
-.ww-toast--error { 
+.ww-toast--error {
   border-left: 3px solid var(--red);
   box-shadow: 0 0 20px rgba(239,68,68,0.15);
 }
@@ -1528,7 +1498,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 }
 
 /* ============================================================
-   CONFIRM MODAL
+   CONFIRM MODAL - TEK KAYNAK (styles.css)
    ============================================================ */
 
 .confirm-modal {
@@ -1540,7 +1510,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  z-index: 1000;
+  z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;
@@ -1691,7 +1661,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   gap: 8px;
   margin-bottom: 0.5rem;
 }
-.footer-logo span { 
+.footer-logo span {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   background-clip: text;
   -webkit-background-clip: text;
@@ -1741,7 +1711,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-family: 'DM Sans', sans-serif;
   min-height: 32px;
 }
-.social-link:hover { 
+.social-link:hover {
   color: var(--accent);
   text-shadow: 0 0 8px var(--accent-glow);
 }
@@ -2068,7 +2038,7 @@ body.light-theme .skeleton-stat::after {
   visibility: hidden;
   transform: translateY(-8px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 9999;
+  z-index: var(--z-dropdown);
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   pointer-events: none;
 }
@@ -2246,7 +2216,35 @@ body.light-theme .skeleton-stat::after {
 }
 
 /* ============================================================
+   ⭐ FAZ 2.3: PANEL-GLOW ORTAK KISIM
+   ============================================================ */
+
+.panel-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(140px, 30vh, 280px);
+  border-radius: var(--radius) var(--radius) 0 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+body.light-theme .panel-glow {
+  opacity: 0.5;
+}
+
+/* ============================================================
    RESPONSIVE - ANA BREAKPOINTLER
+   ⭐ FIX 4.1: chart-wrap boyutları KALDIRILDI (dashboard.css'te)
+   ⭐ FIX 4.2: mini-cal-day boyutları KALDIRILDI (dashboard.css'te)
    ============================================================ */
 
 /* 767px ve altı - tablet/telefon */
@@ -2258,89 +2256,16 @@ body.light-theme .skeleton-stat::after {
     display: none !important;
   }
   .kpi-bar { flex-direction: column; align-items: flex-start; }
-  .kpi-item { 
-    border-right: none; 
-    border-bottom: 1px solid var(--border); 
-    padding-bottom: 0.4rem; 
-    width: 100%; 
+  .kpi-item {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+    width: 100%;
   }
   .kpi-item:last-child { border-bottom: none; }
   .dashboard-grid-2col { grid-template-columns: 1fr; }
-  .chart-wrap { height: 180px; }
-  .chart-wrap--tall { height: 200px; }
-  .chart-wrap--doughnut { height: 180px; }
-}
 
-/* 480px ve altı - telefonlar */
-@media (max-width: 480px) {
-  body { font-size: 14px; }
-  
-  .nav {
-    height: 56px;
-    min-height: 56px;
-    max-height: 56px;
-  }
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.4rem;
-  }
-  .stat-card .stat-value { font-size: 1.1rem; }
-  .stat-card .stat-label { font-size: 8px; }
-  
-  .page-header h1 { font-size: 1.2rem; }
-  .page-header .subtitle { font-size: 0.75rem; }
-  
-  .auth-box { padding: 1.25rem; }
-  .auth-box .auth-title { font-size: 1.2rem; }
-  
-  .footer-container { grid-template-columns: 1fr; gap: 1.25rem; }
-  .footer-social { gap: 0.75rem; }
-  .social-link span { display: none; }
-}
-
-/* 374px ve altı - ultra küçük telefonlar */
-@media (max-width: 374px) {
-  body { font-size: 13px; }
-  
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.3rem;
-  }
-  .stat-card { padding: 0.4rem 0.5rem; }
-  .stat-card .stat-value { font-size: 0.95rem; }
-  .stat-card .stat-label { font-size: 7px; }
-  
-  .page-header h1 { font-size: 1rem; }
-  
-  .cal-day { min-height: 34px; padding: 2px; }
-  .cal-day .day-number { font-size: 8px; }
-  .cal-day .day-pnl { font-size: 5px; }
-  .cal-day .day-trade-count { font-size: 4px; }
-  
-  .mini-cal-day { min-height: 20px; padding: 1px; }
-  .mini-cal-day .day-number { font-size: 7px; }
-  .mini-cal-day .day-name { font-size: 3px; }
-  
-  .cal-nav-btn { font-size: 8px; padding: 0.15rem 0.3rem; }
-  .cal-nav-btn.month-label { font-size: 8px; min-width: 44px; }
-  .cal-header .cal-title { font-size: 0.85rem; }
-  .cal-header .cal-title .cal-icon-wrap { width: 22px; height: 22px; }
-  .cal-header .cal-title .cal-icon-wrap svg { width: 12px; height: 12px; }
-  
-  .ww-toast {
-    font-size: 11px;
-    padding: 0.5rem 0.75rem;
-    bottom: 0.4rem;
-    right: 0.4rem;
-    left: 0.4rem;
-  }
-}
-
-/* ============================================================
-   DOKUNMATİK HEDEF BOYUTLARI (44px minimum)
-   ============================================================ */
-
-@media (max-width: 767px) {
+  /* ⭐ DOKUNMATİK HEDEF BOYUTLARI - 44px minimum */
   .btn,
   .btn-login,
   .btn-register,
@@ -2369,19 +2294,80 @@ body.light-theme .skeleton-stat::after {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   .cal-day {
     min-height: 44px;
   }
-  
+
   .mini-cal-day {
     min-height: 32px;
     min-width: 32px;
   }
-  
+
   .trade-note-indicator {
     min-height: 32px;
     min-width: 32px;
+  }
+}
+
+/* 480px ve altı - telefonlar */
+@media (max-width: 480px) {
+  body { font-size: 14px; }
+
+  .nav {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+  .stat-card .stat-value { font-size: 1.1rem; }
+  .stat-card .stat-label { font-size: 8px; }
+
+  .page-header h1 { font-size: 1.2rem; }
+  .page-header .subtitle { font-size: 0.75rem; }
+
+  .auth-box { padding: 1.25rem; }
+  .auth-box .auth-title { font-size: 1.2rem; }
+
+  .footer-container { grid-template-columns: 1fr; gap: 1.25rem; }
+  .footer-social { gap: 0.75rem; }
+  .social-link span { display: none; }
+}
+
+/* 374px ve altı - ultra küçük telefonlar */
+@media (max-width: 374px) {
+  body { font-size: 13px; }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem;
+  }
+  .stat-card { padding: 0.4rem 0.5rem; }
+  .stat-card .stat-value { font-size: 0.95rem; }
+  .stat-card .stat-label { font-size: 7px; }
+
+  .page-header h1 { font-size: 1rem; }
+
+  .cal-day { min-height: 34px; padding: 2px; }
+  .cal-day .day-number { font-size: 8px; }
+  .cal-day .day-pnl { font-size: 5px; }
+  .cal-day .day-trade-count { font-size: 4px; }
+
+  .cal-nav-btn { font-size: 8px; padding: 0.15rem 0.3rem; }
+  .cal-nav-btn.month-label { font-size: 8px; min-width: 44px; }
+  .cal-header .cal-title { font-size: 0.85rem; }
+  .cal-header .cal-title .cal-icon-wrap { width: 22px; height: 22px; }
+  .cal-header .cal-title .cal-icon-wrap svg { width: 12px; height: 12px; }
+
+  .ww-toast {
+    font-size: 11px;
+    padding: 0.5rem 0.75rem;
+    bottom: 0.4rem;
+    right: 0.4rem;
+    left: 0.4rem;
   }
 }
 

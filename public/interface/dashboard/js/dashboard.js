@@ -1,7 +1,13 @@
 // ============================================================
-// DASHBOARD - ANA JS DOSYASI (OPTİMİZE EDİLMİŞ)
-// script.js'deki tüm global fonksiyonları kullanır
-// SADECE DASHBOARD İÇERİĞİNİ YÖNETİR - NAVBAR'A MÜDAHALE ETMEZ
+// DASHBOARD - ANA JS DOSYASI (TÜM FİX'LER UYGULANDI)
+// ⭐ FİX: 1.1 getPreviousPeriodTrades - yıl düzeltmesi
+// ⭐ FİX: 1.2 loadTrades - ascending:false + reverse
+// ⭐ FİX: 1.3 trend-losses invert
+// ⭐ FİX: 1.4 trade-note tam metin
+// ⭐ FİX: 1.5 DOM sorguları initDashboard'a taşındı
+// ⭐ FİX: 1.6 localDateStr fonksiyonu eklendi
+// ⭐ FİX: 1.7 Win/Loss açık kaldırıldı
+// ⭐ FİX: 2.1 refresh sıralaması + token koruması
 // ============================================================
 
 (function() {
@@ -17,6 +23,17 @@
       console.warn('⚠️ Element bulunamadı:', id);
     }
     return el;
+  }
+
+  // ============================================================
+  // ⭐ FİX 1.6: YEREL TARİH STRING'İ
+  // ============================================================
+
+  function localDateStr(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth() + 1).padStart(2, '0');
+    var d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
   }
 
   // ============================================================
@@ -64,7 +81,7 @@
   }
 
   // ============================================================
-  // UTILITY FUNCTIONS (script.js'den gelenler)
+  // UTILITY FUNCTIONS
   // ============================================================
 
   function calcTradePnL(t) {
@@ -133,10 +150,11 @@
   // ANA DASHBOARD STATE
   // ============================================================
 
-  var dateFilterOptions = document.querySelectorAll('.date-filter-option');
-  var exportCsvBtn = safeEl('export-csv');
-  var exportPdfBtn = safeEl('export-pdf');
-  var welcomeMsg = safeEl('welcome-msg');
+  // ⭐ FİX 1.5: DOM sorguları burada SADECE değişken olarak bildirildi
+  var dateFilterOptions = null;
+  var exportCsvBtn = null;
+  var exportPdfBtn = null;
+  var welcomeMsg = null;
 
   var currentUsername = '';
   var monthlyTarget = 5000;
@@ -151,9 +169,10 @@
   var chartsInitialized = false;
   var chartsBusy = false;
   var resizeDebounceId = null;
-
-  // ⭐ İLK YÜKLEME KONTROLÜ - grafiklerin sadece 1 kez render olması için
   var chartsRenderedOnce = false;
+
+  // ⭐ FİX 2.1: refresh token
+  var refreshToken = 0;
 
   // ============================================================
   // CHART THEME
@@ -183,6 +202,31 @@
   }
 
   // ============================================================
+  // CHARTS RESET EVENT - TEMA DEĞİŞİMİNDE RENDER İÇİN
+  // ============================================================
+
+  function resetChartsForTheme() {
+    chartsRenderedOnce = false;
+    chartsInitialized = false;
+    destroyAllCharts();
+
+    var filtered = filterByDate(allTrades, currentRange);
+    if (filtered && filtered.length > 0) {
+      setChartTheme();
+      if (chartRafId) cancelAnimationFrame(chartRafId);
+      chartRafId = requestAnimationFrame(function() {
+        chartRafId = null;
+        renderCharts(filtered);
+      });
+    }
+  }
+
+  document.addEventListener('chartsReset', function(e) {
+    console.log('🔄 chartsReset event alındı, grafikler yeniden render ediliyor...');
+    resetChartsForTheme();
+  });
+
+  // ============================================================
   // FILTER FUNCTIONS
   // ============================================================
 
@@ -197,6 +241,7 @@
     return trades.filter(function(t) { return t.trade_date && new Date(t.trade_date) >= start; });
   }
 
+  // ⭐ FİX 1.1: getPreviousPeriodTrades - yıl düzeltmesi
   function getPreviousPeriodTrades(trades, range) {
     var now = new Date();
     var currentStart = new Date();
@@ -209,7 +254,10 @@
     var prevStart = new Date(currentStart);
     if (range === 'week') prevStart.setDate(prevStart.getDate() - 7);
     if (range === 'month') prevStart.setMonth(prevStart.getMonth() - 1);
-    if (range === 'year') prevStart.setMonth(0, 1);
+    if (range === 'year') {
+      // ⭐ FİX: geçen yılın 1 Ocak'ı
+      prevStart.setFullYear(prevStart.getFullYear() - 1, 0, 1);
+    }
     prevStart.setHours(0, 0, 0, 0);
 
     return trades.filter(function(t) {
@@ -389,7 +437,11 @@
       updateTrend('trend-pnl', calcTrend(totalPnL, prevTotalPnL));
       updateTrend('trend-wr', calcTrend(wr, prevWr));
       updateTrend('trend-wins', calcTrend(wins, prevWins));
-      updateTrend('trend-losses', calcTrend(losses, prevLosses));
+
+      // ⭐ FİX 1.3: trend-losses invert
+      var lossTrend = calcTrend(losses, prevLosses);
+      lossTrend.isPositive = !lossTrend.isPositive;
+      updateTrend('trend-losses', lossTrend);
     }
 
     var wrEl = safeEl('stat-winrate');
@@ -461,6 +513,7 @@
     }
   }
 
+  // ⭐ FİX 1.4: renderRecentTrades - not tam metin
   async function renderRecentTrades(trades) {
     var container = safeEl('recent-trades-container');
     if (!container) return;
@@ -494,15 +547,18 @@
       var formattedDate = tradeDate.getDate() + ' ' + monthShort + ' ' + tradeDate.getHours().toString().padStart(2, '0') + ':' + tradeDate.getMinutes().toString().padStart(2, '0');
       var strategyName = t.strategy_id ? (strategiesMap[t.strategy_id] || '—') : '—';
       var hasNote = t.notes && t.notes.trim().length > 0;
+      // ⭐ FİX 1.4: notePreview sadece liste satırı için
       var notePreview = hasNote ? (t.notes.length > 60 ? t.notes.substring(0, 57) + '...' : t.notes) : '';
+      // ⭐ FİX 1.4: tam metin
+      var fullNote = hasNote ? t.notes : '';
 
       var safeSymbol = sanitizeHTML(t.symbol || '—');
       var safeStrategy = sanitizeHTML(strategyName);
       var safeNotePreviewAttr = escapeAttr(notePreview);
-      var safeNotesAttr = escapeAttr(t.notes || '');
-      var safeNotePreviewHtml = sanitizeHTML(notePreview);
+      var safeNotesAttr = escapeAttr(fullNote);
+      var safeFullNoteHtml = sanitizeHTML(fullNote);
 
-      html += '\n        <div class="trade-row" data-trade-id="' + t.id + '" data-notes="' + safeNotesAttr + '" data-note-preview="' + safeNotePreviewAttr + '" data-has-note="' + hasNote + '">\n          <div class="trade-icon ' + (isLong ? 'long' : 'short') + '">' + (isLong ? 'L' : 'S') + '</div>\n          <div class="trade-symbol">' + safeSymbol + '</div>\n          <div class="trade-direction ' + (isLong ? 'long' : 'short') + '">' + (isLong ? 'LONG' : 'SHORT') + '</div>\n          <div class="trade-strategy" title="' + safeStrategy + '">' + (safeStrategy.length > 12 ? safeStrategy.slice(0, 10) + '..' : safeStrategy) + '</div>\n          <div class="trade-bar-container">\n            <div class="trade-bar ' + (pnl >= 0 ? 'positive' : 'negative') + '" style="width: ' + pnlPercent + '%"></div>\n          </div>\n          <div class="trade-pnl ' + (pnl >= 0 ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</div>\n          <div class="trade-date">' + formattedDate + '</div>\n          ' + (hasNote ? '<div class="trade-note-indicator" title="Notu göster">\n            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">\n              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>\n              <polyline points="14 2 14 8 20 8"/>\n              <line x1="16" y1="13" x2="8" y2="13"/>\n              <line x1="16" y1="17" x2="8" y2="17"/>\n              <polyline points="10 9 9 9 8 9"/>\n            </svg>\n          </div>' : '<div style="width:24px;"></div>') + '\n        </div>\n        <div class="trade-note" id="note-' + t.id + '">\n          ' + (hasNote ? safeNotePreviewHtml : 'Not yok') + '\n        </div>\n      ';
+      html += '\n        <div class="trade-row" data-trade-id="' + t.id + '" data-notes="' + safeNotesAttr + '" data-note-preview="' + safeNotePreviewAttr + '" data-has-note="' + hasNote + '">\n          <div class="trade-icon ' + (isLong ? 'long' : 'short') + '">' + (isLong ? 'L' : 'S') + '</div>\n          <div class="trade-symbol">' + safeSymbol + '</div>\n          <div class="trade-direction ' + (isLong ? 'long' : 'short') + '">' + (isLong ? 'LONG' : 'SHORT') + '</div>\n          <div class="trade-strategy" title="' + safeStrategy + '">' + (safeStrategy.length > 12 ? safeStrategy.slice(0, 10) + '..' : safeStrategy) + '</div>\n          <div class="trade-bar-container">\n            <div class="trade-bar ' + (pnl >= 0 ? 'positive' : 'negative') + '" style="width: ' + pnlPercent + '%"></div>\n          </div>\n          <div class="trade-pnl ' + (pnl >= 0 ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</div>\n          <div class="trade-date">' + formattedDate + '</div>\n          ' + (hasNote ? '<div class="trade-note-indicator" title="Notu göster">\n            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">\n              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>\n              <polyline points="14 2 14 8 20 8"/>\n              <line x1="16" y1="13" x2="8" y2="13"/>\n              <line x1="16" y1="17" x2="8" y2="17"/>\n              <polyline points="10 9 9 9 8 9"/>\n            </svg>\n          </div>' : '<div style="width:24px;"></div>') + '\n        </div>\n        <div class="trade-note" id="note-' + t.id + '">\n          ' + (hasNote ? safeFullNoteHtml : 'Not yok') + '\n        </div>\n      ';
     });
     html += '</div>';
     container.innerHTML = html;
@@ -563,6 +619,7 @@
 
   var miniCalendarTrades = [];
 
+  // ⭐ FİX 1.6: renderMiniCalendar - localDateStr kullan
   function renderMiniCalendar() {
     var grid = safeEl('mini-cal-grid');
     if (!grid) return;
@@ -587,13 +644,37 @@
       weekDays.push(d);
     }
 
+    // ⭐ FİX 4.4: mini-cal-week-label güncelle
+    var weekLabelEl = safeEl('mini-cal-week-label');
+    if (weekLabelEl) {
+      var firstDay = weekDays[0];
+      var lastDay = weekDays[6];
+      var langMap = {
+        tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+        en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+      };
+      var shortMonths = langMap[lang] || langMap.en;
+      var fDay = firstDay.getDate();
+      var lDay = lastDay.getDate();
+      var fMonth = shortMonths[firstDay.getMonth()];
+      var lMonth = shortMonths[lastDay.getMonth()];
+      if (fMonth === lMonth) {
+        weekLabelEl.textContent = fDay + '–' + lDay + ' ' + fMonth;
+      } else {
+        weekLabelEl.textContent = fDay + ' ' + fMonth + ' – ' + lDay + ' ' + lMonth;
+      }
+    }
+
     var html = '';
     var totalTrades = 0;
     var totalPnl = 0;
 
     weekDays.forEach(function(date, index) {
-      var dateStr = date.toISOString().split('T')[0];
-      var isToday = dateStr === today.toISOString().split('T')[0];
+      // ⭐ FİX 1.6: toISOString yerine localDateStr
+      var dateStr = localDateStr(date);
+      var todayStr = localDateStr(today);
+      var isToday = dateStr === todayStr;
 
       var dayTrades = miniCalendarTrades.filter(function(t) { return t.trade_date === dateStr; });
       var hasTrade = dayTrades.length > 0;
@@ -632,14 +713,14 @@
 
     var todayInfo = safeEl('mini-cal-today-info');
     if (todayInfo) {
-      var todayStr = today.toISOString().split('T')[0];
-      var todayTrades = miniCalendarTrades.filter(function(t) { return t.trade_date === todayStr; });
+      var todayStr2 = localDateStr(today);
+      var todayTrades = miniCalendarTrades.filter(function(t) { return t.trade_date === todayStr2; });
       var todayPnl = 0;
       todayTrades.forEach(function(t) {
         if (t.exit_price) todayPnl += calcTradePnL(t);
       });
-      var pnlText = todayPnl !== 0 ? formatCurrency(todayPnl) : '0';
-      todayInfo.textContent = 'Bugün: ' + todayTrades.length + ' işlem, ' + pnlText;
+      var pnlText2 = todayPnl !== 0 ? formatCurrency(todayPnl) : '0';
+      todayInfo.textContent = 'Bugün: ' + todayTrades.length + ' işlem, ' + pnlText2;
     }
 
     var weekSummary = safeEl('mini-cal-week-summary');
@@ -661,13 +742,14 @@
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol', 'chart-direction'];
     chartIds.forEach(function(id) {
       if (charts[id]) {
-        try { charts[id].destroy(); } catch (e) { /* zaten yok edilmiş olabilir */ }
+        try { charts[id].destroy(); } catch (e) { }
         delete charts[id];
       }
     });
     chartsInitialized = false;
   }
 
+  // ⭐ FİX 1.7: updateCharts - Win/Loss açık kaldırıldı
   function updateCharts(trades) {
     if (!trades || !trades.length) {
       destroyAllCharts();
@@ -695,23 +777,25 @@
       charts['chart-cumulative'].update();
     }
 
-    var wins = 0, losses = 0, open = 0;
-    trades.forEach(function(t) {
-      if (!t.exit_price) open++;
-      else if (calcTradePnL(t) > 0) wins++;
+    // ⭐ FİX 1.7: Win/Loss - SADECE KAPALI İŞLEMLER
+    var wins = 0, losses = 0;
+    var closedTrades = trades.filter(function(t) { return t.exit_price; });
+    closedTrades.forEach(function(t) {
+      if (calcTradePnL(t) > 0) wins++;
       else losses++;
     });
     if (charts['chart-winloss']) {
-      charts['chart-winloss'].data.datasets[0].data = [wins, losses, open];
+      charts['chart-winloss'].data.datasets[0].data = [wins, losses];
       charts['chart-winloss'].update();
     }
 
+    // ⭐ FİX 1.6: days haritasında localDateStr kullan
     var days = {};
     var now = new Date();
     for (var i = 29; i >= 0; i--) {
       var d = new Date(now);
       d.setDate(d.getDate() - i);
-      days[d.toISOString().split('T')[0]] = 0;
+      days[localDateStr(d)] = 0;
     }
     trades.forEach(function(t) {
       if (t.exit_price && days[t.trade_date] !== undefined) days[t.trade_date] += calcTradePnL(t);
@@ -760,6 +844,7 @@
     }
   }
 
+  // ⭐ FİX 1.7: renderCharts - Win/Loss açık kaldırıldı
   function renderCharts(trades) {
     if (!isPageVisible) return;
     if (!trades || !trades.length) {
@@ -767,15 +852,34 @@
       return;
     }
 
-    // ⭐ SADECE 1 KERE RENDER ET
-    if (chartsRenderedOnce) {
-      return;
-    }
-
     if (chartsBusy) return;
     chartsBusy = true;
 
     try {
+      // Canvas görünürlük kontrolü
+      var canvasIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol', 'chart-direction'];
+      var allVisible = true;
+      for (var c = 0; c < canvasIds.length; c++) {
+        var canvasEl = safeEl(canvasIds[c]);
+        if (canvasEl) {
+          var rect = canvasEl.getBoundingClientRect();
+          var isInViewport = rect.width > 0 && rect.height > 0;
+          if (!isInViewport) {
+            allVisible = false;
+            break;
+          }
+        }
+      }
+
+      if (!allVisible) {
+        setTimeout(function() {
+          if (!chartsBusy) {
+            renderCharts(trades);
+          }
+        }, 200);
+        return;
+      }
+
       destroyAllCharts();
 
       var isMobile = window.innerWidth < 768;
@@ -890,23 +994,23 @@
               }
             },
             scales: {
-              x: { 
-                ticks: { font: { size: isMobile ? 9 : 10, weight: '500' }, maxRotation: 0, autoSkip: true, maxTicksLimit: maxTicks }, 
-                grid: { display: !isMobile } 
+              x: {
+                ticks: { font: { size: isMobile ? 9 : 10, weight: '500' }, maxRotation: 0, autoSkip: true, maxTicksLimit: maxTicks },
+                grid: { display: !isMobile }
               },
-              y: { 
-                ticks: { font: { size: isMobile ? 9 : 11, weight: '500' }, maxTicksLimit: isMobile ? 4 : 6, callback: function(v) { return formatCurrency(v); } } 
+              y: {
+                ticks: { font: { size: isMobile ? 9 : 11, weight: '500' }, maxTicksLimit: isMobile ? 4 : 6, callback: function(v) { return formatCurrency(v); } }
               }
             }
           }
         });
       }
 
-      // Win/Loss Doughnut
-      var wins = 0, losses = 0, open = 0;
-      trades.forEach(function(t) {
-        if (!t.exit_price) open++;
-        else if (calcTradePnL(t) > 0) wins++;
+      // ⭐ FİX 1.7: Win/Loss Doughnut - SADECE KAPALI İŞLEMLER
+      var wins = 0, losses = 0;
+      var closedTrades = trades.filter(function(t) { return t.exit_price; });
+      closedTrades.forEach(function(t) {
+        if (calcTradePnL(t) > 0) wins++;
         else losses++;
       });
       var ctx2 = safeEl('chart-winloss');
@@ -917,14 +1021,14 @@
         charts['chart-winloss'] = new Chart(ctx2, {
           type: 'doughnut',
           data: {
-            labels: ['Kazanan', 'Kaybeden', 'Açık'],
-            datasets: [{ 
-              data: [wins, losses, open], 
-              backgroundColor: ['#22c55e', '#ef4444', '#64748b'], 
+            labels: ['Kazanan', 'Kaybeden'],
+            datasets: [{
+              data: [wins, losses],
+              backgroundColor: ['#22c55e', '#ef4444'],
               borderWidth: 2,
               borderColor: 'rgba(10,10,15,0.5)',
               hoverOffset: 8,
-              cutout: '68%' 
+              cutout: '68%'
             }]
           },
           options: {
@@ -933,14 +1037,14 @@
             animation: { duration: isMobile ? 200 : 400 },
             interaction: interactionConfig,
             plugins: {
-              legend: { 
-                position: 'bottom', 
-                labels: { 
-                  font: { size: 11, weight: '500' }, 
-                  boxWidth: 12, 
+              legend: {
+                position: 'bottom',
+                labels: {
+                  font: { size: 11, weight: '500' },
+                  boxWidth: 12,
                   padding: 10,
                   color: document.body.classList.contains('light-theme') ? '#1e293b' : '#e8e8f0'
-                } 
+                }
               },
               tooltip: {
                 ...tooltipConfig,
@@ -957,13 +1061,13 @@
         });
       }
 
-      // Daily Chart
+      // ⭐ FİX 1.6: Daily Chart - localDateStr kullan
       var days = {};
       var now = new Date();
       for (var i = 29; i >= 0; i--) {
         var d = new Date(now);
         d.setDate(d.getDate() - i);
-        days[d.toISOString().split('T')[0]] = 0;
+        days[localDateStr(d)] = 0;
       }
       trades.forEach(function(t) {
         if (t.exit_price && days[t.trade_date] !== undefined) days[t.trade_date] += calcTradePnL(t);
@@ -996,8 +1100,8 @@
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 200 : 400 },
             interaction: interactionConfig,
-            plugins: { 
-              legend: { display: false }, 
+            plugins: {
+              legend: { display: false },
               tooltip: {
                 ...tooltipConfig,
                 callbacks: {
@@ -1010,11 +1114,11 @@
               }
             },
             scales: {
-              x: { 
-                ticks: { font: { size: 10, weight: '500' }, maxRotation: 45, autoSkip: true, maxTicksLimit: 6 } 
+              x: {
+                ticks: { font: { size: 10, weight: '500' }, maxRotation: 45, autoSkip: true, maxTicksLimit: 6 }
               },
-              y: { 
-                ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } } 
+              y: {
+                ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } }
               }
             }
           }
@@ -1051,8 +1155,8 @@
             maintainAspectRatio: false,
             animation: { duration: isMobile ? 200 : 400 },
             interaction: interactionConfig,
-            plugins: { 
-              legend: { display: false }, 
+            plugins: {
+              legend: { display: false },
               tooltip: {
                 ...tooltipConfig,
                 callbacks: {
@@ -1065,11 +1169,11 @@
               }
             },
             scales: {
-              x: { 
-                ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } } 
+              x: {
+                ticks: { font: { size: 11, weight: '500' }, callback: function(v) { return formatCurrency(v); } }
               },
-              y: { 
-                ticks: { font: { size: 11, weight: '500' } } 
+              y: {
+                ticks: { font: { size: 11, weight: '500' } }
               }
             }
           }
@@ -1091,13 +1195,13 @@
           type: 'doughnut',
           data: {
             labels: ['Long', 'Short'],
-            datasets: [{ 
-              data: [longs, shorts], 
-              backgroundColor: ['#8b5cf6', '#f97316'], 
+            datasets: [{
+              data: [longs, shorts],
+              backgroundColor: ['#8b5cf6', '#f97316'],
               borderWidth: 2,
               borderColor: 'rgba(10,10,15,0.5)',
               hoverOffset: 8,
-              cutout: '68%' 
+              cutout: '68%'
             }]
           },
           options: {
@@ -1106,14 +1210,14 @@
             animation: { duration: isMobile ? 200 : 400 },
             interaction: interactionConfig,
             plugins: {
-              legend: { 
-                position: 'bottom', 
-                labels: { 
-                  font: { size: 11, weight: '500' }, 
-                  boxWidth: 12, 
+              legend: {
+                position: 'bottom',
+                labels: {
+                  font: { size: 11, weight: '500' },
+                  boxWidth: 12,
                   padding: 10,
                   color: document.body.classList.contains('light-theme') ? '#1e293b' : '#e8e8f0'
-                } 
+                }
               },
               tooltip: {
                 ...tooltipConfig,
@@ -1131,7 +1235,7 @@
       }
 
       chartsInitialized = true;
-      chartsRenderedOnce = true; // ⭐ SADECE 1 KERE RENDER
+      chartsRenderedOnce = true;
     } finally {
       chartsBusy = false;
     }
@@ -1445,7 +1549,7 @@
   }
 
   // ============================================================
-  // PLAN BADGE GÜNCELLEME (DASHBOARD İÇİN)
+  // PLAN BADGE GÜNCELLEME
   // ============================================================
 
   async function updatePlanBadge() {
@@ -1470,36 +1574,32 @@
   }
 
   // ============================================================
-  // REFRESH FUNCTION
+  // ⭐ FİX 2.1: REFRESH FUNCTION - SIRALAMA + TOKEN
   // ============================================================
 
   async function refresh() {
+    var myToken = ++refreshToken;
     try {
       showSkeletons();
 
       var filtered = filterByDate(allTrades, currentRange);
       var previous = getPreviousPeriodTrades(allTradesFullStats, currentRange);
 
+      if (myToken !== refreshToken) return;
+
       renderStats(filtered, previous, true);
       await renderRecentTrades(filtered);
-      renderStreak(filtered);
+
+      if (myToken !== refreshToken) return;
+
+      var streakContainer = safeEl('streak-dots');
+      if (streakContainer) {
+        renderStreak(filtered);
+      }
+
       await renderStrategyTags(filtered);
 
-      // ⭐ SADECE GRAFİKLER DAHA ÖNCE RENDER EDİLMEDİYSE
-      if (!chartsRenderedOnce && filtered.length > 0) {
-        if (chartRafId) cancelAnimationFrame(chartRafId);
-        chartRafId = requestAnimationFrame(function() {
-          chartRafId = null;
-          renderCharts(filtered);
-        });
-      } else if (chartsInitialized && filtered.length > 0) {
-        // Sadece güncelle (yeniden render değil)
-        if (chartRafId) cancelAnimationFrame(chartRafId);
-        chartRafId = requestAnimationFrame(function() {
-          chartRafId = null;
-          updateCharts(filtered);
-        });
-      }
+      if (myToken !== refreshToken) return;
 
       loadMiniCalendar(allTrades);
 
@@ -1507,7 +1607,36 @@
         await updatePlanBadge();
       } catch (e) {}
 
+      // ⭐ SIRALAMA DEĞİŞTİ: hideSkeletons ÖNCE, renderCharts SONRA
       hideSkeletons();
+
+      if (myToken !== refreshToken) return;
+
+      if (filtered.length > 0) {
+        chartsRenderedOnce = false;
+        chartsInitialized = false;
+        destroyAllCharts();
+
+        if (chartRafId) cancelAnimationFrame(chartRafId);
+        chartRafId = requestAnimationFrame(function() {
+          chartRafId = null;
+          if (myToken !== refreshToken) return;
+          renderCharts(filtered);
+        });
+      } else {
+        destroyAllCharts();
+        var chartContainers = document.querySelectorAll('.chart-wrap');
+        chartContainers.forEach(function(container) {
+          var canvas = container.querySelector('canvas');
+          if (canvas) {
+            var parent = canvas.parentElement;
+            if (parent) {
+              parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:11px;font-family:\'DM Sans\',sans-serif;">Bu aralıkta işlem yok</div>';
+            }
+          }
+        });
+      }
+
     } catch (e) {
       console.error('Refresh hatası:', e);
       hideSkeletons();
@@ -1515,47 +1644,60 @@
   }
 
   // ============================================================
-  // LOAD TRADES - OPTİMİZE EDİLMİŞ TEK SORGU
+  // ⭐ FİX 1.2: LOAD TRADES - ascending:false + reverse
   // ============================================================
 
   async function loadTrades(userId) {
-    // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
     var { data, error } = await sb
       .from('trades')
       .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
       .eq('user_id', userId)
-      .order('trade_date', { ascending: true })
-      .limit(1000); // ⭐ MAX 1000 İŞLEM
+      .order('trade_date', { ascending: false })
+      .limit(1000);
 
     if (error) {
       showToast('Veriler yüklenemedi: ' + error.message, 'error');
       return null;
     }
 
-    return data || [];
+    var result = data || [];
+    return result.reverse();
   }
 
   // ============================================================
-  // INIT DASHBOARD
+  // ⭐ FİX 1.5: INIT DASHBOARD - DOM sorguları burada yapılıyor
   // ============================================================
 
   async function initDashboard() {
     try {
+      // ⭐ FİX 1.5: DOM sorguları burada yapılıyor
+      dateFilterOptions = document.querySelectorAll('.date-filter-option');
+      exportCsvBtn = safeEl('export-csv');
+      exportPdfBtn = safeEl('export-pdf');
+      welcomeMsg = safeEl('welcome-msg');
+
       showSkeletons();
 
-      // Chart temasını ayarla
       try {
         setChartTheme();
       } catch (e) {}
 
-      // Theme observer - SADECE CHART RENKLERİ İÇİN
       try {
         var themeObserver = new MutationObserver(function(mutations) {
           mutations.forEach(function(mutation) {
             if (mutation.attributeName === 'class') {
               setChartTheme();
-              if (chartsInitialized && allTrades.length > 0) {
-                updateCharts(filterByDate(allTrades, currentRange));
+              if (allTrades.length > 0) {
+                var filtered = filterByDate(allTrades, currentRange);
+                if (filtered.length > 0) {
+                  chartsRenderedOnce = false;
+                  chartsInitialized = false;
+                  if (chartRafId) cancelAnimationFrame(chartRafId);
+                  chartRafId = requestAnimationFrame(function() {
+                    chartRafId = null;
+                    renderCharts(filtered);
+                  });
+                }
               }
             }
           });
@@ -1563,7 +1705,6 @@
         themeObserver.observe(document.body, { attributes: true });
       } catch (e) {}
 
-      // Visibility change - sadece görünür olduğunda güncelle, render etme
       document.addEventListener('visibilitychange', function() {
         isPageVisible = !document.hidden;
         if (isPageVisible && allTrades.length > 0 && chartsInitialized) {
@@ -1574,12 +1715,10 @@
         }
       });
 
-      // Load monthly target
       loadMonthlyTarget();
 
-      // Auth kontrolü
       if (typeof requireAuth !== 'function') {
-        console.warn('⚠️ requireAuth fonksiyonu bulunamadı, script.js yüklenmemiş olabilir.');
+        console.warn('⚠️ requireAuth fonksiyonu bulunamadı');
         hideSkeletons();
         return;
       }
@@ -1599,7 +1738,6 @@
         }
       }
 
-      // Admin link - dashboard içindeki admin linkleri
       if (typeof isAdmin === 'function' && isAdmin(user)) {
         var adminLink = safeEl('admin-link');
         var adminLinkMobile = safeEl('admin-link-mobile');
@@ -1607,12 +1745,10 @@
         if (adminLinkMobile) adminLinkMobile.style.display = 'block';
       }
 
-      // Plan badge
       try {
         await updatePlanBadge();
       } catch (e) {}
 
-      // Payment method
       try {
         var savedPayMethod = localStorage.getItem('ww_pay_method');
         if (savedPayMethod && typeof selectedPayMethod !== 'undefined') {
@@ -1620,7 +1756,6 @@
         }
       } catch (e) {}
 
-      // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
       if (typeof sb === 'undefined') {
         console.error('❌ sb (Supabase) tanımlı değil!');
         hideSkeletons();
@@ -1636,17 +1771,17 @@
       allTrades = tradesData;
       allTradesFullStats = allTrades.filter(function(t) { return t.exit_price; });
 
-      // Date filter buttons
-      dateFilterOptions.forEach(function(option) {
-        option.addEventListener('click', function() {
-          dateFilterOptions.forEach(function(opt) { opt.classList.remove('active'); });
-          this.classList.add('active');
-          currentRange = this.dataset.range;
-          refresh();
+      if (dateFilterOptions) {
+        dateFilterOptions.forEach(function(option) {
+          option.addEventListener('click', function() {
+            dateFilterOptions.forEach(function(opt) { opt.classList.remove('active'); });
+            this.classList.add('active');
+            currentRange = this.dataset.range;
+            refresh();
+          });
         });
-      });
+      }
 
-      // Export buttons
       if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
 
       if (exportPdfBtn) {
@@ -1660,10 +1795,8 @@
         });
       }
 
-      // Goal modal
       setupGoalModal();
 
-      // i18n changes - SADECE DASHBOARD İÇERİĞİ
       if (typeof i18n !== 'undefined' && i18n.onChange) {
         i18n.onChange(function() {
           if (currentUsername && welcomeMsg) {
@@ -1674,7 +1807,6 @@
         });
       }
 
-      // Initial refresh
       await refresh();
 
     } catch (e) {
@@ -1688,7 +1820,6 @@
   // ============================================================
 
   document.addEventListener('DOMContentLoaded', function() {
-    // ⭐ LUCIDE ICONS - Sadece dashboard içindeki icon'lar
     if (typeof lucide !== 'undefined') {
       var dashboardIcons = document.querySelectorAll('.dashboard-main [data-lucide]');
       if (dashboardIcons.length > 0) {
@@ -1696,7 +1827,6 @@
       }
     }
 
-    // ⭐ NAVBAR'IN YÜKLENMESİNİ BEKLE
     if (typeof loadNavbar === 'function') {
       var container = document.getElementById('navbar-container');
       if (container && container.innerHTML.trim() === '') {
@@ -1704,7 +1834,6 @@
       }
     }
 
-    // Dashboard'u başlat (biraz gecikmeli - navbar'ın yüklenmesini bekle)
     setTimeout(initDashboard, 150);
   });
 
