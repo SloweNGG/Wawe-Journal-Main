@@ -1,5 +1,10 @@
 /* ============================================================
    STRATEGIES SAYFASI - ÖZEL STİLLER
+   ⭐ FAZ 3.1: skeleton shimmer kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 3.4: .stat-card kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 3.5: .page-header kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
+   ⭐ FIX: .page-header h1 em kaldırıldı (styles.css'teki gradient miras alınsın)
    ============================================================ */
 
 .strategies-main {
@@ -9,36 +14,15 @@
   width: 100%;
 }
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.page-header h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin-bottom: 0.2rem;
-  background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+/* ⭐ FAZ 3.5: .page-header kopyası KALDIRILDI - styles.css'te tek kaynak */
+/* page-header styles.css'ten gelir, burada sadece strategies'e özel alt öğeler */
+
+/* ⭐ FIX: em etiketi styles.css'teki h1 gradient'ini miras alsın */
 .page-header h1 em {
   font-style: normal;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* background, background-clip, -webkit-text-fill-color kaldırıldı - styles.css'ten miras alıyor */
 }
-.page-header .subtitle {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 0;
-}
+
 .page-header-actions {
   display: flex;
   align-items: center;
@@ -97,65 +81,15 @@
   transform: translateY(-1px);
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.85rem 1rem;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-}
-.stat-card:hover {
-  border-color: var(--accent2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(139,92,246,0.15);
-}
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-}
-.stat-card .stat-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 0.3rem;
-  font-family: 'DM Mono', monospace;
-}
-.stat-card .stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.1;
-  color: var(--text);
-}
+/* ⭐ FAZ 3.4: .stats-grid ve .stat-card kopyaları KALDIRILDI - styles.css'ten gelir */
+/* Sadece strategies'e özel stat-card varyasyonları */
+
+/* strategies sayfasına özel stat-card renkleri */
 .stat-card .stat-value.pos { color: var(--green); }
 .stat-card .stat-value.neg { color: var(--red); }
 
-.strategies-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-@media (max-width: 900px) {
-  .strategies-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
-  .strategies-grid { grid-template-columns: 1fr; }
-}
+/* ⭐ FAZ 3.1: skeleton shimmer kopyası KALDIRILDI - styles.css'te tek kaynak */
+/* Skeleton stilleri styles.css'ten gelir, burada sadece strategies'e özel skeleton */
 
 .strategies-grid-skeleton {
   display: grid;
@@ -179,19 +113,7 @@
   position: relative;
   overflow: hidden;
 }
-.strategies-grid-skeleton .skeleton-strategy-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.8s ease-in-out infinite;
-}
-body.light-theme .strategies-grid-skeleton .skeleton-strategy-card::after {
-  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.8s ease-in-out infinite;
-}
+/* shimmer efekti styles.css'teki .skeleton ::after'dan gelir */
 .strategies-grid-skeleton .skeleton-strategy-card .skeleton-line {
   height: 12px;
   background: var(--border);
@@ -227,6 +149,19 @@ body.light-theme .strategies-grid-skeleton .skeleton-strategy-card::after {
 .strategies-grid-skeleton .skeleton-strategy-card .skeleton-stats .skeleton-stat-box .skeleton-line:last-child {
   width: 70%;
   margin-bottom: 0;
+}
+
+.strategies-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+@media (max-width: 900px) {
+  .strategies-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .strategies-grid { grid-template-columns: 1fr; }
 }
 
 .strategy-card {
@@ -401,9 +336,9 @@ body.light-theme .strategies-grid-skeleton .skeleton-strategy-card::after {
   padding: 0.55rem 1rem;
   border-top: 1px solid var(--border);
 }
-.dir-pills { 
-  display: flex; 
-  gap: 6px; 
+.dir-pills {
+  display: flex;
+  gap: 6px;
   align-items: center;
 }
 .dp {
@@ -421,14 +356,14 @@ body.light-theme .strategies-grid-skeleton .skeleton-strategy-card::after {
   height: 12px;
   stroke-width: 2;
 }
-.dp-long { 
-  background: rgba(34,197,94,0.12); 
-  color: var(--green); 
+.dp-long {
+  background: rgba(34,197,94,0.12);
+  color: var(--green);
 }
 .dp-long .dp-icon { stroke: var(--green); }
-.dp-short { 
-  background: rgba(239,68,68,0.12); 
-  color: var(--red); 
+.dp-short {
+  background: rgba(239,68,68,0.12);
+  color: var(--red);
 }
 .dp-short .dp-icon { stroke: var(--red); }
 
@@ -615,19 +550,7 @@ body.light-theme .strategies-grid-skeleton .skeleton-strategy-card::after {
   min-height: 200px;
   position: relative;
 }
-.comparison-skeleton .comparison-card-skeleton::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.8s ease-in-out infinite;
-}
-body.light-theme .comparison-skeleton .comparison-card-skeleton::after {
-  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.8s ease-in-out infinite;
-}
+/* shimmer efekti styles.css'teki .skeleton ::after'dan gelir */
 .comparison-skeleton .comparison-card-skeleton .skeleton-header {
   padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--border);
@@ -665,12 +588,16 @@ body.light-theme .comparison-skeleton .comparison-card-skeleton::after {
 .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(7) { height: 90%; }
 .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(8) { height: 50%; }
 
+/* ============================================================
+   MODAL STILLERI - strategies'e özel
+   ⭐ FAZ 2.1: z-index değişkenleri kullanılıyor
+   ============================================================ */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.85);
   backdrop-filter: blur(6px);
-  z-index: 400;
+  z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;

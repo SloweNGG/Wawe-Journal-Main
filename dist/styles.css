@@ -8,6 +8,9 @@
    ⭐ FAZ 1.1: --radius-lg eklendi (index.css'ten taşındı)
    ⭐ FAZ 2.1: Z-INDEX SKALASI eklendi
    ⭐ FAZ 2.3: Panel-glow ortak kısmı eklendi
+   ⭐ FAZ 4.1: Global transition KALDIRILDI (scope edildi)
+   ⭐ FAZ 4.2: prefers-reduced-motion desteği eklendi
+   ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
    ============================================================ */
 
 /* ============================================================
@@ -114,14 +117,60 @@ body.light-theme {
 }
 
 /* ============================================================
-   TEMA GEÇİŞİ (TEK TANIM)
+   ⭐ FAZ 4.1: SCOPE EDİLMİŞ TRANSITION - SADECE GEREKLİ BİLEŞENLER
    ============================================================ */
-body,
-body * {
+
+/* Sadece tema geçişi gerektiren bileşenler */
+.nav,
+.nav *,
+.btn,
+.btn-login,
+.btn-register,
+.btn-ghost,
+.btn-primary,
+.btn-danger,
+.s-card,
+.stat-card,
+.chart-card,
+.cal-day,
+.mini-cal-day,
+.strategy-card,
+.strategy-tags-card,
+.reference-card,
+.plan-card,
+.plan-card-home,
+.feat-card,
+.macos-mockup,
+.toggle-switch .toggle-slider,
+.panel-glow {
+  transition: background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease,
+              transform 0.2s ease;
+}
+
+/* Hover efektleri için ayrı transition */
+.btn:hover,
+.btn-login:hover,
+.btn-register:hover,
+.btn-ghost:hover,
+.btn-primary:hover,
+.btn-danger:hover,
+.stat-card:hover,
+.chart-card:hover,
+.cal-day:hover,
+.strategy-card:hover,
+.reference-card:hover,
+.plan-card:hover,
+.plan-card-home:hover,
+.feat-card:hover,
+.macos-mockup:hover {
   transition: background-color 0.15s ease,
               border-color 0.15s ease,
               color 0.15s ease,
-              box-shadow 0.15s ease;
+              box-shadow 0.15s ease,
+              transform 0.15s ease;
 }
 
 /* ============================================================
@@ -268,7 +317,6 @@ body.light-theme h4, body.light-theme h5 {
   padding: clamp(0.5rem, 1vw, 0.85rem) clamp(0.6rem, 1.2vw, 1rem);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 .stat-card:hover {
   border-color: var(--accent2);
@@ -292,7 +340,7 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.2rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .stat-card .stat-value {
   font-size: clamp(1.1rem, 2.5vw, 1.5rem);
@@ -314,7 +362,7 @@ body.light-theme h4, body.light-theme h5 {
   display: flex;
   align-items: center;
   gap: 3px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .stat-trend.positive { color: var(--green); }
 .stat-trend.negative { color: var(--red); }
@@ -338,7 +386,7 @@ body.light-theme h4, body.light-theme h5 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .kpi-value {
   font-size: clamp(0.7rem, 1.2vw, 0.9rem);
@@ -393,7 +441,6 @@ body.light-theme h4, body.light-theme h5 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: clamp(0.5rem, 0.8vw, 0.9rem) clamp(0.6rem, 1vw, 1rem);
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .chart-card:hover {
   border-color: rgba(139,92,246,0.3);
@@ -414,11 +461,11 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin: 0;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .chart-badge {
   font-size: clamp(8px, 0.7vw, 10px);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   padding: 2px 8px;
   border-radius: 20px;
   background: rgba(34,197,94,0.1);
@@ -428,7 +475,6 @@ body.light-theme h4, body.light-theme h5 {
   background: rgba(239,68,68,0.1);
   color: var(--red);
 }
-/* ⭐ FIX 4.1: chart-wrap boyutları KALDIRILDI - dashboard.css'te tek kaynak */
 
 /* Streak & Strategy */
 .streak-card, .strategy-tags-card {
@@ -436,7 +482,6 @@ body.light-theme h4, body.light-theme h5 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: clamp(0.6rem, 1vw, 1rem);
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .streak-card:hover, .strategy-tags-card:hover {
   border-color: rgba(139,92,246,0.3);
@@ -448,7 +493,7 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.5rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .streak-dots {
   display: flex;
@@ -461,7 +506,6 @@ body.light-theme h4, body.light-theme h5 {
   height: clamp(10px, 1.5vw, 14px);
   border-radius: 3px;
   background: var(--border);
-  transition: all 0.2s;
 }
 .streak-dot.win {
   background: var(--green);
@@ -506,7 +550,7 @@ body.light-theme h4, body.light-theme h5 {
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', monospace; /* ⭐ KALIR - kısa sembol */
 }
 .trade-icon.long {
   background: rgba(34,197,94,0.15);
@@ -519,7 +563,7 @@ body.light-theme h4, body.light-theme h5 {
   box-shadow: 0 0 8px rgba(239,68,68,0.2);
 }
 .trade-symbol {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', monospace; /* ⭐ KALIR - semboller */
   font-weight: 500;
   font-size: clamp(0.6rem, 1vw, 0.85rem);
   color: var(--text);
@@ -572,7 +616,7 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(0.5rem, 0.7vw, 0.7rem);
   color: var(--muted);
   text-align: right;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', monospace; /* ⭐ KALIR - tarih formatı */
 }
 
 /* ============================================================
@@ -650,7 +694,6 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(9px, 0.8vw, 12px);
   font-family: 'DM Sans', sans-serif;
   font-weight: 500;
-  transition: all 0.2s;
   border-radius: 40px;
   white-space: nowrap;
   min-height: 32px;
@@ -695,7 +738,7 @@ body.light-theme h4, body.light-theme h5 {
   margin-bottom: 0.4rem;
 }
 .cal-day-names .dname {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(7px, 0.7vw, 10px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -720,7 +763,6 @@ body.light-theme h4, body.light-theme h5 {
   min-height: clamp(40px, 8vw, 80px);
   padding: clamp(3px, 0.5vw, 6px) clamp(3px, 0.5vw, 8px);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 .cal-day:hover {
@@ -759,7 +801,7 @@ body.light-theme h4, body.light-theme h5 {
 .cal-day .day-pnl.positive { color: var(--green); }
 .cal-day .day-pnl.negative { color: var(--red); }
 .cal-day .day-trade-count {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(5px, 0.5vw, 8px);
   color: var(--muted);
   position: relative;
@@ -938,7 +980,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   line-height: 1.2;
 }
 .summary-mini-card .s-info .s-label {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(6px, 0.5vw, 8px);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1031,7 +1073,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   gap: clamp(3px, 0.4vw, 6px);
 }
 .calendar-day-popup .popup-trade .pt-badge {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(6px, 0.5vw, 8px);
   font-weight: 700;
   padding: 1px clamp(3px, 0.4vw, 6px);
@@ -1048,7 +1090,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: 1px solid rgba(239,68,68,0.2);
 }
 .calendar-day-popup .popup-trade .pt-symbol {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', monospace; /* ⭐ KALIR - sembol */
   font-weight: 500;
   color: var(--text);
 }
@@ -1102,9 +1144,9 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .ww-table th {
   border-bottom: 1px solid var(--border);
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(8px, 0.7vw, 11px);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.08em;
   padding: clamp(0.3rem, 0.5vw, 0.65rem) clamp(0.4rem, 0.6vw, 0.9rem);
   text-align: left;
@@ -1204,7 +1246,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-family: 'DM Sans', sans-serif;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
   min-height: 32px;
 }
 .sel-bar .sel-clear:hover {
@@ -1225,7 +1266,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-weight: 600;
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, #ef4444, #dc2626);
   box-shadow: 0 2px 12px rgba(239,68,68,0.25);
   letter-spacing: 0.02em;
@@ -1293,7 +1333,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .field input,
 .field select,
@@ -1305,7 +1345,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(12px, 1vw, 14px);
   padding: clamp(0.4rem, 0.6vw, 0.65rem) clamp(0.5rem, 0.7vw, 0.9rem);
-  transition: all 0.2s;
   outline: none;
   width: 100%;
 }
@@ -1329,7 +1368,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 600;
   padding: clamp(0.4rem, 0.6vw, 0.6rem) clamp(0.6rem, 1vw, 1.2rem);
-  transition: all 0.2s;
   display: inline-flex;
   align-items: center;
   gap: clamp(3px, 0.4vw, 6px);
@@ -1370,7 +1408,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 500;
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1.2rem);
-  transition: all 0.2s ease;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -1392,7 +1429,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 600;
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1.2rem);
-  transition: all 0.2s ease;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -1411,7 +1447,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 
 .badge {
   border-radius: 4px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(8px, 0.7vw, 11px);
   font-weight: 500;
   padding: 2px clamp(4px, 0.5vw, 7px);
@@ -1447,7 +1483,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   right: clamp(0.5rem, 1vw, 1rem);
   left: clamp(0.5rem, 1vw, 1rem);
   transform: translateY(8px);
-  transition: opacity 0.3s, transform 0.3s;
   z-index: var(--z-toast);
   max-width: min(400px, calc(100vw - 1rem));
   font-family: 'DM Sans', sans-serif;
@@ -1571,7 +1606,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: rgba(239,68,68,0.06);
   border: 1px solid rgba(239,68,68,0.15);
   border-radius: 8px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: clamp(9px, 0.7vw, 11px);
   color: var(--red);
   display: flex;
@@ -1597,7 +1632,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-weight: 500;
   padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.4rem);
   cursor: pointer;
-  transition: all 0.2s;
   min-height: 36px;
 }
 .confirm-modal-footer .btn-modal-cancel:hover {
@@ -1615,7 +1649,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-weight: 600;
   padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.6rem);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   box-shadow: 0 2px 12px rgba(239,68,68,0.25);
   min-height: 36px;
 }
@@ -1680,7 +1713,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   text-transform: uppercase;
   margin-bottom: 0.75rem;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .footer-col ul { list-style: none; padding: 0; }
 .footer-col ul li { margin-bottom: 0.4rem; }
@@ -1689,7 +1722,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   color: var(--muted);
   font-size: clamp(11px, 0.9vw, 13px);
   text-decoration: none;
-  transition: color 0.2s;
   font-family: 'DM Sans', sans-serif;
 }
 .footer-col ul li a:hover { color: var(--accent); }
@@ -1707,7 +1739,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   color: var(--muted);
   text-decoration: none;
   font-size: clamp(10px, 0.8vw, 12px);
-  transition: all 0.2s;
   font-family: 'DM Sans', sans-serif;
   min-height: 32px;
 }
@@ -1721,7 +1752,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: clamp(9px, 0.7vw, 11px);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 
 /* ============================================================
@@ -2009,7 +2040,6 @@ body.light-theme .skeleton-stat::after {
   padding: clamp(0.2rem, 0.3vw, 0.3rem) clamp(0.4rem, 0.6vw, 0.7rem);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
   white-space: nowrap;
   min-height: 32px;
 }
@@ -2037,7 +2067,6 @@ body.light-theme .skeleton-stat::after {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: var(--z-dropdown);
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   pointer-events: none;
@@ -2067,7 +2096,6 @@ body.light-theme .skeleton-stat::after {
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
-  transition: all 0.15s ease;
 }
 .nav-dropdown-menu a:hover {
   background: rgba(139,92,246,0.06);
@@ -2110,7 +2138,6 @@ body.light-theme .skeleton-stat::after {
   background: var(--surface2);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .plan-perks-box:hover {
   border-color: rgba(139, 92, 246, 0.2);
@@ -2148,7 +2175,6 @@ body.light-theme .skeleton-stat::after {
   background: var(--surface);
   border-radius: 8px;
   border: 1px solid var(--border);
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 }
 .plan-perks-box .perk-item:hover {
   border-color: rgba(139, 92, 246, 0.25);
@@ -2184,7 +2210,6 @@ body.light-theme .skeleton-stat::after {
   background: rgba(34,197,94,0.1);
   border: 1px solid rgba(34,197,94,0.2);
   color: var(--green);
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
   white-space: nowrap;
 }
 .plan-badge.premium {
@@ -2229,7 +2254,6 @@ body.light-theme .skeleton-stat::after {
   pointer-events: none;
   z-index: 0;
   opacity: 0.7;
-  transition: all 0.3s ease;
 }
 
 @keyframes glowPulse {
@@ -2239,6 +2263,52 @@ body.light-theme .skeleton-stat::after {
 
 body.light-theme .panel-glow {
   opacity: 0.5;
+}
+
+/* ============================================================
+   ⭐ FAZ 4.2: PREFERS-REDUCED-MOTION DESTEĞİ
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Animasyonlu elementleri varsayılan hallerine döndür */
+  .cal-day.today::before,
+  .cal-day.today .day-pulse,
+  .quick-add-loading .spinner,
+  .spinner,
+  .skeleton::after,
+  .skeleton-chart::after,
+  .skeleton-chart .skeleton-doughnut::before,
+  .skeleton-stat::after,
+  .skeleton-row .skeleton-cell::after,
+  .cal-grid-skeleton .skeleton-day::after,
+  .calendar-summary-skeleton .skeleton-stat::after,
+  .strategies-grid-skeleton .skeleton-strategy-card::after,
+  .comparison-skeleton .comparison-card-skeleton::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  /* Hareketli gradyanları durdur */
+  .plan-card.premium::before,
+  .plan-card.premium::after,
+  .plan-card-home.premium::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .bellShake,
+  .nav-bell-btn.has-alert {
+    animation: none !important;
+  }
 }
 
 /* ============================================================

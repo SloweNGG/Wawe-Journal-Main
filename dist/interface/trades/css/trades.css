@@ -2,6 +2,7 @@
    TRADES SAYFASI ÖZEL STILLER
    ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
    ⭐ FAZ 2.2: .confirm-modal kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
    ============================================================ */
 
 .trades-page .ww-table {
@@ -32,7 +33,7 @@
 .trades-page .ww-table th {
   border-bottom: 1px solid var(--border);
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -68,7 +69,7 @@
 }
 .trades-page .trade-note-row strong {
   color: var(--accent2);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -91,7 +92,7 @@
   align-items: center;
 }
 .symbol-text {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Mono', monospace; /* ⭐ KALIR - sembol */
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
@@ -102,7 +103,7 @@
   padding: 3px 10px;
   border-radius: 4px;
   font-size: 10px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-weight: 600;
 }
 .badge-long { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
@@ -113,7 +114,7 @@
   padding: 3px 10px;
   border-radius: 4px;
   font-size: 10px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-weight: 500;
   background: rgba(139,92,246,0.15);
   color: var(--accent2);
@@ -178,7 +179,7 @@
   transform: translateY(-2px);
 }
 .stat-card-label {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -318,7 +319,7 @@
   margin-top: 0.5rem;
 }
 .pagination-info {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
   font-size: 11px;
   color: var(--muted);
 }
@@ -392,7 +393,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
 }
 .field input, .field select, .field textarea {
   background: var(--surface2);
