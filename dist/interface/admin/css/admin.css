@@ -1,5 +1,7 @@
 /* ============================================================
    ADMIN PANEL - TÜM STİLLER (FONT DÜZELTMELİ)
+   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
+   ⭐ FAZ 2.3: .panel-glow ortak kısmı styles.css'te, sadece renk varyantları kaldı
    ============================================================ */
 
 /* ⭐ FONT TANIMLAMALARI */
@@ -200,19 +202,7 @@
   min-width: 0;
 }
 
-.panel-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 280px;
-  border-radius: var(--radius) var(--radius) 0 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.7;
-  transition: all 0.3s ease;
-}
-
+/* ⭐ FAZ 2.3: .panel-glow renk varyantları - ortak kısım styles.css'te */
 .panel-glow.users-glow {
   background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(139,92,246,0.5), transparent 70%);
   animation: glowPulse 3s ease-in-out infinite;
@@ -900,11 +890,14 @@ body.light-theme .panel-glow.prices-glow {
   font-variant-numeric: tabular-nums;
 }
 
+/* ============================================================
+   TOAST - z-index güncellendi
+   ============================================================ */
 .toast-container {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -964,12 +957,15 @@ body.light-theme .panel-glow.prices-glow {
   to { transform: rotate(360deg); }
 }
 
+/* ============================================================
+   MODAL - z-index güncellendi
+   ============================================================ */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(6px);
-  z-index: 400;
+  z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;

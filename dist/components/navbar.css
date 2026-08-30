@@ -3,6 +3,7 @@
    Tüm sayfalarda aynı navbar tasarımı
    FONT BOYUTLARI SABİTLENDİ - ANİMASYONLAR KALDIRILDI
    ⭐ AKTİF LİNK FLASH ÖNLENDİ - KAYMA OLMAZ
+   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
    ============================================================ */
 
 /* ============================================================
@@ -30,7 +31,7 @@
   width: 100%;
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -95,9 +96,9 @@ body.light-theme .nav {
   opacity: 0;
   animation: none !important;
   /* ⭐ YUMUŞAK GEÇİŞ - sadece opacity ve renk değişir, konum sabit */
-  transition: visibility 0.15s ease, 
+  transition: visibility 0.15s ease,
               opacity 0.2s ease,
-              color 0.15s ease, 
+              color 0.15s ease,
               background-color 0.15s ease;
 }
 
@@ -174,8 +175,8 @@ body.light-theme .nav {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), 
-              box-shadow 0.35s ease, 
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.35s ease,
               border-color 0.3s ease;
 }
 
@@ -290,7 +291,7 @@ body.light-theme .nav {
   visibility: hidden;
   transform: translateY(-8px) scale(0.96);
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 500;
+  z-index: var(--z-popover);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -514,8 +515,8 @@ body.light-theme .nav {
   object-fit: cover;
 }
 
-.user-avatar:hover { 
-  transform: scale(1.08); 
+.user-avatar:hover {
+  transform: scale(1.08);
   box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
@@ -525,8 +526,8 @@ body.light-theme .nav {
    BELL / BİLDİRİM
    ============================================================ */
 
-.nav-bell-wrapper { 
-  position: relative; 
+.nav-bell-wrapper {
+  position: relative;
 }
 
 .nav-bell-btn {
@@ -550,10 +551,10 @@ body.light-theme .nav {
   height: 16px;
 }
 
-.nav-bell-btn:hover { 
-  border-color: var(--accent); 
-  color: var(--accent); 
-  background: rgba(139,92,246,0.06); 
+.nav-bell-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(139,92,246,0.06);
 }
 
 .nav-bell-btn.has-alert {
@@ -600,14 +601,14 @@ body.light-theme .nav {
   visibility: hidden;
   transform: translateY(-8px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 400;
+  z-index: var(--z-bell);
   box-shadow: 0 12px 40px rgba(0,0,0,0.35);
 }
 
-.bell-panel.open { 
-  opacity: 1; 
-  visibility: visible; 
-  transform: translateY(0); 
+.bell-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .bell-panel-header {
@@ -629,10 +630,10 @@ body.light-theme .nav {
   margin: 0;
 }
 
-.bell-panel-header-actions { 
-  display: flex; 
-  align-items: center; 
-  gap: 6px; 
+.bell-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .bell-mark-read-btn {
@@ -651,25 +652,25 @@ body.light-theme .nav {
   transition: all 0.2s;
 }
 
-.bell-mark-read-btn:hover { 
-  background: rgba(34,197,94,0.18); 
-  border-color: rgba(34,197,94,0.4); 
-  transform: translateY(-1px); 
+.bell-mark-read-btn:hover {
+  background: rgba(34,197,94,0.18);
+  border-color: rgba(34,197,94,0.4);
+  transform: translateY(-1px);
 }
 
-.bell-panel-close { 
-  background: none; 
-  border: none; 
-  color: var(--muted); 
-  font-size: 1rem; 
-  cursor: pointer; 
+.bell-panel-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
   padding: 4px;
 }
 
 .bell-panel-close:hover { color: var(--accent); }
 
-.bell-panel-body { 
-  padding: 0.75rem 1rem; 
+.bell-panel-body {
+  padding: 0.75rem 1rem;
 }
 
 .bell-panel-empty {
@@ -684,13 +685,13 @@ body.light-theme .nav {
   gap: 6px;
 }
 
-.bell-panel-empty .empty-icon { 
-  font-size: 20px; 
-  opacity: 0.5; 
+.bell-panel-empty .empty-icon {
+  font-size: 20px;
+  opacity: 0.5;
 }
 
 /* ============================================================
-   DROPDOWN MENU
+   DROPDOWN MENU - z-index güncellendi
    ============================================================ */
 
 .dropdown-menu {
@@ -705,16 +706,16 @@ body.light-theme .nav {
   visibility: hidden;
   transform: translateY(-6px) scale(0.96);
   transition: opacity 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.34,1.56,0.64,1), visibility 0.22s;
-  z-index: 300;
+  z-index: var(--z-dropdown);
   box-shadow: 0 20px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.1);
   overflow: hidden;
   transform-origin: top right;
 }
 
-.dropdown-menu.show { 
-  opacity: 1; 
-  visibility: visible; 
-  transform: translateY(0) scale(1); 
+.dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
 }
 
 .dropdown-item {
@@ -734,20 +735,20 @@ body.light-theme .nav {
   text-align: left;
 }
 
-.dropdown-item:hover { 
-  background: rgba(139,92,246,0.1); 
-  color: var(--accent2); 
-  padding-left: 17px; 
+.dropdown-item:hover {
+  background: rgba(139,92,246,0.1);
+  color: var(--accent2);
+  padding-left: 17px;
 }
 
-.dropdown-divider { 
-  height: 1px; 
-  background: var(--border); 
-  margin: 4px 0; 
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
 }
 
 /* ============================================================
-   PREMIUM DROPDOWN
+   PREMIUM DROPDOWN - z-index güncellendi
    ============================================================ */
 
 .nav-dropdown {
@@ -800,7 +801,7 @@ body.light-theme .nav {
   visibility: hidden;
   transform: translateY(-8px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 9999;
+  z-index: var(--z-dropdown);
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   pointer-events: none;
 }
@@ -868,9 +869,9 @@ body.light-theme .nav {
   padding: 0;
 }
 
-.nav-toggle:hover { 
-  border-color: var(--accent); 
-  background: rgba(139,92,246,0.06); 
+.nav-toggle:hover {
+  border-color: var(--accent);
+  background: rgba(139,92,246,0.06);
 }
 
 .nav-toggle:active { transform: scale(0.94); }
@@ -889,7 +890,7 @@ body.light-theme .nav {
 .nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
 /* ============================================================
-   MOBILE MENU
+   MOBILE MENU - z-index güncellendi
    ============================================================ */
 
 .nav-backdrop {
@@ -898,14 +899,14 @@ body.light-theme .nav {
   inset: 0;
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
-  z-index: 150;
+  z-index: var(--z-backdrop);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.nav-backdrop.open { 
-  display: block; 
-  opacity: 1; 
+.nav-backdrop.open {
+  display: block;
+  opacity: 1;
 }
 
 .nav-menu {
@@ -917,7 +918,7 @@ body.light-theme .nav {
   width: 260px;
   background: var(--surface);
   border-left: 1px solid var(--border);
-  z-index: 160;
+  z-index: var(--z-menu);
   padding: 1rem;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
@@ -953,15 +954,15 @@ body.light-theme .nav {
 }
 
 .nav-menu-inner a:hover,
-.nav-menu-inner button:hover { 
-  color: var(--accent2); 
-  background: rgba(139,92,246,0.1); 
-  padding-left: 1.25rem; 
+.nav-menu-inner button:hover {
+  color: var(--accent2);
+  background: rgba(139,92,246,0.1);
+  padding-left: 1.25rem;
 }
 
-.nav-menu-inner a.active { 
-  color: var(--accent2); 
-  background: rgba(139,92,246,0.15); 
+.nav-menu-inner a.active {
+  color: var(--accent2);
+  background: rgba(139,92,246,0.15);
 }
 
 .nav-menu-inner a.active::before {
@@ -977,10 +978,10 @@ body.light-theme .nav {
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
-.nav-menu-inner hr { 
-  border: none; 
-  border-top: 1px solid var(--border); 
-  margin: 0.5rem 0; 
+.nav-menu-inner hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.5rem 0;
 }
 
 .nav-menu-inner .mobile-premium-label {
@@ -1005,45 +1006,45 @@ body.light-theme .nav {
 
 /* 767px ve altı - tablet ve telefon */
 @media (max-width: 767px) {
-  .nav-toggle { 
-    display: inline-flex; 
+  .nav-toggle {
+    display: inline-flex;
   }
-  
-  .nav-links { 
-    display: none !important; 
+
+  .nav-links {
+    display: none !important;
   }
-  
-  .nav-dropdown { 
-    display: none !important; 
+
+  .nav-dropdown {
+    display: none !important;
   }
-  
-  .nav-menu { 
-    display: block; 
+
+  .nav-menu {
+    display: block;
   }
-  
-  .nav-right { 
-    gap: 0.3rem; 
+
+  .nav-right {
+    gap: 0.3rem;
   }
-  
-  .nav { 
-    padding: 0 1rem; 
+
+  .nav {
+    padding: 0 1rem;
     height: 56px;
     min-height: 56px;
     max-height: 56px;
     font-size: var(--nav-font-size-sm);
   }
-  
+
   .nav-notebook-name {
     max-width: 80px;
     font-size: 0.6875rem; /* 11px → 0.6875rem */
   }
-  
+
   .nav-notebook-btn {
     padding: 0.2rem 0.5rem;
     min-height: 28px;
     font-size: 0.75rem; /* 12px → 0.75rem */
   }
-  
+
   .nav-notebook-dropdown {
     position: fixed;
     top: 48px;
@@ -1053,52 +1054,52 @@ body.light-theme .nav {
     max-width: unset;
     width: auto;
   }
-  
+
   .nav-logo-text {
     font-size: 0.95rem;
   }
-  
+
   .logo-icon {
     width: 26px;
     height: 26px;
   }
-  
+
   .logo-icon .logo-icon-svg {
     width: 16px;
     height: 16px;
   }
-  
+
   .user-avatar {
     width: 28px;
     height: 28px;
     font-size: 0.6875rem; /* 11px → 0.6875rem */
   }
-  
+
   .nav-bell-btn {
     width: 28px;
     height: 28px;
   }
-  
+
   .nav-bell-btn svg {
     width: 14px;
     height: 14px;
   }
-  
+
   .plan-badge {
     height: 24px;
     font-size: 0.5rem; /* 8px → 0.5rem */
     padding: 0.1rem 0.4rem 0.1rem 0.3rem;
   }
-  
+
   .plan-badge .plan-dot {
     width: 4px;
     height: 4px;
   }
-  
+
   .plan-badge .plan-text {
     font-size: 0.5rem; /* 8px → 0.5rem */
   }
-  
+
   .bell-panel {
     position: fixed;
     top: 54px;
@@ -1118,101 +1119,101 @@ body.light-theme .nav {
     max-height: 48px;
     font-size: var(--nav-font-size-xs);
   }
-  
+
   .nav-right {
     gap: 0.2rem;
   }
-  
+
   .nav-notebook-name {
     max-width: 60px;
     font-size: 0.625rem; /* 10px → 0.625rem */
   }
-  
+
   .nav-notebook-btn {
     padding: 0.15rem 0.4rem;
     min-height: 24px;
     font-size: 0.6875rem; /* 11px → 0.6875rem */
   }
-  
+
   .nav-notebook-dropdown {
     top: 44px;
     right: 4px;
     left: 4px;
   }
-  
+
   .nav-logo-text {
     font-size: 0.85rem;
   }
-  
+
   .logo-icon {
     width: 24px;
     height: 24px;
   }
-  
+
   .logo-icon .logo-icon-svg {
     width: 14px;
     height: 14px;
   }
-  
+
   .user-avatar {
     width: 26px;
     height: 26px;
     font-size: 0.625rem; /* 10px → 0.625rem */
   }
-  
+
   .nav-bell-btn {
     width: 26px;
     height: 26px;
   }
-  
+
   .nav-bell-btn svg {
     width: 13px;
     height: 13px;
   }
-  
+
   .nav-toggle {
     width: 32px;
     height: 32px;
   }
-  
+
   .nav-toggle .bar {
     width: 15px;
   }
-  
+
   .plan-badge {
     height: 22px;
     font-size: 0.4375rem; /* 7px → 0.4375rem */
     padding: 0.05rem 0.3rem 0.05rem 0.2rem;
   }
-  
+
   .plan-badge .plan-dot {
     width: 3px;
     height: 3px;
   }
-  
+
   .plan-badge .plan-text {
     font-size: 0.4375rem; /* 7px → 0.4375rem */
   }
-  
+
   .bell-panel {
     top: 48px;
     right: 4px;
     left: 4px;
   }
-  
+
   .bell-panel-header {
     padding: 0.5rem 0.6rem;
   }
-  
+
   .bell-panel-body {
     padding: 0.4rem 0.5rem;
   }
-  
+
   .dropdown-menu {
     top: 40px;
     min-width: 150px;
   }
-  
+
   .dropdown-item {
     font-size: 0.75rem; /* 12px → 0.75rem */
     padding: 8px 12px;
@@ -1227,63 +1228,63 @@ body.light-theme .nav {
     min-height: 44px;
     max-height: 44px;
   }
-  
+
   .nav-right {
     gap: 0.15rem;
   }
-  
+
   .nav-notebook-name {
     display: none;
   }
-  
+
   .nav-notebook-btn {
     padding: 0.15rem 0.3rem;
     min-height: 22px;
   }
-  
+
   .nav-logo-text {
     font-size: 0.75rem;
   }
-  
+
   .logo-icon {
     width: 22px;
     height: 22px;
   }
-  
+
   .logo-icon .logo-icon-svg {
     width: 12px;
     height: 12px;
   }
-  
+
   .user-avatar {
     width: 24px;
     height: 24px;
     font-size: 0.5625rem; /* 9px → 0.5625rem */
   }
-  
+
   .nav-bell-btn {
     width: 24px;
     height: 24px;
   }
-  
+
   .nav-bell-btn svg {
     width: 12px;
     height: 12px;
   }
-  
+
   .nav-toggle {
     width: 28px;
     height: 28px;
   }
-  
+
   .nav-toggle .bar {
     width: 13px;
   }
-  
+
   .plan-badge {
     display: none !important;
   }
-  
+
   .bell-panel {
     top: 42px;
     right: 2px;
@@ -1307,12 +1308,12 @@ body.light-theme .nav {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   .nav-bell-btn {
     min-height: 36px;
     min-width: 36px;
   }
-  
+
   .bell-panel-close {
     min-height: 36px;
     min-width: 36px;
@@ -1393,7 +1394,7 @@ body.light-theme .nav {
   .strategies-main {
     animation: fadeInContent 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
-  
+
   @keyframes fadeInContent {
     0% {
       opacity: 0;

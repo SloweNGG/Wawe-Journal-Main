@@ -1,5 +1,8 @@
 /* ============================================================
    SETTINGS WRAP - MOBIL OPTIMIZE
+   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
+   ⭐ FAZ 2.2: .confirm-modal-overlay kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 2.3: .panel-glow ortak kısmı styles.css'te, sadece renk varyantları kaldı
    ============================================================ */
 .settings-wrap {
   display: grid;
@@ -122,19 +125,7 @@
   min-width: 0;
 }
 
-.panel-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: clamp(140px, 30vh, 280px);
-  border-radius: var(--radius) var(--radius) 0 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.7;
-  transition: all 0.3s ease;
-}
-
+/* ⭐ FAZ 2.3: .panel-glow renk varyantları - ortak kısım styles.css'te */
 .panel-glow.profile-glow {
   background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(139,92,246,0.5), transparent 70%);
   animation: glowPulse 3s ease-in-out infinite;
@@ -158,11 +149,6 @@
 .panel-glow.overtrade-glow {
   background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(251,191,36,0.6), transparent 70%);
   animation: glowPulse 2.5s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
 }
 
 body.light-theme .panel-glow.profile-glow {
@@ -245,8 +231,8 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--muted);
   margin: .1rem 0 0;
 }
-.s-card-body { 
-  padding: clamp(0.6rem, 1vw, 1.1rem) clamp(0.6rem, 1.2vw, 1.25rem); 
+.s-card-body {
+  padding: clamp(0.6rem, 1vw, 1.1rem) clamp(0.6rem, 1.2vw, 1.25rem);
 }
 
 /* ============================================================
@@ -948,12 +934,12 @@ body.light-theme .panel-glow.overtrade-glow {
   padding: clamp(0.3rem, 0.5vw, 0.5rem) 0;
   flex-wrap: wrap;
 }
-.danger-action-desc { 
-  font-size: clamp(10px, 0.8vw, 12.5px); 
-  color: var(--muted); 
-  line-height: 1.6; 
-  flex: 1; 
-  min-width: 140px; 
+.danger-action-desc {
+  font-size: clamp(10px, 0.8vw, 12.5px);
+  color: var(--muted);
+  line-height: 1.6;
+  flex: 1;
+  min-width: 140px;
 }
 .btn-outline-danger {
   background: transparent;
@@ -1002,10 +988,10 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--text);
   margin: 0 0 .25rem;
 }
-.settings-page-header p { 
-  font-size: clamp(11px, 0.9vw, 13px); 
-  color: var(--muted); 
-  margin: 0; 
+.settings-page-header p {
+  font-size: clamp(11px, 0.9vw, 13px);
+  color: var(--muted);
+  margin: 0;
 }
 
 .settings-tabs-mobile {
@@ -1523,139 +1509,9 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 /* ============================================================
-   CONFIRM MODAL
+   CONFIRM MODAL - KALDIRILDI (styles.css'te tek kaynak)
    ============================================================ */
-.confirm-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 1000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-.confirm-modal-overlay.active { display: flex; }
-.confirm-modal-box {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: clamp(12px, 2vw, 16px);
-  max-width: min(420px, 92vw);
-  width: 100%;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  animation: modalSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-@keyframes modalSlideIn {
-  from { opacity: 0; transform: scale(0.92) translateY(12px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.confirm-modal-header {
-  padding: clamp(0.6rem, 1vw, 1.1rem) clamp(0.8rem, 1.2vw, 1.5rem);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: clamp(8px, 1vw, 12px);
-}
-.confirm-modal-header .icon-wrap {
-  width: clamp(28px, 4vw, 36px);
-  height: clamp(28px, 4vw, 36px);
-  border-radius: 50%;
-  background: rgba(239, 68, 68, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.confirm-modal-header .icon-wrap svg {
-  width: clamp(14px, 1.8vw, 18px);
-  height: clamp(14px, 1.8vw, 18px);
-  stroke: var(--red);
-  stroke-width: 2;
-}
-.confirm-modal-header h3 {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(0.85rem, 1vw, 1rem);
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
-}
-.confirm-modal-body {
-  padding: clamp(0.75rem, 1vw, 1.25rem) clamp(0.8rem, 1.2vw, 1.5rem);
-}
-.confirm-modal-body p {
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(11px, 0.9vw, 13px);
-  color: var(--muted);
-  line-height: 1.6;
-  margin: 0;
-}
-.confirm-modal-body .warning-text {
-  margin-top: 0.5rem;
-  padding: clamp(0.3rem, 0.5vw, 0.6rem) clamp(0.5rem, 0.7vw, 1rem);
-  background: rgba(239, 68, 68, 0.06);
-  border: 1px solid rgba(239, 68, 68, 0.15);
-  border-radius: 10px;
-  font-family: 'DM Mono', monospace;
-  font-size: clamp(9px, 0.7vw, 11px);
-  color: var(--red);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.confirm-modal-body .warning-text svg {
-  width: clamp(12px, 1.2vw, 14px);
-  height: clamp(12px, 1.2vw, 14px);
-  stroke: currentColor;
-  flex-shrink: 0;
-}
-.confirm-modal-footer {
-  padding: clamp(0.5rem, 0.8vw, 1rem) clamp(0.8rem, 1.2vw, 1.5rem) clamp(0.75rem, 1vw, 1.25rem);
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(6px, 0.8vw, 10px);
-  justify-content: flex-end;
-}
-.confirm-modal-footer .btn-modal-cancel {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 40px;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(10px, 0.8vw, 12px);
-  font-weight: 500;
-  padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.4rem);
-  cursor: pointer;
-  transition: all 0.2s;
-  min-height: 36px;
-}
-.confirm-modal-footer .btn-modal-cancel:hover {
-  border-color: var(--accent);
-  color: var(--text);
-  background: rgba(139,92,246,0.05);
-}
-.confirm-modal-footer .btn-modal-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: none;
-  border-radius: 40px;
-  color: #fff;
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(10px, 0.8vw, 12px);
-  font-weight: 600;
-  padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.6rem);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.25);
-  min-height: 36px;
-}
-.confirm-modal-footer .btn-modal-danger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4);
-}
-.confirm-modal-footer .btn-modal-danger:active { transform: scale(0.96); }
+/* .confirm-modal-overlay, .confirm-modal-box, etc. artık styles.css'ten gelir */
 
 /* ============================================================
    AVATAR POPUP
@@ -1666,7 +1522,7 @@ body.light-theme .panel-glow.overtrade-glow {
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  z-index: 2000;
+  z-index: var(--z-avatar-popup);
   display: none;
   align-items: center;
   justify-content: center;
@@ -1746,14 +1602,14 @@ body.light-theme .panel-glow.overtrade-glow {
 
 /* 720px ve altı - tablet */
 @media (max-width: 720px) {
-  .settings-wrap { 
-    grid-template-columns: 1fr; 
+  .settings-wrap {
+    grid-template-columns: 1fr;
   }
-  .settings-sidebar { 
-    display: none; 
+  .settings-sidebar {
+    display: none;
   }
-  .settings-tabs-mobile { 
-    display: flex; 
+  .settings-tabs-mobile {
+    display: flex;
   }
   .avatar-popup-body .big-avatar {
     max-width: min(300px, 80vw);
@@ -1761,50 +1617,47 @@ body.light-theme .panel-glow.overtrade-glow {
   .plan-card .plan-features {
     grid-template-columns: 1fr;
   }
-  .confirm-modal-box {
-    margin: 0 0.5rem;
-  }
 }
 
 /* 767px ve altı - mobil navbar */
 @media (max-width: 767px) {
-  .nav-links { 
-    display: none !important; 
+  .nav-links {
+    display: none !important;
   }
-  .nav-right { 
-    margin-left: auto; 
+  .nav-right {
+    margin-left: auto;
   }
-  .theme-toggle-row { 
-    flex-direction: column; 
-    align-items: flex-start; 
+  .theme-toggle-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  .lang-selector-compact { 
-    margin-top: 0.3rem; 
+  .lang-selector-compact {
+    margin-top: 0.3rem;
   }
-  .currency-selector-compact { 
-    margin-top: 0.3rem; 
+  .currency-selector-compact {
+    margin-top: 0.3rem;
   }
 }
 
 /* 480px ve altı - telefon */
 @media (max-width: 480px) {
-  .info-row { 
-    flex-direction: column; 
-    align-items: flex-start; 
-    gap: .25rem; 
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .25rem;
   }
-  .info-value { 
-    text-align: left; 
+  .info-value {
+    text-align: left;
   }
-  .danger-action-row { 
-    flex-direction: column; 
+  .danger-action-row {
+    flex-direction: column;
   }
-  .panel-glow { 
-    height: 120px; 
+  .panel-glow {
+    height: 120px;
   }
-  .avatar-upload-container { 
-    flex-direction: column; 
-    align-items: flex-start; 
+  .avatar-upload-container {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .avatar-popup-body .big-avatar {
     max-width: min(240px, 75vw);
@@ -1920,18 +1773,16 @@ body.light-theme .panel-glow.overtrade-glow {
   .plan-card .plan-actions .btn-premium,
   .plan-card .plan-actions .btn-premium-outline,
   .ot-premium-locked .btn-premium-cta,
-  .confirm-modal-footer .btn-modal-cancel,
-  .confirm-modal-footer .btn-modal-danger,
   .avatar-popup-close {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   .lang-compact-btn,
   .currency-btn {
     min-height: 36px;
   }
-  
+
   .avatar-popup-close {
     min-height: 32px;
     min-width: 32px;

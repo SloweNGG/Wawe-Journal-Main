@@ -4,6 +4,12 @@
    ⭐ FİX: 4.1 chart-wrap boyutları burada TEK kaynak
    ⭐ FİX: 4.2 mini-cal-day boyutları burada TEK kaynak
    ⭐ FİX: 4.3 .stat-card::before accent-color kullanıyor
+   ⭐ FAZ 2.1: goal-modal-overlay z-index var(--z-modal-overlay) kullanıyor
+   ⭐ FAZ 3.1: skeleton shimmer kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 3.2: spinner kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 3.3: dotPulse kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FAZ 3.4: .stat-card kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FONT: DM Mono kullanılmıyor (JetBrains Mono ve Inter kullanılıyor)
    ============================================================ */
 
 .goal-edit-btn {
@@ -52,7 +58,7 @@
   inset: 0;
   background: rgba(0,0,0,.85);
   backdrop-filter: blur(6px);
-  z-index: 500;
+  z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;
@@ -564,8 +570,8 @@ body.light-theme .mini-cal-day.loss:hover {
 }
 
 /* ============================================================
-   STAT CARD
-   ⭐ FİX 4.3: accent-color kullanılıyor
+   STAT CARD - SADECE DASHBOARD'A ÖZEL EKLEMELER
+   ⭐ FAZ 3.4: .stat-card'ın kendisi styles.css'ten gelir, sadece trend stili burada
    ============================================================ */
 .stat-card .stat-trend {
   font-size: clamp(9px, 0.9vw, 12px);
@@ -585,21 +591,9 @@ body.light-theme .mini-cal-day.loss:hover {
   color: var(--red);
   text-shadow: 0 0 8px rgba(239,68,68,0.15);
 }
-.stat-card {
-  padding: clamp(0.3rem, 1.5vw, 0.7rem) clamp(0.4rem, 2vw, 0.9rem);
-}
-.stat-card .stat-value {
-  font-size: clamp(0.8rem, 3vw, 1.2rem);
-}
-.stat-card .stat-label {
-  font-size: clamp(6px, 1.6vw, 9px);
-}
 /* ⭐ FİX 4.3: kart üst çizgisi kendi accent-color'ını kullanır */
 .stat-card::before {
   background: var(--accent-color, var(--accent));
-}
-.stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(clamp(80px, 22vw, 140px), 1fr));
 }
 
 /* ============================================================
@@ -612,6 +606,10 @@ body.light-theme .mini-cal-day.loss:hover {
 .page-header h1 { font-size: clamp(1rem, 4vw, 1.5rem); }
 .kpi-label { font-size: clamp(7px, 1.8vw, 10px); }
 .kpi-value { font-size: clamp(0.7rem, 2.5vw, 1rem); }
+
+/* ⭐ FAZ 3.2: .spinner kopyası KALDIRILDI - styles.css'te tek kaynak */
+
+/* ⭐ FAZ 3.3: @keyframes dotPulse kopyası KALDIRILDI - styles.css'te tek kaynak */
 
 /* ============================================================
    RESPONSIVE — SADECE LAYOUT
