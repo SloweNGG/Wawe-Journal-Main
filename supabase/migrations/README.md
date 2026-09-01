@@ -14,3 +14,10 @@ The browser-side writes to `plan` and `plan_expires_at` have been removed from
 the source. Apply the migration in the Supabase SQL Editor or with a linked
 Supabase CLI project only after deploying that client change. Verify the first
 registration and admin account immediately after applying it.
+
+
+-------------------------
+
+repomix commands for ai developments. 
+
+

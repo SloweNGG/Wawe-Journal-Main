@@ -1,7 +1,8 @@
 /* ============================================================
    NAVBAR - TEK DOSYA (components/navbar.css)
    Tüm sayfalarda aynı navbar tasarımı
-   FONT BOYUTLARI SABİTLENDİ - ANİMASYONLAR KALDIRILDI
+   ⭐ GLASSMORPHIC CAM EFEKTİ EKLENDİ
+   ⭐ FONT BOYUTLARI SABİTLENDİ - ANİMASYONLAR KALDIRILDI
    ⭐ AKTİF LİNK FLASH ÖNLENDİ - KAYMA OLMAZ
    ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
    ============================================================ */
@@ -15,10 +16,17 @@
   --nav-font-size-sm: 12px;
   --nav-font-size-xs: 10px;
   --nav-line-height: 1.5;
+  
+  /* ⭐ GLASSMORPHIC DEĞİŞKENLER */
+  --glass-bg: rgba(10, 10, 18, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+  --glass-blur: 32px;
+  --glass-saturate: 200%;
 }
 
 /* ============================================================
-   NAVIGATION - SABİT VE OYNAMAYAN
+   NAVIGATION - GLASSMORPHIC CAM EFEKTLİ
    ============================================================ */
 
 .nav {
@@ -35,13 +43,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(7,7,12,0.72);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 32px -16px rgba(0,0,0,0.4);
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-  /* ⭐ FONT BOYUTU SABİT - ANİMASYON YOK */
+  
+  /* ⭐ GLASSMORPHIC CAM EFEKTİ */
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.02) inset;
+  
+  transition: background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              box-shadow 0.3s ease,
+              backdrop-filter 0.3s ease;
+  
   font-size: var(--nav-font-size);
   line-height: var(--nav-line-height);
   animation: none !important;
@@ -53,13 +68,66 @@
   line-height: inherit;
 }
 
+/* ⭐ LIGHT THEME - GLASSMORPHIC */
 body.light-theme .nav {
-  background: rgba(255,255,255,0.72);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 12px 32px -18px rgba(15,23,42,0.12);
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(0, 0, 0, 0.04);
+  --glass-shadow: 0 4px 32px rgba(15, 23, 42, 0.06);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.6) inset;
+}
+
+/* ⭐ DARK THEME - GLASSMORPHIC (daha koyu cam) */
+body:not(.light-theme) .nav {
+  --glass-bg: rgba(7, 7, 12, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.04);
+  --glass-shadow: 0 4px 32px rgba(0, 0, 0, 0.12);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.02) inset;
+}
+
+/* ⭐ GLOW BORDER - ALTTAN IŞIKLI ÇİZGİ */
+.nav::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(139, 92, 246, 0.15) 20%, 
+    rgba(139, 92, 246, 0.4) 50%, 
+    rgba(139, 92, 246, 0.15) 80%, 
+    transparent 100%
+  );
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
+}
+
+.nav:hover::after {
+  opacity: 1;
+}
+
+/* ⭐ GLOW BORDER - LIGHT THEME */
+body.light-theme .nav::after {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(139, 92, 246, 0.1) 20%, 
+    rgba(139, 92, 246, 0.3) 50%, 
+    rgba(139, 92, 246, 0.1) 80%, 
+    transparent 100%
+  );
 }
 
 /* ============================================================
-   ⭐ NAV LINKS - FLASH ÖNLEYİCİ (KAYMA OLMAZ)
+   NAV LINKS - FLASH ÖNLEYİCİ (KAYMA OLMAZ)
    ============================================================ */
 
 .nav-links {
@@ -78,7 +146,7 @@ body.light-theme .nav {
 .nav-links a {
   position: relative;
   color: var(--muted);
-  font-size: 0.8125rem; /* 13px → 0.8125rem */
+  font-size: 0.8125rem;
   font-weight: 500;
   padding: 0.45rem 0.6rem;
   border-radius: 7px;
@@ -91,15 +159,14 @@ body.light-theme .nav {
   align-items: center;
   justify-content: center;
   isolation: isolate;
-  /* ⭐ FLASH ÖNLEYİCİ - görünmez ama yer kaplar, KAYMA OLMAZ */
   visibility: hidden;
   opacity: 0;
   animation: none !important;
-  /* ⭐ YUMUŞAK GEÇİŞ - sadece opacity ve renk değişir, konum sabit */
   transition: visibility 0.15s ease,
               opacity 0.2s ease,
               color 0.15s ease,
-              background-color 0.15s ease;
+              background-color 0.15s ease,
+              transform 0.2s ease;
 }
 
 /* ⭐ Navbar yüklendikten sonra görünür ol - KAYMA YOK */
@@ -113,10 +180,18 @@ body.light-theme .nav {
   visibility: visible !important;
   opacity: 1 !important;
   color: var(--accent2);
-  background: rgba(139,92,246,0.1);
+  background: rgba(139, 92, 246, 0.12);
   transition: none !important;
 }
 
+/* ⭐ Link hover - cam etkisine uyumlu */
+.nav-links a:hover {
+  color: var(--accent2);
+  background: rgba(139, 92, 246, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ⭐ Aktif link çizgisi - GLOW efektli */
 .nav-links a::after {
   content: '';
   position: absolute;
@@ -127,13 +202,8 @@ body.light-theme .nav {
   border-radius: 2px;
   background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
   transform: translateX(-50%);
-  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 6px rgba(139,92,246,0.1);
-}
-
-.nav-links a:hover {
-  color: var(--accent2);
-  background: rgba(139,92,246,0.08);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.1);
 }
 
 .nav-links a:hover::after {
@@ -144,13 +214,13 @@ body.light-theme .nav {
 /* ⭐ Aktif link çizgisi - hemen göster, ANİMASYONSUZ */
 .nav-links a.active::after {
   width: 24px !important;
-  box-shadow: 0 0 14px var(--accent-glow), 0 0 30px rgba(139,92,246,0.1);
+  box-shadow: 0 0 14px var(--accent-glow), 0 0 30px rgba(139, 92, 246, 0.1);
   background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
   transition: none !important;
 }
 
 /* ============================================================
-   NAV LOGO - SABİT BOYUT
+   NAV LOGO - GLASSMORPHIC UYUMLU
    ============================================================ */
 
 .nav-logo {
@@ -168,8 +238,8 @@ body.light-theme .nav {
 .logo-icon {
   width: 30px;
   height: 30px;
-  background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(139,92,246,0.05));
-  border: 1px solid rgba(139,92,246,0.3);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.05));
+  border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -190,8 +260,8 @@ body.light-theme .nav {
 
 .nav-logo:hover .logo-icon {
   transform: rotate(-6deg) scale(1.06);
-  box-shadow: 0 0 16px var(--accent-glow);
-  border-color: rgba(139,92,246,0.5);
+  box-shadow: 0 0 24px var(--accent-glow);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .nav-logo:hover .logo-icon .logo-icon-svg {
@@ -213,8 +283,23 @@ body.light-theme .nav {
   -webkit-text-fill-color: transparent;
 }
 
+/* ⭐ VERSION BADGE - YENİ */
+.nav-version {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  margin-left: 2px;
+  opacity: 0.6;
+  letter-spacing: 0.04em;
+}
+
 /* ============================================================
-   📓 NOTEBOOK SELECTOR - DEFTER SEÇİCİ
+   📓 NOTEBOOK SELECTOR - GLASSMORPHIC UYUMLU
    ============================================================ */
 
 .nav-notebook-wrapper {
@@ -227,23 +312,29 @@ body.light-theme .nav {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   padding: 0.3rem 0.7rem;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.8125rem; /* 13px → 0.8125rem */
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text);
   min-height: 32px;
   white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body.light-theme .nav-notebook-btn {
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .nav-notebook-btn:hover {
   border-color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  background: rgba(139, 92, 246, 0.08);
   transform: translateY(-1px);
 }
 
@@ -275,25 +366,33 @@ body.light-theme .nav {
   color: var(--accent);
 }
 
-/* 📋 DROPDOWN */
+/* 📋 DROPDOWN - GLASSMORPHIC */
 .nav-notebook-dropdown {
   position: absolute;
   top: 42px;
   right: 0;
   min-width: 240px;
   max-width: 320px;
-  background: var(--surface);
-  border: 1px solid var(--border2);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   padding: 6px 0;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.05);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px) scale(0.96);
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: var(--z-popover);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+}
+
+body.light-theme .nav-notebook-dropdown {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.12);
 }
 
 .nav-notebook-dropdown.open {
@@ -328,7 +427,7 @@ body.light-theme .nav {
   border: none;
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.8125rem; /* 13px → 0.8125rem */
+  font-size: 0.8125rem;
   font-weight: 400;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -336,12 +435,12 @@ body.light-theme .nav {
 }
 
 .nav-notebook-item:hover {
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(139, 92, 246, 0.08);
   color: var(--accent);
 }
 
 .nav-notebook-item.active {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(139, 92, 246, 0.12);
   color: var(--accent2);
   font-weight: 500;
 }
@@ -358,7 +457,7 @@ body.light-theme .nav {
 }
 
 .nav-notebook-item-badge {
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   opacity: 0.7;
   margin-left: auto;
 }
@@ -366,7 +465,7 @@ body.light-theme .nav {
 .nav-notebook-item-check {
   color: var(--accent);
   font-weight: 700;
-  font-size: 0.875rem; /* 14px → 0.875rem */
+  font-size: 0.875rem;
   margin-left: auto;
 }
 
@@ -374,7 +473,7 @@ body.light-theme .nav {
   padding: 1.5rem 1rem;
   text-align: center;
   color: var(--muted);
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   font-family: 'DM Sans', sans-serif;
 }
 
@@ -402,7 +501,7 @@ body.light-theme .nav {
   border: none;
   color: var(--muted);
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -412,7 +511,7 @@ body.light-theme .nav {
 }
 
 .nav-notebook-action:hover {
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(139, 92, 246, 0.08);
   color: var(--accent);
 }
 
@@ -435,7 +534,7 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   PLAN BADGE - DÜZGÜN BOYUT
+   PLAN BADGE - GLASSMORPHIC UYUMLU
    ============================================================ */
 
 .plan-badge {
@@ -445,19 +544,21 @@ body.light-theme .nav {
   padding: 0.2rem 0.7rem 0.2rem 0.5rem;
   border-radius: 20px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.625rem; /* 10px → 0.625rem */
+  font-size: 0.625rem;
   font-weight: 600;
-  background: rgba(34,197,94,0.1);
-  border: 1px solid rgba(34,197,94,0.2);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
   color: var(--green);
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
   white-space: nowrap;
   height: 28px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .plan-badge.premium {
-  background: rgba(139,92,246,0.12);
-  border: 1px solid rgba(139,92,246,0.25);
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.25);
   color: var(--accent2);
 }
 
@@ -473,11 +574,11 @@ body.light-theme .nav {
 
 .plan-badge.premium .plan-dot {
   background: var(--accent2);
-  box-shadow: 0 0 8px rgba(139,92,246,0.4);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
 .plan-badge .plan-text {
-  font-size: 0.625rem; /* 10px → 0.625rem */
+  font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -488,8 +589,51 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   USER AVATAR - DÜZGÜN BOYUT
+   USER AVATAR - GLASSMORPHIC UYUMLU
    ============================================================ */
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.15rem 0.6rem 0.15rem 0.3rem;
+  border-radius: 40px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+body.light-theme .nav-user {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.nav-user:hover {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.nav-user .user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.nav-user .user-info .name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.nav-user .user-info .role {
+  font-size: 0.5625rem;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 .user-avatar {
   width: 32px;
@@ -499,12 +643,12 @@ body.light-theme .nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   font-weight: 700;
   color: #fff;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
-  border: 2px solid rgba(255,255,255,0.1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -523,7 +667,7 @@ body.light-theme .nav {
 .user-avatar:active { transform: scale(0.97); }
 
 /* ============================================================
-   BELL / BİLDİRİM
+   BELL / BİLDİRİM - GLASSMORPHIC UYUMLU
    ============================================================ */
 
 .nav-bell-wrapper {
@@ -537,13 +681,19 @@ body.light-theme .nav {
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: transparent;
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   border-radius: 50%;
   color: var(--muted);
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+body.light-theme .nav-bell-btn {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .nav-bell-btn svg {
@@ -554,13 +704,13 @@ body.light-theme .nav {
 .nav-bell-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  background: rgba(139, 92, 246, 0.06);
 }
 
 .nav-bell-btn.has-alert {
   color: var(--red);
-  border-color: rgba(239,68,68,0.35);
-  background: rgba(239,68,68,0.06);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.06);
   animation: bellShake 4s ease-in-out infinite;
 }
 
@@ -575,17 +725,29 @@ body.light-theme .nav {
 
 .bell-dot {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
+  top: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--red);
   border: 2px solid var(--surface);
-  box-shadow: 0 0 6px rgba(239,68,68,0.6);
-  animation: dotPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: bellPing 2s ease-in-out infinite;
 }
 
+@keyframes bellPing {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* 📬 BELL PANEL - GLASSMORPHIC */
 .bell-panel {
   position: absolute;
   top: 42px;
@@ -594,15 +756,25 @@ body.light-theme .nav {
   max-width: 85vw;
   max-height: 420px;
   overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: var(--z-bell);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.05);
+}
+
+body.light-theme .bell-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.12);
 }
 
 .bell-panel.open {
@@ -616,10 +788,12 @@ body.light-theme .nav {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
   position: sticky;
   top: 0;
-  background: var(--surface);
+  background: transparent;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .bell-panel-header h3 {
@@ -640,11 +814,11 @@ body.light-theme .nav {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(34,197,94,0.1);
-  border: 1px solid rgba(34,197,94,0.25);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
   color: var(--green);
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.625rem; /* 10px → 0.625rem */
+  font-size: 0.625rem;
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 20px;
@@ -653,8 +827,8 @@ body.light-theme .nav {
 }
 
 .bell-mark-read-btn:hover {
-  background: rgba(34,197,94,0.18);
-  border-color: rgba(34,197,94,0.4);
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.4);
   transform: translateY(-1px);
 }
 
@@ -675,7 +849,7 @@ body.light-theme .nav {
 
 .bell-panel-empty {
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   color: var(--muted);
   text-align: center;
   padding: 1.5rem 0.5rem;
@@ -691,15 +865,17 @@ body.light-theme .nav {
 }
 
 /* ============================================================
-   DROPDOWN MENU - z-index güncellendi
+   DROPDOWN MENU - GLASSMORPHIC
    ============================================================ */
 
 .dropdown-menu {
   position: absolute;
   top: 42px;
   right: 0;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   min-width: 175px;
   opacity: 0;
@@ -707,9 +883,17 @@ body.light-theme .nav {
   transform: translateY(-6px) scale(0.96);
   transition: opacity 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.34,1.56,0.64,1), visibility 0.22s;
   z-index: var(--z-dropdown);
-  box-shadow: 0 20px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.1);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(139, 92, 246, 0.05);
   overflow: hidden;
   transform-origin: top right;
+}
+
+body.light-theme .dropdown-menu {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
 }
 
 .dropdown-menu.show {
@@ -725,7 +909,7 @@ body.light-theme .nav {
   padding: 10px 14px;
   color: var(--muted);
   text-decoration: none;
-  font-size: 0.8125rem; /* 13px → 0.8125rem */
+  font-size: 0.8125rem;
   font-family: 'DM Sans', sans-serif;
   transition: background-color 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
   cursor: pointer;
@@ -736,19 +920,19 @@ body.light-theme .nav {
 }
 
 .dropdown-item:hover {
-  background: rgba(139,92,246,0.1);
+  background: rgba(139, 92, 246, 0.1);
   color: var(--accent2);
   padding-left: 17px;
 }
 
 .dropdown-divider {
   height: 1px;
-  background: var(--border);
+  background: var(--glass-border);
   margin: 4px 0;
 }
 
 /* ============================================================
-   PREMIUM DROPDOWN - z-index güncellendi
+   PREMIUM DROPDOWN
    ============================================================ */
 
 .nav-dropdown {
@@ -764,7 +948,7 @@ body.light-theme .nav {
   border: none;
   color: var(--muted);
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   font-weight: 500;
   padding: 0.3rem 0.7rem;
   border-radius: 6px;
@@ -775,11 +959,11 @@ body.light-theme .nav {
 
 .nav-dropdown-btn:hover {
   color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  background: rgba(139, 92, 246, 0.06);
 }
 
 .nav-dropdown-btn .dropdown-arrow {
-  font-size: 0.625rem; /* 10px → 0.625rem */
+  font-size: 0.625rem;
   transition: transform 0.2s ease;
   margin-left: 2px;
 }
@@ -793,8 +977,10 @@ body.light-theme .nav {
   top: 38px;
   right: 0;
   min-width: 220px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   padding: 6px 0;
   opacity: 0;
@@ -802,8 +988,15 @@ body.light-theme .nav {
   transform: translateY(-8px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: var(--z-dropdown);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
   pointer-events: none;
+}
+
+body.light-theme .nav-dropdown-menu {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .nav-dropdown-menu.open {
@@ -815,7 +1008,7 @@ body.light-theme .nav {
 
 .nav-dropdown-menu .menu-label {
   padding: 0.3rem 1rem;
-  font-size: 0.5625rem; /* 9px → 0.5625rem */
+  font-size: 0.5625rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -831,19 +1024,19 @@ body.light-theme .nav {
   color: var(--text);
   text-decoration: none;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem; /* 12px → 0.75rem */
+  font-size: 0.75rem;
   font-weight: 500;
   transition: all 0.15s ease;
 }
 
 .nav-dropdown-menu a:hover {
-  background: rgba(139,92,246,0.06);
+  background: rgba(139, 92, 246, 0.08);
   color: var(--accent);
 }
 
 .nav-dropdown-menu .dropdown-divider {
   height: 1px;
-  background: var(--border);
+  background: var(--glass-border);
   margin: 4px 12px;
 }
 
@@ -853,8 +1046,8 @@ body.light-theme .nav {
 
 .nav-toggle {
   display: none;
-  background: transparent;
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   border-radius: 9px;
   color: var(--text);
   cursor: pointer;
@@ -867,11 +1060,17 @@ body.light-theme .nav {
   transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.2s ease;
   flex-shrink: 0;
   padding: 0;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+body.light-theme .nav-toggle {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .nav-toggle:hover {
   border-color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  background: rgba(139, 92, 246, 0.06);
 }
 
 .nav-toggle:active { transform: scale(0.94); }
@@ -890,14 +1089,14 @@ body.light-theme .nav {
 .nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
 /* ============================================================
-   MOBILE MENU - z-index güncellendi
+   MOBILE MENU - GLASSMORPHIC
    ============================================================ */
 
 .nav-backdrop {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
   z-index: var(--z-backdrop);
   opacity: 0;
@@ -915,14 +1114,23 @@ body.light-theme .nav {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 260px;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
+  width: 280px;
+  background: rgba(10, 10, 18, 0.92);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border-left: 1px solid var(--glass-border);
   z-index: var(--z-menu);
   padding: 1rem;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
-  box-shadow: -16px 0 48px rgba(0,0,0,0.3);
+  box-shadow: -16px 0 48px rgba(0, 0, 0, 0.3);
+}
+
+body.light-theme .nav-menu {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border-left: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .nav-menu.open { transform: translateX(0); }
@@ -943,7 +1151,7 @@ body.light-theme .nav {
   color: var(--muted);
   text-decoration: none;
   border-radius: 9px;
-  font-size: 0.875rem; /* 14px → 0.875rem */
+  font-size: 0.875rem;
   font-weight: 500;
   background: none;
   border: none;
@@ -956,13 +1164,13 @@ body.light-theme .nav {
 .nav-menu-inner a:hover,
 .nav-menu-inner button:hover {
   color: var(--accent2);
-  background: rgba(139,92,246,0.1);
+  background: rgba(139, 92, 246, 0.1);
   padding-left: 1.25rem;
 }
 
 .nav-menu-inner a.active {
   color: var(--accent2);
-  background: rgba(139,92,246,0.15);
+  background: rgba(139, 92, 246, 0.15);
 }
 
 .nav-menu-inner a.active::before {
@@ -980,13 +1188,13 @@ body.light-theme .nav {
 
 .nav-menu-inner hr {
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--glass-border);
   margin: 0.5rem 0;
 }
 
 .nav-menu-inner .mobile-premium-label {
   padding: 0.5rem 1rem 0.25rem;
-  font-size: 0.625rem; /* 10px → 0.625rem */
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -996,7 +1204,7 @@ body.light-theme .nav {
 
 .nav-menu-inner .nav-divider {
   height: 1px;
-  background: var(--border);
+  background: var(--glass-border);
   margin: 4px 12px;
 }
 
@@ -1004,7 +1212,6 @@ body.light-theme .nav {
    RESPONSIVE - SABİT FONT BOYUTLARI
    ============================================================ */
 
-/* 767px ve altı - tablet ve telefon */
 @media (max-width: 767px) {
   .nav-toggle {
     display: inline-flex;
@@ -1033,16 +1240,36 @@ body.light-theme .nav {
     max-height: 56px;
     font-size: var(--nav-font-size-sm);
   }
+  
+  .nav::after {
+    left: 10%;
+    right: 10%;
+  }
+
+  .nav-user .user-info {
+    display: none;
+  }
+
+  .nav-user {
+    padding: 0.15rem 0.3rem;
+    border: none;
+    background: transparent;
+  }
+
+  .nav-user:hover {
+    border: none;
+    background: transparent;
+  }
 
   .nav-notebook-name {
     max-width: 80px;
-    font-size: 0.6875rem; /* 11px → 0.6875rem */
+    font-size: 0.6875rem;
   }
 
   .nav-notebook-btn {
     padding: 0.2rem 0.5rem;
     min-height: 28px;
-    font-size: 0.75rem; /* 12px → 0.75rem */
+    font-size: 0.75rem;
   }
 
   .nav-notebook-dropdown {
@@ -1072,7 +1299,7 @@ body.light-theme .nav {
   .user-avatar {
     width: 28px;
     height: 28px;
-    font-size: 0.6875rem; /* 11px → 0.6875rem */
+    font-size: 0.6875rem;
   }
 
   .nav-bell-btn {
@@ -1087,7 +1314,7 @@ body.light-theme .nav {
 
   .plan-badge {
     height: 24px;
-    font-size: 0.5rem; /* 8px → 0.5rem */
+    font-size: 0.5rem;
     padding: 0.1rem 0.4rem 0.1rem 0.3rem;
   }
 
@@ -1097,7 +1324,7 @@ body.light-theme .nav {
   }
 
   .plan-badge .plan-text {
-    font-size: 0.5rem; /* 8px → 0.5rem */
+    font-size: 0.5rem;
   }
 
   .bell-panel {
@@ -1110,7 +1337,6 @@ body.light-theme .nav {
   }
 }
 
-/* 480px ve altı - telefon */
 @media (max-width: 480px) {
   .nav {
     padding: 0 0.75rem;
@@ -1119,6 +1345,11 @@ body.light-theme .nav {
     max-height: 48px;
     font-size: var(--nav-font-size-xs);
   }
+  
+  .nav::after {
+    left: 5%;
+    right: 5%;
+  }
 
   .nav-right {
     gap: 0.2rem;
@@ -1126,13 +1357,13 @@ body.light-theme .nav {
 
   .nav-notebook-name {
     max-width: 60px;
-    font-size: 0.625rem; /* 10px → 0.625rem */
+    font-size: 0.625rem;
   }
 
   .nav-notebook-btn {
     padding: 0.15rem 0.4rem;
     min-height: 24px;
-    font-size: 0.6875rem; /* 11px → 0.6875rem */
+    font-size: 0.6875rem;
   }
 
   .nav-notebook-dropdown {
@@ -1158,7 +1389,7 @@ body.light-theme .nav {
   .user-avatar {
     width: 26px;
     height: 26px;
-    font-size: 0.625rem; /* 10px → 0.625rem */
+    font-size: 0.625rem;
   }
 
   .nav-bell-btn {
@@ -1182,7 +1413,7 @@ body.light-theme .nav {
 
   .plan-badge {
     height: 22px;
-    font-size: 0.4375rem; /* 7px → 0.4375rem */
+    font-size: 0.4375rem;
     padding: 0.05rem 0.3rem 0.05rem 0.2rem;
   }
 
@@ -1192,7 +1423,7 @@ body.light-theme .nav {
   }
 
   .plan-badge .plan-text {
-    font-size: 0.4375rem; /* 7px → 0.4375rem */
+    font-size: 0.4375rem;
   }
 
   .bell-panel {
@@ -1215,12 +1446,11 @@ body.light-theme .nav {
   }
 
   .dropdown-item {
-    font-size: 0.75rem; /* 12px → 0.75rem */
+    font-size: 0.75rem;
     padding: 8px 12px;
   }
 }
 
-/* 374px ve altı - ultra küçük telefonlar */
 @media (max-width: 374px) {
   .nav {
     padding: 0 0.5rem;
@@ -1259,7 +1489,7 @@ body.light-theme .nav {
   .user-avatar {
     width: 24px;
     height: 24px;
-    font-size: 0.5625rem; /* 9px → 0.5625rem */
+    font-size: 0.5625rem;
   }
 
   .nav-bell-btn {
@@ -1324,7 +1554,6 @@ body.light-theme .nav {
    SAYFA GEÇİŞ ANİMASYONLARI - SADECE İÇERİK
    ============================================================ */
 
-/* ⭐ Navbar hariç tüm içerik animasyonlu */
 .main,
 .dashboard-main,
 .calendar-page-main,
@@ -1346,11 +1575,10 @@ body.light-theme .nav {
   }
 }
 
-/* ⭐ Navbar'ı animasyonlardan tamamen izole et */
 .nav,
 .nav * {
   animation: none !important;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
 }
 
 .page-exit {

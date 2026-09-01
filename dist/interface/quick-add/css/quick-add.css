@@ -19,6 +19,8 @@
    değerler eksikse veya uyuşmazsa bile modal doğru renklerde
    görünür.
    ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
+   ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
+   ⭐ SADECE sayısal/mono gereken alanlar Inter/DM Mono kalır
    ============================================================ */
 
 :root {
@@ -220,7 +222,7 @@
   background: transparent;
   border: none;
   color: var(--qa-muted);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 12px;
   font-weight: 500;
   padding: 0.65rem 0.4rem;
@@ -259,9 +261,10 @@
 .quick-add-row .quick-add-field { margin-bottom: 0; }
 .quick-add-field:last-child { margin-bottom: 0; }
 
+/* ⭐ Label: DM Mono → DM Sans */
 .quick-add-field label {
   display: block;
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.07em;
@@ -278,7 +281,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.68rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s ease;
@@ -313,7 +316,7 @@
   border-radius: var(--qa-r-sm);
   background: transparent;
   color: var(--qa-muted);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -346,7 +349,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.6rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-mono); /* ⭐ KALIR - sayısal giriş */
   font-size: 13px;
   outline: none;
 }
@@ -366,7 +369,7 @@
   border-radius: var(--qa-r-sm);
   background: var(--qa-surface2);
   color: var(--qa-muted);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -402,7 +405,7 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-mono); /* ⭐ KALIR - para birimi */
   font-size: 14px;
   font-weight: 600;
   color: var(--qa-muted);
@@ -430,7 +433,7 @@
   border: 1px solid var(--qa-border);
   border-radius: 6px;
   padding: 0.3rem 0.55rem;
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 10px;
   font-weight: 600;
   color: var(--qa-muted);
@@ -450,7 +453,7 @@
    ============================================================ */
 .quick-add-rr-wrap { display: flex; align-items: center; gap: 8px; }
 .quick-add-rr-wrap .rr-label {
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 13px;
   font-weight: 600;
   color: var(--qa-text);
@@ -463,7 +466,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.65rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 14px;
   outline: none;
 }
@@ -474,7 +477,7 @@
   border: 1px solid var(--qa-border);
   border-radius: 6px;
   padding: 0.3rem 0.55rem;
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 10px;
   font-weight: 600;
   color: var(--qa-muted);
@@ -522,7 +525,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.68rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 13px;
   outline: none;
   resize: vertical;
@@ -559,7 +562,7 @@
 .quick-add-preview .preview-item { display: flex; flex-direction: column; gap: 2px; }
 .quick-add-preview .preview-item .p-label {
   font-size: 8px;
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--qa-muted);
@@ -567,7 +570,7 @@
 .quick-add-preview .preview-item .p-val {
   font-size: 0.95rem;
   font-weight: 600;
-  font-family: var(--qa-font-numeric);
+  font-family: var(--qa-font-numeric); /* Inter - sayısal */
   color: var(--qa-text);
 }
 .quick-add-preview .preview-item .p-val.pos { color: var(--qa-green); }
@@ -601,7 +604,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.55rem 1.4rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -620,7 +623,8 @@
   margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
   max-height: 120px; overflow-y: auto;
   background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
-  font-family: var(--qa-font-mono); text-align: left;
+  font-family: var(--qa-font-mono); /* ⭐ KALIR - log için */
+  text-align: left;
 }
 .quick-import-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .quick-import-log div:last-child { border-bottom: none; }
@@ -635,7 +639,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.65rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-mono);
+  font-family: var(--qa-font-mono); /* ⭐ KALIR - veri girişi için */
   font-size: 12px;
   resize: vertical;
   outline: none;
@@ -654,7 +658,8 @@
   margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
   max-height: 120px; overflow-y: auto;
   background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
-  font-family: var(--qa-font-mono); text-align: left;
+  font-family: var(--qa-font-mono); /* ⭐ KALIR - log için */
+  text-align: left;
 }
 .quick-bulk-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .quick-bulk-log div:last-child { border-bottom: none; }
@@ -678,7 +683,7 @@
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
   color: var(--qa-muted);
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 13px;
   font-weight: 500;
   padding: 0.55rem 1.2rem;
@@ -692,7 +697,7 @@
   border: 1px solid var(--qa-accent);
   border-radius: var(--qa-r-sm);
   color: #fff;
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   font-size: 13px;
   font-weight: 600;
   padding: 0.55rem 1.4rem;
@@ -716,7 +721,7 @@
 .quick-add-loading {
   display: none; align-items: center; gap: 8px;
   padding: 0.5rem 0; color: var(--qa-muted);
-  font-size: 13px; font-family: var(--qa-font-body);
+  font-size: 13px; font-family: var(--qa-font-body); /* DM Mono → DM Sans */
 }
 .quick-add-loading.active { display: flex; }
 .quick-add-loading .spinner {
@@ -742,7 +747,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.6rem 0.85rem;
   font-size: 12px;
-  font-family: var(--qa-font-body);
+  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
   margin-bottom: 0.9rem;
 }
 .quick-add-error.active { display: flex; }
