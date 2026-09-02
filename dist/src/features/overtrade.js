@@ -199,6 +199,10 @@ export function checkOvertrade(trades) {
   }
 }
 
+// ============================================================
+// ⭐ RENDER OVERTRADE WARNING - GELİŞTİRİLMİŞ TASARIM
+// ============================================================
+
 export function renderOvertradeWarning(warnings, containerId) {
   try {
     const container = document.getElementById(containerId);
@@ -211,94 +215,92 @@ export function renderOvertradeWarning(warnings, containerId) {
     
     if (!warnings || !Array.isArray(warnings) || warnings.length === 0) {
       container.innerHTML = `
-        <div class="ot-good" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;animation:fadeIn 0.3s ease;">
-          <span style="font-size:1.2rem;">✅</span>
-          <div>
-            <strong style="color:var(--green);">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.all_good') : 'Her şey yolunda!'}</strong>
-            <p style="font-size:12px;color:var(--muted);margin:0;">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.all_good_desc') : 'Tüm limitlerin içindesin.'}</p>
+        <div class="notif-item ot-good">
+          <div class="notif-icon success">
+            <i data-lucide="circle-check"></i>
+          </div>
+          <div class="notif-content">
+            <div class="notif-title" style="color:var(--green);">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.all_good') : 'Her şey yolunda!'}</div>
+            <div class="notif-desc">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.all_good_desc') : 'Tüm limitlerin içindesin.'}</div>
           </div>
         </div>
       `;
+      
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
       return;
     }
     
-    const levelColors = {
-      info: { bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.15)', text: '#3b82f6', icon: 'ℹ️' },
-      warning: { bg: 'rgba(251,191,36,0.06)', border: 'rgba(251,191,36,0.15)', text: '#f59e0b', icon: '⚠️' },
-      danger: { bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)', text: '#ef4444', icon: '🚨' }
+    const levelConfigs = {
+      info: { 
+        iconClass: 'info',
+        icon: 'info',
+        label: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.info') : 'Bilgi'
+      },
+      warning: { 
+        iconClass: 'warning',
+        icon: 'triangle-alert',
+        label: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.warning') : 'Uyarı'
+      },
+      danger: { 
+        iconClass: 'danger',
+        icon: 'octagon-alert',
+        label: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.danger') : 'Tehlike'
+      }
     };
     
-    const levelLabels = { 
-      info: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.info') : 'Bilgi', 
-      warning: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.warning') : 'Uyarı', 
-      danger: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.danger') : 'Tehlike' 
-    };
-    
-    const typeLabels = { 
-      daily_trades: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.daily_trades') : 'Günlük İşlem', 
-      weekly_trades: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.weekly_trades') : 'Haftalık İşlem', 
-      daily_loss: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.loss') : 'Kayıp' 
+    const typeLabels = {
+      daily_trades: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.daily_trades') : 'Günlük İşlem',
+      weekly_trades: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.weekly_trades') : 'Haftalık İşlem',
+      daily_loss: (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('overtrade.loss') : 'Kayıp'
     };
     
     warnings.forEach(function(w) {
-      const color = levelColors[w.level] || levelColors.warning;
+      const config = levelConfigs[w.level] || levelConfigs.warning;
       const warningId = w.id || 'ot_warning_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
       
       const card = document.createElement('div');
       card.id = 'ot-warning-' + warningId;
-      card.style.cssText = `
-        display:flex;
-        align-items:flex-start;
-        gap:0.75rem;
-        padding:0.75rem 1rem;
-        background:${color.bg};
-        border:1px solid ${color.border};
-        border-radius:8px;
-        margin-bottom:0.5rem;
-        animation:slideDown 0.3s ease;
-        transition:opacity 0.3s ease, transform 0.3s ease;
-      `;
+      card.className = 'notif-item';
+      
+      const isOverLimit = w.current > w.limit;
+      const currentDisplay = w.current || 0;
+      const limitDisplay = w.limit || 0;
       
       card.innerHTML = `
-        <span style="font-size:1.2rem;flex-shrink:0;margin-top:2px;">${color.icon || '⚠️'}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-            <strong style="color:${color.text};font-size:13px;">${w.message || 'Uyarı'}</strong>
-            <span style="font-size:9px;font-weight:600;font-family:'DM Mono',monospace;background:${color.bg};color:${color.text};padding:0.1rem 0.5rem;border-radius:10px;border:1px solid ${color.border};flex-shrink:0;">
-              ${levelLabels[w.level] || 'Uyarı'}
+        <div class="notif-icon ${config.iconClass}">
+          <i data-lucide="${config.icon}"></i>
+        </div>
+        <div class="notif-content">
+          <div class="notif-title">${w.message || 'Uyarı'}</div>
+          <div class="notif-desc">
+            <span style="display:inline-flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:2px;">
+              <span style="font-size:9px;font-weight:600;font-family:'DM Mono',monospace;background:${config.iconClass === 'danger' ? 'rgba(239,68,68,0.12)' : config.iconClass === 'warning' ? 'rgba(251,191,36,0.12)' : 'rgba(59,130,246,0.12)'};color:${config.iconClass === 'danger' ? '#ef4444' : config.iconClass === 'warning' ? '#f59e0b' : '#3b82f6'};padding:0.15rem 0.6rem;border-radius:10px;border:1px solid ${config.iconClass === 'danger' ? 'rgba(239,68,68,0.2)' : config.iconClass === 'warning' ? 'rgba(251,191,36,0.2)' : 'rgba(59,130,246,0.2)'};">
+                ${config.label}
+              </span>
             </span>
           </div>
-          <div style="display:flex;gap:1rem;font-size:11px;color:var(--muted);margin-top:4px;flex-wrap:wrap;">
-            <span>📊 ${w.current || 0} / ${w.limit || 0}</span>
-            <span>📅 ${typeLabels[w.type] || w.type || 'Genel'}</span>
+          <div class="notif-ot-stats" style="display:flex;gap:1rem;font-size:11px;color:var(--muted);margin-top:4px;flex-wrap:wrap;align-items:center;">
+            <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);padding:0.15rem 0.6rem;border-radius:4px;font-family:'DM Mono',monospace;">
+              <span style="font-weight:700;color:${isOverLimit ? 'var(--red)' : 'var(--text)'};">${currentDisplay}</span>
+              <span style="opacity:0.4;">/</span>
+              <span style="opacity:0.7;">${limitDisplay}</span>
+            </span>
+            <span style="opacity:0.6;">${typeLabels[w.type] || w.type || 'Genel'}</span>
+            ${w.current > w.limit ? '<span style="font-size:9px;font-weight:600;color:var(--red);background:rgba(239,68,68,0.08);padding:0.05rem 0.4rem;border-radius:4px;border:1px solid rgba(239,68,68,0.15);">⚠️ LİMİT AŞIMI</span>' : ''}
           </div>
         </div>
-        <button onclick="window.dismissOvertradeWarning('${warningId}')" 
-                style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;flex-shrink:0;padding:4px 6px;border-radius:4px;transition:background 0.2s;"
-                onmouseover="this.style.background='var(--surface)'" 
-                onmouseout="this.style.background='transparent'"
-                aria-label="Uyarıyı kapat">
-          ✕
+        <button class="notif-close" onclick="window.dismissOvertradeWarning('${warningId}')">
+          <i data-lucide="x"></i>
         </button>
       `;
       
       container.appendChild(card);
     });
     
-    if (!document.getElementById('ot-animations')) {
-      const style = document.createElement('style');
-      style.id = 'ot-animations';
-      style.textContent = `
-        @keyframes slideDown { 
-          from { opacity: 0; transform: translateY(-10px); } 
-          to { opacity: 1; transform: translateY(0); } 
-        }
-        @keyframes fadeIn { 
-          from { opacity: 0; } 
-          to { opacity: 1; } 
-        }
-      `;
-      document.head.appendChild(style);
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
     }
     
   } catch (error) {
@@ -306,14 +308,20 @@ export function renderOvertradeWarning(warnings, containerId) {
     const container = document.getElementById(containerId);
     if (container) {
       container.innerHTML = `
-        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;">
-          <span style="font-size:1.2rem;">⚠️</span>
-          <div>
-            <strong style="color:var(--red);">Uyarı sistemi geçici olarak kullanılamıyor</strong>
-            <p style="font-size:12px;color:var(--muted);margin:0;">Lütfen daha sonra tekrar deneyin.</p>
+        <div class="notif-item">
+          <div class="notif-icon danger">
+            <i data-lucide="octagon-alert"></i>
+          </div>
+          <div class="notif-content">
+            <div class="notif-title" style="color:var(--red);">Uyarı sistemi geçici olarak kullanılamıyor</div>
+            <div class="notif-desc">Lütfen daha sonra tekrar deneyin.</div>
           </div>
         </div>
       `;
+      
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
     }
   }
 }
@@ -510,3 +518,112 @@ export async function loadOvertradeSettingsUI(containerId) {
     }
   }
 }
+
+// ⭐ GLOBAL OVERTRADE BELL FONKSİYONU
+export async function updateOvertradeBell() {
+  try {
+    // ⭐ DEBUG: Elementlerin var olup olmadığını kontrol et
+    var body = document.getElementById('bell-panel-body');
+    var dot = document.getElementById('bell-dot');
+    var bellBtn = document.getElementById('overtrade-bell-btn');
+    var markReadBtn = document.getElementById('bell-mark-read-btn');
+    
+    console.log('🔔 updateOvertradeBell - Elementler:', {
+      body: !!body,
+      dot: !!dot,
+      bellBtn: !!bellBtn,
+      markReadBtn: !!markReadBtn
+    });
+    
+    if (!body) {
+      console.warn('⚠️ bell-panel-body bulunamadı');
+      return;
+    }
+
+    if (typeof checkAndRenderOvertrade === 'function') {
+      await checkAndRenderOvertrade('bell-panel-body');
+    }
+
+    var rawContent = body.innerHTML || '';
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawContent;
+    var textContent = tempDiv.textContent || tempDiv.innerText || '';
+    var cleanText = textContent.replace(/\s/g, '').trim();
+    var hasContent = cleanText.length > 0;
+
+    if (!hasContent) {
+      var emptyText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
+      body.innerHTML = '<div class="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText + '</span></div>';
+      if (dot) dot.style.display = 'none';
+      if (bellBtn) bellBtn.classList.remove('has-alert');
+      if (markReadBtn) markReadBtn.style.display = 'none';
+      return;
+    }
+
+    var OVERTRADE_READ_KEY = 'ww_overtrade_read_signature';
+    var currentOvertradeSignature = textContent.replace(/\s/g, '');
+    var readSignature = localStorage.getItem(OVERTRADE_READ_KEY) || '';
+
+    if (readSignature && readSignature === currentOvertradeSignature) {
+      var emptyText2 = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
+      body.innerHTML = '<div class="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText2 + '</span></div>';
+      if (dot) dot.style.display = 'none';
+      if (bellBtn) bellBtn.classList.remove('has-alert');
+      if (markReadBtn) markReadBtn.style.display = 'none';
+      return;
+    }
+
+    if (dot) dot.style.display = 'block';
+    if (bellBtn) bellBtn.classList.add('has-alert');
+    if (markReadBtn) markReadBtn.style.display = 'inline-flex';
+
+    // ⭐ BUG FIX: Okundu butonuna event listener bağla (onclick kullan - duplicate binding önler)
+    if (markReadBtn) {
+      markReadBtn.onclick = function(e) {
+        e.stopPropagation();
+        console.log('✅ Okundu butonuna tıklandı, bildirimler kapatılıyor...');
+        
+        try {
+          // 1. Mevcut uyarı imzasını localStorage'a kaydet
+          if (currentOvertradeSignature) {
+            localStorage.setItem(OVERTRADE_READ_KEY, currentOvertradeSignature);
+            console.log('💾 OVERTRADE_READ_KEY kaydedildi:', currentOvertradeSignature);
+          }
+          
+          // 2. Panel içeriğini boşalt
+          if (body) {
+            var emptyText3 = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
+            body.innerHTML = '<div class="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText3 + '</span></div>';
+          }
+          
+          // 3. Zil uyarı durumunu kaldır
+          if (dot) dot.style.display = 'none';
+          if (bellBtn) bellBtn.classList.remove('has-alert');
+          if (markReadBtn) markReadBtn.style.display = 'none';
+          
+          // 4. Bell panelini kapat
+          var bellPanel = document.getElementById('bell-panel');
+          if (bellPanel) bellPanel.classList.remove('open');
+          
+          // 5. Toast göster
+          if (typeof showToast === 'function') {
+            showToast('✅ Bildirimler okundu olarak işaretlendi', 'success');
+          }
+          
+          console.log('✅ OverTrade bildirimleri okundu olarak işaretlendi');
+        } catch(err) {
+          console.warn('Okundu işaretleme hatası:', err);
+          if (typeof showToast === 'function') {
+            showToast('❌ Bildirimler okundu işaretlenirken hata oluştu', 'error');
+          }
+        }
+      };
+    }
+
+  } catch(e) {
+    console.warn('updateOvertradeBell hatası:', e);
+  }
+}
+
+// ⭐ GLOBAL EXPORT - TÜM SAYFALARDAN ERİŞİLEBİLİR
+window.updateOvertradeBell = updateOvertradeBell;

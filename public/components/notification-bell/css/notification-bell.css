@@ -1,0 +1,357 @@
+/* ============================================================
+   notification-bell.css
+   BİLDİRİM BELL - GENEL STİLLER
+   ============================================================ */
+
+.notif-bell-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.notif-btn {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.notif-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.notif-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(139, 92, 246, 0.08);
+  transform: scale(1.05);
+}
+
+.notif-btn:active {
+  transform: scale(0.92);
+}
+
+.notif-btn.has-notif {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: var(--red);
+  animation: notifPulse 2s ease-in-out infinite;
+}
+
+.notif-btn.has-notif:hover {
+  border-color: var(--red);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+@keyframes notifPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08); }
+}
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  transition: transform 0.2s ease;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.notif-badge.hidden {
+  transform: scale(0);
+  opacity: 0;
+}
+
+.notif-panel {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 2rem);
+  max-height: 480px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.06);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.97);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 9999;
+  overflow: hidden;
+  transform-origin: top right;
+  backdrop-filter: blur(16px);
+}
+
+.notif-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.notif-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.notif-panel-header h4 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.notif-panel-header .notif-clear-all {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.notif-panel-header .notif-clear-all:hover {
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.notif-panel-body {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.notif-panel-body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.notif-panel-body::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 99px;
+}
+
+/* ============================================================
+   NOTIF ITEM - ORTAK STİLLER (OVERTRADE İLE PAYLAŞILIR)
+   ============================================================ */
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
+  cursor: default;
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-item:hover {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.notif-item .notif-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.notif-item .notif-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.notif-item .notif-icon.danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.notif-item .notif-icon.warning {
+  background: rgba(251, 191, 36, 0.12);
+  color: #f59e0b;
+}
+
+.notif-item .notif-icon.info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.notif-item .notif-icon.success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.notif-item .notif-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-item .notif-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1px;
+  line-height: 1.3;
+}
+
+.notif-item .notif-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.notif-item .notif-time {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  color: var(--muted);
+  opacity: 0.6;
+  margin-top: 3px;
+  display: block;
+}
+
+.notif-item .notif-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  opacity: 0.4;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-item .notif-close svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+.notif-item .notif-close:hover {
+  opacity: 1;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ⭐ OVERTRADE ÖZEL STİLLER */
+.notif-item .notif-ot-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.notif-item .notif-ot-stats span {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ⭐ ALL GOOD STATE */
+.notif-item.ot-good {
+  background: rgba(34, 197, 94, 0.04);
+  border: 1px solid rgba(34, 197, 94, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.notif-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+}
+
+.notif-empty .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 480px) {
+  .notif-panel {
+    width: 320px;
+    right: -50px;
+  }
+  .notif-item {
+    padding: 0.5rem 0.75rem;
+  }
+  .notif-item .notif-title {
+    font-size: 11.5px;
+  }
+  .notif-item .notif-desc {
+    font-size: 10px;
+  }
+  .notif-item .notif-ot-stats {
+    font-size: 9px;
+    gap: 0.5rem;
+  }
+  .notif-item .notif-ot-stats span {
+    padding: 0.05rem 0.3rem;
+  }
+  .notif-item .notif-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  .notif-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+

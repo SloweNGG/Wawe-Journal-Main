@@ -1,14 +1,8 @@
 /* ============================================================
-   NAVBAR - TEK DOSYA (components/navbar.css)
+   NAVBAR - components/navbar/navbar.css
    Tüm sayfalarda aynı navbar tasarımı
-   ⭐ GLASSMORPHIC CAM EFEKTİ EKLENDİ
-   ⭐ FONT BOYUTLARI SABİTLENDİ - ANİMASYONLAR KALDIRILDI
-   ⭐ AKTİF LİNK FLASH ÖNLENDİ - KAYMA OLMAZ
-   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
-   ============================================================ */
-
-/* ============================================================
-   ROOT DEĞİŞKENLER - TUTARLI FONT BOYUTLARI
+   ⭐ GLASSMORPHIC CAM EFEKTİ
+   ⭐ FONT BOYUTLARI SABİTLENDİ
    ============================================================ */
 
 :root {
@@ -16,18 +10,12 @@
   --nav-font-size-sm: 12px;
   --nav-font-size-xs: 10px;
   --nav-line-height: 1.5;
-  
-  /* ⭐ GLASSMORPHIC DEĞİŞKENLER */
   --glass-bg: rgba(10, 10, 18, 0.55);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
   --glass-blur: 32px;
   --glass-saturate: 200%;
 }
-
-/* ============================================================
-   NAVIGATION - GLASSMORPHIC CAM EFEKTLİ
-   ============================================================ */
 
 .nav {
   height: 64px;
@@ -43,56 +31,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  
-  /* ⭐ GLASSMORPHIC CAM EFEKTİ */
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  
   border-bottom: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.02) inset;
-  
-  transition: background-color 0.3s ease, 
-              border-color 0.3s ease, 
-              box-shadow 0.3s ease,
-              backdrop-filter 0.3s ease;
-  
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   font-size: var(--nav-font-size);
   line-height: var(--nav-line-height);
   animation: none !important;
 }
 
-/* ⭐ Navbar içindeki tüm elementler parent'ından devralsın */
 .nav * {
   animation: none !important;
   line-height: inherit;
 }
 
-/* ⭐ LIGHT THEME - GLASSMORPHIC */
 body.light-theme .nav {
   --glass-bg: rgba(255, 255, 255, 0.65);
   --glass-border: rgba(0, 0, 0, 0.04);
   --glass-shadow: 0 4px 32px rgba(15, 23, 42, 0.06);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.6) inset;
 }
 
-/* ⭐ DARK THEME - GLASSMORPHIC (daha koyu cam) */
 body:not(.light-theme) .nav {
   --glass-bg: rgba(7, 7, 12, 0.65);
   --glass-border: rgba(255, 255, 255, 0.04);
   --glass-shadow: 0 4px 32px rgba(0, 0, 0, 0.12);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.02) inset;
 }
 
-/* ⭐ GLOW BORDER - ALTTAN IŞIKLI ÇİZGİ */
 .nav::after {
   content: '';
   position: absolute;
@@ -100,35 +66,16 @@ body:not(.light-theme) .nav {
   left: 15%;
   right: 15%;
   height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(139, 92, 246, 0.15) 20%, 
-    rgba(139, 92, 246, 0.4) 50%, 
-    rgba(139, 92, 246, 0.15) 80%, 
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.15) 20%, rgba(139,92,246,0.4) 50%, rgba(139,92,246,0.15) 80%, transparent 100%);
   opacity: 0.6;
   transition: opacity 0.4s ease;
 }
 
-.nav:hover::after {
-  opacity: 1;
-}
+.nav:hover::after { opacity: 1; }
 
-/* ⭐ GLOW BORDER - LIGHT THEME */
 body.light-theme .nav::after {
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(139, 92, 246, 0.1) 20%, 
-    rgba(139, 92, 246, 0.3) 50%, 
-    rgba(139, 92, 246, 0.1) 80%, 
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.1) 20%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.1) 80%, transparent 100%);
 }
-
-/* ============================================================
-   NAV LINKS - FLASH ÖNLEYİCİ (KAYMA OLMAZ)
-   ============================================================ */
 
 .nav-links {
   display: flex;
@@ -142,7 +89,6 @@ body.light-theme .nav::after {
   justify-content: flex-start;
 }
 
-/* ⭐ Linkler - görünmez başlar, yer kaplar, kayma olmaz */
 .nav-links a {
   position: relative;
   color: var(--muted);
@@ -162,36 +108,28 @@ body.light-theme .nav::after {
   visibility: hidden;
   opacity: 0;
   animation: none !important;
-  transition: visibility 0.15s ease,
-              opacity 0.2s ease,
-              color 0.15s ease,
-              background-color 0.15s ease,
-              transform 0.2s ease;
+  transition: visibility 0.15s ease, opacity 0.2s ease, color 0.15s ease, background-color 0.15s ease, transform 0.2s ease;
 }
 
-/* ⭐ Navbar yüklendikten sonra görünür ol - KAYMA YOK */
 .nav-links a.loaded {
   visibility: visible;
   opacity: 1;
 }
 
-/* ⭐ Aktif link - hemen görünür, ANİMASYONSUZ */
 .nav-links a.active {
   visibility: visible !important;
   opacity: 1 !important;
   color: var(--accent2);
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(139,92,246,0.12);
   transition: none !important;
 }
 
-/* ⭐ Link hover - cam etkisine uyumlu */
 .nav-links a:hover {
   color: var(--accent2);
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(139,92,246,0.08);
   transform: translateY(-1px);
 }
 
-/* ⭐ Aktif link çizgisi - GLOW efektli */
 .nav-links a::after {
   content: '';
   position: absolute;
@@ -202,8 +140,8 @@ body.light-theme .nav::after {
   border-radius: 2px;
   background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
   transform: translateX(-50%);
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 6px rgba(139, 92, 246, 0.1);
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 6px rgba(139,92,246,0.1);
 }
 
 .nav-links a:hover::after {
@@ -211,17 +149,11 @@ body.light-theme .nav::after {
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
-/* ⭐ Aktif link çizgisi - hemen göster, ANİMASYONSUZ */
 .nav-links a.active::after {
   width: 24px !important;
-  box-shadow: 0 0 14px var(--accent-glow), 0 0 30px rgba(139, 92, 246, 0.1);
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  box-shadow: 0 0 14px var(--accent-glow), 0 0 30px rgba(139,92,246,0.1);
   transition: none !important;
 }
-
-/* ============================================================
-   NAV LOGO - GLASSMORPHIC UYUMLU
-   ============================================================ */
 
 .nav-logo {
   display: flex;
@@ -238,16 +170,14 @@ body.light-theme .nav::after {
 .logo-icon {
   width: 30px;
   height: 30px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.05));
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(139,92,246,0.05));
+  border: 1px solid rgba(139,92,246,0.3);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
-              box-shadow 0.35s ease,
-              border-color 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease, border-color 0.3s ease;
 }
 
 .logo-icon .logo-icon-svg {
@@ -261,7 +191,7 @@ body.light-theme .nav::after {
 .nav-logo:hover .logo-icon {
   transform: rotate(-6deg) scale(1.06);
   box-shadow: 0 0 24px var(--accent-glow);
-  border-color: rgba(139, 92, 246, 0.5);
+  border-color: rgba(139,92,246,0.5);
 }
 
 .nav-logo:hover .logo-icon .logo-icon-svg {
@@ -283,247 +213,19 @@ body.light-theme .nav::after {
   -webkit-text-fill-color: transparent;
 }
 
-/* ⭐ VERSION BADGE - YENİ */
 .nav-version {
   font-family: 'DM Mono', monospace;
   font-size: 0.5rem;
   font-weight: 600;
   color: var(--muted);
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.15);
+  background: rgba(139,92,246,0.1);
+  border: 1px solid rgba(139,92,246,0.15);
   padding: 0.05rem 0.35rem;
   border-radius: 4px;
   margin-left: 2px;
   opacity: 0.6;
   letter-spacing: 0.04em;
 }
-
-/* ============================================================
-   📓 NOTEBOOK SELECTOR - GLASSMORPHIC UYUMLU
-   ============================================================ */
-
-.nav-notebook-wrapper {
-  position: relative;
-  flex-shrink: 0;
-  margin-right: 0.25rem;
-}
-
-.nav-notebook-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 0.3rem 0.7rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text);
-  min-height: 32px;
-  white-space: nowrap;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-body.light-theme .nav-notebook-btn {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.nav-notebook-btn:hover {
-  border-color: var(--accent);
-  background: rgba(139, 92, 246, 0.08);
-  transform: translateY(-1px);
-}
-
-.nav-notebook-btn:active {
-  transform: scale(0.97);
-}
-
-.nav-notebook-icon-svg {
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.nav-notebook-name {
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.nav-notebook-arrow {
-  color: var(--muted);
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.nav-notebook-btn:hover .nav-notebook-arrow {
-  color: var(--accent);
-}
-
-/* 📋 DROPDOWN - GLASSMORPHIC */
-.nav-notebook-dropdown {
-  position: absolute;
-  top: 42px;
-  right: 0;
-  min-width: 240px;
-  max-width: 320px;
-  background: rgba(10, 10, 18, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 6px 0;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.05);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px) scale(0.96);
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: var(--z-popover);
-}
-
-body.light-theme .nav-notebook-dropdown {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.12);
-}
-
-.nav-notebook-dropdown.open {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-}
-
-.nav-notebook-list {
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 4px 0;
-}
-
-.nav-notebook-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.nav-notebook-list::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 99px;
-}
-
-/* 📄 Defter öğesi */
-.nav-notebook-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 0.5rem 0.9rem;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-
-.nav-notebook-item:hover {
-  background: rgba(139, 92, 246, 0.08);
-  color: var(--accent);
-}
-
-.nav-notebook-item.active {
-  background: rgba(139, 92, 246, 0.12);
-  color: var(--accent2);
-  font-weight: 500;
-}
-
-.nav-notebook-item-icon {
-  flex-shrink: 0;
-}
-
-.nav-notebook-item-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.nav-notebook-item-badge {
-  font-size: 0.75rem;
-  opacity: 0.7;
-  margin-left: auto;
-}
-
-.nav-notebook-item-check {
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 0.875rem;
-  margin-left: auto;
-}
-
-.nav-notebook-empty {
-  padding: 1.5rem 1rem;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-family: 'DM Sans', sans-serif;
-}
-
-/* ➖ Ayırıcı */
-.nav-notebook-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 4px 10px;
-}
-
-/* 🎯 Aksiyonlar */
-.nav-notebook-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 0;
-}
-
-.nav-notebook-action {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0.5rem 0.9rem;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-decoration: none;
-  width: 100%;
-  text-align: left;
-}
-
-.nav-notebook-action:hover {
-  background: rgba(139, 92, 246, 0.08);
-  color: var(--accent);
-}
-
-.nav-notebook-action svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   NAV RIGHT
-   ============================================================ */
 
 .nav-right {
   display: flex;
@@ -532,10 +234,6 @@ body.light-theme .nav-notebook-dropdown {
   flex-shrink: 0;
   position: relative;
 }
-
-/* ============================================================
-   PLAN BADGE - GLASSMORPHIC UYUMLU
-   ============================================================ */
 
 .plan-badge {
   display: flex;
@@ -546,8 +244,8 @@ body.light-theme .nav-notebook-dropdown {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.625rem;
   font-weight: 600;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.2);
   color: var(--green);
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
   white-space: nowrap;
@@ -557,8 +255,8 @@ body.light-theme .nav-notebook-dropdown {
 }
 
 .plan-badge.premium {
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(139,92,246,0.15);
+  border: 1px solid rgba(139,92,246,0.25);
   color: var(--accent2);
 }
 
@@ -574,7 +272,7 @@ body.light-theme .nav-notebook-dropdown {
 
 .plan-badge.premium .plan-dot {
   background: var(--accent2);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 8px rgba(139,92,246,0.4);
 }
 
 .plan-badge .plan-text {
@@ -588,10 +286,6 @@ body.light-theme .nav-notebook-dropdown {
   50% { opacity: 0.5; transform: scale(0.7); }
 }
 
-/* ============================================================
-   USER AVATAR - GLASSMORPHIC UYUMLU
-   ============================================================ */
-
 .nav-user {
   display: flex;
   align-items: center;
@@ -599,7 +293,7 @@ body.light-theme .nav-notebook-dropdown {
   padding: 0.15rem 0.6rem 0.15rem 0.3rem;
   border-radius: 40px;
   border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255,255,255,0.03);
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(4px);
@@ -607,12 +301,12 @@ body.light-theme .nav-notebook-dropdown {
 }
 
 body.light-theme .nav-user {
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(0,0,0,0.02);
 }
 
 .nav-user:hover {
   border-color: var(--accent);
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(139,92,246,0.06);
 }
 
 .nav-user .user-info {
@@ -648,7 +342,7 @@ body.light-theme .nav-user {
   color: #fff;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255,255,255,0.1);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -666,10 +360,6 @@ body.light-theme .nav-user {
 
 .user-avatar:active { transform: scale(0.97); }
 
-/* ============================================================
-   BELL / BİLDİRİM - GLASSMORPHIC UYUMLU
-   ============================================================ */
-
 .nav-bell-wrapper {
   position: relative;
 }
@@ -681,7 +371,7 @@ body.light-theme .nav-user {
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255,255,255,0.03);
   border: 1px solid var(--glass-border);
   border-radius: 50%;
   color: var(--muted);
@@ -693,7 +383,7 @@ body.light-theme .nav-user {
 }
 
 body.light-theme .nav-bell-btn {
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(0,0,0,0.02);
 }
 
 .nav-bell-btn svg {
@@ -704,13 +394,13 @@ body.light-theme .nav-bell-btn {
 .nav-bell-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(139,92,246,0.06);
 }
 
 .nav-bell-btn.has-alert {
   color: var(--red);
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.06);
   animation: bellShake 4s ease-in-out infinite;
 }
 
@@ -732,22 +422,15 @@ body.light-theme .nav-bell-btn {
   border-radius: 50%;
   background: var(--red);
   border: 2px solid var(--surface);
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 8px rgba(239,68,68,0.6);
   animation: bellPing 2s ease-in-out infinite;
 }
 
 @keyframes bellPing {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-  }
-  50% {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
-  }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { transform: scale(1.2); box-shadow: 0 0 0 6px rgba(239,68,68,0); }
 }
 
-/* 📬 BELL PANEL - GLASSMORPHIC */
 .bell-panel {
   position: absolute;
   top: 42px;
@@ -756,25 +439,25 @@ body.light-theme .nav-bell-btn {
   max-width: 85vw;
   max-height: 420px;
   overflow-y: auto;
-  background: rgba(10, 10, 18, 0.85);
+  background: rgba(10,10,18,0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 14px;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
   z-index: var(--z-bell);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.05);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.05);
 }
 
 body.light-theme .bell-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 12px 48px rgba(15,23,42,0.12);
 }
 
 .bell-panel.open {
@@ -814,8 +497,8 @@ body.light-theme .bell-panel {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
   color: var(--green);
   font-family: 'DM Sans', sans-serif;
   font-size: 0.625rem;
@@ -827,8 +510,8 @@ body.light-theme .bell-panel {
 }
 
 .bell-mark-read-btn:hover {
-  background: rgba(34, 197, 94, 0.18);
-  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34,197,94,0.18);
+  border-color: rgba(34,197,94,0.4);
   transform: translateY(-1px);
 }
 
@@ -864,18 +547,14 @@ body.light-theme .bell-panel {
   opacity: 0.5;
 }
 
-/* ============================================================
-   DROPDOWN MENU - GLASSMORPHIC
-   ============================================================ */
-
 .dropdown-menu {
   position: absolute;
   top: 42px;
   right: 0;
-  background: rgba(10, 10, 18, 0.85);
+  background: rgba(10,10,18,0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 14px;
   min-width: 175px;
   opacity: 0;
@@ -883,17 +562,17 @@ body.light-theme .bell-panel {
   transform: translateY(-6px) scale(0.96);
   transition: opacity 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.34,1.56,0.64,1), visibility 0.22s;
   z-index: var(--z-dropdown);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(139, 92, 246, 0.05);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.05);
   overflow: hidden;
   transform-origin: top right;
 }
 
 body.light-theme .dropdown-menu {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 20px 48px rgba(15,23,42,0.12);
 }
 
 .dropdown-menu.show {
@@ -920,7 +599,7 @@ body.light-theme .dropdown-menu {
 }
 
 .dropdown-item:hover {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(139,92,246,0.1);
   color: var(--accent2);
   padding-left: 17px;
 }
@@ -931,122 +610,9 @@ body.light-theme .dropdown-menu {
   margin: 4px 0;
 }
 
-/* ============================================================
-   PREMIUM DROPDOWN
-   ============================================================ */
-
-.nav-dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.nav-dropdown-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.3rem 0.7rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.nav-dropdown-btn:hover {
-  color: var(--accent);
-  background: rgba(139, 92, 246, 0.06);
-}
-
-.nav-dropdown-btn .dropdown-arrow {
-  font-size: 0.625rem;
-  transition: transform 0.2s ease;
-  margin-left: 2px;
-}
-
-.nav-dropdown-btn.active .dropdown-arrow {
-  transform: rotate(180deg);
-}
-
-.nav-dropdown-menu {
-  position: absolute;
-  top: 38px;
-  right: 0;
-  min-width: 220px;
-  background: rgba(10, 10, 18, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 6px 0;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: var(--z-dropdown);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
-  pointer-events: none;
-}
-
-body.light-theme .nav-dropdown-menu {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.nav-dropdown-menu.open {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: all;
-}
-
-.nav-dropdown-menu .menu-label {
-  padding: 0.3rem 1rem;
-  font-size: 0.5625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  opacity: 0.5;
-}
-
-.nav-dropdown-menu a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.45rem 1rem;
-  color: var(--text);
-  text-decoration: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-
-.nav-dropdown-menu a:hover {
-  background: rgba(139, 92, 246, 0.08);
-  color: var(--accent);
-}
-
-.nav-dropdown-menu .dropdown-divider {
-  height: 1px;
-  background: var(--glass-border);
-  margin: 4px 12px;
-}
-
-/* ============================================================
-   MOBILE TOGGLE
-   ============================================================ */
-
 .nav-toggle {
   display: none;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255,255,255,0.03);
   border: 1px solid var(--glass-border);
   border-radius: 9px;
   color: var(--text);
@@ -1065,12 +631,12 @@ body.light-theme .nav-dropdown-menu {
 }
 
 body.light-theme .nav-toggle {
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(0,0,0,0.02);
 }
 
 .nav-toggle:hover {
   border-color: var(--accent);
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(139,92,246,0.06);
 }
 
 .nav-toggle:active { transform: scale(0.94); }
@@ -1088,15 +654,11 @@ body.light-theme .nav-toggle {
 .nav-toggle.open .bar:nth-child(2) { opacity: 0; }
 .nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
-/* ============================================================
-   MOBILE MENU - GLASSMORPHIC
-   ============================================================ */
-
 .nav-backdrop {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
   z-index: var(--z-backdrop);
   opacity: 0;
@@ -1115,7 +677,7 @@ body.light-theme .nav-toggle {
   right: 0;
   bottom: 0;
   width: 280px;
-  background: rgba(10, 10, 18, 0.92);
+  background: rgba(10,10,18,0.92);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
   border-left: 1px solid var(--glass-border);
@@ -1123,14 +685,14 @@ body.light-theme .nav-toggle {
   padding: 1rem;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
-  box-shadow: -16px 0 48px rgba(0, 0, 0, 0.3);
+  box-shadow: -16px 0 48px rgba(0,0,0,0.3);
 }
 
 body.light-theme .nav-menu {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255,255,255,0.92);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-left: 1px solid rgba(0, 0, 0, 0.04);
+  border-left: 1px solid rgba(0,0,0,0.04);
 }
 
 .nav-menu.open { transform: translateX(0); }
@@ -1164,13 +726,13 @@ body.light-theme .nav-menu {
 .nav-menu-inner a:hover,
 .nav-menu-inner button:hover {
   color: var(--accent2);
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(139,92,246,0.1);
   padding-left: 1.25rem;
 }
 
 .nav-menu-inner a.active {
   color: var(--accent2);
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(139,92,246,0.15);
 }
 
 .nav-menu-inner a.active::before {
@@ -1208,31 +770,19 @@ body.light-theme .nav-menu {
   margin: 4px 12px;
 }
 
-/* ============================================================
-   RESPONSIVE - SABİT FONT BOYUTLARI
-   ============================================================ */
-
 @media (max-width: 767px) {
   .nav-toggle {
     display: inline-flex;
   }
-
   .nav-links {
     display: none !important;
   }
-
-  .nav-dropdown {
-    display: none !important;
-  }
-
   .nav-menu {
     display: block;
   }
-
   .nav-right {
     gap: 0.3rem;
   }
-
   .nav {
     padding: 0 1rem;
     height: 56px;
@@ -1240,93 +790,58 @@ body.light-theme .nav-menu {
     max-height: 56px;
     font-size: var(--nav-font-size-sm);
   }
-  
   .nav::after {
     left: 10%;
     right: 10%;
   }
-
   .nav-user .user-info {
     display: none;
   }
-
   .nav-user {
     padding: 0.15rem 0.3rem;
     border: none;
     background: transparent;
   }
-
   .nav-user:hover {
     border: none;
     background: transparent;
   }
-
-  .nav-notebook-name {
-    max-width: 80px;
-    font-size: 0.6875rem;
-  }
-
-  .nav-notebook-btn {
-    padding: 0.2rem 0.5rem;
-    min-height: 28px;
-    font-size: 0.75rem;
-  }
-
-  .nav-notebook-dropdown {
-    position: fixed;
-    top: 48px;
-    right: 8px;
-    left: 8px;
-    min-width: unset;
-    max-width: unset;
-    width: auto;
-  }
-
   .nav-logo-text {
     font-size: 0.95rem;
   }
-
   .logo-icon {
     width: 26px;
     height: 26px;
   }
-
   .logo-icon .logo-icon-svg {
     width: 16px;
     height: 16px;
   }
-
   .user-avatar {
     width: 28px;
     height: 28px;
     font-size: 0.6875rem;
   }
-
   .nav-bell-btn {
     width: 28px;
     height: 28px;
   }
-
   .nav-bell-btn svg {
     width: 14px;
     height: 14px;
   }
-
   .plan-badge {
     height: 24px;
     font-size: 0.5rem;
     padding: 0.1rem 0.4rem 0.1rem 0.3rem;
   }
-
   .plan-badge .plan-dot {
     width: 4px;
     height: 4px;
   }
-
   .plan-badge .plan-text {
     font-size: 0.5rem;
   }
-
   .bell-panel {
     position: fixed;
     top: 54px;
@@ -1345,106 +860,71 @@ body.light-theme .nav-menu {
     max-height: 48px;
     font-size: var(--nav-font-size-xs);
   }
-  
   .nav::after {
     left: 5%;
     right: 5%;
   }
-
   .nav-right {
     gap: 0.2rem;
   }
-
-  .nav-notebook-name {
-    max-width: 60px;
-    font-size: 0.625rem;
-  }
-
-  .nav-notebook-btn {
-    padding: 0.15rem 0.4rem;
-    min-height: 24px;
-    font-size: 0.6875rem;
-  }
-
-  .nav-notebook-dropdown {
-    top: 44px;
-    right: 4px;
-    left: 4px;
-  }
-
   .nav-logo-text {
     font-size: 0.85rem;
   }
-
   .logo-icon {
     width: 24px;
     height: 24px;
   }
-
   .logo-icon .logo-icon-svg {
     width: 14px;
     height: 14px;
   }
-
   .user-avatar {
     width: 26px;
     height: 26px;
     font-size: 0.625rem;
   }
-
   .nav-bell-btn {
     width: 26px;
     height: 26px;
   }
-
   .nav-bell-btn svg {
     width: 13px;
     height: 13px;
   }
-
   .nav-toggle {
     width: 32px;
     height: 32px;
   }
-
   .nav-toggle .bar {
     width: 15px;
   }
-
   .plan-badge {
     height: 22px;
     font-size: 0.4375rem;
     padding: 0.05rem 0.3rem 0.05rem 0.2rem;
   }
-
   .plan-badge .plan-dot {
     width: 3px;
     height: 3px;
   }
-
   .plan-badge .plan-text {
     font-size: 0.4375rem;
   }
-
   .bell-panel {
     top: 48px;
     right: 4px;
     left: 4px;
   }
-
   .bell-panel-header {
     padding: 0.5rem 0.6rem;
   }
-
   .bell-panel-body {
     padding: 0.4rem 0.5rem;
   }
-
   .dropdown-menu {
     top: 40px;
     min-width: 150px;
   }
-
   .dropdown-item {
     font-size: 0.75rem;
     padding: 8px 12px;
@@ -1458,63 +938,43 @@ body.light-theme .nav-menu {
     min-height: 44px;
     max-height: 44px;
   }
-
   .nav-right {
     gap: 0.15rem;
   }
-
-  .nav-notebook-name {
-    display: none;
-  }
-
-  .nav-notebook-btn {
-    padding: 0.15rem 0.3rem;
-    min-height: 22px;
-  }
-
   .nav-logo-text {
     font-size: 0.75rem;
   }
-
   .logo-icon {
     width: 22px;
     height: 22px;
   }
-
   .logo-icon .logo-icon-svg {
     width: 12px;
     height: 12px;
   }
-
   .user-avatar {
     width: 24px;
     height: 24px;
     font-size: 0.5625rem;
   }
-
   .nav-bell-btn {
     width: 24px;
     height: 24px;
   }
-
   .nav-bell-btn svg {
     width: 12px;
     height: 12px;
   }
-
   .nav-toggle {
     width: 28px;
     height: 28px;
   }
-
   .nav-toggle .bar {
     width: 13px;
   }
-
   .plan-badge {
     display: none !important;
   }
-
   .bell-panel {
     top: 42px;
     right: 2px;
@@ -1522,37 +982,25 @@ body.light-theme .nav-menu {
   }
 }
 
-/* ============================================================
-   DOKUNMATİK HEDEF BOYUTLARI (44px minimum)
-   ============================================================ */
-
 @media (max-width: 767px) {
   .nav-toggle,
   .user-avatar,
   .nav-bell-btn,
   .dropdown-item,
-  .nav-dropdown-menu a,
   .nav-menu-inner a,
-  .nav-menu-inner button,
-  .nav-notebook-btn {
+  .nav-menu-inner button {
     min-height: 44px;
     min-width: 44px;
   }
-
   .nav-bell-btn {
     min-height: 36px;
     min-width: 36px;
   }
-
   .bell-panel-close {
     min-height: 36px;
     min-width: 36px;
   }
 }
-
-/* ============================================================
-   SAYFA GEÇİŞ ANİMASYONLARI - SADECE İÇERİK
-   ============================================================ */
 
 .main,
 .dashboard-main,
@@ -1561,18 +1009,12 @@ body.light-theme .nav-menu {
 .settings-wrap,
 .settings-panels,
 .page-content {
-  animation: fadeInContent 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: fadeInContent 0.4s cubic-bezier(0.4,0,0.2,1) both;
 }
 
 @keyframes fadeInContent {
-  0% {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .nav,
@@ -1582,37 +1024,25 @@ body.light-theme .nav-menu {
 }
 
 .page-exit {
-  animation: fadeOutContent 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: fadeOutContent 0.25s cubic-bezier(0.4,0,0.2,1) both;
 }
 
 @keyframes fadeOutContent {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
 }
 
 .page-enter {
-  animation: fadeInContent 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: fadeInContent 0.4s cubic-bezier(0.4,0,0.2,1) both;
 }
 
 .settings-panel.active {
-  animation: panelFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: panelFadeIn 0.3s cubic-bezier(0.4,0,0.2,1) both;
 }
 
 @keyframes panelFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 767px) {
@@ -1620,17 +1050,10 @@ body.light-theme .nav-menu {
   .dashboard-main,
   .calendar-page-main,
   .strategies-main {
-    animation: fadeInContent 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: fadeInContent 0.25s cubic-bezier(0.4,0,0.2,1) both;
   }
-
   @keyframes fadeInContent {
-    0% {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 }

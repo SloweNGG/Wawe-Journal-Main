@@ -1,12 +1,9 @@
 // ============================================================
-// NAVBAR.JS - GÜVENLİK + CACHE + LAZY LOAD
+// NAVBAR.JS - components/navbar/navbar.js
 // ============================================================
 
 console.log('🧭 Navbar yükleniyor (CACHE + LAZY LOAD)...');
 
-// ============================================================
-// ⭐ GÜVENLİK: HTML SANITIZE
-// ============================================================
 function sanitizeHTML(str) {
   if (!str) return '';
   var temp = document.createElement('div');
@@ -25,38 +22,23 @@ function sanitizeURL(url) {
   }
 }
 
-// ============================================================
-// ⭐ LUCIDE ICONS - DEFER YÜKLEME
-// ============================================================
 function loadLucideIcons() {
   if (typeof lucide !== 'undefined') {
-    try {
-      lucide.createIcons();
-      console.log('✅ Lucide icons re-created!');
-    } catch(e) {}
+    try { lucide.createIcons(); console.log('✅ Lucide icons re-created!'); } catch(e) {}
     return;
   }
-  
   var script = document.createElement('script');
   script.src = 'https://unpkg.com/lucide@latest';
   script.defer = true;
   script.onload = function() {
     if (typeof lucide !== 'undefined') {
-      try {
-        lucide.createIcons();
-        console.log('✅ Lucide icons loaded and created!');
-      } catch(e) {}
+      try { lucide.createIcons(); console.log('✅ Lucide icons loaded and created!'); } catch(e) {}
     }
   };
-  script.onerror = function() {
-    console.warn('⚠️ Lucide icons could not be loaded');
-  };
+  script.onerror = function() { console.warn('⚠️ Lucide icons could not be loaded'); };
   document.head.appendChild(script);
 }
 
-// ============================================================
-// ⭐ NAVBAR HTML - i18n ETİKETLERİ İLE
-// ============================================================
 function getNavbarHTML(translations) {
   var t = function(key) {
     if (translations && translations[key]) return translations[key];
@@ -224,9 +206,6 @@ function getNavbarHTML(translations) {
   `;
 }
 
-// ============================================================
-// ⭐ i18n METİNLERİNİ BATCH GÜNCELLE
-// ============================================================
 function updateNavbarI18n() {
   if (typeof i18n === 'undefined' || typeof i18n.t !== 'function') {
     console.warn('⚠️ i18n yüklenmemiş, metinler güncellenemiyor');
@@ -264,9 +243,7 @@ function updateNavbarI18n() {
   });
   
   if (textUpdates.length > 0) {
-    textUpdates.forEach(function(item) {
-      item.el.textContent = item.translation;
-    });
+    textUpdates.forEach(function(item) { item.el.textContent = item.translation; });
   }
   
   if (placeholderUpdates.length > 0) {
@@ -276,9 +253,7 @@ function updateNavbarI18n() {
   }
   
   if (htmlUpdates.length > 0) {
-    htmlUpdates.forEach(function(item) {
-      item.el.innerHTML = item.translation;
-    });
+    htmlUpdates.forEach(function(item) { item.el.innerHTML = item.translation; });
   }
   
   updateNavbarBadgeSync();
@@ -287,9 +262,6 @@ function updateNavbarI18n() {
   console.log(`✅ Navbar i18n güncellendi! (${total} element)`);
 }
 
-// ============================================================
-// ⭐ AVATAR UYGULA (CACHE DESTEKLİ)
-// ============================================================
 function applyAvatarToNav(url) {
   var navAvatar = document.getElementById('user-avatar');
   if (!navAvatar) return;
@@ -311,15 +283,11 @@ function applyAvatarToNav(url) {
   navAvatar.style.background = 'var(--surface2)';
 }
 
-// ============================================================
-// ⭐ AVATAR YÜKLE (CACHE DESTEKLİ)
-// ============================================================
 async function loadNavbarAvatar() {
   try {
     var sb = window.sb || window.supabase;
     if (!sb) return;
     
-    // ⭐ CACHE KONTROLÜ
     var cachedAvatar = sessionStorage.getItem('ww_avatar_url');
     var cachedTime = sessionStorage.getItem('ww_avatar_time');
     var now = Date.now();
@@ -359,9 +327,6 @@ async function loadNavbarAvatar() {
   }
 }
 
-// ============================================================
-// ⭐ PLAN BADGE UI GÜNCELLE
-// ============================================================
 function updateBadgeUI(isPremium) {
   var badge = document.getElementById('plan-badge');
   var text = document.getElementById('plan-text');
@@ -389,16 +354,12 @@ function updateBadgeUI(isPremium) {
   }
 }
 
-// ============================================================
-// ⭐ PLAN BADGE GÜNCELLE (CACHE DESTEKLİ)
-// ============================================================
 async function updateNavbarBadge() {
   try {
     var badge = document.getElementById('plan-badge');
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
     
-    // ⭐ CACHE KONTROLÜ
     var cachedPlan = sessionStorage.getItem('ww_user_plan');
     var cachedTime = sessionStorage.getItem('ww_user_plan_time');
     var now = Date.now();
@@ -471,9 +432,6 @@ function updateNavbarBadgeSync() {
   } catch (e) {}
 }
 
-// ============================================================
-// ⭐ AKTİF LİNK
-// ============================================================
 function setActiveNavLink() {
   var currentPath = window.location.pathname;
   var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
@@ -567,9 +525,6 @@ function setActiveNavLink() {
   });
 }
 
-// ============================================================
-// ⭐ AVATAR DROPDOWN
-// ============================================================
 var avatarDropdownInitialized = false;
 
 function setupAvatarDropdown() {
@@ -611,15 +566,10 @@ function setupAvatarDropdown() {
   console.log('✅ Avatar dropdown event delegation kuruldu!');
 }
 
-// ============================================================
-// ⭐ NAVBAR EVENT'LERİ
-// ============================================================
 function initNavEvents() {
   console.log('🔗 Navbar event\'leri bağlanıyor...');
   
-  // ⭐ LUCIDE ICONS - LAZY LOAD
   loadLucideIcons();
-  
   setupAvatarDropdown();
   
   var ddBtn = document.getElementById('premium-dropdown-btn');
@@ -742,9 +692,6 @@ function initNavEvents() {
   console.log('✅ Navbar event\'leri bağlandı!');
 }
 
-// ============================================================
-// ⭐ NAVBAR'YI YÜKLE
-// ============================================================
 function loadNavbar(containerId) {
   var container = document.getElementById(containerId);
   if (!container) {
@@ -805,9 +752,6 @@ function loadNavbar(containerId) {
   }, 50);
 }
 
-// ============================================================
-// ⭐ OTOMATİK BAŞLAT
-// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
   var container = document.getElementById('navbar-container');
   if (container) {
@@ -840,9 +784,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// ============================================================
-// ⭐ GLOBAL
-// ============================================================
 window.setActiveNavLink = setActiveNavLink;
 window.updateNavbarI18n = updateNavbarI18n;
 window.updateNavbarBadge = updateNavbarBadge;

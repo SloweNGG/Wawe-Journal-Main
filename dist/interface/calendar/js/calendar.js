@@ -674,6 +674,15 @@ async function initCalendar() {
     
     var user = await requireAuth();
     if (!user) return;
+
+    // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
+    try {
+        if (typeof updateOvertradeBell === 'function') {
+            await updateOvertradeBell();
+        }
+    } catch(e) {
+        console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+    }
     
     // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
     var tradesData = await loadCalendarTradesFromDB(user.id);

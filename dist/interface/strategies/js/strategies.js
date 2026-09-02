@@ -1256,6 +1256,15 @@ async function initStrategies() {
     
     await updateNavbarAvatar();
     await updatePlanBadge();
+
+    // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
+    try {
+        if (typeof updateOvertradeBell === 'function') {
+            await updateOvertradeBell();
+        }
+    } catch(e) {
+        console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+    }
     
     if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
       var adminLink = document.getElementById('admin-link');

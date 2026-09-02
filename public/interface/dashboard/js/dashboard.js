@@ -8,6 +8,7 @@
 // ⭐ FİX: 1.6 localDateStr fonksiyonu eklendi
 // ⭐ FİX: 1.7 Win/Loss açık kaldırıldı
 // ⭐ FİX: 2.1 refresh sıralaması + token koruması
+// ⭐ FİX: 3.1 Over-Trade bildirimi eklendi
 // ============================================================
 
 (function() {
@@ -1666,6 +1667,7 @@
 
   // ============================================================
   // ⭐ FİX 1.5: INIT DASHBOARD - DOM sorguları burada yapılıyor
+  // ⭐ FİX 3.1: Over-Trade bildirimi eklendi
   // ============================================================
 
   async function initDashboard() {
@@ -1748,6 +1750,15 @@
       try {
         await updatePlanBadge();
       } catch (e) {}
+
+      // ⭐ FİX 3.1: Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
+      try {
+        if (typeof updateOvertradeBell === 'function') {
+          await updateOvertradeBell();
+        }
+      } catch(e) {
+        console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+      }
 
       try {
         var savedPayMethod = localStorage.getItem('ww_pay_method');

@@ -848,6 +848,15 @@
       try {
         await updatePlanBadge();
       } catch (e) {}
+
+      // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
+      try {
+          if (typeof updateOvertradeBell === 'function') {
+              await updateOvertradeBell();
+          }
+      } catch(e) {
+          console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+      }
       
       if (typeof sb === 'undefined') {
         console.error('❌ sb (Supabase) tanımlı değil!');
