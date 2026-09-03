@@ -1,5 +1,11 @@
 // ============================================================
 // dashboard-manager.js - Widgets, drag-drop, skeleton, strategy, export
+// ⭐ FIX: buildWidgets() height alanları kaldırıldı
+// ⭐ FIX: renderWidgets() inline height kaldırıldı
+// ⭐ FIX: Kullanılmayan currentUser ve allTrades kaldırıldı
+// ⭐ FIX: strategy-empty-note zenginleştirildi
+// ⭐ FIX: injectSkeletonMarkup() dinamik hale getirildi (widget'larla eşleşir)
+// ⭐ FIX: Skeleton boyutları gerçek widget boyutlarıyla uyumlu
 // ============================================================
 
 import {
@@ -25,8 +31,6 @@ var sortableInstance = null;
 var isDragging = false;
 var resizeTimeout = null;
 var isResizing = false;
-var currentUser = null;
-var allTrades = [];
 var allStrategies = [];
 var chartRafId = null;
 
@@ -62,10 +66,46 @@ export function hideSkeletons() {
   setTimeout(forceResizeAllCharts, 200);
 }
 
+// ⭐ DINAMIK SKELETON - widget'larla birebir eşleşir
 export function injectSkeletonMarkup() {
   var main = document.getElementById('main-content');
   if (!main) return;
-  main.innerHTML = '\n    <div class="premium-stats-skeleton" id="premium-stats-skeleton">\n      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>\n      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>\n      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>\n      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>\n      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>\n    </div>\n    <div class="dashboard-skeleton" id="dashboard-skeleton">\n      <div class="generic-skeleton-block wide tall"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block wide"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block"></div>\n      <div class="generic-skeleton-block full"></div>\n    </div>\n  ';
+
+  var widgets = buildWidgets();
+  var savedOrder = loadLayoutOrder();
+  var widgetKeys = Object.keys(widgets);
+
+  var orderedKeys = widgetKeys;
+  if (savedOrder && savedOrder.length) {
+    orderedKeys = savedOrder.filter(function(k) { return widgetKeys.indexOf(k) !== -1; });
+    var missing = widgetKeys.filter(function(k) { return orderedKeys.indexOf(k) === -1; });
+    orderedKeys = orderedKeys.concat(missing);
+  }
+
+  // ⭐ Skeleton grid HTML'ini oluştur
+  var gridHtml = '';
+  orderedKeys.forEach(function(key) {
+    var w = widgets[key];
+    var baseClass = 'generic-skeleton-block';
+    var extraClasses = w.class || '';
+    var isDoughnut = w.doughnut || false;
+    
+    // Doughnut widget'lar için farklı skeleton
+    if (isDoughnut) {
+      gridHtml += '\n        <div class="generic-skeleton-block ' + extraClasses + '" data-widget="' + key + '" style="display:flex;align-items:center;justify-content:center;">\n          <div class="skeleton-doughnut"></div>\n        </div>\n      ';
+    } else {
+      // Normal widget skeleton - class'ları koru (wide, tall, full)
+      gridHtml += '\n        <div class="generic-skeleton-block ' + extraClasses + '" data-widget="' + key + '"></div>\n      ';
+    }
+  });
+
+  // ⭐ 5 KPI skeleton (value + label)
+  var statsSkeletonHtml = '';
+  for (var i = 0; i < 5; i++) {
+    statsSkeletonHtml += '\n      <div class="skeleton-stat">\n        <div class="skeleton-line" style="height:20px;"></div>\n        <div class="skeleton-line" style="width:60%;height:10px;"></div>\n      </div>\n    ';
+  }
+
+  main.innerHTML = '\n    <div class="premium-stats-skeleton" id="premium-stats-skeleton">\n      ' + statsSkeletonHtml + '\n    </div>\n    <div class="dashboard-skeleton" id="dashboard-skeleton">\n      ' + gridHtml + '\n    </div>\n  ';
 }
 
 // ⭐ LAYOUT
@@ -235,7 +275,7 @@ export function renderKpiBar(trades) {
   } catch(e) {}
 }
 
-// ⭐ BUILD WIDGETS
+// ⭐ BUILD WIDGETS - height alanları kaldırıldı
 export function buildWidgets() {
   return {
     'cumulative': {
@@ -244,69 +284,59 @@ export function buildWidgets() {
       badgeId: 'cumulative-change',
       badgeDefault: '↑ +0%',
       template: '<div id="chart-cumulative" class="lwc-chart-container"></div>',
-      class: 'wide tall',
-      height: '200px'
+      class: 'wide tall'
     },
     'winloss': {
       title: 'Win / Loss Dağılımı',
       template: '<div id="chart-winloss" style="width:100%;height:100%;"></div>',
       class: '',
-      height: '160px',
       doughnut: true
     },
     'daily': {
       title: 'Günlük K/Z – Son 30 Gün',
       template: '<div id="chart-daily" style="width:100%;height:100%;"></div>',
-      class: 'wide',
-      height: '160px'
+      class: 'wide'
     },
     'symbol': {
       title: 'Sembol Bazlı Performans',
       template: '<div id="chart-symbol" style="width:100%;height:100%;"></div>',
-      class: '',
-      height: '160px'
+      class: ''
     },
     'direction': {
       title: 'Long / Short Dağılımı',
       template: '<div id="chart-direction" style="width:100%;height:100%;"></div>',
       class: '',
-      height: '160px',
       doughnut: true
     },
     'hourly': {
       title: 'Saat Bazlı Performans',
       template: '<div id="chart-hourly" style="width:100%;height:100%;"></div>',
-      class: '',
-      height: '150px'
+      class: ''
     },
     'dow': {
       title: 'Haftanın Günü',
       template: '<div id="chart-dow" style="width:100%;height:100%;"></div>',
-      class: '',
-      height: '140px'
+      class: ''
     },
     'rr': {
       title: 'R:R Dağılımı',
       template: '<div id="chart-rr" style="width:100%;height:100%;"></div>',
-      class: '',
-      height: '140px'
+      class: ''
     },
     'lot': {
       title: 'Lot Büyüklüğü',
       template: '<div id="chart-lot" style="width:100%;height:100%;"></div>',
-      class: '',
-      height: '140px'
+      class: ''
     },
     'strategies': {
       title: 'En İyi Stratejiler',
       template: '<div id="strategy-section-body"></div>',
-      class: 'full',
-      height: 'auto'
+      class: 'full'
     }
   };
 }
 
-// ⭐ RENDER WIDGETS
+// ⭐ RENDER WIDGETS - inline height kaldırıldı
 export function renderWidgets() {
   var grid = document.getElementById('dashboard-grid');
   if (!grid) return;
@@ -330,9 +360,8 @@ export function renderWidgets() {
       badgeHtml = '<span class="chart-badge" id="' + w.badgeId + '">' + w.badgeDefault + '</span>';
     }
     var doughnutClass = w.doughnut ? ' chart-wrap--doughnut' : '';
-    var heightStyle = w.height ? 'height:' + w.height + ';' : '';
 
-    html += '\n      <div class="grid-item ' + (w.class || '') + '" data-widget="' + key + '">\n        <div class="drag-handle">⠿</div>\n        <div class="grid-header">\n          <h3>' + w.title + '</h3>\n          ' + badgeHtml + '\n        </div>\n        <div class="chart-wrap' + doughnutClass + '" style="' + heightStyle + '">\n          ' + w.template + '\n        </div>\n      </div>\n    ';
+    html += '\n      <div class="grid-item ' + (w.class || '') + '" data-widget="' + key + '">\n        <div class="drag-handle">⠿</div>\n        <div class="grid-header">\n          <h3>' + w.title + '</h3>\n          ' + badgeHtml + '\n        </div>\n        <div class="chart-wrap' + doughnutClass + '">\n          ' + w.template + '\n        </div>\n      </div>\n    ';
   });
 
   grid.innerHTML = html;
@@ -374,7 +403,16 @@ export async function loadStrategySection(trades, user) {
     allStrategies = strategies || [];
 
     if (!allStrategies.length) {
-      section.innerHTML = '<div class="strategy-empty-note"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" style="display:block;margin:0 auto 0.5rem;"><path d="M22 12h-4l-3 9H9l-3-9H2"/><path d="M5 3h14l-2 6H7L5 3z"/></svg> Henüz strateji eklenmemiş. <a href="strategies.html" style="color:var(--accent2);">Strateji oluştur →</a></div>';
+      section.innerHTML = `
+        <div class="strategy-empty-note" style="padding:1.5rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" style="opacity:0.5;">
+            <path d="M22 12h-4l-3 9H9l-3-9H2"/>
+            <path d="M5 3h14l-2 6H7L5 3z"/>
+          </svg>
+          <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">Henüz strateji eklenmemiş.</span>
+          <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">Strateji oluştur →</a>
+        </div>
+      `;
       return;
     }
 

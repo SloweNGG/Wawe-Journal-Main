@@ -1,5 +1,9 @@
 /* ============================================================
    LAYOUT - Grid, Flex, Pozisyon, Responsive
+   ⭐ FIX: Tooltip kırpma sorunu çözüldü (overflow: visible)
+   ⭐ FIX: Mobil chart-wrap boyutları eklendi
+   ⭐ FIX: chart-wrap flex: none → flex: 1 1 auto (kutuyu doldur)
+   ⭐ FIX: height → min-height (esnek boyut)
    ============================================================ */
 
 .premium-main {
@@ -96,14 +100,14 @@
 }
 
 /* ============================================================
-   CHART WRAP
+   ⭐ CHART WRAP - TOOLTIP KIRPMA ÇÖZÜMÜ + FLEX FIX
    ============================================================ */
 .chart-wrap {
   position: relative;
   width: 100%;
-  flex: none;
+  flex: 1 1 auto; /* ⭐ flex: none → flex: 1 1 auto (kutuyu doldur) */
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart-wrap--doughnut {
@@ -111,17 +115,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
 }
 .chart-wrap--doughnut .apexcharts-canvas {
   width: 100% !important;
   height: 100% !important;
+  overflow: visible !important;
+}
+
+/* ⭐ ApexCharts canvas - tooltip taşmasına izin ver */
+.apexcharts-canvas {
+  overflow: visible !important;
+}
+
+/* ⭐ Grid item içindeki chart-wrap yükseklikleri - min-height kullan */
+.grid-item .chart-wrap {
+  min-height: clamp(120px, 25vw, 180px);
+}
+
+.grid-item .chart-wrap--doughnut {
+  min-height: clamp(120px, 22vw, 160px);
+}
+
+.grid-item.tall .chart-wrap {
+  min-height: clamp(150px, 30vw, 220px);
 }
 
 .grid-item.wide {
   grid-column: span 2;
-}
-.grid-item.tall .chart-wrap {
-  min-height: 160px;
 }
 .grid-item.full {
   grid-column: span 4;
@@ -205,6 +226,17 @@
     width: 20px;
     height: 20px;
   }
+
+  /* ⭐ MOBIL CHART-WRAP BOYUTLARI - min-height kullan */
+  .grid-item .chart-wrap {
+    min-height: clamp(100px, 20vw, 140px);
+  }
+  .grid-item .chart-wrap--doughnut {
+    min-height: clamp(100px, 18vw, 130px);
+  }
+  .grid-item.tall .chart-wrap {
+    min-height: clamp(120px, 22vw, 160px);
+  }
 }
 
 @media (max-width: 480px) {
@@ -216,5 +248,29 @@
   }
   .premium-stats-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* ⭐ 480px ALTINDA CHART-WRAP DAHA DA KÜÇÜK */
+  .grid-item .chart-wrap {
+    min-height: clamp(80px, 18vw, 110px);
+  }
+  .grid-item .chart-wrap--doughnut {
+    min-height: clamp(80px, 16vw, 100px);
+  }
+  .grid-item.tall .chart-wrap {
+    min-height: clamp(100px, 20vw, 130px);
+  }
+}
+
+@media (max-width: 374px) {
+  /* ⭐ 374px ALTINDA CHART-WRAP EN KÜÇÜK */
+  .grid-item .chart-wrap {
+    min-height: clamp(60px, 15vw, 90px);
+  }
+  .grid-item .chart-wrap--doughnut {
+    min-height: clamp(60px, 14vw, 80px);
+  }
+  .grid-item.tall .chart-wrap {
+    min-height: clamp(80px, 18vw, 100px);
   }
 }

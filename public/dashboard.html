@@ -119,12 +119,14 @@
         <div class="stat-value" id="stat-total">—</div>
         <div class="stat-trend" id="trend-total"></div>
       </div>
-      <div class="stat-card" style="--accent-color: var(--green);">
+      <!-- ⭐ data-critical="true" eklendi - Toplam K/Z -->
+      <div class="stat-card" style="--accent-color: var(--green);" data-critical="true">
         <div class="stat-label" data-i18n="dashboard.stats.total_pnl">Toplam K/Z</div>
         <div class="stat-value" id="stat-pnl">—</div>
         <div class="stat-trend" id="trend-pnl"></div>
       </div>
-      <div class="stat-card" style="--accent-color: var(--accent);">
+      <!-- ⭐ data-critical="true" eklendi - Win Rate -->
+      <div class="stat-card" style="--accent-color: var(--accent);" data-critical="true">
         <div class="stat-label" data-i18n="dashboard.stats.win_rate">Win Rate</div>
         <div class="stat-value" id="stat-winrate">—</div>
         <div class="stat-trend" id="trend-wr"></div>
@@ -168,7 +170,7 @@
       <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
     </div>
 
-    <!-- CHARTS - GERÇEK -->
+    <!-- ⭐ CHARTS - GERÇEK (inline height'lar KALDIRILDI) -->
     <div class="charts-top-grid" id="charts-top-grid" style="display:none;">
       <div class="chart-card">
         <div class="chart-header">
@@ -176,7 +178,7 @@
           <span class="chart-badge" id="cumulative-change">↑ +0%</span>
         </div>
         <div class="chart-wrap chart-wrap--tall">
-          <canvas id="chart-cumulative"></canvas>
+          <div id="chart-cumulative"></div>
         </div>
       </div>
       <div class="chart-card">
@@ -184,7 +186,7 @@
           <h3 data-i18n="dashboard.chart.winloss">Win / Loss Dağılımı</h3>
         </div>
         <div class="chart-wrap chart-wrap--doughnut">
-          <canvas id="chart-winloss"></canvas>
+          <div id="chart-winloss"></div>
         </div>
       </div>
     </div>
@@ -196,24 +198,24 @@
       <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
     </div>
 
-    <!-- CHARTS BOTTOM - GERÇEK -->
+    <!-- ⭐ CHARTS BOTTOM - GERÇEK (inline height'lar KALDIRILDI) -->
     <div class="charts-bottom-grid" id="charts-bottom-grid" style="display:none;">
       <div class="chart-card">
         <h3 data-i18n="dashboard.chart.daily">Günlük K/Z – Son 30 Gün</h3>
         <div class="chart-wrap">
-          <canvas id="chart-daily"></canvas>
+          <div id="chart-daily"></div>
         </div>
       </div>
       <div class="chart-card">
         <h3 data-i18n="dashboard.chart.symbol">Sembol Bazlı Performans</h3>
         <div class="chart-wrap">
-          <canvas id="chart-symbol"></canvas>
+          <div id="chart-symbol"></div>
         </div>
       </div>
       <div class="chart-card">
         <h3 data-i18n="dashboard.chart.direction">Long / Short Dağılımı</h3>
         <div class="chart-wrap chart-wrap--doughnut">
-          <canvas id="chart-direction"></canvas>
+          <div id="chart-direction"></div>
         </div>
       </div>
     </div>
@@ -323,7 +325,9 @@
   
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- ⭐ ESKİ chart.js KALDIRILDI, YERİNE APEXCHARTS VE LIGHTWEIGHT CHARTS -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <!-- 2. CORE KONFİG VE İ18N (ES5) -->
@@ -340,7 +344,7 @@
   <script src="interface/quick-add/js/quick-modal-i18n.js"></script>
   <script src="interface/quick-add/js/quick-add.js"></script>
   
-  <!-- 6. ⭐ DASHBOARD JS (ES5 - AYNI KALIR) -->
+  <!-- 6. ⭐ DASHBOARD JS (YENİ - ApexCharts sürümü) -->
   <script src="interface/dashboard/js/dashboard.js"></script>
   
   <!-- 7. QUICK ADD MANUEL BAŞLATICI -->

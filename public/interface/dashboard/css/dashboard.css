@@ -1,5 +1,13 @@
 /* ============================================================
    DASHBOARD ÖZEL STİLLER — ORANTILI (FLUID) SÜRÜM
+   ⭐ ApexCharts & Lightweight Charts DESTEĞİ EKLENDİ
+   ⭐ FİX: KPI kart font boyutları Premium ile eşitlendi
+   ⭐ FİX: chart-wrap flex: 1 1 auto + min-height (kutuyu doldur)
+   ⭐ FİX: Tooltip overflow görünürlüğü düzeltildi
+   ⭐ FİX: Chart header yapısı geri eklendi
+   ⭐ FİX: Font boyutları büyütüldü
+   ⭐ FİX: Mobil chart-wrap boyutları eklendi
+   ⭐ FİX: Boş state stilleri eklendi
    ⭐ FİX: 3.1 trade-row 420px grid düzeltmesi
    ⭐ FİX: 4.1 chart-wrap boyutları burada TEK kaynak
    ⭐ FİX: 4.2 mini-cal-day boyutları burada TEK kaynak
@@ -10,6 +18,316 @@
    ⭐ FAZ 3.3: dotPulse kopyası SİLİNDİ (styles.css'te tek kaynak)
    ⭐ FAZ 3.4: .stat-card kopyası SİLİNDİ (styles.css'te tek kaynak)
    ⭐ FONT: DM Mono kullanılmıyor (JetBrains Mono ve Inter kullanılıyor)
+   ============================================================ */
+
+/* ============================================================
+   ⭐ APEXCHARTS ÖZEL STİLLERİ
+   ============================================================ */
+
+/* ApexCharts container'ları */
+#chart-cumulative,
+#chart-winloss,
+#chart-daily,
+#chart-symbol,
+#chart-direction {
+  width: 100%;
+  height: 100%;
+}
+
+/* ApexCharts canvas wrapper - tooltip taşmasına izin ver */
+.apexcharts-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
+/* ⭐ APEXCHARTS TOOLTIP - position:fixed KALDIRILDI, overflow görünür */
+.apexcharts-tooltip {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important;
+  z-index: var(--z-popover) !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+}
+
+/* Tooltip içeriği */
+.apexcharts-tooltip-title {
+  background: var(--surface2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+}
+
+.apexcharts-tooltip-text-y-label,
+.apexcharts-tooltip-text-y-value {
+  color: var(--text) !important;
+}
+
+/* Tooltip seri listesi */
+.apexcharts-tooltip-series-group {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 12px !important;
+}
+
+.apexcharts-tooltip-series-group .apexcharts-tooltip-text {
+  color: var(--text) !important;
+}
+
+/* ApexCharts grid lines - tema uyumlu */
+.apexcharts-gridline {
+  stroke: var(--border) !important;
+}
+
+.apexcharts-grid-borders line {
+  stroke: var(--border) !important;
+}
+
+/* ⭐ ApexCharts x-axis labels - FONT BOYUTU BÜYÜTÜLDÜ */
+.apexcharts-xaxis-texts-g text,
+.apexcharts-yaxis-texts-g text {
+  fill: var(--muted) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+/* ⭐ ApexCharts legend - FONT BOYUTU BÜYÜTÜLDÜ */
+.apexcharts-legend-text {
+  color: var(--text) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* ApexCharts doughnut - center text */
+.apexcharts-datalabel-label,
+.apexcharts-datalabel-value {
+  color: var(--text) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ApexCharts doughnut - data label'leri */
+.apexcharts-datalabels-group text {
+  fill: #fff !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================================
+   ⭐ CHART WRAP - APEXCHARTS UYUMLU (FLEX FIX)
+   ============================================================ */
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: clamp(120px, 30vw, 220px);
+  overflow: visible;
+}
+
+.chart-wrap--tall {
+  min-height: clamp(140px, 34vw, 240px);
+}
+
+.chart-wrap--doughnut {
+  min-height: clamp(120px, 28vw, 200px);
+}
+
+/* Chart wrap içindeki ApexCharts container'ı */
+.chart-wrap > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* Chart wrap içindeki canvas'lar */
+.chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  transition: opacity 0.3s ease;
+}
+
+.chart-wrap canvas.chart-ready {
+  opacity: 1;
+}
+
+/* ============================================================
+   ⭐ CHART CARD - HEADER YAPISI
+   ============================================================ */
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(0.5rem, 0.8vw, 0.9rem) clamp(0.6rem, 1vw, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chart-card:hover {
+  border-color: rgba(139,92,246,0.3);
+  box-shadow: 0 4px 16px rgba(139,92,246,0.08);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chart-card h3 {
+  font-size: clamp(8px, 0.8vw, 10px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.chart-header h3 {
+  font-size: clamp(8px, 0.8vw, 10px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.chart-badge {
+  font-size: clamp(8px, 0.7vw, 10px);
+  font-family: 'DM Sans', sans-serif;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(34,197,94,0.1);
+  color: var(--green);
+}
+
+.chart-badge.negative {
+  background: rgba(239,68,68,0.1);
+  color: var(--red);
+}
+
+/* ============================================================
+   ⭐ BOŞ STATE STİLLERİ
+   ============================================================ */
+
+.strategy-tags-card .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  color: var(--muted);
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.strategy-tags-card .empty-state .empty-icon {
+  font-size: 2rem;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.strategy-tags-card .empty-state .empty-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.strategy-tags-card .empty-state .empty-text {
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--muted);
+}
+
+.strategy-tags-card .empty-state .empty-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.strategy-tags-card .empty-state .empty-link:hover {
+  text-decoration: underline;
+}
+
+.recent-trades-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  color: var(--muted);
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.recent-trades-empty .empty-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-trades-empty .empty-icon svg {
+  width: 36px;
+  height: 36px;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.recent-trades-empty .empty-text {
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--muted);
+}
+
+.recent-trades-empty .empty-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.recent-trades-empty .empty-link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   ⭐ LIGHTWEIGHT CHARTS ÖZEL STİLLERİ
+   ============================================================ */
+
+/* Lightweight Charts container */
+.lwc-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.lwc-chart canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ============================================================
+   ⭐ GOAL EDIT BUTTON
    ============================================================ */
 
 .goal-edit-btn {
@@ -39,6 +357,10 @@
   stroke-width: 2;
 }
 
+/* ============================================================
+   ⭐ KPI ITEM
+   ============================================================ */
+
 .kpi-item {
   display: flex;
   align-items: center;
@@ -52,6 +374,10 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* ============================================================
+   ⭐ GOAL MODAL
+   ============================================================ */
 
 .goal-modal-overlay {
   position: fixed;
@@ -137,6 +463,10 @@
   border-top: 1px solid var(--border);
 }
 
+/* ============================================================
+   ⭐ WELCOME MESSAGE
+   ============================================================ */
+
 .welcome-msg {
   color: var(--accent) !important;
   font-size: clamp(0.7rem, 2.2vw, 0.85rem);
@@ -148,6 +478,10 @@
   50% { text-shadow: 0 0 12px var(--accent), 0 0 8px var(--accent2); opacity: 1; }
   100% { text-shadow: 0 0 0px var(--accent); opacity: 1; }
 }
+
+/* ============================================================
+   ⭐ DATE FILTER
+   ============================================================ */
 
 .date-filter-group {
   display: flex;
@@ -179,6 +513,10 @@
   color: #fff;
 }
 
+/* ============================================================
+   ⭐ ADD TRADE BUTTON
+   ============================================================ */
+
 .add-trade-btn {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
@@ -208,6 +546,10 @@
   height: clamp(14px, 4vw, 18px);
 }
 
+/* ============================================================
+   ⭐ EXPORT BUTTON
+   ============================================================ */
+
 .export-btn {
   background: transparent;
   border: 1px solid var(--border);
@@ -235,6 +577,10 @@
   stroke-width: 2;
 }
 
+/* ============================================================
+   ⭐ HEADER ACTIONS
+   ============================================================ */
+
 .header-actions {
   display: flex;
   gap: 0.4rem;
@@ -243,8 +589,9 @@
 }
 
 /* ============================================================
-   TRADE ROW - MOBIL UYUMLU
+   ⭐ TRADE ROW - MOBIL UYUMLU
    ============================================================ */
+
 .trade-row {
   display: grid;
   grid-template-columns:
@@ -316,9 +663,10 @@
 }
 
 /* ============================================================
-   MINI CALENDAR
+   ⭐ MINI CALENDAR
    ⭐ FİX 4.2: mini-cal-day boyutları TEK KAYNAK
    ============================================================ */
+
 .mini-calendar-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -476,12 +824,20 @@ body.light-theme .mini-cal-day.loss:hover {
   background: rgba(239,68,68,0.16);
 }
 
+/* ============================================================
+   ⭐ DASHBOARD GRID 2 COLUMN
+   ============================================================ */
+
 .dashboard-grid-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
+
+/* ============================================================
+   ⭐ STRATEGY TAGS
+   ============================================================ */
 
 .strategy-tags-card {
   background: var(--surface);
@@ -531,6 +887,10 @@ body.light-theme .mini-cal-day.loss:hover {
 .pill-negative { border-left: 2px solid var(--red); }
 .pill-neutral { border-left: 2px solid var(--accent); }
 
+/* ============================================================
+   ⭐ BEST WORST
+   ============================================================ */
+
 .best-worst {
   margin-top: 0.75rem;
   font-size: clamp(9px, 2vw, 10px);
@@ -552,6 +912,10 @@ body.light-theme .mini-cal-day.loss:hover {
   font-weight: 600;
 }
 
+/* ============================================================
+   ⭐ TRADE NOTE INDICATOR
+   ============================================================ */
+
 .trade-note-indicator svg {
   width: clamp(12px, 3vw, 16px);
   height: clamp(12px, 3vw, 16px);
@@ -562,17 +926,11 @@ body.light-theme .mini-cal-day.loss:hover {
   stroke: var(--accent);
 }
 
-.chart-wrap canvas {
-  transition: opacity 0.3s ease;
-}
-.chart-wrap canvas.chart-ready {
-  opacity: 1;
-}
-
 /* ============================================================
-   STAT CARD - SADECE DASHBOARD'A ÖZEL EKLEMELER
-   ⭐ FAZ 3.4: .stat-card'ın kendisi styles.css'ten gelir, sadece trend stili burada
+   ⭐ STAT CARD - SADECE DASHBOARD'A ÖZEL EKLEMELER
+   ⭐ Premium ile eşit font boyutları
    ============================================================ */
+
 .stat-card .stat-trend {
   font-size: clamp(9px, 0.9vw, 12px);
   margin-top: 0.3rem;
@@ -596,25 +954,39 @@ body.light-theme .mini-cal-day.loss:hover {
   background: var(--accent-color, var(--accent));
 }
 
-/* ============================================================
-   ORTAK KÜÇÜK BİLEŞENLER
-   ⭐ FİX 4.1: chart-wrap boyutları TEK kaynak
-   ============================================================ */
-.chart-wrap { height: clamp(120px, 30vw, 220px); }
-.chart-wrap--tall { height: clamp(140px, 34vw, 240px); }
-.chart-wrap--doughnut { height: clamp(120px, 28vw, 200px); }
-.page-header h1 { font-size: clamp(1rem, 4vw, 1.5rem); }
-.kpi-label { font-size: clamp(7px, 1.8vw, 10px); }
-.kpi-value { font-size: clamp(0.7rem, 2.5vw, 1rem); }
+/* ⭐ STAT CARD - PREMIUM İLE EŞİT FONT BOYUTLARI */
+.stat-card .stat-label {
+  font-size: clamp(9.5px, 1vw, 11px);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+  font-family: 'DM Sans', sans-serif;
+}
 
-/* ⭐ FAZ 3.2: .spinner kopyası KALDIRILDI - styles.css'te tek kaynak */
+.stat-card .stat-value {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(1.4rem, 2.8vw, 1.75rem);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
 
-/* ⭐ FAZ 3.3: @keyframes dotPulse kopyası KALDIRILDI - styles.css'te tek kaynak */
+.stat-card .stat-value.positive {
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green-glow);
+}
+.stat-card .stat-value.negative {
+  color: var(--red);
+  text-shadow: 0 0 8px var(--red-glow);
+}
 
 /* ============================================================
    RESPONSIVE — SADECE LAYOUT
    ⭐ FİX 3.1: 420px altı trade-row grid tamamen düzeltildi
    ⭐ FİX 4.2: mini-cal-day boyutları TEK kaynak
+   ⭐ FİX 5: Mobil chart-wrap boyutları EKLENDİ
    ============================================================ */
 
 @media (max-width: 900px) {
@@ -668,6 +1040,17 @@ body.light-theme .mini-cal-day.loss:hover {
     gap: 0.5rem;
   }
 
+  /* ⭐ MOBIL CHART-WRAP BOYUTLARI */
+  .chart-wrap {
+    min-height: clamp(100px, 25vw, 160px);
+  }
+  .chart-wrap--tall {
+    min-height: clamp(110px, 28vw, 180px);
+  }
+  .chart-wrap--doughnut {
+    min-height: clamp(100px, 25vw, 150px);
+  }
+
   /* ⭐ styles.css 44px kuralına saygı duy */
   .date-filter-option,
   .export-btn,
@@ -719,6 +1102,17 @@ body.light-theme .mini-cal-day.loss:hover {
   .trade-bar-container {
     height: clamp(1.5px, 0.4vw, 2px);
   }
+
+  /* ⭐ 420px ALTINDA CHART-WRAP DAHA DA KÜÇÜK */
+  .chart-wrap {
+    min-height: clamp(80px, 20vw, 120px);
+  }
+  .chart-wrap--tall {
+    min-height: clamp(90px, 22vw, 140px);
+  }
+  .chart-wrap--doughnut {
+    min-height: clamp(80px, 20vw, 110px);
+  }
 }
 
 @media (max-width: 480px) {
@@ -742,5 +1136,16 @@ body.light-theme .mini-cal-day.loss:hover {
   }
   .mini-cal-day .day-pnl-small {
     font-size: 4px;
+  }
+
+  /* ⭐ 374px ALTINDA CHART-WRAP EN KÜÇÜK */
+  .chart-wrap {
+    min-height: clamp(60px, 16vw, 90px);
+  }
+  .chart-wrap--tall {
+    min-height: clamp(70px, 18vw, 100px);
+  }
+  .chart-wrap--doughnut {
+    min-height: clamp(60px, 16vw, 80px);
   }
 }

@@ -1,6 +1,8 @@
 // ============================================================
 // premium-dashboard.js - ANA DOSYA
 // Global state, init, event listeners, koordinasyon
+// ⭐ FIX: Scroll listener KALDIRILDI (gereksiz performans yükü)
+// ⭐ Sadece resize ve drag-drop sonrası resize çalışır
 // ============================================================
 
 import {
@@ -61,7 +63,7 @@ var themeObserver = new MutationObserver(function(mutations) {
 });
 themeObserver.observe(document.body, { attributes: true });
 
-// ⭐ WINDOW RESIZE
+// ⭐ WINDOW RESIZE - SADECE RESIZE
 var resizeTimer = null;
 window.addEventListener('resize', function() {
   if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
@@ -71,14 +73,8 @@ window.addEventListener('resize', function() {
   }, 300);
 });
 
-var scrollTimer = null;
-window.addEventListener('scroll', function() {
-  if (scrollTimer) { clearTimeout(scrollTimer); scrollTimer = null; }
-  scrollTimer = setTimeout(function() {
-    forceResizeAllCharts();
-    scrollTimer = null;
-  }, 400);
-});
+// ⭐ SCROLL LISTENER KALDIRILDI - gereksiz performans yükü
+// Drag-drop zaten onEnd'de resize tetikliyor
 
 // ⭐ VISIBILITY CHANGE
 document.addEventListener('visibilitychange', function() {
@@ -147,7 +143,6 @@ async function loadPremiumData() {
       return;
     }
 
-    // ⭐ updateOvertradeBell artık window üzerinden global olarak gelir (src/features/overtrade.js)
     try {
       if (typeof window.updateOvertradeBell === 'function') {
         await window.updateOvertradeBell();
@@ -172,7 +167,7 @@ async function loadPremiumData() {
     allTrades = data || [];
 
     var main2 = document.getElementById('main-content');
-    main2.innerHTML = '\n      <div class="page-header">\n        <div>\n          <div class="page-header-title-row"><h1>Premium Dashboard</h1><span class="premium-crown-badge">Premium</span></div>\n          <p class="subtitle">Gelişmiş analiz ve strateji takibi</p>\n        </div>\n        <div class="header-actions">\n          <button class="btn-export" id="export-csv-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>\n          <button class="btn-export" id="export-pdf-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</button>\n          <button class="layout-reset-btn" id="layout-reset-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Düzeni Sıfırla</button>\n        </div>\n      </div>\n\n      <div class="premium-stats-grid" id="premium-stats-grid">\n        <div class="pstat-card"><div class="pstat-label">Toplam İşlem</div><div class="pstat-value" id="pstat-total">—</div></div>\n        <div class="pstat-card"><div class="pstat-label">Toplam K/Z</div><div class="pstat-value" id="pstat-pnl">—</div></div>\n        <div class="pstat-card"><div class="pstat-label">Win Rate</div><div class="pstat-value" id="pstat-wr">—</div></div>\n        <div class="pstat-card"><div class="pstat-label">Profit Factor</div><div class="pstat-value" id="pstat-pf">—</div></div>\n        <div class="pstat-card"><div class="pstat-label">Sharpe Ratio</div><div class="pstat-value" id="pstat-sharpe">—</div></div>\n      </div>\n\n      <div class="kpi-bar">\n        <div class="kpi-item"><span class="kpi-label">Ort. Kazanç</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Ort. Kayıp</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Profit Factor</span><span class="kpi-value" id="kpi-pf">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Max Drawdown</span><span class="kpi-value negative" id="kpi-dd">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Ort. R:R</span><span class="kpi-value" id="kpi-rr">—</span></div>\n      </div>\n\n      <div class="dashboard-grid" id="dashboard-grid"></div>\n    ';
+    main2.innerHTML = '\n      <div class="page-header">\n        <div>\n          <div class="page-header-title-row"><h1>Premium Dashboard</h1><span class="premium-crown-badge">Premium</span></div>\n          <p class="subtitle">Gelişmiş analiz ve strateji takibi</p>\n        </div>\n        <div class="header-actions">\n          <button class="btn-export" id="export-csv-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>\n          <button class="btn-export" id="export-pdf-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</button>\n          <button class="layout-reset-btn" id="layout-reset-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Düzeni Sıfırla</button>\n        </div>\n      </div>\n\n      <div class="premium-stats-grid" id="premium-stats-grid">\n        <div class="pstat-card"><div class="pstat-label">Toplam İşlem</div><div class="pstat-value" id="pstat-total">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label">Toplam K/Z</div><div class="pstat-value" id="pstat-pnl">—</div></div>\n        <div class="pstat-card"><div class="pstat-label">Win Rate</div><div class="pstat-value" id="pstat-wr">—</div></div>\n        <div class="pstat-card"><div class="pstat-label">Profit Factor</div><div class="pstat-value" id="pstat-pf">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label">Sharpe Ratio</div><div class="pstat-value" id="pstat-sharpe">—</div></div>\n      </div>\n\n      <div class="kpi-bar">\n        <div class="kpi-item"><span class="kpi-label">Ort. Kazanç</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Ort. Kayıp</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Profit Factor</span><span class="kpi-value" id="kpi-pf">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Max Drawdown</span><span class="kpi-value negative" id="kpi-dd">—</span></div>\n        <div class="kpi-item"><span class="kpi-label">Ort. R:R</span><span class="kpi-value" id="kpi-rr">—</span></div>\n      </div>\n\n      <div class="dashboard-grid" id="dashboard-grid"></div>\n    ';
 
     renderWidgets();
     renderPremiumStats(allTrades);

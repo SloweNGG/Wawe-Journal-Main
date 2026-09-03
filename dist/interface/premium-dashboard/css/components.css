@@ -1,5 +1,10 @@
 /* ============================================================
    COMPONENTS - Kartlar, Grafikler, Butonlar, Skeleton
+   ⭐ FIX: KPI bar responsive font boyutları eklendi
+   ⭐ FIX: Tüm KPI kartları eşit font boyutunda (tutarlılık)
+   ⭐ FIX: Tüm kartlar AYNI zemin, AYNI border, AYNI gradient çizgi
+   ⭐ FIX: data-critical SADECE çizgi kalınlığı + animasyon ile ayırt edilir
+   ⭐ FIX: ApexCharts text renk kontrastı genişletildi
    ============================================================ */
 
 /* ============================================================
@@ -142,32 +147,62 @@
 }
 
 /* ============================================================
-   APEXCHARTS & LIGHTWEIGHT CHARTS TEMA UYUMU
+   ⭐ APEXCHARTS & LIGHTWEIGHT CHARTS TEMA UYUMU (GENİŞLETİLDİ)
    ============================================================ */
 .apexcharts-canvas .apexcharts-text {
   fill: var(--text) !important;
 }
+
+.apexcharts-canvas .apexcharts-datalabel {
+  fill: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-datalabel-value {
+  fill: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-pie-label {
+  fill: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-tooltip-text-y-value {
+  color: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-tooltip-text-y-label {
+  color: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-xaxis-label {
+  fill: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-yaxis-label {
+  fill: var(--text) !important;
+}
+
+.apexcharts-canvas .apexcharts-legend-text {
+  color: var(--text) !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
 .apexcharts-canvas .apexcharts-grid line {
   stroke: var(--border) !important;
 }
+
 .apexcharts-canvas .apexcharts-tooltip {
   background: var(--surface) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
 }
+
 .apexcharts-canvas .apexcharts-tooltip-title {
   background: var(--surface2) !important;
   color: var(--text) !important;
 }
-.apexcharts-canvas .apexcharts-xaxis-label {
-  fill: var(--muted) !important;
-}
-.apexcharts-canvas .apexcharts-yaxis-label {
-  fill: var(--muted) !important;
-}
-.apexcharts-canvas .apexcharts-legend-text {
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
+
+.apexcharts-canvas .apexcharts-tooltip-series-group {
+  background: transparent !important;
 }
 
 .chart-wrap .lwc-chart {
@@ -290,7 +325,7 @@
 }
 
 /* ============================================================
-   STATS & KPI
+   STATS & KPI - TÜM KARTLAR TAMAMEN AYNI
    ============================================================ */
 .premium-stats-grid {
   display: grid;
@@ -313,6 +348,8 @@
   transform: translateY(-3px);
   box-shadow: 0 10px 28px rgba(139, 92, 246, 0.18);
 }
+
+/* ⭐ TÜM KARTLAR AYNI GRADYAN ÇİZGİ */
 .pstat-card::before {
   content: '';
   position: absolute;
@@ -323,8 +360,29 @@
   background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
 }
 
+/* ⭐ DATA-CRITICAL - SADECE ÇİZGİ KALINLIĞI + ANİMASYON (ZEMİN AYNI) */
+.pstat-card[data-critical="true"]::before {
+  height: 3px !important;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent2), var(--accent)) !important;
+  background-size: 200% 100% !important;
+  animation: premiumGradient 3s ease-in-out infinite !important;
+}
+
+/* ⭐ TÜM KARTLAR AYNI ZEMİN VE BORDER (data-critical DAHİL) */
+.pstat-card[data-critical="true"] {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+@keyframes premiumGradient {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 0%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* ⭐ TÜM KPI KARTLARI - EŞİT FONT BOYUTU */
 .pstat-card .pstat-label {
-  font-size: 9.5px;
+  font-size: clamp(9.5px, 1vw, 11px);
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -332,13 +390,15 @@
   margin-bottom: 0.3rem;
   font-family: 'DM Sans', sans-serif;
 }
+
 .pstat-card .pstat-value {
   font-family: 'Inter', sans-serif;
-  font-size: 1.35rem;
+  font-size: clamp(1.4rem, 2.8vw, 1.75rem);
   font-weight: 700;
   color: var(--text);
   line-height: 1.1;
 }
+
 .pstat-card .pstat-value.positive {
   color: var(--green);
 }
@@ -346,6 +406,7 @@
   color: var(--red);
 }
 
+/* ⭐ KPI BAR - RESPONSIVE FONT BOYUTLARI */
 .kpi-bar {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -372,7 +433,7 @@
 }
 
 .kpi-label {
-  font-size: 9px;
+  font-size: clamp(7px, 0.7vw, 10px);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--muted);
@@ -380,7 +441,7 @@
   font-weight: 700;
 }
 .kpi-value {
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 1.2vw, 0.95rem);
   font-weight: 600;
 }
 .kpi-value.positive {
@@ -525,7 +586,7 @@ body.light-theme .premium-stats-skeleton .skeleton-stat::after {
 }
 
 .premium-stats-skeleton .skeleton-stat .skeleton-line {
-  height: 10px;
+  height: 16px;
   background: var(--border);
   border-radius: 4px;
   opacity: 0.3;
@@ -534,6 +595,7 @@ body.light-theme .premium-stats-skeleton .skeleton-stat::after {
 .premium-stats-skeleton .skeleton-stat .skeleton-line:last-child {
   width: 60%;
   margin-bottom: 0;
+  height: 10px;
 }
 
 .dashboard-skeleton {

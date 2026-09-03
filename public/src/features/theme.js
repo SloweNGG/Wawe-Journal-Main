@@ -1,10 +1,44 @@
 // ============================================================
-// WAWE JOURNAL - THEME FEATURE (GÜNCELLENDİ)
+// WAWE JOURNAL - THEME FEATURE (APEXCHARTS DESTEKLİ)
+// ⭐ ApexCharts tema geçişleri eklendi
+// ⭐ chartsReset event fırlatma eklendi
 // ============================================================
 
 import { safeLocalStorageGet, safeLocalStorageSet } from '../core/storage.js';
 import { getUserPlanSilent } from '../services/user.js';
 import { showToast } from '../utils/ui.js';
+
+// ============================================================
+// ⭐ APEXCHARTS TEMA YÖNETİMİ
+// ============================================================
+
+export function getApexThemeConfig() {
+  const isLight = document.body.classList.contains('light-theme');
+  return {
+    mode: isLight ? 'light' : 'dark',
+    palette: 'palette1',
+    monochrome: {
+      enabled: false
+    }
+  };
+}
+
+export function getApexColors() {
+  const isLight = document.body.classList.contains('light-theme');
+  return {
+    textColor: isLight ? '#1e293b' : '#e8e8f0',
+    mutedColor: isLight ? '#64748b' : '#8b8b9e',
+    gridColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
+    accent: '#8b5cf6',
+    green: isLight ? '#10b981' : '#22c55e',
+    red: isLight ? '#dc2626' : '#ef4444',
+    surface: isLight ? '#ffffff' : '#0e0e16'
+  };
+}
+
+// ============================================================
+// ⭐ THEME SETTINGS - MEVCUT
+// ============================================================
 
 export function getThemeSettings() {
   try {
@@ -18,49 +52,70 @@ export function getThemeSettings() {
 
 export function saveThemeSettings(settings) {
   try {
-    // ⭐ LIGHT THEME KONTROLÜ
     const isLightTheme = document.body.classList.contains('light-theme');
     
     if (isLightTheme) {
-      // Light tema açıkken sadece font size kaydedilebilir
       const fontOnly = { fontSize: settings.fontSize || 16 };
       safeLocalStorageSet('ww_custom_theme', JSON.stringify(fontOnly));
       applyThemeSettings(fontOnly);
       if (typeof showToast === 'function') {
         showToast('✅ Font boyutu güncellendi!', 'success');
       }
+      // ⭐ ApexCharts için tema değişikliğini bildir
+      triggerChartThemeUpdate();
       return;
     }
     
     safeLocalStorageSet('ww_custom_theme', JSON.stringify(settings));
     applyThemeSettings(settings);
     
-    // ⭐ Event fırlat - diğer sayfaları güncellemek için
     try {
       window.dispatchEvent(new CustomEvent('themeChanged', { 
         detail: { settings: settings } 
       }));
     } catch(e) {}
+    
+    // ⭐ ApexCharts için tema değişikliğini bildir
+    triggerChartThemeUpdate();
+    
   } catch (e) {}
 }
 
+// ============================================================
+// ⭐ APEXCHARTS TEMA GÜNCELLEME TETİKLEYİCİSİ
+// ============================================================
+
+function triggerChartThemeUpdate() {
+  try {
+    // Dashboard sayfasındaki grafikleri güncelle
+    window.dispatchEvent(new CustomEvent('chartsReset', { 
+      detail: { source: 'theme' } 
+    }));
+    console.log('🎨 ApexCharts tema güncellemesi tetiklendi');
+  } catch(e) {
+    console.warn('Chart tema güncellemesi tetiklenemedi:', e);
+  }
+}
+
+// ============================================================
+// ⭐ APPLY THEME SETTINGS - MEVCUT + APEXCHARTS DESTEĞİ
+// ============================================================
+
 export function applyThemeSettings(settings) {
   const root = document.documentElement;
-  
-  // ⭐ EĞER LIGHT THEME AKTİFSE, CSS DEĞİŞKENLERİNİ DEĞİŞTİRME!
   const isLightTheme = document.body.classList.contains('light-theme');
   
   if (isLightTheme) {
-    // Light tema aktifken özel renkler uygulanamaz
-    // Sadece font size uygulanabilir
     if (settings.fontSize) {
       document.body.style.fontSize = settings.fontSize + 'px';
       safeLocalStorageSet('ww_font_size', settings.fontSize);
     }
-    return; // ⭐ ÇIKIŞ YAP - CSS değişkenlerini değiştirme!
+    // ⭐ Light tema için ApexCharts renklerini güncelle
+    updateApexChartColors();
+    return;
   }
   
-  // Sadece dark tema için CSS değişkenlerini uygula
+  // Dark tema için CSS değişkenlerini uygula
   if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
   if (settings.surfaceColor) {
     root.style.setProperty('--surface', settings.surfaceColor);
@@ -72,12 +127,39 @@ export function applyThemeSettings(settings) {
     document.body.style.fontSize = settings.fontSize + 'px';
     safeLocalStorageSet('ww_font_size', settings.fontSize);
   }
+  
+  // ⭐ Dark tema için ApexCharts renklerini güncelle
+  updateApexChartColors();
 }
+
+// ============================================================
+// ⭐ APEXCHARTS RENK GÜNCELLEME
+// ============================================================
+
+function updateApexChartColors() {
+  try {
+    // ApexCharts global renklerini güncelle
+    if (typeof ApexCharts !== 'undefined') {
+      const colors = getApexColors();
+      // Global tema ayarları - ApexCharts'in kendi teması yok, 
+      // ama biz chartsReset event ile yeniden render yapıyoruz
+      console.log('🎨 ApexCharts renkleri güncellendi:', colors);
+    }
+  } catch(e) {
+    // Sessizce geç
+  }
+}
+
+// ============================================================
+// ⭐ FONT SIZE - MEVCUT
+// ============================================================
 
 export function applyFontSize(size) {
   if (size) {
     document.body.style.fontSize = size + 'px';
     safeLocalStorageSet('ww_font_size', size);
+    // Font değişiminde grafikleri yenile
+    triggerChartThemeUpdate();
   }
 }
 
@@ -93,10 +175,18 @@ export function loadFontSize() {
   return 16;
 }
 
+// ============================================================
+// ⭐ PREMIUM KONTROL - MEVCUT
+// ============================================================
+
 export async function canCustomizeTheme() {
   const { plan } = await getUserPlanSilent();
   return plan === 'premium';
 }
+
+// ============================================================
+// ⭐ THEME CUSTOMIZATION UI - MEVCUT + APEXCHARTS DESTEĞİ
+// ============================================================
 
 export async function loadThemeCustomization() {
   const isPremium = await canCustomizeTheme();
@@ -250,7 +340,6 @@ export async function loadThemeCustomization() {
     const isLight = document.body.classList.contains('light-theme');
     
     if (isLight) {
-      // Light tema aktifken sadece font size kaydedilir
       const fontOnly = { fontSize: parseInt(fontSize.value) };
       saveThemeSettings(fontOnly);
       showToast('✅ Font boyutu kaydedildi! (Renkler light tema ile sınırlıdır)', 'success');
@@ -280,10 +369,8 @@ export async function loadThemeCustomization() {
     showToast('↺ Tema varsayılan ayarlara döndürüldü.', 'success');
   });
 
-  // ⭐ Tema değişimini dinle - sayfa içinde güncelle
   document.addEventListener('themeChanged', function(e) {
     if (e.detail && e.detail.settings) {
-      // Sadece dark tema ise güncelle
       if (!document.body.classList.contains('light-theme')) {
         const s = e.detail.settings;
         if (s.backgroundColor) bgColor.value = s.backgroundColor;
@@ -300,8 +387,20 @@ export async function loadThemeCustomization() {
 }
 
 // ============================================================
-// ⭐ window'a ata (settings.js için)
+// ⭐ APEXCHARTS TEMA GETTER - DIŞ KULLANIM İÇİN
 // ============================================================
+
+export function getApexChartTheme() {
+  return {
+    theme: getApexThemeConfig(),
+    colors: getApexColors()
+  };
+}
+
+// ============================================================
+// ⭐ window'a ata (settings.js ve dashboard.js için)
+// ============================================================
+
 window.getThemeSettings = getThemeSettings;
 window.saveThemeSettings = saveThemeSettings;
 window.applyThemeSettings = applyThemeSettings;
@@ -309,3 +408,9 @@ window.applyFontSize = applyFontSize;
 window.loadFontSize = loadFontSize;
 window.loadThemeCustomization = loadThemeCustomization;
 window.canCustomizeTheme = canCustomizeTheme;
+
+// ⭐ ApexCharts tema fonksiyonları
+window.getApexThemeConfig = getApexThemeConfig;
+window.getApexColors = getApexColors;
+window.getApexChartTheme = getApexChartTheme;
+window.triggerChartThemeUpdate = triggerChartThemeUpdate;

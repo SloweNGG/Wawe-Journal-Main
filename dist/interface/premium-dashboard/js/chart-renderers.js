@@ -1,5 +1,10 @@
 // ============================================================
 // chart-renderers.js - Tüm grafik işlemleri
+// ⭐ FIX: Font boyutları mobil/desktop ayrımı
+// ⭐ FIX: Outlier mantığı eklendi (5 chart)
+// ⭐ FIX: Tooltip'lerde gerçek değer gösterimi
+// ⭐ FIX: Tüm text öğelerine CHART_THEME.textColor açıkça set edildi
+// ⭐ FIX: Donut merkez label tasarımı iyileştirildi (hiyerarşi)
 // ============================================================
 
 import {
@@ -18,7 +23,7 @@ var charts = {
   apex: {}
 };
 
-// ⭐ CHART THEME
+// ⭐ CHART THEME - mobil/desktop ayrımı
 var CHART_THEME = {
   textColor: '#e8e8f0',
   gridColor: 'rgba(255,255,255,0.06)',
@@ -28,7 +33,10 @@ var CHART_THEME = {
   orange: '#f97316',
   gray: '#64748b',
   fontFamily: "'DM Sans', sans-serif",
-  fontSize: '10px',
+  fontSizeDesktop: '11px',
+  fontSizeMobile: '9px',
+  legendSizeDesktop: '12px',
+  legendSizeMobile: '10px',
 };
 
 export function getChartTheme() {
@@ -48,6 +56,20 @@ export function updateChartTheme() {
     var accentVal = getComputedStyle(document.body).getPropertyValue('--accent').trim();
     if (accentVal) CHART_THEME.purple = accentVal;
   } catch(e) {}
+}
+
+// ⭐ MOBIL KONTROL
+function isMobile() {
+  return window.innerWidth < 768;
+}
+
+// ⭐ FONT SIZE HELPER
+function getFontSize() {
+  return isMobile() ? CHART_THEME.fontSizeMobile : CHART_THEME.fontSizeDesktop;
+}
+
+function getLegendSize() {
+  return isMobile() ? CHART_THEME.legendSizeMobile : CHART_THEME.legendSizeDesktop;
 }
 
 export function getCharts() {
@@ -138,7 +160,27 @@ export function renderOrUpdateApex(key, containerId, options) {
   }
 }
 
-// ⭐ 1. WIN/LOSS CHART
+// ⭐ OUTLIER HELPER - en büyük değer korunur, diğerleri kırpılır
+function capOutliers(data) {
+  if (!data || data.length === 0) return data;
+  
+  var maxVal = Math.max.apply(null, data.map(Math.abs));
+  if (maxVal === 0) return data;
+  
+  var maxPositive = Math.max.apply(null, data);
+  var minNegative = Math.min.apply(null, data);
+  
+  return data.map(function(v) {
+    if (v === maxPositive && maxPositive > 0) return v;
+    if (v === minNegative && minNegative < 0) return v;
+    if (Math.abs(v) > maxVal * 0.85) {
+      return (v > 0 ? maxVal * 0.85 : -maxVal * 0.85);
+    }
+    return v;
+  });
+}
+
+// ⭐ 1. WIN/LOSS CHART (Donut - iyileştirilmiş merkez tasarımı)
 export function renderWinLossChart(trades) {
   var containerId = 'chart-winloss';
   var container = document.getElementById(containerId);
@@ -166,16 +208,31 @@ export function renderWinLossChart(trades) {
     plotOptions: {
       pie: {
         donut: {
-          size: '68%',
+          size: '72%',
           labels: {
             show: true,
+            name: {
+              fontSize: '10px',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 600,
+              color: CHART_THEME.gray,
+              offsetY: -5
+            },
+            value: {
+              fontSize: '18px',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 800,
+              color: CHART_THEME.textColor,
+              offsetY: 8,
+              formatter: function(val) { return val; }
+            },
             total: {
               show: true,
               label: 'Win Rate',
-              fontSize: '11px',
+              fontSize: '10px',
               fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 700,
-              color: CHART_THEME.textColor,
+              fontWeight: 600,
+              color: CHART_THEME.gray,
               formatter: function() {
                 return Math.round((wins / total) * 100) + '%';
               }
@@ -187,10 +244,14 @@ export function renderWinLossChart(trades) {
     },
     legend: {
       position: 'bottom',
-      fontSize: CHART_THEME.fontSize,
+      fontSize: getLegendSize(),
       fontFamily: "'DM Sans', sans-serif",
       labels: { colors: CHART_THEME.textColor },
       itemMargin: { horizontal: 8, vertical: 4 },
+      formatter: function(seriesName, opts) {
+        var value = opts.w.globals.series[opts.seriesIndex];
+        return seriesName + ' ' + value;
+      }
     },
     stroke: { width: 0 },
     tooltip: {
@@ -199,7 +260,7 @@ export function renderWinLossChart(trades) {
   });
 }
 
-// ⭐ 2. DIRECTION CHART
+// ⭐ 2. DIRECTION CHART (Donut - iyileştirilmiş merkez tasarımı)
 export function renderDirectionChart(trades) {
   var containerId = 'chart-direction';
   var container = document.getElementById(containerId);
@@ -226,16 +287,31 @@ export function renderDirectionChart(trades) {
     plotOptions: {
       pie: {
         donut: {
-          size: '68%',
+          size: '72%',
           labels: {
             show: true,
+            name: {
+              fontSize: '10px',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 600,
+              color: CHART_THEME.gray,
+              offsetY: -5
+            },
+            value: {
+              fontSize: '18px',
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 800,
+              color: CHART_THEME.textColor,
+              offsetY: 8,
+              formatter: function(val) { return val; }
+            },
             total: {
               show: true,
               label: 'Toplam',
-              fontSize: '11px',
+              fontSize: '10px',
               fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 700,
-              color: CHART_THEME.textColor,
+              fontWeight: 600,
+              color: CHART_THEME.gray,
               formatter: function() { return total; }
             }
           }
@@ -245,10 +321,14 @@ export function renderDirectionChart(trades) {
     },
     legend: {
       position: 'bottom',
-      fontSize: CHART_THEME.fontSize,
+      fontSize: getLegendSize(),
       fontFamily: "'DM Sans', sans-serif",
       labels: { colors: CHART_THEME.textColor },
       itemMargin: { horizontal: 8, vertical: 4 },
+      formatter: function(seriesName, opts) {
+        var value = opts.w.globals.series[opts.seriesIndex];
+        return seriesName + ' ' + value;
+      }
     },
     stroke: { width: 0 },
     tooltip: {
@@ -257,7 +337,7 @@ export function renderDirectionChart(trades) {
   });
 }
 
-// ⭐ 3. DAILY CHART
+// ⭐ 3. DAILY CHART (Outlier korumalı)
 export function renderDailyChart(trades) {
   var containerId = 'chart-daily';
   var container = document.getElementById(containerId);
@@ -290,25 +370,36 @@ export function renderDailyChart(trades) {
     return dt.getDate() + '/' + (dt.getMonth() + 1);
   });
   var dailyData = Object.values(days);
+  
+  // ⭐ Outlier koruması - en büyük değer korunur
+  var cappedData = capOutliers(dailyData);
 
   renderOrUpdateApex('daily', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Günlük K/Z', data: dailyData }],
+    series: [{ name: 'Günlük K/Z', data: cappedData }],
     xaxis: {
       categories: dailyLabels,
-      labels: { style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor } },
-      tickAmount: 10,
+      labels: { 
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        } 
+      },
+      tickAmount: isMobile() ? 6 : 10,
     },
     yaxis: {
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
         formatter: apexCurrencyFormatter,
       }
     },
     plotOptions: {
       bar: {
         borderRadius: 4,
-        columnWidth: '70%',
+        columnWidth: isMobile() ? '50%' : '70%',
         colors: {
           ranges: [
             { from: -Infinity, to: -0.01, color: CHART_THEME.red },
@@ -318,12 +409,17 @@ export function renderDailyChart(trades) {
       }
     },
     tooltip: {
-      y: { formatter: formatCurrency }
+      y: {
+        formatter: function(value, { dataPointIndex }) {
+          var realValue = dailyData[dataPointIndex] || value;
+          return formatCurrency(realValue);
+        }
+      }
     }
   });
 }
 
-// ⭐ 4. SYMBOL CHART
+// ⭐ 4. SYMBOL CHART (Outlier korumalı)
 export function renderSymbolChart(trades) {
   var containerId = 'chart-symbol';
   var container = document.getElementById(containerId);
@@ -349,19 +445,28 @@ export function renderSymbolChart(trades) {
 
   var labels = sorted.map(function(s) { return s[0]; });
   var data = sorted.map(function(s) { return s[1]; });
+  
+  // ⭐ Outlier koruması - en büyük değer korunur
+  var cappedData = capOutliers(data);
 
   renderOrUpdateApex('symbol', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Toplam K/Z', data: data }],
+    series: [{ name: 'Toplam K/Z', data: cappedData }],
     xaxis: {
       categories: labels,
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
       }
     },
     yaxis: {
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
         formatter: apexCurrencyFormatter,
       }
     },
@@ -378,12 +483,17 @@ export function renderSymbolChart(trades) {
       }
     },
     tooltip: {
-      y: { formatter: formatCurrency }
+      y: {
+        formatter: function(value, { dataPointIndex }) {
+          var realValue = data[dataPointIndex] || value;
+          return formatCurrency(realValue);
+        }
+      }
     }
   });
 }
 
-// ⭐ 5. HOURLY CHART
+// ⭐ 5. HOURLY CHART (Outlier korumalı)
 export function renderHourlyChart(trades) {
   var containerId = 'chart-hourly';
   var container = document.getElementById(containerId);
@@ -415,27 +525,36 @@ export function renderHourlyChart(trades) {
     var endH = startH + BUCKET_SIZE;
     labels.push(String(startH).padStart(2, '0') + '-' + String(endH).padStart(2, '0'));
   }
+  
+  // ⭐ Outlier koruması - en büyük değer korunur
+  var cappedBuckets = capOutliers(buckets);
 
   renderOrUpdateApex('hourly', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'K/Z', data: buckets }],
+    series: [{ name: 'K/Z', data: cappedBuckets }],
     xaxis: {
       categories: labels,
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
         rotate: 0,
       },
     },
     yaxis: {
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
         formatter: apexCurrencyFormatter,
       }
     },
     plotOptions: {
       bar: {
         borderRadius: 5,
-        columnWidth: '55%',
+        columnWidth: isMobile() ? '40%' : '55%',
         colors: {
           ranges: [
             { from: -Infinity, to: -0.01, color: CHART_THEME.red },
@@ -445,13 +564,18 @@ export function renderHourlyChart(trades) {
       }
     },
     tooltip: {
-      y: { formatter: formatCurrency },
+      y: {
+        formatter: function(value, { dataPointIndex }) {
+          var realValue = buckets[dataPointIndex] || value;
+          return formatCurrency(realValue);
+        }
+      },
       x: { formatter: function(val, opts) { return 'Saat ' + labels[opts.dataPointIndex]; } }
     }
   });
 }
 
-// ⭐ 6. DAY OF WEEK CHART
+// ⭐ 6. DAY OF WEEK CHART (Outlier korumalı)
 export function renderDowChart(trades) {
   var containerId = 'chart-dow';
   var container = document.getElementById(containerId);
@@ -477,24 +601,35 @@ export function renderDowChart(trades) {
   }
 
   var data = Object.values(dowMap);
+  
+  // ⭐ Outlier koruması - en büyük değer korunur
+  var cappedData = capOutliers(data);
 
   renderOrUpdateApex('dow', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Günlük K/Z', data: data }],
+    series: [{ name: 'Günlük K/Z', data: cappedData }],
     xaxis: {
       categories: dayNames,
-      labels: { style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor } },
+      labels: { 
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        } 
+      },
     },
     yaxis: {
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
         formatter: apexCurrencyFormatter,
       }
     },
     plotOptions: {
       bar: {
         borderRadius: 4,
-        columnWidth: '60%',
+        columnWidth: isMobile() ? '50%' : '60%',
         colors: {
           ranges: [
             { from: -Infinity, to: -0.01, color: CHART_THEME.red },
@@ -504,7 +639,12 @@ export function renderDowChart(trades) {
       }
     },
     tooltip: {
-      y: { formatter: formatCurrency }
+      y: {
+        formatter: function(value, { dataPointIndex }) {
+          var realValue = data[dataPointIndex] || value;
+          return formatCurrency(realValue);
+        }
+      }
     }
   });
 }
@@ -540,18 +680,24 @@ export function renderRRChart(trades) {
     xaxis: {
       categories: labels,
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
       }
     },
     yaxis: {
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
       }
     },
     plotOptions: {
       bar: {
         borderRadius: 4,
-        columnWidth: '70%',
+        columnWidth: isMobile() ? '50%' : '70%',
       }
     },
     tooltip: {
@@ -560,7 +706,7 @@ export function renderRRChart(trades) {
   });
 }
 
-// ⭐ 8. LOT CHART
+// ⭐ 8. LOT CHART (Outlier korumalı)
 export function renderLotChart(trades) {
   var containerId = 'chart-lot';
   var container = document.getElementById(containerId);
@@ -586,26 +732,35 @@ export function renderLotChart(trades) {
 
   var labels = sorted.map(function(s) { return s[0]; });
   var data = sorted.map(function(s) { return s[1]; });
+  
+  // ⭐ Outlier koruması - en büyük değer korunur
+  var cappedData = capOutliers(data);
 
   renderOrUpdateApex('lot', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Lot Bazlı K/Z', data: data }],
+    series: [{ name: 'Lot Bazlı K/Z', data: cappedData }],
     xaxis: {
       categories: labels,
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
       }
     },
     yaxis: {
       labels: {
-        style: { fontSize: CHART_THEME.fontSize, colors: CHART_THEME.textColor },
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
         formatter: apexCurrencyFormatter,
       }
     },
     plotOptions: {
       bar: {
         borderRadius: 4,
-        columnWidth: '70%',
+        columnWidth: isMobile() ? '50%' : '70%',
         colors: {
           ranges: [
             { from: -Infinity, to: -0.01, color: CHART_THEME.red },
@@ -615,7 +770,12 @@ export function renderLotChart(trades) {
       }
     },
     tooltip: {
-      y: { formatter: formatCurrency }
+      y: {
+        formatter: function(value, { dataPointIndex }) {
+          var realValue = data[dataPointIndex] || value;
+          return formatCurrency(realValue);
+        }
+      }
     }
   });
 }
@@ -626,7 +786,6 @@ export function renderCumulativeChart(trades) {
   var container = document.getElementById(containerId);
   if (!container) return;
 
-  // Temizle
   if (charts.lightweight.cumulative) {
     try { charts.lightweight.cumulative.chart.remove(); } catch(e) {}
     delete charts.lightweight.cumulative;
@@ -664,11 +823,13 @@ export function renderCumulativeChart(trades) {
     changeEl.className = 'chart-badge ' + (lastVal >= firstVal ? '' : 'negative');
   }
 
+  var fontSize = isMobile() ? 8 : 9;
+
   var chart = LightweightCharts.createChart(container, {
     layout: {
       background: { color: 'transparent' },
       textColor: CHART_THEME.textColor,
-      fontSize: 9,
+      fontSize: fontSize,
       fontFamily: CHART_THEME.fontFamily,
     },
     grid: {
@@ -721,7 +882,6 @@ export function renderCumulativeChart(trades) {
     series: series,
   };
 
-  // Tooltip
   var tooltip = document.createElement('div');
   tooltip.style.cssText = [
     'position:absolute',
