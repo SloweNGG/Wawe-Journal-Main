@@ -1,0 +1,108 @@
+<div class="s-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="settings.theme">Görünüm</h2>
+      <p data-i18n="settings.theme_desc">Tema, dil, para birimi ve renk özelleştirme</p>
+    </div>
+  </div>
+  <div class="s-card-body">
+    
+    <!-- ⭐ TEMA - Lucide Moon Icon -->
+    <div class="theme-toggle-card">
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon" id="theme-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4 id="theme-label" data-i18n="settings.dark_theme">Koyu Tema</h4>
+            <p id="theme-desc" data-i18n="settings.dark_theme_desc">Göz yormayan karanlık arayüz</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- ⭐ DİL - Lucide Globe Icon -->
+    <div class="theme-toggle-card" style="margin-top: 1rem;">
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon" id="lang-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4 id="lang-label" data-i18n="language.title">Dil Seçimi</h4>
+            <p id="lang-desc" data-i18n="language.select">Uygulama dilini değiştirin</p>
+          </div>
+        </div>
+        <div class="lang-selector-compact" id="settings-lang-selector">
+          <button class="lang-compact-btn" data-lang="tr" title="Türkçe">🇹🇷 TR</button>
+          <button class="lang-compact-btn" data-lang="en" title="English">🇬🇧 EN</button>
+          <button class="lang-compact-btn" data-lang="de" title="Deutsch">🇩🇪 DE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⭐ PARA BİRİMİ - Lucide Dollar Sign Icon -->
+    <div class="theme-toggle-card" style="margin-top: 1rem;">
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon" id="currency-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4 id="currency-label" data-i18n="settings.currency">Para Birimi</h4>
+            <p id="currency-desc" data-i18n="settings.currency_desc">Varsayılan para birimini seç</p>
+          </div>
+        </div>
+        <div class="currency-selector-compact" id="settings-currency-selector">
+          <button class="currency-btn" data-currency="$" title="USD">$ USD</button>
+          <button class="currency-btn" data-currency="€" title="Euro">€ EUR</button>
+          <button class="currency-btn" data-currency="₺" title="Türk Lirası">₺ TRY</button>
+          <button class="currency-btn" data-currency="£" title="Sterlin">£ GBP</button>
+          <button class="currency-btn" data-currency="₿" title="Bitcoin">₿ BTC</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⭐ TEMA ÖZELLEŞTİRME - Lucide Palette Icon -->
+    <div class="theme-customization-section" id="theme-customization-section">
+      <div class="section-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+          <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a2 2 0 0 0 2-2c0-.52-.2-1-.53-1.37-.33-.36-.47-.82-.47-1.28 0-1.1.9-2 2-2h1.17c2.21 0 4-1.79 4-4 0-4.96-4.04-9-9-9z"/>
+        </svg>
+        <span data-i18n="settings.theme_customization">Tema Özelleştirme</span>
+        <span class="premium-badge">PREMIUM</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:1rem;">
+        Arka plan, kart, kenarlık ve metin renklerini kişiselleştirin. Font boyutunu ayarlayın.
+      </p>
+      <div id="theme-customization-container">
+        <!-- JS ile doldurulacak -->
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,25 @@
+---
+// ============================================================
+// Layout.astro
+// Orijinal projedeki her sayfanın <head> ve <body> içeriğini
+// birebir koruyan, "lift & shift" tipi paylaşılan iskelet.
+// Sayfaya özel <head> içeriği "head" adlı slot ile,
+// gövde içeriği ise default slot ile geçirilir.
+// ============================================================
+export interface Props {
+  lang?: string;
+  bodyClass?: string;
+  bodyStyle?: string;
+}
+
+const { lang = 'en', bodyClass, bodyStyle } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang={lang}>
+<head>
+<slot name="head" />
+</head>
+<body class={bodyClass} style={bodyStyle}>
+<slot />
+</body>
+</html>

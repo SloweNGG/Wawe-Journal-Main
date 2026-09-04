@@ -1,0 +1,10 @@
+/* ============================================================
+   PREMIUM DASHBOARD - ANA DOSYA
+   Tüm stilleri içe aktarır.
+   ============================================================ */
+
+/* ⭐ LAYOUT (Grid, Flex, Pozisyon, Responsive) */
+@import url("layout.css");
+
+/* ⭐ COMPONENTS (Kartlar, Grafikler, Butonlar, Skeleton) */
+@import url("components.css");

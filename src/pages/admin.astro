@@ -1,0 +1,174 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="tr">
+<Fragment slot="head">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Admin Panel – Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="/resim.svg">
+  
+  <!-- FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- GLOBAL CSS -->
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/components/navbar/navbar.css" />
+  
+  <!-- ADMIN CSS -->
+  <link rel="stylesheet" href="/interface/admin/css/admin.css" />
+  
+  <!-- LUCIDE ICONS -->
+  <script src="https://unpkg.com/lucide@latest" is:inline></script>
+  
+  <!-- CHART.JS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
+</Fragment>
+  <!-- NAVBAR -->
+  <div id="navbar-container"></div>
+
+  <!-- MAIN -->
+  <main class="admin-main" id="main-content">
+    <div style="display:flex;justify-content:center;padding:4rem;flex-direction:column;align-items:center;gap:1rem;">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);">Admin panel yükleniyor...</p>
+    </div>
+  </main>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- REFERANS MODAL -->
+  <div id="ref-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="ref-modal-title">Yeni Referans Ekle</h2>
+        <button class="modal-close" id="close-ref-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ref-id" />
+        <div class="field-row">
+          <div class="field">
+            <label>İsim *</label>
+            <input type="text" id="ref-name" placeholder="Ahmet Yılmaz" />
+          </div>
+          <div class="field">
+            <label>Ünvan / Pozisyon</label>
+            <input type="text" id="ref-title" placeholder="Forex Trader" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Açıklama</label>
+          <textarea id="ref-desc" rows="3" placeholder="Bu kişi hakkında kısa bilgi..."></textarea>
+        </div>
+        <div class="section-divider">Profil Fotoğrafı</div>
+        <div class="avatar-upload">
+          <div class="avatar-preview-sm">
+            <img id="ref-image-preview-img" src="https://placehold.co/64x64?text=Photo" />
+          </div>
+          <div class="avatar-actions">
+            <input type="file" id="ref-image-file" accept="image/*" style="display:none;" />
+            <button type="button" class="btn btn-ghost btn-sm" id="upload-image-btn">Resim Seç</button>
+            <button type="button" class="btn btn-danger btn-sm" id="remove-image-btn">Kaldır</button>
+            <input type="hidden" id="ref-image" value="" />
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:0.75rem;">
+          <div class="field"><label>Sıralama</label><input type="number" id="ref-order" value="0" /></div>
+          <div class="field"><label>Durum</label><select id="ref-active"><option value="true">✓ Aktif</option><option value="false">○ Pasif</option></select></div>
+        </div>
+        <div class="section-divider">Sosyal Medya</div>
+        <div class="field-row">
+          <div class="field"><label>Instagram</label><input type="text" id="ref-insta" placeholder="https://instagram.com/..." /></div>
+          <div class="field"><label>Twitter / X</label><input type="text" id="ref-twitter" placeholder="https://twitter.com/..." /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>YouTube</label><input type="text" id="ref-youtube" placeholder="https://youtube.com/..." /></div>
+          <div class="field"><label>LinkedIn</label><input type="text" id="ref-linkedin" placeholder="https://linkedin.com/..." /></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancel-ref-btn">İptal</button>
+        <button class="btn btn-primary" id="save-ref-btn">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js" is:inline></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
+  <script src="/components/navbar/navbar.js" is:inline></script>
+  
+  <!-- 5. ADMIN MODÜLLERİ (ES5 - AYNI KALIR) -->
+  <script src="/interface/admin/js/admin-core.js" is:inline></script>
+  <script src="/interface/admin/js/admin-data.js" is:inline></script>
+  <script src="/interface/admin/js/admin-dashboard.js" is:inline></script>
+  
+  <!-- 6. BAŞLAT -->
+  <script is:inline>
+    console.log('🚀 Admin başlatılıyor...');
+    
+    // ⭐ Her script'in yüklendiğini kontrol et
+    console.log('📦 script.js loaded:', typeof sb !== 'undefined' ? '✅' : '❌');
+    console.log('📦 navbar.js loaded:', typeof loadNavbar !== 'undefined' ? '✅' : '❌');
+    console.log('📦 admin-core.js loaded:', typeof adminState !== 'undefined' ? '✅' : '❌');
+    console.log('📦 initAdmin loaded:', typeof initAdmin !== 'undefined' ? '✅' : '❌');
+    console.log('📦 admin-data.js loaded:', typeof loadUsers !== 'undefined' ? '✅' : '❌');
+    console.log('📦 admin-dashboard.js loaded:', typeof loadAnalyticsData !== 'undefined' ? '✅' : '❌');
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📄 DOM yüklendi!');
+      
+      // Navbar
+      if (typeof loadNavbar === 'function') {
+        try {
+          loadNavbar('navbar-container');
+          console.log('✅ Navbar yüklendi!');
+        } catch(e) {
+          console.warn('⚠️ Navbar hatası:', e);
+        }
+      }
+      
+      // Lucide
+      if (typeof lucide !== 'undefined') {
+        try {
+          lucide.createIcons();
+          console.log('✅ Lucide icons initialized!');
+        } catch(e) {
+          console.warn('⚠️ Lucide hatası:', e);
+        }
+      }
+      
+      // ⭐ Admin - initAdmin kontrolü
+      if (typeof initAdmin === 'function') {
+        console.log('⏳ initAdmin başlatılıyor...');
+        setTimeout(function() {
+          try {
+            initAdmin();
+          } catch(e) {
+            console.error('❌ Admin panel hatası:', e);
+            alert('Admin panel hatası: ' + e.message);
+          }
+        }, 500);
+      } else {
+        console.error('❌ initAdmin fonksiyonu bulunamadı!');
+        console.log('💡 admin-core.js dosyasının yolu: /js/admin/admin-core.js');
+        console.log('💡 Dosyanın var olduğundan emin ol!');
+        alert('admin-core.js yüklenemedi! Dosya yolunu kontrol et.');
+      }
+    });
+  </script>
+</Layout>

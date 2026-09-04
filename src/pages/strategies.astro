@@ -1,0 +1,409 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en">
+<Fragment slot="head">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="/resim.svg">
+  
+  <!-- ✅ NAVBAR CSS -->
+  <link rel="stylesheet" href="/components/navbar/navbar.css" />
+  
+  <!-- ⭐ LUCIDE ICONS -->
+  <script src="https://unpkg.com/lucide@latest" is:inline></script>
+
+  <!-- ⭐ QUICK ADD MODAL CSS -->
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+  
+  <!-- TEMA KONTROLÜ -->
+  <script is:inline>
+    (function() {
+      var savedTheme = localStorage.getItem('ww_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    })();
+  </script>
+
+  <!-- ⭐ DİL KALICILIĞI -->
+  <script is:inline>
+    (function() {
+      var savedLang = localStorage.getItem('ww_language');
+      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+        document.documentElement.setAttribute('data-lang', savedLang);
+        document.documentElement.lang = savedLang;
+      } else {
+        localStorage.setItem('ww_language', 'en');
+        document.documentElement.setAttribute('data-lang', 'en');
+        document.documentElement.lang = 'en';
+      }
+    })();
+  </script>
+  
+  <!-- FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- GLOBAL CSS -->
+  <link rel="stylesheet" href="/styles.css" />
+  
+  <!-- STRATEGIES CSS -->
+  <link rel="stylesheet" href="/interface/strategies/css/strategies.css" />
+  
+  <!-- CHART.JS & jspdf -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
+</Fragment>
+  <!-- ✅ NAVBAR CONTAINER -->
+  <div id="navbar-container"></div>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main class="strategies-main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="strategies.title">Strateji <em data-i18n="strategies.title_em">Paneli</em></h1>
+        <p class="subtitle" data-i18n="strategies.subtitle">Tüm trading stratejilerinin performansını takip et.</p>
+      </div>
+      <div class="page-header-actions">
+        <div class="time-filter-group" id="time-filter-group">
+          <button class="time-filter-btn active" data-range="all">Tümü</button>
+          <button class="time-filter-btn" data-range="7d">7G</button>
+          <button class="time-filter-btn" data-range="30d">30G</button>
+          <button class="time-filter-btn" data-range="90d">90G</button>
+          <button class="time-filter-btn" data-range="month">Bu Ay</button>
+        </div>
+        <button id="export-all-csv" class="btn-export" title="Tüm stratejileri CSV olarak indir">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+        <button id="export-all-pdf" class="btn-export" title="Tüm stratejileri PDF olarak indir">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </button>
+        <button id="open-add-strategy-modal" class="btn-add-strategy">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span data-i18n="strategies.add_button">Yeni Strateji Ekle</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Grid - SKELETON -->
+    <div class="stats-grid" id="summary-stats-skeleton" style="display:grid;">
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+    </div>
+
+    <!-- Stats Grid - GERÇEK -->
+    <div class="stats-grid" id="summary-stats-bar" style="display:none;">
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.total_strategies">Toplam Strateji</div>
+        <div class="stat-value" id="stat-total-strategies">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.total_trades">Toplam İşlem</div>
+        <div class="stat-value" id="stat-total-trades">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.best_wr">En Yüksek WR</div>
+        <div class="stat-value" id="stat-best-wr">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" data-i18n="strategies.summary.total_pnl">Toplam K/Z</div>
+        <div class="stat-value" id="stat-total-pnl">—</div>
+      </div>
+    </div>
+
+    <!-- Strategies Grid - SKELETON -->
+    <div class="strategies-grid-skeleton" id="strategies-grid-skeleton">
+      <div class="skeleton-strategy-card">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line-sm"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+      <div class="skeleton-strategy-card">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line-sm"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+      <div class="skeleton-strategy-card">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line-sm"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+          <div class="skeleton-stat-box"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategies Grid - GERÇEK -->
+    <div id="strategies-list-container" style="display:none;"></div>
+
+    <!-- Comparison Charts - SKELETON -->
+    <div class="comparison-skeleton" id="comparison-skeleton">
+      <div class="comparison-title">Strateji <em>Karşılaştırma</em></div>
+      <div class="comparison-grid">
+        <div class="comparison-card-skeleton">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart-area">
+            <div class="skeleton-bar-group">
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="comparison-card-skeleton">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart-area">
+            <div class="skeleton-bar-group">
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+              <div class="skeleton-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison Charts - GERÇEK -->
+    <div id="comparison-section" class="comparison-section" style="display:none;">
+      <div class="comparison-title" data-i18n="strategies.comparison.title">Strateji <em data-i18n="strategies.comparison.title_em">Karşılaştırma</em></div>
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header" data-i18n="strategies.comparison.win_rate">Win Rate Karşılaştırması</div>
+          <div class="comparison-chart-inner">
+            <canvas id="winrate-comparison-chart"></canvas>
+          </div>
+        </div>
+        <div class="comparison-card">
+          <div class="comparison-card-header" data-i18n="strategies.comparison.pnl">Toplam K/Z Karşılaştırması</div>
+          <div class="comparison-chart-inner">
+            <canvas id="pnl-comparison-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============================================================
+       MODALS
+       ============================================================ -->
+  <div id="add-strategy-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 data-i18n="strategies.modal.add_title">Yeni Strateji Ekle</h3>
+        <button id="close-add-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.name">Strateji Adı *</label>
+          <input type="text" id="new-strategy-name" data-i18n-placeholder="strategies.modal.name_placeholder" />
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.description">Açıklama (isteğe bağlı)</label>
+          <textarea id="new-strategy-desc" rows="3" data-i18n-placeholder="strategies.modal.desc_placeholder"></textarea>
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.color">Renk</label>
+          <input type="color" id="new-strategy-color" value="#8b5cf6" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-add-strategy" class="btn-modal-cancel" data-i18n="common.cancel">İptal</button>
+        <button id="confirm-add-strategy" class="btn-modal-confirm" data-i18n="strategies.modal.add_confirm">Strateji Ekle →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="edit-strategy-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 data-i18n="strategies.modal.edit_title">Strateji Düzenle</h3>
+        <button id="close-edit-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-strategy-id" />
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.name">Strateji Adı *</label>
+          <input type="text" id="edit-strategy-name" />
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.description">Açıklama</label>
+          <textarea id="edit-strategy-desc" rows="3"></textarea>
+        </div>
+        <div class="modal-field">
+          <label data-i18n="strategies.modal.color">Renk</label>
+          <input type="color" id="edit-strategy-color" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancel-edit-strategy" class="btn-modal-cancel" data-i18n="common.cancel">İptal</button>
+        <button id="confirm-edit-strategy" class="btn-modal-confirm" data-i18n="common.save">Kaydet →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⭐ Strateji Detay Modalı -->
+  <div id="strategy-detail-modal" class="modal-overlay">
+    <div class="modal-box modal-box-lg">
+      <div class="modal-header">
+        <div class="detail-header-info">
+          <span class="detail-color-dot" id="detail-color-dot"></span>
+          <h3 id="detail-strategy-name">Strateji Detayı</h3>
+        </div>
+        <button id="close-detail-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body"></div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <div style="display:flex; gap:0.5rem;">
+          <button id="detail-export-csv" class="btn-export" style="padding:0.55rem 1rem;" data-i18n="strategies.detail.export_csv">CSV İndir</button>
+          <button id="detail-export-pdf" class="btn-export" style="padding:0.55rem 1rem;" data-i18n="strategies.detail.export_pdf">PDF İndir</button>
+        </div>
+        <button id="close-detail-modal-btn" class="btn-modal-cancel" data-i18n="common.close">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⭐ Equity Curve Modalı -->
+  <div id="equity-curve-modal" class="modal-overlay">
+    <div class="modal-box modal-box-md">
+      <div class="modal-header">
+        <div class="detail-header-info">
+          <span class="detail-color-dot" id="equity-color-dot"></span>
+          <h3 id="equity-strategy-name">Equity Curve</h3>
+        </div>
+        <button id="close-equity-modal" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="equity-chart-wrap">
+          <canvas id="equity-curve-canvas"></canvas>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="close-equity-modal-btn" class="btn-modal-cancel" data-i18n="common.close">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js" is:inline></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
+  <script src="/components/navbar/navbar.js" is:inline></script>
+  
+  <!-- 5. QUICK ADD (ES5) -->
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
+  
+  <!-- 6. STRATEGIES JS (ES5 - AYNI KALIR) -->
+  <script src="/interface/strategies/js/strategies.js" is:inline></script>
+
+  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
+  <script is:inline>
+    (function() {
+      function createManualFAB() {
+        if (document.getElementById('quick-add-fab')) return;
+        var fab = document.createElement('button');
+        fab.id = 'quick-add-fab';
+        fab.className = 'quick-add-fab';
+        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+        fab.addEventListener('click', function() {
+          if (typeof quickAddOpen === 'function') quickAddOpen();
+          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+        });
+        document.body.appendChild(fab);
+        console.log('✅ Manuel FAB oluşturuldu');
+      }
+      
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(function() {
+          if (typeof quickAddOpen === 'undefined') createManualFAB();
+        }, 1500);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            if (typeof quickAddOpen === 'undefined') createManualFAB();
+          }, 1500);
+        });
+      }
+    })();
+  </script>
+  
+  <!-- 8. LUCIDE ICONS INIT -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+        console.log('✅ Lucide icons initialized on strategies!');
+      }
+    });
+  </script>
+  
+  <!-- 9. INIT -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof loadNavbar === 'function') {
+        loadNavbar('navbar-container');
+        console.log('✅ Navbar yüklendi!');
+      }
+      if (typeof initStrategies === 'function') {
+        setTimeout(function() {
+          try {
+            initStrategies();
+            console.log('✅ Strategies panel başlatıldı!');
+          } catch(e) {
+            console.error('❌ Strategies init hatası:', e);
+          }
+        }, 300);
+      }
+    });
+  </script>
+</Layout>

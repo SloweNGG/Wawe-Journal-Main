@@ -1,0 +1,254 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en">
+<Fragment slot="head">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title data-i18n="calendar.title">Takvim - Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="/resim.svg">
+  
+  <!-- FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- GLOBAL CSS -->
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/components/navbar/navbar.css" />
+  
+  <!-- CALENDAR CSS -->
+  <link rel="stylesheet" href="/interface/calendar/css/calendar.css" />
+  
+  <!-- QUICK ADD CSS -->
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+  
+  <!-- LUCIDE ICONS -->
+  <script src="https://unpkg.com/lucide@latest" is:inline></script>
+  
+  <!-- ⭐ DİL KALICILIĞI -->
+  <script is:inline>
+    (function() {
+      var savedLang = localStorage.getItem('ww_language');
+      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+        document.documentElement.setAttribute('data-lang', savedLang);
+        document.documentElement.lang = savedLang;
+      } else {
+        localStorage.setItem('ww_language', 'en');
+        document.documentElement.setAttribute('data-lang', 'en');
+        document.documentElement.lang = 'en';
+      }
+    })();
+  </script>
+  
+  <!-- TEMA KONTROLÜ -->
+  <script is:inline>
+    (function() {
+      var savedTheme = localStorage.getItem('ww_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    })();
+  </script>
+</Fragment>
+  <!-- NAVBAR -->
+  <div id="navbar-container"></div>
+
+  <!-- MAIN -->
+  <main class="calendar-page-main">
+
+    <div class="calendar-page-header">
+      <div>
+        <h1 data-i18n="calendar.title">Takvim</h1>
+        <p class="subtitle" data-i18n="calendar.subtitle">Tüm işlemlerini ay bazında görüntüle</p>
+      </div>
+      <a href="dashboard.html" class="back-link" data-i18n="calendar.back_to_dashboard">← Dashboard'a Dön</a>
+    </div>
+
+    <div class="calendar-main-card">
+      <div class="cal-header">
+        <div class="cal-title" style="position:relative;">
+          <span class="cal-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </span>
+          <button type="button" class="cal-title-btn" id="cal-title-btn" aria-haspopup="true" aria-expanded="false">
+            <span id="calendar-month-label">Ocak 2026</span>
+            <span class="cal-title-caret">▼</span>
+          </button>
+          <div class="cal-jump-popover" id="cal-jump-popover">
+            <div class="jump-year-row">
+              <button type="button" id="jump-year-prev" aria-label="Önceki yıl">‹</button>
+              <span class="jump-year-label" id="jump-year-label">2026</span>
+              <button type="button" id="jump-year-next" aria-label="Sonraki yıl">›</button>
+            </div>
+            <div class="jump-months-grid" id="jump-months-grid"></div>
+          </div>
+        </div>
+        <div class="cal-nav-group">
+          <button class="cal-nav-btn" id="cal-prev" aria-label="Önceki ay">‹</button>
+          <button class="cal-nav-btn today-btn" id="cal-today" data-i18n="calendar.today">Bugün</button>
+          <button class="cal-nav-btn" id="cal-next" aria-label="Sonraki ay">›</button>
+        </div>
+      </div>
+
+      <div class="cal-day-names" id="cal-day-names"></div>
+
+      <!-- SKELETON -->
+      <div class="cal-grid-skeleton" id="cal-grid-skeleton">
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+        <div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>
+      </div>
+
+      <!-- GRID -->
+      <div class="cal-grid" id="cal-grid" style="display:none;"></div>
+
+      <div class="cal-legend" id="cal-legend" style="display:none;">
+        <div class="legend-group">
+          <span class="legend-swatch" style="background:rgba(239,68,68,0.45);"></span>
+          <span class="legend-swatch" style="background:rgba(239,68,68,0.16);"></span>
+          <span class="legend-swatch" style="background:var(--surface2); border:1px solid var(--border);"></span>
+          <span class="legend-swatch" style="background:rgba(34,197,94,0.16);"></span>
+          <span class="legend-swatch" style="background:rgba(34,197,94,0.45);"></span>
+        </div>
+        <span class="legend-label">Zarar ← · $0 · → Kâr (eşikler: $100 / $500 / $1000)</span>
+      </div>
+
+      <!-- SUMMARY SKELETON -->
+      <div class="calendar-summary-skeleton" id="calendar-summary-skeleton">
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+        <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="calendar-summary-grid" id="calendar-summary" style="display:none;">
+        <div class="summary-mini-card">
+          <div class="s-icon trades">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="trades.stats.trade_count">İşlem</span>
+            <span class="s-value" id="cal-summary-trades">0</span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon pnl">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="dashboard.stats.total_pnl">Toplam K/Z</span>
+            <span class="s-value" id="cal-summary-pnl">+$0</span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon winrate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="dashboard.stats.win_rate">Win Rate</span>
+            <span class="s-value" id="cal-summary-winrate">0%</span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon best">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="calendar.best_day">En İyi Gün</span>
+            <span class="s-value positive" id="cal-summary-best">—</span>
+            <span class="s-subvalue" id="cal-summary-best-date"></span>
+          </div>
+        </div>
+        <div class="summary-mini-card">
+          <div class="s-icon worst">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div class="s-info">
+            <span class="s-label" data-i18n="calendar.worst_day">En Kötü Gün</span>
+            <span class="s-value negative" id="cal-summary-worst">—</span>
+            <span class="s-subvalue" id="cal-summary-worst-date"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- POPUP -->
+  <div class="calendar-popup-overlay" id="calendar-popup-overlay"></div>
+  <div class="calendar-day-popup" id="calendar-day-popup">
+    <div class="popup-header">
+      <h4 id="popup-date-title">15 Ocak 2026</h4>
+      <button class="popup-close" id="popup-close">✕</button>
+    </div>
+    <div class="popup-filter" id="popup-filter" style="display:none;">
+      <button type="button" class="active" data-filter="all">Tümü</button>
+      <button type="button" data-filter="long">Long</button>
+      <button type="button" data-filter="short">Short</button>
+    </div>
+    <div class="popup-body" id="popup-body"></div>
+  </div>
+
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js" is:inline></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
+  <script src="/components/navbar/navbar.js" is:inline></script>
+  
+  <!-- 5. QUICK ADD (ES5) -->
+  <script src="/quick-modal-i18n.js" is:inline></script>
+  <script src="/js/quick-add.js" is:inline></script>
+  
+  <!-- 6. CALENDAR JS (ES5 - AYNI KALIR) -->
+  <script src="/interface/calendar/js/calendar.js" is:inline></script>
+  
+  <!-- 7. INIT -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+      if (typeof loadNavbar === 'function') {
+        loadNavbar('navbar-container');
+      }
+      if (typeof initCalendar === 'function') {
+        initCalendar();
+      }
+    });
+  </script>
+</Layout>

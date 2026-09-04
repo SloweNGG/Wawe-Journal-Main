@@ -1,0 +1,166 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en">
+<Fragment slot="head">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Premium Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/resim.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/components/navbar/navbar.css" />
+  
+  <!-- PREMIUM DASHBOARD CSS -->
+  <link rel="stylesheet" href="/interface/premium-dashboard/css/premium-dashboard.css" />
+  
+  <!-- ⭐ QUICK ADD MODAL CSS -->
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+  
+  <!-- LUCIDE ICONS -->
+  <script src="https://unpkg.com/lucide@latest" is:inline></script>
+  
+  <!-- SORTABLEJS -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline></script>
+  
+  <!-- APEXCHARTS -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
+  
+  <!-- LIGHTWEIGHT CHARTS -->
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js" is:inline></script>
+
+  <script is:inline>
+    (function() {
+      var savedTheme = localStorage.getItem('ww_theme');
+      var isLight = savedTheme === 'light';
+      document.documentElement.classList.toggle('light-theme-pending', isLight);
+      document.addEventListener('DOMContentLoaded', function() {
+        if (isLight) {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+        document.documentElement.classList.remove('light-theme-pending');
+      });
+    })();
+  </script>
+
+  <script is:inline>
+    (function() {
+      var savedLang = localStorage.getItem('ww_language');
+      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+        document.documentElement.setAttribute('data-lang', savedLang);
+        document.documentElement.lang = savedLang;
+        console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
+      } else {
+        localStorage.setItem('ww_language', 'en');
+        document.documentElement.setAttribute('data-lang', 'en');
+        document.documentElement.lang = 'en';
+        console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
+      }
+    })();
+  </script>
+
+  <style>
+    html.light-theme-pending body {
+      background: #f4f4f9;
+    }
+  </style>
+</Fragment>
+  <!-- NAVBAR CONTAINER -->
+  <div id="navbar-container"></div>
+
+  <!-- QUICK ADD MODAL CONTAINER -->
+  <div id="quick-add-container"></div>
+
+  <main class="premium-main" id="main-content">
+    <div style="display:flex;justify-content:center;align-items:center;min-height:60vh;flex-direction:column;gap:1rem;">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;">Premium Dashboard yükleniyor...</p>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       ⭐ SCRIPTS - SIRALI YÜKLEME (MODÜLER)
+       ============================================================ -->
+
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
+
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js" is:inline></script>
+
+  <!-- 4. NAVBAR (ES5) -->
+  <script src="/components/navbar/navbar.js" is:inline></script>
+
+  <!-- 5. QUICK ADD (ES5) -->
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
+
+  <!-- 6. ⭐ PREMIUM DASHBOARD - MODÜLER JS (ES Module) -->
+  <script type="module" src="/interface/premium-dashboard/js/helpers.js" is:inline></script>
+  <script type="module" src="/interface/premium-dashboard/js/chart-renderers.js" is:inline></script>
+  <script type="module" src="/interface/premium-dashboard/js/dashboard-manager.js" is:inline></script>
+  <script type="module" src="/interface/premium-dashboard/js/premium-dashboard.js" is:inline></script>
+
+  <!-- 7. ⭐ QUICK ADD MANUEL BAŞLATICI (dashboard.html'den alındı) -->
+  <script is:inline>
+    (function() {
+      function createManualFAB() {
+        if (document.getElementById('quick-add-fab')) return;
+        var fab = document.createElement('button');
+        fab.id = 'quick-add-fab';
+        fab.className = 'quick-add-fab';
+        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+        fab.addEventListener('click', function() {
+          if (typeof quickAddOpen === 'function') quickAddOpen();
+          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+        });
+        document.body.appendChild(fab);
+        console.log('✅ Manuel FAB oluşturuldu');
+      }
+      
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(function() {
+          if (typeof quickAddOpen === 'undefined') createManualFAB();
+        }, 1500);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            if (typeof quickAddOpen === 'undefined') createManualFAB();
+          }, 1500);
+        });
+      }
+    })();
+  </script>
+
+  <!-- 8. LUCIDE ICONS INIT (EN SON) -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+        console.log('✅ Lucide icons initialized on premium dashboard!');
+      }
+    });
+  </script>
+
+  <!-- 9. NAVBAR YÜKLE -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof loadNavbar === 'function') {
+        loadNavbar('navbar-container');
+        console.log('✅ Navbar yüklendi!');
+      } else {
+        console.warn('⚠️ loadNavbar fonksiyonu bulunamadı!');
+      }
+    });
+  </script>
+</Layout>

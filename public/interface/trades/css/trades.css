@@ -1,0 +1,591 @@
+/* ============================================================
+   TRADES SAYFASI ÖZEL STILLER
+   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
+   ⭐ FAZ 2.2: .confirm-modal kopyası SİLİNDİ (styles.css'te tek kaynak)
+   ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
+   ============================================================ */
+
+.trades-page .ww-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 1100px;
+}
+.trades-page .ww-table th,
+.trades-page .ww-table td {
+  padding: 0.85rem 0.75rem;
+  vertical-align: middle;
+}
+.trades-page .ww-table th:nth-child(1) { width: 36px; }
+.trades-page .ww-table th:nth-child(2) { width: 85px; }
+.trades-page .ww-table th:nth-child(3) { width: 65px; }
+.trades-page .ww-table th:nth-child(4) { width: 55px; }
+.trades-page .ww-table th:nth-child(5) { width: 80px; }
+.trades-page .ww-table th:nth-child(6) { width: 80px; }
+.trades-page .ww-table th:nth-child(7) { width: 70px; }
+.trades-page .ww-table th:nth-child(8) { width: 70px; }
+.trades-page .ww-table th:nth-child(9) { width: 90px; }
+.trades-page .ww-table th:nth-child(10) { width: 55px; }
+.trades-page .ww-table th:nth-child(11) { width: 110px; }
+.trades-page .ww-table th:nth-child(12) { width: 100px; }
+.trades-page .ww-table th:nth-child(13) { width: 70px; }
+
+.trades-page .ww-table th {
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.trades-page .ww-table td {
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trades-page .ww-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trades-page .ww-table tbody tr:hover {
+  background: rgba(139,92,246,0.05);
+}
+
+.trades-page .trade-note-row {
+  background: rgba(0,0,0,0.15);
+}
+.trades-page .trade-note-row td {
+  white-space: normal !important;
+  word-break: break-word;
+  padding: 0.75rem 1rem 0.75rem 2rem !important;
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+}
+.trades-page .trade-note-row strong {
+  color: var(--accent2);
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.row-indicator {
+  display: inline-block;
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.row-indicator.win { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+.row-indicator.loss { background: var(--red); box-shadow: 0 0 6px var(--red-glow); }
+.row-indicator.open { background: var(--muted); opacity: 0.4; }
+
+.symbol-cell {
+  display: flex;
+  align-items: center;
+}
+.symbol-text {
+  font-family: 'DM Mono', monospace; /* ⭐ KALIR - sembol */
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.badge-long, .badge-short {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-weight: 600;
+}
+.badge-long { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+.badge-short { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+
+.strategy-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-weight: 500;
+  background: rgba(139,92,246,0.15);
+  color: var(--accent2);
+  border: 1px solid rgba(139,92,246,0.25);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.tt-actions {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.trades-page .ww-table tbody tr:hover .tt-actions {
+  opacity: 1;
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,92,246,0.05); }
+.btn-icon.del:hover { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.05); }
+
+/* ============================================================
+   STATS GRID
+   ============================================================ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: all 0.2s;
+}
+.stat-card:hover {
+  border-color: rgba(139,92,246,0.3);
+  transform: translateY(-2px);
+}
+.stat-card-label {
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+.stat-card-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.stat-card-value.positive { color: var(--green); }
+.stat-card-value.negative { color: var(--red); }
+
+/* ============================================================
+   TOOLBAR
+   ============================================================ */
+.trades-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.toolbar-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toolbar-select:hover { border-color: var(--accent); }
+
+/* ============================================================
+   SEÇİM ÇUBUĞU
+   ============================================================ */
+.sel-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 0.6rem 1.2rem;
+  margin-bottom: 1rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(139,92,246,0.06);
+}
+.sel-bar.visible { display: flex; }
+.sel-bar .sel-count {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 0.25rem 0.5rem;
+  background: rgba(139,92,246,0.08);
+  border-radius: 6px;
+  min-width: 24px;
+  text-align: center;
+}
+.sel-bar .sel-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.sel-bar .sel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.sel-bar .sel-clear {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  color: var(--muted);
+  padding: 0.3rem 1rem;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sel-bar .sel-clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(139,92,246,0.05);
+}
+
+/* ============================================================
+   BULK DELETE BUTTON
+   ============================================================ */
+.btn-bulk-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1.2rem;
+  border: none;
+  border-radius: 40px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.25);
+  letter-spacing: 0.02em;
+  min-height: 32px;
+}
+.btn-bulk-delete:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.45);
+}
+.btn-bulk-delete:active { transform: scale(0.96); }
+.btn-bulk-delete svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; }
+.btn-bulk-delete:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+/* ============================================================
+   PAGINATION
+   ============================================================ */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 0 0.5rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+.pagination-info {
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-size: 11px;
+  color: var(--muted);
+}
+.pagination-info strong {
+  color: var(--text);
+}
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.page-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.75rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 32px;
+  text-align: center;
+}
+.page-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(139,92,246,0.05);
+}
+.page-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(139,92,246,0.25);
+}
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.page-btn.arrow {
+  font-size: 14px;
+  padding: 0.3rem 0.6rem;
+}
+.page-btn.ellipsis {
+  border: none;
+  cursor: default;
+  color: var(--muted);
+  padding: 0.3rem 0.2rem;
+  min-width: 20px;
+}
+.page-btn.ellipsis:hover {
+  background: transparent;
+  border: none;
+}
+
+/* ============================================================
+   MODAL STILLERI - SADECE trades.css'E ÖZEL
+   ⭐ FAZ 2.1: z-index değişkenleri kullanılıyor
+   ⭐ FAZ 2.2: .confirm-modal kaldırıldı (styles.css'te tek kaynak)
+   ============================================================ */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+.field label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+}
+.field input, .field select, .field textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(6px);
+  z-index: var(--z-modal-overlay);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.2s, opacity 0.2s;
+}
+.modal-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+.modal-overlay .card {
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: var(--z-modal-content);
+}
+#edit-modal {
+  visibility: hidden;
+  opacity: 0;
+}
+#edit-modal.active {
+  visibility: visible;
+  opacity: 1;
+}
+#bulk-modal {
+  display: none;
+}
+#bulk-modal.active {
+  display: flex !important;
+}
+
+/* ⭐ .confirm-modal KALDIRILDI - styles.css'teki tek kaynak kullanılıyor */
+
+/* ============================================================
+   SKELETON STILLERI
+   ============================================================ */
+.skeleton-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  min-height: 80px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-stat::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+body.light-theme .skeleton-stat::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+.skeleton-stat .skeleton-line {
+  height: 10px;
+  background: var(--border);
+  border-radius: 4px;
+  opacity: 0.3;
+  margin-bottom: 6px;
+}
+.skeleton-stat .skeleton-line:last-child {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skeleton-row {
+  display: flex;
+  gap: 8px;
+}
+.skeleton-row .skeleton-cell {
+  flex: 1;
+  height: 20px;
+  background: var(--border);
+  border-radius: 4px;
+  opacity: 0.15;
+  min-height: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-row .skeleton-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.04) 70%, transparent 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+body.light-theme .skeleton-row .skeleton-cell::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 70%, transparent 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1200px) {
+  .trades-page .card {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .trades-toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar-select { width: 100%; }
+  .pagination-wrap { flex-direction: column; align-items: center; }
+  .pagination-info { font-size: 10px; }
+}
+
+@media (max-width: 767px) {
+  .dropdown-menu {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    left: auto;
+    width: auto;
+    min-width: 160px;
+    border-radius: 12px;
+    transform: translateY(-10px);
+  }
+  .dropdown-menu.show {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .sel-bar {
+    flex-wrap: wrap;
+    padding: 0.6rem 1rem;
+    border-radius: 12px;
+  }
+  .sel-bar .sel-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .pagination-controls .page-btn {
+    font-size: 10px;
+    padding: 0.2rem 0.5rem;
+    min-width: 26px;
+  }
+  .pagination-controls .page-btn.arrow {
+    font-size: 12px;
+    padding: 0.2rem 0.4rem;
+  }
+  .pagination-info {
+    font-size: 9px;
+  }
+}

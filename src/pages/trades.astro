@@ -1,0 +1,385 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en" bodyClass="trades-page" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
+<Fragment slot="head">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
+  <link rel="icon" type="image/svg+xml" href="/resim.svg">
+  
+  <!-- FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- CORE CSS -->
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/components/navbar/navbar.css" />
+  
+  <!-- TRADES CSS -->
+  <link rel="stylesheet" href="/interface/trades/css/trades.css" />
+  
+  <!-- ⭐ QUICK ADD MODAL CSS -->
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+  
+  <!-- LUCIDE ICONS -->
+  <script src="https://unpkg.com/lucide@latest" is:inline></script>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       ⭐ TEMA VE FONT BOYUTU - STANDARDİZE EDİLMİŞ
+       ════════════════════════════════════════════════════════════════ -->
+  <script is:inline>
+  (function() {
+    var savedTheme = localStorage.getItem('ww_theme');
+    var savedFontSize = localStorage.getItem('ww_font_size');
+    var customTheme = localStorage.getItem('ww_custom_theme');
+    
+    // ⭐ 1. ÖNCE BODY'YE CLASS EKLE
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+    
+    // ⭐ 2. CUSTOM THEME'İ UYGULA (EĞER DARK TEMA AKTİFSE)
+    if (savedTheme !== 'light' && customTheme) {
+      try {
+        var settings = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) {
+          document.body.style.fontSize = settings.fontSize + 'px';
+        }
+      } catch(e) {
+        // Hata olursa sadece font size dene
+        if (savedFontSize) {
+          document.body.style.fontSize = savedFontSize + 'px';
+        }
+      }
+    } else if (savedFontSize) {
+      // Light tema veya custom theme yoksa sadece font size uygula
+      document.body.style.fontSize = savedFontSize + 'px';
+    }
+    
+    console.log('🎨 Tema yüklendi:', savedTheme || 'dark');
+  })();
+  </script>
+
+  <!-- LANGUAGE PRELOAD -->
+  <script is:inline>
+    (function() {
+      var savedLang = localStorage.getItem('ww_language');
+      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+        document.documentElement.setAttribute('data-lang', savedLang);
+        document.documentElement.lang = savedLang;
+        console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
+      } else {
+        localStorage.setItem('ww_language', 'en');
+        document.documentElement.setAttribute('data-lang', 'en');
+        document.documentElement.lang = 'en';
+        console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
+      }
+    })();
+  </script>
+</Fragment>
+  <!-- NAVBAR CONTAINER -->
+  <div id="navbar-container"></div>
+
+  <!-- MAIN CONTENT -->
+  <main style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:1400px;">
+
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="trades.title">Tüm İşlemler</h1>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+        <a href="add-trade.html" class="btn btn-primary" data-i18n="trades.add_new">+ Yeni İşlem</a>
+      </div>
+    </div>
+
+    <!-- STATS - SKELETON -->
+    <div class="stat-grid" id="stat-skeleton" style="display:grid;">
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+      <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
+    </div>
+
+    <!-- STATS - GERÇEK -->
+    <div class="stat-grid" id="stat-grid" style="display:none;">
+      <div class="stat-card">
+        <div class="stat-card-label" data-i18n="trades.stats.total_pnl">Toplam K/Z</div>
+        <div class="stat-card-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label" data-i18n="trades.stats.win_rate">Win Rate</div>
+        <div class="stat-card-value" id="stat-wr">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label" data-i18n="trades.stats.trade_count">İşlem Sayısı</div>
+        <div class="stat-card-value" id="stat-count">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label" data-i18n="trades.stats.avg_rr">Ort. R/R</div>
+        <div class="stat-card-value" id="stat-rr">—</div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="trades-toolbar">
+      <select id="sort-select" class="toolbar-select">
+        <option value="date_desc" data-i18n="trades.sort.date_desc">Tarih ↓</option>
+        <option value="date_asc" data-i18n="trades.sort.date_asc">Tarih ↑</option>
+        <option value="pnl_desc" data-i18n="trades.sort.pnl_desc">K/Z ↓</option>
+        <option value="pnl_asc" data-i18n="trades.sort.pnl_asc">K/Z ↑</option>
+        <option value="symbol_asc" data-i18n="trades.sort.symbol_asc">Sembol A→Z</option>
+      </select>
+      <select id="dir-filter" class="toolbar-select">
+        <option value="all" data-i18n="trades.filter.all_directions">Tüm Yönler</option>
+        <option value="LONG" data-i18n="trades.filter.long">Long</option>
+        <option value="SHORT" data-i18n="trades.filter.short">Short</option>
+      </select>
+      <select id="result-filter" class="toolbar-select">
+        <option value="all" data-i18n="trades.filter.all_results">Tüm Sonuçlar</option>
+        <option value="win" data-i18n="trades.filter.win">Kazanç</option>
+        <option value="loss" data-i18n="trades.filter.loss">Kayıp</option>
+        <option value="open" data-i18n="trades.filter.open">Açık</option>
+      </select>
+    </div>
+
+    <!-- SELECTION BAR -->
+    <div class="sel-bar" id="sel-bar">
+      <span class="sel-count" id="sel-count-text">0</span>
+      <span class="sel-label" id="sel-label-text">işlem seçildi</span>
+      <div class="sel-actions">
+        <button class="sel-clear" id="sel-clear-btn" data-i18n="trades.clear_selection">Seçimi Kaldır</button>
+        <button class="btn-bulk-delete" id="bulk-delete-btn" data-i18n="trades.bulk_delete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+          Seçilenleri Sil
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <!-- SKELETON TABLE -->
+      <div id="table-skeleton" style="padding:1.5rem;">
+        <div class="skeleton-table">
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+          <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+        </div>
+      </div>
+
+      <!-- GERÇEK TABLE -->
+      <div id="table-wrap" style="padding:1.5rem;display:none;"></div>
+
+      <!-- PAGINATION -->
+      <div id="pagination-wrap" class="pagination-wrap" style="display:none;padding:0.5rem 1.5rem 1rem;">
+        <div class="pagination-info" id="pagination-info"></div>
+        <div class="pagination-controls" id="pagination-controls"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BULK MODAL -->
+  <div id="bulk-modal" class="confirm-modal">
+    <div class="confirm-modal-box">
+      <div class="confirm-modal-header">
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3 data-i18n="trades.bulk_confirm_title">İşlemleri Sil</h3>
+      </div>
+      <div class="confirm-modal-body">
+        <p id="bulk-count-text"></p>
+        <div class="warning-text">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span data-i18n="trades.bulk_confirm_warning">Bu işlem geri alınamaz!</span>
+        </div>
+      </div>
+      <div class="confirm-modal-footer">
+        <button class="btn-modal-cancel" id="bulk-cancel" data-i18n="common.cancel">İptal</button>
+        <button class="btn-modal-danger" id="bulk-confirm" data-i18n="common.delete">Evet, Sil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DÜZENLEME MODALI -->
+  <div id="edit-modal" class="modal-overlay">
+    <div class="card" style="max-width:520px;width:100%;position:relative;max-height:90vh;overflow-y:auto;">
+      <h2 style="font-size:1.1rem;margin-bottom:1.25rem;" data-i18n="trades.edit_title">İşlemi Düzenle</h2>
+      <input type="hidden" id="edit-id" />
+
+      <div class="field">
+        <label data-i18n="trades.instrument">Enstrüman Tipi</label>
+        <select id="edit-instrument">
+          <option value="forex" data-i18n="trades.instrument_forex">Forex (100.000)</option>
+          <option value="gold" data-i18n="trades.instrument_gold">Altın (100)</option>
+          <option value="index" data-i18n="trades.instrument_index">Endeks (10)</option>
+          <option value="crypto" data-i18n="trades.instrument_crypto">Kripto (1)</option>
+          <option value="other" data-i18n="trades.instrument_other">Diğer / Manuel</option>
+        </select>
+      </div>
+      <div class="field" id="edit-custom-wrap" style="display:none;">
+        <label data-i18n="trades.custom_multiplier">Manuel Çarpan</label>
+        <input type="text" inputmode="decimal" id="edit-multiplier" placeholder="1000" />
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="field">
+          <label data-i18n="trades.symbol">Sembol</label>
+          <input type="text" id="edit-symbol" style="text-transform:uppercase;" />
+        </div>
+        <div class="field">
+          <label data-i18n="trades.direction">Yön</label>
+          <select id="edit-direction">
+            <option value="LONG" data-i18n="trades.direction_long">LONG</option>
+            <option value="SHORT" data-i18n="trades.direction_short">SHORT</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="trades.lot">Lot</label>
+        <input type="text" inputmode="decimal" id="edit-lot" />
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="field">
+          <label data-i18n="trades.entry_price">Giriş Fiyatı</label>
+          <input type="text" inputmode="decimal" id="edit-entry" />
+        </div>
+        <div class="field">
+          <label data-i18n="trades.exit_price">Çıkış Fiyatı</label>
+          <input type="text" inputmode="decimal" id="edit-exit" />
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="field">
+          <label data-i18n="trades.stop_loss">Stop Loss</label>
+          <input type="text" inputmode="decimal" id="edit-sl" />
+        </div>
+        <div class="field">
+          <label data-i18n="trades.take_profit">Take Profit</label>
+          <input type="text" inputmode="decimal" id="edit-tp" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="trades.strategy">Strateji</label>
+        <select id="edit-strategy">
+          <option value="" data-i18n="addtrade.select_strategy">— Strateji Seç —</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label data-i18n="trades.date">Tarih</label>
+        <input type="date" id="edit-date" />
+      </div>
+      <div class="field">
+        <label data-i18n="trades.notes">Notlar</label>
+        <textarea id="edit-notes" rows="2" style="resize:vertical;"></textarea>
+      </div>
+
+      <p class="error-msg" id="edit-err" style="display:none;"></p>
+
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:.5rem;">
+        <button class="btn btn-ghost" id="modal-cancel" data-i18n="common.cancel">İptal (ESC)</button>
+        <button class="btn btn-primary" id="modal-save" data-i18n="common.save">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ⭐ SCRIPTS - GÜNCELLENDİ
+       ============================================================ -->
+  
+  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  
+  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+  
+  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <script type="module" src="/src/script.js" is:inline></script>
+  
+  <!-- 4. NAVBAR (ES5) -->
+  <script src="/components/navbar/navbar.js" is:inline></script>
+  
+  <!-- 5. TRADES JS (ES5 - AYNI KALIR) -->
+  <script src="/interface/trades/js/trades.js" is:inline></script>
+  
+  <!-- 6. QUICK ADD (ES5) -->
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
+
+  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
+  <script is:inline>
+    (function() {
+      function createManualFAB() {
+        if (document.getElementById('quick-add-fab')) return;
+        var fab = document.createElement('button');
+        fab.id = 'quick-add-fab';
+        fab.className = 'quick-add-fab';
+        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+        fab.addEventListener('click', function() {
+          if (typeof quickAddOpen === 'function') quickAddOpen();
+          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+        });
+        document.body.appendChild(fab);
+        console.log('✅ Manuel FAB oluşturuldu');
+      }
+      
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(function() {
+          if (typeof quickAddOpen === 'undefined') createManualFAB();
+        }, 1500);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            if (typeof quickAddOpen === 'undefined') createManualFAB();
+          }, 1500);
+        });
+      }
+    })();
+  </script>
+
+  <!-- 8. LUCIDE ICONS INIT -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+        console.log('✅ Lucide icons initialized on trades!');
+      }
+    });
+  </script>
+  
+</Layout>
