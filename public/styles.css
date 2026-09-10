@@ -11,6 +11,8 @@
    ⭐ FAZ 4.1: Global transition KALDIRILDI (scope edildi)
    ⭐ FAZ 4.2: prefers-reduced-motion desteği eklendi
    ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
+   ⭐ EKLENDİ: strategy-tags-card, strategy-pill, best-worst (dashboard/strategies ortak)
+   ⭐ EKLENDİ: empty-state stilleri
    ============================================================ */
 
 /* ============================================================
@@ -18,7 +20,7 @@
    ============================================================ */
 
 :root {
-  /* KOYU TEMA (Varsayılan) */
+/* KOYU TEMA (Varsayılan) */
   --bg: #07070c;
   --bg2: #0d0d14;
   --surface: #0e0e16;
@@ -48,8 +50,8 @@
   --pink: #ec4899;
 
   --text: #f1f1f8;
-  --text-muted: #8b8b9e;
-  --muted: #8b8b9e;
+  --text-muted: #a0a0b8; /* ⭐ GÜNCELLENDİ: #8b8b9e -> #a0a0b8 (kontrast artırıldı) */
+  --muted: #a0a0b8;      /* ⭐ GÜNCELLENDİ: #8b8b9e -> #a0a0b8 (kontrast artırıldı) */
 
   --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
 
@@ -340,7 +342,7 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.2rem;
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .stat-card .stat-value {
   font-size: clamp(1.1rem, 2.5vw, 1.5rem);
@@ -362,7 +364,7 @@ body.light-theme h4, body.light-theme h5 {
   display: flex;
   align-items: center;
   gap: 3px;
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .stat-trend.positive { color: var(--green); }
 .stat-trend.negative { color: var(--red); }
@@ -386,7 +388,7 @@ body.light-theme h4, body.light-theme h5 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .kpi-value {
   font-size: clamp(0.7rem, 1.2vw, 0.9rem);
@@ -461,11 +463,11 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin: 0;
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .chart-badge {
   font-size: clamp(8px, 0.7vw, 10px);
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   padding: 2px 8px;
   border-radius: 20px;
   background: rgba(34,197,94,0.1);
@@ -493,7 +495,7 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.5rem;
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .streak-dots {
   display: flex;
@@ -532,6 +534,114 @@ body.light-theme h4, body.light-theme h5 {
 }
 
 /* ============================================================
+   ⭐ STRATEGY TAGS CARD - DASHBOARD & STRATEGIES ORTAK
+   ============================================================ */
+
+.strategy-tags-card .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  color: var(--muted);
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.strategy-tags-card .empty-state .empty-icon {
+  font-size: 2rem;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.strategy-tags-card .empty-state .empty-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.strategy-tags-card .empty-state .empty-text {
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--muted);
+}
+
+.strategy-tags-card .empty-state .empty-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.strategy-tags-card .empty-state .empty-link:hover {
+  text-decoration: underline;
+}
+
+.strategy-tags-title svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--accent2);
+}
+
+.strategy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.25rem 0.7rem;
+  margin: 0.2rem;
+  font-size: clamp(9px, 2vw, 11px);
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.2s;
+}
+
+.strategy-pill:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.pill-positive {
+  border-left: 2px solid var(--green);
+}
+
+.pill-negative {
+  border-left: 2px solid var(--red);
+}
+
+.pill-neutral {
+  border-left: 2px solid var(--accent);
+}
+
+.best-worst {
+  margin-top: 0.75rem;
+  font-size: clamp(9px, 2vw, 10px);
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.best-worst svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--accent2);
+  stroke-width: 2;
+}
+
+.best-worst .bw-count {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ============================================================
    TRADE LIST - MOBIL OPTIMIZE
    ============================================================ */
 
@@ -550,7 +660,7 @@ body.light-theme h4, body.light-theme h5 {
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  font-family: 'DM Mono', monospace; /* ⭐ KALIR - kısa sembol */
+  font-family: 'DM Mono', monospace;
 }
 .trade-icon.long {
   background: rgba(34,197,94,0.15);
@@ -563,7 +673,7 @@ body.light-theme h4, body.light-theme h5 {
   box-shadow: 0 0 8px rgba(239,68,68,0.2);
 }
 .trade-symbol {
-  font-family: 'DM Mono', monospace; /* ⭐ KALIR - semboller */
+  font-family: 'DM Mono', monospace;
   font-weight: 500;
   font-size: clamp(0.6rem, 1vw, 0.85rem);
   color: var(--text);
@@ -616,7 +726,7 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(0.5rem, 0.7vw, 0.7rem);
   color: var(--muted);
   text-align: right;
-  font-family: 'DM Mono', monospace; /* ⭐ KALIR - tarih formatı */
+  font-family: 'DM Mono', monospace;
 }
 
 /* ============================================================
@@ -738,7 +848,7 @@ body.light-theme h4, body.light-theme h5 {
   margin-bottom: 0.4rem;
 }
 .cal-day-names .dname {
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(7px, 0.7vw, 10px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -801,7 +911,7 @@ body.light-theme h4, body.light-theme h5 {
 .cal-day .day-pnl.positive { color: var(--green); }
 .cal-day .day-pnl.negative { color: var(--red); }
 .cal-day .day-trade-count {
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(5px, 0.5vw, 8px);
   color: var(--muted);
   position: relative;
@@ -980,7 +1090,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   line-height: 1.2;
 }
 .summary-mini-card .s-info .s-label {
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(6px, 0.5vw, 8px);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1073,7 +1183,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   gap: clamp(3px, 0.4vw, 6px);
 }
 .calendar-day-popup .popup-trade .pt-badge {
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(6px, 0.5vw, 8px);
   font-weight: 700;
   padding: 1px clamp(3px, 0.4vw, 6px);
@@ -1090,7 +1200,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: 1px solid rgba(239,68,68,0.2);
 }
 .calendar-day-popup .popup-trade .pt-symbol {
-  font-family: 'DM Mono', monospace; /* ⭐ KALIR - sembol */
+  font-family: 'DM Mono', monospace;
   font-weight: 500;
   color: var(--text);
 }
@@ -1144,7 +1254,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .ww-table th {
   border-bottom: 1px solid var(--border);
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(8px, 0.7vw, 11px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -1333,7 +1443,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .field input,
 .field select,
@@ -1447,7 +1557,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 
 .badge {
   border-radius: 4px;
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(8px, 0.7vw, 11px);
   font-weight: 500;
   padding: 2px clamp(4px, 0.5vw, 7px);
@@ -1606,7 +1716,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: rgba(239,68,68,0.06);
   border: 1px solid rgba(239,68,68,0.15);
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(9px, 0.7vw, 11px);
   color: var(--red);
   display: flex;
@@ -1713,7 +1823,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   text-transform: uppercase;
   margin-bottom: 0.75rem;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 .footer-col ul { list-style: none; padding: 0; }
 .footer-col ul li { margin-bottom: 0.4rem; }
@@ -1752,7 +1862,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: clamp(9px, 0.7vw, 11px);
-  font-family: 'DM Sans', sans-serif; /* ⭐ DM Mono → DM Sans */
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* ============================================================
@@ -2460,4 +2570,40 @@ body.light-theme .panel-glow {
   .theme-preview-box {
     padding: 0.75rem;
   }
+}
+
+/* ⭐ FIX: Scroll bar çiftlenmesini KÖKTEN çöz */
+html {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+body {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+#app-scroll-container {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100vh !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Scroll bar stilini koru */
+#app-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+#app-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+#app-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 99px;
+}
+#app-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }

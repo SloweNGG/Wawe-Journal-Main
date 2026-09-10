@@ -1,12 +1,9 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title data-i18n="addtrade.title">İşlem Ekle – Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
   
 <script is:inline>
   (function() {
@@ -30,34 +27,8 @@ import Layout from '../layouts/Layout.astro';
   })();
 </script>
 
-<!-- ============================================================
-     ⭐ DİL KALICILIĞI - Sayfa yüklenmeden önce dil geri yükleme
-     ============================================================ -->
-<script is:inline>
-  (function() {
-    // localStorage'dan kayıtlı dili oku
-    var savedLang = localStorage.getItem('ww_language');
-    
-    // Kayıtlı dil varsa ve geçerliyse kullan, yoksa varsayılan 'en'
-    if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-      document.documentElement.setAttribute('data-lang', savedLang);
-      document.documentElement.lang = savedLang;
-      console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
-    } else {
-      // Kayıtlı dil yoksa varsayılanı 'en' yap ve localStorage'a kaydet
-      localStorage.setItem('ww_language', 'en');
-      document.documentElement.setAttribute('data-lang', 'en');
-      document.documentElement.lang = 'en';
-      console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
-    }
-  })();
-</script>
-
 
   
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
   <style>
     .page-header {
       display: flex;
@@ -524,7 +495,6 @@ import Layout from '../layouts/Layout.astro';
   <!-- ============================================================
        NAVBAR CONTAINER
        ============================================================ -->
-  <div id="navbar-container"></div>
 
   <!-- ============================================================
        MAIN

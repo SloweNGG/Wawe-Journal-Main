@@ -1,15 +1,9 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en">
+<Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Premium Dashboard</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
   
   <!-- PREMIUM DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/premium-dashboard/css/premium-dashboard.css" />
@@ -17,8 +11,6 @@ import Layout from '../layouts/Layout.astro';
   <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
   
-  <!-- LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
   
   <!-- SORTABLEJS -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline></script>
@@ -68,7 +60,6 @@ import Layout from '../layouts/Layout.astro';
   </style>
 </Fragment>
   <!-- NAVBAR CONTAINER -->
-  <div id="navbar-container"></div>
 
   <!-- QUICK ADD MODAL CONTAINER -->
   <div id="quick-add-container"></div>

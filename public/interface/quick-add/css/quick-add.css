@@ -12,15 +12,9 @@
      Yeşil         #22c55e
      Kırmızı       #ef4444
 
-   Not: Bu değerler global stylesheet'te --accent, --accent2,
-   --surface, --surface2, --border, --border2, --text, --muted,
-   --green, --red olarak tanımlı olmalı. Bu dosya, güvenlik
-   amacıyla kendi scoped fallback'lerini de tanımlar; global
-   değerler eksikse veya uyuşmazsa bile modal doğru renklerde
-   görünür.
-   ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
-   ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
-   ⭐ SADECE sayısal/mono gereken alanlar Inter/DM Mono kalır
+   ⭐ TEMA FIX: --qa-* değişkenleri artık body üzerinde tanımlı
+      ve body.light-theme altında override ediliyor. Böylece
+      modal hangi temadaysa o renkleri kullanıyor.
    ============================================================ */
 
 :root {
@@ -32,24 +26,40 @@
   --qa-header-h: 56px;
   --qa-header-h-mobile: 50px;
 
-  /* Scoped renk fallback'leri — site paletiyle birebir */
-  --qa-accent: var(--accent, #7c6dfa);
-  --qa-accent-light: var(--accent2, #9b8bfa);
-  --qa-accent-tint: rgba(124, 109, 250, 0.08);
-  --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
-  --qa-surface: var(--surface, #111118);
-  --qa-surface2: var(--surface2, #15151d);
-  --qa-border: var(--border, rgba(232, 232, 240, 0.07));
-  --qa-border-strong: var(--border2, rgba(232, 232, 240, 0.14));
-  --qa-text: var(--text, #e8e8f0);
-  --qa-muted: var(--muted, #6f6f80);
-  --qa-green: var(--green, #22c55e);
-  --qa-red: var(--red, #ef4444);
-
-  /* Tutarlı yarıçap ölçeği — üç değer, tüm bileşen bunları kullanır */
+  /* Yarıçap ölçeği */
   --qa-r-sm: 8px;
   --qa-r-md: 12px;
   --qa-r-lg: 18px;
+
+  /* ⭐ Renk değişkenleri — DARK (varsayılan) */
+  --qa-accent: #7c6dfa;
+  --qa-accent-light: #9b8bfa;
+  --qa-accent-tint: rgba(124, 109, 250, 0.08);
+  --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
+  --qa-surface: #111118;
+  --qa-surface2: #15151d;
+  --qa-border: rgba(232, 232, 240, 0.07);
+  --qa-border-strong: rgba(232, 232, 240, 0.14);
+  --qa-text: #e8e8f0;
+  --qa-muted: #6f6f80;
+  --qa-green: #22c55e;
+  --qa-red: #ef4444;
+}
+
+/* ⭐ LIGHT TEMA - tüm --qa-* değişkenleri override */
+body.light-theme {
+  --qa-accent: #6d5ce0;
+  --qa-accent-light: #7c6dfa;
+  --qa-accent-tint: rgba(109, 92, 224, 0.08);
+  --qa-accent-tint-strong: rgba(109, 92, 224, 0.16);
+  --qa-surface: #ffffff;
+  --qa-surface2: #f5f5f8;
+  --qa-border: rgba(0, 0, 0, 0.08);
+  --qa-border-strong: rgba(0, 0, 0, 0.15);
+  --qa-text: #1e293b;
+  --qa-muted: #64748b;
+  --qa-green: #10b981;
+  --qa-red: #dc2626;
 }
 
 .quick-add-fab,
@@ -128,6 +138,11 @@
 }
 .quick-add-overlay.active { display: flex; }
 
+/* ⭐ LIGHT TEMA - overlay daha açık */
+body.light-theme .quick-add-overlay {
+  background: rgba(240, 240, 245, 0.85);
+}
+
 @keyframes qaFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -135,11 +150,6 @@
 
 /* ============================================================
    MODAL CONTAINER
-   Sinyal öğesi: sol kenarda ince bir "durum rayı". Varsayılan
-   mor; JS istenirse .quick-add-modal üzerine .rail-pos /
-   .rail-neg class'ı ekleyerek P&L işaretine göre yeşile/kırmızıya
-   çevirebilir (bkz. .preview-rail aynı mantığı önizleme
-   kutusunda tekrar eder).
    ============================================================ */
 .quick-add-modal {
   background: var(--qa-surface);
@@ -159,6 +169,11 @@
 .quick-add-modal::-webkit-scrollbar-thumb {
   background: var(--qa-border-strong);
   border-radius: 99px;
+}
+
+/* ⭐ LIGHT TEMA - modal gölgesi daha yumuşak */
+body.light-theme .quick-add-modal {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
 }
 
 /* ============================================================
@@ -206,7 +221,7 @@
 }
 
 /* ============================================================
-   TABS (varsa — CSV / Toplu Yapıştır sekmeleri)
+   TABS
    ============================================================ */
 .quick-add-tabs {
   display: flex;
@@ -222,7 +237,7 @@
   background: transparent;
   border: none;
   color: var(--qa-muted);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 12px;
   font-weight: 500;
   padding: 0.65rem 0.4rem;
@@ -261,10 +276,9 @@
 .quick-add-row .quick-add-field { margin-bottom: 0; }
 .quick-add-field:last-child { margin-bottom: 0; }
 
-/* ⭐ Label: DM Mono → DM Sans */
 .quick-add-field label {
   display: block;
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.07em;
@@ -281,7 +295,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.68rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s ease;
@@ -316,7 +330,7 @@
   border-radius: var(--qa-r-sm);
   background: transparent;
   color: var(--qa-muted);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -349,14 +363,14 @@
   border-radius: var(--qa-r-sm);
   padding: 0.6rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-mono); /* ⭐ KALIR - sayısal giriş */
+  font-family: var(--qa-font-mono);
   font-size: 13px;
   outline: none;
 }
 #quick-custom-multiplier-wrap input:focus { border-color: var(--qa-accent); }
 
 /* ============================================================
-   YÖN (Buy / Sell) — tek stroke, düz renk, glow yok
+   YÖN (Buy / Sell)
    ============================================================ */
 .quick-add-side-toggle {
   display: grid;
@@ -369,7 +383,7 @@
   border-radius: var(--qa-r-sm);
   background: var(--qa-surface2);
   color: var(--qa-muted);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -405,7 +419,7 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font-family: var(--qa-font-mono); /* ⭐ KALIR - para birimi */
+  font-family: var(--qa-font-mono);
   font-size: 14px;
   font-weight: 600;
   color: var(--qa-muted);
@@ -433,7 +447,7 @@
   border: 1px solid var(--qa-border);
   border-radius: 6px;
   padding: 0.3rem 0.55rem;
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 10px;
   font-weight: 600;
   color: var(--qa-muted);
@@ -453,7 +467,7 @@
    ============================================================ */
 .quick-add-rr-wrap { display: flex; align-items: center; gap: 8px; }
 .quick-add-rr-wrap .rr-label {
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 13px;
   font-weight: 600;
   color: var(--qa-text);
@@ -466,7 +480,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.65rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 14px;
   outline: none;
 }
@@ -477,7 +491,7 @@
   border: 1px solid var(--qa-border);
   border-radius: 6px;
   padding: 0.3rem 0.55rem;
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 10px;
   font-weight: 600;
   color: var(--qa-muted);
@@ -493,7 +507,7 @@
 .quick-add-rr-wrap .rr-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
 
 /* ============================================================
-   STRATEJİ — yalnızca dropdown
+   STRATEJİ
    ============================================================ */
 .quick-add-strategy-wrap { display: flex; gap: 8px; align-items: center; }
 .quick-add-strategy-wrap select { flex: 1; }
@@ -525,7 +539,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.68rem 0.85rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 13px;
   outline: none;
   resize: vertical;
@@ -536,7 +550,7 @@
 .quick-add-notes textarea::placeholder { color: var(--qa-muted); opacity: 0.6; }
 
 /* ============================================================
-   ÖN İZLEME — imza öğesi: renkli durum rayı modal kenarını yankılar
+   ÖN İZLEME
    ============================================================ */
 .quick-add-preview {
   display: none;
@@ -562,7 +576,7 @@
 .quick-add-preview .preview-item { display: flex; flex-direction: column; gap: 2px; }
 .quick-add-preview .preview-item .p-label {
   font-size: 8px;
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--qa-muted);
@@ -570,7 +584,7 @@
 .quick-add-preview .preview-item .p-val {
   font-size: 0.95rem;
   font-weight: 600;
-  font-family: var(--qa-font-numeric); /* Inter - sayısal */
+  font-family: var(--qa-font-numeric);
   color: var(--qa-text);
 }
 .quick-add-preview .preview-item .p-val.pos { color: var(--qa-green); }
@@ -579,7 +593,7 @@
 .quick-add-preview .preview-divider { width: 1px; height: 26px; background: var(--qa-border-strong); }
 
 /* ============================================================
-   CSV İÇE AKTARMA (varsa)
+   CSV İÇE AKTARMA
    ============================================================ */
 .quick-import-area { text-align: center; padding: 1rem 0.5rem; }
 .quick-import-icon {
@@ -604,7 +618,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.55rem 1.4rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -623,14 +637,21 @@
   margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
   max-height: 120px; overflow-y: auto;
   background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
-  font-family: var(--qa-font-mono); /* ⭐ KALIR - log için */
+  font-family: var(--qa-font-mono);
   text-align: left;
 }
 .quick-import-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .quick-import-log div:last-child { border-bottom: none; }
 
+body.light-theme .quick-import-log {
+  background: rgba(0,0,0,0.04);
+}
+body.light-theme .quick-import-log div {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
 /* ============================================================
-   TOPLU YAPIŞTIRMA (varsa)
+   TOPLU YAPIŞTIRMA
    ============================================================ */
 .quick-bulk-area textarea {
   width: 100%; min-height: 110px;
@@ -639,7 +660,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.65rem;
   color: var(--qa-text);
-  font-family: var(--qa-font-mono); /* ⭐ KALIR - veri girişi için */
+  font-family: var(--qa-font-mono);
   font-size: 12px;
   resize: vertical;
   outline: none;
@@ -658,11 +679,18 @@
   margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
   max-height: 120px; overflow-y: auto;
   background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
-  font-family: var(--qa-font-mono); /* ⭐ KALIR - log için */
+  font-family: var(--qa-font-mono);
   text-align: left;
 }
 .quick-bulk-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .quick-bulk-log div:last-child { border-bottom: none; }
+
+body.light-theme .quick-bulk-log {
+  background: rgba(0,0,0,0.04);
+}
+body.light-theme .quick-bulk-log div {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
 
 /* ============================================================
    FOOTER
@@ -683,7 +711,7 @@
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
   color: var(--qa-muted);
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 13px;
   font-weight: 500;
   padding: 0.55rem 1.2rem;
@@ -697,7 +725,7 @@
   border: 1px solid var(--qa-accent);
   border-radius: var(--qa-r-sm);
   color: #fff;
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   font-size: 13px;
   font-weight: 600;
   padding: 0.55rem 1.4rem;
@@ -721,7 +749,7 @@
 .quick-add-loading {
   display: none; align-items: center; gap: 8px;
   padding: 0.5rem 0; color: var(--qa-muted);
-  font-size: 13px; font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-size: 13px; font-family: var(--qa-font-body);
 }
 .quick-add-loading.active { display: flex; }
 .quick-add-loading .spinner {
@@ -747,7 +775,7 @@
   border-radius: var(--qa-r-sm);
   padding: 0.6rem 0.85rem;
   font-size: 12px;
-  font-family: var(--qa-font-body); /* DM Mono → DM Sans */
+  font-family: var(--qa-font-body);
   margin-bottom: 0.9rem;
 }
 .quick-add-error.active { display: flex; }

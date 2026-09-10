@@ -1,5 +1,6 @@
 // ============================================================
 // SETTINGS.JS - SADE VE ÇALIŞAN VERSİYON
+// ⭐ Avatar cache - sadece değiştiğinde render
 // ============================================================
 
 console.log('🔧 settings.js yükleniyor...');
@@ -545,7 +546,7 @@ window.getPaymentMethods = function() {
 };
 
 // ============================================================
-// ⭐ AVATAR FONKSİYONLARI
+// ⭐ AVATAR FONKSİYONLARI - CACHE DESTEKLİ
 // ============================================================
 async function uploadAvatar(file) {
   if (!file || !file.type.startsWith('image/')) {
@@ -659,6 +660,7 @@ async function loadAvatar() {
   }
 }
 
+// ⭐ updateAvatarElements - Avatar değiştiğinde cache'i SIFIRLA
 function updateAvatarElements(url) {
   var user = window.SETTINGS_STATE.currentUser;
   var initial = '?';
@@ -668,6 +670,18 @@ function updateAvatarElements(url) {
     } else if (user.email) {
       initial = user.email.charAt(0).toUpperCase();
     }
+  }
+  
+  // ⭐ Avatar değiştiğinde cache'i SIFIRLA
+  sessionStorage.removeItem('ww_avatar_url');
+  sessionStorage.removeItem('ww_avatar_time');
+  
+  // ⭐ Navbar'daki cachedAvatarUrl'yi de sıfırla (global)
+  if (typeof cachedAvatarUrl !== 'undefined') {
+    cachedAvatarUrl = null;
+  }
+  if (typeof window.cachedAvatarUrl !== 'undefined') {
+    window.cachedAvatarUrl = null;
   }
   
   var navAvatar = safeEl('user-avatar');

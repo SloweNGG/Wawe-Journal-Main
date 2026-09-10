@@ -1,7 +1,14 @@
 // ============================================================
-// TRADES - ANA JS DOSYASI (OPTİMİZE EDİLMİŞ)
-// script.js'deki tüm global fonksiyonları kullanır
-// SADECE TRADES İÇERİĞİNİ YÖNETİR - NAVBAR'A MÜDAHALE ETMEZ
+// TRADES - ANA JS DOSYASI
+// ============================================================
+// Bu dosyada değişen bölümler:
+//  - DEĞİŞİKLİK 1: renderStats() — stat kartlarında değer uzunluğuna
+//    göre "value-long" / "value-xlong" class'ı eklenir.
+//  - DEĞİŞİKLİK 2: initMobileFilterSheets() — mobilde 3 filtre için
+//    bottom sheet paneli, çiplerle senkron çalışır.
+//  - DEĞİŞİKLİK 3: renderTable() iki kola ayrıldı — buildDesktopTableHTML()
+//    ve buildMobileCardsHTML() + toggleCardDetail(). Kart görünümü mobilde
+//    (≤768px) otomatik devreye girer, breakpoint geçişinde yeniden render olur.
 // ============================================================
 
 (function() {
@@ -140,6 +147,9 @@
   var totalPages = 1;
   var totalItems = 0;
 
+  // ⭐ DEĞİŞİKLİK 3: Mobil/desktop breakpoint takibi
+  var _lastIsMobile = window.innerWidth <= 768;
+
   // ============================================================
   // SKELETON GÖSTER/GİZLE
   // ============================================================
@@ -244,7 +254,6 @@
   
   async function loadStrategyNames() {
     try {
-      // Cache kontrolü
       var now = Date.now();
       if (strategyNamesCacheTime > 0 && (now - strategyNamesCacheTime) < STRATEGY_NAMES_CACHE_TTL) {
         strategiesList = strategyNamesCache.list || [];
@@ -271,7 +280,6 @@
         strategyNames = {};
         data.forEach(function(s) { strategyNames[s.id] = s.name; });
         
-        // Cache'e kaydet
         strategyNamesCache = {
           list: strategiesList,
           map: strategyNames
@@ -299,6 +307,20 @@
   }
 
   // ============================================================
+  // DEĞİŞİKLİK 1: Stat değeri için font boyutu uygulayıcı
+  // ============================================================
+  function applyStatValueSize(el, text, extraCls) {
+    if (!el) return;
+    el.textContent = text;
+    var base = 'stat-card-value' + (extraCls ? ' ' + extraCls : '');
+    var len = (text || '').length;
+    var sizeCls = '';
+    if (len >= 15) sizeCls = ' value-xlong';
+    else if (len >= 11) sizeCls = ' value-long';
+    el.className = base + sizeCls;
+  }
+
+  // ============================================================
   // STATS
   // ============================================================
   
@@ -312,24 +334,37 @@
       var rrValues = trades.filter(function(t) { return t.rr_ratio; }).map(function(t) { return parseFloat(t.rr_ratio); });
       var avgRR = rrValues.length ? (rrValues.reduce(function(s, v) { return s + v; }, 0) / rrValues.length).toFixed(1) : null;
 
+      // DEĞİŞİKLİK 1: Uzunluğa göre otomatik font küçültme
       var totalEl = safeEl('stat-total');
       if (totalEl) {
-        totalEl.textContent = closed.length ? formatCurrency(total) : '—';
-        totalEl.className = 'stat-card-value' + (total > 0 ? ' positive' : total < 0 ? ' negative' : '');
+        var totalStr = closed.length ? formatCurrency(total) : '—';
+        var totalCls = total > 0 ? 'positive' : total < 0 ? 'negative' : '';
+        applyStatValueSize(totalEl, totalStr, totalCls);
       }
+
       var wrEl = safeEl('stat-wr');
-      if (wrEl) wrEl.textContent = closed.length ? wr + '%' : '—';
+      if (wrEl) {
+        var wrStr = closed.length ? wr + '%' : '—';
+        applyStatValueSize(wrEl, wrStr, '');
+      }
+
       var countEl = safeEl('stat-count');
-      if (countEl) countEl.textContent = trades.length;
+      if (countEl) {
+        applyStatValueSize(countEl, String(trades.length), '');
+      }
+
       var rrEl = safeEl('stat-rr');
-      if (rrEl) rrEl.textContent = avgRR ? '1:' + avgRR : '—';
+      if (rrEl) {
+        var rrStr = avgRR ? '1:' + avgRR : '—';
+        applyStatValueSize(rrEl, rrStr, '');
+      }
     } catch(e) {
       console.warn('renderStats hatası:', e);
     }
   }
 
   // ============================================================
-  // NOTE TOGGLE
+  // NOTE TOGGLE (masaüstü — tablo not satırı)
   // ============================================================
   
   function toggleNote(tradeId) {
@@ -344,6 +379,23 @@
     }
   }
   window.toggleNote = toggleNote;
+
+  // ============================================================
+  // DEĞİŞİKLİK 3: Kart detayı toggle (mobil)
+  // ============================================================
+  function toggleCardDetail(id, btn) {
+    var el = document.getElementById('card-detail-' + id);
+    if (!el) return;
+    var isOpen = el.classList.contains('open');
+    if (isOpen) {
+      el.classList.remove('open');
+      if (btn) btn.classList.remove('open');
+    } else {
+      el.classList.add('open');
+      if (btn) btn.classList.add('open');
+    }
+  }
+  window.toggleCardDetail = toggleCardDetail;
 
   // ============================================================
   // SEÇİM ÇUBUĞU
@@ -507,7 +559,6 @@
       else if (result === 'loss') trades = trades.filter(function(t) { return t.exit_price && getTradePnL(t) < 0; });
       else if (result === 'open') trades = trades.filter(function(t) { return !t.exit_price; });
       
-      // ⭐ Sıralama - optimize edildi
       switch (sort) {
         case 'date_desc': 
           trades.sort(function(a,b) { 
@@ -551,7 +602,105 @@
   }
 
   // ============================================================
-  // TABLO RENDER - GÜVENLİ
+  // DEĞİŞİKLİK 3: Masaüstü tablo HTML üretici (eski kod buraya taşındı)
+  // ============================================================
+  function buildDesktopTableHTML(trades) {
+    var rows = '';
+    for (var i = 0; i < trades.length; i++) {
+      var t = trades[i];
+      var pnl = getTradePnL(t);
+      var isWin = pnl !== null && pnl > 0;
+      var isLoss = pnl !== null && pnl < 0;
+      var isOpen = !t.exit_price;
+      var indClass = isOpen ? 'open' : isWin ? 'win' : 'loss';
+      var pnlStr = isOpen ? '<span class="pnl-open" style="color:var(--muted);">Açık</span>' : '<span style="font-family:\'Inter\',sans-serif;font-weight:600;" class="' + (isWin ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</span>';
+      var rrStr = t.rr_ratio ? '<span style="color:var(--accent2);font-family:\'DM Mono\',monospace;">1:' + t.rr_ratio + '</span>' : '—';
+      var strategyName = t.strategy_id ? (strategyNames[t.strategy_id] || '—') : '—';
+      var dateTimeStr = formatDateTime(t.trade_date);
+      var hasNote = t.notes && t.notes.trim().length > 0;
+      
+      var safeSymbol = sanitizeHTML(t.symbol || '—');
+      var safeStrategy = sanitizeHTML(strategyName);
+      var safeNotes = sanitizeHTML(t.notes || '');
+      
+      rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          <td style="width:36px;" onclick="event.stopPropagation()">\n            <input type="checkbox" class="trade-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)">\n          </td>\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="Düzenle">✏️</button>\n              <button class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="Sil">🗑️</button>\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong>📝 Not:</strong><br>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">Not eklenmemiş</span>') + '\n          </td>\n        </tr>\n      ';
+    }
+    return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>Sembol</th><th>Yön</th><th>Lot</th><th>Giriş</th><th>Çıkış</th><th>SL</th><th>TP</th><th>K/Z</th><th>R/R</th><th>Strateji</th><th>Tarih</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
+  }
+
+  // ============================================================
+  // DEĞİŞİKLİK 3: Mobil kart HTML üretici
+  // ============================================================
+  function buildMobileCardsHTML(trades) {
+    var html = '<div class="trades-mobile-cards">';
+    for (var i = 0; i < trades.length; i++) {
+      var t = trades[i];
+      var pnl = getTradePnL(t);
+      var isWin = pnl !== null && pnl > 0;
+      var isLoss = pnl !== null && pnl < 0;
+      var isOpen = !t.exit_price;
+      var indClass = isOpen ? 'open' : isWin ? 'win' : 'loss';
+
+      var safeSymbol = sanitizeHTML(t.symbol || '—');
+      var strategyName = t.strategy_id ? (strategyNames[t.strategy_id] || '—') : '—';
+      var safeStrategy = sanitizeHTML(strategyName);
+      var safeNotes = sanitizeHTML(t.notes || '');
+      var hasNote = t.notes && t.notes.trim().length > 0;
+      var dateTimeStr = formatDateTime(t.trade_date);
+      var rrStr = t.rr_ratio ? '1:' + t.rr_ratio : '—';
+
+      var pnlStr;
+      if (isOpen) {
+        pnlStr = '<span class="trade-card-pnl pnl-open">Açık</span>';
+      } else {
+        pnlStr = '<span class="trade-card-pnl ' + (isWin ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</span>';
+      }
+
+      var dirBadge = (t.direction === 'LONG' || t.direction === 'BUY')
+        ? '<span class="badge-long">LONG</span>'
+        : '<span class="badge-short">SHORT</span>';
+
+      html += '<div class="trade-card" data-id="' + t.id + '">';
+      html +=   '<div class="trade-card-header">';
+      html +=     '<input type="checkbox" class="trade-checkbox trade-card-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)" onclick="event.stopPropagation()">';
+      html +=     '<span class="row-indicator ' + indClass + '"></span>';
+      html +=     '<span class="symbol-text">' + safeSymbol + '</span>';
+      html +=     dirBadge;
+      html +=     '<span class="trade-card-date">' + dateTimeStr + '</span>';
+      html +=   '</div>';
+      html +=   '<div class="trade-card-body">';
+      html +=     pnlStr;
+      html +=     '<button type="button" class="trade-card-toggle" onclick="toggleCardDetail(\'' + t.id + '\', this)" aria-label="Detaylar">';
+      html +=       '<span data-i18n="trades.card_details">Detaylar</span>';
+      html +=       '<span class="arrow">▾</span>';
+      html +=     '</button>';
+      html +=   '</div>';
+      html +=   '<div class="trade-card-detail" id="card-detail-' + t.id + '">';
+      html +=     '<div class="trade-card-detail-inner">';
+      html +=       '<div class="trade-card-grid">';
+      html +=         '<div class="trade-card-field"><label data-i18n="trades.lot">Lot</label><span>' + (t.lot ?? '—') + '</span></div>';
+      html +=         '<div class="trade-card-field"><label data-i18n="trades.entry_price">Giriş</label><span>' + (t.entry_price ?? '—') + '</span></div>';
+      html +=         '<div class="trade-card-field"><label data-i18n="trades.exit_price">Çıkış</label><span>' + (t.exit_price ?? '—') + '</span></div>';
+      html +=         '<div class="trade-card-field"><label data-i18n="trades.stop_loss">SL</label><span>' + (t.stop_loss ?? '—') + '</span></div>';
+      html +=         '<div class="trade-card-field"><label data-i18n="trades.take_profit">TP</label><span>' + (t.take_profit ?? '—') + '</span></div>';
+      html +=         '<div class="trade-card-field"><label>R/R</label><span>' + rrStr + '</span></div>';
+      html +=         '<div class="trade-card-field trade-card-field-full"><label data-i18n="trades.strategy">Strateji</label><span>' + (strategyName !== '—' ? safeStrategy : '—') + '</span></div>';
+      html +=         '<div class="trade-card-field trade-card-field-full"><label data-i18n="trades.notes">Not</label><span>' + (hasNote ? safeNotes : '<span style="opacity:0.5;">Not eklenmemiş</span>') + '</span></div>';
+      html +=       '</div>';
+      html +=       '<div class="trade-card-actions">';
+      html +=         '<button type="button" class="trade-card-btn edit" onclick="event.stopPropagation();openEdit(\'' + t.id + '\')">✏️ <span data-i18n="common.edit">Düzenle</span></button>';
+      html +=         '<button type="button" class="trade-card-btn del" onclick="event.stopPropagation();deleteTrade(\'' + t.id + '\')">🗑️ <span data-i18n="common.delete">Sil</span></button>';
+      html +=       '</div>';
+      html +=     '</div>';
+      html +=   '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // ============================================================
+  // TABLO RENDER - DEĞİŞİKLİK 3: mobil/desktop ayrımı
   // ============================================================
   
   function renderTable(trades) {
@@ -575,28 +724,14 @@
       renderPagination();
       return;
     }
-    
-    var rows = '';
-    for (var i = 0; i < trades.length; i++) {
-      var t = trades[i];
-      var pnl = getTradePnL(t);
-      var isWin = pnl !== null && pnl > 0;
-      var isLoss = pnl !== null && pnl < 0;
-      var isOpen = !t.exit_price;
-      var indClass = isOpen ? 'open' : isWin ? 'win' : 'loss';
-      var pnlStr = isOpen ? '<span class="pnl-open" style="color:var(--muted);">Açık</span>' : '<span style="font-family:\'Inter\',sans-serif;font-weight:600;" class="' + (isWin ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</span>';
-      var rrStr = t.rr_ratio ? '<span style="color:var(--accent2);font-family:\'DM Mono\',monospace;">1:' + t.rr_ratio + '</span>' : '—';
-      var strategyName = t.strategy_id ? (strategyNames[t.strategy_id] || '—') : '—';
-      var dateTimeStr = formatDateTime(t.trade_date);
-      var hasNote = t.notes && t.notes.trim().length > 0;
-      
-      var safeSymbol = sanitizeHTML(t.symbol || '—');
-      var safeStrategy = sanitizeHTML(strategyName);
-      var safeNotes = sanitizeHTML(t.notes || '');
-      
-      rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          <td style="width:36px;" onclick="event.stopPropagation()">\n            <input type="checkbox" class="trade-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)">\n          </td>\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="Düzenle">✏️</button>\n              <button class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="Sil">🗑️</button>\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong>📝 Not:</strong><br>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">Not eklenmemiş</span>') + '\n          </td>\n        </tr>\n      ';
+
+    // DEĞİŞİKLİK 3: Ekran boyutuna göre markup seç
+    var isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      wrap.innerHTML = buildMobileCardsHTML(trades);
+    } else {
+      wrap.innerHTML = buildDesktopTableHTML(trades);
     }
-    wrap.innerHTML = '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>Sembol</th><th>Yön</th><th>Lot</th><th>Giriş</th><th>Çıkış</th><th>SL</th><th>TP</th><th>K/Z</th><th>R/R</th><th>Strateji</th><th>Tarih</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
     
     if (typeof i18n !== 'undefined' && i18n.apply) i18n.apply();
     renderPagination();
@@ -800,13 +935,12 @@
   // ============================================================
   
   async function loadTrades(userId) {
-    // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
     var { data, error } = await sb
       .from('trades')
       .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
       .eq('user_id', userId)
       .order('trade_date', { ascending: false })
-      .limit(1000); // ⭐ MAX 1000 İŞLEM
+      .limit(1000);
     
     if (error) {
       showToast('Veriler yüklenemedi: ' + error.message, 'error');
@@ -814,6 +948,132 @@
     }
     
     return data || [];
+  }
+
+  // ============================================================
+  // DEĞİŞİKLİK 2: MOBİL FİLTRE BOTTOM SHEET
+  // ============================================================
+  function initMobileFilterSheets() {
+    var overlay = safeEl('mobile-filter-overlay');
+    var sheet = safeEl('mobile-filter-sheet');
+    var optionsEl = safeEl('mobile-filter-options');
+    var titleEl = safeEl('mobile-filter-title');
+    var chips = document.querySelectorAll('.mobile-filter-chip');
+
+    if (!overlay || !sheet || !optionsEl || !titleEl) return;
+
+    var FILTER_MAP = {
+      sort: { selectId: 'sort-select', titleKey: 'trades.sort_title', fallbackTitle: 'Sıralama' },
+      dir: { selectId: 'dir-filter', titleKey: 'trades.filter_title', fallbackTitle: 'Yön' },
+      result: { selectId: 'result-filter', titleKey: 'trades.result_title', fallbackTitle: 'Sonuç' }
+    };
+
+    var currentFilterKey = null;
+
+    function getOptionText(opt) {
+      return (opt.textContent || '').trim();
+    }
+
+    // Çip etiketlerini native select'in seçili option'undan senkronla
+    function syncChipLabels() {
+      chips.forEach(function(chip) {
+        var key = chip.dataset.filter;
+        var cfg = FILTER_MAP[key];
+        if (!cfg) return;
+        var sel = document.getElementById(cfg.selectId);
+        if (!sel) return;
+        var selectedOpt = sel.options[sel.selectedIndex];
+        var txt = selectedOpt ? getOptionText(selectedOpt) : '';
+        var span = chip.querySelector('.mobile-filter-chip-text');
+        if (span && txt) span.textContent = txt;
+      });
+    }
+
+    function openSheet(key) {
+      var cfg = FILTER_MAP[key];
+      if (!cfg) return;
+      var sel = document.getElementById(cfg.selectId);
+      if (!sel) return;
+
+      currentFilterKey = key;
+
+      // Başlık
+      var titleText = cfg.fallbackTitle;
+      if (typeof i18n !== 'undefined' && i18n.t) {
+        titleText = i18n.t(cfg.titleKey) || titleText;
+      }
+      titleEl.textContent = titleText;
+
+      // Seçenekleri oluştur
+      optionsEl.innerHTML = '';
+      Array.prototype.forEach.call(sel.options, function(opt) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mobile-filter-option';
+        btn.dataset.value = opt.value;
+        btn.textContent = getOptionText(opt);
+        if (opt.value === sel.value) btn.classList.add('selected');
+        btn.addEventListener('click', function() {
+          sel.value = opt.value;
+          // Mevcut change event'i tetikle → applyFiltersAndSort + currentPage=1 reset korunur
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          syncChipLabels();
+          closeSheet();
+        });
+        optionsEl.appendChild(btn);
+      });
+
+      overlay.classList.add('active');
+      sheet.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSheet() {
+      overlay.classList.remove('active');
+      sheet.classList.remove('active');
+      document.body.style.overflow = '';
+      currentFilterKey = null;
+    }
+
+    chips.forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        openSheet(chip.dataset.filter);
+      });
+    });
+
+    overlay.addEventListener('click', closeSheet);
+
+    // Native select değişince çip etiketlerini senkron tut
+    ['sort-select', 'dir-filter', 'result-filter'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', syncChipLabels);
+    });
+
+    // ESC ile kapat (edit-modal ve bulk-modal ile çakışmasın)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && sheet.classList.contains('active')) {
+        closeSheet();
+      }
+    });
+
+    // İlk yüklemede çip etiketlerini ayarla
+    syncChipLabels();
+    setTimeout(syncChipLabels, 300);
+    setTimeout(syncChipLabels, 800);
+
+    // Dil değişince çipleri güncelle
+    if (typeof i18n !== 'undefined' && i18n.onChange) {
+      i18n.onChange(function() {
+        setTimeout(syncChipLabels, 80);
+      });
+    }
+
+    // Breakpoint geçişinde açık sheet'i kapat
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 768 && sheet.classList.contains('active')) {
+        closeSheet();
+      }
+    });
   }
 
   // ============================================================
@@ -849,7 +1109,6 @@
         await updatePlanBadge();
       } catch (e) {}
 
-      // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
       try {
           if (typeof updateOvertradeBell === 'function') {
               await updateOvertradeBell();
@@ -866,7 +1125,6 @@
         return;
       }
       
-      // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
       var tradesData = await loadTrades(user.id);
       if (tradesData === null) {
         hideTableSkeleton();
@@ -903,7 +1161,6 @@
         });
       }
       
-      // Export buttons
       var exportCsvBtn = safeEl('export-csv');
       if (exportCsvBtn) {
         exportCsvBtn.addEventListener('click', function() {
@@ -931,7 +1188,6 @@
         });
       }
       
-      // Edit modal - instrument change
       var editInstrument = safeEl('edit-instrument');
       if (editInstrument) {
         editInstrument.addEventListener('change', function() {
@@ -940,23 +1196,18 @@
         });
       }
       
-      // Modal cancel
       var cancelBtn = safeEl('modal-cancel');
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
       
-      // Bulk modal cancel
       var bulkCancel = safeEl('bulk-cancel');
       if (bulkCancel) bulkCancel.addEventListener('click', closeBulkModal);
       
-      // Bulk delete button
       var bulkDeleteBtn = safeEl('bulk-delete-btn');
       if (bulkDeleteBtn) bulkDeleteBtn.addEventListener('click', bulkDelete);
       
-      // Bulk confirm
       var bulkConfirm = safeEl('bulk-confirm');
       if (bulkConfirm) bulkConfirm.addEventListener('click', confirmBulkDelete);
       
-      // Clear selection
       var selClear = safeEl('sel-clear-btn');
       if (selClear) {
         selClear.addEventListener('click', function() {
@@ -966,7 +1217,6 @@
         });
       }
       
-      // Edit modal overlay click
       var editModal = safeEl('edit-modal');
       if (editModal) {
         editModal.addEventListener('click', function(e) {
@@ -974,7 +1224,6 @@
         });
       }
       
-      // Bulk modal overlay click
       var bulkModal = safeEl('bulk-modal');
       if (bulkModal) {
         bulkModal.addEventListener('click', function(e) {
@@ -982,7 +1231,7 @@
         });
       }
       
-      // ESC key
+      // ESC — edit-modal ve bulk-modal
       document.addEventListener('keydown', function(e) { 
         if (e.key === 'Escape') { 
           closeModal(); 
@@ -990,7 +1239,6 @@
         } 
       });
       
-      // Save button
       var saveBtn = safeEl('modal-save');
       if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
@@ -1078,7 +1326,6 @@
         });
       }
       
-      // i18n changes
       if (typeof i18n !== 'undefined' && i18n.onChange) {
         i18n.onChange(function() {
           updateSelBar();
@@ -1086,10 +1333,12 @@
         });
       }
       
-      // Apply decimal fix
       if (typeof applyDecimalFix === 'function') {
         applyDecimalFix(['edit-lot','edit-entry','edit-exit','edit-sl','edit-tp','edit-multiplier']);
       }
+
+      // ⭐ DEĞİŞİKLİK 2: Mobil filtre bottom sheet başlatıcı
+      initMobileFilterSheets();
       
       applyFiltersAndSort();
       
@@ -1098,6 +1347,25 @@
       hideTableSkeleton();
     }
   }
+
+  // ============================================================
+  // DEĞİŞİKLİK 3: Breakpoint geçişinde otomatik yeniden render
+  // ============================================================
+  (function listenBreakpointChanges() {
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        var nowMobile = window.innerWidth <= 768;
+        if (nowMobile !== _lastIsMobile) {
+          _lastIsMobile = nowMobile;
+          if (allTrades && allTrades.length) {
+            applyFiltersAndSort();
+          }
+        }
+      }, 200);
+    });
+  })();
 
   // ============================================================
   // DOM READY
@@ -1111,16 +1379,12 @@
       }
     }
     
-    if (typeof loadNavbar === 'function') {
-      var container = document.getElementById('navbar-container');
-      if (container && container.innerHTML.trim() === '') {
-        loadNavbar('navbar-container');
-      }
-    }
+    // Navbar çağrısı KALDIRILDI - zıplamayı önler
+    // Navbar zaten navbar.js'de yönetiliyor (navbarRendered flag'i ile)
     
     setTimeout(initTrades, 150);
   });
 
 })();
 
-console.log('✅ trades.js yüklendi! (OPTİMİZE EDİLDİ)');
+console.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 uygulandı)');

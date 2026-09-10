@@ -1,36 +1,14 @@
-// ⭐ Service Worker - SADECE STATİK DOSYALARI CACHE'LER
+// ⭐ Service Worker - NETWORK FIRST (Önce sunucu, olmazsa cache)
 // Dashboard, index ve diğer HTML dosyaları her zaman taze gelir
+// CSS/JS dosyaları Network First stratejisi ile çalışır
 
-const CACHE_NAME = 'wawe-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/dashboard.html',
-  '/trades.html',
-  '/strategies.html',
-  '/calendar.html',
-  '/admin.html',
-  '/login.html',
-  '/register.html',
-  '/styles.css',
-  '/index.css',
-  '/pages.css',
-  '/config.js',
-  '/i18n.js',
-  '/resim.svg'
-];
+const CACHE_NAME = 'wawe-v6'; // ⭐ Sürüm değişti (eski cache temizlensin)
 
-// ⭐ INSTALL: Statik dosyaları cache'le
+// ⭐ INSTALL: Sadece hazırlan, hiçbir şey cache'leme
 self.addEventListener('install', function(e) {
   console.log('⚡ SW: Install');
   e.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(STATIC_ASSETS).catch(function(err) {
-        console.warn('⚠️ SW: Bazı dosyalar cache\'lenemedi:', err);
-      });
-    }).then(function() {
-      return self.skipWaiting();
-    })
+    self.skipWaiting()
   );
 });
 
@@ -38,69 +16,86 @@ self.addEventListener('install', function(e) {
 self.addEventListener('activate', function(e) {
   console.log('⚡ SW: Activate');
   e.waitUntil(
-    caches.keys().then(function(cacheNames) {
-      return Promise.all(
-        cacheNames.map(function(cacheName) {
-          if (cacheName !== CACHE_NAME) {
-            console.log('🗑️ SW: Eski cache siliniyor:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(function() {
-      return clients.claim();
-    })
+    caches.keys()
+      .then(function(cacheNames) {
+        return Promise.all(
+          cacheNames.map(function(cacheName) {
+            if (cacheName !== CACHE_NAME) {
+              console.log('🗑️ SW: Eski cache siliniyor:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(function() {
+        return clients.claim();
+      })
   );
 });
 
-// ⭐ FETCH: HTML dosyalarını her zaman SUNUCUDAN al, diğerlerini cache'den
+// ⭐ FETCH: NETWORK FIRST - Önce sunucu, olmazsa cache
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
   var pathname = url.pathname;
   
-  // ⭐ HTML dosyaları - HER ZAMAN SUNUCUDAN (404'ü önle)
+  // ⭐ HTML dosyaları - HER ZAMAN SUNUCUDAN
   if (pathname.endsWith('.html') || pathname === '/') {
     e.respondWith(
-      fetch(e.request).catch(function() {
-        // Hata olursa index.html'ye yönlendir (SPA mantığı)
-        return caches.match('/index.html');
-      })
+      fetch(e.request)
+        .catch(function() {
+          return caches.match('/index.html');
+        })
     );
     return;
   }
   
-  // ⭐ CSS/JS - CACHE ÖNCELİKLİ, sonra sunucu
+  // ⭐ CSS/JS - NETWORK FIRST (önce sunucu, olmazsa cache)
   if (pathname.endsWith('.css') || pathname.endsWith('.js')) {
     e.respondWith(
-      caches.match(e.request).then(function(cached) {
-        if (cached) {
-          // Cache'den gelirken ARKADA sunucudan tazele (stale-while-revalidate)
-          fetch(e.request).then(function(response) {
-            if (response && response.status === 200) {
-              caches.open(CACHE_NAME).then(function(cache) {
-                cache.put(e.request, response);
-              });
-            }
-          }).catch(function() {});
-          return cached;
-        }
-        return fetch(e.request).then(function(response) {
+      fetch(e.request)
+        .then(function(response) {
+          // Başarılı ise cache'le (sadece 200 durumunda)
           if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(e.request, response);
-            });
+            // ⭐ FIX: response.clone() sadece başarılı response'ta
+            var clonedResponse = response.clone();
+            caches.open(CACHE_NAME)
+              .then(function(cache) {
+                cache.put(e.request, clonedResponse);
+              })
+              .catch(function() {});
           }
           return response;
-        });
-      })
+        })
+        .catch(function() {
+          // Network hatası varsa cache'den döndür
+          return caches.match(e.request);
+        })
     );
     return;
   }
   
   // ⭐ Diğer dosyalar (resimler vs) - CACHE ÖNCELİKLİ
   e.respondWith(
-    caches.match(e.request).then(function(cached) {
-      return cached || fetch(e.request);
-    })
+    caches.match(e.request)
+      .then(function(cached) {
+        if (cached) {
+          // Cache'den dönerken arkada tazele (stale-while-revalidate)
+          fetch(e.request)
+            .then(function(response) {
+              if (response && response.status === 200) {
+                // ⭐ FIX: response.clone() sadece başarılı response'ta
+                var clonedResponse = response.clone();
+                caches.open(CACHE_NAME)
+                  .then(function(cache) {
+                    cache.put(e.request, clonedResponse);
+                  })
+                  .catch(function() {});
+              }
+            })
+            .catch(function() {});
+          return cached;
+        }
+        return fetch(e.request);
+      })
   );
 });

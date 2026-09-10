@@ -1,12 +1,9 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en">
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title data-i18n="settings.title">Ayarlar – Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
   
   <!-- ⭐ PREFETCH - ÖN YÜKLEME (HIZLI SAYFA GEÇİŞİ) -->
   <link rel="prefetch" href="/dashboard.html">
@@ -41,43 +38,9 @@ import Layout from '../layouts/Layout.astro';
   }
   </script>
   
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/settings/css/settings.css" />
   
   <!-- ⭐ NAVBAR CSS -->
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
-  
-  <!-- ⭐ LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
-  
-  <script is:inline>
-    (function() {
-      var savedTheme = localStorage.getItem('ww_theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-      } else {
-        document.body.classList.remove('light-theme');
-      }
-    })();
-  </script>
-
-  <!-- ⭐ DİL KALICILIĞI -->
-  <script is:inline>
-    (function() {
-      var savedLang = localStorage.getItem('ww_language');
-      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-        document.documentElement.setAttribute('data-lang', savedLang);
-        document.documentElement.lang = savedLang;
-      } else {
-        localStorage.setItem('ww_language', 'en');
-        document.documentElement.setAttribute('data-lang', 'en');
-        document.documentElement.lang = 'en';
-      }
-    })();
-  </script>
   
   <style>
     /* ⭐ GRİ KUTULARI KÖKTEN KAPAT */
@@ -1500,7 +1463,6 @@ import Layout from '../layouts/Layout.astro';
   </style>
 </Fragment>
   <!-- ⭐ NAVBAR CONTAINER -->
-  <div id="navbar-container"></div>
 
   <!-- ============================================================
        MAIN

@@ -1,105 +1,76 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en">
+<Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
-  
+
   <!-- DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
-  
-  <!-- ⭐ QUICK ADD MODAL CSS -->
-  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-  
-  <!-- LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
-  
-  <script is:inline>
-    (function() {
-      var savedTheme = localStorage.getItem('ww_theme');
-      var isLight = savedTheme === 'light';
-      document.documentElement.classList.toggle('light-theme-pending', isLight);
-      document.addEventListener('DOMContentLoaded', function() {
-        if (isLight) {
-          document.body.classList.add('light-theme');
-        } else {
-          document.body.classList.remove('light-theme');
-        }
-        document.documentElement.classList.remove('light-theme-pending');
-      });
-    })();
-  </script>
 
-  <script is:inline>
-    (function() {
-      var savedLang = localStorage.getItem('ww_language');
-      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-        document.documentElement.setAttribute('data-lang', savedLang);
-        document.documentElement.lang = savedLang;
-        console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
-      } else {
-        localStorage.setItem('ww_language', 'en');
-        document.documentElement.setAttribute('data-lang', 'en');
-        document.documentElement.lang = 'en';
-        console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
-      }
-    })();
-  </script>
+  <!-- QUICK ADD MODAL CSS -->
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+
+  <!-- APEXCHARTS - ÖNCE YÜKLENİR (dashboard.js'den önce) -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
 
   <style>
-    /* Body henüz light-theme class'ını almadan önceki flash'ı önlemek için */
     html.light-theme-pending body {
       background: #f4f4f9;
     }
   </style>
 </Fragment>
-  <!-- NAVBAR CONTAINER -->
-  <div id="navbar-container"></div>
-
-  <!-- QUICK ADD MODAL CONTAINER -->
-  <div id="quick-add-container"></div>
 
   <main class="main dashboard-main">
 
     <div class="page-header">
       <div>
         <h1 data-i18n="dashboard.title">Dashboard</h1>
-        <p class="welcome-msg" id="welcome-msg" data-i18n="dashboard.welcome">Yükleniyor…</p>
       </div>
       <div class="header-actions">
-        <div class="date-filter-group" id="date-filter-group">
-          <button class="date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
-          <button class="date-filter-option" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
-          <button class="date-filter-option" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
-          <button class="date-filter-option" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
+        <!-- MASAÜSTÜ TOOLBAR (>=768px) -->
+        <div class="desktop-toolbar">
+          <div class="date-filter-group" id="date-filter-group-desktop">
+            <button class="date-filter-option active" data-range="all">Tümü</button>
+            <button class="date-filter-option" data-range="week">Bu Hafta</button>
+            <button class="date-filter-option" data-range="month">Bu Ay</button>
+            <button class="date-filter-option" data-range="year">Bu Yıl</button>
+            <button class="date-filter-option" data-range="custom" id="custom-range-btn">Özel</button>
+          </div>
+          <div class="custom-range-panel" id="custom-range-panel" style="display:none;">
+            <input type="date" id="custom-range-start" class="custom-range-input" />
+            <span class="custom-range-sep">–</span>
+            <input type="date" id="custom-range-end" class="custom-range-input" />
+            <button class="custom-range-apply" id="custom-range-apply">Uygula</button>
+          </div>
+          <button class="export-btn" id="export-csv-desktop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+          <button class="export-btn" id="export-pdf-desktop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
         </div>
-        <button class="export-btn" id="export-csv" data-i18n="dashboard.export_csv">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          CSV
-        </button>
-        <button class="export-btn" id="export-pdf" data-i18n="dashboard.export_pdf">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          PDF
-        </button>
-        <a href="/add-trade.html" class="add-trade-btn" aria-label="İşlem Ekle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </a>
+
+        <!-- MOBİL OPTIONS MENÜ (<768px) -->
+        <div class="options-menu-wrapper mobile-only">
+          <button class="options-menu-btn" id="options-menu-btn" aria-label="Seçenekler" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+          <div class="options-menu-dropdown" id="options-menu-dropdown">
+            <div class="options-menu-section-label">Tarih Aralığı</div>
+            <button class="options-menu-item date-filter-option active" data-range="all">Tümü</button>
+            <button class="options-menu-item date-filter-option" data-range="week">Bu Hafta</button>
+            <button class="options-menu-item date-filter-option" data-range="month">Bu Ay</button>
+            <button class="options-menu-item date-filter-option" data-range="year">Bu Yıl</button>
+            <div class="options-menu-divider"></div>
+            <button class="options-menu-item" id="export-csv">CSV indir</button>
+            <button class="options-menu-item" id="export-pdf">PDF indir</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -114,52 +85,58 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- STATS - GERÇEK -->
     <div class="stats-grid" id="stats-grid" style="display:none;">
-      <div class="stat-card" style="--accent-color: var(--accent);">
+      <div class="stat-card">
         <div class="stat-label" data-i18n="dashboard.stats.total_trades">Toplam İşlem</div>
         <div class="stat-value" id="stat-total">—</div>
         <div class="stat-trend" id="trend-total"></div>
       </div>
-      <!-- ⭐ data-critical="true" eklendi - Toplam K/Z -->
-      <div class="stat-card" style="--accent-color: var(--green);" data-critical="true">
+      <div class="stat-card" id="stat-pnl-card" data-critical="true">
         <div class="stat-label" data-i18n="dashboard.stats.total_pnl">Toplam K/Z</div>
         <div class="stat-value" id="stat-pnl">—</div>
         <div class="stat-trend" id="trend-pnl"></div>
       </div>
-      <!-- ⭐ data-critical="true" eklendi - Win Rate -->
-      <div class="stat-card" style="--accent-color: var(--accent);" data-critical="true">
+      <div class="stat-card" data-critical="true">
         <div class="stat-label" data-i18n="dashboard.stats.win_rate">Win Rate</div>
         <div class="stat-value" id="stat-winrate">—</div>
         <div class="stat-trend" id="trend-wr"></div>
       </div>
-      <div class="stat-card" style="--accent-color: var(--green);">
+      <div class="stat-card">
         <div class="stat-label" data-i18n="dashboard.stats.winners">Kazanan</div>
         <div class="stat-value positive" id="stat-wins">—</div>
         <div class="stat-trend" id="trend-wins"></div>
       </div>
-      <div class="stat-card" style="--accent-color: var(--red);">
+      <div class="stat-card">
         <div class="stat-label" data-i18n="dashboard.stats.losers">Kaybeden</div>
         <div class="stat-value negative" id="stat-losses">—</div>
         <div class="stat-trend" id="trend-losses"></div>
       </div>
     </div>
 
-    <!-- KPI BAR -->
-    <div class="kpi-bar" id="kpi-bar">
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">Ort. Kazanç</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">Ort. Kayıp</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">Profit Factor</span><span class="kpi-value" id="kpi-pf">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">Max Drawdown</span><span class="kpi-value negative" id="kpi-dd">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">Ort. R:R</span><span class="kpi-value" id="kpi-rr">—</span></div>
-      <div class="kpi-item">
-        <span class="kpi-label" data-i18n="dashboard.kpi.monthly_goal">Aylık Hedef</span>
-        <div class="goal-wrapper">
-          <div class="progress-bar"><div class="progress-fill" id="goal-progress"></div></div>
-          <span class="kpi-value" id="goal-percent">0%</span>
-          <button class="goal-edit-btn" id="edit-goal-btn" title="Hedefi Düzenle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-            </svg>
-          </button>
+    <!-- KPI ACCORDION (SADECE MOBİLDE) -->
+    <div class="kpi-section">
+      <button class="kpi-toggle-btn" id="kpi-toggle-btn" aria-expanded="true">
+        <span>Detaylı İstatistikler</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="kpi-toggle-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="kpi-bar-wrapper" id="kpi-bar-wrapper">
+        <div class="kpi-bar" id="kpi-bar">
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">Ort. Kazanç</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">Ort. Kayıp</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">Profit Factor</span><span class="kpi-value" id="kpi-pf">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">Max Drawdown</span><span class="kpi-value negative" id="kpi-dd">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">Ort. R:R</span><span class="kpi-value" id="kpi-rr">—</span></div>
+          <div class="kpi-item">
+            <span class="kpi-label" data-i18n="dashboard.kpi.monthly_goal">Aylık Hedef</span>
+            <div class="goal-wrapper">
+              <div class="progress-bar"><div class="progress-fill" id="goal-progress"></div></div>
+              <span class="kpi-value" id="goal-percent">0%</span>
+              <button class="goal-edit-btn" id="edit-goal-btn" title="Hedefi Düzenle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -170,7 +147,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
     </div>
 
-    <!-- ⭐ CHARTS - GERÇEK (inline height'lar KALDIRILDI) -->
+    <!-- CHARTS - GERÇEK -->
     <div class="charts-top-grid" id="charts-top-grid" style="display:none;">
       <div class="chart-card">
         <div class="chart-header">
@@ -198,7 +175,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
     </div>
 
-    <!-- ⭐ CHARTS BOTTOM - GERÇEK (inline height'lar KALDIRILDI) -->
+    <!-- CHARTS BOTTOM - GERÇEK -->
     <div class="charts-bottom-grid" id="charts-bottom-grid" style="display:none;">
       <div class="chart-card">
         <h3 data-i18n="dashboard.chart.daily">Günlük K/Z – Son 30 Gün</h3>
@@ -217,6 +194,24 @@ import Layout from '../layouts/Layout.astro';
         <div class="chart-wrap chart-wrap--doughnut">
           <div id="chart-direction"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- MOBİL DONUT CAROUSEL (SORUN 7) -->
+    <div class="donut-mobile-carousel" id="donut-mobile-carousel">
+      <div class="donut-mobile-track" id="donut-mobile-track">
+        <div class="donut-mobile-slide">
+          <h3>WIN / LOSS DAĞILIMI</h3>
+          <div class="chart-wrap chart-wrap--doughnut"><div id="chart-winloss-mobile"></div></div>
+        </div>
+        <div class="donut-mobile-slide">
+          <h3>LONG / SHORT DAĞILIMI</h3>
+          <div class="chart-wrap chart-wrap--doughnut"><div id="chart-direction-mobile"></div></div>
+        </div>
+      </div>
+      <div class="donut-mobile-dots" id="donut-mobile-dots">
+        <span class="dot active" data-index="0"></span>
+        <span class="dot" data-index="1"></span>
       </div>
     </div>
 
@@ -319,68 +314,46 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
+  <!-- CHART EXPAND MODAL (SORUN 11) -->
+  <div id="chart-expand-modal" class="chart-expand-overlay" style="display:none;">
+    <div class="chart-expand-box">
+      <div class="chart-expand-header">
+        <h3 id="chart-expand-title"></h3>
+        <button class="chart-expand-close" id="chart-expand-close">✕</button>
+      </div>
+      <div class="chart-expand-body">
+        <div id="chart-expand-container" style="width:100%;height:500px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
+       SCRIPTS
        ============================================================ -->
-  
+
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <!-- ⭐ ESKİ chart.js KALDIRILDI, YERİNE APEXCHARTS VE LIGHTWEIGHT CHARTS -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js" is:inline></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
-  
+
   <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
-  
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+
+  <!-- 3. ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
-  
+
   <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
-  
+
   <!-- 5. QUICK ADD (ES5) -->
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
-  
-  <!-- 6. ⭐ DASHBOARD JS (YENİ - ApexCharts sürümü) -->
+
+  <!-- 6. DASHBOARD JS (YENİ - ApexCharts sürümü) -->
   <script src="/interface/dashboard/js/dashboard.js" is:inline></script>
-  
-  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
-  <script is:inline>
-    (function() {
-      function createManualFAB() {
-        if (document.getElementById('quick-add-fab')) return;
-        var fab = document.createElement('button');
-        fab.id = 'quick-add-fab';
-        fab.className = 'quick-add-fab';
-        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
-        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
-        fab.addEventListener('click', function() {
-          if (typeof quickAddOpen === 'function') quickAddOpen();
-          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
-        });
-        document.body.appendChild(fab);
-        console.log('✅ Manuel FAB oluşturuldu');
-      }
-      
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(function() {
-          if (typeof quickAddOpen === 'undefined') createManualFAB();
-        }, 1500);
-      } else {
-        document.addEventListener('DOMContentLoaded', function() {
-          setTimeout(function() {
-            if (typeof quickAddOpen === 'undefined') createManualFAB();
-          }, 1500);
-        });
-      }
-    })();
-  </script>
-  
-  <!-- 8. LUCIDE ICONS INIT (EN SON) -->
+
+  <!-- 7. LUCIDE ICONS INIT (EN SON) -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
@@ -389,5 +362,5 @@ import Layout from '../layouts/Layout.astro';
       }
     });
   </script>
-  
+
 </Layout>

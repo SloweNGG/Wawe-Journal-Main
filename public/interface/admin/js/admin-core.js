@@ -1,6 +1,104 @@
 // ============================================================
 // ADMIN-CORE.JS - STATE, UTILS, INIT
+// ⭐ TEMA: Sayfa başında localStorage'dan tema yüklenir
+// ⭐ TEMA: storage / themeChanged event'leri dinlenir
 // ============================================================
+
+// ============================================================
+// ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ============================================================
+
+(function initAdminTheme() {
+  try {
+    var savedTheme = localStorage.getItem('ww_theme');
+    var savedFontSize = localStorage.getItem('ww_font_size');
+    var customTheme = localStorage.getItem('ww_custom_theme');
+
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+
+    if (savedFontSize) {
+      document.body.style.fontSize = savedFontSize + 'px';
+    }
+
+    if (savedTheme !== 'light' && customTheme) {
+      try {
+        var settings = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) {
+          document.body.style.fontSize = settings.fontSize + 'px';
+        }
+      } catch (e) {}
+    }
+
+    console.log('🎨 [admin-core.js] Tema ayarlandı:', savedTheme || 'dark');
+  } catch (e) {}
+})();
+
+// ============================================================
+// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// ============================================================
+
+(function listenAdminThemeChanges() {
+  function applyThemeFromStorage() {
+    try {
+      var savedTheme = localStorage.getItem('ww_theme');
+      var isLight = savedTheme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+
+      var customTheme = localStorage.getItem('ww_custom_theme');
+      if (customTheme && !isLight) {
+        try {
+          var settings = JSON.parse(customTheme);
+          var root = document.documentElement;
+          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+          if (settings.surfaceColor) {
+            root.style.setProperty('--surface', settings.surfaceColor);
+            root.style.setProperty('--surface2', settings.surfaceColor);
+          }
+          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+        } catch (e) {}
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
+      console.log('🔄 [Admin] Tema değişikliği algılandı (storage):', e.key);
+      applyThemeFromStorage();
+    }
+  });
+
+  document.addEventListener('themeChanged', function(e) {
+    console.log('🔄 [Admin] themeChanged event yakalandı');
+    if (e.detail && e.detail.settings) {
+      var settings = e.detail.settings;
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+    }
+  });
+
+  console.log('✅ [Admin] Tema izleyici yüklendi!');
+})();
 
 console.log('🔥 admin-core.js YÜKLENDİ!');
 

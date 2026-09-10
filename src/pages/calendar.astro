@@ -1,58 +1,20 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en">
+<Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title data-i18n="calendar.title">Takvim - Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
   
-  <!-- FONTS -->
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <!-- GLOBAL CSS -->
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
   
   <!-- CALENDAR CSS -->
   <link rel="stylesheet" href="/interface/calendar/css/calendar.css" />
   
   <!-- QUICK ADD CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-  
-  <!-- LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
-  
-  <!-- ⭐ DİL KALICILIĞI -->
-  <script is:inline>
-    (function() {
-      var savedLang = localStorage.getItem('ww_language');
-      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-        document.documentElement.setAttribute('data-lang', savedLang);
-        document.documentElement.lang = savedLang;
-      } else {
-        localStorage.setItem('ww_language', 'en');
-        document.documentElement.setAttribute('data-lang', 'en');
-        document.documentElement.lang = 'en';
-      }
-    })();
-  </script>
-  
-  <!-- TEMA KONTROLÜ -->
-  <script is:inline>
-    (function() {
-      var savedTheme = localStorage.getItem('ww_theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-      } else {
-        document.body.classList.remove('light-theme');
-      }
-    })();
-  </script>
 </Fragment>
   <!-- NAVBAR -->
-  <div id="navbar-container"></div>
 
   <!-- MAIN -->
   <main class="calendar-page-main">
@@ -220,7 +182,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   
@@ -231,20 +193,61 @@ import Layout from '../layouts/Layout.astro';
   <script src="/components/navbar/navbar.js" is:inline></script>
   
   <!-- 5. QUICK ADD (ES5) -->
-  <script src="/quick-modal-i18n.js" is:inline></script>
-  <script src="/js/quick-add.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
   
   <!-- 6. CALENDAR JS (ES5 - AYNI KALIR) -->
   <script src="/interface/calendar/js/calendar.js" is:inline></script>
   
-  <!-- 7. INIT -->
+  <!-- 7. QUICK ADD MANUEL BAŞLATICI (stratejiler sayfasındaki ile aynı) -->
+  <script is:inline>
+    (function() {
+      function createManualFAB() {
+        if (document.getElementById('quick-add-fab')) return;
+        var fab = document.createElement('button');
+        fab.id = 'quick-add-fab';
+        fab.className = 'quick-add-fab';
+        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+        fab.addEventListener('click', function() {
+          if (typeof quickAddOpen === 'function') quickAddOpen();
+          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+        });
+        document.body.appendChild(fab);
+        console.log('✅ Manuel FAB oluşturuldu (calendar)');
+      }
+      
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(function() {
+          if (typeof quickAddOpen === 'undefined') createManualFAB();
+        }, 1500);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            if (typeof quickAddOpen === 'undefined') createManualFAB();
+          }, 1500);
+        });
+      }
+    })();
+  </script>
+  
+  <!-- 8. LUCIDE ICONS INIT -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
+        console.log('✅ Lucide icons initialized on calendar!');
       }
+    });
+  </script>
+  
+  <!-- 9. INIT -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
         loadNavbar('navbar-container');
+        console.log('✅ Navbar yüklendi!');
       }
       if (typeof initCalendar === 'function') {
         initCalendar();

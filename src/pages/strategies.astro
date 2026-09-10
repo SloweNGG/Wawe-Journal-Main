@@ -1,54 +1,17 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en">
+<Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
   
-  <!-- ✅ NAVBAR CSS -->
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
   
-  <!-- ⭐ LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
 
   <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
   
-  <!-- TEMA KONTROLÜ -->
-  <script is:inline>
-    (function() {
-      var savedTheme = localStorage.getItem('ww_theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-      } else {
-        document.body.classList.remove('light-theme');
-      }
-    })();
-  </script>
-
-  <!-- ⭐ DİL KALICILIĞI -->
-  <script is:inline>
-    (function() {
-      var savedLang = localStorage.getItem('ww_language');
-      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-        document.documentElement.setAttribute('data-lang', savedLang);
-        document.documentElement.lang = savedLang;
-      } else {
-        localStorage.setItem('ww_language', 'en');
-        document.documentElement.setAttribute('data-lang', 'en');
-        document.documentElement.lang = 'en';
-      }
-    })();
-  </script>
-  
-  <!-- FONTS -->
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <!-- GLOBAL CSS -->
-  <link rel="stylesheet" href="/styles.css" />
   
   <!-- STRATEGIES CSS -->
   <link rel="stylesheet" href="/interface/strategies/css/strategies.css" />
@@ -59,7 +22,6 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
 </Fragment>
   <!-- ✅ NAVBAR CONTAINER -->
-  <div id="navbar-container"></div>
 
   <!-- ============================================================
        MAIN

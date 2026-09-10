@@ -1,105 +1,35 @@
----
+﻿---
+// ============================================================
+// Bu dosyada değişen bölümler:
+//  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet için tetikleyici çipler
+//    ve sheet container DOM elementleri eklendi.
+//  - DEĞİŞİKLİK 3: Outer card'a "trades-table-card" class'ı eklendi
+//    (mobilde tablo kartı arkaplanını saydam yapabilmek için).
+//  - #table-wrap inline padding kaldırıldı, CSS'e taşındı
+//    (mobilde farklı padding uygulanabilsin diye).
+// ============================================================
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en" bodyClass="trades-page" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
+<Layout lang="en" bodyClass="trades-page" showQuickAdd={true}>
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
-  
-  <!-- FONTS -->
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
-  <!-- CORE CSS -->
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
   
   <!-- TRADES CSS -->
   <link rel="stylesheet" href="/interface/trades/css/trades.css" />
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-  
-  <!-- LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       ⭐ TEMA VE FONT BOYUTU - STANDARDİZE EDİLMİŞ
-       ════════════════════════════════════════════════════════════════ -->
-  <script is:inline>
-  (function() {
-    var savedTheme = localStorage.getItem('ww_theme');
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    var customTheme = localStorage.getItem('ww_custom_theme');
-    
-    // ⭐ 1. ÖNCE BODY'YE CLASS EKLE
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
-    
-    // ⭐ 2. CUSTOM THEME'İ UYGULA (EĞER DARK TEMA AKTİFSE)
-    if (savedTheme !== 'light' && customTheme) {
-      try {
-        var settings = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-        if (settings.surfaceColor) {
-          root.style.setProperty('--surface', settings.surfaceColor);
-          root.style.setProperty('--surface2', settings.surfaceColor);
-        }
-        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) {
-          document.body.style.fontSize = settings.fontSize + 'px';
-        }
-      } catch(e) {
-        // Hata olursa sadece font size dene
-        if (savedFontSize) {
-          document.body.style.fontSize = savedFontSize + 'px';
-        }
-      }
-    } else if (savedFontSize) {
-      // Light tema veya custom theme yoksa sadece font size uygula
-      document.body.style.fontSize = savedFontSize + 'px';
-    }
-    
-    console.log('🎨 Tema yüklendi:', savedTheme || 'dark');
-  })();
-  </script>
-
-  <!-- LANGUAGE PRELOAD -->
-  <script is:inline>
-    (function() {
-      var savedLang = localStorage.getItem('ww_language');
-      if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-        document.documentElement.setAttribute('data-lang', savedLang);
-        document.documentElement.lang = savedLang;
-        console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
-      } else {
-        localStorage.setItem('ww_language', 'en');
-        document.documentElement.setAttribute('data-lang', 'en');
-        document.documentElement.lang = 'en';
-        console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
-      }
-    })();
-  </script>
 </Fragment>
   <!-- NAVBAR CONTAINER -->
-  <div id="navbar-container"></div>
 
   <!-- MAIN CONTENT -->
-  <main style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:1400px;">
+  <main class="trades-main" style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:1400px;">
 
     <div class="page-header">
       <div>
         <h1 data-i18n="trades.title">Tüm İşlemler</h1>
       </div>
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
-        <a href="add-trade.html" class="btn btn-primary" data-i18n="trades.add_new">+ Yeni İşlem</a>
-      </div>
+      <!-- ⭐ "Yeni İşlem" butonu KALDIRILDI -->
     </div>
 
     <!-- STATS - SKELETON -->
@@ -152,6 +82,27 @@ import Layout from '../layouts/Layout.astro';
       </select>
     </div>
 
+    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE ÇİPLERİ — sadece ≤768px görünür -->
+    <div class="mobile-filter-chips" id="mobile-filter-chips">
+      <button type="button" class="mobile-filter-chip" data-filter="sort">
+        <span class="mobile-filter-chip-text">Tarih ↓</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="dir">
+        <span class="mobile-filter-chip-text">Tüm Yönler</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="result">
+        <span class="mobile-filter-chip-text">Tüm Sonuçlar</span>
+      </button>
+    </div>
+
+    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE BOTTOM SHEET -->
+    <div class="mobile-filter-overlay" id="mobile-filter-overlay"></div>
+    <div class="mobile-filter-sheet" id="mobile-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
+      <div class="mobile-filter-grabber"></div>
+      <h3 class="mobile-filter-title" id="mobile-filter-title"></h3>
+      <div class="mobile-filter-options" id="mobile-filter-options"></div>
+    </div>
+
     <!-- SELECTION BAR -->
     <div class="sel-bar" id="sel-bar">
       <span class="sel-count" id="sel-count-text">0</span>
@@ -170,8 +121,8 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- TABLE -->
-    <div class="card" style="padding:0;overflow-x:auto;">
+    <!-- TABLE — ⭐ trades-table-card class'ı eklendi (DEĞİŞİKLİK 3) -->
+    <div class="card trades-table-card" style="padding:0;overflow-x:auto;">
       <!-- SKELETON TABLE -->
       <div id="table-skeleton" style="padding:1.5rem;">
         <div class="skeleton-table">
@@ -185,8 +136,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- GERÇEK TABLE -->
-      <div id="table-wrap" style="padding:1.5rem;display:none;"></div>
+      <!-- GERÇEK TABLE — ⭐ inline padding kaldırıldı, CSS'e taşındı -->
+      <div id="table-wrap" style="display:none;"></div>
 
       <!-- PAGINATION -->
       <div id="pagination-wrap" class="pagination-wrap" style="display:none;padding:0.5rem 1.5rem 1rem;">
@@ -322,7 +273,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   

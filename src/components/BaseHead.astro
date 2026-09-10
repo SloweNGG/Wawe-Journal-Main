@@ -1,0 +1,134 @@
+---
+// src/components/BaseHead.astro
+// Her sayfada tekrar eden ortak <head> içeriği burada.
+// Sayfaya özel CSS/script'ler sayfanın kendi <head> slot'unda kalır.
+
+export interface Props {
+  title: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  noIndex?: boolean;
+}
+
+const {
+  title,
+  description = 'Log your trades, visualize your performance, and discover the strategies that actually work.',
+  canonical,
+  ogImage = 'https://wawejournal.com/og-image.jpg',
+  noIndex = false,
+} = Astro.props;
+---
+
+<!-- CHARSET & VIEWPORT -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+<!-- TITLE & SEO -->
+<title>{title}</title>
+<meta name="description" content={description} />
+{noIndex ? <meta name="robots" content="noindex, nofollow" /> : <meta name="robots" content="index, follow" />}
+{canonical && <link rel="canonical" href={canonical} />}
+
+<!-- FAVICON -->
+<link rel="icon" type="image/svg+xml" href="/resim.svg" />
+
+<!-- OPEN GRAPH -->
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Wawe Journal" />
+{canonical && <meta property="og:url" content={canonical} />}
+
+<!-- TWITTER CARD -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:site" content="@wawejournal" />
+
+<!-- PWA & THEME -->
+<meta name="theme-color" content="#7c6dfa" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Wawe Journal" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- FONTS -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- CORE CSS -->
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/components/navbar/navbar.css" />
+
+<!-- LUCIDE ICONS -->
+<script src="https://unpkg.com/lucide@latest" is:inline></script>
+
+<!-- TEMA ÖN YÜKLEME — flash önlemek için sayfa render olmadan önce çalışır -->
+<script is:inline>
+(function() {
+  // ⭐ FIX: Scroll bar çiftlenmesini KÖKTEN önle
+  // html ve body overflow'u hidden'a çek, scroll container'a verilecek
+  document.documentElement.style.overflow = 'hidden';
+  document.documentElement.style.height = '100%';
+  document.body.style.overflow = 'hidden';
+  document.body.style.height = '100%';
+
+  var savedTheme = localStorage.getItem('ww_theme');
+  var savedFontSize = localStorage.getItem('ww_font_size');
+  var customTheme = localStorage.getItem('ww_custom_theme');
+
+  if (savedTheme === 'light') {
+    document.documentElement.classList.add('light-theme-pending');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+      document.documentElement.classList.remove('light-theme-pending');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+
+    // ⭐ FIX: Tema geçişi bittikten sonra overflow'u koru
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+
+    if (savedTheme !== 'light' && customTheme) {
+      try {
+        var theme = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (theme.accent)  root.style.setProperty('--accent', theme.accent);
+        if (theme.accent2) root.style.setProperty('--accent2', theme.accent2);
+        if (theme.bg)      root.style.setProperty('--bg', theme.bg);
+      } catch(e) {}
+    }
+
+    if (savedFontSize) {
+      document.documentElement.style.fontSize = savedFontSize + 'px';
+    }
+  });
+})();
+</script>
+
+<!-- DİL ÖN YÜKLEME -->
+<script is:inline>
+(function() {
+  var savedLang = localStorage.getItem('ww_language');
+  if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+    document.documentElement.setAttribute('data-lang', savedLang);
+    document.documentElement.lang = savedLang;
+  } else {
+    localStorage.setItem('ww_language', 'en');
+    document.documentElement.setAttribute('data-lang', 'en');
+    document.documentElement.lang = 'en';
+  }
+})();
+</script>

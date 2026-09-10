@@ -10,8 +10,12 @@ var PageTransition = {
   timeoutId: null,
   currentLang: null,
 
+  getMainElement: function() {
+    return document.querySelector('.main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap, .trades-main');
+  },
+
   enter: function() {
-    var main = document.querySelector('.main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap');
+    var main = this.getMainElement();
     if (!main) return;
     
     if (main.classList.contains('page-visible')) return;
@@ -40,7 +44,7 @@ var PageTransition = {
   },
 
   exit: function(callback) {
-    var main = document.querySelector('.main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap');
+    var main = this.getMainElement();
     if (!main) {
       if (typeof callback === 'function') callback();
       return;
@@ -69,54 +73,33 @@ var PageTransition = {
       if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
         var currentLang = i18n.getCurrentLanguage();
         localStorage.setItem('ww_language', currentLang);
-        console.log('💾 [PageTransition] Dil kaydedildi (çıkış): ' + currentLang);
       }
-    } catch (e) {
-      console.warn('⚠️ [PageTransition] Dil kaydetme hatası:', e);
-    }
+    } catch (e) {}
   },
 
   restoreLanguage: function() {
     try {
       var savedLang = localStorage.getItem('ww_language');
       
-      if (savedLang) {
-        console.log('🌐 [PageTransition] localStorage\'dan dil okundu: ' + savedLang);
+      if (savedLang && typeof i18n !== 'undefined') {
+        var currentLang = i18n.getCurrentLanguage();
         
-        if (typeof i18n !== 'undefined') {
-          var currentLang = i18n.getCurrentLanguage();
-          
-          if (currentLang !== savedLang) {
-            console.log('🔄 [PageTransition] Dil değiştiriliyor: ' + currentLang + ' → ' + savedLang);
-            i18n.setLanguage(savedLang);
-          } else {
-            i18n.apply();
-            console.log('✅ [PageTransition] Dil zaten doğru: ' + savedLang + ', sadece apply edildi');
-          }
-          
-          if (typeof window.updateNavbarI18n === 'function') {
-            window.updateNavbarI18n();
-          } else if (typeof updateNavbarI18n === 'function') {
-            updateNavbarI18n();
-          }
-          
-          document.documentElement.setAttribute('data-lang', savedLang);
+        if (currentLang !== savedLang) {
+          i18n.setLanguage(savedLang);
+        } else {
+          i18n.apply();
         }
-      } else {
-        console.log('🌐 [PageTransition] localStorage\'da dil bulunamadı, varsayılan kullanılıyor');
-        if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
-          var defaultLang = i18n.getCurrentLanguage();
-          localStorage.setItem('ww_language', defaultLang);
+        
+        if (typeof window.updateNavbarI18n === 'function') {
+          window.updateNavbarI18n();
         }
+        
+        document.documentElement.setAttribute('data-lang', savedLang);
       }
-    } catch (e) {
-      console.warn('⚠️ [PageTransition] Dil geri yükleme hatası:', e);
-    }
+    } catch (e) {}
   },
 
   init: function() {
-    console.log('🔄 Sayfa geçiş başlatılıyor...');
-    
     this.restoreLanguage();
     
     var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
@@ -141,8 +124,6 @@ var PageTransition = {
           if (targetHref === window.location.pathname) {
             return;
           }
-          
-          console.log('🔄 Sayfa geçişi:', targetHref);
           
           PageTransition.saveLanguageBeforeExit();
           
@@ -181,7 +162,6 @@ var PageTransition = {
   },
 
   fullRefresh: function() {
-    console.log('🔄 [PageTransition] Tam yenileme başlatılıyor...');
     this.restoreLanguage();
     this.enter();
     this.updateActiveLink();
@@ -209,7 +189,6 @@ window.addEventListener('load', function() {
     if (savedLang && typeof i18n !== 'undefined') {
       var currentLang = i18n.getCurrentLanguage();
       if (currentLang !== savedLang) {
-        console.log('🔄 [PageTransition] load event: dil güncelleniyor ' + currentLang + ' → ' + savedLang);
         i18n.setLanguage(savedLang);
         if (typeof window.updateNavbarI18n === 'function') {
           window.updateNavbarI18n();
@@ -245,8 +224,6 @@ window.addEventListener('hashchange', function() {
 
 window.addEventListener('storage', function(e) {
   if (e.key === 'ww_language' && e.newValue) {
-    console.log('🔄 [PageTransition] Storage event: Dil değişti (' + e.oldValue + ' → ' + e.newValue + ')');
-    
     if (typeof i18n !== 'undefined') {
       i18n.setLanguage(e.newValue);
       
@@ -267,7 +244,6 @@ document.addEventListener('visibilitychange', function() {
     if (savedLang && typeof i18n !== 'undefined') {
       var currentLang = i18n.getCurrentLanguage();
       if (currentLang !== savedLang) {
-        console.log('🔄 [PageTransition] Sayfa görünür oldu, dil güncelleniyor: ' + currentLang + ' → ' + savedLang);
         i18n.setLanguage(savedLang);
         if (typeof window.updateNavbarI18n === 'function') {
           window.updateNavbarI18n();
@@ -280,17 +256,13 @@ document.addEventListener('visibilitychange', function() {
 window.addEventListener('beforeunload', function() {
   try {
     if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
-      var currentLang = i18n.getCurrentLanguage();
-      localStorage.setItem('ww_language', currentLang);
-      console.log('💾 [PageTransition] Sayfa yenileme öncesi dil kaydedildi: ' + currentLang);
+      localStorage.setItem('ww_language', i18n.getCurrentLanguage());
     }
-  } catch (e) {
-    // Sessizce hata
-  }
+  } catch (e) {}
 });
 
 window.PageTransition = PageTransition;
 window.restoreLanguage = PageTransition.restoreLanguage;
 window.saveLanguageBeforeExit = PageTransition.saveLanguageBeforeExit;
 
-console.log('✅ page-transition.js yüklendi! (Dil koruma + localStorage)');
+console.log('✅ page-transition.js yüklendi!');

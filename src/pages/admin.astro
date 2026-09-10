@@ -1,31 +1,21 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr">
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Admin Panel – Wawe Journal</title>
-  <link rel="icon" type="image/svg+xml" href="/resim.svg">
   
-  <!-- FONTS -->
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <!-- GLOBAL CSS -->
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/components/navbar/navbar.css" />
   
   <!-- ADMIN CSS -->
   <link rel="stylesheet" href="/interface/admin/css/admin.css" />
   
-  <!-- LUCIDE ICONS -->
-  <script src="https://unpkg.com/lucide@latest" is:inline></script>
   
   <!-- CHART.JS -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
 </Fragment>
   <!-- NAVBAR -->
-  <div id="navbar-container"></div>
 
   <!-- MAIN -->
   <main class="admin-main" id="main-content">

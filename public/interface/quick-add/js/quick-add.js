@@ -1,25 +1,109 @@
 // ============================================================
 // QUICK ADD MODAL - İŞLEM EKLEME
-// Optimize edilmiş sürüm: "Hızlı Ekle" (manuel P&L) sekmesi
-// kaldırıldı, tüm emoji ikonlar SVG ile değiştirildi, ölü kod
-// temizlendi. Kalan sekmeler: İşlem Ekle (fiyattan otomatik
-// hesaplama), CSV, Toplu.
+// ⭐ FIX: FAB butonu kaybolma sorunu düzeltildi (body'ye kalıcı olarak eklenir)
+// ⭐ FIX: initQuickAdd sadece bir kez çalışır
+// ⭐ FIX: Debounce tamamen kaldırıldı, anında güncelleme
+// ⭐ FIX: Event delegation ile tüm input değişiklikleri yakalanıyor
+// ⭐ FIX: close ve cancel butonları çalışıyor
+// ⭐ TEMA: Sayfa başında localStorage'dan tema yüklenir
+// ⭐ TEMA: storage / themeChanged event'leri dinlenir
 // ============================================================
 
 // ============================================================
-// BAĞIMLILIK LİSTESİ (Global değişkenler/fonksiyonlar)
+// ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
 // ============================================================
-// - sb (Supabase client)
-// - requireAuth() (Auth kontrolü)
-// - calcPnL() (P&L hesaplama)
-// - calcRR() (Risk/Reward hesaplama)
-// - formatCurrency() (Para formatlama)
-// - showToast() (Bildirim gösterme)
-// - applyDecimalFix() (Ondalık giriş düzeltme)
-// - loadTrades() (İşlemleri yeniden yükleme)
-// - refresh() (Sayfa yenileme)
-// - applyFiltersAndSort() (Filtre ve sıralama uygulama)
+
+(function initQuickAddTheme() {
+  try {
+    var savedTheme = localStorage.getItem('ww_theme');
+    var savedFontSize = localStorage.getItem('ww_font_size');
+    var customTheme = localStorage.getItem('ww_custom_theme');
+
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+
+    if (savedFontSize) {
+      document.body.style.fontSize = savedFontSize + 'px';
+    }
+
+    if (savedTheme !== 'light' && customTheme) {
+      try {
+        var settings = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) {
+          document.body.style.fontSize = settings.fontSize + 'px';
+        }
+      } catch (e) {}
+    }
+
+    console.log('🎨 [quick-add.js] Tema ayarlandı:', savedTheme || 'dark');
+  } catch (e) {}
+})();
+
 // ============================================================
+// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// ============================================================
+
+(function listenQuickAddThemeChanges() {
+  function applyThemeFromStorage() {
+    try {
+      var savedTheme = localStorage.getItem('ww_theme');
+      var isLight = savedTheme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+
+      var customTheme = localStorage.getItem('ww_custom_theme');
+      if (customTheme && !isLight) {
+        try {
+          var settings = JSON.parse(customTheme);
+          var root = document.documentElement;
+          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+          if (settings.surfaceColor) {
+            root.style.setProperty('--surface', settings.surfaceColor);
+            root.style.setProperty('--surface2', settings.surfaceColor);
+          }
+          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+        } catch (e) {}
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
+      console.log('🔄 [QuickAdd] Tema değişikliği algılandı (storage):', e.key);
+      applyThemeFromStorage();
+    }
+  });
+
+  document.addEventListener('themeChanged', function(e) {
+    console.log('🔄 [QuickAdd] themeChanged event yakalandı');
+    if (e.detail && e.detail.settings) {
+      var settings = e.detail.settings;
+      var root = document.documentElement;
+      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+      if (settings.surfaceColor) {
+        root.style.setProperty('--surface', settings.surfaceColor);
+        root.style.setProperty('--surface2', settings.surfaceColor);
+      }
+      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+    }
+  });
+
+  console.log('✅ [QuickAdd] Tema izleyici yüklendi!');
+})();
 
 (function() {
   'use strict';
@@ -46,7 +130,6 @@
   };
 
   function badgeIcon(type) {
-    // type: 'loading' | 'success' | 'error' | 'warning'
     const map = {
       loading: { icon: ICONS.spinner, color: 'var(--accent, #7c6dfa)' },
       success: { icon: ICONS.check, color: 'var(--green, #22c55e)' },
@@ -58,7 +141,6 @@
   }
 
   function logTag(type) {
-    // type: 'error' | 'warning'
     if (type === 'warning') {
       return '<span style="color:var(--accent2,#9b8bfa);font-weight:600;">Uyarı</span>';
     }
@@ -180,7 +262,6 @@
 
     dateString = dateString.trim();
 
-    // Zaten ISO formatında mı? (YYYY-MM-DD)
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       const d = new Date(dateString);
       if (!isNaN(d.getTime())) {
@@ -188,7 +269,6 @@
       }
     }
 
-    // DD.MM.YYYY
     let parts = dateString.split('.');
     if (parts.length === 3) {
       const day = parseInt(parts[0], 10);
@@ -202,7 +282,6 @@
       }
     }
 
-    // DD/MM/YYYY veya MM/DD/YYYY
     parts = dateString.split('/');
     if (parts.length === 3) {
       const first = parseInt(parts[0], 10);
@@ -232,7 +311,7 @@
   }
 
   // ============================================================
-  // HTML TEMPLATE
+  // HTML TEMPLATE - FAB butonu hariç (ayrıca eklenecek)
   // ============================================================
 
   function getModalHTML() {
@@ -411,11 +490,6 @@
 
         </div>
       </div>
-
-      <!-- FAB -->
-      <button class="quick-add-fab" id="quick-add-fab" aria-label="Yeni İşlem Ekle" title="Yeni İşlem Ekle">
-        ${ICONS.plus}
-      </button>
     `;
   }
 
@@ -477,10 +551,8 @@
   }
 
   // ============================================================
-  // FİYAT ÖN İZLEME - Debounce ile
+  // FİYAT ÖN İZLEME — DEBONCE YOK, ANINDA GÜNCELLEME
   // ============================================================
-
-  let previewDebounceTimer = null;
 
   function getMultiplier() {
     if (currentInstrument === 'other') {
@@ -492,78 +564,73 @@
   }
 
   function updatePricePreview() {
-    if (previewDebounceTimer) {
-      clearTimeout(previewDebounceTimer);
+    console.log('🔄 Preview güncelleniyor...');
+
+    const entry = parseFloat(el('price-entry')?.value);
+    const exit = parseFloat(el('price-exit')?.value);
+    const lot = parseFloat(el('price-lot')?.value);
+    const sl = parseFloat(el('price-sl')?.value);
+    const tp = parseFloat(el('price-tp')?.value);
+    const dir = currentSide === 'BUY' ? 'LONG' : 'SHORT';
+    const mult = getMultiplier();
+
+    const previewEl = el('price-preview');
+    const pnlEl = el('preview-pnl');
+    const rrEl = el('preview-rr');
+
+    let hasPnl = false;
+    let hasRr = false;
+    let pnlSign = 0;
+
+    if (entry && lot && !isNaN(entry) && !isNaN(lot) && mult !== null) {
+      if (exit && !isNaN(exit)) {
+        try {
+          let pnl = 0;
+          if (typeof calcPnL === 'function') {
+            pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
+          } else {
+            const direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
+            pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+          }
+          if (pnlEl && typeof formatCurrency === 'function') {
+            pnlEl.textContent = formatCurrency(pnl);
+            pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
+          }
+          pnlSign = pnl >= 0 ? 1 : -1;
+          hasPnl = true;
+          console.log('✅ PnL hesaplandı:', pnl);
+        } catch(e) {
+          console.warn('PnL preview hatası:', e);
+        }
+      }
+
+      if (sl && tp && !isNaN(sl) && !isNaN(tp)) {
+        try {
+          let rr = null;
+          if (typeof calcRR === 'function') {
+            rr = calcRR(entry, sl, tp, dir);
+          } else {
+            const risk = Math.abs(entry - sl);
+            const reward = Math.abs(tp - entry);
+            if (risk > 0) rr = (reward / risk).toFixed(2);
+          }
+          if (rr !== null && rrEl) {
+            rrEl.textContent = '1 : ' + rr;
+            hasRr = true;
+          }
+        } catch(e) {
+          console.warn('RR preview hatası:', e);
+        }
+      }
     }
 
-    previewDebounceTimer = setTimeout(function() {
-      const entry = parseFloat(el('price-entry')?.value);
-      const exit = parseFloat(el('price-exit')?.value);
-      const lot = parseFloat(el('price-lot')?.value);
-      const sl = parseFloat(el('price-sl')?.value);
-      const tp = parseFloat(el('price-tp')?.value);
-      const dir = currentSide === 'BUY' ? 'LONG' : 'SHORT';
-      const mult = getMultiplier();
-
-      const previewEl = el('price-preview');
-      const pnlEl = el('preview-pnl');
-      const rrEl = el('preview-rr');
-
-      let hasPnl = false;
-      let hasRr = false;
-      let pnlSign = 0;
-
-      if (entry && lot && !isNaN(entry) && !isNaN(lot) && mult !== null) {
-        if (exit && !isNaN(exit)) {
-          try {
-            let pnl = 0;
-            if (typeof calcPnL === 'function') {
-              pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
-            } else {
-              const direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
-              pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
-            }
-            if (pnlEl && typeof formatCurrency === 'function') {
-              pnlEl.textContent = formatCurrency(pnl);
-              pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
-            }
-            pnlSign = pnl >= 0 ? 1 : -1;
-            hasPnl = true;
-          } catch(e) {
-            console.warn('PnL preview hatası:', e);
-          }
-        }
-
-        if (sl && tp && !isNaN(sl) && !isNaN(tp)) {
-          try {
-            let rr = null;
-            if (typeof calcRR === 'function') {
-              rr = calcRR(entry, sl, tp, dir);
-            } else {
-              const risk = Math.abs(entry - sl);
-              const reward = Math.abs(tp - entry);
-              if (risk > 0) rr = (reward / risk).toFixed(2);
-            }
-            if (rr !== null && rrEl) {
-              rrEl.textContent = '1 : ' + rr;
-              hasRr = true;
-            }
-          } catch(e) {
-            console.warn('RR preview hatası:', e);
-          }
-        }
+    if (previewEl) {
+      previewEl.classList.toggle('visible', hasPnl || hasRr);
+      previewEl.classList.remove('rail-pos', 'rail-neg');
+      if (hasPnl) {
+        previewEl.classList.add(pnlSign >= 0 ? 'rail-pos' : 'rail-neg');
       }
-
-      if (previewEl) {
-        previewEl.classList.toggle('visible', hasPnl || hasRr);
-        previewEl.classList.remove('rail-pos', 'rail-neg');
-        if (hasPnl) {
-          previewEl.classList.add(pnlSign >= 0 ? 'rail-pos' : 'rail-neg');
-        }
-      }
-
-      previewDebounceTimer = null;
-    }, 200);
+    }
   }
 
   // ============================================================
@@ -1214,68 +1281,50 @@
   }
 
   // ============================================================
-  // EVENT LISTENER'LAR
+  // ⭐ FAB BUTONUNU OLUŞTUR (body'ye kalıcı olarak)
   // ============================================================
 
-  function initQuickAdd() {
-    let container = document.getElementById('quick-add-container');
+  function createFab() {
+    if (document.getElementById('quick-add-fab')) return;
+    const fab = document.createElement('button');
+    fab.id = 'quick-add-fab';
+    fab.className = 'quick-add-fab';
+    fab.setAttribute('aria-label', 'Yeni İşlem Ekle');
+    fab.title = 'Yeni İşlem Ekle';
+    fab.innerHTML = ICONS.plus;
+    fab.addEventListener('click', openModal);
+    document.body.appendChild(fab);
+    console.log('✅ FAB butonu oluşturuldu');
+  }
 
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'quick-add-container';
-      document.body.appendChild(container);
-    }
+  // ============================================================
+  // MODAL EVENT LISTENER'LARI
+  // ============================================================
 
-    container.innerHTML = getModalHTML();
-
-    // FAB
-    const fab = document.getElementById('quick-add-fab');
-    if (fab) {
-      const newFab = fab.cloneNode(true);
-      fab.parentNode.replaceChild(newFab, fab);
-      newFab.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        openModal();
-      });
-    } else {
-      console.error('FAB butonu bulunamadı!');
-    }
-
-    // Kapatma
+  function attachModalEvents() {
+    // Kapatma butonları
     const closeBtn = document.getElementById('quick-add-close');
     const cancelBtn = document.getElementById('quick-add-cancel');
     const overlay = document.getElementById('quick-add-overlay');
 
     if (closeBtn) {
-      const newClose = closeBtn.cloneNode(true);
-      closeBtn.parentNode.replaceChild(newClose, closeBtn);
-      newClose.addEventListener('click', closeModal);
+      closeBtn.addEventListener('click', closeModal);
     }
-
     if (cancelBtn) {
-      const newCancel = cancelBtn.cloneNode(true);
-      cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
-      newCancel.addEventListener('click', closeModal);
+      cancelBtn.addEventListener('click', closeModal);
     }
-
     if (overlay) {
-      const newOverlay = overlay.cloneNode(true);
-      overlay.parentNode.replaceChild(newOverlay, overlay);
-      newOverlay.addEventListener('click', function(e) {
+      overlay.addEventListener('click', function(e) {
         if (e.target === this) closeModal();
       });
     }
 
     // ESC
-    document.removeEventListener('keydown', handleEsc);
     document.addEventListener('keydown', handleEsc);
 
     // Tabs
     document.querySelectorAll('.quick-tab').forEach(function(btn) {
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      newBtn.addEventListener('click', function() {
+      btn.addEventListener('click', function() {
         switchTab(this.dataset.tab);
       });
     });
@@ -1284,30 +1333,22 @@
     const buyBtn = document.getElementById('price-side-buy');
     const sellBtn = document.getElementById('price-side-sell');
     if (buyBtn) {
-      const newBuy = buyBtn.cloneNode(true);
-      buyBtn.parentNode.replaceChild(newBuy, buyBtn);
-      newBuy.addEventListener('click', function() { setSide('BUY'); });
+      buyBtn.addEventListener('click', function() { setSide('BUY'); });
     }
     if (sellBtn) {
-      const newSell = sellBtn.cloneNode(true);
-      sellBtn.parentNode.replaceChild(newSell, sellBtn);
-      newSell.addEventListener('click', function() { setSide('SELL'); });
+      sellBtn.addEventListener('click', function() { setSide('SELL'); });
     }
 
     // Lot presetleri
     document.querySelectorAll('.lot-preset').forEach(function(btn) {
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      newBtn.addEventListener('click', function() {
+      btn.addEventListener('click', function() {
         setLotPreset(this.dataset.lot);
       });
     });
 
     const lotInput = document.getElementById('price-lot');
     if (lotInput) {
-      const newLot = lotInput.cloneNode(true);
-      lotInput.parentNode.replaceChild(newLot, lotInput);
-      newLot.addEventListener('input', function() {
+      lotInput.addEventListener('input', function() {
         const val = parseFloat(this.value);
         if (!isNaN(val)) {
           document.querySelectorAll('.lot-preset').forEach(function(btn) {
@@ -1320,39 +1361,57 @@
 
     // Enstrüman butonları
     document.querySelectorAll('.quick-add-instrument-btn').forEach(function(btn) {
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      newBtn.addEventListener('click', function() {
+      btn.addEventListener('click', function() {
         const inst = this.dataset.instrument;
         const mult = parseFloat(this.dataset.multiplier) || 1;
         selectInstrument(inst, mult);
       });
     });
 
-    // Fiyat/lot alanları -> önizleme
-    ['price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier'].forEach(function(id) {
-      const input = document.getElementById(id);
-      if (input) {
-        const newInput = input.cloneNode(true);
-        input.parentNode.replaceChild(newInput, input);
-        newInput.addEventListener('input', updatePricePreview);
-        newInput.addEventListener('change', updatePricePreview);
-      }
-    });
+    // ⭐ Event delegation - tüm input değişiklikleri
+    const body = document.querySelector('.quick-add-body');
+    if (body) {
+      body.addEventListener('input', function(e) {
+        const target = e.target;
+        const id = target.id;
+        
+        if (id === 'price-entry' || id === 'price-exit' || id === 'price-sl' || 
+            id === 'price-tp' || id === 'price-lot' || id === 'price-custom-multiplier') {
+          updatePricePreview();
+        }
+        if (id === 'price-symbol') {
+          target.value = target.value.toUpperCase();
+        }
+      });
+
+      body.addEventListener('change', function(e) {
+        const target = e.target;
+        const id = target.id;
+        if (id === 'price-entry' || id === 'price-exit' || id === 'price-sl' || 
+            id === 'price-tp' || id === 'price-lot' || id === 'price-custom-multiplier') {
+          updatePricePreview();
+        }
+      });
+
+      body.addEventListener('keyup', function(e) {
+        const target = e.target;
+        const id = target.id;
+        if (id === 'price-entry' || id === 'price-exit' || id === 'price-sl' || 
+            id === 'price-tp' || id === 'price-lot' || id === 'price-custom-multiplier') {
+          updatePricePreview();
+        }
+      });
+    }
 
     // Kaydet
     const saveBtn = document.getElementById('quick-add-save');
     if (saveBtn) {
-      const newSave = saveBtn.cloneNode(true);
-      saveBtn.parentNode.replaceChild(newSave, saveBtn);
-      newSave.addEventListener('click', saveTrade);
+      saveBtn.addEventListener('click', saveTrade);
     }
 
     // Enter ile kaydet
     document.querySelectorAll('.quick-add-body input, .quick-add-body select').forEach(function(input) {
-      const newInput = input.cloneNode(true);
-      input.parentNode.replaceChild(newInput, input);
-      newInput.addEventListener('keydown', function(e) {
+      input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
           e.preventDefault();
           saveTrade();
@@ -1363,9 +1422,7 @@
     // Strateji oluştur
     const createStrategyBtn = document.getElementById('price-create-strategy');
     if (createStrategyBtn) {
-      const newBtn = createStrategyBtn.cloneNode(true);
-      createStrategyBtn.parentNode.replaceChild(newBtn, createStrategyBtn);
-      newBtn.addEventListener('click', function(e) {
+      createStrategyBtn.addEventListener('click', function(e) {
         e.preventDefault();
         window.location.href = '/strategies.html';
       });
@@ -1374,32 +1431,23 @@
     // İçe aktar butonu (CSV)
     const importBtn = document.getElementById('quick-import-btn');
     if (importBtn) {
-      const newBtn = importBtn.cloneNode(true);
-      importBtn.parentNode.replaceChild(newBtn, importBtn);
-      newBtn.addEventListener('click', executeCsvImport);
+      importBtn.addEventListener('click', executeCsvImport);
     }
 
     // Toplu ekle butonu
     const bulkBtn = document.getElementById('quick-bulk-btn');
     if (bulkBtn) {
-      const newBtn = bulkBtn.cloneNode(true);
-      bulkBtn.parentNode.replaceChild(newBtn, bulkBtn);
-      newBtn.addEventListener('click', handleBulkImport);
+      bulkBtn.addEventListener('click', handleBulkImport);
     }
 
     // CSV dosya seçimi
     const csvSelectBtn = document.getElementById('quick-csv-select');
     const csvFileInput = document.getElementById('quick-csv-file');
     if (csvSelectBtn && csvFileInput) {
-      const newSelect = csvSelectBtn.cloneNode(true);
-      csvSelectBtn.parentNode.replaceChild(newSelect, csvSelectBtn);
-      newSelect.addEventListener('click', function() {
-        document.getElementById('quick-csv-file')?.click();
+      csvSelectBtn.addEventListener('click', function() {
+        csvFileInput.click();
       });
-
-      const newFile = csvFileInput.cloneNode(true);
-      csvFileInput.parentNode.replaceChild(newFile, csvFileInput);
-      newFile.addEventListener('change', function() {
+      csvFileInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
           handleCsvFileSelect(this.files[0]);
         }
@@ -1410,11 +1458,28 @@
     if (typeof applyDecimalFix === 'function') {
       applyDecimalFix(['price-lot', 'price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier']);
     }
-
-    console.log('Quick Add Modal başlatıldı. FAB butonu aktif.');
   }
 
+  // ============================================================
+  // MODAL'ı oluştur (container'a)
+  // ============================================================
+
+  function createModal() {
+    let container = document.getElementById('quick-add-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'quick-add-container';
+      document.body.appendChild(container);
+    }
+    container.innerHTML = getModalHTML();
+    attachModalEvents();
+    console.log('✅ Quick Add modal oluşturuldu');
+  }
+
+  // ============================================================
   // ESC handler
+  // ============================================================
+
   function handleEsc(e) {
     if (e.key === 'Escape') {
       const overlay = document.getElementById('quick-add-overlay');
@@ -1422,6 +1487,29 @@
         closeModal();
       }
     }
+  }
+
+  // ============================================================
+  // GLOBAL ERİŞİM
+  // ============================================================
+
+  window.quickAddOpen = openModal;
+  window.quickAddClose = closeModal;
+
+  // ============================================================
+  // INIT - SADECE BİR KEZ
+  // ============================================================
+
+  let initialized = false;
+
+  function initQuickAdd() {
+    if (initialized) return;
+    initialized = true;
+
+    createFab();
+    createModal();
+
+    console.log('✅ Quick Add Modal başlatıldı. FAB butonu aktif.');
   }
 
   // ============================================================
@@ -1436,17 +1524,18 @@
     setTimeout(initQuickAdd, 100);
   }
 
+  // window.load'da tekrar çağırma, zaten başlatıldı
+  // Ancak güvenlik için kontrol et
   window.addEventListener('load', function() {
     if (!document.getElementById('quick-add-fab')) {
-      console.warn('FAB butonu bulunamadı, yeniden başlatılıyor...');
-      initQuickAdd();
+      console.warn('FAB butonu bulunamadı, yeniden oluşturuluyor...');
+      createFab();
+    }
+    if (!document.getElementById('quick-add-overlay')) {
+      createModal();
     }
   });
 
-  // Global erişim
-  window.quickAddOpen = openModal;
-  window.quickAddClose = closeModal;
-
 })();
 
-console.log('quick-add.js yüklendi. FAB butonu her zaman görünür.');
+console.log('quick-add.js yüklendi. (FAB kalıcı)');

@@ -1,10 +1,11 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en">
 <Fragment slot="head">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <!-- LANDING PAGE FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
 
   <!-- ============================================================
   SEO - TEMEL
@@ -46,22 +47,17 @@ import Layout from '../layouts/Layout.astro';
   <!-- ============================================================
   FAVICON & MANIFEST
   ============================================================ -->
-  <link rel="icon" type="image/svg+xml" href="/resim.svg" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
 
   <!-- ============================================================
   FONTS
   ============================================================ -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <!-- ============================================================
   ⭐ STYLES - SIRALAMA ÖNEMLİ
   ============================================================ -->
   <!-- 1. ÖNCE styles.css (TÜM değişkenleri içerir) -->
-  <link rel="stylesheet" href="/styles.css" />
   <!-- 2. SONRA index.css (Landing'e özel stiller) -->
   <link rel="stylesheet" href="/index.css" />
 

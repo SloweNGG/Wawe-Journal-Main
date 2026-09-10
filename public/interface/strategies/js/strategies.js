@@ -1,5 +1,10 @@
 // ============================================================
 // STRATEGIES.JS - STRATEJİ SAYFASI ÖZEL FONKSİYONLAR (OPTİMİZE EDİLMİŞ)
+// ⭐ FIX: Strateji ekleme butonu çalışır hale getirildi
+// ⭐ FIX: Modal kapatma/kaydetme event'leri eklendi
+// ⭐ FIX: Düzenleme modalı için event'ler eklendi
+// ⭐ FIX: Grafikler artık sadece sayfa ilk yüklendiğinde render ediliyor
+//        (tema değişikliği / sekme değişimi / visibilitychange tetiklemiyor)
 // ============================================================
 
 console.log('📊 strategies.js yükleniyor...');
@@ -45,6 +50,8 @@ console.log('📊 strategies.js yükleniyor...');
 
 // ============================================================
 // ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// NOT: Tema değişince sadece Chart.defaults güncellenir.
+//      Grafikler YENİDEN RENDER EDİLMEZ (kullanıcı isteği).
 // ============================================================
 
 (function listenThemeChanges() {
@@ -73,12 +80,7 @@ console.log('📊 strategies.js yükleniyor...');
       }
       
       setChartTheme();
-      if (typeof renderComparisonCharts === 'function') {
-        setTimeout(function() { renderComparisonCharts(); }, 100);
-      }
-      if (typeof renderStrategiesGrid === 'function') {
-        setTimeout(function() { renderStrategiesGrid(); }, 150);
-      }
+      // ⭐ Grafikler yeniden render EDİLMEZ
     }
   });
   
@@ -97,25 +99,18 @@ console.log('📊 strategies.js yükleniyor...');
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
       
       setChartTheme();
-      if (typeof renderComparisonCharts === 'function') {
-        setTimeout(function() { renderComparisonCharts(); }, 100);
-      }
-      if (typeof renderStrategiesGrid === 'function') {
-        setTimeout(function() { renderStrategiesGrid(); }, 150);
-      }
+      // ⭐ Grafikler yeniden render EDİLMEZ
     }
   });
   
+  // ⭐ visibilitychange: grafik render YOK, sadece tema class güncelle
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
       var isLight = savedTheme === 'light';
       document.body.classList.toggle('light-theme', isLight);
-      
       setChartTheme();
-      if (typeof renderComparisonCharts === 'function') {
-        setTimeout(function() { renderComparisonCharts(); }, 100);
-      }
+      // ⭐ Grafikler yeniden render EDİLMEZ
     }
   });
   
@@ -248,17 +243,9 @@ function setChartTheme() {
 
 setChartTheme();
 
-var observer = new MutationObserver(function(mutations) {
-  mutations.forEach(function(mutation) {
-    if (mutation.attributeName === 'class') {
-      setChartTheme();
-      if (typeof renderComparisonCharts === 'function') {
-        renderComparisonCharts();
-      }
-    }
-  });
-});
-observer.observe(document.body, { attributes: true });
+// ⭐ MutationObserver KALDIRILDI - grafiklerin yeniden render olmasını önler
+// var observer = new MutationObserver(function(mutations) { ... });
+// observer.observe(document.body, { attributes: true });
 
 // ============================================================
 // TRADE PNL YARDIMCI FONKSİYONLARI
@@ -701,14 +688,7 @@ function renderStrategiesGrid() {
   var addShortcut = document.getElementById('add-card-shortcut');
   if (addShortcut) {
     addShortcut.addEventListener('click', function() {
-      var nameEl = document.getElementById('new-strategy-name');
-      var descEl = document.getElementById('new-strategy-desc');
-      var colorEl = document.getElementById('new-strategy-color');
-      var modalEl = document.getElementById('add-strategy-modal');
-      if (nameEl) nameEl.value = '';
-      if (descEl) descEl.value = '';
-      if (colorEl) colorEl.value = '#8b5cf6';
-      if (modalEl) modalEl.style.display = 'flex';
+      openAddStrategyModal();
     });
   }
   
@@ -804,7 +784,49 @@ function renderComparisonCharts() {
 }
 
 // ============================================================
-// MODAL FONKSİYONLARI
+// ⭐ STRATEJİ EKLEME MODALI
+// ============================================================
+function openAddStrategyModal() {
+  var nameEl = document.getElementById('new-strategy-name');
+  var descEl = document.getElementById('new-strategy-desc');
+  var colorEl = document.getElementById('new-strategy-color');
+  var modalEl = document.getElementById('add-strategy-modal');
+  if (nameEl) nameEl.value = '';
+  if (descEl) descEl.value = '';
+  if (colorEl) colorEl.value = '#8b5cf6';
+  if (modalEl) modalEl.style.display = 'flex';
+}
+
+async function confirmAddStrategy() {
+  var nameEl = document.getElementById('new-strategy-name');
+  var descEl = document.getElementById('new-strategy-desc');
+  var colorEl = document.getElementById('new-strategy-color');
+  
+  var name = nameEl ? nameEl.value.trim() : '';
+  if (!name) {
+    showToast(i18n.t('strategies.modal.name_required'), 'error');
+    return;
+  }
+  
+  var desc = descEl ? descEl.value.trim() : '';
+  var color = colorEl ? colorEl.value : '#8b5cf6';
+  
+  try {
+    await addStrategy(name, desc, color);
+    document.getElementById('add-strategy-modal').style.display = 'none';
+    await loadAllData();
+    showToast(i18n.t('strategies.modal.add_success'));
+  } catch (e) {
+    showToast(i18n.t('strategies.modal.add_error') + e.message, 'error');
+  }
+}
+
+function closeAddStrategyModal() {
+  document.getElementById('add-strategy-modal').style.display = 'none';
+}
+
+// ============================================================
+// DÜZENLEME MODALI
 // ============================================================
 function openEditModal(strategyId) {
   try {
@@ -824,6 +846,38 @@ function openEditModal(strategyId) {
   } catch(e) {}
 }
 
+async function confirmEditStrategy() {
+  var idEl = document.getElementById('edit-strategy-id');
+  var nameEl = document.getElementById('edit-strategy-name');
+  var descEl = document.getElementById('edit-strategy-desc');
+  var colorEl = document.getElementById('edit-strategy-color');
+  
+  var id = idEl ? idEl.value : '';
+  var name = nameEl ? nameEl.value.trim() : '';
+  if (!name) {
+    showToast(i18n.t('strategies.modal.name_required'), 'error');
+    return;
+  }
+  var desc = descEl ? descEl.value.trim() : '';
+  var color = colorEl ? colorEl.value : '#8b5cf6';
+  
+  try {
+    await updateStrategy(id, { name: name, description: desc, color: color });
+    document.getElementById('edit-strategy-modal').style.display = 'none';
+    await loadAllData();
+    showToast(i18n.t('strategies.modal.edit_success'));
+  } catch (e) {
+    showToast(i18n.t('strategies.modal.edit_error') + e.message, 'error');
+  }
+}
+
+function closeEditStrategyModal() {
+  document.getElementById('edit-strategy-modal').style.display = 'none';
+}
+
+// ============================================================
+// DETAY MODALI
+// ============================================================
 function openDetailModal(strategyId) {
   try {
     var s = strategiesList.find(function(x) { return x.id === strategyId; });
@@ -882,6 +936,9 @@ function openDetailModal(strategyId) {
   } catch(e) {}
 }
 
+// ============================================================
+// EQUITY MODAL
+// ============================================================
 function openEquityModal(strategyId) {
   try {
     var s = strategiesList.find(function(x) { return x.id === strategyId; });
@@ -944,6 +1001,9 @@ function openEquityModal(strategyId) {
   } catch(e) {}
 }
 
+// ============================================================
+// DETAY VE EQUITY MODAL KAPATMA
+// ============================================================
 function setupDetailAndEquityModals() {
   var detailModal = document.getElementById('strategy-detail-modal');
   var equityModal = document.getElementById('equity-curve-modal');
@@ -1296,6 +1356,63 @@ async function initStrategies() {
       });
     }
     
+    // ============================================================
+    // ⭐ STRATEJİ EKLEME MODAL EVENT'LERİ (FIX)
+    // ============================================================
+    var openAddBtn = document.getElementById('open-add-strategy-modal');
+    if (openAddBtn) {
+      openAddBtn.addEventListener('click', openAddStrategyModal);
+    }
+    
+    var confirmAddBtn = document.getElementById('confirm-add-strategy');
+    if (confirmAddBtn) {
+      confirmAddBtn.addEventListener('click', confirmAddStrategy);
+    }
+    
+    var cancelAddBtn = document.getElementById('cancel-add-strategy');
+    if (cancelAddBtn) {
+      cancelAddBtn.addEventListener('click', closeAddStrategyModal);
+    }
+    
+    var closeAddBtn = document.getElementById('close-add-modal');
+    if (closeAddBtn) {
+      closeAddBtn.addEventListener('click', closeAddStrategyModal);
+    }
+    
+    // ============================================================
+    // ⭐ STRATEJİ DÜZENLEME MODAL EVENT'LERİ (FIX)
+    // ============================================================
+    var confirmEditBtn = document.getElementById('confirm-edit-strategy');
+    if (confirmEditBtn) {
+      confirmEditBtn.addEventListener('click', confirmEditStrategy);
+    }
+    
+    var cancelEditBtn = document.getElementById('cancel-edit-strategy');
+    if (cancelEditBtn) {
+      cancelEditBtn.addEventListener('click', closeEditStrategyModal);
+    }
+    
+    var closeEditBtn = document.getElementById('close-edit-modal');
+    if (closeEditBtn) {
+      closeEditBtn.addEventListener('click', closeEditStrategyModal);
+    }
+    
+    // ============================================================
+    // ⭐ KAPATMA BUTONLARI İÇİN KLİPLE (modal üzerine tıklama)
+    // ============================================================
+    var addModal = document.getElementById('add-strategy-modal');
+    if (addModal) {
+      addModal.addEventListener('click', function(e) {
+        if (e.target === addModal) closeAddStrategyModal();
+      });
+    }
+    var editModal = document.getElementById('edit-strategy-modal');
+    if (editModal) {
+      editModal.addEventListener('click', function(e) {
+        if (e.target === editModal) closeEditStrategyModal();
+      });
+    }
+    
     await loadAllData();
     setupTimeFilterButtons();
     setupExportButtons();
@@ -1316,5 +1433,6 @@ window.openDetailModal = openDetailModal;
 window.openEquityModal = openEquityModal;
 window.exportStrategyCSV = exportStrategyCSV;
 window.exportStrategyPDF = exportStrategyPDF;
+window.openAddStrategyModal = openAddStrategyModal;
 
 console.log('✅ strategies.js yüklendi!');
