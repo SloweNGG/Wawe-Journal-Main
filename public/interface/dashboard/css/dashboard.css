@@ -1,6 +1,6 @@
 /* ============================================================
    DASHBOARD ÖZEL STİLLER — ORANTILI (FLUID) SÜRÜM
-   ⭐ ApexCharts & Lightweight Charts DESTEĞİ EKLENDİ
+   ⭐ ApexCharts DESTEĞİ EKLENDİ
    ⭐ FIX: KPI kart font boyutları Premium ile eşitlendi
    ⭐ FIX: chart-wrap flex: 1 1 auto + min-height (kutuyu doldur)
    ⭐ FIX: Tooltip overflow görünürlüğü düzeltildi
@@ -28,6 +28,14 @@
    ⭐ FIX: KPI accordion SADECE mobilde (SORUN 6)
    ⭐ FIX: Mobil donut carousel eklendi (SORUN 7)
    ⭐ FIX: Masaüstü toolbar ve custom range eklendi (SORUN 4)
+   ⭐ TEMİZLİK (v1): Lightweight Charts CSS blokları SİLİNDİ
+       - dashboard.js hiçbir yerde LightweightCharts.* çağırmıyor
+       - dashboard.astro'dan LWC script tag'i kaldırıldı
+       - Tüm grafikler ApexCharts ile render ediliyor
+   ⭐ TEMİZLİK (v2 - AUDIT): Ek ölü bloklar SİLİNDİ
+       - .chart-wrap > div (id seçiciler zaten width/height:100% veriyor)
+       - .chart-wrap canvas { transition } (chart-ready hiç eklenmiyor)
+       - .chart-wrap canvas.chart-ready { opacity } (aynı sebep)
    ============================================================ */
 
 /* ============================================================
@@ -175,22 +183,6 @@
   min-height: clamp(90px, 14vw, 130px);
   max-width: 200px;
   margin: 0 auto;
-}
-
-/* Chart wrap içindeki ApexCharts container'ı */
-.chart-wrap > div {
-  width: 100%;
-  height: 100%;
-}
-
-/* Chart wrap içindeki canvas'lar */
-.chart-wrap canvas {
-  max-width: 100% !important;
-  transition: opacity 0.3s ease;
-}
-
-.chart-wrap canvas.chart-ready {
-  opacity: 1;
 }
 
 /* ============================================================
@@ -345,21 +337,6 @@
 
 .recent-trades-empty .empty-link:hover {
   text-decoration: underline;
-}
-
-/* ============================================================
-   ⭐ LIGHTWEIGHT CHARTS ÖZEL STİLLERİ
-   ============================================================ */
-
-/* Lightweight Charts container */
-.lwc-chart {
-  width: 100%;
-  height: 100%;
-}
-
-.lwc-chart canvas {
-  width: 100% !important;
-  height: 100% !important;
 }
 
 /* ============================================================

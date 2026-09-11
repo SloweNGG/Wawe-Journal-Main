@@ -9,6 +9,10 @@
 //  - DEĞİŞİKLİK 3: renderTable() iki kola ayrıldı — buildDesktopTableHTML()
 //    ve buildMobileCardsHTML() + toggleCardDetail(). Kart görünümü mobilde
 //    (≤768px) otomatik devreye girer, breakpoint geçişinde yeniden render olur.
+//  - TEMİZLİK: initTrades() içindeki ölü #export-csv ve #export-pdf
+//    blokları SİLİNDİ (trades.astro'da bu ID'ler yok, sadece konsol
+//    uyarısı üretiyordu). CSV/PDF export zaten dashboard'daki
+//    #export-csv-desktop / #export-pdf-desktop üzerinden çalışıyor.
 // ============================================================
 
 (function() {
@@ -719,7 +723,7 @@
       if (typeof i18n !== 'undefined' && i18n.t) {
         noText = i18n.t('trades.no_trades') || 'Henüz işlem yok.';
       }
-      wrap.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;">' + noText + ' <a href="add-trade.html" style="color:var(--accent);">İlk işlemi ekle →</a></p>';
+      wrap.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;">' + noText + ' <button type="button" onclick="if(typeof quickAddOpen===\'function\')quickAddOpen()" style="color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">İlk işlemi ekle →</button></p>';
       if (typeof i18n !== 'undefined' && i18n.apply) i18n.apply();
       renderPagination();
       return;
@@ -1161,32 +1165,8 @@
         });
       }
       
-      var exportCsvBtn = safeEl('export-csv');
-      if (exportCsvBtn) {
-        exportCsvBtn.addEventListener('click', function() {
-          if (typeof window.exportCSV === 'function') {
-            window.exportCSV();
-          } else {
-            showToast('CSV export özelliği henüz eklenmedi.', 'info');
-          }
-        });
-      }
-      
-      var exportPdfBtn = safeEl('export-pdf');
-      if (exportPdfBtn) {
-        exportPdfBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          if (typeof window.generatePDF === 'function') {
-            var lang = 'en';
-            if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
-              lang = i18n.getCurrentLanguage();
-            }
-            window.generatePDF(lang);
-          } else {
-            showToast('PDF export özelliği henüz eklenmedi.', 'info');
-          }
-        });
-      }
+      // ⭐ TEMİZLİK: export-csv ve export-pdf blokları SİLİNDİ
+      // (trades.astro'da bu ID'ler yok — sadece konsol uyarısı üretiyordu)
       
       var editInstrument = safeEl('edit-instrument');
       if (editInstrument) {

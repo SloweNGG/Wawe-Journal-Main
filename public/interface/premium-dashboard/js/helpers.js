@@ -1,6 +1,9 @@
 // ============================================================
 // premium-dashboard/js/helpers.js - Saf yardımcı fonksiyonlar
 // ⭐ FIX: showEmptyChart zenginleştirildi (ikon + metin + link)
+// ⭐ TEMİZLİK: /add-trade.html referansları kaldırıldı
+//        - "Lot" ve "Henüz işlem" case'leri artık quickAddOpen() çağırıyor
+//        - Quick Add modal aynı sayfada açılıyor, kullanıcı sayfadan çıkmıyor
 // ============================================================
 
 export function sanitizeHTML(str) {
@@ -92,15 +95,17 @@ export function dedupeByTime(points) {
 }
 
 // ⭐ BOŞ STATE - ZENGİNLEŞTİRİLMİŞ
+// ⭐ TEMİZLİK: /add-trade.html yerine quickAddOpen() ile modal açılıyor
 export function showEmptyChart(containerId, message) {
   var container = document.getElementById(containerId);
   if (!container) return;
-  
+
   // Grafik türüne göre ikon ve mesaj belirle
   var icon = '📊';
   var actionText = '';
   var actionLink = '';
-  
+  var useQuickAdd = false;
+
   if (message && message.includes('kapanan işlem')) {
     icon = '⏳';
     actionText = 'İşlemleri görüntüle';
@@ -116,11 +121,11 @@ export function showEmptyChart(containerId, message) {
   } else if (message && message.includes('Lot')) {
     icon = '📐';
     actionText = 'İşlem ekle';
-    actionLink = '/add-trade.html';
+    useQuickAdd = true;
   } else if (message && message.includes('Henüz işlem')) {
     icon = '📭';
     actionText = 'İlk işlemi ekle';
-    actionLink = '/add-trade.html';
+    useQuickAdd = true;
   } else if (message && message.includes('Yeterli veri')) {
     icon = '📉';
     actionText = 'İşlemleri görüntüle';
@@ -130,12 +135,24 @@ export function showEmptyChart(containerId, message) {
     actionText = 'Dashboard\'a dön';
     actionLink = '/dashboard.html';
   }
-  
+
+  // Ortak buton stili (a ve button için uyumlu)
+  var btnStyle = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;";
+  var btnHover = "onmouseover=\"this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';\" onmouseout=\"this.style.borderColor='var(--border)';this.style.background='var(--surface)';\"";
+  var buttonHtml = '';
+
+  if (useQuickAdd) {
+    // ⭐ Quick Add modalını aynı sayfada aç
+    buttonHtml = '<button type="button" onclick="if(typeof quickAddOpen===\'function\')quickAddOpen()" style="' + btnStyle + '" ' + btnHover + '>' + actionText + ' →</button>';
+  } else if (actionLink) {
+    buttonHtml = '<a href="' + actionLink + '" style="' + btnStyle + '" ' + btnHover + '>' + actionText + ' →</a>';
+  }
+
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:80px;padding:0.5rem;text-align:center;color:var(--muted);font-family:'DM Sans',sans-serif;">
       <div style="font-size:2rem;margin-bottom:0.5rem;opacity:0.6;">${icon}</div>
       <p style="font-size:12px;margin:0 0 0.3rem;color:var(--muted);">${message || 'Yeterli veri yok'}</p>
-      ${actionLink ? `<a href="${actionLink}" style="font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">${actionText} →</a>` : ''}
+      ${buttonHtml}
     </div>
   `;
 }

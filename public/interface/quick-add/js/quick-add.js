@@ -7,6 +7,10 @@
 // ⭐ FIX: close ve cancel butonları çalışıyor
 // ⭐ TEMA: Sayfa başında localStorage'dan tema yüklenir
 // ⭐ TEMA: storage / themeChanged event'leri dinlenir
+// ⭐ TEMİZLİK: window.load fallback'i KALDIRILDI
+//        - DOMContentLoaded + 100ms zaten initQuickAdd() çağırıyor
+//        - window.load, 100ms dolmadan tetiklenip "FAB yok" uyarısı
+//          basıyordu (initialized guard'ı sayesinde işlevsizdi)
 // ============================================================
 
 // ============================================================
@@ -1515,6 +1519,11 @@
   // ============================================================
   // DOM READY
   // ============================================================
+  // ⭐ TEMİZLİK: window.load fallback'i KALDIRILDI
+  //        - DOMContentLoaded + 100ms zaten initQuickAdd() çağırıyor
+  //        - window.load, 100ms dolmadan tetiklenip yanlışlıkla
+  //          "FAB butonu bulunamadı" uyarısı basıyordu
+  //        - initialized guard'ı sayesinde zaten işlevsizdi
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
@@ -1523,18 +1532,6 @@
   } else {
     setTimeout(initQuickAdd, 100);
   }
-
-  // window.load'da tekrar çağırma, zaten başlatıldı
-  // Ancak güvenlik için kontrol et
-  window.addEventListener('load', function() {
-    if (!document.getElementById('quick-add-fab')) {
-      console.warn('FAB butonu bulunamadı, yeniden oluşturuluyor...');
-      createFab();
-    }
-    if (!document.getElementById('quick-add-overlay')) {
-      createModal();
-    }
-  });
 
 })();
 

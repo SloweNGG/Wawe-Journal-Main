@@ -36,4 +36,3 @@ npx repomix --compress --remove-comments --ignore "node_modules,dist,.wrangler,.
 | 2 | **chart-renderers.js** | Tüm grafikleri oluşturma, güncelleme ve yönetme | helpers.js | DOM'a grafik çizer, ApexCharts/Lightweight Charts kullanır |
 | 3 | **dashboard-manager.js** | Widget'lar, sürükle-bırak, iskelet ekranlar, stratejiler, export (CSV/PDF) | helpers.js, chart-renderers.js | DOM manipülasyonu, localStorage okuma/yazma, export dosyası oluşturur |
 | 4 | **premium-dashboard.js** | Ana koordinasyon, global state yönetimi, init, event listener'lar | helpers.js, chart-renderers.js, dashboard-manager.js | DOM manipülasyonu, Supabase veritabanı okuma, oturum yönetimi |
-

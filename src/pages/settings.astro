@@ -10,29 +10,22 @@ import Layout from '../layouts/Layout.astro';
   <link rel="prefetch" href="/trades.html">
   <link rel="prefetch" href="/strategies.html">
   <link rel="prefetch" href="/calendar.html">
-  <link rel="prefetch" href="/settings.html">
   <link rel="prefetch" href="/premium-dashboard.html">
+  <!-- ⭐ TEMİZLİK: /settings.html prefetch'i kaldırıldı (sayfa kendini prefetch ediyordu) -->
   
   <!-- ⭐ SERVICE WORKER - OFFLINE DESTEĞİ -->
+  <!-- ⭐ TEMİZLİK: fetch('/sw.js', { method: 'HEAD' }) kaldırıldı.
+       register() zaten dosya varlığını kontrol ediyor — 404 olursa promise reject olur.
+       Bu ekstra HEAD isteği SW fetch handler'ında cache.put hatası veriyordu. -->
   <script is:inline>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      fetch('/sw.js', { method: 'HEAD' })
-        .then(function(response) {
-          if (response.ok) {
-            navigator.serviceWorker.register('/sw.js')
-              .then(function(registration) {
-                console.log('✅ Service Worker registered:', registration);
-              })
-              .catch(function(error) {
-                console.log('❌ Service Worker registration failed:', error);
-              });
-          } else {
-            console.log('ℹ️ sw.js dosyası mevcut değil, Service Worker atlanıyor');
-          }
+      navigator.serviceWorker.register('/sw.js')
+        .then(function(registration) {
+          console.log('✅ Service Worker registered:', registration.scope);
         })
-        .catch(function() {
-          console.log('ℹ️ sw.js kontrol edilemedi, Service Worker atlanıyor');
+        .catch(function(error) {
+          console.log('❌ Service Worker registration failed:', error);
         });
     });
   }
@@ -1634,13 +1627,13 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
+       ⭐ SCRIPTS
        ============================================================ -->
   
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   
@@ -1675,10 +1668,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- 7. SETTINGS JS (ES5 - AYNI KALIR) -->
   <script src="/settings/js/settings.js" is:inline></script>
   
-  <style>
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
+  <!-- ⭐ TEMİZLİK: En alttaki tekrar eden @keyframes spin style bloğu kaldırıldı.
+       Yukarıdaki ana <style> bloğunda zaten tanımlı. -->
   
 </Layout>

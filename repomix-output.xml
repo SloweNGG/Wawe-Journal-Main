@@ -200,453 +200,6 @@ wrangler.toml
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/components/BaseHead.astro">
----
-// src/components/BaseHead.astro
-// Her sayfada tekrar eden ortak <head> içeriği burada.
-// Sayfaya özel CSS/script'ler sayfanın kendi <head> slot'unda kalır.
-
-export interface Props {
-  title: string;
-  description?: string;
-  canonical?: string;
-  ogImage?: string;
-  noIndex?: boolean;
-}
-
-const {
-  title,
-  description = 'Log your trades, visualize your performance, and discover the strategies that actually work.',
-  canonical,
-  ogImage = 'https://wawejournal.com/og-image.jpg',
-  noIndex = false,
-} = Astro.props;
----
-
-<!-- CHARSET & VIEWPORT -->
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
-<!-- TITLE & SEO -->
-<title>{title}</title>
-<meta name="description" content={description} />
-{noIndex ? <meta name="robots" content="noindex, nofollow" /> : <meta name="robots" content="index, follow" />}
-{canonical && <link rel="canonical" href={canonical} />}
-
-<!-- FAVICON -->
-<link rel="icon" type="image/svg+xml" href="/resim.svg" />
-
-<!-- OPEN GRAPH -->
-<meta property="og:title" content={title} />
-<meta property="og:description" content={description} />
-<meta property="og:image" content={ogImage} />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Wawe Journal" />
-{canonical && <meta property="og:url" content={canonical} />}
-
-<!-- TWITTER CARD -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content={title} />
-<meta name="twitter:description" content={description} />
-<meta name="twitter:image" content={ogImage} />
-<meta name="twitter:site" content="@wawejournal" />
-
-<!-- PWA & THEME -->
-<meta name="theme-color" content="#7c6dfa" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Wawe Journal" />
-<link rel="manifest" href="/site.webmanifest" />
-
-<!-- FONTS -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-<!-- CORE CSS -->
-<link rel="stylesheet" href="/styles.css" />
-<link rel="stylesheet" href="/components/navbar/navbar.css" />
-
-<!-- LUCIDE ICONS -->
-<script src="https://unpkg.com/lucide@latest" is:inline></script>
-
-<!-- TEMA ÖN YÜKLEME — flash önlemek için sayfa render olmadan önce çalışır -->
-<script is:inline>
-(function() {
-  // ⭐ FIX: Scroll bar çiftlenmesini KÖKTEN önle
-  // html ve body overflow'u hidden'a çek, scroll container'a verilecek
-  document.documentElement.style.overflow = 'hidden';
-  document.documentElement.style.height = '100%';
-  document.body.style.overflow = 'hidden';
-  document.body.style.height = '100%';
-
-  var savedTheme = localStorage.getItem('ww_theme');
-  var savedFontSize = localStorage.getItem('ww_font_size');
-  var customTheme = localStorage.getItem('ww_custom_theme');
-
-  if (savedTheme === 'light') {
-    document.documentElement.classList.add('light-theme-pending');
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-theme');
-      document.documentElement.classList.remove('light-theme-pending');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
-
-    // ⭐ FIX: Tema geçişi bittikten sonra overflow'u koru
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.height = '100%';
-    document.body.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-
-    if (savedTheme !== 'light' && customTheme) {
-      try {
-        var theme = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (theme.accent)  root.style.setProperty('--accent', theme.accent);
-        if (theme.accent2) root.style.setProperty('--accent2', theme.accent2);
-        if (theme.bg)      root.style.setProperty('--bg', theme.bg);
-      } catch(e) {}
-    }
-
-    if (savedFontSize) {
-      document.documentElement.style.fontSize = savedFontSize + 'px';
-    }
-  });
-})();
-</script>
-
-<!-- DİL ÖN YÜKLEME -->
-<script is:inline>
-(function() {
-  var savedLang = localStorage.getItem('ww_language');
-  if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
-    document.documentElement.setAttribute('data-lang', savedLang);
-    document.documentElement.lang = savedLang;
-  } else {
-    localStorage.setItem('ww_language', 'en');
-    document.documentElement.setAttribute('data-lang', 'en');
-    document.documentElement.lang = 'en';
-  }
-})();
-</script>
-</file>
-
-<file path="src/components/Navbar.astro">
-
-</file>
-
-<file path="src/components/QuickAddModal.astro">
----
-import Navbar from '../components/Navbar.astro';
-import BaseHead from '../components/BaseHead.astro';
-import QuickAddModal from '../components/QuickAddModal.astro';
-
-export interface Props {
-  lang?: string;
-  bodyClass?: string;
-  bodyStyle?: string;
-  title?: string;
-  description?: string;
-  canonical?: string;
-  noIndex?: boolean;
-  showQuickAdd?: boolean;
-}
-
-const {
-  lang = 'en',
-  bodyClass,
-  bodyStyle,
-  title = 'Wawe Journal',
-  description,
-  canonical,
-  noIndex,
-  showQuickAdd = false,
-} = Astro.props;
----
-<!DOCTYPE html>
-<html lang={lang}>
-<head>
-  <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} />
-  <slot name="head" />
-</head>
-<body class={bodyClass} style={bodyStyle}>
-  <div id="navbar-container">
-    <Navbar />
-  </div>
-  <slot />
-  {showQuickAdd && <QuickAddModal />}
-</body>
-</html>
-</file>
-
-<file path="public/components/navbar/navbar.css">
-:root {
-⋮----
-.nav {
-⋮----
-.nav * {
-⋮----
-body.light-theme .nav {
-⋮----
-body:not(.light-theme) .nav {
-⋮----
-.nav::after {
-⋮----
-.nav:hover::after { opacity: 1; }
-⋮----
-body.light-theme .nav::after {
-⋮----
-.nav-links {
-⋮----
-.nav-links a {
-⋮----
-.nav-links a.loaded {
-⋮----
-.nav-links a.active {
-⋮----
-.nav-links a:hover {
-⋮----
-.nav-links a::after {
-⋮----
-.nav-links a:hover::after {
-⋮----
-.nav-links a.active::after {
-⋮----
-.nav-logo {
-⋮----
-.nav-logo:hover { opacity: 0.85; }
-⋮----
-.logo-icon {
-⋮----
-.logo-icon .logo-icon-svg {
-⋮----
-.nav-logo:hover .logo-icon {
-⋮----
-.nav-logo:hover .logo-icon .logo-icon-svg {
-⋮----
-.nav-logo-text {
-⋮----
-.nav-logo-text span {
-⋮----
-.nav-version {
-⋮----
-.nav-right {
-⋮----
-.plan-badge {
-⋮----
-.plan-badge.premium {
-⋮----
-.plan-badge .plan-dot {
-⋮----
-.plan-badge.premium .plan-dot {
-⋮----
-.plan-badge .plan-text {
-⋮----
-.nav-user {
-⋮----
-body.light-theme .nav-user {
-⋮----
-.nav-user:hover {
-⋮----
-.nav-user .user-info {
-⋮----
-.nav-user .user-info .name {
-⋮----
-.nav-user .user-info .role {
-⋮----
-.user-avatar {
-⋮----
-.user-avatar img {
-⋮----
-.user-avatar:hover {
-⋮----
-.user-avatar:active { transform: scale(0.97); }
-⋮----
-.nav-bell-wrapper {
-⋮----
-.nav-bell-btn {
-⋮----
-body.light-theme .nav-bell-btn {
-⋮----
-.nav-bell-btn svg {
-⋮----
-.nav-bell-btn:hover {
-⋮----
-.nav-bell-btn.has-alert {
-⋮----
-.bell-dot {
-⋮----
-.bell-panel {
-⋮----
-body.light-theme .bell-panel {
-⋮----
-.bell-panel.open {
-⋮----
-.bell-panel-header {
-⋮----
-.bell-panel-header h3 {
-⋮----
-.bell-panel-header-actions {
-⋮----
-.bell-mark-read-btn {
-⋮----
-.bell-mark-read-btn:hover {
-⋮----
-.bell-panel-close {
-⋮----
-.bell-panel-close:hover { color: var(--accent); }
-⋮----
-.bell-panel-body {
-⋮----
-.bell-panel-empty {
-⋮----
-.bell-panel-empty .empty-icon {
-⋮----
-.dropdown-menu {
-⋮----
-body.light-theme .dropdown-menu {
-⋮----
-.dropdown-menu.show {
-⋮----
-.dropdown-item {
-⋮----
-.dropdown-item:hover {
-⋮----
-.dropdown-divider {
-⋮----
-.nav-toggle {
-⋮----
-body.light-theme .nav-toggle {
-⋮----
-.nav-toggle:hover {
-⋮----
-.nav-toggle:active { transform: scale(0.94); }
-⋮----
-.nav-toggle .bar {
-⋮----
-.nav-toggle.open .bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-.nav-toggle.open .bar:nth-child(2) { opacity: 0; }
-.nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-⋮----
-.nav-backdrop {
-⋮----
-.nav-backdrop.open {
-⋮----
-.nav-menu {
-⋮----
-body.light-theme .nav-menu {
-⋮----
-.nav-menu.open { transform: translateX(0); }
-⋮----
-.nav-menu-inner {
-⋮----
-.user-card {
-⋮----
-.user-card-avatar {
-⋮----
-.user-card-avatar img {
-⋮----
-.user-card-info {
-⋮----
-.user-card-name {
-⋮----
-.user-card-plan {
-⋮----
-.user-card-plan .plan-dot {
-⋮----
-.menu-section {
-⋮----
-.menu-section:first-of-type {
-⋮----
-.menu-section-title {
-⋮----
-.menu-section a,
-⋮----
-.menu-section a:hover,
-⋮----
-.menu-section a.active {
-⋮----
-.menu-section a.active::before {
-⋮----
-/* ⭐ "Go Premium" özel vurgu */
-.menu-section a.go-premium {
-⋮----
-.menu-section a.go-premium:hover {
-⋮----
-/* ⭐ Logout butonu (menü içinde) */
-.menu-section button#logout-btn-mobile {
-.menu-section button#logout-btn-mobile:hover {
-⋮----
-/* ⭐ CUSTOM FOCUS STYLES - varsayılan outline kaldırıldı */
-.nav-toggle:focus,
-⋮----
-.nav-toggle:focus-visible,
-⋮----
-/* ============================================================
-   MOBİL BREAKPOINTLER
-   ============================================================ */
-⋮----
---nav-height: 56px; /* ⭐ mobil nav yüksekliği */
-⋮----
-width: 28px;   /* ⭐ zil ile aynı */
-⋮----
-/* ⭐ Mobil header'da avatar ve plan badge gizlendi */
-⋮----
-.nav-toggle,
-⋮----
-.main,
-⋮----
-.nav,
-⋮----
-.page-exit {
-⋮----
-.page-enter {
-⋮----
-.settings-panel.active {
-</file>
-
-<file path="public/components/navbar/navbar.js">
-function sanitizeHTML(str)
-⋮----
-function sanitizeURL(url)
-⋮----
-function loadLucideIcons()
-⋮----
-function getNavbarHTML(translations)
-⋮----
-function updateNavbarI18n()
-⋮----
-function applyAvatarToNav(url)
-⋮----
-async function loadNavbarAvatar()
-⋮----
-function updateBadgeUI(isPremium)
-⋮----
-async function updateNavbarBadge()
-⋮----
-function updateNavbarBadgeSync()
-⋮----
-function setActiveNavLink()
-⋮----
-function setupAvatarDropdown()
-⋮----
-function initNavEvents()
-⋮----
-// ⭐ Mobile logout
-⋮----
-function loadNavbar(containerId)
-</file>
-
-<file path="public/components/navbar/page-transition.js">
-
-</file>
-
 <file path="public/components/notification-bell/css/notification-bell.css">
 .notif-bell-wrapper {
 ⋮----
@@ -1066,26 +619,6 @@ body.light-theme .panel-glow.prices-glow {
 .charts-grid .s-card .recharts-cartesian-axis-tick text {
 </file>
 
-<file path="public/interface/admin/js/admin-core.js">
-function showToast(msg, type)
-⋮----
-function formatDate(iso)
-⋮----
-function formatDateFull(iso)
-⋮----
-function escapeHtml(str)
-⋮----
-function getInitials(name)
-⋮----
-function switchPanel(panelId, clickedEl)
-⋮----
-function renderAdminPanel()
-⋮----
-async function updatePlanBadge()
-⋮----
-async function initAdmin()
-</file>
-
 <file path="public/interface/admin/js/admin-dashboard.js">
 async function loadAnalyticsData()
 ⋮----
@@ -1372,332 +905,6 @@ function renderMonthsGrid()
 function openPopover()
 ⋮----
 function closePopover()
-</file>
-
-<file path="public/interface/dashboard/css/dashboard.css">
-#chart-cumulative,
-⋮----
-.apexcharts-canvas {
-⋮----
-.apexcharts-tooltip {
-⋮----
-.apexcharts-tooltip-title {
-⋮----
-.apexcharts-tooltip-text-y-label,
-⋮----
-.apexcharts-tooltip-series-group {
-⋮----
-.apexcharts-tooltip-series-group .apexcharts-tooltip-text {
-⋮----
-.apexcharts-gridline {
-⋮----
-.apexcharts-grid-borders line {
-⋮----
-.apexcharts-xaxis-texts-g text,
-⋮----
-.apexcharts-legend-text {
-⋮----
-.apexcharts-datalabel-label,
-⋮----
-.apexcharts-datalabels-group text {
-⋮----
-.apexcharts-canvas svg:focus,
-⋮----
-.charts-top-grid {
-⋮----
-.charts-bottom-grid {
-⋮----
-.chart-wrap {
-⋮----
-.chart-wrap--tall {
-⋮----
-.chart-wrap--doughnut {
-⋮----
-.chart-wrap > div {
-⋮----
-.chart-wrap canvas {
-⋮----
-.chart-wrap canvas.chart-ready {
-⋮----
-.chart-card {
-⋮----
-.chart-card:hover {
-⋮----
-.chart-header {
-⋮----
-.chart-card h3 {
-⋮----
-.chart-header h3 {
-⋮----
-.chart-badge {
-⋮----
-.chart-badge.negative {
-⋮----
-.strategy-tags-card .empty-state {
-⋮----
-.strategy-tags-card .empty-state .empty-icon {
-⋮----
-.strategy-tags-card .empty-state .empty-icon svg {
-⋮----
-.strategy-tags-card .empty-state .empty-text {
-⋮----
-.strategy-tags-card .empty-state .empty-link {
-⋮----
-.strategy-tags-card .empty-state .empty-link:hover {
-⋮----
-.recent-trades-empty {
-⋮----
-.recent-trades-empty .empty-icon {
-⋮----
-.recent-trades-empty .empty-icon svg {
-⋮----
-.recent-trades-empty .empty-text {
-⋮----
-.recent-trades-empty .empty-link {
-⋮----
-.recent-trades-empty .empty-link:hover {
-⋮----
-.lwc-chart {
-⋮----
-.lwc-chart canvas {
-⋮----
-.goal-edit-btn {
-.goal-edit-btn:hover {
-.goal-edit-btn svg {
-⋮----
-.kpi-item {
-.goal-wrapper {
-⋮----
-.goal-modal-overlay {
-.goal-modal-overlay.active {
-.goal-modal {
-.goal-modal-header {
-.goal-modal-header h3 {
-.goal-modal-header h3 svg {
-.goal-modal-close {
-.goal-modal-body {
-.goal-modal-body label {
-.goal-input {
-.goal-input:focus {
-.goal-modal-footer {
-⋮----
-.welcome-msg {
-⋮----
-.date-filter-group {
-.date-filter-option {
-.date-filter-option:hover {
-.date-filter-option.active {
-⋮----
-.export-btn {
-.export-btn:hover {
-.export-btn svg {
-⋮----
-.header-actions {
-⋮----
-.trade-row {
-.trade-row:hover {
-.trade-strategy {
-.trade-symbol { font-size: clamp(0.55rem, 2vw, 0.8rem); }
-.trade-pnl { font-size: clamp(0.55rem, 2vw, 0.75rem); }
-.trade-direction { font-size: clamp(7px, 1.8vw, 9px); }
-.trade-date { font-size: clamp(0.45rem, 1.6vw, 0.6rem); }
-.trade-icon {
-.trade-bar-container { height: clamp(2px, 0.5vw, 3px); }
-⋮----
-.trade-note-indicator {
-⋮----
-.trade-note {
-.trade-note.show {
-⋮----
-.mini-calendar-card {
-.mini-calendar-card:hover {
-.mini-cal-header {
-.mini-cal-header .mini-cal-title {
-.mini-cal-header .mini-cal-title svg {
-.mini-cal-header .mini-cal-link {
-.mini-cal-header .mini-cal-link:hover {
-.mini-cal-header .mini-cal-link svg {
-.mini-cal-grid {
-.mini-cal-day {
-.mini-cal-day .day-name {
-.mini-cal-day .day-number {
-.mini-cal-day .day-pnl-small {
-.mini-cal-day .day-pnl-small.positive {
-.mini-cal-day .day-pnl-small.negative {
-.mini-cal-day.win {
-.mini-cal-day.win:hover {
-.mini-cal-day.win .day-number {
-.mini-cal-day.loss {
-.mini-cal-day.loss:hover {
-.mini-cal-day.loss .day-number {
-.mini-cal-day.empty-day {
-.mini-cal-day.empty-day:hover {
-.mini-cal-day.today {
-.mini-cal-day.today .day-number {
-body.light-theme .mini-cal-day.win {
-body.light-theme .mini-cal-day.win:hover {
-body.light-theme .mini-cal-day.loss {
-body.light-theme .mini-cal-day.loss:hover {
-⋮----
-.dashboard-grid-2col {
-⋮----
-.strategy-tags-card {
-.strategy-tags-card:hover {
-.strategy-tags-title {
-.strategy-tags-title svg {
-.strategy-pill {
-.strategy-pill:hover {
-.pill-positive { border-left: 2px solid var(--green); }
-.pill-negative { border-left: 2px solid var(--red); }
-.pill-neutral { border-left: 2px solid var(--accent); }
-⋮----
-.best-worst {
-.best-worst svg {
-.best-worst .bw-count {
-⋮----
-.trade-note-indicator svg {
-.trade-note-indicator:hover svg {
-⋮----
-.stat-card .stat-trend {
-.stat-trend.positive {
-.stat-trend.negative {
-⋮----
-.stat-card[data-critical="true"]::before {
-⋮----
-/* ⭐ Dinamik accent renk: pozitif/kritik kartlar */
-.stat-card.positive[data-critical="true"] {
-.stat-card.negative[data-critical="true"] {
-⋮----
-/* ⭐ STAT CARD - PREMIUM İLE EŞİT FONT BOYUTLARI */
-.stat-card .stat-label {
-⋮----
-.stat-card .stat-value {
-⋮----
-.stat-card .stat-value.positive {
-.stat-card .stat-value.negative {
-⋮----
-.page-header {
-⋮----
-.kpi-bar {
-⋮----
-.kpi-item:last-child {
-⋮----
-.charts-top-grid,
-⋮----
-.date-filter-option,
-⋮----
-.trade-date {
-.trade-symbol {
-.trade-pnl {
-.trade-direction {
-⋮----
-.trade-bar-container {
-</file>
-
-<file path="public/interface/dashboard/js/dashboard.js">
-function safeEl(id)
-⋮----
-function localDateStr(date)
-⋮----
-function showSkeletons()
-⋮----
-function hideSkeletons()
-⋮----
-function calcTradePnL(t)
-⋮----
-function formatCurrency(value)
-⋮----
-function formatCurrencyPDF(value)
-⋮----
-function sanitizeHTML(str)
-⋮----
-function escapeAttr(str)
-⋮----
-function showToast(msg, type)
-⋮----
-function getApexTheme()
-⋮----
-function getApexColors()
-⋮----
-function getBaseOptions()
-⋮----
-function resetChartsForTheme()
-⋮----
-function setupResizeObserver(containerId, chart)
-⋮----
-function cleanupResizeObservers()
-⋮----
-function filterByDate(trades, range)
-⋮----
-function getPreviousPeriodTrades(trades, range)
-⋮----
-function calcTrend(current, previous)
-⋮----
-function updateTrend(elementId, trend)
-⋮----
-function smartDateLabel(dateStr)
-⋮----
-function getDayNames(lang)
-⋮----
-function loadMonthlyTarget()
-⋮----
-function saveMonthlyTarget(target)
-⋮----
-function animateNumber(elementId, targetValue, isCurrency, isPercentage, delay, animate)
-⋮----
-function update(currentTime)
-⋮----
-function renderStats(trades, previousTrades, animate)
-⋮----
-async function renderStrategyTags(trades)
-⋮----
-async function renderRecentTrades(trades)
-⋮----
-// ⭐ Saat kaldırıldı, sadece gün ay gösterimi
-⋮----
-function renderStreak(trades)
-⋮----
-function renderMiniCalendar()
-⋮----
-function loadMiniCalendar(trades)
-⋮----
-function destroyAllCharts()
-⋮----
-function renderCumulativeChart(trades)
-⋮----
-function renderWinLossChart(trades)
-⋮----
-function renderDailyChart(trades)
-⋮----
-function renderSymbolChart(trades)
-⋮----
-function renderDirectionChart(trades)
-⋮----
-function renderCharts(trades)
-⋮----
-function updateCharts(trades)
-⋮----
-function exportCSV()
-⋮----
-async function generatePDF(lang)
-⋮----
-function setupGoalModal()
-⋮----
-function openGoalModal()
-⋮----
-function closeGoalModalFunc()
-⋮----
-function saveGoal()
-⋮----
-async function updatePlanBadge()
-⋮----
-async function refresh()
-⋮----
-async function loadTrades(userId)
-⋮----
-async function initDashboard()
-⋮----
-function startDashboard()
 </file>
 
 <file path="public/interface/premium-dashboard/css/components.css">
@@ -2031,263 +1238,6 @@ export function closeMenu()
 async function loadPremiumData()
 </file>
 
-<file path="public/interface/quick-add/css/quick-add.css">
-:root {
-⋮----
-.quick-add-fab,
-⋮----
-.quick-add-fab {
-.quick-add-fab:hover {
-.quick-add-fab:active {
-.quick-add-fab:focus-visible {
-.quick-add-fab svg {
-⋮----
-.quick-add-overlay {
-.quick-add-overlay.active { display: flex; }
-⋮----
-.quick-add-modal {
-.quick-add-modal::-webkit-scrollbar { width: 4px; }
-.quick-add-modal::-webkit-scrollbar-thumb {
-⋮----
-.quick-add-header {
-.quick-add-header h2 {
-.quick-add-header .close-btn {
-.quick-add-header .close-btn svg { width: 17px; height: 17px; }
-.quick-add-header .close-btn:hover {
-.quick-add-header .close-btn:focus-visible {
-⋮----
-.quick-add-tabs {
-.quick-tab {
-.quick-tab:hover { color: var(--qa-text); }
-.quick-tab.active {
-.quick-tab:focus-visible {
-.quick-tab-content { display: none; }
-.quick-tab-content.active { display: block; }
-⋮----
-.quick-add-body { padding: 1.35rem; }
-⋮----
-.quick-add-row {
-⋮----
-.quick-add-field { margin-bottom: 1.1rem; }
-.quick-add-row .quick-add-field { margin-bottom: 0; }
-.quick-add-field:last-child { margin-bottom: 0; }
-⋮----
-.quick-add-field label {
-⋮----
-.quick-add-field input,
-.quick-add-field input:focus,
-.quick-add-field input::placeholder { color: var(--qa-muted); opacity: 0.6; }
-.quick-add-field select {
-.quick-add-field select option { background: var(--qa-surface2); }
-⋮----
-.quick-add-instrument-grid {
-.quick-add-instrument-btn {
-.quick-add-instrument-btn:hover { color: var(--qa-text); }
-.quick-add-instrument-btn.active {
-.quick-add-instrument-btn:focus-visible {
-.quick-add-instrument-btn .inst-label {
-.quick-add-instrument-btn.active .inst-label { color: var(--qa-accent-light); opacity: 0.7; }
-⋮----
-#quick-custom-multiplier-wrap input {
-#quick-custom-multiplier-wrap input:focus { border-color: var(--qa-accent); }
-⋮----
-.quick-add-side-toggle {
-.quick-add-side-btn {
-.quick-add-side-btn:hover { color: var(--qa-text); }
-.quick-add-side-btn.active-buy {
-.quick-add-side-btn.active-sell {
-.quick-add-side-btn:focus-visible {
-.quick-add-side-btn svg { width: 15px; height: 15px; }
-⋮----
-.quick-add-pnl-wrap { position: relative; }
-.quick-add-pnl-wrap .currency-symbol {
-.quick-add-pnl-wrap input { padding-left: 28px; }
-.quick-add-pnl-wrap .pnl-suffix {
-⋮----
-.quick-add-lot-wrap { display: flex; gap: 6px; align-items: center; }
-.quick-add-lot-wrap input { flex: 1; }
-.quick-add-lot-wrap .lot-presets { display: flex; gap: 4px; flex-shrink: 0; }
-.quick-add-lot-wrap .lot-preset {
-.quick-add-lot-wrap .lot-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
-.quick-add-lot-wrap .lot-preset.active {
-.quick-add-lot-wrap .lot-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
-⋮----
-.quick-add-rr-wrap { display: flex; align-items: center; gap: 8px; }
-.quick-add-rr-wrap .rr-label {
-.quick-add-rr-wrap input {
-.quick-add-rr-wrap input:focus { border-color: var(--qa-accent); }
-.quick-add-rr-wrap .rr-presets { display: flex; gap: 4px; flex-shrink: 0; }
-.quick-add-rr-wrap .rr-preset {
-.quick-add-rr-wrap .rr-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
-.quick-add-rr-wrap .rr-preset.active {
-.quick-add-rr-wrap .rr-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
-⋮----
-.quick-add-strategy-wrap { display: flex; gap: 8px; align-items: center; }
-.quick-add-strategy-wrap select { flex: 1; }
-.quick-add-strategy-wrap .create-strategy-btn {
-.quick-add-strategy-wrap .create-strategy-btn svg { width: 15px; height: 15px; }
-.quick-add-strategy-wrap .create-strategy-btn:hover { border-color: var(--qa-accent); color: var(--qa-accent-light); }
-.quick-add-strategy-wrap .create-strategy-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
-⋮----
-.quick-add-notes textarea {
-.quick-add-notes textarea:focus { border-color: var(--qa-accent); }
-.quick-add-notes textarea::placeholder { color: var(--qa-muted); opacity: 0.6; }
-⋮----
-.quick-add-preview {
-.quick-add-preview.visible { display: flex; }
-.quick-add-preview .preview-rail {
-.quick-add-preview.rail-pos .preview-rail { background: var(--qa-green); }
-.quick-add-preview.rail-neg .preview-rail { background: var(--qa-red); }
-.quick-add-preview .preview-item { display: flex; flex-direction: column; gap: 2px; }
-.quick-add-preview .preview-item .p-label {
-.quick-add-preview .preview-item .p-val {
-.quick-add-preview .preview-item .p-val.pos { color: var(--qa-green); }
-.quick-add-preview .preview-item .p-val.neg { color: var(--qa-red); }
-.quick-add-preview .preview-item .p-val.accent { color: var(--qa-accent-light); }
-.quick-add-preview .preview-divider { width: 1px; height: 26px; background: var(--qa-border-strong); }
-⋮----
-.quick-import-area { text-align: center; padding: 1rem 0.5rem; }
-.quick-import-icon {
-.quick-import-icon svg { stroke: var(--qa-accent-light); width: 24px; height: 24px; }
-.quick-import-area p {
-.quick-import-btn {
-.quick-import-btn:hover { border-color: var(--qa-accent); }
-.quick-import-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
-.quick-import-status {
-.quick-import-status .status-badge { font-weight: 600; color: var(--qa-accent-light); }
-.quick-import-log {
-.quick-import-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.quick-import-log div:last-child { border-bottom: none; }
-⋮----
-.quick-bulk-area textarea {
-.quick-bulk-area textarea:focus { border-color: var(--qa-accent); }
-.quick-bulk-progress { margin-top: 0.75rem; font-size: 12px; color: var(--qa-muted); font-family: var(--qa-font-body); }
-.quick-bulk-progress .quick-bulk-bar {
-.quick-bulk-progress .quick-bulk-bar .quick-bulk-fill {
-.quick-bulk-log {
-.quick-bulk-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.quick-bulk-log div:last-child { border-bottom: none; }
-⋮----
-.quick-add-footer {
-.quick-add-footer .btn-cancel {
-.quick-add-footer .btn-cancel:hover { border-color: var(--qa-border-strong); color: var(--qa-text); }
-.quick-add-footer .btn-cancel:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
-.quick-add-footer .btn-save {
-.quick-add-footer .btn-save svg { width: 15px; height: 15px; }
-.quick-add-footer .btn-save:hover { background: var(--qa-accent-light); transform: translateY(-1px); }
-.quick-add-footer .btn-save:active { transform: translateY(0); }
-.quick-add-footer .btn-save:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.quick-add-footer .btn-save:disabled {
-⋮----
-.quick-add-loading {
-.quick-add-loading.active { display: flex; }
-.quick-add-loading .spinner {
-⋮----
-.quick-add-error {
-.quick-add-error.active { display: flex; }
-.quick-add-error svg { width: 15px; height: 15px; flex-shrink: 0; }
-⋮----
-.quick-add-overlay { padding: 0; align-items: flex-end; }
-⋮----
-.quick-add-header { min-height: var(--qa-header-h-mobile); padding: 0.9rem 1.1rem; }
-.quick-add-tabs { top: var(--qa-header-h-mobile); padding: 0 0.75rem; overflow-x: auto; scrollbar-width: none; }
-.quick-add-tabs::-webkit-scrollbar { display: none; }
-.quick-tab { font-size: 11px; padding: 0.55rem 0.4rem; white-space: nowrap; }
-⋮----
-.quick-add-body { padding: 1.1rem; }
-.quick-add-field { margin-bottom: 0.9rem; }
-.quick-add-row { gap: 8px; }
-⋮----
-.quick-add-instrument-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.quick-add-instrument-btn { font-size: 10px; padding: 0.4rem 0.25rem; }
-⋮----
-.quick-add-side-btn { padding: 0.58rem 0.7rem; font-size: 12.5px; }
-⋮----
-.quick-add-lot-wrap .lot-presets,
-⋮----
-.quick-import-area p { font-size: 12px; }
-.quick-bulk-area textarea { min-height: 90px; font-size: 11px; }
-⋮----
-.quick-add-preview { gap: 0.75rem; padding: 0.6rem 0.75rem 0.6rem 0.95rem; }
-.quick-add-preview .preview-item .p-val { font-size: 0.85rem; }
-⋮----
-.quick-add-footer { padding: 0.7rem 1.1rem 0.9rem; }
-.quick-add-footer .btn-cancel,
-⋮----
-.quick-add-instrument-grid { grid-template-columns: repeat(2, 1fr); }
-</file>
-
-<file path="public/interface/quick-add/js/quick-add.js">
-function badgeIcon(type)
-⋮----
-function logTag(type)
-⋮----
-function el(id)
-function qsa(selector)
-⋮----
-function checkGlobals()
-⋮----
-function escapeHtml(str)
-⋮----
-function parseCsvLine(line)
-⋮----
-function parseCsvText(text)
-⋮----
-// ============================================================
-// TARİH FORMATLAMA - Tek tip UTC ISO formatı
-// ============================================================
-⋮----
-function validateAndFormatDate(dateString)
-⋮----
-function getModalHTML()
-⋮----
-async function loadStrategies()
-⋮----
-function selectInstrument(instrument, multiplier)
-⋮----
-function getMultiplier()
-⋮----
-function updatePricePreview()
-⋮----
-function openModal()
-⋮----
-function closeModal()
-⋮----
-function resetForm()
-⋮----
-function switchTab(tab)
-⋮----
-function setSide(side)
-⋮----
-function setLotPreset(value)
-⋮----
-function renderCSVLog(messages)
-⋮----
-function showCsvPreview(rows, headers)
-⋮----
-async function handleCsvFileSelect(file)
-⋮----
-async function executeCsvImport()
-⋮----
-async function handleBulkImport()
-⋮----
-function refreshPage()
-⋮----
-async function saveTrade()
-⋮----
-function showError(msg)
-⋮----
-function createFab()
-⋮----
-function attachModalEvents()
-⋮----
-function createModal()
-⋮----
-function handleEsc(e)
-⋮----
-function initQuickAdd()
-</file>
-
 <file path="public/interface/quick-add/js/quick-modal-i18n.js">
 class QuickI18n
 ⋮----
@@ -2485,259 +1435,6 @@ table.detail-table td.neg { color: var(--red); font-weight: 600; }
 .btn-add-strategy { justify-content: center; }
 .page-header-actions { justify-content: stretch; }
 .time-filter-group { justify-content: space-between; }
-</file>
-
-<file path="public/interface/strategies/js/strategies.js">
-function sanitizeHTML(str)
-⋮----
-function showStrategySkeleton()
-⋮----
-function hideStrategySkeleton()
-⋮----
-async function updateNavbarAvatar()
-⋮----
-async function updatePlanBadge()
-⋮----
-function setChartTheme()
-⋮----
-function getTradeMultiplier(t)
-⋮----
-function getTradePnL(t)
-⋮----
-function colorToRgba(hex, alpha)
-⋮----
-function filterTradesByRange(trades, range)
-⋮----
-function getStrategyPerformance(strategyId)
-⋮----
-function formatCurrencyFixed(value)
-⋮----
-function fmtDate(dateStr)
-⋮----
-function makeChartDefaults()
-⋮----
-function drawSparkline(canvasId, data, color)
-⋮----
-function renderStrategiesGrid()
-⋮----
-function renderComparisonCharts()
-⋮----
-function openEditModal(strategyId)
-⋮----
-function openDetailModal(strategyId)
-⋮----
-function openEquityModal(strategyId)
-⋮----
-function setupDetailAndEquityModals()
-⋮----
-function downloadBlob(content, filename, mimeType)
-⋮----
-function csvEscape(val)
-⋮----
-function getCurrentLanguage()
-⋮----
-function exportStrategyCSV(strategyId)
-⋮----
-function exportAllStrategiesCSV()
-⋮----
-function exportStrategyPDF(strategyId)
-⋮----
-function exportAllStrategiesPDF()
-⋮----
-function setupExportButtons()
-⋮----
-async function loadAllData()
-⋮----
-function setupTimeFilterButtons()
-⋮----
-async function initStrategies()
-</file>
-
-<file path="public/interface/trades/css/trades.css">
-.trades-page .ww-table {
-.trades-page .ww-table th,
-.trades-page .ww-table th:nth-child(1) { width: 36px; }
-.trades-page .ww-table th:nth-child(2) { width: 85px; }
-.trades-page .ww-table th:nth-child(3) { width: 65px; }
-.trades-page .ww-table th:nth-child(4) { width: 55px; }
-.trades-page .ww-table th:nth-child(5) { width: 80px; }
-.trades-page .ww-table th:nth-child(6) { width: 80px; }
-.trades-page .ww-table th:nth-child(7) { width: 70px; }
-.trades-page .ww-table th:nth-child(8) { width: 70px; }
-.trades-page .ww-table th:nth-child(9) { width: 90px; }
-.trades-page .ww-table th:nth-child(10) { width: 55px; }
-.trades-page .ww-table th:nth-child(11) { width: 110px; }
-.trades-page .ww-table th:nth-child(12) { width: 100px; }
-.trades-page .ww-table th:nth-child(13) { width: 70px; }
-⋮----
-.trades-page .ww-table th {
-.trades-page .ww-table td {
-.trades-page .ww-table tbody tr {
-.trades-page .ww-table tbody tr:hover {
-⋮----
-.trades-page .trade-note-row {
-.trades-page .trade-note-row td {
-.trades-page .trade-note-row strong {
-⋮----
-.row-indicator {
-.row-indicator.win { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
-.row-indicator.loss { background: var(--red); box-shadow: 0 0 6px var(--red-glow); }
-.row-indicator.open { background: var(--muted); opacity: 0.4; }
-⋮----
-.symbol-cell {
-.symbol-text {
-⋮----
-.badge-long, .badge-short {
-.badge-long { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
-.badge-short { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
-⋮----
-.strategy-badge {
-⋮----
-.trade-checkbox {
-⋮----
-.tt-actions {
-.trades-page .ww-table tbody tr:hover .tt-actions {
-⋮----
-.btn-icon {
-.btn-icon:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,92,246,0.05); }
-.btn-icon.del:hover { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.05); }
-⋮----
-.stat-grid {
-.stat-card {
-.stat-card:hover {
-.stat-card-label {
-.stat-card-value {
-.stat-card-value.positive { color: var(--green); }
-.stat-card-value.negative { color: var(--red); }
-⋮----
-.trades-toolbar {
-.toolbar-select {
-.toolbar-select:hover { border-color: var(--accent); }
-⋮----
-.sel-bar {
-.sel-bar.visible { display: flex; }
-.sel-bar .sel-count {
-.sel-bar .sel-label {
-.sel-bar .sel-actions {
-.sel-bar .sel-clear {
-.sel-bar .sel-clear:hover {
-⋮----
-.btn-bulk-delete {
-.btn-bulk-delete:hover {
-.btn-bulk-delete:active { transform: scale(0.96); }
-.btn-bulk-delete svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; }
-.btn-bulk-delete:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-⋮----
-.pagination-wrap {
-.pagination-info {
-.pagination-info strong {
-.pagination-controls {
-.page-btn {
-.page-btn:hover:not(:disabled):not(.active) {
-.page-btn.active {
-.page-btn:disabled {
-.page-btn.arrow {
-.page-btn.ellipsis {
-.page-btn.ellipsis:hover {
-⋮----
-.field {
-.field label {
-.field input, .field select, .field textarea {
-.field input:focus, .field select:focus, .field textarea:focus {
-⋮----
-.modal-overlay {
-.modal-overlay.active {
-.modal-overlay .card {
-#edit-modal {
-#edit-modal.active {
-#bulk-modal {
-#bulk-modal.active {
-⋮----
-.skeleton-stat {
-.skeleton-stat::after {
-body.light-theme .skeleton-stat::after {
-.skeleton-stat .skeleton-line {
-.skeleton-stat .skeleton-line:last-child {
-⋮----
-.skeleton-table {
-.skeleton-row {
-.skeleton-row .skeleton-cell {
-.skeleton-row .skeleton-cell::after {
-body.light-theme .skeleton-row .skeleton-cell::after {
-⋮----
-.trades-page .card {
-⋮----
-.stat-grid { grid-template-columns: repeat(2, 1fr); }
-.trades-toolbar { flex-direction: column; align-items: stretch; }
-.toolbar-select { width: 100%; }
-.pagination-wrap { flex-direction: column; align-items: center; }
-.pagination-info { font-size: 10px; }
-⋮----
-.dropdown-menu {
-.dropdown-menu.show {
-⋮----
-.pagination-controls .page-btn {
-.pagination-controls .page-btn.arrow {
-</file>
-
-<file path="public/interface/trades/js/trades.js">
-function safeEl(id)
-⋮----
-function showTableSkeleton()
-⋮----
-function hideTableSkeleton()
-⋮----
-function sanitizeHTML(str)
-⋮----
-function formatCurrency(value)
-⋮----
-function showToast(msg, type)
-⋮----
-function getTradePnL(t)
-⋮----
-function formatDateTime(dateStr)
-⋮----
-async function loadStrategyNames()
-⋮----
-function updateStrategySelect()
-⋮----
-function renderStats(trades)
-⋮----
-function toggleNote(tradeId)
-⋮----
-function updateSelBar()
-⋮----
-function toggleSelect(id, checked)
-⋮----
-function toggleSelectAll(checkbox)
-⋮----
-function renderPagination()
-⋮----
-function applyFiltersAndSort()
-⋮----
-// ============================================================
-// TABLO RENDER - GÜVENLİ
-// ============================================================
-⋮----
-function renderTable(trades)
-⋮----
-async function deleteTrade(id)
-⋮----
-async function bulkDelete()
-⋮----
-async function confirmBulkDelete()
-⋮----
-function openEdit(id)
-⋮----
-function closeModal()
-⋮----
-function closeBulkModal()
-⋮----
-async function updatePlanBadge()
-⋮----
-async function loadTrades(userId)
-⋮----
-async function initTrades()
 </file>
 
 <file path="public/settings/css/settings.css">
@@ -3023,95 +1720,6 @@ body.light-theme .panel-glow.overtrade-glow {
 .sidebar-nav-item,
 ⋮----
 .lang-compact-btn,
-</file>
-
-<file path="public/settings/js/settings.js">
-function getLucideIcon(name, size)
-⋮----
-function getSb()
-⋮----
-function showMsg(message, type)
-⋮----
-function isAdmin(user)
-⋮----
-function safeEl(id)
-⋮----
-function t(key, params)
-⋮----
-function sanitizeHTML(str)
-⋮----
-async function getCurrentUser()
-⋮----
-async function getSession()
-⋮----
-async function loadPanelContent(panelId, url)
-⋮----
-// ============================================================
-// PANEL INIT
-// ============================================================
-function initPanel(panelId)
-⋮----
-async function uploadAvatar(file)
-⋮----
-async function updateAvatar(url)
-⋮----
-async function loadAvatar()
-⋮----
-function updateAvatarElements(url)
-⋮----
-function initProfile()
-⋮----
-async function loadProfileData()
-⋮----
-async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
-⋮----
-function showConfirmModal(title, message, warning, onConfirm, onCancel)
-⋮----
-async function renderPlan()
-⋮----
-function startTimer(expiresAt)
-⋮----
-function initPassword()
-⋮----
-// ============================================================
-// TEHLİKELİ BÖLGE
-// ============================================================
-function initDanger()
-⋮----
-function initAppearance()
-⋮----
-function loadThemeCustomizationFallback()
-⋮----
-function setupThemeEventsFallback()
-⋮----
-function updatePreview()
-⋮----
-function saveTheme()
-⋮----
-function resetTheme()
-⋮----
-function initLanguageSelector()
-⋮----
-function initCurrencySelector()
-⋮----
-function initOvertrade()
-⋮----
-async function updateBadge()
-⋮----
-function initNavEvents()
-⋮----
-function initPanelClickEvents()
-⋮----
-function initAvatarPopup()
-⋮----
-function closePopup()
-⋮----
-// ============================================================
-// CONFIRM MODAL - INIT
-// ============================================================
-function initConfirmModal()
-⋮----
-async function checkAndActivatePremium()
 </file>
 
 <file path="public/settings/panels/appearance.html">
@@ -4670,6 +3278,2238 @@ Crawl-delay: 5
 </urlset>
 </file>
 
+<file path="src/components/BaseHead.astro">
+---
+// src/components/BaseHead.astro
+// Her sayfada tekrar eden ortak <head> içeriği burada.
+// Sayfaya özel CSS/script'ler sayfanın kendi <head> slot'unda kalır.
+
+export interface Props {
+  title: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  noIndex?: boolean;
+}
+
+const {
+  title,
+  description = 'Log your trades, visualize your performance, and discover the strategies that actually work.',
+  canonical,
+  ogImage = 'https://wawejournal.com/og-image.jpg',
+  noIndex = false,
+} = Astro.props;
+---
+
+<!-- CHARSET & VIEWPORT -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+<!-- TITLE & SEO -->
+<title>{title}</title>
+<meta name="description" content={description} />
+{noIndex ? <meta name="robots" content="noindex, nofollow" /> : <meta name="robots" content="index, follow" />}
+{canonical && <link rel="canonical" href={canonical} />}
+
+<!-- FAVICON -->
+<link rel="icon" type="image/svg+xml" href="/resim.svg" />
+
+<!-- OPEN GRAPH -->
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Wawe Journal" />
+{canonical && <meta property="og:url" content={canonical} />}
+
+<!-- TWITTER CARD -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:site" content="@wawejournal" />
+
+<!-- PWA & THEME -->
+<meta name="theme-color" content="#7c6dfa" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Wawe Journal" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- FONTS -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- CORE CSS -->
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/components/navbar/navbar.css" />
+
+<!-- LUCIDE ICONS -->
+<script src="https://unpkg.com/lucide@latest" is:inline></script>
+
+<!-- TEMA ÖN YÜKLEME — flash önlemek için sayfa render olmadan önce çalışır -->
+<script is:inline>
+(function() {
+  // ⭐ FIX: Scroll bar çiftlenmesini KÖKTEN önle
+  // html ve body overflow'u hidden'a çek, scroll container'a verilecek
+  document.documentElement.style.overflow = 'hidden';
+  document.documentElement.style.height = '100%';
+  document.body.style.overflow = 'hidden';
+  document.body.style.height = '100%';
+
+  var savedTheme = localStorage.getItem('ww_theme');
+  var savedFontSize = localStorage.getItem('ww_font_size');
+  var customTheme = localStorage.getItem('ww_custom_theme');
+
+  if (savedTheme === 'light') {
+    document.documentElement.classList.add('light-theme-pending');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+      document.documentElement.classList.remove('light-theme-pending');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+
+    // ⭐ FIX: Tema geçişi bittikten sonra overflow'u koru
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+
+    if (savedTheme !== 'light' && customTheme) {
+      try {
+        var theme = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (theme.accent)  root.style.setProperty('--accent', theme.accent);
+        if (theme.accent2) root.style.setProperty('--accent2', theme.accent2);
+        if (theme.bg)      root.style.setProperty('--bg', theme.bg);
+      } catch(e) {}
+    }
+
+    if (savedFontSize) {
+      document.documentElement.style.fontSize = savedFontSize + 'px';
+    }
+  });
+})();
+</script>
+
+<!-- DİL ÖN YÜKLEME -->
+<script is:inline>
+(function() {
+  var savedLang = localStorage.getItem('ww_language');
+  if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
+    document.documentElement.setAttribute('data-lang', savedLang);
+    document.documentElement.lang = savedLang;
+  } else {
+    localStorage.setItem('ww_language', 'en');
+    document.documentElement.setAttribute('data-lang', 'en');
+    document.documentElement.lang = 'en';
+  }
+})();
+</script>
+</file>
+
+<file path="src/components/Navbar.astro">
+
+</file>
+
+<file path="src/components/QuickAddModal.astro">
+---
+import Navbar from '../components/Navbar.astro';
+import BaseHead from '../components/BaseHead.astro';
+import QuickAddModal from '../components/QuickAddModal.astro';
+
+export interface Props {
+  lang?: string;
+  bodyClass?: string;
+  bodyStyle?: string;
+  title?: string;
+  description?: string;
+  canonical?: string;
+  noIndex?: boolean;
+  showQuickAdd?: boolean;
+}
+
+const {
+  lang = 'en',
+  bodyClass,
+  bodyStyle,
+  title = 'Wawe Journal',
+  description,
+  canonical,
+  noIndex,
+  showQuickAdd = false,
+} = Astro.props;
+---
+<!DOCTYPE html>
+<html lang={lang}>
+<head>
+  <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} />
+  <slot name="head" />
+</head>
+<body class={bodyClass} style={bodyStyle}>
+  <div id="navbar-container">
+    <Navbar />
+  </div>
+  <slot />
+  {showQuickAdd && <QuickAddModal />}
+</body>
+</html>
+</file>
+
+<file path="src/env.d.ts">
+
+</file>
+
+<file path="supabase/.temp/cli-latest">
+v2.115.0
+</file>
+
+<file path="supabase/.temp/linked-project.json">
+{"ref":"odasapyhtdopbnlfhwde","name":"wawedevınc","organization_id":"oxilqjbznlfnfkxolrrk","organization_slug":"oxilqjbznlfnfkxolrrk"}
+</file>
+
+<file path="supabase/functions/create-payment/index.ts">
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+⋮----
+// ⭐ CORS - WILDCARD DESTEKLİ (TÜM Cloudflare Pages preview'ları kabul et)
+⋮----
+function getUserIdFromToken(req: Request): string | null
+⋮----
+function getClientId(req: Request): string
+⋮----
+function checkRateLimit(clientId: string):
+⋮----
+function getCorsHeaders(origin: string | null)
+⋮----
+function validatePlanType(planType: string): boolean
+⋮----
+function validateCurrency(currency: string): boolean
+⋮----
+function getPlanPrice(planType: string, currency: string): number
+⋮----
+async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response>
+⋮----
+// ⭐ CORS - OPTIONS
+</file>
+
+<file path="supabase/functions/get-candles/index.ts">
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+⋮----
+function getClientId(req: Request): string
+⋮----
+function checkRateLimit(clientId: string):
+⋮----
+function getCorsHeaders(origin: string | null)
+⋮----
+function validateSymbol(symbol: string): boolean
+⋮----
+function validateInterval(interval: string): boolean
+⋮----
+async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<Response>
+⋮----
+// ⭐ CORS - OPTIONS
+</file>
+
+<file path="supabase/functions/nowpayment-webhook/index.ts">
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+⋮----
+// ⭐ Supabase client — SERVICE_ROLE_KEY kullanılıyor çünkü bu fonksiyon
+// webhook'u çağıran kim olursa olsun *başka* bir user_id'nin user_profiles
+⋮----
+// ⭐ CORS headers
+⋮----
+function getCorsHeaders(origin: string | null)
+⋮----
+function getPlanDuration(planType: string): number
+⋮----
+function timingSafeEqual(a: string, b: string): boolean
+⋮----
+async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean>
+⋮----
+// ⭐ IP kontrolü — bloklamıyor, sadece izliyor/logluyor.
+// NOWPayments IPN bildirimlerini sabit/tek bir IP adresinden göndermiyor ve
+// resmi olarak sabit bir IP listesi yayınlamıyor, bu yüzden IP whitelist'ini
+⋮----
+function logUnexpectedIP(request: Request): void
+⋮----
+function isInvoiceProcessed(invoiceId: string, status: string): boolean
+⋮----
+async function sendTelegramNotification(userId: string, email: string, planType: string, expiresAt: Date)
+⋮----
+async function processPayment(userId: string, planType: string, invoiceId: string, payload: any)
+⋮----
+// ⭐ CORS - OPTIONS
+</file>
+
+<file path="supabase/migrations/202608190001_security_baseline.sql">
+begin;
+
+
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
+
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.user_profiles (
+    id,
+    email,
+    username,
+    plan,
+    role,
+    is_active
+  ) values (
+    new.id,
+    new.email,
+    coalesce(nullif(trim(new.raw_user_meta_data ->> 'username'), ''), split_part(new.email, '@', 1)),
+    'free',
+    'user',
+    true
+  ) on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+
+
+
+create or replace function public.prevent_profile_privilege_changes()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  if new.plan is distinct from old.plan
+     or new.plan_expires_at is distinct from old.plan_expires_at
+     or new.role is distinct from old.role
+     or new.is_active is distinct from old.is_active then
+    raise exception 'Subscription, role, and account-status fields are server-managed';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_user_profile_privileges on public.user_profiles;
+create trigger protect_user_profile_privileges
+  before update on public.user_profiles
+  for each row execute procedure public.prevent_profile_privilege_changes();
+
+
+
+do $$
+declare
+  target_table text;
+  policy_name text;
+begin
+  foreach target_table in array array[
+    'user_profiles', 'trades', 'strategies', 'backtest_trades', 'references', 'payments'
+  ] loop
+    if to_regclass('public.' || target_table) is not null then
+      execute format('alter table public.%I enable row level security', target_table);
+      for policy_name in
+        select policyname from pg_policies
+        where schemaname = 'public' and tablename = target_table
+      loop
+        execute format('drop policy if exists %I on public.%I', policy_name, target_table);
+      end loop;
+    end if;
+  end loop;
+end;
+$$;
+
+
+
+create policy "profiles_select_own_or_admin" on public.user_profiles
+  for select to authenticated
+  using (id = auth.uid() or public.is_admin());
+
+create policy "profiles_update_own_or_admin" on public.user_profiles
+  for update to authenticated
+  using (id = auth.uid() or public.is_admin())
+  with check (id = auth.uid() or public.is_admin());
+
+
+create policy "trades_select_own_or_admin" on public.trades
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy "trades_insert_own" on public.trades
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "trades_update_own_or_admin" on public.trades
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+create policy "trades_delete_own_or_admin" on public.trades
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+create policy "strategies_select_own_or_admin" on public.strategies
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy "strategies_insert_own" on public.strategies
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "strategies_update_own_or_admin" on public.strategies
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+create policy "strategies_delete_own_or_admin" on public.strategies
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+create policy "backtest_trades_select_own_or_admin" on public.backtest_trades
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy "backtest_trades_insert_own" on public.backtest_trades
+  for insert to authenticated with check (user_id = auth.uid());
+create policy "backtest_trades_update_own_or_admin" on public.backtest_trades
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+create policy "backtest_trades_delete_own_or_admin" on public.backtest_trades
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+
+create policy "references_read_active_or_admin" on public.references
+  for select to anon, authenticated
+  using (is_active = true or public.is_admin());
+create policy "references_insert_admin" on public.references
+  for insert to authenticated with check (public.is_admin());
+create policy "references_update_admin" on public.references
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "references_delete_admin" on public.references
+  for delete to authenticated using (public.is_admin());
+
+
+
+create policy "payments_select_own_or_admin" on public.payments
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+
+
+alter table storage.objects enable row level security;
+drop policy if exists "avatars_select_own" on storage.objects;
+drop policy if exists "avatars_insert_own" on storage.objects;
+drop policy if exists "avatars_update_own" on storage.objects;
+drop policy if exists "avatars_delete_own" on storage.objects;
+create policy "avatars_select_own" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+create policy "avatars_insert_own" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+create policy "avatars_update_own" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\')
+  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+create policy "avatars_delete_own" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
+
+commit;
+</file>
+
+<file path="supabase/migrations/202608270001_add_system_settings.sql">
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
+$$;
+
+
+create table if not exists public.system_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz default now()
+);
+
+
+alter table public.system_settings enable row level security;
+
+
+create policy "system_settings_select_admin" on public.system_settings
+  for select to authenticated
+  using (public.is_admin() = true);
+
+create policy "system_settings_insert_admin" on public.system_settings
+  for insert to authenticated
+  with check (public.is_admin() = true);
+
+create policy "system_settings_update_admin" on public.system_settings
+  for update to authenticated
+  using (public.is_admin() = true)
+  with check (public.is_admin() = true);
+
+
+insert into public.system_settings (key, value)
+values (
+  'prices',
+  jsonb_build_object(
+    'monthly', 9.00,
+    'yearly', 79.00,
+    'currency', 'USD',
+    'discount', jsonb_build_object('yearly', 27, 'promo', 0),
+    'paymentMethods', jsonb_build_array('BTC', 'LTC')
+  )
+) on conflict (key) do nothing;
+
+
+create or replace function public.get_prices()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select value from public.system_settings where key = 'prices';
+$$;
+
+
+grant execute on function public.get_prices() to anon, authenticated;
+
+
+create or replace function public.set_prices(
+  p_monthly numeric,
+  p_yearly numeric,
+  p_currency text default 'USD',
+  p_discount_yearly integer default 27,
+  p_payment_methods text[] default array['BTC', 'LTC']
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_result jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'Only admins can update prices';
+  end if;
+
+  v_result := jsonb_build_object(
+    'monthly', p_monthly,
+    'yearly', p_yearly,
+    'currency', p_currency,
+    'discount', jsonb_build_object(
+      'yearly', p_discount_yearly,
+      'promo', 0
+    ),
+    'paymentMethods', to_jsonb(p_payment_methods)
+  );
+
+  insert into public.system_settings (key, value, updated_at)
+  values ('prices', v_result, now())
+  on conflict (key) do update
+  set value = excluded.value, updated_at = now();
+
+  return v_result;
+end;
+$$;
+
+
+grant execute on function public.set_prices(numeric, numeric, text, integer, text[]) to authenticated;
+
+
+grant select on public.system_settings to anon, authenticated;
+</file>
+
+<file path="supabase/migrations/README.md">
+# Supabase migrations
+
+`202608190001_security_baseline.sql` is a security hardening migration for
+the existing Wawe Journal schema. It assumes these existing tables and columns:
+
+- `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
+- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
+- `references(is_active)`, `payments(user_id)`
+
+It has intentionally not been run against the hosted project: no database
+admin credential or Supabase CLI login is available in this workspace.
+
+The browser-side writes to `plan` and `plan_expires_at` have been removed from
+the source. Apply the migration in the Supabase SQL Editor or with a linked
+Supabase CLI project only after deploying that client change. Verify the first
+registration and admin account immediately after applying it.
+
+
+-------------------------
+
+repomix commands for ai developments :
+
+npx repomix --compress --remove-comments --ignore "node_modules,dist,.wrangler,.git,.next,build"
+
+--------------------------
+
+# Premium Dashboard Dosyasının Komponentlerinin İşlevleri 
+
+
+
+## 📊 Dosya İşlev Özeti
+
+| # | Dosya Adı | Sorumluluk | Bağımlılık | Yan Etki |
+|---|-----------|------------|------------|----------|
+| 1 | **helpers.js** | Saf hesaplamalar, formatlama, veri dönüşümleri | Hiçbir şey (bağımsız) | Yok (pure functions) |
+| 2 | **chart-renderers.js** | Tüm grafikleri oluşturma, güncelleme ve yönetme | helpers.js | DOM'a grafik çizer, ApexCharts/Lightweight Charts kullanır |
+| 3 | **dashboard-manager.js** | Widget'lar, sürükle-bırak, iskelet ekranlar, stratejiler, export (CSV/PDF) | helpers.js, chart-renderers.js | DOM manipülasyonu, localStorage okuma/yazma, export dosyası oluşturur |
+| 4 | **premium-dashboard.js** | Ana koordinasyon, global state yönetimi, init, event listener'lar | helpers.js, chart-renderers.js, dashboard-manager.js | DOM manipülasyonu, Supabase veritabanı okuma, oturum yönetimi |
+</file>
+
+<file path="supabase/ADMIN_ROLE.md">
+# Admin role assignment
+
+The app authorizes admins exclusively through `auth.users.raw_app_meta_data`.
+Do not add `role: admin` to `user_metadata`; users can change that data from a
+browser session.
+
+In the Supabase SQL Editor, first identify the intended account:
+
+```sql
+select id, email, raw_app_meta_data
+from auth.users
+order by created_at;
+```
+
+Then replace the placeholder UUID and execute:
+
+```sql
+update auth.users
+set raw_app_meta_data =
+  coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+where id = '<ADMIN_USER_UUID>';
+```
+
+For revocation:
+
+```sql
+update auth.users
+set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - 'role'
+where id = '<ADMIN_USER_UUID>';
+```
+
+The affected user must sign out and sign in again so their JWT contains the
+new `app_metadata.role` value. The `user_profiles.role` column is display data
+only and is not used for authorization.
+</file>
+
+<file path=".env.example">
+# Supabase (gerekli)
+VITE_SUPABASE_URL=https://odasapyhtdopbnlfhwde.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+
+# News API (opsiyonel)
+VITE_NEWS_API_KEY=your-news-api-key
+VITE_NEWS_API_BASE_URL=https://api.forexfactory.com
+
+# App - wawejournal.com
+VITE_APP_URL=https://wawejournal.com
+VITE_APP_NAME=Wawe Journal
+</file>
+
+<file path=".gitignore">
+Add-Content .gitignore "node_modules/"
+node_modules
+
+node_modules/
+dist/
+.astro/
+</file>
+
+<file path="astro.config.mjs">
+
+</file>
+
+<file path="package.json">
+{
+  "name": "wawe-journal-astro",
+  "version": "1.0.0",
+  "description": "Wawe Journal - Professional Trading Journal (Astro geçişi)",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.16.0"
+  },
+  "author": "WaweDev",
+  "license": "MIT"
+}
+</file>
+
+<file path="wrangler.toml">
+name = "wawe-journal"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-01-01"
+
+[env.production.vars]
+VITE_SUPABASE_URL = "https://odasapyhtdopbnlfhwde.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg"
+VITE_APP_URL = "https://wawejournal.com"
+VITE_APP_NAME = "Wawe Journal"
+</file>
+
+<file path="public/components/navbar/navbar.css">
+:root {
+⋮----
+.nav {
+⋮----
+.nav * {
+⋮----
+body.light-theme .nav {
+⋮----
+body:not(.light-theme) .nav {
+⋮----
+.nav::after {
+⋮----
+.nav:hover::after { opacity: 1; }
+⋮----
+body.light-theme .nav::after {
+⋮----
+.nav-links {
+⋮----
+.nav-links a {
+⋮----
+.nav-links a.loaded {
+⋮----
+.nav-links a.active {
+⋮----
+.nav-links a:hover {
+⋮----
+.nav-links a::after {
+⋮----
+.nav-links a:hover::after {
+⋮----
+.nav-links a.active::after {
+⋮----
+.nav-logo {
+⋮----
+.nav-logo:hover { opacity: 0.85; }
+⋮----
+.logo-icon {
+⋮----
+.logo-icon .logo-icon-svg {
+⋮----
+.nav-logo:hover .logo-icon {
+⋮----
+.nav-logo:hover .logo-icon .logo-icon-svg {
+⋮----
+.nav-logo-text {
+⋮----
+.nav-logo-text span {
+⋮----
+.nav-version {
+⋮----
+.nav-right {
+⋮----
+.plan-badge {
+⋮----
+.plan-badge.premium {
+⋮----
+.plan-badge .plan-dot {
+⋮----
+.plan-badge.premium .plan-dot {
+⋮----
+.plan-badge .plan-text {
+⋮----
+.nav-user {
+⋮----
+body.light-theme .nav-user {
+⋮----
+.nav-user:hover {
+⋮----
+.nav-user .user-info {
+⋮----
+.nav-user .user-info .name {
+⋮----
+.nav-user .user-info .role {
+⋮----
+.user-avatar {
+⋮----
+.user-avatar img {
+⋮----
+.user-avatar:hover {
+⋮----
+.user-avatar:active { transform: scale(0.97); }
+⋮----
+.nav-bell-wrapper {
+⋮----
+.nav-bell-btn {
+⋮----
+body.light-theme .nav-bell-btn {
+⋮----
+.nav-bell-btn svg {
+⋮----
+.nav-bell-btn:hover {
+⋮----
+.nav-bell-btn.has-alert {
+⋮----
+.bell-dot {
+⋮----
+.bell-panel {
+⋮----
+body.light-theme .bell-panel {
+⋮----
+.bell-panel.open {
+⋮----
+.bell-panel-header {
+⋮----
+.bell-panel-header h3 {
+⋮----
+.bell-panel-header-actions {
+⋮----
+.bell-mark-read-btn {
+⋮----
+.bell-mark-read-btn:hover {
+⋮----
+.bell-panel-close {
+⋮----
+.bell-panel-close:hover { color: var(--accent); }
+⋮----
+.bell-panel-body {
+⋮----
+.bell-panel-empty {
+⋮----
+.bell-panel-empty .empty-icon {
+⋮----
+.dropdown-menu {
+⋮----
+body.light-theme .dropdown-menu {
+⋮----
+.dropdown-menu.show {
+⋮----
+.dropdown-item {
+⋮----
+.dropdown-item:hover {
+⋮----
+.dropdown-divider {
+⋮----
+.nav-toggle {
+⋮----
+body.light-theme .nav-toggle {
+⋮----
+.nav-toggle:hover {
+⋮----
+.nav-toggle:active { transform: scale(0.94); }
+⋮----
+.nav-toggle .bar {
+⋮----
+.nav-toggle.open .bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle.open .bar:nth-child(2) { opacity: 0; }
+.nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+⋮----
+.nav-backdrop {
+⋮----
+.nav-backdrop.open {
+⋮----
+.nav-menu {
+⋮----
+body.light-theme .nav-menu {
+⋮----
+.nav-menu.open { transform: translateX(0); }
+⋮----
+.nav-menu-inner {
+⋮----
+.user-card {
+⋮----
+.user-card-avatar {
+⋮----
+.user-card-avatar img {
+⋮----
+.user-card-info {
+⋮----
+.user-card-name {
+⋮----
+.user-card-plan {
+⋮----
+.user-card-plan .plan-dot {
+⋮----
+.menu-section {
+⋮----
+.menu-section:first-of-type {
+⋮----
+.menu-section-title {
+⋮----
+.menu-section a,
+⋮----
+.menu-section a:hover,
+⋮----
+.menu-section a.active {
+⋮----
+.menu-section a.active::before {
+⋮----
+/* ⭐ "Go Premium" özel vurgu */
+.menu-section a.go-premium {
+⋮----
+.menu-section a.go-premium:hover {
+⋮----
+/* ⭐ Logout butonu (menü içinde) */
+.menu-section button#logout-btn-mobile {
+.menu-section button#logout-btn-mobile:hover {
+⋮----
+/* ⭐ CUSTOM FOCUS STYLES - varsayılan outline kaldırıldı */
+.nav-toggle:focus,
+⋮----
+.nav-toggle:focus-visible,
+⋮----
+/* ============================================================
+   MOBİL BREAKPOINTLER
+   ============================================================ */
+⋮----
+--nav-height: 56px; /* ⭐ mobil nav yüksekliği */
+⋮----
+width: 28px;   /* ⭐ zil ile aynı */
+⋮----
+/* ⭐ Mobil header'da avatar ve plan badge gizlendi */
+⋮----
+.nav-toggle,
+⋮----
+.main,
+⋮----
+.nav,
+⋮----
+.page-exit {
+⋮----
+.page-enter {
+⋮----
+.settings-panel.active {
+⋮----
+.nav .plan-badge,
+⋮----
+.nav .plan-badge .plan-dot {
+⋮----
+.nav .plan-badge:not(.premium):not(.badge-upgrade-pulse) {
+⋮----
+.nav .plan-badge.premium:not(.badge-upgrade-pulse) {
+⋮----
+.nav .plan-badge.badge-upgrade-pulse {
+⋮----
+.nav .plan-badge {
+.nav .plan-badge:hover {
+</file>
+
+<file path="public/components/navbar/navbar.js">
+function sanitizeHTML(str)
+⋮----
+function sanitizeURL(url)
+⋮----
+function loadLucideIcons()
+⋮----
+function getNavbarHTML(translations)
+⋮----
+function updateNavbarI18n()
+⋮----
+function applyAvatarToNav(url)
+⋮----
+async function loadNavbarAvatar()
+⋮----
+function updateBadgeUI(isPremium)
+⋮----
+async function updateNavbarBadge()
+⋮----
+function updateNavbarBadgeSync()
+⋮----
+function setActiveNavLink()
+⋮----
+function setupAvatarDropdown()
+⋮----
+function initNavEvents()
+⋮----
+// ⭐ Mobile logout
+⋮----
+function loadNavbar(containerId)
+</file>
+
+<file path="public/components/navbar/page-transition.js">
+
+</file>
+
+<file path="public/interface/admin/js/admin-core.js">
+function applyThemeFromStorage()
+⋮----
+function showToast(msg, type)
+⋮----
+function formatDate(iso)
+⋮----
+function formatDateFull(iso)
+⋮----
+function escapeHtml(str)
+⋮----
+function getInitials(name)
+⋮----
+function switchPanel(panelId, clickedEl)
+⋮----
+function renderAdminPanel()
+⋮----
+async function updatePlanBadge()
+⋮----
+async function initAdmin()
+</file>
+
+<file path="public/interface/dashboard/css/dashboard.css">
+#chart-cumulative,
+⋮----
+.apexcharts-canvas {
+⋮----
+.apexcharts-tooltip {
+⋮----
+.apexcharts-tooltip-title {
+⋮----
+.apexcharts-tooltip-text-y-label,
+⋮----
+.apexcharts-tooltip-series-group {
+⋮----
+.apexcharts-tooltip-series-group .apexcharts-tooltip-text {
+⋮----
+.apexcharts-gridline {
+⋮----
+.apexcharts-grid-borders line {
+⋮----
+.apexcharts-xaxis-texts-g text,
+⋮----
+.apexcharts-legend-text {
+⋮----
+.apexcharts-datalabel-label,
+⋮----
+.apexcharts-datalabels-group text {
+⋮----
+.apexcharts-canvas svg:focus,
+⋮----
+.charts-top-grid {
+⋮----
+.charts-bottom-grid {
+⋮----
+.chart-wrap {
+⋮----
+.chart-wrap--tall {
+⋮----
+.chart-wrap--doughnut {
+⋮----
+.chart-wrap > div {
+⋮----
+.chart-wrap canvas {
+⋮----
+.chart-wrap canvas.chart-ready {
+⋮----
+.chart-card {
+⋮----
+.chart-card:hover {
+⋮----
+.chart-header {
+⋮----
+.chart-card h3 {
+⋮----
+.chart-header h3 {
+⋮----
+.chart-badge {
+⋮----
+.chart-badge.negative {
+⋮----
+.strategy-tags-card .empty-state {
+⋮----
+.strategy-tags-card .empty-state .empty-icon {
+⋮----
+.strategy-tags-card .empty-state .empty-icon svg {
+⋮----
+.strategy-tags-card .empty-state .empty-text {
+⋮----
+.strategy-tags-card .empty-state .empty-link {
+⋮----
+.strategy-tags-card .empty-state .empty-link:hover {
+⋮----
+.recent-trades-empty {
+⋮----
+.recent-trades-empty .empty-icon {
+⋮----
+.recent-trades-empty .empty-icon svg {
+⋮----
+.recent-trades-empty .empty-text {
+⋮----
+.recent-trades-empty .empty-link {
+⋮----
+.recent-trades-empty .empty-link:hover {
+⋮----
+.lwc-chart {
+⋮----
+.lwc-chart canvas {
+⋮----
+.goal-edit-btn {
+⋮----
+.goal-edit-btn:hover {
+⋮----
+.goal-edit-btn svg {
+⋮----
+.kpi-item {
+⋮----
+.goal-wrapper {
+⋮----
+.kpi-item .kpi-value {
+⋮----
+.goal-modal-overlay {
+⋮----
+.goal-modal-overlay.active {
+⋮----
+.goal-modal {
+⋮----
+.goal-modal-header {
+⋮----
+.goal-modal-header h3 {
+⋮----
+.goal-modal-header h3 svg {
+⋮----
+.goal-modal-close {
+⋮----
+.goal-modal-body {
+⋮----
+.goal-modal-body label {
+⋮----
+.goal-input {
+⋮----
+.goal-input:focus {
+⋮----
+.goal-modal-footer {
+⋮----
+.options-menu-wrapper {
+⋮----
+.options-menu-btn {
+⋮----
+.options-menu-btn svg {
+⋮----
+.options-menu-btn:hover,
+⋮----
+.options-menu-dropdown {
+⋮----
+.options-menu-dropdown.open {
+⋮----
+.options-menu-section-label {
+⋮----
+.options-menu-item {
+⋮----
+.options-menu-item:hover {
+⋮----
+.options-menu-item.active {
+⋮----
+.options-menu-divider {
+⋮----
+.options-menu-item svg {
+⋮----
+.header-actions {
+⋮----
+.trade-row {
+⋮----
+.trade-row:hover {
+⋮----
+.trade-row-left {
+⋮----
+.trade-row-info {
+⋮----
+.trade-row-symbol-line {
+⋮----
+.trade-symbol {
+⋮----
+.trade-direction {
+⋮----
+.trade-direction.long {
+⋮----
+.trade-direction.short {
+⋮----
+.trade-note-indicator {
+⋮----
+.trade-note-indicator svg {
+⋮----
+.trade-note-indicator:hover svg {
+⋮----
+.trade-strategy {
+⋮----
+.trade-row-right {
+⋮----
+.trade-pnl {
+⋮----
+.trade-pnl.positive {
+⋮----
+.trade-pnl.negative {
+⋮----
+.trade-date {
+⋮----
+.trade-note {
+⋮----
+.trade-note.show {
+⋮----
+.mini-calendar-card {
+⋮----
+.mini-calendar-card:hover {
+⋮----
+.mini-cal-header {
+⋮----
+.mini-cal-header .mini-cal-title {
+⋮----
+.mini-cal-header .mini-cal-title svg {
+⋮----
+.mini-cal-header .mini-cal-link {
+⋮----
+.mini-cal-header .mini-cal-link:hover {
+⋮----
+.mini-cal-header .mini-cal-link svg {
+⋮----
+.mini-cal-grid {
+⋮----
+.mini-cal-day {
+⋮----
+.mini-cal-day .day-name {
+⋮----
+.mini-cal-day .day-number {
+⋮----
+.mini-cal-day .day-pnl-small {
+⋮----
+.mini-cal-day .day-pnl-small.positive {
+⋮----
+.mini-cal-day .day-pnl-small.negative {
+⋮----
+.mini-cal-day.win {
+⋮----
+.mini-cal-day.win:hover {
+⋮----
+.mini-cal-day.win .day-number {
+⋮----
+.mini-cal-day.loss {
+⋮----
+.mini-cal-day.loss:hover {
+⋮----
+.mini-cal-day.loss .day-number {
+⋮----
+.mini-cal-day.empty-day {
+⋮----
+.mini-cal-day.empty-day:hover {
+⋮----
+.mini-cal-day.today {
+⋮----
+.mini-cal-day.today .day-number {
+⋮----
+body.light-theme .mini-cal-day.win {
+⋮----
+body.light-theme .mini-cal-day.win:hover {
+⋮----
+body.light-theme .mini-cal-day.loss {
+⋮----
+body.light-theme .mini-cal-day.loss:hover {
+⋮----
+.dashboard-grid-2col {
+⋮----
+.strategy-tags-card {
+⋮----
+.strategy-tags-card:hover {
+⋮----
+.strategy-tags-title {
+⋮----
+.strategy-tags-title svg {
+⋮----
+.strategy-pill {
+⋮----
+.strategy-pill:hover {
+⋮----
+.pill-positive {
+.pill-negative {
+.pill-neutral {
+⋮----
+.best-worst {
+⋮----
+.best-worst svg {
+⋮----
+.best-worst .bw-count {
+⋮----
+.stats-grid {
+⋮----
+.stat-card {
+⋮----
+.stat-card:hover {
+⋮----
+.stat-card::before {
+⋮----
+.stat-card .stat-label {
+⋮----
+.stat-card .stat-value {
+⋮----
+.stat-card .stat-value.positive {
+⋮----
+.stat-card .stat-value.negative {
+⋮----
+.stat-card .stat-trend {
+⋮----
+.stat-trend.positive {
+.stat-trend.negative {
+⋮----
+.kpi-section {
+⋮----
+.kpi-toggle-btn {
+⋮----
+.kpi-bar-wrapper {
+⋮----
+.kpi-bar {
+⋮----
+.kpi-label {
+⋮----
+.kpi-value.positive {
+.kpi-value.negative {
+⋮----
+.progress-bar {
+⋮----
+.progress-fill {
+⋮----
+.progress-fill.negative {
+⋮----
+.kpi-toggle-chevron {
+⋮----
+.kpi-toggle-btn.collapsed .kpi-toggle-chevron {
+⋮----
+.kpi-bar-wrapper.collapsed {
+⋮----
+.kpi-item:last-child {
+⋮----
+.chart-expand-overlay {
+⋮----
+.chart-expand-overlay.active {
+⋮----
+.chart-expand-box {
+⋮----
+.chart-expand-header {
+⋮----
+.chart-expand-header h3 {
+⋮----
+.chart-expand-close {
+⋮----
+.chart-expand-body {
+⋮----
+.chart-card.expandable {
+⋮----
+.chart-card.expandable:hover {
+⋮----
+.donut-mobile-carousel {
+⋮----
+.donut-mobile-track {
+.donut-mobile-track::-webkit-scrollbar {
+⋮----
+.donut-mobile-slide {
+.donut-mobile-slide h3 {
+⋮----
+.donut-mobile-dots {
+.donut-mobile-dots .dot {
+.donut-mobile-dots .dot.active {
+⋮----
+#charts-top-grid .chart-card:nth-child(2),
+⋮----
+.desktop-toolbar {
+⋮----
+.mobile-only {
+⋮----
+.custom-range-panel {
+⋮----
+.custom-range-input {
+⋮----
+.custom-range-sep {
+⋮----
+.custom-range-apply {
+⋮----
+.date-filter-group {
+⋮----
+.date-filter-option {
+⋮----
+.date-filter-option:hover {
+⋮----
+.date-filter-option.active {
+⋮----
+.export-btn {
+⋮----
+.export-btn:hover {
+⋮----
+.export-btn svg {
+⋮----
+.page-header {
+.charts-top-grid,
+</file>
+
+<file path="public/interface/dashboard/js/dashboard.js">
+function safeEl(id)
+⋮----
+function localDateStr(date)
+⋮----
+function showSkeletons()
+⋮----
+function hideSkeletons()
+⋮----
+function calcTradePnL(t)
+⋮----
+function formatCurrency(value)
+⋮----
+function formatCompactCurrency(value)
+⋮----
+function formatCurrencyPDF(value)
+⋮----
+function sanitizeHTML(str)
+⋮----
+function escapeAttr(str)
+⋮----
+function showToast(msg, type)
+⋮----
+function getApexTheme()
+⋮----
+function getApexColors()
+⋮----
+function getBaseOptions()
+⋮----
+function resetChartsForTheme()
+⋮----
+function setupResizeObserver(containerId, chart)
+⋮----
+function cleanupResizeObservers()
+⋮----
+function filterByDate(trades, range)
+⋮----
+function getPreviousPeriodTrades(trades, range)
+⋮----
+function calcTrend(current, previous)
+⋮----
+function updateTrend(elementId, trend)
+⋮----
+function smartDateLabel(dateStr)
+⋮----
+function getDayNames(lang)
+⋮----
+function loadMonthlyTarget()
+⋮----
+function saveMonthlyTarget(target)
+⋮----
+function animateNumber(elementId, targetValue, isCurrency, isPercentage, delay, animate)
+⋮----
+function update(currentTime)
+⋮----
+function renderStats(trades, previousTrades, animate)
+⋮----
+async function renderStrategyTags(trades)
+⋮----
+async function renderRecentTrades(trades)
+⋮----
+function renderStreak(trades)
+⋮----
+function renderMiniCalendar()
+⋮----
+function loadMiniCalendar(trades)
+⋮----
+function destroyAllCharts()
+⋮----
+function renderCumulativeChart(trades)
+⋮----
+function renderWinLossChart(trades)
+⋮----
+function renderDailyChart(trades)
+⋮----
+function renderSymbolChart(trades)
+⋮----
+function renderDirectionChart(trades)
+⋮----
+function renderCharts(trades)
+⋮----
+function updateCharts(trades)
+⋮----
+function setupChartExpansion()
+⋮----
+function openChartExpansion(title, renderFn)
+⋮----
+function closeChartExpansion()
+⋮----
+function exportCSV()
+⋮----
+async function generatePDF(lang)
+⋮----
+function setupGoalModal()
+⋮----
+function openGoalModal()
+⋮----
+function closeGoalModalFunc()
+⋮----
+function saveGoal()
+⋮----
+async function updatePlanBadge()
+⋮----
+function setupDateFilterAndOptions()
+⋮----
+function positionOptionsDropdown()
+⋮----
+function setActiveDateRange(range)
+⋮----
+function setupKpiAccordion()
+⋮----
+function setupDonutCarousel()
+⋮----
+async function refresh()
+⋮----
+async function loadTrades(userId)
+⋮----
+async function initDashboard()
+⋮----
+function startDashboard()
+</file>
+
+<file path="public/interface/quick-add/css/quick-add.css">
+:root {
+⋮----
+body.light-theme {
+⋮----
+.quick-add-fab,
+⋮----
+.quick-add-fab {
+.quick-add-fab:hover {
+.quick-add-fab:active {
+.quick-add-fab:focus-visible {
+.quick-add-fab svg {
+⋮----
+.quick-add-overlay {
+.quick-add-overlay.active { display: flex; }
+⋮----
+body.light-theme .quick-add-overlay {
+⋮----
+.quick-add-modal {
+.quick-add-modal::-webkit-scrollbar { width: 4px; }
+.quick-add-modal::-webkit-scrollbar-thumb {
+⋮----
+body.light-theme .quick-add-modal {
+⋮----
+.quick-add-header {
+.quick-add-header h2 {
+.quick-add-header .close-btn {
+.quick-add-header .close-btn svg { width: 17px; height: 17px; }
+.quick-add-header .close-btn:hover {
+.quick-add-header .close-btn:focus-visible {
+⋮----
+.quick-add-tabs {
+.quick-tab {
+.quick-tab:hover { color: var(--qa-text); }
+.quick-tab.active {
+.quick-tab:focus-visible {
+.quick-tab-content { display: none; }
+.quick-tab-content.active { display: block; }
+⋮----
+.quick-add-body { padding: 1.35rem; }
+⋮----
+.quick-add-row {
+⋮----
+.quick-add-field { margin-bottom: 1.1rem; }
+.quick-add-row .quick-add-field { margin-bottom: 0; }
+.quick-add-field:last-child { margin-bottom: 0; }
+⋮----
+.quick-add-field label {
+⋮----
+.quick-add-field input,
+.quick-add-field input:focus,
+.quick-add-field input::placeholder { color: var(--qa-muted); opacity: 0.6; }
+.quick-add-field select {
+.quick-add-field select option { background: var(--qa-surface2); }
+⋮----
+.quick-add-instrument-grid {
+.quick-add-instrument-btn {
+.quick-add-instrument-btn:hover { color: var(--qa-text); }
+.quick-add-instrument-btn.active {
+.quick-add-instrument-btn:focus-visible {
+.quick-add-instrument-btn .inst-label {
+.quick-add-instrument-btn.active .inst-label { color: var(--qa-accent-light); opacity: 0.7; }
+⋮----
+#quick-custom-multiplier-wrap input {
+#quick-custom-multiplier-wrap input:focus { border-color: var(--qa-accent); }
+⋮----
+.quick-add-side-toggle {
+.quick-add-side-btn {
+.quick-add-side-btn:hover { color: var(--qa-text); }
+.quick-add-side-btn.active-buy {
+.quick-add-side-btn.active-sell {
+.quick-add-side-btn:focus-visible {
+.quick-add-side-btn svg { width: 15px; height: 15px; }
+⋮----
+.quick-add-pnl-wrap { position: relative; }
+.quick-add-pnl-wrap .currency-symbol {
+.quick-add-pnl-wrap input { padding-left: 28px; }
+.quick-add-pnl-wrap .pnl-suffix {
+⋮----
+.quick-add-lot-wrap { display: flex; gap: 6px; align-items: center; }
+.quick-add-lot-wrap input { flex: 1; }
+.quick-add-lot-wrap .lot-presets { display: flex; gap: 4px; flex-shrink: 0; }
+.quick-add-lot-wrap .lot-preset {
+.quick-add-lot-wrap .lot-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
+.quick-add-lot-wrap .lot-preset.active {
+.quick-add-lot-wrap .lot-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
+⋮----
+.quick-add-rr-wrap { display: flex; align-items: center; gap: 8px; }
+.quick-add-rr-wrap .rr-label {
+.quick-add-rr-wrap input {
+.quick-add-rr-wrap input:focus { border-color: var(--qa-accent); }
+.quick-add-rr-wrap .rr-presets { display: flex; gap: 4px; flex-shrink: 0; }
+.quick-add-rr-wrap .rr-preset {
+.quick-add-rr-wrap .rr-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
+.quick-add-rr-wrap .rr-preset.active {
+.quick-add-rr-wrap .rr-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
+⋮----
+.quick-add-strategy-wrap { display: flex; gap: 8px; align-items: center; }
+.quick-add-strategy-wrap select { flex: 1; }
+.quick-add-strategy-wrap .create-strategy-btn {
+.quick-add-strategy-wrap .create-strategy-btn svg { width: 15px; height: 15px; }
+.quick-add-strategy-wrap .create-strategy-btn:hover { border-color: var(--qa-accent); color: var(--qa-accent-light); }
+.quick-add-strategy-wrap .create-strategy-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+⋮----
+.quick-add-notes textarea {
+.quick-add-notes textarea:focus { border-color: var(--qa-accent); }
+.quick-add-notes textarea::placeholder { color: var(--qa-muted); opacity: 0.6; }
+⋮----
+.quick-add-preview {
+.quick-add-preview.visible { display: flex; }
+.quick-add-preview .preview-rail {
+.quick-add-preview.rail-pos .preview-rail { background: var(--qa-green); }
+.quick-add-preview.rail-neg .preview-rail { background: var(--qa-red); }
+.quick-add-preview .preview-item { display: flex; flex-direction: column; gap: 2px; }
+.quick-add-preview .preview-item .p-label {
+.quick-add-preview .preview-item .p-val {
+.quick-add-preview .preview-item .p-val.pos { color: var(--qa-green); }
+.quick-add-preview .preview-item .p-val.neg { color: var(--qa-red); }
+.quick-add-preview .preview-item .p-val.accent { color: var(--qa-accent-light); }
+.quick-add-preview .preview-divider { width: 1px; height: 26px; background: var(--qa-border-strong); }
+⋮----
+.quick-import-area { text-align: center; padding: 1rem 0.5rem; }
+.quick-import-icon {
+.quick-import-icon svg { stroke: var(--qa-accent-light); width: 24px; height: 24px; }
+.quick-import-area p {
+.quick-import-btn {
+.quick-import-btn:hover { border-color: var(--qa-accent); }
+.quick-import-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-import-status {
+.quick-import-status .status-badge { font-weight: 600; color: var(--qa-accent-light); }
+.quick-import-log {
+.quick-import-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.quick-import-log div:last-child { border-bottom: none; }
+⋮----
+body.light-theme .quick-import-log {
+body.light-theme .quick-import-log div {
+⋮----
+.quick-bulk-area textarea {
+.quick-bulk-area textarea:focus { border-color: var(--qa-accent); }
+.quick-bulk-progress { margin-top: 0.75rem; font-size: 12px; color: var(--qa-muted); font-family: var(--qa-font-body); }
+.quick-bulk-progress .quick-bulk-bar {
+.quick-bulk-progress .quick-bulk-bar .quick-bulk-fill {
+.quick-bulk-log {
+.quick-bulk-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.quick-bulk-log div:last-child { border-bottom: none; }
+⋮----
+body.light-theme .quick-bulk-log {
+body.light-theme .quick-bulk-log div {
+⋮----
+.quick-add-footer {
+.quick-add-footer .btn-cancel {
+.quick-add-footer .btn-cancel:hover { border-color: var(--qa-border-strong); color: var(--qa-text); }
+.quick-add-footer .btn-cancel:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-add-footer .btn-save {
+.quick-add-footer .btn-save svg { width: 15px; height: 15px; }
+.quick-add-footer .btn-save:hover { background: var(--qa-accent-light); transform: translateY(-1px); }
+.quick-add-footer .btn-save:active { transform: translateY(0); }
+.quick-add-footer .btn-save:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.quick-add-footer .btn-save:disabled {
+⋮----
+.quick-add-loading {
+.quick-add-loading.active { display: flex; }
+.quick-add-loading .spinner {
+⋮----
+.quick-add-error {
+.quick-add-error.active { display: flex; }
+.quick-add-error svg { width: 15px; height: 15px; flex-shrink: 0; }
+⋮----
+.quick-add-overlay { padding: 0; align-items: flex-end; }
+⋮----
+.quick-add-header { min-height: var(--qa-header-h-mobile); padding: 0.9rem 1.1rem; }
+.quick-add-tabs { top: var(--qa-header-h-mobile); padding: 0 0.75rem; overflow-x: auto; scrollbar-width: none; }
+.quick-add-tabs::-webkit-scrollbar { display: none; }
+.quick-tab { font-size: 11px; padding: 0.55rem 0.4rem; white-space: nowrap; }
+⋮----
+.quick-add-body { padding: 1.1rem; }
+.quick-add-field { margin-bottom: 0.9rem; }
+.quick-add-row { gap: 8px; }
+⋮----
+.quick-add-instrument-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.quick-add-instrument-btn { font-size: 10px; padding: 0.4rem 0.25rem; }
+⋮----
+.quick-add-side-btn { padding: 0.58rem 0.7rem; font-size: 12.5px; }
+⋮----
+.quick-add-lot-wrap .lot-presets,
+⋮----
+.quick-import-area p { font-size: 12px; }
+.quick-bulk-area textarea { min-height: 90px; font-size: 11px; }
+⋮----
+.quick-add-preview { gap: 0.75rem; padding: 0.6rem 0.75rem 0.6rem 0.95rem; }
+.quick-add-preview .preview-item .p-val { font-size: 0.85rem; }
+⋮----
+.quick-add-footer { padding: 0.7rem 1.1rem 0.9rem; }
+.quick-add-footer .btn-cancel,
+⋮----
+.quick-add-instrument-grid { grid-template-columns: repeat(2, 1fr); }
+</file>
+
+<file path="public/interface/quick-add/js/quick-add.js">
+function applyThemeFromStorage()
+⋮----
+function badgeIcon(type)
+⋮----
+function logTag(type)
+⋮----
+function el(id)
+function qsa(selector)
+⋮----
+function checkGlobals()
+⋮----
+function escapeHtml(str)
+⋮----
+function parseCsvLine(line)
+⋮----
+function parseCsvText(text)
+⋮----
+// ============================================================
+// TARİH FORMATLAMA - Tek tip UTC ISO formatı
+// ============================================================
+⋮----
+function validateAndFormatDate(dateString)
+⋮----
+function getModalHTML()
+⋮----
+async function loadStrategies()
+⋮----
+function selectInstrument(instrument, multiplier)
+⋮----
+function getMultiplier()
+⋮----
+function updatePricePreview()
+⋮----
+function openModal()
+⋮----
+function closeModal()
+⋮----
+function resetForm()
+⋮----
+function switchTab(tab)
+⋮----
+function setSide(side)
+⋮----
+function setLotPreset(value)
+⋮----
+function renderCSVLog(messages)
+⋮----
+function showCsvPreview(rows, headers)
+⋮----
+async function handleCsvFileSelect(file)
+⋮----
+async function executeCsvImport()
+⋮----
+async function handleBulkImport()
+⋮----
+function refreshPage()
+⋮----
+async function saveTrade()
+⋮----
+function showError(msg)
+⋮----
+function createFab()
+⋮----
+function attachModalEvents()
+⋮----
+function createModal()
+⋮----
+function handleEsc(e)
+⋮----
+function initQuickAdd()
+</file>
+
+<file path="public/interface/strategies/js/strategies.js">
+function sanitizeHTML(str)
+⋮----
+function showStrategySkeleton()
+⋮----
+function hideStrategySkeleton()
+⋮----
+async function updateNavbarAvatar()
+⋮----
+async function updatePlanBadge()
+⋮----
+function setChartTheme()
+⋮----
+function getTradeMultiplier(t)
+⋮----
+function getTradePnL(t)
+⋮----
+function colorToRgba(hex, alpha)
+⋮----
+function filterTradesByRange(trades, range)
+⋮----
+function getStrategyPerformance(strategyId)
+⋮----
+function formatCurrencyFixed(value)
+⋮----
+function fmtDate(dateStr)
+⋮----
+function makeChartDefaults()
+⋮----
+function drawSparkline(canvasId, data, color)
+⋮----
+function renderStrategiesGrid()
+⋮----
+function renderComparisonCharts()
+⋮----
+function openAddStrategyModal()
+⋮----
+async function confirmAddStrategy()
+⋮----
+function closeAddStrategyModal()
+⋮----
+function openEditModal(strategyId)
+⋮----
+async function confirmEditStrategy()
+⋮----
+function closeEditStrategyModal()
+⋮----
+function openDetailModal(strategyId)
+⋮----
+function openEquityModal(strategyId)
+⋮----
+function setupDetailAndEquityModals()
+⋮----
+function downloadBlob(content, filename, mimeType)
+⋮----
+function csvEscape(val)
+⋮----
+function getCurrentLanguage()
+⋮----
+function exportStrategyCSV(strategyId)
+⋮----
+function exportAllStrategiesCSV()
+⋮----
+function exportStrategyPDF(strategyId)
+⋮----
+function exportAllStrategiesPDF()
+⋮----
+function setupExportButtons()
+⋮----
+async function loadAllData()
+⋮----
+function setupTimeFilterButtons()
+⋮----
+async function initStrategies()
+</file>
+
+<file path="public/interface/trades/css/trades.css">
+.trades-page .ww-table {
+.trades-page .ww-table th,
+.trades-page .ww-table th:nth-child(1) { width: 36px; }
+.trades-page .ww-table th:nth-child(2) { width: 85px; }
+.trades-page .ww-table th:nth-child(3) { width: 65px; }
+.trades-page .ww-table th:nth-child(4) { width: 55px; }
+.trades-page .ww-table th:nth-child(5) { width: 80px; }
+.trades-page .ww-table th:nth-child(6) { width: 80px; }
+.trades-page .ww-table th:nth-child(7) { width: 70px; }
+.trades-page .ww-table th:nth-child(8) { width: 70px; }
+.trades-page .ww-table th:nth-child(9) { width: 90px; }
+.trades-page .ww-table th:nth-child(10) { width: 55px; }
+.trades-page .ww-table th:nth-child(11) { width: 110px; }
+.trades-page .ww-table th:nth-child(12) { width: 100px; }
+.trades-page .ww-table th:nth-child(13) { width: 70px; }
+⋮----
+.trades-page .ww-table th {
+.trades-page .ww-table td {
+.trades-page .ww-table tbody tr {
+.trades-page .ww-table tbody tr:hover {
+⋮----
+.trades-page .trade-note-row {
+.trades-page .trade-note-row td {
+.trades-page .trade-note-row strong {
+⋮----
+.trades-page .trades-table-card #table-wrap {
+⋮----
+.row-indicator {
+.row-indicator.win { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+.row-indicator.loss { background: var(--red); box-shadow: 0 0 6px var(--red-glow); }
+.row-indicator.open { background: var(--muted); opacity: 0.4; }
+⋮----
+.symbol-cell {
+.symbol-text {
+⋮----
+.badge-long, .badge-short {
+.badge-long { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+.badge-short { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+⋮----
+.strategy-badge {
+⋮----
+.trade-checkbox {
+⋮----
+.tt-actions {
+.trades-page .ww-table tbody tr:hover .tt-actions {
+⋮----
+.btn-icon {
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,92,246,0.05); }
+.btn-icon.del:hover { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.05); }
+⋮----
+.stat-grid {
+.stat-card {
+.stat-card:hover {
+.stat-card-label {
+⋮----
+.stat-card-value {
+.stat-card-value.positive { color: var(--green); }
+.stat-card-value.negative { color: var(--red); }
+⋮----
+.stat-card-value.value-long {
+⋮----
+.stat-card-value.value-xlong {
+⋮----
+.trades-toolbar {
+.toolbar-select {
+.toolbar-select:hover { border-color: var(--accent); }
+⋮----
+.mobile-filter-chips { display: none; }
+.mobile-filter-overlay { display: none; }
+.mobile-filter-sheet { display: none; }
+⋮----
+.mobile-filter-chip {
+.mobile-filter-chip:active {
+.mobile-filter-chip .mobile-filter-chip-text {
+.mobile-filter-chip::after {
+⋮----
+/* ---- Bottom sheet ---- */
+.mobile-filter-overlay {
+.mobile-filter-overlay.active {
+⋮----
+.mobile-filter-sheet {
+.mobile-filter-sheet.active {
+⋮----
+.mobile-filter-grabber {
+⋮----
+.mobile-filter-title {
+⋮----
+.mobile-filter-options {
+.mobile-filter-option {
+.mobile-filter-option:last-child {
+.mobile-filter-option:active {
+.mobile-filter-option.selected {
+.mobile-filter-option.selected::after {
+⋮----
+.sel-bar {
+.sel-bar.visible { display: flex; }
+.sel-bar .sel-count {
+.sel-bar .sel-label {
+.sel-bar .sel-actions {
+.sel-bar .sel-clear {
+.sel-bar .sel-clear:hover {
+⋮----
+.btn-bulk-delete {
+.btn-bulk-delete:hover {
+.btn-bulk-delete:active { transform: scale(0.96); }
+.btn-bulk-delete svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; }
+.btn-bulk-delete:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+⋮----
+.pagination-wrap {
+.pagination-info {
+.pagination-info strong {
+.pagination-controls {
+.page-btn {
+.page-btn:hover:not(:disabled):not(.active) {
+.page-btn.active {
+.page-btn:disabled {
+.page-btn.arrow {
+.page-btn.ellipsis {
+.page-btn.ellipsis:hover {
+⋮----
+.field {
+.field label {
+.field input, .field select, .field textarea {
+.field input:focus, .field select:focus, .field textarea:focus {
+⋮----
+.modal-overlay {
+.modal-overlay.active {
+.modal-overlay .card {
+#edit-modal {
+#edit-modal.active {
+#bulk-modal {
+#bulk-modal.active {
+⋮----
+.skeleton-stat {
+.skeleton-stat::after {
+body.light-theme .skeleton-stat::after {
+.skeleton-stat .skeleton-line {
+.skeleton-stat .skeleton-line:last-child {
+⋮----
+.skeleton-table {
+.skeleton-row {
+.skeleton-row .skeleton-cell {
+.skeleton-row .skeleton-cell::after {
+body.light-theme .skeleton-row .skeleton-cell::after {
+⋮----
+/* ============================================================
+   DEĞİŞİKLİK 3: MOBİL KART GÖRÜNÜMÜ (temel class'lar)
+   ============================================================ */
+.trades-mobile-cards {
+.trade-card {
+.trade-card:hover {
+⋮----
+.trade-card-header {
+.trade-card-header .trade-checkbox {
+.trade-card-header .row-indicator {
+.trade-card-header .symbol-text {
+.trade-card-date {
+⋮----
+.trade-card-body {
+.trade-card-pnl {
+.trade-card-pnl.positive { color: var(--green); }
+.trade-card-pnl.negative { color: var(--red); }
+.trade-card-pnl.pnl-open {
+⋮----
+.trade-card-toggle {
+.trade-card-toggle:active {
+.trade-card-toggle .arrow {
+.trade-card-toggle.open .arrow {
+⋮----
+.trade-card-detail {
+.trade-card-detail.open {
+.trade-card-detail-inner {
+.trade-card-detail.open .trade-card-detail-inner {
+⋮----
+.trade-card-grid {
+.trade-card-field {
+.trade-card-field-full {
+.trade-card-field label {
+.trade-card-field span {
+.trade-card-field-full span {
+⋮----
+.trade-card-actions {
+.trade-card-btn {
+.trade-card-btn.edit:active {
+.trade-card-btn.del:active {
+⋮----
+.trades-page .card {
+⋮----
+.stat-grid { grid-template-columns: repeat(2, 1fr); }
+⋮----
+.trades-toolbar { display: none; }
+.mobile-filter-chips {
+.mobile-filter-overlay { display: block; }
+.mobile-filter-sheet { display: block; }
+⋮----
+.trades-page .trades-table-card {
+⋮----
+.trades-page .trades-table-card #table-skeleton {
+⋮----
+.pagination-wrap { flex-direction: column; align-items: center; }
+.pagination-info { font-size: 10px; }
+⋮----
+.dropdown-menu {
+.dropdown-menu.show {
+⋮----
+.pagination-controls .page-btn {
+.pagination-controls .page-btn.arrow {
+</file>
+
+<file path="public/interface/trades/js/trades.js">
+function safeEl(id)
+⋮----
+function showTableSkeleton()
+⋮----
+function hideTableSkeleton()
+⋮----
+function sanitizeHTML(str)
+⋮----
+function formatCurrency(value)
+⋮----
+function showToast(msg, type)
+⋮----
+function getTradePnL(t)
+⋮----
+function formatDateTime(dateStr)
+⋮----
+async function loadStrategyNames()
+⋮----
+function updateStrategySelect()
+⋮----
+function applyStatValueSize(el, text, extraCls)
+⋮----
+function renderStats(trades)
+⋮----
+// ============================================================
+// NOTE TOGGLE (masaüstü — tablo not satırı)
+// ============================================================
+⋮----
+function toggleNote(tradeId)
+⋮----
+function toggleCardDetail(id, btn)
+⋮----
+function updateSelBar()
+⋮----
+function toggleSelect(id, checked)
+⋮----
+function toggleSelectAll(checkbox)
+⋮----
+function renderPagination()
+⋮----
+function applyFiltersAndSort()
+⋮----
+// ============================================================
+// DEĞİŞİKLİK 3: Masaüstü tablo HTML üretici (eski kod buraya taşındı)
+// ============================================================
+function buildDesktopTableHTML(trades)
+⋮----
+function buildMobileCardsHTML(trades)
+⋮----
+function renderTable(trades)
+⋮----
+async function deleteTrade(id)
+⋮----
+async function bulkDelete()
+⋮----
+async function confirmBulkDelete()
+⋮----
+function openEdit(id)
+⋮----
+function closeModal()
+⋮----
+function closeBulkModal()
+⋮----
+async function updatePlanBadge()
+⋮----
+async function loadTrades(userId)
+⋮----
+function initMobileFilterSheets()
+⋮----
+function getOptionText(opt)
+⋮----
+// Çip etiketlerini native select'in seçili option'undan senkronla
+function syncChipLabels()
+⋮----
+function openSheet(key)
+⋮----
+function closeSheet()
+⋮----
+async function initTrades()
+</file>
+
+<file path="public/settings/js/settings.js">
+function getLucideIcon(name, size)
+⋮----
+function getSb()
+⋮----
+function showMsg(message, type)
+⋮----
+function isAdmin(user)
+⋮----
+function safeEl(id)
+⋮----
+function t(key, params)
+⋮----
+function sanitizeHTML(str)
+⋮----
+async function getCurrentUser()
+⋮----
+async function getSession()
+⋮----
+async function loadPanelContent(panelId, url)
+⋮----
+// ============================================================
+// PANEL INIT
+// ============================================================
+function initPanel(panelId)
+⋮----
+async function uploadAvatar(file)
+⋮----
+async function updateAvatar(url)
+⋮----
+async function loadAvatar()
+⋮----
+function updateAvatarElements(url)
+⋮----
+function initProfile()
+⋮----
+async function loadProfileData()
+⋮----
+async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
+⋮----
+function showConfirmModal(title, message, warning, onConfirm, onCancel)
+⋮----
+async function renderPlan()
+⋮----
+function startTimer(expiresAt)
+⋮----
+function initPassword()
+⋮----
+// ============================================================
+// TEHLİKELİ BÖLGE
+// ============================================================
+function initDanger()
+⋮----
+function initAppearance()
+⋮----
+function loadThemeCustomizationFallback()
+⋮----
+function setupThemeEventsFallback()
+⋮----
+function updatePreview()
+⋮----
+function saveTheme()
+⋮----
+function resetTheme()
+⋮----
+function initLanguageSelector()
+⋮----
+function initCurrencySelector()
+⋮----
+function initOvertrade()
+⋮----
+async function updateBadge()
+⋮----
+function initNavEvents()
+⋮----
+function initPanelClickEvents()
+⋮----
+function initAvatarPopup()
+⋮----
+function closePopup()
+⋮----
+// ============================================================
+// CONFIRM MODAL - INIT
+// ============================================================
+function initConfirmModal()
+⋮----
+async function checkAndActivatePremium()
+</file>
+
 <file path="public/styles.css">
 :root {
 ⋮----
@@ -4752,6 +5592,36 @@ body.light-theme h1, body.light-theme h2, body.light-theme h3,
 .streak-dot.open { background: var(--muted); opacity: 0.4; }
 .streak-number {
 .streak-label {
+⋮----
+.strategy-tags-card .empty-state {
+⋮----
+.strategy-tags-card .empty-state .empty-icon {
+⋮----
+.strategy-tags-card .empty-state .empty-icon svg {
+⋮----
+.strategy-tags-card .empty-state .empty-text {
+⋮----
+.strategy-tags-card .empty-state .empty-link {
+⋮----
+.strategy-tags-card .empty-state .empty-link:hover {
+⋮----
+.strategy-tags-title svg {
+⋮----
+.strategy-pill {
+⋮----
+.strategy-pill:hover {
+⋮----
+.pill-positive {
+⋮----
+.pill-negative {
+⋮----
+.pill-neutral {
+⋮----
+.best-worst {
+⋮----
+.best-worst svg {
+⋮----
+.best-worst .bw-count {
 ⋮----
 .trade-list {
 ⋮----
@@ -7648,7 +8518,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   
@@ -7659,20 +8529,61 @@ import Layout from '../layouts/Layout.astro';
   <script src="/components/navbar/navbar.js" is:inline></script>
   
   <!-- 5. QUICK ADD (ES5) -->
-  <script src="/quick-modal-i18n.js" is:inline></script>
-  <script src="/js/quick-add.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
   
   <!-- 6. CALENDAR JS (ES5 - AYNI KALIR) -->
   <script src="/interface/calendar/js/calendar.js" is:inline></script>
   
-  <!-- 7. INIT -->
+  <!-- 7. QUICK ADD MANUEL BAŞLATICI (stratejiler sayfasındaki ile aynı) -->
+  <script is:inline>
+    (function() {
+      function createManualFAB() {
+        if (document.getElementById('quick-add-fab')) return;
+        var fab = document.createElement('button');
+        fab.id = 'quick-add-fab';
+        fab.className = 'quick-add-fab';
+        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+        fab.addEventListener('click', function() {
+          if (typeof quickAddOpen === 'function') quickAddOpen();
+          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+        });
+        document.body.appendChild(fab);
+        console.log('✅ Manuel FAB oluşturuldu (calendar)');
+      }
+      
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(function() {
+          if (typeof quickAddOpen === 'undefined') createManualFAB();
+        }, 1500);
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            if (typeof quickAddOpen === 'undefined') createManualFAB();
+          }, 1500);
+        });
+      }
+    })();
+  </script>
+  
+  <!-- 8. LUCIDE ICONS INIT -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
+        console.log('✅ Lucide icons initialized on calendar!');
       }
+    });
+  </script>
+  
+  <!-- 9. INIT -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
         loadNavbar('navbar-container');
+        console.log('✅ Navbar yüklendi!');
       }
       if (typeof initCalendar === 'function') {
         initCalendar();
@@ -7843,10 +8754,10 @@ import Layout from '../layouts/Layout.astro';
   <!-- DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
 
-  <!-- ⭐ QUICK ADD MODAL CSS -->
+  <!-- QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
-  <!-- ⭐ APEXCHARTS - ÖNCE YÜKLENİR (dashboard.js'den önce) -->
+  <!-- APEXCHARTS - ÖNCE YÜKLENİR (dashboard.js'den önce) -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
 
   <style>
@@ -7861,37 +8772,51 @@ import Layout from '../layouts/Layout.astro';
     <div class="page-header">
       <div>
         <h1 data-i18n="dashboard.title">Dashboard</h1>
-        <p class="welcome-msg" id="welcome-msg" data-i18n="dashboard.welcome">Yükleniyor…</p>
       </div>
       <div class="header-actions">
-        <div class="date-filter-group" id="date-filter-group">
-          <button class="date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
-          <button class="date-filter-option" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
-          <button class="date-filter-option" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
-          <button class="date-filter-option" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
+        <!-- MASAÜSTÜ TOOLBAR (>=768px) -->
+        <div class="desktop-toolbar">
+          <div class="date-filter-group" id="date-filter-group-desktop">
+            <button class="date-filter-option active" data-range="all">Tümü</button>
+            <button class="date-filter-option" data-range="week">Bu Hafta</button>
+            <button class="date-filter-option" data-range="month">Bu Ay</button>
+            <button class="date-filter-option" data-range="year">Bu Yıl</button>
+            <button class="date-filter-option" data-range="custom" id="custom-range-btn">Özel</button>
+          </div>
+          <div class="custom-range-panel" id="custom-range-panel" style="display:none;">
+            <input type="date" id="custom-range-start" class="custom-range-input" />
+            <span class="custom-range-sep">–</span>
+            <input type="date" id="custom-range-end" class="custom-range-input" />
+            <button class="custom-range-apply" id="custom-range-apply">Uygula</button>
+          </div>
+          <button class="export-btn" id="export-csv-desktop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+          <button class="export-btn" id="export-pdf-desktop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
         </div>
-        <button class="export-btn" id="export-csv" data-i18n="dashboard.export_csv">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          CSV
-        </button>
-        <button class="export-btn" id="export-pdf" data-i18n="dashboard.export_pdf">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-          PDF
-        </button>
-        <!-- Add Trade butonu kaldırıldı - Quick Add kullanılacak -->
-        <a href="#" class="add-trade-btn" style="display:none;" aria-label="İşlem Ekle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </a>
+
+        <!-- MOBİL OPTIONS MENÜ (<768px) -->
+        <div class="options-menu-wrapper mobile-only">
+          <button class="options-menu-btn" id="options-menu-btn" aria-label="Seçenekler" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+          <div class="options-menu-dropdown" id="options-menu-dropdown">
+            <div class="options-menu-section-label">Tarih Aralığı</div>
+            <button class="options-menu-item date-filter-option active" data-range="all">Tümü</button>
+            <button class="options-menu-item date-filter-option" data-range="week">Bu Hafta</button>
+            <button class="options-menu-item date-filter-option" data-range="month">Bu Ay</button>
+            <button class="options-menu-item date-filter-option" data-range="year">Bu Yıl</button>
+            <div class="options-menu-divider"></div>
+            <button class="options-menu-item" id="export-csv">CSV indir</button>
+            <button class="options-menu-item" id="export-pdf">PDF indir</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -7911,13 +8836,11 @@ import Layout from '../layouts/Layout.astro';
         <div class="stat-value" id="stat-total">—</div>
         <div class="stat-trend" id="trend-total"></div>
       </div>
-      <!-- ⭐ Toplam K/Z - kritik, dinamik accent -->
       <div class="stat-card" id="stat-pnl-card" data-critical="true">
         <div class="stat-label" data-i18n="dashboard.stats.total_pnl">Toplam K/Z</div>
         <div class="stat-value" id="stat-pnl">—</div>
         <div class="stat-trend" id="trend-pnl"></div>
       </div>
-      <!-- ⭐ Win Rate - kritik -->
       <div class="stat-card" data-critical="true">
         <div class="stat-label" data-i18n="dashboard.stats.win_rate">Win Rate</div>
         <div class="stat-value" id="stat-winrate">—</div>
@@ -7935,23 +8858,31 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- KPI BAR -->
-    <div class="kpi-bar" id="kpi-bar">
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">Ort. Kazanç</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">Ort. Kayıp</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">Profit Factor</span><span class="kpi-value" id="kpi-pf">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">Max Drawdown</span><span class="kpi-value negative" id="kpi-dd">—</span></div>
-      <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">Ort. R:R</span><span class="kpi-value" id="kpi-rr">—</span></div>
-      <div class="kpi-item">
-        <span class="kpi-label" data-i18n="dashboard.kpi.monthly_goal">Aylık Hedef</span>
-        <div class="goal-wrapper">
-          <div class="progress-bar"><div class="progress-fill" id="goal-progress"></div></div>
-          <span class="kpi-value" id="goal-percent">0%</span>
-          <button class="goal-edit-btn" id="edit-goal-btn" title="Hedefi Düzenle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-            </svg>
-          </button>
+    <!-- KPI ACCORDION (SADECE MOBİLDE) -->
+    <div class="kpi-section">
+      <button class="kpi-toggle-btn" id="kpi-toggle-btn" aria-expanded="true">
+        <span>Detaylı İstatistikler</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="kpi-toggle-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="kpi-bar-wrapper" id="kpi-bar-wrapper">
+        <div class="kpi-bar" id="kpi-bar">
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">Ort. Kazanç</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">Ort. Kayıp</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">Profit Factor</span><span class="kpi-value" id="kpi-pf">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">Max Drawdown</span><span class="kpi-value negative" id="kpi-dd">—</span></div>
+          <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">Ort. R:R</span><span class="kpi-value" id="kpi-rr">—</span></div>
+          <div class="kpi-item">
+            <span class="kpi-label" data-i18n="dashboard.kpi.monthly_goal">Aylık Hedef</span>
+            <div class="goal-wrapper">
+              <div class="progress-bar"><div class="progress-fill" id="goal-progress"></div></div>
+              <span class="kpi-value" id="goal-percent">0%</span>
+              <button class="goal-edit-btn" id="edit-goal-btn" title="Hedefi Düzenle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -7962,7 +8893,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
     </div>
 
-    <!-- ⭐ CHARTS - GERÇEK -->
+    <!-- CHARTS - GERÇEK -->
     <div class="charts-top-grid" id="charts-top-grid" style="display:none;">
       <div class="chart-card">
         <div class="chart-header">
@@ -7990,7 +8921,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
     </div>
 
-    <!-- ⭐ CHARTS BOTTOM - GERÇEK -->
+    <!-- CHARTS BOTTOM - GERÇEK -->
     <div class="charts-bottom-grid" id="charts-bottom-grid" style="display:none;">
       <div class="chart-card">
         <h3 data-i18n="dashboard.chart.daily">Günlük K/Z – Son 30 Gün</h3>
@@ -8009,6 +8940,24 @@ import Layout from '../layouts/Layout.astro';
         <div class="chart-wrap chart-wrap--doughnut">
           <div id="chart-direction"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- MOBİL DONUT CAROUSEL (SORUN 7) -->
+    <div class="donut-mobile-carousel" id="donut-mobile-carousel">
+      <div class="donut-mobile-track" id="donut-mobile-track">
+        <div class="donut-mobile-slide">
+          <h3>WIN / LOSS DAĞILIMI</h3>
+          <div class="chart-wrap chart-wrap--doughnut"><div id="chart-winloss-mobile"></div></div>
+        </div>
+        <div class="donut-mobile-slide">
+          <h3>LONG / SHORT DAĞILIMI</h3>
+          <div class="chart-wrap chart-wrap--doughnut"><div id="chart-direction-mobile"></div></div>
+        </div>
+      </div>
+      <div class="donut-mobile-dots" id="donut-mobile-dots">
+        <span class="dot active" data-index="0"></span>
+        <span class="dot" data-index="1"></span>
       </div>
     </div>
 
@@ -8111,14 +9060,25 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
+  <!-- CHART EXPAND MODAL (SORUN 11) -->
+  <div id="chart-expand-modal" class="chart-expand-overlay" style="display:none;">
+    <div class="chart-expand-box">
+      <div class="chart-expand-header">
+        <h3 id="chart-expand-title"></h3>
+        <button class="chart-expand-close" id="chart-expand-close">✕</button>
+      </div>
+      <div class="chart-expand-body">
+        <div id="chart-expand-container" style="width:100%;height:500px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
+       SCRIPTS
        ============================================================ -->
 
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-
-  <!-- ⭐ LIGHTWEIGHT CHARTS & jspdf -->
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js" is:inline></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
 
@@ -8126,7 +9086,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
 
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+  <!-- 3. ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
 
   <!-- 4. NAVBAR (ES5) -->
@@ -8136,7 +9096,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
-  <!-- 6. ⭐ DASHBOARD JS (YENİ - ApexCharts sürümü) -->
+  <!-- 6. DASHBOARD JS (YENİ - ApexCharts sürümü) -->
   <script src="/interface/dashboard/js/dashboard.js" is:inline></script>
 
   <!-- 7. LUCIDE ICONS INIT (EN SON) -->
@@ -14822,13 +15782,20 @@ import Layout from '../layouts/Layout.astro';
 
 <file path="src/pages/trades.astro">
 ---
+// ============================================================
+// Bu dosyada değişen bölümler:
+//  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet için tetikleyici çipler
+//    ve sheet container DOM elementleri eklendi.
+//  - DEĞİŞİKLİK 3: Outer card'a "trades-table-card" class'ı eklendi
+//    (mobilde tablo kartı arkaplanını saydam yapabilmek için).
+//  - #table-wrap inline padding kaldırıldı, CSS'e taşındı
+//    (mobilde farklı padding uygulanabilsin diye).
+// ============================================================
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" bodyClass="trades-page" showQuickAdd={true}>
 <Fragment slot="head">
   <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
-  
-  
   
   <!-- TRADES CSS -->
   <link rel="stylesheet" href="/interface/trades/css/trades.css" />
@@ -14839,16 +15806,13 @@ import Layout from '../layouts/Layout.astro';
   <!-- NAVBAR CONTAINER -->
 
   <!-- MAIN CONTENT -->
-  <!-- ⭐ FIX: trades-main class eklendi (page-transition.js için) -->
   <main class="trades-main" style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:1400px;">
 
     <div class="page-header">
       <div>
         <h1 data-i18n="trades.title">Tüm İşlemler</h1>
       </div>
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
-        <a href="add-trade.html" class="btn btn-primary" data-i18n="trades.add_new">+ Yeni İşlem</a>
-      </div>
+      <!-- ⭐ "Yeni İşlem" butonu KALDIRILDI -->
     </div>
 
     <!-- STATS - SKELETON -->
@@ -14901,6 +15865,27 @@ import Layout from '../layouts/Layout.astro';
       </select>
     </div>
 
+    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE ÇİPLERİ — sadece ≤768px görünür -->
+    <div class="mobile-filter-chips" id="mobile-filter-chips">
+      <button type="button" class="mobile-filter-chip" data-filter="sort">
+        <span class="mobile-filter-chip-text">Tarih ↓</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="dir">
+        <span class="mobile-filter-chip-text">Tüm Yönler</span>
+      </button>
+      <button type="button" class="mobile-filter-chip" data-filter="result">
+        <span class="mobile-filter-chip-text">Tüm Sonuçlar</span>
+      </button>
+    </div>
+
+    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE BOTTOM SHEET -->
+    <div class="mobile-filter-overlay" id="mobile-filter-overlay"></div>
+    <div class="mobile-filter-sheet" id="mobile-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
+      <div class="mobile-filter-grabber"></div>
+      <h3 class="mobile-filter-title" id="mobile-filter-title"></h3>
+      <div class="mobile-filter-options" id="mobile-filter-options"></div>
+    </div>
+
     <!-- SELECTION BAR -->
     <div class="sel-bar" id="sel-bar">
       <span class="sel-count" id="sel-count-text">0</span>
@@ -14919,8 +15904,8 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- TABLE -->
-    <div class="card" style="padding:0;overflow-x:auto;">
+    <!-- TABLE — ⭐ trades-table-card class'ı eklendi (DEĞİŞİKLİK 3) -->
+    <div class="card trades-table-card" style="padding:0;overflow-x:auto;">
       <!-- SKELETON TABLE -->
       <div id="table-skeleton" style="padding:1.5rem;">
         <div class="skeleton-table">
@@ -14934,8 +15919,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- GERÇEK TABLE -->
-      <div id="table-wrap" style="padding:1.5rem;display:none;"></div>
+      <!-- GERÇEK TABLE — ⭐ inline padding kaldırıldı, CSS'e taşındı -->
+      <div id="table-wrap" style="display:none;"></div>
 
       <!-- PAGINATION -->
       <div id="pagination-wrap" class="pagination-wrap" style="display:none;padding:0.5rem 1.5rem 1rem;">
@@ -15071,7 +16056,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   
@@ -16003,525 +16988,6 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js" is:inline></script>
   <script src="/script.js" is:inline></script>
 </Layout>
-</file>
-
-<file path="src/env.d.ts">
-
-</file>
-
-<file path="supabase/.temp/cli-latest">
-v2.115.0
-</file>
-
-<file path="supabase/.temp/linked-project.json">
-{"ref":"odasapyhtdopbnlfhwde","name":"wawedevınc","organization_id":"oxilqjbznlfnfkxolrrk","organization_slug":"oxilqjbznlfnfkxolrrk"}
-</file>
-
-<file path="supabase/functions/create-payment/index.ts">
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-⋮----
-// ⭐ CORS - WILDCARD DESTEKLİ (TÜM Cloudflare Pages preview'ları kabul et)
-⋮----
-function getUserIdFromToken(req: Request): string | null
-⋮----
-function getClientId(req: Request): string
-⋮----
-function checkRateLimit(clientId: string):
-⋮----
-function getCorsHeaders(origin: string | null)
-⋮----
-function validatePlanType(planType: string): boolean
-⋮----
-function validateCurrency(currency: string): boolean
-⋮----
-function getPlanPrice(planType: string, currency: string): number
-⋮----
-async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response>
-⋮----
-// ⭐ CORS - OPTIONS
-</file>
-
-<file path="supabase/functions/get-candles/index.ts">
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-⋮----
-function getClientId(req: Request): string
-⋮----
-function checkRateLimit(clientId: string):
-⋮----
-function getCorsHeaders(origin: string | null)
-⋮----
-function validateSymbol(symbol: string): boolean
-⋮----
-function validateInterval(interval: string): boolean
-⋮----
-async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<Response>
-⋮----
-// ⭐ CORS - OPTIONS
-</file>
-
-<file path="supabase/functions/nowpayment-webhook/index.ts">
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-⋮----
-// ⭐ Supabase client — SERVICE_ROLE_KEY kullanılıyor çünkü bu fonksiyon
-// webhook'u çağıran kim olursa olsun *başka* bir user_id'nin user_profiles
-⋮----
-// ⭐ CORS headers
-⋮----
-function getCorsHeaders(origin: string | null)
-⋮----
-function getPlanDuration(planType: string): number
-⋮----
-function timingSafeEqual(a: string, b: string): boolean
-⋮----
-async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean>
-⋮----
-// ⭐ IP kontrolü — bloklamıyor, sadece izliyor/logluyor.
-// NOWPayments IPN bildirimlerini sabit/tek bir IP adresinden göndermiyor ve
-// resmi olarak sabit bir IP listesi yayınlamıyor, bu yüzden IP whitelist'ini
-⋮----
-function logUnexpectedIP(request: Request): void
-⋮----
-function isInvoiceProcessed(invoiceId: string, status: string): boolean
-⋮----
-async function sendTelegramNotification(userId: string, email: string, planType: string, expiresAt: Date)
-⋮----
-async function processPayment(userId: string, planType: string, invoiceId: string, payload: any)
-⋮----
-// ⭐ CORS - OPTIONS
-</file>
-
-<file path="supabase/migrations/202608190001_security_baseline.sql">
-begin;
-
-
-
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
-$$;
-
-revoke all on function public.is_admin() from public;
-grant execute on function public.is_admin() to authenticated;
-
-
-
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  insert into public.user_profiles (
-    id,
-    email,
-    username,
-    plan,
-    role,
-    is_active
-  ) values (
-    new.id,
-    new.email,
-    coalesce(nullif(trim(new.raw_user_meta_data ->> 'username'), ''), split_part(new.email, '@', 1)),
-    'free',
-    'user',
-    true
-  ) on conflict (id) do nothing;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
-
-
-
-create or replace function public.prevent_profile_privilege_changes()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  if auth.role() = 'service_role' then
-    return new;
-  end if;
-
-  if new.plan is distinct from old.plan
-     or new.plan_expires_at is distinct from old.plan_expires_at
-     or new.role is distinct from old.role
-     or new.is_active is distinct from old.is_active then
-    raise exception 'Subscription, role, and account-status fields are server-managed';
-  end if;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists protect_user_profile_privileges on public.user_profiles;
-create trigger protect_user_profile_privileges
-  before update on public.user_profiles
-  for each row execute procedure public.prevent_profile_privilege_changes();
-
-
-
-do $$
-declare
-  target_table text;
-  policy_name text;
-begin
-  foreach target_table in array array[
-    'user_profiles', 'trades', 'strategies', 'backtest_trades', 'references', 'payments'
-  ] loop
-    if to_regclass('public.' || target_table) is not null then
-      execute format('alter table public.%I enable row level security', target_table);
-      for policy_name in
-        select policyname from pg_policies
-        where schemaname = 'public' and tablename = target_table
-      loop
-        execute format('drop policy if exists %I on public.%I', policy_name, target_table);
-      end loop;
-    end if;
-  end loop;
-end;
-$$;
-
-
-
-create policy "profiles_select_own_or_admin" on public.user_profiles
-  for select to authenticated
-  using (id = auth.uid() or public.is_admin());
-
-create policy "profiles_update_own_or_admin" on public.user_profiles
-  for update to authenticated
-  using (id = auth.uid() or public.is_admin())
-  with check (id = auth.uid() or public.is_admin());
-
-
-create policy "trades_select_own_or_admin" on public.trades
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-create policy "trades_insert_own" on public.trades
-  for insert to authenticated with check (user_id = auth.uid());
-create policy "trades_update_own_or_admin" on public.trades
-  for update to authenticated
-  using (user_id = auth.uid() or public.is_admin())
-  with check (user_id = auth.uid() or public.is_admin());
-create policy "trades_delete_own_or_admin" on public.trades
-  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
-
-create policy "strategies_select_own_or_admin" on public.strategies
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-create policy "strategies_insert_own" on public.strategies
-  for insert to authenticated with check (user_id = auth.uid());
-create policy "strategies_update_own_or_admin" on public.strategies
-  for update to authenticated
-  using (user_id = auth.uid() or public.is_admin())
-  with check (user_id = auth.uid() or public.is_admin());
-create policy "strategies_delete_own_or_admin" on public.strategies
-  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
-
-create policy "backtest_trades_select_own_or_admin" on public.backtest_trades
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-create policy "backtest_trades_insert_own" on public.backtest_trades
-  for insert to authenticated with check (user_id = auth.uid());
-create policy "backtest_trades_update_own_or_admin" on public.backtest_trades
-  for update to authenticated
-  using (user_id = auth.uid() or public.is_admin())
-  with check (user_id = auth.uid() or public.is_admin());
-create policy "backtest_trades_delete_own_or_admin" on public.backtest_trades
-  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
-
-
-create policy "references_read_active_or_admin" on public.references
-  for select to anon, authenticated
-  using (is_active = true or public.is_admin());
-create policy "references_insert_admin" on public.references
-  for insert to authenticated with check (public.is_admin());
-create policy "references_update_admin" on public.references
-  for update to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "references_delete_admin" on public.references
-  for delete to authenticated using (public.is_admin());
-
-
-
-create policy "payments_select_own_or_admin" on public.payments
-  for select to authenticated using (user_id = auth.uid() or public.is_admin());
-
-
-alter table storage.objects enable row level security;
-drop policy if exists "avatars_select_own" on storage.objects;
-drop policy if exists "avatars_insert_own" on storage.objects;
-drop policy if exists "avatars_update_own" on storage.objects;
-drop policy if exists "avatars_delete_own" on storage.objects;
-create policy "avatars_select_own" on storage.objects
-  for select to authenticated
-  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-create policy "avatars_insert_own" on storage.objects
-  for insert to authenticated
-  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-create policy "avatars_update_own" on storage.objects
-  for update to authenticated
-  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\')
-  with check (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-create policy "avatars_delete_own" on storage.objects
-  for delete to authenticated
-  using (bucket_id = 'avatars' and storage.filename(name) like auth.uid()::text || '\_%' escape '\');
-
-commit;
-</file>
-
-<file path="supabase/migrations/202608270001_add_system_settings.sql">
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
-$$;
-
-
-create table if not exists public.system_settings (
-  key text primary key,
-  value jsonb not null,
-  updated_at timestamptz default now()
-);
-
-
-alter table public.system_settings enable row level security;
-
-
-create policy "system_settings_select_admin" on public.system_settings
-  for select to authenticated
-  using (public.is_admin() = true);
-
-create policy "system_settings_insert_admin" on public.system_settings
-  for insert to authenticated
-  with check (public.is_admin() = true);
-
-create policy "system_settings_update_admin" on public.system_settings
-  for update to authenticated
-  using (public.is_admin() = true)
-  with check (public.is_admin() = true);
-
-
-insert into public.system_settings (key, value)
-values (
-  'prices',
-  jsonb_build_object(
-    'monthly', 9.00,
-    'yearly', 79.00,
-    'currency', 'USD',
-    'discount', jsonb_build_object('yearly', 27, 'promo', 0),
-    'paymentMethods', jsonb_build_array('BTC', 'LTC')
-  )
-) on conflict (key) do nothing;
-
-
-create or replace function public.get_prices()
-returns jsonb
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select value from public.system_settings where key = 'prices';
-$$;
-
-
-grant execute on function public.get_prices() to anon, authenticated;
-
-
-create or replace function public.set_prices(
-  p_monthly numeric,
-  p_yearly numeric,
-  p_currency text default 'USD',
-  p_discount_yearly integer default 27,
-  p_payment_methods text[] default array['BTC', 'LTC']
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_result jsonb;
-begin
-  if not public.is_admin() then
-    raise exception 'Only admins can update prices';
-  end if;
-
-  v_result := jsonb_build_object(
-    'monthly', p_monthly,
-    'yearly', p_yearly,
-    'currency', p_currency,
-    'discount', jsonb_build_object(
-      'yearly', p_discount_yearly,
-      'promo', 0
-    ),
-    'paymentMethods', to_jsonb(p_payment_methods)
-  );
-
-  insert into public.system_settings (key, value, updated_at)
-  values ('prices', v_result, now())
-  on conflict (key) do update
-  set value = excluded.value, updated_at = now();
-
-  return v_result;
-end;
-$$;
-
-
-grant execute on function public.set_prices(numeric, numeric, text, integer, text[]) to authenticated;
-
-
-grant select on public.system_settings to anon, authenticated;
-</file>
-
-<file path="supabase/migrations/README.md">
-# Supabase migrations
-
-`202608190001_security_baseline.sql` is a security hardening migration for
-the existing Wawe Journal schema. It assumes these existing tables and columns:
-
-- `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
-- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
-- `references(is_active)`, `payments(user_id)`
-
-It has intentionally not been run against the hosted project: no database
-admin credential or Supabase CLI login is available in this workspace.
-
-The browser-side writes to `plan` and `plan_expires_at` have been removed from
-the source. Apply the migration in the Supabase SQL Editor or with a linked
-Supabase CLI project only after deploying that client change. Verify the first
-registration and admin account immediately after applying it.
-
-
--------------------------
-
-repomix commands for ai developments :
-
-npx repomix --compress --remove-comments --ignore "node_modules,dist,.wrangler,.git,.next,build"
-
---------------------------
-
-# Premium Dashboard Dosyasının Komponentlerinin İşlevleri 
-
-
-
-## 📊 Dosya İşlev Özeti
-
-| # | Dosya Adı | Sorumluluk | Bağımlılık | Yan Etki |
-|---|-----------|------------|------------|----------|
-| 1 | **helpers.js** | Saf hesaplamalar, formatlama, veri dönüşümleri | Hiçbir şey (bağımsız) | Yok (pure functions) |
-| 2 | **chart-renderers.js** | Tüm grafikleri oluşturma, güncelleme ve yönetme | helpers.js | DOM'a grafik çizer, ApexCharts/Lightweight Charts kullanır |
-| 3 | **dashboard-manager.js** | Widget'lar, sürükle-bırak, iskelet ekranlar, stratejiler, export (CSV/PDF) | helpers.js, chart-renderers.js | DOM manipülasyonu, localStorage okuma/yazma, export dosyası oluşturur |
-| 4 | **premium-dashboard.js** | Ana koordinasyon, global state yönetimi, init, event listener'lar | helpers.js, chart-renderers.js, dashboard-manager.js | DOM manipülasyonu, Supabase veritabanı okuma, oturum yönetimi |
-</file>
-
-<file path="supabase/ADMIN_ROLE.md">
-# Admin role assignment
-
-The app authorizes admins exclusively through `auth.users.raw_app_meta_data`.
-Do not add `role: admin` to `user_metadata`; users can change that data from a
-browser session.
-
-In the Supabase SQL Editor, first identify the intended account:
-
-```sql
-select id, email, raw_app_meta_data
-from auth.users
-order by created_at;
-```
-
-Then replace the placeholder UUID and execute:
-
-```sql
-update auth.users
-set raw_app_meta_data =
-  coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
-where id = '<ADMIN_USER_UUID>';
-```
-
-For revocation:
-
-```sql
-update auth.users
-set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - 'role'
-where id = '<ADMIN_USER_UUID>';
-```
-
-The affected user must sign out and sign in again so their JWT contains the
-new `app_metadata.role` value. The `user_profiles.role` column is display data
-only and is not used for authorization.
-</file>
-
-<file path=".env.example">
-# Supabase (gerekli)
-VITE_SUPABASE_URL=https://odasapyhtdopbnlfhwde.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
-
-# News API (opsiyonel)
-VITE_NEWS_API_KEY=your-news-api-key
-VITE_NEWS_API_BASE_URL=https://api.forexfactory.com
-
-# App - wawejournal.com
-VITE_APP_URL=https://wawejournal.com
-VITE_APP_NAME=Wawe Journal
-</file>
-
-<file path=".gitignore">
-Add-Content .gitignore "node_modules/"
-node_modules
-
-node_modules/
-dist/
-.astro/
-</file>
-
-<file path="astro.config.mjs">
-
-</file>
-
-<file path="package.json">
-{
-  "name": "wawe-journal-astro",
-  "version": "1.0.0",
-  "description": "Wawe Journal - Professional Trading Journal (Astro geçişi)",
-  "type": "module",
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview"
-  },
-  "dependencies": {
-    "astro": "^4.16.0"
-  },
-  "author": "WaweDev",
-  "license": "MIT"
-}
-</file>
-
-<file path="wrangler.toml">
-name = "wawe-journal"
-pages_build_output_dir = "dist"
-compatibility_date = "2024-01-01"
-
-[env.production.vars]
-VITE_SUPABASE_URL = "https://odasapyhtdopbnlfhwde.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg"
-VITE_APP_URL = "https://wawejournal.com"
-VITE_APP_NAME = "Wawe Journal"
 </file>
 
 </files>

@@ -20,6 +20,28 @@ const {
 } = Astro.props;
 ---
 
+<!-- ⭐ GLOBAL LOGGER — production'da debug log'ları susturur -->
+<!-- Kullanım: wwLog.log(...) / wwLog.warn(...) / wwLog.error(...) -->
+<!-- Debug'ı açmak için tarayıcıda: localStorage.setItem('ww_debug', 'true') + yenile -->
+<script is:inline>
+(function() {
+  var WW_DEBUG = false;
+  try {
+    WW_DEBUG = localStorage.getItem('ww_debug') === 'true';
+  } catch (e) {}
+
+  var noop = function() {};
+  window.wwLog = {
+    log:   WW_DEBUG ? console.log.bind(console)   : noop,
+    warn:  WW_DEBUG ? console.warn.bind(console)  : noop,
+    info:  WW_DEBUG ? console.info.bind(console)  : noop,
+    debug: WW_DEBUG ? console.debug.bind(console) : noop,
+    // Hatalar her zaman gösterilir — hata ayıklama için kritik
+    error: console.error.bind(console)
+  };
+})();
+</script>
+
 <!-- CHARSET & VIEWPORT -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -52,7 +74,10 @@ const {
 
 <!-- PWA & THEME -->
 <meta name="theme-color" content="#7c6dfa" />
+<!-- ⭐ FIX: Chrome, apple-mobile-web-app-capable'ı deprecated olarak işaretliyor.
+     Standardize edilmiş mobile-web-app-capable ile birlikte kullanılmalı. -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Wawe Journal" />
 <link rel="manifest" href="/site.webmanifest" />
@@ -72,12 +97,12 @@ const {
 <!-- TEMA ÖN YÜKLEME — flash önlemek için sayfa render olmadan önce çalışır -->
 <script is:inline>
 (function() {
-  // ⭐ FIX: Scroll bar çiftlenmesini KÖKTEN önle
-  // html ve body overflow'u hidden'a çek, scroll container'a verilecek
   document.documentElement.style.overflow = 'hidden';
   document.documentElement.style.height = '100%';
-  document.body.style.overflow = 'hidden';
-  document.body.style.height = '100%';
+  if (document.body) {
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+  }
 
   var savedTheme = localStorage.getItem('ww_theme');
   var savedFontSize = localStorage.getItem('ww_font_size');
@@ -95,11 +120,12 @@ const {
       document.body.classList.remove('light-theme');
     }
 
-    // ⭐ FIX: Tema geçişi bittikten sonra overflow'u koru
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.height = '100%';
-    document.body.style.overflow = 'hidden';
-    document.body.style.height = '100%';
+    if (document.body) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100%';
+    }
 
     if (savedTheme !== 'light' && customTheme) {
       try {

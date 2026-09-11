@@ -46,6 +46,14 @@
 // ⭐ FIX (TEMA): Sayfa başında tema localStorage'dan yükleniyor
 // ⭐ FIX (TEMA): storage / themeChanged event'leri dinleniyor
 // ⭐ FIX (TEMA): Tema değişince chart'lar yeniden render ediliyor
+// ⭐ FIX (LOCALE): formatCurrency + formatCompactCurrency tr-TR yapıldı
+//        (premium-dashboard/helpers.js ile tutarlılık sağlandı)
+// ⭐ FIX (BADGE): Kümülatif K/Z badge'i 0'a yakın bölmede patlamıyor
+//        (changePercent hesabına Math.abs + min baseline guard eklendi)
+// ⭐ TEMİZLİK: renderStreak() fonksiyonu SİLİNDİ
+//        - dashboard.astro'da #streak-dots/#streak-count/#streak-label
+//          elementleri hiç yok
+//        - safeEl uyarısı veriyordu, hiçbir görsel etkisi yoktu
 // ============================================================
 
 // ============================================================
@@ -185,23 +193,25 @@
     }
   }
 
+  // ⭐ FIX (LOCALE): tr-TR yapıldı → premium-dashboard/helpers.js ile tutarlı
   function formatCurrency(value) {
     if (typeof window.formatCurrency === 'function') {
       return window.formatCurrency(value);
     }
     var num = parseFloat(value) || 0;
     var symbol = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
-    var formatted = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return (num >= 0 ? '+' : '-') + symbol + formatted;
   }
 
+  // ⭐ FIX (LOCALE): tr-TR yapıldı
   function formatCompactCurrency(value) {
     var symbol = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
     var num = parseFloat(value) || 0;
     var abs = Math.abs(num);
     var compact;
     try {
-      compact = new Intl.NumberFormat('en-US', {
+      compact = new Intl.NumberFormat('tr-TR', {
         notation: 'compact',
         maximumFractionDigits: 1
       }).format(abs);
@@ -874,7 +884,7 @@
         <div class="recent-trades-empty">
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
           <p class="empty-text">${noText}</p>
-          <a href="/add-trade.html" class="empty-link">İlk işlemi ekle →</a>
+          <button type="button" onclick="if(typeof quickAddOpen==='function')quickAddOpen()" class="empty-link" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">İlk işlemi ekle →</button>
         </div>
       `;
       if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -921,43 +931,8 @@
     });
   }
 
-  function renderStreak(trades) {
-    var container = safeEl('streak-dots');
-    if (!container) return;
-    var streakCountEl = safeEl('streak-count');
-    var streakLabelEl = safeEl('streak-label');
-
-    var last20 = trades.slice(-20).reverse();
-    var streak = 0;
-    var streakType = null;
-
-    for (var i = 0; i < last20.length; i++) {
-      var pnl = calcTradePnL(last20[i]);
-      if (last20[i].exit_price) {
-        var isWin = pnl > 0;
-        if (streakType === null) { streakType = isWin; streak = 1; } else if (streakType === isWin) streak++;
-        else break;
-      }
-    }
-
-    var dots = last20.slice(0, 20).map(function(t) {
-      if (!t.exit_price) return '<div class="streak-dot open"></div>';
-      var pnl = calcTradePnL(t);
-      return '<div class="streak-dot ' + (pnl > 0 ? 'win' : 'loss') + '"></div>';
-    }).join('');
-
-    container.innerHTML = dots;
-    if (streakCountEl) streakCountEl.textContent = streak;
-    if (streakLabelEl) {
-      if (streakType === true) {
-        streakLabelEl.textContent = streak + ' Kazanma Serisi';
-      } else if (streakType === false) {
-        streakLabelEl.textContent = streak + ' Kaybetme Serisi';
-      } else {
-        streakLabelEl.textContent = 'İşlem Yok';
-      }
-    }
-  }
+  // ⭐ TEMİZLİK: renderStreak() fonksiyonu SİLİNDİ
+  // (dashboard.astro'da #streak-dots/#streak-count/#streak-label yok)
 
   // ============================================================
   // MINI CALENDAR
@@ -1139,12 +1114,25 @@
       cumTimestamps.push(ts);
     });
 
+    // ⭐ FIX (BADGE): firstPnL 0'a çok yakınsa changePercent patlıyor.
+    // Baseline olarak toplam PnL'i kullan, sıfırsa badge'i sıfırla.
     var firstPnL = cumData[0] || 0;
     var lastPnL = cumData[cumData.length - 1] || 0;
-    var changePercent = firstPnL !== 0 ? ((lastPnL - firstPnL) / Math.abs(firstPnL) * 100).toFixed(1) : 0;
+    var totalAbs = 0;
+    for (var ci = 0; ci < cumData.length; ci++) totalAbs += Math.abs(cumData[ci]);
+
+    var changePercent = 0;
+    if (Math.abs(firstPnL) > 0.01 && totalAbs > 0.01) {
+      changePercent = ((lastPnL - firstPnL) / Math.abs(firstPnL)) * 100;
+      if (!isFinite(changePercent)) changePercent = 0;
+    } else if (totalAbs > 0.01) {
+      // firstPnL ~ 0 ama net değişim var → oransal anlamsız, sadece işaret göster
+      changePercent = lastPnL >= 0 ? 100 : -100;
+    }
+
     var changeEl = safeEl('cumulative-change');
     if (changeEl) {
-      changeEl.textContent = (lastPnL >= firstPnL ? '↑' : '↓') + ' ' + Math.abs(changePercent) + '%';
+      changeEl.textContent = (lastPnL >= firstPnL ? '↑' : '↓') + ' ' + Math.abs(changePercent).toFixed(1) + '%';
       changeEl.className = 'chart-badge ' + (lastPnL >= firstPnL ? '' : 'negative');
     }
 
@@ -2418,10 +2406,8 @@
 
       if (myToken !== refreshToken) return;
 
-      var streakContainer = safeEl('streak-dots');
-      if (streakContainer) {
-        renderStreak(filtered);
-      }
+      // ⭐ TEMİZLİK: renderStreak() çağrısı SİLİNDİ
+      // (dashboard.astro'da #streak-dots yok)
 
       await renderStrategyTags(filtered);
 

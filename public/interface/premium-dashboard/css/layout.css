@@ -4,6 +4,17 @@
    ⭐ FIX: Mobil chart-wrap boyutları eklendi
    ⭐ FIX: chart-wrap flex: none → flex: 1 1 auto (kutuyu doldur)
    ⭐ FIX: height → min-height (esnek boyut)
+   ⭐ FIX (KRİTİK): Drag-drop sonrası kutu büyümesi çözüldü
+       - grid-auto-rows: sabit satır yüksekliği (feedback loop kırıcı)
+       - .grid-item min-height: 0 (içerik item'ı büyütemesin)
+       - .chart-wrap min-height: clamp() KALDIRILDI (grid yönetiyor)
+       - .lwc-chart-container min-height override edildi
+   ⭐ NOT: .grid-item.tall ve .grid-item.full için grid-row: span
+       EKLENMEDİ — orijinal davranışta tüm widget'lar aynı satır
+       yüksekliğindeydi, sadece genişlik farkı vardı.
+   ⭐ KALDIRILDI: grid-auto-flow: dense — SortableJS ile çakışıyor,
+       drag-drop'u bozuyor. Boşluk sorunu bunun yerine
+       buildWidgets() sırası optimize edilerek çözüldü.
    ============================================================ */
 
 .premium-main {
@@ -21,6 +32,7 @@
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 240px;         /* ⭐ FIX: Sabit satır yüksekliği (feedback loop kırıcı) */
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -33,9 +45,10 @@
   transition: all 0.2s ease;
   cursor: grab;
   position: relative;
-  min-height: 120px;
+  min-height: 0;           /* ⭐ FIX: İçerik grid item'ı büyütemesin */
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 .grid-item:hover {
   border-color: rgba(139,92,246,0.35);
@@ -100,18 +113,18 @@
 }
 
 /* ============================================================
-   ⭐ CHART WRAP - TOOLTIP KIRPMA ÇÖZÜMÜ + FLEX FIX
+   ⭐ CHART WRAP - GRID ITEM BOYUTUNA UYAR
    ============================================================ */
 .chart-wrap {
   position: relative;
   width: 100%;
-  flex: 1 1 auto; /* ⭐ flex: none → flex: 1 1 auto (kutuyu doldur) */
-  min-height: 0;
-  overflow: visible;
+  flex: 1 1 auto;
+  min-height: 0;           /* ⭐ FIX: clamp() KALDIRILDI - grid yönetiyor */
+  overflow: visible;       /* tooltip görünürlüğü için gerekli */
 }
 
 .chart-wrap--doughnut {
-  min-height: 130px;
+  min-height: 0;           /* ⭐ FIX: grid satır yüksekliği yeterli */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,25 +141,36 @@
   overflow: visible !important;
 }
 
-/* ⭐ Grid item içindeki chart-wrap yükseklikleri - min-height kullan */
+/* ⭐ FIX: Grid item içindeki chart-wrap - artık grid-auto-rows yönetiyor
+   Eski min-height: clamp(...) kuralları KALDIRILDI */
 .grid-item .chart-wrap {
-  min-height: clamp(120px, 25vw, 180px);
+  min-height: 0;
 }
 
 .grid-item .chart-wrap--doughnut {
-  min-height: clamp(120px, 22vw, 160px);
+  min-height: 0;
 }
 
-.grid-item.tall .chart-wrap {
-  min-height: clamp(150px, 30vw, 220px);
+/* ⭐ FIX: LWC container'ının min-height'ını sıfırla (grid yönetiyor) */
+.grid-item .chart-wrap .lwc-chart-container {
+  min-height: 0;
+  height: 100%;
 }
 
 .grid-item.wide {
   grid-column: span 2;
 }
+
 .grid-item.full {
   grid-column: span 4;
+  /* ⭐ NOT: grid-row: span 2 KALDIRILDI — orijinal davranışta
+     full widget'lar da normal tek satır yüksekliğindeydi */
 }
+
+/* ⭐ NOT: .grid-item.tall kuralı KALDIRILDI
+   buildWidgets() 'cumulative' widget'ına 'wide tall' veriyor ama
+   orijinalde 'tall' CSS'te hiç tanımlı değildi, sadece işaretleyiciydi.
+   Artık grid-auto-rows ile tüm widget'lar aynı yükseklikte. */
 
 /* ============================================================
    RESPONSIVE
@@ -163,6 +187,7 @@
   }
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 220px;   /* ⭐ FIX: tablet için sabit satır */
   }
   .grid-item.wide {
     grid-column: span 1;
@@ -184,6 +209,7 @@
   }
   .dashboard-grid {
     grid-template-columns: 1fr;
+    grid-auto-rows: 200px;   /* ⭐ FIX: mobil için sabit satır */
   }
   .grid-item.wide {
     grid-column: span 1;
@@ -226,17 +252,6 @@
     width: 20px;
     height: 20px;
   }
-
-  /* ⭐ MOBIL CHART-WRAP BOYUTLARI - min-height kullan */
-  .grid-item .chart-wrap {
-    min-height: clamp(100px, 20vw, 140px);
-  }
-  .grid-item .chart-wrap--doughnut {
-    min-height: clamp(100px, 18vw, 130px);
-  }
-  .grid-item.tall .chart-wrap {
-    min-height: clamp(120px, 22vw, 160px);
-  }
 }
 
 @media (max-width: 480px) {
@@ -249,28 +264,13 @@
   .premium-stats-grid {
     grid-template-columns: 1fr 1fr;
   }
-
-  /* ⭐ 480px ALTINDA CHART-WRAP DAHA DA KÜÇÜK */
-  .grid-item .chart-wrap {
-    min-height: clamp(80px, 18vw, 110px);
-  }
-  .grid-item .chart-wrap--doughnut {
-    min-height: clamp(80px, 16vw, 100px);
-  }
-  .grid-item.tall .chart-wrap {
-    min-height: clamp(100px, 20vw, 130px);
+  .dashboard-grid {
+    grid-auto-rows: 180px;   /* ⭐ FIX: küçük telefon */
   }
 }
 
 @media (max-width: 374px) {
-  /* ⭐ 374px ALTINDA CHART-WRAP EN KÜÇÜK */
-  .grid-item .chart-wrap {
-    min-height: clamp(60px, 15vw, 90px);
-  }
-  .grid-item .chart-wrap--doughnut {
-    min-height: clamp(60px, 14vw, 80px);
-  }
-  .grid-item.tall .chart-wrap {
-    min-height: clamp(80px, 18vw, 100px);
+  .dashboard-grid {
+    grid-auto-rows: 160px;   /* ⭐ FIX: çok küçük ekran */
   }
 }

@@ -1,8 +1,11 @@
 // ⭐ Service Worker - NETWORK FIRST (Önce sunucu, olmazsa cache)
 // Dashboard, index ve diğer HTML dosyaları her zaman taze gelir
 // CSS/JS dosyaları Network First stratejisi ile çalışır
+// ⭐ FIX: Cache API sadece GET destekler — HEAD/POST gibi isteklerde
+//        SW müdahale etmiyor, tarayıcı default davranışına bırakılıyor.
+//        (settings.astro'dan gelen HEAD isteği artık patlamıyor.)
 
-const CACHE_NAME = 'wawe-v6'; // ⭐ Sürüm değişti (eski cache temizlensin)
+const CACHE_NAME = 'wawe-v7'; // ⭐ Sürüm değişti (eski cache temizlensin)
 
 // ⭐ INSTALL: Sadece hazırlan, hiçbir şey cache'leme
 self.addEventListener('install', function(e) {
@@ -35,9 +38,16 @@ self.addEventListener('activate', function(e) {
 
 // ⭐ FETCH: NETWORK FIRST - Önce sunucu, olmazsa cache
 self.addEventListener('fetch', function(e) {
+  // ⭐ FIX (KRİTİK): Cache API sadece GET isteklerini destekler.
+  // HEAD, POST, PUT, DELETE gibi isteklerde SW müdahale etmez —
+  // tarayıcı doğrudan fetch yapar, cache.put çağrılmaz, hata çıkmaz.
+  if (e.request.method !== 'GET') {
+    return;
+  }
+
   var url = new URL(e.request.url);
   var pathname = url.pathname;
-  
+
   // ⭐ HTML dosyaları - HER ZAMAN SUNUCUDAN
   if (pathname.endsWith('.html') || pathname === '/') {
     e.respondWith(
@@ -48,7 +58,7 @@ self.addEventListener('fetch', function(e) {
     );
     return;
   }
-  
+
   // ⭐ CSS/JS - NETWORK FIRST (önce sunucu, olmazsa cache)
   if (pathname.endsWith('.css') || pathname.endsWith('.js')) {
     e.respondWith(
@@ -73,7 +83,7 @@ self.addEventListener('fetch', function(e) {
     );
     return;
   }
-  
+
   // ⭐ Diğer dosyalar (resimler vs) - CACHE ÖNCELİKLİ
   e.respondWith(
     caches.match(e.request)

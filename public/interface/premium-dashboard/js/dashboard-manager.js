@@ -6,6 +6,11 @@
 // ⭐ FIX: strategy-empty-note zenginleştirildi
 // ⭐ FIX: injectSkeletonMarkup() dinamik hale getirildi (widget'larla eşleşir)
 // ⭐ FIX: Skeleton boyutları gerçek widget boyutlarıyla uyumlu
+// ⭐ FIX: forceResizeAllCharts() - LWC v4 resize düzeltildi
+// ⭐ FIX: forceResizeAllCharts() - Apex resize'da var shadowing giderildi
+// ⭐ FIX (YENİ): buildWidgets() sırası optimize edildi - grid-auto-flow:dense
+//        KALDIRILDI (SortableJS ile çakışıyordu). Bunun yerine default sıra
+//        ile boş sütunlar minimuma indirildi.
 // ============================================================
 
 import {
@@ -89,7 +94,7 @@ export function injectSkeletonMarkup() {
     var baseClass = 'generic-skeleton-block';
     var extraClasses = w.class || '';
     var isDoughnut = w.doughnut || false;
-    
+
     // Doughnut widget'lar için farklı skeleton
     if (isDoughnut) {
       gridHtml += '\n        <div class="generic-skeleton-block ' + extraClasses + '" data-widget="' + key + '" style="display:flex;align-items:center;justify-content:center;">\n          <div class="skeleton-doughnut"></div>\n        </div>\n      ';
@@ -177,30 +182,39 @@ export function forceResizeAllCharts() {
 
   resizeTimeout = setTimeout(function() {
     var charts = getCharts();
+
+    // ⭐ APEXCHARTS RESIZE
     Object.keys(charts.apex).forEach(function(key) {
       var instance = charts.apex[key];
       if (instance && typeof instance.resize === 'function') {
-        var container = instance.container;
-        if (container && container.isConnected) {
-          var rect = container.getBoundingClientRect();
+        // ⭐ FIX: var ismi shadowing'i önlemek için apexEl olarak değiştirildi
+        var apexEl = instance.container || instance.el;
+        if (apexEl && apexEl.isConnected) {
+          var rect = apexEl.getBoundingClientRect();
           if (rect.width > 0 && rect.height > 0) {
             instance.resize(rect.width, rect.height);
           }
         }
       }
     });
+
+    // ⭐ LIGHTWEIGHT CHARTS RESIZE (Kümülatif K/Z)
     if (charts.lightweight.cumulative) {
       var lwc = charts.lightweight.cumulative;
-      if (lwc.chart && lwc.chart.applyOptions) {
-        var container = lwc.chart.container;
-        if (container && container.isConnected) {
-          var rect = container.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            lwc.chart.applyOptions({ width: rect.width, height: rect.height });
+      if (lwc.chart && typeof lwc.chart.applyOptions === 'function') {
+        // ⭐ FIX: LWC v4'te chart.container public API'de yok → DOM'dan alıyoruz
+        var lwcContainer = document.getElementById('chart-cumulative');
+        if (lwcContainer) {
+          var lwcRect = lwcContainer.getBoundingClientRect();
+          if (lwcRect.width > 0 && lwcRect.height > 0) {
+            try {
+              lwc.chart.applyOptions({ width: lwcRect.width, height: lwcRect.height });
+            } catch(e) {}
           }
         }
       }
     }
+
     isResizing = false;
     resizeTimeout = null;
   }, 200);
@@ -275,7 +289,14 @@ export function renderKpiBar(trades) {
   } catch(e) {}
 }
 
-// ⭐ BUILD WIDGETS - height alanları kaldırıldı
+// ⭐ BUILD WIDGETS
+// ⭐ FIX (YENİ): Widget sırası 4 sütunlu grid'de boşluk bırakmayacak şekilde
+//    optimize edildi. grid-auto-flow:dense kaldırıldığı için sıralama önemli.
+//    Yerleşim:
+//      Satır 1: cumulative (2) + winloss (1) + symbol (1)   → 4 sütun tam dolu
+//      Satır 2: daily (2) + direction (1) + hourly (1)      → 4 sütun tam dolu
+//      Satır 3: dow (1) + rr (1) + lot (1) + [1 boşluk]     → 3 dolu
+//      Satır 4: strategies (4)                               → tam dolu
 export function buildWidgets() {
   return {
     'cumulative': {
@@ -292,15 +313,15 @@ export function buildWidgets() {
       class: '',
       doughnut: true
     },
-    'daily': {
-      title: 'Günlük K/Z – Son 30 Gün',
-      template: '<div id="chart-daily" style="width:100%;height:100%;"></div>',
-      class: 'wide'
-    },
     'symbol': {
       title: 'Sembol Bazlı Performans',
       template: '<div id="chart-symbol" style="width:100%;height:100%;"></div>',
       class: ''
+    },
+    'daily': {
+      title: 'Günlük K/Z – Son 30 Gün',
+      template: '<div id="chart-daily" style="width:100%;height:100%;"></div>',
+      class: 'wide'
     },
     'direction': {
       title: 'Long / Short Dağılımı',
