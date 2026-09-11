@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - STATS SERVICE (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
@@ -42,7 +42,7 @@ export async function loadPlatformStats() {
     updateStatsUI(stats);
     
   } catch(e) {
-    console.warn('loadPlatformStats hatası:', e);
+    wwLog.warn('loadPlatformStats hatası:', e);
     var fallbackStats = {
       totalUsers: 0,
       totalTrades: 0,

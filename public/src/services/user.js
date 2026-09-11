@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - USER SERVICE
 // ============================================================
 
@@ -41,7 +41,7 @@ export async function getUserPlan() {
     return { plan: data.plan, features: FEATURES.premium };
     
   } catch (error) {
-    console.warn('getUserPlan hatası, free döndürülüyor:', error);
+    wwLog.warn('getUserPlan hatası, free döndürülüyor:', error);
     return { plan: 'free', features: FEATURES.free };
   }
 }

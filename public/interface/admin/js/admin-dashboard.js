@@ -1,14 +1,31 @@
-// ============================================================
+﻿// ============================================================
 // ADMIN-DASHBOARD.JS - ANALYTICS & PRICES
+// ⭐ MIGRATE: Chart.js → ApexCharts
+//   - usersChart ve premiumChart artık ApexCharts instance'ı
+//   - ApexCharts destroy() ve re-render aynı şekilde çalışır
+//   - Tema (light/dark) desteği eklendi
 // ============================================================
 
-console.log('🔥 admin-dashboard.js yukleniyor...');
+wwLog.log('🔥 admin-dashboard.js yukleniyor...');
+
+// ============================================================
+// APEXCHARTS TEMA YARDIMCISI
+// ============================================================
+function getAdminApexTheme() {
+  var isLight = document.body.classList.contains('light-theme');
+  return {
+    mode: isLight ? 'light' : 'dark',
+    textColor: isLight ? '#1e293b' : '#6b6b80',
+    gridColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)',
+    surface: isLight ? '#ffffff' : '#0e0e16'
+  };
+}
 
 // ============================================================
 // LOAD ANALYTICS DATA
 // ============================================================
 async function loadAnalyticsData() {
-  console.log('📊 loadAnalyticsData basladi...');
+  wwLog.log('📊 loadAnalyticsData basladi...');
   
   try {
     var last7 = [];
@@ -111,26 +128,9 @@ async function loadAnalyticsData() {
     }
 
     var labels = last7.map(function(d) { return d.slice(5).replace('-', '/'); });
-    var chartDefaults = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(17,17,24,0.95)',
-          borderColor: 'rgba(139,92,246,0.3)',
-          borderWidth: 1,
-          padding: 10,
-          titleFont: { family: 'DM Mono', size: 11 },
-          bodyFont: { family: 'DM Sans', size: 13 }
-        }
-      },
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b6b80', font: { family: 'DM Mono', size: 11 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b6b80', font: { family: 'DM Mono', size: 11 } }, beginAtZero: true }
-      }
-    };
-
+    var theme = getAdminApexTheme();
+    
+    // ⭐ Destroy eski grafikler (ApexCharts destroy() Chart.js ile aynı)
     if (adminState.charts.userChart) {
       try { adminState.charts.userChart.destroy(); } catch(e) {}
       adminState.charts.userChart = null;
@@ -140,64 +140,166 @@ async function loadAnalyticsData() {
       adminState.charts.premiumChart = null;
     }
 
-    var usersCtx = document.getElementById('usersChart');
-    if (usersCtx) {
-      adminState.charts.userChart = new Chart(usersCtx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Kullanici',
-            data: uCounts,
-            backgroundColor: 'rgba(34,197,94,0.2)',
-            borderColor: '#34d399',
-            borderWidth: 2,
-            borderRadius: 6
-          }]
+    // ⭐ KULLANICI GRAFİĞİ (Bar)
+    var usersEl = document.getElementById('usersChart');
+    if (usersEl) {
+      usersEl.innerHTML = '';
+      
+      var usersOptions = {
+        series: [{ name: 'Kullanıcı', data: uCounts }],
+        chart: {
+          type: 'bar',
+          height: '100%',
+          toolbar: { show: false },
+          background: 'transparent',
+          fontFamily: "'DM Sans', sans-serif",
+          animations: { enabled: true, speed: 400 }
         },
-        options: chartDefaults
-      });
-    }
-
-    var premiumCtx = document.getElementById('premiumChart');
-    if (premiumCtx) {
-      adminState.charts.premiumChart = new Chart(premiumCtx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Premium Gelir ($)',
-            data: revenueData,
-            backgroundColor: 'rgba(139,92,246,0.25)',
-            borderColor: '#7c6dfa',
-            borderWidth: 2,
-            borderRadius: 6
-          }]
+        plotOptions: {
+          bar: {
+            borderRadius: 6,
+            columnWidth: '60%',
+            colors: {
+              ranges: [
+                { from: 0, to: Number.MAX_VALUE, color: '#34d399' }
+              ]
+            }
+          }
         },
-        options: {
-          plugins: {
-            legend: { display: true, labels: { color: '#6b6b80', font: { family: 'DM Mono', size: 10 } } },
-            tooltip: chartDefaults.plugins.tooltip
-          },
-          scales: {
-            x: chartDefaults.scales.x,
-            y: {
-              grid: chartDefaults.scales.y.grid,
-              ticks: {
-                color: '#6b6b80',
-                font: { family: 'DM Mono', size: 11 },
-                callback: function(value) { return '$' + value; }
-              },
-              beginAtZero: true
+        colors: ['#34d399'],
+        fill: {
+          type: 'solid',
+          opacity: 0.25
+        },
+        stroke: {
+          show: true,
+          width: 2,
+          colors: ['#34d399']
+        },
+        dataLabels: { enabled: false },
+        grid: {
+          borderColor: theme.gridColor,
+          strokeDashArray: 4,
+          position: 'back'
+        },
+        xaxis: {
+          categories: labels,
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px'
             }
           },
-          responsive: true,
-          maintainAspectRatio: false
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px'
+            },
+            formatter: function(val) { return Math.floor(val); }
+          }
+        },
+        tooltip: {
+          theme: theme.mode,
+          style: { fontFamily: "'DM Sans', sans-serif", fontSize: '12px' }
+        },
+        legend: { show: false }
+      };
+      
+      adminState.charts.userChart = new ApexCharts(usersEl, usersOptions);
+      adminState.charts.userChart.render();
+    }
+
+    // ⭐ PREMIUM GRAFİĞİ (Bar)
+    var premiumEl = document.getElementById('premiumChart');
+    if (premiumEl) {
+      premiumEl.innerHTML = '';
+      
+      var premiumOptions = {
+        series: [{ name: 'Premium Gelir ($)', data: revenueData }],
+        chart: {
+          type: 'bar',
+          height: '100%',
+          toolbar: { show: false },
+          background: 'transparent',
+          fontFamily: "'DM Sans', sans-serif",
+          animations: { enabled: true, speed: 400 }
+        },
+        plotOptions: {
+          bar: {
+            borderRadius: 6,
+            columnWidth: '60%',
+            colors: {
+              ranges: [
+                { from: 0, to: Number.MAX_VALUE, color: '#7c6dfa' }
+              ]
+            }
+          }
+        },
+        colors: ['#7c6dfa'],
+        fill: {
+          type: 'solid',
+          opacity: 0.25
+        },
+        stroke: {
+          show: true,
+          width: 2,
+          colors: ['#7c6dfa']
+        },
+        dataLabels: { enabled: false },
+        grid: {
+          borderColor: theme.gridColor,
+          strokeDashArray: 4,
+          position: 'back'
+        },
+        xaxis: {
+          categories: labels,
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px'
+            }
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '11px'
+            },
+            formatter: function(val) { return '$' + val; }
+          }
+        },
+        tooltip: {
+          theme: theme.mode,
+          y: {
+            formatter: function(val) { return '$' + val.toFixed(2); }
+          },
+          style: { fontFamily: "'DM Sans', sans-serif", fontSize: '12px' }
+        },
+        legend: {
+          show: true,
+          position: 'bottom',
+          labels: { colors: theme.textColor },
+          fontFamily: "'DM Mono', monospace",
+          fontSize: '10px'
         }
-      });
+      };
+      
+      adminState.charts.premiumChart = new ApexCharts(premiumEl, premiumOptions);
+      adminState.charts.premiumChart.render();
     }
     
-    console.log('✅ loadAnalyticsData tamamlandi!');
+    wwLog.log('✅ loadAnalyticsData tamamlandi!');
   } catch (e) {
     console.error('loadAnalyticsData hatasi:', e);
   }
@@ -207,7 +309,7 @@ async function loadAnalyticsData() {
 // RENDER PRICES CONTENT
 // ============================================================
 function renderPricesContent() {
-  console.log('💰 renderPricesContent basladi...');
+  wwLog.log('💰 renderPricesContent basladi...');
   
   var container = document.getElementById('prices-container');
   if (!container) {
@@ -326,7 +428,7 @@ function renderPricesContent() {
     html += '</div>';
     
     container.innerHTML = html;
-    console.log('✅ renderPricesContent tamamlandi!');
+    wwLog.log('✅ renderPricesContent tamamlandi!');
     
     // Event bindings
     var saveBtn = document.getElementById('save-prices-btn');
@@ -442,4 +544,4 @@ window.renderPricesContent = renderPricesContent;
 window.addPaymentMethod = addPaymentMethod;
 window.removePaymentMethod = removePaymentMethod;
 
-console.log('✅ admin-dashboard.js yuklendi!');
+wwLog.log('✅ admin-dashboard.js yuklendi!');

@@ -1,9 +1,9 @@
-// ============================================================
+﻿// ============================================================
 // PAGE-TRANSITION.JS - components/navbar/page-transition.js
 // Sayfa Geçiş Animasyonu + DİL KORUMA
 // ============================================================
 
-console.log('🔄 Sayfa geçiş animasyonu yükleniyor...');
+wwLog.log('🔄 Sayfa geçiş animasyonu yükleniyor...');
 
 var PageTransition = {
   isTransitioning: false,
@@ -265,4 +265,4 @@ window.PageTransition = PageTransition;
 window.restoreLanguage = PageTransition.restoreLanguage;
 window.saveLanguageBeforeExit = PageTransition.saveLanguageBeforeExit;
 
-console.log('✅ page-transition.js yüklendi!');
+wwLog.log('✅ page-transition.js yüklendi!');

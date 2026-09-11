@@ -306,7 +306,7 @@ import Layout from '../layouts/Layout.astro';
           else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
         });
         document.body.appendChild(fab);
-        console.log('✅ Manuel FAB oluşturuldu');
+        wwLog.log('✅ Manuel FAB oluşturuldu');
       }
       
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -328,7 +328,7 @@ import Layout from '../layouts/Layout.astro';
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
-        console.log('✅ Lucide icons initialized on trades!');
+        wwLog.log('✅ Lucide icons initialized on trades!');
       }
     });
   </script>

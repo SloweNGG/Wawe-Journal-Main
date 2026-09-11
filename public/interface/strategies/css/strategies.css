@@ -836,3 +836,18 @@ table.detail-table td.neg { color: var(--red); font-weight: 600; }
   .page-header-actions { justify-content: stretch; }
   .time-filter-group { justify-content: space-between; }
 }
+
+/* ⭐ ApexCharts tooltip görünürlüğü için */
+.comparison-chart-inner,
+.equity-chart-wrap,
+.sc-spark {
+  overflow: visible;
+  position: relative;
+}
+
+/* ApexCharts SVG taşma düzeltmesi */
+.comparison-chart-inner .apexcharts-canvas,
+.equity-chart-wrap .apexcharts-canvas,
+.sc-spark .apexcharts-canvas {
+  overflow: visible !important;
+}

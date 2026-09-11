@@ -4,28 +4,18 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
   <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
-  
-  
 
   <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-  
-  
-  <!-- GLOBAL CSS -->
-  
+
   <!-- STRATEGIES CSS -->
   <link rel="stylesheet" href="/interface/strategies/css/strategies.css" />
-  
-  <!-- CHART.JS & jspdf -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
+
+  <!-- ⭐ DEĞİŞİKLİK: Chart.js kaldırıldı (ApexCharts'a geçiş).
+       jspdf ve jspdf-autotable zaten body'de yükleniyordu, burada tekrar yüklemeye gerek yok. -->
 </Fragment>
   <!-- ✅ NAVBAR CONTAINER -->
 
-  <!-- ============================================================
-       MAIN
-       ============================================================ -->
   <main class="strategies-main">
 
     <!-- Page Header -->
@@ -165,13 +155,15 @@ import Layout from '../layouts/Layout.astro';
         <div class="comparison-card">
           <div class="comparison-card-header" data-i18n="strategies.comparison.win_rate">Win Rate Karşılaştırması</div>
           <div class="comparison-chart-inner">
-            <canvas id="winrate-comparison-chart"></canvas>
+            <!-- ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu) -->
+            <div id="winrate-comparison-chart" style="width:100%;height:100%;"></div>
           </div>
         </div>
         <div class="comparison-card">
           <div class="comparison-card-header" data-i18n="strategies.comparison.pnl">Toplam K/Z Karşılaştırması</div>
           <div class="comparison-chart-inner">
-            <canvas id="pnl-comparison-chart"></canvas>
+            <!-- ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu) -->
+            <div id="pnl-comparison-chart" style="width:100%;height:100%;"></div>
           </div>
         </div>
       </div>
@@ -179,9 +171,7 @@ import Layout from '../layouts/Layout.astro';
 
   </main>
 
-  <!-- ============================================================
-       MODALS
-       ============================================================ -->
+  <!-- MODALS -->
   <div id="add-strategy-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
@@ -237,7 +227,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ⭐ Strateji Detay Modalı -->
+  <!-- Strateji Detay Modalı -->
   <div id="strategy-detail-modal" class="modal-overlay">
     <div class="modal-box modal-box-lg">
       <div class="modal-header">
@@ -258,7 +248,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ⭐ Equity Curve Modalı -->
+  <!-- Equity Curve Modalı -->
   <div id="equity-curve-modal" class="modal-overlay">
     <div class="modal-box modal-box-md">
       <div class="modal-header">
@@ -270,7 +260,8 @@ import Layout from '../layouts/Layout.astro';
       </div>
       <div class="modal-body">
         <div class="equity-chart-wrap">
-          <canvas id="equity-curve-canvas"></canvas>
+          <!-- ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu) -->
+          <div id="equity-curve-canvas" style="width:100%;height:100%;"></div>
         </div>
       </div>
       <div class="modal-footer">
@@ -280,30 +271,31 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
+       SCRIPTS
        ============================================================ -->
-  
+
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
+  <!-- ⭐ DEĞİŞİKLİK: Chart.js → ApexCharts (sürüm sabit) -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
-  
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
+
+  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
-  
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
+
+  <!-- 3. ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
-  
+
   <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
-  
+
   <!-- 5. QUICK ADD (ES5) -->
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
-  
-  <!-- 6. STRATEGIES JS (ES5 - AYNI KALIR) -->
+
+  <!-- 6. STRATEGIES JS (ES5) -->
   <script src="/interface/strategies/js/strategies.js" is:inline></script>
 
   <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
@@ -322,9 +314,9 @@ import Layout from '../layouts/Layout.astro';
           else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
         });
         document.body.appendChild(fab);
-        console.log('✅ Manuel FAB oluşturuldu');
+        wwLog.log('✅ Manuel FAB oluşturuldu');
       }
-      
+
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
         setTimeout(function() {
           if (typeof quickAddOpen === 'undefined') createManualFAB();
@@ -338,29 +330,29 @@ import Layout from '../layouts/Layout.astro';
       }
     })();
   </script>
-  
+
   <!-- 8. LUCIDE ICONS INIT -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
-        console.log('✅ Lucide icons initialized on strategies!');
+        wwLog.log('✅ Lucide icons initialized on strategies!');
       }
     });
   </script>
-  
+
   <!-- 9. INIT -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
         loadNavbar('navbar-container');
-        console.log('✅ Navbar yüklendi!');
+        wwLog.log('✅ Navbar yüklendi!');
       }
       if (typeof initStrategies === 'function') {
         setTimeout(function() {
           try {
             initStrategies();
-            console.log('✅ Strategies panel başlatıldı!');
+            wwLog.log('✅ Strategies panel başlatıldı!');
           } catch(e) {
             console.error('❌ Strategies init hatası:', e);
           }

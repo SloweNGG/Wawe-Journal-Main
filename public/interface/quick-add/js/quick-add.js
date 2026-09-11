@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // QUICK ADD MODAL - İŞLEM EKLEME
 // ⭐ FIX: FAB butonu kaybolma sorunu düzeltildi (body'ye kalıcı olarak eklenir)
 // ⭐ FIX: initQuickAdd sadece bir kez çalışır
@@ -8,9 +8,10 @@
 // ⭐ TEMA: Sayfa başında localStorage'dan tema yüklenir
 // ⭐ TEMA: storage / themeChanged event'leri dinlenir
 // ⭐ TEMİZLİK: window.load fallback'i KALDIRILDI
-//        - DOMContentLoaded + 100ms zaten initQuickAdd() çağırıyor
-//        - window.load, 100ms dolmadan tetiklenip "FAB yok" uyarısı
-//          basıyordu (initialized guard'ı sayesinde işlevsizdi)
+// ⭐ CSV/BULK CHUNKING: Tek dev istek yerine 500'lük parçalar
+//        - 1000+ satır import artık çalışır (Supabase limitine takılmaz)
+//        - Kısmi başarı: hatalı chunk diğerlerini etkilemez
+//        - Real-time progress: statusText ve bulk-progress güncellenir
 // ============================================================
 
 // ============================================================
@@ -50,7 +51,7 @@
       } catch (e) {}
     }
 
-    console.log('🎨 [quick-add.js] Tema ayarlandı:', savedTheme || 'dark');
+    wwLog.log('🎨 [quick-add.js] Tema ayarlandı:', savedTheme || 'dark');
   } catch (e) {}
 })();
 
@@ -85,13 +86,13 @@
 
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
-      console.log('🔄 [QuickAdd] Tema değişikliği algılandı (storage):', e.key);
+      wwLog.log('🔄 [QuickAdd] Tema değişikliği algılandı (storage):', e.key);
       applyThemeFromStorage();
     }
   });
 
   document.addEventListener('themeChanged', function(e) {
-    console.log('🔄 [QuickAdd] themeChanged event yakalandı');
+    wwLog.log('🔄 [QuickAdd] themeChanged event yakalandı');
     if (e.detail && e.detail.settings) {
       var settings = e.detail.settings;
       var root = document.documentElement;
@@ -106,11 +107,18 @@
     }
   });
 
-  console.log('✅ [QuickAdd] Tema izleyici yüklendi!');
+  wwLog.log('✅ [QuickAdd] Tema izleyici yüklendi!');
 })();
 
 (function() {
   'use strict';
+
+  // ============================================================
+  // SABİTLER
+  // ============================================================
+  // ⭐ Supabase tek insert'te ~1000 satır limitine sahip.
+  // 500'lük parçalar güvenli ve kullanıcıya hızlı geri bildirim sağlar.
+  const CHUNK_SIZE = 500;
 
   // ============================================================
   // İKONLAR — tek merkezden yönetilen, Lucide tarzı SVG'ler.
@@ -152,6 +160,17 @@
   }
 
   // ============================================================
+  // ⭐ CHUNK HELPER - Diziyi parçalara böl
+  // ============================================================
+  function chunkArray(arr, size) {
+    var chunks = [];
+    for (var i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  }
+
+  // ============================================================
   // STATE
   // ============================================================
 
@@ -184,7 +203,7 @@
 
     const missing = Object.keys(required).filter(k => !required[k]);
     if (missing.length > 0) {
-      console.warn('Eksik global bağımlılıklar:', missing.join(', '));
+      wwLog.warn('Eksik global bağımlılıklar:', missing.join(', '));
       return false;
     }
     return true;
@@ -299,7 +318,7 @@
         }
         d = new Date(year, first - 1, second);
         if (!isNaN(d.getTime())) {
-          console.warn('Tarih formatı belirsiz (DD/MM vs MM/DD):', dateString, '-> MM/DD olarak yorumlandı');
+          wwLog.warn('Tarih formatı belirsiz (DD/MM vs MM/DD):', dateString, '-> MM/DD olarak yorumlandı');
           return d.toISOString().split('T')[0];
         }
       }
@@ -310,7 +329,7 @@
       return d.toISOString().split('T')[0];
     }
 
-    console.warn('Tarih ayrıştırılamadı, bugünün tarihi kullanılacak:', dateString);
+    wwLog.warn('Tarih ayrıştırılamadı, bugünün tarihi kullanılacak:', dateString);
     return new Date().toISOString().split('T')[0];
   }
 
@@ -530,7 +549,7 @@
       }
 
     } catch (e) {
-      console.warn('Stratejiler yüklenemedi:', e);
+      wwLog.warn('Stratejiler yüklenemedi:', e);
     }
   }
 
@@ -568,7 +587,7 @@
   }
 
   function updatePricePreview() {
-    console.log('🔄 Preview güncelleniyor...');
+    wwLog.log('🔄 Preview güncelleniyor...');
 
     const entry = parseFloat(el('price-entry')?.value);
     const exit = parseFloat(el('price-exit')?.value);
@@ -602,9 +621,9 @@
           }
           pnlSign = pnl >= 0 ? 1 : -1;
           hasPnl = true;
-          console.log('✅ PnL hesaplandı:', pnl);
+          wwLog.log('✅ PnL hesaplandı:', pnl);
         } catch(e) {
-          console.warn('PnL preview hatası:', e);
+          wwLog.warn('PnL preview hatası:', e);
         }
       }
 
@@ -623,7 +642,7 @@
             hasRr = true;
           }
         } catch(e) {
-          console.warn('RR preview hatası:', e);
+          wwLog.warn('RR preview hatası:', e);
         }
       }
     }
@@ -876,13 +895,14 @@
       };
 
     } catch(e) {
-      console.warn('CSV okuma hatası:', e);
+      wwLog.warn('CSV okuma hatası:', e);
       showToast('CSV okuma hatası: ' + e.message, 'error');
       const badgeEl = el('quick-csv-badge');
       if (badgeEl) badgeEl.innerHTML = badgeIcon('error');
     }
   }
 
+  // ⭐ CHUNKING: 500'lük parçalarla insert + kısmi başarı + real-time progress
   async function executeCsvImport() {
     if (isImporting || !csvPreviewData) return;
 
@@ -909,6 +929,7 @@
       let imported = 0;
       const trades = [];
 
+      // ⭐ 1. ADIM: Tüm satırları parse et, trades dizisine topla
       for (let i = 0; i < rows.length; i++) {
         const values = rows[i];
         if (values.length < 5) {
@@ -967,13 +988,28 @@
         });
       }
 
+      // ⭐ 2. ADIM: Chunk'lara böl ve parça parça insert et
       if (trades.length > 0) {
-        const { error } = await sb.from('trades').insert(trades);
-        if (error) {
-          log.push('<div>' + logTag('error') + ' — Toplu insert hatası: ' + escapeHtml(error.message) + '</div>');
-          failed += trades.length;
-        } else {
-          imported += trades.length;
+        const chunks = chunkArray(trades, CHUNK_SIZE);
+        const totalChunks = chunks.length;
+
+        for (let c = 0; c < totalChunks; c++) {
+          const chunk = chunks[c];
+
+          // ⭐ Progress güncelle
+          if (statusText) {
+            statusText.textContent = 'Kaydediliyor... (' + (c + 1) + '/' + totalChunks + ' parça, ' + imported + '/' + trades.length + ' işlem)';
+          }
+
+          const { error } = await sb.from('trades').insert(chunk);
+
+          if (error) {
+            // ⭐ Bu chunk başarısız — diğer chunk'lar etkilenmez
+            log.push('<div>' + logTag('error') + ' — Parça ' + (c + 1) + '/' + totalChunks + ' başarısız: ' + escapeHtml(error.message) + '</div>');
+            failed += chunk.length;
+          } else {
+            imported += chunk.length;
+          }
         }
       }
 
@@ -995,7 +1031,7 @@
       }
 
     } catch(e) {
-      console.warn('CSV import hatası:', e);
+      wwLog.warn('CSV import hatası:', e);
       if (progressEl) progressEl.style.display = 'none';
       showToast('CSV import hatası: ' + e.message, 'error');
     }
@@ -1005,7 +1041,7 @@
   }
 
   // ============================================================
-  // BULK IMPORT - Toplu insert ile
+  // BULK IMPORT - Toplu insert ile (CHUNKING)
   // ============================================================
 
   async function handleBulkImport() {
@@ -1046,6 +1082,7 @@
     if (statusEl) statusEl.textContent = '0 / ' + lines.length + ' işlem işleniyor...';
     if (logEl) { logEl.style.display = 'none'; logEl.innerHTML = ''; }
 
+    // ⭐ 1. ADIM: Satırları parse et, trades dizisine topla
     for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
       const parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
 
@@ -1102,19 +1139,48 @@
       return;
     }
 
-    try {
-      const { error } = await sb.from('trades').insert(trades);
+    // ⭐ 2. ADIM: Chunk'lara böl ve parça parça insert et
+    let success = 0;
+    let failed = 0;
 
-      if (error) {
+    try {
+      const chunks = chunkArray(trades, CHUNK_SIZE);
+      const totalChunks = chunks.length;
+
+      for (let c = 0; c < totalChunks; c++) {
+        const chunk = chunks[c];
+
+        // ⭐ Progress güncelle
+        if (statusEl) {
+          statusEl.textContent = 'Kaydediliyor... (' + (c + 1) + '/' + totalChunks + ' parça, ' + success + '/' + trades.length + ' işlem)';
+        }
+        if (fillEl) {
+          fillEl.style.width = (((c + 1) / totalChunks) * 100) + '%';
+        }
+
+        const { error } = await sb.from('trades').insert(chunk);
+
+        if (error) {
+          errors.push('<div>' + logTag('error') + ' — Parça ' + (c + 1) + '/' + totalChunks + ': ' + escapeHtml(error.message) + '</div>');
+          failed += chunk.length;
+        } else {
+          success += chunk.length;
+        }
+      }
+
+      // ⭐ Sonuç
+      if (failed > 0) {
         if (logEl) {
           logEl.style.display = 'block';
-          logEl.innerHTML = '<div>' + logTag('error') + ' — ' + escapeHtml(error.message) + '</div>';
+          logEl.innerHTML = errors.join('');
         }
-        showToast('İşlem eklenirken hata oluştu: ' + error.message, 'error');
+        if (fillEl) fillEl.style.background = 'var(--red)';
+        if (statusEl) statusEl.textContent = '⚠️ ' + success + ' işlem eklendi, ' + failed + ' başarısız!';
+        showToast(success + ' işlem eklendi, ' + failed + ' başarısız!', 'error');
       } else {
-        if (statusEl) statusEl.textContent = trades.length + ' işlem başarıyla eklendi!';
-        if (fillEl) fillEl.style.width = '100%';
-        showToast(trades.length + ' işlem başarıyla eklendi!', 'success');
+        if (statusEl) statusEl.textContent = '✅ ' + success + ' işlem başarıyla eklendi!';
+        if (fillEl) fillEl.style.background = 'var(--green)';
+        showToast(success + ' işlem başarıyla eklendi!', 'success');
 
         setTimeout(function() {
           closeModal();
@@ -1122,7 +1188,7 @@
         }, 1500);
       }
     } catch(e) {
-      console.warn('Bulk import hatası:', e);
+      wwLog.warn('Bulk import hatası:', e);
       if (logEl) {
         logEl.style.display = 'block';
         logEl.innerHTML = '<div>' + logTag('error') + ' — ' + escapeHtml(e.message) + '</div>';
@@ -1298,7 +1364,7 @@
     fab.innerHTML = ICONS.plus;
     fab.addEventListener('click', openModal);
     document.body.appendChild(fab);
-    console.log('✅ FAB butonu oluşturuldu');
+    wwLog.log('✅ FAB butonu oluşturuldu');
   }
 
   // ============================================================
@@ -1477,7 +1543,7 @@
     }
     container.innerHTML = getModalHTML();
     attachModalEvents();
-    console.log('✅ Quick Add modal oluşturuldu');
+    wwLog.log('✅ Quick Add modal oluşturuldu');
   }
 
   // ============================================================
@@ -1513,7 +1579,7 @@
     createFab();
     createModal();
 
-    console.log('✅ Quick Add Modal başlatıldı. FAB butonu aktif.');
+    wwLog.log('✅ Quick Add Modal başlatıldı. FAB butonu aktif.');
   }
 
   // ============================================================
@@ -1535,4 +1601,4 @@
 
 })();
 
-console.log('quick-add.js yüklendi. (FAB kalıcı)');
+wwLog.log('quick-add.js yüklendi. (FAB kalıcı)');

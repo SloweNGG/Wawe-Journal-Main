@@ -1,9 +1,14 @@
-// ============================================================
+﻿// ============================================================
 // SETTINGS.JS - SADE VE ÇALIŞAN VERSİYON
 // ⭐ Avatar cache - sadece değiştiğinde render
+// ⭐ TEHLİKELİ BÖLGE AKTİF: deleteAllUserData + deactivateAccount
+//        - deleteAllUserData(): Tüm trade + backtest verilerini siler
+//        - deactivateAccount(): deactivate_own_account RPC ile hesabı kapatır
+//        - İkisi de özel confirm modal kullanır (native confirm değil)
+//        - Loading durumu, hata yakalama ve redirect'ler eklendi
 // ============================================================
 
-console.log('🔧 settings.js yükleniyor...');
+wwLog.log('🔧 settings.js yükleniyor...');
 
 // ============================================================
 // ⭐ TEMA KONTROLÜ - EN BAŞTA ÇALIŞIR
@@ -42,7 +47,7 @@ console.log('🔧 settings.js yükleniyor...');
     } catch(e) {}
   }
   
-  console.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
+  wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
 // ============================================================
@@ -115,7 +120,7 @@ console.log('🔧 settings.js yükleniyor...');
     }
   });
   
-  console.log('✅ [settings] Tema izleyici yüklendi!');
+  wwLog.log('✅ [settings] Tema izleyici yüklendi!');
 })();
 
 // ============================================================
@@ -179,7 +184,7 @@ window.toggleTheme = function() {
     }));
   } catch(e) {}
   
-  console.log('🎨 Tema değiştirildi:', isLight ? 'light' : 'dark');
+  wwLog.log('🎨 Tema değiştirildi:', isLight ? 'light' : 'dark');
 };
 
 // ============================================================
@@ -270,7 +275,7 @@ function showMsg(message, type) {
   if (window.showToast) {
     window.showToast(message, type);
   } else {
-    console.log('[' + type + ']', message);
+    wwLog.log('[' + type + ']', message);
     var toast = document.createElement('div');
     toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 24px;background:' + (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#8b5cf6') + ';color:white;border-radius:10px;font-family:"DM Sans",sans-serif;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;';
     toast.textContent = message;
@@ -335,14 +340,14 @@ async function getSession() {
 // ============================================================
 async function loadPanelContent(panelId, url) {
   try {
-    console.log('📄 Panel yükleniyor: ' + panelId + ' -> ' + url);
+    wwLog.log('📄 Panel yükleniyor: ' + panelId + ' -> ' + url);
     var res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var html = await res.text();
     var panel = document.getElementById(panelId);
     if (panel) {
       panel.innerHTML = html;
-      console.log('✅ Panel yüklendi: ' + panelId);
+      wwLog.log('✅ Panel yüklendi: ' + panelId);
       
       var scripts = panel.querySelectorAll('script');
       scripts.forEach(function(script) {
@@ -375,10 +380,10 @@ async function loadPanelContent(panelId, url) {
 // PANEL SWITCH - GLOBAL
 // ============================================================
 window.switchPanel = function(panelId) {
-  console.log('🔄 switchPanel: ' + panelId);
+  wwLog.log('🔄 switchPanel: ' + panelId);
   
   if (!panelId) {
-    console.warn('Panel ID boş!');
+    wwLog.warn('Panel ID boş!');
     return;
   }
   
@@ -391,9 +396,9 @@ window.switchPanel = function(panelId) {
   var target = document.getElementById(panelId);
   if (target) {
     target.classList.add('active');
-    console.log('✅ Panel aktif: ' + panelId);
+    wwLog.log('✅ Panel aktif: ' + panelId);
   } else {
-    console.warn('❌ Panel bulunamadı: ' + panelId);
+    wwLog.warn('❌ Panel bulunamadı: ' + panelId);
     return;
   }
   
@@ -447,7 +452,7 @@ window.switchPanel = function(panelId) {
 window.addEventListener('hashchange', function() {
   var hash = window.location.hash.replace('#', '');
   if (hash && hash.indexOf('panel-') === 0) {
-    console.log('📍 Hash değişti: ' + hash);
+    wwLog.log('📍 Hash değişti: ' + hash);
     window.switchPanel(hash);
   }
 });
@@ -577,7 +582,7 @@ async function uploadAvatar(file) {
   var ext = file.name.split('.').pop();
   var fileName = 'avatars/' + user.id + '_' + Date.now() + '.' + ext;
   
-  console.log('📤 Avatar yükleniyor:', fileName);
+  wwLog.log('📤 Avatar yükleniyor:', fileName);
   
   try {
     var listData = await sb.storage.from('avatars').list('avatars', { search: user.id });
@@ -586,12 +591,12 @@ async function uploadAvatar(file) {
         var item = listData.data[i];
         if (item.name.indexOf(user.id) === 0) {
           await sb.storage.from('avatars').remove(['avatars/' + item.name]);
-          console.log('🗑️ Eski avatar silindi:', item.name);
+          wwLog.log('🗑️ Eski avatar silindi:', item.name);
         }
       }
     }
   } catch (e) {
-    console.log('Eski avatar silinemedi:', e);
+    wwLog.log('Eski avatar silinemedi:', e);
   }
   
   var uploadResult = await sb.storage.from('avatars').upload(fileName, file, {
@@ -610,7 +615,7 @@ async function uploadAvatar(file) {
   
   if (progress) progress.style.display = 'none';
   
-  console.log('✅ Avatar yüklendi:', urlData.data.publicUrl);
+  wwLog.log('✅ Avatar yüklendi:', urlData.data.publicUrl);
   return urlData.data.publicUrl;
 }
 
@@ -620,7 +625,7 @@ async function updateAvatar(url) {
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) return false;
   
-  console.log('📝 Avatar güncelleniyor:', url);
+  wwLog.log('📝 Avatar güncelleniyor:', url);
   
   var result = await sb.from('user_profiles').update({ avatar_url: url }).eq('id', user.id);
   
@@ -630,7 +635,7 @@ async function updateAvatar(url) {
     return false;
   }
   
-  console.log('✅ Avatar güncellendi!');
+  wwLog.log('✅ Avatar güncellendi!');
   return true;
 }
 
@@ -645,7 +650,7 @@ async function loadAvatar() {
     var result = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
     
     if (result.error) {
-      console.warn('⚠️ Avatar sorgu hatası:', result.error);
+      wwLog.warn('⚠️ Avatar sorgu hatası:', result.error);
       updateAvatarElements(null);
       return;
     }
@@ -653,9 +658,9 @@ async function loadAvatar() {
     var url = (result.data && result.data.avatar_url) ? result.data.avatar_url : null;
     window.SETTINGS_STATE.currentAvatarUrl = url;
     updateAvatarElements(url);
-    console.log('🖼️ Avatar yüklendi:', url || 'varsayılan');
+    wwLog.log('🖼️ Avatar yüklendi:', url || 'varsayılan');
   } catch (e) {
-    console.warn('⚠️ Avatar yükleme hatası:', e);
+    wwLog.warn('⚠️ Avatar yükleme hatası:', e);
     updateAvatarElements(null);
   }
 }
@@ -744,7 +749,7 @@ function updateAvatarElements(url) {
 // PROFİL PANEL
 // ============================================================
 function initProfile() {
-  console.log('📋 Profil paneli başlatılıyor...');
+  wwLog.log('📋 Profil paneli başlatılıyor...');
   
   loadAvatar();
   
@@ -792,11 +797,11 @@ function initProfile() {
 // PROFİL BİLGİLERİNİ YÜKLE
 // ============================================================
 async function loadProfileData() {
-  console.log('👤 Profil verileri yükleniyor...');
+  wwLog.log('👤 Profil verileri yükleniyor...');
   
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
-    console.warn('Kullanıcı yok');
+    wwLog.warn('Kullanıcı yok');
     return;
   }
   
@@ -828,7 +833,7 @@ async function loadProfileData() {
     if (adminLinkMobile) adminLinkMobile.style.display = 'block';
   }
   
-  console.log('✅ Profil verileri yüklendi!');
+  wwLog.log('✅ Profil verileri yüklendi!');
 }
 
 // ============================================================
@@ -852,7 +857,7 @@ async function createNowPaymentInvoice(userId, planType, amount, currency, payCu
       return null;
     }
 
-    console.log('📤 createNowPaymentInvoice çağrıldı:', { userId: userId, planType: planType, amount: amount, currency: currency, payCurrency: payCurrency });
+    wwLog.log('📤 createNowPaymentInvoice çağrıldı:', { userId: userId, planType: planType, amount: amount, currency: currency, payCurrency: payCurrency });
 
     var edgeFunctionUrl = (window.WW_CONFIG && window.WW_CONFIG.EDGE_FUNCTION_URL) ? 
       window.WW_CONFIG.EDGE_FUNCTION_URL : 
@@ -882,7 +887,7 @@ async function createNowPaymentInvoice(userId, planType, amount, currency, payCu
       throw new Error(data.error || 'Ödeme başlatılamadı');
     }
 
-    console.log('✅ create-payment başarılı:', data);
+    wwLog.log('✅ create-payment başarılı:', data);
     return data;
   } catch (error) {
     console.error('❌ createNowPaymentInvoice hatası:', error);
@@ -934,7 +939,7 @@ window.upgradeToPremium = async function(planType, amount, currency, payMethod) 
 // ⭐ CANCEL PREMIUM
 // ============================================================
 window.cancelPremium = async function() {
-  console.log('💎 Abonelik iptal ediliyor...');
+  wwLog.log('💎 Abonelik iptal ediliyor...');
   
   try {
     var sb = getSb();
@@ -951,7 +956,7 @@ window.cancelPremium = async function() {
     }
     
     var userId = session.user.id;
-    console.log('👤 Kullanıcı ID:', userId);
+    wwLog.log('👤 Kullanıcı ID:', userId);
     
     var profileResult = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', userId).single();
     
@@ -962,7 +967,7 @@ window.cancelPremium = async function() {
     }
     
     var profile = profileResult.data;
-    console.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
+    wwLog.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
     
     if (!profile || profile.plan !== 'premium') {
       showMsg('Zaten premium aboneliğiniz yok.', 'info');
@@ -991,11 +996,11 @@ window.cancelPremium = async function() {
     });
     
     if (!confirmed) {
-      console.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
+      wwLog.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
       return false;
     }
     
-    console.log('ℹ️ Otomatik yenileme yok; plan değişikliği yapılmadı.');
+    wwLog.log('ℹ️ Otomatik yenileme yok; plan değişikliği yapılmadı.');
     showMsg('Otomatik yenileme yok. Premium erişiminiz ' + expiryDate + ' tarihine kadar devam eder.', 'info');
     return true;
     
@@ -1191,7 +1196,7 @@ async function renderPlan() {
       newCancelBtn.addEventListener('click', async function(e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🖱️ İptal butonuna tıklandı!');
+        wwLog.log('🖱️ İptal butonuna tıklandı!');
         
         if (window.cancelPremium) {
           var success = await window.cancelPremium();
@@ -1209,7 +1214,7 @@ async function renderPlan() {
         }
       });
       
-      console.log('✅ İptal butonu bağlandı!');
+      wwLog.log('✅ İptal butonu bağlandı!');
     }
     
     document.querySelectorAll('.pay-method-btn').forEach(function(btn) {
@@ -1280,7 +1285,7 @@ function startTimer(expiresAt) {
 // ŞİFRE PANEL
 // ============================================================
 function initPassword() {
-  console.log('🔐 Şifre paneli başlatılıyor...');
+  wwLog.log('🔐 Şifre paneli başlatılıyor...');
   
   var btn = safeEl('change-password-btn');
   if (btn) {
@@ -1352,22 +1357,151 @@ function initPassword() {
 // TEHLİKELİ BÖLGE
 // ============================================================
 function initDanger() {
-  console.log('⚠️ Tehlikeli bölge başlatılıyor...');
+  wwLog.log('⚠️ Tehlikeli bölge başlatılıyor...');
   
   var deleteBtn = safeEl('delete-data-btn');
   if (deleteBtn) {
-    deleteBtn.addEventListener('click', function() {
-      if (!confirm('Tüm verileriniz silinecek. Devam etmek istediğinize emin misiniz?')) return;
-      showMsg('Bu özellik yakında!', 'info');
-    });
+    deleteBtn.addEventListener('click', deleteAllUserData);
   }
   
   var deactivateBtn = safeEl('deactivate-account-btn');
   if (deactivateBtn) {
-    deactivateBtn.addEventListener('click', function() {
-      if (!confirm('Hesabınızı devre dışı bırakmak istediğinize emin misiniz?')) return;
-      showMsg('Bu özellik yakında!', 'info');
-    });
+    deactivateBtn.addEventListener('click', deactivateAccount);
+  }
+}
+
+// ============================================================
+// ⭐ TÜM VERİLERİ SİL
+// ============================================================
+async function deleteAllUserData() {
+  var user = window.SETTINGS_STATE.currentUser;
+  if (!user) {
+    showMsg('Kullanıcı bilgisi bulunamadı!', 'error');
+    return;
+  }
+  
+  var confirmed = await new Promise(function(resolve) {
+    showConfirmModal(
+      '🗑️ Tüm İşlem Verilerini Sil',
+      'Kaydettiğin tüm trade verileri kalıcı olarak silinecek. Bu işlem geri alınamaz.',
+      '⚠️ Silinecek: Tüm trade kayıtları + backtest verileri. Stratejiler korunur.',
+      function() { resolve(true); },
+      function() { resolve(false); }
+    );
+  });
+  
+  if (!confirmed) return;
+  
+  var btn = safeEl('delete-data-btn');
+  var originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Siliniyor...';
+  }
+  
+  try {
+    var sb = getSb();
+    if (!sb) throw new Error('Supabase bağlantısı yok');
+    
+    // 1. Trade'leri sil
+    wwLog.log('🗑️ Trade verileri siliniyor...');
+    var tradesResult = await sb.from('trades').delete().eq('user_id', user.id);
+    if (tradesResult.error) throw tradesResult.error;
+    
+    // 2. Backtest trade'leri sil (tablo yoksa sessizce geç)
+    wwLog.log('🗑️ Backtest verileri siliniyor...');
+    try {
+      var backtestResult = await sb.from('backtest_trades').delete().eq('user_id', user.id);
+      if (backtestResult.error) {
+        wwLog.warn('Backtest trades silinemedi:', backtestResult.error.message);
+      }
+    } catch (btErr) {
+      wwLog.warn('Backtest tablosu yok olabilir:', btErr);
+    }
+    
+    wwLog.log('✅ Veri silme tamamlandı');
+    showMsg('✅ Tüm trade verileri başarıyla silindi!', 'success');
+    
+    // 1.5 saniye sonra sayfa yenile
+    setTimeout(function() {
+      window.location.reload();
+    }, 1500);
+    
+  } catch (e) {
+    console.error('❌ Veri silme hatası:', e);
+    showMsg('❌ Silme hatası: ' + (e.message || 'Bilinmeyen hata'), 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+// ============================================================
+// ⭐ HESABI DEVRE DIŞI BIRAK
+// ============================================================
+async function deactivateAccount() {
+  var user = window.SETTINGS_STATE.currentUser;
+  if (!user) {
+    showMsg('Kullanıcı bilgisi bulunamadı!', 'error');
+    return;
+  }
+  
+  var confirmed = await new Promise(function(resolve) {
+    showConfirmModal(
+      '⚠️ Hesabı Devre Dışı Bırak',
+      'Hesabın devre dışı bırakılacak ve bir daha giriş yapamayacaksın. Verilerin sistemde saklı kalır.',
+      '⚠️ Bu işlem geri alınamaz. Hesabını tekrar aktifleştirmek için destek ekibiyle iletişime geçmen gerekecek.',
+      function() { resolve(true); },
+      function() { resolve(false); }
+    );
+  });
+  
+  if (!confirmed) return;
+  
+  var btn = safeEl('deactivate-account-btn');
+  var originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Devre dışı bırakılıyor...';
+  }
+  
+  try {
+    var sb = getSb();
+    if (!sb) throw new Error('Supabase bağlantısı yok');
+    
+    // RPC çağrısı (güvenlik trigger'ını bypass eden SECURITY DEFINER fonksiyon)
+    wwLog.log('🔒 Hesap devre dışı bırakılıyor...');
+    var result = await sb.rpc('deactivate_own_account');
+    
+    if (result.error) throw result.error;
+    
+    wwLog.log('✅ Hesap devre dışı bırakıldı');
+    showMsg('✅ Hesabın devre dışı bırakıldı. Çıkış yapılıyor...', 'success');
+    
+    // 1.5 saniye sonra sign out ve login'e yönlendir
+    setTimeout(async function() {
+      try {
+        await sb.auth.signOut();
+      } catch (e) {}
+      try { localStorage.removeItem('ww_last_active_push'); } catch(e) {}
+      window.location.href = '/login.html';
+    }, 1500);
+    
+  } catch (e) {
+    console.error('❌ Hesap devre dışı bırakma hatası:', e);
+    var errMsg = e.message || 'Bilinmeyen hata';
+    
+    // RPC henüz deploy edilmemişse özel mesaj
+    if (errMsg.indexOf('function') !== -1 || errMsg.indexOf('does not exist') !== -1) {
+      errMsg = 'Sunucu güncellemesi gerekiyor. Lütfen yöneticiyle iletişime geç.';
+    }
+    
+    showMsg('❌ İşlem başarısız: ' + errMsg, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
 }
 
@@ -1375,24 +1509,24 @@ function initDanger() {
 // ⭐ GÖRÜNÜM PANEL - TEMA ÖZELLEŞTİRME AKTİF
 // ============================================================
 function initAppearance() {
-  console.log('🎨 Görünüm paneli başlatılıyor...');
+  wwLog.log('🎨 Görünüm paneli başlatılıyor...');
   initLanguageSelector();
   initCurrencySelector();
   
   var container = safeEl('theme-customization-container');
   if (!container) {
-    console.warn('⚠️ theme-customization-container bulunamadı!');
+    wwLog.warn('⚠️ theme-customization-container bulunamadı!');
     return;
   }
   
   if (typeof window.loadThemeCustomization === 'function') {
-    console.log('✅ loadThemeCustomization fonksiyonu bulundu, çağrılıyor...');
+    wwLog.log('✅ loadThemeCustomization fonksiyonu bulundu, çağrılıyor...');
     window.loadThemeCustomization();
   } else if (typeof loadThemeCustomization === 'function') {
-    console.log('✅ loadThemeCustomization (global) çağrılıyor...');
+    wwLog.log('✅ loadThemeCustomization (global) çağrılıyor...');
     loadThemeCustomization();
   } else {
-    console.warn('⚠️ loadThemeCustomization fonksiyonu bulunamadı, fallback UI kullanılıyor...');
+    wwLog.warn('⚠️ loadThemeCustomization fonksiyonu bulunamadı, fallback UI kullanılıyor...');
     loadThemeCustomizationFallback();
   }
 }
@@ -1556,17 +1690,17 @@ function setupThemeEventsFallback() {
 // ⭐ DİL SEÇİCİ
 // ============================================================
 function initLanguageSelector() {
-  console.log('🌐 Dil seçici başlatılıyor...');
+  wwLog.log('🌐 Dil seçici başlatılıyor...');
   
   var savedLang = localStorage.getItem('ww_language') || 'en';
   var currentLang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : savedLang;
   
-  console.log('🌐 Mevcut dil: ' + currentLang + ' (kayıtlı: ' + savedLang + ')');
+  wwLog.log('🌐 Mevcut dil: ' + currentLang + ' (kayıtlı: ' + savedLang + ')');
   
   var btns = document.querySelectorAll('.lang-compact-btn');
   
   if (btns.length === 0) {
-    console.warn('⚠️ Dil butonları bulunamadı!');
+    wwLog.warn('⚠️ Dil butonları bulunamadı!');
     return;
   }
   
@@ -1583,7 +1717,7 @@ function initLanguageSelector() {
       e.stopPropagation();
       
       var lang = this.dataset.lang;
-      console.log('🖱️ Dil seçildi: ' + lang);
+      wwLog.log('🖱️ Dil seçildi: ' + lang);
       
       document.querySelectorAll('.lang-compact-btn').forEach(function(b) {
         b.classList.remove('active');
@@ -1598,7 +1732,7 @@ function initLanguageSelector() {
         var success = i18n.setLanguage(lang);
         
         if (success) {
-          console.log('✅ Dil değiştirildi: ' + lang);
+          wwLog.log('✅ Dil değiştirildi: ' + lang);
           if (typeof window.i18n.apply === 'function') {
             window.i18n.apply();
           }
@@ -1618,7 +1752,7 @@ function initLanguageSelector() {
           });
           var langName = this.textContent.trim();
           showMsg(langName + ' dili seçildi! ✅', 'success');
-          console.log('✅ Dil değişimi tamamlandı (' + lang + ')');
+          wwLog.log('✅ Dil değişimi tamamlandı (' + lang + ')');
         } else {
           showMsg('Dil değiştirilemedi, sayfa yenileniyor...', 'info');
           setTimeout(function() { location.reload(); }, 500);
@@ -1630,14 +1764,14 @@ function initLanguageSelector() {
     });
   });
   
-  console.log('✅ Dil seçici başlatıldı!');
+  wwLog.log('✅ Dil seçici başlatıldı!');
 }
 
 // ============================================================
 // ⭐ PARA BİRİMİ SEÇİCİ
 // ============================================================
 function initCurrencySelector() {
-  console.log('💰 Para birimi seçici başlatılıyor...');
+  wwLog.log('💰 Para birimi seçici başlatılıyor...');
   
   var current = localStorage.getItem('ww_currency') || '$';
   var btns = document.querySelectorAll('.currency-btn');
@@ -1677,23 +1811,23 @@ function initCurrencySelector() {
     });
   });
   
-  console.log('✅ Para birimi seçici başlatıldı!');
+  wwLog.log('✅ Para birimi seçici başlatıldı!');
 }
 
 // ============================================================
 // ⭐ OVER TRADE
 // ============================================================
 function initOvertrade() {
-  console.log('📊 Over Trade paneli başlatılıyor...');
+  wwLog.log('📊 Over Trade paneli başlatılıyor...');
   
   var container = safeEl('overtrade-settings-container');
   if (!container) {
-    console.warn('⚠️ Over Trade container bulunamadı!');
+    wwLog.warn('⚠️ Over Trade container bulunamadı!');
     return;
   }
   
   if (typeof window.loadOvertradeSettingsUI === 'function') {
-    console.log('✅ loadOvertradeSettingsUI fonksiyonu bulundu, çağrılıyor...');
+    wwLog.log('✅ loadOvertradeSettingsUI fonksiyonu bulundu, çağrılıyor...');
     window.loadOvertradeSettingsUI('overtrade-settings-container');
   } else {
     console.error('❌ loadOvertradeSettingsUI fonksiyonu bulunamadı!');
@@ -1732,7 +1866,7 @@ async function updateBadge() {
 // NAV EVENT LISTENER
 // ============================================================
 function initNavEvents() {
-  console.log('🧭 Nav event listener başlatılıyor...');
+  wwLog.log('🧭 Nav event listener başlatılıyor...');
   
   var ddBtn = document.getElementById('premium-dropdown-btn');
   var ddMenu = document.getElementById('premium-dropdown-menu');
@@ -1825,21 +1959,21 @@ function initNavEvents() {
     });
   }
   
-  console.log('✅ Nav event listener başlatıldı!');
+  wwLog.log('✅ Nav event listener başlatıldı!');
 }
 
 // ============================================================
 // PANEL CLICK EVENTLERİ
 // ============================================================
 function initPanelClickEvents() {
-  console.log('📋 Panel click eventleri başlatılıyor...');
+  wwLog.log('📋 Panel click eventleri başlatılıyor...');
   
   document.querySelectorAll('.sidebar-nav-item').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       var panelId = this.dataset.panel;
       if (panelId) {
-        console.log('🖱️ Sidebar tıklandı: ' + panelId);
+        wwLog.log('🖱️ Sidebar tıklandı: ' + panelId);
         window.switchPanel(panelId);
       }
     });
@@ -1850,20 +1984,20 @@ function initPanelClickEvents() {
       e.preventDefault();
       var panelId = this.dataset.panel;
       if (panelId) {
-        console.log('🖱️ Tab tıklandı: ' + panelId);
+        wwLog.log('🖱️ Tab tıklandı: ' + panelId);
         window.switchPanel(panelId);
       }
     });
   });
   
-  console.log('✅ Panel click eventleri başlatıldı!');
+  wwLog.log('✅ Panel click eventleri başlatıldı!');
 }
 
 // ============================================================
 // AVATAR POPUP
 // ============================================================
 function initAvatarPopup() {
-  console.log('🖼️ Avatar popup başlatılıyor...');
+  wwLog.log('🖼️ Avatar popup başlatılıyor...');
   
   var sidebarProfile = document.getElementById('sidebar-profile');
   if (sidebarProfile) {
@@ -1899,7 +2033,7 @@ function closePopup() {
 // CONFIRM MODAL - INIT
 // ============================================================
 function initConfirmModal() {
-  console.log('📦 Confirm modal başlatılıyor...');
+  wwLog.log('📦 Confirm modal başlatılıyor...');
   
   var modal = document.getElementById('confirm-modal');
   if (modal) {
@@ -1918,11 +2052,11 @@ function initConfirmModal() {
 // PREMIUM KONTROL
 // ============================================================
 async function checkAndActivatePremium() {
-  console.log('🔍 Premium kontrol ediliyor...');
+  wwLog.log('🔍 Premium kontrol ediliyor...');
   
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
-    console.warn('Kullanıcı yok');
+    wwLog.warn('Kullanıcı yok');
     return;
   }
   
@@ -1942,7 +2076,7 @@ async function checkAndActivatePremium() {
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
     
     if (isPremium && expiresAt && new Date() > expiresAt) {
-      console.log('⏰ Premium süresi dolmuş; erişim yerelde ücretsiz olarak değerlendiriliyor.');
+      wwLog.log('⏰ Premium süresi dolmuş; erişim yerelde ücretsiz olarak değerlendiriliyor.');
       window.SETTINGS_STATE.isPremium = false;
       return;
     }
@@ -1956,9 +2090,9 @@ async function checkAndActivatePremium() {
           expires_at: expiresAt ? expiresAt.toISOString() : null 
         }));
       } catch(e) {}
-      console.log('✅ Premium aktif! Bitiş:', expiresAt);
+      wwLog.log('✅ Premium aktif! Bitiş:', expiresAt);
     } else {
-      console.log('📌 Ücretsiz plan');
+      wwLog.log('📌 Ücretsiz plan');
     }
     
   } catch (e) {
@@ -1970,14 +2104,14 @@ async function checkAndActivatePremium() {
 // ⭐ SAYFA BAŞLATMA
 // ============================================================
 document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🚀 Settings başlatılıyor...');
+  wwLog.log('🚀 Settings başlatılıyor...');
   
   try {
     var savedLang = localStorage.getItem('ww_language');
     if (savedLang && window.i18n) {
       var currentLang = window.i18n.getCurrentLanguage();
       if (currentLang !== savedLang) {
-        console.log('🔄 Dil geri yükleniyor: ' + currentLang + ' → ' + savedLang);
+        wwLog.log('🔄 Dil geri yükleniyor: ' + currentLang + ' → ' + savedLang);
         window.i18n.setLanguage(savedLang);
       }
       document.documentElement.setAttribute('data-lang', savedLang);
@@ -1989,7 +2123,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       var key = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
       window.sb = window.supabase.createClient(url, key);
       sb = window.sb;
-      console.log('✅ Supabase client oluşturuldu');
+      wwLog.log('✅ Supabase client oluşturuldu');
     }
     
     if (!sb) {
@@ -1999,12 +2133,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     var user = await getCurrentUser();
     if (!user) {
-      console.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
+      wwLog.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
       window.location.href = '/index.html';
       return;
     }
     
-    console.log('👤 Kullanıcı:', user.email);
+    wwLog.log('👤 Kullanıcı:', user.email);
     window.SETTINGS_STATE.currentUser = user;
     
     await checkAndActivatePremium();
@@ -2044,7 +2178,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (hash && hash.indexOf('panel-') === 0) {
       targetPanelId = hash;
-      console.log('📍 URL\'den panel hedefleniyor: ' + targetPanelId);
+      wwLog.log('📍 URL\'den panel hedefleniyor: ' + targetPanelId);
     }
     
     var firstPanel = document.getElementById(targetPanelId);
@@ -2097,14 +2231,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadAvatar();
     await loadProfileData();
     
-    console.log('✅ Settings başarıyla başlatıldı! 🎉');
+    wwLog.log('✅ Settings başarıyla başlatıldı! 🎉');
     
   } catch (e) {
     console.error('❌ Settings hatası:', e);
   }
 });
 
-console.log('✅ settings.js GÜNCELLENDİ ve yüklendi!');
+wwLog.log('✅ settings.js GÜNCELLENDİ ve yüklendi!');
 
 // ============================================================
 // ⭐ GLOBAL EXPORT

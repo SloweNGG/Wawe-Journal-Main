@@ -1,4 +1,4 @@
-
+﻿
 // ============================================================
 // WAWE JOURNAL – i18n.js (DİL KALICILIĞI + NAVBAR + BİLDİRİMLER)
 // Diller: İngilizce (varsayılan), Türkçe, Almanca
@@ -1734,12 +1734,12 @@ class I18n {
   init() {
     // DÜZELTME: Sadece bir kez çalıştır
     if (this._isInitialized) {
-      console.log('[i18n] Zaten başlatılmış, atlanıyor.');
+      wwLog.log('[i18n] Zaten başlatılmış, atlanıyor.');
       return;
     }
     this._isInitialized = true;
     
-    console.log(`[i18n] Başlatılıyor, dil: ${this.currentLang}`);
+    wwLog.log(`[i18n] Başlatılıyor, dil: ${this.currentLang}`);
     this.apply();
   }
   
@@ -1754,18 +1754,18 @@ class I18n {
   // DÜZELTME: Race condition'e karşı güçlendirilmiş setLanguage
   setLanguage(lang) {
     if (!translations[lang]) {
-      console.warn(`[i18n] Dil bulunamadı: ${lang}`);
+      wwLog.warn(`[i18n] Dil bulunamadı: ${lang}`);
       return false;
     }
     
     // Eğer zaten bu dildeyse gereksiz işlem yapma
     if (this.currentLang === lang && document.documentElement.getAttribute('data-lang') === lang) {
-      console.log(`[i18n] Zaten ${lang} dilinde, atlanıyor.`);
+      wwLog.log(`[i18n] Zaten ${lang} dilinde, atlanıyor.`);
       return true;
     }
     
     const callId = ++this._applyCounter;
-    console.log(`[i18n] Dil değiştiriliyor [${callId}]: ${this.currentLang} → ${lang}`);
+    wwLog.log(`[i18n] Dil değiştiriliyor [${callId}]: ${this.currentLang} → ${lang}`);
     
     this.currentLang = lang;
     
@@ -1781,7 +1781,7 @@ class I18n {
     this._applyTimeout = setTimeout(() => {
       // Eğer başka bir çağrı bu sırada dili değiştirdiyse, sadece en sonuncusu uygulansın
       if (this._applyCounter !== callId) {
-        console.log(`[i18n] ${callId} numaralı çağrı iptal edildi (daha yeni bir çağrı var).`);
+        wwLog.log(`[i18n] ${callId} numaralı çağrı iptal edildi (daha yeni bir çağrı var).`);
         return;
       }
       this._applyInternal(callId);
@@ -1793,11 +1793,11 @@ class I18n {
   
   _applyInternal(callId) {
     if (this._applyCounter !== callId) {
-      console.log(`[i18n] _applyInternal ${callId} iptal edildi.`);
+      wwLog.log(`[i18n] _applyInternal ${callId} iptal edildi.`);
       return;
     }
     
-    console.log(`[i18n] Dil uygulanıyor [${callId}]: ${this.currentLang}`);
+    wwLog.log(`[i18n] Dil uygulanıyor [${callId}]: ${this.currentLang}`);
     this.apply();
     
     // Bildirimleri gönder
@@ -1805,7 +1805,7 @@ class I18n {
       try { cb(this.currentLang); } catch (e) {}
     });
     
-    console.log(`[i18n] Dil başarıyla uygulandı [${callId}]`);
+    wwLog.log(`[i18n] Dil başarıyla uygulandı [${callId}]`);
   }
   
   getCurrentLanguage() {
@@ -1836,7 +1836,7 @@ class I18n {
     // Çünkü bu, sayfa yüklendikten sonra DOM metinlerini değiştiriyor
     // Bu işlem, navbar.js ve diğer bileşenler tarafından yapılmalı
     
-    console.log(`[i18n] apply çalıştı, dil: ${lang} (DOM metinleri değiştirilmedi)`);
+    wwLog.log(`[i18n] apply çalıştı, dil: ${lang} (DOM metinleri değiştirilmedi)`);
   }
   
   onChange(callback) {
@@ -1849,7 +1849,7 @@ class I18n {
     // DÜZELTME: refresh sadece localStorage'ı kontrol et, asla kendi kendine setLanguage çağırma
     const savedLang = localStorage.getItem('ww_language');
     if (savedLang && translations[savedLang] && savedLang !== this.currentLang) {
-      console.log(`[i18n] Refresh: localStorage'dan ${savedLang} yükleniyor`);
+      wwLog.log(`[i18n] Refresh: localStorage'dan ${savedLang} yükleniyor`);
       // refresh sadece mevcut dili günceller, listener'ları çağırmaz
       this.currentLang = savedLang;
       this.apply();
@@ -1863,7 +1863,7 @@ class I18n {
   // DÜZELTME: Yeni metot - Sadece localStorage'ı güncelle, UI'ı etkileme
   syncStorageOnly(lang) {
     if (!translations[lang]) return false;
-    console.log(`[i18n] Sadece localStorage senkronize ediliyor: ${lang}`);
+    wwLog.log(`[i18n] Sadece localStorage senkronize ediliyor: ${lang}`);
     localStorage.setItem('ww_language', lang);
     return true;
   }
@@ -1878,19 +1878,19 @@ class I18n {
     
     // localStorage varsa, kullanıcının son tercihi odur
     if (savedLang && translations[savedLang]) {
-      console.log(`[i18n] Çakışma çözümü: localStorage'da ${savedLang} var, DB'deki ${dbLang} değeri kullanılmayacak.`);
+      wwLog.log(`[i18n] Çakışma çözümü: localStorage'da ${savedLang} var, DB'deki ${dbLang} değeri kullanılmayacak.`);
       return savedLang;
     }
     
     // localStorage boşsa, DB'den gelen dili kullan
     if (dbLang && translations[dbLang]) {
-      console.log(`[i18n] Çakışma çözümü: localStorage boş, DB'den ${dbLang} kullanılıyor.`);
+      wwLog.log(`[i18n] Çakışma çözümü: localStorage boş, DB'den ${dbLang} kullanılıyor.`);
       localStorage.setItem('ww_language', dbLang);
       return dbLang;
     }
     
     // Hiçbiri yoksa varsayılan
-    console.log(`[i18n] Çakışma çözümü: varsayılan dil kullanılıyor.`);
+    wwLog.log(`[i18n] Çakışma çözümü: varsayılan dil kullanılıyor.`);
     return this.defaultLang;
   }
 }
@@ -1911,7 +1911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     domReadyApplied = true;
     const saved = localStorage.getItem('ww_language') || 'en';
     document.documentElement.setAttribute('data-lang', saved);
-    console.log('[i18n] DOMContentLoaded: data-lang ayarlandı:', saved);
+    wwLog.log('[i18n] DOMContentLoaded: data-lang ayarlandı:', saved);
   }
 });
 
@@ -1923,7 +1923,7 @@ if (document.readyState === 'loading') {
       dataLangSet = true;
       const saved = localStorage.getItem('ww_language') || 'en';
       document.documentElement.setAttribute('data-lang', saved);
-      console.log('[i18n] data-lang ayarlandı:', saved);
+      wwLog.log('[i18n] data-lang ayarlandı:', saved);
     }
   });
 } else {
@@ -1931,9 +1931,9 @@ if (document.readyState === 'loading') {
     dataLangSet = true;
     const saved = localStorage.getItem('ww_language') || 'en';
     document.documentElement.setAttribute('data-lang', saved);
-    console.log('[i18n] data-lang ayarlandı:', saved);
+    wwLog.log('[i18n] data-lang ayarlandı:', saved);
   }
 }
 
-console.log('[i18n] Başlangıç dili:', i18n.getCurrentLanguage());
-console.log('[i18n] localStorage\'dan okunan dil:', i18n.getSavedLanguage());
+wwLog.log('[i18n] Başlangıç dili:', i18n.getCurrentLanguage());
+wwLog.log('[i18n] localStorage\'dan okunan dil:', i18n.getSavedLanguage());

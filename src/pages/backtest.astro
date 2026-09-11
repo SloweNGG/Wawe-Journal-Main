@@ -316,7 +316,7 @@ import Layout from '../layouts/Layout.astro';
      ============================================================ */
   // WW_CONFIG config.js'den gelir
   if (typeof WW_CONFIG === 'undefined') {
-    console.warn('WW_CONFIG tanımlı değil, fallback kullanılıyor.');
+    wwLog.warn('WW_CONFIG tanımlı değil, fallback kullanılıyor.');
     window.WW_CONFIG = {
       SUPABASE_URL: 'https://odasapyhtdopbnlfhwde.supabase.co',
       SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg'
@@ -330,7 +330,7 @@ import Layout from '../layouts/Layout.astro';
       WW_CONFIG.SUPABASE_ANON_KEY
     );
   } catch (e) {
-    console.warn('Supabase başlatılamadı', e);
+    wwLog.warn('Supabase başlatılamadı', e);
   }
 
   /* ============================================================
@@ -500,7 +500,7 @@ import Layout from '../layouts/Layout.astro';
         pnl_pct: trade.pnl,
         exit_reason: trade.reason
       });
-    } catch (e) { console.warn('Trade Supabase\'e kaydedilemedi', e); }
+    } catch (e) { wwLog.warn('Trade Supabase\'e kaydedilemedi', e); }
   }
 
   function checkAutoExit(bar) {

@@ -13,6 +13,11 @@
 //        ile boş sütunlar minimuma indirildi.
 // ============================================================
 
+// ⭐ Logger — global wwLog'a fallback ile bağlan
+const wwLog = (typeof window !== 'undefined' && window.wwLog) 
+  ? window.wwLog 
+  : { log: () => {}, warn: () => {}, info: () => {}, debug: () => {}, error: console.error.bind(console) };
+
 import {
   sanitizeHTML,
   sanitizeURL,

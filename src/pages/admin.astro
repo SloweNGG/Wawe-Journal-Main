@@ -5,18 +5,13 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title>Admin Panel – Wawe Journal</title>
   
-  
-  <!-- GLOBAL CSS -->
-  
   <!-- ADMIN CSS -->
   <link rel="stylesheet" href="/interface/admin/css/admin.css" />
   
-  
-  <!-- CHART.JS -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
+  <!-- APEXCHARTS (Chart.js yerine) -->
+  <!-- ⭐ DEĞİŞİKLİK: Chart.js kaldırıldı, ApexCharts eklendi (sürüm sabit) -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline></script>
 </Fragment>
-  <!-- NAVBAR -->
-
   <!-- MAIN -->
   <main class="admin-main" id="main-content">
     <div style="display:flex;justify-content:center;padding:4rem;flex-direction:column;align-items:center;gap:1rem;">
@@ -84,80 +79,32 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
-       ============================================================ -->
-  
-  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" is:inline></script>
-  
-  <!-- 2. CORE KONFİG VE İ18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
-  
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
-  
-  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
-  
-  <!-- 5. ADMIN MODÜLLERİ (ES5 - AYNI KALIR) -->
   <script src="/interface/admin/js/admin-core.js" is:inline></script>
   <script src="/interface/admin/js/admin-data.js" is:inline></script>
   <script src="/interface/admin/js/admin-dashboard.js" is:inline></script>
   
-  <!-- 6. BAŞLAT -->
   <script is:inline>
-    console.log('🚀 Admin başlatılıyor...');
-    
-    // ⭐ Her script'in yüklendiğini kontrol et
-    console.log('📦 script.js loaded:', typeof sb !== 'undefined' ? '✅' : '❌');
-    console.log('📦 navbar.js loaded:', typeof loadNavbar !== 'undefined' ? '✅' : '❌');
-    console.log('📦 admin-core.js loaded:', typeof adminState !== 'undefined' ? '✅' : '❌');
-    console.log('📦 initAdmin loaded:', typeof initAdmin !== 'undefined' ? '✅' : '❌');
-    console.log('📦 admin-data.js loaded:', typeof loadUsers !== 'undefined' ? '✅' : '❌');
-    console.log('📦 admin-dashboard.js loaded:', typeof loadAnalyticsData !== 'undefined' ? '✅' : '❌');
-    
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('📄 DOM yüklendi!');
-      
-      // Navbar
       if (typeof loadNavbar === 'function') {
-        try {
-          loadNavbar('navbar-container');
-          console.log('✅ Navbar yüklendi!');
-        } catch(e) {
-          console.warn('⚠️ Navbar hatası:', e);
-        }
+        try { loadNavbar('navbar-container'); } catch(e) {}
       }
-      
-      // Lucide
       if (typeof lucide !== 'undefined') {
-        try {
-          lucide.createIcons();
-          console.log('✅ Lucide icons initialized!');
-        } catch(e) {
-          console.warn('⚠️ Lucide hatası:', e);
-        }
+        try { lucide.createIcons(); } catch(e) {}
       }
-      
-      // ⭐ Admin - initAdmin kontrolü
       if (typeof initAdmin === 'function') {
-        console.log('⏳ initAdmin başlatılıyor...');
         setTimeout(function() {
-          try {
-            initAdmin();
-          } catch(e) {
-            console.error('❌ Admin panel hatası:', e);
-            alert('Admin panel hatası: ' + e.message);
+          try { initAdmin(); } catch(e) {
+            console.error('Admin panel hatası:', e);
           }
         }, 500);
       } else {
-        console.error('❌ initAdmin fonksiyonu bulunamadı!');
-        console.log('💡 admin-core.js dosyasının yolu: /js/admin/admin-core.js');
-        console.log('💡 Dosyanın var olduğundan emin ol!');
-        alert('admin-core.js yüklenemedi! Dosya yolunu kontrol et.');
+        console.error('initAdmin fonksiyonu bulunamadı!');
       }
     });
   </script>

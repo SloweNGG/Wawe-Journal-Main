@@ -43,12 +43,12 @@ import Layout from '../layouts/Layout.astro';
       if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
         document.documentElement.setAttribute('data-lang', savedLang);
         document.documentElement.lang = savedLang;
-        console.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
+        wwLog.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
       } else {
         localStorage.setItem('ww_language', 'en');
         document.documentElement.setAttribute('data-lang', 'en');
         document.documentElement.lang = 'en';
-        console.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
+        wwLog.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
       }
     })();
   </script>
@@ -116,7 +116,7 @@ import Layout from '../layouts/Layout.astro';
           else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
         });
         document.body.appendChild(fab);
-        console.log('✅ Manuel FAB oluşturuldu');
+        wwLog.log('✅ Manuel FAB oluşturuldu');
       }
       
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -138,7 +138,7 @@ import Layout from '../layouts/Layout.astro';
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
-        console.log('✅ Lucide icons initialized on premium dashboard!');
+        wwLog.log('✅ Lucide icons initialized on premium dashboard!');
       }
     });
   </script>
@@ -148,9 +148,9 @@ import Layout from '../layouts/Layout.astro';
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
         loadNavbar('navbar-container');
-        console.log('✅ Navbar yüklendi!');
+        wwLog.log('✅ Navbar yüklendi!');
       } else {
-        console.warn('⚠️ loadNavbar fonksiyonu bulunamadı!');
+        wwLog.warn('⚠️ loadNavbar fonksiyonu bulunamadı!');
       }
     });
   </script>

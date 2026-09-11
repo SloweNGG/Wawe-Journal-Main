@@ -1,8 +1,8 @@
-// ============================================================
+﻿// ============================================================
 // CALENDAR.JS - TAKVİM ÖZEL FONKSİYONLAR (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
-console.log('📅 calendar.js yükleniyor...');
+wwLog.log('📅 calendar.js yükleniyor...');
 
 // ============================================================
 // ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN
@@ -40,7 +40,7 @@ console.log('📅 calendar.js yükleniyor...');
     } catch(e) {}
   }
   
-  console.log('🎨 [calendar.js] Tema ayarlandı:', savedTheme || 'dark');
+  wwLog.log('🎨 [calendar.js] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
 // ============================================================
@@ -48,11 +48,11 @@ console.log('📅 calendar.js yükleniyor...');
 // ============================================================
 
 (function listenThemeChanges() {
-  console.log('🎨 [Calendar] Tema izleyici başlatıldı...');
+  wwLog.log('🎨 [Calendar] Tema izleyici başlatıldı...');
   
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
-      console.log('🔄 [Calendar] Tema değişikliği algılandı:', e.newValue);
+      wwLog.log('🔄 [Calendar] Tema değişikliği algılandı:', e.newValue);
       var isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
       
@@ -79,7 +79,7 @@ console.log('📅 calendar.js yükleniyor...');
   });
   
   document.addEventListener('themeChanged', function(e) {
-    console.log('🔄 [Calendar] ThemeChanged event yakalandı');
+    wwLog.log('🔄 [Calendar] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
       var root = document.documentElement;
@@ -110,7 +110,7 @@ console.log('📅 calendar.js yükleniyor...');
     }
   });
   
-  console.log('✅ [Calendar] Tema izleyici yüklendi!');
+  wwLog.log('✅ [Calendar] Tema izleyici yüklendi!');
 })();
 
 // ============================================================
@@ -399,7 +399,7 @@ function renderCalendar() {
     if (worstEl) worstEl.textContent = anyTradedDay ? formatCurrency(worstDay.pnl) : '—';
     if (worstDateEl) worstDateEl.textContent = anyTradedDay ? formatDayLabel(worstDay.date, lang) : '';
   } catch(e) {
-    console.warn('renderCalendar hatası:', e);
+    wwLog.warn('renderCalendar hatası:', e);
   }
 }
 
@@ -527,7 +527,7 @@ async function loadCalendarTradesFromDB(userId) {
 // ============================================================
 async function initCalendar() {
   try {
-    console.log('📅 Calendar başlatılıyor...');
+    wwLog.log('📅 Calendar başlatılıyor...');
     
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
@@ -681,7 +681,7 @@ async function initCalendar() {
             await updateOvertradeBell();
         }
     } catch(e) {
-        console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+        wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
     }
     
     // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
@@ -700,7 +700,7 @@ async function initCalendar() {
       });
     }
     
-    console.log('✅ Calendar başlatıldı!');
+    wwLog.log('✅ Calendar başlatıldı!');
   } catch (e) {
     console.error('❌ Calendar init hatası:', e);
   }
@@ -715,4 +715,4 @@ window.calcTradePnL = calcTradePnL;
 window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;
 
-console.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');
+wwLog.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');

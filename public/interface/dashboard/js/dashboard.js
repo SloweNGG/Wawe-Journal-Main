@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // DASHBOARD - ANA JS DOSYASI (APEXCHARTS & LIGHTWEIGHT CHARTS)
 // ⭐ Chart.js → ApexCharts + Lightweight Charts GEÇİŞİ
 // ⭐ FIX: Chart boyutlandırma / container senkronizasyonu
@@ -93,7 +93,7 @@
       } catch (e) {}
     }
 
-    console.log('🎨 [dashboard.js] Tema ayarlandı:', savedTheme || 'dark');
+    wwLog.log('🎨 [dashboard.js] Tema ayarlandı:', savedTheme || 'dark');
   } catch (e) {}
 })();
 
@@ -107,7 +107,7 @@
   function safeEl(id) {
     var el = document.getElementById(id);
     if (!el) {
-      console.warn('⚠️ Element bulunamadı:', id);
+      wwLog.warn('⚠️ Element bulunamadı:', id);
     }
     return el;
   }
@@ -252,7 +252,7 @@
     if (typeof window.showToast === 'function') {
       window.showToast(msg, type);
     } else {
-      console.log('📢 Toast:', msg, type);
+      wwLog.log('📢 Toast:', msg, type);
     }
   }
 
@@ -407,7 +407,7 @@
   // ⭐ storage event - başka sekmede tema değişirse
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
-      console.log('🔄 [Dashboard] Tema değişikliği algılandı (storage):', e.newValue);
+      wwLog.log('🔄 [Dashboard] Tema değişikliği algılandı (storage):', e.newValue);
       var isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
 
@@ -433,7 +433,7 @@
 
   // ⭐ themeChanged event - settings.js bu event'i dispatch ediyor
   document.addEventListener('themeChanged', function(e) {
-    console.log('🔄 [Dashboard] themeChanged event yakalandı');
+    wwLog.log('🔄 [Dashboard] themeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
       var root = document.documentElement;
@@ -451,7 +451,7 @@
 
   // ⭐ chartsReset event - eski uyumluluk için
   document.addEventListener('chartsReset', function(e) {
-    console.log('🔄 chartsReset event alındı, grafikler yeniden render ediliyor...');
+    wwLog.log('🔄 chartsReset event alındı, grafikler yeniden render ediliyor...');
     resetChartsForTheme();
   });
 
@@ -464,7 +464,7 @@
     if (!container) return;
 
     if (typeof ResizeObserver === 'undefined') {
-      console.log('ℹ️ ResizeObserver desteklenmiyor, boyut takibi yapılamıyor.');
+      wwLog.log('ℹ️ ResizeObserver desteklenmiyor, boyut takibi yapılamıyor.');
       return;
     }
 
@@ -496,7 +496,7 @@
       resizeObservers[containerId] = observer;
       chartContainers[containerId] = container;
     } catch(e) {
-      console.warn('ResizeObserver kurulamadı:', e);
+      wwLog.warn('ResizeObserver kurulamadı:', e);
     }
   }
 
@@ -1688,7 +1688,7 @@
         renderAttempts++;
         if (renderAttempts > 5) {
           renderAttempts = 0;
-          console.warn('⚠️ Container\'lar bulunamadı, grafik render atlanıyor.');
+          wwLog.warn('⚠️ Container\'lar bulunamadı, grafik render atlanıyor.');
           return;
         }
         setTimeout(function() {
@@ -2537,7 +2537,7 @@
       loadMonthlyTarget();
 
       if (typeof requireAuth !== 'function') {
-        console.warn('⚠️ requireAuth fonksiyonu bulunamadı');
+        wwLog.warn('⚠️ requireAuth fonksiyonu bulunamadı');
         hideSkeletons();
         return;
       }
@@ -2566,7 +2566,7 @@
           await updateOvertradeBell();
         }
       } catch(e) {
-        console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+        wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
       }
 
       try {

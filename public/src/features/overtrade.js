@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - OVERTRADE FEATURE
 // ============================================================
 
@@ -23,7 +23,7 @@ export function getOvertradeSettings() {
       };
     }
   } catch (e) {
-    console.warn('OverTrade ayarları okunamadı:', e);
+    wwLog.warn('OverTrade ayarları okunamadı:', e);
   }
   return { dailyLimit: 5, weeklyLimit: 20, dailyLossLimit: 1000, warningLevel: 'warning', enabled: true };
 }
@@ -207,7 +207,7 @@ export function renderOvertradeWarning(warnings, containerId) {
   try {
     const container = document.getElementById(containerId);
     if (!container) {
-      console.warn('renderOvertradeWarning: container bulunamadı:', containerId);
+      wwLog.warn('renderOvertradeWarning: container bulunamadı:', containerId);
       return;
     }
     
@@ -330,7 +330,7 @@ export async function checkAndRenderOvertrade(containerId) {
   try {
     const container = document.getElementById(containerId);
     if (!container) {
-      console.warn('checkAndRenderOvertrade: container bulunamadı:', containerId);
+      wwLog.warn('checkAndRenderOvertrade: container bulunamadı:', containerId);
       return;
     }
     
@@ -528,7 +528,7 @@ export async function updateOvertradeBell() {
     var bellBtn = document.getElementById('overtrade-bell-btn');
     var markReadBtn = document.getElementById('bell-mark-read-btn');
     
-    console.log('🔔 updateOvertradeBell - Elementler:', {
+    wwLog.log('🔔 updateOvertradeBell - Elementler:', {
       body: !!body,
       dot: !!dot,
       bellBtn: !!bellBtn,
@@ -536,7 +536,7 @@ export async function updateOvertradeBell() {
     });
     
     if (!body) {
-      console.warn('⚠️ bell-panel-body bulunamadı');
+      wwLog.warn('⚠️ bell-panel-body bulunamadı');
       return;
     }
 
@@ -581,13 +581,13 @@ export async function updateOvertradeBell() {
     if (markReadBtn) {
       markReadBtn.onclick = function(e) {
         e.stopPropagation();
-        console.log('✅ Okundu butonuna tıklandı, bildirimler kapatılıyor...');
+        wwLog.log('✅ Okundu butonuna tıklandı, bildirimler kapatılıyor...');
         
         try {
           // 1. Mevcut uyarı imzasını localStorage'a kaydet
           if (currentOvertradeSignature) {
             localStorage.setItem(OVERTRADE_READ_KEY, currentOvertradeSignature);
-            console.log('💾 OVERTRADE_READ_KEY kaydedildi:', currentOvertradeSignature);
+            wwLog.log('💾 OVERTRADE_READ_KEY kaydedildi:', currentOvertradeSignature);
           }
           
           // 2. Panel içeriğini boşalt
@@ -610,9 +610,9 @@ export async function updateOvertradeBell() {
             showToast('✅ Bildirimler okundu olarak işaretlendi', 'success');
           }
           
-          console.log('✅ OverTrade bildirimleri okundu olarak işaretlendi');
+          wwLog.log('✅ OverTrade bildirimleri okundu olarak işaretlendi');
         } catch(err) {
-          console.warn('Okundu işaretleme hatası:', err);
+          wwLog.warn('Okundu işaretleme hatası:', err);
           if (typeof showToast === 'function') {
             showToast('❌ Bildirimler okundu işaretlenirken hata oluştu', 'error');
           }
@@ -621,7 +621,7 @@ export async function updateOvertradeBell() {
     }
 
   } catch(e) {
-    console.warn('updateOvertradeBell hatası:', e);
+    wwLog.warn('updateOvertradeBell hatası:', e);
   }
 }
 

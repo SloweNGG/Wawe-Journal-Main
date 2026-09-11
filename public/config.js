@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL – config.js (SORUNSUZ - import.meta.env KULLANMAZ)
 // ============================================================
 
@@ -41,9 +41,9 @@ window.APP_NAME = APP_NAME;
 // ============================================================
 if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
   window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('✅ Supabase client oluşturuldu (window.supabase ile)');
+  wwLog.log('✅ Supabase client oluşturuldu (window.supabase ile)');
 } else {
-  console.warn('⚠️ window.supabase bulunamadı, supabase-js yüklenmemiş olabilir.');
+  wwLog.warn('⚠️ window.supabase bulunamadı, supabase-js yüklenmemiş olabilir.');
 }
 
 // ============================================================
@@ -350,10 +350,10 @@ const WW_CONFIG = {
 
 window.WW_CONFIG = WW_CONFIG;
 
-console.log('✅ Wawe Journal config loaded from environment!');
-console.log('🔑 Supabase:', SUPABASE_URL ? '✅' : '❌');
-console.log('📦 sb client:', window.sb ? '✅' : '⚠️ (script.js tarafından oluşturulacak)');
-console.log('🌐 Environment:', typeof process !== 'undefined' && process.env ? 'production' : 'browser');
-console.log('📊 INSTRUMENT_MULTIPLIERS:', window.INSTRUMENT_MULTIPLIERS ? '✅' : '❌');
-console.log('🎯 FEATURES:', window.FEATURES ? '✅' : '❌');
-console.log('🔔 NOTIFICATION_TYPES:', window.NOTIFICATION_TYPES ? '✅' : '❌');
+wwLog.log('✅ Wawe Journal config loaded from environment!');
+wwLog.log('🔑 Supabase:', SUPABASE_URL ? '✅' : '❌');
+wwLog.log('📦 sb client:', window.sb ? '✅' : '⚠️ (script.js tarafından oluşturulacak)');
+wwLog.log('🌐 Environment:', typeof process !== 'undefined' && process.env ? 'production' : 'browser');
+wwLog.log('📊 INSTRUMENT_MULTIPLIERS:', window.INSTRUMENT_MULTIPLIERS ? '✅' : '❌');
+wwLog.log('🎯 FEATURES:', window.FEATURES ? '✅' : '❌');
+wwLog.log('🔔 NOTIFICATION_TYPES:', window.NOTIFICATION_TYPES ? '✅' : '❌');

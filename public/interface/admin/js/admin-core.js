@@ -1,11 +1,11 @@
-// ============================================================
+﻿// ============================================================
 // ADMIN-CORE.JS - STATE, UTILS, INIT
 // ⭐ TEMA: Sayfa başında localStorage'dan tema yüklenir
 // ⭐ TEMA: storage / themeChanged event'leri dinlenir
-// ============================================================
-
-// ============================================================
-// ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ⭐ FIX: updatePlanBadge() — querySelector('.plan-badge') → getElementById('plan-badge')
+//        (navbar.js ile tutarlılık sağlandı)
+// ⭐ FIX: renderAdminPanel() — <canvas> → <div> (ApexCharts uyumu)
+// ⭐ FIX: themeChanged event'i — analytics panelindeyse grafikler yenilenir
 // ============================================================
 
 (function initAdminTheme() {
@@ -41,13 +41,9 @@
       } catch (e) {}
     }
 
-    console.log('🎨 [admin-core.js] Tema ayarlandı:', savedTheme || 'dark');
+    wwLog.log('🎨 [admin-core.js] Tema ayarlandı:', savedTheme || 'dark');
   } catch (e) {}
 })();
-
-// ============================================================
-// ⭐ TEMA DEĞİŞİMİNİ DİNLE
-// ============================================================
 
 (function listenAdminThemeChanges() {
   function applyThemeFromStorage() {
@@ -74,15 +70,23 @@
     } catch (e) {}
   }
 
+  // ⭐ FIX: Tema değişince analytics panelindeysek grafikleri yenile
+  function refreshChartsIfNeeded() {
+    if (adminState.currentTab === 'analytics' && typeof loadAnalyticsData === 'function') {
+      setTimeout(function() { loadAnalyticsData(); }, 150);
+    }
+  }
+
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
-      console.log('🔄 [Admin] Tema değişikliği algılandı (storage):', e.key);
+      wwLog.log('🔄 [Admin] Tema değişikliği algılandı (storage):', e.key);
       applyThemeFromStorage();
+      refreshChartsIfNeeded();
     }
   });
 
   document.addEventListener('themeChanged', function(e) {
-    console.log('🔄 [Admin] themeChanged event yakalandı');
+    wwLog.log('🔄 [Admin] themeChanged event yakalandı');
     if (e.detail && e.detail.settings) {
       var settings = e.detail.settings;
       var root = document.documentElement;
@@ -95,12 +99,13 @@
       if (settings.textColor) root.style.setProperty('--text', settings.textColor);
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
     }
+    refreshChartsIfNeeded();
   });
 
-  console.log('✅ [Admin] Tema izleyici yüklendi!');
+  wwLog.log('✅ [Admin] Tema izleyici yüklendi!');
 })();
 
-console.log('🔥 admin-core.js YÜKLENDİ!');
+wwLog.log('🔥 admin-core.js YÜKLENDİ!');
 
 var adminState = {
   currentTab: 'users',
@@ -179,6 +184,12 @@ function switchPanel(panelId, clickedEl) {
     b.classList.toggle('active', b.dataset.panel === panelId);
   });
   
+  // ⭐ Panel state güncelle (tema refresh için)
+  if (panelId === 'panel-users') adminState.currentTab = 'users';
+  else if (panelId === 'panel-references') adminState.currentTab = 'references';
+  else if (panelId === 'panel-analytics') adminState.currentTab = 'analytics';
+  else if (panelId === 'panel-prices') adminState.currentTab = 'prices';
+  
   var glow = document.getElementById('panel-glow');
   if (glow) {
     glow.className = 'panel-glow';
@@ -195,7 +206,7 @@ function switchPanel(panelId, clickedEl) {
 }
 
 function renderAdminPanel() {
-  console.log('🔄 renderAdminPanel başladı...');
+  wwLog.log('🔄 renderAdminPanel başladı...');
   var main = document.getElementById('main-content');
   if (!main) {
     console.error('❌ main-content bulunamadı!');
@@ -216,11 +227,12 @@ function renderAdminPanel() {
 
   var sidebar = '\n    <aside class="admin-sidebar">\n      <div class="sidebar-header">\n        <div class="sidebar-avatar" id="admin-sidebar-avatar">\n          <span class="no-avatar">A</span>\n        </div>\n        <div class="sidebar-username" id="admin-sidebar-username">Admin</div>\n        <div class="sidebar-email" id="admin-sidebar-email">admin@example.com</div>\n      </div>\n      <nav class="sidebar-nav">\n        <button class="sidebar-nav-item active" data-panel="panel-users" onclick="switchPanel(\'panel-users\', this)">\n          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>\n          Kullanıcılar\n        </button>\n        <button class="sidebar-nav-item" data-panel="panel-references" onclick="switchPanel(\'panel-references\', this)">\n          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>\n          Referanslar\n        </button>\n        <button class="sidebar-nav-item" data-panel="panel-analytics" onclick="switchPanel(\'panel-analytics\', this)">\n          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>\n          İstatistikler\n        </button>\n        <div class="sidebar-nav-divider"></div>\n        <button class="sidebar-nav-item" data-panel="panel-prices" onclick="switchPanel(\'panel-prices\', this)">\n          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>\n          Fiyat Yönetimi\n        </button>\n      </nav>\n    </aside>\n  ';
 
-  var panels = '\n    <div class="admin-panels">\n      <div class="panel-glow users-glow" id="panel-glow"></div>\n      \n      <div class="admin-panel active" id="panel-users">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>\n            <div><h2>Kullanıcı Listesi</h2><p>Platformdaki tüm kullanıcılar — <strong id="user-count" style="color:var(--text);">…</strong> kayıt</p></div>\n            <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">\n              <div class="search-wrap">\n                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>\n                <input type="text" id="user-search" class="search-input" placeholder="Ara..." style="width:160px;" />\n              </div>\n              <button id="refresh-users-btn" class="btn btn-ghost btn-sm" onclick="loadUsers(); renderUsersTable();" style="display:inline-flex;align-items:center;gap:4px;">\n                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>\n                Yenile\n              </button>\n            </div>\n          </div>\n          <div class="s-card-body">\n            <div id="users-table-container"></div>\n          </div>\n        </div>\n      </div>\n\n      <div class="admin-panel" id="panel-references">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>\n            <div><h2>Referans Yönetimi</h2><p>Anlaşma yapılan kişi ve kurumlar — <strong id="ref-count" style="color:var(--text);">' + adminState.references.length + '</strong> kayıt</p></div>\n            <button class="btn btn-primary btn-sm" id="add-reference-btn" style="margin-left:auto;padding:0.35rem 0.9rem;font-size:11px;display:inline-flex;align-items:center;gap:4px;">\n              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>\n              Yeni\n            </button>\n          </div>\n          <div class="s-card-body">\n            <div id="references-table-container"></div>\n          </div>\n        </div>\n      </div>\n\n      <div class="admin-panel" id="panel-analytics">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>\n            <div><h2>Platform İstatistikleri</h2><p>Son 7 günlük aktivite verileri ve premium satışları</p></div>\n          </div>\n          <div class="s-card-body">\n            <div class="stats-grid" id="analytics-stats">\n              <div class="stat-card"><div class="stat-label">Toplam Kullanıcı</div><div class="stat-value" id="stat-total-users">—</div></div>\n              <div class="stat-card"><div class="stat-label">Toplam Premium</div><div class="stat-value" id="stat-total-premium">—</div></div>\n              <div class="stat-card"><div class="stat-label">Premium Gelir (Toplam)</div><div class="stat-value" id="stat-premium-revenue">—</div></div>\n              <div class="stat-card"><div class="stat-label">Son 7 Gün Premium</div><div class="stat-value" id="stat-premium-7days">—</div></div>\n            </div>\n            <div class="charts-grid">\n              <div class="chart-card"><h3>Günlük Yeni Kullanıcılar (Son 7 Gün)</h3><div class="chart-wrap"><canvas id="usersChart"></canvas></div></div>\n              <div class="chart-card"><h3>Günlük Premium Satışları (Son 7 Gün) - $</h3><div class="chart-wrap"><canvas id="premiumChart"></canvas></div></div>\n              <div class="chart-card charts-grid-full">\n                <h3 style="display:flex;align-items:center;gap:6px;">\n                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>\n                  Son Premium Alan Kullanıcılar\n                </h3>\n                <div id="recent-premium-list" style="display:flex;flex-direction:column;gap:0.5rem;padding:0.5rem 0;"><div style="text-align:center;padding:1rem;color:var(--muted);font-size:13px;">Yükleniyor...</div></div>\n              </div>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <div class="admin-panel" id="panel-prices">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>\n            <div><h2>Fiyat Yönetimi</h2><p>Premium plan fiyatlarını, indirimleri ve ödeme seçeneklerini yönetin.</p></div>\n          </div>\n          <div class="s-card-body">\n            <div id="prices-container"></div>\n          </div>\n        </div>\n      </div>\n    </div>\n  ';
+  // ⭐ FIX: <canvas> → <div> (ApexCharts uyumu)
+  var panels = '\n    <div class="admin-panels">\n      <div class="panel-glow users-glow" id="panel-glow"></div>\n      \n      <div class="admin-panel active" id="panel-users">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>\n            <div><h2>Kullanıcı Listesi</h2><p>Platformdaki tüm kullanıcılar — <strong id="user-count" style="color:var(--text);">…</strong> kayıt</p></div>\n            <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">\n              <div class="search-wrap">\n                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>\n                <input type="text" id="user-search" class="search-input" placeholder="Ara..." style="width:160px;" />\n              </div>\n              <button id="refresh-users-btn" class="btn btn-ghost btn-sm" onclick="loadUsers(); renderUsersTable();" style="display:inline-flex;align-items:center;gap:4px;">\n                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>\n                Yenile\n              </button>\n            </div>\n          </div>\n          <div class="s-card-body">\n            <div id="users-table-container"></div>\n          </div>\n        </div>\n      </div>\n\n      <div class="admin-panel" id="panel-references">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>\n            <div><h2>Referans Yönetimi</h2><p>Anlaşma yapılan kişi ve kurumlar — <strong id="ref-count" style="color:var(--text);">' + adminState.references.length + '</strong> kayıt</p></div>\n            <button class="btn btn-primary btn-sm" id="add-reference-btn" style="margin-left:auto;padding:0.35rem 0.9rem;font-size:11px;display:inline-flex;align-items:center;gap:4px;">\n              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>\n              Yeni\n            </button>\n          </div>\n          <div class="s-card-body">\n            <div id="references-table-container"></div>\n          </div>\n        </div>\n      </div>\n\n      <div class="admin-panel" id="panel-analytics">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>\n            <div><h2>Platform İstatistikleri</h2><p>Son 7 günlük aktivite verileri ve premium satışları</p></div>\n          </div>\n          <div class="s-card-body">\n            <div class="stats-grid" id="analytics-stats">\n              <div class="stat-card"><div class="stat-label">Toplam Kullanıcı</div><div class="stat-value" id="stat-total-users">—</div></div>\n              <div class="stat-card"><div class="stat-label">Toplam Premium</div><div class="stat-value" id="stat-total-premium">—</div></div>\n              <div class="stat-card"><div class="stat-label">Premium Gelir (Toplam)</div><div class="stat-value" id="stat-premium-revenue">—</div></div>\n              <div class="stat-card"><div class="stat-label">Son 7 Gün Premium</div><div class="stat-value" id="stat-premium-7days">—</div></div>\n            </div>\n            <div class="charts-grid">\n              <div class="chart-card"><h3>Günlük Yeni Kullanıcılar (Son 7 Gün)</h3><div class="chart-wrap" id="usersChart"></div></div>\n              <div class="chart-card"><h3>Günlük Premium Satışları (Son 7 Gün) - $</h3><div class="chart-wrap" id="premiumChart"></div></div>\n              <div class="chart-card charts-grid-full">\n                <h3 style="display:flex;align-items:center;gap:6px;">\n                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>\n                  Son Premium Alan Kullanıcılar\n                </h3>\n                <div id="recent-premium-list" style="display:flex;flex-direction:column;gap:0.5rem;padding:0.5rem 0;"><div style="text-align:center;padding:1rem;color:var(--muted);font-size:13px;">Yükleniyor...</div></div>\n              </div>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <div class="admin-panel" id="panel-prices">\n        <div class="s-card">\n          <div class="s-card-header">\n            <div class="header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>\n            <div><h2>Fiyat Yönetimi</h2><p>Premium plan fiyatlarını, indirimleri ve ödeme seçeneklerini yönetin.</p></div>\n          </div>\n          <div class="s-card-body">\n            <div id="prices-container"></div>\n          </div>\n        </div>\n      </div>\n    </div>\n  ';
 
   main.innerHTML = '\n    <div class="page-header">\n      <div>\n        <h1>Admin Panel</h1>\n        <p class="subtitle">Platform yönetimi ve analiz araçları</p>\n      </div>\n      <span class="admin-badge">\n        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>\n        ADMİN\n      </span>\n    </div>\n    ' + mobileTabs + '\n    <div class="admin-wrap">\n      ' + sidebar + '\n      ' + panels + '\n    </div>\n  ';
 
-  console.log('✅ renderAdminPanel tamamlandı!');
+  wwLog.log('✅ renderAdminPanel tamamlandı!');
   
   var addRefBtn = document.getElementById('add-reference-btn');
   if (addRefBtn) {
@@ -277,10 +289,12 @@ function renderAdminPanel() {
   }, 500);
 }
 
+// ⭐ FIX: querySelector('.plan-badge') → getElementById('plan-badge')
+//        (navbar.js ile tutarlılık sağlandı — navbar'da id olarak tanımlı)
 async function updatePlanBadge() {
   try {
-    var badge = document.querySelector('.plan-badge');
-    var text = document.querySelector('.plan-text');
+    var badge = document.getElementById('plan-badge');
+    var text = document.getElementById('plan-text');
     if (!badge || !text) return;
     
     var planData = await getUserPlan();
@@ -298,7 +312,7 @@ async function updatePlanBadge() {
 
 async function initAdmin() {
   try {
-    console.log('🚀 Admin panel başlatılıyor...');
+    wwLog.log('🚀 Admin panel başlatılıyor...');
     
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
@@ -307,30 +321,30 @@ async function initAdmin() {
     
     var { data: { session } } = await sb.auth.getSession();
     if (!session) {
-      console.warn('⚠️ Oturum yok, login sayfasına yönlendiriliyor...');
+      wwLog.warn('⚠️ Oturum yok, login sayfasına yönlendiriliyor...');
       window.location.href = 'login.html';
       return;
     }
     
     var user = session.user;
-    console.log('👤 Kullanıcı:', user.email);
+    wwLog.log('👤 Kullanıcı:', user.email);
     
     var role = user.app_metadata?.role || user.user_metadata?.role;
-    console.log('🎯 Rol:', role);
+    wwLog.log('🎯 Rol:', role);
     
     if (role !== 'admin') {
-      console.warn('⚠️ Admin yetkisi yok! role:', role);
+      wwLog.warn('⚠️ Admin yetkisi yok! role:', role);
       window.location.href = 'dashboard.html';
       return;
     }
     
-    console.log('✅ Admin girişi başarılı:', user.email);
+    wwLog.log('✅ Admin girişi başarılı:', user.email);
 
     await loadUsers();
-    console.log('✅ Kullanıcılar yüklendi:', adminState.users.length);
+    wwLog.log('✅ Kullanıcılar yüklendi:', adminState.users.length);
     
     await loadReferences();
-    console.log('✅ Referanslar yüklendi:', adminState.references.length);
+    wwLog.log('✅ Referanslar yüklendi:', adminState.references.length);
     
     renderAdminPanel();
     
@@ -342,7 +356,7 @@ async function initAdmin() {
       });
     }
     
-    console.log('✅ Admin panel başarıyla başlatıldı!');
+    wwLog.log('✅ Admin panel başarıyla başlatıldı!');
   } catch (e) {
     console.error('❌ Admin init hatası:', e);
   }
@@ -359,4 +373,4 @@ window.updatePlanBadge = updatePlanBadge;
 window.initAdmin = initAdmin;
 window.renderAdminPanel = renderAdminPanel;
 
-console.log('✅ admin-core.js yüklendi! initAdmin:', typeof window.initAdmin === 'function' ? '✅' : '❌');
+wwLog.log('✅ admin-core.js yüklendi! initAdmin:', typeof window.initAdmin === 'function' ? '✅' : '❌');

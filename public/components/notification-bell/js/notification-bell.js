@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // notification-bell.js
 // BİLDİRİM BELL - JAVASCRIPT (window.notificationManager kullanır)
 // ============================================================
@@ -6,7 +6,7 @@
 (function() {
   'use strict';
 
-  console.log('🔔 Notification Bell başlatılıyor...');
+  wwLog.log('🔔 Notification Bell başlatılıyor...');
 
   function getNotificationBellHTML() {
     return `
@@ -53,7 +53,7 @@
 
     var nm = window.notificationManager;
     if (!nm) {
-      console.warn('⚠️ notificationManager bulunamadı');
+      wwLog.warn('⚠️ notificationManager bulunamadı');
       return;
     }
 
@@ -199,7 +199,7 @@
   function loadNotificationBell(containerId) {
     var container = document.getElementById(containerId);
     if (!container) {
-      console.warn('⚠️ Notification bell container bulunamadı:', containerId);
+      wwLog.warn('⚠️ Notification bell container bulunamadı:', containerId);
       return;
     }
 
@@ -213,7 +213,7 @@
 
     setTimeout(updateNotificationUI, 500);
 
-    console.log('✅ Notification bell yüklendi! (container:', containerId + ')');
+    wwLog.log('✅ Notification bell yüklendi! (container:', containerId + ')');
   }
 
   window.loadNotificationBell = loadNotificationBell;
@@ -226,5 +226,5 @@
     }
   });
 
-  console.log('✅ Notification Bell modülü yüklendi!');
+  wwLog.log('✅ Notification Bell modülü yüklendi!');
 })();

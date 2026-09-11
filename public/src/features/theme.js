@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - THEME FEATURE (APEXCHARTS DESTEKLİ)
 // ⭐ ApexCharts tema geçişleri eklendi
 // ⭐ chartsReset event fırlatma eklendi
@@ -91,9 +91,9 @@ function triggerChartThemeUpdate() {
     window.dispatchEvent(new CustomEvent('chartsReset', { 
       detail: { source: 'theme' } 
     }));
-    console.log('🎨 ApexCharts tema güncellemesi tetiklendi');
+    wwLog.log('🎨 ApexCharts tema güncellemesi tetiklendi');
   } catch(e) {
-    console.warn('Chart tema güncellemesi tetiklenemedi:', e);
+    wwLog.warn('Chart tema güncellemesi tetiklenemedi:', e);
   }
 }
 
@@ -143,7 +143,7 @@ function updateApexChartColors() {
       const colors = getApexColors();
       // Global tema ayarları - ApexCharts'in kendi teması yok, 
       // ama biz chartsReset event ile yeniden render yapıyoruz
-      console.log('🎨 ApexCharts renkleri güncellendi:', colors);
+      wwLog.log('🎨 ApexCharts renkleri güncellendi:', colors);
     }
   } catch(e) {
     // Sessizce geç

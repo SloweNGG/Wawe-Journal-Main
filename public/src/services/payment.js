@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - PAYMENT SERVICE (GÜNCELLENDİ)
 // ============================================================
 
@@ -53,7 +53,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
       return null;
     }
 
-    console.log('📤 createNowPaymentInvoice çağrıldı:', { userId, planType, amount, currency, payCurrency });
+    wwLog.log('📤 createNowPaymentInvoice çağrıldı:', { userId, planType, amount, currency, payCurrency });
 
     const response = await fetch(
       'https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/create-payment',
@@ -82,7 +82,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
       throw new Error(data.error || 'Ödeme başlatılamadı');
     }
 
-    console.log('✅ create-payment başarılı:', data);
+    wwLog.log('✅ create-payment başarılı:', data);
     return data;
   } catch (error) {
     console.error('❌ createNowPaymentInvoice hatası:', error);
@@ -128,7 +128,7 @@ export async function upgradeToPremium(planType, amount, currency, payMethod) {
 
 // ⭐⭐⭐ CANCEL PREMIUM - GERÇEKTEN İPTAL EDEN VERSİYON ⭐⭐⭐
 export async function cancelPremium() {
-  console.log('💎 [cancelPremium] ÇAĞRILDI!');
+  wwLog.log('💎 [cancelPremium] ÇAĞRILDI!');
   
   try {
     const user = await requireAuth();
@@ -150,7 +150,7 @@ export async function cancelPremium() {
       return false;
     }
     
-    console.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
+    wwLog.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
     
     // Zaten premium değilse
     if (!profile || profile.plan !== 'premium') {
@@ -188,12 +188,12 @@ export async function cancelPremium() {
     });
     
     if (!confirmed) {
-      console.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
+      wwLog.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
       return false;
     }
     
     // ⭐⭐⭐ PLANI ÜCRETSİZ YAP - ASIL İPTAL BURADA! ⭐⭐⭐
-    console.log('🔄 Plan free\'e düşürülüyor...');
+    wwLog.log('🔄 Plan free\'e düşürülüyor...');
     
     const { error: updateError } = await sb
       .from('user_profiles')
@@ -209,7 +209,7 @@ export async function cancelPremium() {
       return false;
     }
     
-    console.log('✅ Abonelik iptal edildi!');
+    wwLog.log('✅ Abonelik iptal edildi!');
     
     // LocalStorage'ı temizle
     try {

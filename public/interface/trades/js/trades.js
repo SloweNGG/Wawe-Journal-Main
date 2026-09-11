@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // TRADES - ANA JS DOSYASI
 // ============================================================
 // Bu dosyada değişen bölümler:
@@ -54,7 +54,7 @@
       } catch(e) {}
     }
     
-    console.log('🎨 [trades.js] Tema ayarlandı:', savedTheme || 'dark');
+    wwLog.log('🎨 [trades.js] Tema ayarlandı:', savedTheme || 'dark');
   })();
 
   // ============================================================
@@ -62,11 +62,11 @@
   // ============================================================
   
   (function listenThemeChanges() {
-    console.log('🎨 [Trades] Tema izleyici başlatıldı...');
+    wwLog.log('🎨 [Trades] Tema izleyici başlatıldı...');
     
     window.addEventListener('storage', function(e) {
       if (e.key === 'ww_theme') {
-        console.log('🔄 [Trades] Tema değişikliği algılandı:', e.newValue);
+        wwLog.log('🔄 [Trades] Tema değişikliği algılandı:', e.newValue);
         var isLight = e.newValue === 'light';
         document.body.classList.toggle('light-theme', isLight);
         
@@ -93,7 +93,7 @@
     });
     
     document.addEventListener('themeChanged', function(e) {
-      console.log('🔄 [Trades] ThemeChanged event yakalandı');
+      wwLog.log('🔄 [Trades] ThemeChanged event yakalandı');
       if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
         var settings = e.detail.settings;
         var root = document.documentElement;
@@ -112,7 +112,7 @@
       }
     });
     
-    console.log('✅ [Trades] Tema izleyici yüklendi!');
+    wwLog.log('✅ [Trades] Tema izleyici yüklendi!');
   })();
 
   // ============================================================
@@ -122,7 +122,7 @@
   function safeEl(id) {
     var el = document.getElementById(id);
     if (!el) {
-      console.warn('⚠️ Element bulunamadı:', id);
+      wwLog.warn('⚠️ Element bulunamadı:', id);
     }
     return el;
   }
@@ -214,7 +214,7 @@
     if (typeof window.showToast === 'function') {
       window.showToast(msg, type);
     } else {
-      console.log('📢 Toast:', msg, type);
+      wwLog.log('📢 Toast:', msg, type);
     }
   }
 
@@ -293,7 +293,7 @@
       
       updateStrategySelect();
     } catch (e) {
-      console.warn('loadStrategyNames hatası:', e);
+      wwLog.warn('loadStrategyNames hatası:', e);
     }
   }
 
@@ -363,7 +363,7 @@
         applyStatValueSize(rrEl, rrStr, '');
       }
     } catch(e) {
-      console.warn('renderStats hatası:', e);
+      wwLog.warn('renderStats hatası:', e);
     }
   }
 
@@ -1089,7 +1089,7 @@
       showTableSkeleton();
       
       if (typeof requireAuth !== 'function') {
-        console.warn('⚠️ requireAuth fonksiyonu bulunamadı, script.js yüklenmemiş olabilir.');
+        wwLog.warn('⚠️ requireAuth fonksiyonu bulunamadı, script.js yüklenmemiş olabilir.');
         hideTableSkeleton();
         return;
       }
@@ -1118,7 +1118,7 @@
               await updateOvertradeBell();
           }
       } catch(e) {
-          console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+          wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
       }
       
       if (typeof sb === 'undefined') {
@@ -1367,4 +1367,4 @@
 
 })();
 
-console.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 uygulandı)');
+wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 uygulandı)');

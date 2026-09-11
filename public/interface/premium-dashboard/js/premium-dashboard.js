@@ -1,9 +1,14 @@
-// ============================================================
+﻿// ============================================================
 // premium-dashboard.js - ANA DOSYA
 // Global state, init, event listeners, koordinasyon
 // ⭐ FIX: Scroll listener KALDIRILDI (gereksiz performans yükü)
 // ⭐ Sadece resize ve drag-drop sonrası resize çalışır
 // ============================================================
+
+// ⭐ Logger — global wwLog'a fallback ile bağlan
+const wwLog = (typeof window !== 'undefined' && window.wwLog) 
+  ? window.wwLog 
+  : { log: () => {}, warn: () => {}, info: () => {}, debug: () => {}, error: console.error.bind(console) };
 
 import {
   getCurrencySymbol,
@@ -113,10 +118,10 @@ export function closeMenu() {
 
 // ⭐ LOAD PREMIUM DATA
 async function loadPremiumData() {
-  console.log('📊 loadPremiumData başlatıldı...');
+  wwLog.log('📊 loadPremiumData başlatıldı...');
 
   if (typeof requireAuth === 'undefined') {
-    console.warn('⏳ requireAuth henüz yüklenmedi, 1 saniye bekleniyor...');
+    wwLog.warn('⏳ requireAuth henüz yüklenmedi, 1 saniye bekleniyor...');
     await new Promise(function(resolve) { setTimeout(resolve, 1000); });
 
     if (typeof requireAuth === 'undefined') {
@@ -200,7 +205,7 @@ async function loadPremiumData() {
 
 // ⭐ DOM READY
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('📄 DOM yüklendi, Premium Dashboard başlatılıyor...');
+  wwLog.log('📄 DOM yüklendi, Premium Dashboard başlatılıyor...');
 
   // Avatar dropdown
   var ua = document.getElementById('user-avatar');

@@ -1,33 +1,33 @@
-// ============================================================
-// STRATEGIES.JS - STRATEJİ SAYFASI ÖZEL FONKSİYONLAR (OPTİMİZE EDİLMİŞ)
-// ⭐ FIX: Strateji ekleme butonu çalışır hale getirildi
-// ⭐ FIX: Modal kapatma/kaydetme event'leri eklendi
-// ⭐ FIX: Düzenleme modalı için event'ler eklendi
-// ⭐ FIX: Grafikler artık sadece sayfa ilk yüklendiğinde render ediliyor
-//        (tema değişikliği / sekme değişimi / visibilitychange tetiklemiyor)
+﻿// ============================================================
+// STRATEGIES.JS - STRATEJİ SAYFASI ÖZEL FONKSİYONLAR
+// ⭐ MIGRATE: Chart.js → ApexCharts
+//    - Sparkline: ApexCharts line (sparkline mode)
+//    - Comparison: ApexCharts bar (distributed colors)
+//    - Equity Curve: ApexCharts area
+//    - Tema desteği (light/dark) tüm grafiklerde
 // ============================================================
 
-console.log('📊 strategies.js yükleniyor...');
+wwLog.log('📊 strategies.js yükleniyor...');
 
 // ============================================================
-// ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// ⭐ TEMA KONTROLÜ
 // ============================================================
 
 (function initTheme() {
   var savedTheme = localStorage.getItem('ww_theme');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
-  
+
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
   } else {
     document.body.classList.remove('light-theme');
   }
-  
+
   if (savedFontSize) {
     document.body.style.fontSize = savedFontSize + 'px';
   }
-  
+
   if (savedTheme !== 'light' && customTheme) {
     try {
       var settings = JSON.parse(customTheme);
@@ -44,48 +44,52 @@ console.log('📊 strategies.js yükleniyor...');
       }
     } catch(e) {}
   }
-  
-  console.log('🎨 [strategies.js] Tema ayarlandı:', savedTheme || 'dark');
+
+  wwLog.log('🎨 [strategies.js] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
 // ============================================================
-// ⭐ TEMA DEĞİŞİMİNİ DİNLE
-// NOT: Tema değişince sadece Chart.defaults güncellenir.
-//      Grafikler YENİDEN RENDER EDİLMEZ (kullanıcı isteği).
+// TEMA DEĞİŞİMİNİ DİNLE
+// ⭐ DEĞİŞİKLİK: ApexCharts instance'larını yeniden render etmek yerine
+//    sadece tema değişkenleri güncellenir. Grafikler orijinal tema ile kalır.
+//    (Kullanıcı isteği: "tema değişince grafikler yeniden render EDİLMEZ")
 // ============================================================
 
 (function listenThemeChanges() {
-  console.log('🎨 [Strategies] Tema izleyici başlatıldı...');
-  
+  wwLog.log('🎨 [Strategies] Tema izleyici başlatıldı...');
+
+  function applyThemeFromStorage() {
+    var savedTheme = localStorage.getItem('ww_theme');
+    var isLight = savedTheme === 'light';
+    document.body.classList.toggle('light-theme', isLight);
+
+    var customTheme = localStorage.getItem('ww_custom_theme');
+    if (customTheme && !isLight) {
+      try {
+        var settings = JSON.parse(customTheme);
+        var root = document.documentElement;
+        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
+        if (settings.surfaceColor) {
+          root.style.setProperty('--surface', settings.surfaceColor);
+          root.style.setProperty('--surface2', settings.surfaceColor);
+        }
+        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
+        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
+        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
+      } catch(e) {}
+    }
+  }
+
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
-      console.log('🔄 [Strategies] Tema değişikliği algılandı:', e.newValue);
-      var isLight = e.newValue === 'light';
-      document.body.classList.toggle('light-theme', isLight);
-      
-      var customTheme = localStorage.getItem('ww_custom_theme');
-      if (customTheme && !isLight) {
-        try {
-          var settings = JSON.parse(customTheme);
-          var root = document.documentElement;
-          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-          if (settings.surfaceColor) {
-            root.style.setProperty('--surface', settings.surfaceColor);
-            root.style.setProperty('--surface2', settings.surfaceColor);
-          }
-          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-        } catch(e) {}
-      }
-      
-      setChartTheme();
+      wwLog.log('🔄 [Strategies] Tema değişikliği algılandı:', e.newValue);
+      applyThemeFromStorage();
       // ⭐ Grafikler yeniden render EDİLMEZ
     }
   });
-  
+
   document.addEventListener('themeChanged', function(e) {
-    console.log('🔄 [Strategies] ThemeChanged event yakalandı');
+    wwLog.log('🔄 [Strategies] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
       var root = document.documentElement;
@@ -97,25 +101,33 @@ console.log('📊 strategies.js yükleniyor...');
       if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
       if (settings.textColor) root.style.setProperty('--text', settings.textColor);
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-      
-      setChartTheme();
-      // ⭐ Grafikler yeniden render EDİLMEZ
     }
+    // ⭐ Grafikler yeniden render EDİLMEZ
   });
-  
-  // ⭐ visibilitychange: grafik render YOK, sadece tema class güncelle
+
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
       var isLight = savedTheme === 'light';
       document.body.classList.toggle('light-theme', isLight);
-      setChartTheme();
       // ⭐ Grafikler yeniden render EDİLMEZ
     }
   });
-  
-  console.log('✅ [Strategies] Tema izleyici yüklendi!');
+
+  wwLog.log('✅ [Strategies] Tema izleyici yüklendi!');
 })();
+
+// ============================================================
+// APEXCHARTS TEMA YARDIMCISI
+// ============================================================
+function getStrategiesApexTheme() {
+  var isLight = document.body.classList.contains('light-theme');
+  return {
+    mode: isLight ? 'light' : 'dark',
+    textColor: isLight ? '#475569' : '#e8e8f0',
+    gridColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'
+  };
+}
 
 // ============================================================
 // GÜVENLİK: HTML SANITIZE
@@ -141,7 +153,7 @@ var currentDetailStrategyId = null;
 // ⭐ PERFORMANS: Strateji verilerini cache'le
 var strategyDataCache = {};
 var strategyDataCacheTime = 0;
-var STRATEGY_DATA_CACHE_TTL = 30000; // 30 saniye
+var STRATEGY_DATA_CACHE_TTL = 30000;
 
 // ⭐ PERFORMANS: Tüm işlemleri strateji bazında grupla
 var tradesByStrategy = {};
@@ -156,7 +168,7 @@ function showStrategySkeleton() {
   var el4 = document.getElementById('strategies-list-container');
   var el5 = document.getElementById('comparison-skeleton');
   var el6 = document.getElementById('comparison-section');
-  
+
   if (el1) el1.style.display = 'grid';
   if (el2) el2.style.display = 'none';
   if (el3) el3.style.display = 'grid';
@@ -172,7 +184,7 @@ function hideStrategySkeleton() {
   var el4 = document.getElementById('strategies-list-container');
   var el5 = document.getElementById('comparison-skeleton');
   var el6 = document.getElementById('comparison-section');
-  
+
   if (el1) el1.style.display = 'none';
   if (el2) el2.style.display = 'grid';
   if (el3) el3.style.display = 'none';
@@ -207,11 +219,11 @@ async function updatePlanBadge() {
   var badge = document.getElementById('plan-badge');
   var text = document.getElementById('plan-text');
   if (!badge || !text) return;
-  
+
   try {
     var planData = await getUserPlan();
     var isPremium = planData.plan === 'premium';
-    
+
     if (isPremium) {
       badge.classList.add('premium');
       text.textContent = 'Premium';
@@ -221,31 +233,6 @@ async function updatePlanBadge() {
     }
   } catch (e) {}
 }
-
-// ============================================================
-// TEMA DEĞİŞİMİ - CHART
-// ============================================================
-function setChartTheme() {
-  try {
-    var isLightTheme = document.body.classList.contains('light-theme');
-    if (isLightTheme) {
-      Chart.defaults.color = '#1e293b';
-      Chart.defaults.borderColor = 'rgba(0,0,0,0.08)';
-    } else {
-      Chart.defaults.color = '#e8e8f0';
-      Chart.defaults.borderColor = '#1e1e2e';
-    }
-    Chart.defaults.font.family = "'DM Sans', sans-serif";
-    Chart.defaults.font.size = 11;
-    Chart.defaults.font.weight = '500';
-  } catch(e) {}
-}
-
-setChartTheme();
-
-// ⭐ MutationObserver KALDIRILDI - grafiklerin yeniden render olmasını önler
-// var observer = new MutationObserver(function(mutations) { ... });
-// observer.observe(document.body, { attributes: true });
 
 // ============================================================
 // TRADE PNL YARDIMCI FONKSİYONLARI
@@ -263,17 +250,6 @@ function getTradePnL(t) {
     return calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', getTradeMultiplier(t));
   } catch(e) {
     return 0;
-  }
-}
-
-function colorToRgba(hex, alpha) {
-  try {
-    var r = parseInt(hex.slice(1,3),16);
-    var g = parseInt(hex.slice(3,5),16);
-    var b = parseInt(hex.slice(5,7),16);
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
-  } catch(e) { 
-    return hex; 
   }
 }
 
@@ -301,22 +277,17 @@ function filterTradesByRange(trades, range) {
 }
 
 // ============================================================
-// ⭐ OPTİMİZE EDİLMİŞ getStrategyPerformance
+// getStrategyPerformance
 // ============================================================
 function getStrategyPerformance(strategyId) {
-  // Cache kontrolü
   var now = Date.now();
   if (strategyDataCache[strategyId] && (now - strategyDataCacheTime) < STRATEGY_DATA_CACHE_TTL) {
     return strategyDataCache[strategyId];
   }
 
   try {
-    // ⭐ Doğrudan gruplanmış veriden al - FİLTRELEME YAPMA
     var strategyTrades = tradesByStrategy[strategyId] || [];
-    
-    // Zaman aralığı filtrelemesi
     var filteredTrades = filterTradesByRange(strategyTrades, currentTimeRange);
-    
     var closedTrades = filteredTrades.filter(function(t) { return t.exit_price; });
     var totalPnL = 0, wins = 0, losses = 0, openTrades = 0;
     var longCount = 0, shortCount = 0;
@@ -365,13 +336,13 @@ function getStrategyPerformance(strategyId) {
       var instrumentKey = (t.instrument || 'Diğer');
       var symbolKey = (t.symbol || '—');
       var key = instrumentKey + ':' + symbolKey;
-      
+
       if (!instrumentMap[key]) {
-        instrumentMap[key] = { 
-          instrument: instrumentKey, 
+        instrumentMap[key] = {
+          instrument: instrumentKey,
           symbol: symbolKey,
-          trades: 0, 
-          wins: 0, 
+          trades: 0,
+          wins: 0,
           pnl: 0,
           count: 0
         };
@@ -412,16 +383,16 @@ function getStrategyPerformance(strategyId) {
     var avgLoss = lossAmounts.length ? grossLoss / lossAmounts.length : 0;
     var avgRR = avgLoss > 0 ? parseFloat((avgWin / avgLoss).toFixed(2)) : (avgWin > 0 ? null : 0);
 
-    var result = { 
-      totalTrades: total, 
+    var result = {
+      totalTrades: total,
       totalTradesWithOpen: filteredTrades.length,
-      wins: wins, 
-      losses: losses, 
-      openTrades: openTrades, 
-      totalPnL: totalPnL, 
+      wins: wins,
+      losses: losses,
+      openTrades: openTrades,
+      totalPnL: totalPnL,
       winRate: winRate,
-      pnlSeries: pnlSeries, 
-      longCount: longCount, 
+      pnlSeries: pnlSeries,
+      longCount: longCount,
       shortCount: shortCount,
       profitFactor: profitFactor,
       avgWin: avgWin,
@@ -436,14 +407,13 @@ function getStrategyPerformance(strategyId) {
       tradesDetail: tradesDetail
     };
 
-    // Cache'e kaydet
     strategyDataCache[strategyId] = result;
     strategyDataCacheTime = now;
 
     return result;
   } catch(e) {
-    return { 
-      totalTrades: 0, totalTradesWithOpen: 0, wins: 0, losses: 0, openTrades: 0, totalPnL: 0, winRate: 0, 
+    return {
+      totalTrades: 0, totalTradesWithOpen: 0, wins: 0, losses: 0, openTrades: 0, totalPnL: 0, winRate: 0,
       pnlSeries: [], longCount: 0, shortCount: 0, profitFactor: 0, avgWin: 0, avgLoss: 0, avgRR: 0,
       maxWinStreak: 0, maxLossStreak: 0, maxDrawdown: 0, instrumentBreakdown: [], bestInstrument: null,
       worstInstrument: null, tradesDetail: []
@@ -473,79 +443,51 @@ function fmtDate(dateStr) {
   } catch(e) { return dateStr || '—'; }
 }
 
-function makeChartDefaults() {
+// ============================================================
+// DRAW SPARKLINE - ApexCharts
+// ============================================================
+function drawSparkline(containerId, data, color) {
   try {
-    var isLight = document.body.classList.contains('light-theme');
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(10,10,15,.95)',
-          borderColor: 'rgba(139,92,246,0.25)',
-          borderWidth: 1,
-          titleFont: { family: 'DM Sans', size: 11, weight: '600' },
-          bodyFont: { family: 'DM Mono', size: 11 },
-          padding: 10,
-          cornerRadius: 8
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)', drawBorder: false },
-          ticks: { color: isLight ? '#475569' : '#e8e8f0', font: { family: 'DM Mono', size: 9 }, maxRotation: 0 },
-          border: { display: false }
-        },
-        y: {
-          grid: { color: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)', drawBorder: false },
-          ticks: { color: isLight ? '#475569' : '#e8e8f0', font: { family: 'DM Mono', size: 9 } },
-          border: { display: false }
-        }
-      }
-    };
-  } catch(e) {
-    return {};
-  }
-}
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    if (sparkCharts[containerId]) {
+      try { sparkCharts[containerId].destroy(); } catch(e) {}
+      sparkCharts[containerId] = null;
+    }
+    container.innerHTML = '';
 
-// ============================================================
-// DRAW SPARKLINE
-// ============================================================
-function drawSparkline(canvasId, data, color) {
-  try {
-    var canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    if (sparkCharts[canvasId]) { try { sparkCharts[canvasId].destroy(); } catch(e) {} }
-    var ctx = canvas.getContext('2d');
     var isNeg = data.length > 0 && data[data.length - 1] < 0;
     var lineColor = isNeg ? '#ef4444' : color;
-    sparkCharts[canvasId] = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: data.map(function(_, i) { return i; }),
-        datasets: [{
-          data: data,
-          borderColor: lineColor,
-          borderWidth: 1.5,
-          pointRadius: 0,
-          tension: 0.4,
-          fill: false
-        }]
+
+    var options = {
+      series: [{ name: 'Equity', data: data }],
+      chart: {
+        type: 'line',
+        height: '100%',
+        width: '100%',
+        sparkline: { enabled: true },
+        animations: { enabled: true, speed: 700 },
+        background: 'transparent',
+        toolbar: { show: false }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { display: false }, y: { display: false } },
-        animation: { duration: 700 }
-      }
-    });
+      stroke: {
+        curve: 'smooth',
+        width: 1.5,
+        colors: [lineColor]
+      },
+      fill: { type: 'solid', opacity: 0 },
+      markers: { size: 0 },
+      tooltip: { enabled: false },
+      grid: { show: false }
+    };
+
+    sparkCharts[containerId] = new ApexCharts(container, options);
+    sparkCharts[containerId].render();
   } catch(e) {}
 }
 
 // ============================================================
-// ⭐ OPTİMİZE EDİLMİŞ RENDER STRATEGIES GRID
+// RENDER STRATEGIES GRID
 // ============================================================
 function renderStrategiesGrid() {
   var container = document.getElementById('strategies-list-container');
@@ -580,7 +522,7 @@ function renderStrategiesGrid() {
   var totalTradesEl = document.getElementById('stat-total-trades');
   var bestWrEl = document.getElementById('stat-best-wr');
   var pnlEl = document.getElementById('stat-total-pnl');
-  
+
   if (totalStrategiesEl) totalStrategiesEl.textContent = strategiesList.length;
   if (totalTradesEl) totalTradesEl.textContent = totalTradeCount;
   if (bestWrEl) bestWrEl.textContent = bestWR + '%';
@@ -597,7 +539,7 @@ function renderStrategiesGrid() {
     var safeName = sanitizeHTML(s.name);
     var safeColor = sanitizeHTML(s.color || '#8b5cf6');
     var safeDescription = sanitizeHTML(s.description || '');
-    
+
     var descriptionHtml = '';
     if (safeDescription) {
       descriptionHtml = '<div class="sc-desc">' + (safeDescription.length > 40 ? safeDescription.substring(0,40) + '…' : safeDescription) + '</div>';
@@ -618,9 +560,10 @@ function renderStrategiesGrid() {
         '</div>';
     }
 
+    // ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu)
     var sparkHtml = '';
     if (hasData && perf.pnlSeries.length > 1) {
-      sparkHtml = '<div class="sc-spark clickable" data-id="' + s.id + '" title="Equity curve\'yi büyüt"><span class="sc-spark-hint">büyüt ⤢</span><canvas id="' + sparkId + '"></canvas></div>';
+      sparkHtml = '<div class="sc-spark clickable" data-id="' + s.id + '" title="Equity curve\'yi büyüt"><span class="sc-spark-hint">büyüt ⤢</span><div id="' + sparkId + '" style="width:100%;height:100%;"></div></div>';
     } else {
       sparkHtml = '<div class="sc-spark" style="display:flex;align-items:center;justify-content:center;opacity:.3;font-size:11px;color:var(--muted)"><span data-i18n="strategies.card.no_data">Veri Yok</span></div>';
     }
@@ -630,11 +573,11 @@ function renderStrategiesGrid() {
       ? '<span class="sc-wr-dot ' + wrDotClass + '" title="' + i18n.t('strategies.card.win_rate') + ': ' + perf.winRate + '%"></span>'
       : '<span style="font-size:13px;color:var(--muted);padding-right:4px;">—</span>';
 
-    var longPill = (perf && perf.longCount > 0) 
-      ? '<span class="dp dp-long"><svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Long ' + perf.longCount + '</span>' 
+    var longPill = (perf && perf.longCount > 0)
+      ? '<span class="dp dp-long"><svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Long ' + perf.longCount + '</span>'
       : '';
-    var shortPill = (perf && perf.shortCount > 0) 
-      ? '<span class="dp dp-short"><svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Short ' + perf.shortCount + '</span>' 
+    var shortPill = (perf && perf.shortCount > 0)
+      ? '<span class="dp dp-short"><svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Short ' + perf.shortCount + '</span>'
       : '';
 
     return '\n      <div class="strategy-card" data-id="' + s.id + '">\n        <div class="sc-top">\n          <div class="sc-header">\n            <div class="sc-name-row">\n              <div class="sc-color-bar" style="background:' + safeColor + '"></div>\n              <div>\n                <div class="sc-name">' + safeName + '</div>\n                ' + descriptionHtml + '\n              </div>\n            </div>\n            ' + wrDotHtml + '\n          </div>\n\n          <div class="sc-stats">\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.trades">İşlem</div>\n              <div class="sc-stat-val">' + (perf ? perf.totalTradesWithOpen : 0) + '</div>\n            </div>\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.win_rate">Win Rate</div>\n              <div class="sc-stat-val">' + (hasData ? perf.winRate + '%' : '—') + '</div>\n            </div>\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.pnl">K/Z</div>\n              <div class="sc-stat-val">' + (hasData ? formatCurrencySafe(perf.totalPnL) : '—') + '</div>\n            </div>\n          </div>\n\n          ' + instrumentTagHtml + '\n          ' + sparkHtml + '\n        </div>\n\n        <div class="sc-footer">\n          <div class="dir-pills">\n            ' + longPill + '\n            ' + shortPill + '\n            ' + (!perf || (perf.longCount === 0 && perf.shortCount === 0) ? '<span style="font-size:11px;color:var(--muted)">—</span>' : '') + '\n          </div>\n          <div class="sc-actions">\n            <button class="sc-btn edit-strategy-btn" data-id="' + s.id + '" aria-label="' + i18n.t('trades.edit') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>\n            <button class="sc-btn danger delete-strategy-btn" data-id="' + s.id + '" aria-label="' + i18n.t('trades.delete') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>\n          </div>\n        </div>\n      </div>';
@@ -644,6 +587,7 @@ function renderStrategiesGrid() {
 
   container.innerHTML = '<div class="strategies-grid">' + cards.join('') + '</div>';
 
+  // ⭐ Sparkline'ları ApexCharts ile çiz
   for (var sIdx = 0; sIdx < strategiesList.length; sIdx++) {
     var s = strategiesList[sIdx];
     var perf = getStrategyPerformance(s.id);
@@ -656,12 +600,12 @@ function renderStrategiesGrid() {
 
   var editBtns = document.querySelectorAll('.edit-strategy-btn');
   editBtns.forEach(function(btn) {
-    btn.addEventListener('click', function(e) { 
+    btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      openEditModal(this.dataset.id); 
+      openEditModal(this.dataset.id);
     });
   });
-  
+
   var deleteBtns = document.querySelectorAll('.delete-strategy-btn');
   deleteBtns.forEach(function(btn) {
     btn.addEventListener('click', async function(e) {
@@ -691,12 +635,12 @@ function renderStrategiesGrid() {
       openAddStrategyModal();
     });
   }
-  
+
   if (typeof i18n !== 'undefined') i18n.apply();
 }
 
 // ============================================================
-// RENDER COMPARISON CHARTS
+// RENDER COMPARISON CHARTS - ApexCharts
 // ============================================================
 function renderComparisonCharts() {
   try {
@@ -710,81 +654,174 @@ function renderComparisonCharts() {
         labels.push(s.name.length > 12 ? s.name.slice(0,10) + '..' : s.name);
         wrData.push(perf.winRate);
         pnlData.push(perf.totalPnL);
-        colors.push(s.color);
+        colors.push(s.color || '#8b5cf6');
       }
     }
     if (!wrData.length) return;
 
-    var def = makeChartDefaults();
+    var theme = getStrategiesApexTheme();
 
-    var winCtx = document.getElementById('winrate-comparison-chart');
-    if (winCtx) {
-      var winCtx2d = winCtx.getContext('2d');
-      if (window.winrateChart) { try { window.winrateChart.destroy(); } catch(e) {} }
-      window.winrateChart = new Chart(winCtx2d, {
-        type: 'bar',
-        data: { 
-          labels: labels, 
-          datasets: [{
-            data: wrData,
-            backgroundColor: colors.map(function(c) { return colorToRgba(c, 0.6); }),
-            borderColor: colors,
-            borderWidth: 1,
-            borderRadius: 5,
-            borderSkipped: false
-          }]
+    // ⭐ WİN RATE KARŞILAŞTIRMASI (Bar)
+    var winEl = document.getElementById('winrate-comparison-chart');
+    if (winEl) {
+      if (window.winrateChart) {
+        try { window.winrateChart.destroy(); } catch(e) {}
+        window.winrateChart = null;
+      }
+      winEl.innerHTML = '';
+
+      var winOptions = {
+        series: [{ name: 'Win Rate', data: wrData }],
+        chart: {
+          type: 'bar',
+          height: '100%',
+          width: '100%',
+          toolbar: { show: false },
+          background: 'transparent',
+          fontFamily: "'DM Sans', sans-serif",
+          animations: { enabled: true, speed: 500 }
         },
-        options: {
-          plugins: { 
-            legend: { display: false },
-            tooltip: { callbacks: { label: function(ctx) { return ' ' + ctx.raw + '%'; } } }
+        plotOptions: {
+          bar: {
+            borderRadius: 5,
+            columnWidth: '60%',
+            distributed: true
+          }
+        },
+        colors: colors,
+        dataLabels: { enabled: false },
+        grid: {
+          borderColor: theme.gridColor,
+          strokeDashArray: 3,
+          position: 'back'
+        },
+        xaxis: {
+          categories: labels,
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px'
+            },
+            rotate: 0,
+            hideOverlappingLabels: true,
+            trim: true
           },
-          scales: { 
-            x: { grid: { color: def.scales ? def.scales.x.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 } } },
-            y: { max: 100, ticks: { callback: function(v) { return v + '%'; } } }
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          max: 100,
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px'
+            },
+            formatter: function(v) { return v.toFixed(0) + '%'; }
+          }
+        },
+        tooltip: {
+          theme: theme.mode,
+          y: {
+            formatter: function(v) { return v.toFixed(1) + '%'; }
           },
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
+          style: {
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '12px'
+          }
+        },
+        legend: { show: false }
+      };
+
+      window.winrateChart = new ApexCharts(winEl, winOptions);
+      window.winrateChart.render();
     }
 
-    var pnlCtx = document.getElementById('pnl-comparison-chart');
-    if (pnlCtx) {
-      var pnlCtx2d = pnlCtx.getContext('2d');
-      if (window.pnlChart) { try { window.pnlChart.destroy(); } catch(e) {} }
-      window.pnlChart = new Chart(pnlCtx2d, {
-        type: 'bar',
-        data: { 
-          labels: labels, 
-          datasets: [{
-            data: pnlData,
-            backgroundColor: pnlData.map(function(v) { return v >= 0 ? 'rgba(34,197,94,0.55)' : 'rgba(239,68,68,0.55)'; }),
-            borderColor: pnlData.map(function(v) { return v >= 0 ? '#22c55e' : '#ef4444'; }),
-            borderWidth: 1,
-            borderRadius: 5,
-            borderSkipped: false
-          }]
+    // ⭐ TOPLAM K/Z KARŞILAŞTIRMASI (Bar)
+    var pnlEl = document.getElementById('pnl-comparison-chart');
+    if (pnlEl) {
+      if (window.pnlChart) {
+        try { window.pnlChart.destroy(); } catch(e) {}
+        window.pnlChart = null;
+      }
+      pnlEl.innerHTML = '';
+
+      var barColors = pnlData.map(function(v) { return v >= 0 ? '#22c55e' : '#ef4444'; });
+
+      var pnlOptions = {
+        series: [{ name: 'K/Z', data: pnlData }],
+        chart: {
+          type: 'bar',
+          height: '100%',
+          width: '100%',
+          toolbar: { show: false },
+          background: 'transparent',
+          fontFamily: "'DM Sans', sans-serif",
+          animations: { enabled: true, speed: 500 }
         },
-        options: {
-          plugins: { 
-            legend: { display: false },
-            tooltip: { callbacks: { label: function(ctx) { return ' ' + formatCurrencySafe(ctx.raw); } } }
+        plotOptions: {
+          bar: {
+            borderRadius: 5,
+            columnWidth: '60%',
+            distributed: true
+          }
+        },
+        colors: barColors,
+        dataLabels: { enabled: false },
+        grid: {
+          borderColor: theme.gridColor,
+          strokeDashArray: 3,
+          position: 'back'
+        },
+        xaxis: {
+          categories: labels,
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px'
+            },
+            rotate: 0,
+            hideOverlappingLabels: true,
+            trim: true
           },
-          scales: { 
-            x: { grid: { color: def.scales ? def.scales.x.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 } } },
-            y: { ticks: { callback: function(v) { return formatCurrencySafe(v); } } }
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            style: {
+              colors: theme.textColor,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: '9px'
+            },
+            formatter: function(v) { return formatCurrencySafe(v); }
+          }
+        },
+        tooltip: {
+          theme: theme.mode,
+          y: {
+            formatter: function(v) { return formatCurrencySafe(v); }
           },
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
+          style: {
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '12px'
+          }
+        },
+        legend: { show: false }
+      };
+
+      window.pnlChart = new ApexCharts(pnlEl, pnlOptions);
+      window.pnlChart.render();
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('renderComparisonCharts hatası:', e);
+  }
 }
 
 // ============================================================
-// ⭐ STRATEJİ EKLEME MODALI
+// STRATEJİ EKLEME MODALI
 // ============================================================
 function openAddStrategyModal() {
   var nameEl = document.getElementById('new-strategy-name');
@@ -801,16 +838,16 @@ async function confirmAddStrategy() {
   var nameEl = document.getElementById('new-strategy-name');
   var descEl = document.getElementById('new-strategy-desc');
   var colorEl = document.getElementById('new-strategy-color');
-  
+
   var name = nameEl ? nameEl.value.trim() : '';
   if (!name) {
     showToast(i18n.t('strategies.modal.name_required'), 'error');
     return;
   }
-  
+
   var desc = descEl ? descEl.value.trim() : '';
   var color = colorEl ? colorEl.value : '#8b5cf6';
-  
+
   try {
     await addStrategy(name, desc, color);
     document.getElementById('add-strategy-modal').style.display = 'none';
@@ -837,7 +874,7 @@ function openEditModal(strategyId) {
     var descEl = document.getElementById('edit-strategy-desc');
     var colorEl = document.getElementById('edit-strategy-color');
     var modalEl = document.getElementById('edit-strategy-modal');
-    
+
     if (idEl) idEl.value = s.id;
     if (nameEl) nameEl.value = sanitizeHTML(s.name);
     if (descEl) descEl.value = sanitizeHTML(s.description || '');
@@ -851,7 +888,7 @@ async function confirmEditStrategy() {
   var nameEl = document.getElementById('edit-strategy-name');
   var descEl = document.getElementById('edit-strategy-desc');
   var colorEl = document.getElementById('edit-strategy-color');
-  
+
   var id = idEl ? idEl.value : '';
   var name = nameEl ? nameEl.value.trim() : '';
   if (!name) {
@@ -860,7 +897,7 @@ async function confirmEditStrategy() {
   }
   var desc = descEl ? descEl.value.trim() : '';
   var color = colorEl ? colorEl.value : '#8b5cf6';
-  
+
   try {
     await updateStrategy(id, { name: name, description: desc, color: color });
     document.getElementById('edit-strategy-modal').style.display = 'none';
@@ -931,13 +968,13 @@ function openDetailModal(strategyId) {
 
     var modalEl2 = document.getElementById('strategy-detail-modal');
     if (modalEl2) modalEl2.style.display = 'flex';
-    
+
     if (typeof i18n !== 'undefined') i18n.apply();
   } catch(e) {}
 }
 
 // ============================================================
-// EQUITY MODAL
+// EQUITY MODAL - ApexCharts
 // ============================================================
 function openEquityModal(strategyId) {
   try {
@@ -954,51 +991,104 @@ function openEquityModal(strategyId) {
     var modalEl = document.getElementById('equity-curve-modal');
     if (modalEl) modalEl.style.display = 'flex';
 
-    var canvas = document.getElementById('equity-curve-canvas');
-    if (!canvas) return;
-    if (equityChartInstance) { try { equityChartInstance.destroy(); } catch(e) {} }
+    var equityEl = document.getElementById('equity-curve-canvas');
+    if (!equityEl) return;
 
-    var def = makeChartDefaults();
+    if (equityChartInstance) {
+      try { equityChartInstance.destroy(); } catch(e) {}
+      equityChartInstance = null;
+    }
+    equityEl.innerHTML = '';
+
+    var theme = getStrategiesApexTheme();
     var labels = perf.tradesDetail.map(function(t, i) { return fmtDate(t.trade_date); });
     var isNeg = perf.pnlSeries[perf.pnlSeries.length - 1] < 0;
     var lineColor = isNeg ? '#ef4444' : (s.color || '#8b5cf6');
 
-    var ctx = canvas.getContext('2d');
-    equityChartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Kümülatif K/Z',
-          data: perf.pnlSeries,
-          borderColor: lineColor,
-          backgroundColor: colorToRgba(lineColor, 0.12),
-          borderWidth: 2,
-          pointRadius: 2,
-          pointHoverRadius: 5,
-          tension: 0.3,
-          fill: true
-        }]
+    var equityOptions = {
+      series: [{ name: 'Kümülatif K/Z', data: perf.pnlSeries }],
+      chart: {
+        type: 'area',
+        height: '100%',
+        width: '100%',
+        toolbar: { show: false },
+        background: 'transparent',
+        fontFamily: "'DM Sans', sans-serif",
+        animations: { enabled: true, speed: 500 },
+        zoom: { enabled: false }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: def.plugins ? def.plugins.tooltip.backgroundColor : 'rgba(10,10,15,.95)',
-            borderColor: 'rgba(139,92,246,0.25)',
-            borderWidth: 1,
-            callbacks: { label: function(ctx2) { return ' ' + formatCurrencySafe(ctx2.raw); } }
-          }
-        },
-        scales: {
-          x: { grid: { color: def.scales ? def.scales.x.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
-          y: { grid: { color: def.scales ? def.scales.y.grid.color : 'rgba(255,255,255,0.04)' }, ticks: { callback: function(v) { return formatCurrencySafe(v); } } }
+      stroke: {
+        curve: 'smooth',
+        width: 2,
+        colors: [lineColor]
+      },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.35,
+          opacityTo: 0.02,
+          stops: [0, 100]
         }
-      }
-    });
-  } catch(e) {}
+      },
+      colors: [lineColor],
+      dataLabels: { enabled: false },
+      markers: {
+        size: 3,
+        colors: [lineColor],
+        strokeColors: lineColor,
+        strokeWidth: 0,
+        hover: { size: 6 }
+      },
+      grid: {
+        borderColor: theme.gridColor,
+        strokeDashArray: 3,
+        position: 'back'
+      },
+      xaxis: {
+        categories: labels,
+        tickAmount: 8,
+        labels: {
+          style: {
+            colors: theme.textColor,
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '9px'
+          },
+          rotate: 0,
+          hideOverlappingLabels: true,
+          trim: true
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+      },
+      yaxis: {
+        labels: {
+          style: {
+            colors: theme.textColor,
+            fontFamily: "'DM Mono', monospace",
+            fontSize: '9px'
+          },
+          formatter: function(v) { return formatCurrencySafe(v); }
+        }
+      },
+      tooltip: {
+        theme: theme.mode,
+        y: {
+          formatter: function(v) { return formatCurrencySafe(v); }
+        },
+        style: {
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: '12px'
+        }
+      },
+      legend: { show: false }
+    };
+
+    equityChartInstance = new ApexCharts(equityEl, equityOptions);
+    equityChartInstance.render();
+  } catch(e) {
+    console.error('openEquityModal hatası:', e);
+  }
 }
 
 // ============================================================
@@ -1014,13 +1104,28 @@ function setupDetailAndEquityModals() {
   });
   ['close-equity-modal', 'close-equity-modal-btn'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.addEventListener('click', function() { if (equityModal) equityModal.style.display = 'none'; });
+    if (el) el.addEventListener('click', function() {
+      if (equityModal) equityModal.style.display = 'none';
+      // ⭐ Equity modalı kapanınca chart'ı temizle
+      if (equityChartInstance) {
+        try { equityChartInstance.destroy(); } catch(e) {}
+        equityChartInstance = null;
+      }
+    });
   });
   if (detailModal) {
     detailModal.addEventListener('click', function(e) { if (e.target === detailModal) detailModal.style.display = 'none'; });
   }
   if (equityModal) {
-    equityModal.addEventListener('click', function(e) { if (e.target === equityModal) equityModal.style.display = 'none'; });
+    equityModal.addEventListener('click', function(e) {
+      if (e.target === equityModal) {
+        equityModal.style.display = 'none';
+        if (equityChartInstance) {
+          try { equityChartInstance.destroy(); } catch(e) {}
+          equityChartInstance = null;
+        }
+      }
+    });
   }
 
   var detailCsvBtn = document.getElementById('detail-export-csv');
@@ -1239,11 +1344,10 @@ function setupExportButtons() {
 }
 
 // ============================================================
-// ⭐ OPTİMİZE EDİLMİŞ LOAD ALL DATA
+// LOAD ALL DATA
 // ============================================================
 async function loadAllData() {
   try {
-    // ⭐ STRATEJİLERİ ÇEK
     var { data: strategies } = await sb
       .from('strategies')
       .select('id, name, description, color, user_id, is_active, created_at')
@@ -1251,15 +1355,13 @@ async function loadAllData() {
       .order('name');
     strategiesList = strategies || [];
 
-    // ⭐ İŞLEMLERİ ÇEK - SADECE GEREKLİ KOLONLAR
     var { data: trades } = await sb
       .from('trades')
       .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
       .eq('user_id', currentUser.id)
-      .limit(1000); // ⭐ MAX 1000 İŞLEM
+      .limit(1000);
     allTradesForStats = trades || [];
 
-    // ⭐ İŞLEMLERİ STRATEJİ BAZINDA GRUPLA - OPTİMİZASYON
     tradesByStrategy = {};
     allTradesForStats.forEach(function(t) {
       var sid = t.strategy_id || 'unassigned';
@@ -1267,7 +1369,6 @@ async function loadAllData() {
       tradesByStrategy[sid].push(t);
     });
 
-    // ⭐ CACHE'İ TEMİZLE (yeni veri geldi)
     strategyDataCache = {};
     strategyDataCacheTime = 0;
 
@@ -1286,11 +1387,10 @@ function setupTimeFilterButtons() {
       btns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
       currentTimeRange = this.dataset.range;
-      
-      // ⭐ Cache'i temizle (zaman aralığı değişti)
+
       strategyDataCache = {};
       strategyDataCacheTime = 0;
-      
+
       renderStrategiesGrid();
       renderComparisonCharts();
     });
@@ -1302,37 +1402,36 @@ function setupTimeFilterButtons() {
 // ============================================================
 async function initStrategies() {
   try {
-    console.log('📊 Strategies başlatılıyor...');
-    
+    wwLog.log('📊 Strategies başlatılıyor...');
+
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
       return;
     }
-    
+
     showStrategySkeleton();
-    
+
     currentUser = await requireAuth();
     if (!currentUser) return;
-    
+
     await updateNavbarAvatar();
     await updatePlanBadge();
 
-    // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
     try {
         if (typeof updateOvertradeBell === 'function') {
             await updateOvertradeBell();
         }
     } catch(e) {
-        console.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+        wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
     }
-    
+
     if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
       var adminLink = document.getElementById('admin-link');
       if (adminLink) adminLink.style.display = 'inline';
       var adminLinkMobile = document.getElementById('admin-link-mobile');
       if (adminLinkMobile) adminLinkMobile.style.display = 'block';
     }
-    
+
     var userAvatar = document.getElementById('user-avatar');
     var dropdownMenu = document.getElementById('dropdown-menu');
     if (userAvatar && dropdownMenu) {
@@ -1346,7 +1445,7 @@ async function initStrategies() {
         }
       });
     }
-    
+
     var logoutDropdownBtn = document.getElementById('logout-dropdown-btn');
     if (logoutDropdownBtn) {
       logoutDropdownBtn.addEventListener('click', async function() {
@@ -1355,51 +1454,31 @@ async function initStrategies() {
         window.location.href = 'index.html';
       });
     }
-    
-    // ============================================================
-    // ⭐ STRATEJİ EKLEME MODAL EVENT'LERİ (FIX)
-    // ============================================================
+
+    // Strateji ekleme modal event'leri
     var openAddBtn = document.getElementById('open-add-strategy-modal');
-    if (openAddBtn) {
-      openAddBtn.addEventListener('click', openAddStrategyModal);
-    }
-    
+    if (openAddBtn) openAddBtn.addEventListener('click', openAddStrategyModal);
+
     var confirmAddBtn = document.getElementById('confirm-add-strategy');
-    if (confirmAddBtn) {
-      confirmAddBtn.addEventListener('click', confirmAddStrategy);
-    }
-    
+    if (confirmAddBtn) confirmAddBtn.addEventListener('click', confirmAddStrategy);
+
     var cancelAddBtn = document.getElementById('cancel-add-strategy');
-    if (cancelAddBtn) {
-      cancelAddBtn.addEventListener('click', closeAddStrategyModal);
-    }
-    
+    if (cancelAddBtn) cancelAddBtn.addEventListener('click', closeAddStrategyModal);
+
     var closeAddBtn = document.getElementById('close-add-modal');
-    if (closeAddBtn) {
-      closeAddBtn.addEventListener('click', closeAddStrategyModal);
-    }
-    
-    // ============================================================
-    // ⭐ STRATEJİ DÜZENLEME MODAL EVENT'LERİ (FIX)
-    // ============================================================
+    if (closeAddBtn) closeAddBtn.addEventListener('click', closeAddStrategyModal);
+
+    // Düzenleme modal event'leri
     var confirmEditBtn = document.getElementById('confirm-edit-strategy');
-    if (confirmEditBtn) {
-      confirmEditBtn.addEventListener('click', confirmEditStrategy);
-    }
-    
+    if (confirmEditBtn) confirmEditBtn.addEventListener('click', confirmEditStrategy);
+
     var cancelEditBtn = document.getElementById('cancel-edit-strategy');
-    if (cancelEditBtn) {
-      cancelEditBtn.addEventListener('click', closeEditStrategyModal);
-    }
-    
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditStrategyModal);
+
     var closeEditBtn = document.getElementById('close-edit-modal');
-    if (closeEditBtn) {
-      closeEditBtn.addEventListener('click', closeEditStrategyModal);
-    }
-    
-    // ============================================================
-    // ⭐ KAPATMA BUTONLARI İÇİN KLİPLE (modal üzerine tıklama)
-    // ============================================================
+    if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditStrategyModal);
+
+    // Modal üzerine tıklayınca kapat
     var addModal = document.getElementById('add-strategy-modal');
     if (addModal) {
       addModal.addEventListener('click', function(e) {
@@ -1412,13 +1491,13 @@ async function initStrategies() {
         if (e.target === editModal) closeEditStrategyModal();
       });
     }
-    
+
     await loadAllData();
     setupTimeFilterButtons();
     setupExportButtons();
     setupDetailAndEquityModals();
-    
-    console.log('✅ Strategies başlatıldı!');
+
+    wwLog.log('✅ Strategies başlatıldı!');
   } catch(e) {
     console.error('❌ Strategies init hatası:', e);
   }
@@ -1435,4 +1514,4 @@ window.exportStrategyCSV = exportStrategyCSV;
 window.exportStrategyPDF = exportStrategyPDF;
 window.openAddStrategyModal = openAddStrategyModal;
 
-console.log('✅ strategies.js yüklendi!');
+wwLog.log('✅ strategies.js yüklendi!');

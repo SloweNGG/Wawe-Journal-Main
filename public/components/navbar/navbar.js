@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // NAVBAR.JS - components/navbar/navbar.js
 // ⭐ CLIENT-SIDE RENDER - Navbar tamamen JS ile oluşturulur
 // ⭐ Mobil menüde kullanıcı kartı + gruplanmış bağlantılar
@@ -8,7 +8,7 @@
 // ⭐ Event'ler her sayfa yüklemesinde yeniden bağlanır
 // ============================================================
 
-console.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');
+wwLog.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');
 
 var navbarRendered = false;
 var cachedAvatarUrl = null; // ⭐ Avatar cache kontrolü
@@ -34,7 +34,7 @@ function sanitizeURL(url) {
 
 function loadLucideIcons() {
   if (typeof lucide !== 'undefined') {
-    try { lucide.createIcons(); console.log('✅ Lucide icons re-created!'); } catch(e) {}
+    try { lucide.createIcons(); wwLog.log('✅ Lucide icons re-created!'); } catch(e) {}
     return;
   }
   var script = document.createElement('script');
@@ -42,10 +42,10 @@ function loadLucideIcons() {
   script.defer = true;
   script.onload = function() {
     if (typeof lucide !== 'undefined') {
-      try { lucide.createIcons(); console.log('✅ Lucide icons loaded and created!'); } catch(e) {}
+      try { lucide.createIcons(); wwLog.log('✅ Lucide icons loaded and created!'); } catch(e) {}
     }
   };
-  script.onerror = function() { console.warn('⚠️ Lucide icons could not be loaded'); };
+  script.onerror = function() { wwLog.warn('⚠️ Lucide icons could not be loaded'); };
   document.head.appendChild(script);
 }
 
@@ -247,11 +247,11 @@ function getNavbarHTML(translations) {
 
 function updateNavbarI18n() {
   if (typeof i18n === 'undefined' || typeof i18n.t !== 'function') {
-    console.warn('⚠️ i18n yüklenmemiş, metinler güncellenemiyor');
+    wwLog.warn('⚠️ i18n yüklenmemiş, metinler güncellenemiyor');
     return;
   }
   
-  console.log('🌐 Navbar i18n metinleri batch olarak güncelleniyor...');
+  wwLog.log('🌐 Navbar i18n metinleri batch olarak güncelleniyor...');
   
   var textUpdates = [];
   var placeholderUpdates = [];
@@ -298,7 +298,7 @@ function updateNavbarI18n() {
   updateNavbarBadgeSync();
   
   var total = textUpdates.length + placeholderUpdates.length + htmlUpdates.length;
-  console.log(`✅ Navbar i18n güncellendi! (${total} element)`);
+  wwLog.log(`✅ Navbar i18n güncellendi! (${total} element)`);
 }
 
 // ⭐ applyAvatarToNav - HEADER + MENU avatar ve kullanıcı adını günceller
@@ -385,7 +385,7 @@ async function loadNavbarAvatar() {
     // Avatar cache kontrolü
     if (storedAvatar && storedTime && (now - parseInt(storedTime)) < 300000) {
       if (cachedAvatarUrl === storedAvatar) {
-        console.log('✅ Avatar aynı, render yapılmıyor.');
+        wwLog.log('✅ Avatar aynı, render yapılmıyor.');
         // Ama kullanıcı adı güncellenmiş olabilir, yine de UI'ı tazele
         applyAvatarToNav(storedAvatar);
         return;
@@ -423,7 +423,7 @@ async function loadNavbarAvatar() {
       }
       applyAvatarToNav(avatarUrl);
     } else {
-      console.log('✅ Avatar aynı, render yapılmıyor.');
+      wwLog.log('✅ Avatar aynı, render yapılmıyor.');
       applyAvatarToNav(avatarUrl); // kullanıcı adını güncellemek için
     }
     
@@ -651,7 +651,7 @@ function setupAvatarDropdown() {
   if (avatarDropdownInitialized) return;
   avatarDropdownInitialized = true;
   
-  console.log('👤 Avatar dropdown event delegation kuruluyor...');
+  wwLog.log('👤 Avatar dropdown event delegation kuruluyor...');
   
   document.addEventListener('click', function(e) {
     var avatar = document.getElementById('user-avatar');
@@ -683,12 +683,12 @@ function setupAvatarDropdown() {
     }
   });
   
-  console.log('✅ Avatar dropdown event delegation kuruldu!');
+  wwLog.log('✅ Avatar dropdown event delegation kuruldu!');
 }
 
 // ⭐ initNavEvents - HER ZAMAN çağrıldığında event'leri temizleyip yeniden bağlar
 function initNavEvents() {
-  console.log('🔗 Navbar event\'leri bağlanıyor...');
+  wwLog.log('🔗 Navbar event\'leri bağlanıyor...');
   
   loadLucideIcons();
   setupAvatarDropdown();
@@ -788,7 +788,7 @@ function initNavEvents() {
       backdrop.classList.toggle('open');
       document.body.style.overflow = isOpen ? 'hidden' : '';
       
-      console.log('🍔 Hamburger menü:', isOpen ? 'AÇILDI' : 'KAPANDI');
+      wwLog.log('🍔 Hamburger menü:', isOpen ? 'AÇILDI' : 'KAPANDI');
     });
     
     // ⭐ Backdrop'a tıklayınca kapat
@@ -803,11 +803,11 @@ function initNavEvents() {
         if (menuEl) menuEl.classList.remove('open');
         if (this) this.classList.remove('open');
         document.body.style.overflow = '';
-        console.log('🍔 Backdrop ile menü kapatıldı');
+        wwLog.log('🍔 Backdrop ile menü kapatıldı');
       });
     }
   } else {
-    console.warn('⚠️ Hamburger elementleri bulunamadı:', {
+    wwLog.warn('⚠️ Hamburger elementleri bulunamadı:', {
       toggle: !!toggle,
       menu: !!menu,
       backdrop: !!backdrop
@@ -835,7 +835,7 @@ function initNavEvents() {
   }
   
   navEventsInitialized = true;
-  console.log('✅ Navbar event\'leri bağlandı!');
+  wwLog.log('✅ Navbar event\'leri bağlandı!');
 }
 
 // ⭐ loadNavbar - HER ZAMAN event'leri bağla
@@ -847,7 +847,7 @@ function loadNavbar(containerId) {
   }
   
   if (navbarRendered) {
-    console.log('✅ Navbar zaten render edilmiş, güncelleme + event yeniden bağlanıyor.');
+    wwLog.log('✅ Navbar zaten render edilmiş, güncelleme + event yeniden bağlanıyor.');
     setTimeout(function() {
       updateNavbarI18n();
       loadNavbarAvatar();
@@ -860,7 +860,7 @@ function loadNavbar(containerId) {
     return;
   }
   
-  console.log('📦 Navbar ilk kez render ediliyor...');
+  wwLog.log('📦 Navbar ilk kez render ediliyor...');
   
   var translations = {};
   if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
@@ -886,17 +886,17 @@ function loadNavbar(containerId) {
   
   container.innerHTML = getNavbarHTML(translations);
   navbarRendered = true;
-  console.log('✅ Navbar HTML yüklendi!');
+  wwLog.log('✅ Navbar HTML yüklendi!');
   
   if (window.requestAnimationFrame) {
     requestAnimationFrame(function() {
       setActiveNavLink();
-      console.log('✅ Aktif link ayarlandı!');
+      wwLog.log('✅ Aktif link ayarlandı!');
     });
   } else {
     setTimeout(function() {
       setActiveNavLink();
-      console.log('✅ Aktif link ayarlandı!');
+      wwLog.log('✅ Aktif link ayarlandı!');
     }, 0);
   }
   
@@ -910,7 +910,7 @@ function loadNavbar(containerId) {
     initNavEvents(); // ⭐ Event'leri bağla
     loadNavbarAvatar();
     updateNavbarBadge();
-    console.log('✅ Navbar tamamen yüklendi!');
+    wwLog.log('✅ Navbar tamamen yüklendi!');
   }, 50);
 }
 
@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_language' && e.newValue) {
-      console.log(`🔄 Storage event: Dil değişti (${e.oldValue} → ${e.newValue})`);
+      wwLog.log(`🔄 Storage event: Dil değişti (${e.oldValue} → ${e.newValue})`);
       setTimeout(function() {
         updateNavbarI18n();
         updateNavbarBadgeSync();
@@ -989,4 +989,4 @@ window.refreshNavbar = function() {
   initNavEvents(); // ⭐ Refresh'te event'leri yeniden bağla
 };
 
-console.log('✅ navbar.js yüklendi! (CLIENT-SIDE RENDER + AVATAR CACHE)');
+wwLog.log('✅ navbar.js yüklendi! (CLIENT-SIDE RENDER + AVATAR CACHE)');

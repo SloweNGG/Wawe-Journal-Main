@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - ANA SCRIPT
 // Tüm modülleri import eder ve window'a atar
 // ============================================================
@@ -254,23 +254,23 @@ window.updateHomePrices = updateHomePrices;
 window.adminUpdatePrices = adminUpdatePrices;
 window.resetPrices = resetPrices;
 
-console.log('✅ Wawe Journal script loaded!');
-console.log('📦 requireAuth:', typeof window.requireAuth === 'function' ? '✅' : '❌');
-console.log('🔑 sb:', window.sb ? '✅' : '❌');
-console.log('🧹 sanitizeHTML:', typeof window.sanitizeHTML === 'function' ? '✅' : '❌');
-console.log('🍞 showToast:', typeof window.showToast === 'function' ? '✅' : '❌');
+wwLog.log('✅ Wawe Journal script loaded!');
+wwLog.log('📦 requireAuth:', typeof window.requireAuth === 'function' ? '✅' : '❌');
+wwLog.log('🔑 sb:', window.sb ? '✅' : '❌');
+wwLog.log('🧹 sanitizeHTML:', typeof window.sanitizeHTML === 'function' ? '✅' : '❌');
+wwLog.log('🍞 showToast:', typeof window.showToast === 'function' ? '✅' : '❌');
 
 // ============================================================
 // ⭐ TEMA DEĞİŞİMİNİ DİNLE - TÜM SAYFALARDA ÇALIŞIR
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🎨 Tema izleyici başlatıldı...');
+  wwLog.log('🎨 Tema izleyici başlatıldı...');
   
   // Storage değişikliklerini dinle (diğer sekmelerden gelen)
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
-      console.log('🔄 Tema değişikliği algılandı:', e.newValue);
+      wwLog.log('🔄 Tema değişikliği algılandı:', e.newValue);
       
       const isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Light tema CSS değişkenlerini styles.css'den alır
           }
         } catch(e) {
-          console.warn('⚠️ Custom theme uygulanamadı:', e);
+          wwLog.warn('⚠️ Custom theme uygulanamadı:', e);
         }
       }
     }
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // ⭐ Custom event - aynı sayfadaki tema değişimleri için
   document.addEventListener('themeChanged', function(e) {
-    console.log('🔄 ThemeChanged event yakalandı');
+    wwLog.log('🔄 ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings) {
       // Sadece dark tema ise uygula
       if (!document.body.classList.contains('light-theme')) {
@@ -324,4 +324,4 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-console.log('✅ Tema izleyici yüklendi!');
+wwLog.log('✅ Tema izleyici yüklendi!');

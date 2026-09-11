@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // QUICK MODAL I18N - Hızlı İşlem Modal'ı Çevirileri
 // Dil: İngilizce (varsayılan), Türkçe, Almanca
 // ============================================================
@@ -341,7 +341,7 @@ class QuickI18n {
       });
     }
     
-    console.log('✅ Quick Modal I18n initialized! Dil:', this.currentLang);
+    wwLog.log('✅ Quick Modal I18n initialized! Dil:', this.currentLang);
   }
   
   t(key, params = {}) {
@@ -358,7 +358,7 @@ class QuickI18n {
   
   setLanguage(lang, silent = false) {
     if (!quickTranslations[lang]) {
-      console.warn(`[QuickI18n] Dil bulunamadı: ${lang}`);
+      wwLog.warn(`[QuickI18n] Dil bulunamadı: ${lang}`);
       return false;
     }
     
@@ -420,4 +420,4 @@ class QuickI18n {
 const quickI18n = new QuickI18n('en');
 window.quickI18n = quickI18n;
 
-console.log('✅ Quick Modal I18n loaded! Dil:', quickI18n.getCurrentLanguage());
+wwLog.log('✅ Quick Modal I18n loaded! Dil:', quickI18n.getCurrentLanguage());

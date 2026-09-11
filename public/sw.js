@@ -1,4 +1,4 @@
-// ⭐ Service Worker - NETWORK FIRST (Önce sunucu, olmazsa cache)
+﻿// ⭐ Service Worker - NETWORK FIRST (Önce sunucu, olmazsa cache)
 // Dashboard, index ve diğer HTML dosyaları her zaman taze gelir
 // CSS/JS dosyaları Network First stratejisi ile çalışır
 // ⭐ FIX: Cache API sadece GET destekler — HEAD/POST gibi isteklerde
@@ -9,7 +9,7 @@ const CACHE_NAME = 'wawe-v7'; // ⭐ Sürüm değişti (eski cache temizlensin)
 
 // ⭐ INSTALL: Sadece hazırlan, hiçbir şey cache'leme
 self.addEventListener('install', function(e) {
-  console.log('⚡ SW: Install');
+  wwLog.log('⚡ SW: Install');
   e.waitUntil(
     self.skipWaiting()
   );
@@ -17,14 +17,14 @@ self.addEventListener('install', function(e) {
 
 // ⭐ ACTIVATE: Eski cache'leri temizle
 self.addEventListener('activate', function(e) {
-  console.log('⚡ SW: Activate');
+  wwLog.log('⚡ SW: Activate');
   e.waitUntil(
     caches.keys()
       .then(function(cacheNames) {
         return Promise.all(
           cacheNames.map(function(cacheName) {
             if (cacheName !== CACHE_NAME) {
-              console.log('🗑️ SW: Eski cache siliniyor:', cacheName);
+              wwLog.log('🗑️ SW: Eski cache siliniyor:', cacheName);
               return caches.delete(cacheName);
             }
           })
