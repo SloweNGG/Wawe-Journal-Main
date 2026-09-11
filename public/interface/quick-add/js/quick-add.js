@@ -1,21 +1,12 @@
 ﻿// ============================================================
 // QUICK ADD MODAL - İŞLEM EKLEME
-// ⭐ FIX: FAB butonu kaybolma sorunu düzeltildi (body'ye kalıcı olarak eklenir)
-// ⭐ FIX: initQuickAdd sadece bir kez çalışır
-// ⭐ FIX: Debounce tamamen kaldırıldı, anında güncelleme
-// ⭐ FIX: Event delegation ile tüm input değişiklikleri yakalanıyor
-// ⭐ FIX: close ve cancel butonları çalışıyor
-// ⭐ TEMA: Sayfa başında localStorage'dan tema yüklenir
-// ⭐ TEMA: storage / themeChanged event'leri dinlenir
-// ⭐ TEMİZLİK: window.load fallback'i KALDIRILDI
-// ⭐ CSV/BULK CHUNKING: Tek dev istek yerine 500'lük parçalar
-//        - 1000+ satır import artık çalışır (Supabase limitine takılmaz)
-//        - Kısmi başarı: hatalı chunk diğerlerini etkilemez
-//        - Real-time progress: statusText ve bulk-progress güncellenir
+// ⭐ Emoji temizlendi, tüm ikonlar SVG (Lucide tarzı)
+// ⭐ Custom Date Picker - dark/light tema uyumlu
+// ⭐ i18n entegrasyonu tam
 // ============================================================
 
 // ============================================================
-// ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
+// TEMA BAŞLATMA
 // ============================================================
 
 (function initQuickAddTheme() {
@@ -45,18 +36,14 @@
         }
         if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
         if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) {
-          document.body.style.fontSize = settings.fontSize + 'px';
-        }
+        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
       } catch (e) {}
     }
-
-    wwLog.log('🎨 [quick-add.js] Tema ayarlandı:', savedTheme || 'dark');
   } catch (e) {}
 })();
 
 // ============================================================
-// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// TEMA DEĞİŞİMİNİ DİNLE
 // ============================================================
 
 (function listenQuickAddThemeChanges() {
@@ -86,13 +73,11 @@
 
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
-      wwLog.log('🔄 [QuickAdd] Tema değişikliği algılandı (storage):', e.key);
       applyThemeFromStorage();
     }
   });
 
   document.addEventListener('themeChanged', function(e) {
-    wwLog.log('🔄 [QuickAdd] themeChanged event yakalandı');
     if (e.detail && e.detail.settings) {
       var settings = e.detail.settings;
       var root = document.documentElement;
@@ -106,25 +91,303 @@
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
     }
   });
-
-  wwLog.log('✅ [QuickAdd] Tema izleyici yüklendi!');
 })();
+
+// ============================================================
+// DATE PICKER STİLLERİ - HEAD'E INJECT EDİLİR
+// ============================================================
+
+(function injectDatePickerStyles() {
+  if (document.getElementById('qa-date-picker-styles')) return;
+  var style = document.createElement('style');
+  style.id = 'qa-date-picker-styles';
+  style.textContent = `
+/* ============ DATE INPUT WRAPPER ============ */
+.qa-date-input-wrap { position: relative; }
+.qa-date-input-wrap input {
+  width: 100%;
+  padding-right: 36px !important;
+  cursor: pointer;
+}
+.qa-date-input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--qa-muted, #6b6b80);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+.qa-date-input-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+}
+
+/* ============ OVERLAY ============ */
+.qa-date-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: transparent;
+  display: none;
+}
+.qa-date-picker-overlay.open { display: block; }
+
+/* ============ PICKER PANEL ============ */
+.qa-date-picker {
+  position: fixed;
+  z-index: 10000;
+  background: var(--qa-surface, #111118);
+  border: 1px solid var(--qa-border-strong, rgba(255,255,255,0.12));
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(124,109,250,0.08);
+  width: 300px;
+  font-family: var(--qa-font-body, 'DM Sans', system-ui, sans-serif);
+  color: var(--qa-text, #e8e8f0);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.97);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.18s;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.qa-date-picker.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* ============ HEADER ============ */
+.qa-date-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--qa-border, rgba(255,255,255,0.06));
+}
+.qa-dp-nav {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--qa-border, rgba(255,255,255,0.06));
+  color: var(--qa-muted, #6b6b80);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+.qa-dp-nav svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+.qa-dp-nav:hover {
+  border-color: var(--qa-accent, #7c6dfa);
+  color: var(--qa-accent, #7c6dfa);
+  background: rgba(124,109,250,0.08);
+}
+.qa-dp-nav:active { transform: scale(0.94); }
+
+.qa-dp-title {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--qa-text, #e8e8f0);
+  font-family: var(--qa-font-heading, 'Syne', inherit);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: default;
+  text-align: center;
+}
+
+/* ============ WEEKDAYS ============ */
+.qa-date-picker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.qa-dp-weekday {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--qa-muted, #6b6b80);
+  padding: 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============ DAYS GRID ============ */
+.qa-date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.qa-dp-day {
+  aspect-ratio: 1 / 1;
+  min-height: 34px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--qa-text, #e8e8f0);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.qa-dp-day:hover {
+  background: rgba(124,109,250,0.12);
+  color: var(--qa-accent-light, #a78bfa);
+}
+.qa-dp-day:active { transform: scale(0.94); }
+.qa-dp-day.other-month {
+  color: var(--qa-muted, #6b6b80);
+  opacity: 0.4;
+}
+.qa-dp-day.today {
+  border-color: var(--qa-accent, #7c6dfa);
+  color: var(--qa-accent, #7c6dfa);
+  font-weight: 700;
+}
+.qa-dp-day.selected {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(139,92,246,0.4);
+  font-weight: 700;
+}
+.qa-dp-day.selected:hover {
+  color: #fff;
+  transform: scale(1.04);
+}
+
+/* ============ FOOTER ============ */
+.qa-date-picker-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--qa-border, rgba(255,255,255,0.06));
+}
+.qa-dp-footer-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--qa-border, rgba(255,255,255,0.06));
+  color: var(--qa-muted, #6b6b80);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.qa-dp-footer-btn:hover {
+  border-color: var(--qa-accent, #7c6dfa);
+  color: var(--qa-accent, #7c6dfa);
+  background: rgba(124,109,250,0.06);
+}
+.qa-dp-footer-btn:active { transform: scale(0.96); }
+
+/* ============ LIGHT THEME ============ */
+body.light-theme .qa-date-picker {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(124,109,250,0.06);
+  color: #1a1a2e;
+}
+body.light-theme .qa-date-picker-header { border-bottom-color: rgba(0,0,0,0.06); }
+body.light-theme .qa-dp-nav {
+  border-color: rgba(0,0,0,0.08);
+  color: #6b6b80;
+}
+body.light-theme .qa-dp-nav:hover {
+  border-color: #7c6dfa;
+  color: #7c6dfa;
+  background: rgba(124,109,250,0.06);
+}
+body.light-theme .qa-dp-title { color: #1a1a2e; }
+body.light-theme .qa-dp-weekday { color: #9999aa; }
+body.light-theme .qa-dp-day { color: #1a1a2e; }
+body.light-theme .qa-dp-day:hover {
+  background: rgba(124,109,250,0.1);
+  color: #7c6dfa;
+}
+body.light-theme .qa-dp-day.other-month { color: #bbbbcc; }
+body.light-theme .qa-dp-day.today {
+  border-color: #7c6dfa;
+  color: #7c6dfa;
+}
+body.light-theme .qa-dp-day.selected {
+  background: linear-gradient(135deg, #7c6dfa, #9b8bfa);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124,109,250,0.35);
+}
+body.light-theme .qa-date-picker-footer { border-top-color: rgba(0,0,0,0.06); }
+body.light-theme .qa-dp-footer-btn {
+  border-color: rgba(0,0,0,0.08);
+  color: #6b6b80;
+}
+body.light-theme .qa-dp-footer-btn:hover {
+  border-color: #7c6dfa;
+  color: #7c6dfa;
+  background: rgba(124,109,250,0.06);
+}
+
+/* ============ MOBILE ============ */
+@media (max-width: 480px) {
+  .qa-date-picker { width: calc(100vw - 32px); max-width: 320px; }
+  .qa-dp-day { min-height: 40px; font-size: 13px; }
+}
+`;
+  document.head.appendChild(style);
+})();
+
+// ============================================================
+// ANA MODÜL
+// ============================================================
 
 (function() {
   'use strict';
 
-  // ============================================================
-  // SABİTLER
-  // ============================================================
-  // ⭐ Supabase tek insert'te ~1000 satır limitine sahip.
-  // 500'lük parçalar güvenli ve kullanıcıya hızlı geri bildirim sağlar.
+  function t(key, params) {
+    try {
+      if (typeof quickI18n !== 'undefined' && typeof quickI18n.t === 'function') {
+        return quickI18n.t(key, params);
+      }
+    } catch(e) {}
+    return key;
+  }
+
   const CHUNK_SIZE = 500;
 
   // ============================================================
-  // İKONLAR — tek merkezden yönetilen, Lucide tarzı SVG'ler.
-  // Emoji kullanımı tamamen kaldırıldı.
+  // İKONLAR (hepsi SVG)
   // ============================================================
-
   const ICONS = {
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
@@ -138,7 +401,10 @@
     upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:qaSpin 0.6s linear infinite;"><circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>'
+    spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:qaSpin 0.6s linear infinite;"><circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
   };
 
   function badgeIcon(type) {
@@ -154,14 +420,11 @@
 
   function logTag(type) {
     if (type === 'warning') {
-      return '<span style="color:var(--accent2,#9b8bfa);font-weight:600;">Uyarı</span>';
+      return '<span style="color:var(--accent2,#9b8bfa);font-weight:600;">!</span>';
     }
-    return '<span style="color:var(--red,#ef4444);font-weight:600;">Hata</span>';
+    return '<span style="color:var(--red,#ef4444);font-weight:600;">×</span>';
   }
 
-  // ============================================================
-  // ⭐ CHUNK HELPER - Diziyi parçalara böl
-  // ============================================================
   function chunkArray(arr, size) {
     var chunks = [];
     for (var i = 0; i < arr.length; i += size) {
@@ -173,7 +436,6 @@
   // ============================================================
   // STATE
   // ============================================================
-
   let currentSide = 'BUY';
   let currentTab = 'price';
   let strategiesList = [];
@@ -184,12 +446,12 @@
   let currentMultiplier = 100000;
   let csvPreviewData = null;
 
+  // Date picker state
+  let datePickerState = { isOpen: false, viewYear: 2026, viewMonth: 0, selectedDate: null };
+  let datePickerTargetInput = null;
+
   function el(id) { return document.getElementById(id); }
   function qsa(selector) { return document.querySelectorAll(selector); }
-
-  // ============================================================
-  // GLOBAL BAĞIMLILIK KONTROLÜ
-  // ============================================================
 
   function checkGlobals() {
     const required = {
@@ -200,7 +462,6 @@
       'formatCurrency': typeof formatCurrency === 'function',
       'showToast': typeof showToast === 'function'
     };
-
     const missing = Object.keys(required).filter(k => !required[k]);
     if (missing.length > 0) {
       wwLog.warn('Eksik global bağımlılıklar:', missing.join(', '));
@@ -208,10 +469,6 @@
     }
     return true;
   }
-
-  // ============================================================
-  // XSS KORUMASI - HTML Escape
-  // ============================================================
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -221,7 +478,7 @@
   }
 
   // ============================================================
-  // CSV PARSER - Tırnaklı alanları ve içteki virgülleri işler
+  // CSV PARSER
   // ============================================================
 
   function parseCsvLine(line) {
@@ -232,7 +489,6 @@
 
     while (i < line.length) {
       const char = line[i];
-
       if (inQuotes) {
         if (char === '"') {
           if (i + 1 < line.length && line[i + 1] === '"') {
@@ -260,7 +516,6 @@
         }
       }
     }
-
     result.push(current.trim());
     return result;
   }
@@ -268,28 +523,18 @@
   function parseCsvText(text) {
     const lines = text.split('\n').filter(function(l) { return l.trim() !== ''; });
     if (lines.length === 0) return [];
-
-    return lines.map(function(line) {
-      return parseCsvLine(line);
-    });
+    return lines.map(function(line) { return parseCsvLine(line); });
   }
-
-  // ============================================================
-  // TARİH FORMATLAMA - Tek tip UTC ISO formatı
-  // ============================================================
 
   function validateAndFormatDate(dateString) {
     if (!dateString || !dateString.trim()) {
       return new Date().toISOString().split('T')[0];
     }
-
     dateString = dateString.trim();
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       const d = new Date(dateString);
-      if (!isNaN(d.getTime())) {
-        return d.toISOString().split('T')[0];
-      }
+      if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
     }
 
     let parts = dateString.split('.');
@@ -299,9 +544,7 @@
       const year = parseInt(parts[2], 10);
       if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 2000 && year < 2100) {
         const d = new Date(year, month - 1, day);
-        if (!isNaN(d.getTime())) {
-          return d.toISOString().split('T')[0];
-        }
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
       }
     }
 
@@ -310,50 +553,259 @@
       const first = parseInt(parts[0], 10);
       const second = parseInt(parts[1], 10);
       const year = parseInt(parts[2], 10);
-
       if (!isNaN(first) && !isNaN(second) && !isNaN(year) && year > 2000 && year < 2100) {
         let d = new Date(year, second - 1, first);
-        if (!isNaN(d.getTime())) {
-          return d.toISOString().split('T')[0];
-        }
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
         d = new Date(year, first - 1, second);
-        if (!isNaN(d.getTime())) {
-          wwLog.warn('Tarih formatı belirsiz (DD/MM vs MM/DD):', dateString, '-> MM/DD olarak yorumlandı');
-          return d.toISOString().split('T')[0];
-        }
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
       }
     }
 
     const d = new Date(dateString);
-    if (!isNaN(d.getTime())) {
-      return d.toISOString().split('T')[0];
-    }
-
-    wwLog.warn('Tarih ayrıştırılamadı, bugünün tarihi kullanılacak:', dateString);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
     return new Date().toISOString().split('T')[0];
   }
 
   // ============================================================
-  // HTML TEMPLATE - FAB butonu hariç (ayrıca eklenecek)
+  // DATE PICKER HELPERS
+  // ============================================================
+
+  function isoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function getLocale(lang) {
+    return lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US';
+  }
+
+  function formatDateDisplay(iso, lang) {
+    if (!iso) return '';
+    try {
+      const l = lang || (typeof quickI18n !== 'undefined' ? quickI18n.getCurrentLanguage() : 'tr');
+      const d = new Date(iso + 'T00:00:00');
+      if (isNaN(d.getTime())) return iso;
+      return new Intl.DateTimeFormat(getLocale(l), {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(d);
+    } catch(e) {
+      return iso;
+    }
+  }
+
+  function getWeekdayNames(lang) {
+    try {
+      const ref = new Date(2024, 0, 1); // Pazartesi
+      const names = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(ref);
+        d.setDate(ref.getDate() + i);
+        names.push(new Intl.DateTimeFormat(getLocale(lang), { weekday: 'short' }).format(d));
+      }
+      return names;
+    } catch(e) {
+      return ['Mo','Tu','We','Th','Fr','Sa','Su'];
+    }
+  }
+
+  function getMonthTitle(year, month, lang) {
+    try {
+      const l = lang || (typeof quickI18n !== 'undefined' ? quickI18n.getCurrentLanguage() : 'tr');
+      const d = new Date(year, month, 1);
+      const monthName = new Intl.DateTimeFormat(getLocale(l), { month: 'long' }).format(d);
+      return monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year;
+    } catch(e) {
+      return year + '-' + (month + 1);
+    }
+  }
+
+  // ============================================================
+  // DATE PICKER RENDER
+  // ============================================================
+
+  function renderDatePicker() {
+    const grid = el('qa-dp-grid');
+    const title = el('qa-dp-title');
+    const weekdays = el('qa-dp-weekdays');
+    if (!grid || !title || !weekdays) return;
+
+    const lang = (typeof quickI18n !== 'undefined') ? quickI18n.getCurrentLanguage() : 'tr';
+
+    const year = datePickerState.viewYear;
+    const month = datePickerState.viewMonth;
+
+    // Title
+    title.textContent = getMonthTitle(year, month, lang);
+
+    // Weekdays
+    const dayNames = getWeekdayNames(lang);
+    weekdays.innerHTML = dayNames.map(n => '<div class="qa-dp-weekday">' + escapeHtml(n) + '</div>').join('');
+
+    // Days grid
+    const firstOfMonth = new Date(year, month, 1);
+    const firstDayOfWeek = (firstOfMonth.getDay() + 6) % 7; // Pazartesi=0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = isoDate(today);
+
+    const selectedIso = datePickerState.selectedDate;
+
+    const cells = [];
+
+    // Önceki ayın tail
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      const day = daysInPrevMonth - i;
+      cells.push({ day, date: new Date(year, month - 1, day), otherMonth: true });
+    }
+
+    // Bu ay
+    for (let day = 1; day <= daysInMonth; day++) {
+      cells.push({ day, date: new Date(year, month, day), otherMonth: false });
+    }
+
+    // Sonraki ayın head
+    const remaining = 42 - cells.length;
+    for (let i = 1; i <= remaining; i++) {
+      cells.push({ day: i, date: new Date(year, month + 1, i), otherMonth: true });
+    }
+
+    grid.innerHTML = cells.map(cell => {
+      const iso = isoDate(cell.date);
+      const isToday = iso === todayStr;
+      const isSelected = iso === selectedIso;
+      const classes = ['qa-dp-day'];
+      if (cell.otherMonth) classes.push('other-month');
+      if (isToday) classes.push('today');
+      if (isSelected) classes.push('selected');
+      return '<button type="button" class="' + classes.join(' ') + '" data-date="' + iso + '">' + cell.day + '</button>';
+    }).join('');
+  }
+
+  function openDatePicker(input) {
+    if (!input) return;
+    datePickerTargetInput = input;
+
+    // Mevcut değeri oku
+    let iso = input.getAttribute('data-iso') || '';
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      iso = isoDate(new Date());
+    }
+
+    let baseDate;
+    try {
+      baseDate = new Date(iso + 'T00:00:00');
+    } catch(e) {
+      baseDate = new Date();
+    }
+    if (isNaN(baseDate.getTime())) baseDate = new Date();
+
+    datePickerState.viewYear = baseDate.getFullYear();
+    datePickerState.viewMonth = baseDate.getMonth();
+    datePickerState.selectedDate = iso;
+    datePickerState.isOpen = true;
+
+    renderDatePicker();
+
+    const picker = el('qa-date-picker');
+    const overlay = el('qa-date-picker-overlay');
+    if (!picker) return;
+
+    // Konumlandır
+    const rect = input.getBoundingClientRect();
+    const pickerWidth = 300;
+    const pickerHeight = 360; // yaklaşık
+    const viewportH = window.innerHeight;
+    const viewportW = window.innerWidth;
+    const margin = 8;
+
+    let top = rect.bottom + margin;
+    let left = rect.left;
+
+    // Alt tarafta yer yoksa yukarı aç
+    if (top + pickerHeight > viewportH - margin) {
+      const above = rect.top - pickerHeight - margin;
+      top = above >= margin ? above : Math.max(margin, viewportH - pickerHeight - margin);
+    }
+
+    // Sağa taşarsa sola kaydır
+    if (left + pickerWidth > viewportW - margin) {
+      left = viewportW - pickerWidth - margin;
+    }
+    if (left < margin) left = margin;
+
+    picker.style.top = top + 'px';
+    picker.style.left = left + 'px';
+    picker.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+  }
+
+  function closeDatePicker() {
+    const picker = el('qa-date-picker');
+    const overlay = el('qa-date-picker-overlay');
+    if (picker) picker.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    datePickerState.isOpen = false;
+    datePickerTargetInput = null;
+  }
+
+  function selectDate(iso) {
+    const input = datePickerTargetInput;
+    if (input) {
+      input.value = formatDateDisplay(iso);
+      input.setAttribute('data-iso', iso);
+    }
+    datePickerState.selectedDate = iso;
+    closeDatePicker();
+  }
+
+  function prevMonth() {
+    datePickerState.viewMonth--;
+    if (datePickerState.viewMonth < 0) {
+      datePickerState.viewMonth = 11;
+      datePickerState.viewYear--;
+    }
+    renderDatePicker();
+  }
+
+  function nextMonth() {
+    datePickerState.viewMonth++;
+    if (datePickerState.viewMonth > 11) {
+      datePickerState.viewMonth = 0;
+      datePickerState.viewYear++;
+    }
+    renderDatePicker();
+  }
+
+  // ============================================================
+  // MODAL HTML
   // ============================================================
 
   function getModalHTML() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = isoDate(new Date());
+    const todayDisplay = formatDateDisplay(today);
+
     return `
       <div class="quick-add-overlay" id="quick-add-overlay">
         <div class="quick-add-modal">
 
           <!-- HEADER -->
           <div class="quick-add-header">
-            <h2>Yeni İşlem</h2>
-            <button class="close-btn" id="quick-add-close" aria-label="Kapat">${ICONS.close}</button>
+            <h2 data-quick-i18n="quickmodal.title">İşlem Ekle</h2>
+            <button class="close-btn" id="quick-add-close" aria-label="Close">${ICONS.close}</button>
           </div>
 
           <!-- TABS -->
           <div class="quick-add-tabs" id="quick-tabs">
-            <button class="quick-tab active" data-tab="price">${ICONS.edit}<span>İşlem Ekle</span></button>
-            <button class="quick-tab" data-tab="csv">${ICONS.file}<span>CSV</span></button>
-            <button class="quick-tab" data-tab="bulk">${ICONS.list}<span>Toplu</span></button>
+            <button class="quick-tab active" data-tab="price">${ICONS.edit}<span data-quick-i18n="quickmodal.tab_price">Fiyattan Hesapla</span></button>
+            <button class="quick-tab" data-tab="csv">${ICONS.file}<span data-quick-i18n="quickmodal.tab_csv">CSV İçe Aktar</span></button>
+            <button class="quick-tab" data-tab="bulk">${ICONS.list}<span data-quick-i18n="quickmodal.tab_bulk">Toplu Metin</span></button>
           </div>
 
           <!-- BODY -->
@@ -363,43 +815,41 @@
               <span id="quick-add-error-text"></span>
             </div>
 
-            <!-- ==========================================================
-                 TAB: İŞLEM EKLE — fiyattan otomatik P&L / R:R hesaplama
-                 ========================================================== -->
+            <!-- TAB: İŞLEM EKLE -->
             <div class="quick-tab-content active" id="tab-price">
 
               <div class="quick-add-field">
-                <label>Sembol *</label>
+                <label data-quick-i18n="quickmodal.symbol">Sembol *</label>
                 <input type="text" id="price-symbol" placeholder="EURUSD" style="text-transform:uppercase;" autofocus>
               </div>
 
               <div class="quick-add-field">
-                <label>Yön *</label>
+                <label data-quick-i18n="quickmodal.side">Yön *</label>
                 <div class="quick-add-side-toggle">
-                  <button class="quick-add-side-btn active-buy" data-side="BUY" id="price-side-buy">${ICONS.buy}<span>Buy</span></button>
-                  <button class="quick-add-side-btn" data-side="SELL" id="price-side-sell">${ICONS.sell}<span>Sell</span></button>
+                  <button class="quick-add-side-btn active-buy" data-side="BUY" id="price-side-buy">${ICONS.buy}<span data-quick-i18n="quickmodal.buy">Alış</span></button>
+                  <button class="quick-add-side-btn" data-side="SELL" id="price-side-sell">${ICONS.sell}<span data-quick-i18n="quickmodal.sell">Satış</span></button>
                 </div>
               </div>
 
               <div class="quick-add-field">
-                <label>Enstrüman *</label>
+                <label data-quick-i18n="quickmodal.instrument">Enstrüman *</label>
                 <div class="quick-add-instrument-grid">
-                  <button class="quick-add-instrument-btn active" data-instrument="forex" data-multiplier="100000">Forex</button>
-                  <button class="quick-add-instrument-btn" data-instrument="gold" data-multiplier="100">Altın</button>
-                  <button class="quick-add-instrument-btn" data-instrument="index" data-multiplier="10">Endeks</button>
-                  <button class="quick-add-instrument-btn" data-instrument="crypto" data-multiplier="1">Kripto</button>
-                  <button class="quick-add-instrument-btn" data-instrument="other" data-multiplier="1">Diğer</button>
+                  <button class="quick-add-instrument-btn active" data-instrument="forex" data-multiplier="100000" data-quick-i18n="quickmodal.instrument_forex">Forex</button>
+                  <button class="quick-add-instrument-btn" data-instrument="gold" data-multiplier="100" data-quick-i18n="quickmodal.instrument_gold">Altın</button>
+                  <button class="quick-add-instrument-btn" data-instrument="index" data-multiplier="10" data-quick-i18n="quickmodal.instrument_index">Endeks</button>
+                  <button class="quick-add-instrument-btn" data-instrument="crypto" data-multiplier="1" data-quick-i18n="quickmodal.instrument_crypto">Kripto</button>
+                  <button class="quick-add-instrument-btn" data-instrument="other" data-multiplier="1" data-quick-i18n="quickmodal.instrument_other">Diğer</button>
                 </div>
               </div>
 
               <div class="quick-add-field" id="price-custom-multiplier-wrap" style="display:none;">
-                <label>Manuel Çarpan *</label>
+                <label data-quick-i18n="quickmodal.custom_multiplier">Manuel Çarpan *</label>
                 <input type="text" inputmode="decimal" id="price-custom-multiplier" placeholder="1000">
               </div>
 
               <div class="quick-add-row">
                 <div class="quick-add-field">
-                  <label>Lot *</label>
+                  <label data-quick-i18n="quickmodal.lot">Lot *</label>
                   <div class="quick-add-lot-wrap">
                     <input type="text" inputmode="decimal" id="price-lot" placeholder="0.10" value="1.00">
                     <div class="lot-presets">
@@ -410,63 +860,74 @@
                   </div>
                 </div>
                 <div class="quick-add-field">
-                  <label>Giriş Fiyatı *</label>
+                  <label data-quick-i18n="quickmodal.entry_price">Giriş Fiyatı *</label>
                   <input type="text" inputmode="decimal" id="price-entry" placeholder="1.08500">
                 </div>
               </div>
 
               <div class="quick-add-row">
                 <div class="quick-add-field">
-                  <label>Çıkış Fiyatı</label>
+                  <label data-quick-i18n="quickmodal.exit_price">Çıkış Fiyatı</label>
                   <input type="text" inputmode="decimal" id="price-exit" placeholder="1.09000">
                 </div>
                 <div class="quick-add-field">
-                  <label>Stop Loss</label>
+                  <label data-quick-i18n="quickmodal.stop_loss">Stop Loss</label>
                   <input type="text" inputmode="decimal" id="price-sl" placeholder="1.08000">
                 </div>
               </div>
 
               <div class="quick-add-field">
-                <label>Take Profit</label>
+                <label data-quick-i18n="quickmodal.take_profit">Take Profit</label>
                 <input type="text" inputmode="decimal" id="price-tp" placeholder="1.09500">
               </div>
 
               <div class="quick-add-preview" id="price-preview">
                 <div class="preview-rail"></div>
-                <div class="preview-item"><span class="p-label">Tahmini K/Z</span><span class="p-val" id="preview-pnl">—</span></div>
+                <div class="preview-item">
+                  <span class="p-label" data-quick-i18n="quickmodal.estimated_pnl">Tahmini K/Z</span>
+                  <span class="p-val" id="preview-pnl">—</span>
+                </div>
                 <div class="preview-divider"></div>
-                <div class="preview-item"><span class="p-label">Risk / Reward</span><span class="p-val accent" id="preview-rr">—</span></div>
+                <div class="preview-item">
+                  <span class="p-label" data-quick-i18n="quickmodal.risk_reward">Risk / Reward</span>
+                  <span class="p-val accent" id="preview-rr">—</span>
+                </div>
               </div>
 
               <div class="quick-add-field">
-                <label>Strateji</label>
+                <label data-quick-i18n="quickmodal.strategy">Strateji</label>
                 <div class="quick-add-strategy-wrap">
                   <select id="price-strategy">
-                    <option value="">— Strateji Yok —</option>
+                    <option value="" data-quick-i18n="quickmodal.no_strategy">— Strateji Yok —</option>
                   </select>
-                  <button class="create-strategy-btn" id="price-create-strategy" title="Yeni strateji ekle">${ICONS.plus}</button>
+                  <button class="create-strategy-btn" id="price-create-strategy" title="+">${ICONS.plus}</button>
                 </div>
               </div>
 
               <div class="quick-add-field quick-add-notes">
-                <label>Notlar</label>
-                <textarea id="price-notes" placeholder="Notlar…" rows="2"></textarea>
+                <label data-quick-i18n="quickmodal.notes">Notlar</label>
+                <textarea id="price-notes" rows="2" data-quick-i18n-placeholder="quickmodal.notes_placeholder" placeholder="Notlar…"></textarea>
               </div>
 
               <div class="quick-add-field" style="margin-bottom:0;">
-                <label>Tarih</label>
-                <input type="date" id="price-date" value="${today}">
+                <label data-quick-i18n="quickmodal.date">Tarih</label>
+                <div class="qa-date-input-wrap">
+                  <input type="text" id="price-date" readonly
+                         data-iso="${today}"
+                         value="${todayDisplay}"
+                         data-quick-i18n-placeholder="quickmodal.date_placeholder"
+                         placeholder="Tarih seç">
+                  <span class="qa-date-input-icon">${ICONS.calendar}</span>
+                </div>
               </div>
             </div>
 
-            <!-- ==========================================================
-                 TAB: CSV
-                 ========================================================== -->
+            <!-- TAB: CSV -->
             <div class="quick-tab-content" id="tab-csv">
               <div class="quick-import-area">
                 <div class="quick-import-icon">${ICONS.fileLarge}</div>
-                <p>MT4/MT5 veya Excel'den dışa aktardığınız CSV dosyasını yükleyin</p>
-                <button class="quick-import-btn" id="quick-csv-select">${ICONS.upload}<span>CSV Dosyası Seç</span></button>
+                <p data-quick-i18n="quickmodal.csv_import_desc">MT4/MT5 veya Excel'den dışa aktardığınız CSV dosyasını yükleyin</p>
+                <button class="quick-import-btn" id="quick-csv-select">${ICONS.upload}<span data-quick-i18n="quickmodal.csv_choose_file">CSV Dosyası Seç</span></button>
                 <input type="file" id="quick-csv-file" accept=".csv" style="display:none;">
                 <div class="quick-import-status" id="quick-csv-status" style="display:none;">
                   <span class="status-text" id="quick-csv-filename"></span>
@@ -477,19 +938,17 @@
               </div>
             </div>
 
-            <!-- ==========================================================
-                 TAB: TOPLU
-                 ========================================================== -->
+            <!-- TAB: TOPLU -->
             <div class="quick-tab-content" id="tab-bulk">
               <div class="quick-bulk-area">
-                <p style="font-size:12px;color:var(--muted);margin-bottom:0.5rem;">Her satıra bir işlem gelecek şekilde girin:</p>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:0.5rem;" data-quick-i18n="quickmodal.bulk_desc">Her satıra bir işlem gelecek şekilde girin:</p>
                 <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;margin-bottom:0.75rem;">
-                  sembol,yön,lot,giriş,çıkış,tarih,not<br>
-                  EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem
+                  <span data-quick-i18n="quickmodal.bulk_format">sembol,yön,lot,giriş,çıkış,tarih,not</span><br>
+                  <span data-quick-i18n="quickmodal.bulk_example">EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem</span>
                 </div>
-                <textarea id="quick-bulk-textarea" rows="6" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem"></textarea>
+                <textarea id="quick-bulk-textarea" rows="6" data-quick-i18n-placeholder="quickmodal.bulk_placeholder" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem"></textarea>
                 <div class="quick-bulk-progress" id="quick-bulk-progress" style="display:none;">
-                  <span id="quick-bulk-status">İşleniyor...</span>
+                  <span id="quick-bulk-status"></span>
                   <div class="quick-bulk-bar"><div class="quick-bulk-fill" id="quick-bulk-fill"></div></div>
                 </div>
                 <div class="quick-bulk-log" id="quick-bulk-log" style="display:none;"></div>
@@ -499,18 +958,34 @@
             <!-- LOADING -->
             <div class="quick-add-loading" id="quick-add-loading">
               <div class="spinner"></div>
-              <span>İşlem kaydediliyor...</span>
+              <span data-quick-i18n="quickmodal.loading_saving">İşlem kaydediliyor...</span>
             </div>
           </div>
 
           <!-- FOOTER -->
           <div class="quick-add-footer">
-            <button class="btn-cancel" id="quick-add-cancel">İptal</button>
-            <button class="btn-save" id="quick-add-save">${ICONS.check}<span>Kaydet</span></button>
-            <button class="btn-save" id="quick-import-btn" style="display:none;">${ICONS.upload}<span>İçe Aktar</span></button>
-            <button class="btn-save" id="quick-bulk-btn" style="display:none;">${ICONS.send}<span>İşlemleri Ekle</span></button>
+            <button class="btn-cancel" id="quick-add-cancel" data-quick-i18n="quickmodal.cancel">İptal</button>
+            <button class="btn-save" id="quick-add-save">${ICONS.check}<span data-quick-i18n="quickmodal.save">Kaydet</span></button>
+            <button class="btn-save" id="quick-import-btn" style="display:none;">${ICONS.upload}<span data-quick-i18n="quickmodal.import">İçe Aktar</span></button>
+            <button class="btn-save" id="quick-bulk-btn" style="display:none;">${ICONS.send}<span data-quick-i18n="quickmodal.paste_add">İşlemleri Ekle</span></button>
           </div>
 
+        </div>
+      </div>
+
+      <!-- DATE PICKER (modal dışında, fixed pozisyonlu) -->
+      <div class="qa-date-picker-overlay" id="qa-date-picker-overlay"></div>
+      <div class="qa-date-picker" id="qa-date-picker" role="dialog" aria-modal="true">
+        <div class="qa-date-picker-header">
+          <button type="button" class="qa-dp-nav" id="qa-dp-prev" aria-label="Previous month">${ICONS.chevronLeft}</button>
+          <button type="button" class="qa-dp-title" id="qa-dp-title" tabindex="-1">—</button>
+          <button type="button" class="qa-dp-nav" id="qa-dp-next" aria-label="Next month">${ICONS.chevronRight}</button>
+        </div>
+        <div class="qa-date-picker-weekdays" id="qa-dp-weekdays"></div>
+        <div class="qa-date-picker-grid" id="qa-dp-grid"></div>
+        <div class="qa-date-picker-footer">
+          <button type="button" class="qa-dp-footer-btn" id="qa-dp-today" data-quick-i18n="quickmodal.date_today">Bugün</button>
+          <button type="button" class="qa-dp-footer-btn" id="qa-dp-clear" data-quick-i18n="quickmodal.date_clear">Temizle</button>
         </div>
       </div>
     `;
@@ -538,7 +1013,7 @@
       const select = el('price-strategy');
       if (select) {
         const currentValue = select.value;
-        select.innerHTML = '<option value="">— Strateji Yok —</option>';
+        select.innerHTML = '<option value="" data-quick-i18n="quickmodal.no_strategy">' + escapeHtml(t('quickmodal.no_strategy')) + '</option>';
         strategiesList.forEach(function(s) {
           const option = document.createElement('option');
           option.value = s.id;
@@ -547,15 +1022,10 @@
         });
         if (currentValue) select.value = currentValue;
       }
-
     } catch (e) {
       wwLog.warn('Stratejiler yüklenemedi:', e);
     }
   }
-
-  // ============================================================
-  // ENSTRÜMAN SEÇ
-  // ============================================================
 
   function selectInstrument(instrument, multiplier) {
     currentInstrument = instrument;
@@ -573,10 +1043,6 @@
     updatePricePreview();
   }
 
-  // ============================================================
-  // FİYAT ÖN İZLEME — DEBONCE YOK, ANINDA GÜNCELLEME
-  // ============================================================
-
   function getMultiplier() {
     if (currentInstrument === 'other') {
       const customEl = el('price-custom-multiplier');
@@ -587,8 +1053,6 @@
   }
 
   function updatePricePreview() {
-    wwLog.log('🔄 Preview güncelleniyor...');
-
     const entry = parseFloat(el('price-entry')?.value);
     const exit = parseFloat(el('price-exit')?.value);
     const lot = parseFloat(el('price-lot')?.value);
@@ -621,10 +1085,7 @@
           }
           pnlSign = pnl >= 0 ? 1 : -1;
           hasPnl = true;
-          wwLog.log('✅ PnL hesaplandı:', pnl);
-        } catch(e) {
-          wwLog.warn('PnL preview hatası:', e);
-        }
+        } catch(e) {}
       }
 
       if (sl && tp && !isNaN(sl) && !isNaN(tp)) {
@@ -641,9 +1102,7 @@
             rrEl.textContent = '1 : ' + rr;
             hasRr = true;
           }
-        } catch(e) {
-          wwLog.warn('RR preview hatası:', e);
-        }
+        } catch(e) {}
       }
     }
 
@@ -664,11 +1123,16 @@
     const overlay = el('quick-add-overlay');
     if (!overlay) return;
 
+    closeDatePicker();
     resetForm();
     setSide('BUY');
     switchTab('price');
     selectInstrument('forex', 100000);
     loadStrategies();
+
+    if (typeof quickI18n !== 'undefined' && typeof quickI18n.apply === 'function') {
+      quickI18n.apply();
+    }
 
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -682,6 +1146,8 @@
   function closeModal() {
     const overlay = el('quick-add-overlay');
     if (!overlay) return;
+
+    closeDatePicker();
     overlay.classList.remove('active');
     document.body.style.overflow = '';
     isSubmitting = false;
@@ -700,28 +1166,26 @@
   }
 
   function resetForm() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = isoDate(new Date());
+    const todayDisplay = formatDateDisplay(today);
 
-    const pSymbol = el('price-symbol');
+    const ids = ['price-symbol', 'price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier', 'price-notes'];
+    ids.forEach(function(id) {
+      const e = el(id);
+      if (e) e.value = '';
+    });
+
     const pLot = el('price-lot');
-    const pEntry = el('price-entry');
-    const pExit = el('price-exit');
-    const pSl = el('price-sl');
-    const pTp = el('price-tp');
-    const pCustom = el('price-custom-multiplier');
-    const pStrategy = el('price-strategy');
-    const pNotes = el('price-notes');
-    const pDate = el('price-date');
-    if (pSymbol) pSymbol.value = '';
     if (pLot) pLot.value = '1.00';
-    if (pEntry) pEntry.value = '';
-    if (pExit) pExit.value = '';
-    if (pSl) pSl.value = '';
-    if (pTp) pTp.value = '';
-    if (pCustom) pCustom.value = '';
+
+    const pStrategy = el('price-strategy');
     if (pStrategy) pStrategy.value = '';
-    if (pNotes) pNotes.value = '';
-    if (pDate) pDate.value = today;
+
+    const pDate = el('price-date');
+    if (pDate) {
+      pDate.value = todayDisplay;
+      pDate.setAttribute('data-iso', today);
+    }
 
     const bulkText = el('quick-bulk-textarea');
     if (bulkText) bulkText.value = '';
@@ -755,6 +1219,7 @@
 
   function switchTab(tab) {
     currentTab = tab;
+    closeDatePicker();
 
     qsa('.quick-tab').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -778,14 +1243,12 @@
 
   function setSide(side) {
     currentSide = side;
-
     const buyBtn = el('price-side-buy');
     const sellBtn = el('price-side-sell');
     if (buyBtn && sellBtn) {
       buyBtn.classList.toggle('active-buy', side === 'BUY');
       sellBtn.classList.toggle('active-sell', side === 'SELL');
     }
-
     updatePricePreview();
   }
 
@@ -793,16 +1256,14 @@
     const input = el('price-lot');
     if (!input) return;
     input.value = value;
-
     qsa('.lot-preset').forEach(function(btn) {
       btn.classList.toggle('active', parseFloat(btn.dataset.lot) === parseFloat(value));
     });
-
     updatePricePreview();
   }
 
   // ============================================================
-  // CSV IMPORT - Önizleme ile
+  // CSV IMPORT
   // ============================================================
 
   function renderCSVLog(messages) {
@@ -825,8 +1286,8 @@
     container.style.display = 'block';
     let html = '<div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-    html += '<span style="font-size:13px;font-weight:600;">Önizleme (' + rows.length + ' satır)</span>';
-    html += '<button class="btn btn-primary" id="csv-confirm-import" style="font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:4px;">' + ICONS.check + '<span>İçe Aktar</span></button>';
+    html += '<span style="font-size:13px;font-weight:600;">' + escapeHtml(t('quickmodal.csv_import_title')) + ' (' + rows.length + ')</span>';
+    html += '<button class="btn btn-primary" id="csv-confirm-import" style="font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:4px;">' + ICONS.check + '<span>' + escapeHtml(t('quickmodal.import')) + '</span></button>';
     html += '</div>';
     html += '<div style="overflow-x:auto;max-height:200px;overflow-y:auto;font-size:12px;">';
     html += '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;">';
@@ -847,7 +1308,7 @@
       html += '</tr>';
     });
     if (rows.length > 10) {
-      html += '<tr><td colspan="' + headers.length + '" style="padding:8px;text-align:center;color:var(--muted);">... ve ' + (rows.length - 10) + ' satır daha</td></tr>';
+      html += '<tr><td colspan="' + headers.length + '" style="padding:8px;text-align:center;color:var(--muted);">+' + (rows.length - 10) + '</td></tr>';
     }
     html += '</tbody></table>';
     html += '</div></div>';
@@ -870,14 +1331,14 @@
       const badgeEl = el('quick-csv-badge');
 
       if (statusEl) statusEl.style.display = 'flex';
-      if (filenameEl) filenameEl.textContent = 'Dosya seçildi: ' + file.name;
+      if (filenameEl) filenameEl.textContent = t('quickmodal.csv_file_selected', { filename: file.name });
       if (badgeEl) badgeEl.innerHTML = badgeIcon('loading');
 
       const text = await file.text();
       const parsed = parseCsvText(text);
 
       if (parsed.length < 2) {
-        showToast('CSV dosyasında veri bulunamadı!', 'error');
+        showToast(t('quickmodal.csv_no_data'), 'error');
         if (badgeEl) badgeEl.innerHTML = badgeIcon('error');
         return;
       }
@@ -893,22 +1354,20 @@
         rows: dataRows,
         rawText: text
       };
-
     } catch(e) {
       wwLog.warn('CSV okuma hatası:', e);
-      showToast('CSV okuma hatası: ' + e.message, 'error');
+      showToast(t('quickmodal.error_save', { message: e.message }), 'error');
       const badgeEl = el('quick-csv-badge');
       if (badgeEl) badgeEl.innerHTML = badgeIcon('error');
     }
   }
 
-  // ⭐ CHUNKING: 500'lük parçalarla insert + kısmi başarı + real-time progress
   async function executeCsvImport() {
     if (isImporting || !csvPreviewData) return;
 
     const user = await requireAuth();
     if (!user) {
-      showToast('Lütfen giriş yapın!', 'error');
+      showToast(t('quickmodal.error_auth_required'), 'error');
       return;
     }
 
@@ -918,7 +1377,7 @@
     const log = [];
 
     isImporting = true;
-    if (statusText) statusText.textContent = 'İşleniyor...';
+    if (statusText) statusText.textContent = t('quickmodal.csv_processing');
     if (badge) badge.innerHTML = badgeIcon('loading');
     if (progressEl) progressEl.style.display = 'flex';
 
@@ -929,11 +1388,10 @@
       let imported = 0;
       const trades = [];
 
-      // ⭐ 1. ADIM: Tüm satırları parse et, trades dizisine topla
       for (let i = 0; i < rows.length; i++) {
         const values = rows[i];
         if (values.length < 5) {
-          log.push('<div>' + logTag('warning') + ' — Satır ' + (i + 1) + ': Yetersiz sütun (' + values.length + '), atlandı.</div>');
+          log.push('<div>' + logTag('warning') + ' — #' + (i + 1) + '</div>');
           failed++;
           continue;
         }
@@ -957,14 +1415,13 @@
           instrument = 'forex';
           multiplier = 100000;
         }
-
         if (!multiplier || isNaN(multiplier) || multiplier === 0) {
           const instMap = { forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 };
           multiplier = instMap[instrument] || 100000;
         }
 
         if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
-          log.push('<div>' + logTag('error') + ' — Satır ' + (i + 1) + ': Zorunlu alan eksik, atlandı.</div>');
+          log.push('<div>' + logTag('error') + ' — #' + (i + 1) + '</div>');
           failed++;
           continue;
         }
@@ -972,7 +1429,6 @@
         let finalDir = 'SHORT';
         if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
         else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
-        else log.push('<div>' + logTag('warning') + ' — Satır ' + (i + 1) + ': Bilinmeyen yön "' + escapeHtml(direction) + '", SHORT olarak kaydedildi.</div>');
 
         trades.push({
           user_id: user.id,
@@ -983,32 +1439,25 @@
           entry_price: entry,
           exit_price: isNaN(exit) ? null : exit,
           trade_date: tradeDate,
-          notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR'),
+          notes: 'CSV Import - ' + new Date().toLocaleString(),
           multiplier: multiplier
         });
       }
 
-      // ⭐ 2. ADIM: Chunk'lara böl ve parça parça insert et
       if (trades.length > 0) {
         const chunks = chunkArray(trades, CHUNK_SIZE);
         const totalChunks = chunks.length;
 
         for (let c = 0; c < totalChunks; c++) {
-          const chunk = chunks[c];
-
-          // ⭐ Progress güncelle
           if (statusText) {
-            statusText.textContent = 'Kaydediliyor... (' + (c + 1) + '/' + totalChunks + ' parça, ' + imported + '/' + trades.length + ' işlem)';
+            statusText.textContent = t('quickmodal.csv_importing') + ' (' + (c + 1) + '/' + totalChunks + ')';
           }
-
-          const { error } = await sb.from('trades').insert(chunk);
-
+          const { error } = await sb.from('trades').insert(chunks[c]);
           if (error) {
-            // ⭐ Bu chunk başarısız — diğer chunk'lar etkilenmez
-            log.push('<div>' + logTag('error') + ' — Parça ' + (c + 1) + '/' + totalChunks + ' başarısız: ' + escapeHtml(error.message) + '</div>');
-            failed += chunk.length;
+            log.push('<div>' + logTag('error') + ' — ' + escapeHtml(error.message) + '</div>');
+            failed += chunks[c].length;
           } else {
-            imported += chunk.length;
+            imported += chunks[c].length;
           }
         }
       }
@@ -1016,24 +1465,27 @@
       renderCSVLog(log);
       if (progressEl) progressEl.style.display = 'none';
 
-      const msg = imported + ' işlem içe aktarıldı' + (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
-      showToast(msg, failed > 0 ? 'error' : 'success');
+      if (imported > 0 && failed === 0) {
+        showToast(t('quickmodal.csv_import_success', { count: imported }), 'success');
+      } else if (imported > 0) {
+        showToast(t('quickmodal.csv_import_error', { success: imported, failed: failed }), 'error');
+      } else {
+        showToast(t('quickmodal.error_general'), 'error');
+      }
 
       if (imported > 0) {
         const previewContainer = el('csv-preview-container');
         if (previewContainer) previewContainer.style.display = 'none';
         csvPreviewData = null;
-
         setTimeout(function() {
           closeModal();
           window.location.href = 'trades.html';
         }, 1500);
       }
-
     } catch(e) {
       wwLog.warn('CSV import hatası:', e);
       if (progressEl) progressEl.style.display = 'none';
-      showToast('CSV import hatası: ' + e.message, 'error');
+      showToast(t('quickmodal.error_save', { message: e.message }), 'error');
     }
 
     isImporting = false;
@@ -1041,7 +1493,7 @@
   }
 
   // ============================================================
-  // BULK IMPORT - Toplu insert ile (CHUNKING)
+  // BULK IMPORT
   // ============================================================
 
   async function handleBulkImport() {
@@ -1052,19 +1504,19 @@
 
     const text = textarea.value.trim();
     if (!text) {
-      showToast('Lütfen en az bir işlem girin!', 'error');
+      showToast(t('quickmodal.bulk_required'), 'error');
       return;
     }
 
     const lines = text.split('\n').filter(function(l) { return l.trim(); });
     if (lines.length === 0) {
-      showToast('Lütfen en az bir işlem girin!', 'error');
+      showToast(t('quickmodal.bulk_required'), 'error');
       return;
     }
 
     const user = await requireAuth();
     if (!user) {
-      showToast('Lütfen giriş yapın!', 'error');
+      showToast(t('quickmodal.error_auth_required'), 'error');
       return;
     }
 
@@ -1079,15 +1531,13 @@
     isSubmitting = true;
     if (progressEl) progressEl.style.display = 'block';
     if (fillEl) fillEl.style.width = '0%';
-    if (statusEl) statusEl.textContent = '0 / ' + lines.length + ' işlem işleniyor...';
+    if (statusEl) statusEl.textContent = t('quickmodal.bulk_processing');
     if (logEl) { logEl.style.display = 'none'; logEl.innerHTML = ''; }
 
-    // ⭐ 1. ADIM: Satırları parse et, trades dizisine topla
     for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
       const parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
-
       if (parts.length < 5) {
-        errors.push('<div>' + logTag('error') + ' — Satır ' + (lineIdx + 1) + ': Yetersiz alan (' + parts.length + ' alan, en az 5 gerekli)</div>');
+        errors.push('<div>' + logTag('error') + ' — #' + (lineIdx + 1) + '</div>');
         continue;
       }
 
@@ -1097,10 +1547,10 @@
       const entry = parseFloat(parts[3]);
       const exit = parts[4] ? parseFloat(parts[4]) : null;
       const date = parts[5] ? validateAndFormatDate(parts[5]) : defaultDate;
-      const notes = parts[6] || 'Toplu ekleme - ' + new Date().toLocaleString('tr-TR');
+      const notes = parts[6] || 'Bulk import - ' + new Date().toLocaleString();
 
       if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
-        errors.push('<div>' + logTag('error') + ' — Satır ' + (lineIdx + 1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş)</div>');
+        errors.push('<div>' + logTag('error') + ' — #' + (lineIdx + 1) + '</div>');
         continue;
       }
 
@@ -1122,24 +1572,18 @@
     }
 
     if (errors.length > 0) {
-      if (logEl) {
-        logEl.style.display = 'block';
-        logEl.innerHTML = errors.join('');
-      }
-      showToast(errors.length + ' hata var!', 'error');
+      if (logEl) { logEl.style.display = 'block'; logEl.innerHTML = errors.join(''); }
       isSubmitting = false;
       if (progressEl) progressEl.style.display = 'none';
       return;
     }
 
     if (trades.length === 0) {
-      showToast('Geçerli işlem bulunamadı!', 'error');
       isSubmitting = false;
       if (progressEl) progressEl.style.display = 'none';
       return;
     }
 
-    // ⭐ 2. ADIM: Chunk'lara böl ve parça parça insert et
     let success = 0;
     let failed = 0;
 
@@ -1148,40 +1592,33 @@
       const totalChunks = chunks.length;
 
       for (let c = 0; c < totalChunks; c++) {
-        const chunk = chunks[c];
-
-        // ⭐ Progress güncelle
         if (statusEl) {
-          statusEl.textContent = 'Kaydediliyor... (' + (c + 1) + '/' + totalChunks + ' parça, ' + success + '/' + trades.length + ' işlem)';
+          statusEl.textContent = t('quickmodal.bulk_progress', {
+            current: success,
+            total: trades.length,
+            failed: failed
+          });
         }
-        if (fillEl) {
-          fillEl.style.width = (((c + 1) / totalChunks) * 100) + '%';
-        }
+        if (fillEl) fillEl.style.width = (((c + 1) / totalChunks) * 100) + '%';
 
-        const { error } = await sb.from('trades').insert(chunk);
-
+        const { error } = await sb.from('trades').insert(chunks[c]);
         if (error) {
-          errors.push('<div>' + logTag('error') + ' — Parça ' + (c + 1) + '/' + totalChunks + ': ' + escapeHtml(error.message) + '</div>');
-          failed += chunk.length;
+          errors.push('<div>' + logTag('error') + ' — ' + escapeHtml(error.message) + '</div>');
+          failed += chunks[c].length;
         } else {
-          success += chunk.length;
+          success += chunks[c].length;
         }
       }
 
-      // ⭐ Sonuç
       if (failed > 0) {
-        if (logEl) {
-          logEl.style.display = 'block';
-          logEl.innerHTML = errors.join('');
-        }
+        if (logEl) { logEl.style.display = 'block'; logEl.innerHTML = errors.join(''); }
         if (fillEl) fillEl.style.background = 'var(--red)';
-        if (statusEl) statusEl.textContent = '⚠️ ' + success + ' işlem eklendi, ' + failed + ' başarısız!';
-        showToast(success + ' işlem eklendi, ' + failed + ' başarısız!', 'error');
+        if (statusEl) statusEl.textContent = t('quickmodal.bulk_error', { success: success, failed: failed });
+        showToast(t('quickmodal.bulk_error', { success: success, failed: failed }), 'error');
       } else {
-        if (statusEl) statusEl.textContent = '✅ ' + success + ' işlem başarıyla eklendi!';
+        if (statusEl) statusEl.textContent = t('quickmodal.bulk_complete', { success: success });
         if (fillEl) fillEl.style.background = 'var(--green)';
-        showToast(success + ' işlem başarıyla eklendi!', 'success');
-
+        showToast(t('quickmodal.bulk_complete', { success: success }), 'success');
         setTimeout(function() {
           closeModal();
           window.location.href = 'trades.html';
@@ -1189,40 +1626,23 @@
       }
     } catch(e) {
       wwLog.warn('Bulk import hatası:', e);
-      if (logEl) {
-        logEl.style.display = 'block';
-        logEl.innerHTML = '<div>' + logTag('error') + ' — ' + escapeHtml(e.message) + '</div>';
-      }
-      showToast('İşlem eklenirken hata oluştu: ' + e.message, 'error');
+      if (logEl) { logEl.style.display = 'block'; logEl.innerHTML = '<div>' + logTag('error') + ' — ' + escapeHtml(e.message) + '</div>'; }
+      showToast(t('quickmodal.error_general'), 'error');
     }
 
     isSubmitting = false;
-    if (progressEl) {
-      setTimeout(function() { progressEl.style.display = 'none'; }, 3000);
-    }
+    if (progressEl) setTimeout(function() { progressEl.style.display = 'none'; }, 3000);
   }
-
-  // ============================================================
-  // SAYFA YENİLEME
-  // ============================================================
 
   function refreshPage() {
-    if (typeof loadTrades === 'function') {
-      loadTrades();
-    }
-    if (typeof refresh === 'function') {
-      refresh();
-    } else if (typeof applyFiltersAndSort === 'function') {
-      applyFiltersAndSort();
-    } else {
-      setTimeout(function() {
-        window.location.reload();
-      }, 300);
-    }
+    if (typeof loadTrades === 'function') loadTrades();
+    if (typeof refresh === 'function') refresh();
+    else if (typeof applyFiltersAndSort === 'function') applyFiltersAndSort();
+    else setTimeout(function() { window.location.reload(); }, 300);
   }
 
   // ============================================================
-  // SAVE TRADE - ANA FONKSİYON
+  // SAVE TRADE
   // ============================================================
 
   async function saveTrade() {
@@ -1244,13 +1664,13 @@
     if (error) error.classList.remove('active');
 
     if (!checkGlobals()) {
-      showError('Sistem bağlantısı yok!');
+      showError(t('quickmodal.error_connection'));
       return;
     }
 
     const user = await requireAuth();
     if (!user) {
-      showError('Lütfen önce giriş yapın!');
+      showError(t('quickmodal.error_auth_required'));
       return;
     }
 
@@ -1264,8 +1684,10 @@
     const strategyId = el('price-strategy')?.value || null;
     const notes = el('price-notes')?.value || null;
     const instrument = currentInstrument || 'forex';
-    const dateInput = el('price-date')?.value;
-    const date = dateInput || new Date().toISOString().split('T')[0];
+
+    // ⭐ Tarih: data-iso'dan oku
+    const dateInput = el('price-date');
+    const date = (dateInput && dateInput.getAttribute('data-iso')) || isoDate(new Date());
 
     let mult = currentMultiplier;
     if (instrument === 'other' && !isNaN(customMult) && customMult > 0) {
@@ -1273,25 +1695,22 @@
     }
 
     if (!symbol) {
-      showError('Lütfen bir sembol girin!');
+      showError(t('quickmodal.error_symbol_required'));
       el('price-symbol')?.focus();
       return;
     }
-
     if (isNaN(entry) || !entry || entry === 0) {
-      showError('Giriş fiyatı geçerli bir sayı olmalı!');
+      showError(t('quickmodal.error_entry_invalid'));
       el('price-entry')?.focus();
       return;
     }
-
     if (isNaN(lot) || !lot || lot === 0) {
-      showError('Lot geçerli bir sayı olmalı!');
+      showError(t('quickmodal.error_lot_invalid'));
       el('price-lot')?.focus();
       return;
     }
-
     if (instrument === 'other' && (isNaN(mult) || mult === 0)) {
-      showError('Manuel çarpan geçerli bir sayı olmalı!');
+      showError(t('quickmodal.error_multiplier_required'));
       el('price-custom-multiplier')?.focus();
       return;
     }
@@ -1327,21 +1746,20 @@
       const { error: insertError } = await sb.from('trades').insert([tradeData]);
 
       if (insertError) {
-        console.error('Insert hatası:', insertError);
-        showError('Kaydetme hatası: ' + insertError.message);
+        wwLog.error('Insert hatası:', insertError);
+        showError(t('quickmodal.error_save', { message: insertError.message }));
         return;
       }
 
       if (typeof showToast === 'function') {
-        showToast('İşlem başarıyla eklendi', 'success');
+        showToast(t('quickmodal.success_saved'), 'success');
       }
 
       closeModal();
       refreshPage();
-
     } catch (e) {
-      console.error('Kaydetme hatası:', e);
-      showError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      wwLog.error('Kaydetme hatası:', e);
+      showError(t('quickmodal.error_general'));
     } finally {
       isSubmitting = false;
       if (saveBtn) saveBtn.disabled = false;
@@ -1351,69 +1769,57 @@
   }
 
   // ============================================================
-  // ⭐ FAB BUTONUNU OLUŞTUR (body'ye kalıcı olarak)
+  // FAB
   // ============================================================
 
   function createFab() {
     if (document.getElementById('quick-add-fab')) return;
-    const fab = document.createElement('button');
-    fab.id = 'quick-add-fab';
-    fab.className = 'quick-add-fab';
-    fab.setAttribute('aria-label', 'Yeni İşlem Ekle');
-    fab.title = 'Yeni İşlem Ekle';
-    fab.innerHTML = ICONS.plus;
-    fab.addEventListener('click', openModal);
-    document.body.appendChild(fab);
-    wwLog.log('✅ FAB butonu oluşturuldu');
+    try {
+      const fab = document.createElement('button');
+      fab.id = 'quick-add-fab';
+      fab.className = 'quick-add-fab';
+      fab.setAttribute('aria-label', 'Add Trade');
+      fab.title = 'Add Trade';
+      fab.innerHTML = ICONS.plus;
+      fab.addEventListener('click', openModal);
+      document.body.appendChild(fab);
+      wwLog.log('✅ FAB butonu oluşturuldu');
+    } catch(e) {
+      wwLog.error('FAB oluşturulamadı:', e);
+    }
   }
 
   // ============================================================
-  // MODAL EVENT LISTENER'LARI
+  // EVENT LISTENER'LAR
   // ============================================================
 
   function attachModalEvents() {
-    // Kapatma butonları
     const closeBtn = document.getElementById('quick-add-close');
     const cancelBtn = document.getElementById('quick-add-cancel');
     const overlay = document.getElementById('quick-add-overlay');
 
-    if (closeBtn) {
-      closeBtn.addEventListener('click', closeModal);
-    }
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', closeModal);
-    }
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
     if (overlay) {
       overlay.addEventListener('click', function(e) {
         if (e.target === this) closeModal();
       });
     }
 
-    // ESC
-    document.addEventListener('keydown', handleEsc);
-
     // Tabs
-    document.querySelectorAll('.quick-tab').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        switchTab(this.dataset.tab);
-      });
+    qsa('.quick-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() { switchTab(this.dataset.tab); });
     });
 
     // Yön butonları
     const buyBtn = document.getElementById('price-side-buy');
     const sellBtn = document.getElementById('price-side-sell');
-    if (buyBtn) {
-      buyBtn.addEventListener('click', function() { setSide('BUY'); });
-    }
-    if (sellBtn) {
-      sellBtn.addEventListener('click', function() { setSide('SELL'); });
-    }
+    if (buyBtn) buyBtn.addEventListener('click', function() { setSide('BUY'); });
+    if (sellBtn) sellBtn.addEventListener('click', function() { setSide('SELL'); });
 
     // Lot presetleri
-    document.querySelectorAll('.lot-preset').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        setLotPreset(this.dataset.lot);
-      });
+    qsa('.lot-preset').forEach(function(btn) {
+      btn.addEventListener('click', function() { setLotPreset(this.dataset.lot); });
     });
 
     const lotInput = document.getElementById('price-lot');
@@ -1421,7 +1827,7 @@
       lotInput.addEventListener('input', function() {
         const val = parseFloat(this.value);
         if (!isNaN(val)) {
-          document.querySelectorAll('.lot-preset').forEach(function(btn) {
+          qsa('.lot-preset').forEach(function(btn) {
             btn.classList.toggle('active', parseFloat(btn.dataset.lot) === val);
           });
         }
@@ -1430,64 +1836,136 @@
     }
 
     // Enstrüman butonları
-    document.querySelectorAll('.quick-add-instrument-btn').forEach(function(btn) {
+    qsa('.quick-add-instrument-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        const inst = this.dataset.instrument;
-        const mult = parseFloat(this.dataset.multiplier) || 1;
-        selectInstrument(inst, mult);
+        selectInstrument(this.dataset.instrument, parseFloat(this.dataset.multiplier) || 1);
       });
     });
 
-    // ⭐ Event delegation - tüm input değişiklikleri
+    // ⭐ DATE INPUT - Custom picker aç
+    const dateInput = document.getElementById('price-date');
+    if (dateInput) {
+      dateInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (datePickerState.isOpen && datePickerTargetInput === this) {
+          closeDatePicker();
+        } else {
+          openDatePicker(this);
+        }
+      });
+    }
+
+    // ⭐ DATE PICKER - Navigasyon
+    const dpPrev = document.getElementById('qa-dp-prev');
+    const dpNext = document.getElementById('qa-dp-next');
+    const dpGrid = document.getElementById('qa-dp-grid');
+    const dpToday = document.getElementById('qa-dp-today');
+    const dpClear = document.getElementById('qa-dp-clear');
+    const dpOverlay = document.getElementById('qa-date-picker-overlay');
+
+    if (dpPrev) dpPrev.addEventListener('click', function(e) { e.stopPropagation(); prevMonth(); });
+    if (dpNext) dpNext.addEventListener('click', function(e) { e.stopPropagation(); nextMonth(); });
+
+    if (dpGrid) {
+      dpGrid.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const btn = e.target.closest('.qa-dp-day');
+        if (btn) {
+          const iso = btn.getAttribute('data-date');
+          if (iso) selectDate(iso);
+        }
+      });
+    }
+
+    if (dpToday) {
+      dpToday.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectDate(isoDate(new Date()));
+      });
+    }
+
+    if (dpClear) {
+      dpClear.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (datePickerTargetInput) {
+          datePickerTargetInput.value = '';
+          datePickerTargetInput.setAttribute('data-iso', '');
+        }
+        closeDatePicker();
+      });
+    }
+
+    if (dpOverlay) {
+      dpOverlay.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeDatePicker();
+      });
+    }
+
+    // ⭐ Modal içindeki herhangi bir yere tıklanınca picker'ı kapat (input ve picker hariç)
+    const modal = document.querySelector('.quick-add-modal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (!datePickerState.isOpen) return;
+        const picker = document.getElementById('qa-date-picker');
+        const input = document.getElementById('price-date');
+        if (picker && (picker.contains(e.target) || (input && input.contains(e.target)))) return;
+        if (e.target.closest('.qa-date-picker')) return;
+        if (e.target.closest('.qa-date-input-wrap')) return;
+        closeDatePicker();
+      });
+    }
+
+    // ⭐ ESC ile picker kapat (öncelikli), modal kapat (fallback)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        if (datePickerState.isOpen) {
+          e.stopPropagation();
+          closeDatePicker();
+          return;
+        }
+        const ov = document.getElementById('quick-add-overlay');
+        if (ov && ov.classList.contains('active')) {
+          closeModal();
+        }
+      }
+    });
+
+    // Input değişikliklerini yakala (event delegation)
     const body = document.querySelector('.quick-add-body');
     if (body) {
+      const previewIds = ['price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-lot', 'price-custom-multiplier'];
       body.addEventListener('input', function(e) {
-        const target = e.target;
-        const id = target.id;
-        
-        if (id === 'price-entry' || id === 'price-exit' || id === 'price-sl' || 
-            id === 'price-tp' || id === 'price-lot' || id === 'price-custom-multiplier') {
-          updatePricePreview();
-        }
-        if (id === 'price-symbol') {
-          target.value = target.value.toUpperCase();
-        }
+        const id = e.target.id;
+        if (previewIds.indexOf(id) !== -1) updatePricePreview();
+        if (id === 'price-symbol') e.target.value = e.target.value.toUpperCase();
       });
-
       body.addEventListener('change', function(e) {
-        const target = e.target;
-        const id = target.id;
-        if (id === 'price-entry' || id === 'price-exit' || id === 'price-sl' || 
-            id === 'price-tp' || id === 'price-lot' || id === 'price-custom-multiplier') {
-          updatePricePreview();
-        }
-      });
-
-      body.addEventListener('keyup', function(e) {
-        const target = e.target;
-        const id = target.id;
-        if (id === 'price-entry' || id === 'price-exit' || id === 'price-sl' || 
-            id === 'price-tp' || id === 'price-lot' || id === 'price-custom-multiplier') {
-          updatePricePreview();
-        }
+        if (previewIds.indexOf(e.target.id) !== -1) updatePricePreview();
       });
     }
 
     // Kaydet
     const saveBtn = document.getElementById('quick-add-save');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', saveTrade);
-    }
+    if (saveBtn) saveBtn.addEventListener('click', saveTrade);
 
-    // Enter ile kaydet
-    document.querySelectorAll('.quick-add-body input, .quick-add-body select').forEach(function(input) {
-      input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          saveTrade();
-        }
+    // İçe aktar
+    const importBtn = document.getElementById('quick-import-btn');
+    if (importBtn) importBtn.addEventListener('click', executeCsvImport);
+
+    // Toplu
+    const bulkBtn = document.getElementById('quick-bulk-btn');
+    if (bulkBtn) bulkBtn.addEventListener('click', handleBulkImport);
+
+    // CSV dosya seçimi
+    const csvSelectBtn = document.getElementById('quick-csv-select');
+    const csvFileInput = document.getElementById('quick-csv-file');
+    if (csvSelectBtn && csvFileInput) {
+      csvSelectBtn.addEventListener('click', function() { csvFileInput.click(); });
+      csvFileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) handleCsvFileSelect(this.files[0]);
       });
-    });
+    }
 
     // Strateji oluştur
     const createStrategyBtn = document.getElementById('price-create-strategy');
@@ -1498,40 +1976,28 @@
       });
     }
 
-    // İçe aktar butonu (CSV)
-    const importBtn = document.getElementById('quick-import-btn');
-    if (importBtn) {
-      importBtn.addEventListener('click', executeCsvImport);
-    }
-
-    // Toplu ekle butonu
-    const bulkBtn = document.getElementById('quick-bulk-btn');
-    if (bulkBtn) {
-      bulkBtn.addEventListener('click', handleBulkImport);
-    }
-
-    // CSV dosya seçimi
-    const csvSelectBtn = document.getElementById('quick-csv-select');
-    const csvFileInput = document.getElementById('quick-csv-file');
-    if (csvSelectBtn && csvFileInput) {
-      csvSelectBtn.addEventListener('click', function() {
-        csvFileInput.click();
-      });
-      csvFileInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-          handleCsvFileSelect(this.files[0]);
+    // ⭐ i18n değişiminde tarih gösterimini de güncelle
+    if (typeof quickI18n !== 'undefined' && typeof quickI18n.onChange === 'function') {
+      quickI18n.onChange(function() {
+        const di = document.getElementById('price-date');
+        if (di) {
+          const iso = di.getAttribute('data-iso');
+          if (iso) di.value = formatDateDisplay(iso);
         }
+        if (datePickerState.isOpen) renderDatePicker();
       });
     }
 
-    // Ondalık düzeltme
+    // Decimal fix
     if (typeof applyDecimalFix === 'function') {
-      applyDecimalFix(['price-lot', 'price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier']);
+      try {
+        applyDecimalFix(['price-lot', 'price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier']);
+      } catch(e) {}
     }
   }
 
   // ============================================================
-  // MODAL'ı oluştur (container'a)
+  // MODAL OLUŞTUR
   // ============================================================
 
   function createModal() {
@@ -1543,20 +2009,12 @@
     }
     container.innerHTML = getModalHTML();
     attachModalEvents();
-    wwLog.log('✅ Quick Add modal oluşturuldu');
-  }
 
-  // ============================================================
-  // ESC handler
-  // ============================================================
-
-  function handleEsc(e) {
-    if (e.key === 'Escape') {
-      const overlay = document.getElementById('quick-add-overlay');
-      if (overlay && overlay.classList.contains('active')) {
-        closeModal();
-      }
+    if (typeof quickI18n !== 'undefined' && typeof quickI18n.apply === 'function') {
+      try { quickI18n.apply(); } catch(e) {}
     }
+
+    wwLog.log('✅ Quick Add modal oluşturuldu');
   }
 
   // ============================================================
@@ -1567,7 +2025,7 @@
   window.quickAddClose = closeModal;
 
   // ============================================================
-  // INIT - SADECE BİR KEZ
+  // INIT
   // ============================================================
 
   let initialized = false;
@@ -1576,20 +2034,11 @@
     if (initialized) return;
     initialized = true;
 
-    createFab();
-    createModal();
+    try { createFab(); } catch(e) { wwLog.error('FAB init hatası:', e); }
+    try { createModal(); } catch(e) { wwLog.error('Modal init hatası:', e); }
 
-    wwLog.log('✅ Quick Add Modal başlatıldı. FAB butonu aktif.');
+    wwLog.log('✅ Quick Add Modal başlatıldı.');
   }
-
-  // ============================================================
-  // DOM READY
-  // ============================================================
-  // ⭐ TEMİZLİK: window.load fallback'i KALDIRILDI
-  //        - DOMContentLoaded + 100ms zaten initQuickAdd() çağırıyor
-  //        - window.load, 100ms dolmadan tetiklenip yanlışlıkla
-  //          "FAB butonu bulunamadı" uyarısı basıyordu
-  //        - initialized guard'ı sayesinde zaten işlevsizdi
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
@@ -1598,7 +2047,6 @@
   } else {
     setTimeout(initQuickAdd, 100);
   }
-
 })();
 
-wwLog.log('quick-add.js yüklendi. (FAB kalıcı)');
+wwLog.log('quick-add.js yüklendi. (i18n + custom date picker)');

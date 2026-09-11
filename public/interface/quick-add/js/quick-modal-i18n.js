@@ -1,24 +1,26 @@
 ﻿// ============================================================
 // QUICK MODAL I18N - Hızlı İşlem Modal'ı Çevirileri
 // Dil: İngilizce (varsayılan), Türkçe, Almanca
+// ⭐ Emoji temizlendi - ikonlar JS ICONS objesinden geliyor
+// ⭐ Date picker için yeni key'ler eklendi
 // ============================================================
 
 const quickTranslations = {
   en: {
-    "quickmodal.title": "📝 Add Trade",
+    "quickmodal.title": "Add Trade",
     "quickmodal.tab_quick": "Quick Add",
     "quickmodal.tab_price": "Price Based",
     "quickmodal.tab_csv": "CSV Import",
     "quickmodal.tab_bulk": "Bulk Paste",
-    
+
     // Quick Mode
     "quickmodal.mode_quick": "Quick Entry",
     "quickmodal.mode_price": "Price Calculation",
     "quickmodal.symbol": "Symbol *",
     "quickmodal.symbol_hint": "Enter symbol manually",
     "quickmodal.side": "Direction *",
-    "quickmodal.buy": "Buy ↑",
-    "quickmodal.sell": "Sell ↓",
+    "quickmodal.buy": "Buy",
+    "quickmodal.sell": "Sell",
     "quickmodal.pnl": "P&L *",
     "quickmodal.risk_reward": "Risk / Reward",
     "quickmodal.strategy": "Strategy",
@@ -26,7 +28,7 @@ const quickTranslations = {
     "quickmodal.create_strategy": "New",
     "quickmodal.saving": "Saving...",
     "quickmodal.strategy_placeholder": "Select a strategy",
-    
+
     // Price Mode
     "quickmodal.instrument": "Instrument *",
     "quickmodal.instrument_forex": "Forex",
@@ -44,7 +46,18 @@ const quickTranslations = {
     "quickmodal.rr_calculated": "R:R",
     "quickmodal.calculate_from_price": "Calculate from price",
     "quickmodal.enter_manually": "Enter manually",
-    
+
+    // Notes & Date
+    "quickmodal.notes": "Notes",
+    "quickmodal.notes_placeholder": "Notes...",
+    "quickmodal.date": "Date",
+    "quickmodal.date_placeholder": "Select date",
+    "quickmodal.date_prev_month": "Previous month",
+    "quickmodal.date_next_month": "Next month",
+    "quickmodal.date_today": "Today",
+    "quickmodal.date_clear": "Clear",
+    "quickmodal.loading_saving": "Saving trade...",
+
     // Strategy Chip Grid
     "quickmodal.select_strategy": "Select Strategy",
     "quickmodal.refresh": "Refresh",
@@ -54,7 +67,7 @@ const quickTranslations = {
     "quickmodal.create_strategy_link": "Create a strategy →",
     "quickmodal.strategy_selected": "Strategy selected",
     "quickmodal.strategy_cleared": "Strategy cleared",
-    
+
     // CSV Import
     "quickmodal.csv_import_title": "CSV Import",
     "quickmodal.csv_import_desc": "Upload your CSV file from MT4/MT5 or Excel",
@@ -63,12 +76,12 @@ const quickTranslations = {
     "quickmodal.csv_no_file": "No file selected",
     "quickmodal.csv_processing": "Processing...",
     "quickmodal.csv_importing": "Importing...",
-    "quickmodal.csv_import_success": "✅ {{count}} trades imported successfully!",
-    "quickmodal.csv_import_error": "⚠️ {{success}} imported, {{failed}} errors!",
+    "quickmodal.csv_import_success": "{{count}} trades imported successfully!",
+    "quickmodal.csv_import_error": "{{success}} imported, {{failed}} errors!",
     "quickmodal.csv_no_data": "No data found in CSV file!",
     "quickmodal.csv_required_fields": "Missing required fields in row {{row}}",
     "quickmodal.csv_invalid_date": "Invalid date format in row {{row}}",
-    
+
     // Bulk Paste
     "quickmodal.bulk_title": "Bulk Add Trades",
     "quickmodal.bulk_desc": "Enter one trade per line in the following format:",
@@ -77,11 +90,11 @@ const quickTranslations = {
     "quickmodal.bulk_placeholder": "EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,First trade\nXAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Gold trade",
     "quickmodal.bulk_processing": "Processing...",
     "quickmodal.bulk_progress": "{{current}} / {{total}} trades added ({{failed}} failed)",
-    "quickmodal.bulk_complete": "✅ {{success}} trades added successfully!",
-    "quickmodal.bulk_error": "⚠️ {{success}} added, {{failed}} errors!",
+    "quickmodal.bulk_complete": "{{success}} trades added successfully!",
+    "quickmodal.bulk_error": "{{success}} added, {{failed}} errors!",
     "quickmodal.bulk_required": "Please enter at least one trade!",
     "quickmodal.bulk_invalid_format": "Invalid format in line {{line}}: {{error}}",
-    
+
     // Validation
     "quickmodal.error_symbol_required": "Please enter a symbol!",
     "quickmodal.error_pnl_required": "Please enter a valid P&L!",
@@ -96,32 +109,31 @@ const quickTranslations = {
     "quickmodal.error_connection": "No system connection!",
     "quickmodal.error_save": "Save error: {{message}}",
     "quickmodal.error_general": "An error occurred. Please try again.",
-    
+
     // Success
-    "quickmodal.success_saved": "✅ Trade added successfully!",
-    
+    "quickmodal.success_saved": "Trade added successfully!",
+
     // Buttons
     "quickmodal.cancel": "Cancel",
-    "quickmodal.save": "💾 Save",
-    "quickmodal.import": "📤 Import",
-    "quickmodal.paste_add": "📤 Add Trades"
+    "quickmodal.save": "Save",
+    "quickmodal.import": "Import",
+    "quickmodal.paste_add": "Add Trades"
   },
-  
+
   tr: {
-    "quickmodal.title": "📝 İşlem Ekle",
+    "quickmodal.title": "İşlem Ekle",
     "quickmodal.tab_quick": "Hızlı Ekle",
     "quickmodal.tab_price": "Fiyattan Hesapla",
     "quickmodal.tab_csv": "CSV İçe Aktar",
     "quickmodal.tab_bulk": "Toplu Metin",
-    
-    // Quick Mode
+
     "quickmodal.mode_quick": "Hızlı Giriş",
     "quickmodal.mode_price": "Fiyat Hesaplama",
     "quickmodal.symbol": "Sembol *",
     "quickmodal.symbol_hint": "Sembolü manuel girin",
     "quickmodal.side": "Yön *",
-    "quickmodal.buy": "Alış ↑",
-    "quickmodal.sell": "Satış ↓",
+    "quickmodal.buy": "Alış",
+    "quickmodal.sell": "Satış",
     "quickmodal.pnl": "K/Z *",
     "quickmodal.risk_reward": "Risk / Reward",
     "quickmodal.strategy": "Strateji",
@@ -129,8 +141,7 @@ const quickTranslations = {
     "quickmodal.create_strategy": "Yeni",
     "quickmodal.saving": "Kaydediliyor...",
     "quickmodal.strategy_placeholder": "Strateji seç",
-    
-    // Price Mode
+
     "quickmodal.instrument": "Enstrüman *",
     "quickmodal.instrument_forex": "Forex",
     "quickmodal.instrument_gold": "Altın",
@@ -147,8 +158,17 @@ const quickTranslations = {
     "quickmodal.rr_calculated": "R/R",
     "quickmodal.calculate_from_price": "Fiyattan hesapla",
     "quickmodal.enter_manually": "Manuel gir",
-    
-    // Strategy Chip Grid
+
+    "quickmodal.notes": "Notlar",
+    "quickmodal.notes_placeholder": "Notlar…",
+    "quickmodal.date": "Tarih",
+    "quickmodal.date_placeholder": "Tarih seç",
+    "quickmodal.date_prev_month": "Önceki ay",
+    "quickmodal.date_next_month": "Sonraki ay",
+    "quickmodal.date_today": "Bugün",
+    "quickmodal.date_clear": "Temizle",
+    "quickmodal.loading_saving": "İşlem kaydediliyor...",
+
     "quickmodal.select_strategy": "Strateji Seç",
     "quickmodal.refresh": "Yenile",
     "quickmodal.clear": "Temizle",
@@ -157,8 +177,7 @@ const quickTranslations = {
     "quickmodal.create_strategy_link": "Strateji oluştur →",
     "quickmodal.strategy_selected": "Strateji seçildi",
     "quickmodal.strategy_cleared": "Strateji temizlendi",
-    
-    // CSV Import
+
     "quickmodal.csv_import_title": "CSV İçe Aktar",
     "quickmodal.csv_import_desc": "MT4/MT5 veya Excel'den dışa aktardığınız CSV dosyasını yükleyin",
     "quickmodal.csv_choose_file": "CSV Dosyası Seç",
@@ -166,13 +185,12 @@ const quickTranslations = {
     "quickmodal.csv_no_file": "Dosya seçilmedi",
     "quickmodal.csv_processing": "İşleniyor...",
     "quickmodal.csv_importing": "İçe aktarılıyor...",
-    "quickmodal.csv_import_success": "✅ {{count}} işlem başarıyla içe aktarıldı!",
-    "quickmodal.csv_import_error": "⚠️ {{success}} içe aktarıldı, {{failed}} hata!",
+    "quickmodal.csv_import_success": "{{count}} işlem başarıyla içe aktarıldı!",
+    "quickmodal.csv_import_error": "{{success}} içe aktarıldı, {{failed}} hata!",
     "quickmodal.csv_no_data": "CSV dosyasında veri bulunamadı!",
     "quickmodal.csv_required_fields": "{{row}}. satırda zorunlu alanlar eksik",
     "quickmodal.csv_invalid_date": "{{row}}. satırda geçersiz tarih formatı",
-    
-    // Bulk Paste
+
     "quickmodal.bulk_title": "Toplu İşlem Ekle",
     "quickmodal.bulk_desc": "Her satıra bir işlem gelecek şekilde aşağıdaki formatta girin:",
     "quickmodal.bulk_format": "sembol,yön,lot,giriş,çıkış,tarih,not",
@@ -180,12 +198,11 @@ const quickTranslations = {
     "quickmodal.bulk_placeholder": "EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem\nXAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Altın işlemi",
     "quickmodal.bulk_processing": "İşleniyor...",
     "quickmodal.bulk_progress": "{{current}} / {{total}} işlem eklendi ({{failed}} başarısız)",
-    "quickmodal.bulk_complete": "✅ {{success}} işlem başarıyla eklendi!",
-    "quickmodal.bulk_error": "⚠️ {{success}} eklendi, {{failed}} hata!",
+    "quickmodal.bulk_complete": "{{success}} işlem başarıyla eklendi!",
+    "quickmodal.bulk_error": "{{success}} eklendi, {{failed}} hata!",
     "quickmodal.bulk_required": "Lütfen en az bir işlem girin!",
     "quickmodal.bulk_invalid_format": "{{line}}. satırda geçersiz format: {{error}}",
-    
-    // Validation
+
     "quickmodal.error_symbol_required": "Lütfen bir sembol girin!",
     "quickmodal.error_pnl_required": "Lütfen geçerli bir K/Z girin!",
     "quickmodal.error_pnl_invalid": "K/Z bir sayı olmalıdır!",
@@ -199,32 +216,29 @@ const quickTranslations = {
     "quickmodal.error_connection": "Sistem bağlantısı yok!",
     "quickmodal.error_save": "Kaydetme hatası: {{message}}",
     "quickmodal.error_general": "Bir hata oluştu. Lütfen tekrar deneyin.",
-    
-    // Success
-    "quickmodal.success_saved": "✅ İşlem başarıyla eklendi!",
-    
-    // Buttons
+
+    "quickmodal.success_saved": "İşlem başarıyla eklendi!",
+
     "quickmodal.cancel": "İptal",
-    "quickmodal.save": "💾 Kaydet",
-    "quickmodal.import": "📤 İçe Aktar",
-    "quickmodal.paste_add": "📤 İşlemleri Ekle"
+    "quickmodal.save": "Kaydet",
+    "quickmodal.import": "İçe Aktar",
+    "quickmodal.paste_add": "İşlemleri Ekle"
   },
-  
+
   de: {
-    "quickmodal.title": "📝 Trade hinzufügen",
+    "quickmodal.title": "Trade hinzufügen",
     "quickmodal.tab_quick": "Schnell Hinzufügen",
     "quickmodal.tab_price": "Preisbasiert",
     "quickmodal.tab_csv": "CSV Import",
     "quickmodal.tab_bulk": "Massen Einfügen",
-    
-    // Quick Mode
+
     "quickmodal.mode_quick": "Schnelleingabe",
     "quickmodal.mode_price": "Preisberechnung",
     "quickmodal.symbol": "Symbol *",
     "quickmodal.symbol_hint": "Symbol manuell eingeben",
     "quickmodal.side": "Richtung *",
-    "quickmodal.buy": "Kaufen ↑",
-    "quickmodal.sell": "Verkaufen ↓",
+    "quickmodal.buy": "Kaufen",
+    "quickmodal.sell": "Verkaufen",
     "quickmodal.pnl": "P&L *",
     "quickmodal.risk_reward": "Risk / Reward",
     "quickmodal.strategy": "Strategie",
@@ -232,8 +246,7 @@ const quickTranslations = {
     "quickmodal.create_strategy": "Neu",
     "quickmodal.saving": "Speichern...",
     "quickmodal.strategy_placeholder": "Strategie wählen",
-    
-    // Price Mode
+
     "quickmodal.instrument": "Instrument *",
     "quickmodal.instrument_forex": "Forex",
     "quickmodal.instrument_gold": "Gold",
@@ -250,8 +263,17 @@ const quickTranslations = {
     "quickmodal.rr_calculated": "R/R",
     "quickmodal.calculate_from_price": "Vom Preis berechnen",
     "quickmodal.enter_manually": "Manuell eingeben",
-    
-    // Strategy Chip Grid
+
+    "quickmodal.notes": "Notizen",
+    "quickmodal.notes_placeholder": "Notizen...",
+    "quickmodal.date": "Datum",
+    "quickmodal.date_placeholder": "Datum wählen",
+    "quickmodal.date_prev_month": "Vorheriger Monat",
+    "quickmodal.date_next_month": "Nächster Monat",
+    "quickmodal.date_today": "Heute",
+    "quickmodal.date_clear": "Löschen",
+    "quickmodal.loading_saving": "Trade wird gespeichert...",
+
     "quickmodal.select_strategy": "Strategie wählen",
     "quickmodal.refresh": "Aktualisieren",
     "quickmodal.clear": "Löschen",
@@ -260,8 +282,7 @@ const quickTranslations = {
     "quickmodal.create_strategy_link": "Strategie erstellen →",
     "quickmodal.strategy_selected": "Strategie ausgewählt",
     "quickmodal.strategy_cleared": "Strategie gelöscht",
-    
-    // CSV Import
+
     "quickmodal.csv_import_title": "CSV Import",
     "quickmodal.csv_import_desc": "Laden Sie Ihre CSV-Datei von MT4/MT5 oder Excel hoch",
     "quickmodal.csv_choose_file": "CSV-Datei wählen",
@@ -269,13 +290,12 @@ const quickTranslations = {
     "quickmodal.csv_no_file": "Keine Datei ausgewählt",
     "quickmodal.csv_processing": "Verarbeite...",
     "quickmodal.csv_importing": "Importiere...",
-    "quickmodal.csv_import_success": "✅ {{count}} Trades erfolgreich importiert!",
-    "quickmodal.csv_import_error": "⚠️ {{success}} importiert, {{failed}} Fehler!",
+    "quickmodal.csv_import_success": "{{count}} Trades erfolgreich importiert!",
+    "quickmodal.csv_import_error": "{{success}} importiert, {{failed}} Fehler!",
     "quickmodal.csv_no_data": "Keine Daten in CSV-Datei gefunden!",
     "quickmodal.csv_required_fields": "Fehlende Pflichtfelder in Zeile {{row}}",
     "quickmodal.csv_invalid_date": "Ungültiges Datumsformat in Zeile {{row}}",
-    
-    // Bulk Paste
+
     "quickmodal.bulk_title": "Trades massenhaft hinzufügen",
     "quickmodal.bulk_desc": "Geben Sie einen Trade pro Zeile im folgenden Format ein:",
     "quickmodal.bulk_format": "symbol,richtung,lot,einstieg,ausstieg,datum,notizen",
@@ -283,12 +303,11 @@ const quickTranslations = {
     "quickmodal.bulk_placeholder": "EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,Erster Trade\nXAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Gold Trade",
     "quickmodal.bulk_processing": "Verarbeite...",
     "quickmodal.bulk_progress": "{{current}} / {{total}} Trades hinzugefügt ({{failed}} fehlgeschlagen)",
-    "quickmodal.bulk_complete": "✅ {{success}} Trades erfolgreich hinzugefügt!",
-    "quickmodal.bulk_error": "⚠️ {{success}} hinzugefügt, {{failed}} Fehler!",
+    "quickmodal.bulk_complete": "{{success}} Trades erfolgreich hinzugefügt!",
+    "quickmodal.bulk_error": "{{success}} hinzugefügt, {{failed}} Fehler!",
     "quickmodal.bulk_required": "Bitte geben Sie mindestens einen Trade ein!",
     "quickmodal.bulk_invalid_format": "Ungültiges Format in Zeile {{line}}: {{error}}",
-    
-    // Validation
+
     "quickmodal.error_symbol_required": "Bitte geben Sie ein Symbol ein!",
     "quickmodal.error_pnl_required": "Bitte geben Sie ein gültiges P&L ein!",
     "quickmodal.error_pnl_invalid": "P&L muss eine Zahl sein!",
@@ -302,15 +321,13 @@ const quickTranslations = {
     "quickmodal.error_connection": "Keine Systemverbindung!",
     "quickmodal.error_save": "Speicherfehler: {{message}}",
     "quickmodal.error_general": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-    
-    // Success
-    "quickmodal.success_saved": "✅ Trade erfolgreich hinzugefügt!",
-    
-    // Buttons
+
+    "quickmodal.success_saved": "Trade erfolgreich hinzugefügt!",
+
     "quickmodal.cancel": "Abbrechen",
-    "quickmodal.save": "💾 Speichern",
-    "quickmodal.import": "📤 Importieren",
-    "quickmodal.paste_add": "📤 Trades hinzufügen"
+    "quickmodal.save": "Speichern",
+    "quickmodal.import": "Importieren",
+    "quickmodal.paste_add": "Trades hinzufügen"
   }
 };
 
@@ -323,92 +340,118 @@ class QuickI18n {
     this.defaultLang = defaultLang;
     this.currentLang = defaultLang;
     this.listeners = [];
-    
-    // Başlangıç dilini ana i18n'den al veya localStorage'dan
+
     const savedLang = localStorage.getItem('ww_language');
     if (savedLang && quickTranslations[savedLang]) {
       this.currentLang = savedLang;
     } else {
       this.currentLang = defaultLang;
     }
-    
+
     // Ana i18n dil değişikliklerini dinle
-    if (typeof i18n !== 'undefined' && i18n.onChange) {
-      i18n.onChange((lang) => {
-        if (quickTranslations[lang]) {
-          this.setLanguage(lang, true);
-        }
-      });
+    var self = this;
+    function attachListener() {
+      if (typeof i18n !== 'undefined' && typeof i18n.onChange === 'function') {
+        i18n.onChange(function(lang) {
+          if (quickTranslations[lang]) {
+            self.setLanguage(lang);
+          }
+        });
+        wwLog.log('✅ [QuickI18n] Ana i18n dinleyicisi bağlandı');
+        return true;
+      }
+      return false;
     }
-    
+
+    if (!attachListener()) {
+      setTimeout(attachListener, 100);
+    }
+
     wwLog.log('✅ Quick Modal I18n initialized! Dil:', this.currentLang);
   }
-  
+
   t(key, params = {}) {
-    let text = quickTranslations[this.currentLang]?.[key] || 
-               quickTranslations[this.defaultLang]?.[key] || 
+    let text = quickTranslations[this.currentLang]?.[key] ||
+               quickTranslations[this.defaultLang]?.[key] ||
                key;
-    
+
     Object.keys(params).forEach(param => {
       text = text.replace(new RegExp(`{{${param}}}`, 'g'), params[param]);
     });
-    
+
     return text;
   }
-  
-  setLanguage(lang, silent = false) {
+
+  setLanguage(lang) {
     if (!quickTranslations[lang]) {
       wwLog.warn(`[QuickI18n] Dil bulunamadı: ${lang}`);
       return false;
     }
-    
-    if (this.currentLang === lang) return true;
-    
+
+    const changed = this.currentLang !== lang;
     this.currentLang = lang;
-    
-    if (!silent) {
+
+    // Her durumda apply et (idempotent)
+    this.apply();
+
+    if (changed) {
       this.listeners.forEach(cb => {
         try { cb(lang); } catch(e) {}
       });
     }
-    
+
     return true;
   }
-  
+
   onChange(callback) {
     if (typeof callback === 'function') {
       this.listeners.push(callback);
     }
   }
-  
+
   getCurrentLanguage() {
     return this.currentLang;
   }
-  
-  // HTML içindeki data-quick-i18n attribute'larını güncelle
+
+  // data-quick-i18n attribute'larını günceller
   apply() {
     try {
       document.querySelectorAll('[data-quick-i18n]').forEach(el => {
         const key = el.getAttribute('data-quick-i18n');
+        if (!key) return;
         const text = this.t(key);
+
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
           if (el.hasAttribute('data-quick-i18n-placeholder')) {
             el.placeholder = text;
           }
-        } else {
+          return;
+        }
+
+        if (el.textContent !== text) {
           el.textContent = text;
         }
       });
-      
+
       document.querySelectorAll('[data-quick-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-quick-i18n-placeholder');
+        if (!key) return;
         const text = this.t(key);
-        if (el.placeholder !== undefined) {
+        if (el.placeholder !== text) {
           el.placeholder = text;
         }
       });
+
+      document.querySelectorAll('[data-quick-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-quick-i18n-html');
+        if (!key) return;
+        const text = this.t(key);
+        if (el.innerHTML !== text) {
+          el.innerHTML = text;
+        }
+      });
     } catch(e) {
-      // Sessizce geç
+      wwLog.warn('[QuickI18n] apply hatası:', e);
     }
   }
 }

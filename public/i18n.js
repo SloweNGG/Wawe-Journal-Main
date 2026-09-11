@@ -1,5 +1,4 @@
-﻿
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL – i18n.js (DİL KALICILIĞI + NAVBAR + BİLDİRİMLER)
 // Diller: İngilizce (varsayılan), Türkçe, Almanca
 // ============================================================
@@ -1740,7 +1739,9 @@ class I18n {
     this._isInitialized = true;
     
     wwLog.log(`[i18n] Başlatılıyor, dil: ${this.currentLang}`);
-    this.apply();
+    // ⭐ DİKKAT: init() sırasında apply() çağrılmıyor.
+    // apply() sadece DOMContentLoaded'da (veya setLanguage'de) çağrılır,
+    // çünkü bu sırada DOM henüz hazır olmayabilir.
   }
   
   t(key, params = {}) {
@@ -1787,7 +1788,6 @@ class I18n {
       this._applyInternal(callId);
     }, 0);
     
-    // 🔥 Bildirim yap - hemen değil, apply sonrası
     return true;
   }
   
@@ -1813,30 +1813,65 @@ class I18n {
   }
   
   // ════════════════════════════════════════════════════════════════
-  // ⭐ apply() - DÜZELTİLDİ: DOM metinlerini DEĞİŞTİRMEZ!
+  // ⭐ apply() - TÜM data-i18n ATTRIBUTE'LARINI GÜNCELLER
   // ════════════════════════════════════════════════════════════════
   apply() {
     const lang = this.currentLang;
-    
-    // Sadece HTML attribute'larını güncelle
+
+    // Document seviyesi ayarlar
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-lang', lang);
-    
-    // ⭐ SADECE placeholder'ları güncelle (input alanları)
-    // Bu, sayfa yüklendikten sonra DOM metinlerini değiştirmez
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-      const key = el.getAttribute('data-i18n-placeholder');
+
+    // ⭐ data-i18n → textContent (XSS'e karşı güvenli)
+    const textEls = document.querySelectorAll('[data-i18n]');
+    for (let i = 0; i < textEls.length; i++) {
+      const el = textEls[i];
+      const key = el.getAttribute('data-i18n');
+      if (!key) continue;
       const text = this.t(key);
-      if (el.placeholder !== undefined) {
+      // Sadece çeviri bulunduysa ve mevcut metinden farklıysa güncelle
+      if (text !== key && el.textContent !== text) {
+        el.textContent = text;
+      }
+    }
+
+    // ⭐ data-i18n-html → innerHTML (çeviri dosyası güvenilir kaynak)
+    const htmlEls = document.querySelectorAll('[data-i18n-html]');
+    for (let i = 0; i < htmlEls.length; i++) {
+      const el = htmlEls[i];
+      const key = el.getAttribute('data-i18n-html');
+      if (!key) continue;
+      const text = this.t(key);
+      if (text !== key && el.innerHTML !== text) {
+        el.innerHTML = text;
+      }
+    }
+
+    // ⭐ data-i18n-placeholder → placeholder
+    const phEls = document.querySelectorAll('[data-i18n-placeholder]');
+    for (let i = 0; i < phEls.length; i++) {
+      const el = phEls[i];
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (!key) continue;
+      const text = this.t(key);
+      if (text !== key && el.placeholder !== text) {
         el.placeholder = text;
       }
-    });
-    
-    // ⭐ data-i18n ve data-i18n-html ile etiketlenmiş elementleri GÜNCELLEME!
-    // Çünkü bu, sayfa yüklendikten sonra DOM metinlerini değiştiriyor
-    // Bu işlem, navbar.js ve diğer bileşenler tarafından yapılmalı
-    
-    wwLog.log(`[i18n] apply çalıştı, dil: ${lang} (DOM metinleri değiştirilmedi)`);
+    }
+
+    // ⭐ data-i18n-title → title attribute (opsiyonel kullanım için)
+    const titleEls = document.querySelectorAll('[data-i18n-title]');
+    for (let i = 0; i < titleEls.length; i++) {
+      const el = titleEls[i];
+      const key = el.getAttribute('data-i18n-title');
+      if (!key) continue;
+      const text = this.t(key);
+      if (text !== key && el.title !== text) {
+        el.title = text;
+      }
+    }
+
+    wwLog.log(`[i18n] apply çalıştı, dil: ${lang} (text: ${textEls.length}, html: ${htmlEls.length}, placeholder: ${phEls.length})`);
   }
   
   onChange(callback) {
@@ -1900,39 +1935,23 @@ const i18n = new I18n('en');
 window.i18n = i18n;
 
 // ════════════════════════════════════════════════════════════════
-// ⭐ DOMContentLoaded OLAYI - DÜZELTİLDİ (SADECE data-lang AYARLA)
+// ⭐ DOMContentLoaded - İLK YÜKLEME + data-lang AYARI + APPLY
 // ════════════════════════════════════════════════════════════════
-// DÜZELTME: DOMContentLoaded'da sadece data-lang attribute'unu ayarla
-// apply() çağrılmaz, çünkü apply DOM metinlerini değiştirir.
+// Sayfa yüklendiğinde bir kez çevirileri DOM'a uygula.
+// (Sonradan dinamik eklenen içerik için sayfalar kendi i18n.apply() çağrısını yapmalı.)
 
-let domReadyApplied = false;
-document.addEventListener('DOMContentLoaded', () => {
-  if (!domReadyApplied) {
-    domReadyApplied = true;
-    const saved = localStorage.getItem('ww_language') || 'en';
-    document.documentElement.setAttribute('data-lang', saved);
-    wwLog.log('[i18n] DOMContentLoaded: data-lang ayarlandı:', saved);
-  }
-});
+function _initialApply() {
+  const saved = localStorage.getItem('ww_language') || 'en';
+  document.documentElement.setAttribute('data-lang', saved);
+  wwLog.log('[i18n] initial apply, dil:', saved);
+  i18n.apply();
+}
 
-// ⭐ Sayfa her yüklendiğinde data-lang'i kontrol et - sadece bir kez
-let dataLangSet = false;
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    if (!dataLangSet) {
-      dataLangSet = true;
-      const saved = localStorage.getItem('ww_language') || 'en';
-      document.documentElement.setAttribute('data-lang', saved);
-      wwLog.log('[i18n] data-lang ayarlandı:', saved);
-    }
-  });
+  document.addEventListener('DOMContentLoaded', _initialApply, { once: true });
 } else {
-  if (!dataLangSet) {
-    dataLangSet = true;
-    const saved = localStorage.getItem('ww_language') || 'en';
-    document.documentElement.setAttribute('data-lang', saved);
-    wwLog.log('[i18n] data-lang ayarlandı:', saved);
-  }
+  // DOM zaten hazır (script body sonunda)
+  _initialApply();
 }
 
 wwLog.log('[i18n] Başlangıç dili:', i18n.getCurrentLanguage());

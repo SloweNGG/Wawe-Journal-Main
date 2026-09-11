@@ -58,3 +58,8 @@ Eğer hata çıktıysa geri almak için bu komutu kullan
 
 git reset --hard
 
+
+
+## Sızma Testleri İçin 
+
+https://hostedscan.com/scans
