@@ -375,82 +375,56 @@ export async function loadOvertradeSettingsUI(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
+    const t = (key, params) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key, params) : key;
+    const applyI18n = () => { if (typeof i18n !== 'undefined' && i18n.apply) try { i18n.apply(); } catch(e) {} };
+    
     const { plan } = await getUserPlanSilent();
     const isPremiumUser = plan === 'premium';
     
     if (!isPremiumUser) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
-          <div style="font-size:2.5rem;margin-bottom:0.75rem;">💎</div>
-          <h3 style="font-family:'Syne',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">OverTrade Uyarıları</h3>
-          <p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1rem;">Bu özellik sadece Premium üyelere özeldir. İşlem limitlerini ve kayıp kontrollerini yaparak daha disiplinli ticaret yapın.</p>
-          <a href="settings.html#panel-plan" class="btn btn-primary" style="display:inline-flex;">Premium'a Geç →</a>
-        </div>
-      `;
+      const tpl = document.getElementById('tpl-overtrade-locked');
+      if (!tpl) return;
+      container.innerHTML = '';
+      container.appendChild(tpl.content.cloneNode(true));
+      applyI18n();
       return;
     }
     
     const settings = getOvertradeSettings();
     
-    container.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:1.25rem;">
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:13px;color:var(--text);">
-            <input type="checkbox" id="ot-enabled" ${settings.enabled !== false ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px;cursor:pointer;">
-            OverTrade Uyarılarını Aktif Et
-          </label>
-        </div>
-        
-        <div class="field" style="margin:0;">
-          <label style="font-size:13px;font-weight:500;color:var(--text);">Günlük İşlem Limiti</label>
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-top:4px;">
-            <input type="number" id="ot-daily-limit" value="${settings.dailyLimit || 5}" min="1" max="100" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;width:100px;">
-            <span style="font-size:12px;color:var(--muted);">işlem</span>
-          </div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Bu limiti aştığında uyarı alırsın.</p>
-        </div>
-        
-        <div class="field" style="margin:0;">
-          <label style="font-size:13px;font-weight:500;color:var(--text);">Haftalık İşlem Limiti</label>
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-top:4px;">
-            <input type="number" id="ot-weekly-limit" value="${settings.weeklyLimit || 20}" min="1" max="500" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;width:100px;">
-            <span style="font-size:12px;color:var(--muted);">işlem</span>
-          </div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Bu limiti aştığında uyarı alırsın.</p>
-        </div>
-        
-        <div class="field" style="margin:0;">
-          <label style="font-size:13px;font-weight:500;color:var(--text);">Günlük Kayıp Limiti</label>
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-top:4px;">
-            <span style="font-size:12px;color:var(--muted);">$</span>
-            <input type="number" id="ot-loss-limit" value="${settings.dailyLossLimit || 1000}" min="1" max="999999" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;width:100px;">
-          </div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Bu limiti aştığında uyarı alırsın.</p>
-        </div>
-        
-        <div class="field" style="margin:0;">
-          <label style="font-size:13px;font-weight:500;color:var(--text);">Uyarı Seviyesi</label>
-          <select id="ot-warning-level" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;margin-top:4px;">
-            <option value="info" ${settings.warningLevel === 'info' ? 'selected' : ''}>ℹ️ Bilgi</option>
-            <option value="warning" ${settings.warningLevel === 'warning' ? 'selected' : ''}>⚠️ Uyarı</option>
-            <option value="danger" ${settings.warningLevel === 'danger' ? 'selected' : ''}>🚨 Tehlike</option>
-          </select>
-        </div>
-        
-        <button id="ot-save-settings" class="btn btn-primary" style="align-self:flex-start;display:inline-flex;gap:0.5rem;align-items:center;">
-          💾 Ayarları Kaydet
-        </button>
-        
-        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;padding-top:0.75rem;border-top:1px solid var(--border);">
-          <button id="ot-clear-dismissed" class="btn btn-ghost" style="font-size:12px;padding:0.4rem 0.8rem;">
-            🗑️ Kapatılan Uyarıları Temizle
-          </button>
-          <button id="ot-reset-defaults" class="btn btn-ghost" style="font-size:12px;padding:0.4rem 0.8rem;">
-            ↺ Varsayılana Dön
-          </button>
-        </div>
-      </div>
-    `;
+    const tpl = document.getElementById('tpl-overtrade-premium');
+    if (!tpl) return;
+    const clone = tpl.content.cloneNode(true);
+    
+    const enabledCb = clone.querySelector('#ot-enabled');
+    if (enabledCb) enabledCb.checked = settings.enabled !== false;
+    
+    const dailyEl = clone.querySelector('#ot-daily-limit');
+    if (dailyEl) dailyEl.value = settings.dailyLimit || 5;
+    
+    const weeklyEl = clone.querySelector('#ot-weekly-limit');
+    if (weeklyEl) weeklyEl.value = settings.weeklyLimit || 20;
+    
+    const lossEl = clone.querySelector('#ot-loss-limit');
+    if (lossEl) lossEl.value = settings.dailyLossLimit || 1000;
+    
+    const levelEl = clone.querySelector('#ot-warning-level');
+    if (levelEl) levelEl.value = settings.warningLevel || 'warning';
+    
+    // data-icon placeholder'ları doldur
+    clone.querySelectorAll('[data-icon]').forEach(function(el) {
+      const name = el.getAttribute('data-icon');
+      if (typeof window.getLucideIcon === 'function') {
+        el.innerHTML = window.getLucideIcon(name, 14);
+      } else if (typeof getLucideIcon === 'function') {
+        el.innerHTML = getLucideIcon(name, 14);
+      }
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(clone);
+    
+    applyI18n();
     
     const enabledCheckbox = document.getElementById('ot-enabled');
     const dailyLimitInput = document.getElementById('ot-daily-limit');
@@ -470,25 +444,19 @@ export async function loadOvertradeSettingsUI(containerId) {
           dailyLossLimit: parseFloat(lossLimitInput?.value) || 1000,
           warningLevel: warningLevelSelect?.value || 'warning'
         };
-        
         saveOvertradeSettings(newSettings);
-        showToast('✅ OverTrade ayarları kaydedildi!', 'success');
-        
+        showToast('✅ ' + t('overtrade.settings_saved'), 'success');
         const otContainer = document.getElementById('overtrade-container');
-        if (otContainer) {
-          checkAndRenderOvertrade('overtrade-container');
-        }
+        if (otContainer) checkAndRenderOvertrade('overtrade-container');
       });
     }
     
     if (clearBtn) {
       clearBtn.addEventListener('click', function() {
         clearDismissedOvertradeWarnings();
-        showToast('🗑️ Kapatılan uyarılar temizlendi.', 'success');
+        showToast('🗑️ ' + t('overtrade.dismissed_cleared'), 'success');
         const otContainer = document.getElementById('overtrade-container');
-        if (otContainer) {
-          checkAndRenderOvertrade('overtrade-container');
-        }
+        if (otContainer) checkAndRenderOvertrade('overtrade-container');
       });
     }
     
@@ -496,12 +464,10 @@ export async function loadOvertradeSettingsUI(containerId) {
       resetBtn.addEventListener('click', function() {
         const defaultSettings = { dailyLimit: 5, weeklyLimit: 20, dailyLossLimit: 1000, warningLevel: 'warning', enabled: true };
         saveOvertradeSettings(defaultSettings);
-        showToast('↺ Varsayılan ayarlara döndürüldü.', 'success');
+        showToast('↺ ' + t('overtrade.reset_success'), 'success');
         loadOvertradeSettingsUI(containerId);
         const otContainer = document.getElementById('overtrade-container');
-        if (otContainer) {
-          checkAndRenderOvertrade('overtrade-container');
-        }
+        if (otContainer) checkAndRenderOvertrade('overtrade-container');
       });
     }
     
@@ -509,12 +475,12 @@ export async function loadOvertradeSettingsUI(containerId) {
     console.error('loadOvertradeSettingsUI hatası:', error);
     const container = document.getElementById(containerId);
     if (container) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
-          <p style="color:var(--muted);font-size:13px;">Ayarlar yüklenirken bir hata oluştu.</p>
-          <button onclick="window.loadOvertradeSettingsUI('${containerId}')" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 Yeniden Dene</button>
-        </div>
-      `;
+      const tplErr = document.getElementById('tpl-overtrade-error');
+      if (tplErr) {
+        container.innerHTML = '';
+        container.appendChild(tplErr.content.cloneNode(true));
+        if (typeof i18n !== 'undefined' && i18n.apply) try { i18n.apply(); } catch(e) {}
+      }
     }
   }
 }

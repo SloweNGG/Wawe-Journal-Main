@@ -192,77 +192,88 @@ export async function loadThemeCustomization() {
   const isPremium = await canCustomizeTheme();
   const container = document.getElementById('theme-customization-container');
   if (!container) return;
-
-  if (!isPremium) {
-    container.innerHTML = `
-      <div style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">
-        <div style="font-size:2.5rem;margin-bottom:0.75rem;">💎</div>
-        <h3 style="font-family:'Syne',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Tema Özelleştirme</h3>
-        <p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1rem;">Bu özellik sadece Premium üyelere özeldir.</p>
-        <a href="settings.html#panel-plan" class="btn btn-primary" style="display:inline-flex;">Premium'a Geç →</a>
-      </div>
-    `;
+  
+  const applyI18n = () => { if (typeof i18n !== 'undefined' && i18n.apply) try { i18n.apply(); } catch(e) {} };
+  const fillIcons = (root) => {
+    root.querySelectorAll('[data-icon]').forEach(function(el) {
+      const name = el.getAttribute('data-icon');
+      if (typeof window.getLucideIcon === 'function') {
+        el.innerHTML = window.getLucideIcon(name, 14);
+      } else if (typeof getLucideIcon === 'function') {
+        el.innerHTML = getLucideIcon(name, 14);
+      }
+    });
+  };
+  
+  const isLight = document.body.classList.contains('light-theme');
+  
+  // Light tema → kilit ekranı
+  if (isLight) {
+    const tplLight = document.getElementById('tpl-theme-light-locked');
+    if (!tplLight) return;
+    container.innerHTML = '';
+    container.appendChild(tplLight.content.cloneNode(true));
+    applyI18n();
+    const switchBtn = container.querySelector('#theme-switch-to-dark-btn');
+    if (switchBtn) {
+      switchBtn.addEventListener('click', function() {
+        const toggle = document.getElementById('theme-toggle');
+        if (toggle && !toggle.checked) toggle.click();
+      });
+    }
     return;
   }
-
+  
+  // Premium değil → kilit ekranı
+  if (!isPremium) {
+    const tplLocked = document.getElementById('tpl-theme-locked');
+    if (!tplLocked) return;
+    container.innerHTML = '';
+    container.appendChild(tplLocked.content.cloneNode(true));
+    applyI18n();
+    return;
+  }
+  
+  // Premium + Dark → tam form
+  const tplForm = document.getElementById('tpl-theme-form');
+  if (!tplForm) return;
+  const clone = tplForm.content.cloneNode(true);
+  
   const settings = getThemeSettings();
-  container.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:1rem;">
-      <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15);border-radius:8px;padding:0.6rem 0.9rem;font-size:12px;color:var(--text);">
-        ⚠️ <strong>Not:</strong> Renk özelleştirme sadece <strong>Koyu Tema</strong> aktifken çalışır. Açık tema aktifken sadece font boyutu değiştirilebilir.
-      </div>
-      <div class="field">
-        <label>Arka Plan Rengi</label>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <input type="color" id="custom-bg-color" value="${settings.backgroundColor || '#0a0a0f'}" style="width:50px;height:40px;border:none;cursor:pointer;background:transparent;padding:0;">
-          <input type="text" id="custom-bg-color-text" value="${settings.backgroundColor || '#0a0a0f'}" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;">
-        </div>
-      </div>
-      <div class="field">
-        <label>Kart Arka Plan Rengi</label>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <input type="color" id="custom-surface-color" value="${settings.surfaceColor || '#111118'}" style="width:50px;height:40px;border:none;cursor:pointer;background:transparent;padding:0;">
-          <input type="text" id="custom-surface-color-text" value="${settings.surfaceColor || '#111118'}" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;">
-        </div>
-      </div>
-      <div class="field">
-        <label>Kenarlık Rengi</label>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <input type="color" id="custom-border-color" value="${settings.borderColor || '#1e1e2e'}" style="width:50px;height:40px;border:none;cursor:pointer;background:transparent;padding:0;">
-          <input type="text" id="custom-border-color-text" value="${settings.borderColor || '#1e1e2e'}" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;">
-        </div>
-      </div>
-      <div class="field">
-        <label>Metin Rengi</label>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <input type="color" id="custom-text-color" value="${settings.textColor || '#e8e8f0'}" style="width:50px;height:40px;border:none;cursor:pointer;background:transparent;padding:0;">
-          <input type="text" id="custom-text-color-text" value="${settings.textColor || '#e8e8f0'}" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;">
-        </div>
-      </div>
-      <div class="field">
-        <label>Font Boyutu: <span id="font-size-display">${settings.fontSize || 16}px</span></label>
-        <input type="range" id="custom-font-size" min="12" max="24" step="1" value="${settings.fontSize || 16}" style="width:100%;accent-color:var(--accent);">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);">
-          <span>12px</span><span>18px</span><span>24px</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">
-        <button class="btn btn-primary" id="save-custom-theme-btn">💾 Temayı Kaydet</button>
-        <button class="btn btn-ghost" id="reset-custom-theme-btn">↺ Varsayılana Dön</button>
-      </div>
-      <div id="theme-preview-box" style="margin-top:1rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);">
-        <p style="color:var(--text);font-size:${settings.fontSize || 16}px;margin:0;">
-          <strong>Önizleme:</strong> Bu metin seçtiğiniz renk ve font boyutu ile görüntüleniyor.
-        </p>
-        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
-          <span style="background:var(--accent);color:#fff;padding:4px 12px;border-radius:4px;font-size:12px;">Accent</span>
-          <span style="background:var(--green);color:#fff;padding:4px 12px;border-radius:4px;font-size:12px;">Win</span>
-          <span style="background:var(--red);color:#fff;padding:4px 12px;border-radius:4px;font-size:12px;">Loss</span>
-        </div>
-      </div>
-    </div>
-  `;
+  
+  const bgInput = clone.querySelector('#custom-bg-color');
+  const bgText = clone.querySelector('#custom-bg-color-text');
+  const surfInput = clone.querySelector('#custom-surface-color');
+  const surfText = clone.querySelector('#custom-surface-color-text');
+  const borderInput = clone.querySelector('#custom-border-color');
+  const borderText = clone.querySelector('#custom-border-color-text');
+  const textInput = clone.querySelector('#custom-text-color');
+  const textText = clone.querySelector('#custom-text-color-text');
+  const fontSize = clone.querySelector('#custom-font-size');
+  const fontSizeDisplay = clone.querySelector('#font-size-display');
+  
+  if (bgInput) bgInput.value = settings.backgroundColor || '#0a0a0f';
+  if (bgText) bgText.value = settings.backgroundColor || '#0a0a0f';
+  if (surfInput) surfInput.value = settings.surfaceColor || '#111118';
+  if (surfText) surfText.value = settings.surfaceColor || '#111118';
+  if (borderInput) borderInput.value = settings.borderColor || '#1e1e2e';
+  if (borderText) borderText.value = settings.borderColor || '#1e1e2e';
+  if (textInput) textInput.value = settings.textColor || '#e8e8f0';
+  if (textText) textText.value = settings.textColor || '#e8e8f0';
+  if (fontSize) fontSize.value = settings.fontSize || 16;
+  if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
+  
+  fillIcons(clone);
+  
+  container.innerHTML = '';
+  container.appendChild(clone);
+  
+  applyI18n();
+  
+  initThemeFormEvents();
+}
 
+function initThemeFormEvents() {
   const bgColor = document.getElementById('custom-bg-color');
   const bgColorText = document.getElementById('custom-bg-color-text');
   const surfaceColor = document.getElementById('custom-surface-color');
@@ -273,24 +284,28 @@ export async function loadThemeCustomization() {
   const textColorText = document.getElementById('custom-text-color-text');
   const fontSize = document.getElementById('custom-font-size');
   const fontSizeDisplay = document.getElementById('font-size-display');
-
+  const previewBox = document.getElementById('theme-preview-box');
+  
+  if (!bgColor || !surfaceColor || !borderColor || !textColor || !fontSize) return;
+  
+  const _t = (key) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : key;
+  
   function updatePreview() {
     const bg = bgColor.value;
     const surface = surfaceColor.value;
     const border = borderColor.value;
     const text = textColor.value;
     const size = fontSize.value;
-
-    const preview = document.getElementById('theme-preview-box');
-    if (preview) {
-      preview.style.background = surface;
-      preview.style.borderColor = border;
-      preview.style.color = text;
-      preview.style.fontSize = size + 'px';
-      const strong = preview.querySelector('strong');
+    
+    if (previewBox) {
+      previewBox.style.background = surface;
+      previewBox.style.borderColor = border;
+      previewBox.style.color = text;
+      previewBox.style.fontSize = size + 'px';
+      const strong = previewBox.querySelector('strong');
       if (strong) strong.style.color = text;
     }
-
+    
     const root = document.documentElement;
     root.style.setProperty('--bg', bg);
     root.style.setProperty('--surface', surface);
@@ -298,91 +313,69 @@ export async function loadThemeCustomization() {
     root.style.setProperty('--border', border);
     root.style.setProperty('--text', text);
     document.body.style.fontSize = size + 'px';
-
-    bgColorText.value = bg;
-    surfaceColorText.value = surface;
-    borderColorText.value = border;
-    textColorText.value = text;
+    
+    if (bgColorText) bgColorText.value = bg;
+    if (surfaceColorText) surfaceColorText.value = surface;
+    if (borderColorText) borderColorText.value = border;
+    if (textColorText) textColorText.value = text;
     if (fontSizeDisplay) fontSizeDisplay.textContent = size + 'px';
   }
-
+  
   bgColor.addEventListener('input', updatePreview);
-  bgColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) {
-      bgColor.value = this.value;
-      updatePreview();
-    }
+  if (bgColorText) bgColorText.addEventListener('input', function() {
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { bgColor.value = this.value; updatePreview(); }
   });
   surfaceColor.addEventListener('input', updatePreview);
-  surfaceColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) {
-      surfaceColor.value = this.value;
-      updatePreview();
-    }
+  if (surfaceColorText) surfaceColorText.addEventListener('input', function() {
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { surfaceColor.value = this.value; updatePreview(); }
   });
   borderColor.addEventListener('input', updatePreview);
-  borderColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) {
-      borderColor.value = this.value;
-      updatePreview();
-    }
+  if (borderColorText) borderColorText.addEventListener('input', function() {
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { borderColor.value = this.value; updatePreview(); }
   });
   textColor.addEventListener('input', updatePreview);
-  textColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) {
-      textColor.value = this.value;
-      updatePreview();
-    }
+  if (textColorText) textColorText.addEventListener('input', function() {
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { textColor.value = this.value; updatePreview(); }
   });
   fontSize.addEventListener('input', updatePreview);
-
-  document.getElementById('save-custom-theme-btn').addEventListener('click', function() {
-    const isLight = document.body.classList.contains('light-theme');
-    
-    if (isLight) {
-      const fontOnly = { fontSize: parseInt(fontSize.value) };
-      saveThemeSettings(fontOnly);
-      showToast('✅ Font boyutu kaydedildi! (Renkler light tema ile sınırlıdır)', 'success');
-      return;
-    }
-    
-    const settings = {
-      backgroundColor: bgColor.value,
-      surfaceColor: surfaceColor.value,
-      borderColor: borderColor.value,
-      textColor: textColor.value,
-      fontSize: parseInt(fontSize.value)
-    };
-    saveThemeSettings(settings);
-    showToast('✅ Tema başarıyla kaydedildi!', 'success');
-  });
-
-  document.getElementById('reset-custom-theme-btn').addEventListener('click', function() {
-    const defaultSettings = WW_CONFIG.THEME;
-    bgColor.value = defaultSettings.backgroundColor;
-    surfaceColor.value = defaultSettings.surfaceColor;
-    borderColor.value = defaultSettings.borderColor;
-    textColor.value = defaultSettings.textColor;
-    fontSize.value = defaultSettings.fontSize;
-    updatePreview();
-    saveThemeSettings(defaultSettings);
-    showToast('↺ Tema varsayılan ayarlara döndürüldü.', 'success');
-  });
-
-  document.addEventListener('themeChanged', function(e) {
-    if (e.detail && e.detail.settings) {
-      if (!document.body.classList.contains('light-theme')) {
-        const s = e.detail.settings;
-        if (s.backgroundColor) bgColor.value = s.backgroundColor;
-        if (s.surfaceColor) surfaceColor.value = s.surfaceColor;
-        if (s.borderColor) borderColor.value = s.borderColor;
-        if (s.textColor) textColor.value = s.textColor;
-        if (s.fontSize) fontSize.value = s.fontSize;
-        updatePreview();
+  
+  const saveBtn = document.getElementById('save-custom-theme-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      const isLight = document.body.classList.contains('light-theme');
+      if (isLight) {
+        const fontOnly = { fontSize: parseInt(fontSize.value) };
+        saveThemeSettings(fontOnly);
+        showToast('✅ ' + _t('settings.font_updated_light'), 'success');
+        return;
       }
-    }
-  });
-
+      const settings = {
+        backgroundColor: bgColor.value,
+        surfaceColor: surfaceColor.value,
+        borderColor: borderColor.value,
+        textColor: textColor.value,
+        fontSize: parseInt(fontSize.value)
+      };
+      saveThemeSettings(settings);
+      showToast('✅ ' + _t('settings.theme_saved'), 'success');
+    });
+  }
+  
+  const resetBtn = document.getElementById('reset-custom-theme-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function() {
+      const defaultSettings = WW_CONFIG.THEME;
+      bgColor.value = defaultSettings.backgroundColor;
+      surfaceColor.value = defaultSettings.surfaceColor;
+      borderColor.value = defaultSettings.borderColor;
+      textColor.value = defaultSettings.textColor;
+      fontSize.value = defaultSettings.fontSize;
+      updatePreview();
+      saveThemeSettings(defaultSettings);
+      showToast('↺ ' + _t('settings.theme_reset_done'), 'success');
+    });
+  }
+  
   updatePreview();
 }
 

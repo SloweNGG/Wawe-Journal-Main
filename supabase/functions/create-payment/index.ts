@@ -6,17 +6,18 @@ const NOWPAYMENTS_API_KEY = Deno.env.get('NOWPAYMENTS_API_KEY') || '';
 const NOWPAYMENTS_ENV = Deno.env.get('NOWPAYMENTS_ENV') || 'production';
 const NOWPAYMENTS_WEBHOOK_URL = Deno.env.get('NOWPAYMENTS_WEBHOOK_URL') || '';
 
-// ⭐ CORS - WILDCARD DESTEKLİ (TÜM Cloudflare Pages preview'ları kabul et)
+// ⭐ CORS - WILDCARD DESTEKLİ
 const ALLOWED_ORIGINS = [
   'https://your-domain.com',
   'https://wawejournal.com',
   'https://wawe-journal.pages.dev',
-  'https://*.wawe-journal.pages.dev',   // ⭐ TÜM PREVIEW URL'LER
-  'https://*.pages.dev',                // ⭐ TÜM pages.dev alt alanları
+  'https://*.wawe-journal.pages.dev',
+  'https://*.pages.dev',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:4200',
-  'http://localhost:4173'
+  'http://localhost:4173',
+  'http://localhost:4321'
 ];
 
 const API_URL = NOWPAYMENTS_ENV === 'sandbox'
@@ -27,6 +28,10 @@ const API_URL = NOWPAYMENTS_ENV === 'sandbox'
 const rateLimitStore = new Map<string, { count: number, resetTime: number }>();
 const RATE_LIMIT_WINDOW = parseInt(Deno.env.get('RATE_LIMIT_WINDOW') || '60000');
 const RATE_LIMIT_MAX = parseInt(Deno.env.get('RATE_LIMIT_MAX') || '10');
+
+// ⭐ Fiyat Cache (60 saniye)
+let pricesCache: { data: any, timestamp: number } | null = null;
+const PRICES_CACHE_TTL = 60000;
 
 // ⭐ JWT'den kullanıcı kimliğini çıkarır
 function getUserIdFromToken(req: Request): string | null {
@@ -76,12 +81,10 @@ function checkRateLimit(clientId: string): { allowed: boolean, remaining: number
   };
 }
 
-// ⭐ CORS Headers - WILDCARD DESTEKLİ
+// ⭐ CORS Headers
 function getCorsHeaders(origin: string | null) {
-  // Önce tam eşleşme kontrolü
   let isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
-  
-  // Wildcard kontrolü (*.pages.dev gibi)
+
   if (!isAllowed && origin) {
     for (let i = 0; i < ALLOWED_ORIGINS.length; i++) {
       const pattern = ALLOWED_ORIGINS[i];
@@ -94,7 +97,7 @@ function getCorsHeaders(origin: string | null) {
       }
     }
   }
-  
+
   return {
     'Access-Control-Allow-Origin': isAllowed ? origin : (ALLOWED_ORIGINS[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -118,13 +121,42 @@ function validateCurrency(currency: string): boolean {
   return VALID_CURRENCIES.includes(currency) || VALID_PAY_CURRENCIES.includes(currency);
 }
 
-function getPlanPrice(planType: string, currency: string): number {
+// ⭐ Sabit fallback fiyatlar (DB erişimi başarısız olursa)
+function getFallbackPlanPrice(planType: string, currency: string): number {
   const prices: Record<string, Record<string, number>> = {
     monthly: { USD: 9, EUR: 8, GBP: 7, TRY: 250 },
     yearly: { USD: 79, EUR: 70, GBP: 62, TRY: 2200 },
     premium: { USD: 9, EUR: 8, GBP: 7, TRY: 250 }
   };
   return prices[planType]?.[currency] || prices[planType]?.USD || 0;
+}
+
+// ⭐ Fiyat nesnesinden plan/currency bazlı fiyat çöz
+function resolvePrice(prices: any, planType: string, currency: string): number {
+  let basePrice = 0;
+
+  if (planType === 'monthly' || planType === 'premium') {
+    basePrice = Number(prices.monthly) || 9;
+  } else if (planType === 'yearly') {
+    basePrice = Number(prices.yearly) || 79;
+  } else {
+    return getFallbackPlanPrice(planType, currency);
+  }
+
+  // USD ise direkt dön
+  if (currency === 'USD') {
+    return basePrice;
+  }
+
+  // USD dışı currency — basit dönüşüm
+  const conversionRates: Record<string, number> = {
+    'USD': 1,
+    'EUR': 0.92,
+    'GBP': 0.79,
+    'TRY': 34.5
+  };
+  const rate = conversionRates[currency] || 1;
+  return Math.round(basePrice * rate * 100) / 100;
 }
 
 // ⭐ Supabase client
@@ -144,6 +176,45 @@ try {
   }
 } catch (e) {
   console.warn('⚠️ Supabase client initialization failed:', e);
+}
+
+// ⭐ DB'den güncel fiyatı al (cache'li)
+async function getPlanPriceFromDB(planType: string, currency: string): Promise<number> {
+  const now = Date.now();
+
+  // Cache kontrolü
+  if (pricesCache && (now - pricesCache.timestamp) < PRICES_CACHE_TTL) {
+    return resolvePrice(pricesCache.data, planType, currency);
+  }
+
+  // DB'den oku — önce service role client, yoksa RPC dene
+  try {
+    const client = supabaseAdminClient || supabaseClient;
+    if (client) {
+      // system_settings tablosundan 'prices' key'ini oku
+      const { data, error } = await client
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'prices')
+        .single();
+
+      if (!error && data?.value) {
+        pricesCache = { data: data.value, timestamp: now };
+        console.log('💰 Prices loaded from DB:', JSON.stringify(data.value));
+        return resolvePrice(data.value, planType, currency);
+      }
+
+      if (error) {
+        console.warn('⚠️ system_settings query error:', error.message);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Failed to fetch prices from DB:', e);
+  }
+
+  // Fallback
+  console.warn('⚠️ Using fallback hardcoded prices');
+  return getFallbackPlanPrice(planType, currency);
 }
 
 // ⭐ Fetch with timeout
@@ -281,7 +352,8 @@ serve(async (req) => {
       });
     }
 
-    const finalAmount = getPlanPrice(planType, priceCurrency);
+    // ⭐ Fiyatı DB'den al (fallback hardcoded)
+    const finalAmount = await getPlanPriceFromDB(planType, priceCurrency);
     const payCurrencyFinal = payCurrency || 'BTC';
 
     if (!VALID_PAY_CURRENCIES.includes(payCurrencyFinal)) {

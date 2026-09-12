@@ -2,10 +2,9 @@
 // SETTINGS.JS - SADE VE ÇALIŞAN VERSİYON
 // ⭐ Avatar cache - sadece değiştiğinde render
 // ⭐ TEHLİKELİ BÖLGE AKTİF: deleteAllUserData + deactivateAccount
-//        - deleteAllUserData(): Tüm trade + backtest verilerini siler
-//        - deactivateAccount(): deactivate_own_account RPC ile hesabı kapatır
-//        - İkisi de özel confirm modal kullanır (native confirm değil)
-//        - Loading durumu, hata yakalama ve redirect'ler eklendi
+// ⭐ ÇAKIŞMA ÇÖZÜLDÜ: Ödeme fonksiyonları (upgradeToPremium, cancelPremium,
+//      createNowPaymentInvoice, selectPayMethod) artık sadece payment.js'te.
+//      Bu dosyada sadece fiyat verisi (getMonthlyPrice/getYearlyPrice) var.
 // ============================================================
 
 wwLog.log('🔧 settings.js yükleniyor...');
@@ -19,19 +18,16 @@ wwLog.log('🔧 settings.js yükleniyor...');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
   
-  // Body class'ını ayarla
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
   } else {
     document.body.classList.remove('light-theme');
   }
   
-  // Font size
   if (savedFontSize) {
     document.body.style.fontSize = savedFontSize + 'px';
   }
   
-  // Custom theme (sadece dark)
   if (savedTheme !== 'light' && customTheme) {
     try {
       var settings = JSON.parse(customTheme);
@@ -55,17 +51,14 @@ wwLog.log('🔧 settings.js yükleniyor...');
 // ============================================================
 
 (function() {
-  // Storage değişikliklerini dinle
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
       var isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
       
-      // Checkbox'ı güncelle
       var cb = document.getElementById('theme-toggle');
       if (cb) cb.checked = isLight;
       
-      // Icon'u güncelle
       var icon = document.getElementById('theme-icon');
       var label = document.getElementById('theme-label');
       var desc = document.getElementById('theme-desc');
@@ -80,7 +73,6 @@ wwLog.log('🔧 settings.js yükleniyor...');
         if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
       }
       
-      // Custom theme uygula (dark ise)
       if (!isLight) {
         var ct = localStorage.getItem('ww_custom_theme');
         if (ct) {
@@ -101,7 +93,6 @@ wwLog.log('🔧 settings.js yükleniyor...');
     }
   });
   
-  // ThemeChanged event
   document.addEventListener('themeChanged', function(e) {
     if (e.detail && e.detail.settings) {
       var isLight = document.body.classList.contains('light-theme');
@@ -124,7 +115,7 @@ wwLog.log('🔧 settings.js yükleniyor...');
 })();
 
 // ============================================================
-// ⭐ TOGGLE THEME - HTML'den çağrılır
+// ⭐ TOGGLE THEME
 // ============================================================
 
 window.toggleTheme = function() {
@@ -133,11 +124,9 @@ window.toggleTheme = function() {
   
   var isLight = cb.checked;
   
-  // Body class'ını değiştir
   document.body.classList.toggle('light-theme', isLight);
   localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
   
-  // Icon ve etiketleri güncelle
   var icon = document.getElementById('theme-icon');
   var label = document.getElementById('theme-label');
   var desc = document.getElementById('theme-desc');
@@ -152,7 +141,6 @@ window.toggleTheme = function() {
     if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
   }
   
-  // Custom theme uygula (dark ise)
   if (!isLight) {
     var customTheme = localStorage.getItem('ww_custom_theme');
     if (customTheme) {
@@ -170,14 +158,12 @@ window.toggleTheme = function() {
       } catch(e) {}
     }
   } else {
-    // Light tema - font size'ı koru
     var savedFontSize = localStorage.getItem('ww_font_size');
     if (savedFontSize) {
       document.body.style.fontSize = savedFontSize + 'px';
     }
   }
   
-  // Event fırlat
   try {
     window.dispatchEvent(new CustomEvent('themeChanged', { 
       detail: { settings: { isLight: isLight } } 
@@ -188,7 +174,7 @@ window.toggleTheme = function() {
 };
 
 // ============================================================
-// ⭐ LUCIDE SVG ICON HELPER - GÜVENLİ
+// ⭐ LUCIDE SVG ICON HELPER
 // ============================================================
 function getLucideIcon(name, size) {
   size = size || 16;
@@ -252,15 +238,15 @@ if (!window.SETTINGS_STATE) {
 // PREMIUM FEATURES
 // ============================================================
 const PREMIUM_FEATURES = [
-  { iconName: 'bar-chart-3', text: 'Premium Dashboard' },
-  { iconName: 'refresh-cw', text: 'Sürükle-Bırak Paneller' },
-  { iconName: 'trending-up', text: 'Gelişmiş Grafikler' },
-  { iconName: 'palette', text: 'Tema Özelleştirme' },
-  { iconName: 'file-text', text: 'Detaylı PDF Rapor' },
-  { iconName: 'newspaper', text: 'Premium Haberler' },
-  { iconName: 'bell', text: 'Gelişmiş Over Trade Uyarısı' },
-  { iconName: 'gem', text: 'Öncelikli Destek' },
-  { iconName: 'rocket', text: 'Reklamsız Deneyim' }
+  { iconName: 'bar-chart-3', key: 'premium_features.dashboard' },
+  { iconName: 'refresh-cw', key: 'premium_features.drag_drop' },
+  { iconName: 'trending-up', key: 'premium_features.advanced_charts' },
+  { iconName: 'palette', key: 'premium_features.theme_customization' },
+  { iconName: 'file-text', key: 'premium_features.detailed_pdf' },
+  { iconName: 'newspaper', key: 'premium_features.news' },
+  { iconName: 'bell', key: 'premium_features.overtrade' },
+  { iconName: 'gem', key: 'premium_features.priority_support' },
+  { iconName: 'rocket', key: 'premium_features.no_ads' }
 ];
 
 // ============================================================
@@ -361,6 +347,10 @@ async function loadPanelContent(panelId, url) {
         setTimeout(function() {
           loadAvatar();
         }, 100);
+      }
+      
+      if (window.i18n && typeof window.i18n.apply === 'function') {
+        try { window.i18n.apply(); } catch(e) {}
       }
       
       return true;
@@ -493,7 +483,11 @@ window.checkStrength = function(val) {
   if (/[^A-Za-z0-9]/.test(val)) score++;
   
   var cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
-  var labels = { weak: 'Zayıf', medium: 'Orta', strong: 'Güçlü' };
+  var labels = {
+    weak: t('settings.pw_strength_weak') || 'Zayıf',
+    medium: t('settings.pw_strength_medium') || 'Orta',
+    strong: t('settings.pw_strength_strong') || 'Güçlü'
+  };
   var colors = { weak: 'var(--red)', medium: '#facc15', strong: 'var(--green)' };
   
   for (var i = 0; i < Math.min(score, 4); i++) {
@@ -520,7 +514,7 @@ window.togglePassword = function(inputId, btn) {
 };
 
 // ============================================================
-// ⭐ FİYAT FONKSİYONLARI
+// ⭐ FİYAT FONKSİYONLARI (SAF VERİ - payment.js kullanır)
 // ============================================================
 window.getMonthlyPrice = function() {
   try {
@@ -665,7 +659,6 @@ async function loadAvatar() {
   }
 }
 
-// ⭐ updateAvatarElements - Avatar değiştiğinde cache'i SIFIRLA
 function updateAvatarElements(url) {
   var user = window.SETTINGS_STATE.currentUser;
   var initial = '?';
@@ -677,11 +670,9 @@ function updateAvatarElements(url) {
     }
   }
   
-  // ⭐ Avatar değiştiğinde cache'i SIFIRLA
   sessionStorage.removeItem('ww_avatar_url');
   sessionStorage.removeItem('ww_avatar_time');
   
-  // ⭐ Navbar'daki cachedAvatarUrl'yi de sıfırla (global)
   if (typeof cachedAvatarUrl !== 'undefined') {
     cachedAvatarUrl = null;
   }
@@ -837,181 +828,6 @@ async function loadProfileData() {
 }
 
 // ============================================================
-// ⭐ NOW PAYMENT - EDGE FUNCTION
-// ============================================================
-async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency) {
-  currency = currency || 'USD';
-  payCurrency = payCurrency || 'BTC';
-  
-  try {
-    var sb = getSb();
-    if (!sb) {
-      showMsg('Supabase bağlantısı yok!', 'error');
-      return null;
-    }
-    
-    var sessionData = await sb.auth.getSession();
-    var session = sessionData && sessionData.data ? sessionData.data.session : null;
-    if (!session) {
-      showMsg('Oturumunuz sona ermiş, lütfen tekrar giriş yapın.', 'error');
-      return null;
-    }
-
-    wwLog.log('📤 createNowPaymentInvoice çağrıldı:', { userId: userId, planType: planType, amount: amount, currency: currency, payCurrency: payCurrency });
-
-    var edgeFunctionUrl = (window.WW_CONFIG && window.WW_CONFIG.EDGE_FUNCTION_URL) ? 
-      window.WW_CONFIG.EDGE_FUNCTION_URL : 
-      'https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/create-payment';
-
-    var response = await fetch(edgeFunctionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + session.access_token
-      },
-      body: JSON.stringify({
-        userId: userId,
-        planType: planType,
-        amount: amount,
-        currency: currency,
-        payCurrency: payCurrency,
-        successUrl: window.location.origin + '/dashboard.html',
-        cancelUrl: window.location.origin + '/settings.html'
-      })
-    });
-
-    var data = await response.json();
-
-    if (!response.ok) {
-      console.error('❌ create-payment API hatası:', response.status, data);
-      throw new Error(data.error || 'Ödeme başlatılamadı');
-    }
-
-    wwLog.log('✅ create-payment başarılı:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ createNowPaymentInvoice hatası:', error);
-    showMsg('Ödeme başlatılamadı: ' + error.message, 'error');
-    return null;
-  }
-}
-
-// ============================================================
-// ⭐ PREMIUM SATIN ALMA
-// ============================================================
-window.upgradeToPremium = async function(planType, amount, currency, payMethod) {
-  currency = currency || 'USD';
-  
-  try {
-    var user = await getCurrentUser();
-    if (!user) {
-      showMsg('Lütfen önce giriş yapın.', 'error');
-      return null;
-    }
-    
-    var method = payMethod || window.SETTINGS_STATE.payMethod || 'BTC';
-    showMsg('💳 ' + method + ' ile ödeme sayfasına yönlendiriliyorsunuz...', 'info');
-    
-    var result = await createNowPaymentInvoice(
-      user.id,
-      planType,
-      amount,
-      currency,
-      method
-    );
-    
-    if (result && result.invoiceUrl) {
-      window.open(result.invoiceUrl, '_blank');
-      showMsg('💰 Ödeme sayfası açıldı. Lütfen işlemi tamamlayın.', 'success');
-      return result;
-    } else {
-      showMsg('Ödeme linki oluşturulamadı. Lütfen tekrar deneyin.', 'error');
-      return null;
-    }
-  } catch (error) {
-    console.error('upgradeToPremium hatası:', error);
-    showMsg('Ödeme başlatılamadı: ' + error.message, 'error');
-    return null;
-  }
-};
-
-// ============================================================
-// ⭐ CANCEL PREMIUM
-// ============================================================
-window.cancelPremium = async function() {
-  wwLog.log('💎 Abonelik iptal ediliyor...');
-  
-  try {
-    var sb = getSb();
-    if (!sb) {
-      showMsg('Supabase bağlantısı yok!', 'error');
-      return false;
-    }
-    
-    var sessionData = await sb.auth.getSession();
-    var session = sessionData && sessionData.data ? sessionData.data.session : null;
-    if (!session) {
-      showMsg('Lütfen önce giriş yapın.', 'error');
-      return false;
-    }
-    
-    var userId = session.user.id;
-    wwLog.log('👤 Kullanıcı ID:', userId);
-    
-    var profileResult = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', userId).single();
-    
-    if (profileResult.error) {
-      console.error('❌ Profil sorgusu hatası:', profileResult.error);
-      showMsg('Profil bilgileri alınamadı.', 'error');
-      return false;
-    }
-    
-    var profile = profileResult.data;
-    wwLog.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
-    
-    if (!profile || profile.plan !== 'premium') {
-      showMsg('Zaten premium aboneliğiniz yok.', 'info');
-      return true;
-    }
-    
-    var expiryDate = profile.plan_expires_at ? 
-      new Date(profile.plan_expires_at).toLocaleDateString('tr-TR', { 
-        day: '2-digit', 
-        month: 'long', 
-        year: 'numeric' 
-      }) : 'belirsiz';
-    
-    var confirmTitle = t('settings.cancel_premium_title') || '⚠️ Premium Aboneliğini İptal Et';
-    var confirmMessage = t('settings.cancel_premium_message') || 'Premium aboneliğinizi iptal etmek istediğinize emin misiniz?';
-    var confirmWarning = t('settings.cancel_premium_warning', { date: expiryDate }) || '📅 Bitiş tarihi: ' + expiryDate + '\n\nBu işlem geri alınamaz!';
-    
-    var confirmed = await new Promise(function(resolve) {
-      showConfirmModal(
-        confirmTitle,
-        confirmMessage,
-        confirmWarning,
-        function() { resolve(true); },
-        function() { resolve(false); }
-      );
-    });
-    
-    if (!confirmed) {
-      wwLog.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
-      return false;
-    }
-    
-    wwLog.log('ℹ️ Otomatik yenileme yok; plan değişikliği yapılmadı.');
-    showMsg('Otomatik yenileme yok. Premium erişiminiz ' + expiryDate + ' tarihine kadar devam eder.', 'info');
-    return true;
-    
-  } catch (error) {
-    console.error('❌ Abonelik iptal hatası:', error);
-    showMsg('Abonelik iptal edilemedi: ' + error.message, 'error');
-    return false;
-  }
-};
-
-// ============================================================
 // ⭐ CONFIRM MODAL
 // ============================================================
 function showConfirmModal(title, message, warning, onConfirm, onCancel) {
@@ -1060,26 +876,8 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   });
 }
 
-// ============================================================
-// ⭐ SELECT PAY METHOD
-// ============================================================
-window.selectPayMethod = function(method) {
-  window.SETTINGS_STATE.payMethod = method;
-  var display = document.getElementById('selected-method-display');
-  if (display) display.textContent = sanitizeHTML(method);
-  
-  document.querySelectorAll('.pay-method-btn').forEach(function(btn) {
-    if (btn.dataset.method === method) {
-      btn.style.border = '2px solid var(--accent)';
-      btn.style.background = 'var(--accent)';
-      btn.style.color = '#fff';
-    } else {
-      btn.style.border = '2px solid var(--border)';
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--muted)';
-    }
-  });
-};
+// ⭐ payment.js'in çağırabilmesi için global'e de at
+window.showConfirmModal = showConfirmModal;
 
 // ============================================================
 // ⭐ PLAN PANEL
@@ -1091,14 +889,14 @@ async function renderPlan() {
   try {
     var user = await getCurrentUser();
     if (!user) {
-      container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">Lütfen giriş yapın.</div>';
+      container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">' + t('settings.plan_load_error') + '</div>';
       return;
     }
     
     window.SETTINGS_STATE.currentUser = user;
     
     var sb = getSb();
-    if (!sb) throw new Error('Supabase bağlantısı yok');
+    if (!sb) throw new Error('Supabase');
     
     var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
     var data = result.data;
@@ -1118,129 +916,142 @@ async function renderPlan() {
     var yearly = window.getYearlyPrice ? window.getYearlyPrice() : 79;
     var methods = window.getPaymentMethods ? window.getPaymentMethods() : ['BTC', 'LTC'];
     
-    var html = '';
+    var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+    var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
     
-    if (isPremium) {
-      var daysLeft = expiresAt ? Math.ceil((expiresAt - new Date()) / (1000*60*60*24)) : 0;
-      var pct = Math.max(0, Math.min(100, ((30 - daysLeft) / 30) * 100));
-      
-      var perks = PREMIUM_FEATURES.map(function(f) {
-        return '<div class="perk-item"><span class="perk-icon">' + getLucideIcon(f.iconName, 16) + '</span><span class="perk-text">' + sanitizeHTML(f.text) + '</span></div>';
-      }).join('');
-      
-      html = '<div class="plan-card premium">' +
-        '<div class="plan-header"><div class="plan-name">Premium <span class="premium-badge">AKTİF</span></div><span class="plan-status active"><span class="dot green"></span> Aktif</span></div>' +
-        '<div class="plan-desc">Tüm premium özelliklere erişiminiz var.</div>' +
-        '<div class="subscription-timer"><div class="timer-header"><span class="timer-label">⏳ Kalan Süre</span><span class="timer-value" id="timer-days">' + daysLeft + ' gün</span></div>' +
-        '<div class="timer-progress-wrap"><div class="timer-progress" style="width:' + pct + '%;"></div></div>' +
-        (expiresAt ? '<div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:\'DM Mono\',monospace;">' + expiresAt.toLocaleDateString('tr-TR', { day:'2-digit', month:'long', year:'numeric' }) + '</div>' : '') +
-        '</div><div class="plan-actions"><button class="btn-premium-outline" id="cancel-premium-btn">' + (t('settings.cancel_subscription') || 'Aboneliği İptal Et') + '</button></div></div>' +
-        '<div class="plan-perks-box"><div class="perks-title">✨ Premium Özellikler</div><div class="perks-grid">' + perks + '</div></div>';
-    } else {
-      var free = ['Sınırsız Trade', 'Sınırsız Strateji', 'Takvim Görünümü', 'Aylık Hedef', 'CSV İçe/Dışa Aktarım', 'PDF Rapor'];
-      var premium = ['Premium Dashboard', 'Tema Özelleştirme', 'Over Trade Uyarısı', 'Gelişmiş Grafikler', 'Çoklu Para Birimi', 'Reklamsız'];
-      
-      html = '<div class="plan-card">' +
-        '<div class="plan-header"><div class="plan-name">Ücretsiz</div><span class="plan-status inactive"><span class="dot gray"></span> Aktif</span></div>' +
-        '<div class="plan-desc">Premium\'a geçerek tüm özelliklerin kilidini aç.</div>' +
-        '<ul class="plan-features">' +
-        free.map(function(f) { return '<li class="included"><span class="indicator">' + getLucideIcon('check', 12) + '</span> ' + sanitizeHTML(f) + '</li>'; }).join('') +
-        premium.map(function(f) { return '<li class="excluded"><span class="indicator">–</span> ' + sanitizeHTML(f) + '</li>'; }).join('') +
-        '</ul>' +
-        '<div style="margin:0.75rem 0;padding:0.75rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">' +
-        '<label style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;display:block;margin-bottom:0.5rem;">' + getLucideIcon('credit-card', 14) + ' Ödeme Metodu</label>' +
-        '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;">' +
-        methods.map(function(m) {
-          return '<button class="pay-method-btn ' + (m === 'BTC' ? 'active' : '') + '" data-method="' + sanitizeHTML(m) + '" style="padding:0.4rem 1.2rem;border-radius:20px;border:2px solid ' + (m === 'BTC' ? 'var(--accent)' : 'var(--border)') + ';background:' + (m === 'BTC' ? 'var(--accent)' : 'transparent') + ';color:' + (m === 'BTC' ? '#fff' : 'var(--muted)') + ';cursor:pointer;font-family:\'DM Mono\',monospace;font-size:12px;font-weight:600;">' + sanitizeHTML(m) + '</button>';
-        }).join('') +
-        '</div></div>' +
-        '<div class="plan-actions"><button class="btn-premium" id="upgrade-monthly">' + getLucideIcon('credit-card', 14) + ' Aylık — $' + monthly + '/ay</button><button class="btn-premium secondary" id="upgrade-yearly">' + getLucideIcon('credit-card', 14) + ' Yıllık — $' + yearly + '/yıl</button></div>' +
-        '<div class="plan-payment-note">' + getLucideIcon('lock', 12) + ' Kredi kartı, kripto (' + methods.join(' / ') + ') ile güvenli ödeme</div></div>';
+    var tplId = isPremium ? 'tpl-plan-premium' : 'tpl-plan-free';
+    var tpl = document.getElementById(tplId);
+    if (!tpl) {
+      container.innerHTML = '<div style="padding:1rem;color:var(--red);">Template not found: ' + tplId + '</div>';
+      return;
     }
     
-    container.innerHTML = html;
+    var clone = tpl.content.cloneNode(true);
     
-    var monthlyBtn = safeEl('upgrade-monthly');
+    if (isPremium) {
+      var daysLeft = expiresAt ? Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+      var pct = Math.max(0, Math.min(100, ((30 - daysLeft) / 30) * 100));
+      
+      var daysEl = clone.querySelector('[data-bind="days-left"]');
+      if (daysEl) daysEl.textContent = daysLeft + ' ' + t('settings.plan_days');
+      
+      var progEl = clone.querySelector('[data-bind="progress"]');
+      if (progEl) progEl.style.width = pct + '%';
+      
+      var expEl = clone.querySelector('[data-bind="expiry-date"]');
+      if (expEl && expiresAt) expEl.textContent = expiresAt.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+      
+      var perksGrid = clone.querySelector('#plan-perks-grid');
+      if (perksGrid) {
+        PREMIUM_FEATURES.forEach(function(f) {
+          var item = document.createElement('div');
+          item.className = 'perk-item';
+          var iconSpan = document.createElement('span');
+          iconSpan.className = 'perk-icon';
+          iconSpan.innerHTML = getLucideIcon(f.iconName, 16);
+          var textSpan = document.createElement('span');
+          textSpan.className = 'perk-text';
+          textSpan.setAttribute('data-i18n', f.key);
+          item.appendChild(iconSpan);
+          item.appendChild(textSpan);
+          perksGrid.appendChild(item);
+        });
+      }
+    } else {
+      var methodsContainer = clone.querySelector('#plan-payment-methods');
+      if (methodsContainer) {
+        methods.forEach(function(m, idx) {
+          var btn = document.createElement('button');
+          btn.className = 'pay-method-btn' + (idx === 0 ? ' active' : '');
+          btn.setAttribute('data-method', m);
+          btn.textContent = m;
+          methodsContainer.appendChild(btn);
+        });
+        if (methods.length > 0) window.SETTINGS_STATE.payMethod = methods[0];
+      }
+      
+      var monthlyBtnSpan = clone.querySelector('#upgrade-monthly [data-i18n="settings.plan_monthly_btn"]');
+      if (monthlyBtnSpan) monthlyBtnSpan.setAttribute('data-i18n-params', JSON.stringify({ price: String(monthly) }));
+      
+      var yearlyBtnSpan = clone.querySelector('#upgrade-yearly [data-i18n="settings.plan_yearly_btn"]');
+      if (yearlyBtnSpan) yearlyBtnSpan.setAttribute('data-i18n-params', JSON.stringify({ price: String(yearly) }));
+      
+      var secureSpan = clone.querySelector('[data-i18n="settings.plan_secure_payment"]');
+      if (secureSpan) secureSpan.setAttribute('data-i18n-params', JSON.stringify({ methods: methods.join(' / ') }));
+    }
+    
+    clone.querySelectorAll('[data-icon]').forEach(function(el) {
+      el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(clone);
+    
+    if (window.i18n && typeof window.i18n.apply === 'function') {
+      try { window.i18n.apply(); } catch(e) {}
+    }
+    
+    var monthlyBtn = container.querySelector('#upgrade-monthly');
     if (monthlyBtn) {
       monthlyBtn.addEventListener('click', async function() {
         var payMethod = window.SETTINGS_STATE.payMethod || 'BTC';
         var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
-        
         if (window.upgradeToPremium) {
           await window.upgradeToPremium('monthly', price, 'USD', payMethod);
         } else {
-          showMsg('⚠️ Ödeme sistemi yüklenemedi. Lütfen sayfayı yenileyin.', 'error');
+          showMsg(t('payment.link_failed'), 'error');
         }
       });
     }
     
-    var yearlyBtn = safeEl('upgrade-yearly');
+    var yearlyBtn = container.querySelector('#upgrade-yearly');
     if (yearlyBtn) {
       yearlyBtn.addEventListener('click', async function() {
         var payMethod = window.SETTINGS_STATE.payMethod || 'BTC';
         var price = window.getYearlyPrice ? window.getYearlyPrice() : 79;
-        
         if (window.upgradeToPremium) {
           await window.upgradeToPremium('yearly', price, 'USD', payMethod);
         } else {
-          showMsg('⚠️ Ödeme sistemi yüklenemedi. Lütfen sayfayı yenileyin.', 'error');
+          showMsg(t('payment.link_failed'), 'error');
         }
       });
     }
     
-    var cancelBtn = safeEl('cancel-premium-btn');
+    var cancelBtn = container.querySelector('#cancel-premium-btn');
     if (cancelBtn) {
-      var newCancelBtn = cancelBtn.cloneNode(true);
-      cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-      
-      newCancelBtn.addEventListener('click', async function(e) {
+      cancelBtn.addEventListener('click', async function(e) {
         e.preventDefault();
         e.stopPropagation();
-        wwLog.log('🖱️ İptal butonuna tıklandı!');
-        
         if (window.cancelPremium) {
           var success = await window.cancelPremium();
           if (success) {
-            showMsg(t('settings.cancel_subscription_success') || 'Abonelik iptal edildi.', 'success');
-            if (typeof renderPlan === 'function') {
-              await renderPlan();
-            }
-            if (typeof updateBadge === 'function') {
-              await updateBadge();
-            }
+            showMsg(t('settings.cancel_subscription_success'), 'success');
+            await renderPlan();
+            if (typeof updateBadge === 'function') await updateBadge();
           }
-        } else {
-          showMsg('Abonelik iptal fonksiyonu bulunamadı.', 'error');
         }
       });
-      
-      wwLog.log('✅ İptal butonu bağlandı!');
     }
     
-    document.querySelectorAll('.pay-method-btn').forEach(function(btn) {
+    container.querySelectorAll('.pay-method-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        document.querySelectorAll('.pay-method-btn').forEach(function(b) {
-          b.style.border = '2px solid var(--border)';
-          b.style.background = 'transparent';
-          b.style.color = 'var(--muted)';
-        });
-        this.style.border = '2px solid var(--accent)';
-        this.style.background = 'var(--accent)';
-        this.style.color = '#fff';
-        window.SETTINGS_STATE.payMethod = this.dataset.method;
-        window.selectPayMethod(this.dataset.method);
+        container.querySelectorAll('.pay-method-btn').forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        window.SETTINGS_STATE.payMethod = this.getAttribute('data-method');
+        if (window.selectPayMethod) window.selectPayMethod(this.getAttribute('data-method'));
       });
     });
     
-    if (isPremium && expiresAt) {
-      startTimer(expiresAt);
-    }
+    if (isPremium && expiresAt) startTimer(expiresAt);
     
   } catch (e) {
     console.error('Plan hatası:', e);
-    container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">Plan yüklenemedi: ' + sanitizeHTML(e.message) + '</div>';
+    container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">' + sanitizeHTML(e.message) + '</div>';
   }
 }
+
+// ⭐ payment.js'in çağırabilmesi için global'e de at
+window.renderPlan = renderPlan;
 
 // ============================================================
 // ⭐ SÜRE SAYACI
@@ -1258,7 +1069,7 @@ function startTimer(expiresAt) {
       if (diff <= 0) {
         clearInterval(window.SETTINGS_STATE.timerInterval);
         var timerEl = document.getElementById('timer-days');
-        if (timerEl) timerEl.textContent = 'Süre Doldu';
+        if (timerEl) timerEl.textContent = t('settings.plan_expired');
         return;
       }
       
@@ -1268,16 +1079,14 @@ function startTimer(expiresAt) {
       var timerEl = document.getElementById('timer-days');
       if (timerEl) {
         if (days > 0) {
-          timerEl.textContent = days + ' gün ' + hours + ' saat';
+          timerEl.textContent = days + ' ' + t('settings.plan_days') + ' ' + hours + ' ' + t('settings.plan_hours');
         } else if (hours > 0) {
-          timerEl.textContent = hours + ' saat';
+          timerEl.textContent = hours + ' ' + t('settings.plan_hours');
         } else {
-          timerEl.textContent = '1 saatten az';
+          timerEl.textContent = t('settings.plan_less_than_hour');
         }
       }
-    } catch (e) {
-      // Sessizce geç
-    }
+    } catch (e) {}
   }, 10000);
 }
 
@@ -1302,15 +1111,15 @@ function initPassword() {
       if (ok) ok.style.display = 'none';
       
       if (!current.value || !next.value || !confirm.value) {
-        if (err) { err.textContent = 'Tüm alanları doldurun.'; err.style.display = 'block'; }
+        if (err) { err.textContent = t('settings.password_fill_all'); err.style.display = 'block'; }
         return;
       }
       if (next.value.length < 6) {
-        if (err) { err.textContent = 'Şifre en az 6 karakter olmalı.'; err.style.display = 'block'; }
+        if (err) { err.textContent = t('settings.password_min_chars'); err.style.display = 'block'; }
         return;
       }
       if (next.value !== confirm.value) {
-        if (err) { err.textContent = 'Şifreler eşleşmiyor.'; err.style.display = 'block'; }
+        if (err) { err.textContent = t('settings.password_mismatch'); err.style.display = 'block'; }
         return;
       }
       
@@ -1321,7 +1130,7 @@ function initPassword() {
       }
       
       btn.disabled = true;
-      btn.textContent = 'Güncelleniyor...';
+      btn.textContent = t('settings.updating');
       
       var user = window.SETTINGS_STATE.currentUser;
       var signResult = await sb.auth.signInWithPassword({
@@ -1330,9 +1139,9 @@ function initPassword() {
       });
       
       if (signResult.error) {
-        if (err) { err.textContent = 'Mevcut şifre hatalı.'; err.style.display = 'block'; }
+        if (err) { err.textContent = t('settings.password_wrong_current'); err.style.display = 'block'; }
         btn.disabled = false;
-        btn.textContent = 'Şifreyi Güncelle →';
+        btn.textContent = t('settings.update_password_btn');
         return;
       }
       
@@ -1340,7 +1149,7 @@ function initPassword() {
       if (updateResult.error) {
         if (err) { err.textContent = sanitizeHTML(updateResult.error.message); err.style.display = 'block'; }
       } else {
-        if (ok) { ok.textContent = 'Şifre başarıyla güncellendi!'; ok.style.display = 'block'; }
+        if (ok) { ok.textContent = t('settings.password_updated'); ok.style.display = 'block'; }
         current.value = '';
         next.value = '';
         confirm.value = '';
@@ -1348,7 +1157,7 @@ function initPassword() {
       }
       
       btn.disabled = false;
-      btn.textContent = 'Şifreyi Güncelle →';
+      btn.textContent = t('settings.update_password_btn');
     });
   }
 }
@@ -1370,9 +1179,6 @@ function initDanger() {
   }
 }
 
-// ============================================================
-// ⭐ TÜM VERİLERİ SİL
-// ============================================================
 async function deleteAllUserData() {
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
@@ -1382,9 +1188,9 @@ async function deleteAllUserData() {
   
   var confirmed = await new Promise(function(resolve) {
     showConfirmModal(
-      '🗑️ Tüm İşlem Verilerini Sil',
-      'Kaydettiğin tüm trade verileri kalıcı olarak silinecek. Bu işlem geri alınamaz.',
-      '⚠️ Silinecek: Tüm trade kayıtları + backtest verileri. Stratejiler korunur.',
+      '🗑️ ' + t('settings.delete_confirm_title'),
+      t('settings.delete_confirm_message'),
+      '⚠️ ' + t('settings.delete_confirm_warning'),
       function() { resolve(true); },
       function() { resolve(false); }
     );
@@ -1396,19 +1202,17 @@ async function deleteAllUserData() {
   var originalText = btn ? btn.textContent : '';
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Siliniyor...';
+    btn.textContent = t('settings.deleting');
   }
   
   try {
     var sb = getSb();
     if (!sb) throw new Error('Supabase bağlantısı yok');
     
-    // 1. Trade'leri sil
     wwLog.log('🗑️ Trade verileri siliniyor...');
     var tradesResult = await sb.from('trades').delete().eq('user_id', user.id);
     if (tradesResult.error) throw tradesResult.error;
     
-    // 2. Backtest trade'leri sil (tablo yoksa sessizce geç)
     wwLog.log('🗑️ Backtest verileri siliniyor...');
     try {
       var backtestResult = await sb.from('backtest_trades').delete().eq('user_id', user.id);
@@ -1420,16 +1224,15 @@ async function deleteAllUserData() {
     }
     
     wwLog.log('✅ Veri silme tamamlandı');
-    showMsg('✅ Tüm trade verileri başarıyla silindi!', 'success');
+    showMsg('✅ ' + t('settings.delete_success'), 'success');
     
-    // 1.5 saniye sonra sayfa yenile
     setTimeout(function() {
       window.location.reload();
     }, 1500);
     
   } catch (e) {
     console.error('❌ Veri silme hatası:', e);
-    showMsg('❌ Silme hatası: ' + (e.message || 'Bilinmeyen hata'), 'error');
+    showMsg('❌ ' + t('settings.delete_error') + (e.message || 'Unknown'), 'error');
     if (btn) {
       btn.disabled = false;
       btn.textContent = originalText;
@@ -1437,9 +1240,6 @@ async function deleteAllUserData() {
   }
 }
 
-// ============================================================
-// ⭐ HESABI DEVRE DIŞI BIRAK
-// ============================================================
 async function deactivateAccount() {
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
@@ -1449,9 +1249,9 @@ async function deactivateAccount() {
   
   var confirmed = await new Promise(function(resolve) {
     showConfirmModal(
-      '⚠️ Hesabı Devre Dışı Bırak',
-      'Hesabın devre dışı bırakılacak ve bir daha giriş yapamayacaksın. Verilerin sistemde saklı kalır.',
-      '⚠️ Bu işlem geri alınamaz. Hesabını tekrar aktifleştirmek için destek ekibiyle iletişime geçmen gerekecek.',
+      '⚠️ ' + t('settings.deactivate_confirm_title'),
+      t('settings.deactivate_confirm_message'),
+      '⚠️ ' + t('settings.deactivate_confirm_warning'),
       function() { resolve(true); },
       function() { resolve(false); }
     );
@@ -1463,23 +1263,21 @@ async function deactivateAccount() {
   var originalText = btn ? btn.textContent : '';
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Devre dışı bırakılıyor...';
+    btn.textContent = t('settings.deactivating');
   }
   
   try {
     var sb = getSb();
     if (!sb) throw new Error('Supabase bağlantısı yok');
     
-    // RPC çağrısı (güvenlik trigger'ını bypass eden SECURITY DEFINER fonksiyon)
     wwLog.log('🔒 Hesap devre dışı bırakılıyor...');
     var result = await sb.rpc('deactivate_own_account');
     
     if (result.error) throw result.error;
     
     wwLog.log('✅ Hesap devre dışı bırakıldı');
-    showMsg('✅ Hesabın devre dışı bırakıldı. Çıkış yapılıyor...', 'success');
+    showMsg('✅ ' + t('settings.deactivate_success'), 'success');
     
-    // 1.5 saniye sonra sign out ve login'e yönlendir
     setTimeout(async function() {
       try {
         await sb.auth.signOut();
@@ -1492,12 +1290,11 @@ async function deactivateAccount() {
     console.error('❌ Hesap devre dışı bırakma hatası:', e);
     var errMsg = e.message || 'Bilinmeyen hata';
     
-    // RPC henüz deploy edilmemişse özel mesaj
     if (errMsg.indexOf('function') !== -1 || errMsg.indexOf('does not exist') !== -1) {
-      errMsg = 'Sunucu güncellemesi gerekiyor. Lütfen yöneticiyle iletişime geç.';
+      errMsg = t('settings.deactivate_server_update');
     }
     
-    showMsg('❌ İşlem başarısız: ' + errMsg, 'error');
+    showMsg('❌ ' + t('settings.deactivate_error') + errMsg, 'error');
     if (btn) {
       btn.disabled = false;
       btn.textContent = originalText;
@@ -1531,67 +1328,89 @@ function initAppearance() {
   }
 }
 
-// ⭐ FALLBACK: Tema özelleştirme UI
 function loadThemeCustomizationFallback() {
   var container = document.getElementById('theme-customization-container');
   if (!container) return;
   
-  // ⭐ TEMA KONTROLÜ - LIGHT THEME'DE ÖZELLEŞTİRME KAPALI
   var isLight = document.body.classList.contains('light-theme');
   
   if (isLight) {
-    container.innerHTML = '<div class="ot-premium-locked" style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">' +
-      '<div class="lock-icon" style="font-size:3rem;margin-bottom:0.75rem;">☀️</div>' +
-      '<h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Açık Tema Aktif</h3>' +
-      '<p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1.25rem;line-height:1.6;">Renk özelleştirme sadece <strong>Koyu Tema</strong> aktifken çalışır. Font boyutunu ayarlamak için yukarıdaki kaydırıcıyı kullanabilirsiniz.</p>' +
-      '<button onclick="document.getElementById(\'theme-toggle\').click()" class="btn-premium-cta" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;padding:0.65rem 1.8rem;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);text-decoration:none;">🌙 Koyu Temaya Geç</button>' +
-      '</div>';
+    var tplLight = document.getElementById('tpl-theme-light-locked');
+    if (!tplLight) return;
+    var cloneLight = tplLight.content.cloneNode(true);
+    container.innerHTML = '';
+    container.appendChild(cloneLight);
+    if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
+    
+    var switchBtn = container.querySelector('#theme-switch-to-dark-btn');
+    if (switchBtn) {
+      switchBtn.addEventListener('click', function() {
+        var toggle = document.getElementById('theme-toggle');
+        if (toggle && !toggle.checked) toggle.click();
+      });
+    }
     return;
   }
   
-  // ⭐ Dark tema - Premium kontrolü yap
   getUserPlanSilent().then(function(result) {
     var isPremium = result.plan === 'premium';
     
-    if (isPremium) {
-      var settings = typeof getThemeSettings === 'function' ? getThemeSettings() : { 
-        backgroundColor: '#0a0a0f', 
-        surfaceColor: '#111118', 
-        borderColor: '#1e1e2e', 
-        textColor: '#e8e8f0', 
-        fontSize: 16 
-      };
-      
-      container.innerHTML = '<div style="display:flex;flex-direction:column;gap:1rem;padding:1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">' +
-        '<div style="display:flex;align-items:center;gap:0.75rem;color:var(--text);"><span style="font-size:1.5rem;">🎨</span><div><h4 style="font-family:\'Syne\',sans-serif;font-size:0.95rem;margin:0;">Tema Özelleştirme</h4><p style="font-size:12px;color:var(--muted);margin:0;">Renkleri ve font boyutunu kişiselleştir</p></div></div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">' +
-        '<div class="field" style="margin:0;"><label>Arka Plan</label><input type="color" id="custom-bg-color" value="' + sanitizeHTML(settings.backgroundColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
-        '<div class="field" style="margin:0;"><label>Kart Rengi</label><input type="color" id="custom-surface-color" value="' + sanitizeHTML(settings.surfaceColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
-        '<div class="field" style="margin:0;"><label>Kenarlık Rengi</label><input type="color" id="custom-border-color" value="' + sanitizeHTML(settings.borderColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
-        '<div class="field" style="margin:0;"><label>Metin Rengi</label><input type="color" id="custom-text-color" value="' + sanitizeHTML(settings.textColor) + '" style="width:100%;height:40px;border:none;cursor:pointer;background:transparent;padding:0;"></div>' +
-        '</div>' +
-        '<div class="field" style="margin:0;"><label>Font Boyutu: <span id="font-size-display">' + settings.fontSize + 'px</span></label><input type="range" id="custom-font-size" min="12" max="24" step="1" value="' + settings.fontSize + '" style="width:100%;accent-color:var(--accent);"></div>' +
-        '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;"><button class="btn btn-primary" id="save-custom-theme-btn" style="display:inline-flex;gap:0.5rem;align-items:center;">💾 Kaydet</button><button class="btn btn-ghost" id="reset-custom-theme-btn" style="display:inline-flex;gap:0.5rem;align-items:center;">↺ Sıfırla</button></div>' +
-        '<div id="theme-preview-box" style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);"><p style="color:var(--text);font-size:' + settings.fontSize + 'px;margin:0;"><strong>Önizleme:</strong> Bu metin seçtiğin renklerle görüntüleniyor.</p><div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;"><span style="background:var(--accent);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;">Accent</span><span style="background:var(--green);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;">Win</span><span style="background:var(--red);color:#fff;padding:2px 10px;border-radius:4px;font-size:12px;">Loss</span></div></div>' +
-        '</div>';
-      
-      setupThemeEventsFallback();
-      
-    } else {
-      container.innerHTML = '<div class="ot-premium-locked" style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);">' +
-        '<div class="lock-icon" style="font-size:3rem;margin-bottom:0.75rem;">🔒</div>' +
-        '<h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Tema Özelleştirme</h3>' +
-        '<p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1.25rem;line-height:1.6;">Renkleri, font boyutunu ve arka planı kişiselleştir. Bu özellik sadece Premium üyelere özeldir.</p>' +
-        '<a href="#panel-plan" class="btn-premium-cta" onclick="window.switchPanel(\'panel-plan\')" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;padding:0.65rem 1.8rem;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);text-decoration:none;">💎 Premium\'a Geç</a>' +
-        '</div>';
+    if (!isPremium) {
+      var tplLocked = document.getElementById('tpl-theme-locked');
+      if (!tplLocked) return;
+      container.innerHTML = '';
+      container.appendChild(tplLocked.content.cloneNode(true));
+      if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
+      return;
     }
+    
+    var tplForm = document.getElementById('tpl-theme-form');
+    if (!tplForm) return;
+    var cloneForm = tplForm.content.cloneNode(true);
+    
+    var settings = typeof getThemeSettings === 'function' ? getThemeSettings() : {
+      backgroundColor: '#0a0a0f', surfaceColor: '#111118', borderColor: '#1e1e2e', textColor: '#e8e8f0', fontSize: 16
+    };
+    
+    var bgInput = cloneForm.querySelector('#custom-bg-color');
+    var bgText = cloneForm.querySelector('#custom-bg-color-text');
+    var surfInput = cloneForm.querySelector('#custom-surface-color');
+    var surfText = cloneForm.querySelector('#custom-surface-color-text');
+    var borderInput = cloneForm.querySelector('#custom-border-color');
+    var borderText = cloneForm.querySelector('#custom-border-color-text');
+    var textInput = cloneForm.querySelector('#custom-text-color');
+    var textText = cloneForm.querySelector('#custom-text-color-text');
+    var fontSize = cloneForm.querySelector('#custom-font-size');
+    var fontSizeDisplay = cloneForm.querySelector('#font-size-display');
+    
+    if (bgInput) bgInput.value = settings.backgroundColor || '#0a0a0f';
+    if (bgText) bgText.value = settings.backgroundColor || '#0a0a0f';
+    if (surfInput) surfInput.value = settings.surfaceColor || '#111118';
+    if (surfText) surfText.value = settings.surfaceColor || '#111118';
+    if (borderInput) borderInput.value = settings.borderColor || '#1e1e2e';
+    if (borderText) borderText.value = settings.borderColor || '#1e1e2e';
+    if (textInput) textInput.value = settings.textColor || '#e8e8f0';
+    if (textText) textText.value = settings.textColor || '#e8e8f0';
+    if (fontSize) fontSize.value = settings.fontSize || 16;
+    if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
+    
+    cloneForm.querySelectorAll('[data-icon]').forEach(function(el) {
+      el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(cloneForm);
+    
+    if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
+    
+    setupThemeEventsFallback();
+    
   }).catch(function(err) {
     console.error('❌ Premium kontrol hatası:', err);
-    container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ Tema özelleştirme yüklenirken hata oluştu.</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 Yenile</button></div>';
+    container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ ' + t('settings.theme_load_error') + '</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 ' + t('overtrade.retry') + '</button></div>';
   });
 }
 
-// ⭐ FALLBACK: Tema event'leri
 function setupThemeEventsFallback() {
   var bgColor = document.getElementById('custom-bg-color');
   var surfaceColor = document.getElementById('custom-surface-color');
@@ -1623,14 +1442,13 @@ function setupThemeEventsFallback() {
     var isLight = document.body.classList.contains('light-theme');
     
     if (isLight) {
-      // Light tema - sadece font size kaydedilir
       var fontOnly = { fontSize: parseInt(fontSize.value) };
       if (typeof saveThemeSettings === 'function') {
         saveThemeSettings(fontOnly);
       } else if (typeof window.saveThemeSettings === 'function') {
         window.saveThemeSettings(fontOnly);
       }
-      showMsg('✅ Font boyutu kaydedildi! (Renkler light tema ile sınırlıdır)', 'success');
+      showMsg('✅ ' + t('settings.font_updated_light'), 'success');
       return;
     }
     
@@ -1646,7 +1464,7 @@ function setupThemeEventsFallback() {
     } else if (typeof window.saveThemeSettings === 'function') {
       window.saveThemeSettings(settings);
     }
-    showMsg('✅ Tema başarıyla kaydedildi!', 'success');
+    showMsg('✅ ' + t('settings.theme_saved'), 'success');
   }
   
   function resetTheme() {
@@ -1668,7 +1486,7 @@ function setupThemeEventsFallback() {
     } else if (typeof window.saveThemeSettings === 'function') {
       window.saveThemeSettings(defaultSettings);
     }
-    showMsg('↺ Tema varsayılana döndürüldü.', 'success');
+    showMsg('↺ ' + t('settings.theme_reset_done'), 'success');
   }
   
   if (bgColor) bgColor.addEventListener('input', updatePreview);
@@ -1750,8 +1568,7 @@ function initLanguageSelector() {
               }
             }
           });
-          var langName = this.textContent.trim();
-          showMsg(langName + ' dili seçildi! ✅', 'success');
+          showMsg(t('settings.language_selected', { name: this.textContent.trim() }), 'success');
           wwLog.log('✅ Dil değişimi tamamlandı (' + lang + ')');
         } else {
           showMsg('Dil değiştirilemedi, sayfa yenileniyor...', 'info');
@@ -1805,7 +1622,7 @@ function initCurrencySelector() {
         el.textContent = currency;
       });
       
-      showMsg('Para birimi değiştirildi! ✅', 'success');
+      showMsg(t('settings.currency_changed_success'), 'success');
       
       setTimeout(function() { location.reload(); }, 800);
     });
@@ -1831,7 +1648,12 @@ function initOvertrade() {
     window.loadOvertradeSettingsUI('overtrade-settings-container');
   } else {
     console.error('❌ loadOvertradeSettingsUI fonksiyonu bulunamadı!');
-    container.innerHTML = '<div style="text-align:center;padding:2rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><div style="font-size:2.5rem;margin-bottom:0.75rem;">⚠️</div><h3 style="font-family:\'Syne\',sans-serif;font-size:1rem;color:var(--text);margin-bottom:0.5rem;">Sistem Hatası</h3><p style="color:var(--muted);font-size:13px;max-width:400px;margin:0 auto 1rem;">Over Trade sistemi yüklenemedi. Lütfen sayfayı yenileyin.</p><button onclick="location.reload()" class="btn btn-primary" style="display:inline-flex;">🔄 Yenile</button></div>';
+    var tplErr = document.getElementById('tpl-overtrade-error');
+    if (tplErr) {
+      container.innerHTML = '';
+      container.appendChild(tplErr.content.cloneNode(true));
+      if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
+    }
   }
 }
 
@@ -1861,6 +1683,9 @@ async function updateBadge() {
     }
   } catch (e) {}
 }
+
+// ⭐ payment.js'in çağırabilmesi için global'e de at
+window.updateBadge = updateBadge;
 
 // ============================================================
 // NAV EVENT LISTENER
@@ -2143,8 +1968,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     await checkAndActivatePremium();
     
-    // ⭐ TEMA BAŞLAT - ÖNEMLİ!
-    // Checkbox durumunu güncelle
     var cb = document.getElementById('theme-toggle');
     if (cb) {
       var savedTheme = localStorage.getItem('ww_theme');
@@ -2238,15 +2061,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-wwLog.log('✅ settings.js GÜNCELLENDİ ve yüklendi!');
+wwLog.log('✅ settings.js GÜNCELLENDİ ve yüklendi! (çakışma temizlendi)');
 
 // ============================================================
-// ⭐ GLOBAL EXPORT
+// ⭐ GLOBAL EXPORT (ödeme fonksiyonları payment.js'te)
 // ============================================================
 window.settings = {
-  upgradeToPremium: window.upgradeToPremium,
-  cancelPremium: window.cancelPremium,
-  selectPayMethod: window.selectPayMethod,
   getMonthlyPrice: window.getMonthlyPrice,
   getYearlyPrice: window.getYearlyPrice,
   getPaymentMethods: window.getPaymentMethods,

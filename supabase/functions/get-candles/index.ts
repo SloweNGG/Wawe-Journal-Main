@@ -8,7 +8,8 @@ const RATE_LIMIT_MAX = parseInt(Deno.env.get('RATE_LIMIT_MAX') || '30'); // daki
 const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
   'https://your-domain.com',
   'https://wawejournal.com',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'http://localhost:4321'
 ];
 
 // ⭐ Valid symbol patterns (güvenlik için)

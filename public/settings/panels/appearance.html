@@ -12,8 +12,7 @@
     </div>
   </div>
   <div class="s-card-body">
-    
-    <!-- ⭐ TEMA - Lucide Moon Icon -->
+
     <div class="theme-toggle-card">
       <div class="theme-toggle-row">
         <div class="theme-toggle-info">
@@ -34,7 +33,6 @@
       </div>
     </div>
 
-    <!-- ⭐ DİL - Lucide Globe Icon -->
     <div class="theme-toggle-card" style="margin-top: 1rem;">
       <div class="theme-toggle-row">
         <div class="theme-toggle-info">
@@ -58,7 +56,6 @@
       </div>
     </div>
 
-    <!-- ⭐ PARA BİRİMİ - Lucide Dollar Sign Icon -->
     <div class="theme-toggle-card" style="margin-top: 1rem;">
       <div class="theme-toggle-row">
         <div class="theme-toggle-info">
@@ -83,7 +80,6 @@
       </div>
     </div>
 
-    <!-- ⭐ TEMA ÖZELLEŞTİRME - Lucide Palette Icon -->
     <div class="theme-customization-section" id="theme-customization-section">
       <div class="section-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;">
@@ -96,13 +92,103 @@
         <span data-i18n="settings.theme_customization">Tema Özelleştirme</span>
         <span class="premium-badge">PREMIUM</span>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:1rem;">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:1rem;" data-i18n="settings.theme_customization_desc">
         Arka plan, kart, kenarlık ve metin renklerini kişiselleştirin. Font boyutunu ayarlayın.
       </p>
-      <div id="theme-customization-container">
-        <!-- JS ile doldurulacak -->
-      </div>
+      <div id="theme-customization-container"></div>
     </div>
 
   </div>
 </div>
+
+<template id="tpl-theme-locked">
+  <div class="ot-premium-locked">
+    <div class="lock-icon">🔒</div>
+    <h3 data-i18n="settings.theme">Tema Özelleştirme</h3>
+    <p data-i18n="settings.theme_customization_locked_desc">Renkleri, font boyutunu ve arka planı kişiselleştir. Bu özellik sadece Premium üyelere özeldir.</p>
+    <a href="#panel-plan" class="btn-premium-cta" onclick="window.switchPanel('panel-plan')" data-i18n="settings.go_premium">Premium'a Geç →</a>
+  </div>
+</template>
+
+<template id="tpl-theme-light-locked">
+  <div class="ot-premium-locked">
+    <div class="lock-icon">☀️</div>
+    <h3 data-i18n="settings.theme_light_active">Açık Tema Aktif</h3>
+    <p data-i18n="settings.theme_light_active_desc">Renk özelleştirme sadece Koyu Tema aktifken çalışır. Font boyutunu yine de ayarlayabilirsiniz.</p>
+    <button type="button" id="theme-switch-to-dark-btn" class="btn-premium-cta" data-i18n="settings.theme_switch_to_dark">Koyu Temaya Geç</button>
+  </div>
+</template>
+
+<template id="tpl-theme-form">
+  <div class="theme-form">
+    <div class="theme-notice" data-i18n-html="settings.theme_notice">⚠️ <strong>Not:</strong> Renk özelleştirme sadece <strong>Koyu Tema</strong> aktifken çalışır.</div>
+
+    <div class="color-grid">
+      <div class="color-field">
+        <label data-i18n="settings.theme_bg_color">Arka Plan Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-bg-color" class="color-input-picker">
+          <input type="text" id="custom-bg-color-text" class="color-input-text">
+        </div>
+      </div>
+
+      <div class="color-field">
+        <label data-i18n="settings.theme_surface_color">Kart Arka Plan Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-surface-color" class="color-input-picker">
+          <input type="text" id="custom-surface-color-text" class="color-input-text">
+        </div>
+      </div>
+
+      <div class="color-field">
+        <label data-i18n="settings.theme_border_color">Kenarlık Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-border-color" class="color-input-picker">
+          <input type="text" id="custom-border-color-text" class="color-input-text">
+        </div>
+      </div>
+
+      <div class="color-field">
+        <label data-i18n="settings.theme_text_color">Metin Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-text-color" class="color-input-picker">
+          <input type="text" id="custom-text-color-text" class="color-input-text">
+        </div>
+      </div>
+    </div>
+
+    <div class="font-size-field">
+      <label>
+        <span data-i18n="settings.theme_font_size">Font Boyutu</span>:
+        <span id="font-size-display">16px</span>
+      </label>
+      <input type="range" id="custom-font-size" min="12" max="24" step="1" value="16" class="font-size-slider">
+      <div class="font-size-hints">
+        <span>12px</span><span>18px</span><span>24px</span>
+      </div>
+    </div>
+
+    <div class="theme-actions">
+      <button class="btn btn-primary" id="save-custom-theme-btn">
+        <span data-icon="check"></span>
+        <span data-i18n="settings.theme_save">Temayı Kaydet</span>
+      </button>
+      <button class="btn btn-ghost" id="reset-custom-theme-btn">
+        <span data-icon="rotate-ccw"></span>
+        <span data-i18n="settings.theme_reset">Varsayılana Dön</span>
+      </button>
+    </div>
+
+    <div id="theme-preview-box" class="theme-preview-box">
+      <p class="preview-text">
+        <strong data-i18n="settings.theme_preview_label">Önizleme</strong>:
+        <span data-i18n="settings.theme_preview_desc">Bu metin seçtiğiniz renk ve font boyutu ile görüntüleniyor.</span>
+      </p>
+      <div class="preview-badges">
+        <span class="badge-accent">Accent</span>
+        <span class="badge-green">Win</span>
+        <span class="badge-red">Loss</span>
+      </div>
+    </div>
+  </div>
+</template>

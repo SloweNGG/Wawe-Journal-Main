@@ -6,11 +6,90 @@
       </svg>
     </div>
     <div>
-      <h2>Plan</h2>
-      <p>Abonelik durumunuz ve premium özellikler</p>
+      <h2 data-i18n="settings.plan_header_title">Plan</h2>
+      <p data-i18n="settings.plan_header_desc">Abonelik durumunuz ve premium özellikler</p>
     </div>
   </div>
-  <div class="s-card-body" id="plan-container">
-    <!-- JS ile doldurulacak -->
-  </div>
+  <div class="s-card-body" id="plan-container"></div>
 </div>
+
+<template id="tpl-plan-free">
+  <div class="plan-card">
+    <div class="plan-header">
+      <div class="plan-name" data-i18n="settings.plan_free_name">Ücretsiz</div>
+      <span class="plan-status inactive">
+        <span class="dot gray"></span>
+        <span data-i18n="settings.plan_active_label">Aktif</span>
+      </span>
+    </div>
+    <div class="plan-desc" data-i18n="settings.plan_free_desc">Premium'a geçerek tüm özelliklerin kilidini aç.</div>
+    <ul class="plan-features">
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f1">Sınırsız Trade</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f2">Sınırsız Strateji</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f3">Takvim Görünümü</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f4">Aylık Hedef</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f5">CSV İçe/Dışa Aktarım</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f6">PDF Rapor</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f1">Premium Dashboard</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f2">Tema Özelleştirme</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f3">Over Trade Uyarısı</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f4">Gelişmiş Grafikler</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f6">Reklamsız</span></li>
+    </ul>
+    <div class="plan-payment-method-block">
+      <label class="plan-payment-method-label">
+        <span data-icon="credit-card"></span>
+        <span data-i18n="settings.plan_payment_method">Ödeme Metodu</span>
+      </label>
+      <div class="plan-payment-methods" id="plan-payment-methods"></div>
+    </div>
+    <div class="plan-actions">
+      <button class="btn-premium" id="upgrade-monthly">
+        <span data-icon="credit-card"></span>
+        <span data-i18n="settings.plan_monthly_btn" data-i18n-params='{"price":"—"}'>Aylık</span>
+      </button>
+      <button class="btn-premium secondary" id="upgrade-yearly">
+        <span data-icon="credit-card"></span>
+        <span data-i18n="settings.plan_yearly_btn" data-i18n-params='{"price":"—"}'>Yıllık</span>
+      </button>
+    </div>
+    <div class="plan-payment-note">
+      <span data-icon="lock"></span>
+      <span data-i18n="settings.plan_secure_payment" data-i18n-params='{"methods":"BTC / LTC"}'>Güvenli ödeme</span>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-plan-premium">
+  <div class="plan-card premium">
+    <div class="plan-header">
+      <div class="plan-name">
+        Premium
+        <span class="premium-badge" data-i18n="settings.plan_premium_badge">AKTİF</span>
+      </div>
+      <span class="plan-status active">
+        <span class="dot green"></span>
+        <span data-i18n="settings.plan_active_label">Aktif</span>
+      </span>
+    </div>
+    <div class="plan-desc" data-i18n="settings.plan_premium_desc">Tüm premium özelliklere erişiminiz var.</div>
+    <div class="subscription-timer">
+      <div class="timer-header">
+        <span class="timer-label" data-i18n="settings.plan_time_remaining">Kalan Süre</span>
+        <span class="timer-value" data-bind="days-left">—</span>
+      </div>
+      <div class="timer-progress-wrap">
+        <div class="timer-progress" data-bind="progress" style="width:0%;"></div>
+      </div>
+      <div class="timer-expiry" data-bind="expiry-date"></div>
+    </div>
+    <div class="plan-actions">
+      <button class="btn-premium-outline" id="cancel-premium-btn" data-i18n="settings.plan_cancel_subscription">Aboneliği İptal Et</button>
+    </div>
+    <div class="plan-perks-box">
+      <div class="perks-title" data-i18n="settings.plan_premium_features">Premium Özellikler</div>
+      <div class="perks-grid" id="plan-perks-grid"></div>
+    </div>
+  </div>
+</template>

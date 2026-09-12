@@ -6,12 +6,81 @@
       </svg>
     </div>
     <div>
-      <h2>Over Trade Uyarıları</h2>
-      <p>Premium'a özel gelişmiş işlem uyarı sistemi</p>
+      <h2 data-i18n="overtrade.title">Over Trade Uyarıları</h2>
+      <p data-i18n="overtrade.desc">Premium'a özel gelişmiş işlem uyarı sistemi</p>
     </div>
     <span style="margin-left:auto;" class="ot-premium-badge"><span class="diamond">◆</span> PREMIUM</span>
   </div>
-  <div class="s-card-body" id="overtrade-settings-container">
-    <!-- JS ile dinamik olarak doldurulacak (Premium kontrolü ile) -->
-  </div>
+  <div class="s-card-body" id="overtrade-settings-container"></div>
 </div>
+
+<template id="tpl-overtrade-locked">
+  <div class="ot-premium-locked">
+    <div class="lock-icon">💎</div>
+    <h3 data-i18n="overtrade.title">Over Trade Uyarıları</h3>
+    <p data-i18n="overtrade.premium_required_desc">Bu özellik sadece Premium üyelere özeldir.</p>
+    <a href="settings.html#panel-plan" class="btn-premium-cta" data-i18n="overtrade.go_premium">Premium'a Geç →</a>
+  </div>
+</template>
+
+<template id="tpl-overtrade-premium">
+  <div class="ot-form">
+    <label class="ot-toggle-row">
+      <input type="checkbox" id="ot-enabled" class="ot-checkbox">
+      <span data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</span>
+    </label>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</label>
+      <div class="ot-input-row">
+        <input type="number" id="ot-daily-limit" min="1" max="100" class="ot-input">
+        <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+      </div>
+      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
+    </div>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</label>
+      <div class="ot-input-row">
+        <input type="number" id="ot-weekly-limit" min="1" max="500" class="ot-input">
+        <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+      </div>
+      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
+    </div>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</label>
+      <div class="ot-input-row">
+        <span class="ot-currency">$</span>
+        <input type="number" id="ot-loss-limit" min="1" max="999999" class="ot-input">
+      </div>
+      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
+    </div>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.warning_level_label">Uyarı Seviyesi</label>
+      <select id="ot-warning-level" class="ot-select">
+        <option value="info" data-i18n="overtrade.level_info">Bilgi</option>
+        <option value="warning" data-i18n="overtrade.level_warning">Uyarı</option>
+        <option value="danger" data-i18n="overtrade.level_danger">Tehlike</option>
+      </select>
+    </div>
+
+    <button id="ot-save-settings" class="btn-save-ot">
+      <span data-icon="check"></span>
+      <span data-i18n="overtrade.save_settings">Ayarları Kaydet</span>
+    </button>
+
+    <div class="ot-secondary-actions">
+      <button id="ot-clear-dismissed" class="btn-ot-ghost" data-i18n="overtrade.clear_dismissed_btn">Kapatılan Uyarıları Temizle</button>
+      <button id="ot-reset-defaults" class="btn-ot-ghost" data-i18n="overtrade.reset_defaults_btn">Varsayılana Dön</button>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-overtrade-error">
+  <div class="ot-error-box">
+    <p class="ot-error-text" data-i18n="overtrade.settings_error">Ayarlar yüklenirken bir hata oluştu.</p>
+    <button class="btn-ot-ghost" onclick="window.location.reload()" data-i18n="overtrade.retry">Yeniden Dene</button>
+  </div>
+</template>
