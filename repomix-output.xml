@@ -1028,402 +1028,6 @@ export function renderCumulativeChart(trades)
 export function renderCharts(trades)
 </file>
 
-<file path="public/settings/css/settings.css">
-.settings-wrap {
-⋮----
-.settings-sidebar {
-⋮----
-.sidebar-profile {
-.sidebar-profile:hover {
-⋮----
-.sidebar-avatar {
-.sidebar-avatar img {
-.sidebar-avatar .no-avatar {
-.sidebar-avatar:hover {
-⋮----
-.sidebar-username {
-.sidebar-email {
-⋮----
-.sidebar-nav {
-.sidebar-nav-item {
-.sidebar-nav-item:hover {
-.sidebar-nav-item.active {
-.sidebar-nav-item.danger { color: var(--red); }
-.sidebar-nav-item.danger:hover { background: rgba(239,68,68,0.08); }
-.sidebar-nav-divider {
-⋮----
-.settings-panels {
-⋮----
-.panel-glow.profile-glow {
-.panel-glow.password-glow {
-.panel-glow.appearance-glow {
-.panel-glow.danger-glow {
-.panel-glow.plan-glow {
-.panel-glow.overtrade-glow {
-⋮----
-body.light-theme .panel-glow.profile-glow {
-body.light-theme .panel-glow.password-glow {
-body.light-theme .panel-glow.appearance-glow {
-body.light-theme .panel-glow.danger-glow {
-body.light-theme .panel-glow.plan-glow {
-body.light-theme .panel-glow.overtrade-glow {
-⋮----
-.settings-panel {
-.settings-panel.active {
-⋮----
-.s-card {
-.s-card-header {
-.s-card-header-icon {
-.s-card-header-icon svg {
-.s-card-header h2 {
-.s-card-header p {
-.s-card-body {
-⋮----
-.ot-premium-badge {
-.ot-premium-badge .diamond {
-⋮----
-.ot-premium-banner {
-.ot-premium-banner .banner-icon {
-.ot-premium-banner .banner-text strong {
-.ot-premium-banner .banner-text p {
-⋮----
-.ot-field {
-.ot-field label {
-.ot-field input, .ot-field select {
-.ot-field input:focus, .ot-field select:focus {
-.ot-field .ot-hint {
-.ot-field-row {
-⋮----
-.btn-save-ot {
-.btn-save-ot:hover {
-.btn-save-ot:active {
-⋮----
-.ot-premium-locked {
-.ot-premium-locked .lock-icon {
-.ot-premium-locked h3 {
-.ot-premium-locked p {
-.ot-premium-locked .btn-premium-cta {
-.ot-premium-locked .btn-premium-cta:hover {
-⋮----
-.avatar-upload-section {
-.avatar-upload-title {
-.avatar-upload-container {
-.avatar-preview {
-.avatar-preview img {
-.avatar-preview .avatar-placeholder {
-.avatar-buttons {
-.btn-upload {
-.btn-upload:hover {
-.btn-remove-avatar {
-.btn-remove-avatar:hover {
-.upload-progress {
-.upload-progress .spinner-small {
-⋮----
-.info-row {
-.info-row:last-child { border-bottom: none; }
-.info-label {
-.info-value {
-.info-badge {
-⋮----
-.pw-field {
-.pw-field label {
-.pw-field input {
-.pw-field input:focus { border-color: var(--accent); }
-.pw-toggle {
-.pw-toggle:hover { color: var(--accent); }
-⋮----
-.pw-strength {
-.pw-strength-bar {
-.pw-strength-bar.weak { background: var(--red); }
-.pw-strength-bar.medium { background: #facc15; }
-.pw-strength-bar.strong { background: var(--green); }
-.pw-strength-label {
-⋮----
-.theme-toggle-card {
-.theme-toggle-row {
-.theme-toggle-info {
-.theme-toggle-icon {
-.theme-toggle-text h4 {
-.theme-toggle-text p {
-.toggle-switch {
-.toggle-switch input {
-.toggle-slider {
-.toggle-slider::before {
-.toggle-switch input:checked + .toggle-slider {
-.toggle-switch input:checked + .toggle-slider::before {
-⋮----
-.lang-selector-compact {
-.lang-compact-btn {
-.lang-compact-btn:hover {
-.lang-compact-btn.active {
-⋮----
-.currency-selector-compact {
-.currency-btn {
-.currency-btn:hover {
-.currency-btn.active {
-⋮----
-.theme-customization-section {
-.theme-customization-section .section-title {
-.theme-customization-section .section-title .premium-badge {
-⋮----
-.color-picker-row {
-.color-picker-row label {
-.color-picker-row input[type="color"] {
-.color-picker-row input[type="text"] {
-.color-picker-row input[type="text"]:focus {
-⋮----
-.font-size-control {
-.font-size-control input[type="range"] {
-.font-size-control .font-size-display {
-⋮----
-.theme-preview-box {
-.theme-preview-box p {
-.theme-preview-box .preview-badges {
-.theme-preview-box .preview-badges span {
-.btn-save-theme {
-.btn-save-theme:hover {
-.btn-reset-theme {
-.btn-reset-theme:hover {
-⋮----
-.msg-error, .msg-success {
-.msg-error {
-.msg-success {
-⋮----
-.s-card.danger-card { border-color: rgba(239,68,68,0.25); }
-.s-card.danger-card .s-card-header {
-.s-card.danger-card h2 { color: var(--red); }
-⋮----
-.danger-action-row {
-.danger-action-desc {
-.btn-outline-danger {
-.btn-outline-danger:hover {
-⋮----
-.settings-page-header {
-.settings-page-header-eyebrow {
-.settings-page-header h1 {
-.settings-page-header p {
-⋮----
-.settings-tabs-mobile {
-.settings-tabs-mobile::-webkit-scrollbar {
-.settings-tab-btn {
-.settings-tab-btn.active {
-.settings-tab-btn.danger.active {
-⋮----
-.plan-card {
-⋮----
-.plan-card.premium {
-⋮----
-.plan-card.premium::before {
-⋮----
-.plan-card.premium::after {
-⋮----
-.plan-card:hover {
-⋮----
-.plan-card .plan-header {
-⋮----
-.plan-card .plan-name {
-⋮----
-.plan-card .plan-name .premium-badge {
-⋮----
-.plan-card .plan-price-wrap {
-⋮----
-.plan-card .plan-price {
-.plan-card .plan-price .currency {
-.plan-card .plan-price .period {
-.plan-card .plan-price .discount-tag {
-⋮----
-.plan-card .plan-desc {
-⋮----
-.plan-card .plan-features {
-⋮----
-.plan-card .plan-features li {
-.plan-card .plan-features li.included {
-.plan-card .plan-features li .indicator {
-.plan-card .plan-features li.included .indicator {
-.plan-card .plan-features li.included:hover .indicator {
-.plan-card .plan-features li.excluded {
-.plan-card .plan-features li.excluded .indicator {
-.plan-card .plan-features li.premium-feature {
-.plan-card .plan-features li.premium-feature::after {
-.plan-card .plan-features li.premium-feature .indicator {
-⋮----
-.plan-card .plan-actions {
-.plan-card .plan-actions .btn-premium {
-.plan-card .plan-actions .btn-premium::before {
-.plan-card .plan-actions .btn-premium:hover::before {
-.plan-card .plan-actions .btn-premium:hover {
-.plan-card .plan-actions .btn-premium:active {
-.plan-card .plan-actions .btn-premium.secondary {
-.plan-card .plan-actions .btn-premium.secondary:hover {
-.plan-card .plan-actions .btn-premium-outline {
-.plan-card .plan-actions .btn-premium-outline:hover {
-⋮----
-.plan-card .plan-status {
-.plan-card .plan-status.active {
-.plan-card .plan-status.inactive {
-.plan-card .plan-status .dot {
-.plan-card .plan-status .dot.green {
-.plan-card .plan-status .dot.gray {
-⋮----
-.plan-expiry {
-.plan-expiry .expiry-icon {
-⋮----
-.plan-payment-note {
-.plan-payment-note .payment-icon {
-⋮----
-.plan-perks-box {
-.plan-perks-box:hover {
-.plan-perks-box .perks-title {
-.plan-perks-box .perks-title .perks-icon {
-.plan-perks-box .perks-grid {
-⋮----
-.plan-perks-box .perk-item {
-.plan-perks-box .perk-item:hover {
-.plan-perks-box .perk-item .perk-icon {
-.plan-perks-box .perk-item .perk-text {
-⋮----
-.subscription-timer {
-.subscription-timer .timer-header {
-.subscription-timer .timer-label {
-.subscription-timer .timer-value {
-.subscription-timer .timer-progress-wrap {
-.subscription-timer .timer-progress-wrap .timer-progress {
-⋮----
-.avatar-popup-overlay {
-.avatar-popup-overlay.active { display: flex; }
-.avatar-popup {
-⋮----
-.avatar-popup-close {
-.avatar-popup-close:hover {
-.avatar-popup-body {
-.avatar-popup-body .big-avatar {
-.avatar-popup-body .big-avatar img {
-.avatar-popup-body .big-avatar .big-placeholder {
-⋮----
-.nav-links {
-.nav-right {
-⋮----
-.panel-glow {
-⋮----
-.confirm-modal-footer {
-.confirm-modal-footer .btn-modal-cancel,
-⋮----
-.sidebar-nav-item,
-⋮----
-.lang-compact-btn,
-</file>
-
-<file path="public/settings/panels/appearance.html">
-<div class="s-card">
-  <div class="s-card-header">
-    <div class="s-card-header-icon">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="12" cy="12" r="5"/>
-        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-      </svg>
-    </div>
-    <div>
-      <h2 data-i18n="settings.theme">Görünüm</h2>
-      <p data-i18n="settings.theme_desc">Tema, dil, para birimi ve renk özelleştirme</p>
-    </div>
-  </div>
-  <div class="s-card-body">
-
-
-    <div class="theme-toggle-card">
-      <div class="theme-toggle-row">
-        <div class="theme-toggle-info">
-          <div class="theme-toggle-icon" id="theme-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-          </div>
-          <div class="theme-toggle-text">
-            <h4 id="theme-label" data-i18n="settings.dark_theme">Koyu Tema</h4>
-            <p id="theme-desc" data-i18n="settings.dark_theme_desc">Göz yormayan karanlık arayüz</p>
-          </div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
-
-
-    <div class="theme-toggle-card" style="margin-top: 1rem;">
-      <div class="theme-toggle-row">
-        <div class="theme-toggle-info">
-          <div class="theme-toggle-icon" id="lang-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="2" y1="12" x2="22" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-          </div>
-          <div class="theme-toggle-text">
-            <h4 id="lang-label" data-i18n="language.title">Dil Seçimi</h4>
-            <p id="lang-desc" data-i18n="language.select">Uygulama dilini değiştirin</p>
-          </div>
-        </div>
-        <div class="lang-selector-compact" id="settings-lang-selector">
-          <button class="lang-compact-btn" data-lang="tr" title="Türkçe">🇹🇷 TR</button>
-          <button class="lang-compact-btn" data-lang="en" title="English">🇬🇧 EN</button>
-          <button class="lang-compact-btn" data-lang="de" title="Deutsch">🇩🇪 DE</button>
-        </div>
-      </div>
-    </div>
-
-
-    <div class="theme-toggle-card" style="margin-top: 1rem;">
-      <div class="theme-toggle-row">
-        <div class="theme-toggle-info">
-          <div class="theme-toggle-icon" id="currency-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23"/>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-          </div>
-          <div class="theme-toggle-text">
-            <h4 id="currency-label" data-i18n="settings.currency">Para Birimi</h4>
-            <p id="currency-desc" data-i18n="settings.currency_desc">Varsayılan para birimini seç</p>
-          </div>
-        </div>
-        <div class="currency-selector-compact" id="settings-currency-selector">
-          <button class="currency-btn" data-currency="$" title="USD">$ USD</button>
-          <button class="currency-btn" data-currency="€" title="Euro">€ EUR</button>
-          <button class="currency-btn" data-currency="₺" title="Türk Lirası">₺ TRY</button>
-          <button class="currency-btn" data-currency="£" title="Sterlin">£ GBP</button>
-          <button class="currency-btn" data-currency="₿" title="Bitcoin">₿ BTC</button>
-        </div>
-      </div>
-    </div>
-
-
-    <div class="theme-customization-section" id="theme-customization-section">
-      <div class="section-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;">
-          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
-          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
-          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
-          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
-          <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a2 2 0 0 0 2-2c0-.52-.2-1-.53-1.37-.33-.36-.47-.82-.47-1.28 0-1.1.9-2 2-2h1.17c2.21 0 4-1.79 4-4 0-4.96-4.04-9-9-9z"/>
-        </svg>
-        <span data-i18n="settings.theme_customization">Tema Özelleştirme</span>
-        <span class="premium-badge">PREMIUM</span>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:1rem;">
-        Arka plan, kart, kenarlık ve metin renklerini kişiselleştirin. Font boyutunu ayarlayın.
-      </p>
-      <div id="theme-customization-container">
-
-      </div>
-    </div>
-
-  </div>
-</div>
-</file>
-
 <file path="public/settings/panels/danger-area.html">
 <div class="s-card danger-card">
   <div class="s-card-header">
@@ -1455,26 +1059,6 @@ body.light-theme .panel-glow.overtrade-glow {
       </div>
       <button class="btn-outline-danger" id="deactivate-account-btn" data-i18n="settings.deactivate">Hesabı Devre Dışı Bırak</button>
     </div>
-  </div>
-</div>
-</file>
-
-<file path="public/settings/panels/overtrade.html">
-<div class="s-card">
-  <div class="s-card-header">
-    <div class="s-card-header-icon">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-      </svg>
-    </div>
-    <div>
-      <h2>Over Trade Uyarıları</h2>
-      <p>Premium'a özel gelişmiş işlem uyarı sistemi</p>
-    </div>
-    <span style="margin-left:auto;" class="ot-premium-badge"><span class="diamond">◆</span> PREMIUM</span>
-  </div>
-  <div class="s-card-body" id="overtrade-settings-container">
-
   </div>
 </div>
 </file>
@@ -1534,25 +1118,6 @@ body.light-theme .panel-glow.overtrade-glow {
     <div class="msg-error" id="password-error"></div>
     <div class="msg-success" id="password-success"></div>
     <button class="btn btn-primary" id="change-password-btn" style="margin-top:.75rem; width:100%;" data-i18n="settings.update_password">Şifreyi Güncelle →</button>
-  </div>
-</div>
-</file>
-
-<file path="public/settings/panels/plan.html">
-<div class="s-card">
-  <div class="s-card-header">
-    <div class="s-card-header-icon">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-      </svg>
-    </div>
-    <div>
-      <h2>Plan</h2>
-      <p>Abonelik durumunuz ve premium özellikler</p>
-    </div>
-  </div>
-  <div class="s-card-body" id="plan-container">
-
   </div>
 </div>
 </file>
@@ -2785,54 +2350,8 @@ const {
 
 </file>
 
-<file path="supabase/.temp/cli-latest">
-v2.115.0
-</file>
-
 <file path="supabase/.temp/linked-project.json">
 {"ref":"odasapyhtdopbnlfhwde","name":"wawedevınc","organization_id":"oxilqjbznlfnfkxolrrk","organization_slug":"oxilqjbznlfnfkxolrrk"}
-</file>
-
-<file path="supabase/functions/create-payment/index.ts">
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-⋮----
-// ⭐ CORS - WILDCARD DESTEKLİ (TÜM Cloudflare Pages preview'ları kabul et)
-⋮----
-function getUserIdFromToken(req: Request): string | null
-⋮----
-function getClientId(req: Request): string
-⋮----
-function checkRateLimit(clientId: string):
-⋮----
-function getCorsHeaders(origin: string | null)
-⋮----
-function validatePlanType(planType: string): boolean
-⋮----
-function validateCurrency(currency: string): boolean
-⋮----
-function getPlanPrice(planType: string, currency: string): number
-⋮----
-async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response>
-⋮----
-// ⭐ CORS - OPTIONS
-</file>
-
-<file path="supabase/functions/get-candles/index.ts">
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-⋮----
-function getClientId(req: Request): string
-⋮----
-function checkRateLimit(clientId: string):
-⋮----
-function getCorsHeaders(origin: string | null)
-⋮----
-function validateSymbol(symbol: string): boolean
-⋮----
-function validateInterval(interval: string): boolean
-⋮----
-async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<Response>
-⋮----
-// ⭐ CORS - OPTIONS
 </file>
 
 <file path="supabase/functions/nowpayment-webhook/index.ts">
@@ -3903,20 +3422,6 @@ body.light-theme .quick-bulk-log div {
 .quick-add-instrument-grid { grid-template-columns: repeat(2, 1fr); }
 </file>
 
-<file path="public/interface/quick-add/js/quick-modal-i18n.js">
-class QuickI18n
-⋮----
-t(key, params =
-⋮----
-setLanguage(lang, silent = false)
-⋮----
-onChange(callback)
-⋮----
-getCurrentLanguage()
-⋮----
-apply()
-</file>
-
 <file path="public/interface/strategies/css/strategies.css">
 .strategies-main {
 ⋮----
@@ -4316,58 +3821,717 @@ body.light-theme .skeleton-row .skeleton-cell::after {
 .pagination-controls .page-btn.arrow {
 </file>
 
-<file path="public/src/features/overtrade.js">
-export function getOvertradeSettings()
+<file path="public/settings/css/settings.css">
+.settings-wrap {
 ⋮----
-export function saveOvertradeSettings(settings)
+.settings-sidebar {
 ⋮----
-export function getDismissedOvertradeWarnings()
+.sidebar-profile {
+.sidebar-profile:hover {
 ⋮----
-export function setDismissedOvertradeWarnings(dismissedArray)
+.sidebar-avatar {
+.sidebar-avatar img {
+.sidebar-avatar .no-avatar {
+.sidebar-avatar:hover {
 ⋮----
-export function dismissOvertradeWarning(warningId)
+.sidebar-username {
+.sidebar-email {
 ⋮----
-export function isOvertradeWarningDismissed(warningId)
+.sidebar-nav {
+.sidebar-nav-item {
+.sidebar-nav-item:hover {
+.sidebar-nav-item.active {
+.sidebar-nav-item.danger { color: var(--red); }
+.sidebar-nav-item.danger:hover { background: rgba(239,68,68,0.08); }
+.sidebar-nav-divider {
 ⋮----
-export function clearDismissedOvertradeWarnings()
+.settings-panels {
 ⋮----
-export function checkOvertrade(trades)
+.panel-glow.profile-glow {
+.panel-glow.password-glow {
+.panel-glow.appearance-glow {
+.panel-glow.danger-glow {
+.panel-glow.plan-glow {
+.panel-glow.overtrade-glow {
 ⋮----
-export function renderOvertradeWarning(warnings, containerId)
+body.light-theme .panel-glow.profile-glow {
+body.light-theme .panel-glow.password-glow {
+body.light-theme .panel-glow.appearance-glow {
+body.light-theme .panel-glow.danger-glow {
+body.light-theme .panel-glow.plan-glow {
+body.light-theme .panel-glow.overtrade-glow {
 ⋮----
-export async function checkAndRenderOvertrade(containerId)
+.settings-panel {
+.settings-panel.active {
 ⋮----
-export async function loadOvertradeSettingsUI(containerId)
+.s-card {
+.s-card-header {
+.s-card-header-icon {
+.s-card-header-icon svg {
+.s-card-header h2 {
+.s-card-header p {
+.s-card-body {
 ⋮----
-export async function updateOvertradeBell()
+.ot-premium-badge {
+.ot-premium-badge .diamond {
+⋮----
+.ot-premium-banner {
+.ot-premium-banner .banner-icon {
+.ot-premium-banner .banner-text strong {
+.ot-premium-banner .banner-text p {
+⋮----
+.ot-field {
+.ot-field label {
+.ot-field input, .ot-field select {
+.ot-field input:focus, .ot-field select:focus {
+.ot-field .ot-hint {
+.ot-field-row {
+⋮----
+.btn-save-ot {
+.btn-save-ot:hover {
+.btn-save-ot:active {
+⋮----
+.ot-premium-locked {
+.ot-premium-locked .lock-icon {
+.ot-premium-locked h3 {
+.ot-premium-locked p {
+.ot-premium-locked .btn-premium-cta {
+.ot-premium-locked .btn-premium-cta:hover {
+⋮----
+.avatar-upload-section {
+.avatar-upload-title {
+.avatar-upload-container {
+.avatar-preview {
+.avatar-preview img {
+.avatar-preview .avatar-placeholder {
+.avatar-buttons {
+.btn-upload {
+.btn-upload:hover {
+.btn-remove-avatar {
+.btn-remove-avatar:hover {
+.upload-progress {
+.upload-progress .spinner-small {
+⋮----
+.info-row {
+.info-row:last-child { border-bottom: none; }
+.info-label {
+.info-value {
+.info-badge {
+⋮----
+.pw-field {
+.pw-field label {
+.pw-field input {
+.pw-field input:focus { border-color: var(--accent); }
+.pw-toggle {
+.pw-toggle:hover { color: var(--accent); }
+⋮----
+.pw-strength {
+.pw-strength-bar {
+.pw-strength-bar.weak { background: var(--red); }
+.pw-strength-bar.medium { background: #facc15; }
+.pw-strength-bar.strong { background: var(--green); }
+.pw-strength-label {
+⋮----
+.theme-toggle-card {
+.theme-toggle-row {
+.theme-toggle-info {
+.theme-toggle-icon {
+.theme-toggle-text h4 {
+.theme-toggle-text p {
+.toggle-switch {
+.toggle-switch input {
+.toggle-slider {
+.toggle-slider::before {
+.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked + .toggle-slider::before {
+⋮----
+.lang-selector-compact {
+.lang-compact-btn {
+.lang-compact-btn:hover {
+.lang-compact-btn.active {
+⋮----
+.currency-selector-compact {
+.currency-btn {
+.currency-btn:hover {
+.currency-btn.active {
+⋮----
+.theme-customization-section {
+.theme-customization-section .section-title {
+.theme-customization-section .section-title .premium-badge {
+⋮----
+.color-picker-row {
+.color-picker-row label {
+.color-picker-row input[type="color"] {
+.color-picker-row input[type="text"] {
+.color-picker-row input[type="text"]:focus {
+⋮----
+.font-size-control {
+.font-size-control input[type="range"] {
+.font-size-control .font-size-display {
+⋮----
+.theme-preview-box {
+.theme-preview-box p {
+.theme-preview-box .preview-badges {
+.theme-preview-box .preview-badges span {
+.btn-save-theme {
+.btn-save-theme:hover {
+.btn-reset-theme {
+.btn-reset-theme:hover {
+⋮----
+.msg-error, .msg-success {
+.msg-error {
+.msg-success {
+⋮----
+.s-card.danger-card { border-color: rgba(239,68,68,0.25); }
+.s-card.danger-card .s-card-header {
+.s-card.danger-card h2 { color: var(--red); }
+⋮----
+.danger-action-row {
+.danger-action-desc {
+.btn-outline-danger {
+.btn-outline-danger:hover {
+⋮----
+.settings-page-header {
+.settings-page-header-eyebrow {
+.settings-page-header h1 {
+.settings-page-header p {
+⋮----
+.settings-tabs-mobile {
+.settings-tabs-mobile::-webkit-scrollbar {
+.settings-tab-btn {
+.settings-tab-btn.active {
+.settings-tab-btn.danger.active {
+⋮----
+.plan-card {
+⋮----
+.plan-card.premium {
+⋮----
+.plan-card.premium::before {
+⋮----
+.plan-card.premium::after {
+⋮----
+.plan-card:hover {
+⋮----
+.plan-card .plan-header {
+⋮----
+.plan-card .plan-name {
+⋮----
+.plan-card .plan-name .premium-badge {
+⋮----
+.plan-card .plan-price-wrap {
+⋮----
+.plan-card .plan-price {
+.plan-card .plan-price .currency {
+.plan-card .plan-price .period {
+.plan-card .plan-price .discount-tag {
+⋮----
+.plan-card .plan-desc {
+⋮----
+.plan-card .plan-features {
+⋮----
+.plan-card .plan-features li {
+.plan-card .plan-features li.included {
+.plan-card .plan-features li .indicator {
+.plan-card .plan-features li.included .indicator {
+.plan-card .plan-features li.included:hover .indicator {
+.plan-card .plan-features li.excluded {
+.plan-card .plan-features li.excluded .indicator {
+.plan-card .plan-features li.premium-feature {
+.plan-card .plan-features li.premium-feature::after {
+.plan-card .plan-features li.premium-feature .indicator {
+⋮----
+.plan-card .plan-actions {
+.plan-card .plan-actions .btn-premium {
+.plan-card .plan-actions .btn-premium::before {
+.plan-card .plan-actions .btn-premium:hover::before {
+.plan-card .plan-actions .btn-premium:hover {
+.plan-card .plan-actions .btn-premium:active {
+.plan-card .plan-actions .btn-premium.secondary {
+.plan-card .plan-actions .btn-premium.secondary:hover {
+.plan-card .plan-actions .btn-premium-outline {
+.plan-card .plan-actions .btn-premium-outline:hover {
+⋮----
+.plan-card .plan-status {
+.plan-card .plan-status.active {
+.plan-card .plan-status.inactive {
+.plan-card .plan-status .dot {
+.plan-card .plan-status .dot.green {
+.plan-card .plan-status .dot.gray {
+⋮----
+.plan-expiry {
+.plan-expiry .expiry-icon {
+⋮----
+.plan-payment-note {
+.plan-payment-note .payment-icon {
+⋮----
+.plan-perks-box {
+.plan-perks-box:hover {
+.plan-perks-box .perks-title {
+.plan-perks-box .perks-title .perks-icon {
+.plan-perks-box .perks-grid {
+⋮----
+.plan-perks-box .perk-item {
+.plan-perks-box .perk-item:hover {
+.plan-perks-box .perk-item .perk-icon {
+.plan-perks-box .perk-item .perk-text {
+⋮----
+.subscription-timer {
+.subscription-timer .timer-header {
+.subscription-timer .timer-label {
+.subscription-timer .timer-value {
+.subscription-timer .timer-progress-wrap {
+.subscription-timer .timer-progress-wrap .timer-progress {
+⋮----
+.avatar-popup-overlay {
+.avatar-popup-overlay.active { display: flex; }
+.avatar-popup {
+⋮----
+.avatar-popup-close {
+.avatar-popup-close:hover {
+.avatar-popup-body {
+.avatar-popup-body .big-avatar {
+.avatar-popup-body .big-avatar img {
+.avatar-popup-body .big-avatar .big-placeholder {
+⋮----
+.nav-links {
+.nav-right {
+⋮----
+.panel-glow {
+⋮----
+.confirm-modal-footer {
+.confirm-modal-footer .btn-modal-cancel,
+⋮----
+.sidebar-nav-item,
+⋮----
+.lang-compact-btn,
+⋮----
+.plan-payment-method-block { margin: 0.75rem 0; padding: 0.75rem; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
+.plan-payment-method-label { font-size: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem; }
+.plan-payment-methods { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.pay-method-btn { padding: 0.4rem 1.2rem; border-radius: 20px; border: 2px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+.pay-method-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+.timer-expiry { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: 'DM Sans', sans-serif; }
+⋮----
+.ot-form { display: flex; flex-direction: column; gap: 1.25rem; }
+.ot-toggle-row { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 13px; color: var(--text); }
+.ot-checkbox { accent-color: var(--accent); width: 18px; height: 18px; cursor: pointer; }
+.ot-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.ot-input-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 4px; }
+.ot-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; }
+.ot-unit, .ot-currency { font-size: 12px; color: var(--muted); }
+.ot-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; margin-top: 4px; }
+.btn-save-ot { display: inline-flex; gap: 0.5rem; align-items: center; align-self: flex-start; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; padding: 0.65rem 1.4rem; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-save-ot:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,92,246,0.35); }
+.ot-secondary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.btn-ot-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 0.8rem; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.btn-ot-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.ot-error-box { text-align: center; padding: 1.5rem; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
+.ot-error-text { color: var(--muted); font-size: 13px; margin-bottom: 0.5rem; }
+⋮----
+.theme-form { display: flex; flex-direction: column; gap: 1rem; }
+.theme-notice { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.15); border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 12px; color: var(--text); }
+.color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.color-field { display: flex; flex-direction: column; gap: 4px; }
+.color-field label { font-size: 12px; color: var(--muted); }
+.color-input-group { display: flex; align-items: center; gap: 0.5rem; }
+.color-input-picker { width: 44px; height: 38px; border: none; cursor: pointer; background: transparent; padding: 0; border-radius: 6px; }
+.color-input-text { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; }
+.font-size-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.font-size-field label { font-size: 12px; color: var(--muted); }
+.font-size-slider { width: 100%; accent-color: var(--accent); }
+.font-size-hints { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+.theme-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.theme-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+.preview-text { margin: 0; color: var(--text); }
+.preview-badges .badge-accent { background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+.preview-badges .badge-green { background: var(--green); color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+.preview-badges .badge-red { background: var(--red); color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+⋮----
+.color-grid { grid-template-columns: 1fr; }
 </file>
 
-<file path="public/src/features/theme.js">
-export function getApexThemeConfig()
-⋮----
-export function getApexColors()
-⋮----
-export function getThemeSettings()
-⋮----
-export function saveThemeSettings(settings)
-⋮----
-function triggerChartThemeUpdate()
-⋮----
-export function applyThemeSettings(settings)
-⋮----
-function updateApexChartColors()
-⋮----
-export function applyFontSize(size)
-⋮----
-export function loadFontSize()
-⋮----
-export async function canCustomizeTheme()
-⋮----
-export async function loadThemeCustomization()
-⋮----
-function updatePreview()
-⋮----
-export function getApexChartTheme()
+<file path="public/settings/panels/appearance.html">
+<div class="s-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="settings.theme">Görünüm</h2>
+      <p data-i18n="settings.theme_desc">Tema, dil, para birimi ve renk özelleştirme</p>
+    </div>
+  </div>
+  <div class="s-card-body">
+
+    <div class="theme-toggle-card">
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon" id="theme-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4 id="theme-label" data-i18n="settings.dark_theme">Koyu Tema</h4>
+            <p id="theme-desc" data-i18n="settings.dark_theme_desc">Göz yormayan karanlık arayüz</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="theme-toggle-card" style="margin-top: 1rem;">
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon" id="lang-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4 id="lang-label" data-i18n="language.title">Dil Seçimi</h4>
+            <p id="lang-desc" data-i18n="language.select">Uygulama dilini değiştirin</p>
+          </div>
+        </div>
+        <div class="lang-selector-compact" id="settings-lang-selector">
+          <button class="lang-compact-btn" data-lang="tr" title="Türkçe">🇹🇷 TR</button>
+          <button class="lang-compact-btn" data-lang="en" title="English">🇬🇧 EN</button>
+          <button class="lang-compact-btn" data-lang="de" title="Deutsch">🇩🇪 DE</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-toggle-card" style="margin-top: 1rem;">
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon" id="currency-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4 id="currency-label" data-i18n="settings.currency">Para Birimi</h4>
+            <p id="currency-desc" data-i18n="settings.currency_desc">Varsayılan para birimini seç</p>
+          </div>
+        </div>
+        <div class="currency-selector-compact" id="settings-currency-selector">
+          <button class="currency-btn" data-currency="$" title="USD">$ USD</button>
+          <button class="currency-btn" data-currency="€" title="Euro">€ EUR</button>
+          <button class="currency-btn" data-currency="₺" title="Türk Lirası">₺ TRY</button>
+          <button class="currency-btn" data-currency="£" title="Sterlin">£ GBP</button>
+          <button class="currency-btn" data-currency="₿" title="Bitcoin">₿ BTC</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-customization-section" id="theme-customization-section">
+      <div class="section-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px;">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+          <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a2 2 0 0 0 2-2c0-.52-.2-1-.53-1.37-.33-.36-.47-.82-.47-1.28 0-1.1.9-2 2-2h1.17c2.21 0 4-1.79 4-4 0-4.96-4.04-9-9-9z"/>
+        </svg>
+        <span data-i18n="settings.theme_customization">Tema Özelleştirme</span>
+        <span class="premium-badge">PREMIUM</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:1rem;" data-i18n="settings.theme_customization_desc">
+        Arka plan, kart, kenarlık ve metin renklerini kişiselleştirin. Font boyutunu ayarlayın.
+      </p>
+      <div id="theme-customization-container"></div>
+    </div>
+
+  </div>
+</div>
+
+<template id="tpl-theme-locked">
+  <div class="ot-premium-locked">
+    <div class="lock-icon">🔒</div>
+    <h3 data-i18n="settings.theme">Tema Özelleştirme</h3>
+    <p data-i18n="settings.theme_customization_locked_desc">Renkleri, font boyutunu ve arka planı kişiselleştir. Bu özellik sadece Premium üyelere özeldir.</p>
+    <a href="#panel-plan" class="btn-premium-cta" onclick="window.switchPanel('panel-plan')" data-i18n="settings.go_premium">Premium'a Geç →</a>
+  </div>
+</template>
+
+<template id="tpl-theme-light-locked">
+  <div class="ot-premium-locked">
+    <div class="lock-icon">☀️</div>
+    <h3 data-i18n="settings.theme_light_active">Açık Tema Aktif</h3>
+    <p data-i18n="settings.theme_light_active_desc">Renk özelleştirme sadece Koyu Tema aktifken çalışır. Font boyutunu yine de ayarlayabilirsiniz.</p>
+    <button type="button" id="theme-switch-to-dark-btn" class="btn-premium-cta" data-i18n="settings.theme_switch_to_dark">Koyu Temaya Geç</button>
+  </div>
+</template>
+
+<template id="tpl-theme-form">
+  <div class="theme-form">
+    <div class="theme-notice" data-i18n-html="settings.theme_notice">⚠️ <strong>Not:</strong> Renk özelleştirme sadece <strong>Koyu Tema</strong> aktifken çalışır.</div>
+
+    <div class="color-grid">
+      <div class="color-field">
+        <label data-i18n="settings.theme_bg_color">Arka Plan Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-bg-color" class="color-input-picker">
+          <input type="text" id="custom-bg-color-text" class="color-input-text">
+        </div>
+      </div>
+
+      <div class="color-field">
+        <label data-i18n="settings.theme_surface_color">Kart Arka Plan Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-surface-color" class="color-input-picker">
+          <input type="text" id="custom-surface-color-text" class="color-input-text">
+        </div>
+      </div>
+
+      <div class="color-field">
+        <label data-i18n="settings.theme_border_color">Kenarlık Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-border-color" class="color-input-picker">
+          <input type="text" id="custom-border-color-text" class="color-input-text">
+        </div>
+      </div>
+
+      <div class="color-field">
+        <label data-i18n="settings.theme_text_color">Metin Rengi</label>
+        <div class="color-input-group">
+          <input type="color" id="custom-text-color" class="color-input-picker">
+          <input type="text" id="custom-text-color-text" class="color-input-text">
+        </div>
+      </div>
+    </div>
+
+    <div class="font-size-field">
+      <label>
+        <span data-i18n="settings.theme_font_size">Font Boyutu</span>:
+        <span id="font-size-display">16px</span>
+      </label>
+      <input type="range" id="custom-font-size" min="12" max="24" step="1" value="16" class="font-size-slider">
+      <div class="font-size-hints">
+        <span>12px</span><span>18px</span><span>24px</span>
+      </div>
+    </div>
+
+    <div class="theme-actions">
+      <button class="btn btn-primary" id="save-custom-theme-btn">
+        <span data-icon="check"></span>
+        <span data-i18n="settings.theme_save">Temayı Kaydet</span>
+      </button>
+      <button class="btn btn-ghost" id="reset-custom-theme-btn">
+        <span data-icon="rotate-ccw"></span>
+        <span data-i18n="settings.theme_reset">Varsayılana Dön</span>
+      </button>
+    </div>
+
+    <div id="theme-preview-box" class="theme-preview-box">
+      <p class="preview-text">
+        <strong data-i18n="settings.theme_preview_label">Önizleme</strong>:
+        <span data-i18n="settings.theme_preview_desc">Bu metin seçtiğiniz renk ve font boyutu ile görüntüleniyor.</span>
+      </p>
+      <div class="preview-badges">
+        <span class="badge-accent">Accent</span>
+        <span class="badge-green">Win</span>
+        <span class="badge-red">Loss</span>
+      </div>
+    </div>
+  </div>
+</template>
+</file>
+
+<file path="public/settings/panels/overtrade.html">
+<div class="s-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="overtrade.title">Over Trade Uyarıları</h2>
+      <p data-i18n="overtrade.desc">Premium'a özel gelişmiş işlem uyarı sistemi</p>
+    </div>
+    <span style="margin-left:auto;" class="ot-premium-badge"><span class="diamond">◆</span> PREMIUM</span>
+  </div>
+  <div class="s-card-body" id="overtrade-settings-container"></div>
+</div>
+
+<template id="tpl-overtrade-locked">
+  <div class="ot-premium-locked">
+    <div class="lock-icon">💎</div>
+    <h3 data-i18n="overtrade.title">Over Trade Uyarıları</h3>
+    <p data-i18n="overtrade.premium_required_desc">Bu özellik sadece Premium üyelere özeldir.</p>
+    <a href="settings.html#panel-plan" class="btn-premium-cta" data-i18n="overtrade.go_premium">Premium'a Geç →</a>
+  </div>
+</template>
+
+<template id="tpl-overtrade-premium">
+  <div class="ot-form">
+    <label class="ot-toggle-row">
+      <input type="checkbox" id="ot-enabled" class="ot-checkbox">
+      <span data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</span>
+    </label>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</label>
+      <div class="ot-input-row">
+        <input type="number" id="ot-daily-limit" min="1" max="100" class="ot-input">
+        <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+      </div>
+      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
+    </div>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</label>
+      <div class="ot-input-row">
+        <input type="number" id="ot-weekly-limit" min="1" max="500" class="ot-input">
+        <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+      </div>
+      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
+    </div>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</label>
+      <div class="ot-input-row">
+        <span class="ot-currency">$</span>
+        <input type="number" id="ot-loss-limit" min="1" max="999999" class="ot-input">
+      </div>
+      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
+    </div>
+
+    <div class="ot-field">
+      <label class="ot-label" data-i18n="overtrade.warning_level_label">Uyarı Seviyesi</label>
+      <select id="ot-warning-level" class="ot-select">
+        <option value="info" data-i18n="overtrade.level_info">Bilgi</option>
+        <option value="warning" data-i18n="overtrade.level_warning">Uyarı</option>
+        <option value="danger" data-i18n="overtrade.level_danger">Tehlike</option>
+      </select>
+    </div>
+
+    <button id="ot-save-settings" class="btn-save-ot">
+      <span data-icon="check"></span>
+      <span data-i18n="overtrade.save_settings">Ayarları Kaydet</span>
+    </button>
+
+    <div class="ot-secondary-actions">
+      <button id="ot-clear-dismissed" class="btn-ot-ghost" data-i18n="overtrade.clear_dismissed_btn">Kapatılan Uyarıları Temizle</button>
+      <button id="ot-reset-defaults" class="btn-ot-ghost" data-i18n="overtrade.reset_defaults_btn">Varsayılana Dön</button>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-overtrade-error">
+  <div class="ot-error-box">
+    <p class="ot-error-text" data-i18n="overtrade.settings_error">Ayarlar yüklenirken bir hata oluştu.</p>
+    <button class="btn-ot-ghost" onclick="window.location.reload()" data-i18n="overtrade.retry">Yeniden Dene</button>
+  </div>
+</template>
+</file>
+
+<file path="public/settings/panels/plan.html">
+<div class="s-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="settings.plan_header_title">Plan</h2>
+      <p data-i18n="settings.plan_header_desc">Abonelik durumunuz ve premium özellikler</p>
+    </div>
+  </div>
+  <div class="s-card-body" id="plan-container"></div>
+</div>
+
+<template id="tpl-plan-free">
+  <div class="plan-card">
+    <div class="plan-header">
+      <div class="plan-name" data-i18n="settings.plan_free_name">Ücretsiz</div>
+      <span class="plan-status inactive">
+        <span class="dot gray"></span>
+        <span data-i18n="settings.plan_active_label">Aktif</span>
+      </span>
+    </div>
+    <div class="plan-desc" data-i18n="settings.plan_free_desc">Premium'a geçerek tüm özelliklerin kilidini aç.</div>
+    <ul class="plan-features">
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f1">Sınırsız Trade</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f2">Sınırsız Strateji</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f3">Takvim Görünümü</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f4">Aylık Hedef</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f5">CSV İçe/Dışa Aktarım</span></li>
+      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f6">PDF Rapor</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f1">Premium Dashboard</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f2">Tema Özelleştirme</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f3">Over Trade Uyarısı</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f4">Gelişmiş Grafikler</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
+      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f6">Reklamsız</span></li>
+    </ul>
+    <div class="plan-payment-method-block">
+      <label class="plan-payment-method-label">
+        <span data-icon="credit-card"></span>
+        <span data-i18n="settings.plan_payment_method">Ödeme Metodu</span>
+      </label>
+      <div class="plan-payment-methods" id="plan-payment-methods"></div>
+    </div>
+    <div class="plan-actions">
+      <button class="btn-premium" id="upgrade-monthly">
+        <span data-icon="credit-card"></span>
+        <span data-i18n="settings.plan_monthly_btn" data-i18n-params='{"price":"—"}'>Aylık</span>
+      </button>
+      <button class="btn-premium secondary" id="upgrade-yearly">
+        <span data-icon="credit-card"></span>
+        <span data-i18n="settings.plan_yearly_btn" data-i18n-params='{"price":"—"}'>Yıllık</span>
+      </button>
+    </div>
+    <div class="plan-payment-note">
+      <span data-icon="lock"></span>
+      <span data-i18n="settings.plan_secure_payment" data-i18n-params='{"methods":"BTC / LTC"}'>Güvenli ödeme</span>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-plan-premium">
+  <div class="plan-card premium">
+    <div class="plan-header">
+      <div class="plan-name">
+        Premium
+        <span class="premium-badge" data-i18n="settings.plan_premium_badge">AKTİF</span>
+      </div>
+      <span class="plan-status active">
+        <span class="dot green"></span>
+        <span data-i18n="settings.plan_active_label">Aktif</span>
+      </span>
+    </div>
+    <div class="plan-desc" data-i18n="settings.plan_premium_desc">Tüm premium özelliklere erişiminiz var.</div>
+    <div class="subscription-timer">
+      <div class="timer-header">
+        <span class="timer-label" data-i18n="settings.plan_time_remaining">Kalan Süre</span>
+        <span class="timer-value" data-bind="days-left">—</span>
+      </div>
+      <div class="timer-progress-wrap">
+        <div class="timer-progress" data-bind="progress" style="width:0%;"></div>
+      </div>
+      <div class="timer-expiry" data-bind="expiry-date"></div>
+    </div>
+    <div class="plan-actions">
+      <button class="btn-premium-outline" id="cancel-premium-btn" data-i18n="settings.plan_cancel_subscription">Aboneliği İptal Et</button>
+    </div>
+    <div class="plan-perks-box">
+      <div class="perks-title" data-i18n="settings.plan_premium_features">Premium Özellikler</div>
+      <div class="perks-grid" id="plan-perks-grid"></div>
+    </div>
+  </div>
+</template>
 </file>
 
 <file path="public/src/services/payment.js">
@@ -4424,32 +4588,6 @@ export async function getStrategiesMap()
 
 <file path="public/config.js">
 const getEnv = (key, fallback) =>
-</file>
-
-<file path="public/i18n.js">
-class I18n
-⋮----
-init()
-⋮----
-t(key, params =
-⋮----
-setLanguage(lang)
-⋮----
-_applyInternal(callId)
-⋮----
-getCurrentLanguage()
-⋮----
-apply()
-⋮----
-onChange(callback)
-⋮----
-refresh()
-⋮----
-syncStorageOnly(lang)
-⋮----
-getSavedLanguage()
-⋮----
-resolveLanguageConflict(dbLang)
 </file>
 
 <file path="public/styles.css">
@@ -9986,6 +10124,56 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 </file>
 
+<file path="supabase/.temp/cli-latest">
+v2.117.0
+</file>
+
+<file path="supabase/functions/create-payment/index.ts">
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+⋮----
+// ⭐ CORS - WILDCARD DESTEKLİ
+⋮----
+function getUserIdFromToken(req: Request): string | null
+⋮----
+function getClientId(req: Request): string
+⋮----
+function checkRateLimit(clientId: string):
+⋮----
+function getCorsHeaders(origin: string | null)
+⋮----
+function validatePlanType(planType: string): boolean
+⋮----
+function validateCurrency(currency: string): boolean
+⋮----
+function getFallbackPlanPrice(planType: string, currency: string): number
+⋮----
+function resolvePrice(prices: any, planType: string, currency: string): number
+⋮----
+async function getPlanPriceFromDB(planType: string, currency: string): Promise<number>
+⋮----
+async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response>
+⋮----
+// ⭐ CORS - OPTIONS
+</file>
+
+<file path="supabase/functions/get-candles/index.ts">
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+⋮----
+function getClientId(req: Request): string
+⋮----
+function checkRateLimit(clientId: string):
+⋮----
+function getCorsHeaders(origin: string | null)
+⋮----
+function validateSymbol(symbol: string): boolean
+⋮----
+function validateInterval(interval: string): boolean
+⋮----
+async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<Response>
+⋮----
+// ⭐ CORS - OPTIONS
+</file>
+
 <file path="public/components/navbar/navbar.js">
 function sanitizeHTML(str)
 ⋮----
@@ -10465,6 +10653,22 @@ export function exportCSV(trades)
 export function exportPDF(trades)
 </file>
 
+<file path="public/interface/quick-add/js/quick-modal-i18n.js">
+class QuickI18n
+⋮----
+function attachListener()
+⋮----
+t(key, params =
+⋮----
+setLanguage(lang)
+⋮----
+onChange(callback)
+⋮----
+getCurrentLanguage()
+⋮----
+apply()
+</file>
+
 <file path="public/interface/strategies/js/strategies.js">
 function applyThemeFromStorage()
 ⋮----
@@ -10543,1435 +10747,70 @@ function setupTimeFilterButtons()
 async function initStrategies()
 </file>
 
-<file path="public/settings/js/settings.js">
-function getLucideIcon(name, size)
+<file path="public/src/features/overtrade.js">
+export function getOvertradeSettings()
 ⋮----
-function getSb()
+export function saveOvertradeSettings(settings)
 ⋮----
-function showMsg(message, type)
+export function getDismissedOvertradeWarnings()
 ⋮----
-function isAdmin(user)
+export function setDismissedOvertradeWarnings(dismissedArray)
 ⋮----
-function safeEl(id)
+export function dismissOvertradeWarning(warningId)
 ⋮----
-function t(key, params)
+export function isOvertradeWarningDismissed(warningId)
 ⋮----
-function sanitizeHTML(str)
+export function clearDismissedOvertradeWarnings()
 ⋮----
-async function getCurrentUser()
+export function checkOvertrade(trades)
 ⋮----
-async function getSession()
+export function renderOvertradeWarning(warnings, containerId)
 ⋮----
-async function loadPanelContent(panelId, url)
+export async function checkAndRenderOvertrade(containerId)
 ⋮----
-// ============================================================
-// PANEL INIT
-// ============================================================
-function initPanel(panelId)
+export async function loadOvertradeSettingsUI(containerId)
 ⋮----
-async function uploadAvatar(file)
+const t = (key, params)
+const applyI18n = () =>
 ⋮----
-async function updateAvatar(url)
+export async function updateOvertradeBell()
+</file>
+
+<file path="public/src/features/theme.js">
+export function getApexThemeConfig()
 ⋮----
-async function loadAvatar()
+export function getApexColors()
 ⋮----
-function updateAvatarElements(url)
+export function getThemeSettings()
 ⋮----
-function initProfile()
+export function saveThemeSettings(settings)
 ⋮----
-async function loadProfileData()
+function triggerChartThemeUpdate()
 ⋮----
-async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency)
+export function applyThemeSettings(settings)
 ⋮----
-function showConfirmModal(title, message, warning, onConfirm, onCancel)
+function updateApexChartColors()
 ⋮----
-async function renderPlan()
+export function applyFontSize(size)
 ⋮----
-function startTimer(expiresAt)
+export function loadFontSize()
 ⋮----
-function initPassword()
+export async function canCustomizeTheme()
 ⋮----
-// ============================================================
-// TEHLİKELİ BÖLGE
-// ============================================================
-function initDanger()
+export async function loadThemeCustomization()
 ⋮----
-async function deleteAllUserData()
+const applyI18n = () =>
+const fillIcons = (root) =>
 ⋮----
-async function deactivateAccount()
+// Premium + Dark → tam form
 ⋮----
-function initAppearance()
+function initThemeFormEvents()
 ⋮----
-function loadThemeCustomizationFallback()
-⋮----
-function setupThemeEventsFallback()
+const _t = (key)
 ⋮----
 function updatePreview()
 ⋮----
-function saveTheme()
-⋮----
-function resetTheme()
-⋮----
-function initLanguageSelector()
-⋮----
-function initCurrencySelector()
-⋮----
-function initOvertrade()
-⋮----
-async function updateBadge()
-⋮----
-function initNavEvents()
-⋮----
-function initPanelClickEvents()
-⋮----
-function initAvatarPopup()
-⋮----
-function closePopup()
-⋮----
-// ============================================================
-// CONFIRM MODAL - INIT
-// ============================================================
-function initConfirmModal()
-⋮----
-async function checkAndActivatePremium()
-</file>
-
-<file path="src/pages/add-trade.astro">
----
-import Layout from '../layouts/Layout.astro';
----
-<Layout lang="en" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
-<Fragment slot="head">
-  <title data-i18n="addtrade.title">İşlem Ekle – Wawe Journal</title>
-  
-<script is:inline>
-  (function() {
-    if (document.body) {
-      var savedTheme = localStorage.getItem('ww_theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-      } else {
-        document.body.classList.remove('light-theme');
-      }
-    } else {
-      document.addEventListener('DOMContentLoaded', function() {
-        var savedTheme = localStorage.getItem('ww_theme');
-        if (savedTheme === 'light') {
-          document.body.classList.add('light-theme');
-        } else {
-          document.body.classList.remove('light-theme');
-        }
-      });
-    }
-  })();
-</script>
-
-
-  
-  <style>
-    .page-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 1.5rem;
-      gap: 1rem;
-    }
-    .page-header h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.2rem;
-      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .page-header .subtitle {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin: 0;
-    }
-    
-    .import-banner {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: var(--surface);
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.25rem;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .import-banner:hover {
-      border-color: var(--accent);
-      border-style: solid;
-      background: rgba(139,92,246,0.03);
-    }
-    .import-banner-icon {
-      width: 38px;
-      height: 38px;
-      background: rgba(139,92,246,0.12);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .import-banner-text p {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-      margin: 0 0 2px;
-    }
-    .import-banner-text span {
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .import-banner-badge {
-      margin-left: auto;
-      font-size: 11px;
-      color: var(--accent);
-      background: rgba(139,92,246,0.12);
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    #csv-file { display: none; }
-    
-    .form-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .form-section {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .form-section:last-child { border-bottom: none; }
-    .section-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: 'DM Mono', monospace;
-    }
-    .section-label svg { opacity: 0.8; }
-    
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .field label {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 500;
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .field input, .field select, .field textarea {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.6rem 0.9rem;
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      outline: none;
-      transition: all 0.2s;
-    }
-    .field input:focus, .field select:focus, .field textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
-    }
-    .field input[type="text"], .field input[type="date"], .field input[type="number"] {
-      font-family: 'DM Mono', monospace;
-    }
-    .field textarea {
-      resize: vertical;
-      min-height: 72px;
-      line-height: 1.5;
-    }
-    .field select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b80' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 32px;
-      cursor: pointer;
-    }
-    .field select option { background: var(--surface); }
-    
-    .dir-toggle {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .dir-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 9px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .dir-btn:hover:not(.active) {
-      border-color: var(--accent);
-      color: var(--text);
-    }
-    .dir-btn.long.active {
-      background: rgba(34,197,94,0.1);
-      border-color: #22c55e;
-      color: #22c55e;
-    }
-    .dir-btn.short.active {
-      background: rgba(239,68,68,0.1);
-      border-color: #ef4444;
-      color: #ef4444;
-    }
-    #direction-hidden { display: none; }
-    
-    /* ============================================================
-       STRATEJİ KUTUCUKLARI - YENİ TASARIM
-       ============================================================ */
-    .strategy-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 8px;
-      margin-top: 4px;
-    }
-    .strategy-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--surface2);
-      color: var(--muted);
-      font-size: 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .strategy-chip:hover {
-      border-color: var(--accent);
-      color: var(--text);
-      background: rgba(139,92,246,0.04);
-      transform: translateY(-1px);
-    }
-    .strategy-chip.active {
-      border-color: var(--accent);
-      background: rgba(139,92,246,0.12);
-      color: var(--accent2);
-      box-shadow: 0 0 0 2px rgba(139,92,246,0.15);
-    }
-    .strategy-chip .chip-color {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .strategy-chip .chip-check {
-      margin-left: auto;
-      font-size: 12px;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .strategy-chip.active .chip-check {
-      opacity: 1;
-      color: var(--accent);
-    }
-    .strategy-chip .chip-name {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .strategy-chip-empty {
-      grid-column: 1 / -1;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      padding: 0.5rem;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .strategy-chip-empty a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    .strategy-chip-empty a:hover { text-decoration: underline; }
-    
-    .strategy-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .strategy-header .s-label {
-      font-size: 11px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .strategy-actions {
-      display: flex;
-      gap: 4px;
-    }
-    .strategy-actions button {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 3px 8px;
-      font-size: 10px;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: 'DM Sans', sans-serif;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .strategy-actions button:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .strategy-actions button svg { width: 12px; height: 12px; }
-    
-    #strategy-id-hidden { display: none; }
-
-    .preview-bar {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      padding: 1rem 1.5rem;
-      background: rgba(139,92,246,0.04);
-      border-top: 1px solid var(--border);
-    }
-    .preview-item {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .preview-item .p-label {
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-family: 'DM Mono', monospace;
-    }
-    .preview-item .p-val {
-      font-size: 1.1rem;
-      font-weight: 600;
-      font-family: 'Inter', sans-serif;
-      color: var(--text);
-    }
-    .preview-item .p-val.pos { color: var(--green); }
-    .preview-item .p-val.neg { color: var(--red); }
-    .preview-item .p-val.accent { color: var(--accent); }
-    .preview-divider {
-      width: 1px;
-      height: 36px;
-      background: var(--border);
-    }
-    
-    .save-btn-wrap {
-      padding: 1.25rem 1.5rem;
-    }
-    .save-btn {
-      width: 100%;
-      padding: 0.8rem;
-      justify-content: center;
-    }
-    
-    .import-log {
-      display: none;
-      margin-top: 0.75rem;
-      font-size: 11px;
-      color: var(--muted);
-      max-height: 150px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.15);
-      padding: 0.5rem;
-      border-radius: 6px;
-      font-family: 'DM Mono', monospace;
-    }
-    .error-msg {
-      display: none;
-      font-size: 12px;
-      color: var(--red);
-      margin-top: 0.5rem;
-    }
-
-    @media (max-width: 599px) {
-      main { padding: 1rem !important; }
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-      .form-section { padding: 1rem; }
-      .preview-bar { gap: 1rem; }
-      .strategy-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
-    }
-    
-    /* Loading overlay for bulk import */
-    .bulk-import-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 1rem;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
-    }
-    .bulk-import-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-    .bulk-import-overlay .bulk-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2rem;
-      max-width: 500px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    .bulk-import-overlay .bulk-box h3 {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: var(--text);
-    }
-    .bulk-import-overlay .bulk-box p {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 1rem;
-    }
-    .bulk-import-overlay .bulk-box textarea {
-      width: 100%;
-      min-height: 200px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.7rem;
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 12px;
-      resize: vertical;
-      outline: none;
-    }
-    .bulk-import-overlay .bulk-box textarea:focus {
-      border-color: var(--accent);
-    }
-    .bulk-import-overlay .bulk-box .bulk-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-      justify-content: flex-end;
-    }
-    .bulk-import-overlay .bulk-box .bulk-actions button {
-      padding: 0.5rem 1.2rem;
-    }
-    .bulk-import-overlay .bulk-box .bulk-progress {
-      margin-top: 0.75rem;
-      font-size: 12px;
-      color: var(--muted);
-      font-family: 'DM Sans', sans-serif;
-    }
-    .bulk-import-overlay .bulk-box .bulk-progress .bulk-bar {
-      width: 100%;
-      height: 4px;
-      background: var(--border);
-      border-radius: 99px;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-    .bulk-import-overlay .bulk-box .bulk-progress .bulk-bar .bulk-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 99px;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-  </style>
-</Fragment>
-  <!-- ============================================================
-       NAVBAR CONTAINER
-       ============================================================ -->
-
-  <!-- ============================================================
-       MAIN
-       ============================================================ -->
-  <main style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:800px;">
-
-    <div class="page-header">
-      <div>
-        <h1 data-i18n="addtrade.title">Yeni işlem ekle</h1>
-        <p class="subtitle" data-i18n="addtrade.subtitle">İşlem detaylarını gir, anlık K/Z hesaplamasını gör</p>
-      </div>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-        <button class="btn btn-ghost" id="bulk-import-btn" style="font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.bulk_import">
-          📋 Toplu Ekle
-        </button>
-        <a href="trades.html" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          Geri
-        </a>
-      </div>
-    </div>
-
-    <!-- CSV İmport Banner -->
-    <div class="import-banner" id="import-banner-trigger" role="button" tabindex="0">
-      <div class="import-banner-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <line x1="9" y1="15" x2="15" y2="15"/>
-        </svg>
-      </div>
-      <div class="import-banner-text">
-        <p data-i18n="addtrade.import_title">Toplu içe aktarma (CSV)</p>
-        <span data-i18n="addtrade.import_desc">MT4/MT5 veya Excel'den dışa aktardığınız dosyayı yükleyin</span>
-      </div>
-      <span class="import-banner-badge">CSV</span>
-    </div>
-    <input type="file" id="csv-file" accept=".csv" />
-
-    <div id="import-progress" style="display:none;align-items:center;gap:8px;margin-bottom:0.75rem;font-size:12px;color:var(--muted);">
-      <div class="spinner" style="width:18px;height:18px;"></div>
-      <span data-i18n="addtrade.import_processing">İşleniyor…</span>
-    </div>
-    <div class="import-log" id="import-log"></div>
-
-    <div class="form-card">
-
-      <!-- İŞLEM DETAYLARI -->
-      <div class="form-section">
-        <div class="section-label">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span data-i18n="addtrade.section_trade_details">İşlem Detayları</span>
-        </div>
-
-        <div class="field" style="margin-bottom:12px;">
-          <label data-i18n="addtrade.instrument_type">Enstrüman tipi *</label>
-          <select id="instrument">
-            <option value="forex" data-i18n="addtrade.instrument_forex">Forex (çarpan: 100.000)</option>
-            <option value="gold" data-i18n="addtrade.instrument_gold">Altın / XAUUSD (çarpan: 100)</option>
-            <option value="index" data-i18n="addtrade.instrument_index">Endeks (çarpan: 10)</option>
-            <option value="crypto" data-i18n="addtrade.instrument_crypto">Kripto (çarpan: 1)</option>
-            <option value="other" data-i18n="addtrade.instrument_other">Diğer / Manuel</option>
-          </select>
-        </div>
-
-        <div class="field" id="custom-multiplier-wrap" style="display:none;margin-bottom:12px;">
-          <label data-i18n="addtrade.custom_multiplier">Manuel çarpan *</label>
-          <input type="text" inputmode="decimal" id="custom-multiplier" placeholder="1000" />
-        </div>
-
-        <div class="grid-2" style="margin-bottom:12px;">
-          <div class="field">
-            <label data-i18n="addtrade.symbol">Sembol *</label>
-            <input type="text" id="symbol" placeholder="EURUSD, BTCUSDT…" style="text-transform:uppercase;" />
-          </div>
-          <div class="field">
-            <label data-i18n="addtrade.lot">Lot *</label>
-            <input type="text" inputmode="decimal" id="lot" placeholder="0.10" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label data-i18n="addtrade.direction">Yön *</label>
-          <div class="dir-toggle">
-            <button type="button" class="dir-btn long active" id="btn-long" onclick="setDirection('LONG')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-              <span data-i18n="addtrade.long">Long · Alış</span>
-            </button>
-            <button type="button" class="dir-btn short" id="btn-short" onclick="setDirection('SHORT')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
-              <span data-i18n="addtrade.short">Short · Satış</span>
-            </button>
-          </div>
-          <input type="hidden" id="direction" value="LONG" />
-        </div>
-      </div>
-
-      <!-- FİYATLAR -->
-      <div class="form-section">
-        <div class="section-label">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span data-i18n="addtrade.section_prices">Fiyatlar</span>
-        </div>
-
-        <div class="grid-3" style="margin-bottom:12px;">
-          <div class="field">
-            <label data-i18n="addtrade.entry_price">Giriş fiyatı *</label>
-            <input type="text" inputmode="decimal" id="entry" placeholder="1.08500" />
-          </div>
-          <div class="field">
-            <label data-i18n="addtrade.exit_price">Çıkış fiyatı</label>
-            <input type="text" inputmode="decimal" id="exit" placeholder="1.09000" />
-          </div>
-          <div class="field">
-            <label data-i18n="addtrade.date">Tarih *</label>
-            <input type="date" id="trade-date" />
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <div class="field">
-            <label data-i18n="addtrade.stop_loss">Stop loss</label>
-            <input type="text" inputmode="decimal" id="sl" placeholder="1.08000" />
-          </div>
-          <div class="field">
-            <label data-i18n="addtrade.take_profit">Take profit</label>
-            <input type="text" inputmode="decimal" id="tp" placeholder="1.09500" />
-          </div>
-        </div>
-      </div>
-
-      <!-- STRATEJİ & NOTLAR -->
-      <div class="form-section">
-        <div class="section-label" style="margin-bottom:0.75rem;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          <span data-i18n="addtrade.section_strategy_notes">Strateji &amp; Notlar</span>
-        </div>
-
-        <!-- Strateji Kutucukları - YENİ TASARIM -->
-        <div class="strategy-header">
-          <span class="s-label" data-i18n="addtrade.select_strategy_label">Strateji seç</span>
-          <div class="strategy-actions">
-            <button type="button" id="refresh-strategies-btn" title="Stratejileri Yenile">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              <span data-i18n="addtrade.refresh">Yenile</span>
-            </button>
-            <button type="button" id="clear-strategy-btn" title="Seçimi Temizle">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              <span>Temizle</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="strategy-grid" id="strategy-grid">
-          <div class="strategy-chip-empty">
-            <span data-i18n="addtrade.loading_strategies">Stratejiler yükleniyor...</span>
-          </div>
-        </div>
-        <input type="hidden" id="strategy-id-hidden" value="" />
-
-        <div class="field" style="margin-top:0.75rem;">
-          <label data-i18n="addtrade.notes">Notlar</label>
-          <textarea id="notes" rows="3" data-i18n-placeholder="addtrade.notes_placeholder" placeholder="Strateji notları, gözlemler, psikolojik durum…"></textarea>
-        </div>
-      </div>
-
-      <!-- ÖN İZLEME -->
-      <div class="preview-bar" id="preview-bar" style="display:none;">
-        <div class="preview-item" id="preview-pnl-wrap" style="display:none;">
-          <span class="p-label" data-i18n="addtrade.estimated_pnl">Tahmini K/Z</span>
-          <span class="p-val" id="preview-pnl">—</span>
-        </div>
-        <div class="preview-divider" id="preview-divider" style="display:none;"></div>
-        <div class="preview-item" id="preview-rr-wrap" style="display:none;">
-          <span class="p-label" data-i18n="addtrade.risk_reward">Risk / Reward</span>
-          <span class="p-val accent" id="preview-rr">—</span>
-        </div>
-      </div>
-
-      <div class="form-section" style="padding-top:0;padding-bottom:0;border:none;" id="err-wrap">
-        <p class="error-msg" id="err"></p>
-      </div>
-
-      <div class="save-btn-wrap">
-        <button class="btn btn-primary save-btn" id="save-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          <span data-i18n="common.save">Kaydet</span>
-        </button>
-      </div>
-
-    </div>
-  </main>
-
-  <!-- ============================================================
-       BULK IMPORT MODAL
-       ============================================================ -->
-  <div class="bulk-import-overlay" id="bulk-import-overlay">
-    <div class="bulk-box">
-      <h3>📋 Toplu İşlem Ekle</h3>
-      <p>Her satıra bir işlem gelecek şekilde aşağıdaki formatta girin:</p>
-      <p style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;">
-        sembol,yön,lot,giriş,çıkış,tarih,not<br>
-        EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem
-      </p>
-      <textarea id="bulk-textarea" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem&#10;XAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Altın işlemi"></textarea>
-      <div class="bulk-progress" id="bulk-progress" style="display:none;">
-        <span id="bulk-status">İşleniyor...</span>
-        <div class="bulk-bar"><div class="bulk-fill" id="bulk-fill"></div></div>
-      </div>
-      <div class="bulk-actions">
-        <button class="btn btn-ghost" id="bulk-cancel-btn" style="font-size:12px;padding:0.4rem 1rem;">İptal</button>
-        <button class="btn btn-primary" id="bulk-confirm-btn" style="font-size:12px;padding:0.4rem 1.2rem;">📤 İşlemleri Ekle</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
-  <script src="/script.js" is:inline></script>
-  <script src="/components/navbar/navbar.js" is:inline></script>
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof loadNavbar === 'function') {
-        loadNavbar('navbar-container');
-      }
-    });
-  </script>
-  <script is:inline>
-    // ⭐ INSTRUMENT_MULTIPLIERS kontrolü - eğer tanımlı değilse varsayılan değerleri ata
-    if (typeof INSTRUMENT_MULTIPLIERS === 'undefined') {
-      window.INSTRUMENT_MULTIPLIERS = {
-        forex: 100000,
-        gold: 100,
-        index: 10,
-        crypto: 1,
-        other: 1
-      };
-    }
-
-    var currentUser = null;
-    var importLogs = [];
-    var strategiesList = [];
-
-    // ============================================================
-    // STRATEJİ KUTUCUKLARI
-    // ============================================================
-    async function loadStrategyGrid() {
-      var grid = document.getElementById('strategy-grid');
-      if (!grid) return;
-
-      try {
-        var strategies = await getUserStrategies();
-        strategiesList = strategies;
-
-        if (!strategies || strategies.length === 0) {
-          grid.innerHTML = '\n            <div class="strategy-chip-empty">\n              <span data-i18n="addtrade.no_strategies">Henüz strateji eklenmemiş.</span>\n              <a href="strategies.html" data-i18n="addtrade.create_strategy">Strateji oluştur →</a>\n            </div>\n          ';
-          i18n.apply();
-          return;
-        }
-
-        var currentSelected = document.getElementById('strategy-id-hidden').value;
-
-        var html = '';
-        for (var sIdx = 0; sIdx < strategies.length; sIdx++) {
-          var s = strategies[sIdx];
-          var isActive = s.id === currentSelected;
-          html += '\n            <div class="strategy-chip ' + (isActive ? 'active' : '') + '" \n                 data-id="' + s.id + '" \n                 onclick="selectStrategy(\'' + s.id + '\')"\n                 title="' + (s.description || s.name) + '">\n              <span class="chip-color" style="background:' + (s.color || '#8b5cf6') + '"></span>\n              <span class="chip-name">' + (s.name.length > 15 ? s.name.slice(0,12)+'..' : s.name) + '</span>\n              <span class="chip-check">✓</span>\n            </div>\n          ';
-        }
-
-        grid.innerHTML = html;
-        i18n.apply();
-
-      } catch (e) {
-        grid.innerHTML = '\n          <div class="strategy-chip-empty">\n            <span style="color:var(--red);">⚠️ Stratejiler yüklenemedi</span>\n          </div>\n        ';
-      }
-    }
-
-    function selectStrategy(id) {
-      var chips = document.querySelectorAll('.strategy-chip');
-      chips.forEach(function(chip) {
-        chip.classList.toggle('active', chip.dataset.id === id);
-      });
-      var hiddenEl = document.getElementById('strategy-id-hidden');
-      if (hiddenEl) hiddenEl.value = id;
-    }
-
-    function clearStrategy() {
-      document.querySelectorAll('.strategy-chip').forEach(function(chip) { chip.classList.remove('active'); });
-      var hiddenEl = document.getElementById('strategy-id-hidden');
-      if (hiddenEl) hiddenEl.value = '';
-    }
-
-    var clearBtn = document.getElementById('clear-strategy-btn');
-    if (clearBtn) clearBtn.addEventListener('click', clearStrategy);
-
-    // ============================================================
-    // REFRESH STRATEGIES
-    // ============================================================
-    var refreshBtn = document.getElementById('refresh-strategies-btn');
-    if (refreshBtn) refreshBtn.addEventListener('click', loadStrategyGrid);
-
-    // ============================================================
-    // DIRECTION TOGGLE
-    // ============================================================
-    window.setDirection = function(val) {
-      var dirEl = document.getElementById('direction');
-      if (dirEl) dirEl.value = val;
-      var longBtn = document.getElementById('btn-long');
-      var shortBtn = document.getElementById('btn-short');
-      if (longBtn) longBtn.classList.toggle('active', val === 'LONG');
-      if (shortBtn) shortBtn.classList.toggle('active', val === 'SHORT');
-      updatePreview();
-    };
-
-    // ============================================================
-    // INSTRUMENT CHANGE
-    // ============================================================
-    var instrumentEl = document.getElementById('instrument');
-    if (instrumentEl) {
-      instrumentEl.addEventListener('change', function() {
-        var customWrap = document.getElementById('custom-multiplier-wrap');
-        if (customWrap) customWrap.style.display = this.value === 'other' ? 'flex' : 'none';
-        updatePreview();
-      });
-    }
-
-    // ============================================================
-    // PREVIEW - calcPnL ve calcRR fonksiyonları script.js'den çağrılır
-    // ============================================================
-    var previewInputs = ['entry', 'exit', 'lot', 'instrument', 'custom-multiplier', 'sl', 'tp'];
-    previewInputs.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('input', updatePreview);
-        el.addEventListener('change', updatePreview);
-      }
-    });
-
-    function getMultiplier() {
-      var instEl = document.getElementById('instrument');
-      var inst = instEl ? instEl.value : 'forex';
-      if (inst === 'other') {
-        var customEl = document.getElementById('custom-multiplier');
-        var v = customEl ? parseFloat(customEl.value) : null;
-        return isNaN(v) ? null : v;
-      }
-      if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined') {
-        return INSTRUMENT_MULTIPLIERS[inst] || 1;
-      }
-      return 1;
-    }
-
-    function updatePreview() {
-      var entryEl = document.getElementById('entry');
-      var exitEl = document.getElementById('exit');
-      var lotEl = document.getElementById('lot');
-      var dirEl = document.getElementById('direction');
-      var slEl = document.getElementById('sl');
-      var tpEl = document.getElementById('tp');
-      
-      var entry = entryEl ? entryEl.value : '';
-      var exit = exitEl ? exitEl.value : '';
-      var lot = lotEl ? lotEl.value : '';
-      var dir = dirEl ? dirEl.value : '';
-      var sl = slEl ? slEl.value : '';
-      var tp = tpEl ? tpEl.value : '';
-      var mult = getMultiplier();
-
-      var bar = document.getElementById('preview-bar');
-      var pnlWrap = document.getElementById('preview-pnl-wrap');
-      var rrWrap = document.getElementById('preview-rr-wrap');
-      var divider = document.getElementById('preview-divider');
-      var pnlEl = document.getElementById('preview-pnl');
-      var rrEl = document.getElementById('preview-rr');
-
-      var hasPnl = false;
-      var hasRr = false;
-
-      if (entry && lot && dir && mult !== null) {
-        if (exit) {
-          var pnl = 0;
-          try {
-            if (typeof calcPnL !== 'undefined') {
-              pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
-            } else {
-              var direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
-              pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
-            }
-          } catch(e) {}
-          if (pnlEl) {
-            pnlEl.textContent = formatCurrency(pnl);
-            pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
-          }
-          hasPnl = true;
-        }
-        if (sl && tp) {
-          var rr = null;
-          try {
-            if (typeof calcRR !== 'undefined') {
-              rr = calcRR(entry, sl, tp, dir);
-            } else {
-              var e = parseFloat(entry);
-              var s = parseFloat(sl);
-              var t = parseFloat(tp);
-              var risk = Math.abs(e - s);
-              var reward = Math.abs(t - e);
-              if (risk > 0) rr = (reward / risk).toFixed(2);
-            }
-          } catch(e) {}
-          if (rr !== null && rrEl) {
-            rrEl.textContent = '1 : ' + rr;
-            hasRr = true;
-          }
-        }
-      }
-
-      if (pnlWrap) pnlWrap.style.display = hasPnl ? 'flex' : 'none';
-      if (rrWrap) rrWrap.style.display = hasRr ? 'flex' : 'none';
-      if (divider) divider.style.display = (hasPnl && hasRr) ? 'block' : 'none';
-      if (bar) bar.style.display = (hasPnl || hasRr) ? 'flex' : 'none';
-    }
-
-    // ============================================================
-    // CSV IMPORT
-    // ============================================================
-    var importBanner = document.getElementById('import-banner-trigger');
-    if (importBanner) {
-      importBanner.addEventListener('click', function() {
-        var csvFile = document.getElementById('csv-file');
-        if (csvFile) csvFile.click();
-      });
-    }
-    
-    var csvFileInput = document.getElementById('csv-file');
-    if (csvFileInput) {
-      csvFileInput.addEventListener('change', async function() {
-        if (this.files && this.files[0]) await importCSV(this.files[0]);
-      });
-    }
-
-    function validateAndFormatDate(dateString, rowNumber) {
-      if (!dateString || !dateString.trim()) {
-        importLogs.push('⚠️ Satır ' + (rowNumber || '?') + ': Tarih boş, bugün kullanıldı.');
-        return new Date().toISOString().split('T')[0];
-      }
-      dateString = dateString.trim();
-      var d = new Date(dateString);
-      if (!isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        return d.toISOString().split('T')[0];
-      }
-
-      var p = dateString.split('.');
-      if (p.length === 3) {
-        var dmy = new Date(p[2] + '-' + p[1] + '-' + p[0]);
-        if (!isNaN(dmy.getTime())) return dmy.toISOString().split('T')[0];
-      }
-      p = dateString.split('/');
-      if (p.length === 3) {
-        var mdy = new Date(p[2] + '-' + p[0] + '-' + p[1]);
-        if (!isNaN(mdy.getTime())) return mdy.toISOString().split('T')[0];
-        var dmy2 = new Date(p[2] + '-' + p[1] + '-' + p[0]);
-        if (!isNaN(dmy2.getTime())) return dmy2.toISOString().split('T')[0];
-      }
-      importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + dateString + '", bugün kullanıldı.');
-      return new Date().toISOString().split('T')[0];
-    }
-
-    function renderImportLog() {
-      var el = document.getElementById('import-log');
-      if (el) {
-        if (importLogs.length > 0) {
-          el.style.display = 'block';
-          el.innerHTML = importLogs.map(function(l) { return '<div>' + l + '</div>'; }).join('');
-        } else {
-          el.style.display = 'none';
-          el.innerHTML = '';
-        }
-      }
-    }
-
-    async function importCSV(file) {
-      var progressDiv = document.getElementById('import-progress');
-      if (progressDiv) progressDiv.style.display = 'flex';
-      importLogs = [];
-      renderImportLog();
-
-      try {
-        var text = await file.text();
-        var lines = text.split('\n').filter(function(l) { return l.trim(); });
-
-        if (lines.length < 2) {
-          showToast(i18n.t('addtrade.csv_no_data'), 'error');
-          if (progressDiv) progressDiv.style.display = 'none';
-          return;
-        }
-
-        var headers = lines[0].split(',').map(function(h) { return h.trim().toLowerCase(); });
-        var imported = 0, failed = 0;
-
-        for (var i = 1; i < lines.length; i++) {
-          var values = lines[i].split(',');
-          if (values.length < 5) {
-            importLogs.push('⚠️ Satır ' + i + ': Yetersiz sütun (' + values.length + '), atlandı.');
-            failed++; continue;
-          }
-
-          var row = {};
-          for (var hIdx = 0; hIdx < headers.length; hIdx++) {
-            row[headers[hIdx]] = values[hIdx] ? values[hIdx].trim() : '';
-          }
-
-          var symbol = (row.symbol || row.sembol || '').toUpperCase();
-          var direction = (row.yon || row.direction || '').toUpperCase();
-          var lot = parseFloat(row.lot || 0);
-          var entry = parseFloat(row.entry || row.giris || row.entry_price || 0);
-          var exit = parseFloat(row.exit || row.cikis || row.exit_price) || null;
-          var rawDate = row.tarih || row.date || '';
-          var tradeDate = validateAndFormatDate(rawDate, i);
-
-          if (!symbol || !direction || !lot || !entry) {
-            importLogs.push('❌ Satır ' + i + ': Zorunlu alan eksik, atlandı.');
-            failed++; continue;
-          }
-
-          var finalDir = 'SHORT';
-          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
-          else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
-          else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + direction + '", SHORT olarak kaydedildi.');
-
-          var trade = {
-            user_id: currentUser.id, symbol: symbol, direction: finalDir,
-            instrument: 'forex', lot: lot, entry_price: entry,
-            exit_price: exit, trade_date: tradeDate,
-            notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR')
-          };
-
-          var { error } = await sb.from('trades').insert([trade]);
-          if (error) { 
-            importLogs.push('❌ Satır ' + i + ': ' + error.message); 
-            failed++; 
-          } else {
-            imported++;
-          }
-        }
-
-        renderImportLog();
-        if (progressDiv) progressDiv.style.display = 'none';
-        if (csvFileInput) csvFileInput.value = '';
-
-        var msg = imported + ' işlem içe aktarıldı' + (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
-        showToast(msg, failed > 0 ? 'error' : 'success');
-        if (imported > 0) setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
-      } catch(e) {
-        if (progressDiv) progressDiv.style.display = 'none';
-        showToast('CSV okuma hatası: ' + e.message, 'error');
-      }
-    }
-
-    // ============================================================
-    // BULK IMPORT (TOPLU EKLEME)
-    // ============================================================
-    var bulkOverlay = document.getElementById('bulk-import-overlay');
-    var bulkTextarea = document.getElementById('bulk-textarea');
-    var bulkProgress = document.getElementById('bulk-progress');
-    var bulkFill = document.getElementById('bulk-fill');
-    var bulkStatus = document.getElementById('bulk-status');
-
-    var bulkImportBtn = document.getElementById('bulk-import-btn');
-    if (bulkImportBtn) {
-      bulkImportBtn.addEventListener('click', function() {
-        if (bulkOverlay) bulkOverlay.classList.add('active');
-        if (bulkTextarea) bulkTextarea.value = '';
-        if (bulkProgress) bulkProgress.style.display = 'none';
-      });
-    }
-
-    var bulkCancelBtn = document.getElementById('bulk-cancel-btn');
-    if (bulkCancelBtn) {
-      bulkCancelBtn.addEventListener('click', function() {
-        if (bulkOverlay) bulkOverlay.classList.remove('active');
-      });
-    }
-
-    if (bulkOverlay) {
-      bulkOverlay.addEventListener('click', function(e) {
-        if (e.target === bulkOverlay) bulkOverlay.classList.remove('active');
-      });
-    }
-
-    var bulkConfirmBtn = document.getElementById('bulk-confirm-btn');
-    if (bulkConfirmBtn) {
-      bulkConfirmBtn.addEventListener('click', async function() {
-        if (!bulkTextarea) return;
-        var text = bulkTextarea.value.trim();
-        if (!text) {
-          showToast('Lütfen en az bir işlem girin!', 'error');
-          return;
-        }
-
-        var lines = text.split('\n').filter(function(l) { return l.trim(); });
-        if (lines.length === 0) {
-          showToast('Lütfen en az bir işlem girin!', 'error');
-          return;
-        }
-
-        var trades = [];
-        var errors = [];
-        var defaultDate = new Date().toISOString().split('T')[0];
-
-        for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-          var parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
-          if (parts.length < 5) {
-            errors.push('Satır ' + (lineIdx+1) + ': Yetersiz alan (' + parts.length + ' alan, en az 5 gerekli)');
-            continue;
-          }
-
-          var symbol = parts[0].toUpperCase();
-          var direction = parts[1].toUpperCase();
-          var lot = parseFloat(parts[2]);
-          var entry = parseFloat(parts[3]);
-          var exit = parts[4] ? parseFloat(parts[4]) : null;
-          var date = parts[5] ? validateAndFormatDate(parts[5], lineIdx+1) : defaultDate;
-          var notes = parts[6] || 'Toplu ekleme - ' + new Date().toLocaleString('tr-TR');
-
-          if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
-            errors.push('Satır ' + (lineIdx+1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş)');
-            continue;
-          }
-
-          var finalDir = 'SHORT';
-          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
-
-          trades.push({
-            user_id: currentUser.id,
-            symbol: symbol,
-            direction: finalDir,
-            instrument: 'forex',
-            lot: lot,
-            entry_price: entry,
-            exit_price: exit,
-            trade_date: date,
-            notes: notes || null,
-            multiplier: 100000
-          });
-        }
-
-        if (errors.length > 0) {
-          showToast(errors.length + ' hata var!', 'error');
-          if (bulkProgress) bulkProgress.style.display = 'block';
-          if (bulkFill) {
-            bulkFill.style.width = '100%';
-            bulkFill.style.background = 'var(--red)';
-          }
-          if (bulkStatus) bulkStatus.textContent = '❌ ' + errors.length + ' hata: ' + errors.join('; ');
-          setTimeout(function() { 
-            if (bulkProgress) bulkProgress.style.display = 'none'; 
-            if (bulkFill) bulkFill.style.width = '0%'; 
-          }, 3000);
-          return;
-        }
-
-        if (trades.length === 0) {
-          showToast('Geçerli işlem bulunamadı!', 'error');
-          return;
-        }
-
-        if (bulkProgress) bulkProgress.style.display = 'block';
-        if (bulkFill) {
-          bulkFill.style.width = '0%';
-          bulkFill.style.background = 'linear-gradient(90deg, var(--accent), var(--accent2))';
-        }
-        if (bulkStatus) bulkStatus.textContent = '0 / ' + trades.length + ' işlem ekleniyor...';
-
-        var success = 0;
-        var failed = 0;
-
-        for (var tIdx = 0; tIdx < trades.length; tIdx++) {
-          var trade = trades[tIdx];
-          var { error } = await sb.from('trades').insert([trade]);
-          if (error) {
-            failed++;
-            errors.push('Satır ' + (tIdx+1) + ': ' + error.message);
-          } else {
-            success++;
-          }
-          var progress = ((tIdx + 1) / trades.length) * 100;
-          if (bulkFill) bulkFill.style.width = progress + '%';
-          if (bulkStatus) bulkStatus.textContent = success + ' / ' + trades.length + ' işlem eklendi (' + failed + ' başarısız)';
-        }
-
-        if (errors.length > 0) {
-          if (bulkFill) {
-            bulkFill.style.background = 'var(--red)';
-          }
-          if (bulkStatus) bulkStatus.textContent = '⚠️ ' + success + ' işlem eklendi, ' + failed + ' hata!';
-          setTimeout(function() { 
-            if (bulkProgress) bulkProgress.style.display = 'none'; 
-            if (bulkFill) bulkFill.style.width = '0%'; 
-          }, 3000);
-          showToast(success + ' işlem eklendi, ' + failed + ' hata!', 'error');
-        } else {
-          if (bulkFill) {
-            bulkFill.style.width = '100%';
-            bulkFill.style.background = 'var(--green)';
-          }
-          if (bulkStatus) bulkStatus.textContent = '✅ ' + success + ' işlem başarıyla eklendi!';
-          setTimeout(function() {
-            if (bulkOverlay) bulkOverlay.classList.remove('active');
-            if (bulkProgress) bulkProgress.style.display = 'none';
-            if (bulkFill) bulkFill.style.width = '0%';
-            window.location.href = 'trades.html';
-          }, 1500);
-          showToast(success + ' işlem başarıyla eklendi!', 'success');
-        }
-      });
-    }
-
-    // ============================================================
-    // SAVE TRADE
-    // ============================================================
-    var saveBtn = document.getElementById('save-btn');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', async function() {
-        var symbolEl = document.getElementById('symbol');
-        var directionEl = document.getElementById('direction');
-        var instrumentEl = document.getElementById('instrument');
-        var lotEl = document.getElementById('lot');
-        var entryEl = document.getElementById('entry');
-        var exitEl = document.getElementById('exit');
-        var slEl = document.getElementById('sl');
-        var tpEl = document.getElementById('tp');
-        var tradeDateEl = document.getElementById('trade-date');
-        var notesEl = document.getElementById('notes');
-        var strategyIdEl = document.getElementById('strategy-id-hidden');
-        var errEl = document.getElementById('err');
-        
-        var symbol = symbolEl ? symbolEl.value.trim().toUpperCase() : '';
-        var direction = directionEl ? directionEl.value : '';
-        var instrument = instrumentEl ? instrumentEl.value : 'forex';
-        var lot = lotEl ? parseFloat(lotEl.value) : 0;
-        var entry = entryEl ? parseFloat(entryEl.value) : 0;
-        var exit = exitEl ? parseFloat(exitEl.value) : null;
-        var sl = slEl ? parseFloat(slEl.value) : null;
-        var tp = tpEl ? parseFloat(tpEl.value) : null;
-        var tradeDate = tradeDateEl ? tradeDateEl.value : '';
-        var notes = notesEl ? notesEl.value.trim() : '';
-        var strategyId = strategyIdEl ? strategyIdEl.value || null : null;
-        var mult = getMultiplier();
-        
-        if (errEl) errEl.style.display = 'none';
-
-        if (!symbol || !direction || !lot || !entry || !tradeDate) {
-          if (errEl) {
-            errEl.textContent = i18n.t('addtrade.required_fields');
-            errEl.style.display = 'block';
-          }
-          return;
-        }
-        if (instrument === 'other' && !mult) {
-          if (errEl) {
-            errEl.textContent = i18n.t('addtrade.custom_multiplier_required');
-            errEl.style.display = 'block';
-          }
-          return;
-        }
-
-        var btn = document.getElementById('save-btn');
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto;"></div>';
-        }
-
-        var pnl = null;
-        var rr = null;
-        try {
-          if (typeof calcPnL !== 'undefined' && exit) {
-            pnl = calcPnL(entry, exit, lot, direction, 'other', mult);
-          }
-          if (typeof calcRR !== 'undefined' && sl && tp) {
-            rr = calcRR(entry, sl, tp, direction);
-          }
-        } catch(e) {}
-
-        var { error } = await sb.from('trades').insert([{
-          user_id: currentUser.id, symbol: symbol, direction: direction, instrument: instrument, lot: lot,
-          entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp,
-          trade_date: tradeDate, notes: notes || null, pnl: pnl,
-          rr_ratio: rr ? parseFloat(rr) : null, multiplier: mult, strategy_id: strategyId
-        }]);
-
-        if (error) {
-          if (errEl) {
-            errEl.textContent = i18n.t('addtrade.save_error') + error.message;
-            errEl.style.display = 'block';
-          }
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> ' + i18n.t('common.save');
-          }
-          return;
-        }
-
-        showToast(i18n.t('addtrade.save_success'));
-        setTimeout(function() { window.location.href = 'trades.html'; }, 1200);
-      });
-    }
-
-    // ============================================================
-    // INIT
-    // ============================================================
-    (async function() {
-      try {
-        currentUser = await requireAuth();
-        if (!currentUser) return;
-        
-        var dateEl = document.getElementById('trade-date');
-        if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-
-        if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
-          var adminLink = document.getElementById('admin-link');
-          if (adminLink) adminLink.style.display = 'inline';
-          var adminLinkMobile = document.getElementById('admin-link-mobile');
-          if (adminLinkMobile) adminLinkMobile.style.display = 'block';
-        }
-
-        await loadStrategyGrid();
-      } catch(e) {}
-    })();
-
-    // ============================================================
-    // DECIMAL FIX
-    // ============================================================
-    applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
-
-  </script>
-</Layout>
+export function getApexChartTheme()
 </file>
 
 <file path="src/pages/admin.astro">
@@ -14464,68 +13303,6 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 </file>
 
-<file path="supabase/migrations/README.md">
-# Supabase migrations
-
-`202608190001_security_baseline.sql` is a security hardening migration for
-the existing Wawe Journal schema. It assumes these existing tables and columns:
-
-- `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
-- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
-- `references(is_active)`, `payments(user_id)`
-
-It has intentionally not been run against the hosted project: no database
-admin credential or Supabase CLI login is available in this workspace.
-
-The browser-side writes to `plan` and `plan_expires_at` have been removed from
-the source. Apply the migration in the Supabase SQL Editor or with a linked
-Supabase CLI project only after deploying that client change. Verify the first
-registration and admin account immediately after applying it.
-
-
--------------------------
-
-repomix commands for ai developments :
-
-npx repomix --compress --remove-comments --ignore "node_modules,dist,.wrangler,.git,.next,build"
-
---------------------------
-
-# Premium Dashboard Dosyasının Komponentlerinin İşlevleri 
-
-
-
-## 📊 Dosya İşlev Özeti
-
-| # | Dosya Adı | Sorumluluk | Bağımlılık | Yan Etki |
-|---|-----------|------------|------------|----------|
-| 1 | **helpers.js** | Saf hesaplamalar, formatlama, veri dönüşümleri | Hiçbir şey (bağımsız) | Yok (pure functions) |
-| 2 | **chart-renderers.js** | Tüm grafikleri oluşturma, güncelleme ve yönetme | helpers.js | DOM'a grafik çizer, ApexCharts/Lightweight Charts kullanır |
-| 3 | **dashboard-manager.js** | Widget'lar, sürükle-bırak, iskelet ekranlar, stratejiler, export (CSV/PDF) | helpers.js, chart-renderers.js | DOM manipülasyonu, localStorage okuma/yazma, export dosyası oluşturur |
-| 4 | **premium-dashboard.js** | Ana koordinasyon, global state yönetimi, init, event listener'lar | helpers.js, chart-renderers.js, dashboard-manager.js | DOM manipülasyonu, Supabase veritabanı okuma, oturum yönetimi |
-
-
-
-## Debug Modunu Açmak İçin 
-
-localStorage.setItem('ww_debug', 'true');
-location.reload();
-
-## Kapatmak İçin
-
-localStorage.removeItem('ww_debug');
-location.reload();
-
-
-## Bir geliştirme yapmadan önce şunları yap!
-
-Github repo yedeği al 
-
-Eğer hata çıktıysa geri almak için bu komutu kullan 
-
-git reset --hard
-</file>
-
 <file path="public/interface/dashboard/js/dashboard.js">
 function safeEl(id)
 ⋮----
@@ -14646,83 +13423,6 @@ async function initDashboard()
 function startDashboard()
 </file>
 
-<file path="public/interface/quick-add/js/quick-add.js">
-function applyThemeFromStorage()
-⋮----
-function badgeIcon(type)
-⋮----
-function logTag(type)
-⋮----
-function chunkArray(arr, size)
-⋮----
-function el(id)
-function qsa(selector)
-⋮----
-function checkGlobals()
-⋮----
-function escapeHtml(str)
-⋮----
-function parseCsvLine(line)
-⋮----
-function parseCsvText(text)
-⋮----
-// ============================================================
-// TARİH FORMATLAMA - Tek tip UTC ISO formatı
-// ============================================================
-⋮----
-function validateAndFormatDate(dateString)
-⋮----
-function getModalHTML()
-⋮----
-async function loadStrategies()
-⋮----
-function selectInstrument(instrument, multiplier)
-⋮----
-function getMultiplier()
-⋮----
-function updatePricePreview()
-⋮----
-function openModal()
-⋮----
-function closeModal()
-⋮----
-function resetForm()
-⋮----
-function switchTab(tab)
-⋮----
-function setSide(side)
-⋮----
-function setLotPreset(value)
-⋮----
-function renderCSVLog(messages)
-⋮----
-function showCsvPreview(rows, headers)
-⋮----
-async function handleCsvFileSelect(file)
-⋮----
-async function executeCsvImport()
-⋮----
-async function handleBulkImport()
-⋮----
-// ⭐ 1. ADIM: Satırları parse et, trades dizisine topla
-⋮----
-function refreshPage()
-⋮----
-async function saveTrade()
-⋮----
-function showError(msg)
-⋮----
-function createFab()
-⋮----
-function attachModalEvents()
-⋮----
-function createModal()
-⋮----
-function handleEsc(e)
-⋮----
-function initQuickAdd()
-</file>
-
 <file path="public/interface/trades/js/trades.js">
 function safeEl(id)
 ⋮----
@@ -14805,8 +13505,1462 @@ function closeSheet()
 async function initTrades()
 </file>
 
+<file path="public/settings/js/settings.js">
+function getLucideIcon(name, size)
+⋮----
+function getSb()
+⋮----
+function showMsg(message, type)
+⋮----
+function isAdmin(user)
+⋮----
+function safeEl(id)
+⋮----
+function t(key, params)
+⋮----
+function sanitizeHTML(str)
+⋮----
+async function getCurrentUser()
+⋮----
+async function getSession()
+⋮----
+async function loadPanelContent(panelId, url)
+⋮----
+// ============================================================
+// PANEL INIT
+// ============================================================
+function initPanel(panelId)
+⋮----
+async function uploadAvatar(file)
+⋮----
+async function updateAvatar(url)
+⋮----
+async function loadAvatar()
+⋮----
+function updateAvatarElements(url)
+⋮----
+function initProfile()
+⋮----
+async function loadProfileData()
+⋮----
+function showConfirmModal(title, message, warning, onConfirm, onCancel)
+⋮----
+async function renderPlan()
+⋮----
+function startTimer(expiresAt)
+⋮----
+function initPassword()
+⋮----
+function initDanger()
+⋮----
+async function deleteAllUserData()
+⋮----
+async function deactivateAccount()
+⋮----
+function initAppearance()
+⋮----
+function loadThemeCustomizationFallback()
+⋮----
+function setupThemeEventsFallback()
+⋮----
+function updatePreview()
+⋮----
+function saveTheme()
+⋮----
+function resetTheme()
+⋮----
+function initLanguageSelector()
+⋮----
+function initCurrencySelector()
+⋮----
+function initOvertrade()
+⋮----
+async function updateBadge()
+⋮----
+function initNavEvents()
+⋮----
+function initPanelClickEvents()
+⋮----
+function initAvatarPopup()
+⋮----
+function closePopup()
+⋮----
+// ============================================================
+// CONFIRM MODAL - INIT
+// ============================================================
+function initConfirmModal()
+⋮----
+async function checkAndActivatePremium()
+</file>
+
+<file path="public/i18n.js">
+class I18n
+⋮----
+init()
+⋮----
+t(key, params =
+⋮----
+setLanguage(lang)
+⋮----
+_applyInternal(callId)
+⋮----
+getCurrentLanguage()
+⋮----
+apply()
+⋮----
+onChange(callback)
+⋮----
+refresh()
+⋮----
+syncStorageOnly(lang)
+⋮----
+getSavedLanguage()
+⋮----
+resolveLanguageConflict(dbLang)
+⋮----
+function _initialApply()
+</file>
+
 <file path="public/sw.js">
 
+</file>
+
+<file path="src/pages/add-trade.astro">
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
+<Fragment slot="head">
+  <title data-i18n="addtrade.title">İşlem Ekle – Wawe Journal</title>
+  
+<script is:inline>
+  (function() {
+    if (document.body) {
+      var savedTheme = localStorage.getItem('ww_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        var savedTheme = localStorage.getItem('ww_theme');
+        if (savedTheme === 'light') {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+      });
+    }
+  })();
+</script>
+
+
+  
+  <style>
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.2rem;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .page-header .subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    
+    .import-banner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .import-banner:hover {
+      border-color: var(--accent);
+      border-style: solid;
+      background: rgba(139,92,246,0.03);
+    }
+    .import-banner-icon {
+      width: 38px;
+      height: 38px;
+      background: rgba(139,92,246,0.12);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .import-banner-text p {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin: 0 0 2px;
+    }
+    .import-banner-text span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .import-banner-badge {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(139,92,246,0.12);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    #csv-file { display: none; }
+    
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .form-section {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section:last-child { border-bottom: none; }
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Mono', monospace;
+    }
+    .section-label svg { opacity: 0.8; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .field label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .field input, .field select, .field textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
+    }
+    .field input[type="text"], .field input[type="date"], .field input[type="number"] {
+      font-family: 'DM Mono', monospace;
+    }
+    .field textarea {
+      resize: vertical;
+      min-height: 72px;
+      line-height: 1.5;
+    }
+    .field select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b80' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      cursor: pointer;
+    }
+    .field select option { background: var(--surface); }
+    
+    .dir-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .dir-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .dir-btn:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .dir-btn.long.active {
+      background: rgba(34,197,94,0.1);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+    .dir-btn.short.active {
+      background: rgba(239,68,68,0.1);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    #direction-hidden { display: none; }
+    
+    /* ============================================================
+       STRATEJİ KUTUCUKLARI - YENİ TASARIM
+       ============================================================ */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .strategy-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .strategy-chip:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(139,92,246,0.04);
+      transform: translateY(-1px);
+    }
+    .strategy-chip.active {
+      border-color: var(--accent);
+      background: rgba(139,92,246,0.12);
+      color: var(--accent2);
+      box-shadow: 0 0 0 2px rgba(139,92,246,0.15);
+    }
+    .strategy-chip .chip-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .strategy-chip .chip-check {
+      margin-left: auto;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .strategy-chip.active .chip-check {
+      opacity: 1;
+      color: var(--accent);
+    }
+    .strategy-chip .chip-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .strategy-chip-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0.5rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .strategy-chip-empty a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .strategy-chip-empty a:hover { text-decoration: underline; }
+    
+    .strategy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .strategy-header .s-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .strategy-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .strategy-actions button {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .strategy-actions button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .strategy-actions button svg { width: 12px; height: 12px; }
+    
+    #strategy-id-hidden { display: none; }
+
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      padding: 1rem 1.5rem;
+      background: rgba(139,92,246,0.04);
+      border-top: 1px solid var(--border);
+    }
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .preview-item .p-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: 'DM Mono', monospace;
+    }
+    .preview-item .p-val {
+      font-size: 1.1rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+    }
+    .preview-item .p-val.pos { color: var(--green); }
+    .preview-item .p-val.neg { color: var(--red); }
+    .preview-item .p-val.accent { color: var(--accent); }
+    .preview-divider {
+      width: 1px;
+      height: 36px;
+      background: var(--border);
+    }
+    
+    .save-btn-wrap {
+      padding: 1.25rem 1.5rem;
+    }
+    .save-btn {
+      width: 100%;
+      padding: 0.8rem;
+      justify-content: center;
+    }
+    
+    .import-log {
+      display: none;
+      margin-top: 0.75rem;
+      font-size: 11px;
+      color: var(--muted);
+      max-height: 150px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.15);
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+    }
+    .error-msg {
+      display: none;
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 599px) {
+      main { padding: 1rem !important; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .form-section { padding: 1rem; }
+      .preview-bar { gap: 1rem; }
+      .strategy-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    }
+    
+    /* Loading overlay for bulk import */
+    .bulk-import-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .bulk-import-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .bulk-import-overlay .bulk-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .bulk-import-overlay .bulk-box h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    .bulk-import-overlay .bulk-box p {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 1rem;
+    }
+    .bulk-import-overlay .bulk-box textarea {
+      width: 100%;
+      min-height: 200px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }
+    .bulk-import-overlay .bulk-box textarea:focus {
+      border-color: var(--accent);
+    }
+    .bulk-import-overlay .bulk-box .bulk-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      justify-content: flex-end;
+    }
+    .bulk-import-overlay .bulk-box .bulk-actions button {
+      padding: 0.5rem 1.2rem;
+    }
+    .bulk-import-overlay .bulk-box .bulk-progress {
+      margin-top: 0.75rem;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .bulk-import-overlay .bulk-box .bulk-progress .bulk-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .bulk-import-overlay .bulk-box .bulk-progress .bulk-bar .bulk-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</Fragment>
+  <!-- ============================================================
+       NAVBAR CONTAINER
+       ============================================================ -->
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:800px;">
+
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="addtrade.title">Yeni işlem ekle</h1>
+        <p class="subtitle" data-i18n="addtrade.subtitle">İşlem detaylarını gir, anlık K/Z hesaplamasını gör</p>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="bulk-import-btn" style="font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.bulk_import">
+          📋 Toplu Ekle
+        </button>
+        <a href="trades.html" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;padding:0.4rem 1rem;" data-i18n="addtrade.back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Geri
+        </a>
+      </div>
+    </div>
+
+    <!-- CSV İmport Banner -->
+    <div class="import-banner" id="import-banner-trigger" role="button" tabindex="0">
+      <div class="import-banner-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div class="import-banner-text">
+        <p data-i18n="addtrade.import_title">Toplu içe aktarma (CSV)</p>
+        <span data-i18n="addtrade.import_desc">MT4/MT5 veya Excel'den dışa aktardığınız dosyayı yükleyin</span>
+      </div>
+      <span class="import-banner-badge">CSV</span>
+    </div>
+    <input type="file" id="csv-file" accept=".csv" />
+
+    <div id="import-progress" style="display:none;align-items:center;gap:8px;margin-bottom:0.75rem;font-size:12px;color:var(--muted);">
+      <div class="spinner" style="width:18px;height:18px;"></div>
+      <span data-i18n="addtrade.import_processing">İşleniyor…</span>
+    </div>
+    <div class="import-log" id="import-log"></div>
+
+    <div class="form-card">
+
+      <!-- İŞLEM DETAYLARI -->
+      <div class="form-section">
+        <div class="section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span data-i18n="addtrade.section_trade_details">İşlem Detayları</span>
+        </div>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label data-i18n="addtrade.instrument_type">Enstrüman tipi *</label>
+          <select id="instrument">
+            <option value="forex" data-i18n="addtrade.instrument_forex">Forex (çarpan: 100.000)</option>
+            <option value="gold" data-i18n="addtrade.instrument_gold">Altın / XAUUSD (çarpan: 100)</option>
+            <option value="index" data-i18n="addtrade.instrument_index">Endeks (çarpan: 10)</option>
+            <option value="crypto" data-i18n="addtrade.instrument_crypto">Kripto (çarpan: 1)</option>
+            <option value="other" data-i18n="addtrade.instrument_other">Diğer / Manuel</option>
+          </select>
+        </div>
+
+        <div class="field" id="custom-multiplier-wrap" style="display:none;margin-bottom:12px;">
+          <label data-i18n="addtrade.custom_multiplier">Manuel çarpan *</label>
+          <input type="text" inputmode="decimal" id="custom-multiplier" placeholder="1000" />
+        </div>
+
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="field">
+            <label data-i18n="addtrade.symbol">Sembol *</label>
+            <input type="text" id="symbol" placeholder="EURUSD, BTCUSDT…" style="text-transform:uppercase;" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.lot">Lot *</label>
+            <input type="text" inputmode="decimal" id="lot" placeholder="0.10" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="addtrade.direction">Yön *</label>
+          <div class="dir-toggle">
+            <button type="button" class="dir-btn long active" id="btn-long" onclick="setDirection('LONG')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span data-i18n="addtrade.long">Long · Alış</span>
+            </button>
+            <button type="button" class="dir-btn short" id="btn-short" onclick="setDirection('SHORT')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+              <span data-i18n="addtrade.short">Short · Satış</span>
+            </button>
+          </div>
+          <input type="hidden" id="direction" value="LONG" />
+        </div>
+      </div>
+
+      <!-- FİYATLAR -->
+      <div class="form-section">
+        <div class="section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span data-i18n="addtrade.section_prices">Fiyatlar</span>
+        </div>
+
+        <div class="grid-3" style="margin-bottom:12px;">
+          <div class="field">
+            <label data-i18n="addtrade.entry_price">Giriş fiyatı *</label>
+            <input type="text" inputmode="decimal" id="entry" placeholder="1.08500" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.exit_price">Çıkış fiyatı</label>
+            <input type="text" inputmode="decimal" id="exit" placeholder="1.09000" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.date">Tarih *</label>
+            <input type="date" id="trade-date" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label data-i18n="addtrade.stop_loss">Stop loss</label>
+            <input type="text" inputmode="decimal" id="sl" placeholder="1.08000" />
+          </div>
+          <div class="field">
+            <label data-i18n="addtrade.take_profit">Take profit</label>
+            <input type="text" inputmode="decimal" id="tp" placeholder="1.09500" />
+          </div>
+        </div>
+      </div>
+
+      <!-- STRATEJİ & NOTLAR -->
+      <div class="form-section">
+        <div class="section-label" style="margin-bottom:0.75rem;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span data-i18n="addtrade.section_strategy_notes">Strateji &amp; Notlar</span>
+        </div>
+
+        <!-- Strateji Kutucukları - YENİ TASARIM -->
+        <div class="strategy-header">
+          <span class="s-label" data-i18n="addtrade.select_strategy_label">Strateji seç</span>
+          <div class="strategy-actions">
+            <button type="button" id="refresh-strategies-btn" title="Stratejileri Yenile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span data-i18n="addtrade.refresh">Yenile</span>
+            </button>
+            <button type="button" id="clear-strategy-btn" title="Seçimi Temizle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span>Temizle</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="strategy-grid" id="strategy-grid">
+          <div class="strategy-chip-empty">
+            <span data-i18n="addtrade.loading_strategies">Stratejiler yükleniyor...</span>
+          </div>
+        </div>
+        <input type="hidden" id="strategy-id-hidden" value="" />
+
+        <div class="field" style="margin-top:0.75rem;">
+          <label data-i18n="addtrade.notes">Notlar</label>
+          <textarea id="notes" rows="3" data-i18n-placeholder="addtrade.notes_placeholder" placeholder="Strateji notları, gözlemler, psikolojik durum…"></textarea>
+        </div>
+      </div>
+
+      <!-- ÖN İZLEME -->
+      <div class="preview-bar" id="preview-bar" style="display:none;">
+        <div class="preview-item" id="preview-pnl-wrap" style="display:none;">
+          <span class="p-label" data-i18n="addtrade.estimated_pnl">Tahmini K/Z</span>
+          <span class="p-val" id="preview-pnl">—</span>
+        </div>
+        <div class="preview-divider" id="preview-divider" style="display:none;"></div>
+        <div class="preview-item" id="preview-rr-wrap" style="display:none;">
+          <span class="p-label" data-i18n="addtrade.risk_reward">Risk / Reward</span>
+          <span class="p-val accent" id="preview-rr">—</span>
+        </div>
+      </div>
+
+      <div class="form-section" style="padding-top:0;padding-bottom:0;border:none;" id="err-wrap">
+        <p class="error-msg" id="err"></p>
+      </div>
+
+      <div class="save-btn-wrap">
+        <button class="btn btn-primary save-btn" id="save-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span data-i18n="common.save">Kaydet</span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ============================================================
+       BULK IMPORT MODAL
+       ============================================================ -->
+  <div class="bulk-import-overlay" id="bulk-import-overlay">
+    <div class="bulk-box">
+      <h3>📋 Toplu İşlem Ekle</h3>
+      <p>Her satıra bir işlem gelecek şekilde aşağıdaki formatta girin:</p>
+      <p style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;">
+        sembol,yön,lot,giriş,çıkış,tarih,not<br>
+        EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem
+      </p>
+      <textarea id="bulk-textarea" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem&#10;XAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Altın işlemi"></textarea>
+      <div class="bulk-progress" id="bulk-progress" style="display:none;">
+        <span id="bulk-status">İşleniyor...</span>
+        <div class="bulk-bar"><div class="bulk-fill" id="bulk-fill"></div></div>
+      </div>
+      <div class="bulk-actions">
+        <button class="btn btn-ghost" id="bulk-cancel-btn" style="font-size:12px;padding:0.4rem 1rem;">İptal</button>
+        <button class="btn btn-primary" id="bulk-confirm-btn" style="font-size:12px;padding:0.4rem 1.2rem;">📤 İşlemleri Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+  <script src="/script.js" is:inline></script>
+  <script src="/components/navbar/navbar.js" is:inline></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof loadNavbar === 'function') {
+        loadNavbar('navbar-container');
+      }
+    });
+  </script>
+  <script is:inline>
+    // ⭐ INSTRUMENT_MULTIPLIERS kontrolü - eğer tanımlı değilse varsayılan değerleri ata
+    if (typeof INSTRUMENT_MULTIPLIERS === 'undefined') {
+      window.INSTRUMENT_MULTIPLIERS = {
+        forex: 100000,
+        gold: 100,
+        index: 10,
+        crypto: 1,
+        other: 1
+      };
+    }
+
+    var currentUser = null;
+    var importLogs = [];
+    var strategiesList = [];
+
+    // ============================================================
+    // STRATEJİ KUTUCUKLARI
+    // ============================================================
+    async function loadStrategyGrid() {
+      var grid = document.getElementById('strategy-grid');
+      if (!grid) return;
+
+      try {
+        var strategies = await getUserStrategies();
+        strategiesList = strategies;
+
+        if (!strategies || strategies.length === 0) {
+          grid.innerHTML = '\n            <div class="strategy-chip-empty">\n              <span data-i18n="addtrade.no_strategies">Henüz strateji eklenmemiş.</span>\n              <a href="strategies.html" data-i18n="addtrade.create_strategy">Strateji oluştur →</a>\n            </div>\n          ';
+          i18n.apply();
+          return;
+        }
+
+        var currentSelected = document.getElementById('strategy-id-hidden').value;
+
+        var html = '';
+        for (var sIdx = 0; sIdx < strategies.length; sIdx++) {
+          var s = strategies[sIdx];
+          var isActive = s.id === currentSelected;
+          html += '\n            <div class="strategy-chip ' + (isActive ? 'active' : '') + '" \n                 data-id="' + s.id + '" \n                 onclick="selectStrategy(\'' + s.id + '\')"\n                 title="' + (s.description || s.name) + '">\n              <span class="chip-color" style="background:' + (s.color || '#8b5cf6') + '"></span>\n              <span class="chip-name">' + (s.name.length > 15 ? s.name.slice(0,12)+'..' : s.name) + '</span>\n              <span class="chip-check">✓</span>\n            </div>\n          ';
+        }
+
+        grid.innerHTML = html;
+        i18n.apply();
+
+      } catch (e) {
+        grid.innerHTML = '\n          <div class="strategy-chip-empty">\n            <span style="color:var(--red);">⚠️ Stratejiler yüklenemedi</span>\n          </div>\n        ';
+      }
+    }
+
+    function selectStrategy(id) {
+      var chips = document.querySelectorAll('.strategy-chip');
+      chips.forEach(function(chip) {
+        chip.classList.toggle('active', chip.dataset.id === id);
+      });
+      var hiddenEl = document.getElementById('strategy-id-hidden');
+      if (hiddenEl) hiddenEl.value = id;
+    }
+
+    function clearStrategy() {
+      document.querySelectorAll('.strategy-chip').forEach(function(chip) { chip.classList.remove('active'); });
+      var hiddenEl = document.getElementById('strategy-id-hidden');
+      if (hiddenEl) hiddenEl.value = '';
+    }
+
+    var clearBtn = document.getElementById('clear-strategy-btn');
+    if (clearBtn) clearBtn.addEventListener('click', clearStrategy);
+
+    // ============================================================
+    // REFRESH STRATEGIES
+    // ============================================================
+    var refreshBtn = document.getElementById('refresh-strategies-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadStrategyGrid);
+
+    // ============================================================
+    // DIRECTION TOGGLE
+    // ============================================================
+    window.setDirection = function(val) {
+      var dirEl = document.getElementById('direction');
+      if (dirEl) dirEl.value = val;
+      var longBtn = document.getElementById('btn-long');
+      var shortBtn = document.getElementById('btn-short');
+      if (longBtn) longBtn.classList.toggle('active', val === 'LONG');
+      if (shortBtn) shortBtn.classList.toggle('active', val === 'SHORT');
+      updatePreview();
+    };
+
+    // ============================================================
+    // INSTRUMENT CHANGE
+    // ============================================================
+    var instrumentEl = document.getElementById('instrument');
+    if (instrumentEl) {
+      instrumentEl.addEventListener('change', function() {
+        var customWrap = document.getElementById('custom-multiplier-wrap');
+        if (customWrap) customWrap.style.display = this.value === 'other' ? 'flex' : 'none';
+        updatePreview();
+      });
+    }
+
+    // ============================================================
+    // PREVIEW - calcPnL ve calcRR fonksiyonları script.js'den çağrılır
+    // ============================================================
+    var previewInputs = ['entry', 'exit', 'lot', 'instrument', 'custom-multiplier', 'sl', 'tp'];
+    previewInputs.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
+      }
+    });
+
+    function getMultiplier() {
+      var instEl = document.getElementById('instrument');
+      var inst = instEl ? instEl.value : 'forex';
+      if (inst === 'other') {
+        var customEl = document.getElementById('custom-multiplier');
+        var v = customEl ? parseFloat(customEl.value) : null;
+        return isNaN(v) ? null : v;
+      }
+      if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined') {
+        return INSTRUMENT_MULTIPLIERS[inst] || 1;
+      }
+      return 1;
+    }
+
+    function updatePreview() {
+      var entryEl = document.getElementById('entry');
+      var exitEl = document.getElementById('exit');
+      var lotEl = document.getElementById('lot');
+      var dirEl = document.getElementById('direction');
+      var slEl = document.getElementById('sl');
+      var tpEl = document.getElementById('tp');
+      
+      var entry = entryEl ? entryEl.value : '';
+      var exit = exitEl ? exitEl.value : '';
+      var lot = lotEl ? lotEl.value : '';
+      var dir = dirEl ? dirEl.value : '';
+      var sl = slEl ? slEl.value : '';
+      var tp = tpEl ? tpEl.value : '';
+      var mult = getMultiplier();
+
+      var bar = document.getElementById('preview-bar');
+      var pnlWrap = document.getElementById('preview-pnl-wrap');
+      var rrWrap = document.getElementById('preview-rr-wrap');
+      var divider = document.getElementById('preview-divider');
+      var pnlEl = document.getElementById('preview-pnl');
+      var rrEl = document.getElementById('preview-rr');
+
+      var hasPnl = false;
+      var hasRr = false;
+
+      if (entry && lot && dir && mult !== null) {
+        if (exit) {
+          var pnl = 0;
+          try {
+            if (typeof calcPnL !== 'undefined') {
+              pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
+            } else {
+              var direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
+              pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+            }
+          } catch(e) {}
+          if (pnlEl) {
+            pnlEl.textContent = formatCurrency(pnl);
+            pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
+          }
+          hasPnl = true;
+        }
+        if (sl && tp) {
+          var rr = null;
+          try {
+            if (typeof calcRR !== 'undefined') {
+              rr = calcRR(entry, sl, tp, dir);
+            } else {
+              var e = parseFloat(entry);
+              var s = parseFloat(sl);
+              var t = parseFloat(tp);
+              var risk = Math.abs(e - s);
+              var reward = Math.abs(t - e);
+              if (risk > 0) rr = (reward / risk).toFixed(2);
+            }
+          } catch(e) {}
+          if (rr !== null && rrEl) {
+            rrEl.textContent = '1 : ' + rr;
+            hasRr = true;
+          }
+        }
+      }
+
+      if (pnlWrap) pnlWrap.style.display = hasPnl ? 'flex' : 'none';
+      if (rrWrap) rrWrap.style.display = hasRr ? 'flex' : 'none';
+      if (divider) divider.style.display = (hasPnl && hasRr) ? 'block' : 'none';
+      if (bar) bar.style.display = (hasPnl || hasRr) ? 'flex' : 'none';
+    }
+
+    // ============================================================
+    // CSV IMPORT
+    // ============================================================
+    var importBanner = document.getElementById('import-banner-trigger');
+    if (importBanner) {
+      importBanner.addEventListener('click', function() {
+        var csvFile = document.getElementById('csv-file');
+        if (csvFile) csvFile.click();
+      });
+    }
+    
+    var csvFileInput = document.getElementById('csv-file');
+    if (csvFileInput) {
+      csvFileInput.addEventListener('change', async function() {
+        if (this.files && this.files[0]) await importCSV(this.files[0]);
+      });
+    }
+
+    function validateAndFormatDate(dateString, rowNumber) {
+      if (!dateString || !dateString.trim()) {
+        importLogs.push('⚠️ Satır ' + (rowNumber || '?') + ': Tarih boş, bugün kullanıldı.');
+        return new Date().toISOString().split('T')[0];
+      }
+      dateString = dateString.trim();
+      var d = new Date(dateString);
+      if (!isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return d.toISOString().split('T')[0];
+      }
+
+      var p = dateString.split('.');
+      if (p.length === 3) {
+        var dmy = new Date(p[2] + '-' + p[1] + '-' + p[0]);
+        if (!isNaN(dmy.getTime())) return dmy.toISOString().split('T')[0];
+      }
+      p = dateString.split('/');
+      if (p.length === 3) {
+        var mdy = new Date(p[2] + '-' + p[0] + '-' + p[1]);
+        if (!isNaN(mdy.getTime())) return mdy.toISOString().split('T')[0];
+        var dmy2 = new Date(p[2] + '-' + p[1] + '-' + p[0]);
+        if (!isNaN(dmy2.getTime())) return dmy2.toISOString().split('T')[0];
+      }
+      importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + dateString + '", bugün kullanıldı.');
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function renderImportLog() {
+      var el = document.getElementById('import-log');
+      if (el) {
+        if (importLogs.length > 0) {
+          el.style.display = 'block';
+          el.innerHTML = importLogs.map(function(l) { return '<div>' + l + '</div>'; }).join('');
+        } else {
+          el.style.display = 'none';
+          el.innerHTML = '';
+        }
+      }
+    }
+
+    async function importCSV(file) {
+      var progressDiv = document.getElementById('import-progress');
+      if (progressDiv) progressDiv.style.display = 'flex';
+      importLogs = [];
+      renderImportLog();
+
+      try {
+        var text = await file.text();
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+
+        if (lines.length < 2) {
+          showToast(i18n.t('addtrade.csv_no_data'), 'error');
+          if (progressDiv) progressDiv.style.display = 'none';
+          return;
+        }
+
+        var headers = lines[0].split(',').map(function(h) { return h.trim().toLowerCase(); });
+        var imported = 0, failed = 0;
+
+        for (var i = 1; i < lines.length; i++) {
+          var values = lines[i].split(',');
+          if (values.length < 5) {
+            importLogs.push('⚠️ Satır ' + i + ': Yetersiz sütun (' + values.length + '), atlandı.');
+            failed++; continue;
+          }
+
+          var row = {};
+          for (var hIdx = 0; hIdx < headers.length; hIdx++) {
+            row[headers[hIdx]] = values[hIdx] ? values[hIdx].trim() : '';
+          }
+
+          var symbol = (row.symbol || row.sembol || '').toUpperCase();
+          var direction = (row.yon || row.direction || '').toUpperCase();
+          var lot = parseFloat(row.lot || 0);
+          var entry = parseFloat(row.entry || row.giris || row.entry_price || 0);
+          var exit = parseFloat(row.exit || row.cikis || row.exit_price) || null;
+          var rawDate = row.tarih || row.date || '';
+          var tradeDate = validateAndFormatDate(rawDate, i);
+
+          if (!symbol || !direction || !lot || !entry) {
+            importLogs.push('❌ Satır ' + i + ': Zorunlu alan eksik, atlandı.');
+            failed++; continue;
+          }
+
+          var finalDir = 'SHORT';
+          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
+          else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
+          else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + direction + '", SHORT olarak kaydedildi.');
+
+          var trade = {
+            user_id: currentUser.id, symbol: symbol, direction: finalDir,
+            instrument: 'forex', lot: lot, entry_price: entry,
+            exit_price: exit, trade_date: tradeDate,
+            notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR')
+          };
+
+          var { error } = await sb.from('trades').insert([trade]);
+          if (error) { 
+            importLogs.push('❌ Satır ' + i + ': ' + error.message); 
+            failed++; 
+          } else {
+            imported++;
+          }
+        }
+
+        renderImportLog();
+        if (progressDiv) progressDiv.style.display = 'none';
+        if (csvFileInput) csvFileInput.value = '';
+
+        var msg = imported + ' işlem içe aktarıldı' + (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
+        showToast(msg, failed > 0 ? 'error' : 'success');
+        if (imported > 0) setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
+      } catch(e) {
+        if (progressDiv) progressDiv.style.display = 'none';
+        showToast('CSV okuma hatası: ' + e.message, 'error');
+      }
+    }
+
+    // ============================================================
+    // BULK IMPORT (TOPLU EKLEME)
+    // ============================================================
+    var bulkOverlay = document.getElementById('bulk-import-overlay');
+    var bulkTextarea = document.getElementById('bulk-textarea');
+    var bulkProgress = document.getElementById('bulk-progress');
+    var bulkFill = document.getElementById('bulk-fill');
+    var bulkStatus = document.getElementById('bulk-status');
+
+    var bulkImportBtn = document.getElementById('bulk-import-btn');
+    if (bulkImportBtn) {
+      bulkImportBtn.addEventListener('click', function() {
+        if (bulkOverlay) bulkOverlay.classList.add('active');
+        if (bulkTextarea) bulkTextarea.value = '';
+        if (bulkProgress) bulkProgress.style.display = 'none';
+      });
+    }
+
+    var bulkCancelBtn = document.getElementById('bulk-cancel-btn');
+    if (bulkCancelBtn) {
+      bulkCancelBtn.addEventListener('click', function() {
+        if (bulkOverlay) bulkOverlay.classList.remove('active');
+      });
+    }
+
+    if (bulkOverlay) {
+      bulkOverlay.addEventListener('click', function(e) {
+        if (e.target === bulkOverlay) bulkOverlay.classList.remove('active');
+      });
+    }
+
+    var bulkConfirmBtn = document.getElementById('bulk-confirm-btn');
+    if (bulkConfirmBtn) {
+      bulkConfirmBtn.addEventListener('click', async function() {
+        if (!bulkTextarea) return;
+        var text = bulkTextarea.value.trim();
+        if (!text) {
+          showToast('Lütfen en az bir işlem girin!', 'error');
+          return;
+        }
+
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+        if (lines.length === 0) {
+          showToast('Lütfen en az bir işlem girin!', 'error');
+          return;
+        }
+
+        var trades = [];
+        var errors = [];
+        var defaultDate = new Date().toISOString().split('T')[0];
+
+        for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+          var parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
+          if (parts.length < 5) {
+            errors.push('Satır ' + (lineIdx+1) + ': Yetersiz alan (' + parts.length + ' alan, en az 5 gerekli)');
+            continue;
+          }
+
+          var symbol = parts[0].toUpperCase();
+          var direction = parts[1].toUpperCase();
+          var lot = parseFloat(parts[2]);
+          var entry = parseFloat(parts[3]);
+          var exit = parts[4] ? parseFloat(parts[4]) : null;
+          var date = parts[5] ? validateAndFormatDate(parts[5], lineIdx+1) : defaultDate;
+          var notes = parts[6] || 'Toplu ekleme - ' + new Date().toLocaleString('tr-TR');
+
+          if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
+            errors.push('Satır ' + (lineIdx+1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş)');
+            continue;
+          }
+
+          var finalDir = 'SHORT';
+          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
+
+          trades.push({
+            user_id: currentUser.id,
+            symbol: symbol,
+            direction: finalDir,
+            instrument: 'forex',
+            lot: lot,
+            entry_price: entry,
+            exit_price: exit,
+            trade_date: date,
+            notes: notes || null,
+            multiplier: 100000
+          });
+        }
+
+        if (errors.length > 0) {
+          showToast(errors.length + ' hata var!', 'error');
+          if (bulkProgress) bulkProgress.style.display = 'block';
+          if (bulkFill) {
+            bulkFill.style.width = '100%';
+            bulkFill.style.background = 'var(--red)';
+          }
+          if (bulkStatus) bulkStatus.textContent = '❌ ' + errors.length + ' hata: ' + errors.join('; ');
+          setTimeout(function() { 
+            if (bulkProgress) bulkProgress.style.display = 'none'; 
+            if (bulkFill) bulkFill.style.width = '0%'; 
+          }, 3000);
+          return;
+        }
+
+        if (trades.length === 0) {
+          showToast('Geçerli işlem bulunamadı!', 'error');
+          return;
+        }
+
+        if (bulkProgress) bulkProgress.style.display = 'block';
+        if (bulkFill) {
+          bulkFill.style.width = '0%';
+          bulkFill.style.background = 'linear-gradient(90deg, var(--accent), var(--accent2))';
+        }
+        if (bulkStatus) bulkStatus.textContent = '0 / ' + trades.length + ' işlem ekleniyor...';
+
+        var success = 0;
+        var failed = 0;
+
+        for (var tIdx = 0; tIdx < trades.length; tIdx++) {
+          var trade = trades[tIdx];
+          var { error } = await sb.from('trades').insert([trade]);
+          if (error) {
+            failed++;
+            errors.push('Satır ' + (tIdx+1) + ': ' + error.message);
+          } else {
+            success++;
+          }
+          var progress = ((tIdx + 1) / trades.length) * 100;
+          if (bulkFill) bulkFill.style.width = progress + '%';
+          if (bulkStatus) bulkStatus.textContent = success + ' / ' + trades.length + ' işlem eklendi (' + failed + ' başarısız)';
+        }
+
+        if (errors.length > 0) {
+          if (bulkFill) {
+            bulkFill.style.background = 'var(--red)';
+          }
+          if (bulkStatus) bulkStatus.textContent = '⚠️ ' + success + ' işlem eklendi, ' + failed + ' hata!';
+          setTimeout(function() { 
+            if (bulkProgress) bulkProgress.style.display = 'none'; 
+            if (bulkFill) bulkFill.style.width = '0%'; 
+          }, 3000);
+          showToast(success + ' işlem eklendi, ' + failed + ' hata!', 'error');
+        } else {
+          if (bulkFill) {
+            bulkFill.style.width = '100%';
+            bulkFill.style.background = 'var(--green)';
+          }
+          if (bulkStatus) bulkStatus.textContent = '✅ ' + success + ' işlem başarıyla eklendi!';
+          setTimeout(function() {
+            if (bulkOverlay) bulkOverlay.classList.remove('active');
+            if (bulkProgress) bulkProgress.style.display = 'none';
+            if (bulkFill) bulkFill.style.width = '0%';
+            window.location.href = 'trades.html';
+          }, 1500);
+          showToast(success + ' işlem başarıyla eklendi!', 'success');
+        }
+      });
+    }
+
+    // ============================================================
+    // SAVE TRADE
+    // ============================================================
+    var saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async function() {
+        var symbolEl = document.getElementById('symbol');
+        var directionEl = document.getElementById('direction');
+        var instrumentEl = document.getElementById('instrument');
+        var lotEl = document.getElementById('lot');
+        var entryEl = document.getElementById('entry');
+        var exitEl = document.getElementById('exit');
+        var slEl = document.getElementById('sl');
+        var tpEl = document.getElementById('tp');
+        var tradeDateEl = document.getElementById('trade-date');
+        var notesEl = document.getElementById('notes');
+        var strategyIdEl = document.getElementById('strategy-id-hidden');
+        var errEl = document.getElementById('err');
+        
+        var symbol = symbolEl ? symbolEl.value.trim().toUpperCase() : '';
+        var direction = directionEl ? directionEl.value : '';
+        var instrument = instrumentEl ? instrumentEl.value : 'forex';
+        var lot = lotEl ? parseFloat(lotEl.value) : 0;
+        var entry = entryEl ? parseFloat(entryEl.value) : 0;
+        var exit = exitEl ? parseFloat(exitEl.value) : null;
+        var sl = slEl ? parseFloat(slEl.value) : null;
+        var tp = tpEl ? parseFloat(tpEl.value) : null;
+        var tradeDate = tradeDateEl ? tradeDateEl.value : '';
+        var notes = notesEl ? notesEl.value.trim() : '';
+        var strategyId = strategyIdEl ? strategyIdEl.value || null : null;
+        var mult = getMultiplier();
+        
+        if (errEl) errEl.style.display = 'none';
+
+        if (!symbol || !direction || !lot || !entry || !tradeDate) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.required_fields');
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+        if (instrument === 'other' && !mult) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.custom_multiplier_required');
+            errEl.style.display = 'block';
+          }
+          return;
+        }
+
+        var btn = document.getElementById('save-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto;"></div>';
+        }
+
+        var pnl = null;
+        var rr = null;
+        try {
+          if (typeof calcPnL !== 'undefined' && exit) {
+            pnl = calcPnL(entry, exit, lot, direction, 'other', mult);
+          }
+          if (typeof calcRR !== 'undefined' && sl && tp) {
+            rr = calcRR(entry, sl, tp, direction);
+          }
+        } catch(e) {}
+
+        var { error } = await sb.from('trades').insert([{
+          user_id: currentUser.id, symbol: symbol, direction: direction, instrument: instrument, lot: lot,
+          entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp,
+          trade_date: tradeDate, notes: notes || null, pnl: pnl,
+          rr_ratio: rr ? parseFloat(rr) : null, multiplier: mult, strategy_id: strategyId
+        }]);
+
+        if (error) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.save_error') + error.message;
+            errEl.style.display = 'block';
+          }
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> ' + i18n.t('common.save');
+          }
+          return;
+        }
+
+        showToast(i18n.t('addtrade.save_success'));
+        setTimeout(function() { window.location.href = 'trades.html'; }, 1200);
+      });
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    (async function() {
+      try {
+        currentUser = await requireAuth();
+        if (!currentUser) return;
+        
+        var dateEl = document.getElementById('trade-date');
+        if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+
+        if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
+          var adminLink = document.getElementById('admin-link');
+          if (adminLink) adminLink.style.display = 'inline';
+          var adminLinkMobile = document.getElementById('admin-link-mobile');
+          if (adminLinkMobile) adminLinkMobile.style.display = 'block';
+        }
+
+        await loadStrategyGrid();
+      } catch(e) {}
+    })();
+
+    // ============================================================
+    // DECIMAL FIX
+    // ============================================================
+    applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
+
+  </script>
+</Layout>
 </file>
 
 <file path="src/pages/dashboard.astro">
@@ -17014,6 +17168,179 @@ import Layout from '../layouts/Layout.astro';
        Yukarıdaki ana <style> bloğunda zaten tanımlı. -->
   
 </Layout>
+</file>
+
+<file path="supabase/migrations/README.md">
+# Supabase migrations
+
+`202608190001_security_baseline.sql` is a security hardening migration for
+the existing Wawe Journal schema. It assumes these existing tables and columns:
+
+- `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
+- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
+- `references(is_active)`, `payments(user_id)`
+
+It has intentionally not been run against the hosted project: no database
+admin credential or Supabase CLI login is available in this workspace.
+
+The browser-side writes to `plan` and `plan_expires_at` have been removed from
+the source. Apply the migration in the Supabase SQL Editor or with a linked
+Supabase CLI project only after deploying that client change. Verify the first
+registration and admin account immediately after applying it.
+
+
+-------------------------
+
+repomix commands for ai developments :
+
+npx repomix --compress --remove-comments --ignore "node_modules,dist,.wrangler,.git,.next,build"
+
+--------------------------
+
+# Premium Dashboard Dosyasının Komponentlerinin İşlevleri 
+
+
+
+## 📊 Dosya İşlev Özeti
+
+| # | Dosya Adı | Sorumluluk | Bağımlılık | Yan Etki |
+|---|-----------|------------|------------|----------|
+| 1 | **helpers.js** | Saf hesaplamalar, formatlama, veri dönüşümleri | Hiçbir şey (bağımsız) | Yok (pure functions) |
+| 2 | **chart-renderers.js** | Tüm grafikleri oluşturma, güncelleme ve yönetme | helpers.js | DOM'a grafik çizer, ApexCharts/Lightweight Charts kullanır |
+| 3 | **dashboard-manager.js** | Widget'lar, sürükle-bırak, iskelet ekranlar, stratejiler, export (CSV/PDF) | helpers.js, chart-renderers.js | DOM manipülasyonu, localStorage okuma/yazma, export dosyası oluşturur |
+| 4 | **premium-dashboard.js** | Ana koordinasyon, global state yönetimi, init, event listener'lar | helpers.js, chart-renderers.js, dashboard-manager.js | DOM manipülasyonu, Supabase veritabanı okuma, oturum yönetimi |
+
+
+
+## Debug Modunu Açmak İçin 
+
+localStorage.setItem('ww_debug', 'true');
+location.reload();
+
+## Kapatmak İçin
+
+localStorage.removeItem('ww_debug');
+location.reload();
+
+
+## Bir geliştirme yapmadan önce şunları yap!
+
+Github repo yedeği al 
+
+Eğer hata çıktıysa geri almak için bu komutu kullan 
+
+git reset --hard
+
+
+
+## Sızma Testleri İçin 
+
+https://hostedscan.com/scans
+</file>
+
+<file path="public/interface/quick-add/js/quick-add.js">
+function applyThemeFromStorage()
+⋮----
+function t(key, params)
+⋮----
+function badgeIcon(type)
+⋮----
+function logTag(type)
+⋮----
+function chunkArray(arr, size)
+⋮----
+function el(id)
+function qsa(selector)
+⋮----
+function checkGlobals()
+⋮----
+function escapeHtml(str)
+⋮----
+function parseCsvLine(line)
+⋮----
+function parseCsvText(text)
+⋮----
+function validateAndFormatDate(dateString)
+⋮----
+function isoDate(d)
+⋮----
+function getLocale(lang)
+⋮----
+function formatDateDisplay(iso, lang)
+⋮----
+function getWeekdayNames(lang)
+⋮----
+function getMonthTitle(year, month, lang)
+⋮----
+function renderDatePicker()
+⋮----
+// Days grid
+⋮----
+const firstDayOfWeek = (firstOfMonth.getDay() + 6) % 7; // Pazartesi=0
+⋮----
+// Önceki ayın tail
+⋮----
+// Bu ay
+⋮----
+// Sonraki ayın head
+⋮----
+function openDatePicker(input)
+⋮----
+// Mevcut değeri oku
+⋮----
+function closeDatePicker()
+⋮----
+function selectDate(iso)
+⋮----
+function prevMonth()
+⋮----
+function nextMonth()
+⋮----
+function getModalHTML()
+⋮----
+async function loadStrategies()
+⋮----
+function selectInstrument(instrument, multiplier)
+⋮----
+function getMultiplier()
+⋮----
+function updatePricePreview()
+⋮----
+function openModal()
+⋮----
+function closeModal()
+⋮----
+function resetForm()
+⋮----
+function switchTab(tab)
+⋮----
+function setSide(side)
+⋮----
+function setLotPreset(value)
+⋮----
+function renderCSVLog(messages)
+⋮----
+function showCsvPreview(rows, headers)
+⋮----
+async function handleCsvFileSelect(file)
+⋮----
+async function executeCsvImport()
+⋮----
+async function handleBulkImport()
+⋮----
+function refreshPage()
+⋮----
+async function saveTrade()
+⋮----
+function showError(msg)
+⋮----
+function createFab()
+⋮----
+function attachModalEvents()
+⋮----
+function createModal()
+⋮----
+function initQuickAdd()
 </file>
 
 </files>

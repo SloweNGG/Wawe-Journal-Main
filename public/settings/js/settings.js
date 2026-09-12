@@ -5,6 +5,7 @@
 // ⭐ ÇAKIŞMA ÇÖZÜLDÜ: Ödeme fonksiyonları (upgradeToPremium, cancelPremium,
 //      createNowPaymentInvoice, selectPayMethod) artık sadece payment.js'te.
 //      Bu dosyada sadece fiyat verisi (getMonthlyPrice/getYearlyPrice) var.
+// ⭐ DEĞİŞİKLİK: updateBadge() artık navbar.js'e delege ediyor (i18n race fix)
 // ============================================================
 
 wwLog.log('🔧 settings.js yükleniyor...');
@@ -876,7 +877,6 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   });
 }
 
-// ⭐ payment.js'in çağırabilmesi için global'e de at
 window.showConfirmModal = showConfirmModal;
 
 // ============================================================
@@ -1050,7 +1050,6 @@ async function renderPlan() {
   }
 }
 
-// ⭐ payment.js'in çağırabilmesi için global'e de at
 window.renderPlan = renderPlan;
 
 // ============================================================
@@ -1659,32 +1658,14 @@ function initOvertrade() {
 
 // ============================================================
 // PLAN BADGE GÜNCELLE
+// ⭐ DEĞİŞTİ: Plan rozeti sorumluluğu navbar.js'e taşındı (DRY + race fix)
 // ============================================================
 async function updateBadge() {
-  var badge = safeEl('plan-badge');
-  var text = safeEl('plan-text');
-  if (!badge || !text) return;
-  
-  try {
-    var user = await getCurrentUser();
-    if (!user) return;
-    var sb = getSb();
-    if (!sb) return;
-    var result = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
-    var isPremium = result.data && result.data.plan === 'premium';
-    window.SETTINGS_STATE.isPremium = isPremium;
-    
-    if (isPremium) {
-      badge.classList.add('premium');
-      text.textContent = 'Premium';
-    } else {
-      badge.classList.remove('premium');
-      text.textContent = 'Ücretsiz';
-    }
-  } catch (e) {}
+  if (typeof window.updateNavbarBadge === 'function') {
+    await window.updateNavbarBadge();
+  }
 }
 
-// ⭐ payment.js'in çağırabilmesi için global'e de at
 window.updateBadge = updateBadge;
 
 // ============================================================

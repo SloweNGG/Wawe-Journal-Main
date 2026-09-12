@@ -13,6 +13,9 @@
 //    blokları SİLİNDİ (trades.astro'da bu ID'ler yok, sadece konsol
 //    uyarısı üretiyordu). CSV/PDF export zaten dashboard'daki
 //    #export-csv-desktop / #export-pdf-desktop üzerinden çalışıyor.
+//  - i18n: Tüm hardcoded metinler i18n.t() çağrılarına dönüştürüldü
+//    (plan badge, select placeholder, sel bar, tablo başlıkları,
+//     edit modal hataları, bulk/delete toast'ları, save handler).
 // ============================================================
 
 (function() {
@@ -301,7 +304,7 @@
     var strategySelect = safeEl('edit-strategy');
     if (!strategySelect) return;
     
-    strategySelect.innerHTML = '<option value="">— Strateji Seç —</option>';
+    strategySelect.innerHTML = '<option value="">' + i18n.t('addtrade.select_strategy') + '</option>';
     strategiesList.forEach(function(s) {
       var option = document.createElement('option');
       option.value = s.id;
@@ -412,15 +415,15 @@
       if (bar) bar.classList.add('visible');
       var countEl = safeEl('sel-count-text');
       if (countEl) countEl.textContent = cnt;
-      var lang = 'en';
-      if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
-        lang = i18n.getCurrentLanguage();
-      }
-      var labelText = 'işlem seçildi';
-      if (lang === 'en') labelText = 'trades selected';
-      else if (lang === 'de') labelText = 'Trades ausgewählt';
+      // ⭐ DEĞİŞTİ: manuel dil branching kaldırıldı
+      // NOT: sel-count-text ayrı, sel-label-text ayrı. Sadece etiketi i18n'den besliyoruz.
       var labelEl = safeEl('sel-label-text');
-      if (labelEl) labelEl.textContent = labelText;
+      if (labelEl) {
+        var fullText = i18n.t('trades.selected_count_text', { count: cnt });
+        // "{{count}} trades selected" → sadece "trades selected" kısmını al
+        var strippedText = fullText.replace(String(cnt), '').trim();
+        labelEl.textContent = strippedText || fullText;
+      }
     } else {
       if (bar) bar.classList.remove('visible');
     }
@@ -629,7 +632,7 @@
       
       rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          <td style="width:36px;" onclick="event.stopPropagation()">\n            <input type="checkbox" class="trade-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)">\n          </td>\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="Düzenle">✏️</button>\n              <button class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="Sil">🗑️</button>\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong>📝 Not:</strong><br>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">Not eklenmemiş</span>') + '\n          </td>\n        </tr>\n      ';
     }
-    return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>Sembol</th><th>Yön</th><th>Lot</th><th>Giriş</th><th>Çıkış</th><th>SL</th><th>TP</th><th>K/Z</th><th>R/R</th><th>Strateji</th><th>Tarih</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
+    return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>' + i18n.t('trades.th_symbol') + '</th><th>' + i18n.t('trades.th_direction') + '</th><th>' + i18n.t('trades.th_lot') + '</th><th>' + i18n.t('trades.th_entry') + '</th><th>' + i18n.t('trades.th_exit') + '</th><th>' + i18n.t('trades.th_sl') + '</th><th>' + i18n.t('trades.th_tp') + '</th><th>' + i18n.t('trades.th_pnl') + '</th><th>' + i18n.t('trades.th_rr') + '</th><th>' + i18n.t('trades.th_strategy') + '</th><th>' + i18n.t('trades.th_date') + '</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
   }
 
   // ============================================================
@@ -754,7 +757,7 @@
     
     try {
       if (typeof sb === 'undefined') {
-        showToast('Veritabanı bağlantısı yok!', 'error');
+        showToast(i18n.t('common.db_connection_error'), 'error');
         return;
       }
       var { error } = await sb.from('trades').delete().eq('id', id);
@@ -780,7 +783,7 @@
       applyFiltersAndSort();
     } catch (e) {
       console.error('Delete hatası:', e);
-      showToast('Bir hata oluştu.', 'error');
+      showToast(i18n.t('common.unexpected_error'), 'error');
     }
   }
   window.deleteTrade = deleteTrade;
@@ -788,7 +791,7 @@
   async function bulkDelete() {
     var count = selectedTrades.size;
     if (count === 0) {
-      showToast('Silinecek işlem seçilmedi!', 'error');
+      showToast(i18n.t('trades.no_selection_error'), 'error');
       return;
     }
     
@@ -808,7 +811,7 @@
     var ids = Array.from(selectedTrades).filter(function(id) { return id && typeof id === 'string' && id.trim() !== ''; });
     
     if (ids.length === 0) {
-      showToast('Silinecek geçerli işlem bulunamadı!', 'error');
+      showToast(i18n.t('trades.no_valid_selection_error'), 'error');
       var modal = safeEl('bulk-modal');
       if (modal) modal.classList.remove('active');
       return;
@@ -816,7 +819,7 @@
     
     try {
       if (typeof sb === 'undefined') {
-        showToast('Veritabanı bağlantısı yok!', 'error');
+        showToast(i18n.t('common.db_connection_error'), 'error');
         return;
       }
       var { error } = await sb.from('trades').delete().in('id', ids);
@@ -832,11 +835,7 @@
         return; 
       }
       
-      var successMsg = ids.length + ' işlem silindi!';
-      if (typeof i18n !== 'undefined' && i18n.t) {
-        successMsg = ids.length + ' ' + i18n.t('trades.deleted') || successMsg;
-      }
-      showToast(successMsg);
+      showToast(i18n.t('trades.bulk_deleted', { count: ids.length }));
       
       allTrades = allTrades.filter(function(t) { return !selectedTrades.has(t.id); });
       selectedTrades.clear();
@@ -850,7 +849,7 @@
       if (modal3) modal3.classList.remove('active');
     } catch (e) {
       console.error('Bulk delete hatası:', e);
-      showToast('Bir hata oluştu.', 'error');
+      showToast(i18n.t('common.unexpected_error'), 'error');
     }
   }
 
@@ -912,26 +911,12 @@
   // ============================================================
   // PLAN BADGE GÜNCELLEME
   // ============================================================
-  
+
+  // ⭐ DEĞİŞTİ: Plan rozeti sorumluluğu navbar.js'e taşındı (DRY + race fix)
   async function updatePlanBadge() {
-    try {
-      var badge = safeEl('plan-badge');
-      var text = safeEl('plan-text');
-      if (!badge || !text) return;
-
-      if (typeof window.getUserPlan === 'function') {
-        var planData = await window.getUserPlan();
-        var isPremium = planData.plan === 'premium';
-
-        if (isPremium) {
-          badge.classList.add('premium');
-          text.textContent = 'Premium';
-        } else {
-          badge.classList.remove('premium');
-          text.textContent = 'Ücretsiz';
-        }
-      }
-    } catch (e) {}
+    if (typeof window.updateNavbarBadge === 'function') {
+      await window.updateNavbarBadge();
+    }
   }
 
   // ============================================================
@@ -1245,7 +1230,7 @@
             mult = parseFloat(safeEl('edit-multiplier')?.value);
             if (!mult || isNaN(mult)) { 
               if (errEl) {
-                errEl.textContent = 'Manuel çarpan gerekli!';
+                errEl.textContent = i18n.t('trades.custom_multiplier_required');
                 errEl.style.display = 'block';
               }
               return; 
@@ -1253,7 +1238,7 @@
           }
           if (!symbol || !direction || !lot || !entry || !tradeDate) {
             if (errEl) {
-              errEl.textContent = 'Tüm zorunlu alanları doldurun!';
+              errEl.textContent = i18n.t('trades.required_fields');
               errEl.style.display = 'block';
             }
             return; 
@@ -1264,7 +1249,7 @@
           
           try {
             if (typeof sb === 'undefined') {
-              showToast('Veritabanı bağlantısı yok!', 'error');
+              showToast(i18n.t('common.db_connection_error'), 'error');
               return;
             }
             var { error } = await sb.from('trades').update({
@@ -1276,7 +1261,7 @@
             
             if (error) {
               if (errEl) {
-                errEl.textContent = 'Güncelleme hatası: ' + error.message;
+                errEl.textContent = i18n.t('trades.update_error') + error.message;
                 errEl.style.display = 'block';
               }
               return;
@@ -1301,7 +1286,7 @@
             applyFiltersAndSort();
           } catch (e) {
             console.error('Save hatası:', e);
-            showToast('Bir hata oluştu.', 'error');
+            showToast(i18n.t('common.unexpected_error'), 'error');
           }
         });
       }
@@ -1367,4 +1352,4 @@
 
 })();
 
-wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 uygulandı)');
+wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 + tam i18n uygulandı)');

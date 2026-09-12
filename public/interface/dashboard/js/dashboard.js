@@ -54,6 +54,7 @@
 //        - dashboard.astro'da #streak-dots/#streak-count/#streak-label
 //          elementleri hiç yok
 //        - safeEl uyarısı veriyordu, hiçbir görsel etkisi yoktu
+// ⭐ i18n: Tüm hardcoded metinler i18n.t() çağrılarına dönüştürüldü
 // ============================================================
 
 // ============================================================
@@ -603,6 +604,16 @@
     return names[lang] || names.en;
   }
 
+  // ⭐ i18n: Kısa ay isimleri
+  function getMonthNamesShort(lang) {
+    var names = {
+      tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+      en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+    };
+    return names[lang] || names.en;
+  }
+
   function loadMonthlyTarget() {
     try {
       var saved = localStorage.getItem(TARGET_STORAGE_KEY);
@@ -827,7 +838,7 @@
         <div class="empty-state">
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
           <p class="empty-text">${noText}</p>
-          <a href="/strategies.html" class="empty-link">Strateji oluştur →</a>
+          <a href="/strategies.html" class="empty-link">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.create_strategy_link') : 'Strateji oluştur →'}</a>
         </div>
       `;
       if (bestWorstEl) bestWorstEl.style.display = 'none';
@@ -884,7 +895,7 @@
         <div class="recent-trades-empty">
           <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
           <p class="empty-text">${noText}</p>
-          <button type="button" onclick="if(typeof quickAddOpen==='function')quickAddOpen()" class="empty-link" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">İlk işlemi ekle →</button>
+          <button type="button" onclick="if(typeof quickAddOpen==='function')quickAddOpen()" class="empty-link" style="background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">${(typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.add_first_trade') : 'İlk işlemi ekle →'}</button>
         </div>
       `;
       if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -902,8 +913,7 @@
       var pnl = calcTradePnL(t);
       var isLong = t.direction === 'LONG' || t.direction === 'BUY';
       var tradeDate = new Date(t.trade_date);
-      var monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-      var monthShort = monthNames[tradeDate.getMonth()] || '';
+      var monthShort = getMonthNamesShort(i18n.getCurrentLanguage())[tradeDate.getMonth()] || '';
       var formattedDate = tradeDate.getDate() + ' ' + monthShort;
       var strategyName = t.strategy_id ? (strategiesMap[t.strategy_id] || '—') : '—';
       var hasNote = t.notes && t.notes.trim().length > 0;
@@ -914,7 +924,7 @@
       var safeNotesAttr = escapeAttr(fullNote);
       var safeFullNoteHtml = sanitizeHTML(fullNote);
 
-      html += '\n        <div class="trade-row" data-trade-id="' + t.id + '" data-notes="' + safeNotesAttr + '" data-has-note="' + hasNote + '">\n          <div class="trade-row-left">\n            <div class="trade-row-info">\n              <div class="trade-row-symbol-line">\n                <span class="trade-symbol">' + safeSymbol + '</span>\n                <span class="trade-direction ' + (isLong ? 'long' : 'short') + '">' + (isLong ? 'LONG' : 'SHORT') + '</span>\n                ' + (hasNote ? '<span class="trade-note-indicator" title="Notu göster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>' : '') + '\n              </div>\n              <span class="trade-strategy" title="' + safeStrategy + '">' + (safeStrategy.length > 16 ? safeStrategy.slice(0, 14) + '..' : safeStrategy) + '</span>\n            </div>\n          </div>\n          <div class="trade-row-right">\n            <span class="trade-pnl ' + (pnl >= 0 ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</span>\n            <span class="trade-date">' + formattedDate + '</span>\n          </div>\n        </div>\n        <div class="trade-note" id="note-' + t.id + '">\n          ' + (hasNote ? safeFullNoteHtml : 'Not yok') + '\n        </div>\n      ';
+      html += '\n        <div class="trade-row" data-trade-id="' + t.id + '" data-notes="' + safeNotesAttr + '" data-has-note="' + hasNote + '">\n          <div class="trade-row-left">\n            <div class="trade-row-info">\n              <div class="trade-row-symbol-line">\n                <span class="trade-symbol">' + safeSymbol + '</span>\n                <span class="trade-direction ' + (isLong ? 'long' : 'short') + '">' + (isLong ? 'LONG' : 'SHORT') + '</span>\n                ' + (hasNote ? '<span class="trade-note-indicator" title="Notu göster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>' : '') + '\n              </div>\n              <span class="trade-strategy" title="' + safeStrategy + '">' + (safeStrategy.length > 16 ? safeStrategy.slice(0, 14) + '..' : safeStrategy) + '</span>\n            </div>\n          </div>\n          <div class="trade-row-right">\n            <span class="trade-pnl ' + (pnl >= 0 ? 'positive' : 'negative') + '">' + formatCurrency(pnl) + '</span>\n            <span class="trade-date">' + formattedDate + '</span>\n          </div>\n        </div>\n        <div class="trade-note" id="note-' + t.id + '">\n          ' + (hasNote ? safeFullNoteHtml : ((typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.no_note') : 'Not yok')) + '\n        </div>\n      ';
     });
     html += '</div>';
     container.innerHTML = html;
@@ -1038,12 +1048,12 @@
         if (t.exit_price) todayPnl += calcTradePnL(t);
       });
       var pnlText2 = todayPnl !== 0 ? formatCurrency(todayPnl) : '0';
-      todayInfo.textContent = 'Bugün: ' + todayTrades.length + ' işlem, ' + pnlText2;
+      todayInfo.textContent = i18n.t('dashboard.calendar.today', { count: todayTrades.length, pnl: pnlText2 });
     }
 
     var weekSummary = safeEl('mini-cal-week-summary');
     if (weekSummary) {
-      weekSummary.textContent = 'Bu hafta: ' + totalTrades + ' işlem, ' + formatCurrency(totalPnl);
+      weekSummary.textContent = i18n.t('dashboard.calendar.week_summary', { count: totalTrades, pnl: formatCurrency(totalPnl) });
     }
   }
 
@@ -1830,11 +1840,11 @@
     if (!isDesktop) return;
 
     var chartConfigs = [
-      { cardSelector: '#charts-top-grid .chart-card:nth-child(1)', title: 'Kümülatif K/Z Serisi', renderFn: renderCumulativeChart },
-      { cardSelector: '#charts-top-grid .chart-card:nth-child(2)', title: 'Win / Loss Dağılımı', renderFn: renderWinLossChart },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(1)', title: 'Günlük K/Z - Son 30 Gün', renderFn: renderDailyChart },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(2)', title: 'Sembol Bazlı Performans', renderFn: renderSymbolChart },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(3)', title: 'Long / Short Dağılımı', renderFn: renderDirectionChart }
+      { cardSelector: '#charts-top-grid .chart-card:nth-child(1)', title: i18n.t('dashboard.chart.cumulative'), renderFn: renderCumulativeChart },
+      { cardSelector: '#charts-top-grid .chart-card:nth-child(2)', title: i18n.t('dashboard.chart.winloss'), renderFn: renderWinLossChart },
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(1)', title: i18n.t('dashboard.chart.daily'), renderFn: renderDailyChart },
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(2)', title: i18n.t('dashboard.chart.symbol'), renderFn: renderSymbolChart },
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(3)', title: i18n.t('dashboard.chart.direction'), renderFn: renderDirectionChart }
     ];
 
     chartConfigs.forEach(function(cfg) {
@@ -1894,10 +1904,15 @@
     try {
       var trades = filterByDate(allTrades, currentRange);
       if (!trades.length) {
-        showToast('Dışa aktarılacak işlem yok.', 'error');
+        showToast(i18n.t('toast.no_trades_export'), 'error');
         return;
       }
-      var headers = ['Sembol', 'Yön', 'Enstrüman', 'Lot', 'Giriş', 'Çıkış', 'SL', 'TP', 'K/Z', 'R:R', 'Tarih', 'Not'];
+      var headers = [
+        i18n.t('csv.symbol'), i18n.t('csv.direction'), i18n.t('csv.instrument'),
+        i18n.t('csv.lot'), i18n.t('csv.entry'), i18n.t('csv.exit'),
+        i18n.t('csv.sl'), i18n.t('csv.tp'), i18n.t('csv.pnl'),
+        i18n.t('csv.rr'), i18n.t('csv.date'), i18n.t('csv.notes')
+      ];
       var rows = trades.map(function(t) {
         var pnl = calcTradePnL(t);
         return [
@@ -1915,7 +1930,7 @@
       a.download = 'wawe-journal-' + new Date().toISOString().split('T')[0] + '.csv';
       a.click();
       URL.revokeObjectURL(url);
-      showToast('CSV indirildi!');
+      showToast(i18n.t('toast.csv_exported'));
     } catch (e) {
       console.error('CSV export hatası:', e);
     }
@@ -2174,13 +2189,13 @@
       if (!goalAmountInput) return;
       var newTarget = parseFloat(goalAmountInput.value);
       if (isNaN(newTarget) || newTarget <= 0) {
-        showToast('Geçerli bir hedef girin!', 'error');
+        showToast(i18n.t('dashboard.goal.invalid'), 'error');
         return;
       }
       saveMonthlyTarget(newTarget);
       closeGoalModalFunc();
       refresh();
-      showToast('Hedef güncellendi!');
+      showToast(i18n.t('dashboard.goal.updated'));
     }
 
     if (editGoalBtn) editGoalBtn.addEventListener('click', openGoalModal);
@@ -2198,25 +2213,11 @@
   // PLAN BADGE GÜNCELLEME
   // ============================================================
 
+  // ⭐ DEĞİŞTİ: Plan rozeti sorumluluğu navbar.js'e taşındı (DRY + race fix)
   async function updatePlanBadge() {
-    try {
-      var badge = document.getElementById('plan-badge');
-      var text = document.getElementById('plan-text');
-      if (!badge || !text) return;
-
-      if (typeof window.getUserPlan === 'function') {
-        var planData = await window.getUserPlan();
-        var isPremium = planData.plan === 'premium';
-
-        if (isPremium) {
-          badge.classList.add('premium');
-          text.textContent = 'Premium';
-        } else {
-          badge.classList.remove('premium');
-          text.textContent = 'Ücretsiz';
-        }
-      }
-    } catch (e) {}
+    if (typeof window.updateNavbarBadge === 'function') {
+      await window.updateNavbarBadge();
+    }
   }
 
   // ============================================================
@@ -2248,7 +2249,7 @@
         var startVal = safeEl('custom-range-start').value;
         var endVal = safeEl('custom-range-end').value;
         if (!startVal || !endVal) {
-          showToast('Lütfen başlangıç ve bitiş tarihi seçin.', 'error');
+          showToast(i18n.t('dashboard.custom_range_required'), 'error');
           return;
         }
         currentRange = 'custom';
@@ -2448,7 +2449,7 @@
           if (div) {
             var parent = div.parentElement;
             if (parent) {
-              parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">Bu aralıkta işlem yok</div>';
+              parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + i18n.t('dashboard.no_trades_in_range') + '</div>';
             }
           }
         });
@@ -2473,7 +2474,7 @@
       .limit(1000);
 
     if (error) {
-      showToast('Veriler yüklenemedi: ' + error.message, 'error');
+      showToast(i18n.t('common.load_error') + error.message, 'error');
       return null;
     }
 
@@ -2605,8 +2606,11 @@
 
       if (typeof i18n !== 'undefined' && i18n.onChange) {
         i18n.onChange(function() {
-          renderMiniCalendar();
-          refresh();
+          // ⭐ DEĞİŞTİ: i18n.apply() tamamlandıktan sonra refresh et
+          requestAnimationFrame(function() {
+            renderMiniCalendar();
+            refresh();
+          });
         });
       }
 

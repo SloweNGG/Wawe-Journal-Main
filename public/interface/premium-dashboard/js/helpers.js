@@ -4,6 +4,7 @@
 // ⭐ TEMİZLİK: /add-trade.html referansları kaldırıldı
 //        - "Lot" ve "Henüz işlem" case'leri artık quickAddOpen() çağırıyor
 //        - Quick Add modal aynı sayfada açılıyor, kullanıcı sayfadan çıkmıyor
+// ⭐ i18n: bellEmptyStateHtml() artık 'nav.no_notifications' anahtarını kullanıyor
 // ============================================================
 
 export function sanitizeHTML(str) {
@@ -139,6 +140,7 @@ export function showEmptyChart(containerId, message) {
   // Ortak buton stili (a ve button için uyumlu)
   var btnStyle = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;";
   var btnHover = "onmouseover=\"this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';\" onmouseout=\"this.style.borderColor='var(--border)';this.style.background='var(--surface)';\"";
+
   var buttonHtml = '';
 
   if (useQuickAdd) {
@@ -158,7 +160,7 @@ export function showEmptyChart(containerId, message) {
 }
 
 export function bellEmptyStateHtml() {
-  var emptyText = (typeof i18n !== 'undefined' && i18n.t && i18n.t('dashboard.bell.empty') !== 'dashboard.bell.empty') ? i18n.t('dashboard.bell.empty') : 'Yeni bildirim yok';
+  var emptyText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
   return '<div class="bell-panel-empty" id="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText + '</span></div>';
 }
 

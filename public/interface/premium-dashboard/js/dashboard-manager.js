@@ -11,6 +11,8 @@
 // ⭐ FIX (YENİ): buildWidgets() sırası optimize edildi - grid-auto-flow:dense
 //        KALDIRILDI (SortableJS ile çakışıyordu). Bunun yerine default sıra
 //        ile boş sütunlar minimuma indirildi.
+// ⭐ i18n: resetLayout, loadStrategySection, exportCSV, exportPDF,
+//         markOvertradeAsRead içindeki hardcoded metinler i18n'e taşındı.
 // ============================================================
 
 // ⭐ Logger — global wwLog'a fallback ile bağlan
@@ -140,12 +142,12 @@ export function resetLayout() {
   try {
     localStorage.removeItem(LAYOUT_KEY);
     if (typeof showToast === 'function') {
-      showToast('✅ Düzen sıfırlandı! Sayfa yenileniyor...', 'success');
+      showToast(i18n.t('premium_dash.layout_reset_toast'), 'success');
     }
     setTimeout(function() { window.location.reload(); }, 800);
   } catch(e) {
     if (typeof showToast === 'function') {
-      showToast('Düzen sıfırlanamadı.', 'error');
+      showToast(i18n.t('premium_dash.layout_reset_error'), 'error');
     }
   }
 }
@@ -409,7 +411,7 @@ export async function loadStrategySection(trades, user) {
   if (!section) return;
 
   if (!user || !user.id) {
-    section.innerHTML = '<div class="strategy-empty-note">⚠️ Stratejiler yüklenemiyor. Lütfen sayfayı yenileyin.</div>';
+    section.innerHTML = '<div class="strategy-empty-note">' + i18n.t('premium_dash.strategies_not_loaded') + '</div>';
     return;
   }
 
@@ -422,7 +424,7 @@ export async function loadStrategySection(trades, user) {
 
     if (error) {
       console.error('Strateji çekme hatası:', error);
-      section.innerHTML = '<div class="strategy-empty-note">⚠️ Stratejiler yüklenirken hata oluştu.</div>';
+      section.innerHTML = '<div class="strategy-empty-note">' + i18n.t('premium_dash.strategies_load_error') + '</div>';
       return;
     }
 
@@ -435,8 +437,8 @@ export async function loadStrategySection(trades, user) {
             <path d="M22 12h-4l-3 9H9l-3-9H2"/>
             <path d="M5 3h14l-2 6H7L5 3z"/>
           </svg>
-          <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">Henüz strateji eklenmemiş.</span>
-          <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">Strateji oluştur →</a>
+          <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">' + i18n.t('premium_dash.no_strategies') + '</span>
+          <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">' + i18n.t('premium_dash.create_strategy') + '</a>
         </div>
       `;
       return;
@@ -462,7 +464,7 @@ export async function loadStrategySection(trades, user) {
       var displayPnL = perf.closedCount > 0 ? formatCurrency(perf.totalPnL) : '—';
       var pnlClass = perf.totalPnL >= 0 ? 'pos' : 'neg';
 
-      var safeName = sanitizeHTML(s.name || 'Strateji');
+      var safeName = sanitizeHTML(s.name || i18n.t('premium_dash.strategy_fallback'));
 
       return '<div class="strategy-premium-card">' +
         '<div class="sp-top">' +
@@ -471,9 +473,9 @@ export async function loadStrategySection(trades, user) {
           '<span class="sp-rank ' + rankClass + '">#' + rank + '</span>' +
         '</div>' +
         '<div class="sp-stats">' +
-          '<div class="sp-stat"><div class="sp-stat-lbl">İşlem</div><div class="sp-stat-val">' + perf.totalTrades + '</div></div>' +
-          '<div class="sp-stat"><div class="sp-stat-lbl">Win Rate</div><div class="sp-stat-val">' + displayWinRate + '</div></div>' +
-          '<div class="sp-stat"><div class="sp-stat-lbl">K/Z</div><div class="sp-stat-val ' + pnlClass + '">' + displayPnL + '</div></div>' +
+          '<div class="sp-stat"><div class="sp-stat-lbl">' + i18n.t('premium_dash.trades_label') + '</div><div class="sp-stat-val">' + perf.totalTrades + '</div></div>' +
+          '<div class="sp-stat"><div class="sp-stat-lbl">' + i18n.t('premium_dash.win_rate_label') + '</div><div class="sp-stat-val">' + displayWinRate + '</div></div>' +
+          '<div class="sp-stat"><div class="sp-stat-lbl">' + i18n.t('premium_dash.pnl_label') + '</div><div class="sp-stat-val ' + pnlClass + '">' + displayPnL + '</div></div>' +
         '</div>' +
         '<div class="sp-progress"><div class="sp-fill ' + progressClass + '" style="width:' + progressPct + '%;"></div></div>' +
       '</div>';
@@ -482,7 +484,7 @@ export async function loadStrategySection(trades, user) {
     section.innerHTML = '<div class="strategy-premium-grid">' + cardsHtml + '</div>';
   } catch(e) {
     console.error('loadStrategySection hatası:', e);
-    section.innerHTML = '<div class="strategy-empty-note">⚠️ Strateji verileri yüklenirken hata oluştu. Lütfen sayfayı yenileyin.</div>';
+    section.innerHTML = '<div class="strategy-empty-note">' + i18n.t('premium_dash.strategies_load_error') + '</div>';
   }
 }
 
@@ -497,7 +499,7 @@ export function markOvertradeAsRead() {
   if (body) body.innerHTML = bellEmptyStateHtml();
   var bellPanel = document.getElementById('bell-panel');
   if (bellPanel) bellPanel.classList.remove('open');
-  if (typeof showToast === 'function') showToast('Bildirim okundu olarak işaretlendi');
+  if (typeof showToast === 'function') showToast(i18n.t('premium_dash.notification_read_toast'));
 }
 
 // ⭐ NAVBAR AVATAR
@@ -533,10 +535,15 @@ export async function updateNavbarAvatar() {
 export function exportCSV(trades) {
   try {
     if (!trades || !trades.length) {
-      if (typeof showToast === 'function') showToast('Dışa aktarılacak işlem yok.', 'error');
+      if (typeof showToast === 'function') showToast(i18n.t('toast.no_trades_export'), 'error');
       return;
     }
-    var headers = ['Sembol', 'Yön', 'Enstrüman', 'Lot', 'Giriş', 'Çıkış', 'SL', 'TP', 'K/Z', 'R:R', 'Tarih', 'Not'];
+    var headers = [
+      i18n.t('csv.symbol'), i18n.t('csv.direction'), i18n.t('csv.instrument'),
+      i18n.t('csv.lot'), i18n.t('csv.entry'), i18n.t('csv.exit'),
+      i18n.t('csv.sl'), i18n.t('csv.tp'), i18n.t('csv.pnl'),
+      i18n.t('csv.rr'), i18n.t('csv.date'), i18n.t('csv.notes')
+    ];
     var rows = trades.map(function(t) {
       var pnl = calcTradePnL(t);
       return [
@@ -562,9 +569,9 @@ export function exportCSV(trades) {
     a.download = 'wawe-premium-' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
     URL.revokeObjectURL(url);
-    if (typeof showToast === 'function') showToast('CSV indirildi!', 'success');
+    if (typeof showToast === 'function') showToast(i18n.t('toast.csv_exported'), 'success');
   } catch(e) {
-    if (typeof showToast === 'function') showToast('CSV oluşturulamadı', 'error');
+    if (typeof showToast === 'function') showToast(i18n.t('toast.csv_export_error'), 'error');
   }
 }
 
@@ -572,11 +579,11 @@ export function exportCSV(trades) {
 export function exportPDF(trades) {
   try {
     if (!trades || !trades.length) {
-      if (typeof showToast === 'function') showToast('Dışa aktarılacak işlem yok.', 'error');
+      if (typeof showToast === 'function') showToast(i18n.t('toast.no_trades_export'), 'error');
       return;
     }
     if (typeof window.jspdf === 'undefined') {
-      if (typeof showToast === 'function') showToast('PDF kütüphanesi yüklenemedi.', 'error');
+      if (typeof showToast === 'function') showToast(i18n.t('toast.pdf_lib_error'), 'error');
       return;
     }
     var { jsPDF } = window.jspdf;
@@ -591,12 +598,12 @@ export function exportPDF(trades) {
     doc.setTextColor(232, 232, 240);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('WAWE JOURNAL - PREMIUM RAPOR', 12, 12);
+    doc.text(i18n.t('premium_dash.pdf_title'), 12, 12);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(107, 107, 128);
-    doc.text('Premium Dashboard Export', 12, 18);
-    doc.text(new Date().toLocaleDateString('tr-TR'), W - 12, 18, { align: 'right' });
+    doc.text(i18n.t('premium_dash.pdf_subtitle'), 12, 18);
+    doc.text(new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US')), W - 12, 18, { align: 'right' });
 
     var closed = trades.filter(function(t){ return t.exit_price; });
     var pnls = closed.map(function(t){ return calcTradePnL(t); });
@@ -606,11 +613,11 @@ export function exportPDF(trades) {
     var wr = total ? Math.round((wins/total)*100) : 0;
 
     var stats = [
-      ['Toplam İşlem', total.toString()],
-      ['Toplam K/Z', formatCurrencyPDF(totalPnL)],
-      ['Win Rate', wr + '%'],
-      ['Kazanan', wins.toString()],
-      ['Kaybeden', (total - wins).toString()]
+      [i18n.t('dashboard.stats.total_trades'), total.toString()],
+      [i18n.t('dashboard.stats.total_pnl'), formatCurrencyPDF(totalPnL)],
+      [i18n.t('dashboard.stats.win_rate'), wr + '%'],
+      [i18n.t('dashboard.stats.winners'), wins.toString()],
+      [i18n.t('dashboard.stats.losers'), (total - wins).toString()]
     ];
 
     var yPos = 28;
@@ -634,17 +641,17 @@ export function exportPDF(trades) {
     doc.setTextColor(139, 92, 246);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('İşlem Detayları', 12, yPos);
+    doc.text(i18n.t('premium_dash.pdf_details'), 12, yPos);
     yPos += 5;
 
     var colDefs = [
-      { label: 'Sembol', w: 25 },
-      { label: 'Yön', w: 18 },
-      { label: 'Lot', w: 16 },
-      { label: 'Giriş', w: 26 },
-      { label: 'Çıkış', w: 26 },
-      { label: 'K/Z', w: 28 },
-      { label: 'Tarih', w: 26 }
+      { label: i18n.t('csv.symbol'), w: 25 },
+      { label: i18n.t('csv.direction'), w: 18 },
+      { label: i18n.t('csv.lot'), w: 16 },
+      { label: i18n.t('csv.entry'), w: 26 },
+      { label: i18n.t('csv.exit'), w: 26 },
+      { label: i18n.t('csv.pnl'), w: 28 },
+      { label: i18n.t('csv.date'), w: 26 }
     ];
     var totalW = colDefs.reduce(function(s, c){ return s + c.w; }, 0);
     var startX = (W - totalW) / 2;
@@ -689,7 +696,7 @@ export function exportPDF(trades) {
         doc.text(String(t.exit_price), cx2, yPos + 3.5);
       } else {
         doc.setTextColor(139, 92, 246);
-        doc.text('Açık', cx2, yPos + 3.5);
+        doc.text(i18n.t('trades.open'), cx2, yPos + 3.5);
         doc.setTextColor(107, 107, 128);
       }
       cx2 += colDefs[4].w;
@@ -703,7 +710,8 @@ export function exportPDF(trades) {
         doc.text('—', cx2, yPos + 3.5);
       }
       cx2 += colDefs[5].w;
-      var dateStr = t.trade_date ? new Date(t.trade_date).toLocaleDateString('tr-TR') : '—';
+      var lang = i18n.getCurrentLanguage();
+      var dateStr = t.trade_date ? new Date(t.trade_date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US')) : '—';
       doc.text(dateStr, cx2, yPos + 3.5);
 
       yPos += rowH;
@@ -714,9 +722,9 @@ export function exportPDF(trades) {
     doc.rect(startX, yPos - displayTrades.length * rowH - 6, totalW, displayTrades.length * rowH + 6, 'S');
 
     doc.save('wawe-premium-rapor-' + new Date().toISOString().split('T')[0] + '.pdf');
-    if (typeof showToast === 'function') showToast('PDF indirildi!', 'success');
+    if (typeof showToast === 'function') showToast(i18n.t('toast.pdf_exported'), 'success');
   } catch(e) {
     console.error('PDF hatası:', e);
-    if (typeof showToast === 'function') showToast('PDF oluşturulamadı', 'error');
+    if (typeof showToast === 'function') showToast(i18n.t('toast.pdf_export_error'), 'error');
   }
 }
