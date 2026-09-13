@@ -55,6 +55,11 @@ public/
         notification-bell.css
       js/
         notification-bell.js
+  i18n/
+    locales/
+      de.js
+      en.js
+      tr.js
   interface/
     admin/
       css/
@@ -189,6 +194,7 @@ supabase/
     202608190001_security_baseline.sql
     202608270001_add_system_settings.sql
     202609120001_add_deactivate_account_rpc.sql
+    202609130001_add_anon_stats_rpc.sql
     README.md
   ADMIN_ROLE.md
 .env.example
@@ -200,6 +206,40 @@ wrangler.toml
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="public/i18n/locales/de.js">
+
+</file>
+
+<file path="public/i18n/locales/en.js">
+
+</file>
+
+<file path="public/i18n/locales/tr.js">
+
+</file>
+
+<file path="supabase/migrations/202609130001_add_anon_stats_rpc.sql">
+create or replace function public.get_platform_stats()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'totalUsers',   (select count(*) from public.user_profiles),
+    'totalTrades',  (select count(*) from public.trades),
+    'todayUsers',   (select count(*) from public.user_profiles
+                     where created_at >= current_date),
+    'todayTrades',  (select count(*) from public.trades
+                     where created_at >= current_date)
+  );
+$$;
+
+revoke all on function public.get_platform_stats() from public;
+grant execute on function public.get_platform_stats() to anon, authenticated;
+</file>
 
 <file path="public/components/notification-bell/css/notification-bell.css">
 .notif-bell-wrapper {
@@ -1473,8 +1513,6 @@ nav.nav {
 ⋮----
 .hero-mockup-wrap {
 ⋮----
-/* Mobilde grafik ANIMASYONU KALDIR - sadece mockup göster */
-⋮----
 .hero-float-card {
 ⋮----
 .hfc-top {
@@ -1604,6 +1642,7 @@ nav.nav {
 .cta-banner p {
 ⋮----
 footer.site-footer {
+⋮----
 .footer-container {
 ⋮----
 .footer-logo {
@@ -1629,9 +1668,104 @@ footer.site-footer {
 .psych-card::before {
 ⋮----
 /* ============================================================
-   ⭐ PLAN KARTLARI - ÖZEL STİLLER
+   ⭐ PLAN CARDS - Landing (index.astro inline'dan taşındı)
+   Base styles
    ============================================================ */
+⋮----
+.plans-section {
+⋮----
+.plans-grid {
+⋮----
+.plan-card-home {
+⋮----
+.plan-card-home::before {
+⋮----
+.plan-card-home:hover {
+⋮----
+.plan-card-home:hover::before {
+⋮----
+.plan-card-home.premium {
+⋮----
+.plan-card-home.premium::before {
+⋮----
+.plan-card-home.premium:hover {
+⋮----
+.plan-card-home.premium::after {
+⋮----
+.plan-card-home .plan-badge {
+⋮----
+.plan-card-home .plan-badge.popular {
+⋮----
+.plan-card-home .plan-icon {
+⋮----
+.plan-card-home:hover .plan-icon {
+⋮----
+.plan-card-home.premium .plan-icon {
+⋮----
+.plan-card-home.premium:hover .plan-icon {
+⋮----
+.plan-card-home .plan-icon svg {
+⋮----
+.plan-card-home .plan-name {
+⋮----
+.plan-card-home .plan-desc {
+⋮----
+.plan-card-home .plan-features-wrapper {
+⋮----
+.plan-card-home .plan-features-toggle {
+⋮----
+.plan-card-home .plan-features-toggle:hover {
+⋮----
+.plan-card-home .plan-features-toggle .arrow {
+⋮----
+.plan-card-home .plan-features-toggle .arrow.open {
+⋮----
+.plan-card-home .plan-features-list {
+⋮----
+.plan-card-home .plan-features-list.open {
+⋮----
+.plan-card-home .plan-features-list li {
+⋮----
+.plan-card-home .plan-features-list li:last-child {
+⋮----
+.plan-card-home .plan-features-list li .check {
+⋮----
+.plan-card-home.premium .plan-features-list li .check {
+⋮----
+.plan-card-home .plan-features-list li .cross {
+⋮----
+.plan-card-home .plan-features-list li.is-disabled {
+⋮----
+.plan-card-home .plan-features-list li .premium-only {
+⋮----
+.plan-card-home .btn-plan {
+⋮----
+.plan-card-home .btn-plan.free {
+⋮----
+.plan-card-home .btn-plan.free:hover {
+⋮----
+.plan-card-home .btn-plan.premium-btn {
+⋮----
+.plan-card-home .btn-plan.premium-btn::before {
+⋮----
+.plan-card-home .btn-plan.premium-btn:hover {
+⋮----
+.plan-card-home .btn-plan.premium-btn:hover::before {
+⋮----
+.plan-card-home .btn-plan.premium-btn span {
+⋮----
+.plan-card-home .btn-plan.premium-btn.outline {
+⋮----
+.plan-card-home .btn-plan.premium-btn.outline:hover {
+⋮----
+/* Plan cards - Responsive */
+⋮----
 .plan-card-home .plan-price {
+⋮----
+/* ============================================================
+   ⭐ PLAN KARTLARI - ÖZEL OVERRIDES (mevcut index.css)
+   Bu blok yukarıdaki base'i override eder.
+   ============================================================ */
 ⋮----
 .plan-card-home .plan-price span {
 ⋮----
@@ -1641,7 +1775,6 @@ footer.site-footer {
 ⋮----
 .plan-card-home.premium .plan-price span {
 ⋮----
-.plan-card-home .plan-features-list li {
 .plan-card-home .plan-features-list.open li {
 .plan-card-home .plan-features-list.open li:nth-child(1) {
 .plan-card-home .plan-features-list.open li:nth-child(2) {
@@ -1653,10 +1786,6 @@ footer.site-footer {
 .plan-card-home .plan-features-list.open li:nth-child(8) {
 .plan-card-home .plan-features-list.open li:nth-child(9) {
 .plan-card-home .plan-features-list.open li:nth-child(10) {
-⋮----
-.plans-grid {
-.plan-card-home.premium {
-.plan-card-home.premium:hover {
 ⋮----
 .hfc-mid,
 ⋮----
@@ -3181,47 +3310,6 @@ function closePopover()
 ⋮----
 .page-header h1 {
 .premium-stats-grid {
-</file>
-
-<file path="public/interface/premium-dashboard/js/helpers.js">
-export function sanitizeHTML(str)
-⋮----
-export function sanitizeURL(url)
-⋮----
-export function getCurrencySymbol()
-⋮----
-export function getMultiplier(t)
-⋮----
-export function calcTradePnL(t)
-⋮----
-export function formatCurrency(value)
-⋮----
-export function formatCurrencyPlain(value)
-⋮----
-export function formatCurrencyPDF(value)
-⋮----
-export function toLwcTime(dateStr)
-⋮----
-export function dedupeByTime(points)
-⋮----
-export function showEmptyChart(containerId, message)
-⋮----
-// ⭐ Quick Add modalını aynı sayfada aç
-⋮----
-export function bellEmptyStateHtml()
-⋮----
-export function apexCurrencyFormatter(value)
-</file>
-
-<file path="public/interface/premium-dashboard/js/premium-dashboard.js">
-:
-⋮----
-export function openMenu()
-⋮----
-export function closeMenu()
-⋮----
-// ⭐ LOAD PREMIUM DATA
-async function loadPremiumData()
 </file>
 
 <file path="public/interface/quick-add/css/quick-add.css">
@@ -4921,22 +5009,6 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .confirm-modal-footer .btn-modal-danger:hover {
 .confirm-modal-footer .btn-modal-danger:active { transform: scale(0.96); }
 ⋮----
-.site-footer {
-.footer-container {
-⋮----
-.footer-logo {
-.footer-logo span {
-.footer-desc {
-.footer-col h4 {
-.footer-col ul { list-style: none; padding: 0; }
-.footer-col ul li { margin-bottom: 0.4rem; }
-.footer-col ul li a,
-.footer-col ul li a:hover { color: var(--accent); }
-.footer-social {
-.social-link {
-.social-link:hover {
-.footer-bottom {
-⋮----
 .skeleton {
 .skeleton::after {
 body.light-theme .skeleton::after {
@@ -5311,7 +5383,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
 <Fragment slot="head">
   <title>Biz Kimiz – Wawe Journal</title>
-  <link rel="stylesheet" href="/pages.css" />
+  <link rel="stylesheet" href="/index.css" />
 </Fragment>
   <nav class="nav">
     <a href="index.html" class="nav-logo">
@@ -5426,6 +5498,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
 <Fragment slot="head">
   <title>İletişim – Wawe Journal</title>
+  <link rel="stylesheet" href="/index.css" />
   <link rel="stylesheet" href="/pages.css" />
 </Fragment>
   <nav class="nav">
@@ -6271,6 +6344,7 @@ import Layout from '../layouts/Layout.astro';
 
   <!-- ============================================================
   EXTRA STYLES (Sadece gerekli olanlar)
+  ⭐ Plan kartı stilleri index.css'e taşındı.
   ============================================================ -->
   <style>
     /* ─── RESET & BASE ─── */
@@ -6410,362 +6484,6 @@ import Layout from '../layouts/Layout.astro';
       color: var(--accent);
     }
 
-    /* ─── PLANS SECTION ─── */
-    .plans-section {
-      padding: 4rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .plans-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-      margin-top: 2rem;
-      align-items: stretch;
-    }
-
-    .plan-card-home {
-      display: flex;
-      flex-direction: column;
-      background: rgba(255, 255, 255, 0.02);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.5rem 1.5rem 1.5rem;
-      text-align: center;
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                  border-color 0.35s ease,
-                  box-shadow 0.35s ease,
-                  background 0.35s ease;
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-      cursor: pointer;
-    }
-    .plan-card-home::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 50% 0%, var(--accent-glow), transparent 70%);
-      opacity: 0;
-      transition: opacity 0.4s ease;
-      pointer-events: none;
-      z-index: -1;
-    }
-    .plan-card-home:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent-glow);
-      box-shadow: 0 16px 48px rgba(0,0,0,0.25), 0 0 0 1px var(--accent-glow) inset;
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .plan-card-home:hover::before {
-      opacity: 1;
-    }
-    .plan-card-home.premium {
-      border-color: rgba(139,92,246,0.18);
-      background: rgba(139,92,246,0.04);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transform: scale(1.02);
-    }
-    .plan-card-home.premium::before {
-      background: radial-gradient(circle at 50% 0%, rgba(139,92,246,0.1), transparent 70%);
-      opacity: 1;
-    }
-    .plan-card-home.premium:hover {
-      transform: scale(1.02) translateY(-4px);
-      border-color: rgba(139,92,246,0.35);
-      box-shadow: 0 16px 48px var(--accent-glow), 0 0 0 1px rgba(139,92,246,0.1) inset;
-    }
-    .plan-card-home.premium::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--accent), transparent);
-      background-size: 300% 100%;
-      animation: shimmerLine 4s ease-in-out infinite;
-      border-radius: 20px 20px 0 0;
-    }
-    @keyframes shimmerLine {
-      0% { background-position: 0% 0%; }
-      50% { background-position: 100% 0%; }
-      100% { background-position: 0% 0%; }
-    }
-
-    .plan-card-home .plan-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 7px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      background: rgba(139,92,246,0.08);
-      color: var(--accent2);
-      border: 1px solid var(--border);
-    }
-    .plan-card-home .plan-badge.popular {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      box-shadow: 0 4px 16px var(--accent-glow);
-      animation: pulseBadge 2s ease-in-out infinite;
-    }
-    @keyframes pulseBadge {
-      0%, 100% { box-shadow: 0 4px 16px var(--accent-glow); }
-      50% { box-shadow: 0 4px 24px rgba(139,92,246,0.4); }
-    }
-
-    .plan-card-home .plan-icon {
-      width: 44px;
-      height: 44px;
-      margin: 0 auto 0.5rem;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(139,92,246,0.06);
-      border: 1px solid var(--border);
-      transition: all 0.3s ease;
-    }
-    .plan-card-home:hover .plan-icon {
-      background: rgba(139,92,246,0.12);
-      border-color: var(--accent-glow);
-      transform: scale(1.05);
-    }
-    .plan-card-home.premium .plan-icon {
-      background: rgba(139,92,246,0.1);
-      border: 1px solid rgba(139,92,246,0.15);
-    }
-    .plan-card-home.premium:hover .plan-icon {
-      background: rgba(139,92,246,0.18);
-      border-color: rgba(139,92,246,0.3);
-    }
-    .plan-card-home .plan-icon svg {
-      width: 22px;
-      height: 22px;
-      stroke: var(--accent);
-    }
-
-    .plan-card-home .plan-name {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.2rem;
-      letter-spacing: -0.2px;
-    }
-    .plan-card-home .plan-price {
-      font-family: 'Inter', sans-serif;
-      font-size: 2.2rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.1rem;
-      letter-spacing: -0.5px;
-    }
-    .plan-card-home.premium .plan-price {
-      background: linear-gradient(135deg, var(--text), var(--accent2));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .plan-card-home .plan-price span {
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: var(--muted);
-      -webkit-text-fill-color: var(--muted);
-    }
-
-    .plan-card-home .plan-desc {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 0.75rem;
-      line-height: 1.5;
-      min-height: 32px;
-    }
-
-    .plan-card-home .plan-features-wrapper {
-      flex: 1;
-      margin-bottom: 0.75rem;
-    }
-    .plan-card-home .plan-features-toggle {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: var(--accent);
-      background: rgba(139,92,246,0.06);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 0.2rem 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      margin-bottom: 0.5rem;
-      user-select: none;
-    }
-    .plan-card-home .plan-features-toggle:hover {
-      background: rgba(139,92,246,0.12);
-      border-color: var(--accent-glow);
-    }
-    .plan-card-home .plan-features-toggle .arrow {
-      transition: transform 0.3s ease;
-      display: inline-block;
-    }
-    .plan-card-home .plan-features-toggle .arrow.open {
-      transform: rotate(180deg);
-    }
-
-    .plan-card-home .plan-features-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      text-align: left;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin 0.3s ease;
-      opacity: 0;
-    }
-    .plan-card-home .plan-features-list.open {
-      max-height: 500px;
-      opacity: 1;
-      margin-top: 0.5rem;
-    }
-    .plan-card-home .plan-features-list li {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.3rem 0;
-      font-size: 11px;
-      color: var(--text);
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-    }
-    .plan-card-home .plan-features-list li:last-child {
-      border-bottom: none;
-    }
-    .plan-card-home .plan-features-list li .check {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-      border-radius: 50%;
-      background: rgba(139,92,246,0.1);
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 9px;
-    }
-    .plan-card-home.premium .plan-features-list li .check {
-      background: rgba(139,92,246,0.15);
-      color: var(--accent2);
-    }
-    .plan-card-home .plan-features-list li .cross {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.02);
-      color: var(--muted);
-      opacity: 0.4;
-      font-size: 9px;
-    }
-    .plan-card-home .plan-features-list li.is-disabled {
-      color: var(--muted);
-    }
-    .plan-card-home .plan-features-list li .premium-only {
-      color: var(--accent2);
-      font-size: 7px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      font-family: 'JetBrains Mono', monospace;
-      margin-left: auto;
-      background: rgba(139,92,246,0.06);
-      padding: 0.05rem 0.4rem;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-
-    .plan-card-home .btn-plan {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.6rem 1.5rem;
-      border-radius: 10px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      width: 100%;
-      justify-content: center;
-      margin-top: auto;
-    }
-    .plan-card-home .btn-plan.free {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.06);
-      color: var(--text);
-    }
-    .plan-card-home .btn-plan.free:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(139,92,246,0.06);
-      transform: translateY(-2px);
-    }
-
-    .plan-card-home .btn-plan.premium-btn {
-      background: linear-gradient(135deg, var(--accent), #6b5bd6);
-      color: #fff;
-      border: none;
-      box-shadow: 0 4px 20px var(--accent-glow);
-      position: relative;
-      overflow: hidden;
-    }
-    .plan-card-home .btn-plan.premium-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, #6b5bd6, var(--accent));
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      border-radius: 10px;
-    }
-    .plan-card-home .btn-plan.premium-btn:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 8px 28px rgba(139,92,246,0.35);
-    }
-    .plan-card-home .btn-plan.premium-btn:hover::before {
-      opacity: 1;
-    }
-    .plan-card-home .btn-plan.premium-btn span {
-      position: relative;
-      z-index: 1;
-    }
-    .plan-card-home .btn-plan.premium-btn.outline {
-      background: rgba(139,92,246,0.04);
-      border: 1px solid var(--border);
-      color: var(--text);
-      box-shadow: none;
-    }
-    .plan-card-home .btn-plan.premium-btn.outline:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(139,92,246,0.08);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px var(--accent-glow);
-    }
-
     /* ─── NAV ─── */
     .nav {
       display: flex;
@@ -6782,26 +6500,6 @@ import Layout from '../layouts/Layout.astro';
     }
 
     /* ─── RESPONSIVE ─── */
-    @media (max-width: 1024px) {
-      .plans-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    @media (max-width: 900px) {
-      .plans-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-      }
-      .plan-card-home.premium {
-        transform: none;
-      }
-      .plan-card-home.premium:hover {
-        transform: translateY(-4px);
-      }
-      .plans-section {
-        padding: 3rem 1.25rem;
-      }
-    }
     @media (max-width: 768px) {
       .nav-links .btn-login,
       .nav-links .btn-register {
@@ -6826,24 +6524,6 @@ import Layout from '../layouts/Layout.astro';
       }
     }
     @media (max-width: 600px) {
-      .plans-grid {
-        grid-template-columns: 1fr;
-      }
-      .plan-card-home {
-        padding: 1.25rem 1.25rem 1.25rem;
-      }
-      .plan-card-home.premium {
-        transform: none;
-      }
-      .plan-card-home.premium:hover {
-        transform: translateY(-4px);
-      }
-      .plan-card-home .plan-price {
-        font-size: 1.8rem;
-      }
-      .plans-section {
-        padding: 2.5rem 1rem;
-      }
       .section-desc {
         padding: 0 0.5rem;
       }
@@ -6869,12 +6549,6 @@ import Layout from '../layouts/Layout.astro';
       }
     }
     @media (max-width: 400px) {
-      .plan-card-home .plan-price {
-        font-size: 1.6rem;
-      }
-      .plan-card-home .plan-name {
-        font-size: 1rem;
-      }
       .psych-quote {
         font-size: 0.9rem;
       }
@@ -7311,12 +6985,31 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
-  <script src="/script.js" is:inline></script>
+  <script type="module" src="/src/script.js" is:inline></script>
 
   <!-- ============================================================
   SAYFA İÇİ SCRIPTS
   ============================================================ -->
   <script is:inline>
+    // ============================================================
+    // ⭐ MODULE DEPENDENCY WAITER
+    // ============================================================
+    function waitForDeps(cb, maxMs) {
+      maxMs = maxMs || 8000;
+      var t0 = Date.now();
+      (function check() {
+        if (window.sb && typeof window.loadPlatformStats === 'function') {
+          try { cb(); } catch (e) { wwLog.warn('[index] waitForDeps callback hatası:', e); }
+          return;
+        }
+        if (Date.now() - t0 > maxMs) {
+          wwLog.warn('⚠️ [index] Bağımlılıklar yüklenemedi (timeout)');
+          return;
+        }
+        setTimeout(check, 50);
+      })();
+    }
+
     // ============================================================
     // MAINTENANCE MODE CHECK
     // ============================================================
@@ -7326,19 +7019,21 @@ import Layout from '../layouts/Layout.astro';
         return;
       }
 
-      (async function() {
-        try {
-          var settings = getSystemSettings();
-          if (settings.maintenance_mode) {
-            var { data: { session } } = await sb.auth.getSession();
-            if (session) {
-              var role = session.user?.app_metadata?.role;
-              if (role === 'admin') return;
+      waitForDeps(function() {
+        (async function() {
+          try {
+            var settings = window.getSystemSettings ? window.getSystemSettings() : {};
+            if (settings.maintenance_mode) {
+              var { data: { session } } = await window.sb.auth.getSession();
+              if (session) {
+                var role = session.user?.app_metadata?.role;
+                if (role === 'admin') return;
+              }
+              window.location.href = 'maintenance.html';
             }
-            window.location.href = 'maintenance.html';
-          }
-        } catch(e) {}
-      })();
+          } catch(e) {}
+        })();
+      });
     })();
 
     // ============================================================
@@ -7347,21 +7042,17 @@ import Layout from '../layouts/Layout.astro';
     (function() {
       var redirectDone = false;
 
-      (async function() {
-        try {
-          var { data: { session } } = await sb.auth.getSession();
-          if (session && !redirectDone) {
-            redirectDone = true;
-            if (document.readyState === 'complete') {
+      waitForDeps(function() {
+        (async function() {
+          try {
+            var { data: { session } } = await window.sb.auth.getSession();
+            if (session && !redirectDone) {
+              redirectDone = true;
               window.location.href = 'dashboard.html';
-            } else {
-              window.addEventListener('load', function() {
-                window.location.href = 'dashboard.html';
-              });
             }
-          }
-        } catch(e) {}
-      })();
+          } catch(e) {}
+        })();
+      });
     })();
 
     // ============================================================
@@ -7371,7 +7062,9 @@ import Layout from '../layouts/Layout.astro';
     if (discordLink) {
       discordLink.addEventListener('click', function(e) {
         e.preventDefault();
-        showToast('Discord server coming soon! 🚀', 'success');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Discord server coming soon! 🚀', 'success');
+        }
       });
     }
 
@@ -7710,7 +7403,7 @@ import Layout from '../layouts/Layout.astro';
 
         var url = DEFAULT_MOCKUP_URL;
         try {
-          var settings = getSystemSettings();
+          var settings = window.getSystemSettings ? window.getSystemSettings() : {};
           if (settings && settings.dashboard_mockup_url) {
             url = settings.dashboard_mockup_url;
           }
@@ -7736,31 +7429,45 @@ import Layout from '../layouts/Layout.astro';
     // ============================================================
     async function loadStats() {
       try {
-        await loadPlatformStats();
-      } catch (e) {}
+        await window.loadPlatformStats();
+      } catch (e) {
+        console.error('[index] loadPlatformStats hatası:', e);
+      }
     }
-    loadStats();
+    waitForDeps(function() { loadStats(); });
 
     // ============================================================
     // TRADING PSYCHOLOGY QUOTES
     // ============================================================
     function updateRandomQuote() {
-      var quotesArray = i18n.t('quotes');
-      var authorsArray = i18n.t('quote_authors');
+      try {
+        var quotesArray = i18n.t('quotes');
+        var authorsArray = i18n.t('quote_authors');
 
-      var quotes = typeof quotesArray === 'string' ? JSON.parse(quotesArray.replace(/'/g, '"')) : quotesArray;
-      var authors = typeof authorsArray === 'string' ? JSON.parse(authorsArray.replace(/'/g, '"')) : authorsArray;
+        if (typeof quotesArray === 'string' && quotesArray === 'quotes') return;
+        if (typeof authorsArray === 'string' && authorsArray === 'quote_authors') return;
 
-      var randomIndex = Math.floor(Math.random() * quotes.length);
-      var quoteEl = document.getElementById('quote-text');
-      var authorEl = document.getElementById('quote-author');
-      if (quoteEl) quoteEl.textContent = quotes[randomIndex];
-      if (authorEl) authorEl.textContent = '— ' + authors[randomIndex];
+        var quotes = typeof quotesArray === 'string' ? JSON.parse(quotesArray.replace(/'/g, '"')) : quotesArray;
+        var authors = typeof authorsArray === 'string' ? JSON.parse(authorsArray.replace(/'/g, '"')) : authorsArray;
+
+        if (!Array.isArray(quotes) || quotes.length === 0) return;
+        if (!Array.isArray(authors) || authors.length === 0) return;
+
+        var randomIndex = Math.floor(Math.random() * quotes.length);
+        var quoteEl = document.getElementById('quote-text');
+        var authorEl = document.getElementById('quote-author');
+        if (quoteEl) quoteEl.textContent = quotes[randomIndex];
+        if (authorEl) authorEl.textContent = '— ' + authors[randomIndex];
+      } catch (e) {
+        wwLog.warn('[index] quote render hatası:', e);
+      }
     }
 
-    updateRandomQuote();
-    if (i18n.onChange) {
-      i18n.onChange(function() { updateRandomQuote(); });
+    try { updateRandomQuote(); } catch (e) { wwLog.warn('[index] updateRandomQuote hatası:', e); }
+    if (typeof i18n !== 'undefined' && typeof i18n.onChange === 'function') {
+      try {
+        i18n.onChange(function() { updateRandomQuote(); });
+      } catch (e) { wwLog.warn('[index] i18n.onChange hatası:', e); }
     }
 
     // ============================================================
@@ -7770,7 +7477,10 @@ import Layout from '../layouts/Layout.astro';
       var container = document.getElementById('references-grid');
       if (!container) return;
       try {
-        var { data, error } = await sb
+        var sbClient = window.sb || window.supabase;
+        if (!sbClient) throw new Error('sb not ready');
+
+        var { data, error } = await sbClient
           .from('references')
           .select('*')
           .eq('is_active', true)
@@ -7782,9 +7492,10 @@ import Layout from '../layouts/Layout.astro';
         }
 
         container.innerHTML = data.map(function(ref) {
-          return '\n          <div class="reference-card">\n            <div class="ref-image">\n              <img src="/' + (ref.image_url || 'https://placehold.co/100x100?text=Profile') + '" alt="' + esc(ref.name) + '" onerror="this.src=\'https://placehold.co/100x100?text=Profile\'">\n            </div>\n            <div class="ref-info">\n              <h3>' + esc(ref.name) + '</h3>\n              <p class="ref-title">' + esc(ref.title || '') + '</p>\n              <p class="ref-desc">' + esc(ref.description || '') + '</p>\n              <div class="ref-social">\n                ' + (ref.instagram ? '<a href="' + ref.instagram + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>' : '') + '\n                ' + (ref.twitter ? '<a href="' + ref.twitter + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></a>' : '') + '\n                ' + (ref.youtube ? '<a href="' + ref.youtube + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>' : '') + '\n                ' + (ref.linkedin ? '<a href="' + ref.linkedin + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>' : '') + '\n              </div>\n            </div>\n          </div>\n        ';
+          return '\n          <div class="reference-card">\n            <div class="ref-image">\n              <img src="' + (ref.image_url || 'https://placehold.co/100x100?text=Profile') + '" alt="' + esc(ref.name) + '" onerror="this.src=\'https://placehold.co/100x100?text=Profile\'">\n            </div>\n            <div class="ref-info">\n              <h3>' + esc(ref.name) + '</h3>\n              <p class="ref-title">' + esc(ref.title || '') + '</p>\n              <p class="ref-desc">' + esc(ref.description || '') + '</p>\n              <div class="ref-social">\n                ' + (ref.instagram ? '<a href="' + ref.instagram + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>' : '') + '\n                ' + (ref.twitter ? '<a href="' + ref.twitter + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></a>' : '') + '\n                ' + (ref.youtube ? '<a href="' + ref.youtube + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>' : '') + '\n                ' + (ref.linkedin ? '<a href="' + ref.linkedin + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>' : '') + '\n              </div>\n            </div>\n          </div>\n        ';
         }).join('');
       } catch (e) {
+        console.error('[index] loadReferences hatası:', e);
         container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="references.error">Failed to load references.</p>';
       }
     }
@@ -7797,7 +7508,7 @@ import Layout from '../layouts/Layout.astro';
       });
     }
 
-    loadReferences();
+    waitForDeps(function() { loadReferences(); });
 
     // ============================================================
     // TOGGLE FEATURES
@@ -7904,7 +7615,7 @@ import Layout from '../layouts/Layout.astro';
 
     document.addEventListener('DOMContentLoaded', function() {
       try {
-        var settings = getSystemSettings();
+        var settings = window.getSystemSettings ? window.getSystemSettings() : {};
         if (settings.payMethod) {
           if (typeof selectedPayMethod !== 'undefined') {
             selectedPayMethod = settings.payMethod;
@@ -7932,23 +7643,28 @@ import Layout from '../layouts/Layout.astro';
         e.stopPropagation();
         (async function() {
           try {
-            var { data: { session } } = await sb.auth.getSession();
+            var sbClient = window.sb || window.supabase;
+            if (!sbClient) {
+              window.location.href = 'register.html?plan=monthly';
+              return;
+            }
+            var { data: { session } } = await sbClient.auth.getSession();
             if (!session) {
               window.location.href = 'register.html?plan=monthly';
               return;
             }
 
-            var price = typeof getMonthlyPrice === 'function' ? getMonthlyPrice() : 9;
+            var price = typeof window.getMonthlyPrice === 'function' ? window.getMonthlyPrice() : 9;
             var payMethod = typeof selectedPayMethod !== 'undefined' ? selectedPayMethod : 'BTC';
 
-            if (typeof upgradeToPremium === 'function') {
-              await upgradeToPremium('monthly', price, 'USD', payMethod);
+            if (typeof window.upgradeToPremium === 'function') {
+              await window.upgradeToPremium('monthly', price, 'USD', payMethod);
             } else {
-              showToast('System preparing, please refresh the page.', 'error');
+              window.showToast('System preparing, please refresh the page.', 'error');
             }
           } catch (err) {
             console.error('Premium purchase error:', err);
-            showToast('An error occurred. Please try again.', 'error');
+            window.showToast('An error occurred. Please try again.', 'error');
           }
         })();
       });
@@ -7961,23 +7677,28 @@ import Layout from '../layouts/Layout.astro';
         e.stopPropagation();
         (async function() {
           try {
-            var { data: { session } } = await sb.auth.getSession();
+            var sbClient = window.sb || window.supabase;
+            if (!sbClient) {
+              window.location.href = 'register.html?plan=yearly';
+              return;
+            }
+            var { data: { session } } = await sbClient.auth.getSession();
             if (!session) {
               window.location.href = 'register.html?plan=yearly';
               return;
             }
 
-            var price = typeof getYearlyPrice === 'function' ? getYearlyPrice() : 79;
+            var price = typeof window.getYearlyPrice === 'function' ? window.getYearlyPrice() : 79;
             var payMethod = typeof selectedPayMethod !== 'undefined' ? selectedPayMethod : 'BTC';
 
-            if (typeof upgradeToPremium === 'function') {
-              await upgradeToPremium('yearly', price, 'USD', payMethod);
+            if (typeof window.upgradeToPremium === 'function') {
+              await window.upgradeToPremium('yearly', price, 'USD', payMethod);
             } else {
-              showToast('System preparing, please refresh the page.', 'error');
+              window.showToast('System preparing, please refresh the page.', 'error');
             }
           } catch (err) {
             console.error('Premium purchase error:', err);
-            showToast('An error occurred. Please try again.', 'error');
+            window.showToast('An error occurred. Please try again.', 'error');
           }
         })();
       });
@@ -8825,6 +8546,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
 <Fragment slot="head">
   <title>Gizlilik Politikası – Wawe Journal</title>
+  <link rel="stylesheet" href="/index.css" />
   <link rel="stylesheet" href="/pages.css" />
 </Fragment>
   <nav class="nav">
@@ -9906,7 +9628,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
 <Fragment slot="head">
   <title>Kullanım Şartları – Wawe Journal</title>
-  <link rel="stylesheet" href="/pages.css" />
+  <link rel="stylesheet" href="/index.css" />
 </Fragment>
   <nav class="nav">
     <a href="index.html" class="nav-logo">
@@ -10023,6 +9745,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
 <Fragment slot="head">
   <title>Wawe Social – Trader'lar için Sosyal Medya</title>
+  <link rel="stylesheet" href="/index.css" />
   <style>
     .coming-soon {
       display: flex;
@@ -10200,8 +9923,6 @@ function setActiveNavLink()
 function setupAvatarDropdown()
 ⋮----
 function initNavEvents()
-⋮----
-// ⭐ Mobile logout
 ⋮----
 function loadNavbar(containerId)
 </file>
@@ -10607,50 +10328,47 @@ body.light-theme .mini-cal-day.loss:hover {
 .charts-top-grid,
 </file>
 
-<file path="public/interface/premium-dashboard/js/dashboard-manager.js">
+<file path="public/interface/premium-dashboard/js/helpers.js">
+export function sanitizeHTML(str)
+⋮----
+export function sanitizeURL(url)
+⋮----
+export function getCurrencySymbol()
+⋮----
+export function getMultiplier(t)
+⋮----
+export function calcTradePnL(t)
+⋮----
+export function formatCurrency(value)
+⋮----
+export function formatCurrencyPlain(value)
+⋮----
+export function formatCurrencyPDF(value)
+⋮----
+export function toLwcTime(dateStr)
+⋮----
+export function dedupeByTime(points)
+⋮----
+function _t(key, params)
+⋮----
+function _resolveEmptyType(input)
+⋮----
+export function showEmptyChart(containerId, typeOrMessage)
+⋮----
+export function bellEmptyStateHtml()
+⋮----
+export function apexCurrencyFormatter(value)
+</file>
+
+<file path="public/interface/premium-dashboard/js/premium-dashboard.js">
 :
 ⋮----
-// ⭐ SKELETON
-export function showSkeletons()
+export function openMenu()
 ⋮----
-export function hideSkeletons()
+export function closeMenu()
 ⋮----
-export function injectSkeletonMarkup()
-⋮----
-// Doughnut widget'lar için farklı skeleton
-⋮----
-// ⭐ LAYOUT
-export function saveLayoutOrder()
-⋮----
-export function loadLayoutOrder()
-⋮----
-export function resetLayout()
-⋮----
-export function initDragDrop()
-⋮----
-export function forceResizeAllCharts()
-⋮----
-export function renderPremiumStats(trades)
-⋮----
-export function renderKpiBar(trades)
-⋮----
-export function buildWidgets()
-⋮----
-export function renderWidgets()
-⋮----
-// ⭐ STRATEGY SECTION
-function getSimpleStrategyPerf(strategyId, trades)
-⋮----
-export async function loadStrategySection(trades, user)
-⋮----
-// ⭐ OVERTRADE BELL - MARK AS READ
-export function markOvertradeAsRead()
-⋮----
-export async function updateNavbarAvatar()
-⋮----
-export function exportCSV(trades)
-⋮----
-export function exportPDF(trades)
+// ⭐ LOAD PREMIUM DATA
+async function loadPremiumData()
 </file>
 
 <file path="public/interface/quick-add/js/quick-modal-i18n.js">
@@ -10667,84 +10385,6 @@ onChange(callback)
 getCurrentLanguage()
 ⋮----
 apply()
-</file>
-
-<file path="public/interface/strategies/js/strategies.js">
-function applyThemeFromStorage()
-⋮----
-function getStrategiesApexTheme()
-⋮----
-function sanitizeHTML(str)
-⋮----
-function showStrategySkeleton()
-⋮----
-function hideStrategySkeleton()
-⋮----
-async function updateNavbarAvatar()
-⋮----
-async function updatePlanBadge()
-⋮----
-function getTradeMultiplier(t)
-⋮----
-function getTradePnL(t)
-⋮----
-function filterTradesByRange(trades, range)
-⋮----
-function getStrategyPerformance(strategyId)
-⋮----
-function formatCurrencyFixed(value)
-⋮----
-function fmtDate(dateStr)
-⋮----
-function drawSparkline(containerId, data, color)
-⋮----
-function renderStrategiesGrid()
-⋮----
-// ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu)
-⋮----
-// ⭐ Sparkline'ları ApexCharts ile çiz
-⋮----
-function renderComparisonCharts()
-⋮----
-function openAddStrategyModal()
-⋮----
-async function confirmAddStrategy()
-⋮----
-function closeAddStrategyModal()
-⋮----
-function openEditModal(strategyId)
-⋮----
-async function confirmEditStrategy()
-⋮----
-function closeEditStrategyModal()
-⋮----
-function openDetailModal(strategyId)
-⋮----
-function openEquityModal(strategyId)
-⋮----
-function setupDetailAndEquityModals()
-⋮----
-function downloadBlob(content, filename, mimeType)
-⋮----
-function csvEscape(val)
-⋮----
-function getCurrentLanguage()
-⋮----
-function exportStrategyCSV(strategyId)
-⋮----
-function exportAllStrategiesCSV()
-⋮----
-function exportStrategyPDF(strategyId)
-⋮----
-function exportAllStrategiesPDF()
-⋮----
-function setupExportButtons()
-⋮----
-async function loadAllData()
-⋮----
-function setupTimeFilterButtons()
-⋮----
-async function initStrategies()
 </file>
 
 <file path="public/src/features/overtrade.js">
@@ -12204,13 +11844,11 @@ import Layout from '../layouts/Layout.astro';
 <file path="src/pages/trades.astro">
 ---
 // ============================================================
-// Bu dosyada değişen bölümler:
-//  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet için tetikleyici çipler
-//    ve sheet container DOM elementleri eklendi.
-//  - DEĞİŞİKLİK 3: Outer card'a "trades-table-card" class'ı eklendi
-//    (mobilde tablo kartı arkaplanını saydam yapabilmek için).
-//  - #table-wrap inline padding kaldırıldı, CSS'e taşındı
-//    (mobilde farklı padding uygulanabilsin diye).
+// TRADES - SAYFA
+//  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet
+//  - DEĞİŞİKLİK 3: trades-table-card class
+//  - i18n: Bulk delete butonundaki SVG+data-i18n çakışması düzeltildi
+//    (data-i18n artık <span> içinde, SVG korunur)
 // ============================================================
 import Layout from '../layouts/Layout.astro';
 ---
@@ -12218,22 +11856,16 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
   
-  <!-- TRADES CSS -->
   <link rel="stylesheet" href="/interface/trades/css/trades.css" />
-  
-  <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 </Fragment>
-  <!-- NAVBAR CONTAINER -->
 
-  <!-- MAIN CONTENT -->
   <main class="trades-main" style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:1400px;">
 
     <div class="page-header">
       <div>
         <h1 data-i18n="trades.title">Tüm İşlemler</h1>
       </div>
-      <!-- ⭐ "Yeni İşlem" butonu KALDIRILDI -->
     </div>
 
     <!-- STATS - SKELETON -->
@@ -12286,20 +11918,20 @@ import Layout from '../layouts/Layout.astro';
       </select>
     </div>
 
-    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE ÇİPLERİ — sadece ≤768px görünür -->
+    <!-- MOBİL FİLTRE ÇİPLERİ -->
     <div class="mobile-filter-chips" id="mobile-filter-chips">
       <button type="button" class="mobile-filter-chip" data-filter="sort">
-        <span class="mobile-filter-chip-text">Tarih ↓</span>
+        <span class="mobile-filter-chip-text" data-i18n="trades.sort.date_desc">Tarih ↓</span>
       </button>
       <button type="button" class="mobile-filter-chip" data-filter="dir">
-        <span class="mobile-filter-chip-text">Tüm Yönler</span>
+        <span class="mobile-filter-chip-text" data-i18n="trades.filter.all_directions">Tüm Yönler</span>
       </button>
       <button type="button" class="mobile-filter-chip" data-filter="result">
-        <span class="mobile-filter-chip-text">Tüm Sonuçlar</span>
+        <span class="mobile-filter-chip-text" data-i18n="trades.filter.all_results">Tüm Sonuçlar</span>
       </button>
     </div>
 
-    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE BOTTOM SHEET -->
+    <!-- MOBİL FİLTRE BOTTOM SHEET -->
     <div class="mobile-filter-overlay" id="mobile-filter-overlay"></div>
     <div class="mobile-filter-sheet" id="mobile-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
       <div class="mobile-filter-grabber"></div>
@@ -12310,22 +11942,22 @@ import Layout from '../layouts/Layout.astro';
     <!-- SELECTION BAR -->
     <div class="sel-bar" id="sel-bar">
       <span class="sel-count" id="sel-count-text">0</span>
-      <span class="sel-label" id="sel-label-text">işlem seçildi</span>
+      <span class="sel-label" id="sel-label-text" data-i18n="trades.selected_count_text">işlem seçildi</span>
       <div class="sel-actions">
         <button class="sel-clear" id="sel-clear-btn" data-i18n="trades.clear_selection">Seçimi Kaldır</button>
-        <button class="btn-bulk-delete" id="bulk-delete-btn" data-i18n="trades.bulk_delete">
+        <button class="btn-bulk-delete" id="bulk-delete-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
             <line x1="10" y1="11" x2="10" y2="17"/>
             <line x1="14" y1="11" x2="14" y2="17"/>
           </svg>
-          Seçilenleri Sil
+          <span data-i18n="trades.bulk_delete_text">Seçilenleri Sil</span>
         </button>
       </div>
     </div>
 
-    <!-- TABLE — ⭐ trades-table-card class'ı eklendi (DEĞİŞİKLİK 3) -->
+    <!-- TABLE -->
     <div class="card trades-table-card" style="padding:0;overflow-x:auto;">
       <!-- SKELETON TABLE -->
       <div id="table-skeleton" style="padding:1.5rem;">
@@ -12340,7 +11972,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- GERÇEK TABLE — ⭐ inline padding kaldırıldı, CSS'e taşındı -->
+      <!-- GERÇEK TABLE -->
       <div id="table-wrap" style="display:none;"></div>
 
       <!-- PAGINATION -->
@@ -12470,31 +12102,22 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
-       ============================================================ -->
-  
-  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
   
-  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
   
-  <!-- 5. TRADES JS (ES5 - AYNI KALIR) -->
   <script src="/interface/trades/js/trades.js" is:inline></script>
   
-  <!-- 6. QUICK ADD (ES5) -->
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
-  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
+  <!-- QUICK ADD MANUEL BAŞLATICI -->
   <script is:inline>
     (function() {
       function createManualFAB() {
@@ -12502,12 +12125,12 @@ import Layout from '../layouts/Layout.astro';
         var fab = document.createElement('button');
         fab.id = 'quick-add-fab';
         fab.className = 'quick-add-fab';
-        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.setAttribute('aria-label', 'Quick Add');
         fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
         fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
         fab.addEventListener('click', function() {
           if (typeof quickAddOpen === 'function') quickAddOpen();
-          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+          else alert('Quick Add failed to load. Please refresh the page.');
         });
         document.body.appendChild(fab);
         wwLog.log('✅ Manuel FAB oluşturuldu');
@@ -12527,7 +12150,6 @@ import Layout from '../layouts/Layout.astro';
     })();
   </script>
 
-  <!-- 8. LUCIDE ICONS INIT -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
@@ -13303,322 +12925,127 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 </file>
 
-<file path="public/interface/dashboard/js/dashboard.js">
-function safeEl(id)
+<file path="public/interface/premium-dashboard/js/dashboard-manager.js">
+:
 ⋮----
-function localDateStr(date)
+// ⭐ SKELETON
+export function showSkeletons()
 ⋮----
-function showSkeletons()
+export function hideSkeletons()
 ⋮----
-function hideSkeletons()
+export function injectSkeletonMarkup()
 ⋮----
-function calcTradePnL(t)
+// Doughnut widget'lar için farklı skeleton
 ⋮----
-function formatCurrency(value)
+// ⭐ LAYOUT
+export function saveLayoutOrder()
 ⋮----
-function formatCompactCurrency(value)
+export function loadLayoutOrder()
 ⋮----
-function formatCurrencyPDF(value)
+export function resetLayout()
+⋮----
+export function initDragDrop()
+⋮----
+export function forceResizeAllCharts()
+⋮----
+export function renderPremiumStats(trades)
+⋮----
+export function renderKpiBar(trades)
+⋮----
+export function buildWidgets()
+⋮----
+export function renderWidgets()
+⋮----
+// ⭐ STRATEGY SECTION
+function getSimpleStrategyPerf(strategyId, trades)
+⋮----
+export async function loadStrategySection(trades, user)
+⋮----
+export function markOvertradeAsRead()
+⋮----
+export async function updateNavbarAvatar()
+⋮----
+export function exportCSV(trades)
+⋮----
+export function exportPDF(trades)
+</file>
+
+<file path="public/interface/strategies/js/strategies.js">
+function applyThemeFromStorage()
+⋮----
+function getStrategiesApexTheme()
 ⋮----
 function sanitizeHTML(str)
 ⋮----
-function escapeAttr(str)
+function showStrategySkeleton()
 ⋮----
-function showToast(msg, type)
+function hideStrategySkeleton()
 ⋮----
-function getApexTheme()
-⋮----
-function getApexColors()
-⋮----
-function getBaseOptions()
-⋮----
-function resetChartsForTheme()
-⋮----
-function setupResizeObserver(containerId, chart)
-⋮----
-function cleanupResizeObservers()
-⋮----
-function filterByDate(trades, range)
-⋮----
-function getPreviousPeriodTrades(trades, range)
-⋮----
-function calcTrend(current, previous)
-⋮----
-function updateTrend(elementId, trend)
-⋮----
-function smartDateLabel(dateStr)
-⋮----
-function getDayNames(lang)
-⋮----
-function loadMonthlyTarget()
-⋮----
-function saveMonthlyTarget(target)
-⋮----
-function animateNumber(elementId, targetValue, isCurrency, isPercentage, delay, animate)
-⋮----
-function update(currentTime)
-⋮----
-function renderStats(trades, previousTrades, animate)
-⋮----
-async function renderStrategyTags(trades)
-⋮----
-async function renderRecentTrades(trades)
-⋮----
-function renderMiniCalendar()
-⋮----
-function loadMiniCalendar(trades)
-⋮----
-function destroyAllCharts()
-⋮----
-function renderCumulativeChart(trades)
-⋮----
-function renderWinLossChart(trades)
-⋮----
-function renderDailyChart(trades)
-⋮----
-function renderSymbolChart(trades)
-⋮----
-function renderDirectionChart(trades)
-⋮----
-function renderCharts(trades)
-⋮----
-function updateCharts(trades)
-⋮----
-function setupChartExpansion()
-⋮----
-function openChartExpansion(title, renderFn)
-⋮----
-function closeChartExpansion()
-⋮----
-function exportCSV()
-⋮----
-async function generatePDF(lang)
-⋮----
-function setupGoalModal()
-⋮----
-function openGoalModal()
-⋮----
-function closeGoalModalFunc()
-⋮----
-function saveGoal()
+async function updateNavbarAvatar()
 ⋮----
 async function updatePlanBadge()
 ⋮----
-function setupDateFilterAndOptions()
-⋮----
-function positionOptionsDropdown()
-⋮----
-function setActiveDateRange(range)
-⋮----
-function setupKpiAccordion()
-⋮----
-function setupDonutCarousel()
-⋮----
-async function refresh()
-⋮----
-async function loadTrades(userId)
-⋮----
-async function initDashboard()
-⋮----
-function startDashboard()
-</file>
-
-<file path="public/interface/trades/js/trades.js">
-function safeEl(id)
-⋮----
-function showTableSkeleton()
-⋮----
-function hideTableSkeleton()
-⋮----
-function sanitizeHTML(str)
-⋮----
-function formatCurrency(value)
-⋮----
-function showToast(msg, type)
+function getTradeMultiplier(t)
 ⋮----
 function getTradePnL(t)
 ⋮----
-function formatDateTime(dateStr)
+function filterTradesByRange(trades, range)
 ⋮----
-async function loadStrategyNames()
+function getStrategyPerformance(strategyId)
 ⋮----
-function updateStrategySelect()
+function formatCurrencyFixed(value)
 ⋮----
-function applyStatValueSize(el, text, extraCls)
+function fmtDate(dateStr)
 ⋮----
-function renderStats(trades)
+function drawSparkline(containerId, data, color)
 ⋮----
-// ============================================================
-// NOTE TOGGLE (masaüstü — tablo not satırı)
-// ============================================================
+function renderStrategiesGrid()
 ⋮----
-function toggleNote(tradeId)
+// ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu)
 ⋮----
-function toggleCardDetail(id, btn)
+// ⭐ Sparkline'ları ApexCharts ile çiz
 ⋮----
-function updateSelBar()
+function renderComparisonCharts()
 ⋮----
-function toggleSelect(id, checked)
+function openAddStrategyModal()
 ⋮----
-function toggleSelectAll(checkbox)
+async function confirmAddStrategy()
 ⋮----
-function renderPagination()
+function closeAddStrategyModal()
 ⋮----
-function applyFiltersAndSort()
+function openEditModal(strategyId)
 ⋮----
-// ============================================================
-// DEĞİŞİKLİK 3: Masaüstü tablo HTML üretici (eski kod buraya taşındı)
-// ============================================================
-function buildDesktopTableHTML(trades)
+async function confirmEditStrategy()
 ⋮----
-function buildMobileCardsHTML(trades)
+function closeEditStrategyModal()
 ⋮----
-function renderTable(trades)
+function openDetailModal(strategyId)
 ⋮----
-async function deleteTrade(id)
+function openEquityModal(strategyId)
 ⋮----
-async function bulkDelete()
+function setupDetailAndEquityModals()
 ⋮----
-async function confirmBulkDelete()
+function downloadBlob(content, filename, mimeType)
 ⋮----
-function openEdit(id)
+function csvEscape(val)
 ⋮----
-function closeModal()
+function getCurrentLanguage()
 ⋮----
-function closeBulkModal()
+function exportStrategyCSV(strategyId)
 ⋮----
-async function updatePlanBadge()
+function exportAllStrategiesCSV()
 ⋮----
-async function loadTrades(userId)
+function exportStrategyPDF(strategyId)
 ⋮----
-function initMobileFilterSheets()
+function exportAllStrategiesPDF()
 ⋮----
-function getOptionText(opt)
+function setupExportButtons()
 ⋮----
-// Çip etiketlerini native select'in seçili option'undan senkronla
-function syncChipLabels()
+async function loadAllData()
 ⋮----
-function openSheet(key)
+function setupTimeFilterButtons()
 ⋮----
-function closeSheet()
-⋮----
-async function initTrades()
-</file>
-
-<file path="public/settings/js/settings.js">
-function getLucideIcon(name, size)
-⋮----
-function getSb()
-⋮----
-function showMsg(message, type)
-⋮----
-function isAdmin(user)
-⋮----
-function safeEl(id)
-⋮----
-function t(key, params)
-⋮----
-function sanitizeHTML(str)
-⋮----
-async function getCurrentUser()
-⋮----
-async function getSession()
-⋮----
-async function loadPanelContent(panelId, url)
-⋮----
-// ============================================================
-// PANEL INIT
-// ============================================================
-function initPanel(panelId)
-⋮----
-async function uploadAvatar(file)
-⋮----
-async function updateAvatar(url)
-⋮----
-async function loadAvatar()
-⋮----
-function updateAvatarElements(url)
-⋮----
-function initProfile()
-⋮----
-async function loadProfileData()
-⋮----
-function showConfirmModal(title, message, warning, onConfirm, onCancel)
-⋮----
-async function renderPlan()
-⋮----
-function startTimer(expiresAt)
-⋮----
-function initPassword()
-⋮----
-function initDanger()
-⋮----
-async function deleteAllUserData()
-⋮----
-async function deactivateAccount()
-⋮----
-function initAppearance()
-⋮----
-function loadThemeCustomizationFallback()
-⋮----
-function setupThemeEventsFallback()
-⋮----
-function updatePreview()
-⋮----
-function saveTheme()
-⋮----
-function resetTheme()
-⋮----
-function initLanguageSelector()
-⋮----
-function initCurrencySelector()
-⋮----
-function initOvertrade()
-⋮----
-async function updateBadge()
-⋮----
-function initNavEvents()
-⋮----
-function initPanelClickEvents()
-⋮----
-function initAvatarPopup()
-⋮----
-function closePopup()
-⋮----
-// ============================================================
-// CONFIRM MODAL - INIT
-// ============================================================
-function initConfirmModal()
-⋮----
-async function checkAndActivatePremium()
-</file>
-
-<file path="public/i18n.js">
-class I18n
-⋮----
-init()
-⋮----
-t(key, params =
-⋮----
-setLanguage(lang)
-⋮----
-_applyInternal(callId)
-⋮----
-getCurrentLanguage()
-⋮----
-apply()
-⋮----
-onChange(callback)
-⋮----
-refresh()
-⋮----
-syncStorageOnly(lang)
-⋮----
-getSavedLanguage()
-⋮----
-resolveLanguageConflict(dbLang)
-⋮----
-function _initialApply()
+async function initStrategies()
 </file>
 
 <file path="public/sw.js">
@@ -14971,13 +14398,8 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
 
-  <!-- DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
-
-  <!-- QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-
-  <!-- APEXCHARTS - ÖNCE YÜKLENİR (dashboard.js'den önce) -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
 
   <style>
@@ -14997,44 +14419,44 @@ import Layout from '../layouts/Layout.astro';
         <!-- MASAÜSTÜ TOOLBAR (>=768px) -->
         <div class="desktop-toolbar">
           <div class="date-filter-group" id="date-filter-group-desktop">
-            <button class="date-filter-option active" data-range="all">Tümü</button>
-            <button class="date-filter-option" data-range="week">Bu Hafta</button>
-            <button class="date-filter-option" data-range="month">Bu Ay</button>
-            <button class="date-filter-option" data-range="year">Bu Yıl</button>
-            <button class="date-filter-option" data-range="custom" id="custom-range-btn">Özel</button>
+            <button class="date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
+            <button class="date-filter-option" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
+            <button class="date-filter-option" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
+            <button class="date-filter-option" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
+            <button class="date-filter-option" data-range="custom" id="custom-range-btn" data-i18n="dashboard.filter.custom">Özel</button>
           </div>
           <div class="custom-range-panel" id="custom-range-panel" style="display:none;">
             <input type="date" id="custom-range-start" class="custom-range-input" />
             <span class="custom-range-sep">–</span>
             <input type="date" id="custom-range-end" class="custom-range-input" />
-            <button class="custom-range-apply" id="custom-range-apply">Uygula</button>
+            <button class="custom-range-apply" id="custom-range-apply" data-i18n="dashboard.filter.apply">Uygula</button>
           </div>
           <button class="export-btn" id="export-csv-desktop">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            CSV
+            <span data-i18n="dashboard.export_csv">CSV</span>
           </button>
           <button class="export-btn" id="export-pdf-desktop">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            PDF
+            <span data-i18n="dashboard.export_pdf">PDF</span>
           </button>
         </div>
 
         <!-- MOBİL OPTIONS MENÜ (<768px) -->
         <div class="options-menu-wrapper mobile-only">
-          <button class="options-menu-btn" id="options-menu-btn" aria-label="Seçenekler" aria-expanded="false">
+          <button class="options-menu-btn" id="options-menu-btn" aria-label="Options" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
             </svg>
           </button>
           <div class="options-menu-dropdown" id="options-menu-dropdown">
-            <div class="options-menu-section-label">Tarih Aralığı</div>
-            <button class="options-menu-item date-filter-option active" data-range="all">Tümü</button>
-            <button class="options-menu-item date-filter-option" data-range="week">Bu Hafta</button>
-            <button class="options-menu-item date-filter-option" data-range="month">Bu Ay</button>
-            <button class="options-menu-item date-filter-option" data-range="year">Bu Yıl</button>
+            <div class="options-menu-section-label" data-i18n="dashboard.filter.date_range">Tarih Aralığı</div>
+            <button class="options-menu-item date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
+            <button class="options-menu-item date-filter-option" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
+            <button class="options-menu-item date-filter-option" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
+            <button class="options-menu-item date-filter-option" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
             <div class="options-menu-divider"></div>
-            <button class="options-menu-item" id="export-csv">CSV indir</button>
-            <button class="options-menu-item" id="export-pdf">PDF indir</button>
+            <button class="options-menu-item" id="export-csv" data-i18n="dashboard.download_csv">CSV indir</button>
+            <button class="options-menu-item" id="export-pdf" data-i18n="dashboard.download_pdf">PDF indir</button>
           </div>
         </div>
       </div>
@@ -15078,10 +14500,10 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- KPI ACCORDION (SADECE MOBİLDE) -->
+    <!-- KPI ACCORDION -->
     <div class="kpi-section">
       <button class="kpi-toggle-btn" id="kpi-toggle-btn" aria-expanded="true">
-        <span>Detaylı İstatistikler</span>
+        <span data-i18n="dashboard.kpi.detailed_stats">Detaylı İstatistikler</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="kpi-toggle-chevron"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="kpi-bar-wrapper" id="kpi-bar-wrapper">
@@ -15096,7 +14518,7 @@ import Layout from '../layouts/Layout.astro';
             <div class="goal-wrapper">
               <div class="progress-bar"><div class="progress-fill" id="goal-progress"></div></div>
               <span class="kpi-value" id="goal-percent">0%</span>
-              <button class="goal-edit-btn" id="edit-goal-btn" title="Hedefi Düzenle">
+              <button class="goal-edit-btn" id="edit-goal-btn" data-i18n-title="dashboard.goal.edit" title="Hedefi Düzenle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
@@ -15163,15 +14585,15 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- MOBİL DONUT CAROUSEL (SORUN 7) -->
+    <!-- MOBİL DONUT CAROUSEL -->
     <div class="donut-mobile-carousel" id="donut-mobile-carousel">
       <div class="donut-mobile-track" id="donut-mobile-track">
         <div class="donut-mobile-slide">
-          <h3>WIN / LOSS DAĞILIMI</h3>
+          <h3 data-i18n="dashboard.chart.winloss_title">WIN / LOSS DAĞILIMI</h3>
           <div class="chart-wrap chart-wrap--doughnut"><div id="chart-winloss-mobile"></div></div>
         </div>
         <div class="donut-mobile-slide">
-          <h3>LONG / SHORT DAĞILIMI</h3>
+          <h3 data-i18n="dashboard.chart.direction_title">LONG / SHORT DAĞILIMI</h3>
           <div class="chart-wrap chart-wrap--doughnut"><div id="chart-direction-mobile"></div></div>
         </div>
       </div>
@@ -15213,7 +14635,7 @@ import Layout from '../layouts/Layout.astro';
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
-          KULLANILAN STRATEJİLER
+          <span data-i18n="dashboard.strategies.title_full">KULLANILAN STRATEJİLER</span>
         </div>
         <div id="strategy-tags-container"></div>
         <div class="best-worst" id="best-worst">
@@ -15280,7 +14702,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- CHART EXPAND MODAL (SORUN 11) -->
+  <!-- CHART EXPAND MODAL -->
   <div id="chart-expand-modal" class="chart-expand-overlay" style="display:none;">
     <div class="chart-expand-box">
       <div class="chart-expand-header">
@@ -15293,34 +14715,21 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ============================================================
-       SCRIPTS
-       ============================================================ -->
-
-  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <!-- ⭐ LIGHTWEIGHT CHARTS KALDIRILDI: dashboard.js hiçbir yerde LightweightCharts.* çağırmıyor,
-       tüm grafikler ApexCharts ile render ediliyor. ~50 KB gereksiz JS indirme ortadan kalktı. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
 
-  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
 
-  <!-- 3. ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
-
-  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
 
-  <!-- 5. QUICK ADD (ES5) -->
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
-  <!-- 6. DASHBOARD JS (YENİ - ApexCharts sürümü) -->
   <script src="/interface/dashboard/js/dashboard.js" is:inline></script>
 
-  <!-- 7. LUCIDE ICONS INIT (EN SON) -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
@@ -17238,6 +16647,128 @@ git reset --hard
 https://hostedscan.com/scans
 </file>
 
+<file path="public/interface/dashboard/js/dashboard.js">
+function safeEl(id)
+⋮----
+function localDateStr(date)
+⋮----
+function showSkeletons()
+⋮----
+function hideSkeletons()
+⋮----
+function calcTradePnL(t)
+⋮----
+function formatCurrency(value)
+⋮----
+function formatCompactCurrency(value)
+⋮----
+function formatCurrencyPDF(value)
+⋮----
+function sanitizeHTML(str)
+⋮----
+function escapeAttr(str)
+⋮----
+function showToast(msg, type)
+⋮----
+function getApexTheme()
+⋮----
+function getApexColors()
+⋮----
+function getBaseOptions()
+⋮----
+function resetChartsForTheme()
+⋮----
+function setupResizeObserver(containerId, chart)
+⋮----
+function cleanupResizeObservers()
+⋮----
+function filterByDate(trades, range)
+⋮----
+function getPreviousPeriodTrades(trades, range)
+⋮----
+function calcTrend(current, previous)
+⋮----
+function updateTrend(elementId, trend)
+⋮----
+function smartDateLabel(dateStr)
+⋮----
+function getDayNames(lang)
+⋮----
+function getMonthNamesShort(lang)
+⋮----
+function loadMonthlyTarget()
+⋮----
+function saveMonthlyTarget(target)
+⋮----
+function animateNumber(elementId, targetValue, isCurrency, isPercentage, delay, animate)
+⋮----
+function update(currentTime)
+⋮----
+function renderStats(trades, previousTrades, animate)
+⋮----
+async function renderStrategyTags(trades)
+⋮----
+async function renderRecentTrades(trades)
+⋮----
+function renderMiniCalendar()
+⋮----
+function loadMiniCalendar(trades)
+⋮----
+function destroyAllCharts()
+⋮----
+function renderCumulativeChart(trades)
+⋮----
+function renderWinLossChart(trades)
+⋮----
+function renderDailyChart(trades)
+⋮----
+function renderSymbolChart(trades)
+⋮----
+function renderDirectionChart(trades)
+⋮----
+function renderCharts(trades)
+⋮----
+function updateCharts(trades)
+⋮----
+function setupChartExpansion()
+⋮----
+function openChartExpansion(title, renderFn)
+⋮----
+function closeChartExpansion()
+⋮----
+function exportCSV()
+⋮----
+async function generatePDF(lang)
+⋮----
+function setupGoalModal()
+⋮----
+function openGoalModal()
+⋮----
+function closeGoalModalFunc()
+⋮----
+function saveGoal()
+⋮----
+async function updatePlanBadge()
+⋮----
+function setupDateFilterAndOptions()
+⋮----
+function positionOptionsDropdown()
+⋮----
+function setActiveDateRange(range)
+⋮----
+function setupKpiAccordion()
+⋮----
+function setupDonutCarousel()
+⋮----
+async function refresh()
+⋮----
+async function loadTrades(userId)
+⋮----
+async function initDashboard()
+⋮----
+function startDashboard()
+</file>
+
 <file path="public/interface/quick-add/js/quick-add.js">
 function applyThemeFromStorage()
 ⋮----
@@ -17341,6 +16872,197 @@ function attachModalEvents()
 function createModal()
 ⋮----
 function initQuickAdd()
+</file>
+
+<file path="public/interface/trades/js/trades.js">
+function _t(key, params)
+⋮----
+function _lang()
+⋮----
+function safeEl(id)
+⋮----
+function showTableSkeleton()
+⋮----
+function hideTableSkeleton()
+⋮----
+function sanitizeHTML(str)
+⋮----
+function formatCurrency(value)
+⋮----
+function showToast(msg, type)
+⋮----
+function getTradePnL(t)
+⋮----
+function formatDateTime(dateStr)
+⋮----
+async function loadStrategyNames()
+⋮----
+function updateStrategySelect()
+⋮----
+function applyStatValueSize(el, text, extraCls)
+⋮----
+function renderStats(trades)
+⋮----
+// ============================================================
+// NOTE TOGGLE (masaüstü — tablo not satırı)
+// ============================================================
+⋮----
+function toggleNote(tradeId)
+⋮----
+function toggleCardDetail(id, btn)
+⋮----
+function updateSelBar()
+⋮----
+function toggleSelect(id, checked)
+⋮----
+function toggleSelectAll(checkbox)
+⋮----
+function renderPagination()
+⋮----
+function applyFiltersAndSort()
+⋮----
+// ============================================================
+// DEĞİŞİKLİK 3: Masaüstü tablo HTML üretici
+// ============================================================
+function buildDesktopTableHTML(trades)
+⋮----
+// ⭐ i18n: title attribute'ları
+⋮----
+function buildMobileCardsHTML(trades)
+⋮----
+// ⭐ i18n: 'Açık' → _t('trades.open')
+⋮----
+function renderTable(trades)
+⋮----
+async function deleteTrade(id)
+⋮----
+async function bulkDelete()
+⋮----
+async function confirmBulkDelete()
+⋮----
+function openEdit(id)
+⋮----
+function closeModal()
+⋮----
+function closeBulkModal()
+⋮----
+async function updatePlanBadge()
+⋮----
+async function loadTrades(userId)
+⋮----
+function initMobileFilterSheets()
+⋮----
+function getOptionText(opt)
+⋮----
+function syncChipLabels()
+⋮----
+function openSheet(key)
+⋮----
+function closeSheet()
+⋮----
+async function initTrades()
+</file>
+
+<file path="public/settings/js/settings.js">
+function t(key, params)
+⋮----
+function themeLabel(isLight)
+⋮----
+function themeDesc(isLight)
+⋮----
+function getLucideIcon(name, size)
+⋮----
+function getSb()
+⋮----
+function showMsg(message, type)
+⋮----
+function isAdmin(user)
+⋮----
+function safeEl(id)
+⋮----
+function sanitizeHTML(str)
+⋮----
+async function getCurrentUser()
+⋮----
+async function getSession()
+⋮----
+async function loadPanelContent(panelId, url)
+⋮----
+// ============================================================
+// PANEL INIT
+// ============================================================
+function initPanel(panelId)
+⋮----
+async function uploadAvatar(file)
+⋮----
+async function updateAvatar(url)
+⋮----
+async function loadAvatar()
+⋮----
+function updateAvatarElements(url)
+⋮----
+function initProfile()
+⋮----
+async function loadProfileData()
+⋮----
+function showConfirmModal(title, message, warning, onConfirm, onCancel)
+⋮----
+async function renderPlan()
+⋮----
+function startTimer(expiresAt)
+⋮----
+function initPassword()
+⋮----
+function initDanger()
+⋮----
+async function deleteAllUserData()
+⋮----
+async function deactivateAccount()
+⋮----
+function initAppearance()
+⋮----
+function loadThemeCustomizationFallback()
+⋮----
+function setupThemeEventsFallback()
+⋮----
+function updatePreview()
+⋮----
+function saveTheme()
+⋮----
+function resetTheme()
+⋮----
+async function switchLanguageSafe(lang)
+⋮----
+function initLanguageSelector()
+⋮----
+function updateButtonStates(lang)
+⋮----
+function initCurrencySelector()
+⋮----
+function initOvertrade()
+⋮----
+async function updateBadge()
+⋮----
+function initNavEvents()
+⋮----
+function initPanelClickEvents()
+⋮----
+function initAvatarPopup()
+⋮----
+function closePopup()
+⋮----
+// ============================================================
+// CONFIRM MODAL - INIT — ELEMENT-LEVEL GUARD
+// ============================================================
+function initConfirmModal()
+⋮----
+async function checkAndActivatePremium()
+⋮----
+async function bootSettings()
+</file>
+
+<file path="public/i18n.js">
+function I18n(defaultLang)
 </file>
 
 </files>

@@ -1,12 +1,10 @@
 ﻿---
 // ============================================================
-// Bu dosyada değişen bölümler:
-//  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet için tetikleyici çipler
-//    ve sheet container DOM elementleri eklendi.
-//  - DEĞİŞİKLİK 3: Outer card'a "trades-table-card" class'ı eklendi
-//    (mobilde tablo kartı arkaplanını saydam yapabilmek için).
-//  - #table-wrap inline padding kaldırıldı, CSS'e taşındı
-//    (mobilde farklı padding uygulanabilsin diye).
+// TRADES - SAYFA
+//  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet
+//  - DEĞİŞİKLİK 3: trades-table-card class
+//  - i18n: Bulk delete butonundaki SVG+data-i18n çakışması düzeltildi
+//    (data-i18n artık <span> içinde, SVG korunur)
 // ============================================================
 import Layout from '../layouts/Layout.astro';
 ---
@@ -14,22 +12,16 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
   
-  <!-- TRADES CSS -->
   <link rel="stylesheet" href="/interface/trades/css/trades.css" />
-  
-  <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 </Fragment>
-  <!-- NAVBAR CONTAINER -->
 
-  <!-- MAIN CONTENT -->
   <main class="trades-main" style="flex:1;padding:2rem;margin:0 auto;width:100%;max-width:1400px;">
 
     <div class="page-header">
       <div>
         <h1 data-i18n="trades.title">Tüm İşlemler</h1>
       </div>
-      <!-- ⭐ "Yeni İşlem" butonu KALDIRILDI -->
     </div>
 
     <!-- STATS - SKELETON -->
@@ -82,20 +74,20 @@ import Layout from '../layouts/Layout.astro';
       </select>
     </div>
 
-    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE ÇİPLERİ — sadece ≤768px görünür -->
+    <!-- MOBİL FİLTRE ÇİPLERİ -->
     <div class="mobile-filter-chips" id="mobile-filter-chips">
       <button type="button" class="mobile-filter-chip" data-filter="sort">
-        <span class="mobile-filter-chip-text">Tarih ↓</span>
+        <span class="mobile-filter-chip-text" data-i18n="trades.sort.date_desc">Tarih ↓</span>
       </button>
       <button type="button" class="mobile-filter-chip" data-filter="dir">
-        <span class="mobile-filter-chip-text">Tüm Yönler</span>
+        <span class="mobile-filter-chip-text" data-i18n="trades.filter.all_directions">Tüm Yönler</span>
       </button>
       <button type="button" class="mobile-filter-chip" data-filter="result">
-        <span class="mobile-filter-chip-text">Tüm Sonuçlar</span>
+        <span class="mobile-filter-chip-text" data-i18n="trades.filter.all_results">Tüm Sonuçlar</span>
       </button>
     </div>
 
-    <!-- ⭐ YENİ (DEĞİŞİKLİK 2): MOBİL FİLTRE BOTTOM SHEET -->
+    <!-- MOBİL FİLTRE BOTTOM SHEET -->
     <div class="mobile-filter-overlay" id="mobile-filter-overlay"></div>
     <div class="mobile-filter-sheet" id="mobile-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
       <div class="mobile-filter-grabber"></div>
@@ -106,22 +98,22 @@ import Layout from '../layouts/Layout.astro';
     <!-- SELECTION BAR -->
     <div class="sel-bar" id="sel-bar">
       <span class="sel-count" id="sel-count-text">0</span>
-      <span class="sel-label" id="sel-label-text">işlem seçildi</span>
+      <span class="sel-label" id="sel-label-text" data-i18n="trades.selected_count_text">işlem seçildi</span>
       <div class="sel-actions">
         <button class="sel-clear" id="sel-clear-btn" data-i18n="trades.clear_selection">Seçimi Kaldır</button>
-        <button class="btn-bulk-delete" id="bulk-delete-btn" data-i18n="trades.bulk_delete">
+        <button class="btn-bulk-delete" id="bulk-delete-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
             <line x1="10" y1="11" x2="10" y2="17"/>
             <line x1="14" y1="11" x2="14" y2="17"/>
           </svg>
-          Seçilenleri Sil
+          <span data-i18n="trades.bulk_delete_text">Seçilenleri Sil</span>
         </button>
       </div>
     </div>
 
-    <!-- TABLE — ⭐ trades-table-card class'ı eklendi (DEĞİŞİKLİK 3) -->
+    <!-- TABLE -->
     <div class="card trades-table-card" style="padding:0;overflow-x:auto;">
       <!-- SKELETON TABLE -->
       <div id="table-skeleton" style="padding:1.5rem;">
@@ -136,7 +128,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- GERÇEK TABLE — ⭐ inline padding kaldırıldı, CSS'e taşındı -->
+      <!-- GERÇEK TABLE -->
       <div id="table-wrap" style="display:none;"></div>
 
       <!-- PAGINATION -->
@@ -266,31 +258,22 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
-       ============================================================ -->
-  
-  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
   
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
   
-  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
   
-  <!-- 5. TRADES JS (ES5 - AYNI KALIR) -->
   <script src="/interface/trades/js/trades.js" is:inline></script>
   
-  <!-- 6. QUICK ADD (ES5) -->
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
-  <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
+  <!-- QUICK ADD MANUEL BAŞLATICI -->
   <script is:inline>
     (function() {
       function createManualFAB() {
@@ -298,12 +281,12 @@ import Layout from '../layouts/Layout.astro';
         var fab = document.createElement('button');
         fab.id = 'quick-add-fab';
         fab.className = 'quick-add-fab';
-        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        fab.setAttribute('aria-label', 'Quick Add');
         fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
         fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
         fab.addEventListener('click', function() {
           if (typeof quickAddOpen === 'function') quickAddOpen();
-          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+          else alert('Quick Add failed to load. Please refresh the page.');
         });
         document.body.appendChild(fab);
         wwLog.log('✅ Manuel FAB oluşturuldu');
@@ -323,7 +306,6 @@ import Layout from '../layouts/Layout.astro';
     })();
   </script>
 
-  <!-- 8. LUCIDE ICONS INIT -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {

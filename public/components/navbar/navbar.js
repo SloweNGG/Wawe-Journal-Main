@@ -6,13 +6,15 @@
 // ⭐ Kullanıcı adı her zaman doğru gösterilir
 // ⭐ AYARLAR SAYFASINDA DA HAMBURGER MENÜ ÇALIŞIR
 // ⭐ Event'ler her sayfa yüklemesinde yeniden bağlanır
+// ⭐ FIX: updateNavbarBadge() - 5dk sessionStorage cache KALDIRILDI
+//    (plan değişimi anında yansısın diye her zaman taze çekiyor)
 // ============================================================
 
 wwLog.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');
 
 var navbarRendered = false;
-var cachedAvatarUrl = null; // ⭐ Avatar cache kontrolü
-var navEventsInitialized = false; // ⭐ Event'lerin bağlanıp bağlanmadığını takip et
+var cachedAvatarUrl = null;
+var navEventsInitialized = false;
 
 function sanitizeHTML(str) {
   if (!str) return '';
@@ -58,7 +60,6 @@ function getNavbarHTML(translations) {
     return key;
   };
 
-  // ⭐ Menü bölüm başlıkları için i18n (data-i18n ile de işaretlenecek)
   var menuGeneral = t('nav.menu_general') || 'GENEL';
   var menuPremium = t('nav.menu_premium') || 'PREMIUM';
   var menuAccount = t('nav.menu_account') || 'HESAP';
@@ -170,7 +171,6 @@ function getNavbarHTML(translations) {
     <div class="nav-menu" id="nav-menu">
       <div class="nav-menu-inner">
         
-        <!-- ⭐ Kullanıcı Kartı (mobil menü üstü) -->
         <div class="user-card" id="menu-user-card">
           <div class="user-card-avatar" id="menu-user-avatar">
             <span id="menu-avatar-text">?</span>
@@ -184,7 +184,6 @@ function getNavbarHTML(translations) {
           </div>
         </div>
 
-        <!-- ⭐ BÖLÜM 1: GENEL (data-i18n ile işaretlendi) -->
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_general">${menuGeneral}</div>
           <a href="/index.html" data-i18n="nav.home">
@@ -209,7 +208,6 @@ function getNavbarHTML(translations) {
           </span>
         </div>
 
-        <!-- ⭐ BÖLÜM 2: PREMIUM -->
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_premium">${menuPremium}</div>
           <a href="/premium-dashboard.html" data-i18n="nav.premium_dashboard">
@@ -226,7 +224,6 @@ function getNavbarHTML(translations) {
           </a>
         </div>
 
-        <!-- ⭐ BÖLÜM 3: HESAP -->
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_account">${menuAccount}</div>
           <a href="/settings.html#panel-profile" data-i18n="nav.profile">
@@ -301,18 +298,15 @@ function updateNavbarI18n() {
   wwLog.log(`✅ Navbar i18n güncellendi! (${total} element)`);
 }
 
-// ⭐ applyAvatarToNav - HEADER + MENU avatar ve kullanıcı adını günceller
 function applyAvatarToNav(url) {
   var navAvatar = document.getElementById('user-avatar');
   var menuAvatar = document.getElementById('menu-user-avatar');
   var menuName = document.getElementById('menu-user-name');
   
-  // ⭐ Kullanıcı bilgisini önce SETTINGS_STATE'den, yoksa sessionStorage'dan al
   var user = window.SETTINGS_STATE?.currentUser || null;
   var fullName = user?.user_metadata?.username || user?.email || sessionStorage.getItem('ww_user_display_name') || 'Kullanıcı';
   var initial = fullName.charAt(0)?.toUpperCase() || '?';
   
-  // HEADER avatar
   if (navAvatar) {
     if (url) {
       var safeUrl = sanitizeURL(url);
@@ -329,7 +323,6 @@ function applyAvatarToNav(url) {
     }
   }
   
-  // MENÜ avatar
   if (menuAvatar) {
     if (url) {
       var safeUrl2 = sanitizeURL(url);
@@ -346,7 +339,6 @@ function applyAvatarToNav(url) {
     }
   }
   
-  // MENÜ kullanıcı adı
   if (menuName) {
     var displayName = fullName;
     if (displayName && displayName.includes('@')) {
@@ -356,7 +348,6 @@ function applyAvatarToNav(url) {
   }
 }
 
-// ⭐ loadNavbarAvatar - Avatar + kullanıcı adı cache, her zaman currentUser'ı doldurur
 async function loadNavbarAvatar() {
   try {
     var sb = window.sb || window.supabase;
@@ -367,7 +358,6 @@ async function loadNavbarAvatar() {
     var storedTime = sessionStorage.getItem('ww_avatar_time');
     var now = Date.now();
     
-    // ⭐ Kullanıcı adını her zaman SETTINGS_STATE'e yaz (cache varsa bile)
     if (storedDisplayName) {
       if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
       if (!window.SETTINGS_STATE.currentUser) {
@@ -382,11 +372,9 @@ async function loadNavbarAvatar() {
       }
     }
     
-    // Avatar cache kontrolü
     if (storedAvatar && storedTime && (now - parseInt(storedTime)) < 300000) {
       if (cachedAvatarUrl === storedAvatar) {
         wwLog.log('✅ Avatar aynı, render yapılmıyor.');
-        // Ama kullanıcı adı güncellenmiş olabilir, yine de UI'ı tazele
         applyAvatarToNav(storedAvatar);
         return;
       }
@@ -395,7 +383,6 @@ async function loadNavbarAvatar() {
       return;
     }
     
-    // Sunucudan al
     var { data: { user } } = await sb.auth.getUser();
     if (!user) return;
     
@@ -424,7 +411,7 @@ async function loadNavbarAvatar() {
       applyAvatarToNav(avatarUrl);
     } else {
       wwLog.log('✅ Avatar aynı, render yapılmıyor.');
-      applyAvatarToNav(avatarUrl); // kullanıcı adını güncellemek için
+      applyAvatarToNav(avatarUrl);
     }
     
   } catch (e) {
@@ -440,13 +427,11 @@ async function loadNavbarAvatar() {
       cachedAvatarUrl = fallbackAvatar;
       applyAvatarToNav(fallbackAvatar);
     } else {
-      // En azından kullanıcı adını güncelle
       applyAvatarToNav(fallbackAvatar || null);
     }
   }
 }
 
-// ⭐ updateBadgeUI - HEADER + MENU plan badge'lerini aynı anda günceller
 function updateBadgeUI(isPremium) {
   var badge = document.getElementById('plan-badge');
   var text = document.getElementById('plan-text');
@@ -492,20 +477,14 @@ function updateBadgeUI(isPremium) {
   }
 }
 
+// ⭐ FIX: 5 dakikalık sessionStorage cache KALDIRILDI.
+// Plan admin tarafından değiştirildiğinde kullanıcı Ctrl+R yapınca
+// anında doğru badge görür. Sorgu hafif (tek kolon, tek satır).
 async function updateNavbarBadge() {
   try {
     var badge = document.getElementById('plan-badge');
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
-    
-    var cachedPlan = sessionStorage.getItem('ww_user_plan');
-    var cachedTime = sessionStorage.getItem('ww_user_plan_time');
-    var now = Date.now();
-    
-    if (cachedPlan && cachedTime && (now - parseInt(cachedTime)) < 300000) {
-      updateBadgeUI(cachedPlan === 'premium');
-      return;
-    }
     
     var sb = window.sb || window.supabase;
     if (!sb) {
@@ -527,8 +506,11 @@ async function updateNavbarBadge() {
     
     var isPremium = profile?.plan === 'premium';
     
-    sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
-    sessionStorage.setItem('ww_user_plan_time', String(now));
+    // Sadece fallback amaçlı yaz; artık OKUMUYORUZ
+    try {
+      sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
+      sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+    } catch (e) {}
     
     updateBadgeUI(isPremium);
     
@@ -686,14 +668,12 @@ function setupAvatarDropdown() {
   wwLog.log('✅ Avatar dropdown event delegation kuruldu!');
 }
 
-// ⭐ initNavEvents - HER ZAMAN çağrıldığında event'leri temizleyip yeniden bağlar
 function initNavEvents() {
   wwLog.log('🔗 Navbar event\'leri bağlanıyor...');
   
   loadLucideIcons();
   setupAvatarDropdown();
   
-  // ⭐ Premium dropdown
   var ddBtn = document.getElementById('premium-dropdown-btn');
   var ddMenu = document.getElementById('premium-dropdown-menu');
   
@@ -718,7 +698,6 @@ function initNavEvents() {
     });
   }
   
-  // ⭐ Bell panel
   var bellBtn = document.getElementById('overtrade-bell-btn');
   var bellPanel = document.getElementById('bell-panel');
   
@@ -753,7 +732,6 @@ function initNavEvents() {
     });
   }
   
-  // ⭐ Logout dropdown
   var logoutBtn = document.getElementById('logout-dropdown-btn');
   if (logoutBtn) {
     var newLogoutBtn = logoutBtn.cloneNode(true);
@@ -764,24 +742,28 @@ function initNavEvents() {
       var sb = window.sb || window.supabase;
       if (sb) await sb.auth.signOut();
       localStorage.removeItem('ww_last_active_push');
+      try {
+        sessionStorage.removeItem('ww_user_plan');
+        sessionStorage.removeItem('ww_user_plan_time');
+        sessionStorage.removeItem('ww_avatar_url');
+        sessionStorage.removeItem('ww_avatar_time');
+        sessionStorage.removeItem('ww_user_display_name');
+      } catch(e) {}
       window.location.href = '/index.html';
     });
   }
   
-  // ⭐ HAMBURGER MENU - AYARLAR SAYFASINDA DA ÇALIŞSIN
   var toggle = document.getElementById('nav-toggle');
   var menu = document.getElementById('nav-menu');
   var backdrop = document.getElementById('nav-backdrop');
   
   if (toggle && menu && backdrop) {
-    // ⭐ Eski event'leri temizle
     var newToggle = toggle.cloneNode(true);
     toggle.parentNode.replaceChild(newToggle, toggle);
     
-    // ⭐ Menü açma/kapama
     newToggle.addEventListener('click', function(e) {
       e.preventDefault();
-      e.stopPropagation(); // ⭐ Event yayılmasını engelle
+      e.stopPropagation();
       
       var isOpen = this.classList.toggle('open');
       menu.classList.toggle('open');
@@ -791,7 +773,6 @@ function initNavEvents() {
       wwLog.log('🍔 Hamburger menü:', isOpen ? 'AÇILDI' : 'KAPANDI');
     });
     
-    // ⭐ Backdrop'a tıklayınca kapat
     if (backdrop) {
       var newBackdrop = backdrop.cloneNode(true);
       backdrop.parentNode.replaceChild(newBackdrop, backdrop);
@@ -814,7 +795,6 @@ function initNavEvents() {
     });
   }
   
-  // ⭐ Mobile logout
   var logoutMobile = document.getElementById('logout-btn-mobile');
   if (logoutMobile) {
     var newLogoutMobile = logoutMobile.cloneNode(true);
@@ -838,7 +818,6 @@ function initNavEvents() {
   wwLog.log('✅ Navbar event\'leri bağlandı!');
 }
 
-// ⭐ loadNavbar - HER ZAMAN event'leri bağla
 function loadNavbar(containerId) {
   var container = document.getElementById(containerId);
   if (!container) {
@@ -854,7 +833,6 @@ function loadNavbar(containerId) {
       updateNavbarBadge();
       setActiveNavLink();
       loadLucideIcons();
-      // ⭐ HER ZAMAN event'leri yeniden bağla
       initNavEvents();
     }, 50);
     return;
@@ -907,20 +885,19 @@ function loadNavbar(containerId) {
   });
   
   setTimeout(function() {
-    initNavEvents(); // ⭐ Event'leri bağla
+    initNavEvents();
     loadNavbarAvatar();
     updateNavbarBadge();
     wwLog.log('✅ Navbar tamamen yüklendi!');
   }, 50);
 }
 
-// ⭐ DOMContentLoaded - AYARLAR SAYFASINDA DA ÇALIŞSIN
 document.addEventListener('DOMContentLoaded', function() {
   var container = document.getElementById('navbar-container');
   if (container && container.children.length > 0) {
     navbarRendered = true;
     setTimeout(function() {
-      initNavEvents(); // ⭐ Her zaman event'leri bağla
+      initNavEvents();
       loadNavbarAvatar();
       updateNavbarBadge();
       setActiveNavLink();
@@ -930,9 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadNavbar('navbar-container');
   }
   
-  // ⭐ AYARLAR SAYFASI İÇİN: Hash değişikliklerinde menüyü kapat
   window.addEventListener('hashchange', function() {
-    // Menüyü kapat
     var toggle = document.getElementById('nav-toggle');
     var menu = document.getElementById('nav-menu');
     var backdrop = document.getElementById('nav-backdrop');
@@ -952,7 +927,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(setActiveNavLink, 100);
     setTimeout(updateNavbarBadge, 150);
     loadLucideIcons();
-    // ⭐ Event'leri tekrar bağla (güvenlik için)
     setTimeout(initNavEvents, 200);
   });
   
@@ -963,7 +937,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateNavbarI18n();
         updateNavbarBadgeSync();
         loadLucideIcons();
-        // ⭐ Dil değişince event'leri yeniden bağla
         initNavEvents();
       }, 100);
     }
@@ -978,7 +951,7 @@ window.loadNavbar = loadNavbar;
 window.sanitizeHTML = sanitizeHTML;
 window.sanitizeURL = sanitizeURL;
 window.loadLucideIcons = loadLucideIcons;
-window.initNavEvents = initNavEvents; // ⭐ Manuel çağrı için export
+window.initNavEvents = initNavEvents;
 
 window.refreshNavbar = function() {
   updateNavbarI18n();
@@ -986,7 +959,7 @@ window.refreshNavbar = function() {
   setActiveNavLink();
   loadNavbarAvatar();
   loadLucideIcons();
-  initNavEvents(); // ⭐ Refresh'te event'leri yeniden bağla
+  initNavEvents();
 };
 
-wwLog.log('✅ navbar.js yüklendi! (CLIENT-SIDE RENDER + AVATAR CACHE)');
+wwLog.log('✅ navbar.js yüklendi! (CLIENT-SIDE RENDER + AVATAR CACHE + FRESH BADGE)');

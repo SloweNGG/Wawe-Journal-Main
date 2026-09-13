@@ -5,13 +5,8 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
 
-  <!-- DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
-
-  <!-- QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-
-  <!-- APEXCHARTS - ÖNCE YÜKLENİR (dashboard.js'den önce) -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
 
   <style>
@@ -31,44 +26,44 @@ import Layout from '../layouts/Layout.astro';
         <!-- MASAÜSTÜ TOOLBAR (>=768px) -->
         <div class="desktop-toolbar">
           <div class="date-filter-group" id="date-filter-group-desktop">
-            <button class="date-filter-option active" data-range="all">Tümü</button>
-            <button class="date-filter-option" data-range="week">Bu Hafta</button>
-            <button class="date-filter-option" data-range="month">Bu Ay</button>
-            <button class="date-filter-option" data-range="year">Bu Yıl</button>
-            <button class="date-filter-option" data-range="custom" id="custom-range-btn">Özel</button>
+            <button class="date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
+            <button class="date-filter-option" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
+            <button class="date-filter-option" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
+            <button class="date-filter-option" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
+            <button class="date-filter-option" data-range="custom" id="custom-range-btn" data-i18n="dashboard.filter.custom">Özel</button>
           </div>
           <div class="custom-range-panel" id="custom-range-panel" style="display:none;">
             <input type="date" id="custom-range-start" class="custom-range-input" />
             <span class="custom-range-sep">–</span>
             <input type="date" id="custom-range-end" class="custom-range-input" />
-            <button class="custom-range-apply" id="custom-range-apply">Uygula</button>
+            <button class="custom-range-apply" id="custom-range-apply" data-i18n="dashboard.filter.apply">Uygula</button>
           </div>
           <button class="export-btn" id="export-csv-desktop">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            CSV
+            <span data-i18n="dashboard.export_csv">CSV</span>
           </button>
           <button class="export-btn" id="export-pdf-desktop">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            PDF
+            <span data-i18n="dashboard.export_pdf">PDF</span>
           </button>
         </div>
 
         <!-- MOBİL OPTIONS MENÜ (<768px) -->
         <div class="options-menu-wrapper mobile-only">
-          <button class="options-menu-btn" id="options-menu-btn" aria-label="Seçenekler" aria-expanded="false">
+          <button class="options-menu-btn" id="options-menu-btn" aria-label="Options" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
             </svg>
           </button>
           <div class="options-menu-dropdown" id="options-menu-dropdown">
-            <div class="options-menu-section-label">Tarih Aralığı</div>
-            <button class="options-menu-item date-filter-option active" data-range="all">Tümü</button>
-            <button class="options-menu-item date-filter-option" data-range="week">Bu Hafta</button>
-            <button class="options-menu-item date-filter-option" data-range="month">Bu Ay</button>
-            <button class="options-menu-item date-filter-option" data-range="year">Bu Yıl</button>
+            <div class="options-menu-section-label" data-i18n="dashboard.filter.date_range">Tarih Aralığı</div>
+            <button class="options-menu-item date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
+            <button class="options-menu-item date-filter-option" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
+            <button class="options-menu-item date-filter-option" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
+            <button class="options-menu-item date-filter-option" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
             <div class="options-menu-divider"></div>
-            <button class="options-menu-item" id="export-csv">CSV indir</button>
-            <button class="options-menu-item" id="export-pdf">PDF indir</button>
+            <button class="options-menu-item" id="export-csv" data-i18n="dashboard.download_csv">CSV indir</button>
+            <button class="options-menu-item" id="export-pdf" data-i18n="dashboard.download_pdf">PDF indir</button>
           </div>
         </div>
       </div>
@@ -112,10 +107,10 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- KPI ACCORDION (SADECE MOBİLDE) -->
+    <!-- KPI ACCORDION -->
     <div class="kpi-section">
       <button class="kpi-toggle-btn" id="kpi-toggle-btn" aria-expanded="true">
-        <span>Detaylı İstatistikler</span>
+        <span data-i18n="dashboard.kpi.detailed_stats">Detaylı İstatistikler</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="kpi-toggle-chevron"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="kpi-bar-wrapper" id="kpi-bar-wrapper">
@@ -130,7 +125,7 @@ import Layout from '../layouts/Layout.astro';
             <div class="goal-wrapper">
               <div class="progress-bar"><div class="progress-fill" id="goal-progress"></div></div>
               <span class="kpi-value" id="goal-percent">0%</span>
-              <button class="goal-edit-btn" id="edit-goal-btn" title="Hedefi Düzenle">
+              <button class="goal-edit-btn" id="edit-goal-btn" data-i18n-title="dashboard.goal.edit" title="Hedefi Düzenle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
@@ -197,15 +192,15 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- MOBİL DONUT CAROUSEL (SORUN 7) -->
+    <!-- MOBİL DONUT CAROUSEL -->
     <div class="donut-mobile-carousel" id="donut-mobile-carousel">
       <div class="donut-mobile-track" id="donut-mobile-track">
         <div class="donut-mobile-slide">
-          <h3>WIN / LOSS DAĞILIMI</h3>
+          <h3 data-i18n="dashboard.chart.winloss_title">WIN / LOSS DAĞILIMI</h3>
           <div class="chart-wrap chart-wrap--doughnut"><div id="chart-winloss-mobile"></div></div>
         </div>
         <div class="donut-mobile-slide">
-          <h3>LONG / SHORT DAĞILIMI</h3>
+          <h3 data-i18n="dashboard.chart.direction_title">LONG / SHORT DAĞILIMI</h3>
           <div class="chart-wrap chart-wrap--doughnut"><div id="chart-direction-mobile"></div></div>
         </div>
       </div>
@@ -247,7 +242,7 @@ import Layout from '../layouts/Layout.astro';
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
-          KULLANILAN STRATEJİLER
+          <span data-i18n="dashboard.strategies.title_full">KULLANILAN STRATEJİLER</span>
         </div>
         <div id="strategy-tags-container"></div>
         <div class="best-worst" id="best-worst">
@@ -314,7 +309,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- CHART EXPAND MODAL (SORUN 11) -->
+  <!-- CHART EXPAND MODAL -->
   <div id="chart-expand-modal" class="chart-expand-overlay" style="display:none;">
     <div class="chart-expand-box">
       <div class="chart-expand-header">
@@ -327,34 +322,21 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ============================================================
-       SCRIPTS
-       ============================================================ -->
-
-  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <!-- ⭐ LIGHTWEIGHT CHARTS KALDIRILDI: dashboard.js hiçbir yerde LightweightCharts.* çağırmıyor,
-       tüm grafikler ApexCharts ile render ediliyor. ~50 KB gereksiz JS indirme ortadan kalktı. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
 
-  <!-- 2. CORE KONFİG VE I18N (ES5) -->
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
 
-  <!-- 3. ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
-
-  <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
 
-  <!-- 5. QUICK ADD (ES5) -->
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
-  <!-- 6. DASHBOARD JS (YENİ - ApexCharts sürümü) -->
   <script src="/interface/dashboard/js/dashboard.js" is:inline></script>
 
-  <!-- 7. LUCIDE ICONS INIT (EN SON) -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {

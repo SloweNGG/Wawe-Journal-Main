@@ -1,13 +1,9 @@
-/* ============================================================
-   WAWE JOURNAL – pages.css
-   BİLGİ SAYFALARI (about, privacy, terms, contact)
-   INDEX.CSS TASARIMI İLE AYNI - MOBIL OPTIMIZE
-   ⭐ FAZ 1.4: Tüm hardcoded renkler var(--accent) ve var(--accent-glow) ile değiştirildi
-   ============================================================ */
 
 /* ============================================================
-   SAYFA KARTI - INDEX CARD STİLİ
+   ⭐ PUBLIC PAGES (about, contact, privacy, terms)
+   pages.css'ten taşındı — index.css ile tutarlı
    ============================================================ */
+
 .page-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -20,9 +16,6 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-/* ============================================================
-   TİPOGRAFİ - INDEX İLE AYNI
-   ============================================================ */
 .page-card h1 {
   font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(1.3rem, 5vw, 2.8rem);
@@ -88,9 +81,6 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* ============================================================
-   GERİ BUTONU - INDEX BUTON STİLİ
-   ============================================================ */
 .back-link {
   margin-top: clamp(1.5rem, 3vh, 2.5rem);
   padding-top: clamp(0.75rem, 1.5vh, 1.5rem);
@@ -121,9 +111,7 @@
   transform: translateY(-1px);
 }
 
-/* ============================================================
-   CONTACT SAYFASI ÖZEL - INDEX UYUMLU
-   ============================================================ */
+/* Contact sayfası */
 .contact-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -226,7 +214,6 @@
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 
-/* Contact Map */
 .contact-map {
   display: flex;
   flex-direction: column;
@@ -265,7 +252,6 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Support Note - Index kart stili */
 .support-note {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -297,198 +283,153 @@
   font-weight: 600;
 }
 
-/* ============================================================
-   RESPONSIVE - ANA BREAKPOINTLER
-   ============================================================ */
-
-/* 768px ve altı - tablet */
+/* Public pages — responsive */
 @media (max-width: 768px) {
   .page-card {
     padding: 1.25rem;
   }
-
   .page-card h1 {
     font-size: 1.6rem;
   }
-
   .page-card h2 {
     font-size: 1.1rem;
   }
-
   .page-card p,
   .page-card ul {
     font-size: 13px;
   }
-
   .contact-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-
   .contact-item {
     padding: 0.6rem 0.8rem;
   }
-
   .social-links {
     gap: 0.5rem;
   }
-
   .social-btn {
     padding: 0.4rem 0.75rem;
     font-size: 11px;
   }
-
   .map-placeholder svg {
     height: 140px;
   }
-
   .support-note {
     padding: 1rem;
   }
 }
 
-/* 480px ve altı - telefon */
 @media (max-width: 480px) {
   .page-card {
     padding: 0.8rem;
   }
-
   .page-card h1 {
     font-size: 1.3rem;
   }
-
   .page-card h2 {
     font-size: 1rem;
     margin-top: 1.25rem;
   }
-
   .page-card p,
   .page-card ul {
     font-size: 12px;
   }
-
   .page-card ul {
     padding-left: 1.2rem;
   }
-
   .back-link .btn-ghost {
     width: 100%;
     justify-content: center;
     padding: 10px 20px;
     font-size: 13px;
   }
-
   .contact-item {
     padding: 0.5rem 0.6rem;
     gap: 0.6rem;
   }
-
   .contact-icon {
     font-size: 1rem;
     min-width: 28px;
   }
-
   .map-placeholder svg {
     height: 100px;
   }
-
   .support-note {
     padding: 0.8rem;
   }
 }
 
-/* 374px ve altı - ultra küçük telefonlar */
 @media (max-width: 374px) {
   .page-card {
     padding: 0.6rem;
     border-radius: 10px;
   }
-
   .page-card h1 {
     font-size: 1.1rem;
   }
-
   .page-card h2 {
     font-size: 0.85rem;
     margin-top: 1rem;
   }
-
   .page-card h3 {
     font-size: 0.75rem;
   }
-
   .page-card p,
   .page-card ul {
     font-size: 11px;
     line-height: 1.6;
   }
-
   .page-card ul {
     padding-left: 1rem;
   }
-
   .page-card .last-updated {
     font-size: 9px;
   }
-
   .back-link .btn-ghost {
     font-size: 11px;
     padding: 8px 16px;
     min-height: 36px;
   }
-
   .contact-item {
     padding: 0.4rem 0.5rem;
     gap: 0.4rem;
     border-radius: 8px;
   }
-
   .contact-icon {
     font-size: 0.85rem;
     min-width: 22px;
   }
-
   .contact-item strong {
     font-size: 10px;
   }
-
   .contact-item a {
     font-size: 10px;
   }
-
   .contact-item .contact-desc {
     font-size: 9px;
   }
-
   .social-btn {
     font-size: 9px;
     padding: 0.25rem 0.5rem;
     min-height: 32px;
   }
-
   .support-note {
     padding: 0.6rem;
   }
-
   .support-note h3 {
     font-size: 0.8rem;
   }
-
   .support-note p {
     font-size: 10px;
   }
 }
-
-/* ============================================================
-   DOKUNMATİK HEDEF BOYUTLARI (44px minimum)
-   ============================================================ */
 
 @media (max-width: 767px) {
   .back-link .btn-ghost,
   .social-btn {
     min-height: 44px;
   }
-
   .social-btn {
     min-height: 36px;
   }

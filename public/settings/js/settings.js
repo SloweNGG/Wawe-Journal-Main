@@ -1,11 +1,15 @@
 ﻿// ============================================================
-// SETTINGS.JS - SADE VE ÇALIŞAN VERSİYON
+// SETTINGS.JS - TAM SÜRÜM
 // ⭐ Avatar cache - sadece değiştiğinde render
 // ⭐ TEHLİKELİ BÖLGE AKTİF: deleteAllUserData + deactivateAccount
-// ⭐ ÇAKIŞMA ÇÖZÜLDÜ: Ödeme fonksiyonları (upgradeToPremium, cancelPremium,
-//      createNowPaymentInvoice, selectPayMethod) artık sadece payment.js'te.
-//      Bu dosyada sadece fiyat verisi (getMonthlyPrice/getYearlyPrice) var.
-// ⭐ DEĞİŞİKLİK: updateBadge() artık navbar.js'e delege ediyor (i18n race fix)
+// ⭐ ÇAKIŞMA ÇÖZÜLDÜ: Ödeme fonksiyonları payment.js'te
+// ⭐ FOWL FIX: SETTINGS_STATE.isPremium null başlıyor
+// ⭐ i18n: Hardcoded metinler i18n.t() çağrılarına dönüştürüldü
+// ⭐ i18n FIX v5 (ASTRO SPA + TÜM init'lerde element-level guard)
+// ⭐ FIX v6: checkAndActivatePremium() sessionStorage kullanıyor
+//           (navbar sessionStorage okuyordu, localStorage değil)
+// ⭐ FIX v6: renderPlan() cancel callback'i window.updateNavbarBadge()
+//           çağırıyor (badge anında güncellensin)
 // ============================================================
 
 wwLog.log('🔧 settings.js yükleniyor...');
@@ -18,17 +22,17 @@ wwLog.log('🔧 settings.js yükleniyor...');
   var savedTheme = localStorage.getItem('ww_theme');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
-  
+
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
   } else {
     document.body.classList.remove('light-theme');
   }
-  
+
   if (savedFontSize) {
     document.body.style.fontSize = savedFontSize + 'px';
   }
-  
+
   if (savedTheme !== 'light' && customTheme) {
     try {
       var settings = JSON.parse(customTheme);
@@ -43,37 +47,69 @@ wwLog.log('🔧 settings.js yükleniyor...');
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
     } catch(e) {}
   }
-  
+
   wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
 // ============================================================
-// ⭐ TEMA DEĞİŞİMİNİ DİNLE
+// ⭐ i18n GÜVENLİ ERİŞİM WRAPPER'I
+// ============================================================
+function t(key, params) {
+  if (window.i18n && typeof window.i18n.t === 'function') {
+    return window.i18n.t(key, params);
+  }
+  return key;
+}
+
+var THEME_FALLBACKS = {
+  light_label: 'Açık Tema',
+  light_desc: 'Aydınlık ve ferah arayüz',
+  dark_label: 'Koyu Tema',
+  dark_desc: 'Göz yormayan karanlık arayüz'
+};
+
+function themeLabel(isLight) {
+  var key = isLight ? 'settings.light_theme' : 'settings.dark_theme';
+  var fb = isLight ? THEME_FALLBACKS.light_label : THEME_FALLBACKS.dark_label;
+  var v = t(key);
+  return (v && v !== key) ? v : fb;
+}
+
+function themeDesc(isLight) {
+  var key = isLight ? 'settings.light_theme_desc' : 'settings.dark_theme_desc';
+  var fb = isLight ? THEME_FALLBACKS.light_desc : THEME_FALLBACKS.dark_desc;
+  var v = t(key);
+  return (v && v !== key) ? v : fb;
+}
+
+// ============================================================
+// ⭐ TEMA DEĞİŞİMİNİ DİNLE (document-level, window guard)
 // ============================================================
 
 (function() {
+  if (window._themeListenersBound) return;
+  window._themeListenersBound = true;
+
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_theme') {
       var isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
-      
+
       var cb = document.getElementById('theme-toggle');
       if (cb) cb.checked = isLight;
-      
+
       var icon = document.getElementById('theme-icon');
       var label = document.getElementById('theme-label');
       var desc = document.getElementById('theme-desc');
-      
+
       if (isLight) {
         if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-        if (label) label.textContent = 'Açık Tema';
-        if (desc) desc.textContent = 'Aydınlık ve ferah arayüz';
       } else {
         if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-        if (label) label.textContent = 'Koyu Tema';
-        if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
       }
-      
+      if (label) label.textContent = themeLabel(isLight);
+      if (desc) desc.textContent = themeDesc(isLight);
+
       if (!isLight) {
         var ct = localStorage.getItem('ww_custom_theme');
         if (ct) {
@@ -93,7 +129,7 @@ wwLog.log('🔧 settings.js yükleniyor...');
       }
     }
   });
-  
+
   document.addEventListener('themeChanged', function(e) {
     if (e.detail && e.detail.settings) {
       var isLight = document.body.classList.contains('light-theme');
@@ -111,7 +147,7 @@ wwLog.log('🔧 settings.js yükleniyor...');
       }
     }
   });
-  
+
   wwLog.log('✅ [settings] Tema izleyici yüklendi!');
 })();
 
@@ -122,26 +158,24 @@ wwLog.log('🔧 settings.js yükleniyor...');
 window.toggleTheme = function() {
   var cb = document.getElementById('theme-toggle');
   if (!cb) return;
-  
+
   var isLight = cb.checked;
-  
+
   document.body.classList.toggle('light-theme', isLight);
   localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
-  
+
   var icon = document.getElementById('theme-icon');
   var label = document.getElementById('theme-label');
   var desc = document.getElementById('theme-desc');
-  
+
   if (isLight) {
     if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-    if (label) label.textContent = 'Açık Tema';
-    if (desc) desc.textContent = 'Aydınlık ve ferah arayüz';
   } else {
     if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-    if (label) label.textContent = 'Koyu Tema';
-    if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
   }
-  
+  if (label) label.textContent = themeLabel(isLight);
+  if (desc) desc.textContent = themeDesc(isLight);
+
   if (!isLight) {
     var customTheme = localStorage.getItem('ww_custom_theme');
     if (customTheme) {
@@ -164,13 +198,13 @@ window.toggleTheme = function() {
       document.body.style.fontSize = savedFontSize + 'px';
     }
   }
-  
+
   try {
-    window.dispatchEvent(new CustomEvent('themeChanged', { 
-      detail: { settings: { isLight: isLight } } 
+    window.dispatchEvent(new CustomEvent('themeChanged', {
+      detail: { settings: { isLight: isLight } }
     }));
   } catch(e) {}
-  
+
   wwLog.log('🎨 Tema değiştirildi:', isLight ? 'light' : 'dark');
 };
 
@@ -179,19 +213,19 @@ window.toggleTheme = function() {
 // ============================================================
 function getLucideIcon(name, size) {
   size = size || 16;
-  
+
   const VALID_ICONS = [
-    'upload', 'edit', 'image', 'bar-chart-3', 'refresh-cw', 
+    'upload', 'edit', 'image', 'bar-chart-3', 'refresh-cw',
     'trending-up', 'palette', 'file-text', 'newspaper', 'bell',
     'gem', 'rocket', 'clipboard', 'user', 'lock', 'alert-triangle',
     'credit-card', 'dollar-sign', 'check', 'rotate-ccw', 'globe',
     'target', 'settings', 'refresh'
   ];
-  
+
   if (!VALID_ICONS.includes(name)) {
     return `<span style="color:var(--muted);font-size:${size}px;">◻</span>`;
   }
-  
+
   var icons = {
     'upload': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
     'edit': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
@@ -218,7 +252,7 @@ function getLucideIcon(name, size) {
     'settings': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
     'refresh': '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
   };
-  
+
   return icons[name] || `<span style="color:var(--muted);font-size:${size}px;">◻</span>`;
 }
 
@@ -231,9 +265,11 @@ if (!window.SETTINGS_STATE) {
     currentAvatarUrl: null,
     timerInterval: null,
     payMethod: 'BTC',
-    isPremium: false
+    isPremium: null
   };
 }
+
+if (typeof window._langOnChangeBound === 'undefined') window._langOnChangeBound = false;
 
 // ============================================================
 // PREMIUM FEATURES
@@ -283,13 +319,6 @@ function safeEl(id) {
   return document.getElementById(id);
 }
 
-function t(key, params) {
-  if (window.i18n && typeof i18n.t === 'function') {
-    return i18n.t(key, params);
-  }
-  return key;
-}
-
 function sanitizeHTML(str) {
   if (!str) return '';
   const temp = document.createElement('div');
@@ -335,7 +364,7 @@ async function loadPanelContent(panelId, url) {
     if (panel) {
       panel.innerHTML = html;
       wwLog.log('✅ Panel yüklendi: ' + panelId);
-      
+
       var scripts = panel.querySelectorAll('script');
       scripts.forEach(function(script) {
         var newScript = document.createElement('script');
@@ -343,17 +372,17 @@ async function loadPanelContent(panelId, url) {
         document.body.appendChild(newScript);
         script.remove();
       });
-      
+
       if (panelId === 'panel-profile') {
         setTimeout(function() {
           loadAvatar();
         }, 100);
       }
-      
+
       if (window.i18n && typeof window.i18n.apply === 'function') {
         try { window.i18n.apply(); } catch(e) {}
       }
-      
+
       return true;
     }
     return false;
@@ -361,7 +390,9 @@ async function loadPanelContent(panelId, url) {
     console.error('❌ Panel yüklenemedi: ' + panelId, e);
     var panel = document.getElementById(panelId);
     if (panel) {
-      panel.innerHTML = '<div class="s-card"><div class="s-card-body" style="padding:2rem;text-align:center;color:var(--muted);"><div style="font-size:2rem;margin-bottom:0.5rem;">' + getLucideIcon('alert-triangle', 32) + '</div><p>Panel yüklenemedi. Lütfen sayfayı yenileyin.</p><p style="font-size:11px;opacity:0.5;">' + sanitizeHTML(e.message) + '</p></div></div>';
+      var fallbackMsg = t('settings.panel_load_error');
+      if (fallbackMsg === 'settings.panel_load_error') fallbackMsg = 'Panel yüklenemedi. Lütfen sayfayı yenileyin.';
+      panel.innerHTML = '<div class="s-card"><div class="s-card-body" style="padding:2rem;text-align:center;color:var(--muted);"><div style="font-size:2rem;margin-bottom:0.5rem;">' + getLucideIcon('alert-triangle', 32) + '</div><p>' + fallbackMsg + '</p><p style="font-size:11px;opacity:0.5;">' + sanitizeHTML(e.message) + '</p></div></div>';
     }
     return false;
   }
@@ -372,18 +403,18 @@ async function loadPanelContent(panelId, url) {
 // ============================================================
 window.switchPanel = function(panelId) {
   wwLog.log('🔄 switchPanel: ' + panelId);
-  
+
   if (!panelId) {
     wwLog.warn('Panel ID boş!');
     return;
   }
-  
+
   if (panelId !== window.location.hash.replace('#', '')) {
     window.location.hash = panelId;
   }
-  
+
   document.querySelectorAll('.settings-panel').forEach(function(p) { p.classList.remove('active'); });
-  
+
   var target = document.getElementById(panelId);
   if (target) {
     target.classList.add('active');
@@ -392,7 +423,7 @@ window.switchPanel = function(panelId) {
     wwLog.warn('❌ Panel bulunamadı: ' + panelId);
     return;
   }
-  
+
   document.querySelectorAll('.sidebar-nav-item, .settings-tab-btn').forEach(function(el) {
     var isActive = el.dataset.panel === panelId;
     if (isActive) {
@@ -401,7 +432,7 @@ window.switchPanel = function(panelId) {
       el.classList.remove('active');
     }
   });
-  
+
   var glow = document.getElementById('panel-glow');
   if (glow) {
     glow.className = 'panel-glow';
@@ -415,7 +446,7 @@ window.switchPanel = function(panelId) {
     };
     if (map[panelId]) glow.classList.add(map[panelId]);
   }
-  
+
   if (!target.dataset.loaded) {
     var map2 = {
       'panel-profile': '/settings/panels/profile-info.html',
@@ -440,13 +471,16 @@ window.switchPanel = function(panelId) {
 // ============================================================
 // HASH DEĞİŞİKLİĞİNİ İZLE
 // ============================================================
-window.addEventListener('hashchange', function() {
-  var hash = window.location.hash.replace('#', '');
-  if (hash && hash.indexOf('panel-') === 0) {
-    wwLog.log('📍 Hash değişti: ' + hash);
-    window.switchPanel(hash);
-  }
-});
+if (!window._hashChangeBound) {
+  window._hashChangeBound = true;
+  window.addEventListener('hashchange', function() {
+    var hash = window.location.hash.replace('#', '');
+    if (hash && hash.indexOf('panel-') === 0) {
+      wwLog.log('📍 Hash değişti: ' + hash);
+      window.switchPanel(hash);
+    }
+  });
+}
 
 // ============================================================
 // PANEL INIT
@@ -466,23 +500,23 @@ function initPanel(panelId) {
 window.checkStrength = function(val) {
   var bars = ['bar1', 'bar2', 'bar3', 'bar4'];
   var label = document.getElementById('pw-strength-label');
-  
+
   bars.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.className = 'pw-strength-bar';
   });
-  
+
   if (!val) {
     if (label) label.textContent = '';
     return;
   }
-  
+
   var score = 0;
   if (val.length >= 6) score++;
   if (val.length >= 10) score++;
   if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
   if (/[^A-Za-z0-9]/.test(val)) score++;
-  
+
   var cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
   var labels = {
     weak: t('settings.pw_strength_weak') || 'Zayıf',
@@ -490,12 +524,12 @@ window.checkStrength = function(val) {
     strong: t('settings.pw_strength_strong') || 'Güçlü'
   };
   var colors = { weak: 'var(--red)', medium: '#facc15', strong: 'var(--green)' };
-  
+
   for (var i = 0; i < Math.min(score, 4); i++) {
     var barEl = document.getElementById(bars[i]);
     if (barEl) barEl.classList.add(cls);
   }
-  
+
   if (label) {
     label.textContent = labels[cls] || '';
     label.style.color = colors[cls] || '';
@@ -515,7 +549,7 @@ window.togglePassword = function(inputId, btn) {
 };
 
 // ============================================================
-// ⭐ FİYAT FONKSİYONLARI (SAF VERİ - payment.js kullanır)
+// ⭐ FİYAT FONKSİYONLARI
 // ============================================================
 window.getMonthlyPrice = function() {
   try {
@@ -546,7 +580,7 @@ window.getPaymentMethods = function() {
 };
 
 // ============================================================
-// ⭐ AVATAR FONKSİYONLARI - CACHE DESTEKLİ
+// ⭐ AVATAR FONKSİYONLARI
 // ============================================================
 async function uploadAvatar(file) {
   if (!file || !file.type.startsWith('image/')) {
@@ -557,28 +591,28 @@ async function uploadAvatar(file) {
     showMsg(t('toast.image_too_large'), 'error');
     return null;
   }
-  
+
   var sb = getSb();
   if (!sb) {
-    showMsg('Supabase bağlantısı yok!', 'error');
+    showMsg(t('common.db_connection_error'), 'error');
     return null;
   }
-  
+
   var progress = safeEl('upload-progress');
   if (progress) progress.style.display = 'flex';
-  
+
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
-    showMsg('Kullanıcı bilgisi yok!', 'error');
+    showMsg(t('common.unexpected_error'), 'error');
     if (progress) progress.style.display = 'none';
     return null;
   }
-  
+
   var ext = file.name.split('.').pop();
   var fileName = 'avatars/' + user.id + '_' + Date.now() + '.' + ext;
-  
+
   wwLog.log('📤 Avatar yükleniyor:', fileName);
-  
+
   try {
     var listData = await sb.storage.from('avatars').list('avatars', { search: user.id });
     if (listData.data && listData.data.length > 0) {
@@ -593,23 +627,23 @@ async function uploadAvatar(file) {
   } catch (e) {
     wwLog.log('Eski avatar silinemedi:', e);
   }
-  
+
   var uploadResult = await sb.storage.from('avatars').upload(fileName, file, {
     cacheControl: '3600',
     upsert: true
   });
-  
+
   if (uploadResult.error) {
     console.error('Yükleme hatası:', uploadResult.error);
     showMsg('Yükleme hatası: ' + uploadResult.error.message, 'error');
     if (progress) progress.style.display = 'none';
     return null;
   }
-  
+
   var urlData = sb.storage.from('avatars').getPublicUrl(fileName);
-  
+
   if (progress) progress.style.display = 'none';
-  
+
   wwLog.log('✅ Avatar yüklendi:', urlData.data.publicUrl);
   return urlData.data.publicUrl;
 }
@@ -619,17 +653,17 @@ async function updateAvatar(url) {
   if (!sb) return false;
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) return false;
-  
+
   wwLog.log('📝 Avatar güncelleniyor:', url);
-  
+
   var result = await sb.from('user_profiles').update({ avatar_url: url }).eq('id', user.id);
-  
+
   if (result.error) {
     console.error('Güncelleme hatası:', result.error);
     showMsg('Güncelleme hatası: ' + result.error.message, 'error');
     return false;
   }
-  
+
   wwLog.log('✅ Avatar güncellendi!');
   return true;
 }
@@ -637,19 +671,19 @@ async function updateAvatar(url) {
 async function loadAvatar() {
   var sb = getSb();
   if (!sb) return;
-  
+
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) return;
-  
+
   try {
     var result = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
-    
+
     if (result.error) {
       wwLog.warn('⚠️ Avatar sorgu hatası:', result.error);
       updateAvatarElements(null);
       return;
     }
-    
+
     var url = (result.data && result.data.avatar_url) ? result.data.avatar_url : null;
     window.SETTINGS_STATE.currentAvatarUrl = url;
     updateAvatarElements(url);
@@ -670,17 +704,17 @@ function updateAvatarElements(url) {
       initial = user.email.charAt(0).toUpperCase();
     }
   }
-  
+
   sessionStorage.removeItem('ww_avatar_url');
   sessionStorage.removeItem('ww_avatar_time');
-  
+
   if (typeof cachedAvatarUrl !== 'undefined') {
     cachedAvatarUrl = null;
   }
   if (typeof window.cachedAvatarUrl !== 'undefined') {
     window.cachedAvatarUrl = null;
   }
-  
+
   var navAvatar = safeEl('user-avatar');
   if (navAvatar) {
     if (url) {
@@ -691,7 +725,7 @@ function updateAvatarElements(url) {
       navAvatar.style.background = 'var(--surface2)';
     }
   }
-  
+
   var sbAvatar = safeEl('sb-avatar');
   if (sbAvatar) {
     if (url) {
@@ -700,32 +734,32 @@ function updateAvatarElements(url) {
       sbAvatar.innerHTML = '<span class="no-avatar" id="sb-avatar-text">' + sanitizeHTML(initial) + '</span>';
     }
   }
-  
+
   var preview = safeEl('avatar-preview');
   var placeholder = safeEl('avatar-placeholder');
   var img = safeEl('avatar-img');
   if (preview) {
     if (url) {
       if (placeholder) placeholder.style.display = 'none';
-      if (img) { 
-        img.style.display = 'block'; 
+      if (img) {
+        img.style.display = 'block';
         img.src = sanitizeHTML(url) + '?t=' + Date.now();
       }
     } else {
-      if (placeholder) { 
-        placeholder.style.display = 'flex'; 
+      if (placeholder) {
+        placeholder.style.display = 'flex';
         placeholder.textContent = sanitizeHTML(initial);
       }
       if (img) img.style.display = 'none';
     }
   }
-  
+
   var popupPlaceholder = safeEl('popup-placeholder');
   var popupImg = safeEl('popup-avatar-img');
   if (url) {
     if (popupPlaceholder) popupPlaceholder.style.display = 'none';
-    if (popupImg) { 
-      popupImg.style.display = 'block'; 
+    if (popupImg) {
+      popupImg.style.display = 'block';
       popupImg.src = sanitizeHTML(url) + '?t=' + Date.now();
     }
   } else {
@@ -738,27 +772,29 @@ function updateAvatarElements(url) {
 }
 
 // ============================================================
-// PROFİL PANEL
+// PROFİL PANEL — ELEMENT-LEVEL GUARD
 // ============================================================
 function initProfile() {
   wwLog.log('📋 Profil paneli başlatılıyor...');
-  
+
   loadAvatar();
-  
+
   var uploadBtn = safeEl('upload-avatar-btn');
-  if (uploadBtn) {
+  if (uploadBtn && !uploadBtn._uploadBound) {
+    uploadBtn._uploadBound = true;
     uploadBtn.addEventListener('click', function() {
       var fileInput = safeEl('avatar-file');
       if (fileInput) fileInput.click();
     });
   }
-  
+
   var fileInput = safeEl('avatar-file');
-  if (fileInput) {
+  if (fileInput && !fileInput._fileBound) {
+    fileInput._fileBound = true;
     fileInput.addEventListener('change', async function(e) {
       var file = e.target.files[0];
       if (!file) return;
-      
+
       var url = await uploadAvatar(file);
       if (url) {
         var success = await updateAvatar(url);
@@ -770,9 +806,10 @@ function initProfile() {
       fileInput.value = '';
     });
   }
-  
+
   var removeBtn = safeEl('remove-avatar-btn');
-  if (removeBtn) {
+  if (removeBtn && !removeBtn._removeBound) {
+    removeBtn._removeBound = true;
     removeBtn.addEventListener('click', async function() {
       var success = await updateAvatar(null);
       if (success) {
@@ -781,7 +818,7 @@ function initProfile() {
       }
     });
   }
-  
+
   loadProfileData();
 }
 
@@ -790,41 +827,43 @@ function initProfile() {
 // ============================================================
 async function loadProfileData() {
   wwLog.log('👤 Profil verileri yükleniyor...');
-  
+
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
     wwLog.warn('Kullanıcı yok');
     return;
   }
-  
+
   var username = (user.user_metadata && user.user_metadata.username) ? user.user_metadata.username : user.email.split('@')[0];
-  
+
   var sbUsername = safeEl('sb-username');
   if (sbUsername) sbUsername.textContent = sanitizeHTML(username);
-  
+
   var sbEmail = safeEl('sb-email');
   if (sbEmail) sbEmail.textContent = sanitizeHTML(user.email);
-  
+
   var profileUsername = safeEl('profile-username');
   if (profileUsername) profileUsername.textContent = sanitizeHTML(username);
-  
+
   var profileEmail = safeEl('profile-email');
   if (profileEmail) profileEmail.textContent = sanitizeHTML(user.email);
-  
+
   var profileCreated = safeEl('profile-created');
   if (profileCreated) {
-    profileCreated.textContent = new Date(user.created_at).toLocaleDateString('tr-TR', {
+    var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+    var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
+    profileCreated.textContent = new Date(user.created_at).toLocaleDateString(locale, {
       day: '2-digit', month: 'long', year: 'numeric'
     });
   }
-  
+
   if (isAdmin(user)) {
     var adminLink = safeEl('admin-link');
     if (adminLink) adminLink.style.display = 'inline';
     var adminLinkMobile = safeEl('admin-link-mobile');
     if (adminLinkMobile) adminLinkMobile.style.display = 'block';
   }
-  
+
   wwLog.log('✅ Profil verileri yüklendi!');
 }
 
@@ -838,12 +877,12 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   var warningEl = document.getElementById('confirm-warning');
   var okBtn = document.getElementById('confirm-ok');
   var cancelBtn = document.getElementById('confirm-cancel');
-  
+
   if (!modal || !titleEl || !messageEl) return;
-  
+
   titleEl.textContent = sanitizeHTML(title) || '⚠️ Dikkat!';
   messageEl.textContent = sanitizeHTML(message) || 'Bu işlem geri alınamaz. Devam etmek istediğinize emin misiniz?';
-  
+
   if (warningEl && warning) {
     warningEl.style.display = 'flex';
     var span = warningEl.querySelector('span');
@@ -851,24 +890,24 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   } else if (warningEl) {
     warningEl.style.display = 'none';
   }
-  
+
   modal.classList.add('active');
-  
+
   var newOk = okBtn.cloneNode(true);
   var newCancel = cancelBtn.cloneNode(true);
   okBtn.parentNode.replaceChild(newOk, okBtn);
   cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
-  
+
   newOk.addEventListener('click', function() {
     modal.classList.remove('active');
     if (typeof onConfirm === 'function') onConfirm();
   });
-  
+
   newCancel.addEventListener('click', function() {
     modal.classList.remove('active');
     if (typeof onCancel === 'function') onCancel();
   });
-  
+
   modal.addEventListener('click', function(e) {
     if (e.target === this) {
       modal.classList.remove('active');
@@ -885,62 +924,62 @@ window.showConfirmModal = showConfirmModal;
 async function renderPlan() {
   var container = safeEl('plan-container');
   if (!container) return;
-  
+
   try {
     var user = await getCurrentUser();
     if (!user) {
       container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">' + t('settings.plan_load_error') + '</div>';
       return;
     }
-    
+
     window.SETTINGS_STATE.currentUser = user;
-    
+
     var sb = getSb();
-    if (!sb) throw new Error('Supabase');
-    
+    if (!sb) throw new Error(t('common.db_connection_error'));
+
     var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
     var data = result.data;
-    
+
     var isPremium = data && data.plan === 'premium';
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
-    
+
     window.SETTINGS_STATE.isPremium = isPremium;
-    
+
     if (isPremium && expiresAt && new Date() > expiresAt) {
       window.SETTINGS_STATE.isPremium = false;
       renderPlan();
       return;
     }
-    
+
     var monthly = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
     var yearly = window.getYearlyPrice ? window.getYearlyPrice() : 79;
     var methods = window.getPaymentMethods ? window.getPaymentMethods() : ['BTC', 'LTC'];
-    
+
     var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
     var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
-    
+
     var tplId = isPremium ? 'tpl-plan-premium' : 'tpl-plan-free';
     var tpl = document.getElementById(tplId);
     if (!tpl) {
       container.innerHTML = '<div style="padding:1rem;color:var(--red);">Template not found: ' + tplId + '</div>';
       return;
     }
-    
+
     var clone = tpl.content.cloneNode(true);
-    
+
     if (isPremium) {
       var daysLeft = expiresAt ? Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)) : 0;
       var pct = Math.max(0, Math.min(100, ((30 - daysLeft) / 30) * 100));
-      
+
       var daysEl = clone.querySelector('[data-bind="days-left"]');
       if (daysEl) daysEl.textContent = daysLeft + ' ' + t('settings.plan_days');
-      
+
       var progEl = clone.querySelector('[data-bind="progress"]');
       if (progEl) progEl.style.width = pct + '%';
-      
+
       var expEl = clone.querySelector('[data-bind="expiry-date"]');
       if (expEl && expiresAt) expEl.textContent = expiresAt.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
-      
+
       var perksGrid = clone.querySelector('#plan-perks-grid');
       if (perksGrid) {
         PREMIUM_FEATURES.forEach(function(f) {
@@ -969,28 +1008,28 @@ async function renderPlan() {
         });
         if (methods.length > 0) window.SETTINGS_STATE.payMethod = methods[0];
       }
-      
+
       var monthlyBtnSpan = clone.querySelector('#upgrade-monthly [data-i18n="settings.plan_monthly_btn"]');
       if (monthlyBtnSpan) monthlyBtnSpan.setAttribute('data-i18n-params', JSON.stringify({ price: String(monthly) }));
-      
+
       var yearlyBtnSpan = clone.querySelector('#upgrade-yearly [data-i18n="settings.plan_yearly_btn"]');
       if (yearlyBtnSpan) yearlyBtnSpan.setAttribute('data-i18n-params', JSON.stringify({ price: String(yearly) }));
-      
+
       var secureSpan = clone.querySelector('[data-i18n="settings.plan_secure_payment"]');
       if (secureSpan) secureSpan.setAttribute('data-i18n-params', JSON.stringify({ methods: methods.join(' / ') }));
     }
-    
+
     clone.querySelectorAll('[data-icon]').forEach(function(el) {
       el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
     });
-    
+
     container.innerHTML = '';
     container.appendChild(clone);
-    
+
     if (window.i18n && typeof window.i18n.apply === 'function') {
       try { window.i18n.apply(); } catch(e) {}
     }
-    
+
     var monthlyBtn = container.querySelector('#upgrade-monthly');
     if (monthlyBtn) {
       monthlyBtn.addEventListener('click', async function() {
@@ -1003,7 +1042,7 @@ async function renderPlan() {
         }
       });
     }
-    
+
     var yearlyBtn = container.querySelector('#upgrade-yearly');
     if (yearlyBtn) {
       yearlyBtn.addEventListener('click', async function() {
@@ -1016,7 +1055,7 @@ async function renderPlan() {
         }
       });
     }
-    
+
     var cancelBtn = container.querySelector('#cancel-premium-btn');
     if (cancelBtn) {
       cancelBtn.addEventListener('click', async function(e) {
@@ -1027,12 +1066,18 @@ async function renderPlan() {
           if (success) {
             showMsg(t('settings.cancel_subscription_success'), 'success');
             await renderPlan();
-            if (typeof updateBadge === 'function') await updateBadge();
+            // ⭐ FIX v6: Navbar badge'ini ANINDA güncelle
+            if (typeof window.updateNavbarBadge === 'function') {
+              await window.updateNavbarBadge();
+            }
+            if (typeof window.updateBadge === 'function') {
+              await window.updateBadge();
+            }
           }
         }
       });
     }
-    
+
     container.querySelectorAll('.pay-method-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         container.querySelectorAll('.pay-method-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -1041,9 +1086,9 @@ async function renderPlan() {
         if (window.selectPayMethod) window.selectPayMethod(this.getAttribute('data-method'));
       });
     });
-    
+
     if (isPremium && expiresAt) startTimer(expiresAt);
-    
+
   } catch (e) {
     console.error('Plan hatası:', e);
     container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">' + sanitizeHTML(e.message) + '</div>';
@@ -1059,22 +1104,22 @@ function startTimer(expiresAt) {
   if (window.SETTINGS_STATE.timerInterval) {
     clearInterval(window.SETTINGS_STATE.timerInterval);
   }
-  
+
   window.SETTINGS_STATE.timerInterval = setInterval(function() {
     try {
       var now = new Date();
       var diff = expiresAt - now;
-      
+
       if (diff <= 0) {
         clearInterval(window.SETTINGS_STATE.timerInterval);
         var timerEl = document.getElementById('timer-days');
         if (timerEl) timerEl.textContent = t('settings.plan_expired');
         return;
       }
-      
+
       var days = Math.floor(diff / (1000 * 60 * 60 * 24));
       var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      
+
       var timerEl = document.getElementById('timer-days');
       if (timerEl) {
         if (days > 0) {
@@ -1090,25 +1135,26 @@ function startTimer(expiresAt) {
 }
 
 // ============================================================
-// ŞİFRE PANEL
+// ŞİFRE PANEL — ELEMENT-LEVEL GUARD
 // ============================================================
 function initPassword() {
   wwLog.log('🔐 Şifre paneli başlatılıyor...');
-  
+
   var btn = safeEl('change-password-btn');
-  if (btn) {
+  if (btn && !btn._passwordBound) {
+    btn._passwordBound = true;
     btn.addEventListener('click', async function() {
       var current = safeEl('current-password');
       var next = safeEl('new-password');
       var confirm = safeEl('confirm-password');
       var err = safeEl('password-error');
       var ok = safeEl('password-success');
-      
+
       if (!current || !next || !confirm) return;
-      
+
       if (err) err.style.display = 'none';
       if (ok) ok.style.display = 'none';
-      
+
       if (!current.value || !next.value || !confirm.value) {
         if (err) { err.textContent = t('settings.password_fill_all'); err.style.display = 'block'; }
         return;
@@ -1121,29 +1167,29 @@ function initPassword() {
         if (err) { err.textContent = t('settings.password_mismatch'); err.style.display = 'block'; }
         return;
       }
-      
+
       var sb = getSb();
       if (!sb) {
-        if (err) { err.textContent = 'Supabase bağlantısı yok!'; err.style.display = 'block'; }
+        if (err) { err.textContent = t('common.db_connection_error'); err.style.display = 'block'; }
         return;
       }
-      
+
       btn.disabled = true;
       btn.textContent = t('settings.updating');
-      
+
       var user = window.SETTINGS_STATE.currentUser;
       var signResult = await sb.auth.signInWithPassword({
         email: user.email,
         password: current.value
       });
-      
+
       if (signResult.error) {
         if (err) { err.textContent = t('settings.password_wrong_current'); err.style.display = 'block'; }
         btn.disabled = false;
         btn.textContent = t('settings.update_password_btn');
         return;
       }
-      
+
       var updateResult = await sb.auth.updateUser({ password: next.value });
       if (updateResult.error) {
         if (err) { err.textContent = sanitizeHTML(updateResult.error.message); err.style.display = 'block'; }
@@ -1154,7 +1200,7 @@ function initPassword() {
         confirm.value = '';
         window.checkStrength('');
       }
-      
+
       btn.disabled = false;
       btn.textContent = t('settings.update_password_btn');
     });
@@ -1162,18 +1208,20 @@ function initPassword() {
 }
 
 // ============================================================
-// TEHLİKELİ BÖLGE
+// TEHLİKELİ BÖLGE — ELEMENT-LEVEL GUARD
 // ============================================================
 function initDanger() {
   wwLog.log('⚠️ Tehlikeli bölge başlatılıyor...');
-  
+
   var deleteBtn = safeEl('delete-data-btn');
-  if (deleteBtn) {
+  if (deleteBtn && !deleteBtn._dangerBound) {
+    deleteBtn._dangerBound = true;
     deleteBtn.addEventListener('click', deleteAllUserData);
   }
-  
+
   var deactivateBtn = safeEl('deactivate-account-btn');
-  if (deactivateBtn) {
+  if (deactivateBtn && !deactivateBtn._dangerBound) {
+    deactivateBtn._dangerBound = true;
     deactivateBtn.addEventListener('click', deactivateAccount);
   }
 }
@@ -1181,10 +1229,10 @@ function initDanger() {
 async function deleteAllUserData() {
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
-    showMsg('Kullanıcı bilgisi bulunamadı!', 'error');
+    showMsg(t('common.unexpected_error'), 'error');
     return;
   }
-  
+
   var confirmed = await new Promise(function(resolve) {
     showConfirmModal(
       '🗑️ ' + t('settings.delete_confirm_title'),
@@ -1194,24 +1242,24 @@ async function deleteAllUserData() {
       function() { resolve(false); }
     );
   });
-  
+
   if (!confirmed) return;
-  
+
   var btn = safeEl('delete-data-btn');
   var originalText = btn ? btn.textContent : '';
   if (btn) {
     btn.disabled = true;
     btn.textContent = t('settings.deleting');
   }
-  
+
   try {
     var sb = getSb();
-    if (!sb) throw new Error('Supabase bağlantısı yok');
-    
+    if (!sb) throw new Error(t('common.db_connection_error'));
+
     wwLog.log('🗑️ Trade verileri siliniyor...');
     var tradesResult = await sb.from('trades').delete().eq('user_id', user.id);
     if (tradesResult.error) throw tradesResult.error;
-    
+
     wwLog.log('🗑️ Backtest verileri siliniyor...');
     try {
       var backtestResult = await sb.from('backtest_trades').delete().eq('user_id', user.id);
@@ -1221,17 +1269,17 @@ async function deleteAllUserData() {
     } catch (btErr) {
       wwLog.warn('Backtest tablosu yok olabilir:', btErr);
     }
-    
+
     wwLog.log('✅ Veri silme tamamlandı');
     showMsg('✅ ' + t('settings.delete_success'), 'success');
-    
+
     setTimeout(function() {
       window.location.reload();
     }, 1500);
-    
+
   } catch (e) {
     console.error('❌ Veri silme hatası:', e);
-    showMsg('❌ ' + t('settings.delete_error') + (e.message || 'Unknown'), 'error');
+    showMsg('❌ ' + t('settings.delete_error') + (e.message || ''), 'error');
     if (btn) {
       btn.disabled = false;
       btn.textContent = originalText;
@@ -1242,10 +1290,10 @@ async function deleteAllUserData() {
 async function deactivateAccount() {
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
-    showMsg('Kullanıcı bilgisi bulunamadı!', 'error');
+    showMsg(t('common.unexpected_error'), 'error');
     return;
   }
-  
+
   var confirmed = await new Promise(function(resolve) {
     showConfirmModal(
       '⚠️ ' + t('settings.deactivate_confirm_title'),
@@ -1255,44 +1303,48 @@ async function deactivateAccount() {
       function() { resolve(false); }
     );
   });
-  
+
   if (!confirmed) return;
-  
+
   var btn = safeEl('deactivate-account-btn');
   var originalText = btn ? btn.textContent : '';
   if (btn) {
     btn.disabled = true;
     btn.textContent = t('settings.deactivating');
   }
-  
+
   try {
     var sb = getSb();
-    if (!sb) throw new Error('Supabase bağlantısı yok');
-    
+    if (!sb) throw new Error(t('common.db_connection_error'));
+
     wwLog.log('🔒 Hesap devre dışı bırakılıyor...');
     var result = await sb.rpc('deactivate_own_account');
-    
+
     if (result.error) throw result.error;
-    
+
     wwLog.log('✅ Hesap devre dışı bırakıldı');
     showMsg('✅ ' + t('settings.deactivate_success'), 'success');
-    
+
     setTimeout(async function() {
       try {
         await sb.auth.signOut();
       } catch (e) {}
       try { localStorage.removeItem('ww_last_active_push'); } catch(e) {}
+      try {
+        sessionStorage.removeItem('ww_user_plan');
+        sessionStorage.removeItem('ww_user_plan_time');
+      } catch(e) {}
       window.location.href = '/login.html';
     }, 1500);
-    
+
   } catch (e) {
     console.error('❌ Hesap devre dışı bırakma hatası:', e);
-    var errMsg = e.message || 'Bilinmeyen hata';
-    
+    var errMsg = e.message || '';
+
     if (errMsg.indexOf('function') !== -1 || errMsg.indexOf('does not exist') !== -1) {
       errMsg = t('settings.deactivate_server_update');
     }
-    
+
     showMsg('❌ ' + t('settings.deactivate_error') + errMsg, 'error');
     if (btn) {
       btn.disabled = false;
@@ -1302,19 +1354,19 @@ async function deactivateAccount() {
 }
 
 // ============================================================
-// ⭐ GÖRÜNÜM PANEL - TEMA ÖZELLEŞTİRME AKTİF
+// ⭐ GÖRÜNÜM PANEL
 // ============================================================
 function initAppearance() {
   wwLog.log('🎨 Görünüm paneli başlatılıyor...');
   initLanguageSelector();
   initCurrencySelector();
-  
+
   var container = safeEl('theme-customization-container');
   if (!container) {
     wwLog.warn('⚠️ theme-customization-container bulunamadı!');
     return;
   }
-  
+
   if (typeof window.loadThemeCustomization === 'function') {
     wwLog.log('✅ loadThemeCustomization fonksiyonu bulundu, çağrılıyor...');
     window.loadThemeCustomization();
@@ -1330,9 +1382,9 @@ function initAppearance() {
 function loadThemeCustomizationFallback() {
   var container = document.getElementById('theme-customization-container');
   if (!container) return;
-  
+
   var isLight = document.body.classList.contains('light-theme');
-  
+
   if (isLight) {
     var tplLight = document.getElementById('tpl-theme-light-locked');
     if (!tplLight) return;
@@ -1340,7 +1392,7 @@ function loadThemeCustomizationFallback() {
     container.innerHTML = '';
     container.appendChild(cloneLight);
     if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-    
+
     var switchBtn = container.querySelector('#theme-switch-to-dark-btn');
     if (switchBtn) {
       switchBtn.addEventListener('click', function() {
@@ -1350,10 +1402,10 @@ function loadThemeCustomizationFallback() {
     }
     return;
   }
-  
+
   getUserPlanSilent().then(function(result) {
     var isPremium = result.plan === 'premium';
-    
+
     if (!isPremium) {
       var tplLocked = document.getElementById('tpl-theme-locked');
       if (!tplLocked) return;
@@ -1362,15 +1414,15 @@ function loadThemeCustomizationFallback() {
       if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
       return;
     }
-    
+
     var tplForm = document.getElementById('tpl-theme-form');
     if (!tplForm) return;
     var cloneForm = tplForm.content.cloneNode(true);
-    
+
     var settings = typeof getThemeSettings === 'function' ? getThemeSettings() : {
       backgroundColor: '#0a0a0f', surfaceColor: '#111118', borderColor: '#1e1e2e', textColor: '#e8e8f0', fontSize: 16
     };
-    
+
     var bgInput = cloneForm.querySelector('#custom-bg-color');
     var bgText = cloneForm.querySelector('#custom-bg-color-text');
     var surfInput = cloneForm.querySelector('#custom-surface-color');
@@ -1381,7 +1433,7 @@ function loadThemeCustomizationFallback() {
     var textText = cloneForm.querySelector('#custom-text-color-text');
     var fontSize = cloneForm.querySelector('#custom-font-size');
     var fontSizeDisplay = cloneForm.querySelector('#font-size-display');
-    
+
     if (bgInput) bgInput.value = settings.backgroundColor || '#0a0a0f';
     if (bgText) bgText.value = settings.backgroundColor || '#0a0a0f';
     if (surfInput) surfInput.value = settings.surfaceColor || '#111118';
@@ -1392,18 +1444,18 @@ function loadThemeCustomizationFallback() {
     if (textText) textText.value = settings.textColor || '#e8e8f0';
     if (fontSize) fontSize.value = settings.fontSize || 16;
     if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
-    
+
     cloneForm.querySelectorAll('[data-icon]').forEach(function(el) {
       el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
     });
-    
+
     container.innerHTML = '';
     container.appendChild(cloneForm);
-    
+
     if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-    
+
     setupThemeEventsFallback();
-    
+
   }).catch(function(err) {
     console.error('❌ Premium kontrol hatası:', err);
     container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ ' + t('settings.theme_load_error') + '</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 ' + t('overtrade.retry') + '</button></div>';
@@ -1418,7 +1470,7 @@ function setupThemeEventsFallback() {
   var fontSize = document.getElementById('custom-font-size');
   var fontSizeDisplay = document.getElementById('font-size-display');
   var previewBox = document.getElementById('theme-preview-box');
-  
+
   function updatePreview() {
     var root = document.documentElement;
     if (bgColor) root.style.setProperty('--bg', bgColor.value);
@@ -1436,10 +1488,10 @@ function setupThemeEventsFallback() {
       if (textColor) previewBox.style.color = textColor.value;
     }
   }
-  
+
   function saveTheme() {
     var isLight = document.body.classList.contains('light-theme');
-    
+
     if (isLight) {
       var fontOnly = { fontSize: parseInt(fontSize.value) };
       if (typeof saveThemeSettings === 'function') {
@@ -1450,7 +1502,7 @@ function setupThemeEventsFallback() {
       showMsg('✅ ' + t('settings.font_updated_light'), 'success');
       return;
     }
-    
+
     var settings = {
       backgroundColor: bgColor ? bgColor.value : '#0a0a0f',
       surfaceColor: surfaceColor ? surfaceColor.value : '#111118',
@@ -1465,7 +1517,7 @@ function setupThemeEventsFallback() {
     }
     showMsg('✅ ' + t('settings.theme_saved'), 'success');
   }
-  
+
   function resetTheme() {
     var defaultSettings = {
       backgroundColor: '#0a0a0f',
@@ -1487,147 +1539,224 @@ function setupThemeEventsFallback() {
     }
     showMsg('↺ ' + t('settings.theme_reset_done'), 'success');
   }
-  
-  if (bgColor) bgColor.addEventListener('input', updatePreview);
-  if (surfaceColor) surfaceColor.addEventListener('input', updatePreview);
-  if (borderColor) borderColor.addEventListener('input', updatePreview);
-  if (textColor) textColor.addEventListener('input', updatePreview);
-  if (fontSize) fontSize.addEventListener('input', updatePreview);
-  
+
+  if (bgColor && !bgColor._themeBound) {
+    bgColor._themeBound = true;
+    bgColor.addEventListener('input', updatePreview);
+  }
+  if (surfaceColor && !surfaceColor._themeBound) {
+    surfaceColor._themeBound = true;
+    surfaceColor.addEventListener('input', updatePreview);
+  }
+  if (borderColor && !borderColor._themeBound) {
+    borderColor._themeBound = true;
+    borderColor.addEventListener('input', updatePreview);
+  }
+  if (textColor && !textColor._themeBound) {
+    textColor._themeBound = true;
+    textColor.addEventListener('input', updatePreview);
+  }
+  if (fontSize && !fontSize._themeBound) {
+    fontSize._themeBound = true;
+    fontSize.addEventListener('input', updatePreview);
+  }
+
   var saveBtn = document.getElementById('save-custom-theme-btn');
-  if (saveBtn) saveBtn.addEventListener('click', saveTheme);
-  
+  if (saveBtn && !saveBtn._themeBound) {
+    saveBtn._themeBound = true;
+    saveBtn.addEventListener('click', saveTheme);
+  }
+
   var resetBtn = document.getElementById('reset-custom-theme-btn');
-  if (resetBtn) resetBtn.addEventListener('click', resetTheme);
-  
+  if (resetBtn && !resetBtn._themeBound) {
+    resetBtn._themeBound = true;
+    resetBtn.addEventListener('click', resetTheme);
+  }
+
   updatePreview();
 }
 
 // ============================================================
-// ⭐ DİL SEÇİCİ
+// ⭐ DİL SEÇİCİ v5 - ELEMENT-LEVEL GUARD (SPA-AWARE)
 // ============================================================
+
+async function switchLanguageSafe(lang) {
+  if (window.i18nReady) {
+    try { await window.i18nReady; } catch (e) {}
+  }
+
+  if (!window.i18n) {
+    throw new Error('i18n not available');
+  }
+
+  if (typeof window.i18n.loadLanguage === 'function') {
+    try {
+      await window.i18n.loadLanguage(lang);
+    } catch (e) {
+      wwLog.warn('loadLanguage failed:', e);
+    }
+  }
+
+  if (typeof window.i18n.setLanguage === 'function') {
+    try {
+      var result = window.i18n.setLanguage(lang);
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+    } catch (e) {
+      wwLog.warn('setLanguage threw:', e);
+    }
+  }
+
+  if (window.i18n.currentLang !== lang) {
+    window.i18n.currentLang = lang;
+  }
+
+  try { localStorage.setItem('ww_language', lang); } catch (e) {}
+  document.documentElement.setAttribute('data-lang', lang);
+
+  if (typeof window.i18n.apply === 'function') {
+    try { window.i18n.apply(); } catch (e) {}
+  }
+
+  if (window.i18n.listeners && Array.isArray(window.i18n.listeners)) {
+    window.i18n.listeners.forEach(function(cb) {
+      try { cb(lang); } catch (e) {}
+    });
+  }
+}
+
 function initLanguageSelector() {
   wwLog.log('🌐 Dil seçici başlatılıyor...');
-  
-  var savedLang = localStorage.getItem('ww_language') || 'en';
-  var currentLang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : savedLang;
-  
-  wwLog.log('🌐 Mevcut dil: ' + currentLang + ' (kayıtlı: ' + savedLang + ')');
-  
+
   var btns = document.querySelectorAll('.lang-compact-btn');
-  
+
   if (btns.length === 0) {
-    wwLog.warn('⚠️ Dil butonları bulunamadı!');
+    wwLog.warn('⚠️ Dil butonları bulunamadı! (panel henüz yüklenmemiş olabilir)');
     return;
   }
-  
+
+  var savedLang = localStorage.getItem('ww_language') || 'en';
+  var currentLang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function')
+    ? window.i18n.getCurrentLanguage() : savedLang;
+
+  wwLog.log('🌐 Mevcut dil: ' + currentLang + ' (kayıtlı: ' + savedLang + ')');
+
+  function updateButtonStates(lang) {
+    document.querySelectorAll('.lang-compact-btn').forEach(function(b) {
+      var isActive = b.dataset.lang === lang;
+      b.classList.toggle('active', isActive);
+      if (isActive) b.setAttribute('aria-current', 'true');
+      else b.removeAttribute('aria-current');
+    });
+  }
+
+  if (window.i18n && typeof window.i18n.onChange === 'function' && !window._langOnChangeBound) {
+    window._langOnChangeBound = true;
+    window.i18n.onChange(function(newLang) {
+      updateButtonStates(newLang);
+      wwLog.log('🔄 Buton state güncellendi (onChange): ' + newLang);
+    });
+  }
+
+  updateButtonStates(currentLang);
+
   btns.forEach(function(btn) {
-    var lang = btn.dataset.lang;
-    if (lang === currentLang) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-    
+    if (btn._langBound) return;
+    btn._langBound = true;
+
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       var lang = this.dataset.lang;
+      var langName = this.textContent.trim();
+
       wwLog.log('🖱️ Dil seçildi: ' + lang);
-      
-      document.querySelectorAll('.lang-compact-btn').forEach(function(b) {
-        b.classList.remove('active');
-      });
-      this.classList.add('active');
-      
-      localStorage.setItem('ww_language', lang);
-      document.documentElement.setAttribute('data-lang', lang);
-      
-      if (window.i18n && typeof window.i18n.setLanguage === 'function') {
-        i18n.currentLang = lang;
-        var success = i18n.setLanguage(lang);
-        
-        if (success) {
-          wwLog.log('✅ Dil değiştirildi: ' + lang);
-          if (typeof window.i18n.apply === 'function') {
-            window.i18n.apply();
-          }
+
+      updateButtonStates(lang);
+
+      (async function() {
+        try {
+          await switchLanguageSafe(lang);
+
           if (typeof window.updateNavbarI18n === 'function') {
-            window.updateNavbarI18n();
+            try { window.updateNavbarI18n(); } catch (e) {}
           } else if (typeof updateNavbarI18n === 'function') {
-            updateNavbarI18n();
+            try { updateNavbarI18n(); } catch (e) {}
           }
-          document.querySelectorAll('[data-i18n]').forEach(function(el) {
-            var key = el.getAttribute('data-i18n');
-            if (key) {
-              var translated = i18n.t(key);
-              if (translated && translated !== key) {
-                el.textContent = translated;
-              }
-            }
-          });
-          showMsg(t('settings.language_selected', { name: this.textContent.trim() }), 'success');
-          wwLog.log('✅ Dil değişimi tamamlandı (' + lang + ')');
-        } else {
-          showMsg('Dil değiştirilemedi, sayfa yenileniyor...', 'info');
-          setTimeout(function() { location.reload(); }, 500);
+
+          updateButtonStates(lang);
+
+          var msg = window.i18n.t('settings.language_selected', { name: langName });
+          if (msg && msg !== 'settings.language_selected') {
+            showMsg(msg, 'success');
+          } else {
+            showMsg('✓ ' + langName, 'success');
+          }
+
+          wwLog.log('✅ Dil değişimi tamamlandı: ' + lang);
+
+        } catch (err) {
+          wwLog.warn('❌ Dil değişimi hatası:', err);
+          showMsg('Dil değiştirilemedi. Lütfen sayfayı yenileyin.', 'error');
         }
-      } else {
-        showMsg('Dil kaydedildi, sayfa yenileniyor...', 'info');
-        setTimeout(function() { location.reload(); }, 500);
-      }
+      })();
     });
   });
-  
-  wwLog.log('✅ Dil seçici başlatıldı!');
+
+  wwLog.log('✅ Dil seçici başlatıldı! (' + btns.length + ' buton)');
 }
 
 // ============================================================
-// ⭐ PARA BİRİMİ SEÇİCİ
+// ⭐ PARA BİRİMİ SEÇİCİ - ELEMENT-LEVEL GUARD
 // ============================================================
 function initCurrencySelector() {
   wwLog.log('💰 Para birimi seçici başlatılıyor...');
-  
+
   var current = localStorage.getItem('ww_currency') || '$';
   var btns = document.querySelectorAll('.currency-btn');
-  
+
+  if (btns.length === 0) {
+    wwLog.warn('⚠️ Para birimi butonları bulunamadı!');
+    return;
+  }
+
   btns.forEach(function(btn) {
-    if (btn.dataset.currency === current) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-    
+    btn.classList.toggle('active', btn.dataset.currency === current);
+
+    if (btn._currencyBound) return;
+    btn._currencyBound = true;
+
     btn.addEventListener('click', function() {
       var currency = this.dataset.currency;
-      
+
       localStorage.setItem('ww_currency', currency);
-      
+
       if (typeof window.setCurrencySymbol === 'function') {
         window.setCurrencySymbol(currency);
       }
-      
+
       btns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
-      
+
       try {
-        window.dispatchEvent(new CustomEvent('currencyChanged', { 
-          detail: { symbol: currency } 
+        window.dispatchEvent(new CustomEvent('currencyChanged', {
+          detail: { symbol: currency }
         }));
       } catch(e) {}
-      
+
       document.querySelectorAll('.currency-display, .currency-symbol, [data-currency-display]').forEach(function(el) {
         el.textContent = currency;
       });
-      
+
       showMsg(t('settings.currency_changed_success'), 'success');
-      
+
       setTimeout(function() { location.reload(); }, 800);
     });
   });
-  
-  wwLog.log('✅ Para birimi seçici başlatıldı!');
+
+  wwLog.log('✅ Para birimi seçici başlatıldı! (' + btns.length + ' buton)');
 }
 
 // ============================================================
@@ -1635,13 +1764,13 @@ function initCurrencySelector() {
 // ============================================================
 function initOvertrade() {
   wwLog.log('📊 Over Trade paneli başlatılıyor...');
-  
+
   var container = safeEl('overtrade-settings-container');
   if (!container) {
     wwLog.warn('⚠️ Over Trade container bulunamadı!');
     return;
   }
-  
+
   if (typeof window.loadOvertradeSettingsUI === 'function') {
     wwLog.log('✅ loadOvertradeSettingsUI fonksiyonu bulundu, çağrılıyor...');
     window.loadOvertradeSettingsUI('overtrade-settings-container');
@@ -1657,26 +1786,44 @@ function initOvertrade() {
 }
 
 // ============================================================
-// PLAN BADGE GÜNCELLE
-// ⭐ DEĞİŞTİ: Plan rozeti sorumluluğu navbar.js'e taşındı (DRY + race fix)
+// PLAN BADGE GÜNCELLE (lokal fallback - navbar.js asıl sorumlu)
 // ============================================================
 async function updateBadge() {
-  if (typeof window.updateNavbarBadge === 'function') {
-    await window.updateNavbarBadge();
-  }
+  var badge = safeEl('plan-badge');
+  var text = safeEl('plan-text');
+  if (!badge || !text) return;
+
+  try {
+    var user = await getCurrentUser();
+    if (!user) return;
+    var sb = getSb();
+    if (!sb) return;
+    var result = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
+    var isPremium = result.data && result.data.plan === 'premium';
+    window.SETTINGS_STATE.isPremium = isPremium;
+
+    if (isPremium) {
+      badge.classList.add('premium');
+      text.textContent = t('nav.premium_badge');
+    } else {
+      badge.classList.remove('premium');
+      text.textContent = t('nav.free_badge');
+    }
+  } catch (e) {}
 }
 
 window.updateBadge = updateBadge;
 
 // ============================================================
-// NAV EVENT LISTENER
+// NAV EVENT LISTENER — ELEMENT-LEVEL GUARD
 // ============================================================
 function initNavEvents() {
   wwLog.log('🧭 Nav event listener başlatılıyor...');
-  
+
   var ddBtn = document.getElementById('premium-dropdown-btn');
   var ddMenu = document.getElementById('premium-dropdown-menu');
-  if (ddBtn && ddMenu) {
+  if (ddBtn && ddMenu && !ddBtn._navBound) {
+    ddBtn._navBound = true;
     ddBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       this.classList.toggle('active');
@@ -1687,10 +1834,11 @@ function initNavEvents() {
       ddMenu.classList.remove('open');
     });
   }
-  
+
   var bellBtn = document.getElementById('overtrade-bell-btn');
   var bellPanel = document.getElementById('bell-panel');
-  if (bellBtn && bellPanel) {
+  if (bellBtn && bellPanel && !bellBtn._navBound) {
+    bellBtn._navBound = true;
     bellBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       bellPanel.classList.toggle('open');
@@ -1701,18 +1849,20 @@ function initNavEvents() {
       }
     });
   }
-  
+
   var bellClose = document.getElementById('bell-panel-close');
-  if (bellClose) {
+  if (bellClose && !bellClose._navBound) {
+    bellClose._navBound = true;
     bellClose.addEventListener('click', function() {
       var panel = document.getElementById('bell-panel');
       if (panel) panel.classList.remove('open');
     });
   }
-  
+
   var avatar = document.getElementById('user-avatar');
   var dropdown = document.getElementById('dropdown-menu');
-  if (avatar && dropdown) {
+  if (avatar && dropdown && !avatar._navBound) {
+    avatar._navBound = true;
     avatar.addEventListener('click', function(e) {
       e.stopPropagation();
       dropdown.classList.toggle('show');
@@ -1721,21 +1871,27 @@ function initNavEvents() {
       dropdown.classList.remove('show');
     });
   }
-  
+
   var logoutBtn = document.getElementById('logout-dropdown-btn');
-  if (logoutBtn) {
+  if (logoutBtn && !logoutBtn._navBound) {
+    logoutBtn._navBound = true;
     logoutBtn.addEventListener('click', async function() {
       var sb = getSb();
       if (sb) await sb.auth.signOut();
       localStorage.removeItem('ww_last_active_push');
+      try {
+        sessionStorage.removeItem('ww_user_plan');
+        sessionStorage.removeItem('ww_user_plan_time');
+      } catch(e) {}
       window.location.href = '/index.html';
     });
   }
-  
+
   var toggle = document.getElementById('nav-toggle');
   var menu = document.getElementById('nav-menu');
   var backdrop = document.getElementById('nav-backdrop');
-  if (toggle && menu && backdrop) {
+  if (toggle && menu && backdrop && !toggle._navBound) {
+    toggle._navBound = true;
     toggle.addEventListener('click', function() {
       this.classList.toggle('open');
       menu.classList.toggle('open');
@@ -1749,9 +1905,10 @@ function initNavEvents() {
       document.body.style.overflow = '';
     });
   }
-  
+
   var logoutMobile = document.getElementById('logout-btn-mobile');
-  if (logoutMobile) {
+  if (logoutMobile && !logoutMobile._navBound) {
+    logoutMobile._navBound = true;
     logoutMobile.addEventListener('click', function() {
       var toggleEl = document.getElementById('nav-toggle');
       if (toggleEl) toggleEl.classList.remove('open');
@@ -1764,17 +1921,19 @@ function initNavEvents() {
       if (logoutBtnEl) logoutBtnEl.click();
     });
   }
-  
+
   wwLog.log('✅ Nav event listener başlatıldı!');
 }
 
 // ============================================================
-// PANEL CLICK EVENTLERİ
+// PANEL CLICK EVENTLERİ — ELEMENT-LEVEL GUARD
 // ============================================================
 function initPanelClickEvents() {
   wwLog.log('📋 Panel click eventleri başlatılıyor...');
-  
+
   document.querySelectorAll('.sidebar-nav-item').forEach(function(btn) {
+    if (btn._panelBound) return;
+    btn._panelBound = true;
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       var panelId = this.dataset.panel;
@@ -1784,8 +1943,10 @@ function initPanelClickEvents() {
       }
     });
   });
-  
+
   document.querySelectorAll('.settings-tab-btn').forEach(function(btn) {
+    if (btn._panelBound) return;
+    btn._panelBound = true;
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       var panelId = this.dataset.panel;
@@ -1795,18 +1956,19 @@ function initPanelClickEvents() {
       }
     });
   });
-  
+
   wwLog.log('✅ Panel click eventleri başlatıldı!');
 }
 
 // ============================================================
-// AVATAR POPUP
+// AVATAR POPUP — ELEMENT-LEVEL GUARD
 // ============================================================
 function initAvatarPopup() {
   wwLog.log('🖼️ Avatar popup başlatılıyor...');
-  
+
   var sidebarProfile = document.getElementById('sidebar-profile');
-  if (sidebarProfile) {
+  if (sidebarProfile && !sidebarProfile._avatarBound) {
+    sidebarProfile._avatarBound = true;
     sidebarProfile.addEventListener('click', function() {
       var popup = document.getElementById('avatar-popup');
       if (popup) {
@@ -1815,14 +1977,16 @@ function initAvatarPopup() {
       }
     });
   }
-  
+
   var closeBtn = document.getElementById('avatar-popup-close');
-  if (closeBtn) {
+  if (closeBtn && !closeBtn._avatarBound) {
+    closeBtn._avatarBound = true;
     closeBtn.addEventListener('click', closePopup);
   }
-  
+
   var popup = document.getElementById('avatar-popup');
-  if (popup) {
+  if (popup && !popup._avatarBound) {
+    popup._avatarBound = true;
     popup.addEventListener('click', function(e) {
       if (e.target === this) closePopup();
     });
@@ -1836,13 +2000,14 @@ function closePopup() {
 }
 
 // ============================================================
-// CONFIRM MODAL - INIT
+// CONFIRM MODAL - INIT — ELEMENT-LEVEL GUARD
 // ============================================================
 function initConfirmModal() {
   wwLog.log('📦 Confirm modal başlatılıyor...');
-  
+
   var modal = document.getElementById('confirm-modal');
-  if (modal) {
+  if (modal && !modal._confirmBound) {
+    modal._confirmBound = true;
     modal.addEventListener('click', function(e) {
       if (e.target === this) this.classList.remove('active');
     });
@@ -1859,59 +2024,64 @@ function initConfirmModal() {
 // ============================================================
 async function checkAndActivatePremium() {
   wwLog.log('🔍 Premium kontrol ediliyor...');
-  
+
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
     wwLog.warn('Kullanıcı yok');
     return;
   }
-  
+
   var sb = getSb();
   if (!sb) {
     console.error('Supabase bağlantısı yok');
     return;
   }
-  
+
   try {
     var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
-    
+
     if (result.error) throw result.error;
-    
+
     var data = result.data;
     var isPremium = data && data.plan === 'premium';
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
-    
+
     if (isPremium && expiresAt && new Date() > expiresAt) {
-      wwLog.log('⏰ Premium süresi dolmuş; erişim yerelde ücretsiz olarak değerlendiriliyor.');
+      wwLog.log('⏰ Premium süresi dolmuş.');
       window.SETTINGS_STATE.isPremium = false;
+      // ⭐ FIX v6: sessionStorage'a yaz (navbar ile aynı storage)
+      try {
+        sessionStorage.setItem('ww_user_plan', 'free');
+        sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+      } catch(e) {}
       return;
     }
-    
+
     window.SETTINGS_STATE.isPremium = isPremium;
-    
+
+    // ⭐ FIX v6: localStorage yerine sessionStorage kullan (navbar.js ile senkron)
+    try {
+      sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
+      sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+    } catch(e) {}
+
     if (isPremium) {
-      try {
-        localStorage.setItem('ww_user_plan', JSON.stringify({ 
-          plan: 'premium', 
-          expires_at: expiresAt ? expiresAt.toISOString() : null 
-        }));
-      } catch(e) {}
       wwLog.log('✅ Premium aktif! Bitiş:', expiresAt);
     } else {
       wwLog.log('📌 Ücretsiz plan');
     }
-    
+
   } catch (e) {
     console.error('Premium kontrol hatası:', e);
   }
 }
 
 // ============================================================
-// ⭐ SAYFA BAŞLATMA
+// ⭐ SAYFA BAŞLATMA (ASTRO SPA-AWARE)
 // ============================================================
-document.addEventListener('DOMContentLoaded', async function() {
+async function bootSettings() {
   wwLog.log('🚀 Settings başlatılıyor...');
-  
+
   try {
     var savedLang = localStorage.getItem('ww_language');
     if (savedLang && window.i18n) {
@@ -1922,7 +2092,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
       document.documentElement.setAttribute('data-lang', savedLang);
     }
-    
+
     var sb = getSb();
     if (!sb && window.supabase && typeof window.supabase.createClient === 'function') {
       var url = window.SUPABASE_URL || 'https://odasapyhtdopbnlfhwde.supabase.co';
@@ -1931,65 +2101,64 @@ document.addEventListener('DOMContentLoaded', async function() {
       sb = window.sb;
       wwLog.log('✅ Supabase client oluşturuldu');
     }
-    
+
     if (!sb) {
       console.error('❌ Supabase bağlantısı yok!');
       return;
     }
-    
+
     var user = await getCurrentUser();
     if (!user) {
       wwLog.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
       window.location.href = '/index.html';
       return;
     }
-    
+
     wwLog.log('👤 Kullanıcı:', user.email);
     window.SETTINGS_STATE.currentUser = user;
-    
+
     await checkAndActivatePremium();
-    
+
     var cb = document.getElementById('theme-toggle');
     if (cb) {
       var savedTheme = localStorage.getItem('ww_theme');
       cb.checked = savedTheme === 'light';
-      
+
+      var isLightTheme = savedTheme === 'light';
       var icon = document.getElementById('theme-icon');
       var label = document.getElementById('theme-label');
       var desc = document.getElementById('theme-desc');
-      
-      if (savedTheme === 'light') {
+
+      if (isLightTheme) {
         if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-        if (label) label.textContent = 'Açık Tema';
-        if (desc) desc.textContent = 'Aydınlık ve ferah arayüz';
       } else {
         if (icon) icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-        if (label) label.textContent = 'Koyu Tema';
-        if (desc) desc.textContent = 'Göz yormayan karanlık arayüz';
       }
+      if (label) label.textContent = themeLabel(isLightTheme);
+      if (desc) desc.textContent = themeDesc(isLightTheme);
     }
-    
+
     initNavEvents();
     initPanelClickEvents();
     initAvatarPopup();
     initConfirmModal();
-    
+
     var glow = document.getElementById('panel-glow');
     if (glow) glow.className = 'panel-glow profile-glow';
-    
+
     var hash = window.location.hash.replace('#', '');
     var targetPanelId = 'panel-profile';
-    
+
     if (hash && hash.indexOf('panel-') === 0) {
       targetPanelId = hash;
       wwLog.log('📍 URL\'den panel hedefleniyor: ' + targetPanelId);
     }
-    
+
     var firstPanel = document.getElementById(targetPanelId);
     if (firstPanel) {
       document.querySelectorAll('.settings-panel').forEach(function(p) { p.classList.remove('active'); });
       firstPanel.classList.add('active');
-      
+
       document.querySelectorAll('.sidebar-nav-item, .settings-tab-btn').forEach(function(el) {
         var isActive = el.dataset.panel === targetPanelId;
         if (isActive) {
@@ -1998,7 +2167,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           el.classList.remove('active');
         }
       });
-      
+
       if (glow) {
         glow.className = 'panel-glow';
         var map = {
@@ -2011,7 +2180,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
         if (map[targetPanelId]) glow.classList.add(map[targetPanelId]);
       }
-      
+
       var map2 = {
         'panel-profile': '/settings/panels/profile-info.html',
         'panel-plan': '/settings/panels/plan.html',
@@ -2027,25 +2196,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         initPanel(targetPanelId);
       }
     }
-    
-    initLanguageSelector();
-    initCurrencySelector();
+
+    // ⭐ FIX v6: Navbar badge'ini settings.js boot'ta güncelle
+    if (typeof window.updateNavbarBadge === 'function') {
+      await window.updateNavbarBadge();
+    }
     await updateBadge();
-    
+
     await loadAvatar();
     await loadProfileData();
-    
+
     wwLog.log('✅ Settings başarıyla başlatıldı! 🎉');
-    
+
   } catch (e) {
     console.error('❌ Settings hatası:', e);
   }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootSettings);
+} else {
+  bootSettings();
+}
+
+document.addEventListener('astro:page-load', function() {
+  wwLog.log('🔄 astro:page-load tetiklendi');
+  bootSettings();
 });
 
-wwLog.log('✅ settings.js GÜNCELLENDİ ve yüklendi! (çakışma temizlendi)');
+wwLog.log('✅ settings.js GÜNCELLENDİ ve yüklendi! (i18n v5 - ASTRO SPA + tüm guard)');
 
 // ============================================================
-// ⭐ GLOBAL EXPORT (ödeme fonksiyonları payment.js'te)
+// ⭐ GLOBAL EXPORT
 // ============================================================
 window.settings = {
   getMonthlyPrice: window.getMonthlyPrice,

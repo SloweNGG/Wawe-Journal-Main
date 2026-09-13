@@ -5,6 +5,12 @@
 //        - "Lot" ve "Henüz işlem" case'leri artık quickAddOpen() çağırıyor
 //        - Quick Add modal aynı sayfada açılıyor, kullanıcı sayfadan çıkmıyor
 // ⭐ i18n: bellEmptyStateHtml() artık 'nav.no_notifications' anahtarını kullanıyor
+// ⭐ i18n (YENİ): showEmptyChart() içindeki mesaj ve buton metinleri
+//    i18n'e taşındı. Hem eski Türkçe mesaj (string.includes ile algılama)
+//    hem de yeni 'empty.*' type API'si destekleniyor.
+// ⭐ FIX (BUG): ES module scope'unda `i18n` doğrudan tanımlı olmadığı için
+//    `typeof i18n !== 'undefined'` kontrolü her zaman false dönüyordu.
+//    Artık `window.i18n` üzerinden güvenli erişim yapılıyor.
 // ============================================================
 
 export function sanitizeHTML(str) {
@@ -95,72 +101,131 @@ export function dedupeByTime(points) {
   });
 }
 
-// ⭐ BOŞ STATE - ZENGİNLEŞTİRİLMİŞ
-// ⭐ TEMİZLİK: /add-trade.html yerine quickAddOpen() ile modal açılıyor
-export function showEmptyChart(containerId, message) {
+// ============================================================
+// ⭐ i18n GÜVENLİ ERİŞİM (ES module scope'u için)
+// ============================================================
+// ES module scope'unda `i18n` doğrudan tanımlı değil.
+// Global window.i18n üzerinden erişilir.
+// i18n.js yüklenmemişse veya hata verse bile fallback metni döner.
+
+var _EMPTY_FALLBACKS = {
+  'empty.no_closed':           'Yeterli kapanan işlem yok',
+  'empty.no_recent':           'Son 30 gün için yeterli veri yok',
+  'empty.no_rr':               'R:R verisi yok',
+  'empty.no_lot':              'Lot verisi yok',
+  'empty.no_trades':           'Henüz işlem yok',
+  'empty.not_enough':          'Yeterli veri yok',
+  'empty.default':             'Veri yok',
+  'empty.action.view_trades':     'İşlemleri görüntüle',
+  'empty.action.view_calendar':   'Takvimi görüntüle',
+  'empty.action.view_strategies': 'Stratejileri görüntüle',
+  'empty.action.add_trade':       'İşlem ekle',
+  'empty.action.add_first_trade': 'İlk işlemi ekle',
+  'empty.action.back_dashboard':  'Dashboard\'a dön',
+  'nav.no_notifications':      'Yeni bildirim yok'
+};
+
+function _t(key, params) {
+  try {
+    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
+      var v = window.i18n.t(key, params);
+      if (v && v !== key) return v;
+    }
+  } catch (e) {}
+  return (_EMPTY_FALLBACKS[key] !== undefined) ? _EMPTY_FALLBACKS[key] : key;
+}
+
+// ============================================================
+// ⭐ BOŞ GRAFİK TİPİ ÇÖZÜMLEYİCİ
+// ============================================================
+// Hem yeni 'empty.*' type API'sini hem de eski Türkçe mesaj string'ini
+// algılar. Böylece chart-renderers.js'i değiştirmek zorunda kalmayız.
+
+var _EMPTY_TYPE_MAP = {
+  no_closed:  { icon: '⏳', msgKey: 'empty.no_closed',  actionKey: 'empty.action.view_trades',     link: '/trades.html' },
+  no_recent:  { icon: '📅', msgKey: 'empty.no_recent',  actionKey: 'empty.action.view_calendar',   link: '/calendar.html' },
+  no_rr:      { icon: '📈', msgKey: 'empty.no_rr',      actionKey: 'empty.action.view_strategies', link: '/strategies.html' },
+  no_lot:     { icon: '📐', msgKey: 'empty.no_lot',     actionKey: 'empty.action.add_trade',       quickAdd: true },
+  no_trades:  { icon: '📭', msgKey: 'empty.no_trades',  actionKey: 'empty.action.add_first_trade', quickAdd: true },
+  not_enough: { icon: '📉', msgKey: 'empty.not_enough', actionKey: 'empty.action.view_trades',     link: '/trades.html' },
+  default:    { icon: '📊', msgKey: 'empty.default',    actionKey: 'empty.action.back_dashboard',  link: '/dashboard.html' }
+};
+
+function _resolveEmptyType(input) {
+  if (!input || typeof input !== 'string') return 'default';
+
+  // Yeni type API: 'empty.no_closed' → 'no_closed'
+  if (input.indexOf('empty.') === 0) {
+    var t = input.slice(6);
+    if (_EMPTY_TYPE_MAP[t]) return t;
+    return 'default';
+  }
+
+  // Eski Türkçe mesaj algılama (backward compatibility)
+  if (input.includes('kapanan işlem')) return 'no_closed';
+  if (input.includes('Son 30 gün'))    return 'no_recent';
+  if (input.includes('RR'))            return 'no_rr';
+  if (input.includes('Lot'))           return 'no_lot';
+  if (input.includes('Henüz işlem'))   return 'no_trades';
+  if (input.includes('Yeterli veri'))  return 'not_enough';
+
+  return 'default';
+}
+
+// ============================================================
+// ⭐ BOŞ STATE - ZENGİNLEŞTİRİLMİŞ + i18n DESTEKLİ
+// ============================================================
+// Kullanım:
+//   showEmptyChart('chart-id', 'empty.no_closed')       → yeni type API
+//   showEmptyChart('chart-id', 'Yeterli kapanan işlem yok') → eski mesaj (chart-renderers.js'ten)
+//
+// Her iki durumda da buton metni ve link/quickAdd davranışı i18n'den
+// gelen metinlerle ve tip haritasıyla belirlenir.
+
+export function showEmptyChart(containerId, typeOrMessage) {
   var container = document.getElementById(containerId);
   if (!container) return;
 
-  // Grafik türüne göre ikon ve mesaj belirle
-  var icon = '📊';
-  var actionText = '';
-  var actionLink = '';
-  var useQuickAdd = false;
+  var type = _resolveEmptyType(typeOrMessage);
+  var cfg = _EMPTY_TYPE_MAP[type];
 
-  if (message && message.includes('kapanan işlem')) {
-    icon = '⏳';
-    actionText = 'İşlemleri görüntüle';
-    actionLink = '/trades.html';
-  } else if (message && message.includes('Son 30 gün')) {
-    icon = '📅';
-    actionText = 'Takvimi görüntüle';
-    actionLink = '/calendar.html';
-  } else if (message && message.includes('RR')) {
-    icon = '📈';
-    actionText = 'Stratejileri görüntüle';
-    actionLink = '/strategies.html';
-  } else if (message && message.includes('Lot')) {
-    icon = '📐';
-    actionText = 'İşlem ekle';
-    useQuickAdd = true;
-  } else if (message && message.includes('Henüz işlem')) {
-    icon = '📭';
-    actionText = 'İlk işlemi ekle';
-    useQuickAdd = true;
-  } else if (message && message.includes('Yeterli veri')) {
-    icon = '📉';
-    actionText = 'İşlemleri görüntüle';
-    actionLink = '/trades.html';
+  // Mesaj metni:
+  // - Yeni type API → i18n'den al
+  // - Eski mesaj string → aynen göster (chart-renderers zaten Türkçe veriyor)
+  // - Hiçbiri yoksa → i18n 'empty.not_enough'
+  var displayMessage;
+  if (typeof typeOrMessage === 'string' && typeOrMessage.indexOf('empty.') === 0) {
+    displayMessage = _t(cfg.msgKey);
+  } else if (typeof typeOrMessage === 'string' && typeOrMessage.length > 0) {
+    displayMessage = typeOrMessage;
   } else {
-    icon = '📊';
-    actionText = 'Dashboard\'a dön';
-    actionLink = '/dashboard.html';
+    displayMessage = _t('empty.not_enough');
   }
+
+  var actionText = _t(cfg.actionKey);
 
   // Ortak buton stili (a ve button için uyumlu)
   var btnStyle = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;";
   var btnHover = "onmouseover=\"this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';\" onmouseout=\"this.style.borderColor='var(--border)';this.style.background='var(--surface)';\"";
 
   var buttonHtml = '';
-
-  if (useQuickAdd) {
-    // ⭐ Quick Add modalını aynı sayfada aç
+  if (cfg.quickAdd) {
     buttonHtml = '<button type="button" onclick="if(typeof quickAddOpen===\'function\')quickAddOpen()" style="' + btnStyle + '" ' + btnHover + '>' + actionText + ' →</button>';
-  } else if (actionLink) {
-    buttonHtml = '<a href="' + actionLink + '" style="' + btnStyle + '" ' + btnHover + '>' + actionText + ' →</a>';
+  } else if (cfg.link) {
+    buttonHtml = '<a href="' + cfg.link + '" style="' + btnStyle + '" ' + btnHover + '>' + actionText + ' →</a>';
   }
 
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:80px;padding:0.5rem;text-align:center;color:var(--muted);font-family:'DM Sans',sans-serif;">
-      <div style="font-size:2rem;margin-bottom:0.5rem;opacity:0.6;">${icon}</div>
-      <p style="font-size:12px;margin:0 0 0.3rem;color:var(--muted);">${message || 'Yeterli veri yok'}</p>
+      <div style="font-size:2rem;margin-bottom:0.5rem;opacity:0.6;">${cfg.icon}</div>
+      <p style="font-size:12px;margin:0 0 0.3rem;color:var(--muted);">${displayMessage}</p>
       ${buttonHtml}
     </div>
   `;
 }
 
 export function bellEmptyStateHtml() {
-  var emptyText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
+  var emptyText = _t('nav.no_notifications');
   return '<div class="bell-panel-empty" id="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText + '</span></div>';
 }
 
