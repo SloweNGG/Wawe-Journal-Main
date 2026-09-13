@@ -2511,3 +2511,6 @@ body {
 #app-scroll-container::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
 }
+
+/* ⭐ Landing plan kartları — style.css çakışmasını önle */
+.plan .plan-badge { display: none; }

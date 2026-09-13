@@ -1,25 +1,15 @@
 ﻿// ============================================================
 // WAWE JOURNAL – config.js (SORUNSUZ - import.meta.env KULLANMAZ)
+// ⭐ TURNSTILE_SITE_KEY eklendi
 // ============================================================
-
-// ============================================================
-// SUPABASE YAPILANDIRMASI - Environment'dan oku (import.meta.env YOK!)
-// ============================================================
-
-// ⭐ Environment variable'ları oku - import.meta.env KULLANMA!
-// Vite build sırasında define ile değiştirilirler
-// Normal script'te çalışması için process.env veya window kullan
 
 const getEnv = (key, fallback) => {
-  // Önce process.env'den dene (Node.js / Vite)
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
     return process.env[key];
   }
-  // Sonra window'dan dene (manual override)
   if (typeof window !== 'undefined' && window[key]) {
     return window[key];
   }
-  // Fallback
   return fallback;
 };
 
@@ -28,17 +18,15 @@ const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIs
 const APP_URL = getEnv('VITE_APP_URL', 'https://wawejournal.com');
 const APP_NAME = getEnv('VITE_APP_NAME', 'Wawe Journal');
 
-// ============================================================
-// GLOBAL DEĞİŞKENLER
-// ============================================================
+// ⭐ Turnstile Site Key (public)
+const TURNSTILE_SITE_KEY = getEnv('VITE_TURNSTILE_SITE_KEY', '0x4AAAAAAEzAoR2XhUtPTxV7');
+
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 window.APP_URL = APP_URL;
 window.APP_NAME = APP_NAME;
+window.TURNSTILE_SITE_KEY = TURNSTILE_SITE_KEY;
 
-// ============================================================
-// SUPABASE CLIENT - DOĞRUDAN OLUŞTUR
-// ============================================================
 if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
   window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   wwLog.log('✅ Supabase client oluşturuldu (window.supabase ile)');
@@ -46,11 +34,6 @@ if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
   wwLog.warn('⚠️ window.supabase bulunamadı, supabase-js yüklenmemiş olabilir.');
 }
 
-// ============================================================
-// ⭐ EKSİK OLANLAR EKLENDİ!
-// ============================================================
-
-// ── INSTRUMENT_MULTIPLIERS ──────────────────────────────────
 window.INSTRUMENT_MULTIPLIERS = {
   forex: 100000,
   gold: 100,
@@ -59,7 +42,6 @@ window.INSTRUMENT_MULTIPLIERS = {
   other: 1
 };
 
-// ── FEATURES ────────────────────────────────────────────────
 window.FEATURES = {
   free: {
     label: '🆓 Free',
@@ -117,7 +99,6 @@ window.FEATURES = {
   }
 };
 
-// ── NOTIFICATION_TYPES ──────────────────────────────────────
 window.NOTIFICATION_TYPES = {
   OVERTRADE_WARNING: 'overtrade_warning',
   OVERTRADE_CRITICAL: 'overtrade_critical',
@@ -126,10 +107,6 @@ window.NOTIFICATION_TYPES = {
   PREMIUM_UPGRADED: 'premium_upgraded',
   SYSTEM: 'system'
 };
-
-// ============================================================
-// 💰 FİYAT FONKSİYONLARI - GLOBAL
-// ============================================================
 
 window.getPrices = function() {
   try {
@@ -144,8 +121,8 @@ window.getPrices = function() {
           yearly: (typeof parsed.discount?.yearly === 'number' && !isNaN(parsed.discount?.yearly)) ? parsed.discount.yearly : 27,
           promo: (typeof parsed.discount?.promo === 'number' && !isNaN(parsed.discount?.promo)) ? parsed.discount.promo : 0
         },
-        paymentMethods: Array.isArray(parsed.paymentMethods) && parsed.paymentMethods.length > 0 
-          ? parsed.paymentMethods 
+        paymentMethods: Array.isArray(parsed.paymentMethods) && parsed.paymentMethods.length > 0
+          ? parsed.paymentMethods
           : ['BTC', 'LTC']
       };
     }
@@ -154,10 +131,7 @@ window.getPrices = function() {
     monthly: 9,
     yearly: 79,
     currency: 'USD',
-    discount: {
-      yearly: 27,
-      promo: 0
-    },
+    discount: { yearly: 27, promo: 0 },
     paymentMethods: ['BTC', 'LTC']
   };
 };
@@ -166,18 +140,14 @@ window.getMonthlyPrice = function() {
   try {
     const prices = window.getPrices();
     return (typeof prices.monthly === 'number' && !isNaN(prices.monthly) && prices.monthly > 0) ? prices.monthly : 9;
-  } catch (e) {
-    return 9;
-  }
+  } catch (e) { return 9; }
 };
 
 window.getYearlyPrice = function() {
   try {
     const prices = window.getPrices();
     return (typeof prices.yearly === 'number' && !isNaN(prices.yearly) && prices.yearly > 0) ? prices.yearly : 79;
-  } catch (e) {
-    return 79;
-  }
+  } catch (e) { return 79; }
 };
 
 window.getYearlyDiscount = function() {
@@ -193,9 +163,7 @@ window.getYearlyDiscount = function() {
       return Math.round(((fullPrice - yearly) / fullPrice) * 100);
     }
     return 27;
-  } catch (e) {
-    return 27;
-  }
+  } catch (e) { return 27; }
 };
 
 window.getPaymentMethods = function() {
@@ -211,132 +179,90 @@ window.getPaymentMethods = function() {
 window.savePrices = function(prices) {
   try {
     const currentPrices = window.getPrices();
-    
     const updatedPrices = {
-      monthly: (typeof prices.monthly === 'number' && !isNaN(prices.monthly) && prices.monthly > 0) 
-        ? prices.monthly 
-        : currentPrices.monthly,
-      yearly: (typeof prices.yearly === 'number' && !isNaN(prices.yearly) && prices.yearly > 0) 
-        ? prices.yearly 
-        : currentPrices.yearly,
-      currency: (typeof prices.currency === 'string' && prices.currency.length > 0) 
-        ? prices.currency 
-        : currentPrices.currency,
+      monthly: (typeof prices.monthly === 'number' && !isNaN(prices.monthly) && prices.monthly > 0) ? prices.monthly : currentPrices.monthly,
+      yearly: (typeof prices.yearly === 'number' && !isNaN(prices.yearly) && prices.yearly > 0) ? prices.yearly : currentPrices.yearly,
+      currency: (typeof prices.currency === 'string' && prices.currency.length > 0) ? prices.currency : currentPrices.currency,
       discount: {
-        yearly: (typeof prices.discount?.yearly === 'number' && !isNaN(prices.discount?.yearly)) 
-          ? prices.discount.yearly 
-          : currentPrices.discount.yearly,
-        promo: (typeof prices.discount?.promo === 'number' && !isNaN(prices.discount?.promo)) 
-          ? prices.discount.promo 
-          : currentPrices.discount.promo
+        yearly: (typeof prices.discount?.yearly === 'number' && !isNaN(prices.discount?.yearly)) ? prices.discount.yearly : currentPrices.discount.yearly,
+        promo: (typeof prices.discount?.promo === 'number' && !isNaN(prices.discount?.promo)) ? prices.discount.promo : currentPrices.discount.promo
       },
-      paymentMethods: Array.isArray(prices.paymentMethods) && prices.paymentMethods.length > 0 
-        ? prices.paymentMethods.slice() 
+      paymentMethods: Array.isArray(prices.paymentMethods) && prices.paymentMethods.length > 0
+        ? prices.paymentMethods.slice()
         : currentPrices.paymentMethods.slice()
     };
-    
     localStorage.setItem('ww_prices', JSON.stringify(updatedPrices));
     return updatedPrices;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 };
 
 window.resetPrices = function() {
-  try {
-    localStorage.removeItem('ww_prices');
-    return true;
-  } catch (e) {
-    return false;
-  }
+  try { localStorage.removeItem('ww_prices'); return true; } catch (e) { return false; }
 };
 
 window.adminUpdatePrices = function(monthly, yearly) {
   try {
     const current = window.getPrices();
     const updated = window.savePrices({
-      monthly: monthly,
-      yearly: yearly,
+      monthly, yearly,
       currency: current.currency,
       discount: current.discount,
       paymentMethods: current.paymentMethods
     });
     return updated !== null;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 };
 
 window.adminUpdateDiscount = function(discountPercent) {
   try {
     const current = window.getPrices();
     const updated = window.savePrices({
-      monthly: current.monthly,
-      yearly: current.yearly,
-      currency: current.currency,
-      discount: {
-        yearly: discountPercent,
-        promo: current.discount.promo
-      },
+      monthly: current.monthly, yearly: current.yearly, currency: current.currency,
+      discount: { yearly: discountPercent, promo: current.discount.promo },
       paymentMethods: current.paymentMethods
     });
     return updated !== null;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 };
 
 window.adminUpdatePaymentMethods = function(methods) {
   try {
-    if (!Array.isArray(methods) || methods.length === 0) {
-      return false;
-    }
+    if (!Array.isArray(methods) || methods.length === 0) return false;
     const current = window.getPrices();
     const updated = window.savePrices({
-      monthly: current.monthly,
-      yearly: current.yearly,
-      currency: current.currency,
-      discount: current.discount,
-      paymentMethods: methods
+      monthly: current.monthly, yearly: current.yearly, currency: current.currency,
+      discount: current.discount, paymentMethods: methods
     });
     return updated !== null;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 };
 
 window.setPaymentMethods = function(methods) {
   try {
     const current = window.getPrices();
     const updated = window.savePrices({
-      monthly: current.monthly,
-      yearly: current.yearly,
-      currency: current.currency,
-      discount: current.discount,
-      paymentMethods: methods
+      monthly: current.monthly, yearly: current.yearly, currency: current.currency,
+      discount: current.discount, paymentMethods: methods
     });
     return updated !== null;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 };
 
-// ============================================================
-// WW_CONFIG OBJESİ - Global erişim için
-// ============================================================
+window.isTurnstileConfigured = function() {
+  return !!(TURNSTILE_SITE_KEY && TURNSTILE_SITE_KEY.indexOf('REPLACE') !== 0);
+};
+
 const WW_CONFIG = {
   SUPABASE_URL: SUPABASE_URL,
   SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
   APP_URL: APP_URL,
   APP_NAME: APP_NAME,
+  TURNSTILE_SITE_KEY: TURNSTILE_SITE_KEY,
   DEFAULT_PRICES: {
     monthly: 9,
     yearly: 79,
     currency: 'USD',
-    discount: {
-      yearly: 27,
-      promo: 0
-    },
+    discount: { yearly: 27, promo: 0 },
     paymentMethods: ['BTC', 'LTC']
   },
   THEME: {
@@ -357,3 +283,4 @@ wwLog.log('🌐 Environment:', typeof process !== 'undefined' && process.env ? '
 wwLog.log('📊 INSTRUMENT_MULTIPLIERS:', window.INSTRUMENT_MULTIPLIERS ? '✅' : '❌');
 wwLog.log('🎯 FEATURES:', window.FEATURES ? '✅' : '❌');
 wwLog.log('🔔 NOTIFICATION_TYPES:', window.NOTIFICATION_TYPES ? '✅' : '❌');
+wwLog.log('🛡️ Turnstile:', window.isTurnstileConfigured() ? '✅' : '⚠️ (not configured)');

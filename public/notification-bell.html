@@ -300,7 +300,14 @@
 <script>
   (function() {
     // ⭐ window.notificationManager zaten src/features/notifications.js'den gelir
-    
+
+    // ⭐ XSS koruması: kullanıcı/kaynak verisini escape et
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      });
+    }
+
     function getTimeAgoSimple(timestamp) {
       const diff = Date.now() - timestamp;
       const seconds = Math.floor(diff / 1000);
@@ -359,14 +366,14 @@
                               n.type === 'premium_upgraded' ? 'success' : 'info';
             
             return `
-              <div class="notif-item" data-id="${n.id}" ${isRead}>
-                <div class="notif-icon ${iconClass}">${n.icon || 'ℹ️'}</div>
+              <div class="notif-item" data-id="${esc(n.id)}" ${isRead}>
+                <div class="notif-icon ${iconClass}">${esc(n.icon) || 'ℹ️'}</div>
                 <div class="notif-content">
-                  <div class="notif-title">${n.title || 'Bildirim'}</div>
-                  <div class="notif-desc">${n.description || ''}</div>
+                  <div class="notif-title">${esc(n.title) || 'Bildirim'}</div>
+                  <div class="notif-desc">${esc(n.description)}</div>
                   <span class="notif-time">${timeAgo}</span>
                 </div>
-                <button class="notif-close" onclick="window.dismissNotification('${n.id}')">✕</button>
+                <button class="notif-close" onclick="window.dismissNotification('${esc(n.id)}')">✕</button>
               </div>
             `;
           }).join('');

@@ -4,6 +4,10 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="en">
 <Fragment slot="head">
   <title>Login – Wawe Journal</title>
+
+  <!-- Cloudflare Turnstile -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer is:inline></script>
+
   <style>
     /* ═══════════════════════════════════════════════════════════════
        RENK DEĞİŞKENLERİ
@@ -33,18 +37,8 @@ import Layout from '../layouts/Layout.astro';
       --font-display: 'Syne', sans-serif;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       GENEL - TAM ORTALAMA
-       ═══════════════════════════════════════════════════════════════ */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
 
     body {
       display: flex;
@@ -57,9 +51,6 @@ import Layout from '../layouts/Layout.astro';
       color-scheme: dark;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       ARKA PLAN - MOR SÜZME
-       ═══════════════════════════════════════════════════════════════ */
     body::before {
       content: '';
       position: fixed;
@@ -72,12 +63,10 @@ import Layout from '../layouts/Layout.astro';
         var(--bg);
       animation: breath 8s ease-in-out infinite alternate;
     }
-
     @keyframes breath {
       0% { opacity: 0.7; transform: scale(1); }
       100% { opacity: 1; transform: scale(1.04); }
     }
-
     body::after {
       content: '';
       position: fixed;
@@ -89,15 +78,11 @@ import Layout from '../layouts/Layout.astro';
       pointer-events: none;
       animation: pulseGlow 12s ease-in-out infinite alternate;
     }
-
     @keyframes pulseGlow {
       0% { opacity: 0.4; }
       100% { opacity: 1; }
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       LOGO - SOL ÜST
-       ═══════════════════════════════════════════════════════════════ */
     .brand-logo {
       position: fixed;
       top: 1.5rem;
@@ -109,11 +94,7 @@ import Layout from '../layouts/Layout.astro';
       text-decoration: none;
       transition: transform 0.3s ease;
     }
-
-    .brand-logo:hover {
-      transform: scale(1.04);
-    }
-
+    .brand-logo:hover { transform: scale(1.04); }
     .brand-logo .logo-icon {
       width: 34px;
       height: 34px;
@@ -125,34 +106,25 @@ import Layout from '../layouts/Layout.astro';
       justify-content: center;
       transition: var(--transition);
     }
-
     .brand-logo:hover .logo-icon {
       border-color: var(--accent);
       background: rgba(124, 109, 250, 0.15);
       box-shadow: 0 0 40px rgba(124, 109, 250, 0.08);
     }
-
     .brand-logo .logo-icon svg {
       width: 17px;
       height: 17px;
       stroke: var(--accent);
       transition: stroke 0.3s ease;
     }
+    .brand-logo:hover .logo-icon svg { stroke: var(--accent2); }
 
-    .brand-logo:hover .logo-icon svg {
-      stroke: var(--accent2);
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       FORM KONTEYNERİ
-       ═══════════════════════════════════════════════════════════════ */
     .auth-wrap {
       width: 100%;
       max-width: 400px;
       margin: 0 auto;
       animation: formIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
-
     @keyframes formIn {
       from { opacity: 0; transform: translateY(20px) scale(0.96); }
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -171,7 +143,6 @@ import Layout from '../layouts/Layout.astro';
         0 0 60px rgba(124, 109, 250, 0.02);
       transition: var(--transition);
     }
-
     .auth-box:hover {
       border-color: rgba(124, 109, 250, 0.12);
       box-shadow:
@@ -180,9 +151,6 @@ import Layout from '../layouts/Layout.astro';
         0 0 80px rgba(124, 109, 250, 0.03);
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       BAŞLIK - BEYAZ VE BELİRGİN
-       ═══════════════════════════════════════════════════════════════ */
     .auth-title {
       font-family: var(--font-display);
       font-size: 1.7rem;
@@ -191,7 +159,6 @@ import Layout from '../layouts/Layout.astro';
       margin-bottom: 0.2rem;
       letter-spacing: -0.03em;
     }
-
     .auth-sub {
       color: var(--text2);
       font-size: 0.9rem;
@@ -199,21 +166,14 @@ import Layout from '../layouts/Layout.astro';
       font-family: var(--font);
       opacity: 0.8;
     }
-
     .auth-sub a {
       color: var(--accent2);
       text-decoration: none;
       font-weight: 600;
       transition: color 0.2s;
     }
+    .auth-sub a:hover { color: var(--accent); }
 
-    .auth-sub a:hover {
-      color: var(--accent);
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       DIVIDER - BEYAZ
-       ═══════════════════════════════════════════════════════════════ */
     .divider {
       display: flex;
       align-items: center;
@@ -224,7 +184,6 @@ import Layout from '../layouts/Layout.astro';
       font-family: var(--font);
       opacity: 0.6;
     }
-
     .divider::before,
     .divider::after {
       content: '';
@@ -233,9 +192,6 @@ import Layout from '../layouts/Layout.astro';
       background: var(--border);
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       GOOGLE BUTONU
-       ═══════════════════════════════════════════════════════════════ */
     .btn-google {
       display: flex;
       align-items: center;
@@ -253,28 +209,15 @@ import Layout from '../layouts/Layout.astro';
       cursor: pointer;
       transition: var(--transition);
     }
-
     .btn-google:hover {
       border-color: var(--accent);
       background: rgba(124, 109, 250, 0.06);
       transform: translateY(-2px);
       box-shadow: 0 8px 32px rgba(124, 109, 250, 0.08);
     }
-
-    .btn-google:active {
-      transform: scale(0.97);
-    }
-
-    .btn-google svg {
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-
-    .btn-google svg path {
-      fill: var(--accent) !important;
-    }
-
+    .btn-google:active { transform: scale(0.97); }
+    .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .btn-google svg path { fill: var(--accent) !important; }
     .btn-google:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -282,13 +225,7 @@ import Layout from '../layouts/Layout.astro';
       box-shadow: none !important;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       FORM ALANLARI - BEYAZ YAZI
-       ═══════════════════════════════════════════════════════════════ */
-    .field {
-      margin-bottom: 1rem;
-    }
-
+    .field { margin-bottom: 1rem; }
     .field label {
       display: block;
       font-size: 11px;
@@ -300,7 +237,6 @@ import Layout from '../layouts/Layout.astro';
       font-family: var(--font-mono);
       opacity: 0.8;
     }
-
     .field input {
       width: 100%;
       background: var(--bg2);
@@ -313,25 +249,14 @@ import Layout from '../layouts/Layout.astro';
       outline: none;
       transition: var(--transition);
     }
-
-    .field input::placeholder {
-      color: var(--muted);
-      opacity: 0.4;
-    }
-
+    .field input::placeholder { color: var(--muted); opacity: 0.4; }
     .field input:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 4px var(--accent-glow), 0 0 0 1px var(--accent);
       background: var(--surface);
     }
+    .field input:hover { border-color: rgba(124, 109, 250, 0.2); }
 
-    .field input:hover {
-      border-color: rgba(124, 109, 250, 0.2);
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       FORGOT PASSWORD - BEYAZ
-       ═══════════════════════════════════════════════════════════════ */
     .forgot-link {
       display: block;
       text-align: right;
@@ -344,15 +269,21 @@ import Layout from '../layouts/Layout.astro';
       transition: var(--transition);
       opacity: 0.6;
     }
+    .forgot-link:hover { opacity: 1; color: var(--accent2); }
 
-    .forgot-link:hover {
-      opacity: 1;
-      color: var(--accent2);
+    /* ⭐ TURNSTILE WIDGET */
+    .turnstile-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0 0.5rem;
+      min-height: 65px;
+    }
+    .turnstile-wrap[data-skip="1"] {
+      display: none;
+      min-height: 0;
+      margin: 0;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       LOGIN BUTONU
-       ═══════════════════════════════════════════════════════════════ */
     .btn-primary {
       width: 100%;
       padding: 0.8rem 1rem;
@@ -368,17 +299,12 @@ import Layout from '../layouts/Layout.astro';
       box-shadow: 0 4px 28px rgba(124, 109, 250, 0.25);
       letter-spacing: 0.03em;
     }
-
     .btn-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 40px rgba(124, 109, 250, 0.35);
       background: linear-gradient(135deg, #8b7cfa, var(--accent));
     }
-
-    .btn-primary:active {
-      transform: scale(0.97);
-    }
-
+    .btn-primary:active { transform: scale(0.97); }
     .btn-primary:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -386,9 +312,6 @@ import Layout from '../layouts/Layout.astro';
       box-shadow: none !important;
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       TOAST - SAĞ ALT
-       ═══════════════════════════════════════════════════════════════ */
     .toast-container {
       position: fixed;
       bottom: 1.5rem;
@@ -401,7 +324,6 @@ import Layout from '../layouts/Layout.astro';
       width: 100%;
       pointer-events: none;
     }
-
     .toast {
       pointer-events: all;
       padding: 0.8rem 1.2rem;
@@ -418,27 +340,10 @@ import Layout from '../layouts/Layout.astro';
       border: 1px solid rgba(255, 255, 255, 0.06);
       backdrop-filter: blur(16px);
     }
-
-    .toast.error {
-      background: rgba(239, 68, 68, 0.92);
-      border-color: rgba(239, 68, 68, 0.2);
-    }
-
-    .toast.success {
-      background: rgba(34, 197, 94, 0.92);
-      border-color: rgba(34, 197, 94, 0.2);
-    }
-
-    .toast.info {
-      background: rgba(124, 109, 250, 0.92);
-      border-color: rgba(124, 109, 250, 0.2);
-    }
-
-    .toast .toast-icon {
-      font-size: 17px;
-      flex-shrink: 0;
-    }
-
+    .toast.error { background: rgba(239, 68, 68, 0.92); border-color: rgba(239, 68, 68, 0.2); }
+    .toast.success { background: rgba(34, 197, 94, 0.92); border-color: rgba(34, 197, 94, 0.2); }
+    .toast.info { background: rgba(124, 109, 250, 0.92); border-color: rgba(124, 109, 250, 0.2); }
+    .toast .toast-icon { font-size: 17px; flex-shrink: 0; }
     .toast .toast-close {
       background: none;
       border: none;
@@ -449,130 +354,46 @@ import Layout from '../layouts/Layout.astro';
       margin-left: auto;
       transition: color 0.2s;
     }
-
-    .toast .toast-close:hover {
-      color: #fff;
-    }
-
+    .toast .toast-close:hover { color: #fff; }
     @keyframes toastIn {
       from { opacity: 0; transform: translateX(30px) scale(0.95); }
       to { opacity: 1; transform: translateX(0) scale(1); }
     }
-
-    .toast.hide {
-      animation: toastOut 0.3s ease both;
-    }
-
+    .toast.hide { animation: toastOut 0.3s ease both; }
     @keyframes toastOut {
       from { opacity: 1; transform: translateX(0) scale(1); }
       to { opacity: 0; transform: translateX(30px) scale(0.95); }
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       RESPONSIVE
-       ═══════════════════════════════════════════════════════════════ */
     @media (max-width: 600px) {
-      body {
-        padding: 1rem;
-      }
-
-      .auth-box {
-        padding: 1.75rem 1.5rem;
-      }
-
-      .auth-title {
-        font-size: 1.4rem;
-      }
-
-      .auth-sub {
-        font-size: 0.85rem;
-      }
-
-      .brand-logo {
-        top: 1rem;
-        left: 1rem;
-      }
-
-      .brand-logo .logo-icon {
-        width: 30px;
-        height: 30px;
-      }
-
-      .brand-logo .logo-icon svg {
-        width: 15px;
-        height: 15px;
-      }
-
-      .auth-wrap {
-        max-width: 100%;
-      }
-
-      .field input {
-        padding: 0.65rem 0.85rem;
-        font-size: 13px;
-      }
-
-      .btn-google {
-        padding: 0.65rem 0.9rem;
-        font-size: 13px;
-      }
-
-      .btn-primary {
-        padding: 0.7rem 0.9rem;
-        font-size: 14px;
-      }
-
-      .toast-container {
-        bottom: 1rem;
-        right: 1rem;
-        max-width: calc(100% - 2rem);
-      }
+      body { padding: 1rem; }
+      .auth-box { padding: 1.75rem 1.5rem; }
+      .auth-title { font-size: 1.4rem; }
+      .auth-sub { font-size: 0.85rem; }
+      .brand-logo { top: 1rem; left: 1rem; }
+      .brand-logo .logo-icon { width: 30px; height: 30px; }
+      .brand-logo .logo-icon svg { width: 15px; height: 15px; }
+      .auth-wrap { max-width: 100%; }
+      .field input { padding: 0.65rem 0.85rem; font-size: 13px; }
+      .btn-google { padding: 0.65rem 0.9rem; font-size: 13px; }
+      .btn-primary { padding: 0.7rem 0.9rem; font-size: 14px; }
+      .toast-container { bottom: 1rem; right: 1rem; max-width: calc(100% - 2rem); }
     }
-
     @media (max-width: 400px) {
-      .auth-box {
-        padding: 1.5rem 1.15rem;
-      }
-
-      .auth-title {
-        font-size: 1.2rem;
-      }
-
-      .btn-google {
-        font-size: 12px;
-        padding: 0.6rem 0.8rem;
-      }
-
-      .btn-primary {
-        font-size: 13px;
-        padding: 0.65rem 0.8rem;
-      }
-
-      .brand-logo {
-        top: 0.75rem;
-        left: 0.75rem;
-      }
-
-      .brand-logo .logo-icon {
-        width: 26px;
-        height: 26px;
-      }
-
-      .brand-logo .logo-icon svg {
-        width: 13px;
-        height: 13px;
-      }
+      .auth-box { padding: 1.5rem 1.15rem; }
+      .auth-title { font-size: 1.2rem; }
+      .btn-google { font-size: 12px; padding: 0.6rem 0.8rem; }
+      .btn-primary { font-size: 13px; padding: 0.65rem 0.8rem; }
+      .brand-logo { top: 0.75rem; left: 0.75rem; }
+      .brand-logo .logo-icon { width: 26px; height: 26px; }
+      .brand-logo .logo-icon svg { width: 13px; height: 13px; }
     }
-
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
   </style>
 </Fragment>
-  <!-- ═══════════════════════════════════════════════════════════════
-       LOGO
-       ═══════════════════════════════════════════════════════════════ -->
   <a href="index.html" class="brand-logo">
     <div class="logo-icon">
       <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
@@ -581,15 +402,11 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </a>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       FORM
-       ═══════════════════════════════════════════════════════════════ -->
   <div class="auth-wrap">
     <div class="auth-box">
       <h1 class="auth-title">Welcome Back</h1>
       <p class="auth-sub">Don't have an account? <a href="register.html">Sign up</a></p>
 
-      <!-- Google -->
       <button class="btn-google" id="google-login-btn">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#7c6dfa"/>
@@ -614,33 +431,83 @@ import Layout from '../layouts/Layout.astro';
 
       <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
 
+      <!-- Turnstile widget -->
+      <div class="turnstile-wrap" id="turnstile-container"></div>
+
       <button class="btn-primary" id="login-btn">Login</button>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       TOAST
-       ═══════════════════════════════════════════════════════════════ -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- ============================================================
-       ⭐ SCRIPTS - GÜNCELLENDİ
-       ============================================================ -->
-  
-  <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  
-  <!-- 2. CORE KONFİG (ES5) -->
   <script src="/config.js" is:inline></script>
-  
-  <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
   <script type="module" src="/src/script.js" is:inline></script>
-  
-  <!-- 4. ⭐ SAYFA BAŞLATICI -->
+
   <script is:inline>
-    // showToast zaten script.js'den window'a atanıyor
-    // isValidEmail zaten script.js'den window'a atanıyor
-    
+    // ─── Turnstile init ─────────────────────────────────────
+    var turnstileWidgetId = null;
+
+    window.onTurnstileSuccess = function () {};
+    window.onTurnstileExpired = function () {};
+
+    (function initTurnstile() {
+      function tryRender() {
+        var cfg = window.WW_CONFIG || {};
+        var siteKey = cfg.TURNSTILE_SITE_KEY || '';
+        var container = document.getElementById('turnstile-container');
+        if (!container) return;
+
+        // Konfigüre edilmemişse widget'ı gizle
+        if (!siteKey || siteKey.indexOf('REPLACE') === 0) {
+          container.setAttribute('data-skip', '1');
+          wwLog && wwLog.warn && wwLog.warn('⚠️ Turnstile site key not configured');
+          return;
+        }
+
+        if (typeof window.turnstile === 'undefined' || typeof window.turnstile.render !== 'function') {
+          setTimeout(tryRender, 150);
+          return;
+        }
+
+        try {
+          turnstileWidgetId = window.turnstile.render(container, {
+            sitekey: siteKey,
+            theme: 'dark',
+            size: 'flexible',
+            callback: window.onTurnstileSuccess,
+            'expired-callback': window.onTurnstileExpired,
+            'error-callback': window.onTurnstileExpired,
+          });
+        } catch (e) {
+          wwLog && wwLog.warn && wwLog.warn('Turnstile render error:', e);
+        }
+      }
+      tryRender();
+    })();
+
+    function getTurnstileToken() {
+      try {
+        if (window.turnstile && turnstileWidgetId !== null && window.turnstile.getResponse) {
+          return window.turnstile.getResponse(turnstileWidgetId) || '';
+        }
+      } catch (e) {}
+      return '';
+    }
+
+    function resetTurnstile() {
+      try {
+        if (window.turnstile && turnstileWidgetId !== null) {
+          window.turnstile.reset(turnstileWidgetId);
+        }
+      } catch (e) {}
+    }
+
+    function isTurnstileRequired() {
+      return typeof window.isTurnstileConfigured === 'function' && window.isTurnstileConfigured();
+    }
+
+    // ─── Yardımcılar ────────────────────────────────────────
     function hasTurkishChars(str) {
       return /[ığüşöçİĞÜŞÖÇ]/.test(str);
     }
@@ -654,46 +521,23 @@ import Layout from '../layouts/Layout.astro';
         </svg>
         Redirecting to Google...
       `;
-
       try {
-        const { data, error } = await sb.auth.signInWithOAuth({
+        const { error } = await sb.auth.signInWithOAuth({
           provider: 'google',
           options: {
             redirectTo: window.location.origin + '/dashboard.html',
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            }
+            queryParams: { access_type: 'offline', prompt: 'consent' }
           }
         });
-
         if (error) {
-          console.error('Google login error:', error);
           window.showToast('Google login failed. Please try again.', 'error');
           btn.disabled = false;
-          btn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#7c6dfa"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#7c6dfa"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#7c6dfa"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#7c6dfa"/>
-            </svg>
-            Continue with Google
-          `;
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#7c6dfa"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#7c6dfa"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#7c6dfa"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#7c6dfa"/></svg>Continue with Google`;
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
         window.showToast('An unexpected error occurred. Please try again.', 'error');
         btn.disabled = false;
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#7c6dfa"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#7c6dfa"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#7c6dfa"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#7c6dfa"/>
-          </svg>
-          Continue with Google
-        `;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#7c6dfa"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#7c6dfa"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#7c6dfa"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#7c6dfa"/></svg>Continue with Google`;
       }
     }
 
@@ -714,14 +558,19 @@ import Layout from '../layouts/Layout.astro';
         window.showToast('Email and password are required.', 'error');
         return;
       }
-
       if (hasTurkishChars(email)) {
         window.showToast('Email cannot contain Turkish characters.', 'error');
         return;
       }
-
       if (!window.isValidEmail(email)) {
         window.showToast('Please enter a valid email address.', 'error');
+        return;
+      }
+
+      // Turnstile token
+      var turnstileToken = getTurnstileToken();
+      if (isTurnstileRequired() && !turnstileToken) {
+        window.showToast('Please complete the verification.', 'error');
         return;
       }
 
@@ -729,31 +578,55 @@ import Layout from '../layouts/Layout.astro';
       btn.disabled = true;
       btn.textContent = 'Logging in…';
 
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      try {
+        const res = await fetch(
+          window.WW_CONFIG.SUPABASE_URL + '/functions/v1/verify-auth',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': window.WW_CONFIG.SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ action: 'login', email, password, turnstileToken }),
+          }
+        );
 
-      if (error) {
-        window.showToast('Invalid email or password.', 'error');
+        const result = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (res.status === 429) {
+            window.showToast('Too many attempts. Please try again in 15 minutes.', 'error');
+          } else if (res.status === 401) {
+            window.showToast('Invalid email or password.', 'error');
+          } else if (res.status === 403) {
+            window.showToast('Your account has been deactivated.', 'error');
+          } else if (res.status === 400 && result.error && result.error.indexOf('Verification') !== -1) {
+            window.showToast('Verification failed. Please try again.', 'error');
+          } else {
+            window.showToast(result.error || 'Login failed. Please try again.', 'error');
+          }
+          resetTurnstile();
+          btn.disabled = false;
+          btn.textContent = 'Login';
+          return;
+        }
+
+        // Session'ı client'a yükle
+        await sb.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.refresh_token,
+        });
+
+        window.showToast('Welcome back! 🎉', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+
+      } catch (err) {
+        console.error('Login error:', err);
+        window.showToast('Network error. Please try again.', 'error');
+        resetTurnstile();
         btn.disabled = false;
         btn.textContent = 'Login';
-        return;
       }
-
-      const { data: profile, error: profileError } = await sb
-        .from('user_profiles')
-        .select('is_active')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError || !profile || profile.is_active === false) {
-        await sb.auth.signOut();
-        window.showToast('Your account has been deactivated.', 'error');
-        btn.disabled = false;
-        btn.textContent = 'Login';
-        return;
-      }
-
-      window.showToast('Welcome back! 🎉', 'success');
-      setTimeout(() => window.location.href = 'dashboard.html', 800);
     });
 
     document.addEventListener('keydown', e => {

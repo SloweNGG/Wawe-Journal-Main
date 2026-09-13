@@ -501,6 +501,16 @@ export default {
   "login.error_invalid_email": "Please enter a valid email address.",
   "login.error_wrong_credentials": "Invalid email or password.",
   "login.error_account_disabled": "Your account has been deactivated.",
+    "auth.too_many_attempts": "Too many attempts. Please try again later.",
+  "auth.verification_required": "Please complete the verification.",
+  "auth.verification_failed": "Verification failed. Please try again.",
+  "auth.network_error": "Network error. Please try again.",
+  "auth.email_taken": "This email is already registered.",
+  "auth.username_taken": "This username is already taken.",
+  "auth.register_success": "Registration successful! You can now log in.",
+  "auth.register_failed": "Registration failed. Please try again.",
+  "auth.account_deactivated": "Your account has been deactivated.",
+  "auth.generic_login_error": "Login failed. Please try again.",
 
   // Register
   "register.title": "Create Account",

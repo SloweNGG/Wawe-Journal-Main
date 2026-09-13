@@ -196,6 +196,20 @@ async function saveReference() {
   var imageEl = document.getElementById('ref-image');
   var imageUrl = imageEl ? imageEl.value : '';
   
+  // ⭐ XSS/URL INJECTION KORUMASI - sadece http(s) URL kabul et
+  var urlFields = ['instagram', 'twitter', 'youtube', 'linkedin'];
+  for (var ui = 0; ui < urlFields.length; ui++) {
+    var fieldId = 'ref-' + urlFields[ui];
+    var el = document.getElementById(fieldId);
+    if (el) {
+      var v = el.value.trim();
+      if (v && !/^https?:\/\//i.test(v)) {
+        showToast('Sadece http(s) URL kabul edilir: ' + urlFields[ui], 'error');
+        return;
+      }
+    }
+  }
+  
   if (adminState.currentImageFile) {
     var url = await uploadImage(adminState.currentImageFile);
     if (url) imageUrl = url;

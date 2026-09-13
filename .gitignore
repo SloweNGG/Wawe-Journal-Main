@@ -1,6 +1,25 @@
-Add-Content .gitignore "node_modules/"
-node_modules
+# Environment
+.env
+.env.*
+!.env.example
 
+# Dependencies
 node_modules/
+
+# Build
 dist/
 .astro/
+.wrangler/
+.next/
+build/
+
+# Supabase
+supabase/.temp/
+
+# OS / IDE / Logs
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+

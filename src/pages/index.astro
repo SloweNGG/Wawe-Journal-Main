@@ -3,316 +3,64 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en">
 <Fragment slot="head">
-  <!-- LANDING PAGE FONTS -->
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-
-  <!-- ============================================================
-  SEO - TEMEL
-  ============================================================ -->
   <title>Wawe Journal - Professional Trading Journal for Traders</title>
-  <meta name="description" content="Every great trader has a story. Wawe Journal helps you write yours. Log your trades, visualize your performance, and discover the strategies that actually work. Your trading destiny is in your hands...." />
+  <meta name="description" content="Every great trader has a story. Wawe Journal helps you write yours." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://wawejournal.com/" />
-
-  <!-- ============================================================
-  OPEN GRAPH - Social Media
-  ============================================================ -->
   <meta property="og:title" content="Wawe Journal - Professional Trading Journal" />
-  <meta property="og:description" content="Track your trades, analyze your performance, and build discipline. Free trading journal with premium features." />
+  <meta property="og:description" content="Track your trades, analyze your performance, and build discipline." />
   <meta property="og:url" content="https://wawejournal.com/" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://wawejournal.com/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Wawe Journal" />
-
-  <!-- ============================================================
-  TWITTER CARD
-  ============================================================ -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Wawe Journal - Professional Trading Journal" />
-  <meta name="twitter:description" content="Track your trades, analyze your performance, and build discipline. Free trading journal with premium features." />
+  <meta name="twitter:description" content="Track your trades, analyze your performance, and build discipline." />
   <meta name="twitter:image" content="https://wawejournal.com/og-image.jpg" />
   <meta name="twitter:site" content="@wawejournal" />
-
-  <!-- ============================================================
-  THEME & PWA
-  ============================================================ -->
   <meta name="theme-color" content="#7c6dfa" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Wawe Journal" />
-
-  <!-- ============================================================
-  FAVICON & MANIFEST
-  ============================================================ -->
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
 
-  <!-- ============================================================
-  FONTS
-  ============================================================ -->
-
-  <!-- ============================================================
-  ⭐ STYLES - SIRALAMA ÖNEMLİ
-  ============================================================ -->
-  <!-- 1. ÖNCE styles.css (TÜM değişkenleri içerir) -->
-  <!-- 2. SONRA index.css (Landing'e özel stiller) -->
   <link rel="stylesheet" href="/index.css" />
 
-  <!-- ============================================================
-  JSON-LD Structured Data
-  ============================================================ -->
   <script type="application/ld+json" is:inline>
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Wawe Journal",
-    "description": "Professional Trading Journal for Traders. Track trades, analyze performance, and build discipline.",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Web",
     "url": "https://wawejournal.com",
-    "author": {
-      "@type": "Organization",
-      "name": "WaweDev Inc"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
+    "author": { "@type": "Organization", "name": "WaweDev Inc" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
   }
   </script>
 
-  <!-- ============================================================
-  EXTRA STYLES (Sadece gerekli olanlar)
-  ⭐ Plan kartı stilleri index.css'e taşındı.
-  ============================================================ -->
   <style>
-    /* ─── RESET & BASE ─── */
-    * {
-      box-sizing: border-box;
-    }
-    html, body {
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-    img, svg, canvas {
-      max-width: 100%;
-    }
-
-    /* ─── PSYCHOLOGY SECTION ─── */
-    .psych-section {
-      text-align: center;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 1rem 1rem;
-    }
-    .psych-quote {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.5rem;
-      line-height: 1.5;
-      color: var(--text);
-      margin-bottom: 1rem;
-      font-weight: 500;
-      letter-spacing: -0.3px;
-    }
-    .psych-quote::before {
-      content: '"';
-      font-size: 2rem;
-      color: var(--accent);
-      opacity: 0.4;
-      margin-right: 4px;
-    }
-    .psych-quote::after {
-      content: '"';
-      font-size: 2rem;
-      color: var(--accent);
-      opacity: 0.4;
-      margin-left: 4px;
-      vertical-align: top;
-    }
-    .psych-author {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: var(--accent);
-      letter-spacing: 1px;
-    }
-
-    /* ─── LANGUAGE SELECTOR ─── */
-    .lang-selector {
-      position: relative;
-      margin-left: 0.5rem;
-    }
-    .lang-current {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 40px;
-      padding: 0.4rem 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      backdrop-filter: blur(4px);
-    }
-    .lang-current:hover {
-      background: var(--accent-glow);
-      border-color: var(--accent);
-    }
-    .lang-current-flag {
-      font-size: 1rem;
-    }
-    .lang-current-text {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-    .lang-current-arrow {
-      font-size: 0.6rem;
-      color: var(--muted);
-      transition: transform 0.2s;
-    }
-    .lang-dropdown {
-      position: absolute;
-      top: 48px;
-      right: 0;
-      background: var(--surface2);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      min-width: 130px;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-10px);
-      transition: all 0.2s ease;
-      z-index: 300;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-    .lang-dropdown.show {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-    .lang-option {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.6rem 1rem;
-      cursor: pointer;
-      transition: background 0.15s;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-    .lang-option:hover {
-      background: var(--accent-glow);
-    }
-    .lang-option.active {
-      background: rgba(139,92,246,0.15);
-      color: var(--accent);
-    }
-    .lang-option-flag {
-      font-size: 1rem;
-    }
-    .lang-option-name {
-      flex: 1;
-    }
-    .lang-option-check {
-      font-size: 0.7rem;
-      color: var(--accent);
-    }
-
-    /* ─── NAV ─── */
-    .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-left: auto;
-      margin-right: 0.5rem;
-    }
-
-    /* ─── RESPONSIVE ─── */
-    @media (max-width: 768px) {
-      .nav-links .btn-login,
-      .nav-links .btn-register {
-        display: none;
-      }
-      .lang-current-text {
-        display: none;
-      }
-      .lang-current {
-        padding: 0.4rem 0.6rem;
-      }
-      .psych-quote {
-        font-size: 1.15rem;
-      }
-      .psych-author {
-        font-size: 0.75rem;
-      }
-    }
-    @media (min-width: 769px) {
-      .lang-current-text {
-        display: inline;
-      }
-    }
-    @media (max-width: 600px) {
-      .section-desc {
-        padding: 0 0.5rem;
-      }
-      .psych-section {
-        padding: 1rem 0.75rem;
-      }
-      .psych-quote {
-        font-size: 1rem;
-        line-height: 1.45;
-      }
-      .lang-selector {
-        margin-left: 0.25rem;
-      }
-      .lang-current {
-        padding: 0.35rem 0.5rem;
-      }
-      .nav {
-        padding: 0.75rem 1rem;
-      }
-      #payment-methods-note {
-        padding: 0 0.5rem;
-        line-height: 1.5;
-      }
-    }
-    @media (max-width: 400px) {
-      .psych-quote {
-        font-size: 0.9rem;
-      }
-    }
+    * { box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
   </style>
 </Fragment>
-  <!-- ⭐ STARS BACKGROUND -->
-  <canvas id="stars-canvas"></canvas>
 
-  <!-- ⭐ NAVIGATION -->
+  <!-- ═══ NAV ═══ -->
   <nav class="nav">
     <a href="index.html" class="nav-logo">
-      <div class="logo-icon">
-        <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
-          <polyline points="2,16 7,9 12,13 19,4" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      Wawe<span>Journal</span>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <polyline points="2,16 7,9 12,13 19,4" stroke="#8b5cf6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Wawe<span class="logo-accent">Journal</span></span>
     </a>
 
     <div class="nav-links">
+      <a href="#pricing" class="nav-link" data-i18n="nav.pricing">Pricing</a>
       <a href="login.html" class="btn-login" data-i18n="nav.login">Login</a>
       <a href="register.html" class="btn-register" data-i18n="nav.register">Sign Up →</a>
     </div>
@@ -320,65 +68,53 @@ import Layout from '../layouts/Layout.astro';
     <div class="lang-selector" id="lang-selector">
       <div class="lang-current" id="lang-current">
         <span class="lang-current-flag">🇬🇧</span>
-        <span class="lang-current-text">English</span>
         <span class="lang-current-arrow">▼</span>
       </div>
       <div class="lang-dropdown" id="lang-dropdown">
-        <div class="lang-option" data-lang="tr" data-flag="🇹🇷" data-name="Türkçe">
-          <span class="lang-option-flag">🇹🇷</span>
-          <span class="lang-option-name">Türkçe</span>
-          <span class="lang-option-check"></span>
+        <div class="lang-option" data-lang="tr" data-flag="🇹🇷">
+          <span class="lang-option-flag">🇹🇷</span><span class="lang-option-check"></span>
         </div>
-        <div class="lang-option" data-lang="en" data-flag="🇬🇧" data-name="English">
-          <span class="lang-option-flag">🇬🇧</span>
-          <span class="lang-option-name">English</span>
-          <span class="lang-option-check">✓</span>
+        <div class="lang-option active" data-lang="en" data-flag="🇬🇧">
+          <span class="lang-option-flag">🇬🇧</span><span class="lang-option-check">✓</span>
         </div>
-        <div class="lang-option" data-lang="de" data-flag="🇩🇪" data-name="Deutsch">
-          <span class="lang-option-flag">🇩🇪</span>
-          <span class="lang-option-name">Deutsch</span>
-          <span class="lang-option-check"></span>
+        <div class="lang-option" data-lang="de" data-flag="🇩🇪">
+          <span class="lang-option-flag">🇩🇪</span><span class="lang-option-check"></span>
         </div>
       </div>
     </div>
 
-    <button class="hamburger" id="hamburger">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
   </nav>
 
-  <!-- ⭐ MOBILE MENU -->
   <div class="mobile-menu" id="mobile-menu">
-    <a href="strategies.html" data-i18n="nav.strategies">Strategies</a>
+    <a href="#pricing" data-i18n="nav.pricing">Pricing</a>
     <a href="login.html" data-i18n="nav.login">Login</a>
     <a href="register.html" class="btn-register-mobile" data-i18n="nav.register">Sign Up →</a>
   </div>
   <div class="menu-overlay" id="menu-overlay"></div>
 
-  <!-- ⭐ HERO SECTION -->
+  <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="hero-left">
-      <div class="hero-badge">
-        <div class="badge-dot"></div>
-        <span data-i18n="hero.badge">More than just a journal.</span>
+      <div class="hero-beta-badge">
+        <span class="beta-dot"></span>
+        <span data-i18n="hero.beta">BETA</span>
       </div>
 
       <h1>
-        <span class="l1" data-i18n="hero.line1">DISCIPLINED</span>
-        <span class="l2" data-i18n="hero.line2">TRADE.</span>
-        <span class="l3" data-i18n="hero.line3">WIN. GROW.</span>
+        <span class="l1" data-i18n="hero.title">Stop guessing which trades work.</span>
       </h1>
 
       <p class="hero-sub" data-i18n="hero.subtitle">
-        Wawe Journal is the professional trading journal where you log every trade, track your performance, and build discipline.
+        Log every trade, see your real edge, and drop the strategies that only feel right. Your data, your discipline.
       </p>
 
       <div class="hero-actions">
         <a href="register.html" class="btn-primary" data-i18n="hero.start_free">Start Free →</a>
         <a href="login.html" class="btn-ghost" data-i18n="hero.login">Login</a>
       </div>
+
+      <div class="hero-note" data-i18n="hero.note">Analyze beyond the standards.</div>
     </div>
 
     <div class="hero-chart-wrap">
@@ -398,259 +134,234 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <div class="hero-stats">
-      <div class="hstat">
-        <div class="hstat-val" id="stat-total-users">—</div>
-        <div class="hstat-label" data-i18n="stats.total_users">Total Users</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-val" id="stat-total-trades">—</div>
-        <div class="hstat-label" data-i18n="stats.total_trades">Trades Logged</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-val" id="stat-today-users">—</div>
-        <div class="hstat-label" data-i18n="stats.today_users">New Today</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-val" id="stat-today-trades">—</div>
-        <div class="hstat-label" data-i18n="stats.today_trades">Trades Today</div>
-      </div>
+      <div class="hstat"><div class="hstat-val" id="stat-total-users">—</div><div class="hstat-label" data-i18n="stats.total_users">Total Users</div></div>
+      <div class="hstat"><div class="hstat-val" id="stat-total-trades">—</div><div class="hstat-label" data-i18n="stats.total_trades">Trades Logged</div></div>
+      <div class="hstat"><div class="hstat-val" id="stat-today-users">—</div><div class="hstat-label" data-i18n="stats.today_users">New Today</div></div>
+      <div class="hstat"><div class="hstat-val" id="stat-today-trades">—</div><div class="hstat-label" data-i18n="stats.today_trades">Trades Today</div></div>
     </div>
   </section>
 
-  <!-- ⭐ DASHBOARD MOCKUP SHOWCASE (macOS window) -->
-  <div class="mockup-section reveal">
-    <div class="mockup-section-inner">
-      <div class="mockup-glow"></div>
-      <div class="macos-mockup">
-        <div class="macos-mockup-bar">
-          <div class="macos-dots">
-            <span class="dot dot-red"></span>
-            <span class="dot dot-yellow"></span>
-            <span class="dot dot-green"></span>
-          </div>
-          <div class="macos-url-bar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <span class="url-text">app.wawejournal.com/dashboard</span>
-          </div>
-        </div>
-        <div class="macos-mockup-screen">
-          <div class="mockup-skeleton" id="mockup-skeleton">
-            <div class="spinner"></div>
-          </div>
-          <img id="dashboard-mockup-img" alt="Wawe Journal Dashboard" style="display:none;" />
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="glow-line"></div>
 
-  <!-- ⭐ PSYCHOLOGY QUOTE -->
-  <div class="section reveal" style="padding: 3rem 2rem;">
-    <div class="psych-section">
-      <div class="psych-quote" id="quote-text"></div>
-      <div class="psych-author" id="quote-author"></div>
-    </div>
-  </div>
-
-  <div class="glow-line"></div>
-
-  <!-- ⭐ FEATURES -->
+  <!-- ═══ 01 AI ═══ -->
   <div class="section reveal">
-    <div class="section-tag" data-i18n="features.tag">Features</div>
-    <h2 class="section-title" data-i18n-html="features.title">The <em>Trader's</em> Edge</h2>
-    <p class="section-desc" data-i18n="features.desc">Designed not just to log — but to understand, improve, and outperform.</p>
-
-    <div class="features-grid">
-      <div class="feat-card">
-        <div class="feat-num">01</div>
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-          </svg>
-        </div>
-        <h3 data-i18n="feature.trade_log.title">Trade Log</h3>
-        <p data-i18n="feature.trade_log.desc">Document the full story of every trade in seconds.</p>
+    <div class="nsection">
+      <div class="ntext">
+        <div class="ntag" data-i18n="ai.tag">01 — AI-powered analysis</div>
+        <h2 class="section-title" data-i18n="ai.title">It reads your journal so you don't have to.</h2>
+        <p class="section-desc" data-i18n="ai.desc">Wawe scans your logged trades and surfaces the patterns you'd otherwise miss.</p>
       </div>
-      <div class="feat-card">
-        <div class="feat-num">02</div>
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"/>
-            <line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-        </div>
-        <h3 data-i18n="feature.dashboard.title">Live Dashboard</h3>
-        <p data-i18n="feature.dashboard.desc">Win rate, average R, and drawdown at a glance.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-num">03</div>
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="13 2 13 7 18 7"/>
-            <path d="M3 8v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8"/>
-            <path d="M3 8h18"/>
-          </svg>
-        </div>
-        <h3 data-i18n="feature.fast.title">Fast & Professional</h3>
-        <p data-i18n="feature.fast.desc">Just you and your trades. Focus, log, analyze.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-num">04</div>
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            <polyline points="3.29 7 12 12 20.71 7"/>
-            <line x1="12" y1="22" x2="12" y2="12"/>
-          </svg>
-        </div>
-        <h3 data-i18n="feature.strategy.title">Strategy Analytics</h3>
-        <p data-i18n="feature.strategy.desc">See which strategies are most profitable at a glance.</p>
+      <div class="nmock">
+        <div class="ai-msg"><div class="ai-dot">AI</div><div class="ai-text" data-i18n="ai.msg1">Your Thursday short trades close at a loss 71% of the time.</div></div>
+        <div class="ai-msg"><div class="ai-dot">AI</div><div class="ai-text" data-i18n="ai.msg2">Your breakout strategy has been your most consistent setup over the last 30 days.</div></div>
+        <div class="ai-msg"><div class="ai-dot">AI</div><div class="ai-text" data-i18n="ai.msg3">When a position stays open over 2 hours, your win rate drops by 18%.</div></div>
+        <div class="ai-soon"><span class="ai-soon-dot"></span><span data-i18n="ai.coming">Wawe AI chatbot — Coming soon</span></div>
       </div>
     </div>
   </div>
 
   <div class="glow-line"></div>
 
-  <!-- ⭐ PRICING -->
-  <div class="section reveal plans-section">
+  <!-- ═══ 02 STRATEGY ═══ -->
+  <div class="section reveal">
+    <div class="nsection reverse">
+      <div class="ntext">
+        <div class="ntag" data-i18n="strategy.tag">02 — Strategy analytics</div>
+        <h2 class="section-title" data-i18n="strategy.title">See which strategy is actually making money.</h2>
+        <p class="section-desc" data-i18n="strategy.desc">Tag every trade with its strategy, then compare win rate, R-multiple and volume side by side.</p>
+      </div>
+      <div class="nmock">
+        <div class="sa-wrap">
+          <div class="sa-donut"></div>
+          <div class="sa-bars">
+            <div class="sa-row"><span class="name">breakout</span><div class="sa-track"><div class="sa-fill" style="width:82%;background:var(--accent)"></div></div><span class="sa-pct">82%</span></div>
+            <div class="sa-row"><span class="name">pullback</span><div class="sa-track"><div class="sa-fill" style="width:61%;background:var(--accent2)"></div></div><span class="sa-pct">61%</span></div>
+            <div class="sa-row"><span class="name">news-fade</span><div class="sa-track"><div class="sa-fill" style="width:34%;background:var(--border)"></div></div><span class="sa-pct">34%</span></div>
+          </div>
+        </div>
+        <div class="sa-legend">
+          <span><i style="background:var(--accent)"></i><span data-i18n="strategy.breakout">Breakout</span> · 46%</span>
+          <span><i style="background:var(--accent2)"></i><span data-i18n="strategy.pullback">Pullback</span> · 32%</span>
+          <span><i style="background:var(--border)"></i><span data-i18n="strategy.news_fade">News-fade</span> · 22%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- ═══ 03 CALENDAR ═══ -->
+  <div class="section reveal">
+    <div class="nsection">
+      <div class="ntext">
+        <div class="ntag" data-i18n="cal.tag">03 — Calendar & consistency</div>
+        <h2 class="section-title" data-i18n="cal.title">Discipline shows up as a pattern, not a mood.</h2>
+        <p class="section-desc" data-i18n="cal.desc">A week at a glance — win days, loss days, and the days you didn't trade at all.</p>
+      </div>
+      <div class="nmock">
+        <div class="mock-cal">
+          <div class="mock-cal-day win"><div class="n" data-i18n="cal.mon">Mon</div><div class="p">+2.1%</div></div>
+          <div class="mock-cal-day loss"><div class="n" data-i18n="cal.tue">Tue</div><div class="p">−0.6%</div></div>
+          <div class="mock-cal-day win"><div class="n" data-i18n="cal.wed">Wed</div><div class="p">+1.4%</div></div>
+          <div class="mock-cal-day win"><div class="n" data-i18n="cal.thu">Thu</div><div class="p">+0.9%</div></div>
+          <div class="mock-cal-day loss"><div class="n" data-i18n="cal.fri">Fri</div><div class="p">−1.1%</div></div>
+          <div class="mock-cal-day"><div class="n" data-i18n="cal.sat">Sat</div><div class="p">—</div></div>
+          <div class="mock-cal-day"><div class="n" data-i18n="cal.sun">Sun</div><div class="p">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- ═══ COMPARISON ═══ -->
+  <div class="section reveal">
+    <div class="section-tag" data-i18n="cmp.tag">Comparison</div>
+    <h2 class="section-title" data-i18n="cmp.title">How Wawe Journal compares</h2>
+    <p class="section-desc" data-i18n="cmp.desc">Public pricing and feature info as of 2026 — verify before deciding.</p>
+    <div class="cmp-grid">
+      <div class="cmp-card us">
+        <div class="cmp-name" data-i18n="cmp.us.name">Wawe Journal</div>
+        <div class="cmp-sub" data-i18n="cmp.us.sub">Premium</div>
+        <div class="cmp-price us">$9<span>/mo</span></div>
+        <ul class="cmp-rows">
+          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v">1,000 / journal</span></li>
+          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
+          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 20 charts</span></li>
+          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v mid" data-i18n="cmp.rows.coming">Yes (Coming soon)</span></li>
+          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v mid" data-i18n="cmp.rows.coming">Yes (Coming soon)</span></li>
+        </ul>
+      </div>
+      <div class="cmp-card">
+        <div class="cmp-name" data-i18n="cmp.tz.name">TradeZella</div>
+        <div class="cmp-sub" data-i18n="cmp.tz.sub">Essential</div>
+        <div class="cmp-price">$35<span>/mo</span></div>
+        <ul class="cmp-rows">
+          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v neg" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
+          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
+          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 300+ reports</span></li>
+          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v pos">Yes (Zella AI)</span></li>
+          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v neg" data-i18n="cmp.rows.pro_only">Pro plan only</span></li>
+        </ul>
+      </div>
+      <div class="cmp-card">
+        <div class="cmp-name" data-i18n="cmp.ew.name">Edgewonk</div>
+        <div class="cmp-sub" data-i18n="cmp.ew.sub">Single plan</div>
+        <div class="cmp-price">~$16<span>/mo</span></div>
+        <ul class="cmp-rows">
+          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v neg" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
+          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos">Yes (Checklist)</span></li>
+          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 17 charts</span></li>
+          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v neg" data-i18n="cmp.rows.partial">Partial</span></li>
+          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v neg" data-i18n="cmp.rows.no">No</span></li>
+        </ul>
+      </div>
+      <div class="cmp-card">
+        <div class="cmp-name" data-i18n="cmp.ts.name">TraderSync</div>
+        <div class="cmp-sub" data-i18n="cmp.ts.sub">Pro</div>
+        <div class="cmp-price">$29.95<span>/mo</span></div>
+        <ul class="cmp-rows">
+          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v neg" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
+          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
+          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
+          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v neg" data-i18n="cmp.rows.limited">Limited · 5 msgs/day</span></li>
+          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="cmp-foot" data-i18n="cmp.foot">Source: providers' public pricing pages, 2026. Prices and content may change.</p>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- ═══ FEATURES ═══ -->
+  <div class="section reveal" id="features-detail">
+    <div class="section-tag" data-i18n="features.tag">Features</div>
+    <h2 class="section-title" data-i18n-html="features.title">Built around one <em>habit</em>: writing it down.</h2>
+    <p class="section-desc" data-i18n="features.desc">Spend less time reconstructing what happened and more time recognizing what works.</p>
+
+    <div class="bgrid">
+      <div class="bcell"><div class="bnum">01</div><h3 data-i18n="features.c1.t">Fast trade entry</h3><p data-i18n="features.c1.d">Log trades in detail, fast.</p></div>
+      <div class="bcell"><div class="bnum">02</div><h3 data-i18n="features.c2.t">Advanced metrics</h3><p data-i18n="features.c2.d">Sharpe ratio, profit factor, and deeper stats.</p></div>
+      <div class="bcell"><div class="bnum">03</div><h3 data-i18n="features.c3.t">Find winning strategies</h3><p data-i18n="features.c3.d">Let charts tell you which strategy makes money.</p></div>
+      <div class="bcell"><div class="bnum">04</div><h3 data-i18n="features.c4.t">Build streaks, stop over-trading</h3><p data-i18n="features.c4.d">Over-trade alerts keep you from breaking your rules.</p></div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- ═══ PRICING ═══ -->
+  <div class="section reveal plans-section" id="pricing">
     <div class="section-tag" data-i18n="plans.tag">💎 Pricing</div>
     <h2 class="section-title" data-i18n-html="plans.title">A Plan for <em>Everyone</em></h2>
-    <p class="section-desc" data-i18n="plans.desc">Whether you're just starting out or a professional trader — choose the plan that fits you.</p>
+    <p class="section-desc" data-i18n="plans.desc">Choose the plan that fits you.</p>
 
-    <div class="plans-grid" id="plans-grid">
+    <div class="plans">
 
       <!-- FREE -->
-      <div class="plan-card-home" onclick="toggleFeatures(this)">
-        <div class="plan-badge" data-i18n="plans.free_badge">FREE</div>
-        <div class="plan-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
+      <div class="plan">
+        <div class="plan-tag" data-i18n="plans.free_tag">free</div>
         <div class="plan-name" data-i18n="plans.free_name">Starter</div>
-        <div class="plan-price">$0.00 <span data-i18n="plans.free_period">/ month</span></div>
+        <div class="plan-price">$0<span data-i18n="plans.free_period"> / mo</span></div>
         <p class="plan-desc" data-i18n="plans.free_desc">Start with the essentials.</p>
-
-        <div class="plan-features-wrapper">
-          <div class="plan-features-toggle">
-            <span data-i18n="plans.show_features">Show Features</span>
-            <span class="arrow">▼</span>
-          </div>
-          <ul class="plan-features-list">
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature1">Unlimited Trades</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature2">Unlimited Strategies</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature3">Calendar View</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature4">Monthly Goal Tracking</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature5">Strategy Comparison</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature6">CSV Import/Export</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.free_feature7">Standard PDF Reports</span></li>
-            <li class="is-disabled"><span class="cross">✕</span> <span data-i18n="plans.free_feature9">Premium Dashboard</span> <span class="premium-only">Premium</span></li>
-            <li class="is-disabled"><span class="cross">✕</span> <span data-i18n="plans.free_feature10">Advanced Charts</span> <span class="premium-only">Premium</span></li>
-            <li class="is-disabled"><span class="cross">✕</span> <span data-i18n="plans.free_feature11">Theme Customization</span> <span class="premium-only">Premium</span></li>
-          </ul>
-        </div>
-
-        <a href="register.html" class="btn-plan free" data-i18n="plans.free_btn">Start Free →</a>
+        <ul class="plan-feats">
+          <li data-i18n="plans.free_f1">Trade logging</li>
+          <li data-i18n="plans.free_f2">Calendar view</li>
+          <li data-i18n="plans.free_f3">CSV / PDF import</li>
+          <li data-i18n="plans.free_f4">Basic charts</li>
+          <li data-i18n="plans.free_f5">Limited AI analysis</li>
+        </ul>
+        <a href="register.html" class="btn-plan ghost" data-i18n="plans.free_btn">Start free</a>
       </div>
 
-      <!-- MONTHLY PREMIUM -->
-      <div class="plan-card-home premium featured" onclick="toggleFeatures(this)">
-        <div class="plan-badge popular" data-i18n="plans.popular">🔥 POPULAR</div>
-        <div class="plan-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-        </div>
-        <div class="plan-name" data-i18n="plans.premium_name">Premium Monthly</div>
-        <div class="plan-price" id="price-monthly-home">$<span id="monthly-price-value">9.00</span> <span data-i18n="plans.premium_monthly_period">/ month</span></div>
-        <p class="plan-desc" data-i18n="plans.premium_desc">Unlock all features.</p>
-
-        <div class="plan-features-wrapper">
-          <div class="plan-features-toggle">
-            <span data-i18n="plans.show_features">Show Features</span>
-            <span class="arrow">▼</span>
-          </div>
-          <ul class="plan-features-list">
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature1">All Free Features</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature2">Premium Dashboard</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature3">Drag & Drop Panels</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature4">Advanced Charts</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature5">Theme Customization</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature6">Detailed PDF Reports</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature7">Premium News</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature9">Advanced Over Trade Alerts</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature11">Ad-Free Experience</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature12">Priority Support</span></li>
-          </ul>
-        </div>
-
-        <a href="#" class="btn-plan premium-btn" id="upgrade-monthly-home" data-i18n="plans.premium_btn"><span>Go Premium →</span></a>
+      <!-- MONTHLY -->
+      <div class="plan featured">
+        <div class="plan-tag" data-i18n="plans.monthly_tag">most used</div>
+        <div class="plan-name" data-i18n="plans.monthly_name">Premium monthly</div>
+        <div class="plan-price">$<span id="monthly-price-value">9</span><span data-i18n="plans.monthly_period"> / mo</span></div>
+        <p class="plan-desc" data-i18n="plans.monthly_desc">Unlock everything.</p>
+        <ul class="plan-feats">
+          <li data-i18n="plans.monthly_f1">All features</li>
+          <li data-i18n="plans.monthly_f2">Advanced customizable charts</li>
+          <li data-i18n="plans.monthly_f3">Theme settings</li>
+          <li data-i18n="plans.monthly_f4">Over trade notifications</li>
+          <li data-i18n="plans.monthly_f5">Advanced strategy analytics</li>
+          <li data-i18n="plans.monthly_f6">AI analysis / Wawe AI chat bot</li>
+          <li data-i18n="plans.monthly_f7">Customize Wawe journal</li>
+          <li data-i18n="plans.monthly_f8">Movable charts</li>
+        </ul>
+        <a href="#" class="btn-plan solid" id="upgrade-monthly-home"><span data-i18n="plans.monthly_btn">Go premium</span></a>
       </div>
 
-      <!-- YEARLY PREMIUM -->
-      <div class="plan-card-home premium" onclick="toggleFeatures(this)">
-        <div class="plan-badge" data-i18n="plans.best_value">💎 BEST VALUE</div>
-        <div class="plan-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-            <polyline points="12 22 12 12"/>
-          </svg>
-        </div>
-        <div class="plan-name" data-i18n="plans.premium_yearly_name">Premium Yearly</div>
-        <div class="plan-price" id="price-yearly-home">$<span id="yearly-price-value">79.00</span> <span data-i18n="plans.premium_yearly_period">/ year</span></div>
-        <div style="font-size:11px;color:var(--accent);margin-bottom:0.25rem;" id="yearly-save-text" data-i18n="plans.save_67">🎯 Save 67%!</div>
-        <p class="plan-desc" data-i18n="plans.premium_yearly_desc">Best value with annual subscription.</p>
-
-        <div class="plan-features-wrapper">
-          <div class="plan-features-toggle">
-            <span data-i18n="plans.show_features">Show Features</span>
-            <span class="arrow">▼</span>
-          </div>
-          <ul class="plan-features-list">
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature1">All Free Features</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature2">Premium Dashboard</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature3">Drag & Drop Panels</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature4">Advanced Charts</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature5">Theme Customization</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature6">Detailed PDF Reports</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature7">Premium News</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature9">Advanced Over Trade Alerts</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature11">Ad-Free Experience</span></li>
-            <li><span class="check">✓</span> <span data-i18n="plans.premium_feature12">Priority Support</span></li>
-          </ul>
-        </div>
-
-        <a href="#" class="btn-plan premium-btn outline" id="upgrade-yearly-home" data-i18n="plans.premium_yearly_btn"><span>Buy Yearly →</span></a>
+      <!-- YEARLY -->
+      <div class="plan">
+        <div class="plan-tag" data-i18n="plans.yearly_tag">best value</div>
+        <div class="plan-name" data-i18n="plans.yearly_name">Premium yearly</div>
+        <div class="plan-price">$<span id="yearly-price-value">79</span><span data-i18n="plans.yearly_period"> / yr</span></div>
+        <p class="plan-desc" data-i18n="plans.yearly_desc">Save 67% annually.</p>
+        <ul class="plan-feats">
+          <li data-i18n="plans.yearly_f1">All premium features</li>
+          <li data-i18n="plans.yearly_f2">2 months free</li>
+        </ul>
+        <a href="#" class="btn-plan ghost" id="upgrade-yearly-home"><span data-i18n="plans.yearly_btn">Buy yearly</span></a>
       </div>
-    </div>
 
-    <div style="text-align:center;margin-top:1.5rem;font-size:11px;color:var(--muted);" id="payment-methods-note">
-      <span data-i18n="plans.payment_note">💳 Pay with credit card, crypto (BTC / LTC) or bank transfer</span>
     </div>
   </div>
 
   <div class="glow-line"></div>
 
-  <!-- ⭐ REFERENCES -->
+  <!-- ═══ REFERENCES ═══ -->
   <div class="section reveal">
-    <div class="section-tag" data-i18n="references.tag">Trusted By</div>
-    <h2 class="section-title" data-i18n-html="references.title">Names We <em>Trust</em></h2>
-    <p class="section-desc" data-i18n="references.desc">Experienced traders and content creators we work with.</p>
+    <div class="section-tag" data-i18n="refs.tag">Trusted By</div>
+    <h2 class="section-title" data-i18n-html="refs.title">Names We <em>Trust</em></h2>
+    <p class="section-desc" data-i18n="refs.desc">Experienced traders and content creators we work with.</p>
     <div class="references-grid" id="references-grid">
       <div class="loading-spinner"><div class="spinner"></div></div>
     </div>
   </div>
 
-  <!-- ⭐ CTA -->
+  <!-- ═══ CTA ═══ -->
   <div class="cta-wrap reveal">
     <div class="cta-banner">
       <h2 data-i18n="cta.title">READY?</h2>
@@ -659,26 +370,25 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- ⭐ FOOTER -->
+  <!-- ═══ FOOTER ═══ -->
   <footer class="site-footer">
     <div class="footer-container">
       <div class="footer-col">
         <div class="footer-logo">
-          <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-            <polyline points="2,16 7,9 12,13 19,4" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <polyline points="2,16 7,9 12,13 19,4" stroke="#8b5cf6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Wawe<span>Journal</span>
+          <span>Wawe<span class="logo-accent">Journal</span></span>
         </div>
-        <p class="footer-desc" data-i18n="footer.desc">A modern trading journal built for professional traders. Log, analyze, and track your growth.</p>
+        <p class="footer-desc" data-i18n="footer.desc">A modern trading journal built for professional traders.</p>
       </div>
       <div class="footer-col">
         <h4 data-i18n="footer.links">Links</h4>
         <ul>
-          <li><a href="index.html" data-i18n="nav.dashboard">Home</a></li>
+          <li><a href="index.html" data-i18n="nav.home">Home</a></li>
           <li><a href="strategies.html" data-i18n="nav.strategies">Strategies</a></li>
           <li><a href="login.html" data-i18n="nav.login">Login</a></li>
           <li><a href="register.html" data-i18n="nav.register">Sign Up</a></li>
-          <li><a href="dashboard.html" data-i18n="nav.dashboard">Dashboard</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -700,78 +410,58 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
     <div class="footer-bottom-bar">
-      <p>© 2026 WaweDev · <span data-i18n="footer.rights">All rights reserved.</span></p>
+      <p>
+        © 2026 <span data-i18n-html="footer.credit">WaweJournal is a part of <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a> brand.</span>
+        <span data-i18n="footer.rights">All rights reserved.</span>
+      </p>
       <div class="footer-social">
-        <a href="https://www.instagram.com/wawejournal/" target="_blank" class="social-link">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg>
-          Instagram
+        <a href="https://www.instagram.com/wawejournal/" target="_blank" class="social-link" aria-label="Instagram">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg>
         </a>
-        <a href="https://youtube.com/@wawedev" target="_blank" class="social-link">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
-          YouTube
+        <a href="https://youtube.com/@wawedev" target="_blank" class="social-link" aria-label="YouTube">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
         </a>
-        <a href="#" class="social-link" id="discord-link">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.317 4.37a19.6 19.6 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0c-.164-.386-.398-.875-.608-1.25a.077.077 0 0 0-.079-.037A19.6 19.6 0 0 0 3.68 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03c.028.006.056-.009.071-.033c.46-.629.873-1.295 1.216-1.99a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.838-.875c-.037-.02-.04-.071-.008-.098a12.6 12.6 0 0 0 .37-.292c.02-.017.046-.02.068-.007a13.9 13.9 0 0 0 11.62 0c.022-.013.048-.01.068.007c.12.095.245.194.37.292c.032.027.029.078-.008.098a13.1 13.1 0 0 1-1.838.875c-.041.02-.05.065-.041.106c.343.695.756 1.361 1.216 1.99c.015.024.043.039.071.033a19.9 19.9 0 0 0 5.993-3.03a.082.082 0 0 0 .031-.057c.5-5.088-.838-9.58-3.512-13.66a.07.07 0 0 0-.032-.027zM8.02 15.33c-1.2 0-2.19-1.099-2.19-2.44s.98-2.44 2.19-2.44c1.2 0 2.19 1.09 2.19 2.44c0 1.34-.98 2.44-2.19 2.44zm7.96 0c-1.2 0-2.19-1.099-2.19-2.44s.98-2.44 2.19-2.44c1.2 0 2.19 1.09 2.19 2.44c0 1.34-.98 2.44-2.19 2.44z"/></svg>
-          Discord
+        <a href="#" class="social-link" id="discord-link" aria-label="Discord">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.317 4.37a19.6 19.6 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0c-.164-.386-.398-.875-.608-1.25a.077.077 0 0 0-.079-.037A19.6 19.6 0 0 0 3.68 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03c.028.006.056-.009.071-.033a13.9 13.9 0 0 0 1.216-1.99.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.838-.875c-.037-.02-.04-.071-.008-.098"/></svg>
         </a>
-        <a href="mailto:destek@wawedev.com" class="social-link">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Email
+        <a href="mailto:destek@wawedev.com" class="social-link" aria-label="Email">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </a>
       </div>
     </div>
   </footer>
 
-  <!-- ============================================================
-  SCRIPTS
-  ============================================================ -->
+  <!-- ═══ SCRIPTS ═══ -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
+  <script src="/index-i18n.js" is:inline></script>
   <script type="module" src="/src/script.js" is:inline></script>
 
-  <!-- ============================================================
-  SAYFA İÇİ SCRIPTS
-  ============================================================ -->
   <script is:inline>
-    // ============================================================
-    // ⭐ MODULE DEPENDENCY WAITER
-    // ============================================================
     function waitForDeps(cb, maxMs) {
       maxMs = maxMs || 8000;
       var t0 = Date.now();
       (function check() {
         if (window.sb && typeof window.loadPlatformStats === 'function') {
-          try { cb(); } catch (e) { wwLog.warn('[index] waitForDeps callback hatası:', e); }
+          try { cb(); } catch (e) { window.wwLog && wwLog.warn('[index] cb error:', e); }
           return;
         }
-        if (Date.now() - t0 > maxMs) {
-          wwLog.warn('⚠️ [index] Bağımlılıklar yüklenemedi (timeout)');
-          return;
-        }
+        if (Date.now() - t0 > maxMs) return;
         setTimeout(check, 50);
       })();
     }
 
-    // ============================================================
-    // MAINTENANCE MODE CHECK
-    // ============================================================
+    // MAINTENANCE
     (function() {
-      var currentPath = window.location.pathname;
-      if (currentPath.includes('admin.html') || currentPath.includes('login.html') || currentPath.includes('maintenance.html')) {
-        return;
-      }
-
+      var p = window.location.pathname;
+      if (p.includes('admin.html') || p.includes('login.html') || p.includes('maintenance.html')) return;
       waitForDeps(function() {
         (async function() {
           try {
-            var settings = window.getSystemSettings ? window.getSystemSettings() : {};
-            if (settings.maintenance_mode) {
+            var s = window.getSystemSettings ? window.getSystemSettings() : {};
+            if (s.maintenance_mode) {
               var { data: { session } } = await window.sb.auth.getSession();
-              if (session) {
-                var role = session.user?.app_metadata?.role;
-                if (role === 'admin') return;
-              }
+              if (session && session.user?.app_metadata?.role === 'admin') return;
               window.location.href = 'maintenance.html';
             }
           } catch(e) {}
@@ -779,738 +469,261 @@ import Layout from '../layouts/Layout.astro';
       });
     })();
 
-    // ============================================================
-    // LOGGED IN USER REDIRECT
-    // ============================================================
+    // LOGGED-IN REDIRECT
     (function() {
-      var redirectDone = false;
-
+      var done = false;
       waitForDeps(function() {
         (async function() {
           try {
             var { data: { session } } = await window.sb.auth.getSession();
-            if (session && !redirectDone) {
-              redirectDone = true;
-              window.location.href = 'dashboard.html';
-            }
+            if (session && !done) { done = true; window.location.href = 'dashboard.html'; }
           } catch(e) {}
         })();
       });
     })();
 
-    // ============================================================
-    // DISCORD LINK
-    // ============================================================
+    // DISCORD TOAST
     var discordLink = document.getElementById('discord-link');
-    if (discordLink) {
-      discordLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (typeof window.showToast === 'function') {
-          window.showToast('Discord server coming soon! 🚀', 'success');
-        }
-      });
-    }
+    if (discordLink) discordLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (typeof window.showToast === 'function') window.showToast('Discord server coming soon! 🚀', 'success');
+    });
 
-    // ============================================================
     // MOBILE MENU
-    // ============================================================
     var hamburger = document.getElementById('hamburger');
     var mobileMenu = document.getElementById('mobile-menu');
     var overlay = document.getElementById('menu-overlay');
-
     function toggleMenu() {
       hamburger.classList.toggle('active');
       mobileMenu.classList.toggle('active');
       overlay.classList.toggle('active');
       document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
     }
-
     if (hamburger) hamburger.addEventListener('click', toggleMenu);
     if (overlay) overlay.addEventListener('click', toggleMenu);
+    document.querySelectorAll('.mobile-menu a').forEach(l => l.addEventListener('click', toggleMenu));
 
-    document.querySelectorAll('.mobile-menu a').forEach(function(link) {
-      link.addEventListener('click', toggleMenu);
-    });
-
-    // ============================================================
-    // STARS ANIMATION
-    // ============================================================
-    (function() {
-      var canvas = document.getElementById('stars-canvas');
-      if (!canvas) return;
-      var ctx = canvas.getContext('2d');
-      var W, H, stars = [];
-      var rafId = null;
-      var isVisible = true;
-
-      function resize() {
-        W = canvas.width = window.innerWidth;
-        H = canvas.height = window.innerHeight;
-      }
-
-      function mkStar() {
-        return {
-          x: Math.random() * W,
-          y: Math.random() * H,
-          r: Math.random() * 1.2 + 0.3,
-          vy: Math.random() * 0.25 + 0.05,
-          vx: (Math.random() - 0.5) * 0.08,
-          o: Math.random() * 0.5 + 0.15,
-          dt: (Math.random() - 0.5) * 0.006,
-          purple: Math.random() > 0.65,
-        };
-      }
-
-      function init() {
-        resize();
-        stars = [];
-        var count = window.innerWidth < 600 ? 90 : 160;
-        for (var i = 0; i < count; i++) {
-          stars.push(mkStar());
-        }
-      }
-
-      function draw() {
-        if (!isVisible) {
-          rafId = requestAnimationFrame(draw);
-          return;
-        }
-
-        ctx.clearRect(0, 0, W, H);
-        for (var i = 0; i < stars.length; i++) {
-          var s = stars[i];
-          s.o += s.dt;
-          if (s.o <= 0.05 || s.o >= 0.7) { s.dt *= -1; }
-          s.y -= s.vy;
-          s.x += s.vx;
-          if (s.y < -4) {
-            var newStar = mkStar();
-            s.x = newStar.x;
-            s.y = H + 4;
-            s.r = newStar.r;
-            s.vy = newStar.vy;
-            s.vx = newStar.vx;
-            s.o = newStar.o;
-            s.dt = newStar.dt;
-            s.purple = newStar.purple;
-          }
-          if (s.x < -4 || s.x > W + 4) {
-            var newStar2 = mkStar();
-            s.x = Math.random() * W;
-            s.y = H + 4;
-            s.r = newStar2.r;
-            s.vy = newStar2.vy;
-            s.vx = newStar2.vx;
-            s.o = newStar2.o;
-            s.dt = newStar2.dt;
-            s.purple = newStar2.purple;
-          }
-
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = s.purple
-            ? 'rgba(139,92,246,' + s.o + ')'
-            : 'rgba(232,232,240,' + s.o + ')';
-          ctx.fill();
-        }
-        rafId = requestAnimationFrame(draw);
-      }
-
-      document.addEventListener('visibilitychange', function() {
-        isVisible = !document.hidden;
-        if (isVisible && !rafId) {
-          rafId = requestAnimationFrame(draw);
-        }
-      });
-
-      var resizeTimeout;
-      window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-          resize();
-        }, 100);
-      });
-
-      init();
-      rafId = requestAnimationFrame(draw);
-    })();
-
-    // ============================================================
-    // HERO CANDLESTICK CHART
-    // ============================================================
+    // HERO CHART
     (function() {
       var canvas = document.getElementById('hero-chart-canvas');
       if (!canvas) return;
       var ctx = canvas.getContext('2d');
-
-      var candles = [
-        { o: 18, h: 22, l: 14, c: 21 }, { o: 21, h: 26, l: 19, c: 25 }, { o: 25, h: 28, l: 21, c: 22 },
-        { o: 22, h: 27, l: 20, c: 26 }, { o: 26, h: 31, l: 24, c: 30 }, { o: 30, h: 34, l: 27, c: 28 },
-        { o: 28, h: 33, l: 26, c: 32 }, { o: 32, h: 38, l: 30, c: 37 }, { o: 37, h: 41, l: 34, c: 40 },
-        { o: 40, h: 44, l: 37, c: 38 }, { o: 38, h: 43, l: 36, c: 42 }, { o: 42, h: 48, l: 40, c: 47 },
-        { o: 47, h: 52, l: 44, c: 51 }, { o: 51, h: 55, l: 48, c: 49 }, { o: 49, h: 54, l: 47, c: 53 },
-        { o: 53, h: 59, l: 51, c: 58 }, { o: 58, h: 63, l: 55, c: 57 }, { o: 57, h: 62, l: 55, c: 61 },
-        { o: 61, h: 67, l: 59, c: 66 }, { o: 66, h: 71, l: 63, c: 70 }, { o: 70, h: 74, l: 67, c: 68 },
-        { o: 68, h: 73, l: 66, c: 72 }, { o: 72, h: 78, l: 70, c: 77 }, { o: 77, h: 82, l: 74, c: 76 },
-        { o: 76, h: 81, l: 74, c: 80 }, { o: 80, h: 86, l: 78, c: 85 }, { o: 85, h: 90, l: 82, c: 89 },
-        { o: 89, h: 93, l: 86, c: 87 }, { o: 87, h: 92, l: 85, c: 91 }, { o: 91, h: 97, l: 89, c: 96 },
-        { o: 96, h: 100, l: 93, c: 99 }
-      ];
-
-      var C_BULL = '#8b5cf6';
-      var C_BEAR = '#e8e8f0';
-
-      var W, H;
-      var visibleCount = 0;
-      var animating = true;
-      var ANIM_INTERVAL = 80;
-      var lastReveal = 0;
-      var rafId = null;
-      var pulsePhase = 0;
-      var isVisible = true;
-
+      var W, H, rafId = null, isVisible = true;
+      var progress = 0;
+      var points = 60;
+      var data = [];
+      for (var i = 0; i < points; i++) {
+        var base = i / (points - 1);
+        var val = 0.15 + base * 0.7 + Math.sin(i * 0.4) * 0.035 + (Math.random() - 0.5) * 0.025;
+        data.push(Math.max(0.05, Math.min(0.98, val)));
+      }
       function resize() {
         var wrap = canvas.parentElement;
         if (!wrap) return;
         W = canvas.width = wrap.clientWidth || 520;
         H = canvas.height = wrap.clientHeight || 380;
       }
-
-      var padL = 14,
-        padR = 18,
-        padT = 28,
-        padB = 36;
-
-      function getChartDims() {
-        return { chartW: W - padL - padR, chartH: H - padT - padB };
-      }
-
-      function candleX(i, total, chartW) {
-        var slot = chartW / total;
-        return padL + i * slot + slot * 0.1;
-      }
-
-      function candleWidth(total, chartW) {
-        return (chartW / total) * 0.72;
-      }
-
-      function toY(val, chartH) {
-        return padT + (1 - val / 100) * chartH;
-      }
-
-      function drawFrame(ts) {
-        if (!isVisible) {
-          rafId = requestAnimationFrame(drawFrame);
-          return;
-        }
-
-        if (animating) {
-          if (ts - lastReveal > ANIM_INTERVAL) {
-            visibleCount = Math.min(visibleCount + 1, candles.length);
-            lastReveal = ts;
-            if (visibleCount >= candles.length) animating = false;
-          }
-        }
-
+      function padY(v) { return 30 + (1 - v) * (H - 60); }
+      function draw() {
+        if (!isVisible) { rafId = requestAnimationFrame(draw); return; }
+        if (progress < 1) progress = Math.min(1, progress + 0.015);
         ctx.clearRect(0, 0, W, H);
-        var dims = getChartDims();
-        var chartW = dims.chartW;
-        var chartH = dims.chartH;
-        var total = candles.length;
-        var cw = candleWidth(total, chartW);
 
         ctx.setLineDash([3, 7]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.strokeStyle = 'rgba(139,92,246,0.06)';
         ctx.lineWidth = 1;
         for (var g = 1; g <= 4; g++) {
-          var gy = padT + (g / 5) * chartH;
-          ctx.beginPath();
-          ctx.moveTo(padL, gy);
-          ctx.lineTo(W - padR, gy);
-          ctx.stroke();
+          var gy = 30 + (g / 5) * (H - 60);
+          ctx.beginPath(); ctx.moveTo(20, gy); ctx.lineTo(W - 20, gy); ctx.stroke();
         }
         ctx.setLineDash([]);
 
-        for (var i = 0; i < visibleCount; i++) {
-          var c = candles[i];
-          var bull = c.c >= c.o;
-          var col = bull ? C_BULL : C_BEAR;
-          var cx = candleX(i, total, chartW);
-          var openY = toY(c.o, chartH);
-          var closeY = toY(c.c, chartH);
-          var highY = toY(c.h, chartH);
-          var lowY = toY(c.l, chartH);
-          var bodyTop = Math.min(openY, closeY);
-          var bodyHeight = Math.max(Math.abs(closeY - openY), 1.5);
-          var isLast = (i === visibleCount - 1);
+        var padL = 20, padR = 20;
+        var chartW = W - padL - padR;
+        var visiblePts = Math.floor(data.length * progress);
 
-          if (isLast) {
-            ctx.save();
-            ctx.shadowColor = bull ? 'rgba(139,92,246,0.7)' : 'rgba(232,232,240,0.5)';
-            ctx.shadowBlur = 14;
-          }
+        var grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, 'rgba(139,92,246,0.35)');
+        grad.addColorStop(1, 'rgba(139,92,246,0.0)');
 
-          ctx.strokeStyle = col;
-          ctx.lineWidth = 1.2;
-          ctx.globalAlpha = isLast ? 0.9 : 0.85;
-          ctx.beginPath();
-          ctx.moveTo(cx + cw / 2, highY);
-          ctx.lineTo(cx + cw / 2, lowY);
-          ctx.stroke();
-
-          ctx.fillStyle = col;
-          ctx.globalAlpha = isLast ? 1 : (bull ? 0.88 : 0.72);
-          ctx.fillRect(cx, bodyTop, cw, bodyHeight);
-
-          if (!bull) {
-            ctx.strokeStyle = col;
-            ctx.lineWidth = 0.8;
-            ctx.globalAlpha = 0.5;
-            ctx.strokeRect(cx, bodyTop, cw, bodyHeight);
-          }
-
-          if (isLast) ctx.restore();
-          ctx.globalAlpha = 1;
+        ctx.beginPath();
+        for (var i = 0; i < visiblePts; i++) {
+          var x = padL + (i / (data.length - 1)) * chartW;
+          var y = padY(data[i]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
+        ctx.save();
+        ctx.lineTo(padL + ((visiblePts - 1) / (data.length - 1)) * chartW, H - 10);
+        ctx.lineTo(padL, H - 10);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
 
-        if (visibleCount > 0) {
-          pulsePhase += 0.06;
-          var last = candles[visibleCount - 1];
-          var bullLast = last.c >= last.o;
-          var lcx = candleX(visibleCount - 1, total, chartW) + cw / 2;
-          var tipY = toY(bullLast ? last.h : last.l, chartH);
-          var pAlpha = 0.3 + 0.3 * Math.sin(pulsePhase);
-          var pR = 5 + 3 * Math.abs(Math.sin(pulsePhase));
+        ctx.beginPath();
+        for (var j = 0; j < visiblePts; j++) {
+          var x2 = padL + (j / (data.length - 1)) * chartW;
+          var y2 = padY(data[j]);
+          if (j === 0) ctx.moveTo(x2, y2); else ctx.lineTo(x2, y2);
+        }
+        ctx.strokeStyle = '#a78bfa';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = 'rgba(139,92,246,0.7)';
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
 
+        if (visiblePts > 0) {
+          var tipX = padL + ((visiblePts - 1) / (data.length - 1)) * chartW;
+          var tipY = padY(data[visiblePts - 1]);
           ctx.beginPath();
-          ctx.arc(lcx, tipY, pR, 0, Math.PI * 2);
-          ctx.strokeStyle = bullLast ? 'rgba(139,92,246,' + pAlpha + ')' : 'rgba(232,232,240,' + pAlpha + ')';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(lcx, tipY, 3, 0, Math.PI * 2);
-          ctx.fillStyle = bullLast ? C_BULL : C_BEAR;
-          ctx.shadowColor = bullLast ? 'rgba(139,92,246,0.9)' : 'rgba(232,232,240,0.6)';
-          ctx.shadowBlur = 10;
+          ctx.arc(tipX, tipY, 5, 0, Math.PI * 2);
+          ctx.fillStyle = '#c084fc';
+          ctx.shadowColor = 'rgba(192,132,252,1)';
+          ctx.shadowBlur = 18;
           ctx.fill();
           ctx.shadowBlur = 0;
         }
-        rafId = requestAnimationFrame(drawFrame);
+        rafId = requestAnimationFrame(draw);
       }
-
-      document.addEventListener('visibilitychange', function() {
-        isVisible = !document.hidden;
-        if (isVisible && !rafId) {
-          rafId = requestAnimationFrame(drawFrame);
-        }
-      });
-
-      var resizeTimeout;
-      window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-          resize();
-          visibleCount = 0;
-          animating = true;
-          lastReveal = 0;
-          if (rafId) cancelAnimationFrame(rafId);
-          rafId = requestAnimationFrame(drawFrame);
-        }, 150);
-      });
-
-      resize();
-      rafId = requestAnimationFrame(drawFrame);
+      document.addEventListener('visibilitychange', function() { isVisible = !document.hidden; if (isVisible && !rafId) rafId = requestAnimationFrame(draw); });
+      var rt; window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(function() { resize(); progress = 0; }, 150); });
+      resize(); rafId = requestAnimationFrame(draw);
     })();
 
-    // ============================================================
-    // REVEAL ANIMATION
-    // ============================================================
+    // REVEAL
     var obs = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
-        if (e.isIntersecting) e.target.classList.add('visible');
-      });
+      entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.08 });
-    document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
-    // ============================================================
-    // ⭐ DASHBOARD MOCKUP IMAGE
-    // ============================================================
-    (function() {
-      var DEFAULT_MOCKUP_URL = 'https://placehold.co/1600x1000/111118/7c6dfa?text=Dashboard+Preview';
-
-      function loadDashboardMockupImage() {
-        var img = document.getElementById('dashboard-mockup-img');
-        var skeleton = document.getElementById('mockup-skeleton');
-        if (!img) return;
-
-        var url = DEFAULT_MOCKUP_URL;
-        try {
-          var settings = window.getSystemSettings ? window.getSystemSettings() : {};
-          if (settings && settings.dashboard_mockup_url) {
-            url = settings.dashboard_mockup_url;
-          }
-        } catch (e) {}
-
-        img.onload = function() {
-          img.style.display = 'block';
-          if (skeleton) skeleton.style.display = 'none';
-        };
-        img.onerror = function() {
-          if (img.src !== DEFAULT_MOCKUP_URL) {
-            img.src = DEFAULT_MOCKUP_URL;
-          }
-        };
-        img.src = url;
-      }
-
-      loadDashboardMockupImage();
-    })();
-
-    // ============================================================
-    // STATS LOAD
-    // ============================================================
-    async function loadStats() {
-      try {
-        await window.loadPlatformStats();
-      } catch (e) {
-        console.error('[index] loadPlatformStats hatası:', e);
-      }
-    }
+    // STATS
+    async function loadStats() { try { await window.loadPlatformStats(); } catch (e) { console.error('[index] loadStats:', e); } }
     waitForDeps(function() { loadStats(); });
 
-    // ============================================================
-    // TRADING PSYCHOLOGY QUOTES
-    // ============================================================
-    function updateRandomQuote() {
-      try {
-        var quotesArray = i18n.t('quotes');
-        var authorsArray = i18n.t('quote_authors');
-
-        if (typeof quotesArray === 'string' && quotesArray === 'quotes') return;
-        if (typeof authorsArray === 'string' && authorsArray === 'quote_authors') return;
-
-        var quotes = typeof quotesArray === 'string' ? JSON.parse(quotesArray.replace(/'/g, '"')) : quotesArray;
-        var authors = typeof authorsArray === 'string' ? JSON.parse(authorsArray.replace(/'/g, '"')) : authorsArray;
-
-        if (!Array.isArray(quotes) || quotes.length === 0) return;
-        if (!Array.isArray(authors) || authors.length === 0) return;
-
-        var randomIndex = Math.floor(Math.random() * quotes.length);
-        var quoteEl = document.getElementById('quote-text');
-        var authorEl = document.getElementById('quote-author');
-        if (quoteEl) quoteEl.textContent = quotes[randomIndex];
-        if (authorEl) authorEl.textContent = '— ' + authors[randomIndex];
-      } catch (e) {
-        wwLog.warn('[index] quote render hatası:', e);
-      }
+    // REFERENCES
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m] || m; });
     }
-
-    try { updateRandomQuote(); } catch (e) { wwLog.warn('[index] updateRandomQuote hatası:', e); }
-    if (typeof i18n !== 'undefined' && typeof i18n.onChange === 'function') {
-      try {
-        i18n.onChange(function() { updateRandomQuote(); });
-      } catch (e) { wwLog.warn('[index] i18n.onChange hatası:', e); }
-    }
-
-    // ============================================================
-    // REFERENCES LOAD
-    // ============================================================
     async function loadReferences() {
       var container = document.getElementById('references-grid');
       if (!container) return;
       try {
         var sbClient = window.sb || window.supabase;
         if (!sbClient) throw new Error('sb not ready');
-
-        var { data, error } = await sbClient
-          .from('references')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true });
-
-        if (error || !data || data.length === 0) {
-          container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="references.empty">No references added yet.</p>';
+        var { data, error } = await sbClient.from('references').select('*').eq('is_active', true).order('display_order', { ascending: true });
+        if (error || !data || !data.length) {
+          container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="refs.empty">No references added yet.</p>';
+          i18n.apply();
           return;
         }
-
         container.innerHTML = data.map(function(ref) {
-          return '\n          <div class="reference-card">\n            <div class="ref-image">\n              <img src="' + (ref.image_url || 'https://placehold.co/100x100?text=Profile') + '" alt="' + esc(ref.name) + '" onerror="this.src=\'https://placehold.co/100x100?text=Profile\'">\n            </div>\n            <div class="ref-info">\n              <h3>' + esc(ref.name) + '</h3>\n              <p class="ref-title">' + esc(ref.title || '') + '</p>\n              <p class="ref-desc">' + esc(ref.description || '') + '</p>\n              <div class="ref-social">\n                ' + (ref.instagram ? '<a href="' + ref.instagram + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>' : '') + '\n                ' + (ref.twitter ? '<a href="' + ref.twitter + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></a>' : '') + '\n                ' + (ref.youtube ? '<a href="' + ref.youtube + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>' : '') + '\n                ' + (ref.linkedin ? '<a href="' + ref.linkedin + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>' : '') + '\n              </div>\n            </div>\n          </div>\n        ';
+          return '<div class="reference-card">' +
+            '<div class="ref-image"><img src="' + (ref.image_url || 'https://placehold.co/100x100?text=Profile') + '" alt="' + esc(ref.name) + '"></div>' +
+            '<div class="ref-info"><h3>' + esc(ref.name) + '</h3>' +
+            '<p class="ref-title">' + esc(ref.title || '') + '</p>' +
+            '<p class="ref-desc">' + esc(ref.description || '') + '</p>' +
+            '<div class="ref-social">' +
+              (ref.instagram ? '<a href="' + ref.instagram + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>' : '') +
+              (ref.twitter ? '<a href="' + ref.twitter + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></a>' : '') +
+              (ref.youtube ? '<a href="' + ref.youtube + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>' : '') +
+              (ref.linkedin ? '<a href="' + ref.linkedin + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>' : '') +
+            '</div></div></div>';
         }).join('');
       } catch (e) {
-        console.error('[index] loadReferences hatası:', e);
-        container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="references.error">Failed to load references.</p>';
+        container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="refs.error">Failed to load references.</p>';
+        i18n.apply();
       }
     }
-
-    function esc(str) {
-      if (!str) return '';
-      return str.replace(/[&<>"']/g, function(m) {
-        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-        return map[m] || m;
-      });
-    }
-
     waitForDeps(function() { loadReferences(); });
 
-    // ============================================================
-    // TOGGLE FEATURES
-    // ============================================================
-    function toggleFeatures(card) {
-      var toggle = card.querySelector('.plan-features-toggle');
-      var list = card.querySelector('.plan-features-list');
-      var arrow = toggle.querySelector('.arrow');
-
-      if (list.classList.contains('open')) {
-        list.classList.remove('open');
-        arrow.classList.remove('open');
-        var firstSpan = toggle.querySelector('span:first-child');
-        if (firstSpan) firstSpan.textContent = i18n.t('plans.show_features') || 'Show Features';
-      } else {
-        document.querySelectorAll('.plan-features-list.open').forEach(function(l) {
-          if (l !== list) {
-            l.classList.remove('open');
-            var parentCard = l.closest('.plan-card-home');
-            if (parentCard) {
-              var parentToggle = parentCard.querySelector('.plan-features-toggle');
-              var parentArrow = parentToggle.querySelector('.arrow');
-              if (parentArrow) parentArrow.classList.remove('open');
-              var parentSpan = parentToggle.querySelector('span:first-child');
-              if (parentSpan) parentSpan.textContent = i18n.t('plans.show_features') || 'Show Features';
-            }
-          }
-        });
-
-        list.classList.add('open');
-        arrow.classList.add('open');
-        var firstSpan2 = toggle.querySelector('span:first-child');
-        if (firstSpan2) firstSpan2.textContent = i18n.t('plans.hide_features') || 'Hide Features';
-      }
-    }
-
-    document.querySelectorAll('.plan-features-toggle').forEach(function(toggle) {
-      toggle.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var card = this.closest('.plan-card-home');
-        if (card) toggleFeatures(card);
-      });
-    });
-
-    // ============================================================
-    // PLAN PRICES
-    // ============================================================
-    var updatePriceTimeout = null;
-
+    // PRICES
+    var priceTimeout = null;
     function updateHomePrices() {
-      if (updatePriceTimeout) {
-        cancelAnimationFrame(updatePriceTimeout);
-      }
-
-      updatePriceTimeout = requestAnimationFrame(function() {
+      if (priceTimeout) cancelAnimationFrame(priceTimeout);
+      priceTimeout = requestAnimationFrame(function() {
         try {
-          var monthlyPrice = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
-          var yearlyPrice = window.getYearlyPrice ? window.getYearlyPrice() : 79;
-          var paymentMethods = window.getPaymentMethods ? window.getPaymentMethods() : ['BTC', 'LTC'];
-
-          var monthlyEl = document.getElementById('monthly-price-value');
-          if (monthlyEl) {
-            monthlyEl.textContent = monthlyPrice.toFixed(2);
-          }
-
-          var yearlyEl = document.getElementById('yearly-price-value');
-          if (yearlyEl) {
-            yearlyEl.textContent = yearlyPrice.toFixed(2);
-          }
-
-          var saveEl = document.getElementById('yearly-save-text');
-          if (saveEl) {
-            var monthlyFull = monthlyPrice * 12;
-            if (monthlyFull > 0) {
-              var discount = Math.round(((monthlyFull - yearlyPrice) / monthlyFull) * 100);
-              var lang = typeof i18n !== 'undefined' ? i18n.getCurrentLanguage() : 'en';
-              var text = '';
-              if (lang === 'tr') text = '🎯 %' + discount + ' tasarruf et!';
-              else if (lang === 'de') text = '🎯 ' + discount + '% sparen!';
-              else text = '🎯 Save ' + discount + '%!';
-              saveEl.textContent = text;
-            }
-          }
-
-          var paymentNote = document.getElementById('payment-methods-note');
-          if (paymentNote && paymentMethods.length > 0) {
-            var lang2 = typeof i18n !== 'undefined' ? i18n.getCurrentLanguage() : 'en';
-            var prefix = '💳 ';
-            if (lang2 === 'tr') prefix = '💳 Kredi kartı, kripto (';
-            else if (lang2 === 'de') prefix = '💳 Kreditkarte, Krypto (';
-            else prefix = '💳 Credit card, crypto (';
-            paymentNote.innerHTML = '<span data-i18n="plans.payment_note">' + prefix + paymentMethods.join(' / ') + ') or bank transfer</span>';
-            if (window.i18n) window.i18n.apply();
-          }
-        } catch (error) {}
+          var mp = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
+          var yp = window.getYearlyPrice ? window.getYearlyPrice() : 79;
+          var mEl = document.getElementById('monthly-price-value');
+          if (mEl) mEl.textContent = mp % 1 === 0 ? mp.toFixed(0) : mp.toFixed(2);
+          var yEl = document.getElementById('yearly-price-value');
+          if (yEl) yEl.textContent = yp % 1 === 0 ? yp.toFixed(0) : yp.toFixed(2);
+        } catch (e) {}
       });
     }
-
     window.addEventListener('storage', function(e) {
-      if (e.key === 'ww_monthly_price' || e.key === 'ww_yearly_price' || e.key === 'ww_prices' || e.key === 'ww_payment_methods') {
-        updateHomePrices();
-      }
+      if (e.key && e.key.startsWith('ww_')) updateHomePrices();
     });
+    document.addEventListener('DOMContentLoaded', updateHomePrices);
+    if (typeof i18n !== 'undefined' && i18n.onChange) i18n.onChange(updateHomePrices);
 
-    document.addEventListener('DOMContentLoaded', function() {
-      try {
-        var settings = window.getSystemSettings ? window.getSystemSettings() : {};
-        if (settings.payMethod) {
-          if (typeof selectedPayMethod !== 'undefined') {
-            selectedPayMethod = settings.payMethod;
-          }
-          try { localStorage.setItem('ww_pay_method', settings.payMethod); } catch (e) {}
-        }
-      } catch (e) {}
-
-      updateHomePrices();
-    });
-
-    if (typeof i18n !== 'undefined' && i18n.onChange) {
-      i18n.onChange(function() {
-        updateHomePrices();
-      });
-    }
-
-    // ============================================================
     // PLAN BUTTONS
-    // ============================================================
-    var upgradeMonthly = document.getElementById('upgrade-monthly-home');
-    if (upgradeMonthly) {
-      upgradeMonthly.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        (async function() {
-          try {
-            var sbClient = window.sb || window.supabase;
-            if (!sbClient) {
-              window.location.href = 'register.html?plan=monthly';
-              return;
-            }
-            var { data: { session } } = await sbClient.auth.getSession();
-            if (!session) {
-              window.location.href = 'register.html?plan=monthly';
-              return;
-            }
+    var upM = document.getElementById('upgrade-monthly-home');
+    if (upM) upM.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      (async function() {
+        try {
+          var sb = window.sb || window.supabase;
+          if (!sb) { window.location.href = 'register.html?plan=monthly'; return; }
+          var { data: { session } } = await sb.auth.getSession();
+          if (!session) { window.location.href = 'register.html?plan=monthly'; return; }
+          var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
+          if (window.upgradeToPremium) await window.upgradeToPremium('monthly', price, 'USD', 'BTC');
+          else window.showToast && window.showToast('System preparing.', 'error');
+        } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
+      })();
+    });
+    var upY = document.getElementById('upgrade-yearly-home');
+    if (upY) upY.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      (async function() {
+        try {
+          var sb = window.sb || window.supabase;
+          if (!sb) { window.location.href = 'register.html?plan=yearly'; return; }
+          var { data: { session } } = await sb.auth.getSession();
+          if (!session) { window.location.href = 'register.html?plan=yearly'; return; }
+          var price = window.getYearlyPrice ? window.getYearlyPrice() : 79;
+          if (window.upgradeToPremium) await window.upgradeToPremium('yearly', price, 'USD', 'BTC');
+          else window.showToast && window.showToast('System preparing.', 'error');
+        } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
+      })();
+    });
 
-            var price = typeof window.getMonthlyPrice === 'function' ? window.getMonthlyPrice() : 9;
-            var payMethod = typeof selectedPayMethod !== 'undefined' ? selectedPayMethod : 'BTC';
-
-            if (typeof window.upgradeToPremium === 'function') {
-              await window.upgradeToPremium('monthly', price, 'USD', payMethod);
-            } else {
-              window.showToast('System preparing, please refresh the page.', 'error');
-            }
-          } catch (err) {
-            console.error('Premium purchase error:', err);
-            window.showToast('An error occurred. Please try again.', 'error');
-          }
-        })();
-      });
-    }
-
-    var upgradeYearly = document.getElementById('upgrade-yearly-home');
-    if (upgradeYearly) {
-      upgradeYearly.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        (async function() {
-          try {
-            var sbClient = window.sb || window.supabase;
-            if (!sbClient) {
-              window.location.href = 'register.html?plan=yearly';
-              return;
-            }
-            var { data: { session } } = await sbClient.auth.getSession();
-            if (!session) {
-              window.location.href = 'register.html?plan=yearly';
-              return;
-            }
-
-            var price = typeof window.getYearlyPrice === 'function' ? window.getYearlyPrice() : 79;
-            var payMethod = typeof selectedPayMethod !== 'undefined' ? selectedPayMethod : 'BTC';
-
-            if (typeof window.upgradeToPremium === 'function') {
-              await window.upgradeToPremium('yearly', price, 'USD', payMethod);
-            } else {
-              window.showToast('System preparing, please refresh the page.', 'error');
-            }
-          } catch (err) {
-            console.error('Premium purchase error:', err);
-            window.showToast('An error occurred. Please try again.', 'error');
-          }
-        })();
-      });
-    }
-
-    // ============================================================
     // LANGUAGE SELECTOR
-    // ============================================================
     var langCurrent = document.getElementById('lang-current');
     var langDropdown = document.getElementById('lang-dropdown');
     var langOptions = document.querySelectorAll('.lang-option');
-    var langCurrentFlag = document.querySelector('.lang-current-flag');
-    var langCurrentText = document.querySelector('.lang-current-text');
+    var langFlag = document.querySelector('.lang-current-flag');
 
     function updateLanguageUI(lang) {
-      var selectedOption = document.querySelector('.lang-option[data-lang="' + lang + '"]');
-      if (selectedOption) {
-        var flag = selectedOption.dataset.flag;
-        var name = selectedOption.dataset.name;
-        if (langCurrentFlag) langCurrentFlag.textContent = flag;
-        if (langCurrentText) langCurrentText.textContent = name;
-
-        langOptions.forEach(function(opt) {
-          var optLang = opt.dataset.lang;
-          var checkSpan = opt.querySelector('.lang-option-check');
-          if (optLang === lang) {
-            opt.classList.add('active');
-            if (checkSpan) checkSpan.textContent = '✓';
-          } else {
-            opt.classList.remove('active');
-            if (checkSpan) checkSpan.textContent = '';
-          }
-        });
-      }
-    }
-
-    function toggleDropdown() {
-      if (langDropdown) langDropdown.classList.toggle('show');
-    }
-
-    function closeDropdown() {
-      if (langDropdown) langDropdown.classList.remove('show');
-    }
-
-    if (langCurrent) {
-      langCurrent.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleDropdown();
+      var sel = document.querySelector('.lang-option[data-lang="' + lang + '"]');
+      if (!sel) return;
+      if (langFlag) langFlag.textContent = sel.dataset.flag;
+      langOptions.forEach(function(opt) {
+        var c = opt.querySelector('.lang-option-check');
+        if (opt.dataset.lang === lang) { opt.classList.add('active'); if (c) c.textContent = '✓'; }
+        else { opt.classList.remove('active'); if (c) c.textContent = ''; }
       });
     }
-
-    langOptions.forEach(function(option) {
-      option.addEventListener('click', function(e) {
+    function toggleDD() { langDropdown && langDropdown.classList.toggle('show'); }
+    function closeDD() { langDropdown && langDropdown.classList.remove('show'); }
+    if (langCurrent) langCurrent.addEventListener('click', function(e) { e.stopPropagation(); toggleDD(); });
+    langOptions.forEach(function(o) {
+      o.addEventListener('click', function(e) {
         e.stopPropagation();
-        var lang = option.dataset.lang;
-        i18n.setLanguage(lang);
-        updateLanguageUI(lang);
-        closeDropdown();
+        i18n.setLanguage(o.dataset.lang);
+        updateLanguageUI(o.dataset.lang);
+        closeDD();
       });
     });
-
     document.addEventListener('click', function(e) {
-      if (langCurrent && langDropdown) {
-        if (!langCurrent.contains(e.target) && !langDropdown.contains(e.target)) {
-          closeDropdown();
-        }
-      }
+      if (langCurrent && langDropdown && !langCurrent.contains(e.target) && !langDropdown.contains(e.target)) closeDD();
     });
-
     updateLanguageUI(i18n.getCurrentLanguage());
+    i18n.onChange(function(l) { updateLanguageUI(l); });
   </script>
 </Layout>

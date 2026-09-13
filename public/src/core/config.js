@@ -1,5 +1,6 @@
 // ============================================================
 // WAWE JOURNAL - CORE CONFIG (ES Module)
+// ⭐ TURNSTILE_SITE_KEY eklendi (public/config.js'ten okur)
 // ============================================================
 
 export const INSTRUMENT_MULTIPLIERS = {
@@ -82,10 +83,14 @@ export const NOTIFICATION_STORAGE_KEY = 'ww_notifications';
 export const OT_STORAGE_KEY = 'ww_overtrade_settings';
 export const OT_DISMISSED_KEY = 'ww_overtrade_dismissed_v2';
 
-// ⭐ WW_CONFIG export ediliyor!
+// ⭐ public/config.js'ten gelen değerleri koru (varsa)
+const _existingWindowConfig = (typeof window !== 'undefined' && window.WW_CONFIG) ? window.WW_CONFIG : null;
+
 export const WW_CONFIG = {
   SUPABASE_URL: 'https://odasapyhtdopbnlfhwde.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg',
+  // ⭐ public/config.js'ten oku, yoksa fallback
+  TURNSTILE_SITE_KEY: (_existingWindowConfig && _existingWindowConfig.TURNSTILE_SITE_KEY) || '0x4AAAAAAEzAoR2XhUtPTxV7',
   THEME: {
     backgroundColor: '#0a0a0f',
     fontSize: 16,
