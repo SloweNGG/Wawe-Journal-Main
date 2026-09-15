@@ -1,5 +1,6 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
+import QuickAdd from '../components/quick-add/QuickAdd';
 ---
 <Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
@@ -192,45 +193,11 @@ import Layout from '../layouts/Layout.astro';
   <!-- 4. NAVBAR (ES5) -->
   <script src="/components/navbar/navbar.js" is:inline></script>
   
-  <!-- 5. QUICK ADD (ES5) -->
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
-  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
-  
   <!-- 6. CALENDAR JS (ES5 - AYNI KALIR) -->
   <script src="/interface/calendar/js/calendar.js" is:inline></script>
   
-  <!-- 7. QUICK ADD MANUEL BAŞLATICI (stratejiler sayfasındaki ile aynı) -->
-  <script is:inline>
-    (function() {
-      function createManualFAB() {
-        if (document.getElementById('quick-add-fab')) return;
-        var fab = document.createElement('button');
-        fab.id = 'quick-add-fab';
-        fab.className = 'quick-add-fab';
-        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
-        fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
-        fab.addEventListener('click', function() {
-          if (typeof quickAddOpen === 'function') quickAddOpen();
-          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
-        });
-        document.body.appendChild(fab);
-        wwLog.log('✅ Manuel FAB oluşturuldu (calendar)');
-      }
-      
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(function() {
-          if (typeof quickAddOpen === 'undefined') createManualFAB();
-        }, 1500);
-      } else {
-        document.addEventListener('DOMContentLoaded', function() {
-          setTimeout(function() {
-            if (typeof quickAddOpen === 'undefined') createManualFAB();
-          }, 1500);
-        });
-      }
-    })();
-  </script>
+  <!-- 7. QUICK ADD (REACT TSX + CSS MODULES) -->
+  <QuickAdd client:load />
   
   <!-- 8. LUCIDE ICONS INIT -->
   <script is:inline>

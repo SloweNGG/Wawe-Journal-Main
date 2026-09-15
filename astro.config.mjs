@@ -1,8 +1,10 @@
 import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
 
 export default defineConfig({
   site: 'https://wawejournal.com',
   outDir: 'dist',
+  integrations: [react()],
   build: {
     // Orijinal siteyle birebir aynı URL yapısını (dashboard.html, trades.html, ...)
     // korumak için 'file' formatını kullanıyoruz. Böylece navbar.js, script.js

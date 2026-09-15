@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // DASHBOARD - ANA JS DOSYASI (APEXCHARTS & LIGHTWEIGHT CHARTS)
 // ⭐ Chart.js → ApexCharts + Lightweight Charts GEÇİŞİ
 // ⭐ FIX: Chart boyutlandırma / container senkronizasyonu
@@ -269,8 +269,9 @@
   var allTradesFullStats = [];
   var currentRange = 'all';
 
-  // ⭐ APEXCHARTS STATE
+  // ⭐ APEXCHARTS & LIGHTWEIGHT CHARTS STATE
   var apexCharts = {};
+  var lwcCharts = {};
   var chartRafId = null;
   var isPageVisible = true;
   var chartsInitialized = false;
@@ -284,6 +285,7 @@
 
   // ⭐ CHART EXPANSION (SORUN 11)
   var expandedChart = null;
+  var expandedLwcChart = null;
   var _chartExpandResizeTimer = null;
 
   // ⭐ CUSTOM RANGE (SORUN 4)
@@ -485,6 +487,8 @@
             try {
               if (chart && typeof chart.resize === 'function') {
                 chart.resize(rect.width, rect.height);
+              } else if (chart && typeof chart.applyOptions === 'function') {
+                chart.applyOptions({ width: rect.width, height: rect.height });
               }
             } catch(e) {
               // Sessizce geç
@@ -1068,6 +1072,14 @@
   // ============================================================
 
   function destroyAllCharts() {
+    for (var lwcId in lwcCharts) {
+      if (lwcCharts[lwcId]) {
+        try {
+          lwcCharts[lwcId].remove();
+        } catch (e) { }
+        delete lwcCharts[lwcId];
+      }
+    }
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-winloss-mobile', 'chart-daily', 'chart-symbol', 'chart-direction', 'chart-direction-mobile'];
     chartIds.forEach(function(id) {
       if (apexCharts[id]) {
@@ -1077,7 +1089,11 @@
         delete apexCharts[id];
       }
       var container = document.getElementById(id);
-      if (!container) {
+      if (container) {
+        if (id === 'chart-cumulative' || id === 'chart-daily') {
+          container.innerHTML = '';
+        }
+      } else {
         var parentMap = {
           'chart-cumulative': '.chart-wrap--tall',
           'chart-winloss': '.chart-wrap--doughnut',
@@ -1102,6 +1118,235 @@
     });
     cleanupResizeObservers();
     chartsInitialized = false;
+  }
+
+  // ============================================================
+  // ⭐ LIGHTWEIGHT CHARTS - RENDER FUNCTIONS
+  // ============================================================
+
+  function renderCumulativeLwc(trades, container, customHeight) {
+    if (typeof window.LightweightCharts === 'undefined') {
+      wwLog.warn('LightweightCharts kütüphanesi yüklenemedi.');
+      return null;
+    }
+    if (!container) return null;
+
+    var closedTrades = (trades || []).filter(function(t) { return t.exit_price; });
+    if (!closedTrades.length) {
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;">' + (i18n.t('dashboard.stats.no_trades') || 'İşlem bulunamadı') + '</div>';
+      return null;
+    }
+
+    var sorted = closedTrades.slice().sort(function(a, b) {
+      var dA = (a.trade_date || '').replace(' ', 'T');
+      var dB = (b.trade_date || '').replace(' ', 'T');
+      return new Date(dA).getTime() - new Date(dB).getTime();
+    });
+
+    var dayCumMap = {};
+    var cum = 0;
+    sorted.forEach(function(t) {
+      cum += calcTradePnL(t);
+      var d = (t.trade_date || '').split('T')[0];
+      if (!d || d.length < 10) {
+        try {
+          d = new Date(t.created_at || Date.now()).toISOString().split('T')[0];
+        } catch(e) {
+          d = '2026-01-01';
+        }
+      }
+      dayCumMap[d] = parseFloat(cum.toFixed(2));
+    });
+
+    var sortedDates = Object.keys(dayCumMap).sort();
+    var seriesData = sortedDates.map(function(d) {
+      return { time: d, value: dayCumMap[d] };
+    });
+
+    if (seriesData.length === 1) {
+      var prevD = new Date(seriesData[0].time);
+      prevD.setDate(prevD.getDate() - 1);
+      var prevDStr = prevD.toISOString().split('T')[0];
+      seriesData.unshift({ time: prevDStr, value: 0 });
+    }
+
+    var firstPnL = seriesData[0] ? seriesData[0].value : 0;
+    var lastPnL = seriesData[seriesData.length - 1] ? seriesData[seriesData.length - 1].value : 0;
+    var changePercent = 0;
+    if (Math.abs(firstPnL) > 0.01) {
+      changePercent = ((lastPnL - firstPnL) / Math.abs(firstPnL)) * 100;
+      if (!isFinite(changePercent)) changePercent = 0;
+    } else if (Math.abs(lastPnL) > 0.01) {
+      changePercent = lastPnL >= 0 ? 100 : -100;
+    }
+
+    var changeEl = safeEl('cumulative-change');
+    if (changeEl) {
+      changeEl.textContent = (lastPnL >= 0 ? '↑' : '↓') + ' ' + Math.abs(changePercent).toFixed(1) + '%';
+      changeEl.className = 'chart-badge ' + (lastPnL >= 0 ? '' : 'negative');
+    }
+
+    var colors = getApexColors();
+    var isPositive = lastPnL >= 0;
+    var strokeColor = isPositive ? colors.green : colors.red;
+    var topColor = isPositive ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+    var bottomColor = isPositive ? 'rgba(34, 197, 94, 0.01)' : 'rgba(239, 68, 68, 0.01)';
+
+    var width = container.clientWidth || (window.innerWidth < 768 ? 320 : 600);
+    var height = customHeight || (container.clientHeight > 80 ? container.clientHeight : 260);
+
+    container.innerHTML = '';
+
+    var chart = window.LightweightCharts.createChart(container, {
+      width: width,
+      height: height,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: colors.textColor,
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 11
+      },
+      grid: {
+        vertLines: { color: colors.gridColor },
+        horzLines: { color: colors.gridColor }
+      },
+      crosshair: {
+        vertLine: {
+          color: colors.mutedColor,
+          width: 1,
+          style: 3,
+          labelBackgroundColor: colors.surface
+        },
+        horzLine: {
+          color: colors.mutedColor,
+          width: 1,
+          style: 3,
+          labelBackgroundColor: colors.surface
+        }
+      },
+      rightPriceScale: {
+        borderColor: colors.gridColor,
+        scaleMargins: { top: 0.15, bottom: 0.15 }
+      },
+      timeScale: {
+        borderColor: colors.gridColor,
+        fixLeftEdge: true,
+        fixRightEdge: true
+      },
+      handleScroll: true,
+      handleScale: true
+    });
+
+    var areaSeries = chart.addAreaSeries({
+      topColor: topColor,
+      bottomColor: bottomColor,
+      lineColor: strokeColor,
+      lineWidth: 2,
+      priceFormat: {
+        type: 'custom',
+        formatter: function(price) {
+          return formatCurrency(price);
+        }
+      }
+    });
+
+    areaSeries.setData(seriesData);
+    chart.timeScale().fitContent();
+
+    return chart;
+  }
+
+  function renderDailyLwc(trades, container, customHeight) {
+    if (typeof window.LightweightCharts === 'undefined') return null;
+    if (!container) return null;
+
+    var colors = getApexColors();
+    var days = {};
+    var now = new Date();
+    for (var i = 29; i >= 0; i--) {
+      var d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days[localDateStr(d)] = 0;
+    }
+    (trades || []).forEach(function(t) {
+      if (t.exit_price && days[t.trade_date] !== undefined) {
+        days[t.trade_date] += calcTradePnL(t);
+      }
+    });
+
+    var dailyData = Object.keys(days).sort().map(function(dateKey) {
+      var val = parseFloat(days[dateKey].toFixed(2));
+      return {
+        time: dateKey,
+        value: val,
+        color: val > 0 ? colors.green : (val < 0 ? colors.red : 'rgba(148, 163, 184, 0.2)')
+      };
+    });
+
+    var hasData = dailyData.some(function(item) { return item.value !== 0; });
+    if (!hasData) {
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;">' + (i18n.t('dashboard.stats.no_trades') || 'İşlem bulunamadı') + '</div>';
+      return null;
+    }
+
+    var width = container.clientWidth || (window.innerWidth < 768 ? 320 : 380);
+    var height = customHeight || (container.clientHeight > 80 ? container.clientHeight : 220);
+
+    container.innerHTML = '';
+
+    var chart = window.LightweightCharts.createChart(container, {
+      width: width,
+      height: height,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: colors.textColor,
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 11
+      },
+      grid: {
+        vertLines: { color: colors.gridColor },
+        horzLines: { color: colors.gridColor }
+      },
+      crosshair: {
+        vertLine: {
+          color: colors.mutedColor,
+          width: 1,
+          style: 3,
+          labelBackgroundColor: colors.surface
+        },
+        horzLine: {
+          color: colors.mutedColor,
+          width: 1,
+          style: 3,
+          labelBackgroundColor: colors.surface
+        }
+      },
+      rightPriceScale: {
+        borderColor: colors.gridColor,
+        scaleMargins: { top: 0.2, bottom: 0.2 }
+      },
+      timeScale: {
+        borderColor: colors.gridColor,
+        fixLeftEdge: true,
+        fixRightEdge: true
+      },
+      handleScroll: true,
+      handleScale: true
+    });
+
+    var histSeries = chart.addHistogramSeries({
+      priceFormat: {
+        type: 'custom',
+        formatter: function(price) {
+          return formatCurrency(price);
+        }
+      }
+    });
+
+    histSeries.setData(dailyData);
+    chart.timeScale().fitContent();
+
+    return chart;
   }
 
   // ============================================================
@@ -1711,13 +1956,12 @@
       destroyAllCharts();
 
       try {
-        var cumOptions = renderCumulativeChart(trades);
-        if (cumOptions) {
-          var cumContainer = safeEl('chart-cumulative');
-          if (cumContainer) {
-            var chart = new ApexCharts(cumContainer, cumOptions);
-            chart.render();
-            apexCharts['chart-cumulative'] = chart;
+        var cumContainer = safeEl('chart-cumulative');
+        if (cumContainer) {
+          cumContainer.innerHTML = '';
+          var chart = renderCumulativeLwc(trades, cumContainer);
+          if (chart) {
+            lwcCharts['chart-cumulative'] = chart;
             setupResizeObserver('chart-cumulative', chart);
           }
         }
@@ -1741,13 +1985,12 @@
       }
 
       try {
-        var dailyOptions = renderDailyChart(trades);
-        if (dailyOptions) {
-          var dailyContainer = safeEl('chart-daily');
-          if (dailyContainer) {
-            var chart3 = new ApexCharts(dailyContainer, dailyOptions);
-            chart3.render();
-            apexCharts['chart-daily'] = chart3;
+        var dailyContainer = safeEl('chart-daily');
+        if (dailyContainer) {
+          dailyContainer.innerHTML = '';
+          var chart3 = renderDailyLwc(trades, dailyContainer);
+          if (chart3) {
+            lwcCharts['chart-daily'] = chart3;
             setupResizeObserver('chart-daily', chart3);
           }
         }
@@ -1817,6 +2060,17 @@
           }
         } catch(e) {}
       }
+      for (var lkey in lwcCharts) {
+        try {
+          var lcontainer = safeEl(lkey);
+          if (lcontainer) {
+            var lrect = lcontainer.getBoundingClientRect();
+            if (lrect.width > 0 && lrect.height > 0) {
+              lwcCharts[lkey].applyOptions({ width: lrect.width, height: lrect.height });
+            }
+          }
+        } catch(e) {}
+      }
       return;
     }
 
@@ -1836,15 +2090,14 @@
   // ============================================================
 
   function setupChartExpansion() {
-    var isDesktop = window.innerWidth >= 768;
-    if (!isDesktop) return;
-
     var chartConfigs = [
-      { cardSelector: '#charts-top-grid .chart-card:nth-child(1)', title: i18n.t('dashboard.chart.cumulative'), renderFn: renderCumulativeChart },
-      { cardSelector: '#charts-top-grid .chart-card:nth-child(2)', title: i18n.t('dashboard.chart.winloss'), renderFn: renderWinLossChart },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(1)', title: i18n.t('dashboard.chart.daily'), renderFn: renderDailyChart },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(2)', title: i18n.t('dashboard.chart.symbol'), renderFn: renderSymbolChart },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(3)', title: i18n.t('dashboard.chart.direction'), renderFn: renderDirectionChart }
+      { cardSelector: '#charts-top-grid .chart-card:nth-child(1)', type: 'cumulative', title: i18n.t('dashboard.chart.cumulative') || 'Kümülatif K/Z Serisi' },
+      { cardSelector: '#charts-top-grid .chart-card:nth-child(2)', type: 'winloss', title: i18n.t('dashboard.chart.winloss') || 'Win / Loss Dağılımı' },
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(1)', type: 'daily', title: i18n.t('dashboard.chart.daily') || 'Günlük K/Z – Son 30 Gün' },
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(2)', type: 'symbol', title: i18n.t('dashboard.chart.symbol') || 'Sembol Bazlı Performans' },
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(3)', type: 'direction', title: i18n.t('dashboard.chart.direction') || 'Long / Short Dağılımı' },
+      { cardSelector: '.donut-mobile-slide:first-child', type: 'winloss', title: i18n.t('dashboard.chart.winloss') || 'Win / Loss Dağılımı' },
+      { cardSelector: '.donut-mobile-slide:last-child', type: 'direction', title: i18n.t('dashboard.chart.direction') || 'Long / Short Dağılımı' }
     ];
 
     chartConfigs.forEach(function(cfg) {
@@ -1852,36 +2105,67 @@
       if (!card) return;
       card.classList.add('expandable');
       card.onclick = function(e) {
-        if (e.target.closest('.chart-wrap')) {
-          openChartExpansion(cfg.title, cfg.renderFn);
-        }
+        if (e.target.closest('button') || e.target.closest('a')) return;
+        openChartExpansion(cfg.type, cfg.title);
       };
     });
+
+    if (!window._chartExpandEscBound) {
+      window._chartExpandEscBound = true;
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeChartExpansion();
+      });
+    }
   }
 
-  function openChartExpansion(title, renderFn) {
+  function openChartExpansion(type, title) {
     var overlay = safeEl('chart-expand-modal');
     var titleEl = safeEl('chart-expand-title');
     var container = safeEl('chart-expand-container');
+    var summaryEl = safeEl('chart-expand-summary');
     if (!overlay || !container) return;
 
     titleEl.textContent = title;
     overlay.classList.add('active');
     overlay.style.display = 'flex';
 
-    var filtered = filterByDate(allTrades, currentRange);
-    var options = renderFn(filtered);
-    if (!options) return;
-
-    options.chart.height = 480;
-    options.chart.animations = { enabled: true, speed: 300 };
-
-    container.innerHTML = '';
     if (expandedChart) {
       try { expandedChart.destroy(); } catch(e) {}
+      expandedChart = null;
     }
-    expandedChart = new ApexCharts(container, options);
-    expandedChart.render();
+    if (expandedLwcChart) {
+      try { expandedLwcChart.remove(); } catch(e) {}
+      expandedLwcChart = null;
+    }
+    container.innerHTML = '';
+
+    var filtered = filterByDate(allTrades, currentRange);
+    var modalHeight = window.innerWidth < 768 ? 300 : 400;
+
+    if (type === 'cumulative') {
+      expandedLwcChart = renderCumulativeLwc(filtered, container, modalHeight);
+    } else if (type === 'daily') {
+      expandedLwcChart = renderDailyLwc(filtered, container, modalHeight);
+    } else {
+      var renderFn = null;
+      if (type === 'winloss') renderFn = renderWinLossChart;
+      else if (type === 'symbol') renderFn = renderSymbolChart;
+      else if (type === 'direction') renderFn = renderDirectionChart;
+
+      if (renderFn) {
+        var options = renderFn(filtered);
+        if (options) {
+          options.chart.height = modalHeight;
+          options.chart.animations = { enabled: true, speed: 300 };
+          expandedChart = new ApexCharts(container, options);
+          expandedChart.render();
+        }
+      }
+    }
+
+    if (summaryEl) {
+      renderExpandSummary(filtered, summaryEl);
+    }
   }
 
   function closeChartExpansion() {
@@ -1894,6 +2178,108 @@
       try { expandedChart.destroy(); } catch(e) {}
       expandedChart = null;
     }
+    if (expandedLwcChart) {
+      try { expandedLwcChart.remove(); } catch(e) {}
+      expandedLwcChart = null;
+    }
+    var container = safeEl('chart-expand-container');
+    if (container) container.innerHTML = '';
+    var summaryEl = safeEl('chart-expand-summary');
+    if (summaryEl) summaryEl.innerHTML = '';
+  }
+
+  // ============================================================
+  // ⭐ EXPAND SUMMARY RENDER (Kazanan & Kaybeden İşlemler)
+  // ============================================================
+
+  function renderExpandSummary(trades, container) {
+    if (!container) return;
+    var closed = (trades || []).filter(function(t) { return t.exit_price; });
+    if (!closed.length) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px;">İşlem özeti bulunamadı.</div>';
+      return;
+    }
+
+    var winTrades = [];
+    var lossTrades = [];
+    var totalWinPnL = 0;
+    var totalLossPnL = 0;
+    var symbolStats = {};
+
+    closed.forEach(function(t) {
+      var pnl = calcTradePnL(t);
+      var sym = (t.symbol || 'Diğer').toUpperCase();
+
+      if (!symbolStats[sym]) {
+        symbolStats[sym] = { winCount: 0, lossCount: 0, winPnL: 0, lossPnL: 0 };
+      }
+
+      if (pnl > 0) {
+        winTrades.push(t);
+        totalWinPnL += pnl;
+        symbolStats[sym].winCount++;
+        symbolStats[sym].winPnL += pnl;
+      } else if (pnl < 0) {
+        lossTrades.push(t);
+        totalLossPnL += pnl;
+        symbolStats[sym].lossCount++;
+        symbolStats[sym].lossPnL += pnl;
+      }
+    });
+
+    var topWinSymbols = Object.keys(symbolStats)
+      .filter(function(s) { return symbolStats[s].winPnL > 0; })
+      .sort(function(a, b) { return symbolStats[b].winPnL - symbolStats[a].winPnL; })
+      .slice(0, 3);
+
+    var topLossSymbols = Object.keys(symbolStats)
+      .filter(function(s) { return symbolStats[s].lossPnL < 0; })
+      .sort(function(a, b) { return symbolStats[a].lossPnL - symbolStats[b].lossPnL; })
+      .slice(0, 3);
+
+    var totalCount = closed.length;
+    var winRate = totalCount > 0 ? ((winTrades.length / totalCount) * 100).toFixed(1) : '0.0';
+    var lossRate = totalCount > 0 ? ((lossTrades.length / totalCount) * 100).toFixed(1) : '0.0';
+
+    var winListHtml = '';
+    if (topWinSymbols.length > 0) {
+      winListHtml = topWinSymbols.map(function(s) {
+        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].winCount + ' işlem)</span><span class="item-val" style="color:var(--green)">+' + formatCurrency(symbolStats[s].winPnL).replace('+', '') + '</span></div>';
+      }).join('');
+    } else {
+      winListHtml = '<div style="color:var(--muted);font-size:12px;">Kazanan işlem yok</div>';
+    }
+
+    var lossListHtml = '';
+    if (topLossSymbols.length > 0) {
+      lossListHtml = topLossSymbols.map(function(s) {
+        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].lossCount + ' işlem)</span><span class="item-val" style="color:var(--red)">' + formatCurrency(symbolStats[s].lossPnL) + '</span></div>';
+      }).join('');
+    } else {
+      lossListHtml = '<div style="color:var(--muted);font-size:12px;">Kaybeden işlem yok</div>';
+    }
+
+    var html = '' +
+      '<div class="expand-summary-col wins">' +
+        '<div class="expand-summary-header">' +
+          '<span class="expand-summary-title">Kazanan İşlemler (' + winTrades.length + ' adet • %' + winRate + ')</span>' +
+          '<span class="expand-summary-total">+' + formatCurrency(totalWinPnL).replace('+', '') + '</span>' +
+        '</div>' +
+        '<div class="expand-summary-list">' +
+          winListHtml +
+        '</div>' +
+      '</div>' +
+      '<div class="expand-summary-col losses">' +
+        '<div class="expand-summary-header">' +
+          '<span class="expand-summary-title">Kaybeden İşlemler (' + lossTrades.length + ' adet • %' + lossRate + ')</span>' +
+          '<span class="expand-summary-total">' + formatCurrency(totalLossPnL) + '</span>' +
+        '</div>' +
+        '<div class="expand-summary-list">' +
+          lossListHtml +
+        '</div>' +
+      '</div>';
+
+    container.innerHTML = html;
   }
 
   // ============================================================
@@ -2645,7 +3031,7 @@
   // ============================================================
 
   function startDashboard() {
-    if (typeof window.ApexCharts === 'undefined') {
+    if (typeof window.ApexCharts === 'undefined' || typeof window.LightweightCharts === 'undefined') {
       setTimeout(startDashboard, 50);
       return;
     }

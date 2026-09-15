@@ -1230,11 +1230,14 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
    STRATEGIES SAYFASI
    ============================================================ */
 
-.strategies-main {
+.strategies-main,
+.trades-main {
   padding: 0.9rem clamp(0.75rem, 2vw, 2rem);
   max-width: 100%;
   margin: 0 auto;
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 /* ============================================================
@@ -2495,6 +2498,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   scroll-behavior: smooth !important;
+  scrollbar-gutter: stable;
 }
 
 /* Scroll bar stilini koru */

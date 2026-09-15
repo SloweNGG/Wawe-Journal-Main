@@ -27,6 +27,17 @@
   --nav-height: 64px; /* ⭐ sabit nav yüksekliği (masaüstü) */
 }
 
+#navbar-container {
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  width: 100%;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
 .nav {
   height: 64px;
   min-height: 64px;
@@ -1217,6 +1228,7 @@ body.light-theme .nav-menu {
 .dashboard-main,
 .calendar-page-main,
 .strategies-main,
+.trades-main,
 .settings-wrap,
 .settings-panels,
 .page-content {
@@ -1260,7 +1272,8 @@ body.light-theme .nav-menu {
   .main,
   .dashboard-main,
   .calendar-page-main,
-  .strategies-main {
+  .strategies-main,
+  .trades-main {
     animation: fadeInContent 0.25s cubic-bezier(0.4,0,0.2,1) both;
   }
   @keyframes fadeInContent {

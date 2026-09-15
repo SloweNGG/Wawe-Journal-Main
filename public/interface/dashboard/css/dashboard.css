@@ -1347,18 +1347,123 @@ body.light-theme .mini-cal-day.loss:hover {
 }
 
 @media (max-width: 767px) {
-  .chart-expand-overlay {
-    display: none !important;
+  .chart-expand-box {
+    width: 95vw;
+    max-height: 92vh;
+  }
+  .chart-expand-body {
+    padding: 1rem;
+  }
+  #chart-expand-container {
+    height: 320px !important;
   }
 }
 
-.chart-card.expandable {
+.chart-card.expandable,
+.donut-mobile-slide.expandable {
   cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.chart-card.expandable:hover,
+.donut-mobile-slide.expandable:hover {
+  border-color: var(--accent);
 }
 
 .chart-card.expandable:hover {
   border-color: var(--accent);
 }
+
+/* ============================================================
+   ⭐ CHART EXPAND SUMMARY (Kazanan & Kaybeden İşlemler)
+   ============================================================ */
+.chart-expand-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  .chart-expand-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+.expand-summary-col {
+  background: var(--surface2, rgba(255,255,255,0.03));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.expand-summary-col.wins {
+  border-left: 3px solid var(--green);
+}
+
+.expand-summary-col.losses {
+  border-left: 3px solid var(--red);
+}
+
+.expand-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.expand-summary-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.expand-summary-total {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.expand-summary-col.wins .expand-summary-total {
+  color: var(--green);
+}
+
+.expand-summary-col.losses .expand-summary-total {
+  color: var(--red);
+}
+
+.expand-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.expand-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text);
+  padding: 2px 0;
+}
+
+.expand-summary-item .item-sym {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.expand-summary-item .item-val {
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+}
+
 
 /* ============================================================
    ⭐ DONUT MOBILE CAROUSEL (SORUN 7)
