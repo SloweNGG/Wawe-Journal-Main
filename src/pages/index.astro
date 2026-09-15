@@ -1,7 +1,7 @@
 ﻿---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en">
+<Layout lang="en" showNavbar={false}>
 <Fragment slot="head">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
@@ -47,6 +47,14 @@ import Layout from '../layouts/Layout.astro';
   <style>
     * { box-sizing: border-box; }
     html, body { max-width: 100%; overflow-x: hidden; }
+    #navbar-container { display: none !important; }
+    /* landing page: app-scroll-container normal flow (scroll on html/body, not container) */
+    #app-scroll-container {
+      overflow: unset !important;
+      height: auto !important;
+      display: block !important;
+    }
+    html { overflow-y: auto !important; }
   </style>
 </Fragment>
 

@@ -10,6 +10,7 @@ export interface Props {
   description?: string;
   canonical?: string;
   noIndex?: boolean;
+  showNavbar?: boolean;
 }
 
 const {
@@ -20,6 +21,7 @@ const {
   description,
   canonical,
   noIndex,
+  showNavbar = true,
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -30,9 +32,11 @@ const {
 </head>
 <body class={bodyClass} style={bodyStyle}>
   <div id="app-scroll-container">
-    <div id="navbar-container">
-      <Navbar /> <!-- ⭐ BOŞ, placeholder -->
-    </div>
+    {showNavbar && (
+      <div id="navbar-container">
+        <Navbar />
+      </div>
+    )}
     <slot />
   </div>
 </body>

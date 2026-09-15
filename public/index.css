@@ -28,6 +28,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   color-scheme: dark;
+  padding-top: 53px; /* fixed nav height offset */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -45,9 +46,11 @@ img, svg, canvas { max-width: 100%; }
    NAV
    ============================================================ */
 nav.nav {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 99;
+  left: 0;
+  right: 0;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: space-between;

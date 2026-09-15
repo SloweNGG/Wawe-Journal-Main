@@ -4,9 +4,9 @@
   "description": "Wawe Journal - Professional Trading Journal (Astro geçişi)",
   "type": "module",
   "scripts": {
-    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
-    "preview": "astro preview"
+    "dev": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro dev",
+    "build": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "preview": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro preview"
   },
   "dependencies": {
     "@astrojs/react": "^3.6.3",
@@ -17,5 +17,8 @@
     "react-dom": "^18.3.1"
   },
   "author": "WaweDev",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
 }

@@ -1,0 +1,239 @@
+---
+import Layout from './Layout.astro';
+
+export interface Props {
+  title: string;
+  lang?: string;
+  description?: string;
+}
+
+const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal' } = Astro.props;
+---
+<Layout lang={lang} showNavbar={false} title={title} description={description}>
+<Fragment slot="head">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/index.css" />
+  <link rel="stylesheet" href="/pages.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #navbar-container { display: none !important; }
+    #app-scroll-container {
+      overflow: unset !important;
+      height: auto !important;
+      min-height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    html { overflow-y: auto !important; }
+    body {
+      padding-top: 53px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+      font-size: clamp(14px, 1.2vw, 16px);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+  </style>
+</Fragment>
+
+  <!-- ═══ NAV ═══ -->
+  <nav class="nav">
+    <a href="/" class="nav-logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <polyline points="2,16 7,9 12,13 19,4" stroke="#8b5cf6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Wawe<span class="logo-accent">Journal</span></span>
+    </a>
+
+    <div class="nav-links">
+      <a href="/#pricing" class="nav-link" data-i18n="nav.pricing">Pricing</a>
+      <a href="/login" class="btn-login" data-i18n="nav.login">Login</a>
+      <a href="/register" class="btn-register" data-i18n="nav.register">Sign Up →</a>
+    </div>
+
+    <div class="lang-selector" id="lang-selector">
+      <div class="lang-current" id="lang-current">
+        <span class="lang-current-flag">🇬🇧</span>
+        <span class="lang-current-arrow">▼</span>
+      </div>
+      <div class="lang-dropdown" id="lang-dropdown">
+        <div class="lang-option" data-lang="tr" data-flag="🇹🇷">
+          <span class="lang-option-flag">🇹🇷</span><span class="lang-option-check"></span>
+        </div>
+        <div class="lang-option active" data-lang="en" data-flag="🇬🇧">
+          <span class="lang-option-flag">🇬🇧</span><span class="lang-option-check">✓</span>
+        </div>
+        <div class="lang-option" data-lang="de" data-flag="🇩🇪">
+          <span class="lang-option-flag">🇩🇪</span><span class="lang-option-check"></span>
+        </div>
+      </div>
+    </div>
+
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </nav>
+
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/#pricing" data-i18n="nav.pricing">Pricing</a>
+    <a href="/login" data-i18n="nav.login">Login</a>
+    <a href="/register" class="btn-register-mobile" data-i18n="nav.register">Sign Up →</a>
+  </div>
+  <div class="menu-overlay" id="menu-overlay"></div>
+
+  <!-- ═══ MAIN PAGE CONTAINER ═══ -->
+  <main class="page-container">
+    <slot />
+  </main>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <div class="footer-logo">
+          <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <polyline points="2,16 7,9 12,13 19,4" stroke="#8b5cf6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Wawe<span class="logo-accent">Journal</span></span>
+        </div>
+        <p class="footer-desc" data-i18n="footer.desc">A modern trading journal built for professional traders.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.links">Links</h4>
+        <ul>
+          <li><a href="/" data-i18n="nav.home">Home</a></li>
+          <li><a href="/#pricing" data-i18n="nav.pricing">Pricing</a></li>
+          <li><a href="/login" data-i18n="nav.login">Login</a></li>
+          <li><a href="/register" data-i18n="nav.register">Sign Up</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.corporate">Corporate</h4>
+        <ul>
+          <li><a href="/about" data-i18n="footer.about">About</a></li>
+          <li><a href="/privacy" data-i18n="footer.privacy">Privacy</a></li>
+          <li><a href="/terms" data-i18n="footer.terms">Terms</a></li>
+          <li><a href="/contact" data-i18n="footer.contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.contact_title">Contact</h4>
+        <ul>
+          <li><a href="mailto:destek@wawedev.com">destek@wawedev.com</a></li>
+          <li><span>EU Finland</span></li>
+          <li><span>WaweDev Inc</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom-bar">
+      <p>
+        © 2026 <span data-i18n-html="footer.credit">WaweJournal is a part of <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a> brand.</span>
+        <span data-i18n="footer.rights">All rights reserved.</span>
+      </p>
+      <div class="footer-social">
+        <a href="https://www.instagram.com/wawejournal/" target="_blank" class="social-link" aria-label="Instagram">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg>
+        </a>
+        <a href="https://youtube.com/@wawedev" target="_blank" class="social-link" aria-label="YouTube">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
+        </a>
+        <a href="https://discord.gg" target="_blank" class="social-link" id="discord-link" aria-label="Discord">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.317 4.37a19.6 19.6 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0c-.164-.386-.398-.875-.608-1.25a.077.077 0 0 0-.079-.037A19.6 19.6 0 0 0 3.68 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03c.028.006.056-.009.071-.033a13.9 13.9 0 0 0 1.216-1.99.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.838-.875c-.037-.02-.04-.071-.008-.098"/></svg>
+        </a>
+        <a href="mailto:destek@wawedev.com" class="social-link" aria-label="Email">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/index-i18n.js" is:inline></script>
+  <script is:inline>
+  (function() {
+    function setupPage() {
+      var langCurrent = document.getElementById('lang-current');
+      var langDropdown = document.getElementById('lang-dropdown');
+      var langOptions = document.querySelectorAll('.lang-option');
+      var langFlag = document.querySelector('#lang-current .lang-current-flag');
+
+      function updateLanguageUI(lang) {
+        langOptions.forEach(function(opt) {
+          var check = opt.querySelector('.lang-option-check');
+          if (opt.dataset.lang === lang) {
+            opt.classList.add('active');
+            if (check) check.textContent = '✓';
+            if (langFlag) langFlag.textContent = opt.dataset.flag;
+          } else {
+            opt.classList.remove('active');
+            if (check) check.textContent = '';
+          }
+        });
+      }
+
+      if (typeof window.i18n !== 'undefined') {
+        updateLanguageUI(window.i18n.getCurrentLanguage());
+        window.i18n.onChange(function(l) { updateLanguageUI(l); });
+      }
+
+      function toggleDD() { if (langDropdown) langDropdown.classList.toggle('show'); }
+      function closeDD() { if (langDropdown) langDropdown.classList.remove('show'); }
+
+      if (langCurrent) {
+        langCurrent.addEventListener('click', function(e) {
+          e.stopPropagation();
+          toggleDD();
+        });
+      }
+
+      langOptions.forEach(function(opt) {
+        opt.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var lang = opt.dataset.lang;
+          if (typeof window.i18n !== 'undefined') {
+            window.i18n.setLanguage(lang);
+          }
+          closeDD();
+        });
+      });
+
+      document.addEventListener('click', function(e) {
+        if (langCurrent && langDropdown && !langCurrent.contains(e.target) && !langDropdown.contains(e.target)) {
+          closeDD();
+        }
+      });
+
+      // Hamburger menu
+      var hamburger = document.getElementById('hamburger');
+      var mobileMenu = document.getElementById('mobile-menu');
+      var overlay = document.getElementById('menu-overlay');
+      function toggleMenu() {
+        if (!hamburger || !mobileMenu) return;
+        hamburger.classList.toggle('active');
+        mobileMenu.classList.toggle('active');
+        if (overlay) overlay.classList.toggle('active');
+        document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+      }
+      if (hamburger) hamburger.addEventListener('click', toggleMenu);
+      if (overlay) overlay.addEventListener('click', toggleMenu);
+      document.querySelectorAll('.mobile-menu a').forEach(function(l) {
+        l.addEventListener('click', toggleMenu);
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupPage);
+    } else {
+      setupPage();
+    }
+  })();
+  </script>
+</Layout>
