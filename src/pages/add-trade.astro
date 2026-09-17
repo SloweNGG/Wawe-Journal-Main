@@ -715,8 +715,8 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
-  <script src="/script.js" is:inline></script>
-  <script src="/components/navbar/navbar.js" is:inline></script>
+  <script type="module" src="/src/script.js" is:inline></script>
+  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
@@ -748,7 +748,15 @@ import Layout from '../layouts/Layout.astro';
       if (!grid) return;
 
       try {
-        var strategies = await getUserStrategies();
+        var allStrategies = await getUserStrategies();
+        
+        var jid = window.journal ? window.journal.getActiveJournalId() : null;
+        if (!jid) {
+          if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+          return;
+        }
+
+        var strategies = allStrategies.filter(function(s) { return s.journal_id === jid; });
         strategiesList = strategies;
 
         if (!strategies || strategies.length === 0) {
@@ -1027,7 +1035,7 @@ import Layout from '../layouts/Layout.astro';
           else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + direction + '", SHORT olarak kaydedildi.');
 
           var trade = {
-            user_id: currentUser.id, symbol: symbol, direction: finalDir,
+            user_id: currentUser.id, journal_id: window.journal.getActiveJournalId(), symbol: symbol, direction: finalDir,
             instrument: 'forex', lot: lot, entry_price: entry,
             exit_price: exit, trade_date: tradeDate,
             notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR')
@@ -1131,6 +1139,7 @@ import Layout from '../layouts/Layout.astro';
 
           trades.push({
             user_id: currentUser.id,
+            journal_id: window.journal.getActiveJournalId(),
             symbol: symbol,
             direction: finalDir,
             instrument: 'forex',
@@ -1281,7 +1290,7 @@ import Layout from '../layouts/Layout.astro';
         } catch(e) {}
 
         var { error } = await sb.from('trades').insert([{
-          user_id: currentUser.id, symbol: symbol, direction: direction, instrument: instrument, lot: lot,
+          user_id: currentUser.id, journal_id: window.journal.getActiveJournalId(), symbol: symbol, direction: direction, instrument: instrument, lot: lot,
           entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp,
           trade_date: tradeDate, notes: notes || null, pnl: pnl,
           rr_ratio: rr ? parseFloat(rr) : null, multiplier: mult, strategy_id: strategyId
@@ -1311,6 +1320,12 @@ import Layout from '../layouts/Layout.astro';
       try {
         currentUser = await requireAuth();
         if (!currentUser) return;
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(currentUser.id);
         
         var dateEl = document.getElementById('trade-date');
         if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
@@ -1333,3 +1348,7 @@ import Layout from '../layouts/Layout.astro';
 
   </script>
 </Layout>
+
+<script is:inline>
+document.addEventListener('journal-changed', () => window.location.reload());
+</script>

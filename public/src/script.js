@@ -1,3 +1,4 @@
+import './core/journal.js';
 ﻿// ============================================================
 // WAWE JOURNAL - ANA SCRIPT
 // Tüm modülleri import eder ve window'a atar

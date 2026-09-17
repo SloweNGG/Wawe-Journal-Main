@@ -1,14 +1,34 @@
-﻿// ============================================================
-// NAVBAR.JS - components/navbar/navbar.js
-// ⭐ CLIENT-SIDE RENDER - Navbar tamamen JS ile oluşturulur
-// ⭐ Mobil menüde kullanıcı kartı + gruplanmış bağlantılar
-// ⭐ Avatar cache + kullanıcı adı cache ayrı
-// ⭐ Kullanıcı adı her zaman doğru gösterilir
-// ⭐ AYARLAR SAYFASINDA DA HAMBURGER MENÜ ÇALIŞIR
-// ⭐ Event'ler her sayfa yüklemesinde yeniden bağlanır
-// ⭐ FIX: updateNavbarBadge() - 5dk sessionStorage cache KALDIRILDI
-//    (plan değişimi anında yansısın diye her zaman taze çekiyor)
-// ============================================================
+window.wwTogglePremium = function(e, btn) {
+  e.preventDefault();
+  e.stopPropagation();
+  var m = document.getElementById('premium-dropdown-menu');
+  if(m) {
+    btn.classList.toggle('active');
+    m.classList.toggle('open');
+  }
+};
+
+window.wwToggleBell = function(e, btn) {
+  e.preventDefault();
+  e.stopPropagation();
+  var p = document.getElementById('bell-panel');
+  if(p) p.classList.toggle('open');
+};
+
+window.wwToggleJournal = function(e, btn) {
+  e.preventDefault();
+  e.stopPropagation();
+  var js = document.getElementById('nav-journal-switcher');
+  if (js) js.classList.toggle('open');
+};
+
+function t(key, fallback) {
+  if (typeof i18n !== 'undefined' && i18n.t) {
+    var val = i18n.t(key);
+    return (val && val !== key) ? val : fallback;
+  }
+  return fallback;
+}
 
 wwLog.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');
 
@@ -36,7 +56,7 @@ function sanitizeURL(url) {
 
 function loadLucideIcons() {
   if (typeof lucide !== 'undefined') {
-    try { lucide.createIcons(); wwLog.log('✅ Lucide icons re-created!'); } catch(e) {}
+    try { lucide.createIcons(); } catch(e) {}
     return;
   }
   var script = document.createElement('script');
@@ -44,25 +64,25 @@ function loadLucideIcons() {
   script.defer = true;
   script.onload = function() {
     if (typeof lucide !== 'undefined') {
-      try { lucide.createIcons(); wwLog.log('✅ Lucide icons loaded and created!'); } catch(e) {}
+      try { lucide.createIcons(); } catch(e) {}
     }
   };
-  script.onerror = function() { wwLog.warn('⚠️ Lucide icons could not be loaded'); };
   document.head.appendChild(script);
 }
 
 function getNavbarHTML(translations) {
-  var t = function(key) {
-    if (translations && translations[key]) return translations[key];
+  var tt = function(key, fallback) {
+    if (translations && translations[key] && translations[key] !== key) return translations[key];
     if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
-      return i18n.t(key);
+      var val = i18n.t(key);
+      if (val && val !== key) return val;
     }
-    return key;
+    return fallback || key;
   };
 
-  var menuGeneral = t('nav.menu_general') || 'GENEL';
-  var menuPremium = t('nav.menu_premium') || 'PREMIUM';
-  var menuAccount = t('nav.menu_account') || 'HESAP';
+  var menuGeneral = tt('nav.menu_general') || 'GENEL';
+  var menuPremium = tt('nav.menu_premium') || 'PREMIUM';
+  var menuAccount = tt('nav.menu_account') || 'HESAP';
 
   return `
     <nav class="nav">
@@ -72,60 +92,70 @@ function getNavbarHTML(translations) {
         </div>
       </a>
       
+      <div class="nav-journal-switcher" id="nav-journal-switcher">
+        <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="wwToggleJournal(event, this)">
+          <i data-lucide="folder" class="journal-icon"></i>
+          <span class="journal-name">Ana Hesap</span>
+          <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="journal-dropdown" id="journal-dropdown"></div>
+      </div>
+      
       <div class="nav-links">
-        <a href="/dashboard.html" data-i18n="nav.dashboard" data-page="dashboard">${t('nav.dashboard')}</a>
-        <a href="/trades.html" data-i18n="nav.trades" data-page="trades">${t('nav.trades')}</a>
-        <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">${t('nav.strategies')}</a>
-        <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">${t('nav.calendar')}</a>
-        <span id="admin-link" style="display:none;"><a href="/admin.html" data-i18n="nav.admin" data-page="admin">${t('nav.admin')}</a></span>
+        <a href="/dashboard.html" data-i18n="nav.dashboard" data-page="dashboard">${tt('nav.dashboard', 'Dashboard')}</a>
+        <a href="/trades.html" data-i18n="nav.trades" data-page="trades">${tt('nav.trades', 'İşlemler')}</a>
+        <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">${tt('nav.strategies', 'Stratejiler')}</a>
+        <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">${tt('nav.calendar', 'Takvim')}</a>
+        <a href="/journals.html" data-i18n="nav.journals" data-page="journals">${tt('nav.journals', 'Hesaplar')}</a>
+        <span id="admin-link" style="display:none;"><a href="/admin.html" data-i18n="nav.admin" data-page="admin">${tt('nav.admin', 'Admin')}</a></span>
       </div>
       
       <div class="nav-right">
         <div class="nav-dropdown">
-          <button class="nav-dropdown-btn" id="premium-dropdown-btn">
+          <button class="nav-dropdown-btn" id="premium-dropdown-btn" onclick="wwTogglePremium(event, this)">
             <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.premium">${t('nav.premium')}</span>
+            <span data-i18n="nav.premium">${tt('nav.premium')}</span>
             <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
           </button>
           <div class="nav-dropdown-menu" id="premium-dropdown-menu">
             <div class="menu-label" data-i18n="nav.premium_features">✨ Premium Özellikler</div>
             <a href="/premium-dashboard.html">
               <i data-lucide="layout-dashboard" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.premium_dashboard">${t('nav.premium_dashboard')}</span>
+              <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard')}</span>
             </a>
             <a href="/settings.html#panel-appearance">
               <i data-lucide="palette" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.theme_customization">${t('nav.theme_customization')}</span>
+              <span data-i18n="nav.theme_customization">${tt('nav.theme_customization')}</span>
             </a>
             <a href="/settings.html#panel-overtrade">
               <i data-lucide="bell" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.overtrade_alert">${t('nav.overtrade_alert')}</span>
+              <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert')}</span>
             </a>
             <div class="dropdown-divider"></div>
             <a href="/settings.html#panel-plan" style="color:var(--accent); font-weight:700;">
               <i data-lucide="rocket" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.upgrade_premium">${t('nav.upgrade_premium')}</span>
+              <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium')}</span>
             </a>
           </div>
         </div>
 
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
-          <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler">
+          <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="wwToggleBell(event, this)">
             <i data-lucide="bell" style="width:18px;height:18px;"></i>
             <span class="bell-dot" id="bell-dot" style="display:none;"></span>
           </button>
           <div class="bell-panel" id="bell-panel">
             <div class="bell-panel-header">
-              <h3 data-i18n="nav.notifications">🔔 ${t('nav.notifications')}</h3>
+              <h3 data-i18n="nav.notifications">🔔 ${tt('nav.notifications')}</h3>
               <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read">✓ ${t('nav.mark_read')}</button>
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read">✓ ${tt('nav.mark_read')}</button>
                 <button class="bell-panel-close" id="bell-panel-close">✕</button>
               </div>
             </div>
             <div class="bell-panel-body" id="bell-panel-body">
               <div class="bell-panel-empty">
                 <span class="empty-icon">🔕</span>
-                <span data-i18n="nav.no_notifications">${t('nav.no_notifications')}</span>
+                <span data-i18n="nav.no_notifications">${tt('nav.no_notifications')}</span>
               </div>
             </div>
           </div>
@@ -133,7 +163,7 @@ function getNavbarHTML(translations) {
         
         <div class="plan-badge" id="plan-badge">
           <span class="plan-dot"></span>
-          <span class="plan-text" id="plan-text">${t('nav.free_badge') || 'Ücretsiz'}</span>
+          <span class="plan-text" id="plan-text">${tt('nav.free_badge') || 'Ücretsiz'}</span>
         </div>
         
         <div class="user-avatar" id="user-avatar">
@@ -143,21 +173,21 @@ function getNavbarHTML(translations) {
         <div class="dropdown-menu" id="dropdown-menu">
           <a href="/settings.html#panel-profile" class="dropdown-item" data-i18n="nav.profile">
             <i data-lucide="user" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.profile">${t('nav.profile')}</span>
+            <span data-i18n="nav.profile">${tt('nav.profile')}</span>
           </a>
           <a href="/settings.html" class="dropdown-item" data-i18n="nav.settings">
             <i data-lucide="settings" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.settings">${t('nav.settings')}</span>
+            <span data-i18n="nav.settings">${tt('nav.settings', 'Ayarlar')}</span>
           </a>
           <div class="dropdown-divider"></div>
           <a href="/settings.html#panel-plan" class="dropdown-item" style="color:var(--accent2);">
             <i data-lucide="crown" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.upgrade_premium">${t('nav.upgrade_premium')}</span>
+            <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium')}</span>
           </a>
           <div class="dropdown-divider"></div>
           <button class="dropdown-item" id="logout-dropdown-btn" data-i18n="nav.logout">
             <i data-lucide="log-out" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.logout">${t('nav.logout')}</span>
+            <span data-i18n="nav.logout">${tt('nav.logout', 'Çıkış Yap')}</span>
           </button>
         </div>
         
@@ -179,7 +209,7 @@ function getNavbarHTML(translations) {
             <div class="user-card-name" id="menu-user-name">Kullanıcı</div>
             <div class="user-card-plan" id="menu-user-plan">
               <span class="plan-dot"></span>
-              <span class="plan-text">${t('nav.free_badge') || 'Ücretsiz'}</span>
+              <span class="plan-text">${tt('nav.free_badge') || 'Ücretsiz'}</span>
             </div>
           </div>
         </div>
@@ -187,23 +217,26 @@ function getNavbarHTML(translations) {
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_general">${menuGeneral}</div>
           <a href="/index.html" data-i18n="nav.home">
-            <i data-lucide="home" style="width:16px;height:16px;"></i> ${t('nav.home')}
+            <i data-lucide="home" style="width:16px;height:16px;"></i> ${tt('nav.home')}
           </a>
           <a href="/dashboard.html" data-i18n="nav.dashboard">
-            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${t('nav.dashboard')}
+            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${tt('nav.dashboard', 'Dashboard')}
           </a>
           <a href="/trades.html" data-i18n="nav.trades">
-            <i data-lucide="list" style="width:16px;height:16px;"></i> ${t('nav.trades')}
+            <i data-lucide="list" style="width:16px;height:16px;"></i> ${tt('nav.trades', 'İşlemler')}
           </a>
           <a href="/strategies.html" data-i18n="nav.strategies">
-            <i data-lucide="target" style="width:16px;height:16px;"></i> ${t('nav.strategies')}
+            <i data-lucide="target" style="width:16px;height:16px;"></i> ${tt('nav.strategies', 'Stratejiler')}
           </a>
           <a href="/calendar.html" data-i18n="nav.calendar">
-            <i data-lucide="calendar" style="width:16px;height:16px;"></i> ${t('nav.calendar')}
+            <i data-lucide="calendar" style="width:16px;height:16px;"></i> ${tt('nav.calendar', 'Takvim')}
+          </a>
+          <a href="/journals.html" data-i18n="nav.journals">
+            <i data-lucide="folder" style="width:16px;height:16px;"></i> ${tt('nav.journals', 'Hesaplar')}
           </a>
           <span id="admin-link-mobile" style="display:none;">
             <a href="/admin.html" data-i18n="nav.admin">
-              <i data-lucide="shield" style="width:16px;height:16px;"></i> ${t('nav.admin')}
+              <i data-lucide="shield" style="width:16px;height:16px;"></i> ${tt('nav.admin', 'Admin')}
             </a>
           </span>
         </div>
@@ -211,29 +244,29 @@ function getNavbarHTML(translations) {
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_premium">${menuPremium}</div>
           <a href="/premium-dashboard.html" data-i18n="nav.premium_dashboard">
-            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${t('nav.premium_dashboard')}
+            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${tt('nav.premium_dashboard')}
           </a>
           <a href="/settings.html#panel-appearance" data-i18n="nav.theme_customization">
-            <i data-lucide="palette" style="width:16px;height:16px;"></i> ${t('nav.theme_customization')}
+            <i data-lucide="palette" style="width:16px;height:16px;"></i> ${tt('nav.theme_customization')}
           </a>
           <a href="/settings.html#panel-overtrade" data-i18n="nav.overtrade_alert">
-            <i data-lucide="bell" style="width:16px;height:16px;"></i> ${t('nav.overtrade_alert')}
+            <i data-lucide="bell" style="width:16px;height:16px;"></i> ${tt('nav.overtrade_alert')}
           </a>
           <a href="/settings.html#panel-plan" class="go-premium" data-i18n="nav.upgrade_premium">
-            <i data-lucide="rocket" style="width:16px;height:16px;"></i> ${t('nav.upgrade_premium')}
+            <i data-lucide="rocket" style="width:16px;height:16px;"></i> ${tt('nav.upgrade_premium')}
           </a>
         </div>
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_account">${menuAccount}</div>
           <a href="/settings.html#panel-profile" data-i18n="nav.profile">
-            <i data-lucide="user" style="width:16px;height:16px;"></i> ${t('nav.profile')}
+            <i data-lucide="user" style="width:16px;height:16px;"></i> ${tt('nav.profile')}
           </a>
           <a href="/settings.html" data-i18n="nav.settings">
-            <i data-lucide="settings" style="width:16px;height:16px;"></i> ${t('nav.settings')}
+            <i data-lucide="settings" style="width:16px;height:16px;"></i> ${tt('nav.settings', 'Ayarlar')}
           </a>
           <button id="logout-btn-mobile" data-i18n="nav.logout">
-            <i data-lucide="log-out" style="width:16px;height:16px;"></i> ${t('nav.logout')}
+            <i data-lucide="log-out" style="width:16px;height:16px;"></i> ${tt('nav.logout', 'Çıkış Yap')}
           </button>
         </div>
 
@@ -244,16 +277,12 @@ function getNavbarHTML(translations) {
 
 function updateNavbarI18n() {
   if (typeof i18n === 'undefined' || typeof i18n.t !== 'function') {
-    wwLog.warn('⚠️ i18n yüklenmemiş, metinler güncellenemiyor');
     return;
   }
-  
-  wwLog.log('🌐 Navbar i18n metinleri batch olarak güncelleniyor...');
-  
   var textUpdates = [];
   var placeholderUpdates = [];
   var htmlUpdates = [];
-  
+
   document.querySelectorAll('[data-i18n]').forEach(function(el) {
     var key = el.getAttribute('data-i18n');
     var translation = i18n.t(key);
@@ -261,7 +290,7 @@ function updateNavbarI18n() {
       textUpdates.push({ el: el, translation: translation });
     }
   });
-  
+
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
     var key = el.getAttribute('data-i18n-placeholder');
     var translation = i18n.t(key);
@@ -269,7 +298,7 @@ function updateNavbarI18n() {
       placeholderUpdates.push({ el: el, translation: translation });
     }
   });
-  
+
   document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
     var key = el.getAttribute('data-i18n-html');
     var translation = i18n.t(key);
@@ -277,36 +306,22 @@ function updateNavbarI18n() {
       htmlUpdates.push({ el: el, translation: sanitizeHTML(translation) });
     }
   });
-  
-  if (textUpdates.length > 0) {
-    textUpdates.forEach(function(item) { item.el.textContent = item.translation; });
-  }
-  
-  if (placeholderUpdates.length > 0) {
-    placeholderUpdates.forEach(function(item) {
-      item.el.setAttribute('placeholder', item.translation);
-    });
-  }
-  
-  if (htmlUpdates.length > 0) {
-    htmlUpdates.forEach(function(item) { item.el.innerHTML = item.translation; });
-  }
-  
+
+  textUpdates.forEach(function(item) { item.el.textContent = item.translation; });
+  placeholderUpdates.forEach(function(item) { item.el.setAttribute('placeholder', item.translation); });
+  htmlUpdates.forEach(function(item) { item.el.innerHTML = item.translation; });
+
   updateNavbarBadgeSync();
-  
-  var total = textUpdates.length + placeholderUpdates.length + htmlUpdates.length;
-  wwLog.log(`✅ Navbar i18n güncellendi! (${total} element)`);
 }
 
 function applyAvatarToNav(url) {
   var navAvatar = document.getElementById('user-avatar');
   var menuAvatar = document.getElementById('menu-user-avatar');
   var menuName = document.getElementById('menu-user-name');
-  
   var user = window.SETTINGS_STATE?.currentUser || null;
   var fullName = user?.user_metadata?.username || user?.email || sessionStorage.getItem('ww_user_display_name') || 'Kullanıcı';
   var initial = fullName.charAt(0)?.toUpperCase() || '?';
-  
+
   if (navAvatar) {
     if (url) {
       var safeUrl = sanitizeURL(url);
@@ -322,7 +337,7 @@ function applyAvatarToNav(url) {
       navAvatar.style.background = 'var(--surface2)';
     }
   }
-  
+
   if (menuAvatar) {
     if (url) {
       var safeUrl2 = sanitizeURL(url);
@@ -338,12 +353,10 @@ function applyAvatarToNav(url) {
       menuAvatar.style.background = 'var(--surface2)';
     }
   }
-  
+
   if (menuName) {
     var displayName = fullName;
-    if (displayName && displayName.includes('@')) {
-      displayName = displayName.split('@')[0];
-    }
+    if (displayName && displayName.includes('@')) displayName = displayName.split('@')[0];
     menuName.textContent = displayName || 'Kullanıcı';
   }
 }
@@ -352,56 +365,37 @@ async function loadNavbarAvatar() {
   try {
     var sb = window.sb || window.supabase;
     if (!sb) return;
-    
+
     var storedDisplayName = sessionStorage.getItem('ww_user_display_name');
     var storedAvatar = sessionStorage.getItem('ww_avatar_url');
     var storedTime = sessionStorage.getItem('ww_avatar_time');
     var now = Date.now();
-    
+
     if (storedDisplayName) {
       if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
       if (!window.SETTINGS_STATE.currentUser) {
-        window.SETTINGS_STATE.currentUser = {
-          user_metadata: { username: storedDisplayName }
-        };
-      } else {
-        if (!window.SETTINGS_STATE.currentUser.user_metadata) {
-          window.SETTINGS_STATE.currentUser.user_metadata = {};
-        }
-        window.SETTINGS_STATE.currentUser.user_metadata.username = storedDisplayName;
+        window.SETTINGS_STATE.currentUser = { user_metadata: { username: storedDisplayName } };
       }
     }
-    
+
     if (storedAvatar && storedTime && (now - parseInt(storedTime)) < 300000) {
-      if (cachedAvatarUrl === storedAvatar) {
-        wwLog.log('✅ Avatar aynı, render yapılmıyor.');
-        applyAvatarToNav(storedAvatar);
-        return;
-      }
       cachedAvatarUrl = storedAvatar;
       applyAvatarToNav(storedAvatar);
       return;
     }
-    
+
     var { data: { user } } = await sb.auth.getUser();
     if (!user) return;
-    
+
     if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
     window.SETTINGS_STATE.currentUser = user;
-    
+
     var displayName = user?.user_metadata?.username || user?.email || 'Kullanıcı';
-    if (displayName) {
-      sessionStorage.setItem('ww_user_display_name', displayName);
-    }
-    
-    var { data: profile } = await sb
-      .from('user_profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-    
+    if (displayName) sessionStorage.setItem('ww_user_display_name', displayName);
+
+    var { data: profile } = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
     var avatarUrl = profile?.avatar_url || null;
-    
+
     if (avatarUrl !== cachedAvatarUrl) {
       cachedAvatarUrl = avatarUrl;
       if (avatarUrl) {
@@ -410,25 +404,11 @@ async function loadNavbarAvatar() {
       }
       applyAvatarToNav(avatarUrl);
     } else {
-      wwLog.log('✅ Avatar aynı, render yapılmıyor.');
       applyAvatarToNav(avatarUrl);
     }
-    
   } catch (e) {
     var fallbackAvatar = sessionStorage.getItem('ww_avatar_url');
-    var fallbackName = sessionStorage.getItem('ww_user_display_name');
-    if (fallbackName && !window.SETTINGS_STATE?.currentUser) {
-      if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
-      window.SETTINGS_STATE.currentUser = {
-        user_metadata: { username: fallbackName }
-      };
-    }
-    if (fallbackAvatar && fallbackAvatar !== cachedAvatarUrl) {
-      cachedAvatarUrl = fallbackAvatar;
-      applyAvatarToNav(fallbackAvatar);
-    } else {
-      applyAvatarToNav(fallbackAvatar || null);
-    }
+    applyAvatarToNav(fallbackAvatar || null);
   }
 }
 
@@ -436,28 +416,19 @@ function updateBadgeUI(isPremium) {
   var badge = document.getElementById('plan-badge');
   var text = document.getElementById('plan-text');
   var menuPlan = document.getElementById('menu-user-plan');
-  
-  if (window.SETTINGS_STATE) {
-    window.SETTINGS_STATE.isPremium = isPremium;
-  }
-  
+
+  if (window.SETTINGS_STATE) window.SETTINGS_STATE.isPremium = isPremium;
+
   if (badge) {
-    if (isPremium) {
-      badge.classList.add('premium');
-    } else {
-      badge.classList.remove('premium');
-    }
+    if (isPremium) badge.classList.add('premium');
+    else badge.classList.remove('premium');
   }
-  
-  var premiumText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
-    ? i18n.t('nav.premium_badge') : null;
-  var freeText = (typeof i18n !== 'undefined' && typeof i18n.t === 'function') 
-    ? i18n.t('nav.free_badge') : null;
-  
-  if (text) {
-    text.textContent = isPremium ? (premiumText || 'Premium') : (freeText || 'Ücretsiz');
-  }
-  
+
+  var premiumText = t('nav.premium_badge', 'Premium');
+  var freeText = t('nav.free_badge', 'Free');
+
+  if (text) text.textContent = isPremium ? premiumText : freeText;
+
   if (menuPlan) {
     var dot = menuPlan.querySelector('.plan-dot');
     var planTextEl = menuPlan.querySelector('.plan-text');
@@ -471,56 +442,37 @@ function updateBadgeUI(isPremium) {
       }
     }
     if (planTextEl) {
-      planTextEl.textContent = isPremium ? (premiumText || 'Premium') : (freeText || 'Ücretsiz');
+      planTextEl.textContent = isPremium ? premiumText : freeText;
       planTextEl.style.color = isPremium ? 'var(--accent2)' : 'var(--green)';
     }
   }
 }
 
-// ⭐ FIX: 5 dakikalık sessionStorage cache KALDIRILDI.
-// Plan admin tarafından değiştirildiğinde kullanıcı Ctrl+R yapınca
-// anında doğru badge görür. Sorgu hafif (tek kolon, tek satır).
 async function updateNavbarBadge() {
   try {
     var badge = document.getElementById('plan-badge');
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
-    
+
     var sb = window.sb || window.supabase;
-    if (!sb) {
-      updateNavbarBadgeSync();
-      return;
-    }
-    
+    if (!sb) { updateNavbarBadgeSync(); return; }
+
     var { data: { user } } = await sb.auth.getUser();
-    if (!user) {
-      updateNavbarBadgeSync();
-      return;
-    }
-    
-    var { data: profile } = await sb
-      .from('user_profiles')
-      .select('plan')
-      .eq('id', user.id)
-      .single();
-    
+    if (!user) { updateNavbarBadgeSync(); return; }
+
+    var { data: profile } = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
     var isPremium = profile?.plan === 'premium';
-    
-    // Sadece fallback amaçlı yaz; artık OKUMUYORUZ
+
     try {
       sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
       sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
     } catch (e) {}
-    
+
     updateBadgeUI(isPremium);
-    
   } catch (e) {
     var fallbackPlan = sessionStorage.getItem('ww_user_plan');
-    if (fallbackPlan) {
-      updateBadgeUI(fallbackPlan === 'premium');
-    } else {
-      updateNavbarBadgeSync();
-    }
+    if (fallbackPlan) updateBadgeUI(fallbackPlan === 'premium');
+    else updateNavbarBadgeSync();
   }
 }
 
@@ -537,93 +489,25 @@ function updateNavbarBadgeSync() {
 function setActiveNavLink() {
   var currentPath = window.location.pathname;
   var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
-  
+
+  navLinks.forEach(function(link) { link.classList.remove('active'); });
+
   navLinks.forEach(function(link) {
-    link.classList.remove('active');
-  });
-  
-  var found = false;
-  
-  navLinks.forEach(function(link) {
-    if (found) return;
     var href = link.getAttribute('href');
     if (!href) return;
-    
+
     if (currentPath === '/' || currentPath === '/index.html') {
-      if (href === '/index.html' || href === '/') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
+      if (href === '/index.html' || href === '/') { link.classList.add('active'); return; }
     }
-    
-    if (currentPath === '/dashboard.html' || currentPath.includes('/dashboard')) {
-      if (href === '/dashboard.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (currentPath === '/trades.html' || currentPath.includes('/trades')) {
-      if (href === '/trades.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (currentPath === '/strategies.html' || currentPath.includes('/strategies')) {
-      if (href === '/strategies.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (currentPath === '/calendar.html' || currentPath.includes('/calendar')) {
-      if (href === '/calendar.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (currentPath.includes('/settings/')) {
-      if (href === '/settings.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (currentPath === '/premium-dashboard.html' || currentPath.includes('/premium-dashboard')) {
-      if (href === '/premium-dashboard.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (currentPath === '/admin.html' || currentPath.includes('/admin')) {
-      if (href === '/admin.html') {
-        link.classList.add('active');
-        found = true;
-        return;
-      }
-    }
-    
-    if (href === currentPath) {
-      link.classList.add('active');
-      found = true;
-      return;
-    }
-    
-    if (href !== '/' && currentPath.includes(href.replace('/', ''))) {
-      link.classList.add('active');
-      found = true;
-      return;
-    }
+    if (currentPath.includes('/dashboard') && href === '/dashboard.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/trades') && href === '/trades.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/strategies') && href === '/strategies.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/calendar') && href === '/calendar.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/journals') && href === '/journals.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/settings') && href === '/settings.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/premium-dashboard') && href === '/premium-dashboard.html') { link.classList.add('active'); return; }
+    if (currentPath.includes('/admin') && href === '/admin.html') { link.classList.add('active'); return; }
+    if (href === currentPath) { link.classList.add('active'); return; }
   });
 }
 
@@ -632,175 +516,146 @@ var avatarDropdownInitialized = false;
 function setupAvatarDropdown() {
   if (avatarDropdownInitialized) return;
   avatarDropdownInitialized = true;
-  
-  wwLog.log('👤 Avatar dropdown event delegation kuruluyor...');
-  
+
   document.addEventListener('click', function(e) {
     var avatar = document.getElementById('user-avatar');
     var dropdown = document.getElementById('dropdown-menu');
-    
     if (!avatar || !dropdown) return;
-    
+
     if (e.target && e.target.closest && e.target.closest('#user-avatar')) {
-      e.stopPropagation();
       e.preventDefault();
       dropdown.classList.toggle('show');
       return;
     }
-    
     if (e.target && e.target.closest && !e.target.closest('#dropdown-menu')) {
       dropdown.classList.remove('show');
-      return;
-    }
-    
-    if (e.target && e.target.closest && e.target.closest('#dropdown-menu')) {
-      return;
     }
   }, true);
-  
+
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       var dropdown = document.getElementById('dropdown-menu');
       if (dropdown) dropdown.classList.remove('show');
     }
   });
-  
-  wwLog.log('✅ Avatar dropdown event delegation kuruldu!');
 }
 
+// ============================================================
+// ⭐ FIX: initNavEvents — butonlara event listener EKLEMİYORUZ.
+// Inline onclick (HTML'de) tek handler olarak kalıyor.
+// Böylece çift fire problemi çözüldü.
+// ============================================================
 function initNavEvents() {
   wwLog.log('🔗 Navbar event\'leri bağlanıyor...');
-  
+
+  // Journal change → dropdown'u yenile
+  if (!window._journalChangedBound) {
+    window._journalChangedBound = true;
+    document.addEventListener('journal-changed', function() { updateNavbarJournal(0); });
+  }
+
+  // Global: Journal switcher dışına tıklanınca kapat
+  if (!window._journalSwitcherDocBound) {
+    window._journalSwitcherDocBound = true;
+    document.addEventListener('click', function(e) {
+      var js = document.getElementById('nav-journal-switcher');
+      if (js && e.target && !e.target.closest('#nav-journal-switcher')) {
+        js.classList.remove('open');
+      }
+    });
+  }
+
+  // Global: Premium dropdown dışına tıklanınca kapat
+  if (!window._premiumDdGlobalBound) {
+    window._premiumDdGlobalBound = true;
+    document.addEventListener('click', function(e) {
+      var m = document.getElementById('premium-dropdown-menu');
+      var b = document.getElementById('premium-dropdown-btn');
+      if (m && b && e.target) {
+        if (!e.target.closest('#premium-dropdown-menu') && !e.target.closest('#premium-dropdown-btn')) {
+          b.classList.remove('active');
+          m.classList.remove('open');
+        }
+      }
+    });
+  }
+
+  // Global: Bell panel dışına tıklanınca kapat
+  if (!window._bellGlobalBound) {
+    window._bellGlobalBound = true;
+    document.addEventListener('click', function(e) {
+      var panel = document.getElementById('bell-panel');
+      var b = document.getElementById('overtrade-bell-btn');
+      if (panel && b && e.target) {
+        if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
+          panel.classList.remove('open');
+        }
+      }
+    });
+  }
+
   loadLucideIcons();
   setupAvatarDropdown();
-  
-  var ddBtn = document.getElementById('premium-dropdown-btn');
-  var ddMenu = document.getElementById('premium-dropdown-menu');
-  
-  if (ddBtn && ddMenu) {
-    var newDdBtn = ddBtn.cloneNode(true);
-    ddBtn.parentNode.replaceChild(newDdBtn, ddBtn);
-    
-    newDdBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      this.classList.toggle('active');
-      ddMenu.classList.toggle('open');
-    });
-    
-    document.addEventListener('click', function(e) {
-      if (e.target && ddMenu.contains(e.target) === false && 
-          e.target !== newDdBtn && 
-          (newDdBtn.contains && newDdBtn.contains(e.target) === false)) {
-        newDdBtn.classList.remove('active');
-        ddMenu.classList.remove('open');
-      }
-    });
-  }
-  
-  var bellBtn = document.getElementById('overtrade-bell-btn');
-  var bellPanel = document.getElementById('bell-panel');
-  
-  if (bellBtn && bellPanel) {
-    var newBellBtn = bellBtn.cloneNode(true);
-    bellBtn.parentNode.replaceChild(newBellBtn, bellBtn);
-    
-    newBellBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      bellPanel.classList.toggle('open');
-    });
-    
-    document.addEventListener('click', function(e) {
-      if (e.target && bellPanel.contains(e.target) === false && 
-          e.target !== newBellBtn && 
-          (newBellBtn.contains && newBellBtn.contains(e.target) === false)) {
-        bellPanel.classList.remove('open');
-      }
-    });
-  }
-  
+
+  // Bell kapatma butonu
   var bellClose = document.getElementById('bell-panel-close');
-  if (bellClose) {
-    var newBellClose = bellClose.cloneNode(true);
-    bellClose.parentNode.replaceChild(newBellClose, bellClose);
-    
-    newBellClose.addEventListener('click', function(e) {
+  if (bellClose && !bellClose._bound) {
+    bellClose._bound = true;
+    bellClose.addEventListener('click', function(e) {
       e.stopPropagation();
       var panel = document.getElementById('bell-panel');
       if (panel) panel.classList.remove('open');
     });
   }
-  
+
+  // Logout dropdown butonu
   var logoutBtn = document.getElementById('logout-dropdown-btn');
-  if (logoutBtn) {
-    var newLogoutBtn = logoutBtn.cloneNode(true);
-    logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
-    
-    newLogoutBtn.addEventListener('click', async function(e) {
+  if (logoutBtn && !logoutBtn._bound) {
+    logoutBtn._bound = true;
+    logoutBtn.addEventListener('click', async function(e) {
       e.preventDefault();
       var sb = window.sb || window.supabase;
       if (sb) await sb.auth.signOut();
       localStorage.removeItem('ww_last_active_push');
       try {
         sessionStorage.removeItem('ww_user_plan');
-        sessionStorage.removeItem('ww_user_plan_time');
         sessionStorage.removeItem('ww_avatar_url');
-        sessionStorage.removeItem('ww_avatar_time');
         sessionStorage.removeItem('ww_user_display_name');
+        sessionStorage.removeItem('ww_active_journal_id');
       } catch(e) {}
       window.location.href = '/index.html';
     });
   }
-  
+
+  // Hamburger menü
   var toggle = document.getElementById('nav-toggle');
   var menu = document.getElementById('nav-menu');
   var backdrop = document.getElementById('nav-backdrop');
-  
-  if (toggle && menu && backdrop) {
-    var newToggle = toggle.cloneNode(true);
-    toggle.parentNode.replaceChild(newToggle, toggle);
-    
-    newToggle.addEventListener('click', function(e) {
+
+  if (toggle && menu && backdrop && !toggle._bound) {
+    toggle._bound = true;
+    toggle.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      
       var isOpen = this.classList.toggle('open');
       menu.classList.toggle('open');
       backdrop.classList.toggle('open');
       document.body.style.overflow = isOpen ? 'hidden' : '';
-      
-      wwLog.log('🍔 Hamburger menü:', isOpen ? 'AÇILDI' : 'KAPANDI');
     });
-    
-    if (backdrop) {
-      var newBackdrop = backdrop.cloneNode(true);
-      backdrop.parentNode.replaceChild(newBackdrop, backdrop);
-      
-      newBackdrop.addEventListener('click', function() {
-        var toggleEl = document.getElementById('nav-toggle');
-        var menuEl = document.getElementById('nav-menu');
-        if (toggleEl) toggleEl.classList.remove('open');
-        if (menuEl) menuEl.classList.remove('open');
-        if (this) this.classList.remove('open');
-        document.body.style.overflow = '';
-        wwLog.log('🍔 Backdrop ile menü kapatıldı');
-      });
-    }
-  } else {
-    wwLog.warn('⚠️ Hamburger elementleri bulunamadı:', {
-      toggle: !!toggle,
-      menu: !!menu,
-      backdrop: !!backdrop
+
+    backdrop.addEventListener('click', function() {
+      toggle.classList.remove('open');
+      menu.classList.remove('open');
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
     });
   }
-  
+
+  // Mobil logout
   var logoutMobile = document.getElementById('logout-btn-mobile');
-  if (logoutMobile) {
-    var newLogoutMobile = logoutMobile.cloneNode(true);
-    logoutMobile.parentNode.replaceChild(newLogoutMobile, logoutMobile);
-    
-    newLogoutMobile.addEventListener('click', function(e) {
+  if (logoutMobile && !logoutMobile._bound) {
+    logoutMobile._bound = true;
+    logoutMobile.addEventListener('click', function(e) {
       e.preventDefault();
       var toggleEl = document.getElementById('nav-toggle');
       if (toggleEl) toggleEl.classList.remove('open');
@@ -813,7 +668,7 @@ function initNavEvents() {
       if (logoutBtnEl) logoutBtnEl.click();
     });
   }
-  
+
   navEventsInitialized = true;
   wwLog.log('✅ Navbar event\'leri bağlandı!');
 }
@@ -824,9 +679,8 @@ function loadNavbar(containerId) {
     console.error('❌ Navbar container bulunamadı:', containerId);
     return;
   }
-  
+
   if (navbarRendered) {
-    wwLog.log('✅ Navbar zaten render edilmiş, güncelleme + event yeniden bağlanıyor.');
     setTimeout(function() {
       updateNavbarI18n();
       loadNavbarAvatar();
@@ -834,60 +688,38 @@ function loadNavbar(containerId) {
       setActiveNavLink();
       loadLucideIcons();
       initNavEvents();
+      updateNavbarJournal(0);
     }, 50);
     return;
   }
-  
-  wwLog.log('📦 Navbar ilk kez render ediliyor...');
-  
+
   var translations = {};
   if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
-    var keys = new Set();
-    document.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-html]').forEach(function(el) {
-      var key = el.getAttribute('data-i18n') || el.getAttribute('data-i18n-placeholder') || el.getAttribute('data-i18n-html');
-      if (key) keys.add(key);
-    });
-    
     var navbarKeys = [
-      'nav.dashboard', 'nav.trades', 'nav.strategies', 'nav.calendar', 'nav.admin',
+      'nav.dashboard', 'nav.trades', 'nav.strategies', 'nav.calendar', 'nav.admin', 'nav.journals',
       'nav.premium', 'nav.premium_dashboard', 'nav.theme_customization', 'nav.overtrade_alert',
       'nav.upgrade_premium', 'nav.notifications', 'nav.mark_read', 'nav.no_notifications',
-      'nav.profile', 'nav.settings', 'nav.logout', 'nav.home', 'nav.premium_badge', 
+      'nav.profile', 'nav.settings', 'nav.logout', 'nav.home', 'nav.premium_badge',
       'nav.free_badge', 'nav.menu_general', 'nav.menu_premium', 'nav.menu_account'
     ];
-    navbarKeys.forEach(function(key) { keys.add(key); });
-    
-    keys.forEach(function(key) {
-      translations[key] = i18n.t(key);
-    });
+    navbarKeys.forEach(function(key) { translations[key] = i18n.t(key); });
   }
-  
+
   container.innerHTML = getNavbarHTML(translations);
   navbarRendered = true;
-  wwLog.log('✅ Navbar HTML yüklendi!');
-  
-  if (window.requestAnimationFrame) {
-    requestAnimationFrame(function() {
-      setActiveNavLink();
-      wwLog.log('✅ Aktif link ayarlandı!');
-    });
-  } else {
-    setTimeout(function() {
-      setActiveNavLink();
-      wwLog.log('✅ Aktif link ayarlandı!');
-    }, 0);
-  }
-  
+
   requestAnimationFrame(function() {
+    setActiveNavLink();
     document.querySelectorAll('.nav-links a').forEach(function(link) {
       link.classList.add('loaded');
     });
   });
-  
+
   setTimeout(function() {
     initNavEvents();
     loadNavbarAvatar();
     updateNavbarBadge();
+    updateNavbarJournal(0);
     wwLog.log('✅ Navbar tamamen yüklendi!');
   }, 50);
 }
@@ -902,11 +734,12 @@ document.addEventListener('DOMContentLoaded', function() {
       updateNavbarBadge();
       setActiveNavLink();
       loadLucideIcons();
+      updateNavbarJournal(0);
     }, 50);
   } else if (container) {
     loadNavbar('navbar-container');
   }
-  
+
   window.addEventListener('hashchange', function() {
     var toggle = document.getElementById('nav-toggle');
     var menu = document.getElementById('nav-menu');
@@ -915,24 +748,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (menu) menu.classList.remove('open');
     if (backdrop) backdrop.classList.remove('open');
     document.body.style.overflow = '';
-    
     setTimeout(setActiveNavLink, 50);
   });
-  
+
   window.addEventListener('popstate', function() {
     setTimeout(setActiveNavLink, 50);
   });
-  
+
   window.addEventListener('load', function() {
     setTimeout(setActiveNavLink, 100);
     setTimeout(updateNavbarBadge, 150);
     loadLucideIcons();
     setTimeout(initNavEvents, 200);
   });
-  
+
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_language' && e.newValue) {
-      wwLog.log(`🔄 Storage event: Dil değişti (${e.oldValue} → ${e.newValue})`);
       setTimeout(function() {
         updateNavbarI18n();
         updateNavbarBadgeSync();
@@ -963,3 +794,79 @@ window.refreshNavbar = function() {
 };
 
 wwLog.log('✅ navbar.js yüklendi! (CLIENT-SIDE RENDER + AVATAR CACHE + FRESH BADGE)');
+
+// ============================================================
+// updateNavbarJournal — retry mekanizması + window.journal guard
+// ============================================================
+async function updateNavbarJournal(retries) {
+  retries = retries || 0;
+  try {
+    if (!window.journal) {
+      if (retries < 15) {
+        setTimeout(function() { updateNavbarJournal(retries + 1); }, 200);
+      }
+      return;
+    }
+
+    var switcher = document.getElementById('nav-journal-switcher');
+    var wasOpen = switcher ? switcher.classList.contains('open') : false;
+    var activeId = window.journal.getActiveJournalId();
+    var journals = await window.journal.listJournals();
+    if (!journals || journals.length === 0) return;
+
+    var activeJ = journals.find(function(j) { return j.id === activeId; });
+    if (!activeJ) activeJ = journals.find(function(j) { return j.is_default; }) || journals[0];
+
+    var swName = document.querySelector('.nav-journal-switcher .journal-name');
+    var swIcon = document.querySelector('.nav-journal-switcher .journal-icon');
+    if (swName) swName.textContent = activeJ.name;
+    if (swIcon) swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+
+    var dropdown = document.getElementById('journal-dropdown');
+    if (dropdown) {
+      var swTitle = t('journal.switcher_title', 'Hesaplar');
+      var html = '<div class="journal-dropdown-header">' + swTitle + '</div>';
+
+      journals.forEach(function(j) {
+        var isActive = (j.id === activeJ.id) ? 'active' : '';
+        var tradesTxt = (j.trade_count || 0) + ' işlem';
+        html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '">' +
+          '<i data-lucide="' + (j.icon || 'folder') + '" class="journal-icon" style="color:' + (j.color || '#7c6dfa') + '"></i>' +
+          '<span class="journal-info">' +
+            '<span class="journal-name" style="font-family:\'Syne\',sans-serif;font-weight:600;">' + j.name + '</span>' +
+            '<span class="journal-count">' + tradesTxt + '</span>' +
+          '</span>' +
+          '<i data-lucide="check" class="journal-check"></i>' +
+        '</button>';
+      });
+
+      var manageTxt = t('journal.manage', 'Hesapları Yönet');
+      html += '<div class="journal-dropdown-footer"><a href="/journals.html"><i data-lucide="settings" style="width:14px;height:14px;margin-right:6px;"></i> ' + manageTxt + ' →</a></div>';
+      dropdown.innerHTML = html;
+
+      dropdown.querySelectorAll('.journal-item').forEach(function(btn) {
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          var id = btn.dataset.id;
+          if (id !== activeJ.id) {
+            window.journal.setActiveJournalId(id);
+            if (window.location.pathname.includes('/journals')) {
+              window.location.href = '/dashboard.html';
+            } else {
+              window.location.reload();
+            }
+          }
+          var sw = document.getElementById('nav-journal-switcher');
+          if (sw) sw.classList.remove('open');
+        };
+      });
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    if (wasOpen && switcher) switcher.classList.add('open');
+  } catch (err) {
+    if (typeof wwLog !== 'undefined') wwLog.error('updateNavbarJournal err', err);
+  }
+}
+
+window.updateNavbarJournal = updateNavbarJournal;

@@ -1844,7 +1844,7 @@ function initNavEvents() {
       bellPanel.classList.toggle('open');
     });
     document.addEventListener('click', function(e) {
-      if (!bellPanel.contains(e.target) && !bellBtn.contains(e.target)) {
+      if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
         bellPanel.classList.remove('open');
       }
     });

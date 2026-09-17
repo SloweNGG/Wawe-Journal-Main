@@ -49,6 +49,7 @@ const {
 <!-- TITLE & SEO -->
 <title>{title}</title>
 <meta name="description" content={description} />
+<meta name="keywords" content="wawe journal, wave journal, wave trading journal, trading journal, wawejournal, crypto trading journal, forex journal" />
 {noIndex ? <meta name="robots" content="noindex, nofollow" /> : <meta name="robots" content="index, follow" />}
 {canonical && <link rel="canonical" href={canonical} />}
 
@@ -157,4 +158,16 @@ const {
     document.documentElement.lang = 'en';
   }
 })();
+</script>
+<!-- SERVICE WORKER REGISTRATION (Force Update on Navigation) -->
+<script is:inline>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').then(function(registration) {
+        registration.update();
+      }).catch(function(error) {
+        console.error('SW Registration failed:', error);
+      });
+    });
+  }
 </script>

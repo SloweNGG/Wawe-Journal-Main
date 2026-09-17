@@ -1001,10 +1001,25 @@ body.light-theme .qa-dp-footer-btn:hover {
       const user = await requireAuth();
       if (!user) return;
 
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
+
+
+      
+  var jid = window.journal ? window.journal.getActiveJournalId() : null;
+  if (!jid) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+    return;
+  }
+
       const { data, error } = await sb
         .from('strategies')
         .select('id, name, color, description')
         .eq('user_id', user.id)
+        .eq('journal_id', jid)
         .eq('is_active', true)
         .order('name', { ascending: true });
 
@@ -1371,6 +1386,13 @@ body.light-theme .qa-dp-footer-btn:hover {
       return;
     }
 
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
+
+
     const progressEl = el('quick-csv-status');
     const statusText = el('quick-csv-filename');
     const badge = el('quick-csv-badge');
@@ -1519,6 +1541,13 @@ body.light-theme .qa-dp-footer-btn:hover {
       showToast(t('quickmodal.error_auth_required'), 'error');
       return;
     }
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
+
 
     const progressEl = el('quick-bulk-progress');
     const statusEl = el('quick-bulk-status');
@@ -1674,6 +1703,13 @@ body.light-theme .qa-dp-footer-btn:hover {
       return;
     }
 
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
+
+
     const symbol = el('price-symbol')?.value?.trim()?.toUpperCase() || '';
     const lot = parseFloat(el('price-lot')?.value);
     const entry = parseFloat(el('price-entry')?.value);
@@ -1718,6 +1754,7 @@ body.light-theme .qa-dp-footer-btn:hover {
     const direction = currentSide === 'BUY' ? 'LONG' : 'SHORT';
 
     const tradeData = {
+      journal_id: window.journal.getActiveJournalId(),
       user_id: user.id,
       symbol: symbol,
       direction: direction,
@@ -1909,7 +1946,7 @@ body.light-theme .qa-dp-footer-btn:hover {
         if (!datePickerState.isOpen) return;
         const picker = document.getElementById('qa-date-picker');
         const input = document.getElementById('price-date');
-        if (picker && (picker.contains(e.target) || (input && input.contains(e.target)))) return;
+        if (picker && (e.target.closest('.flatpickr-calendar') || (input && e.target.closest('#' + input.id)))) return;
         if (e.target.closest('.qa-date-picker')) return;
         if (e.target.closest('.qa-date-input-wrap')) return;
         closeDatePicker();

@@ -1358,10 +1358,18 @@ function setupExportButtons() {
 // ============================================================
 async function loadAllData() {
   try {
+
+  var jid = window.journal ? window.journal.getActiveJournalId() : null;
+  if (!jid) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+    return;
+  }
+
     var { data: strategies } = await sb
       .from('strategies')
       .select('id, name, description, color, user_id, is_active, created_at')
       .eq('user_id', currentUser.id)
+      .eq('journal_id', jid)
       .order('name');
     strategiesList = strategies || [];
 
@@ -1369,6 +1377,7 @@ async function loadAllData() {
       .from('trades')
       .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
       .eq('user_id', currentUser.id)
+      .eq('journal_id', jid)
       .limit(1000);
     allTradesForStats = trades || [];
 
@@ -1424,6 +1433,12 @@ async function initStrategies() {
     currentUser = await requireAuth();
     if (!currentUser) return;
 
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(currentUser.id);
+
     await updateNavbarAvatar();
     await updatePlanBadge();
 
@@ -1450,7 +1465,7 @@ async function initStrategies() {
         dropdownMenu.classList.toggle('show');
       });
       document.addEventListener('click', function(e) {
-        if (!userAvatar.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        if (!e.target.closest('#user-avatar') && !e.target.closest('#dropdown-menu')) {
           dropdownMenu.classList.remove('show');
         }
       });
@@ -1525,3 +1540,4 @@ window.exportStrategyPDF = exportStrategyPDF;
 window.openAddStrategyModal = openAddStrategyModal;
 
 wwLog.log('✅ strategies.js yüklendi!');
+document.addEventListener('journal-changed', () => window.location.reload());

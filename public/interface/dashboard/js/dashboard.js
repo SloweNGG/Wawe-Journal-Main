@@ -263,7 +263,7 @@
 
   var currentUsername = '';
   var monthlyTarget = 5000;
-  var TARGET_STORAGE_KEY = 'ww_monthly_target';
+  var getTargetStorageKey = () => 'ww_monthly_target_' + (window.journal ? window.journal.getActiveJournalId() : '');
 
   var allTrades = [];
   var allTradesFullStats = [];
@@ -620,7 +620,7 @@
 
   function loadMonthlyTarget() {
     try {
-      var saved = localStorage.getItem(TARGET_STORAGE_KEY);
+      var saved = localStorage.getItem(getTargetStorageKey());
       if (saved && !isNaN(parseFloat(saved))) {
         monthlyTarget = parseFloat(saved);
       } else {
@@ -634,7 +634,7 @@
   function saveMonthlyTarget(target) {
     try {
       monthlyTarget = target;
-      localStorage.setItem(TARGET_STORAGE_KEY, target);
+      localStorage.setItem(getTargetStorageKey(), target);
     } catch (e) {}
   }
 
@@ -2703,7 +2703,7 @@
       }, true);
 
       document.addEventListener('click', function(e) {
-        if (!optionsMenuDropdown.contains(e.target) && e.target !== optionsMenuBtn) {
+        if (!e.target.closest('#options-menu-dropdown') && !e.target.closest('#options-menu-btn')) {
           optionsMenuDropdown.classList.remove('open');
           optionsMenuBtn.classList.remove('active');
         }
@@ -2852,10 +2852,18 @@
   // ============================================================
 
   async function loadTrades(userId) {
+
+  var jid = window.journal ? window.journal.getActiveJournalId() : null;
+  if (!jid) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+    return;
+  }
+
     var { data, error } = await sb
       .from('trades')
       .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
       .eq('user_id', userId)
+      .eq('journal_id', jid)
       .order('trade_date', { ascending: false })
       .limit(1000);
 
@@ -2934,6 +2942,12 @@
         hideSkeletons();
         return;
       }
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
 
       currentUsername = (user.user_metadata && user.user_metadata.username) || user.email.split('@')[0];
 
@@ -3056,3 +3070,4 @@
   document.addEventListener('DOMContentLoaded', startDashboard);
 
 })();
+document.addEventListener('journal-changed', () => window.location.reload());

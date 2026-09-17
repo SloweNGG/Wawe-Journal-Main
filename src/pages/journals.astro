@@ -1,0 +1,417 @@
+---
+// src/pages/journals.astro
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en" bodyClass="journals-page">
+<Fragment slot="head">
+  <link rel="stylesheet" href="/interface/journals/css/journals.css" />
+  <title data-i18n="journal.title">Hesaplarım – Wawe Journal</title>
+    
+</Fragment>
+
+<main class="journals-page-main">
+  <div class="journals-page-header">
+    <h1 data-i18n="journal.title">Hesaplarım</h1>
+    <button class="btn-new-journal" id="btn-new-journal">
+      <i data-lucide="plus" style="width:16px;height:16px;margin-right:4px;vertical-align:middle;"></i>
+      <span data-i18n="journal.new_button">Yeni Hesap</span>
+    </button>
+  </div>
+  <div class="subtitle" data-i18n="journal.subtitle">İşlemlerini hesaplara ayır, performansı takip et</div>
+  
+  <div class="journals-usage-bar" id="usage-text">
+    —
+  </div>
+  
+  <div class="journals-grid" id="journals-grid">
+    <!-- Skeleton -->
+    <div class="journal-card" style="opacity:0.5;">
+      <div class="journal-color-bar" style="background:var(--border);"></div>
+      <div class="journal-header">
+        <div class="journal-icon-wrap" style="background:var(--border);width:32px;height:32px;border-radius:8px;"></div>
+      </div>
+      <div class="journal-body">
+        <div style="height:20px;width:60%;background:var(--border);border-radius:4px;margin-bottom:8px;"></div>
+        <div style="height:14px;width:90%;background:var(--border);border-radius:4px;"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create / Edit Modal -->
+<div class="journal-modal-overlay" id="journal-modal">
+  <div class="journal-modal">
+    <div class="journal-modal-header"><h3 id="journal-modal-title" data-i18n="journal.create_title">Yeni Hesap Oluştur</h3><button class="journal-modal-close" onclick="closeModal()"><i data-lucide="x"></i></button></div><div class="journal-modal-body">
+    <input type="hidden" id="journal-id" value="">
+    
+    <div class="journal-field">
+      <label data-i18n="journal.name_label">Hesap Adı</label>
+      <input type="text" id="journal-name" maxlength="60" data-i18n-placeholder="journal.name_placeholder" placeholder="Örn: Scalping, Swing, Prop Firm">
+    </div>
+    
+    <div class="journal-field">
+      <label data-i18n="journal.description_label">Açıklama (opsiyonel)</label>
+      <textarea id="journal-desc" rows="2" maxlength="200"></textarea>
+    </div>
+    
+    <div class="journal-field">
+      <label data-i18n="journal.color_label">Renk</label>
+      <div class="journal-color-picker" id="color-grid">
+        <!-- JS fills -->
+      </div>
+    </div>
+    
+    <div class="journal-field">
+      <label data-i18n="journal.icon_label">İkon</label>
+      <div class="journal-icon-picker" id="icon-grid">
+        <!-- JS fills -->
+      </div>
+    </div>
+    
+    </div>
+    <div class="journal-modal-footer">
+      <button class="journal-btn-cancel" id="journal-modal-cancel" data-i18n="journal.cancel">İptal</button>
+      <button class="journal-btn-save" id="journal-modal-save" data-i18n="journal.save">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="journal-modal-overlay" id="delete-modal">
+  <div class="journal-modal">
+    <div class="journal-modal-header"><h3 data-i18n="journal.delete_title" style="color:var(--red);">Hesabı Sil</h3><button class="journal-modal-close" onclick="closeModal()"><i data-lucide="x"></i></button></div><div class="journal-modal-body">
+    <p style="font-family:'DM Sans', sans-serif;font-size:0.95rem;color:var(--text);margin-bottom:1.5rem;line-height:1.5;" id="delete-modal-msg"></p>
+    </div>
+    <div class="journal-modal-footer">
+      <button class="journal-btn-cancel" id="delete-modal-cancel" data-i18n="journal.cancel">İptal</button>
+      <button class="journal-btn-danger" id="delete-modal-confirm" data-i18n="journal.delete_confirm">Evet, Sil</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+<script src="/config.js" is:inline></script>
+<script src="/i18n.js" is:inline></script>
+<script type="module" src="/src/script.js" is:inline></script>
+<script src="/components/navbar/navbar.js?v=3" is:inline></script>
+
+<script is:inline>
+  var COLORS = ['#7c6dfa','#22c55e','#ef4444','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316'];
+  var ICONS = ['folder', 'chart-bar', 'trending-up', 'target', 'rocket', 'gem', 'flame', 'zap', 'waves', 'crown', 'star', 'palette'];
+  
+  var journalsData = [];
+  var isPremium = false;
+  var deleteId = null;
+  
+  function initModals() {
+    var cGrid = document.getElementById('color-grid');
+    COLORS.forEach(function(c) {
+      var btn = document.createElement('div');
+      btn.className = 'journal-color-btn';
+      btn.style.backgroundColor = c;
+      btn.dataset.color = c;
+      btn.onclick = function() {
+        document.querySelectorAll('.journal-color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+      cGrid.appendChild(btn);
+    });
+    
+    var iGrid = document.getElementById('icon-grid');
+    ICONS.forEach(function(icon) {
+      var btn = document.createElement('button');
+      btn.className = 'journal-icon-btn';
+      btn.dataset.icon = icon;
+      btn.innerHTML = '<i data-lucide="' + icon + '" style="width:20px;height:20px;"></i>';
+      btn.onclick = function() {
+        document.querySelectorAll('.journal-icon-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+      iGrid.appendChild(btn);
+    });
+  }
+  
+  function getSelectedColor() {
+    var active = document.querySelector('.journal-color-btn.active');
+    return active ? active.dataset.color : COLORS[0];
+  }
+  
+  function getSelectedIcon() {
+    var active = document.querySelector('.journal-icon-btn.active');
+    return active ? active.dataset.icon : ICONS[0];
+  }
+  
+  function openModal(mode, id) {
+    var titleEl = document.getElementById('journal-modal-title');
+    var idEl = document.getElementById('journal-id');
+    var nameEl = document.getElementById('journal-name');
+    var descEl = document.getElementById('journal-desc');
+    
+    document.querySelectorAll('.journal-color-btn, .journal-icon-btn').forEach(b => b.classList.remove('active'));
+    
+    if (mode === 'create') {
+      titleEl.textContent = i18n.t('journal.create_title');
+      titleEl.setAttribute('data-i18n', 'journal.create_title');
+      idEl.value = '';
+      nameEl.value = '';
+      descEl.value = '';
+      document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]').classList.add('active');
+      document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]').classList.add('active');
+    } else {
+      titleEl.textContent = i18n.t('journal.edit_title');
+      titleEl.setAttribute('data-i18n', 'journal.edit_title');
+      var j = journalsData.find(x => x.id === id);
+      if (j) {
+        idEl.value = j.id;
+        nameEl.value = j.name;
+        descEl.value = j.description || '';
+        
+        var cBtn = document.querySelector('.journal-color-btn[data-color="' + (j.color || COLORS[0]) + '"]');
+        if (cBtn) cBtn.classList.add('active');
+        else document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]').classList.add('active');
+        
+        var iBtn = document.querySelector('.journal-icon-btn[data-icon="' + (j.icon || ICONS[0]) + '"]');
+        if (iBtn) iBtn.classList.add('active');
+        else document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]').classList.add('active');
+      }
+    }
+    
+    document.getElementById('journal-modal').classList.add('active');
+  }
+  
+  function closeModal() {
+    document.getElementById('journal-modal').classList.remove('active');
+  }
+  
+  function showUpgradeModal() {
+    wwLog.log('Show upgrade modal');
+    window.location.href = '/settings.html#panel-plan';
+  }
+  
+  async function renderJournals() {
+    try {
+      if (!window.sb) throw new Error('No sb client');
+      var { data: { user } } = await window.sb.auth.getUser();
+      if (!user) { window.location.href = '/index.html'; return; }
+      
+      var { data: profile } = await window.sb.from('user_profiles').select('plan, max_journals').eq('id', user.id).single();
+      isPremium = profile?.plan === 'premium';
+      journalsData = await window.journal.listJournals();
+      var count = journalsData.length;
+      
+      // max_journals kaynagi: RPC eger gonderiyorsa onu kullan, yoksa fallback
+      var maxJournals = (count > 0 && journalsData[0].max_journals !== undefined) 
+                        ? journalsData[0].max_journals 
+                        : (profile?.max_journals || (isPremium ? 5 : 2));
+      
+      var usageTmpl = i18n.t('journal.usage');
+      var usageTxt = usageTmpl.replace('{used}', count).replace('{limit}', maxJournals);
+      document.getElementById('usage-text').innerHTML = '<strong>' + usageTxt + '</strong>';
+      
+      var btnNew = document.getElementById('btn-new-journal');
+      if (count >= maxJournals) {
+        btnNew.onclick = showUpgradeModal;
+        btnNew.title = i18n.t('journal.err_quota');
+      } else {
+        btnNew.onclick = () => openModal('create');
+        btnNew.title = '';
+      }
+      
+      var grid = document.getElementById('journals-grid');
+      grid.innerHTML = '';
+      
+      if (journalsData.length === 0) {
+        grid.innerHTML = '<div style="color:var(--muted);">' + i18n.t('journal.empty') + '</div>';
+        return;
+      }
+      
+            journalsData.forEach(function(j) {
+        var card = document.createElement('div');
+        card.className = 'journal-card';
+        card.dataset.id = j.id;
+        card.style.setProperty('--journal-color', j.color || '#7c6dfa');
+        
+        card.onclick = function(e) {
+          if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown')) return;
+          window.journal.setActiveJournalId(j.id);
+          window.location.href = '/dashboard.html';
+        };
+        
+        var formatCurrencyFn = window.formatCurrency || (val => Number(val).toFixed(2));
+        var pnl = Number(j.total_pnl || 0);
+        var pnlClass = pnl > 0 ? 'positive' : (pnl < 0 ? 'negative' : 'neutral');
+        var pnlText = pnl === 0 ? '0.00' : formatCurrencyFn(pnl);
+        var iconStr = j.icon || 'folder';
+        
+        var defaultBadge = j.is_default ? `<div class="journal-card-badge"><i data-lucide="star" style="width:12px;height:12px;fill:currentColor;"></i> ${i18n.t('journal.default_badge')}</div>` : '';
+        var tradesTxt = i18n.t('journal.trades_count').replace('{count}', j.trade_count || 0);
+        
+        card.innerHTML = `
+          <button class="journal-menu-btn" data-id="${j.id}">
+            <i data-lucide="more-vertical"></i>
+          </button>
+          <div class="journal-menu-dropdown">
+            ${!j.is_default ? `<button class="journal-menu-item btn-make-default"><i data-lucide="check-circle"></i> ${i18n.t('journal.set_default')}</button>` : ''}
+            <button class="journal-menu-item btn-edit"><i data-lucide="edit"></i> ${i18n.t('journal.edit')}</button>
+            ${!j.is_default ? `<button class="journal-menu-item danger btn-delete"><i data-lucide="trash-2"></i> ${i18n.t('journal.delete')}</button>` : ''}
+          </div>
+          
+          <div class="journal-icon-wrap">
+            <i data-lucide="${iconStr}"></i>
+          </div>
+          
+          <div class="journal-card-name" title="${j.name}">${j.name}</div>
+          <div class="journal-card-desc">${j.description || ''}</div>
+          
+          <div class="journal-card-stats">
+            <span>${tradesTxt}</span>
+            <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
+          </div>
+          
+          ${defaultBadge}
+        `;
+        
+        grid.appendChild(card);
+        
+        // Events
+        var moreBtnEl = card.querySelector('.journal-menu-btn');
+        var dropdown = card.querySelector('.journal-menu-dropdown');
+        moreBtnEl.onclick = function(e) {
+          e.stopPropagation();
+          document.querySelectorAll('.journal-menu-dropdown.open').forEach(el => {
+            if (el !== dropdown) el.classList.remove('open');
+          });
+          dropdown.classList.toggle('open');
+        };
+        
+        var btnEdit = card.querySelector('.btn-edit');
+        if (btnEdit) {
+          btnEdit.onclick = function(e) { e.stopPropagation(); dropdown.classList.remove('open'); openModal('edit', j.id); };
+        }
+        
+        var btnDef = card.querySelector('.btn-make-default');
+        if (btnDef) {
+          btnDef.onclick = async function(e) {
+            e.stopPropagation(); dropdown.classList.remove('open');
+            try {
+              await window.journal.switchDefaultJournal(j.id);
+              if (window.showToast) window.showToast('Varsayılan hesap değiştirildi.', 'success');
+              renderJournals();
+            } catch (err) {
+              if (window.showToast) window.showToast(err.message, 'error');
+            }
+          };
+        }
+        
+        var btnDel = card.querySelector('.btn-delete');
+        if (btnDel) {
+          btnDel.onclick = function(e) {
+            e.stopPropagation(); dropdown.classList.remove('open');
+            deleteId = j.id;
+            var msg = i18n.t('journal.delete_message').replace('{tradeCount}', j.trade_count || 0).replace('{strategyCount}', '0');
+            document.getElementById('delete-modal-msg').textContent = msg;
+            document.getElementById('delete-modal').classList.add('active');
+          };
+        }
+      });
+      
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.journal-menu-dropdown')) {
+          document.querySelectorAll('.journal-menu-dropdown.open').forEach(el => el.classList.remove('open'));
+        }
+      });
+      
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      
+    } catch(err) {
+      wwLog.error(err);
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    initModals();
+    
+    document.getElementById('journal-modal-cancel').onclick = closeModal;
+    
+    document.getElementById('journal-modal-save').onclick = async function() {
+      var id = document.getElementById('journal-id').value;
+      var name = document.getElementById('journal-name').value.trim();
+      var desc = document.getElementById('journal-desc').value.trim();
+      var color = getSelectedColor();
+      var icon = getSelectedIcon();
+      
+      if (!name) {
+        if (window.showToast) window.showToast(i18n.t('journal.err_invalid_name'), 'error');
+        return;
+      }
+      
+      try {
+        var btn = document.getElementById('journal-modal-save');
+        btn.disabled = true;
+        btn.textContent = '...';
+        
+        if (id) {
+          await window.journal.updateJournal(id, { name, description: desc, color, icon });
+          if (window.showToast) window.showToast('Hesap güncellendi.', 'success');
+        } else {
+          await window.journal.createJournal({ name, description: desc, color, icon });
+          if (window.showToast) window.showToast('Yeni hesap oluşturuldu.', 'success');
+        }
+        
+        closeModal();
+        renderJournals();
+      } catch (err) {
+        var msgKey = err.code ? 'journal.err_' + err.code.toLowerCase() : 'journal.err_generic';
+        var msg = i18n.t(msgKey);
+        if (msg === msgKey) msg = err.message;
+        if (window.showToast) window.showToast(msg, 'error');
+      } finally {
+        var btn = document.getElementById('journal-modal-save');
+        btn.disabled = false;
+        btn.textContent = i18n.t('journal.save');
+      }
+    };
+    
+    document.getElementById('delete-modal-cancel').onclick = function() {
+      document.getElementById('delete-modal').classList.remove('active');
+      deleteId = null;
+    };
+    
+    document.getElementById('delete-modal-confirm').onclick = async function() {
+      if (!deleteId) return;
+      try {
+        var btn = document.getElementById('delete-modal-confirm');
+        btn.disabled = true;
+        btn.textContent = '...';
+        
+        await window.journal.deleteJournal(deleteId);
+        if (window.showToast) window.showToast('Hesap silindi.', 'success');
+        
+        document.getElementById('delete-modal').classList.remove('active');
+        deleteId = null;
+        renderJournals();
+      } catch (err) {
+        var msgKey = err.code ? 'journal.err_' + err.code.toLowerCase() : 'journal.err_generic';
+        var msg = i18n.t(msgKey);
+        if (msg === msgKey) msg = err.message;
+        if (window.showToast) window.showToast(msg, 'error');
+      } finally {
+        var btn = document.getElementById('delete-modal-confirm');
+        btn.disabled = false;
+        btn.textContent = i18n.t('journal.delete_confirm');
+      }
+    };
+    
+    if (window.i18nReady) {
+      window.i18nReady.then(renderJournals);
+    } else {
+      setTimeout(renderJournals, 500);
+    }
+  });
+  
+  document.addEventListener('journal-changed', renderJournals);
+  
+</script>
+
+</Layout>
+

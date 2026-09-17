@@ -134,6 +134,9 @@
 
   // ⭐ Çeviri — sync, i18nReady öncesi de çağrılabilir
   I18n.prototype.t = function (key, params) {
+    if (!this || !this.translations) {
+      return key;
+    }
     params = params || {};
 
     var text =

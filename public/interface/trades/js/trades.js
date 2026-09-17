@@ -292,6 +292,12 @@
       if (typeof requireAuth !== 'function') return;
       var user = await requireAuth();
       if (!user) return;
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
       
       if (typeof sb === 'undefined') return;
       
@@ -925,10 +931,18 @@
   // ============================================================
   
   async function loadTrades(userId) {
+
+  var jid = window.journal ? window.journal.getActiveJournalId() : null;
+  if (!jid) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+    return;
+  }
+
     var { data, error } = await sb
       .from('trades')
       .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
       .eq('user_id', userId)
+      .eq('journal_id', jid)
       .order('trade_date', { ascending: false })
       .limit(1000);
     
@@ -1073,6 +1087,12 @@
         hideTableSkeleton();
         return;
       }
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
       
       if (typeof isAdmin === 'function' && isAdmin(user)) {
         var adminLink = safeEl('admin-link');
@@ -1329,3 +1349,4 @@
 })();
 
 wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 + tam i18n uygulandı)');
+document.addEventListener('journal-changed', () => window.location.reload());

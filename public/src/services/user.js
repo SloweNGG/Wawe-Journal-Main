@@ -156,6 +156,7 @@ export async function addStrategy(name, description, color) {
     .from('strategies')
     .insert([{
       user_id: user.id,
+      journal_id: window.journal ? window.journal.getActiveJournalId() : null,
       name: name.trim(),
       description: description?.trim() || null,
       color: color,

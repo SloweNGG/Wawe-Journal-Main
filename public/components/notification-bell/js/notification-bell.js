@@ -165,7 +165,7 @@
       var panel = document.getElementById('notifPanel');
       var bell = document.getElementById('notifBell');
       if (panel && panel.classList.contains('open')) {
-        if (!panel.contains(e.target) && !bell.contains(e.target)) {
+        if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
           panel.classList.remove('open');
         }
       }

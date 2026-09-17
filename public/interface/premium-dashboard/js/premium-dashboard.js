@@ -142,6 +142,12 @@ async function loadPremiumData() {
   try {
     var user = await requireAuth();
     if (!user) return;
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
     currentUser = user;
 
     var planData = await getUserPlan();
@@ -166,7 +172,14 @@ async function loadPremiumData() {
 
     await updateNavbarAvatar();
 
-    var { data, error } = await sb.from('trades').select('*').eq('user_id', user.id).order('trade_date', { ascending: true });
+    
+  var jid = window.journal ? window.journal.getActiveJournalId() : null;
+  if (!jid) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+    return;
+  }
+
+    var { data, error } = await sb.from('trades').select('*').eq('user_id', user.id).eq('journal_id', jid).order('trade_date', { ascending: true });
     if (error) {
       if (typeof showToast === 'function') showToast(i18n.t('common.load_error') + error.message, 'error');
       return;
@@ -258,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
       fabActions.classList.toggle('open');
     });
     document.addEventListener('click', function(e) {
-      if (!fabToggle.contains(e.target) && !fabActions.contains(e.target)) {
+      if (!e.target.closest('#fab-toggle') && !e.target.closest('#fab-actions')) {
         fabActions.classList.remove('open');
       }
     });
@@ -278,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
     document.addEventListener('click', function(e) {
-      if (!bellPanel.contains(e.target) && !bellBtn.contains(e.target)) {
+      if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
         bellPanel.classList.remove('open');
       }
     });
@@ -308,3 +321,4 @@ window.openMenu = openMenu;
 window.closeMenu = closeMenu;
 window.exportCSV = function() { exportCSV(allTrades); };
 window.exportPDF = function() { exportPDF(allTrades); };
+document.addEventListener('journal-changed', () => window.location.reload());

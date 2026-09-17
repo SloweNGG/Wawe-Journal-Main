@@ -38,7 +38,7 @@ import {
 } from './chart-renderers.js';
 
 // ⭐ GLOBAL DEĞİŞKENLER
-var LAYOUT_KEY = 'ww_premium_layout';
+var LAYOUT_KEY = ('ww_premium_layout_' + (window.journal ? window.journal.getActiveJournalId() : ''));
 var sortableInstance = null;
 var isDragging = false;
 var resizeTimeout = null;
@@ -566,7 +566,8 @@ export function exportCSV(trades) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'wawe-premium-' + new Date().toISOString().split('T')[0] + '.csv';
+    var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || 'premium';
+    a.download = 'wawe-journal-' + jName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
     URL.revokeObjectURL(url);
     if (typeof showToast === 'function') showToast(i18n.t('toast.csv_exported'), 'success');
@@ -721,7 +722,8 @@ export function exportPDF(trades) {
     doc.setLineWidth(0.3);
     doc.rect(startX, yPos - displayTrades.length * rowH - 6, totalW, displayTrades.length * rowH + 6, 'S');
 
-    doc.save('wawe-premium-rapor-' + new Date().toISOString().split('T')[0] + '.pdf');
+    var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || 'premium';
+    doc.save('wawe-journal-' + jName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + new Date().toISOString().split('T')[0] + '.pdf');
     if (typeof showToast === 'function') showToast(i18n.t('toast.pdf_exported'), 'success');
   } catch(e) {
     console.error('PDF hatası:', e);

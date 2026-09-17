@@ -503,11 +503,19 @@ function loadCalendarTrades(trades) {
 // ⭐ OPTİMİZE EDİLMİŞ LOAD TRADES
 // ============================================================
 async function loadCalendarTradesFromDB(userId) {
+
+  var jid = window.journal ? window.journal.getActiveJournalId() : null;
+  if (!jid) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+    return;
+  }
+
   // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
   var { data, error } = await sb
     .from('trades')
     .select('id,trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,symbol')
     .eq('user_id', userId)
+    .eq('journal_id', jid)
     .order('trade_date', { ascending: true })
     .limit(1000); // ⭐ MAX 1000 İŞLEM
   
@@ -649,7 +657,7 @@ async function initCalendar() {
       });
       
       document.addEventListener('click', function(e) {
-        if (!popover.contains(e.target) && e.target !== titleBtn) closePopover();
+        if (!e.target.closest('.month-picker-popover') && !e.target.closest('#month-picker-btn')) closePopover();
       });
       popover.addEventListener('click', function(e) { e.stopPropagation(); });
       
@@ -674,6 +682,12 @@ async function initCalendar() {
     
     var user = await requireAuth();
     if (!user) return;
+
+  if (!window.journal) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
+    return;
+  }
+  await window.journal.ensureActiveJournal(user.id);
 
     // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
     try {
@@ -716,3 +730,4 @@ window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;
 
 wwLog.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');
+document.addEventListener('journal-changed', () => window.location.reload());
