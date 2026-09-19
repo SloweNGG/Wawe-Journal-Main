@@ -8,6 +8,7 @@ export default {
 
   // ⭐ NAVIGATION - ALMANCA
   "nav.premium": "Premium",
+  "nav.current_account": "Aktives Konto",
   "nav.premium_features": "✨ Premium Funktionen",
   "nav.premium_dashboard": "Premium Dashboard",
   "nav.theme_customization": "Theme-Anpassung",

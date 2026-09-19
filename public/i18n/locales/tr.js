@@ -8,6 +8,7 @@ export default {
 
   // ⭐ NAVIGATION - TÜRKÇE
   "nav.premium": "Premium",
+  "nav.current_account": "Aktif Hesap",
   "nav.premium_features": "✨ Premium Özellikler",
   "nav.premium_dashboard": "Premium Dashboard",
   "nav.theme_customization": "Tema Özelleştirme",
@@ -744,7 +745,6 @@ export default {
     "common.edit": "Düzenle",
   "trades.bulk_delete_text": "Seçilenleri Sil",
 
-  
   "journal.title": "Hesaplarım",
   "journal.subtitle": "İşlemlerini hesaplara ayır, performansı takip et",
   "journal.new_button": "Yeni Hesap",

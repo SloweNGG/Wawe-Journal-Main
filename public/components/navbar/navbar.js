@@ -1,6 +1,7 @@
 window.wwTogglePremium = function(e, btn) {
   e.preventDefault();
   e.stopPropagation();
+  if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('premium');
   var m = document.getElementById('premium-dropdown-menu');
   if(m) {
     btn.classList.toggle('active');
@@ -11,6 +12,7 @@ window.wwTogglePremium = function(e, btn) {
 window.wwToggleBell = function(e, btn) {
   e.preventDefault();
   e.stopPropagation();
+  if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('bell');
   var p = document.getElementById('bell-panel');
   if(p) p.classList.toggle('open');
 };
@@ -18,8 +20,21 @@ window.wwToggleBell = function(e, btn) {
 window.wwToggleJournal = function(e, btn) {
   e.preventDefault();
   e.stopPropagation();
+  if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('journal');
   var js = document.getElementById('nav-journal-switcher');
   if (js) js.classList.toggle('open');
+};
+
+window.closeMobileMenuAndNavigate = function(e, url) {
+  if (e) e.preventDefault();
+  var toggle = document.getElementById('nav-toggle');
+  var menu = document.getElementById('nav-menu');
+  var backdrop = document.getElementById('nav-backdrop');
+  if (toggle) toggle.classList.remove('open');
+  if (menu) menu.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+  if (url) window.location.href = url;
 };
 
 function t(key, fallback) {
@@ -92,21 +107,11 @@ function getNavbarHTML(translations) {
         </div>
       </a>
       
-      <div class="nav-journal-switcher" id="nav-journal-switcher">
-        <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="wwToggleJournal(event, this)">
-          <i data-lucide="folder" class="journal-icon"></i>
-          <span class="journal-name">Ana Hesap</span>
-          <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="journal-dropdown" id="journal-dropdown"></div>
-      </div>
-      
       <div class="nav-links">
         <a href="/dashboard.html" data-i18n="nav.dashboard" data-page="dashboard">${tt('nav.dashboard', 'Dashboard')}</a>
         <a href="/trades.html" data-i18n="nav.trades" data-page="trades">${tt('nav.trades', 'İşlemler')}</a>
         <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">${tt('nav.strategies', 'Stratejiler')}</a>
         <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">${tt('nav.calendar', 'Takvim')}</a>
-        <a href="/journals.html" data-i18n="nav.journals" data-page="journals">${tt('nav.journals', 'Hesaplar')}</a>
         <span id="admin-link" style="display:none;"><a href="/admin.html" data-i18n="nav.admin" data-page="admin">${tt('nav.admin', 'Admin')}</a></span>
       </div>
       
@@ -137,6 +142,15 @@ function getNavbarHTML(translations) {
               <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium')}</span>
             </a>
           </div>
+        </div>
+
+        <div class="nav-journal-switcher" id="nav-journal-switcher">
+          <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="wwToggleJournal(event, this)">
+            <i data-lucide="folder" class="journal-icon"></i>
+            <span class="journal-name">Ana Hesap</span>
+            <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="journal-dropdown" id="journal-dropdown"></div>
         </div>
 
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
@@ -214,6 +228,15 @@ function getNavbarHTML(translations) {
           </div>
         </div>
 
+        <a href="/journals.html" class="menu-journal-link" id="menu-journal-link" onclick="closeMobileMenuAndNavigate(event, '/journals.html')">
+          <i data-lucide="folder" class="menu-journal-icon"></i>
+          <span class="menu-journal-info">
+            <span class="menu-journal-label">${tt('nav.current_account', 'Aktif Hesap')}</span>
+            <span class="menu-journal-name" id="menu-journal-name">...</span>
+          </span>
+          <i data-lucide="chevron-right" class="menu-journal-arrow"></i>
+        </a>
+
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_general">${menuGeneral}</div>
           <a href="/index.html" data-i18n="nav.home">
@@ -230,9 +253,6 @@ function getNavbarHTML(translations) {
           </a>
           <a href="/calendar.html" data-i18n="nav.calendar">
             <i data-lucide="calendar" style="width:16px;height:16px;"></i> ${tt('nav.calendar', 'Takvim')}
-          </a>
-          <a href="/journals.html" data-i18n="nav.journals">
-            <i data-lucide="folder" style="width:16px;height:16px;"></i> ${tt('nav.journals', 'Hesaplar')}
           </a>
           <span id="admin-link-mobile" style="display:none;">
             <a href="/admin.html" data-i18n="nav.admin">
@@ -524,6 +544,7 @@ function setupAvatarDropdown() {
 
     if (e.target && e.target.closest && e.target.closest('#user-avatar')) {
       e.preventDefault();
+      if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('avatar');
       dropdown.classList.toggle('show');
       return;
     }
@@ -539,6 +560,32 @@ function setupAvatarDropdown() {
     }
   });
 }
+
+function closeAllNavDropdowns(except) {
+  // Premium dropdown
+  if (except !== 'premium') {
+    var p = document.getElementById('premium-dropdown-menu');
+    var pb = document.getElementById('premium-dropdown-btn');
+    if (p) p.classList.remove('open');
+    if (pb) pb.classList.remove('active');
+  }
+  // Bell panel
+  if (except !== 'bell') {
+    var bell = document.getElementById('bell-panel');
+    if (bell) bell.classList.remove('open');
+  }
+  // Journal switcher
+  if (except !== 'journal') {
+    var js = document.getElementById('nav-journal-switcher');
+    if (js) js.classList.remove('open');
+  }
+  // Avatar dropdown
+  if (except !== 'avatar') {
+    var av = document.getElementById('dropdown-menu');
+    if (av) av.classList.remove('show');
+  }
+}
+window.closeAllNavDropdowns = closeAllNavDropdowns;
 
 // ============================================================
 // ⭐ FIX: initNavEvents — butonlara event listener EKLEMİYORUZ.
@@ -821,6 +868,16 @@ async function updateNavbarJournal(retries) {
     var swIcon = document.querySelector('.nav-journal-switcher .journal-icon');
     if (swName) swName.textContent = activeJ.name;
     if (swIcon) swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+
+    // Mobil menü göstergesi
+    var menuJournalName = document.getElementById('menu-journal-name');
+    if (menuJournalName && activeJ) menuJournalName.textContent = activeJ.name;
+    
+    var menuJournalIcon = document.querySelector('.menu-journal-icon');
+    if (menuJournalIcon && activeJ) {
+      menuJournalIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+      menuJournalIcon.style.color = activeJ.color || 'var(--accent)';
+    }
 
     var dropdown = document.getElementById('journal-dropdown');
     if (dropdown) {

@@ -8,6 +8,7 @@ export default {
 
   // ⭐ NAVIGATION
   "nav.premium": "Premium",
+  "nav.current_account": "Current Account",
   "nav.premium_features": "✨ Premium Features",
   "nav.premium_dashboard": "Premium Dashboard",
   "nav.theme_customization": "Theme Customization",
