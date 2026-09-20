@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // TRADES - ANA JS DOSYASI
 // ============================================================
 // Bu dosyada değişen bölümler:
@@ -1335,7 +1335,7 @@
   // DOM READY
   // ============================================================
   
-  document.addEventListener('DOMContentLoaded', function() {
+  function startTrades() {
     if (typeof lucide !== 'undefined') {
       var tradeIcons = document.querySelectorAll('.trades-page [data-lucide]');
       if (tradeIcons.length > 0) {
@@ -1343,8 +1343,14 @@
       }
     }
     
-    setTimeout(initTrades, 150);
-  });
+    initTrades();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startTrades);
+  } else {
+    startTrades();
+  }
 
 })();
 

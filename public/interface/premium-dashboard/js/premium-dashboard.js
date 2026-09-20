@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // premium-dashboard.js - ANA DOSYA
 // Global state, init, event listeners, koordinasyon
 // ⭐ FIX: Scroll listener KALDIRILDI (gereksiz performans yükü)
@@ -179,7 +179,13 @@ async function loadPremiumData() {
     return;
   }
 
-    var { data, error } = await sb.from('trades').select('*').eq('user_id', user.id).eq('journal_id', jid).order('trade_date', { ascending: true });
+    var { data, error } = await sb
+      .from('trades')
+      .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+      .eq('user_id', user.id)
+      .eq('journal_id', jid)
+      .order('trade_date', { ascending: true })
+      .limit(2000);
     if (error) {
       if (typeof showToast === 'function') showToast(i18n.t('common.load_error') + error.message, 'error');
       return;

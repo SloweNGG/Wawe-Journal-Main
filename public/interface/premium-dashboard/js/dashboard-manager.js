@@ -577,11 +577,16 @@ export function exportCSV(trades) {
 }
 
 // ⭐ EXPORT PDF
-export function exportPDF(trades) {
+export async function exportPDF(trades) {
   try {
     if (!trades || !trades.length) {
       if (typeof showToast === 'function') showToast(i18n.t('toast.no_trades_export'), 'error');
       return;
+    }
+    if (typeof window.jspdf === 'undefined') {
+      if (typeof window.loadJsPDF === 'function') {
+        await window.loadJsPDF(true);
+      }
     }
     if (typeof window.jspdf === 'undefined') {
       if (typeof showToast === 'function') showToast(i18n.t('toast.pdf_lib_error'), 'error');

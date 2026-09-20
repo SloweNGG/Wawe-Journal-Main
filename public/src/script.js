@@ -52,7 +52,8 @@ import {
   formatCurrency, 
   formatCurrencyPDF, 
   formatDate, 
-  getInstrumentMultiplier 
+  getInstrumentMultiplier,
+  loadJsPDF 
 } from './utils/helpers.js';
 
 // Utils - ui
@@ -172,6 +173,7 @@ window.formatCurrency = formatCurrency;
 window.formatCurrencyPDF = formatCurrencyPDF;
 window.formatDate = formatDate;
 window.getInstrumentMultiplier = getInstrumentMultiplier;
+window.loadJsPDF = loadJsPDF;
 
 // Utils - ui (showToast BURADA!)
 window.showToast = showToast;

@@ -266,6 +266,53 @@ export function buildDailyData(trades, days) {
 }
 
 // ============================================================
+// ⭐ DİNAMİK jsPDF YÜKLEYİCİ (On-Demand Lazy Load)
+// ============================================================
+
+export function loadJsPDF(includeAutoTable = false) {
+  return new Promise((resolve, reject) => {
+    if (window.jspdf && (!includeAutoTable || (window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable))) {
+      return resolve(window.jspdf);
+    }
+    
+    function loadScript(src) {
+      return new Promise((res, rej) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+          if (existing.dataset.loaded === 'true') return res();
+          existing.addEventListener('load', () => res());
+          existing.addEventListener('error', (e) => rej(e));
+          return;
+        }
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => { s.dataset.loaded = 'true'; res(); };
+        s.onerror = (e) => rej(e);
+        document.head.appendChild(s);
+      });
+    }
+
+    const jspdfUrl = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    const autoTableUrl = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+
+    loadScript(jspdfUrl)
+      .then(() => {
+        if (includeAutoTable) {
+          return loadScript(autoTableUrl);
+        }
+      })
+      .then(() => {
+        resolve(window.jspdf);
+      })
+      .catch((err) => {
+        console.error('jsPDF yüklenemedi:', err);
+        reject(err);
+      });
+  });
+}
+
+// ============================================================
 // ⭐ window'a ata (sayfalar için)
 // ============================================================
 
@@ -277,6 +324,7 @@ window.formatCurrency = formatCurrency;
 window.formatCurrencyPDF = formatCurrencyPDF;
 window.formatDate = formatDate;
 window.getInstrumentMultiplier = getInstrumentMultiplier;
+window.loadJsPDF = loadJsPDF;
 
 // ⭐ ApexCharts yardımcıları
 window.formatCurrencyApex = formatCurrencyApex;

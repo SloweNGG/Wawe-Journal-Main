@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // STRATEGIES.JS - STRATEJİ SAYFASI ÖZEL FONKSİYONLAR
 // ⭐ MIGRATE: Chart.js → ApexCharts
 //    - Sparkline: ApexCharts line (sparkline mode)
@@ -1221,11 +1221,21 @@ function exportAllStrategiesCSV() {
   } catch(e) { showToast(i18n.t('toast.csv_export_error'), 'error'); }
 }
 
-function exportStrategyPDF(strategyId) {
+async function exportStrategyPDF(strategyId) {
   try {
+    if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+      if (typeof window.loadJsPDF === 'function') {
+        await window.loadJsPDF(true);
+      }
+    }
+    var PDFConstructor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (typeof jsPDF !== 'undefined' ? jsPDF : null);
+    if (!PDFConstructor) {
+      showToast(i18n.t('toast.pdf_export_error') || 'PDF library error', 'error');
+      return;
+    }
     var s = strategiesList.find(function(x) { return x.id === strategyId; });
     var perf = getStrategyPerformance(strategyId);
-    var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 12;
     var y = margin + 5;
@@ -1245,43 +1255,33 @@ function exportStrategyPDF(strategyId) {
     doc.text('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US')), margin, y);
     y += 10;
 
-    var data = [
-      [i18n.t('strategies.detail.trades'), perf.totalTradesWithOpen],
-      [i18n.t('strategies.detail.win_rate'), perf.winRate + '%'],
-      [i18n.t('strategies.detail.pnl'), formatCurrencySafe(perf.totalPnL)],
-      [i18n.t('strategies.detail.profit_factor'), perf.profitFactor === null ? '∞' : perf.profitFactor],
-      [i18n.t('strategies.detail.max_drawdown'), formatCurrencySafe(perf.maxDrawdown)]
-    ];
-    data.forEach(function(row) {
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(107, 107, 128);
-      doc.text(row[0] + ':', margin, y);
-      var x2 = doc.getStringUnitWidth(row[0] + ':') * 7 / 0.3528 + margin + 4;
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(232, 232, 240);
-      doc.text(row[1], x2, y);
-      y += 5;
+    var trades = allTrades.filter(function(t) { return t.strategy_id === strategyId && t.exit_price; });
+    var tableData = trades.slice(0, 30).map(function(t) {
+      var pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
+      return [
+        t.trade_date || '-',
+        t.symbol || '-',
+        (t.direction || '-').toUpperCase(),
+        t.entry_price || '-',
+        t.exit_price || '-',
+        formatCurrency(pnl),
+        t.rr_ratio ? t.rr_ratio + 'R' : '-'
+      ];
     });
-    y += 5;
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(139, 92, 246);
-    doc.text(i18n.t('strategies.detail.trade_list'), margin, y);
-    y += 4;
-    var tableRows = perf.tradesDetail.slice(0, 15).map(function(t) {
-      return [fmtDate(t.trade_date), sanitizeHTML(t.symbol), sanitizeHTML(t.direction), t.entry_price, t.exit_price, t.pnl.toFixed(2)];
-    });
     doc.autoTable({
       startY: y,
       head: [[
-        i18n.t('strategies.detail.date'), i18n.t('strategies.detail.symbol'),
-        i18n.t('strategies.detail.direction'), i18n.t('strategies.detail.entry'),
-        i18n.t('strategies.detail.exit'), i18n.t('strategies.detail.pnl')
+        i18n.t('trades.table.date'),
+        i18n.t('trades.table.symbol'),
+        i18n.t('trades.table.direction'),
+        i18n.t('trades.table.entry'),
+        i18n.t('trades.table.exit'),
+        i18n.t('trades.table.pnl'),
+        'R:R'
       ]],
-      body: tableRows,
-      theme: 'dark',
+      body: tableData,
+      theme: 'plain',
       headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 5 },
       bodyStyles: { textColor: [232, 232, 240], fontSize: 5 },
       columnStyles: { 5: { textColor: function(cell) { return cell.raw >= 0 ? [34,197,94] : [239,68,68]; } } },
@@ -1293,9 +1293,19 @@ function exportStrategyPDF(strategyId) {
   } catch(e) { showToast(i18n.t('toast.pdf_export_error'), 'error'); }
 }
 
-function exportAllStrategiesPDF() {
+async function exportAllStrategiesPDF() {
   try {
-    var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+      if (typeof window.loadJsPDF === 'function') {
+        await window.loadJsPDF(true);
+      }
+    }
+    var PDFConstructor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (typeof jsPDF !== 'undefined' ? jsPDF : null);
+    if (!PDFConstructor) {
+      showToast(i18n.t('toast.pdf_export_error') || 'PDF library error', 'error');
+      return;
+    }
+    var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 12;
     var y = margin + 5;

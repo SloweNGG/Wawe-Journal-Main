@@ -2331,6 +2331,12 @@
       }
 
       if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+        if (typeof window.loadJsPDF === 'function') {
+          await window.loadJsPDF(false);
+        }
+      }
+
+      if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
         showToast('PDF kütüphanesi yüklenemedi.', 'error');
         return;
       }
@@ -3046,7 +3052,7 @@
 
   function startDashboard() {
     if (typeof window.ApexCharts === 'undefined' || typeof window.LightweightCharts === 'undefined') {
-      setTimeout(startDashboard, 50);
+      requestAnimationFrame(startDashboard);
       return;
     }
 
@@ -3064,10 +3070,14 @@
       }
     }
 
-    setTimeout(initDashboard, 150);
+    initDashboard();
   }
 
-  document.addEventListener('DOMContentLoaded', startDashboard);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startDashboard);
+  } else {
+    startDashboard();
+  }
 
 })();
 document.addEventListener('journal-changed', () => window.location.reload());
