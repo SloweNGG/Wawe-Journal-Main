@@ -350,3 +350,94 @@ window.saveReference = saveReference;
 window.editReference = editReference;
 window.deleteReference = deleteReference;
 window.uploadImage = uploadImage;
+// ============================================================
+// REFERANS KODLARI (REFERRAL CODES)
+// ============================================================
+async function loadReferralCodes() {
+  if (!sb) return;
+  try {
+    var { data, error } = await sb
+      .from('referral_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    adminState.referralCodes = data || [];
+  } catch (e) {
+    console.error('loadReferralCodes hatası:', e);
+  }
+}
+
+async function deleteReferralCode(id) {
+  if (!sb) return false;
+  try {
+    var { error } = await sb.from('referral_codes').delete().eq('id', id);
+    if (error) throw error;
+    await loadReferralCodes();
+    return true;
+  } catch (e) {
+    console.error('deleteReferralCode hatası:', e);
+    window.showToast('Silinemedi: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function toggleReferralCodeStatus(id, newStatus) {
+  if (!sb) return false;
+  try {
+    var { error } = await sb.from('referral_codes').update({ is_active: newStatus }).eq('id', id);
+    if (error) throw error;
+    await loadReferralCodes();
+    return true;
+  } catch (e) {
+    console.error('toggleReferralCodeStatus hatası:', e);
+    window.showToast('Güncellenemedi: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function saveReferralCode(id, payload) {
+  if (!sb) return false;
+  try {
+    if (id) {
+      var { error } = await sb.from('referral_codes').update(payload).eq('id', id);
+      if (error) throw error;
+      window.showToast('Kod güncellendi', 'success');
+    } else {
+      var { error: e2 } = await sb.from('referral_codes').insert([payload]);
+      if (e2) throw e2;
+      window.showToast('Kod eklendi', 'success');
+    }
+    await loadReferralCodes();
+    return true;
+  } catch (e) {
+    console.error('saveReferralCode hatası:', e);
+    window.showToast('Kaydedilemedi: ' + e.message, 'error');
+    return false;
+  }
+}
+
+// Payment Settings
+async function loadPaymentSettings() {
+  if (!sb) return null;
+  try {
+    var { data, error } = await sb.from('system_settings').select('value').eq('key', 'payment_settings').single();
+    if (error) return null;
+    return data.value;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function savePaymentSettings(payload) {
+  if (!sb) return false;
+  try {
+    var { error } = await sb.from('system_settings').upsert({ key: 'payment_settings', value: payload });
+    if (error) throw error;
+    window.showToast('Fiyat ayarları güncellendi', 'success');
+    return true;
+  } catch (e) {
+    window.showToast('Hata: ' + e.message, 'error');
+    return false;
+  }
+}

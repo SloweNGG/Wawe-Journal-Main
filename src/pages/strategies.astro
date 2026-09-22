@@ -13,6 +13,18 @@ import Layout from '../layouts/Layout.astro';
 
   <!-- ⭐ DEĞİŞİKLİK: Chart.js kaldırıldı (ApexCharts'a geçiş).
        jspdf ve jspdf-autotable zaten body'de yükleniyordu, burada tekrar yüklemeye gerek yok. -->
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
+  <script src="/interface/strategies/js/strategies.js" is:inline defer></script>
 </Fragment>
   <!-- ✅ NAVBAR CONTAINER -->
 
@@ -275,26 +287,26 @@ import Layout from '../layouts/Layout.astro';
        ============================================================ -->
 
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  
   <!-- ⭐ DEĞİŞİKLİK: Chart.js → ApexCharts (sürüm sabit) -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline></script>
+  
 
   <!-- 2. CORE KONFİG VE I18N (ES5) -->
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
+  
+  
 
   <!-- 3. ANA MODÜL SCRIPT (ES Module) -->
-  <script type="module" src="/src/script.js" is:inline></script>
+  
 
   <!-- 4. NAVBAR (ES5) -->
-  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
+  
 
   <!-- 5. QUICK ADD (ES5) -->
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
-  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
+  
+  
 
   <!-- 6. STRATEGIES JS (ES5) -->
-  <script src="/interface/strategies/js/strategies.js" is:inline></script>
+  
 
   <!-- 7. QUICK ADD MANUEL BAŞLATICI -->
   <script is:inline>

@@ -14,6 +14,16 @@ import Layout from '../layouts/Layout.astro';
   
   <link rel="stylesheet" href="/interface/trades/css/trades.css" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
+  <script src="/interface/trades/js/trades.js" is:inline defer></script>
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
 </Fragment>
 
   <main class="main trades-main">
@@ -259,19 +269,19 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
   
-  <script type="module" src="/src/script.js" is:inline></script>
   
-  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
   
-  <script src="/interface/trades/js/trades.js" is:inline></script>
   
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
-  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
+  
+  
+  
+  
+  
+  
+  
+  
 
   <!-- QUICK ADD MANUEL BAŞLATICI -->
   <script is:inline>

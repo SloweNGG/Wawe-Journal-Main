@@ -55,10 +55,44 @@ function minifyDistAssets() {
   };
 }
 
+function bundleAppScript() {
+  const buildBundle = () => {
+    try {
+      const entry = path.resolve('public/src/script.js');
+      const outfile = path.resolve('public/src/bundle.js');
+      if (fs.existsSync(entry)) {
+        esbuild.buildSync({
+          entryPoints: [entry],
+          bundle: true,
+          format: 'esm',
+          outfile: outfile,
+          minify: true,
+          legalComments: 'none',
+        });
+        console.log('⚡ [bundle-app-script] Built public/src/bundle.js successfully.');
+      }
+    } catch (err) {
+      console.error('[bundle-app-script] Error bundling public/src/script.js:', err.message);
+    }
+  };
+
+  return {
+    name: 'bundle-app-script',
+    hooks: {
+      'astro:config:setup': () => {
+        buildBundle();
+      },
+      'astro:build:start': () => {
+        buildBundle();
+      },
+    },
+  };
+}
+
 export default defineConfig({
   site: 'https://wawejournal.com',
   outDir: 'dist',
-  integrations: [react(), minifyDistAssets()],
+  integrations: [react(), bundleAppScript(), minifyDistAssets()],
   build: {
     // Orijinal siteyle birebir aynı URL yapısını (dashboard.html, trades.html, ...)
     // korumak için 'file' formatını kullanıyoruz. Böylece navbar.js, script.js

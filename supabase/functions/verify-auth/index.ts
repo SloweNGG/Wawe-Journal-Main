@@ -4,7 +4,7 @@
 // ⭐ Rate limit: login 15dk/10 fail, register 1sa/5 attempt
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -68,12 +68,28 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   }
   if (!token) return false;
   try {
+    const formData = new URLSearchParams();
+    formData.append('secret', TURNSTILE_SECRET);
+    formData.append('response', token);
+    
+    // Cloudflare remoteip parametresini sadece geçerli IPv4/IPv6 ise kabul eder.
+    // 'unknown' veya dahili geçersiz değerler gönderilirse "invalid-remoteip" hatasıyla reddeder.
+    const isValidIp = ip && ip !== 'unknown' && (
+      /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip) || /^[0-9a-fA-F:]+$/.test(ip)
+    );
+    if (isValidIp) {
+      formData.append('remoteip', ip);
+    }
+
     const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret: TURNSTILE_SECRET, response: token, remoteip: ip }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
     });
     const data = await res.json();
+    if (data.success !== true) {
+      console.warn('Turnstile verification failed:', JSON.stringify(data));
+    }
     return data.success === true;
   } catch (e) {
     console.error('Turnstile verify error:', e);
@@ -120,6 +136,8 @@ serve(async (req) => {
   }
 
   const ip = getClientIP(req);
+  const isRealIp = ip && ip !== 'unknown';
+
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -130,27 +148,35 @@ serve(async (req) => {
   // ── RATE LIMIT ──────────────────────────────────────────
   if (action === 'login') {
     const since = new Date(Date.now() - LOGIN_WINDOW_MIN * 60 * 1000).toISOString();
-    const [ipCheck, emailCheck] = await Promise.all([
-      admin.from('login_attempts')
-        .select('id', { count: 'exact', head: true })
-        .eq('ip_address', ip).eq('action', 'login').eq('success', false)
-        .gte('attempted_at', since),
+    const checks = [
       admin.from('login_attempts')
         .select('id', { count: 'exact', head: true })
         .eq('email', email).eq('action', 'login').eq('success', false)
         .gte('attempted_at', since),
-    ]);
-    if ((ipCheck.count || 0) >= LOGIN_MAX_FAILED || (emailCheck.count || 0) >= LOGIN_MAX_FAILED) {
+    ];
+    if (isRealIp) {
+      checks.push(
+        admin.from('login_attempts')
+          .select('id', { count: 'exact', head: true })
+          .eq('ip_address', ip).eq('action', 'login').eq('success', false)
+          .gte('attempted_at', since)
+      );
+    }
+    const [emailCheck, ipCheck] = await Promise.all(checks);
+    if ((emailCheck?.count || 0) >= LOGIN_MAX_FAILED || (ipCheck?.count || 0) >= LOGIN_MAX_FAILED) {
       return jsonRes({ error: 'Too many attempts. Please try again in 15 minutes.' }, 429, cors);
     }
   } else {
-    const since = new Date(Date.now() - REGISTER_WINDOW_MIN * 60 * 1000).toISOString();
-    const ipCheck = await admin.from('login_attempts')
-      .select('id', { count: 'exact', head: true })
-      .eq('ip_address', ip).eq('action', 'register')
-      .gte('attempted_at', since);
-    if ((ipCheck.count || 0) >= REGISTER_MAX_ATTEMPTS) {
-      return jsonRes({ error: 'Too many attempts. Please try again in 1 hour.' }, 429, cors);
+    // Sadece gerçek IP'ler için ve yalnızca başarısız denemeler kontrol edilir
+    if (isRealIp) {
+      const since = new Date(Date.now() - REGISTER_WINDOW_MIN * 60 * 1000).toISOString();
+      const ipCheck = await admin.from('login_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('ip_address', ip).eq('action', 'register').eq('success', false)
+        .gte('attempted_at', since);
+      if ((ipCheck?.count || 0) >= REGISTER_MAX_ATTEMPTS) {
+        return jsonRes({ error: 'Too many attempts. Please try again in 1 hour.' }, 429, cors);
+      }
     }
   }
 
@@ -172,6 +198,9 @@ serve(async (req) => {
     });
 
     if (error || !data?.session) {
+      if (error?.message?.toLowerCase().includes('confirm')) {
+        return jsonRes({ error: 'Please confirm your email address before logging in.' }, 401, cors);
+      }
       return jsonRes({ error: 'Invalid email or password' }, 401, cors);
     }
 
@@ -179,9 +208,9 @@ serve(async (req) => {
       .from('user_profiles')
       .select('is_active')
       .eq('id', data.user.id)
-      .single();
+      .maybeSingle();
 
-    if (!profile || profile.is_active === false) {
+    if (profile && profile.is_active === false) {
       await anon.auth.signOut();
       return jsonRes({ error: 'Account deactivated' }, 403, cors);
     }
@@ -236,11 +265,27 @@ serve(async (req) => {
     if (msg.includes('already') || msg.includes('registered')) {
       return jsonRes({ error: 'This email is already registered.' }, 409, cors);
     }
-    return jsonRes({ error: 'Registration failed. Please try again.' }, 400, cors);
+    return jsonRes({ error: signUpError.message || 'Registration failed. Please try again.' }, 400, cors);
+  }
+
+  // Oturum token'ı hazır mı kontrol et; değilse e-posta auto-confirm ve oturum oluştur
+  let session = signUpData.session;
+  if (!session && signUpData.user) {
+    try {
+      await admin.auth.admin.updateUserById(signUpData.user.id, { email_confirm: true });
+      const { data: loginData } = await anon.auth.signInWithPassword({ email, password });
+      if (loginData?.session) {
+        session = loginData.session;
+      }
+    } catch (confirmErr) {
+      console.warn('Auto-confirm notice:', confirmErr);
+    }
   }
 
   return jsonRes({
     success: true,
+    access_token: session?.access_token || null,
+    refresh_token: session?.refresh_token || null,
     user: { id: signUpData.user?.id, email },
   }, 200, cors);
 });

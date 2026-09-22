@@ -119,7 +119,7 @@ export default {
   "plans.best_value": "💎 EN İYİ DEĞER",
   "plans.premium_yearly_name": "Premium Yıllık",
   "plans.premium_yearly_period": "/ yıl",
-  "plans.save_67": "🎯 %67 tasarruf et!",
+  "plans.save_67": "🎯 %31 tasarruf et!",
   "plans.premium_yearly_desc": "Yıllık abonelikle en iyi fiyat avantajı.",
   "plans.premium_yearly_btn": "Yıllık Satın Al →",
   "plans.payment_note": "💳 Kredi kartı, kripto (BTC / LTC) veya banka havalesi ile ödeme",

@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr">
@@ -180,6 +180,11 @@ import Layout from '../layouts/Layout.astro';
     .bt-trade-panel { flex-direction: column; align-items: stretch; }
   }
 </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
 </Fragment>
   <nav class="nav">
     <a href="dashboard.html" class="nav-logo">
@@ -308,8 +313,8 @@ import Layout from '../layouts/Layout.astro';
 
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  
+  
   <script is:inline>
   /* ============================================================
      1) SUPABASE AYARLARI - WW_CONFIG üzerinden

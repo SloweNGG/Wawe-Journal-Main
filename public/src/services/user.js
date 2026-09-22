@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL - USER SERVICE
 // ============================================================
 
@@ -11,16 +11,33 @@ import { showToast } from '../utils/ui.js';
 // ── PLAN & PREMIUM ──────────────────────────────────────────
 export async function getUserPlan() {
   try {
-    const user = await requireAuth();
-    if (!user) return { plan: 'free', features: FEATURES.free };
+    const cachedPlan = sessionStorage.getItem('ww_user_plan');
+    const cachedPlanTime = sessionStorage.getItem('ww_user_plan_time');
+    if (cachedPlan && cachedPlanTime && (Date.now() - parseInt(cachedPlanTime, 10)) < 300000) {
+      const isPrem = cachedPlan === 'premium';
+      return { plan: cachedPlan, features: isPrem ? FEATURES.premium : FEATURES.free };
+    }
+
+    if (window.__wwUserProfile && window.__wwUserProfile.plan) {
+      const plan = window.__wwUserProfile.plan;
+      const isPrem = plan === 'premium';
+      return { plan, features: isPrem ? FEATURES.premium : FEATURES.free };
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return { plan: 'free', features: FEATURES.free };
     
     const { data, error } = await sb
       .from('user_profiles')
       .select('plan, plan_expires_at')
-      .eq('id', user.id)
+      .eq('id', session.user.id)
       .single();
     
     if (error || !data || data.plan === 'free') {
+      try {
+        sessionStorage.setItem('ww_user_plan', 'free');
+        sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+      } catch(e) {}
       return { plan: 'free', features: FEATURES.free };
     }
     
@@ -30,6 +47,10 @@ export async function getUserPlan() {
       
       if (isNaN(expires.getTime()) || now > expires) {
         showToast(i18n.t('premium.expired'), 'info');
+        try {
+          sessionStorage.setItem('ww_user_plan', 'free');
+          sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+        } catch(e) {}
         return { plan: 'free', features: FEATURES.free };
       }
     }
@@ -38,6 +59,10 @@ export async function getUserPlan() {
       return { plan: 'free', features: FEATURES.free };
     }
     
+    try {
+      sessionStorage.setItem('ww_user_plan', 'premium');
+      sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+    } catch(e) {}
     return { plan: data.plan, features: FEATURES.premium };
     
   } catch (error) {
@@ -48,6 +73,19 @@ export async function getUserPlan() {
 
 export async function getUserPlanSilent() {
   try {
+    const cachedPlan = sessionStorage.getItem('ww_user_plan');
+    const cachedPlanTime = sessionStorage.getItem('ww_user_plan_time');
+    if (cachedPlan && cachedPlanTime && (Date.now() - parseInt(cachedPlanTime, 10)) < 300000) {
+      const isPrem = cachedPlan === 'premium';
+      return { plan: cachedPlan, features: isPrem ? FEATURES.premium : FEATURES.free };
+    }
+
+    if (window.__wwUserProfile && window.__wwUserProfile.plan) {
+      const plan = window.__wwUserProfile.plan;
+      const isPrem = plan === 'premium';
+      return { plan, features: isPrem ? FEATURES.premium : FEATURES.free };
+    }
+
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return { plan: 'free', features: FEATURES.free };
     

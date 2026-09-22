@@ -99,7 +99,7 @@ export const WW_CONFIG = {
     textColor: '#e8e8f0'
   },
   DEFAULT_PRICES: {
-    monthly: 9.00,
-    yearly: 79.00
+    monthly: 12.00,
+    yearly: 99.00
   }
 };

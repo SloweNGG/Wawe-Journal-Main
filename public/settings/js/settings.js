@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // SETTINGS.JS - TAM SÜRÜM
 // ⭐ Avatar cache - sadece değiştiğinde render
 // ⭐ TEHLİKELİ BÖLGE AKTİF: deleteAllUserData + deactivateAccount
@@ -554,17 +554,17 @@ window.togglePassword = function(inputId, btn) {
 window.getMonthlyPrice = function() {
   try {
     var saved = localStorage.getItem('ww_monthly_price');
-    if (saved) return parseFloat(saved);
+    if (saved && parseFloat(saved) > 0 && parseFloat(saved) !== 9) return parseFloat(saved);
   } catch(e) {}
-  return (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES) ? window.WW_CONFIG.DEFAULT_PRICES.monthly : 9.00;
+  return (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES) ? window.WW_CONFIG.DEFAULT_PRICES.monthly : 12.00;
 };
 
 window.getYearlyPrice = function() {
   try {
     var saved = localStorage.getItem('ww_yearly_price');
-    if (saved) return parseFloat(saved);
+    if (saved && parseFloat(saved) > 0 && parseFloat(saved) !== 79) return parseFloat(saved);
   } catch(e) {}
-  return (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES) ? window.WW_CONFIG.DEFAULT_PRICES.yearly : 79.00;
+  return (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES) ? window.WW_CONFIG.DEFAULT_PRICES.yearly : 99.00;
 };
 
 window.getYearlyDiscount = function() {
@@ -941,6 +941,20 @@ async function renderPlan() {
     var data = result.data;
 
     var isPremium = data && data.plan === 'premium';
+
+    // Fiyatlari DB'den canli cek
+    try {
+      var sb = window.sb || window.supabase;
+      if (sb) {
+        var { data: dbPrices } = await sb.rpc('get_prices');
+        if (dbPrices && dbPrices.monthly && dbPrices.yearly) {
+           if (window.adminUpdatePrices) {
+             window.adminUpdatePrices(dbPrices.monthly, dbPrices.yearly);
+           }
+        }
+      }
+    } catch(err) { console.error('Plan prices fetch err:', err); }
+
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
 
     window.SETTINGS_STATE.isPremium = isPremium;
@@ -951,8 +965,8 @@ async function renderPlan() {
       return;
     }
 
-    var monthly = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
-    var yearly = window.getYearlyPrice ? window.getYearlyPrice() : 79;
+    var monthly = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
+    var yearly = window.getYearlyPrice ? window.getYearlyPrice() : 99;
     var methods = window.getPaymentMethods ? window.getPaymentMethods() : ['BTC', 'LTC'];
 
     var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
@@ -1019,6 +1033,118 @@ async function renderPlan() {
       if (secureSpan) secureSpan.setAttribute('data-i18n-params', JSON.stringify({ methods: methods.join(' / ') }));
     }
 
+
+    
+    
+    // REFERANS KODU MANTIĞI
+    var refBtn = clone.querySelector('#apply-referral-btn');
+    var refInput = clone.querySelector('#referral-input');
+    var refMsg = clone.querySelector('#referral-msg');
+    
+    var monthlyBtnSpan = clone.querySelector('#upgrade-monthly span[data-i18n]');
+    var yearlyBtnSpan = clone.querySelector('#upgrade-yearly span[data-i18n]');
+    var monthlyBtn = clone.querySelector('#upgrade-monthly');
+    var yearlyBtn = clone.querySelector('#upgrade-yearly');
+
+    function updatePriceDisplay(discount = 0) {
+      var isBtc = window.SETTINGS_STATE.payMethod === 'BTC';
+      
+      var baseMonthly = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
+      var baseYearly = window.getYearlyPrice ? window.getYearlyPrice() : 99;
+      
+      var finalMonthly = baseMonthly;
+      var finalYearly = baseYearly;
+      
+      if (isBtc) {
+        if (discount > 0 && refMsg) {
+           refMsg.textContent = '❌ İndirim kodları BTC ödemelerinde geçerli değildir. Sadece LTC ile kullanılabilir.';
+           refMsg.style.color = 'var(--red)';
+        }
+      } else {
+        if (discount > 0) {
+           finalMonthly = baseMonthly - (baseMonthly * (discount / 100));
+           finalYearly = baseYearly - (baseYearly * (discount / 100));
+           if (refMsg) {
+             refMsg.textContent = '✅ %' + discount + ' indirim uygulandı!';
+             refMsg.style.color = 'var(--green)';
+           }
+        }
+      }
+
+      if (monthlyBtn) {
+         if (discount > 0 && !isBtc) {
+            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> Aylık: <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseMonthly + '</span> $' + finalMonthly.toFixed(2);
+         } else {
+            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> Aylık: $' + baseMonthly;
+         }
+         if(window.lucide) window.lucide.createIcons();
+      }
+
+      if (yearlyBtn) {
+         if (discount > 0 && !isBtc) {
+            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> Yıllık: <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseYearly + '</span> $' + finalYearly.toFixed(2);
+         } else {
+            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> Yıllık: $' + baseYearly;
+         }
+         if(window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    if (refBtn && refInput) {
+      refBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        var code = refInput.value.trim().toUpperCase();
+        if (!code) return;
+        
+        refBtn.textContent = '...';
+        refBtn.disabled = true;
+        
+        try {
+          var sb = window.sb || window.supabase;
+          var { data, error } = await sb.rpc('validate_referral_code', { p_code: code });
+          
+          if (error) throw error;
+          
+          if (data && data.valid) {
+            window.SETTINGS_STATE.appliedReferralCode = code;
+            window.SETTINGS_STATE.appliedDiscount = data.discount_percent;
+            
+            if (refMsg) {
+              refMsg.textContent = '✅ %' + data.discount_percent + ' indirim uygulandı!';
+              refMsg.style.color = 'var(--green)';
+            }
+            updatePriceDisplay(data.discount_percent);
+          } else {
+            throw new Error(data.message || 'Geçersiz kod');
+          }
+        } catch (err) {
+          window.SETTINGS_STATE.appliedReferralCode = null;
+          window.SETTINGS_STATE.appliedDiscount = 0;
+          if (refMsg) {
+            refMsg.textContent = '❌ ' + (err.message || 'Kod doğrulanamadı');
+            refMsg.style.color = 'var(--red)';
+          }
+          updatePriceDisplay(0);
+        } finally {
+          refBtn.textContent = 'Uygula';
+          refBtn.disabled = false;
+        }
+      });
+    }
+
+    // Bind payment method changes to re-calc price
+    setTimeout(function() {
+      var inputs = document.querySelectorAll('input[name="payment_method"]');
+      inputs.forEach(function(r) {
+        r.addEventListener('change', function() {
+           window.SETTINGS_STATE.payMethod = this.value;
+           updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
+        });
+      });
+      // Initial render
+      updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
+    }, 100);
+
     clone.querySelectorAll('[data-icon]').forEach(function(el) {
       el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
     });
@@ -1034,9 +1160,10 @@ async function renderPlan() {
     if (monthlyBtn) {
       monthlyBtn.addEventListener('click', async function() {
         var payMethod = window.SETTINGS_STATE.payMethod || 'BTC';
-        var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
+        var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
+        var refCode = window.SETTINGS_STATE.appliedReferralCode || null;
         if (window.upgradeToPremium) {
-          await window.upgradeToPremium('monthly', price, 'USD', payMethod);
+          await window.upgradeToPremium('monthly', price, 'USD', payMethod, refCode);
         } else {
           showMsg(t('payment.link_failed'), 'error');
         }
@@ -1047,9 +1174,10 @@ async function renderPlan() {
     if (yearlyBtn) {
       yearlyBtn.addEventListener('click', async function() {
         var payMethod = window.SETTINGS_STATE.payMethod || 'BTC';
-        var price = window.getYearlyPrice ? window.getYearlyPrice() : 79;
+        var price = window.getYearlyPrice ? window.getYearlyPrice() : 99;
+        var refCode = window.SETTINGS_STATE.appliedReferralCode || null;
         if (window.upgradeToPremium) {
-          await window.upgradeToPremium('yearly', price, 'USD', payMethod);
+          await window.upgradeToPremium('yearly', price, 'USD', payMethod, refCode);
         } else {
           showMsg(t('payment.link_failed'), 'error');
         }
@@ -1084,6 +1212,9 @@ async function renderPlan() {
         this.classList.add('active');
         window.SETTINGS_STATE.payMethod = this.getAttribute('data-method');
         if (window.selectPayMethod) window.selectPayMethod(this.getAttribute('data-method'));
+        if (typeof updatePriceDisplay === 'function') {
+          updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
+        }
       });
     });
 
@@ -2044,6 +2175,20 @@ async function checkAndActivatePremium() {
 
     var data = result.data;
     var isPremium = data && data.plan === 'premium';
+
+    // Fiyatlari DB'den canli cek
+    try {
+      var sb = window.sb || window.supabase;
+      if (sb) {
+        var { data: dbPrices } = await sb.rpc('get_prices');
+        if (dbPrices && dbPrices.monthly && dbPrices.yearly) {
+           if (window.adminUpdatePrices) {
+             window.adminUpdatePrices(dbPrices.monthly, dbPrices.yearly);
+           }
+        }
+      }
+    } catch(err) { console.error('Plan prices fetch err:', err); }
+
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
 
     if (isPremium && expiresAt && new Date() > expiresAt) {

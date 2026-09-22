@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en">
@@ -1450,6 +1450,14 @@ import Layout from '../layouts/Layout.astro';
       }
     }
   </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js?v=8" is:inline defer></script>
+  <script src="/i18n.js?v=8" is:inline defer></script>
+  <script type="module" src="/src/bundle.js?v=8" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=8" is:inline defer></script>
+  <script src="/settings/js/settings.js?v=8" is:inline defer></script>
 </Fragment>
   <!-- ⭐ NAVBAR CONTAINER -->
 
@@ -1627,17 +1635,17 @@ import Layout from '../layouts/Layout.astro';
        ============================================================ -->
   
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  
   
   <!-- 2. CORE KONFİG VE I18N (ES5) -->
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
+  
+  
   
   <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
-  <script type="module" src="/src/script.js" is:inline></script>
+  
   
   <!-- 4. NAVBAR (ES5) -->
-  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
+  
   
   <!-- 5. LUCIDE ICONS INIT -->
   <script is:inline>
@@ -1662,7 +1670,7 @@ import Layout from '../layouts/Layout.astro';
   </script>
   
   <!-- 7. SETTINGS JS (ES5 - AYNI KALIR) -->
-  <script src="/settings/js/settings.js" is:inline></script>
+  
   
   <!-- ⭐ TEMİZLİK: En alttaki tekrar eden @keyframes spin style bloğu kaldırıldı.
        Yukarıdaki ana <style> bloğunda zaten tanımlı. -->

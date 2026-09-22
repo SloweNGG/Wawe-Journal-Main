@@ -59,6 +59,12 @@ import Layout from '../layouts/Layout.astro';
     }
     html { overflow-y: auto !important; }
   </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js?v=8" is:inline defer></script>
+  <script src="/index-i18n.js?v=8" is:inline defer></script>
+  <script type="module" src="/src/bundle.js?v=8" is:inline defer></script>
 </Fragment>
 
   <!-- ═══ NAV ═══ -->
@@ -234,7 +240,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="cmp-card us">
         <div class="cmp-name" data-i18n="cmp.us.name">Wawe Journal</div>
         <div class="cmp-sub" data-i18n="cmp.us.sub">Premium</div>
-        <div class="cmp-price us">$9<span>/mo</span></div>
+        <div class="cmp-price us">$12<span>/mo</span></div>
         <ul class="cmp-rows">
           <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v">1,000 / journal</span></li>
           <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
@@ -329,7 +335,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="plan featured">
         <div class="plan-tag" data-i18n="plans.monthly_tag">most used</div>
         <div class="plan-name" data-i18n="plans.monthly_name">Premium monthly</div>
-        <div class="plan-price">$<span id="monthly-price-value">9</span><span data-i18n="plans.monthly_period"> / mo</span></div>
+        <div class="plan-price">$<span id="monthly-price-value">12</span><span data-i18n="plans.monthly_period"> / mo</span></div>
         <p class="plan-desc" data-i18n="plans.monthly_desc">Unlock everything.</p>
         <ul class="plan-feats">
           <li data-i18n="plans.monthly_f1">All features</li>
@@ -348,8 +354,8 @@ import Layout from '../layouts/Layout.astro';
       <div class="plan">
         <div class="plan-tag" data-i18n="plans.yearly_tag">best value</div>
         <div class="plan-name" data-i18n="plans.yearly_name">Premium yearly</div>
-        <div class="plan-price">$<span id="yearly-price-value">79</span><span data-i18n="plans.yearly_period"> / yr</span></div>
-        <p class="plan-desc" data-i18n="plans.yearly_desc">Save 67% annually.</p>
+        <div class="plan-price">$<span id="yearly-price-value">99</span><span data-i18n="plans.yearly_period"> / yr</span></div>
+        <p class="plan-desc" data-i18n="plans.yearly_desc">Save 31% annually.</p>
         <ul class="plan-feats">
           <li data-i18n="plans.yearly_f1">All premium features</li>
           <li data-i18n="plans.yearly_f2">2 months free</li>
@@ -443,10 +449,10 @@ import Layout from '../layouts/Layout.astro';
   </footer>
 
   <!-- ═══ SCRIPTS ═══ -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="/config.js" is:inline></script>
-  <script src="/index-i18n.js" is:inline></script>
-  <script type="module" src="/src/script.js" is:inline></script>
+  
+  
+  
+  
 
   <script is:inline>
     function waitForDeps(cb, maxMs) {
@@ -657,8 +663,8 @@ import Layout from '../layouts/Layout.astro';
       if (priceTimeout) cancelAnimationFrame(priceTimeout);
       priceTimeout = requestAnimationFrame(function() {
         try {
-          var mp = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
-          var yp = window.getYearlyPrice ? window.getYearlyPrice() : 79;
+          var mp = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
+          var yp = window.getYearlyPrice ? window.getYearlyPrice() : 99;
           var mEl = document.getElementById('monthly-price-value');
           if (mEl) mEl.textContent = mp % 1 === 0 ? mp.toFixed(0) : mp.toFixed(2);
           var yEl = document.getElementById('yearly-price-value');
@@ -682,7 +688,7 @@ import Layout from '../layouts/Layout.astro';
           if (!sb) { window.location.href = 'register.html?plan=monthly'; return; }
           var { data: { session } } = await sb.auth.getSession();
           if (!session) { window.location.href = 'register.html?plan=monthly'; return; }
-          var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 9;
+          var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
           if (window.upgradeToPremium) await window.upgradeToPremium('monthly', price, 'USD', 'BTC');
           else window.showToast && window.showToast('System preparing.', 'error');
         } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
@@ -697,7 +703,7 @@ import Layout from '../layouts/Layout.astro';
           if (!sb) { window.location.href = 'register.html?plan=yearly'; return; }
           var { data: { session } } = await sb.auth.getSession();
           if (!session) { window.location.href = 'register.html?plan=yearly'; return; }
-          var price = window.getYearlyPrice ? window.getYearlyPrice() : 79;
+          var price = window.getYearlyPrice ? window.getYearlyPrice() : 99;
           if (window.upgradeToPremium) await window.upgradeToPremium('yearly', price, 'USD', 'BTC');
           else window.showToast && window.showToast('System preparing.', 'error');
         } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }

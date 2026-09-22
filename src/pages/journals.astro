@@ -7,6 +7,13 @@ import Layout from '../layouts/Layout.astro';
   <link rel="stylesheet" href="/interface/journals/css/journals.css" />
   <title data-i18n="journal.title">Hesaplarım – Wawe Journal</title>
     
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
 </Fragment>
 
 <main class="journals-page-main">
@@ -89,11 +96,11 @@ import Layout from '../layouts/Layout.astro';
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-<script src="/config.js" is:inline></script>
-<script src="/i18n.js" is:inline></script>
-<script type="module" src="/src/script.js" is:inline></script>
-<script src="/components/navbar/navbar.js?v=3" is:inline></script>
+
+
+
+
+
 
 <script is:inline>
   var COLORS = ['#7c6dfa','#22c55e','#ef4444','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316'];

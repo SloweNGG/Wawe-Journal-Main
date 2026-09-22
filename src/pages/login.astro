@@ -10,8 +10,21 @@ import Layout from '../layouts/Layout.astro';
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- Cloudflare Turnstile -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer is:inline></script>
+  <!-- Turnstile Callbacks (Global Scope) -->
+  <script is:inline>
+    window.latestTurnstileToken = '';
+    window.onTurnstileSuccess = function(token) {
+      window.latestTurnstileToken = token || '';
+    };
+    window.onTurnstileExpired = function() {
+      window.latestTurnstileToken = '';
+    };
+    window.onTurnstileError = function() {
+      window.latestTurnstileToken = '';
+    };
+  </script>
+  <!-- Cloudflare Turnstile (Official Auto-Render) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer is:inline></script>
 
   <style>
     /* ═══════════════════════════════════════════════════════════════
@@ -424,6 +437,11 @@ import Layout from '../layouts/Layout.astro';
       to { transform: rotate(360deg); }
     }
   </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="/config.js" is:inline></script>
+  <script type="module" src="/src/bundle.js" is:inline></script>
 </Fragment>
 
   <a href="/" class="brand-logo" aria-label="Wawe Journal Home">
@@ -440,7 +458,7 @@ import Layout from '../layouts/Layout.astro';
       <h1 class="auth-title">Welcome Back</h1>
       <p class="auth-sub">Don't have an account? <a href="register.html">Sign up</a></p>
 
-      <button class="btn-google" id="google-login-btn">
+      <button type="button" class="btn-google" id="google-login-btn">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#8b5cf6"/>
           <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#8b5cf6"/>
@@ -464,8 +482,19 @@ import Layout from '../layouts/Layout.astro';
 
       <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
 
-      <!-- Turnstile widget -->
-      <div class="turnstile-wrap" id="turnstile-container"></div>
+      <!-- Turnstile widget (Official Auto-Render) -->
+      <div class="turnstile-wrap">
+        <div 
+          class="cf-turnstile" 
+          id="turnstile-container" 
+          data-sitekey="0x4AAAAAAEzAoR2XhUtPTxV7" 
+          data-theme="dark" 
+          data-size="flexible"
+          data-callback="onTurnstileSuccess" 
+          data-expired-callback="onTurnstileExpired"
+          data-error-callback="onTurnstileError"
+        ></div>
+      </div>
 
       <button class="btn-primary" id="login-btn">Login</button>
     </div>
@@ -473,81 +502,144 @@ import Layout from '../layouts/Layout.astro';
 
   <div class="toast-container" id="toast-container"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="/config.js" is:inline></script>
-  <script type="module" src="/src/script.js" is:inline></script>
+  
+  
+  
 
   <script is:inline>
-    // ─── Turnstile init ─────────────────────────────────────
-    var turnstileWidgetId = null;
+    // ⭐ URL'den gelen hata veya OAuth parametrelerini işle
+    (function handleUrlParams() {
+      if (typeof window === 'undefined') return;
+      var searchParams = new URLSearchParams(window.location.search);
+      var hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      var authErr = searchParams.get('auth_error') || 
+                    searchParams.get('error_description') || 
+                    searchParams.get('error') || 
+                    hashParams.get('error_description') || 
+                    hashParams.get('error');
 
-    window.onTurnstileSuccess = function () {};
-    window.onTurnstileExpired = function () {};
-
-    (function initTurnstile() {
-      function tryRender() {
-        var cfg = window.WW_CONFIG || {};
-        var siteKey = cfg.TURNSTILE_SITE_KEY || '';
-        var container = document.getElementById('turnstile-container');
-        if (!container) return;
-
-        // Konfigüre edilmemişse widget'ı gizle
-        if (!siteKey || siteKey.indexOf('REPLACE') === 0) {
-          container.setAttribute('data-skip', '1');
-          wwLog && wwLog.warn && wwLog.warn('⚠️ Turnstile site key not configured');
-          return;
+      if (authErr) {
+        var cleanMsg = decodeURIComponent(authErr).replace(/\+/g, ' ');
+        if (cleanMsg.includes('Database error saving new user')) {
+          cleanMsg = 'Google ile giriş başarısız: Supabase veritabanında "Database error saving new user" hatası alındı. Lütfen Supabase SQL Editor\'de trigger güncellemesini çalıştırınız.';
         }
-
-        if (typeof window.turnstile === 'undefined' || typeof window.turnstile.render !== 'function') {
-          setTimeout(tryRender, 150);
-          return;
+        window.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            toast(cleanMsg, 'error');
+          }, 300);
+        });
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, '', window.location.pathname);
         }
-
-        try {
-          turnstileWidgetId = window.turnstile.render(container, {
-            sitekey: siteKey,
-            theme: 'dark',
-            size: 'flexible',
-            callback: window.onTurnstileSuccess,
-            'expired-callback': window.onTurnstileExpired,
-            'error-callback': window.onTurnstileExpired,
-          });
-        } catch (e) {
-          wwLog && wwLog.warn && wwLog.warn('Turnstile render error:', e);
-        }
+      } else if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+        window.location.replace('dashboard.html' + window.location.search + window.location.hash);
       }
-      tryRender();
     })();
 
-    function getTurnstileToken() {
-      try {
-        if (window.turnstile && turnstileWidgetId !== null && window.turnstile.getResponse) {
-          return window.turnstile.getResponse(turnstileWidgetId) || '';
-        }
-      } catch (e) {}
-      return '';
+    // ─── Güvenli Yardımcılar ─────────────────────────────────
+    function getSupabase() {
+      if (typeof window.sb !== 'undefined' && window.sb) return window.sb;
+      if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        var url = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || window.SUPABASE_URL || 'https://odasapyhtdopbnlfhwde.supabase.co';
+        var key = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+        window.sb = window.supabase.createClient(url, key);
+        return window.sb;
+      }
+      return null;
     }
 
-    function resetTurnstile() {
-      try {
-        if (window.turnstile && turnstileWidgetId !== null) {
-          window.turnstile.reset(turnstileWidgetId);
-        }
-      } catch (e) {}
+    function toast(msg, type) {
+      if (typeof window.showToast === 'function') {
+        window.showToast(msg, type || 'info');
+        return;
+      }
+      var c = document.getElementById('toast-container');
+      if (!c) return;
+      var t = document.createElement('div');
+      t.className = 'toast toast-' + (type || 'info');
+      t.textContent = msg;
+      t.style.cssText = 'padding:10px 16px;background:#1e1b4b;border:1px solid #8b5cf6;color:#fff;border-radius:8px;margin-bottom:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.5);';
+      c.appendChild(t);
+      setTimeout(function() { t.remove(); }, 3500);
     }
 
-    function isTurnstileRequired() {
-      return typeof window.isTurnstileConfigured === 'function' && window.isTurnstileConfigured();
+    function validateEmail(email) {
+      if (typeof window.isValidEmail === 'function') return window.isValidEmail(email);
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    // ─── Yardımcılar ────────────────────────────────────────
     function hasTurkishChars(str) {
       return /[ığüşöçİĞÜŞÖÇ]/.test(str);
     }
 
+    // ─── Turnstile Token Alma & Yedek Render ───────────────────
+    function getTurnstileToken() {
+      if (window.latestTurnstileToken) return window.latestTurnstileToken;
+      var input = document.querySelector('[name="cf-turnstile-response"]');
+      if (input && input.value) return input.value;
+      if (typeof window.turnstile !== 'undefined' && typeof window.turnstile.getResponse === 'function') {
+        try {
+          var t = window.turnstile.getResponse();
+          if (t) return t;
+        } catch (e) {}
+      }
+      return '';
+    }
+
+    function resetTurnstile() {
+      window.latestTurnstileToken = '';
+      if (typeof window.turnstile !== 'undefined' && typeof window.turnstile.reset === 'function') {
+        try { window.turnstile.reset(); } catch (e) {}
+      }
+    }
+
+    function isTurnstileRequired() {
+      if (typeof window.isTurnstileConfigured === 'function') {
+        return window.isTurnstileConfigured();
+      }
+      return true;
+    }
+
+    // Yedek render: Eğer 1 saniye sonra kutu henüz çizilmemişse manuel çiz
+    function ensureTurnstileRender() {
+      var c = document.getElementById('turnstile-container');
+      if (c && !c.hasChildNodes() && typeof window.turnstile !== 'undefined' && typeof window.turnstile.render === 'function') {
+        try {
+          window.turnstile.render(c, {
+            sitekey: '0x4AAAAAAEzAoR2XhUtPTxV7',
+            theme: 'dark',
+            size: 'flexible',
+            callback: function(token) { window.onTurnstileSuccess(token); },
+            'expired-callback': function() { window.onTurnstileExpired(); },
+            'error-callback': function() { window.onTurnstileError(); }
+          });
+        } catch (e) {}
+      }
+    }
+    setTimeout(ensureTurnstileRender, 1000);
+    setTimeout(ensureTurnstileRender, 2500);
+
+    // ─── Mevcut Oturum Kontrolü ─────────────────────────────
+    function checkExistingSession() {
+      if (window.location.search.includes('error=') || window.location.hash.includes('error=') || window.location.search.includes('auth_error=')) {
+        return; // Hata incelenirken yönlendirme yapma
+      }
+      var client = getSupabase();
+      if (client && client.auth) {
+        client.auth.getSession().then(function(res) {
+          if (res && res.data && res.data.session) {
+            window.location.replace('dashboard.html');
+          }
+        }).catch(function() {});
+      }
+    }
+    setTimeout(checkExistingSession, 400);
+
+    // ─── Google OAuth Girişi ─────────────────────────────────
     async function signInWithGoogle() {
       const btn = document.getElementById('google-login-btn');
       btn.disabled = true;
+      var originalHTML = btn.innerHTML;
       btn.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;animation:spin 1s linear infinite;">
           <circle cx="12" cy="12" r="10" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="31.4 31.4" fill="none"/>
@@ -555,7 +647,14 @@ import Layout from '../layouts/Layout.astro';
         Redirecting to Google...
       `;
       try {
-        const { error } = await sb.auth.signInWithOAuth({
+        var client = getSupabase();
+        if (!client || !client.auth) {
+          toast('Authentication service initializing, please try again.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          return;
+        }
+        const { data, error } = await client.auth.signInWithOAuth({
           provider: 'google',
           options: {
             redirectTo: window.location.origin + '/dashboard.html',
@@ -563,47 +662,45 @@ import Layout from '../layouts/Layout.astro';
           }
         });
         if (error) {
-          window.showToast('Google login failed. Please try again.', 'error');
+          toast('Google login failed: ' + error.message, 'error');
           btn.disabled = false;
-          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#8b5cf6"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#8b5cf6"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#8b5cf6"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#8b5cf6"/></svg>Continue with Google`;
+          btn.innerHTML = originalHTML;
+          return;
+        }
+        if (data && data.url) {
+          window.location.href = data.url;
         }
       } catch (err) {
-        window.showToast('An unexpected error occurred. Please try again.', 'error');
+        toast('An unexpected error occurred. Please try again.', 'error');
         btn.disabled = false;
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#8b5cf6"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#8b5cf6"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#8b5cf6"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#8b5cf6"/></svg>Continue with Google`;
+        btn.innerHTML = originalHTML;
       }
     }
 
     document.getElementById('google-login-btn').addEventListener('click', signInWithGoogle);
 
-    (async () => {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) window.location.href = 'dashboard.html';
-    })();
-
+    // ─── E-posta ile Giriş ───────────────────────────────────
     document.getElementById('login-btn').addEventListener('click', async () => {
       let email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-
       email = email.toLowerCase();
 
       if (!email || !password) {
-        window.showToast('Email and password are required.', 'error');
+        toast('Email and password are required.', 'error');
         return;
       }
       if (hasTurkishChars(email)) {
-        window.showToast('Email cannot contain Turkish characters.', 'error');
+        toast('Email cannot contain Turkish characters.', 'error');
         return;
       }
-      if (!window.isValidEmail(email)) {
-        window.showToast('Please enter a valid email address.', 'error');
+      if (!validateEmail(email)) {
+        toast('Please enter a valid email address.', 'error');
         return;
       }
 
-      // Turnstile token
       var turnstileToken = getTurnstileToken();
       if (isTurnstileRequired() && !turnstileToken) {
-        window.showToast('Please complete the verification.', 'error');
+        toast('Please complete the verification.', 'error');
         return;
       }
 
@@ -611,14 +708,17 @@ import Layout from '../layouts/Layout.astro';
       btn.disabled = true;
       btn.textContent = 'Logging in…';
 
+      var supabaseUrl = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || window.SUPABASE_URL || 'https://odasapyhtdopbnlfhwde.supabase.co';
+      var supabaseAnonKey = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+
       try {
         const res = await fetch(
-          window.WW_CONFIG.SUPABASE_URL + '/functions/v1/verify-auth',
+          supabaseUrl + '/functions/v1/verify-auth',
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': window.WW_CONFIG.SUPABASE_ANON_KEY,
+              'apikey': supabaseAnonKey,
             },
             body: JSON.stringify({ action: 'login', email, password, turnstileToken }),
           }
@@ -628,16 +728,43 @@ import Layout from '../layouts/Layout.astro';
 
         if (!res.ok) {
           if (res.status === 429) {
-            window.showToast('Too many attempts. Please try again in 15 minutes.', 'error');
+            toast('Too many attempts. Please try again in 15 minutes.', 'error');
+            resetTurnstile();
+            btn.disabled = false;
+            btn.textContent = 'Login';
+            return;
           } else if (res.status === 401) {
-            window.showToast('Invalid email or password.', 'error');
+            toast(result.error || 'Invalid email or password.', 'error');
+            resetTurnstile();
+            btn.disabled = false;
+            btn.textContent = 'Login';
+            return;
           } else if (res.status === 403) {
-            window.showToast('Your account has been deactivated.', 'error');
-          } else if (res.status === 400 && result.error && result.error.indexOf('Verification') !== -1) {
-            window.showToast('Verification failed. Please try again.', 'error');
-          } else {
-            window.showToast(result.error || 'Login failed. Please try again.', 'error');
+            toast('Your account has been deactivated.', 'error');
+            resetTurnstile();
+            btn.disabled = false;
+            btn.textContent = 'Login';
+            return;
           }
+
+          // Edge function hatası veya doğrulama reddinde doğrudan Supabase client ile yedek giriş dene
+          var client = getSupabase();
+          if (client && client.auth) {
+            const { data: directData, error: directErr } = await client.auth.signInWithPassword({ email, password });
+            if (!directErr && directData?.session) {
+              toast('Welcome back! 🎉', 'success');
+              setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+              return;
+            } else if (directErr) {
+              toast(directErr.message || 'Invalid email or password.', 'error');
+              resetTurnstile();
+              btn.disabled = false;
+              btn.textContent = 'Login';
+              return;
+            }
+          }
+
+          toast(result.error || 'Login failed. Please try again.', 'error');
           resetTurnstile();
           btn.disabled = false;
           btn.textContent = 'Login';
@@ -645,17 +772,32 @@ import Layout from '../layouts/Layout.astro';
         }
 
         // Session'ı client'a yükle
-        await sb.auth.setSession({
-          access_token: result.access_token,
-          refresh_token: result.refresh_token,
-        });
+        var client = getSupabase();
+        if (client && client.auth && result.access_token && result.refresh_token) {
+          await client.auth.setSession({
+            access_token: result.access_token,
+            refresh_token: result.refresh_token,
+          });
+        }
 
-        window.showToast('Welcome back! 🎉', 'success');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+        toast('Welcome back! 🎉', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
 
       } catch (err) {
         console.error('Login error:', err);
-        window.showToast('Network error. Please try again.', 'error');
+        // Ağ hatasında doğrudan istemci girişi yedeklemesi
+        var client = getSupabase();
+        if (client && client.auth) {
+          try {
+            const { data: directData, error: directErr } = await client.auth.signInWithPassword({ email, password });
+            if (!directErr && directData?.session) {
+              toast('Welcome back! 🎉', 'success');
+              setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+              return;
+            }
+          } catch (e) {}
+        }
+        toast('Network error. Please try again.', 'error');
         resetTurnstile();
         btn.disabled = false;
         btn.textContent = 'Login';

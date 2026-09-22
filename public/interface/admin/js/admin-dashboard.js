@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // ADMIN-DASHBOARD.JS - ANALYTICS & PRICES
 // ⭐ MIGRATE: Chart.js → ApexCharts
 //   - usersChart ve premiumChart artık ApexCharts instance'ı
@@ -57,6 +57,7 @@ async function loadAnalyticsData() {
         var diffDays = Math.ceil((expiresAt - startDate) / (1000 * 60 * 60 * 24));
         var isYearly = diffDays > 31;
         var price = isYearly ? 79 : 9;
+        var price = isYearly ? 99 : 12;
         
         totalRevenue += price;
         
@@ -309,239 +310,790 @@ async function loadAnalyticsData() {
 // RENDER PRICES CONTENT
 // ============================================================
 function renderPricesContent() {
-  wwLog.log('💰 renderPricesContent basladi...');
-  
-  var container = document.getElementById('prices-container');
-  if (!container) {
-    console.error('❌ prices-container bulunamadi!');
-    return;
-  }
-  
-  try {
-    var monthly = 9;
-    var yearly = 79;
-    var methods = ['BTC', 'LTC'];
-    var discount = 27;
-    
-    if (window.getMonthlyPrice) monthly = window.getMonthlyPrice();
-    if (window.getYearlyPrice) yearly = window.getYearlyPrice();
-    if (window.getPaymentMethods) methods = window.getPaymentMethods();
-    if (window.getYearlyDiscount) discount = window.getYearlyDiscount();
-    
-    var html = '';
-    
-    // 1. Aylik Plan
-    html += '<div class="price-card">';
-    html += '<div class="price-title">';
-    html += '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>';
-    html += 'Aylik Plan Fiyati';
-    html += '</div>';
-    html += '<div class="price-desc">Premium aylik abonelik fiyatini belirleyin.</div>';
-    html += '<div class="price-input-group">';
-    html += '<label>Aylik Fiyat</label>';
-    html += '<input type="number" id="price-monthly-input" value="' + monthly + '" min="0.5" step="0.5" />';
-    html += '<span class="currency-label">USD</span>';
-    html += '<span style="font-size:11px;color:var(--muted);margin-left:0.5rem;">Mevcut: $' + monthly.toFixed(2) + '</span>';
-    html += '</div>';
-    html += '</div>';
-    
-    // 2. Yillik Plan
-    html += '<div class="price-card">';
-    html += '<div class="price-title">';
-    html += '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-    html += 'Yillik Plan Fiyati';
-    html += '</div>';
-    html += '<div class="price-desc">Premium yillik abonelik fiyatini belirleyin.</div>';
-    html += '<div class="price-input-group">';
-    html += '<label>Yillik Fiyat</label>';
-    html += '<input type="number" id="price-yearly-input" value="' + yearly + '" min="0.5" step="0.5" />';
-    html += '<span class="currency-label">USD</span>';
-    html += '<span style="font-size:11px;color:var(--muted);margin-left:0.5rem;">Mevcut: $' + yearly.toFixed(2) + '</span>';
-    html += '</div>';
-    html += '<div style="margin-top:0.5rem;font-size:11px;color:var(--muted);">';
-    html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-    html += 'Mevcut indirim: <span id="discount-display">' + discount + '%</span>';
-    if (discount > 0) {
-      html += ' <span style="color:var(--green);margin-left:0.5rem;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Aktif</span>';
-    }
-    html += '</div>';
-    html += '</div>';
-    
-    // 3. Odeme Secenekleri
-    html += '<div class="price-card">';
-    html += '<div class="price-title">';
-    html += '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
-    html += 'Odeme Secenekleri';
-    html += '</div>';
-    html += '<div class="price-desc">Kullanicilarin odeme yapabilecegi kripto para birimlerini secin.</div>';
-    html += '<div class="payment-methods-grid" id="payment-methods-container">';
-    for (var k = 0; k < methods.length; k++) {
-      html += '<span class="payment-method-chip">';
-      html += methods[k];
-      html += '<button class="remove-method" onclick="removePaymentMethod(\'' + methods[k] + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;">✕</button>';
-      html += '</span>';
-    }
-    html += '</div>';
-    html += '<div class="add-method-input" style="margin-top:0.75rem;">';
-    html += '<input type="text" id="new-method-input" placeholder="ETH" maxlength="10" />';
-    html += '<button onclick="addPaymentMethod()">';
-    html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-    html += 'Ekle';
-    html += '</button>';
-    html += '</div>';
-    html += '</div>';
-    
-    // 4. Indirim Orani
-    html += '<div class="price-card">';
-    html += '<div class="price-title">';
-    html += '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>';
-    html += 'Indirim Orani';
-    html += '</div>';
-    html += '<div class="price-desc">Yillik plan icin indirim oranini belirleyin (yuzde).</div>';
-    html += '<div class="price-input-group">';
-    html += '<label>Indirim %</label>';
-    html += '<input type="number" id="discount-input" value="' + discount + '" min="0" max="90" step="1" />';
-    html += '<span class="currency-label">%</span>';
-    html += '<span style="font-size:11px;color:var(--muted);margin-left:0.5rem;">Oneri: %27-40</span>';
-    html += '</div>';
-    html += '</div>';
-    
-    // 5. Butonlar
-    html += '<div class="price-actions">';
-    html += '<button class="btn btn-primary" id="save-prices-btn" style="display:inline-flex;align-items:center;gap:4px;">';
-    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
-    html += 'Fiyatlari Kaydet';
-    html += '</button>';
-    html += '<button class="btn btn-ghost" id="reset-prices-btn" style="display:inline-flex;align-items:center;gap:4px;">';
-    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
-    html += 'Varsayilana Don';
-    html += '</button>';
-    html += '</div>';
-    
-    // 6. Not
-    html += '<div style="margin-top:1rem;padding:1rem;background:rgba(139,92,246,0.04);border-radius:var(--radius);border:1px solid var(--border);">';
-    html += '<p style="font-size:12px;color:var(--muted);margin:0;display:flex;align-items:center;gap:6px;">';
-    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-    html += '<strong>Not:</strong> Fiyat degisiklikleri tum kullanicilar icin gecerli olacaktir. ';
-    html += 'Yeni fiyatlar otomatik olarak ana sayfa, ayarlar sayfasi ve NowPayment entegrasyonuna yansiyacaktir.';
-    html += '</p>';
-    html += '</div>';
-    
-    container.innerHTML = html;
-    wwLog.log('✅ renderPricesContent tamamlandi!');
-    
-    // Event bindings
-    var saveBtn = document.getElementById('save-prices-btn');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', function() {
-        var monthlyInput = document.getElementById('price-monthly-input');
-        var yearlyInput = document.getElementById('price-yearly-input');
-        var discountInput = document.getElementById('discount-input');
-        
-        var monthlyVal = parseFloat(monthlyInput ? monthlyInput.value : 0);
-        var yearlyVal = parseFloat(yearlyInput ? yearlyInput.value : 0);
-        var discountVal = parseFloat(discountInput ? discountInput.value : 0);
-        
-        if (!monthlyVal || monthlyVal < 0 || !yearlyVal || yearlyVal < 0 || discountVal < 0 || discountVal > 90) {
-          showToast('Gecerli degerler giriniz!', 'error');
-          return;
-        }
-
-        if (window.setMonthlyPrice) window.setMonthlyPrice(monthlyVal);
-        if (window.setYearlyPrice) window.setYearlyPrice(yearlyVal);
-        
-        if (window.setYearlyDiscount) {
-          window.setYearlyDiscount(discountVal);
-        } else {
-          try {
-            localStorage.setItem('ww_yearly_discount', String(discountVal));
-          } catch (e) {}
-        }
-        
-        var methods2 = [];
-        var chips = document.querySelectorAll('.payment-method-chip');
-        chips.forEach(function(chip) {
-          var text = chip.textContent.trim().replace('✕', '').trim();
-          if (text) methods2.push(text);
-        });
-        if (methods2.length > 0 && window.setPaymentMethods) window.setPaymentMethods(methods2);
-        
-        showToast('Fiyatlar basariyla kaydedildi!', 'success');
-        var discountDisplay = document.getElementById('discount-display');
-        if (discountDisplay) discountDisplay.textContent = discountVal + '%';
-        if (window.updateHomePrices) window.updateHomePrices();
-      });
-    }
-
-    var resetBtn = document.getElementById('reset-prices-btn');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', function() {
-        if (confirm('Varsayilan fiyatlara donmek istediginizden emin misiniz?')) {
-          if (window.resetPrices) window.resetPrices();
-          showToast('Varsayilan fiyatlara donuldu.', 'success');
-          renderPricesContent();
-        }
-      });
-    }
-    
-  } catch (e) {
-    console.error('renderPricesContent hatasi:', e);
-    container.innerHTML = '<div style="padding:2rem;color:var(--red);text-align:center;">Fiyat yonetimi yuklenirken hata olustu: ' + e.message + '</div>';
+  if (typeof renderPaymentSettingsUI === 'function') {
+    renderPaymentSettingsUI();
   }
 }
-
-// ============================================================
-// PAYMENT METHODS
-// ============================================================
-function addPaymentMethod() {
-  var input = document.getElementById('new-method-input');
-  if (!input) return;
-  var method = input.value.trim().toUpperCase();
-  if (!method) {
-    showToast('Lutfen bir kripto para birimi girin (orn: ETH)', 'error');
-    return;
-  }
-  
-  var methods = [];
-  var chips = document.querySelectorAll('.payment-method-chip');
-  chips.forEach(function(chip) {
-    var text = chip.textContent.trim().replace('✕', '').trim();
-    if (text) methods.push(text);
-  });
-  
-  if (methods.indexOf(method) !== -1) {
-    showToast('Bu odeme metodu zaten ekli!', 'error');
-    return;
-  }
-  
-  methods.push(method);
-  if (window.setPaymentMethods) window.setPaymentMethods(methods);
-  renderPricesContent();
-  showToast(method + ' eklendi!', 'success');
-}
-
-function removePaymentMethod(method) {
-  var methods = [];
-  var chips = document.querySelectorAll('.payment-method-chip');
-  chips.forEach(function(chip) {
-    var text = chip.textContent.trim().replace('✕', '').trim();
-    if (text && text !== method) methods.push(text);
-  });
-  
-  if (methods.length === 0) {
-    showToast('En az bir odeme metodu olmalidir!', 'error');
-    return;
-  }
-  
-  if (window.setPaymentMethods) window.setPaymentMethods(methods);
-  renderPricesContent();
-  showToast(method + ' kaldirildi.', 'success');
-}
-
-// ⭐ Global
-window.loadAnalyticsData = loadAnalyticsData;
 window.renderPricesContent = renderPricesContent;
 window.addPaymentMethod = addPaymentMethod;
 window.removePaymentMethod = removePaymentMethod;
 
 wwLog.log('✅ admin-dashboard.js yuklendi!');
+
+// ============================================================
+// REFERANS KODLARI UI (REFERRAL CODES)
+// ============================================================
+function renderReferralCodesTable() {
+  var c = document.getElementById('referral-codes-container');
+  if (!c) return;
+  var codes = adminState.referralCodes || [];
+  if (codes.length === 0) {
+    c.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">Kayıtlı referans kodu yok.</div>';
+    return;
+  }
+
+  var html = '<div class="table-responsive"><table class="admin-table"><thead><tr>' +
+    '<th>Kod</th><th>İndirim</th><th>Kullanım</th><th>Sınır</th><th>Son Tarih</th><th>Durum</th><th style="text-align:right">İşlem</th>' +
+    '</tr></thead><tbody>';
+
+  codes.forEach(function(item) {
+    var stat = item.is_active ? '<span class="status-badge status-active">Aktif</span>' : '<span class="status-badge status-inactive">Pasif</span>';
+    var expiry = item.expires_at ? new Date(item.expires_at).toLocaleDateString() : 'Süresiz';
+    var limit = item.max_usage ? item.max_usage : 'Sınırsız';
+    
+    html += '<tr>' +
+      '<td><strong style="color:var(--text);">' + escapeHtml(item.code) + '</strong><br><span style="font-size:11px;color:var(--muted);">' + escapeHtml(item.referrer_name || '-') + '</span></td>' +
+      '<td>%' + item.discount_percent + '</td>' +
+      '<td>' + item.usage_count + '</td>' +
+      '<td>' + limit + '</td>' +
+      '<td>' + expiry + '</td>' +
+      '<td>' + stat + '</td>' +
+      '<td style="text-align:right;white-space:nowrap;">' +
+        '<button class="btn btn-ghost btn-sm" onclick="editReferralCode(\'' + item.id + '\')" style="padding:4px 8px;margin-right:4px;">Düzenle</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="delReferralCode(\'' + item.id + '\')" style="padding:4px 8px;">Sil</button>' +
+      '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+  c.innerHTML = html;
+}
+
+window.editReferralCode = function(id) {
+  var item = adminState.referralCodes.find(x => x.id === id);
+  if (!item) return;
+  document.getElementById('rc-id').value = item.id;
+  document.getElementById('rc-code').value = item.code;
+  document.getElementById('rc-discount').value = item.discount_percent;
+  document.getElementById('rc-name').value = item.referrer_name || '';
+  document.getElementById('rc-email').value = item.referrer_email || '';
+  document.getElementById('rc-max-usage').value = item.max_usage || '';
+  document.getElementById('rc-expires').value = item.expires_at ? item.expires_at.split('T')[0] : '';
+  document.getElementById('rc-active').value = item.is_active ? 'true' : 'false';
+  
+  document.getElementById('rc-modal-title').textContent = 'Kodu Düzenle';
+  document.getElementById('referral-code-modal').classList.add('open');
+};
+
+window.delReferralCode = async function(id) {
+  if (confirm('Bu kodu silmek istediğinize emin misiniz?')) {
+    await deleteReferralCode(id);
+    renderReferralCodesTable();
+  }
+};
+
+function initReferralModal() {
+  var modal = document.getElementById('referral-code-modal');
+  var btnAdd = document.getElementById('add-referral-code-btn');
+  var btnClose = document.getElementById('close-rc-modal');
+  var btnCancel = document.getElementById('cancel-rc-btn');
+  var btnSave = document.getElementById('save-rc-btn');
+
+  if (btnAdd) {
+    btnAdd.addEventListener('click', function() {
+      document.getElementById('rc-id').value = '';
+      document.getElementById('rc-code').value = '';
+      document.getElementById('rc-discount').value = '';
+      document.getElementById('rc-name').value = '';
+      document.getElementById('rc-email').value = '';
+      document.getElementById('rc-max-usage').value = '';
+      document.getElementById('rc-expires').value = '';
+      document.getElementById('rc-active').value = 'true';
+      document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
+      modal.classList.add('open');
+    });
+  }
+
+  function close() { modal.classList.remove('open'); }
+  if (btnClose) btnClose.addEventListener('click', close);
+  if (btnCancel) btnCancel.addEventListener('click', close);
+
+  if (btnSave) {
+    btnSave.addEventListener('click', async function() {
+      var code = document.getElementById('rc-code').value.trim().toUpperCase();
+      var discount = parseInt(document.getElementById('rc-discount').value, 10);
+      if (!code || isNaN(discount)) return alert('Lütfen kod ve indirim yüzdesini doldurun.');
+      
+      var payload = {
+        code: code,
+        discount_percent: discount,
+        referrer_name: document.getElementById('rc-name').value.trim() || null,
+        referrer_email: document.getElementById('rc-email').value.trim() || null,
+        max_usage: parseInt(document.getElementById('rc-max-usage').value, 10) || null,
+        expires_at: document.getElementById('rc-expires').value || null,
+        is_active: document.getElementById('rc-active').value === 'true'
+      };
+
+      var id = document.getElementById('rc-id').value;
+      
+      btnSave.disabled = true;
+      btnSave.textContent = 'Kaydediliyor...';
+      var ok = await saveReferralCode(id, payload);
+      btnSave.disabled = false;
+      btnSave.textContent = 'Kaydet';
+      
+      if (ok) {
+        close();
+        renderReferralCodesTable();
+      }
+    });
+  }
+}
+
+// ============================================================
+// PAYMENT SETTINGS UI
+// ============================================================
+async function renderPaymentSettingsUI() {
+  var c = document.getElementById('prices-container');
+  if (!c) return;
+
+  var current = await loadPaymentSettings();
+  if (!current) {
+    current = {
+      monthly_price_usd: 12,
+      yearly_price_usd: 99,
+      video_embed_url: '',
+      video_embed_enabled: false,
+      ltc_discount_enabled: true
+    };
+  }
+
+  c.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:1rem;max-width:500px;">
+      <div class="field">
+        <label>Aylık Fiyat (USD)</label>
+        <input type="number" id="ps-monthly" value="${current.monthly_price_usd || 12}">
+      </div>
+      <div class="field">
+        <label>Yıllık Fiyat (USD)</label>
+        <input type="number" id="ps-yearly" value="${current.yearly_price_usd || 99}">
+      </div>
+      <div class="field">
+        <label>YouTube Embed URL</label>
+        <input type="text" id="ps-video-url" value="${current.video_embed_url || ''}" placeholder="https://www.youtube.com/embed/...">
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:0.5rem;">
+        <input type="checkbox" id="ps-video-enabled" ${current.video_embed_enabled ? 'checked' : ''}>
+        <label for="ps-video-enabled" style="margin:0;">Video Ödeme Sayfasında Gösterilsin mi?</label>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:0.5rem;margin-top:1rem;">
+        <input type="checkbox" id="ps-ltc-discount" ${current.ltc_discount_enabled !== false ? 'checked' : ''}>
+        <label for="ps-ltc-discount" style="margin:0;">Referans İndirimi LTC Ödemelerinde Geçerli Olsun</label>
+      </div>
+      <div style="margin-top:1rem;">
+        <button class="btn btn-primary" id="save-ps-btn">Ayarları Kaydet</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('save-ps-btn').addEventListener('click', async function() {
+    var payload = {
+      monthly_price_usd: parseFloat(document.getElementById('ps-monthly').value) || 12,
+      yearly_price_usd: parseFloat(document.getElementById('ps-yearly').value) || 99,
+      video_embed_url: document.getElementById('ps-video-url').value.trim(),
+      video_embed_enabled: document.getElementById('ps-video-enabled').checked,
+      ltc_discount_enabled: document.getElementById('ps-ltc-discount').checked,
+      yearly_discount_percent: 31, // hesaplama eklenebilir
+      days_per_monthly: 30,
+      days_per_yearly: 365
+    };
+    this.disabled = true;
+    this.textContent = 'Kaydediliyor...';
+    await savePaymentSettings(payload);
+    this.disabled = false;
+    this.textContent = 'Ayarları Kaydet';
+  });
+}
+
+
+window.openReferralModal = function() {
+  document.getElementById('rc-id').value = '';
+  document.getElementById('rc-code').value = '';
+  document.getElementById('rc-discount').value = '';
+  document.getElementById('rc-name').value = '';
+  document.getElementById('rc-email').value = '';
+  document.getElementById('rc-max-usage').value = '';
+  document.getElementById('rc-expires').value = '';
+  document.getElementById('rc-active').value = 'true';
+  document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
+  document.getElementById('referral-code-modal').classList.add('open');
+};
+
+// ============================================================
+// GENEL (OVERVIEW) DASHBOARD
+// ============================================================
+
+function destroyOverviewCharts() {
+  if (adminState.charts.overviewUserChart) {
+    try { adminState.charts.overviewUserChart.destroy(); } catch(e) {}
+    adminState.charts.overviewUserChart = null;
+  }
+  if (adminState.charts.overviewRevenueChart) {
+    try { adminState.charts.overviewRevenueChart.destroy(); } catch(e) {}
+    adminState.charts.overviewRevenueChart = null;
+  }
+  if (adminState.charts.overviewPlanDonut) {
+    try { adminState.charts.overviewPlanDonut.destroy(); } catch(e) {}
+    adminState.charts.overviewPlanDonut = null;
+  }
+}
+
+window.changeOverviewPeriod = function(period) {
+  adminState.overviewPeriod = period;
+  renderOverviewContent(period);
+};
+
+function getSubscriptionDetails(user) {
+  if (user.plan !== 'premium' || !user.plan_expires_at) {
+    return null;
+  }
+  var expiresAt = new Date(user.plan_expires_at);
+  if (isNaN(expiresAt.getTime())) return null;
+
+  var createdAt = user.created_at ? new Date(user.created_at) : new Date();
+  var totalDays = Math.round((expiresAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+  var isYearly = totalDays > 60;
+  var durationDays = isYearly ? 365 : 30;
+
+  var startDate = new Date(expiresAt.getTime() - durationDays * 24 * 60 * 60 * 1000);
+  if (startDate > new Date()) {
+    startDate = createdAt;
+  }
+
+  return {
+    isYearly: isYearly,
+    price: isYearly ? 99 : 12,
+    startDate: startDate,
+    expiresAt: expiresAt
+  };
+}
+
+function renderOverviewContent(period) {
+  period = period || adminState.overviewPeriod || 'week';
+  adminState.overviewPeriod = period;
+
+  var container = document.getElementById('overview-content');
+  if (!container) return;
+
+  // Destroy previous charts before modifying DOM to prevent leaks or conflicts
+  destroyOverviewCharts();
+
+  var theme = getAdminApexTheme();
+  var usersList = adminState.users || [];
+  var totalUsers = usersList.length;
+
+  // Active Premium & Free counts
+  var now = new Date();
+  var activePremiumUsers = usersList.filter(function(u) {
+    return u.plan === 'premium' && u.plan_expires_at && new Date(u.plan_expires_at) > now;
+  });
+  var premiumCount = activePremiumUsers.length;
+  var freeCount = Math.max(0, totalUsers - premiumCount);
+  var conversionRate = totalUsers > 0 ? ((premiumCount / totalUsers) * 100).toFixed(1) : '0.0';
+
+  // Today Users (local start of day)
+  var startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  var todayUsers = usersList.filter(function(u) {
+    if (!u.created_at) return false;
+    var d = new Date(u.created_at);
+    return !isNaN(d.getTime()) && d >= startOfToday;
+  }).length;
+
+  // Subscriptions & Total Revenue calculation
+  var subscriptions = [];
+  var totalRevenue = 0;
+
+  usersList.forEach(function(u) {
+    var sub = getSubscriptionDetails(u);
+    if (sub) {
+      totalRevenue += sub.price;
+      subscriptions.push(sub);
+    }
+  });
+
+  // Period Buckets & Labels
+  var bucketLabels = [];
+  var userCounts = [];
+  var revenueAmounts = [];
+  var periodUsers = 0;
+  var periodRevenue = 0;
+
+  var trDays = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+  var trMonths = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+  var periodLabelText = 'Son 7 Gün';
+  var periodPillText = '1 Hafta';
+
+  if (period === 'week') {
+    periodLabelText = 'Son 7 Gün';
+    periodPillText = '1 Hafta';
+
+    for (var i = 6; i >= 0; i--) {
+      var dayStart = new Date();
+      dayStart.setDate(dayStart.getDate() - i);
+      dayStart.setHours(0, 0, 0, 0);
+
+      var dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      var label = dayStart.getDate() + ' ' + trMonths[dayStart.getMonth()] + ' (' + trDays[dayStart.getDay()] + ')';
+      bucketLabels.push(label);
+
+      var uCount = usersList.filter(function(u) {
+        if (!u.created_at) return false;
+        var ud = new Date(u.created_at);
+        return !isNaN(ud.getTime()) && ud >= dayStart && ud <= dayEnd;
+      }).length;
+      userCounts.push(uCount);
+      periodUsers += uCount;
+
+      var rSum = subscriptions.filter(function(s) {
+        return s.startDate >= dayStart && s.startDate <= dayEnd;
+      }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      revenueAmounts.push(rSum);
+      periodRevenue += rSum;
+    }
+  } else if (period === 'month') {
+    periodLabelText = 'Son 30 Gün';
+    periodPillText = '1 Ay';
+
+    for (var i = 29; i >= 0; i--) {
+      var dayStart = new Date();
+      dayStart.setDate(dayStart.getDate() - i);
+      dayStart.setHours(0, 0, 0, 0);
+
+      var dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      var label = dayStart.getDate() + ' ' + trMonths[dayStart.getMonth()];
+      bucketLabels.push(label);
+
+      var uCount = usersList.filter(function(u) {
+        if (!u.created_at) return false;
+        var ud = new Date(u.created_at);
+        return !isNaN(ud.getTime()) && ud >= dayStart && ud <= dayEnd;
+      }).length;
+      userCounts.push(uCount);
+      periodUsers += uCount;
+
+      var rSum = subscriptions.filter(function(s) {
+        return s.startDate >= dayStart && s.startDate <= dayEnd;
+      }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      revenueAmounts.push(rSum);
+      periodRevenue += rSum;
+    }
+  } else if (period === 'year') {
+    periodLabelText = 'Son 12 Ay';
+    periodPillText = '1 Yıl';
+
+    for (var i = 11; i >= 0; i--) {
+      var mStart = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
+      var mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+
+      var label = trMonths[mStart.getMonth()] + ' ' + mStart.getFullYear();
+      bucketLabels.push(label);
+
+      var uCount = usersList.filter(function(u) {
+        if (!u.created_at) return false;
+        var ud = new Date(u.created_at);
+        return !isNaN(ud.getTime()) && ud >= mStart && ud <= mEnd;
+      }).length;
+      userCounts.push(uCount);
+      periodUsers += uCount;
+
+      var rSum = subscriptions.filter(function(s) {
+        return s.startDate >= mStart && s.startDate <= mEnd;
+      }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      revenueAmounts.push(rSum);
+      periodRevenue += rSum;
+    }
+  }
+
+  // Recent Users List (Latest 8)
+  var sortedUsers = usersList.slice().sort(function(a, b) {
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  }).slice(0, 8);
+
+  var recentUsersHtml = '';
+  if (sortedUsers.length === 0) {
+    recentUsersHtml = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henüz kullanıcı bulunmuyor.</div>';
+  } else {
+    sortedUsers.forEach(function(u) {
+      var name = escapeHtml(u.username || (u.email ? u.email.split('@')[0] : 'Kullanıcı'));
+      var email = escapeHtml(u.email || '—');
+      var avatarContent = u.avatar_url
+        ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;">'
+        : '<span>' + getInitials(name) + '</span>';
+      var isPrem = u.plan === 'premium';
+      var badgeHtml = isPrem
+        ? '<span class="user-mini-badge badge-sub-premium">⭐ Premium</span>'
+        : '<span class="user-mini-badge badge-sub-free">Ücretsiz</span>';
+
+      recentUsersHtml += 
+        '<div class="overview-user-row">' +
+          '<div class="user-mini-avatar">' + avatarContent + '</div>' +
+          '<div class="user-mini-info">' +
+            '<div class="user-mini-name">' + name + '</div>' +
+            '<div class="user-mini-email">' + email + '</div>' +
+          '</div>' +
+          badgeHtml +
+          '<div class="user-mini-date">' + formatDate(u.created_at) + '</div>' +
+        '</div>';
+    });
+  }
+
+  // Build HTML
+  container.innerHTML = 
+    '<div class="overview-container">' +
+      '<div class="overview-header-bar">' +
+        '<div>' +
+          '<h2 style="font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 4px 0;color:var(--text);display:flex;align-items:center;gap:8px;">' +
+            'Platform Genel Bakış ' +
+            '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.15);color:#a78bfa;border:1px solid rgba(124,109,250,0.3);">' +
+              'Canlı Veriler' +
+            '</span>' +
+          '</h2>' +
+          '<p style="font-size:13px;color:var(--muted);margin:0;">Sistem geneli kullanıcı, abonelik ve gelir metrikleri</p>' +
+        '</div>' +
+        '<div class="period-switcher-pill">' +
+          '<button type="button" class="period-pill-btn ' + (period === 'week' ? 'active' : '') + '" data-period="week" onclick="changeOverviewPeriod(\'week\')">1 Hafta</button>' +
+          '<button type="button" class="period-pill-btn ' + (period === 'month' ? 'active' : '') + '" data-period="month" onclick="changeOverviewPeriod(\'month\')">1 Ay</button>' +
+          '<button type="button" class="period-pill-btn ' + (period === 'year' ? 'active' : '') + '" data-period="year" onclick="changeOverviewPeriod(\'year\')">1 Yıl</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="overview-kpi-grid">' +
+        '<div class="kpi-card">' +
+          '<div class="kpi-card-inner">' +
+            '<div class="kpi-icon-wrap icon-users">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+            '</div>' +
+            '<div class="kpi-meta">' +
+              '<span class="kpi-label">Toplam Kullanıcılar</span>' +
+              '<div class="kpi-value-row">' +
+                '<span class="kpi-val">' + totalUsers + '</span>' +
+                '<span class="kpi-badge badge-green">Tüm Zamanlar</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="kpi-card highlight-card">' +
+          '<div class="kpi-card-inner">' +
+            '<div class="kpi-icon-wrap icon-today">' +
+              '<div class="live-pulse"></div>' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+            '</div>' +
+            '<div class="kpi-meta">' +
+              '<span class="kpi-label">Bugün Gelen Kullanıcılar</span>' +
+              '<div class="kpi-value-row">' +
+                '<span class="kpi-val" style="color:#22c55e;">+' + todayUsers + '</span>' +
+                '<span class="kpi-badge badge-pulse">Bugün</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="kpi-card">' +
+          '<div class="kpi-card-inner">' +
+            '<div class="kpi-icon-wrap icon-users">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>' +
+            '</div>' +
+            '<div class="kpi-meta">' +
+              '<span class="kpi-label">' + periodLabelText + ' Yeni Kayıt</span>' +
+              '<div class="kpi-value-row">' +
+                '<span class="kpi-val">+' + periodUsers + '</span>' +
+                '<span class="kpi-badge badge-purple">' + periodPillText + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="kpi-card">' +
+          '<div class="kpi-card-inner">' +
+            '<div class="kpi-icon-wrap icon-revenue">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' +
+            '</div>' +
+            '<div class="kpi-meta">' +
+              '<span class="kpi-label">Toplam Gelir</span>' +
+              '<div class="kpi-value-row">' +
+                '<span class="kpi-val" style="color:#10b981;">$' + totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
+                '<span class="kpi-badge badge-emerald">Dönem: $' + periodRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="kpi-card">' +
+          '<div class="kpi-card-inner">' +
+            '<div class="kpi-icon-wrap icon-premium">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+            '</div>' +
+            '<div class="kpi-meta">' +
+              '<span class="kpi-label">Premium Üyeler</span>' +
+              '<div class="kpi-value-row">' +
+                '<span class="kpi-val" style="color:#a78bfa;">' + premiumCount + '</span>' +
+                '<span class="kpi-badge badge-purple">%' + conversionRate + ' Dönüşüm</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="overview-charts-row">' +
+        '<div class="s-card">' +
+          '<div class="s-card-header">' +
+            '<div class="header-icon" style="background:rgba(124,109,250,0.12);color:#a78bfa;">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+            '</div>' +
+            '<div><h2>Kullanıcı Büyümesi</h2><p>' + periodLabelText + ' kayıt olan yeni kullanıcı trendi</p></div>' +
+            '<div class="chart-corner-stat">' +
+              '<span class="corner-val">+' + periodUsers + '</span>' +
+              '<span class="corner-lbl">' + periodPillText + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="s-card-body" style="padding-top:0.5rem;">' +
+            '<div id="overviewUserGrowthChart"></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="s-card">' +
+          '<div class="s-card-header">' +
+            '<div class="header-icon" style="background:rgba(16,185,129,0.12);color:#34d399;">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' +
+            '</div>' +
+            '<div><h2>Gelir İstatistiği ($)</h2><p>' + periodLabelText + ' elde edilen premium abonelik gelirleri</p></div>' +
+            '<div class="chart-corner-stat">' +
+              '<span class="corner-val text-emerald">$' + periodRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
+              '<span class="corner-lbl">' + periodPillText + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="s-card-body" style="padding-top:0.5rem;">' +
+            '<div id="overviewRevenueChart"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="overview-bottom-row">' +
+        '<div class="s-card">' +
+          '<div class="s-card-header">' +
+            '<div class="header-icon" style="background:rgba(168,85,247,0.12);color:#c084fc;">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>' +
+            '</div>' +
+            '<div><h2>Plan Dağılımı</h2><p>Kullanıcıların abonelik türü oranı</p></div>' +
+          '</div>' +
+          '<div class="s-card-body">' +
+            '<div id="overviewPlanDonutChart"></div>' +
+            '<div class="plan-summary-bars">' +
+              '<div class="plan-summary-item">' +
+                '<span class="plan-dot dot-premium"></span>' +
+                '<span class="plan-name">Premium Plan</span>' +
+                '<span class="plan-count">' + premiumCount + ' üye</span>' +
+                '<span class="plan-pct" style="color:#a78bfa;">%' + conversionRate + '</span>' +
+              '</div>' +
+              '<div class="plan-summary-item">' +
+                '<span class="plan-dot dot-free"></span>' +
+                '<span class="plan-name">Ücretsiz Plan</span>' +
+                '<span class="plan-count">' + freeCount + ' üye</span>' +
+                '<span class="plan-pct" style="color:#94a3b8;">%' + (100 - parseFloat(conversionRate)).toFixed(1) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="s-card">' +
+          '<div class="s-card-header">' +
+            '<div class="header-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>' +
+            '</div>' +
+            '<div><h2>Son Kayıt Olan Kullanıcılar</h2><p>Platforma en son katılan ' + sortedUsers.length + ' üye</p></div>' +
+            '<button class="btn btn-ghost btn-sm" onclick="switchPanel(\'panel-users\')" style="margin-left:auto;font-size:11px;padding:4px 10px;">' +
+              'Tümünü Gör →' +
+            '</button>' +
+          '</div>' +
+          '<div class="s-card-body" style="padding:0;">' +
+            '<div class="overview-user-list">' +
+              recentUsersHtml +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Attach explicit click events to period pill buttons
+  var pillBtns = container.querySelectorAll('.period-pill-btn');
+  pillBtns.forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var p = this.getAttribute('data-period');
+      if (p) window.changeOverviewPeriod(p);
+    });
+  });
+
+  if (typeof ApexCharts === 'undefined') {
+    wwLog.warn('⚠️ ApexCharts henüz yüklenmedi');
+    return;
+  }
+
+  // Render ApexCharts after next paint frame so DOM container dimensions are resolved
+  setTimeout(function() {
+    // 1. User Growth Area Chart
+    var userChartEl = document.getElementById('overviewUserGrowthChart');
+    if (userChartEl) {
+      var userChartOptions = {
+        series: [{ name: 'Yeni Kullanıcı', data: userCounts }],
+        chart: {
+          type: 'area',
+          height: 280,
+          toolbar: { show: false },
+          zoom: { enabled: false },
+          background: 'transparent',
+          fontFamily: 'Inter, sans-serif'
+        },
+        colors: ['#7c6dfa'],
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.45,
+            opacityTo: 0.05,
+            stops: [0, 95, 100]
+          }
+        },
+        stroke: { curve: 'smooth', width: 2.5 },
+        dataLabels: { enabled: false },
+        xaxis: {
+          categories: bucketLabels,
+          tickAmount: period === 'month' ? 6 : undefined,
+          labels: {
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' }
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' },
+            formatter: function(val) { return Math.round(val); }
+          }
+        },
+        grid: { borderColor: theme.gridColor, strokeDashArray: 4 },
+        tooltip: {
+          theme: theme.mode,
+          y: { formatter: function(val) { return val + ' kullanıcı'; } }
+        }
+      };
+      adminState.charts.overviewUserChart = new ApexCharts(userChartEl, userChartOptions);
+      adminState.charts.overviewUserChart.render();
+    }
+
+    // 2. Revenue Column Chart
+    var revenueChartEl = document.getElementById('overviewRevenueChart');
+    if (revenueChartEl) {
+      var revChartOptions = {
+        series: [{ name: 'Gelir ($)', data: revenueAmounts }],
+        chart: {
+          type: 'bar',
+          height: 280,
+          toolbar: { show: false },
+          background: 'transparent',
+          fontFamily: 'Inter, sans-serif'
+        },
+        plotOptions: {
+          bar: {
+            borderRadius: period === 'month' ? 3 : 6,
+            columnWidth: period === 'month' ? '60%' : (period === 'year' ? '50%' : '38%'),
+            distributed: false
+          }
+        },
+        colors: ['#10b981'],
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shade: 'light',
+            type: 'vertical',
+            shadeIntensity: 0.25,
+            gradientToColors: ['#34d399'],
+            inverseColors: true,
+            opacityFrom: 0.95,
+            opacityTo: 0.75,
+            stops: [0, 100]
+          }
+        },
+        dataLabels: { enabled: false },
+        xaxis: {
+          categories: bucketLabels,
+          tickAmount: period === 'month' ? 6 : undefined,
+          labels: {
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' }
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          labels: {
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' },
+            formatter: function(val) { return '$' + Math.round(val); }
+          }
+        },
+        grid: { borderColor: theme.gridColor, strokeDashArray: 4 },
+        tooltip: {
+          theme: theme.mode,
+          y: { formatter: function(val) { return '$' + Number(val).toFixed(2); } }
+        }
+      };
+      adminState.charts.overviewRevenueChart = new ApexCharts(revenueChartEl, revChartOptions);
+      adminState.charts.overviewRevenueChart.render();
+    }
+
+    // 3. Plan Donut Chart
+    var donutChartEl = document.getElementById('overviewPlanDonutChart');
+    if (donutChartEl) {
+      var donutOptions = {
+        series: [freeCount, premiumCount],
+        labels: ['Ücretsiz', 'Premium'],
+        chart: {
+          type: 'donut',
+          height: 220,
+          background: 'transparent',
+          fontFamily: 'Inter, sans-serif'
+        },
+        colors: ['#475569', '#7c6dfa'],
+        stroke: { width: 0 },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: '72%',
+              labels: {
+                show: true,
+                name: { show: true, fontSize: '12px', color: theme.textColor },
+                value: { show: true, fontSize: '20px', fontWeight: 700, color: theme.mode === 'dark' ? '#fff' : '#0f172a' },
+                total: {
+                  show: true,
+                  label: 'Toplam',
+                  fontSize: '12px',
+                  color: theme.textColor,
+                  formatter: function() { return totalUsers; }
+                }
+              }
+            }
+          }
+        },
+        tooltip: {
+          theme: theme.mode,
+          y: {
+            formatter: function(val) {
+              return val + ' kullanıcı (%' + ((val / (totalUsers || 1)) * 100).toFixed(1) + ')';
+            }
+          }
+        }
+      };
+      adminState.charts.overviewPlanDonut = new ApexCharts(donutChartEl, donutOptions);
+      adminState.charts.overviewPlanDonut.render();
+    }
+  }, 50);
+}
+
+window.renderOverviewContent = renderOverviewContent;

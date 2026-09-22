@@ -54,11 +54,20 @@ function getSbClient() {
   return window.sb;
 }
 
+let _listJournalsPromise = null;
 export async function listJournals() {
+  if (_listJournalsPromise) return _listJournalsPromise;
   const sb = getSbClient();
-  const { data, error } = await sb.rpc('list_journals');
-  if (error) handleJournalError(error);
-  return data;
+  _listJournalsPromise = (async () => {
+    try {
+      const { data, error } = await sb.rpc('list_journals');
+      if (error) handleJournalError(error);
+      return data;
+    } finally {
+      setTimeout(() => { _listJournalsPromise = null; }, 2000);
+    }
+  })();
+  return _listJournalsPromise;
 }
 
 export async function ensureActiveJournal(userId) {
@@ -66,13 +75,25 @@ export async function ensureActiveJournal(userId) {
     if (typeof wwLog !== 'undefined') wwLog.warn('ensureActiveJournal: userId yok');
     return null;
   }
+  const stored = getActiveJournalId();
+  if (stored) {
+    listJournals().then(journals => {
+      if (journals && journals.length > 0) {
+        let active = journals.find(j => j.id === stored);
+        if (!active) {
+          active = journals.find(j => j.is_default) || journals[0];
+          setActiveJournalId(active.id);
+        }
+      }
+    }).catch(() => {});
+    return stored;
+  }
   try {
     const journals = await listJournals();
     if (!journals || journals.length === 0) {
       if (typeof wwLog !== 'undefined') wwLog.warn('journals boş');
       return null;
     }
-    const stored = getActiveJournalId();
     let active = journals.find(j => j.id === stored);
     if (!active) active = journals.find(j => j.is_default) || journals[0];
     setActiveJournalId(active.id);

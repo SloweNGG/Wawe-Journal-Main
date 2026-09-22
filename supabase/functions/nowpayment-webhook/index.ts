@@ -1,6 +1,6 @@
 // supabase/functions/nowpayment-webhook/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // ⭐ Environment variables
 const NOWPAYMENTS_IPN_SECRET = Deno.env.get('NOWPAYMENTS_IPN_SECRET') || '';
@@ -272,6 +272,17 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
   }
 
   // ⭐ Log the payment
+  
+  // Referans kodu ayıklama
+  let appliedReferral = null;
+  if (payload.order_description) {
+    const refMatch = payload.order_description.match(/\(Ref:\s*([A-Z0-9]+)\)/i);
+    if (refMatch && refMatch[1]) {
+      appliedReferral = refMatch[1].toUpperCase();
+    }
+  }
+
+  // Payment kaydı at
   await supabase
     .from('payments')
     .insert([{
@@ -284,8 +295,20 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
       paid_amount: payload.actually_paid || payload.pay_amount || 0,
       paid_currency: payload.pay_currency || 'USD',
       pay_address: payload.pay_address || null,
+      referral_code: appliedReferral,
       created_at: new Date().toISOString()
     }]);
+
+  // Referans kodu geçerliyse kullanımı artır
+  if (appliedReferral) {
+    try {
+      await supabase.rpc('increment_referral_usage', { p_code: appliedReferral });
+      console.log(`✅ Incremented referral usage: ${appliedReferral}`);
+    } catch (e) {
+      console.warn(`⚠️ Could not increment referral ${appliedReferral}:`, e);
+    }
+  }
+
 
   // ⭐ Telegram bildirimi gönder
   const email = profile.email || 'Bilinmiyor';

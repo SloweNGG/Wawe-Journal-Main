@@ -7,29 +7,31 @@ import { showToast } from './utils/ui.js';
 
 let homePriceUpdateTimeout = null;
 
+
 export function getMonthlyPrice() {
-  try {
-    const saved = safeLocalStorageGet('ww_monthly_price', null);
-    if (saved) return parseFloat(saved);
-  } catch(e) {}
-  return WW_CONFIG.DEFAULT_PRICES?.monthly || 9.00;
+  if (window.getMonthlyPrice) return window.getMonthlyPrice();
+  return 12;
 }
+
 
 export function getYearlyPrice() {
-  try {
-    const saved = safeLocalStorageGet('ww_yearly_price', null);
-    if (saved) return parseFloat(saved);
-  } catch(e) {}
-  return WW_CONFIG.DEFAULT_PRICES?.yearly || 79.00;
+  if (window.getYearlyPrice) return window.getYearlyPrice();
+  return 99;
 }
 
+
 export function setMonthlyPrice(price) {
-  safeLocalStorageSet('ww_monthly_price', String(price));
+  if (window.adminUpdatePrices) {
+    window.adminUpdatePrices(price, getYearlyPrice());
+  }
   updateHomePrices();
 }
 
+
 export function setYearlyPrice(price) {
-  safeLocalStorageSet('ww_yearly_price', String(price));
+  if (window.adminUpdatePrices) {
+    window.adminUpdatePrices(getMonthlyPrice(), price);
+  }
   updateHomePrices();
 }
 
@@ -45,7 +47,7 @@ export function updateHomePrices() {
       
       const monthlyEl = document.getElementById('monthly-price-value');
       if (monthlyEl) {
-        monthlyEl.textContent = monthlyPrice.toFixed(2);
+        monthlyEl.textContent = monthlyPrice % 1 === 0 ? monthlyPrice.toFixed(0) : monthlyPrice.toFixed(2);
         monthlyEl.style.fontSize = '2.8rem';
         monthlyEl.style.fontWeight = '700';
         monthlyEl.style.display = 'inline-block';
@@ -54,7 +56,7 @@ export function updateHomePrices() {
       
       const yearlyEl = document.getElementById('yearly-price-value');
       if (yearlyEl) {
-        yearlyEl.textContent = yearlyPrice.toFixed(2);
+        yearlyEl.textContent = yearlyPrice % 1 === 0 ? yearlyPrice.toFixed(0) : yearlyPrice.toFixed(2);
         yearlyEl.style.fontSize = '2.8rem';
         yearlyEl.style.fontWeight = '700';
         yearlyEl.style.display = 'inline-block';
@@ -93,8 +95,8 @@ export function adminUpdatePrices(monthly, yearly) {
 }
 
 export function resetPrices() {
-  setMonthlyPrice(WW_CONFIG.DEFAULT_PRICES?.monthly || 9.00);
-  setYearlyPrice(WW_CONFIG.DEFAULT_PRICES?.yearly || 79.00);
+  setMonthlyPrice(WW_CONFIG.DEFAULT_PRICES?.monthly || 12);
+  setYearlyPrice(WW_CONFIG.DEFAULT_PRICES?.yearly || 99);
   updateHomePrices();
   showToast('↺ Fiyatlar varsayılana döndürüldü!', 'success');
 }
@@ -105,9 +107,30 @@ window.addEventListener('storage', function(e) {
   }
 });
 
+
+export async function fetchPricesFromDB() {
+  try {
+    const sb = window.sb || window.supabase;
+    if (!sb) return;
+    
+    // Call the new RPC
+    const { data, error } = await sb.rpc('get_prices');
+    if (!error && data) {
+      if (data.monthly) setMonthlyPrice(data.monthly);
+      if (data.yearly) setYearlyPrice(data.yearly);
+    }
+  } catch (e) {
+    console.error('fetchPricesFromDB hatasi:', e);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(updateHomePrices, 300);
+  setTimeout(function() {
+    updateHomePrices();
+    fetchPricesFromDB(); // <--- Fetch on load!
+  }, 300);
 });
+
 
 if (window.i18n && i18n.onChange) {
   i18n.onChange(function() {

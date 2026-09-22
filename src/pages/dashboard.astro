@@ -7,8 +7,6 @@ import Layout from '../layouts/Layout.astro';
 
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline></script>
 
   <style>
     html.light-theme-pending body {
@@ -325,18 +323,27 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <Fragment slot="head">
+    <!-- PRELOAD CRITICAL SCRIPTS -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
 
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
 
-  <script type="module" src="/src/script.js" is:inline></script>
-  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
+    <script src="/config.js" is:inline defer></script>
+    <script src="/i18n.js" is:inline defer></script>
 
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
-  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
+    <script type="module" src="/src/bundle.js" is:inline></script>
+    <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
 
-  <script src="/interface/dashboard/js/dashboard.js" is:inline></script>
+    <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
+    <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
+
+    <script src="/interface/dashboard/js/dashboard.js" is:inline defer></script>
+  </Fragment>
 
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {

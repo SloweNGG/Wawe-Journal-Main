@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr">
@@ -6,11 +6,19 @@ import Layout from '../layouts/Layout.astro';
   <title>Admin Panel – Wawe Journal</title>
   
   <!-- ADMIN CSS -->
-  <link rel="stylesheet" href="/interface/admin/css/admin.css" />
+  <link rel="stylesheet" href="/interface/admin/css/admin.css?v=11" />
   
-  <!-- APEXCHARTS (Chart.js yerine) -->
-  <!-- ⭐ DEĞİŞİKLİK: Chart.js kaldırıldı, ApexCharts eklendi (sürüm sabit) -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline></script>
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" as="script" />
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
+  <script src="/interface/admin/js/admin-core.js?v=11" is:inline defer></script>
+  <script src="/interface/admin/js/admin-data.js?v=11" is:inline defer></script>
+  <script src="/interface/admin/js/admin-dashboard.js?v=11" is:inline defer></script>
 </Fragment>
   <!-- MAIN -->
   <main class="admin-main" id="main-content">
@@ -79,33 +87,110 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
+
+  <!-- REFERRAL CODE MODAL -->
+  <div id="referral-code-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="rc-modal-title">Yeni Referans Kodu Ekle</h2>
+        <button class="modal-close" id="close-rc-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="rc-id" />
+        <div class="field-row">
+          <div class="field">
+            <label>Kod *</label>
+            <input type="text" id="rc-code" placeholder="Örn: AHMET20" style="text-transform: uppercase;" />
+          </div>
+          <div class="field">
+            <label>İndirim Yüzdesi * (0-100)</label>
+            <input type="number" id="rc-discount" placeholder="20" min="0" max="100" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Referans Adı</label>
+            <input type="text" id="rc-name" placeholder="Ahmet Yılmaz" />
+          </div>
+          <div class="field">
+            <label>Referans E-postası</label>
+            <input type="email" id="rc-email" placeholder="ahmet@example.com" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Maksimum Kullanım (Boş = Sınırsız)</label>
+            <input type="number" id="rc-max-usage" placeholder="100" />
+          </div>
+          <div class="field">
+            <label>Son Kullanma Tarihi (Boş = Süresiz)</label>
+            <input type="date" id="rc-expires" />
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:0.75rem;">
+          <div class="field">
+            <label>Durum</label>
+            <select id="rc-active">
+              <option value="true">✓ Aktif</option>
+              <option value="false">○ Pasif</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancel-rc-btn">İptal</button>
+        <button class="btn btn-primary" id="save-rc-btn">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
-  <script type="module" src="/src/script.js" is:inline></script>
-  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
-  <script src="/interface/admin/js/admin-core.js" is:inline></script>
-  <script src="/interface/admin/js/admin-data.js" is:inline></script>
-  <script src="/interface/admin/js/admin-dashboard.js" is:inline></script>
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof loadNavbar === 'function') {
-        try { loadNavbar('navbar-container'); } catch(e) {}
-      }
-      if (typeof lucide !== 'undefined') {
-        try { lucide.createIcons(); } catch(e) {}
-      }
-      if (typeof initAdmin === 'function') {
-        setTimeout(function() {
-          try { initAdmin(); } catch(e) {
-            console.error('Admin panel hatası:', e);
+    (function bootstrapAdmin() {
+      function start() {
+        if (typeof loadNavbar === 'function') {
+          try { loadNavbar('navbar-container'); } catch(e) {}
+        }
+        if (typeof lucide !== 'undefined') {
+          try { lucide.createIcons(); } catch(e) {}
+        }
+
+        var attempts = 0;
+        var checkInterval = setInterval(function() {
+          attempts++;
+          if (typeof initAdmin === 'function') {
+            clearInterval(checkInterval);
+            try {
+              initAdmin();
+            } catch(e) {
+              console.error('Admin panel hatası:', e);
+            }
+          } else if (attempts >= 50) {
+            clearInterval(checkInterval);
+            console.error('initAdmin fonksiyonu bulunamadı (timeout).');
+            var mc = document.getElementById('main-content');
+            if (mc) {
+              mc.innerHTML = '<div style="text-align:center;padding:4rem;"><p style="color:#ef4444;font-weight:600;font-size:15px;">Admin panel başlatılamadı.</p><p style="color:var(--muted);font-size:13px;margin-top:0.5rem;">Lütfen sayfayı yenileyin veya internet bağlantınızı kontrol edin.</p><button class="btn btn-primary" onclick="location.reload()" style="margin-top:1.25rem;">Sayfayı Yenile</button></div>';
+            }
           }
-        }, 500);
-      } else {
-        console.error('initAdmin fonksiyonu bulunamadı!');
+        }, 100);
       }
-    });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+      } else {
+        start();
+      }
+    })();
   </script>
 </Layout>

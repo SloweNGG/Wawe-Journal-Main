@@ -479,20 +479,26 @@
     }
 
     try {
+      var lastW = 0, lastH = 0;
+      var resizeTimer = null;
       var observer = new ResizeObserver(function(entries) {
         for (var i = 0; i < entries.length; i++) {
           var entry = entries[i];
           var rect = entry.contentRect;
           if (rect.width > 0 && rect.height > 0) {
-            try {
-              if (chart && typeof chart.resize === 'function') {
-                chart.resize(rect.width, rect.height);
-              } else if (chart && typeof chart.applyOptions === 'function') {
-                chart.applyOptions({ width: rect.width, height: rect.height });
-              }
-            } catch(e) {
-              // Sessizce geç
-            }
+            if (Math.abs(rect.width - lastW) < 2 && Math.abs(rect.height - lastH) < 2) continue;
+            lastW = rect.width;
+            lastH = rect.height;
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+              try {
+                if (chart && typeof chart.resize === 'function') {
+                  chart.resize(lastW, lastH);
+                } else if (chart && typeof chart.applyOptions === 'function') {
+                  chart.applyOptions({ width: lastW, height: lastH });
+                }
+              } catch(e) {}
+            }, 80);
           }
         }
       });
@@ -653,24 +659,32 @@
     }
     var startValue = 0;
     var duration = 1000;
-    var startTime = performance.now() + delay;
 
-    function update(currentTime) {
-      if (currentTime < startTime) { requestAnimationFrame(update); return; }
-      var elapsed = currentTime - startTime;
-      var progress = Math.min(elapsed / duration, 1);
-      var current = startValue + (targetValue - startValue) * progress;
-      if (isCurrency) el.textContent = formatCurrency(current);
-      else if (isPercentage) el.textContent = current.toFixed(1) + '%';
-      else el.textContent = Math.floor(current);
-      if (progress < 1) requestAnimationFrame(update);
-      else {
-        if (isCurrency) el.textContent = formatCurrency(targetValue);
-        else if (isPercentage) el.textContent = targetValue.toFixed(1) + '%';
-        else el.textContent = targetValue;
+    function startAnimation() {
+      var startTime = performance.now();
+      function update(currentTime) {
+        var elapsed = currentTime - startTime;
+        var progress = Math.min(elapsed / duration, 1);
+        var current = startValue + (targetValue - startValue) * progress;
+        if (isCurrency) el.textContent = formatCurrency(current);
+        else if (isPercentage) el.textContent = current.toFixed(1) + '%';
+        else el.textContent = Math.floor(current);
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          if (isCurrency) el.textContent = formatCurrency(targetValue);
+          else if (isPercentage) el.textContent = targetValue.toFixed(1) + '%';
+          else el.textContent = targetValue;
+        }
       }
+      requestAnimationFrame(update);
     }
-    requestAnimationFrame(update);
+
+    if (delay && delay > 0) {
+      setTimeout(startAnimation, delay);
+    } else {
+      startAnimation();
+    }
   }
 
   // ============================================================
@@ -2886,33 +2900,25 @@
   // INIT DASHBOARD
   // ============================================================
 
+  var isDashboardInitialized = false;
   async function initDashboard() {
+    if (isDashboardInitialized) return;
+    isDashboardInitialized = true;
+
     try {
       showSkeletons();
 
-      // ⭐ ThemeObserver - body class değişince chart'ları yeniden render et
-      // NOT: Artık themeChanged/storage event'leri de dinleniyor (yukarıda).
-      // Bu observer sadece manuel class değişimleri için güvenlik ağı.
+      // ⭐ ThemeObserver - sadece light-theme sınıfı gerçekten değiştiğinde tetiklenir
       try {
-        var themeObserver = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            if (mutation.attributeName === 'class') {
-              if (allTrades.length > 0) {
-                var filtered = filterByDate(allTrades, currentRange);
-                if (filtered.length > 0) {
-                  chartsRenderedOnce = false;
-                  chartsInitialized = false;
-                  if (chartRafId) cancelAnimationFrame(chartRafId);
-                  chartRafId = requestAnimationFrame(function() {
-                    chartRafId = null;
-                    renderCharts(filtered);
-                  });
-                }
-              }
-            }
-          });
+        var currentIsLight = document.body.classList.contains('light-theme');
+        var themeObserver = new MutationObserver(function() {
+          var isLightNow = document.body.classList.contains('light-theme');
+          if (isLightNow !== currentIsLight) {
+            currentIsLight = isLightNow;
+            resetChartsForTheme();
+          }
         });
-        themeObserver.observe(document.body, { attributes: true });
+        themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
       } catch (e) {}
 
       document.addEventListener('visibilitychange', function() {
@@ -2964,13 +2970,22 @@
         if (adminLinkMobile) adminLinkMobile.style.display = 'block';
       }
 
+      if (typeof sb === 'undefined') {
+        console.error('❌ sb (Supabase) tanımlı değil!');
+        hideSkeletons();
+        return;
+      }
+
+      // Trades sorgusunu beklemeden hemen başlat
+      var tradesPromise = loadTrades(user.id);
+
       try {
-        await updatePlanBadge();
+        updatePlanBadge().catch(function() {});
       } catch (e) {}
 
       try {
         if (typeof updateOvertradeBell === 'function') {
-          await updateOvertradeBell();
+          updateOvertradeBell().catch(function() {});
         }
       } catch(e) {
         wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
@@ -2983,13 +2998,7 @@
         }
       } catch (e) {}
 
-      if (typeof sb === 'undefined') {
-        console.error('❌ sb (Supabase) tanımlı değil!');
-        hideSkeletons();
-        return;
-      }
-
-      var tradesData = await loadTrades(user.id);
+      var tradesData = await tradesPromise;
       if (tradesData === null) {
         hideSkeletons();
         return;
@@ -3050,23 +3059,46 @@
   // ⭐ DOM READY - APEXCHARTS KONTROLLÜ BAŞLAT
   // ============================================================
 
+  var dashboardCheckAttempts = 0;
+  var MAX_DASHBOARD_CHECK_ATTEMPTS = 160; // 160 * 50ms = 8 saniye max
+
   function startDashboard() {
-    if (typeof window.ApexCharts === 'undefined' || typeof window.LightweightCharts === 'undefined') {
-      requestAnimationFrame(startDashboard);
+    var isApexReady = typeof window.ApexCharts !== 'undefined';
+    var isLwcReady = typeof window.LightweightCharts !== 'undefined';
+    var isSbReady = typeof window.sb !== 'undefined';
+    var isAuthReady = typeof window.requireAuth === 'function';
+    var isJournalReady = typeof window.journal !== 'undefined';
+
+    if (!isApexReady || !isLwcReady || !isSbReady || !isAuthReady || !isJournalReady) {
+      dashboardCheckAttempts++;
+      if (dashboardCheckAttempts >= MAX_DASHBOARD_CHECK_ATTEMPTS) {
+        if (typeof wwLog !== 'undefined') {
+          wwLog.warn('⚠️ [Dashboard] Bağımlılıklar zaman aşımına uğradı:', {
+            ApexCharts: isApexReady,
+            LightweightCharts: isLwcReady,
+            sb: isSbReady,
+            requireAuth: isAuthReady,
+            journal: isJournalReady
+          });
+        }
+        hideSkeletons();
+        return;
+      }
+      setTimeout(startDashboard, 50);
       return;
     }
 
     if (typeof lucide !== 'undefined') {
       var dashboardIcons = document.querySelectorAll('.dashboard-main [data-lucide]');
       if (dashboardIcons.length > 0) {
-        lucide.createIcons();
+        try { lucide.createIcons(); } catch(e) {}
       }
     }
 
     if (typeof loadNavbar === 'function') {
       var container = document.getElementById('navbar-container');
       if (container && container.innerHTML.trim() === '') {
-        loadNavbar('navbar-container');
+        try { loadNavbar('navbar-container'); } catch(e) {}
       }
     }
 

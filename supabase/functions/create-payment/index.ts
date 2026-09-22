@@ -1,5 +1,6 @@
 // supabase/functions/create-payment/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // ⭐ Environment variables
 const NOWPAYMENTS_API_KEY = Deno.env.get('NOWPAYMENTS_API_KEY') || '';
@@ -168,7 +169,6 @@ let supabaseAdminClient: any = null;
 
 try {
   if (supabaseUrl && supabaseAnonKey) {
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
     if (supabaseServiceKey) {
       supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -293,8 +293,7 @@ serve(async (req) => {
     const userId = authData.user.id;
 
     // ⭐ User-scoped client for RLS
-    const { createClient: createUserScopedClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
-    const userScopedClient = createUserScopedClient(supabaseUrl, supabaseAnonKey, {
+    const userScopedClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${jwt}` } }
     });
 
@@ -330,7 +329,7 @@ serve(async (req) => {
       });
     }
 
-    const { planType, currency, payCurrency, successUrl, cancelUrl } = body;
+    const { planType, currency, payCurrency, successUrl, cancelUrl, referralCode } = body;
 
     // ⭐ 6. VALIDASYONLAR
     if (!planType || !validatePlanType(planType)) {
@@ -352,9 +351,66 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ Fiyatı DB'den al (fallback hardcoded)
-    const finalAmount = await getPlanPriceFromDB(planType, priceCurrency);
+    // ⭐ Fiyatı ve ayarları DB'den al
+    const adminClient = supabaseAdminClient || supabaseClient;
+    
+    // Varsayılan ayarlar
+    let paymentSettings = {
+      monthly_price_usd: 12,
+      yearly_price_usd: 99,
+      ltc_discount_enabled: true
+    };
+    
+    if (adminClient) {
+      const { data } = await adminClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
+      if (data?.value) paymentSettings = { ...paymentSettings, ...data.value };
+    }
+
+    let baseAmount = 12;
+    if (planType === 'monthly' || planType === 'premium') {
+      baseAmount = Number(paymentSettings.monthly_price_usd) || 12;
+    } else if (planType === 'yearly') {
+      baseAmount = Number(paymentSettings.yearly_price_usd) || 99;
+    }
+
+    if (priceCurrency !== 'USD') {
+      const conversionRates: Record<string, number> = { 'USD': 1, 'EUR': 0.92, 'GBP': 0.79, 'TRY': 33.50 };
+      const rate = conversionRates[priceCurrency] || 1;
+      baseAmount = Number((baseAmount * rate).toFixed(2));
+    }
+
     const payCurrencyFinal = payCurrency || 'BTC';
+    
+    let finalAmount = baseAmount;
+    let appliedReferralCode = null;
+    let orderDesc = `Wawe Journal - ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan Subscription`;
+
+    // ⭐ Referans İndirimi Hesaplama
+    const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : null;
+    const isLtc = String(payCurrencyFinal).toUpperCase() === 'LTC';
+    const isLtcDiscountEnabled = paymentSettings.ltc_discount_enabled !== false && String(paymentSettings.ltc_discount_enabled) !== 'false';
+
+    if (cleanRefCode && isLtc && isLtcDiscountEnabled && adminClient) {
+      try {
+        const { data: refData, error: refErr } = await adminClient.rpc('validate_referral_code', { p_code: cleanRefCode });
+        if (refErr) {
+          console.warn('⚠️ validate_referral_code RPC hatası:', refErr);
+        } else if (refData && refData.valid) {
+          const discountPct = Number(refData.discount_percent) || 0;
+          if (discountPct > 0 && discountPct <= 100) {
+            finalAmount = Number((baseAmount * (1 - (discountPct / 100))).toFixed(2));
+            appliedReferralCode = cleanRefCode;
+            orderDesc += ` (Ref: ${appliedReferralCode})`;
+            console.log(`✅ Applied referral discount ${discountPct}% with code ${appliedReferralCode}. New price: ${finalAmount}`);
+          }
+        } else {
+          console.log(`ℹ️ Referral code ${cleanRefCode} invalid:`, refData);
+        }
+      } catch (e) {
+        console.warn('⚠️ Referral validation failed:', e);
+      }
+    }
+
 
     if (!VALID_PAY_CURRENCIES.includes(payCurrencyFinal)) {
       return new Response(JSON.stringify({
@@ -398,7 +454,7 @@ serve(async (req) => {
       success_url: successUrl || 'https://wawejournal.com/dashboard.html',
       cancel_url: cancelUrl || 'https://wawejournal.com/settings.html',
       order_id: orderId,
-      order_description: `Wawe Journal - ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan Subscription`
+      order_description: orderDesc
     };
 
     console.log(`📤 Sending to NowPayments: ${JSON.stringify(payload)}`);
@@ -446,6 +502,7 @@ serve(async (req) => {
           plan_type: planType,
           payment_status: 'pending',
           pay_currency: payCurrencyFinal,
+          referral_code: appliedReferralCode,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }]);

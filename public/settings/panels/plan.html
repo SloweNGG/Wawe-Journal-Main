@@ -37,6 +37,16 @@
       <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
       <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f6">Reklamsız</span></li>
     </ul>
+    
+    <div class="plan-referral-block" style="margin-top:1.5rem; background: var(--surface2); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+      <label style="display:block; font-size:13px; color:var(--muted); margin-bottom:0.5rem;" data-i18n="settings.plan_referral_code">Referans Kodu (Opsiyonel)</label>
+      <div style="display:flex; gap:0.5rem;">
+        <input type="text" id="referral-input" placeholder="Kodu Girin" style="flex:1; text-transform:uppercase; padding:0.5rem; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+        <button id="apply-referral-btn" class="btn btn-secondary btn-sm">Uygula</button>
+      </div>
+      <div id="referral-msg" style="font-size:12px; margin-top:0.5rem;"></div>
+    </div>
+
     <div class="plan-payment-method-block">
       <label class="plan-payment-method-label">
         <span data-icon="credit-card"></span>
@@ -54,6 +64,11 @@
         <span data-i18n="settings.plan_yearly_btn" data-i18n-params='{"price":"—"}'>Yıllık</span>
       </button>
     </div>
+    
+    <div id="plan-video-container" style="display:none; margin-top:1.5rem; border-radius:var(--radius-sm); overflow:hidden;">
+      <iframe id="plan-video-frame" width="100%" height="200" frameborder="0" allowfullscreen></iframe>
+    </div>
+
     <div class="plan-payment-note">
       <span data-icon="lock"></span>
       <span data-i18n="settings.plan_secure_payment" data-i18n-params='{"methods":"BTC / LTC"}'>Güvenli ödeme</span>

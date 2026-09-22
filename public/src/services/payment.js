@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL - PAYMENT SERVICE (GÜNCELLENDİ)
 // ============================================================
 
@@ -42,7 +42,7 @@ export function selectPayMethod(method) {
   });
 }
 
-export async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency) {
+export async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency, referralCode = null) {
   currency = currency || 'USD';
   payCurrency = payCurrency || 'BTC';
   
@@ -53,7 +53,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
       return null;
     }
 
-    wwLog.log('📤 createNowPaymentInvoice çağrıldı:', { userId, planType, amount, currency, payCurrency });
+    wwLog.log('📤 createNowPaymentInvoice çağrıldı:', { userId, planType, amount, currency, payCurrency, referralCode });
 
     const response = await fetch(
       'https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/create-payment',
@@ -69,6 +69,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
           amount: amount,
           currency: currency,
           payCurrency: payCurrency,
+          referralCode: referralCode,
           successUrl: window.location.origin + '/dashboard.html',
           cancelUrl: window.location.origin + '/settings.html'
         })
@@ -91,7 +92,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
   }
 }
 
-export async function upgradeToPremium(planType, amount, currency, payMethod) {
+export async function upgradeToPremium(planType, amount, currency, payMethod, referralCode = null) {
   currency = currency || 'USD';
   
   try {
@@ -109,7 +110,8 @@ export async function upgradeToPremium(planType, amount, currency, payMethod) {
       planType,
       amount,
       currency,
-      method
+      method,
+      referralCode
     );
     
     if (result && result.invoiceUrl) {

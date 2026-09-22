@@ -123,7 +123,7 @@ export default {
   "plans.best_value": "💎 BESTES PREIS-LEISTUNGS-VERHÄLTNIS",
   "plans.premium_yearly_name": "Premium Jährlich",
   "plans.premium_yearly_period": "/ Jahr",
-  "plans.save_67": "🎯 67% sparen!",
+  "plans.save_67": "🎯 31% sparen!",
   "plans.premium_yearly_desc": "Bestes Preis-Leistungs-Verhältnis mit Jahresabo.",
   "plans.premium_yearly_btn": "Jährlich kaufen →",
   "plans.payment_note": "💳 Kreditkarte, Krypto (BTC / LTC) oder Banküberweisung",

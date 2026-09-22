@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
@@ -491,6 +491,13 @@ import Layout from '../layouts/Layout.astro';
       transition: width 0.3s ease;
     }
   </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
 </Fragment>
   <!-- ============================================================
        NAVBAR CONTAINER
@@ -712,11 +719,11 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
-  <script type="module" src="/src/script.js" is:inline></script>
-  <script src="/components/navbar/navbar.js?v=3" is:inline></script>
+  
+  
+  
+  
+  
   <script is:inline>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {

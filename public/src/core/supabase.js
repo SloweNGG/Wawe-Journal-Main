@@ -23,21 +23,99 @@ if (typeof window.sb === 'undefined') {
 export const sb = window.sb;
 
 // ── AUTH FONKSİYONLARI ──────────────────────────────────────
+let _profilePromise = null;
+export async function getUserProfileCached(userId, force = false) {
+  if (!force && window.__wwUserProfile && window.__wwUserProfile.id === userId) {
+    return window.__wwUserProfile;
+  }
+  if (!force) {
+    try {
+      const cached = sessionStorage.getItem('ww_cached_profile');
+      const time = sessionStorage.getItem('ww_cached_profile_time');
+      if (cached && time && (Date.now() - parseInt(time, 10)) < 180000) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.id === userId) {
+          window.__wwUserProfile = parsed;
+          return parsed;
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (_profilePromise) return _profilePromise;
+
+  _profilePromise = (async () => {
+    try {
+      const { data, error } = await sb
+        .from('user_profiles')
+        .select('id, is_active, plan, plan_expires_at, avatar_url')
+        .eq('id', userId)
+        .single();
+      if (!error && data) {
+        window.__wwUserProfile = data;
+        try {
+          sessionStorage.setItem('ww_cached_profile', JSON.stringify(data));
+          sessionStorage.setItem('ww_cached_profile_time', String(Date.now()));
+          sessionStorage.setItem('ww_user_plan', data.plan || 'free');
+          sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+          sessionStorage.setItem('ww_avatar_url', data.avatar_url || 'none');
+          sessionStorage.setItem('ww_avatar_time', String(Date.now()));
+        } catch(e) {}
+      }
+      return data || null;
+    } finally {
+      _profilePromise = null;
+    }
+  })();
+
+  return _profilePromise;
+}
+
 export async function requireAuth() {
   try {
-    const { data: { session } } = await sb.auth.getSession();
+    let session = null;
+    const hasOAuthParams = typeof window !== 'undefined' && (
+      window.location.hash.includes('access_token') ||
+      window.location.search.includes('code=') ||
+      window.location.hash.includes('type=recovery')
+    );
+
+    // ⭐ OAuth yönlendirmesi durumunda Supabase'in oturumu URL'den okuması için bekle
+    if (hasOAuthParams) {
+      for (let i = 0; i < 20; i++) {
+        const { data } = await sb.auth.getSession();
+        if (data?.session) {
+          session = data.session;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      // URL hash'ini temizle
+      if (session && window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+
+    if (!session) {
+      const { data } = await sb.auth.getSession();
+      session = data?.session;
+    }
+
     if (!session) { 
       window.location.href = 'login.html'; 
       return null; 
     }
     
-    const { data: profile, error } = await sb
-      .from('user_profiles')
-      .select('is_active')
-      .eq('id', session.user.id)
-      .single();
+    let profile = await getUserProfileCached(session.user.id);
     
-    if (error || !profile || profile.is_active === false) {
+    // Yeni OAuth kayıtlarında DB trigger gecikmesine karşı tolerans
+    if (!profile) {
+      await new Promise(r => setTimeout(r, 500));
+      profile = await getUserProfileCached(session.user.id, true);
+    }
+    
+    // SADECE aktiflik açıkça false yapılmışsa hesabı kapat
+    if (profile && profile.is_active === false) {
       await sb.auth.signOut();
       safeLocalStorageRemove('ww_last_active_push');
       showToast(i18n.t('auth.account_disabled'), 'error');
@@ -45,7 +123,7 @@ export async function requireAuth() {
       return null;
     }
     
-    throttledUpdateLastActive(session.user.id);
+    throttledUpdateLastActive(session.user.id).catch(() => {});
     return session.user;
   } catch (error) {
     console.error('requireAuth hatası:', error);
@@ -55,22 +133,43 @@ export async function requireAuth() {
 
 export async function requireAuthSilent() {
   try {
-    const { data: { session } } = await sb.auth.getSession();
+    let session = null;
+    const hasOAuthParams = typeof window !== 'undefined' && (
+      window.location.hash.includes('access_token') ||
+      window.location.search.includes('code=') ||
+      window.location.hash.includes('type=recovery')
+    );
+
+    if (hasOAuthParams) {
+      for (let i = 0; i < 20; i++) {
+        const { data } = await sb.auth.getSession();
+        if (data?.session) {
+          session = data.session;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      if (session && window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+
+    if (!session) {
+      const { data } = await sb.auth.getSession();
+      session = data?.session;
+    }
+
     if (!session) return null;
     
-    const { data: profile, error } = await sb
-      .from('user_profiles')
-      .select('is_active')
-      .eq('id', session.user.id)
-      .single();
+    const profile = await getUserProfileCached(session.user.id);
     
-    if (error || !profile || profile.is_active === false) {
+    if (profile && profile.is_active === false) {
       await sb.auth.signOut();
       safeLocalStorageRemove('ww_last_active_push');
       return null;
     }
     
-    throttledUpdateLastActive(session.user.id);
+    throttledUpdateLastActive(session.user.id).catch(() => {});
     return session.user;
   } catch (error) {
     return null;

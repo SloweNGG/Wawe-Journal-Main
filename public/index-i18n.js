@@ -101,7 +101,7 @@
         yearly_tag: 'best value',
         yearly_name: 'Premium yearly',
         yearly_period: ' / yr',
-        yearly_desc: 'Save 67% annually.',
+        yearly_desc: 'Save 31% annually.',
         yearly_f1: 'All premium features',
         yearly_f2: '2 months free',
         yearly_btn: 'Buy yearly'
@@ -305,7 +305,7 @@
         yearly_tag: 'en avantajlı',
         yearly_name: 'Premium Yıllık',
         yearly_period: ' / yıl',
-        yearly_desc: 'Yıllık %67 tasarruf et.',
+        yearly_desc: 'Yıllık %31 tasarruf et.',
         yearly_f1: 'Tüm premium özellikler',
         yearly_f2: '2 ay ücretsiz',
         yearly_btn: 'Yıllık Satın Al'
@@ -507,7 +507,7 @@
         yearly_tag: 'bester Wert',
         yearly_name: 'Premium Jährlich',
         yearly_period: ' / Jahr',
-        yearly_desc: 'Spare 67 % bei jährlicher Zahlung.',
+        yearly_desc: 'Spare 31 % bei jährlicher Zahlung.',
         yearly_f1: 'Alle Premium-Funktionen',
         yearly_f2: '2 Monate geschenkt',
         yearly_btn: 'Jährlich kaufen'

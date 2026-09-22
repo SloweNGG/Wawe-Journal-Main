@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr">
@@ -17,6 +17,13 @@ import Layout from '../layouts/Layout.astro';
     body{margin:0;background:#0a0a0f;min-height:100vh;font-family:'DM Sans',sans-serif;}
     .page-hint{color:#6f6f80;font-size:13px;text-align:center;padding:2rem 1rem 0;font-family:'DM Sans',sans-serif;}
   </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/js/quick-modal.js" is:inline defer></script>
 </Fragment>
   <p class="page-hint">FAB butonuna tıklayın · Yön ve preset butonları etkileşimlidir</p>
 
@@ -148,15 +155,15 @@ import Layout from '../layouts/Layout.astro';
        ============================================================ -->
   
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  
   
   <!-- 2. CORE KONFİG (ES5) -->
-  <script src="/config.js" is:inline></script>
-  <script src="/i18n.js" is:inline></script>
+  
+  
   
   <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
-  <script type="module" src="/src/script.js" is:inline></script>
+  
   
   <!-- 4. QUICK ADD JS (ES5) -->
-  <script src="/js/quick-modal.js" is:inline></script>
+  
 </Layout>

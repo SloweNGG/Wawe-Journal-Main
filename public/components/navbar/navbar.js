@@ -398,13 +398,18 @@ async function loadNavbarAvatar() {
       }
     }
 
-    if (storedAvatar && storedTime && (now - parseInt(storedTime)) < 300000) {
-      cachedAvatarUrl = storedAvatar;
-      applyAvatarToNav(storedAvatar);
+    if (storedTime && (now - parseInt(storedTime, 10)) < 300000) {
+      var av = (storedAvatar && storedAvatar !== 'none') ? storedAvatar : null;
+      cachedAvatarUrl = av;
+      applyAvatarToNav(av);
       return;
     }
 
-    var { data: { user } } = await sb.auth.getUser();
+    var sb = window.sb || window.supabase;
+    if (!sb) return;
+
+    var sessionRes = await sb.auth.getSession();
+    var user = sessionRes?.data?.session?.user;
     if (!user) return;
 
     if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
@@ -413,22 +418,21 @@ async function loadNavbarAvatar() {
     var displayName = user?.user_metadata?.username || user?.email || 'Kullanıcı';
     if (displayName) sessionStorage.setItem('ww_user_display_name', displayName);
 
-    var { data: profile } = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
-    var avatarUrl = profile?.avatar_url || null;
-
-    if (avatarUrl !== cachedAvatarUrl) {
-      cachedAvatarUrl = avatarUrl;
-      if (avatarUrl) {
-        sessionStorage.setItem('ww_avatar_url', avatarUrl);
-        sessionStorage.setItem('ww_avatar_time', String(now));
-      }
-      applyAvatarToNav(avatarUrl);
+    var avatarUrl = null;
+    if (window.__wwUserProfile && window.__wwUserProfile.id === user.id) {
+      avatarUrl = window.__wwUserProfile.avatar_url || null;
     } else {
-      applyAvatarToNav(avatarUrl);
+      var { data: profile } = await sb.from('user_profiles').select('avatar_url').eq('id', user.id).single();
+      avatarUrl = profile?.avatar_url || null;
     }
+
+    cachedAvatarUrl = avatarUrl;
+    sessionStorage.setItem('ww_avatar_url', avatarUrl || 'none');
+    sessionStorage.setItem('ww_avatar_time', String(now));
+    applyAvatarToNav(avatarUrl);
   } catch (e) {
     var fallbackAvatar = sessionStorage.getItem('ww_avatar_url');
-    applyAvatarToNav(fallbackAvatar || null);
+    applyAvatarToNav((fallbackAvatar && fallbackAvatar !== 'none') ? fallbackAvatar : null);
   }
 }
 
@@ -474,10 +478,27 @@ async function updateNavbarBadge() {
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
 
+    var now = Date.now();
+    var storedPlan = sessionStorage.getItem('ww_user_plan');
+    var storedPlanTime = sessionStorage.getItem('ww_user_plan_time');
+    if (storedPlan && storedPlanTime && (now - parseInt(storedPlanTime, 10)) < 300000) {
+      updateBadgeUI(storedPlan === 'premium');
+      return;
+    }
+
+    if (window.__wwUserProfile && window.__wwUserProfile.plan) {
+      var isPrem = window.__wwUserProfile.plan === 'premium';
+      sessionStorage.setItem('ww_user_plan', isPrem ? 'premium' : 'free');
+      sessionStorage.setItem('ww_user_plan_time', String(now));
+      updateBadgeUI(isPrem);
+      return;
+    }
+
     var sb = window.sb || window.supabase;
     if (!sb) { updateNavbarBadgeSync(); return; }
 
-    var { data: { user } } = await sb.auth.getUser();
+    var sessionRes = await sb.auth.getSession();
+    var user = sessionRes?.data?.session?.user;
     if (!user) { updateNavbarBadgeSync(); return; }
 
     var { data: profile } = await sb.from('user_profiles').select('plan').eq('id', user.id).single();

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL – config.js (SORUNSUZ - import.meta.env KULLANMAZ)
 // ⭐ TURNSTILE_SITE_KEY eklendi
 // ============================================================
@@ -114,11 +114,11 @@ window.getPrices = function() {
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
-        monthly: (typeof parsed.monthly === 'number' && !isNaN(parsed.monthly) && parsed.monthly > 0) ? parsed.monthly : 9,
-        yearly: (typeof parsed.yearly === 'number' && !isNaN(parsed.yearly) && parsed.yearly > 0) ? parsed.yearly : 79,
+        monthly: (typeof parsed.monthly === 'number' && !isNaN(parsed.monthly) && parsed.monthly > 0 && parsed.monthly !== 9) ? parsed.monthly : 12,
+        yearly: (typeof parsed.yearly === 'number' && !isNaN(parsed.yearly) && parsed.yearly > 0 && parsed.yearly !== 79) ? parsed.yearly : 99,
         currency: (typeof parsed.currency === 'string') ? parsed.currency : 'USD',
         discount: {
-          yearly: (typeof parsed.discount?.yearly === 'number' && !isNaN(parsed.discount?.yearly)) ? parsed.discount.yearly : 27,
+          yearly: (typeof parsed.discount?.yearly === 'number' && !isNaN(parsed.discount?.yearly) && parsed.discount?.yearly !== 27) ? parsed.discount.yearly : 31,
           promo: (typeof parsed.discount?.promo === 'number' && !isNaN(parsed.discount?.promo)) ? parsed.discount.promo : 0
         },
         paymentMethods: Array.isArray(parsed.paymentMethods) && parsed.paymentMethods.length > 0
@@ -128,10 +128,10 @@ window.getPrices = function() {
     }
   } catch (e) {}
   return {
-    monthly: 9,
-    yearly: 79,
+    monthly: 12,
+    yearly: 99,
     currency: 'USD',
-    discount: { yearly: 27, promo: 0 },
+    discount: { yearly: 31, promo: 0 },
     paymentMethods: ['BTC', 'LTC']
   };
 };
@@ -139,15 +139,15 @@ window.getPrices = function() {
 window.getMonthlyPrice = function() {
   try {
     const prices = window.getPrices();
-    return (typeof prices.monthly === 'number' && !isNaN(prices.monthly) && prices.monthly > 0) ? prices.monthly : 9;
-  } catch (e) { return 9; }
+    return (typeof prices.monthly === 'number' && !isNaN(prices.monthly) && prices.monthly > 0 && prices.monthly !== 9) ? prices.monthly : 12;
+  } catch (e) { return 12; }
 };
 
 window.getYearlyPrice = function() {
   try {
     const prices = window.getPrices();
-    return (typeof prices.yearly === 'number' && !isNaN(prices.yearly) && prices.yearly > 0) ? prices.yearly : 79;
-  } catch (e) { return 79; }
+    return (typeof prices.yearly === 'number' && !isNaN(prices.yearly) && prices.yearly > 0 && prices.yearly !== 79) ? prices.yearly : 99;
+  } catch (e) { return 99; }
 };
 
 window.getYearlyDiscount = function() {
@@ -259,8 +259,8 @@ const WW_CONFIG = {
   APP_NAME: APP_NAME,
   TURNSTILE_SITE_KEY: TURNSTILE_SITE_KEY,
   DEFAULT_PRICES: {
-    monthly: 9,
-    yearly: 79,
+    monthly: 12,
+    yearly: 99,
     currency: 'USD',
     discount: { yearly: 27, promo: 0 },
     paymentMethods: ['BTC', 'LTC']

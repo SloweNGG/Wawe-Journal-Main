@@ -128,7 +128,7 @@ export default {
   "plans.best_value": "💎 BEST VALUE",
   "plans.premium_yearly_name": "Premium Yearly",
   "plans.premium_yearly_period": "/ year",
-  "plans.save_67": "🎯 Save 67%!",
+  "plans.save_67": "🎯 Save 31%!",
   "plans.premium_yearly_desc": "Best value with yearly subscription.",
   "plans.premium_yearly_btn": "Buy Yearly →",
   "plans.payment_note": "💳 Credit card, crypto (BTC / LTC) or bank transfer",
