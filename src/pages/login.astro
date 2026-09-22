@@ -470,41 +470,39 @@ import Layout from '../layouts/Layout.astro';
 
       <div class="divider">or continue with email</div>
 
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="trader@example.com" autocomplete="email" />
-      </div>
+      <form id="login-form" onsubmit="return false;">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="trader@example.com" autocomplete="email" />
+        </div>
 
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="Your password" autocomplete="current-password" />
-      </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Your password" autocomplete="current-password" />
+        </div>
 
-      <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+        <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
 
-      <!-- Turnstile widget (Official Auto-Render) -->
-      <div class="turnstile-wrap">
-        <div 
-          class="cf-turnstile" 
-          id="turnstile-container" 
-          data-sitekey="0x4AAAAAAEzAoR2XhUtPTxV7" 
-          data-theme="dark" 
-          data-size="flexible"
-          data-callback="onTurnstileSuccess" 
-          data-expired-callback="onTurnstileExpired"
-          data-error-callback="onTurnstileError"
-        ></div>
-      </div>
+        <!-- Turnstile widget (Official Auto-Render) -->
+        <div class="turnstile-wrap">
+          <div 
+            class="cf-turnstile" 
+            id="turnstile-container" 
+            data-sitekey="0x4AAAAAAEzAoR2XhUtPTxV7" 
+            data-theme="dark" 
+            data-size="flexible"
+            data-callback="onTurnstileSuccess" 
+            data-expired-callback="onTurnstileExpired"
+            data-error-callback="onTurnstileError"
+          ></div>
+        </div>
 
-      <button class="btn-primary" id="login-btn">Login</button>
+        <button type="submit" class="btn-primary" id="login-btn">Login</button>
+      </form>
     </div>
   </div>
 
   <div class="toast-container" id="toast-container"></div>
-
-  
-  
-  
 
   <script is:inline>
     // ⭐ URL'den gelen hata veya OAuth parametrelerini işle
@@ -680,7 +678,9 @@ import Layout from '../layouts/Layout.astro';
     document.getElementById('google-login-btn').addEventListener('click', signInWithGoogle);
 
     // ─── E-posta ile Giriş ───────────────────────────────────
-    document.getElementById('login-btn').addEventListener('click', async () => {
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
       let email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       email = email.toLowerCase();
@@ -699,10 +699,6 @@ import Layout from '../layouts/Layout.astro';
       }
 
       var turnstileToken = getTurnstileToken();
-      if (isTurnstileRequired() && !turnstileToken) {
-        toast('Please complete the verification.', 'error');
-        return;
-      }
 
       const btn = document.getElementById('login-btn');
       btn.disabled = true;
@@ -729,6 +725,7 @@ import Layout from '../layouts/Layout.astro';
         if (!res.ok) {
           if (res.status === 429) {
             toast('Too many attempts. Please try again in 15 minutes.', 'error');
+            toast('Too many attempts. Please try again in a moment.', 'error');
             resetTurnstile();
             btn.disabled = false;
             btn.textContent = 'Login';
@@ -802,10 +799,6 @@ import Layout from '../layouts/Layout.astro';
         btn.disabled = false;
         btn.textContent = 'Login';
       }
-    });
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('login-btn').click();
     });
   </script>
 </Layout>

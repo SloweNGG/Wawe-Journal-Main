@@ -5,6 +5,12 @@
 //   - ApexCharts destroy() ve re-render aynı şekilde çalışır
 //   - Tema (light/dark) desteği eklendi
 // ============================================================
+var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
+if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
+
+function getSbClient() {
+  return (typeof window !== 'undefined' && window.sb) ? window.sb : (typeof sb !== 'undefined' ? sb : null);
+}
 
 wwLog.log('🔥 admin-dashboard.js yukleniyor...');
 
@@ -35,7 +41,12 @@ async function loadAnalyticsData() {
       last7.push(d.toISOString().split('T')[0]);
     }
 
-    var { data: profiles } = await sb.from('user_profiles').select('*');
+    var client = getSbClient();
+    if (!client) {
+      wwLog.warn('Supabase client not ready for analytics');
+      return;
+    }
+    var { data: profiles } = await client.from('user_profiles').select('*');
     var profileList = profiles || [];
 
     var premiumUsers = profileList.filter(function(p) {
@@ -56,7 +67,6 @@ async function loadAnalyticsData() {
         
         var diffDays = Math.ceil((expiresAt - startDate) / (1000 * 60 * 60 * 24));
         var isYearly = diffDays > 31;
-        var price = isYearly ? 79 : 9;
         var price = isYearly ? 99 : 12;
         
         totalRevenue += price;
@@ -315,73 +325,256 @@ function renderPricesContent() {
   }
 }
 window.renderPricesContent = renderPricesContent;
-window.addPaymentMethod = addPaymentMethod;
-window.removePaymentMethod = removePaymentMethod;
+window.addPaymentMethod = function() {};
+window.removePaymentMethod = function() {};
 
 wwLog.log('✅ admin-dashboard.js yuklendi!');
 
 // ============================================================
 // REFERANS KODLARI UI (REFERRAL CODES)
 // ============================================================
-function renderReferralCodesTable() {
-  var c = document.getElementById('referral-codes-container');
-  if (!c) return;
-  var codes = adminState.referralCodes || [];
-  if (codes.length === 0) {
-    c.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);">Kayıtlı referans kodu yok.</div>';
-    return;
+window.copyReferralCode = function(code) {
+  if (!code) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function() {
+      if (typeof showToast === 'function') showToast('Referans kodu kopyalandı: ' + code, 'success');
+    }).catch(function() {
+      fallbackCopy(code);
+    });
+  } else {
+    fallbackCopy(code);
   }
 
-  var html = '<div class="table-responsive"><table class="admin-table"><thead><tr>' +
-    '<th>Kod</th><th>İndirim</th><th>Kullanım</th><th>Sınır</th><th>Son Tarih</th><th>Durum</th><th style="text-align:right">İşlem</th>' +
-    '</tr></thead><tbody>';
-
-  codes.forEach(function(item) {
-    var stat = item.is_active ? '<span class="status-badge status-active">Aktif</span>' : '<span class="status-badge status-inactive">Pasif</span>';
-    var expiry = item.expires_at ? new Date(item.expires_at).toLocaleDateString() : 'Süresiz';
-    var limit = item.max_usage ? item.max_usage : 'Sınırsız';
-    
-    html += '<tr>' +
-      '<td><strong style="color:var(--text);">' + escapeHtml(item.code) + '</strong><br><span style="font-size:11px;color:var(--muted);">' + escapeHtml(item.referrer_name || '-') + '</span></td>' +
-      '<td>%' + item.discount_percent + '</td>' +
-      '<td>' + item.usage_count + '</td>' +
-      '<td>' + limit + '</td>' +
-      '<td>' + expiry + '</td>' +
-      '<td>' + stat + '</td>' +
-      '<td style="text-align:right;white-space:nowrap;">' +
-        '<button class="btn btn-ghost btn-sm" onclick="editReferralCode(\'' + item.id + '\')" style="padding:4px 8px;margin-right:4px;">Düzenle</button>' +
-        '<button class="btn btn-danger btn-sm" onclick="delReferralCode(\'' + item.id + '\')" style="padding:4px 8px;">Sil</button>' +
-      '</td>' +
-    '</tr>';
-  });
-  html += '</tbody></table></div>';
-  c.innerHTML = html;
-}
-
-window.editReferralCode = function(id) {
-  var item = adminState.referralCodes.find(x => x.id === id);
-  if (!item) return;
-  document.getElementById('rc-id').value = item.id;
-  document.getElementById('rc-code').value = item.code;
-  document.getElementById('rc-discount').value = item.discount_percent;
-  document.getElementById('rc-name').value = item.referrer_name || '';
-  document.getElementById('rc-email').value = item.referrer_email || '';
-  document.getElementById('rc-max-usage').value = item.max_usage || '';
-  document.getElementById('rc-expires').value = item.expires_at ? item.expires_at.split('T')[0] : '';
-  document.getElementById('rc-active').value = item.is_active ? 'true' : 'false';
-  
-  document.getElementById('rc-modal-title').textContent = 'Kodu Düzenle';
-  document.getElementById('referral-code-modal').classList.add('open');
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (typeof showToast === 'function') showToast('Referans kodu kopyalandı: ' + text, 'success');
+    } catch(e) {
+      if (typeof showToast === 'function') showToast('Kod kopyalanamadı', 'error');
+    }
+  }
 };
 
-window.delReferralCode = async function(id) {
-  if (confirm('Bu kodu silmek istediğinize emin misiniz?')) {
-    await deleteReferralCode(id);
+window.handleToggleReferralCode = async function(id, newStatus) {
+  var ok = await toggleReferralCodeStatus(id, newStatus);
+  if (ok) {
     renderReferralCodesTable();
   }
 };
 
+function renderReferralCodesTable() {
+  var c = document.getElementById('referral-codes-container');
+  if (!c) return;
+  var codes = adminState.referralCodes || [];
+
+  // 1. ÖZET İSTATİSTİKLERİ HESAPLA
+  var totalCodes = codes.length;
+  var activeCodes = codes.filter(function(item) { return item.is_active; }).length;
+  var totalUsages = codes.reduce(function(acc, item) { return acc + (parseInt(item.usage_count, 10) || 0); }, 0);
+  var avgDiscount = totalCodes > 0
+    ? Math.round(codes.reduce(function(acc, item) { return acc + (parseInt(item.discount_percent, 10) || 0); }, 0) / totalCodes)
+    : 0;
+
+  var statsHtml = '\
+    <div class="ref-stats-grid">\
+      <div class="ref-stat-card">\
+        <div class="ref-stat-icon icon-code">\
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>\
+        </div>\
+        <div class="ref-stat-meta">\
+          <span class="ref-stat-label">Toplam Kod</span>\
+          <div class="ref-stat-val">' + totalCodes + '</div>\
+        </div>\
+      </div>\
+      <div class="ref-stat-card">\
+        <div class="ref-stat-icon icon-active">\
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>\
+        </div>\
+        <div class="ref-stat-meta">\
+          <span class="ref-stat-label">Aktif Kodlar</span>\
+          <div class="ref-stat-val" style="color:#34d399;">' + activeCodes + '</div>\
+        </div>\
+      </div>\
+      <div class="ref-stat-card">\
+        <div class="ref-stat-icon icon-usage">\
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>\
+        </div>\
+        <div class="ref-stat-meta">\
+          <span class="ref-stat-label">Toplam Kullanım</span>\
+          <div class="ref-stat-val" style="color:#60a5fa;">' + totalUsages + '</div>\
+        </div>\
+      </div>\
+      <div class="ref-stat-card">\
+        <div class="ref-stat-icon icon-discount">\
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>\
+        </div>\
+        <div class="ref-stat-meta">\
+          <span class="ref-stat-label">Ort. İndirim</span>\
+          <div class="ref-stat-val" style="color:#fbbf24;">%' + avgDiscount + '</div>\
+        </div>\
+      </div>\
+    </div>\
+  ';
+
+  if (codes.length === 0) {
+    c.innerHTML = statsHtml + '\
+      <div class="preview-video-placeholder" style="padding:3.5rem 1.5rem;">\
+        <div style="width:48px;height:48px;border-radius:12px;background:rgba(124,109,250,0.12);display:flex;align-items:center;justify-content:center;color:#a78bfa;margin-bottom:0.5rem;">\
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>\
+        </div>\
+        <h3 style="font-size:15px;font-weight:600;color:var(--text);margin:0;">Henüz referans kodu tanımlanmadı</h3>\
+        <p style="font-size:13px;color:var(--muted);max-width:340px;margin:0;">İş ortaklarınız veya kampanyalarınız için özel indirim kodları oluşturmaya başlayın.</p>\
+        <button class="btn btn-primary btn-sm" onclick="if(window.openReferralModal) window.openReferralModal();" style="margin-top:0.75rem;display:inline-flex;align-items:center;gap:6px;">\
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>\
+          İlk Kodu Oluştur\
+        </button>\
+      </div>\
+    ';
+    return;
+  }
+
+  var rows = codes.map(function(item) {
+    var isExpired = item.expires_at && new Date() > new Date(item.expires_at);
+    var expiryBadge = '';
+    if (item.expires_at) {
+      if (isExpired) {
+        expiryBadge = '<span class="expiry-pill expired" title="Süresi Doldu">⏳ Doldu (' + formatDate(item.expires_at) + ')</span>';
+      } else {
+        expiryBadge = '<span class="expiry-pill valid" title="Son Geçerlilik">📅 ' + formatDate(item.expires_at) + '</span>';
+      }
+    } else {
+      expiryBadge = '<span class="expiry-pill infinite" title="Süresiz Kod">♾️ Süresiz</span>';
+    }
+
+    var usageCount = parseInt(item.usage_count, 10) || 0;
+    var maxUsage = item.max_usage ? parseInt(item.max_usage, 10) : null;
+    var usagePct = maxUsage ? Math.min(100, Math.round((usageCount / maxUsage) * 100)) : 0;
+    var usageText = '<strong>' + usageCount + '</strong> / ' + (maxUsage !== null ? maxUsage : '<span style="font-size:13px;">∞</span>');
+    var progressBar = maxUsage
+      ? '<div class="usage-track"><div class="usage-bar" style="width:' + usagePct + '%;"></div></div>'
+      : '';
+
+    var statusHtml = '\
+      <button type="button" class="status-toggle-btn ' + (item.is_active ? 'active' : 'inactive') + '" onclick="handleToggleReferralCode(\'' + item.id + '\', ' + (!item.is_active) + ')" title="Durumu değiştirmek için tıklayın">\
+        <span class="status-dot"></span>\
+        ' + (item.is_active ? 'Aktif' : 'Pasif') + '\
+      </button>\
+    ';
+
+    return '\
+      <tr>\
+        <td>\
+          <div class="coupon-code-wrap">\
+            <div class="coupon-code-chip" onclick="copyReferralCode(\'' + escapeHtml(item.code) + '\')" title="Kodu Kopyala">\
+              <svg class="coupon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>\
+              <strong>' + escapeHtml(item.code) + '</strong>\
+              <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>\
+            </div>\
+            ' + (item.referrer_name ? '<div class="coupon-referrer">' + escapeHtml(item.referrer_name) + (item.referrer_email ? ' <span class="text-muted">(' + escapeHtml(item.referrer_email) + ')</span>' : '') + '</div>' : '<div class="coupon-referrer text-muted">Genel Kampanya</div>') + '\
+          </div>\
+        </td>\
+        <td>\
+          <span class="discount-pill">\
+            <span class="discount-pct">%' + item.discount_percent + '</span>\
+            <span class="discount-sub">İndirim</span>\
+          </span>\
+        </td>\
+        <td>\
+          <div class="usage-progress-wrap">\
+            <div class="usage-text">' + usageText + '</div>\
+            ' + progressBar + '\
+          </div>\
+        </td>\
+        <td>' + expiryBadge + '</td>\
+        <td>' + statusHtml + '</td>\
+        <td>\
+          <div class="table-action-btns">\
+            <button class="btn btn-ghost btn-sm" onclick="editReferralCode(\'' + item.id + '\')" title="Kodu Düzenle" style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;">\
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\
+              Düzenle\
+            </button>\
+            <button class="btn btn-danger btn-sm" onclick="delReferralCode(\'' + item.id + '\')" title="Kodu Sil" style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;">\
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>\
+              Sil\
+            </button>\
+          </div>\
+        </td>\
+      </tr>\
+    ';
+  }).join('');
+
+  c.innerHTML = statsHtml + '\
+    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\
+      <div style="overflow-x:auto;">\
+        <table class="ww-table">\
+          <thead>\
+            <tr>\
+              <th>Referans Kodu & Sahibi</th>\
+              <th>İndirim</th>\
+              <th>Kullanım Durumu</th>\
+              <th>Son Geçerlilik</th>\
+              <th>Durum</th>\
+              <th style="text-align:right;">İşlem</th>\
+            </tr>\
+          </thead>\
+          <tbody>\
+            ' + rows + '\
+          </tbody>\
+        </table>\
+      </div>\
+    </div>\
+  ';
+}
+
+window.editReferralCode = function(id) {
+  var item = (adminState.referralCodes || []).find(function(x) { return String(x.id) === String(id); });
+  if (!item) return;
+  var idEl = document.getElementById('rc-id');
+  if (idEl) idEl.value = item.id;
+  var codeEl = document.getElementById('rc-code');
+  if (codeEl) codeEl.value = item.code;
+  var discEl = document.getElementById('rc-discount');
+  if (discEl) discEl.value = item.discount_percent;
+  var nameEl = document.getElementById('rc-name');
+  if (nameEl) nameEl.value = item.referrer_name || '';
+  var emailEl = document.getElementById('rc-email');
+  if (emailEl) emailEl.value = item.referrer_email || '';
+  var maxEl = document.getElementById('rc-max-usage');
+  if (maxEl) maxEl.value = item.max_usage || '';
+  var expEl = document.getElementById('rc-expires');
+  if (expEl) expEl.value = item.expires_at ? item.expires_at.split('T')[0] : '';
+  var actEl = document.getElementById('rc-active');
+  if (actEl) actEl.value = item.is_active ? 'true' : 'false';
+  
+  var titleEl = document.getElementById('rc-modal-title');
+  if (titleEl) titleEl.textContent = 'Referans Kodunu Düzenle';
+  var modalEl = document.getElementById('referral-code-modal');
+  if (modalEl) modalEl.classList.add('open');
+};
+
+window.delReferralCode = async function(id) {
+  if (!confirm('Bu referans kodunu kalıcı olarak silmek istediğinizden emin misiniz?')) return;
+  if (typeof deleteReferralCode === 'function') {
+    var ok = await deleteReferralCode(id);
+    if (ok) {
+      if (typeof showToast === 'function') showToast('Referans kodu silindi', 'success');
+      renderReferralCodesTable();
+    }
+  }
+};
+
 function initReferralModal() {
+  if (window._referralModalInitialized) return;
+  window._referralModalInitialized = true;
+
   var modal = document.getElementById('referral-code-modal');
   var btnAdd = document.getElementById('add-referral-code-btn');
   var btnClose = document.getElementById('close-rc-modal');
@@ -392,7 +585,7 @@ function initReferralModal() {
     btnAdd.addEventListener('click', function() {
       document.getElementById('rc-id').value = '';
       document.getElementById('rc-code').value = '';
-      document.getElementById('rc-discount').value = '';
+      document.getElementById('rc-discount').value = '20';
       document.getElementById('rc-name').value = '';
       document.getElementById('rc-email').value = '';
       document.getElementById('rc-max-usage').value = '';
@@ -403,7 +596,7 @@ function initReferralModal() {
     });
   }
 
-  function close() { modal.classList.remove('open'); }
+  function close() { if (modal) modal.classList.remove('open'); }
   if (btnClose) btnClose.addEventListener('click', close);
   if (btnCancel) btnCancel.addEventListener('click', close);
 
@@ -411,15 +604,27 @@ function initReferralModal() {
     btnSave.addEventListener('click', async function() {
       var code = document.getElementById('rc-code').value.trim().toUpperCase();
       var discount = parseInt(document.getElementById('rc-discount').value, 10);
-      if (!code || isNaN(discount)) return alert('Lütfen kod ve indirim yüzdesini doldurun.');
+      if (!code) {
+        if (typeof showToast === 'function') showToast('Lütfen referans kodunu girin.', 'error');
+        else alert('Lütfen referans kodunu girin.');
+        return;
+      }
+      if (isNaN(discount) || discount < 0 || discount > 100) {
+        if (typeof showToast === 'function') showToast('İndirim yüzdesi 0 ile 100 arasında olmalıdır.', 'error');
+        else alert('İndirim yüzdesi 0 ile 100 arasında olmalıdır.');
+        return;
+      }
       
+      var maxUsageVal = document.getElementById('rc-max-usage').value.trim();
+      var expiresVal = document.getElementById('rc-expires').value.trim();
+
       var payload = {
         code: code,
         discount_percent: discount,
         referrer_name: document.getElementById('rc-name').value.trim() || null,
         referrer_email: document.getElementById('rc-email').value.trim() || null,
-        max_usage: parseInt(document.getElementById('rc-max-usage').value, 10) || null,
-        expires_at: document.getElementById('rc-expires').value || null,
+        max_usage: maxUsageVal ? parseInt(maxUsageVal, 10) : null,
+        expires_at: expiresVal ? new Date(expiresVal).toISOString() : null,
         is_active: document.getElementById('rc-active').value === 'true'
       };
 
@@ -440,7 +645,7 @@ function initReferralModal() {
 }
 
 // ============================================================
-// PAYMENT SETTINGS UI
+// PAYMENT SETTINGS UI (SAAS PRICING & CONFIG HUB)
 // ============================================================
 async function renderPaymentSettingsUI() {
   var c = document.getElementById('prices-container');
@@ -453,69 +658,312 @@ async function renderPaymentSettingsUI() {
       yearly_price_usd: 99,
       video_embed_url: '',
       video_embed_enabled: false,
-      ltc_discount_enabled: true
+      ltc_discount_enabled: true,
+      yearly_discount_percent: 31,
+      days_per_monthly: 30,
+      days_per_yearly: 365,
+      referral_note: 'Referans kodu sadece Litecoin (LTC) ödemelerinde geçerlidir.'
     };
   }
 
-  c.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:1rem;max-width:500px;">
-      <div class="field">
-        <label>Aylık Fiyat (USD)</label>
-        <input type="number" id="ps-monthly" value="${current.monthly_price_usd || 12}">
-      </div>
-      <div class="field">
-        <label>Yıllık Fiyat (USD)</label>
-        <input type="number" id="ps-yearly" value="${current.yearly_price_usd || 99}">
-      </div>
-      <div class="field">
-        <label>YouTube Embed URL</label>
-        <input type="text" id="ps-video-url" value="${current.video_embed_url || ''}" placeholder="https://www.youtube.com/embed/...">
-      </div>
-      <div class="field" style="display:flex;align-items:center;gap:0.5rem;">
-        <input type="checkbox" id="ps-video-enabled" ${current.video_embed_enabled ? 'checked' : ''}>
-        <label for="ps-video-enabled" style="margin:0;">Video Ödeme Sayfasında Gösterilsin mi?</label>
-      </div>
-      <div class="field" style="display:flex;align-items:center;gap:0.5rem;margin-top:1rem;">
-        <input type="checkbox" id="ps-ltc-discount" ${current.ltc_discount_enabled !== false ? 'checked' : ''}>
-        <label for="ps-ltc-discount" style="margin:0;">Referans İndirimi LTC Ödemelerinde Geçerli Olsun</label>
-      </div>
-      <div style="margin-top:1rem;">
-        <button class="btn btn-primary" id="save-ps-btn">Ayarları Kaydet</button>
-      </div>
-    </div>
-  `;
+  var monthlyVal = current.monthly_price_usd || 12;
+  var yearlyVal = current.yearly_price_usd || 99;
+  var videoUrlVal = current.video_embed_url || '';
+  var videoEnabledVal = !!current.video_embed_enabled;
+  var ltcDiscountVal = current.ltc_discount_enabled !== false;
 
-  document.getElementById('save-ps-btn').addEventListener('click', async function() {
-    var payload = {
-      monthly_price_usd: parseFloat(document.getElementById('ps-monthly').value) || 12,
-      yearly_price_usd: parseFloat(document.getElementById('ps-yearly').value) || 99,
-      video_embed_url: document.getElementById('ps-video-url').value.trim(),
-      video_embed_enabled: document.getElementById('ps-video-enabled').checked,
-      ltc_discount_enabled: document.getElementById('ps-ltc-discount').checked,
-      yearly_discount_percent: 31, // hesaplama eklenebilir
-      days_per_monthly: 30,
-      days_per_yearly: 365
-    };
-    this.disabled = true;
-    this.textContent = 'Kaydediliyor...';
-    await savePaymentSettings(payload);
-    this.disabled = false;
-    this.textContent = 'Ayarları Kaydet';
-  });
+  c.innerHTML = '\
+    <div class="pricing-mgmt-container">\
+      <!-- SOL PANEL: FİYAT VE PARAMETRE AYARLARI -->\
+      <div class="pricing-config-card">\
+        <div class="pricing-config-header">\
+          <div class="icon-bubble">\
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>\
+          </div>\
+          <div>\
+            <h3>Fiyatlandırma & Paket Yönetimi</h3>\
+            <p>Platform abonelik fiyatlarını, indirimleri ve ödeme seçeneklerini belirleyin</p>\
+          </div>\
+        </div>\
+\
+        <!-- Bölüm 1: Plan Ücretleri -->\
+        <div class="pricing-form-section">\
+          <h4 class="section-title">\
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>\
+            Abonelik Plan Ücretleri\
+          </h4>\
+          <div class="field-row">\
+            <div class="field">\
+              <label>Aylık Plan Ücreti ($ USD) *</label>\
+              <div class="input-with-icon">\
+                <span class="input-prefix">$</span>\
+                <input type="number" id="ps-monthly" value="' + monthlyVal + '" min="1" step="0.5" />\
+                <span class="input-suffix">/ ay</span>\
+              </div>\
+            </div>\
+            <div class="field">\
+              <label>Yıllık Plan Ücreti ($ USD) *</label>\
+              <div class="input-with-icon">\
+                <span class="input-prefix">$</span>\
+                <input type="number" id="ps-yearly" value="' + yearlyVal + '" min="1" step="1" />\
+                <span class="input-suffix">/ yıl</span>\
+              </div>\
+            </div>\
+          </div>\
+          <div class="pricing-calc-info" id="pricing-calc-badge">\
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>\
+            <span id="pricing-calc-text">Hesaplanıyor...</span>\
+          </div>\
+        </div>\
+\
+        <!-- Bölüm 2: Kripto & Promosyon Ayarları -->\
+        <div class="pricing-form-section">\
+          <h4 class="section-title">\
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>\
+            Promosyon & Kripto Ödemeleri\
+          </h4>\
+          <div class="toggle-card">\
+            <div class="toggle-info">\
+              <strong>Litecoin (LTC) Referans İndirimi</strong>\
+              <p>Referans indirim kuponları LTC ile ödeme yapan kullanıcılara anında indirim sağlar.</p>\
+            </div>\
+            <label class="ios-switch">\
+              <input type="checkbox" id="ps-ltc-discount" ' + (ltcDiscountVal ? 'checked' : '') + ' />\
+              <span class="slider"></span>\
+            </label>\
+          </div>\
+        </div>\
+\
+        <!-- Bölüm 3: Tanıtım / Rehber Videosu -->\
+        <div class="pricing-form-section">\
+          <h4 class="section-title">\
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>\
+            Ödeme Sayfası Tanıtım Videosu\
+          </h4>\
+          <div class="toggle-card" style="margin-bottom:0.75rem;">\
+            <div class="toggle-info">\
+              <strong>Video Gösterimi Aktif</strong>\
+              <p>Ödeme ekranında kullanıcılara adım adım rehber veya tanıtım videosu gösterilsin.</p>\
+            </div>\
+            <label class="ios-switch">\
+              <input type="checkbox" id="ps-video-enabled" ' + (videoEnabledVal ? 'checked' : '') + ' />\
+              <span class="slider"></span>\
+            </label>\
+          </div>\
+          <div class="field" id="video-url-field-wrap">\
+            <label>YouTube Embed Video URL</label>\
+            <div class="input-with-icon">\
+              <span class="input-prefix" style="font-size:12px;">🔗</span>\
+              <input type="text" id="ps-video-url" value="' + escapeHtml(videoUrlVal) + '" placeholder="https://www.youtube.com/embed/..." />\
+            </div>\
+            <p class="field-hint">Format: <code>https://www.youtube.com/embed/VIDEO_ID</code></p>\
+          </div>\
+        </div>\
+\
+        <!-- Kaydet Butonu -->\
+        <div class="pricing-form-actions" style="margin-top:0.5rem;">\
+          <button class="btn btn-primary" id="save-ps-btn" style="display:inline-flex;align-items:center;gap:8px;padding:0.75rem 1.75rem;font-size:14px;">\
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>\
+            <span>Ayarları Kaydet</span>\
+          </button>\
+        </div>\
+      </div>\
+\
+      <!-- SAĞ PANEL: CANLI KULLANICI ÖNİZLEMESİ -->\
+      <div class="pricing-preview-panel">\
+        <div class="preview-header">\
+          <div class="preview-badge">\
+            <span class="live-dot"></span> Canlı Kullanıcı Önizlemesi\
+          </div>\
+          <p>Kullanıcıların satın alma ekranında göreceği fiyatlandırma kartları</p>\
+        </div>\
+\
+        <div class="preview-cards-container">\
+          <!-- Aylık Plan Önizleme -->\
+          <div class="preview-plan-card" id="prev-monthly-card">\
+            <div class="preview-plan-name">Aylık Plan</div>\
+            <div class="preview-price-row">\
+              <span class="preview-price-val" id="prev-monthly-price">$' + monthlyVal + '</span>\
+              <span class="preview-price-cycle">/ ay</span>\
+            </div>\
+            <div class="preview-price-sub">Her ay otomatik yenilenir</div>\
+            <ul class="preview-features-list">\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Sınırsız İşlem Günlüğü</li>\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Detaylı Analitik & İstatistik</li>\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Otomatik Metrik Hesaplama</li>\
+            </ul>\
+          </div>\
+\
+          <!-- Yıllık Plan Önizleme (Featured) -->\
+          <div class="preview-plan-card featured" id="prev-yearly-card">\
+            <span class="preview-plan-badge" id="prev-yearly-savings-badge">%31 Tasarruf</span>\
+            <div class="preview-plan-name" style="color:#a78bfa;">Yıllık Plan</div>\
+            <div class="preview-price-row">\
+              <span class="preview-price-val" id="prev-yearly-price">$' + yearlyVal + '</span>\
+              <span class="preview-price-cycle">/ yıl</span>\
+            </div>\
+            <div class="preview-price-sub" id="prev-yearly-equiv" style="color:#34d399;">Ayda ~$8.25</div>\
+            <ul class="preview-features-list">\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 365 Gün Kesintisiz Erişim</li>\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tüm Premium Özellikler</li>\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Öncelikli VIP Destek</li>\
+            </ul>\
+          </div>\
+        </div>\
+\
+        <!-- Video Canlı Önizleme Kutusu -->\
+        <div class="preview-video-box" id="prev-video-box">\
+          <div class="video-label">\
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>\
+            Video Canlı Önizlemesi\
+          </div>\
+          <div id="prev-video-player-container"></div>\
+        </div>\
+      </div>\
+    </div>\
+  ';
+
+  // Live Preview & Calculation Engine
+  function updateLivePricingPreview() {
+    var m = parseFloat(document.getElementById('ps-monthly').value) || 0;
+    var y = parseFloat(document.getElementById('ps-yearly').value) || 0;
+    var vUrl = (document.getElementById('ps-video-url').value || '').trim();
+    var vEnabled = document.getElementById('ps-video-enabled').checked;
+
+    // Fiyat etiketlerini güncelle
+    var mPriceEl = document.getElementById('prev-monthly-price');
+    var yPriceEl = document.getElementById('prev-yearly-price');
+    var yEquivEl = document.getElementById('prev-yearly-equiv');
+    var yBadgeEl = document.getElementById('prev-yearly-savings-badge');
+    var calcTextEl = document.getElementById('pricing-calc-text');
+
+    if (mPriceEl) mPriceEl.textContent = '$' + (m % 1 === 0 ? m : m.toFixed(2));
+    if (yPriceEl) yPriceEl.textContent = '$' + (y % 1 === 0 ? y : y.toFixed(2));
+
+    var regularYearly = m * 12;
+    var savingsPct = 0;
+    var savingsDollars = 0;
+
+    if (regularYearly > 0 && y > 0 && regularYearly > y) {
+      savingsPct = Math.round(((regularYearly - y) / regularYearly) * 100);
+      savingsDollars = Math.round(regularYearly - y);
+    }
+
+    var monthlyEquiv = (y / 12).toFixed(2);
+    if (yEquivEl) yEquivEl.textContent = 'Ayda ~$' + monthlyEquiv + ' ($' + regularYearly + ' yerine)';
+    if (yBadgeEl) yBadgeEl.textContent = '%' + (savingsPct > 0 ? savingsPct : 0) + ' Tasarruf';
+
+    if (calcTextEl) {
+      if (savingsPct > 0) {
+        calcTextEl.innerHTML = 'Kullanıcılar yıllık planda <strong>%' + savingsPct + ' indirim</strong> (yılda <strong>$' + savingsDollars + '</strong> tasarruf) elde ediyor.';
+      } else {
+        calcTextEl.innerHTML = 'Aylık 12 ay toplamı: <strong>$' + regularYearly + '</strong>. Yıllık fiyat: <strong>$' + y + '</strong>.';
+      }
+    }
+
+    // Video Player Önizlemesini Güncelle
+    var vContainer = document.getElementById('prev-video-player-container');
+    if (vContainer) {
+      if (vEnabled && vUrl) {
+        // Sanitize YouTube URL for embed
+        var safeEmbedUrl = vUrl;
+        if (vUrl.indexOf('youtube.com/watch?v=') !== -1) {
+          var vidId = vUrl.split('v=')[1].split('&')[0];
+          safeEmbedUrl = 'https://www.youtube.com/embed/' + vidId;
+        } else if (vUrl.indexOf('youtu.be/') !== -1) {
+          var vidId2 = vUrl.split('youtu.be/')[1].split('?')[0];
+          safeEmbedUrl = 'https://www.youtube.com/embed/' + vidId2;
+        }
+
+        vContainer.innerHTML = '\
+          <div class="preview-video-iframe-wrap">\
+            <iframe src="' + escapeHtml(safeEmbedUrl) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\
+          </div>\
+        ';
+      } else if (vEnabled && !vUrl) {
+        vContainer.innerHTML = '\
+          <div class="preview-video-placeholder">\
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>\
+            <span>Video aktif edildi fakat henüz URL girilmedi.</span>\
+          </div>\
+        ';
+      } else {
+        vContainer.innerHTML = '\
+          <div class="preview-video-placeholder">\
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/></svg>\
+            <span>Tanıtım videosu gösterimi şu anda pasif durumda.</span>\
+          </div>\
+        ';
+      }
+    }
+  }
+
+  // Bind live change listeners
+  var mInput = document.getElementById('ps-monthly');
+  var yInput = document.getElementById('ps-yearly');
+  var vUrlInput = document.getElementById('ps-video-url');
+  var vEnabledInput = document.getElementById('ps-video-enabled');
+
+  if (mInput) mInput.addEventListener('input', updateLivePricingPreview);
+  if (yInput) yInput.addEventListener('input', updateLivePricingPreview);
+  if (vUrlInput) vUrlInput.addEventListener('input', updateLivePricingPreview);
+  if (vEnabledInput) vEnabledInput.addEventListener('change', updateLivePricingPreview);
+
+  // Initial calculation
+  updateLivePricingPreview();
+
+  // Save button action
+  var saveBtn = document.getElementById('save-ps-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async function() {
+      var m = parseFloat(document.getElementById('ps-monthly').value) || 12;
+      var y = parseFloat(document.getElementById('ps-yearly').value) || 99;
+      var vUrl = document.getElementById('ps-video-url').value.trim();
+      var vEnabled = document.getElementById('ps-video-enabled').checked;
+      var ltcDisc = document.getElementById('ps-ltc-discount').checked;
+
+      var regYear = m * 12;
+      var discPct = regYear > 0 && y < regYear ? Math.round(((regYear - y) / regYear) * 100) : 0;
+
+      var payload = {
+        monthly_price_usd: m,
+        yearly_price_usd: y,
+        yearly_discount_percent: discPct,
+        video_embed_url: vUrl,
+        video_embed_enabled: vEnabled,
+        ltc_discount_enabled: ltcDisc,
+        days_per_monthly: 30,
+        days_per_yearly: 365,
+        referral_note: 'Referans kodu sadece Litecoin (LTC) ödemelerinde geçerlidir.'
+      };
+
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;"></div><span> Kaydediliyor...</span>';
+      
+      var ok = await savePaymentSettings(payload);
+      
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Ayarları Kaydet</span>';
+
+      if (ok) {
+        updateLivePricingPreview();
+      }
+    });
+  }
 }
-
 
 window.openReferralModal = function() {
   document.getElementById('rc-id').value = '';
   document.getElementById('rc-code').value = '';
-  document.getElementById('rc-discount').value = '';
+  document.getElementById('rc-discount').value = '20';
   document.getElementById('rc-name').value = '';
   document.getElementById('rc-email').value = '';
   document.getElementById('rc-max-usage').value = '';
   document.getElementById('rc-expires').value = '';
   document.getElementById('rc-active').value = 'true';
   document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
-  document.getElementById('referral-code-modal').classList.add('open');
+  var m = document.getElementById('referral-code-modal');
+  if (m) m.classList.add('open');
 };
 
 // ============================================================
@@ -523,23 +971,31 @@ window.openReferralModal = function() {
 // ============================================================
 
 function destroyOverviewCharts() {
-  if (adminState.charts.overviewUserChart) {
-    try { adminState.charts.overviewUserChart.destroy(); } catch(e) {}
-    adminState.charts.overviewUserChart = null;
+  if (!window.adminState) return;
+  if (!window.adminState.charts) {
+    window.adminState.charts = {};
+    return;
   }
-  if (adminState.charts.overviewRevenueChart) {
-    try { adminState.charts.overviewRevenueChart.destroy(); } catch(e) {}
-    adminState.charts.overviewRevenueChart = null;
+  var c = window.adminState.charts;
+  if (c.overviewUserChart) {
+    try { c.overviewUserChart.destroy(); } catch(e) {}
+    c.overviewUserChart = null;
   }
-  if (adminState.charts.overviewPlanDonut) {
-    try { adminState.charts.overviewPlanDonut.destroy(); } catch(e) {}
-    adminState.charts.overviewPlanDonut = null;
+  if (c.overviewRevenueChart) {
+    try { c.overviewRevenueChart.destroy(); } catch(e) {}
+    c.overviewRevenueChart = null;
+  }
+  if (c.overviewPlanDonut) {
+    try { c.overviewPlanDonut.destroy(); } catch(e) {}
+    c.overviewPlanDonut = null;
   }
 }
 
 window.changeOverviewPeriod = function(period) {
-  adminState.overviewPeriod = period;
-  renderOverviewContent(period);
+  if (window.adminState) window.adminState.overviewPeriod = period;
+  if (typeof renderOverviewContent === 'function') {
+    renderOverviewContent(period);
+  }
 };
 
 function getSubscriptionDetails(user) {
@@ -756,9 +1212,9 @@ function renderOverviewContent(period) {
           '<p style="font-size:13px;color:var(--muted);margin:0;">Sistem geneli kullanıcı, abonelik ve gelir metrikleri</p>' +
         '</div>' +
         '<div class="period-switcher-pill">' +
-          '<button type="button" class="period-pill-btn ' + (period === 'week' ? 'active' : '') + '" data-period="week" onclick="changeOverviewPeriod(\'week\')">1 Hafta</button>' +
-          '<button type="button" class="period-pill-btn ' + (period === 'month' ? 'active' : '') + '" data-period="month" onclick="changeOverviewPeriod(\'month\')">1 Ay</button>' +
-          '<button type="button" class="period-pill-btn ' + (period === 'year' ? 'active' : '') + '" data-period="year" onclick="changeOverviewPeriod(\'year\')">1 Yıl</button>' +
+          '<button type="button" class="period-pill-btn ' + (period === 'week' ? 'active' : '') + '" onclick="window.changeOverviewPeriod(\'week\')">1 Hafta</button>' +
+          '<button type="button" class="period-pill-btn ' + (period === 'month' ? 'active' : '') + '" onclick="window.changeOverviewPeriod(\'month\')">1 Ay</button>' +
+          '<button type="button" class="period-pill-btn ' + (period === 'year' ? 'active' : '') + '" onclick="window.changeOverviewPeriod(\'year\')">1 Yıl</button>' +
         '</div>' +
       '</div>' +
 
@@ -920,15 +1376,7 @@ function renderOverviewContent(period) {
       '</div>' +
     '</div>';
 
-  // Attach explicit click events to period pill buttons
-  var pillBtns = container.querySelectorAll('.period-pill-btn');
-  pillBtns.forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      var p = this.getAttribute('data-period');
-      if (p) window.changeOverviewPeriod(p);
-    });
-  });
+
 
   if (typeof ApexCharts === 'undefined') {
     wwLog.warn('⚠️ ApexCharts henüz yüklenmedi');
@@ -1097,3 +1545,10 @@ function renderOverviewContent(period) {
 }
 
 window.renderOverviewContent = renderOverviewContent;
+window.changeOverviewPeriod = window.changeOverviewPeriod || changeOverviewPeriod;
+window.destroyOverviewCharts = destroyOverviewCharts;
+window.loadAnalyticsData = loadAnalyticsData;
+window.renderPricesContent = renderPricesContent;
+window.renderPaymentSettingsUI = renderPaymentSettingsUI;
+window.initReferralModal = initReferralModal;
+window.renderReferralCodesTable = renderReferralCodesTable;

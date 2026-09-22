@@ -471,41 +471,43 @@ import Layout from '../layouts/Layout.astro';
 
       <div class="divider">or sign up with email</div>
 
-      <div class="field">
-        <label>Username *</label>
-        <input type="text" id="username" placeholder="e.g., traderjohn" autocomplete="username" />
-      </div>
+      <form id="register-form" onsubmit="return false;">
+        <div class="field">
+          <label>Username *</label>
+          <input type="text" id="username" placeholder="e.g., traderjohn" autocomplete="username" />
+        </div>
 
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="trader@example.com" autocomplete="email" />
-      </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="trader@example.com" autocomplete="email" />
+        </div>
 
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="At least 6 characters" autocomplete="new-password" />
-      </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="At least 6 characters" autocomplete="new-password" />
+        </div>
 
-      <div class="field">
-        <label>Confirm Password</label>
-        <input type="password" id="password2" placeholder="Re-enter password" autocomplete="new-password" />
-      </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input type="password" id="password2" placeholder="Re-enter password" autocomplete="new-password" />
+        </div>
 
-      <!-- Turnstile widget (Official Auto-Render) -->
-      <div class="turnstile-wrap">
-        <div 
-          class="cf-turnstile" 
-          id="turnstile-container" 
-          data-sitekey="0x4AAAAAAEzAoR2XhUtPTxV7" 
-          data-theme="dark" 
-          data-size="flexible"
-          data-callback="onTurnstileSuccess" 
-          data-expired-callback="onTurnstileExpired"
-          data-error-callback="onTurnstileError"
-        ></div>
-      </div>
+        <!-- Turnstile widget (Official Auto-Render) -->
+        <div class="turnstile-wrap">
+          <div 
+            class="cf-turnstile" 
+            id="turnstile-container" 
+            data-sitekey="0x4AAAAAAEzAoR2XhUtPTxV7" 
+            data-theme="dark" 
+            data-size="flexible"
+            data-callback="onTurnstileSuccess" 
+            data-expired-callback="onTurnstileExpired"
+            data-error-callback="onTurnstileError"
+          ></div>
+        </div>
 
-      <button class="btn-primary" id="register-btn">Sign Up</button>
+        <button type="submit" class="btn-primary" id="register-btn">Sign Up</button>
+      </form>
 
       <p class="terms-text">
         By signing up, you agree to our <a href="terms.html">Terms of Use</a>.
@@ -514,10 +516,6 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <div class="toast-container" id="toast-container"></div>
-
-  
-  
-  
 
   <script is:inline>
     // ⭐ URL'den gelen hata veya OAuth parametrelerini işle
@@ -693,7 +691,9 @@ import Layout from '../layouts/Layout.astro';
     document.getElementById('google-register-btn').addEventListener('click', signUpWithGoogle);
 
     // ─── E-posta ile Kayıt ────────────────────────────────────
-    document.getElementById('register-btn').addEventListener('click', async () => {
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
       const username = document.getElementById('username').value.trim();
       let email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -703,25 +703,24 @@ import Layout from '../layouts/Layout.astro';
 
       if (!username) { toast('Username is required.', 'error'); return; }
       if (username.length < 3) { toast('Username must be at least 3 characters.', 'error'); return; }
+      if (!/^[a-zA-Z0-9_.-]+$/.test(username)) { toast('Username contains invalid characters.', 'error'); return; }
       if (!email || !password) { toast('Email and password are required.', 'error'); return; }
       if (hasTurkishChars(email)) { toast('Email cannot contain Turkish characters.', 'error'); return; }
       if (!validateEmail(email)) { toast('Please enter a valid email address.', 'error'); return; }
       if (password.length < 6) { toast('Password must be at least 6 characters.', 'error'); return; }
       if (password !== pass2) { toast('Passwords do not match.', 'error'); return; }
 
-      var turnstileToken = getTurnstileToken();
-      if (isTurnstileRequired() && !turnstileToken) {
-        toast('Please complete the verification.', 'error');
-        return;
-      }
-
       const btn = document.getElementById('register-btn');
       btn.disabled = true;
       btn.textContent = 'Signing up…';
 
+      var turnstileToken = getTurnstileToken();
       var supabaseUrl = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || window.SUPABASE_URL || 'https://odasapyhtdopbnlfhwde.supabase.co';
-      var supabaseAnonKey = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+      var supabaseAnonKey = (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || window.WW_CONFIG.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+      var client = getSupabase();
 
+      // Sadece Edge Function ile kayıt yap. Başarısız olursa Native Supabase'e DÜŞME,
+      // çünkü Native Supabase e-posta onayı gerektirir ve kullanıcı anında giriş yapmak istiyor.
       try {
         const res = await fetch(
           supabaseUrl + '/functions/v1/verify-auth',
@@ -737,102 +736,41 @@ import Layout from '../layouts/Layout.astro';
 
         const result = await res.json().catch(() => ({}));
 
-        if (!res.ok) {
-          if (res.status === 429) {
-            toast('Too many attempts. Please try again later.', 'error');
-            resetTurnstile();
-            btn.disabled = false;
-            btn.textContent = 'Sign Up';
-            return;
-          } else if (res.status === 409) {
-            toast(result.error || 'This username or email already exists.', 'error');
-            resetTurnstile();
-            btn.disabled = false;
-            btn.textContent = 'Sign Up';
-            return;
-          }
-
-          // Edge function hatası veya doğrulama reddinde doğrudan Supabase signUp dene
-          var client = getSupabase();
-          if (client && client.auth) {
-            const { data: directData, error: directErr } = await client.auth.signUp({
-              email,
-              password,
-              options: { data: { username } }
-            });
-            if (!directErr) {
-              if (directData?.session) {
-                toast('Account created successfully! Redirecting... 🎉', 'success');
-                setTimeout(() => { window.location.href = 'dashboard.html'; }, 600);
-              } else {
-                toast('Registration successful! Redirecting to login... 🎉', 'success');
-                setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-              }
-              return;
-            } else {
-              toast(directErr.message || 'Registration failed. Please try again.', 'error');
-              resetTurnstile();
-              btn.disabled = false;
-              btn.textContent = 'Sign Up';
-              return;
-            }
-          }
-
-          toast(result.error || 'Registration failed. Please try again.', 'error');
-          resetTurnstile();
-          btn.disabled = false;
-          btn.textContent = 'Sign Up';
-          return;
-        }
-
-        // Oturum token'ları döndüyse doğrudan giriş yap ve dashboard'a yönlendir!
-        if (result.access_token && result.refresh_token) {
-          var client = getSupabase();
-          if (client && client.auth) {
+        if (res.ok && result.success) {
+          if (result.access_token && result.refresh_token && client && client.auth) {
             await client.auth.setSession({
               access_token: result.access_token,
               refresh_token: result.refresh_token,
             });
           }
-          toast('Account created successfully! Redirecting... 🎉', 'success');
+          toast('Hesap başarıyla oluşturuldu! Yönlendiriliyorsunuz... 🎉', 'success');
           setTimeout(() => { window.location.href = 'dashboard.html'; }, 600);
-        } else {
-          toast('Registration successful! Redirecting to login... 🎉', 'success');
-          setTimeout(() => { window.location.href = 'login.html'; }, 1000);
+          return;
         }
+
+        // Edge Function hata döndürdüyse (örneğin rate limit, turnstile, username vs.)
+        // Kullanıcıya doğrudan hatayı göster ve işlemi durdur.
+        let errorMessage = result.error || 'Kayıt başarısız oldu. Lütfen tekrar deneyin.';
+        
+        // Turnstile hatasını daha anlaşılır yap
+        if (errorMessage.includes('Verification failed')) {
+            errorMessage = 'Güvenlik doğrulaması (Turnstile) başarısız oldu. Lütfen sayfayı yenileyip tekrar deneyin.';
+        }
+        
+        toast(errorMessage, 'error');
+        resetTurnstile();
+        btn.disabled = false;
+        btn.textContent = 'Sign Up';
+        return;
 
       } catch (err) {
         console.error('Register error:', err);
-        // Ağ hatasında doğrudan Supabase signUp dene
-        var client = getSupabase();
-        if (client && client.auth) {
-          try {
-            const { data: directData, error: directErr } = await client.auth.signUp({
-              email,
-              password,
-              options: { data: { username } }
-            });
-            if (!directErr) {
-              if (directData?.session) {
-                toast('Account created successfully! Redirecting... 🎉', 'success');
-                setTimeout(() => { window.location.href = 'dashboard.html'; }, 600);
-              } else {
-                toast('Registration successful! Redirecting to login... 🎉', 'success');
-                setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-              }
-              return;
-            }
-          } catch (e) {}
-        }
-        toast('Network error. Please try again.', 'error');
+        toast('Sunucu ile bağlantı kurulamadı. Lütfen tekrar deneyin.', 'error');
         resetTurnstile();
         btn.disabled = false;
         btn.textContent = 'Sign Up';
       }
     });
 
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('register-btn').click();
-    });
   </script>
 </Layout>

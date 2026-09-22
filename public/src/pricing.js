@@ -4,32 +4,51 @@
 
 import { safeLocalStorageGet, safeLocalStorageSet } from './core/storage.js';
 import { showToast } from './utils/ui.js';
+import { WW_CONFIG } from './core/config.js';
 
 let homePriceUpdateTimeout = null;
 
+let currentMonthlyPrice = 12;
+let currentYearlyPrice = 99;
+
+try {
+  const savedM = safeLocalStorageGet('ww_monthly_price');
+  if (savedM !== null && !isNaN(parseFloat(savedM))) {
+    currentMonthlyPrice = parseFloat(savedM);
+  }
+  const savedY = safeLocalStorageGet('ww_yearly_price');
+  if (savedY !== null && !isNaN(parseFloat(savedY))) {
+    currentYearlyPrice = parseFloat(savedY);
+  }
+} catch (e) {}
 
 export function getMonthlyPrice() {
-  if (window.getMonthlyPrice) return window.getMonthlyPrice();
-  return 12;
+  return currentMonthlyPrice;
 }
-
 
 export function getYearlyPrice() {
-  if (window.getYearlyPrice) return window.getYearlyPrice();
-  return 99;
+  return currentYearlyPrice;
 }
 
-
 export function setMonthlyPrice(price) {
-  if (window.adminUpdatePrices) {
+  const p = parseFloat(price);
+  if (!isNaN(p)) {
+    currentMonthlyPrice = p;
+    safeLocalStorageSet('ww_monthly_price', p.toString());
+  }
+  if (window.adminUpdatePrices && window.adminUpdatePrices !== adminUpdatePrices) {
     window.adminUpdatePrices(price, getYearlyPrice());
   }
   updateHomePrices();
 }
 
-
 export function setYearlyPrice(price) {
-  if (window.adminUpdatePrices) {
+  const p = parseFloat(price);
+  if (!isNaN(p)) {
+    currentYearlyPrice = p;
+    safeLocalStorageSet('ww_yearly_price', p.toString());
+  }
+  if (window.adminUpdatePrices && window.adminUpdatePrices !== adminUpdatePrices) {
     window.adminUpdatePrices(getMonthlyPrice(), price);
   }
   updateHomePrices();
@@ -90,6 +109,20 @@ export function updateHomePrices() {
 export function adminUpdatePrices(monthly, yearly) {
   setMonthlyPrice(monthly);
   setYearlyPrice(yearly);
+  if (monthly !== undefined && monthly !== null) {
+    const m = parseFloat(monthly);
+    if (!isNaN(m)) {
+      currentMonthlyPrice = m;
+      safeLocalStorageSet('ww_monthly_price', m.toString());
+    }
+  }
+  if (yearly !== undefined && yearly !== null) {
+    const y = parseFloat(yearly);
+    if (!isNaN(y)) {
+      currentYearlyPrice = y;
+      safeLocalStorageSet('ww_yearly_price', y.toString());
+    }
+  }
   updateHomePrices();
   showToast('✅ Fiyatlar güncellendi!', 'success');
 }
@@ -97,12 +130,26 @@ export function adminUpdatePrices(monthly, yearly) {
 export function resetPrices() {
   setMonthlyPrice(WW_CONFIG.DEFAULT_PRICES?.monthly || 12);
   setYearlyPrice(WW_CONFIG.DEFAULT_PRICES?.yearly || 99);
+  const defM = (typeof WW_CONFIG !== 'undefined' && WW_CONFIG.DEFAULT_PRICES?.monthly) ? WW_CONFIG.DEFAULT_PRICES.monthly : 12;
+  const defY = (typeof WW_CONFIG !== 'undefined' && WW_CONFIG.DEFAULT_PRICES?.yearly) ? WW_CONFIG.DEFAULT_PRICES.yearly : 99;
+  currentMonthlyPrice = defM;
+  currentYearlyPrice = defY;
+  safeLocalStorageSet('ww_monthly_price', defM.toString());
+  safeLocalStorageSet('ww_yearly_price', defY.toString());
   updateHomePrices();
   showToast('↺ Fiyatlar varsayılana döndürüldü!', 'success');
 }
 
 window.addEventListener('storage', function(e) {
   if (e.key === 'ww_monthly_price' || e.key === 'ww_yearly_price' || e.key === 'ww_prices') {
+    if (e.key === 'ww_monthly_price' && e.newValue) {
+      const parsed = parseFloat(e.newValue);
+      if (!isNaN(parsed)) currentMonthlyPrice = parsed;
+    }
+    if (e.key === 'ww_yearly_price' && e.newValue) {
+      const parsed = parseFloat(e.newValue);
+      if (!isNaN(parsed)) currentYearlyPrice = parsed;
+    }
     updateHomePrices();
   }
 });
@@ -118,6 +165,21 @@ export async function fetchPricesFromDB() {
     if (!error && data) {
       if (data.monthly) setMonthlyPrice(data.monthly);
       if (data.yearly) setYearlyPrice(data.yearly);
+      if (data.monthly) {
+        const m = parseFloat(data.monthly);
+        if (!isNaN(m)) {
+          currentMonthlyPrice = m;
+          safeLocalStorageSet('ww_monthly_price', m.toString());
+        }
+      }
+      if (data.yearly) {
+        const y = parseFloat(data.yearly);
+        if (!isNaN(y)) {
+          currentYearlyPrice = y;
+          safeLocalStorageSet('ww_yearly_price', y.toString());
+        }
+      }
+      updateHomePrices();
     }
   } catch (e) {
     console.error('fetchPricesFromDB hatasi:', e);
@@ -128,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     updateHomePrices();
     fetchPricesFromDB(); // <--- Fetch on load!
+    fetchPricesFromDB();
   }, 300);
 });
 

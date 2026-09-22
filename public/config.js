@@ -2,6 +2,8 @@
 // WAWE JOURNAL – config.js (SORUNSUZ - import.meta.env KULLANMAZ)
 // ⭐ TURNSTILE_SITE_KEY eklendi
 // ============================================================
+var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
+if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
 const getEnv = (key, fallback) => {
   if (typeof process !== 'undefined' && process.env && process.env[key]) {

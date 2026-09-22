@@ -2,9 +2,21 @@
 // ADMIN-DATA.JS - USERS & REFERENCES
 // ============================================================
 
+var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
+if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
+
+function getSbClient() {
+  return (typeof window !== 'undefined' && window.sb) ? window.sb : (typeof sb !== 'undefined' ? sb : null);
+}
+
 async function loadUsers() {
   try {
-    var { data: profiles, error } = await sb
+    var client = getSbClient();
+    if (!client) {
+      adminState.users = [];
+      return;
+    }
+    var { data: profiles, error } = await client
       .from('user_profiles')
       .select('*')
       .order('created_at', { ascending: false });
@@ -25,14 +37,19 @@ async function loadUsers() {
       };
     });
   } catch (e) {
-    showToast('Kullanıcılar yüklenemedi!', 'error');
+    if (typeof showToast === 'function') showToast('Kullanıcılar yüklenemedi!', 'error');
     adminState.users = [];
   }
 }
 
 async function loadReferences() {
   try {
-    var { data, error } = await sb
+    var client = getSbClient();
+    if (!client) {
+      adminState.references = [];
+      return;
+    }
+    var { data, error } = await client
       .from('references')
       .select('*')
       .order('display_order', { ascending: true });
@@ -65,15 +82,16 @@ async function renderUsersTable() {
   var countEl = document.getElementById('user-count');
   if (countEl) countEl.textContent = filtered.length;
 
+  var tradeCounts = {};
   try {
-    var { data: trades } = await sb.from('trades').select('user_id');
-    var tradeCounts = {};
-    (trades || []).forEach(function(t) {
-      tradeCounts[t.user_id] = (tradeCounts[t.user_id] || 0) + 1;
-    });
-  } catch(e) {
-    var tradeCounts = {};
-  }
+    var client = getSbClient();
+    if (client) {
+      var { data: trades } = await client.from('trades').select('user_id');
+      (trades || []).forEach(function(t) {
+        tradeCounts[t.user_id] = (tradeCounts[t.user_id] || 0) + 1;
+      });
+    }
+  } catch(e) {}
 
   var now = new Date();
   var AW = 10 * 60 * 1000;
@@ -126,9 +144,9 @@ function renderReferencesTable() {
     if (r.linkedin) socialIcons += '<span title="LinkedIn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></span>';
     if (!r.instagram && !r.twitter && !r.youtube && !r.linkedin) socialIcons = '<span style="color:var(--muted);font-size:12px;">—</span>';
     
-    return '<tr>\n      <td>\n        <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--border2);background:var(--surface2);">\n          <img src="' + (r.image_url || 'https://placehold.co/40x40?text=?') + '" style="width:100%;height:100%;object-fit:cover;">\n        </div>\n      </td>\n      <td>\n        <div style="font-weight:600;color:var(--text);">' + escapeHtml(r.name) + '</div>\n        <div style="font-size:11px;color:var(--muted);margin-top:2px;">' + escapeHtml(r.title || '—') + '</div>\n      </td>\n      <td style="display:flex;gap:4px;align-items:center;">' + socialIcons + '</td>\n      <td>\n        ' + (r.is_active
+    return '<tr>\n      <td>\n        <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--border2);background:var(--surface2);">\n          <img src="' + (r.image_url || 'https://placehold.co/40x40?text=?') + '" style="width:100%;height:100%;object-fit:cover;">\n        </div>\n      </td>\n      <td>\n        <div style="font-weight:600;color:var(--text);">' + escapeHtml(r.name) + '</div>\n        <div style="font-size:11px;color:var(--muted);margin-top:2px;">' + escapeHtml(r.title || '—') + '</div>\n      </td>\n      <td><div style="display:flex;gap:4px;align-items:center;">' + socialIcons + '</div></td>\n      <td>\n        ' + (r.is_active
           ? '<span style="background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);padding:3px 10px;border-radius:99px;font-size:10px;font-weight:600;">Aktif</span>'
-          : '<span style="background:rgba(107,107,128,0.1);color:var(--muted);border:1px solid var(--border);padding:3px 10px;border-radius:99px;font-size:10px;font-weight:600;">Pasif</span>') + '\n      </td>\n      <td>\n        <div style="display:flex;gap:4px;">\n          <button class="btn btn-ghost btn-sm" onclick="editReference(\'' + r.id + '\')" style="display:inline-flex;align-items:center;gap:3px;">\n            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\n            Düzenle\n          </button>\n          <button class="btn btn-danger btn-sm" onclick="deleteReference(\'' + r.id + '\')" style="display:inline-flex;align-items:center;gap:3px;">\n            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>\n            Sil\n          </button>\n        </div>\n      </td>\n    </tr>';
+          : '<span style="background:rgba(107,107,128,0.1);color:var(--muted);border:1px solid var(--border);padding:3px 10px;border-radius:99px;font-size:10px;font-weight:600;">Pasif</span>') + '\n      </td>\n      <td>\n        <div class="table-action-btns" style="display:flex;gap:6px;align-items:center;">\n          <button type="button" class="btn btn-ghost btn-sm" onclick="window.editReference(\'' + r.id + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;">\n            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\n            Düzenle\n          </button>\n          <button type="button" class="btn btn-danger btn-sm" onclick="window.deleteReference(\'' + r.id + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;">\n            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>\n            Sil\n          </button>\n        </div>\n      </td>\n    </tr>';
   }).join('');
 
   container.innerHTML = '\n    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead><tr><th>Fotoğraf</th><th>Kişi / Kurum</th><th>Sosyal</th><th>Durum</th><th>İşlem</th></tr></thead>\n          <tbody>\n            ' + (rows || '<tr><td colspan="5"><div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;">Henüz referans eklenmemiş.</div></td></tr>') + '\n          </tbody>\n        </table>\n      </div>\n    </div>\n  ';
@@ -158,7 +176,7 @@ function openReferenceModal(ref) {
   if (titleEl) titleEl.value = ref && ref.title ? ref.title : '';
   if (descEl) descEl.value = ref && ref.description ? ref.description : '';
   if (orderEl) orderEl.value = ref && ref.display_order !== undefined ? ref.display_order : 0;
-  if (activeEl) activeEl.value = ref && ref.is_active !== undefined ? ref.is_active : true;
+  if (activeEl) activeEl.value = (ref && ref.is_active !== undefined) ? String(ref.is_active) : 'true';
   if (instaEl) instaEl.value = ref && ref.instagram ? ref.instagram : '';
   if (twitterEl) twitterEl.value = ref && ref.twitter ? ref.twitter : '';
   if (youtubeEl) youtubeEl.value = ref && ref.youtube ? ref.youtube : '';
@@ -179,11 +197,13 @@ function closeReferenceModal() {
 async function uploadImage(file) {
   if (!file) return null;
   try {
+    var client = getSbClient();
+    if (!client) return null;
     var ext = file.name.split('.').pop();
     var path = 'references/' + Date.now() + '_' + Math.random().toString(36).slice(7) + '.' + ext;
-    var { error } = await sb.storage.from('references-images').upload(path, file);
+    var { error } = await client.storage.from('references-images').upload(path, file);
     if (error) return null;
-    var publicUrl = sb.storage.from('references-images').getPublicUrl(path).data.publicUrl;
+    var publicUrl = client.storage.from('references-images').getPublicUrl(path).data.publicUrl;
     return publicUrl;
   } catch(e) {
     return null;
@@ -204,7 +224,7 @@ async function saveReference() {
     if (el) {
       var v = el.value.trim();
       if (v && !/^https?:\/\//i.test(v)) {
-        showToast('Sadece http(s) URL kabul edilir: ' + urlFields[ui], 'error');
+        if (typeof showToast === 'function') showToast('Sadece http(s) URL kabul edilir: ' + urlFields[ui], 'error');
         return;
       }
     }
@@ -239,47 +259,60 @@ async function saveReference() {
   };
   
   if (!payload.name) {
-    showToast('İsim alanı zorunludur!', 'error');
+    if (typeof showToast === 'function') showToast('İsim alanı zorunludur!', 'error');
+    return;
+  }
+
+  var client = getSbClient();
+  if (!client) {
+    if (typeof showToast === 'function') showToast('Veritabanı bağlantısı yok!', 'error');
     return;
   }
 
   var result;
   if (id) {
-    result = await sb.from('references').update(payload).eq('id', id);
+    result = await client.from('references').update(payload).eq('id', id);
   } else {
-    result = await sb.from('references').insert([payload]);
+    result = await client.from('references').insert([payload]);
   }
 
   if (result && result.error) {
-    showToast('Kayıt hatası: ' + result.error.message, 'error');
+    if (typeof showToast === 'function') showToast('Kayıt hatası: ' + result.error.message, 'error');
     return;
   }
   
-  showToast(id ? 'Referans güncellendi!' : 'Referans eklendi!');
+  if (typeof showToast === 'function') showToast(id ? 'Referans güncellendi!' : 'Referans eklendi!');
   closeReferenceModal();
   await loadReferences();
   renderReferencesTable();
 }
 
-async function editReference(id) {
-  var ref = adminState.references.find(function(r) { return r.id === id; });
+function editReference(id) {
+  var ref = (adminState.references || []).find(function(r) { return String(r.id) === String(id); });
   if (ref) openReferenceModal(ref);
 }
 
 async function deleteReference(id) {
   if (!confirm('Bu referansı silmek istediğinizden emin misiniz?')) return;
-  var { error } = await sb.from('references').delete().eq('id', id);
-  if (error) {
-    showToast('Silme hatası: ' + error.message, 'error');
+  var client = getSbClient();
+  if (!client) {
+    if (typeof showToast === 'function') showToast('Veritabanı bağlantısı yok!', 'error');
     return;
   }
-  showToast('Referans silindi!');
+  var { error } = await client.from('references').delete().eq('id', id);
+  if (error) {
+    if (typeof showToast === 'function') showToast('Silme hatası: ' + error.message, 'error');
+    return;
+  }
+  if (typeof showToast === 'function') showToast('Referans silindi!');
   await loadReferences();
   renderReferencesTable();
 }
 
-// Event bindings
-document.addEventListener('DOMContentLoaded', function() {
+function initReferenceModal() {
+  if (window._refModalInitialized) return;
+  window._refModalInitialized = true;
+
   var uploadBtn = document.getElementById('upload-image-btn');
   if (uploadBtn) {
     uploadBtn.addEventListener('click', function() {
@@ -291,14 +324,14 @@ document.addEventListener('DOMContentLoaded', function() {
   var fileInput = document.getElementById('ref-image-file');
   if (fileInput) {
     fileInput.addEventListener('change', function(e) {
-      var f = e.target.files[0];
+      var f = e.target.files && e.target.files[0];
       if (!f) return;
       if (!f.type.startsWith('image/')) {
-        showToast('Geçerli bir resim seçin!', 'error');
+        if (typeof showToast === 'function') showToast('Geçerli bir resim seçin!', 'error');
         return;
       }
       if (f.size > 2 * 1024 * 1024) {
-        showToast('Resim 2MB\'dan küçük olmalı!', 'error');
+        if (typeof showToast === 'function') showToast('Resim 2MB\'dan küçük olmalı!', 'error');
         return;
       }
       var r = new FileReader();
@@ -337,26 +370,24 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target.id === 'ref-modal') closeReferenceModal();
     });
   }
-});
+}
 
-window.loadUsers = loadUsers;
-window.loadReferences = loadReferences;
-window.filterUsers = filterUsers;
-window.renderUsersTable = renderUsersTable;
-window.renderReferencesTable = renderReferencesTable;
-window.openReferenceModal = openReferenceModal;
-window.closeReferenceModal = closeReferenceModal;
-window.saveReference = saveReference;
-window.editReference = editReference;
-window.deleteReference = deleteReference;
-window.uploadImage = uploadImage;
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReferenceModal);
+  } else {
+    initReferenceModal();
+  }
+}
+
 // ============================================================
 // REFERANS KODLARI (REFERRAL CODES)
 // ============================================================
 async function loadReferralCodes() {
-  if (!sb) return;
+  var client = getSbClient();
+  if (!client) return;
   try {
-    var { data, error } = await sb
+    var { data, error } = await client
       .from('referral_codes')
       .select('*')
       .order('created_at', { ascending: false });
@@ -369,59 +400,63 @@ async function loadReferralCodes() {
 }
 
 async function deleteReferralCode(id) {
-  if (!sb) return false;
+  var client = getSbClient();
+  if (!client) return false;
   try {
-    var { error } = await sb.from('referral_codes').delete().eq('id', id);
+    var { error } = await client.from('referral_codes').delete().eq('id', id);
     if (error) throw error;
     await loadReferralCodes();
     return true;
   } catch (e) {
     console.error('deleteReferralCode hatası:', e);
-    window.showToast('Silinemedi: ' + e.message, 'error');
+    if (typeof showToast === 'function') showToast('Silinemedi: ' + e.message, 'error');
     return false;
   }
 }
 
 async function toggleReferralCodeStatus(id, newStatus) {
-  if (!sb) return false;
+  var client = getSbClient();
+  if (!client) return false;
   try {
-    var { error } = await sb.from('referral_codes').update({ is_active: newStatus }).eq('id', id);
+    var { error } = await client.from('referral_codes').update({ is_active: newStatus }).eq('id', id);
     if (error) throw error;
     await loadReferralCodes();
     return true;
   } catch (e) {
     console.error('toggleReferralCodeStatus hatası:', e);
-    window.showToast('Güncellenemedi: ' + e.message, 'error');
+    if (typeof showToast === 'function') showToast('Güncellenemedi: ' + e.message, 'error');
     return false;
   }
 }
 
 async function saveReferralCode(id, payload) {
-  if (!sb) return false;
+  var client = getSbClient();
+  if (!client) return false;
   try {
     if (id) {
-      var { error } = await sb.from('referral_codes').update(payload).eq('id', id);
+      var { error } = await client.from('referral_codes').update(payload).eq('id', id);
       if (error) throw error;
-      window.showToast('Kod güncellendi', 'success');
+      if (typeof showToast === 'function') showToast('Kod güncellendi', 'success');
     } else {
-      var { error: e2 } = await sb.from('referral_codes').insert([payload]);
+      var { error: e2 } = await client.from('referral_codes').insert([payload]);
       if (e2) throw e2;
-      window.showToast('Kod eklendi', 'success');
+      if (typeof showToast === 'function') showToast('Kod eklendi', 'success');
     }
     await loadReferralCodes();
     return true;
   } catch (e) {
     console.error('saveReferralCode hatası:', e);
-    window.showToast('Kaydedilemedi: ' + e.message, 'error');
+    if (typeof showToast === 'function') showToast('Kaydedilemedi: ' + e.message, 'error');
     return false;
   }
 }
 
 // Payment Settings
 async function loadPaymentSettings() {
-  if (!sb) return null;
+  var client = getSbClient();
+  if (!client) return null;
   try {
-    var { data, error } = await sb.from('system_settings').select('value').eq('key', 'payment_settings').single();
+    var { data, error } = await client.from('system_settings').select('value').eq('key', 'payment_settings').single();
     if (error) return null;
     return data.value;
   } catch (e) {
@@ -430,14 +465,34 @@ async function loadPaymentSettings() {
 }
 
 async function savePaymentSettings(payload) {
-  if (!sb) return false;
+  var client = getSbClient();
+  if (!client) return false;
   try {
-    var { error } = await sb.from('system_settings').upsert({ key: 'payment_settings', value: payload });
+    var { error } = await client.from('system_settings').upsert({ key: 'payment_settings', value: payload });
     if (error) throw error;
-    window.showToast('Fiyat ayarları güncellendi', 'success');
+    if (typeof showToast === 'function') showToast('Fiyat ayarları güncellendi', 'success');
     return true;
   } catch (e) {
-    window.showToast('Hata: ' + e.message, 'error');
+    if (typeof showToast === 'function') showToast('Hata: ' + e.message, 'error');
     return false;
   }
 }
+
+window.loadUsers = loadUsers;
+window.loadReferences = loadReferences;
+window.filterUsers = filterUsers;
+window.renderUsersTable = renderUsersTable;
+window.renderReferencesTable = renderReferencesTable;
+window.openReferenceModal = openReferenceModal;
+window.closeReferenceModal = closeReferenceModal;
+window.initReferenceModal = initReferenceModal;
+window.saveReference = saveReference;
+window.editReference = editReference;
+window.deleteReference = deleteReference;
+window.uploadImage = uploadImage;
+window.loadReferralCodes = loadReferralCodes;
+window.deleteReferralCode = deleteReferralCode;
+window.toggleReferralCodeStatus = toggleReferralCodeStatus;
+window.saveReferralCode = saveReferralCode;
+window.loadPaymentSettings = loadPaymentSettings;
+window.savePaymentSettings = savePaymentSettings;

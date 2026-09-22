@@ -6,19 +6,19 @@ import Layout from '../layouts/Layout.astro';
   <title>Admin Panel – Wawe Journal</title>
   
   <!-- ADMIN CSS -->
-  <link rel="stylesheet" href="/interface/admin/css/admin.css?v=11" />
+  <link rel="stylesheet" href="/interface/admin/css/admin.css?v=26" />
   
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
-  <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js" is:inline defer></script>
-  <script type="module" src="/src/bundle.js" is:inline defer></script>
-  <script src="/components/navbar/navbar.js?v=3" is:inline defer></script>
-  <script src="/interface/admin/js/admin-core.js?v=11" is:inline defer></script>
-  <script src="/interface/admin/js/admin-data.js?v=11" is:inline defer></script>
-  <script src="/interface/admin/js/admin-dashboard.js?v=11" is:inline defer></script>
+  <script src="/config.js?v=26" is:inline defer></script>
+  <script src="/i18n.js?v=26" is:inline defer></script>
+  <script type="module" src="/src/bundle.js?v=26" is:inline></script>
+  <script src="/components/navbar/navbar.js?v=26" is:inline defer></script>
+  <script src="/interface/admin/js/admin-core.js?v=26" is:inline defer></script>
+  <script src="/interface/admin/js/admin-data.js?v=26" is:inline defer></script>
+  <script src="/interface/admin/js/admin-dashboard.js?v=26" is:inline defer></script>
 </Fragment>
   <!-- MAIN -->
   <main class="admin-main" id="main-content">
@@ -175,7 +175,7 @@ import Layout from '../layouts/Layout.astro';
             } catch(e) {
               console.error('Admin panel hatası:', e);
             }
-          } else if (attempts >= 50) {
+          } else if (attempts >= 80) {
             clearInterval(checkInterval);
             console.error('initAdmin fonksiyonu bulunamadı (timeout).');
             var mc = document.getElementById('main-content');
