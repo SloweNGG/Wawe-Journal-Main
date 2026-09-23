@@ -117,6 +117,7 @@ var adminState = window.adminState || {
   currentTab: 'overview',
   overviewPeriod: 'week',
   users: [],
+  payments: [],
   references: [],
   referralCodes: [],
   charts: {
@@ -442,6 +443,7 @@ async function initAdmin() {
     wwLog.log('✅ Admin girişi başarılı:', user.email);
 
     try { if (typeof loadUsers === 'function') await loadUsers(); } catch(e) { console.error('loadUsers hatası:', e); }
+    try { if (typeof loadPayments === 'function') await loadPayments(); } catch(e) { console.error('loadPayments hatası:', e); }
     try { if (typeof loadReferences === 'function') await loadReferences(); } catch(e) { console.error('loadReferences hatası:', e); }
     try { if (typeof loadReferralCodes === 'function') await loadReferralCodes(); } catch(e) { console.error('loadReferralCodes hatası:', e); }
     

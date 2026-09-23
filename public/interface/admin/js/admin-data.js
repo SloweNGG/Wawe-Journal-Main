@@ -42,7 +42,34 @@ async function loadUsers() {
   }
 }
 
+async function loadPayments() {
+  try {
+    var client = getSbClient();
+    if (!client) {
+      adminState.payments = [];
+      return;
+    }
+    var { data: paymentRows, error } = await client
+      .from('payments')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.warn('⚠️ Payments yüklenemedi:', error);
+      adminState.payments = [];
+      return;
+    }
+    
+    adminState.payments = paymentRows || [];
+    wwLog.log('💳 [Admin] ' + adminState.payments.length + ' ödeme kaydı yüklendi.');
+  } catch (e) {
+    console.warn('loadPayments error:', e);
+    adminState.payments = [];
+  }
+}
+
 var _usersRealtimeSub = null;
+var _paymentsRealtimeSub = null;
 var _usersPollInterval = null;
 
 function updateAdminConnectionStatus(isOnline) {
@@ -67,77 +94,109 @@ if (typeof window !== 'undefined') {
 }
 
 function initUsersRealtime() {
-  if (_usersRealtimeSub) return;
   var client = getSbClient();
   if (!client || typeof client.channel !== 'function') return;
 
-  try {
-    _usersRealtimeSub = client
-      .channel('admin-user-profiles-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, function(payload) {
-        // ⭐ AKILLI FİLTRE: Sadece anlamlı değişikliklerde grafikleri ve tabloları güncelle
-        var isMeaningful = true;
-        if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
-          // Eğer sadece last_active değişmişse (kullanıcı gezinirken olan tıklamalar), grafikleri boşuna zıplatma
-          var onlyLastActive = (
-            payload.new.plan === payload.old.plan &&
-            payload.new.role === payload.old.role &&
-            payload.new.is_active === payload.old.is_active &&
-            payload.new.email === payload.old.email &&
-            payload.new.username === payload.old.username &&
-            payload.new.plan_expires_at === payload.old.plan_expires_at
-          );
-          if (onlyLastActive) {
-            isMeaningful = false;
-            // Yerel nesneyi sessizce güncelle
-            if (adminState.users && payload.new.id) {
-              var found = adminState.users.find(function(u) { return u.id === payload.new.id; });
-              if (found) found.last_active = payload.new.last_active;
+  if (!_usersRealtimeSub) {
+    try {
+      _usersRealtimeSub = client
+        .channel('admin-user-profiles-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, function(payload) {
+          // ⭐ AKILLI FİLTRE: Sadece anlamlı değişikliklerde grafikleri ve tabloları güncelle
+          var isMeaningful = true;
+          if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+            // Eğer sadece last_active değişmişse (kullanıcı gezinirken olan tıklamalar), grafikleri boşuna zıplatma
+            var onlyLastActive = (
+              payload.new.plan === payload.old.plan &&
+              payload.new.role === payload.old.role &&
+              payload.new.is_active === payload.old.is_active &&
+              payload.new.email === payload.old.email &&
+              payload.new.username === payload.old.username &&
+              payload.new.plan_expires_at === payload.old.plan_expires_at
+            );
+            if (onlyLastActive) {
+              isMeaningful = false;
+              // Yerel nesneyi sessizce güncelle
+              if (adminState.users && payload.new.id) {
+                var found = adminState.users.find(function(u) { return u.id === payload.new.id; });
+                if (found) found.last_active = payload.new.last_active;
+              }
             }
           }
-        }
 
-        if (!isMeaningful) return;
+          if (!isMeaningful) return;
 
-        wwLog.log('⚡ [Admin Realtime] Anlamlı kullanıcı güncellemesi:', payload.eventType);
-        loadUsers().then(function() {
-          if (typeof renderUsersTable === 'function') renderUsersTable();
-          if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
-            renderOverviewContent(adminState.overviewPeriod || 'week');
-          }
-          if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
-            loadAnalyticsData();
+          wwLog.log('⚡ [Admin Realtime] Anlamlı kullanıcı güncellemesi:', payload.eventType);
+          loadUsers().then(function() {
+            if (typeof renderUsersTable === 'function') renderUsersTable();
+            if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
+              renderOverviewContent(adminState.overviewPeriod || 'week');
+            }
+            if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
+              loadAnalyticsData();
+            }
+          });
+        })
+        .subscribe(function(status) {
+          if (status === 'SUBSCRIBED') {
+            updateAdminConnectionStatus(true);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            if (!navigator.onLine) {
+              updateAdminConnectionStatus(false);
+            }
           }
         });
-      })
-      .subscribe(function(status) {
-        if (status === 'SUBSCRIBED') {
-          updateAdminConnectionStatus(true);
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          if (!navigator.onLine) {
-            updateAdminConnectionStatus(false);
-          }
-        }
-      });
 
-    wwLog.log('📡 [Admin] Kullanıcılar ve istatistikler için canlı dinleyici (Realtime) başlatıldı.');
-  } catch (e) {
-    console.error('Realtime bağlanamadı:', e);
+      wwLog.log('📡 [Admin] Kullanıcılar için canlı dinleyici (Realtime) başlatıldı.');
+    } catch (e) {
+      console.error('Realtime bağlanamadı:', e);
+    }
   }
 
-  // ⭐ 2-3 DAKİKALIK SESSİZ YEDEK YENİLEME (2 dakika = 120.000 ms)
+  // ⭐ ÖDEMELER (PAYMENTS) CANLI DİNLEYİCİSİ
+  if (!_paymentsRealtimeSub) {
+    try {
+      _paymentsRealtimeSub = client
+        .channel('admin-payments-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, function(payload) {
+          wwLog.log('⚡ [Admin Realtime] Yeni ödeme olayı algılandı:', payload.eventType);
+          Promise.all([
+            typeof loadPayments === 'function' ? loadPayments() : Promise.resolve(),
+            typeof loadUsers === 'function' ? loadUsers() : Promise.resolve()
+          ]).then(function() {
+            if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
+              renderOverviewContent(adminState.overviewPeriod || 'week');
+            }
+            if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
+              loadAnalyticsData();
+            }
+          });
+        })
+        .subscribe();
+      wwLog.log('📡 [Admin] Ödemeler (payments) için canlı dinleyici başlatıldı.');
+    } catch (e) {
+      console.error('Payments realtime bağlanamadı:', e);
+    }
+  }
+
+  // ⭐ 2 DAKİKALIK SESSİZ YEDEK YENİLEME (2 dakika = 120.000 ms)
   if (!_usersPollInterval) {
     _usersPollInterval = setInterval(function() {
       if (document.visibilityState === 'visible' && navigator.onLine !== false) {
         var prevCount = (adminState.users || []).length;
         var prevPrem = (adminState.users || []).filter(function(u) { return u.plan === 'premium'; }).length;
+        var prevPayCount = (adminState.payments || []).length;
 
-        loadUsers().then(function() {
+        Promise.all([
+          loadUsers(),
+          loadPayments()
+        ]).then(function() {
           var newCount = (adminState.users || []).length;
           var newPrem = (adminState.users || []).filter(function(u) { return u.plan === 'premium'; }).length;
+          var newPayCount = (adminState.payments || []).length;
 
-          // Sadece sayı değiştiyse paneli yenile, veri aynıysa grafikleri titretme!
-          if (newCount !== prevCount || newPrem !== prevPrem) {
+          // Sadece sayı veya ödeme değiştiyse paneli yenile
+          if (newCount !== prevCount || newPrem !== prevPrem || newPayCount !== prevPayCount) {
             if (typeof renderUsersTable === 'function') renderUsersTable();
             if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
               renderOverviewContent(adminState.overviewPeriod || 'week');
@@ -578,6 +637,13 @@ async function savePaymentSettings(payload) {
   var client = getSbClient();
   if (!client) return false;
   try {
+    payload = payload || {};
+    payload.monthly_price_usd = 12;
+    payload.yearly_price_usd = 99;
+    payload.yearly_discount_percent = 31;
+    payload.days_per_monthly = 30;
+    payload.days_per_yearly = 365;
+
     // 1. payment_settings tablosunu güncelle (tüm detaylı ayarlar)
     var { error: err1 } = await client.from('system_settings').upsert({ 
       key: 'payment_settings', 
@@ -636,6 +702,7 @@ async function savePaymentSettings(payload) {
 }
 
 window.loadUsers = loadUsers;
+window.loadPayments = loadPayments;
 window.loadReferences = loadReferences;
 window.filterUsers = filterUsers;
 window.renderUsersTable = renderUsersTable;

@@ -59,37 +59,74 @@ async function loadAnalyticsData() {
     var revenueByDay = {};
     var recentPremiumUsers = [];
 
-    profileList.forEach(function(p) {
-      if (p.plan === 'premium' && p.plan_expires_at) {
-        var expiresAt = new Date(p.plan_expires_at);
-        var startDate = new Date(expiresAt);
-        startDate.setDate(startDate.getDate() - 30);
-        
-        var diffDays = Math.ceil((expiresAt - startDate) / (1000 * 60 * 60 * 24));
-        var isYearly = diffDays > 31;
-        var price = isYearly ? 99 : 12;
-        
-        totalRevenue += price;
-        
-        var dayKey = startDate.toISOString().split('T')[0];
-        if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
-        revenueByDay[dayKey] += price;
-        
-        var sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        if (startDate >= sevenDaysAgo) {
-          revenue7Days += price;
-          recentPremiumUsers.push({
-            username: p.username || p.email || 'Isimsiz',
-            email: p.email || '-',
-            plan: isYearly ? 'Yillik' : 'Aylik',
-            amount: price,
-            date: startDate,
-            avatar_url: p.avatar_url || null
-          });
-        }
-      }
+    // Gerçek payments tablosunu kontrol et
+    var payments = (adminState.payments || []).filter(function(p) {
+      return p.payment_status === 'finished' || p.payment_status === 'confirmed';
     });
+
+    var sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    if (payments.length > 0) {
+      // 1. Gerçek ödemelerden hesapla
+      payments.forEach(function(p) {
+        var pAmount = Number(p.amount) || 0;
+        totalRevenue += pAmount;
+
+        var pDate = p.created_at ? new Date(p.created_at) : new Date();
+        var dayKey = pDate.toISOString().split('T')[0];
+        if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
+        revenueByDay[dayKey] += pAmount;
+
+        if (pDate >= sevenDaysAgo) {
+          revenue7Days += pAmount;
+        }
+
+        var matchedUser = profileList.find(function(prof) { return prof.id === p.user_id; });
+        var isYearly = p.plan_type === 'yearly' || p.plan_type === 'year';
+
+        recentPremiumUsers.push({
+          username: (matchedUser && matchedUser.username) || (matchedUser && matchedUser.email) || 'Kullanıcı',
+          email: (matchedUser && matchedUser.email) || '—',
+          plan: isYearly ? 'Yıllık' : 'Aylık',
+          amount: pAmount,
+          date: pDate,
+          referralCode: p.referral_code || null,
+          avatar_url: (matchedUser && matchedUser.avatar_url) || null
+        });
+      });
+    } else {
+      // 2. Fallback (Henüz canlı payments kaydı yoksa veya test için):
+      profileList.forEach(function(p) {
+        if (p.plan === 'premium' && p.plan_expires_at) {
+          var expiresAt = new Date(p.plan_expires_at);
+          var remainingDays = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          var isYearly = remainingDays > 45;
+          var price = isYearly ? 99 : 12;
+          
+          totalRevenue += price;
+          
+          var startDate = new Date(expiresAt.getTime() - (isYearly ? 365 : 30) * 86400000);
+          var dayKey = startDate.toISOString().split('T')[0];
+          if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
+          revenueByDay[dayKey] += price;
+          
+          if (startDate >= sevenDaysAgo) {
+            revenue7Days += price;
+            recentPremiumUsers.push({
+              username: p.username || p.email || 'Kullanıcı',
+              email: p.email || '—',
+              plan: isYearly ? 'Yıllık' : 'Aylık',
+              amount: price,
+              date: startDate,
+              referralCode: null,
+              avatar_url: p.avatar_url || null
+            });
+          }
+        }
+      });
+    }
 
     var revenueData = last7.map(function(d) { return revenueByDay[d] || 0; });
     var uCounts = last7.map(function(d) {
@@ -112,7 +149,7 @@ async function loadAnalyticsData() {
     var recentContainer = document.getElementById('recent-premium-list');
     if (recentContainer) {
       if (recentPremiumUsers.length === 0) {
-        recentContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henuz premium satisi yok.</div>';
+        recentContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henüz premium satışı yok.</div>';
       } else {
         var html = '';
         for (var j = 0; j < recentPremiumUsers.length && j < 10; j++) {
@@ -121,13 +158,18 @@ async function loadAnalyticsData() {
             ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;">'
             : '<span style="font-weight:700;font-size:14px;">' + getInitials(u.username) + '</span>';
           
+          var refBadge = u.referralCode 
+            ? '<span class="kpi-badge badge-purple" style="font-size:10px;padding:2px 6px;margin-left:4px;">🏷️ ' + escapeHtml(u.referralCode) + '</span>' 
+            : '';
+
           html += '<div class="recent-premium-card">' +
             '<div class="avatar-small">' + avatarHtml + '</div>' +
             '<div class="info">' +
               '<div class="name">' + escapeHtml(u.username) + '</div>' +
               '<div class="email">' + escapeHtml(u.email) + '</div>' +
-              '<div style="display:flex;align-items:center;gap:0.5rem;margin-top:2px;">' +
+              '<div style="display:flex;align-items:center;gap:0.5rem;margin-top:2px;flex-wrap:wrap;">' +
                 '<span class="plan-type">' + u.plan + '</span>' +
+                refBadge +
                 '<span style="font-size:11px;color:var(--muted);font-family:\'Inter\',sans-serif;">' + formatDateFull(u.date) + '</span>' +
               '</div>' +
             '</div>' +
@@ -728,25 +770,25 @@ async function renderPaymentSettingsUI() {
           </h4>\
           <div class="field-row">\
             <div class="field">\
-              <label>Aylık Plan Ücreti ($ USD) *</label>\
+              <label>Aylık Plan Ücreti (Sabit & Kilitli)</label>\
               <div class="input-with-icon">\
                 <span class="input-prefix">$</span>\
-                <input type="number" id="ps-monthly" value="' + monthlyVal + '" min="1" step="0.5" />\
+                <input type="number" id="ps-monthly" value="12" disabled style="opacity:0.85;cursor:not-allowed;" />\
                 <span class="input-suffix">/ ay</span>\
               </div>\
             </div>\
             <div class="field">\
-              <label>Yıllık Plan Ücreti ($ USD) *</label>\
+              <label>Yıllık Plan Ücreti (Sabit & Kilitli)</label>\
               <div class="input-with-icon">\
                 <span class="input-prefix">$</span>\
-                <input type="number" id="ps-yearly" value="' + yearlyVal + '" min="1" step="1" />\
+                <input type="number" id="ps-yearly" value="99" disabled style="opacity:0.85;cursor:not-allowed;" />\
                 <span class="input-suffix">/ yıl</span>\
               </div>\
             </div>\
           </div>\
           <div class="pricing-calc-info" id="pricing-calc-badge">\
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>\
-            <span id="pricing-calc-text">Hesaplanıyor...</span>\
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>\
+            <span id="pricing-calc-text">🔒 Fiyatlar sistem yapılandırmasında sabitlenmiştir ($12/ay & $99/yıl). Kampanyalar Referans Kodları sekmesinden yönetilir.</span>\
           </div>\
         </div>\
 \
@@ -1041,21 +1083,41 @@ function getSubscriptionDetails(user) {
   var expiresAt = new Date(user.plan_expires_at);
   if (isNaN(expiresAt.getTime())) return null;
 
-  var createdAt = user.created_at ? new Date(user.created_at) : new Date();
-  var totalDays = Math.round((expiresAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  var isYearly = totalDays > 60;
-  var durationDays = isYearly ? 365 : 30;
+  // 1. Gerçek payments tablosunda bu kullanıcıya ait başarılı bir ödeme var mı?
+  var userPayments = (adminState.payments || []).filter(function(p) {
+    return p.user_id === user.id && (p.payment_status === 'finished' || p.payment_status === 'confirmed');
+  });
 
-  var startDate = new Date(expiresAt.getTime() - durationDays * 24 * 60 * 60 * 1000);
-  if (startDate > new Date()) {
-    startDate = createdAt;
+  if (userPayments.length > 0) {
+    var latestPayment = userPayments[0];
+    var isYearlyPay = latestPayment.plan_type === 'yearly' || latestPayment.plan_type === 'year';
+    var payAmount = Number(latestPayment.amount) || (isYearlyPay ? 99 : 12);
+    var payStartDate = latestPayment.created_at ? new Date(latestPayment.created_at) : new Date(expiresAt.getTime() - (isYearlyPay ? 365 : 30) * 86400000);
+
+    return {
+      isYearly: isYearlyPay,
+      price: payAmount,
+      startDate: payStartDate,
+      expiresAt: expiresAt,
+      referralCode: latestPayment.referral_code || null,
+      isRealPayment: true
+    };
   }
+
+  // 2. Fallback (Manuel veritabanı testi / ödeme kaydı olmayan durumlar):
+  // ASLA created_at'e bakılmaz! Bitiş tarihinin bugünden ne kadar ileride olduğuna bakılır.
+  var remainingDays = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  var isYearly = remainingDays > 45;
+  var durationDays = isYearly ? 365 : 30;
+  var startDate = new Date(expiresAt.getTime() - durationDays * 86400000);
 
   return {
     isYearly: isYearly,
     price: isYearly ? 99 : 12,
     startDate: startDate,
-    expiresAt: expiresAt
+    expiresAt: expiresAt,
+    referralCode: null,
+    isRealPayment: false
   };
 }
 
@@ -1091,17 +1153,30 @@ function renderOverviewContent(period) {
     return !isNaN(d.getTime()) && d >= startOfToday;
   }).length;
 
+  // Payments List (Gerçekleşen Ödemeler)
+  var paymentsList = (adminState.payments || []).filter(function(p) {
+    return p.payment_status === 'finished' || p.payment_status === 'confirmed';
+  });
+
   // Subscriptions & Total Revenue calculation
   var subscriptions = [];
   var totalRevenue = 0;
 
-  usersList.forEach(function(u) {
-    var sub = getSubscriptionDetails(u);
-    if (sub) {
-      totalRevenue += sub.price;
-      subscriptions.push(sub);
-    }
-  });
+  if (paymentsList.length > 0) {
+    totalRevenue = paymentsList.reduce(function(sum, p) { return sum + (Number(p.amount) || 0); }, 0);
+    usersList.forEach(function(u) {
+      var sub = getSubscriptionDetails(u);
+      if (sub) subscriptions.push(sub);
+    });
+  } else {
+    usersList.forEach(function(u) {
+      var sub = getSubscriptionDetails(u);
+      if (sub) {
+        totalRevenue += sub.price;
+        subscriptions.push(sub);
+      }
+    });
+  }
 
   // Period Buckets & Labels
   var bucketLabels = [];
@@ -1139,9 +1214,18 @@ function renderOverviewContent(period) {
       userCounts.push(uCount);
       periodUsers += uCount;
 
-      var rSum = subscriptions.filter(function(s) {
-        return s.startDate >= dayStart && s.startDate <= dayEnd;
-      }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      var rSum = 0;
+      if (paymentsList.length > 0) {
+        rSum = paymentsList.filter(function(p) {
+          if (!p.created_at) return false;
+          var pd = new Date(p.created_at);
+          return !isNaN(pd.getTime()) && pd >= dayStart && pd <= dayEnd;
+        }).reduce(function(acc, p) { return acc + (Number(p.amount) || 0); }, 0);
+      } else {
+        rSum = subscriptions.filter(function(s) {
+          return s.startDate >= dayStart && s.startDate <= dayEnd;
+        }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      }
       revenueAmounts.push(rSum);
       periodRevenue += rSum;
     }
@@ -1168,9 +1252,18 @@ function renderOverviewContent(period) {
       userCounts.push(uCount);
       periodUsers += uCount;
 
-      var rSum = subscriptions.filter(function(s) {
-        return s.startDate >= dayStart && s.startDate <= dayEnd;
-      }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      var rSum = 0;
+      if (paymentsList.length > 0) {
+        rSum = paymentsList.filter(function(p) {
+          if (!p.created_at) return false;
+          var pd = new Date(p.created_at);
+          return !isNaN(pd.getTime()) && pd >= dayStart && pd <= dayEnd;
+        }).reduce(function(acc, p) { return acc + (Number(p.amount) || 0); }, 0);
+      } else {
+        rSum = subscriptions.filter(function(s) {
+          return s.startDate >= dayStart && s.startDate <= dayEnd;
+        }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      }
       revenueAmounts.push(rSum);
       periodRevenue += rSum;
     }
@@ -1193,9 +1286,18 @@ function renderOverviewContent(period) {
       userCounts.push(uCount);
       periodUsers += uCount;
 
-      var rSum = subscriptions.filter(function(s) {
-        return s.startDate >= mStart && s.startDate <= mEnd;
-      }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      var rSum = 0;
+      if (paymentsList.length > 0) {
+        rSum = paymentsList.filter(function(p) {
+          if (!p.created_at) return false;
+          var pd = new Date(p.created_at);
+          return !isNaN(pd.getTime()) && pd >= mStart && pd <= mEnd;
+        }).reduce(function(acc, p) { return acc + (Number(p.amount) || 0); }, 0);
+      } else {
+        rSum = subscriptions.filter(function(s) {
+          return s.startDate >= mStart && s.startDate <= mEnd;
+        }).reduce(function(acc, s) { return acc + s.price; }, 0);
+      }
       revenueAmounts.push(rSum);
       periodRevenue += rSum;
     }
