@@ -16,15 +16,19 @@ import Layout from '../layouts/Layout.astro';
   <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
 </Fragment>
 
-<main class="journals-page-main">
-  <div class="journals-page-header">
-    <h1 data-i18n="journal.title">Hesaplarım</h1>
-    <button class="btn-new-journal" id="btn-new-journal">
-      <i data-lucide="plus" style="width:16px;height:16px;margin-right:4px;vertical-align:middle;"></i>
-      <span data-i18n="journal.new_button">Yeni Hesap</span>
-    </button>
+<main class="main dashboard-main">
+  <div class="page-header">
+    <div>
+      <h1 data-i18n="journal.title">Hesaplarım</h1>
+      <p class="subtitle" data-i18n="journal.subtitle">İşlemlerini hesaplara ayır, performansı takip et</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-new-journal" id="btn-new-journal">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:4px;vertical-align:middle;"></i>
+        <span data-i18n="journal.new_button">Yeni Hesap</span>
+      </button>
+    </div>
   </div>
-  <div class="subtitle" data-i18n="journal.subtitle">İşlemlerini hesaplara ayır, performansı takip et</div>
   
   <div class="journals-usage-bar" id="usage-text">
     —

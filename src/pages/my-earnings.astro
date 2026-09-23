@@ -4,31 +4,14 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr">
 <Fragment slot="head">
   <title data-i18n="earnings.title">Kazançlarım - Wawe Journal</title>
-  <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
+  
   <style>
+    /* Özelleştirilmiş tablolar için gerekli css */
     .earnings-stat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
       margin-bottom: 2rem;
-    }
-    .earnings-stat-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-    }
-    .earnings-stat-label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
-    }
-    .earnings-stat-value {
-      font-size: 2rem;
-      font-weight: 700;
     }
     .earnings-table-wrap {
       background: var(--surface);
@@ -43,28 +26,6 @@ import Layout from '../layouts/Layout.astro';
       font-weight: 600;
       margin: 0;
     }
-    .earnings-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .earnings-table th {
-      padding: 0.85rem 1.25rem;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-    }
-    .earnings-table td {
-      padding: 0.9rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 14px;
-    }
-    .earnings-table tr:last-child td { border-bottom: none; }
-    .earnings-table tbody tr:hover { background: var(--surface2); }
     .code-chip {
       font-family: monospace;
       font-size: 1rem;
@@ -85,11 +46,13 @@ import Layout from '../layouts/Layout.astro';
       margin: 0;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
-  <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js" is:inline defer></script>
-  <script type="module" src="/src/bundle.js" is:inline></script>
-  <script src="/components/navbar/navbar.js" is:inline defer></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
+  <!-- defer is removed from supabase to ensure it's loaded before script execution -->
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
 </Fragment>
 
   <main class="main dashboard-main">
@@ -117,27 +80,27 @@ import Layout from '../layouts/Layout.astro';
     <div id="data-state" style="display:none;">
 
       <div class="earnings-stat-grid">
-        <div class="earnings-stat-box">
-          <div class="earnings-stat-label">Toplam Kullanım</div>
-          <div class="earnings-stat-value" id="stat-usage" style="color:var(--accent);">0</div>
+        <div class="stat-card">
+          <div class="stat-label">Toplam Kullanım</div>
+          <div class="stat-value" id="stat-usage" style="color:var(--accent);">0</div>
         </div>
-        <div class="earnings-stat-box">
-          <div class="earnings-stat-label">Toplam Kazanç</div>
-          <div class="earnings-stat-value" id="stat-earnings" style="color:#22c55e;">$0.00</div>
+        <div class="stat-card">
+          <div class="stat-label">Toplam Kazanç</div>
+          <div class="stat-value positive" id="stat-earnings">$0.00</div>
         </div>
       </div>
 
       <div class="earnings-table-wrap">
         <h2 class="earnings-table-title">Tanımlı Kodlarınız</h2>
-        <div style="overflow-x:auto;">
-          <table class="earnings-table">
+        <div class="ww-table-wrapper" style="overflow-x:auto;">
+          <table class="ww-table">
             <thead>
               <tr>
-                <th>Kod</th>
+                <th style="padding-left: 1.5rem;">Kod</th>
                 <th>İndirim</th>
                 <th>Kullanım Sayısı</th>
                 <th>Komisyon / Kullanım ($)</th>
-                <th>Toplam Kazanç</th>
+                <th style="padding-right: 1.5rem;">Toplam Kazanç</th>
               </tr>
             </thead>
             <tbody id="codes-tbody">
@@ -153,24 +116,61 @@ import Layout from '../layouts/Layout.astro';
 
   <script is:inline>
     document.addEventListener('DOMContentLoaded', async function() {
-      var sb = window.sb;
-      if (!sb) {
+      // Supabase client helper to handle race conditions with module loading
+      async function getSb() {
+        if (window.sb) return window.sb;
+        for (let i = 0; i < 40; i++) {
+          if (window.sb) return window.sb;
+          if (typeof window.supabase !== 'undefined' && window.SUPABASE_URL) {
+            window.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            return window.sb;
+          }
+          await new Promise(r => setTimeout(r, 100));
+        }
+        return null;
+      }
+
+      var client = await getSb();
+      
+      if (!client) {
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('empty-state').style.display = 'block';
         return;
       }
 
-      const { data: { session } } = await sb.auth.getSession();
+      const { data: { session } } = await client.auth.getSession();
       if (!session) {
         window.location.href = '/login.html';
         return;
       }
 
       try {
-        const { data, error } = await sb.rpc('get_influencer_earnings');
+        let rows = [];
+        const { data: rpcData, error: rpcError } = await client.rpc('get_influencer_earnings');
+        
+        if (!rpcError && Array.isArray(rpcData)) {
+          rows = rpcData;
+        } else {
+          // Fallback direct query if RPC doesn't exist
+          const { data: directData, error: directError } = await client
+            .from('referral_codes')
+            .select('code, discount_percent, usage_count, commission_rate')
+            .eq('influencer_user_id', session.user.id);
+            
+          if (!directError && Array.isArray(directData)) {
+            rows = directData.map(r => ({
+              code: r.code,
+              discount_percent: r.discount_percent,
+              usage_count: r.usage_count || 0,
+              commission_rate: r.commission_rate || 0,
+              total_earnings: (r.usage_count || 0) * (r.commission_rate || 0)
+            }));
+          }
+        }
+
         document.getElementById('loading-state').style.display = 'none';
 
-        if (error || !data || data.length === 0) {
+        if (rows.length === 0) {
           document.getElementById('empty-state').style.display = 'block';
           return;
         }
@@ -182,17 +182,17 @@ import Layout from '../layouts/Layout.astro';
         const tbody = document.getElementById('codes-tbody');
         tbody.innerHTML = '';
 
-        data.forEach(function(item) {
+        rows.forEach(function(item) {
           totalUsage += item.usage_count || 0;
           totalEarnings += parseFloat(item.total_earnings || 0);
 
           const tr = document.createElement('tr');
           tr.innerHTML =
-            '<td><span class="code-chip">' + item.code + '</span></td>' +
+            '<td style="padding-left: 1.5rem;"><span class="code-chip">' + item.code + '</span></td>' +
             '<td>%' + item.discount_percent + '</td>' +
             '<td>' + item.usage_count + '</td>' +
             '<td>$' + (item.commission_rate || 0) + '</td>' +
-            '<td style="font-weight:600; color:#22c55e;">$' + parseFloat(item.total_earnings || 0).toFixed(2) + '</td>';
+            '<td style="font-weight:600; color:#22c55e; padding-right: 1.5rem;">$' + parseFloat(item.total_earnings || 0).toFixed(2) + '</td>';
           tbody.appendChild(tr);
         });
 
