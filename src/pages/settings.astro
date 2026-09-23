@@ -1421,6 +1421,10 @@ import Layout from '../layouts/Layout.astro';
       
       /* Dokunma alanlarını büyüt */
       .settings-tab-btn, .btn-upload, .btn-remove-avatar, .btn-save-ot, .btn-save-theme, .btn-reset-theme, .btn-outline-danger, .lang-compact-btn, .currency-btn { min-height: 44px; }
+      /* Sadece ikonları göster */
+      .settings-tab-btn span { display: none; }
+      .settings-tab-btn { justify-content: center; padding: 0.5rem 1rem; }
+      .settings-tab-btn .tab-icon { width: 18px; height: 18px; }
     }
     @media (max-width: 767px) {
       .nav-links { display: none !important; }
@@ -1478,7 +1482,7 @@ import Layout from '../layouts/Layout.astro';
       </button>
       <button class="settings-tab-btn" data-panel="panel-plan">
         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Plan
+        <span>Plan</span>
       </button>
       <button class="settings-tab-btn" data-panel="panel-password">
         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -1490,7 +1494,7 @@ import Layout from '../layouts/Layout.astro';
       </button>
       <button class="settings-tab-btn" data-panel="panel-overtrade">
         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Over Trade
+        <span>Over Trade</span>
       </button>
       <button class="settings-tab-btn danger" data-panel="panel-danger">
         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
