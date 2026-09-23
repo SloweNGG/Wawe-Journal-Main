@@ -6,7 +6,84 @@ import Layout from '../layouts/Layout.astro';
   <title data-i18n="earnings.title">Kazançlarım - Wawe Journal</title>
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
   <style>
-    /* my-earnings uses global page-header, chart-card, ww-table styles */
+    .earnings-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .earnings-stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .earnings-stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .earnings-stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .earnings-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .earnings-table-title {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .earnings-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .earnings-table th {
+      padding: 0.85rem 1.25rem;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .earnings-table td {
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .earnings-table tr:last-child td { border-bottom: none; }
+    .earnings-table tbody tr:hover { background: var(--surface2); }
+    .code-chip {
+      font-family: monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      background: var(--surface2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+    .earnings-empty {
+      text-align: center;
+      padding: 4rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 0;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
@@ -15,49 +92,52 @@ import Layout from '../layouts/Layout.astro';
   <script src="/components/navbar/navbar.js" is:inline defer></script>
 </Fragment>
 
-  <main class="main">
+  <main class="main dashboard-main">
+
     <div class="page-header">
       <div>
         <h1 data-i18n="earnings.title">Kazançlarım</h1>
       </div>
     </div>
 
-    <div id="loading-state" style="text-align:center; padding: 3rem;">
+    <!-- Yükleniyor -->
+    <div id="loading-state" style="text-align:center; padding: 4rem;">
       <div class="spinner" style="margin: 0 auto;"></div>
       <p style="color:var(--muted); margin-top:1rem;">Veriler yükleniyor...</p>
     </div>
 
-    <div id="empty-state" style="display:none; text-align:center; padding: 4rem 1rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); margin: 1rem 0;">
+    <!-- Kod tanımlı değil -->
+    <div id="empty-state" class="earnings-empty" style="display:none;">
       <i data-lucide="trending-up" style="width:48px;height:48px;color:var(--muted);margin-bottom:1rem;display:inline-block;"></i>
       <h3 style="font-size:1.25rem; font-weight:600; margin-bottom:0.5rem;">Henüz bir kazanç profiliniz yok</h3>
-      <p style="color:var(--muted);">Size tanımlanmış bir indirim veya referans kodu bulunmuyor. Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.</p>
+      <p style="color:var(--muted);">Size tanımlanmış bir indirim veya referans kodu bulunmuyor.<br>Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.</p>
     </div>
 
+    <!-- Ana İçerik -->
     <div id="data-state" style="display:none;">
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-        <div class="chart-card" style="padding:1.5rem;">
-          <div style="color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;">Toplam Kullanım</div>
-          <div id="stat-usage" style="font-size:2rem; font-weight:700; color:var(--accent);">0</div>
+
+      <div class="earnings-stat-grid">
+        <div class="earnings-stat-box">
+          <div class="earnings-stat-label">Toplam Kullanım</div>
+          <div class="earnings-stat-value" id="stat-usage" style="color:var(--accent);">0</div>
         </div>
-        <div class="chart-card" style="padding:1.5rem;">
-          <div style="color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;">Toplam Kazanç</div>
-          <div id="stat-earnings" style="font-size:2rem; font-weight:700; color:var(--green);">$0.00</div>
+        <div class="earnings-stat-box">
+          <div class="earnings-stat-label">Toplam Kazanç</div>
+          <div class="earnings-stat-value" id="stat-earnings" style="color:#22c55e;">$0.00</div>
         </div>
       </div>
 
-      <div class="chart-card" style="padding:0;">
-        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
-          <h2 style="font-size:1rem; font-weight:600; margin:0;">Tanımlı Kodlarınız</h2>
-        </div>
+      <div class="earnings-table-wrap">
+        <h2 class="earnings-table-title">Tanımlı Kodlarınız</h2>
         <div style="overflow-x:auto;">
-          <table class="ww-table" style="width:100%;">
+          <table class="earnings-table">
             <thead>
               <tr>
                 <th>Kod</th>
                 <th>İndirim</th>
                 <th>Kullanım Sayısı</th>
-                <th>Komisyon / Kod Başına ($)</th>
-                <th>Elde Edilen Kazanç</th>
+                <th>Komisyon / Kullanım ($)</th>
+                <th>Toplam Kazanç</th>
               </tr>
             </thead>
             <tbody id="codes-tbody">
@@ -66,34 +146,31 @@ import Layout from '../layouts/Layout.astro';
           </table>
         </div>
       </div>
+
     </div>
+
   </main>
 
   <script is:inline>
     document.addEventListener('DOMContentLoaded', async function() {
-      if (typeof window.sb === 'undefined') {
-        console.error("Supabase yüklenemedi.");
+      var sb = window.sb;
+      if (!sb) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
         return;
       }
-      
-      const { data: { session } } = await window.sb.auth.getSession();
+
+      const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         window.location.href = '/login.html';
         return;
       }
 
       try {
-        const { data, error } = await window.sb.rpc('get_influencer_earnings');
-        
+        const { data, error } = await sb.rpc('get_influencer_earnings');
         document.getElementById('loading-state').style.display = 'none';
 
-        if (error) {
-          console.error("RPC Error:", error);
-          document.getElementById('empty-state').style.display = 'block';
-          return;
-        }
-
-        if (!data || data.length === 0) {
+        if (error || !data || data.length === 0) {
           document.getElementById('empty-state').style.display = 'block';
           return;
         }
@@ -105,24 +182,23 @@ import Layout from '../layouts/Layout.astro';
         const tbody = document.getElementById('codes-tbody');
         tbody.innerHTML = '';
 
-        data.forEach(item => {
+        data.forEach(function(item) {
           totalUsage += item.usage_count || 0;
           totalEarnings += parseFloat(item.total_earnings || 0);
 
           const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><strong style="color:var(--primary); font-family:monospace; font-size:1.1rem; background:var(--bg-muted); padding:4px 8px; border-radius:4px;">${item.code}</strong></td>
-            <td>%${item.discount_percent}</td>
-            <td>${item.usage_count}</td>
-            <td>$${item.commission_rate || 0}</td>
-            <td style="font-weight:600; color:var(--success);">$${parseFloat(item.total_earnings || 0).toFixed(2)}</td>
-          `;
+          tr.innerHTML =
+            '<td><span class="code-chip">' + item.code + '</span></td>' +
+            '<td>%' + item.discount_percent + '</td>' +
+            '<td>' + item.usage_count + '</td>' +
+            '<td>$' + (item.commission_rate || 0) + '</td>' +
+            '<td style="font-weight:600; color:#22c55e;">$' + parseFloat(item.total_earnings || 0).toFixed(2) + '</td>';
           tbody.appendChild(tr);
         });
 
         document.getElementById('stat-usage').textContent = totalUsage;
         document.getElementById('stat-earnings').textContent = '$' + totalEarnings.toFixed(2);
-        
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
       } catch (err) {
         console.error(err);
