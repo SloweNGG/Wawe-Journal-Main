@@ -424,6 +424,9 @@ async function loadNavbarAvatar() {
       return;
     }
 
+    var sb = window.sb || window.supabase;
+    if (!sb) return;
+
     var sessionRes = await sb.auth.getSession();
     var user = sessionRes?.data?.session?.user;
     if (!user) return;

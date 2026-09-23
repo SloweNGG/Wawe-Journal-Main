@@ -227,6 +227,7 @@ function switchPanel(panelId, clickedEl) {
   
   try {
     if (panelId === 'panel-overview' && typeof renderOverviewContent === 'function') renderOverviewContent(adminState.overviewPeriod || 'week');
+    if (panelId === 'panel-users' && typeof renderUsersTable === 'function') renderUsersTable();
     if (panelId === 'panel-users') {
       if (typeof loadUsers === 'function') {
         loadUsers().then(function() {
