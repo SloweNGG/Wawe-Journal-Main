@@ -1,0 +1,134 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="tr">
+<Fragment slot="head">
+  <title data-i18n="earnings.title">Kazançlarım - Wawe Journal</title>
+  <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css" />
+  <style>
+    .earnings-container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); margin-top: 0.5rem; }
+    .codes-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; background: var(--bg-card); border-radius: var(--radius); overflow: hidden; }
+    .codes-table th, .codes-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .codes-table th { background: var(--bg-muted); font-weight: 600; color: var(--text); }
+    .codes-table tr:last-child td { border-bottom: none; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline></script>
+  <script src="/components/navbar/navbar.js" is:inline defer></script>
+</Fragment>
+
+  <main class="main">
+    <div class="earnings-container">
+      <h1 data-i18n="earnings.title" style="margin-bottom:2rem; font-size:2rem; font-weight:700;">Kazançlarım</h1>
+      
+      <div id="loading-state" style="text-align:center; padding: 3rem;">
+        <div class="spinner" style="margin: 0 auto;"></div>
+        <p style="color:var(--muted); margin-top:1rem;">Veriler yükleniyor...</p>
+      </div>
+
+      <div id="empty-state" style="display:none; text-align:center; padding: 4rem 1rem; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);">
+        <i data-lucide="dollar-sign" style="width:48px;height:48px;color:var(--muted);margin-bottom:1rem;display:inline-block;"></i>
+        <h3 style="font-size:1.25rem; font-weight:600; margin-bottom:0.5rem;">Henüz bir kazanç profiliniz yok</h3>
+        <p style="color:var(--muted);">Size tanımlanmış bir indirim veya referans kodu bulunmuyor. Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.</p>
+      </div>
+
+      <div id="data-state" style="display:none;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div class="stat-card">
+            <div style="color:var(--muted); font-weight:500;">Toplam Kullanım</div>
+            <div class="stat-value" id="stat-usage">0</div>
+          </div>
+          <div class="stat-card">
+            <div style="color:var(--muted); font-weight:500;">Toplam Kazanç</div>
+            <div class="stat-value" id="stat-earnings">$0.00</div>
+          </div>
+        </div>
+
+        <h2 style="margin-top:2.5rem; margin-bottom:1rem; font-size:1.25rem;">Tanımlı Kodlarınız</h2>
+        <div style="overflow-x:auto;">
+          <table class="codes-table">
+            <thead>
+              <tr>
+                <th>Kod</th>
+                <th>İndirim</th>
+                <th>Kullanım Sayısı</th>
+                <th>Komisyon / Kod Başına ($)</th>
+                <th>Elde Edilen Kazanç</th>
+              </tr>
+            </thead>
+            <tbody id="codes-tbody">
+              <!-- JS ile dolacak -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (typeof window.sb === 'undefined') {
+        console.error("Supabase yüklenemedi.");
+        return;
+      }
+      
+      const { data: { session } } = await window.sb.auth.getSession();
+      if (!session) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      try {
+        const { data, error } = await window.sb.rpc('get_influencer_earnings');
+        
+        document.getElementById('loading-state').style.display = 'none';
+
+        if (error) {
+          console.error("RPC Error:", error);
+          document.getElementById('empty-state').style.display = 'block';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          document.getElementById('empty-state').style.display = 'block';
+          return;
+        }
+
+        document.getElementById('data-state').style.display = 'block';
+
+        let totalUsage = 0;
+        let totalEarnings = 0;
+        const tbody = document.getElementById('codes-tbody');
+        tbody.innerHTML = '';
+
+        data.forEach(item => {
+          totalUsage += item.usage_count || 0;
+          totalEarnings += parseFloat(item.total_earnings || 0);
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong style="color:var(--primary); font-family:monospace; font-size:1.1rem; background:var(--bg-muted); padding:4px 8px; border-radius:4px;">${item.code}</strong></td>
+            <td>%${item.discount_percent}</td>
+            <td>${item.usage_count}</td>
+            <td>$${item.commission_rate || 0}</td>
+            <td style="font-weight:600; color:var(--success);">$${parseFloat(item.total_earnings || 0).toFixed(2)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('stat-usage').textContent = totalUsage;
+        document.getElementById('stat-earnings').textContent = '$' + totalEarnings.toFixed(2);
+        
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+      }
+    });
+  </script>
+</Layout>

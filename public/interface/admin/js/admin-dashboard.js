@@ -553,6 +553,12 @@ window.editReferralCode = function(id) {
   if (expEl) expEl.value = item.expires_at ? item.expires_at.split('T')[0] : '';
   var actEl = document.getElementById('rc-active');
   if (actEl) actEl.value = item.is_active ? 'true' : 'false';
+
+  var infEmailEl = document.getElementById('rc-influencer-email');
+  if (infEmailEl) infEmailEl.value = (item.user_profiles && item.user_profiles.email) ? item.user_profiles.email : '';
+  
+  var commEl = document.getElementById('rc-commission');
+  if (commEl) commEl.value = item.commission_rate || '0';
   
   var titleEl = document.getElementById('rc-modal-title');
   if (titleEl) titleEl.textContent = 'Referans Kodunu Düzenle';
@@ -591,6 +597,8 @@ function initReferralModal() {
       document.getElementById('rc-max-usage').value = '';
       document.getElementById('rc-expires').value = '';
       document.getElementById('rc-active').value = 'true';
+      document.getElementById('rc-influencer-email').value = '';
+      document.getElementById('rc-commission').value = '';
       document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
       modal.classList.add('open');
     });
@@ -617,12 +625,34 @@ function initReferralModal() {
       
       var maxUsageVal = document.getElementById('rc-max-usage').value.trim();
       var expiresVal = document.getElementById('rc-expires').value.trim();
+      
+      var influencerEmail = document.getElementById('rc-influencer-email').value.trim();
+      var commissionRate = parseFloat(document.getElementById('rc-commission').value);
+      
+      var influencerUserId = null;
+      if (influencerEmail) {
+        var client = window.sb; // Get supabase client
+        try {
+          var { data, error } = await client.from('user_profiles').select('id').eq('email', influencerEmail).single();
+          if (error) throw error;
+          if (data && data.id) {
+            influencerUserId = data.id;
+          }
+        } catch (e) {
+          console.error("Influencer email not found:", e);
+          if (typeof showToast === 'function') showToast('Influencer e-postası bulunamadı, lütfen kontrol edin.', 'error');
+          else alert('Influencer e-postası bulunamadı.');
+          return;
+        }
+      }
 
       var payload = {
         code: code,
         discount_percent: discount,
         referrer_name: document.getElementById('rc-name').value.trim() || null,
         referrer_email: document.getElementById('rc-email').value.trim() || null,
+        influencer_user_id: influencerUserId,
+        commission_rate: isNaN(commissionRate) ? 0 : commissionRate,
         max_usage: maxUsageVal ? parseInt(maxUsageVal, 10) : null,
         expires_at: expiresVal ? new Date(expiresVal).toISOString() : null,
         is_active: document.getElementById('rc-active').value === 'true'
@@ -961,6 +991,8 @@ window.openReferralModal = function() {
   document.getElementById('rc-max-usage').value = '';
   document.getElementById('rc-expires').value = '';
   document.getElementById('rc-active').value = 'true';
+  document.getElementById('rc-influencer-email').value = '';
+  document.getElementById('rc-commission').value = '';
   document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
   var m = document.getElementById('referral-code-modal');
   if (m) m.classList.add('open');

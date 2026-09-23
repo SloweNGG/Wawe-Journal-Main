@@ -112,6 +112,7 @@ function getNavbarHTML(translations) {
         <a href="/trades.html" data-i18n="nav.trades" data-page="trades">${tt('nav.trades', 'İşlemler')}</a>
         <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">${tt('nav.strategies', 'Stratejiler')}</a>
         <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">${tt('nav.calendar', 'Takvim')}</a>
+        <a href="/my-earnings.html" data-i18n="nav.earnings" data-page="my-earnings"><i data-lucide="dollar-sign" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;margin-top:-2px;"></i>${tt('nav.earnings', 'Kazançlarım')}</a>
         <span id="admin-link" style="display:none;"><a href="/admin.html" data-i18n="nav.admin" data-page="admin">${tt('nav.admin', 'Admin')}</a></span>
       </div>
       
@@ -253,6 +254,9 @@ function getNavbarHTML(translations) {
           </a>
           <a href="/calendar.html" data-i18n="nav.calendar">
             <i data-lucide="calendar" style="width:16px;height:16px;"></i> ${tt('nav.calendar', 'Takvim')}
+          </a>
+          <a href="/my-earnings.html" data-i18n="nav.earnings">
+            <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> ${tt('nav.earnings', 'Kazançlarım')}
           </a>
           <span id="admin-link-mobile" style="display:none;">
             <a href="/admin.html" data-i18n="nav.admin">

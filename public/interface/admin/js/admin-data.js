@@ -389,7 +389,7 @@ async function loadReferralCodes() {
   try {
     var { data, error } = await client
       .from('referral_codes')
-      .select('*')
+      .select('*, user_profiles(email)')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
