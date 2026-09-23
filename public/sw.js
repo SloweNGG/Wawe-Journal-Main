@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v6';
+const CACHE_VERSION = 'wawe-v7';
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
@@ -25,6 +25,9 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // Admin panel sayfalarını ve admin varlıklarını ASLA SW'ye sokma (her zaman güncel kalsın)
+  if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/interface/admin/')) return;
 
   // HTML ve API isteklerini SW'ye sokma
   if (url.pathname.endsWith('.html') || url.pathname.startsWith('/api/')) return;
