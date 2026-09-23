@@ -273,12 +273,32 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
 
   // ⭐ Log the payment
   
-  // Referans kodu ayıklama
-  let appliedReferral = null;
+  // Referans kodu ayıklama (önce order_description regex, yoksa payments tablosundan fallback)
+  let appliedReferral: string | null = null;
   if (payload.order_description) {
     const refMatch = payload.order_description.match(/\(Ref:\s*([A-Z0-9]+)\)/i);
     if (refMatch && refMatch[1]) {
       appliedReferral = refMatch[1].toUpperCase();
+    }
+  }
+
+  if (!appliedReferral && invoiceId && invoiceId !== 'unknown') {
+    try {
+      const { data: initialPayment } = await supabase
+        .from('payments')
+        .select('referral_code')
+        .eq('invoice_id', invoiceId)
+        .not('referral_code', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (initialPayment?.referral_code) {
+        appliedReferral = initialPayment.referral_code.toUpperCase();
+        console.log(`ℹ️ Referral code recovered from initial payment record: ${appliedReferral}`);
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not check fallback referral from payments table:', e);
     }
   }
 

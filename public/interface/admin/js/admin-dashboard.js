@@ -555,7 +555,11 @@ window.editReferralCode = function(id) {
   if (actEl) actEl.value = item.is_active ? 'true' : 'false';
 
   var infEmailEl = document.getElementById('rc-influencer-email');
-  if (infEmailEl) infEmailEl.value = (item.user_profiles && item.user_profiles.email) ? item.user_profiles.email : '';
+  var infEmail = '';
+  if (item.user_profiles) {
+    infEmail = Array.isArray(item.user_profiles) ? (item.user_profiles[0]?.email || '') : (item.user_profiles.email || '');
+  }
+  if (infEmailEl) infEmailEl.value = infEmail;
   
   var commEl = document.getElementById('rc-commission');
   if (commEl) commEl.value = item.commission_rate || '0';
@@ -626,7 +630,7 @@ function initReferralModal() {
       var maxUsageVal = document.getElementById('rc-max-usage').value.trim();
       var expiresVal = document.getElementById('rc-expires').value.trim();
       
-      var influencerEmail = document.getElementById('rc-influencer-email').value.trim();
+      var influencerEmail = document.getElementById('rc-influencer-email').value.trim().toLowerCase();
       var commissionRate = parseFloat(document.getElementById('rc-commission').value);
       
       var influencerUserId = null;

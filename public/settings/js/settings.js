@@ -1115,7 +1115,14 @@ async function renderPlan() {
             }
             updatePriceDisplay(data.discount_percent);
           } else {
-            throw new Error(data.message || 'Geçersiz kod');
+            var errMsg = 'Geçersiz referans kodu.';
+            if (data && data.error) {
+              if (data.error === 'expired_code') errMsg = 'Bu kodun kullanım süresi dolmuş.';
+              else if (data.error === 'usage_limit_reached') errMsg = 'Bu kod maksimum kullanım sınırına ulaşmış.';
+              else if (data.error === 'inactive_code') errMsg = 'Bu referans kodu şu anda aktif değil.';
+              else if (data.error === 'invalid_code') errMsg = 'Geçersiz referans kodu.';
+            }
+            throw new Error(errMsg);
           }
         } catch (err) {
           window.SETTINGS_STATE.appliedReferralCode = null;
