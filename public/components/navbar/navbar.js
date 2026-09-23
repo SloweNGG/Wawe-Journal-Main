@@ -401,6 +401,7 @@ async function loadNavbarAvatar() {
     var storedDisplayName = sessionStorage.getItem('ww_user_display_name');
     var storedAvatar = sessionStorage.getItem('ww_avatar_url');
     var storedTime = sessionStorage.getItem('ww_avatar_time');
+    var storedIsAdmin = sessionStorage.getItem('ww_user_is_admin');
     var now = Date.now();
 
     if (storedDisplayName) {
@@ -414,11 +415,14 @@ async function loadNavbarAvatar() {
       var av = (storedAvatar && storedAvatar !== 'none') ? storedAvatar : null;
       cachedAvatarUrl = av;
       applyAvatarToNav(av);
+      if (storedIsAdmin === 'true') {
+        var al = document.getElementById('admin-link');
+        var alm = document.getElementById('admin-link-mobile');
+        if (al) al.style.display = 'inline';
+        if (alm) alm.style.display = 'block';
+      }
       return;
     }
-
-    var sb = window.sb || window.supabase;
-    if (!sb) return;
 
     var sessionRes = await sb.auth.getSession();
     var user = sessionRes?.data?.session?.user;
@@ -426,6 +430,15 @@ async function loadNavbarAvatar() {
 
     if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
     window.SETTINGS_STATE.currentUser = user;
+    
+    var isAdminUser = (user?.app_metadata?.role === 'admin');
+    sessionStorage.setItem('ww_user_is_admin', isAdminUser ? 'true' : 'false');
+    if (isAdminUser) {
+      var al = document.getElementById('admin-link');
+      var alm = document.getElementById('admin-link-mobile');
+      if (al) al.style.display = 'inline';
+      if (alm) alm.style.display = 'block';
+    }
 
     var displayName = user?.user_metadata?.username || user?.email || 'Kullanıcı';
     if (displayName) sessionStorage.setItem('ww_user_display_name', displayName);
