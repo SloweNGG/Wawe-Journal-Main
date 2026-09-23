@@ -1,11 +1,14 @@
 window.wwTogglePremium = function(e, btn) {
-  e.preventDefault();
-  e.stopPropagation();
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
   if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('premium');
   var m = document.getElementById('premium-dropdown-menu');
-  if(m) {
-    btn.classList.toggle('active');
-    m.classList.toggle('open');
+  var b = btn || document.getElementById('premium-dropdown-btn');
+  if (m) {
+    var isOpen = m.classList.toggle('open');
+    if (b) b.classList.toggle('active', isOpen);
   }
 };
 
@@ -599,6 +602,16 @@ function setupAvatarDropdown() {
     }
     if (e.target && e.target.closest && !e.target.closest('#dropdown-menu')) {
       dropdown.classList.remove('show');
+    } else if (e.target && e.target.closest && e.target.closest('#dropdown-menu') && e.target.closest('a')) {
+      dropdown.classList.remove('show');
+      var a = e.target.closest('a');
+      var href = a.getAttribute('href') || '';
+      if (href.indexOf('#panel-') !== -1) {
+        var panelId = href.split('#')[1];
+        if (panelId && typeof window.switchPanel === 'function') {
+          window.switchPanel(panelId);
+        }
+      }
     }
   }, true);
 
@@ -661,16 +674,30 @@ function initNavEvents() {
     });
   }
 
-  // Global: Premium dropdown dışına tıklanınca kapat
+  // Global: Premium dropdown dışına veya içindeki linklere tıklanınca kapat
   if (!window._premiumDdGlobalBound) {
     window._premiumDdGlobalBound = true;
     document.addEventListener('click', function(e) {
       var m = document.getElementById('premium-dropdown-menu');
       var b = document.getElementById('premium-dropdown-btn');
-      if (m && b && e.target) {
-        if (!e.target.closest('#premium-dropdown-menu') && !e.target.closest('#premium-dropdown-btn')) {
-          b.classList.remove('active');
-          m.classList.remove('open');
+      if (!m || !b || !e.target) return;
+
+      var insideMenu = e.target.closest('#premium-dropdown-menu');
+      var insideBtn = e.target.closest('#premium-dropdown-btn');
+
+      if (!insideMenu && !insideBtn) {
+        b.classList.remove('active');
+        m.classList.remove('open');
+      } else if (insideMenu && e.target.closest('a')) {
+        b.classList.remove('active');
+        m.classList.remove('open');
+        var a = e.target.closest('a');
+        var href = a.getAttribute('href') || '';
+        if (href.indexOf('#panel-') !== -1) {
+          var panelId = href.split('#')[1];
+          if (panelId && typeof window.switchPanel === 'function') {
+            window.switchPanel(panelId);
+          }
         }
       }
     });

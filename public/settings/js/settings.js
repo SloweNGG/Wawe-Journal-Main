@@ -1946,11 +1946,6 @@ async function updateBadge() {
 window.updateBadge = updateBadge;
 
 // ============================================================
-// NAV EVENT LISTENER — ELEMENT-LEVEL GUARD
-// ============================================================
-function initNavEvents() {
-  wwLog.log('Settings.js: skipping duplicate initNavEvents (navbar.js handles this)');
-}
 
 // ============================================================
 // PANEL CLICK EVENTLERİ — ELEMENT-LEVEL GUARD
@@ -2179,7 +2174,7 @@ async function bootSettings() {
       if (desc) desc.textContent = themeDesc(isLightTheme);
     }
 
-    initNavEvents();
+    if (typeof window.initNavEvents === 'function') window.initNavEvents();
     initPanelClickEvents();
     initAvatarPopup();
     initConfirmModal();

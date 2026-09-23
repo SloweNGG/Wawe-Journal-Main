@@ -1659,18 +1659,7 @@ import Layout from '../layouts/Layout.astro';
       }
     });
   </script>
-  
-  <!-- 6. NAVBAR'ı YÜKLE -->
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof loadNavbar === 'function') {
-        loadNavbar('navbar-container');
-        wwLog.log('✅ Navbar yüklendi!');
-      } else {
-        wwLog.warn('⚠️ loadNavbar fonksiyonu bulunamadı!');
-      }
-    });
-  </script>
+
   
   <!-- 7. SETTINGS JS (ES5 - AYNI KALIR) -->
   
