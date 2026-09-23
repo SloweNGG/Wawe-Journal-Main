@@ -56,14 +56,17 @@ function initUsersRealtime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, function(payload) {
         wwLog.log('⚡ [Admin Realtime] Kullanıcı güncellemesi algılandı:', payload.eventType);
         loadUsers().then(function() {
-          renderUsersTable();
+          if (typeof renderUsersTable === 'function') renderUsersTable();
           if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
             renderOverviewContent(adminState.overviewPeriod || 'week');
+          }
+          if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
+            loadAnalyticsData();
           }
         });
       })
       .subscribe();
-    wwLog.log('📡 [Admin] Kullanıcılar için canlı dinleyici (Realtime) başlatıldı.');
+    wwLog.log('📡 [Admin] Kullanıcılar ve istatistikler için canlı dinleyici (Realtime) başlatıldı.');
   } catch (e) {
     console.error('Realtime bağlanamadı:', e);
   }
@@ -72,7 +75,13 @@ function initUsersRealtime() {
     _usersPollInterval = setInterval(function() {
       if (document.visibilityState === 'visible') {
         loadUsers().then(function() {
-          renderUsersTable();
+          if (typeof renderUsersTable === 'function') renderUsersTable();
+          if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
+            renderOverviewContent(adminState.overviewPeriod || 'week');
+          }
+          if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
+            loadAnalyticsData();
+          }
         });
       }
     }, 15000);
