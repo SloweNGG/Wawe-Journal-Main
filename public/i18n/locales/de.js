@@ -805,4 +805,17 @@ export default {
   "journal.upgrade_cta": "Auf Premium Upgraden",
   "journal.switcher_title": "Konten",
   "journal.switch_to": "Wechseln zu {name}"
+  ,
+  "earnings.title": "Meine Einnahmen",
+  "earnings.loading": "Daten werden geladen...",
+  "earnings.empty_title": "Sie haben noch kein Einnahmenprofil",
+  "earnings.empty_desc": "Ihnen ist noch kein Rabatt- oder Empfehlungscode zugewiesen.<br>Wenn Sie ein Partner sind, wenden Sie sich bitte an den Administrator.",
+  "earnings.stat_usage": "Gesamtnutzung",
+  "earnings.stat_earnings": "Gesamteinnahmen",
+  "earnings.table_title": "Ihre zugewiesenen Codes",
+  "earnings.col_code": "Code",
+  "earnings.col_discount": "Rabatt",
+  "earnings.col_usage": "Nutzungsanzahl",
+  "earnings.col_commission": "Provision / Nutzung ($)",
+  "earnings.col_total": "Gesamteinnahmen"
 };

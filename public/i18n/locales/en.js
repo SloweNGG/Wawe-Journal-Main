@@ -839,4 +839,17 @@ export default {
   "journal.upgrade_cta": "Upgrade to Premium",
   "journal.switcher_title": "Accounts",
   "journal.switch_to": "Switch to {name}"
+  ,
+  "earnings.title": "My Earnings",
+  "earnings.loading": "Loading data...",
+  "earnings.empty_title": "You do not have an earnings profile yet",
+  "earnings.empty_desc": "There is no discount or referral code assigned to you.<br>If you are a partner, please contact the administrator.",
+  "earnings.stat_usage": "Total Usage",
+  "earnings.stat_earnings": "Total Earnings",
+  "earnings.table_title": "Your Assigned Codes",
+  "earnings.col_code": "Code",
+  "earnings.col_discount": "Discount",
+  "earnings.col_usage": "Usage Count",
+  "earnings.col_commission": "Commission / Usage ($)",
+  "earnings.col_total": "Total Earnings"
 };

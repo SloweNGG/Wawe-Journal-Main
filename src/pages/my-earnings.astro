@@ -50,7 +50,6 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
   <script src="/config.js" is:inline></script>
   <script src="/i18n.js" is:inline></script>
-  <!-- defer is removed from supabase to ensure it's loaded before script execution -->
   <script type="module" src="/src/bundle.js" is:inline defer></script>
   <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
 </Fragment>
@@ -66,14 +65,14 @@ import Layout from '../layouts/Layout.astro';
     <!-- Yükleniyor -->
     <div id="loading-state" style="text-align:center; padding: 4rem;">
       <div class="spinner" style="margin: 0 auto;"></div>
-      <p style="color:var(--muted); margin-top:1rem;">Veriler yükleniyor...</p>
+      <p style="color:var(--muted); margin-top:1rem;" data-i18n="earnings.loading">Veriler yükleniyor...</p>
     </div>
 
     <!-- Kod tanımlı değil -->
     <div id="empty-state" class="earnings-empty" style="display:none;">
       <i data-lucide="trending-up" style="width:48px;height:48px;color:var(--muted);margin-bottom:1rem;display:inline-block;"></i>
-      <h3 style="font-size:1.25rem; font-weight:600; margin-bottom:0.5rem;">Henüz bir kazanç profiliniz yok</h3>
-      <p style="color:var(--muted);">Size tanımlanmış bir indirim veya referans kodu bulunmuyor.<br>Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.</p>
+      <h3 style="font-size:1.25rem; font-weight:600; margin-bottom:0.5rem;" data-i18n="earnings.empty_title">Henüz bir kazanç profiliniz yok</h3>
+      <p style="color:var(--muted);" data-i18n="earnings.empty_desc">Size tanımlanmış bir indirim veya referans kodu bulunmuyor.<br>Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.</p>
     </div>
 
     <!-- Ana İçerik -->
@@ -81,26 +80,26 @@ import Layout from '../layouts/Layout.astro';
 
       <div class="earnings-stat-grid">
         <div class="stat-card">
-          <div class="stat-label">Toplam Kullanım</div>
+          <div class="stat-label" data-i18n="earnings.stat_usage">Toplam Kullanım</div>
           <div class="stat-value" id="stat-usage" style="color:var(--accent);">0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Toplam Kazanç</div>
+          <div class="stat-label" data-i18n="earnings.stat_earnings">Toplam Kazanç</div>
           <div class="stat-value positive" id="stat-earnings">$0.00</div>
         </div>
       </div>
 
       <div class="earnings-table-wrap">
-        <h2 class="earnings-table-title">Tanımlı Kodlarınız</h2>
+        <h2 class="earnings-table-title" data-i18n="earnings.table_title">Tanımlı Kodlarınız</h2>
         <div class="ww-table-wrapper" style="overflow-x:auto;">
           <table class="ww-table">
             <thead>
               <tr>
-                <th style="padding-left: 1.5rem;">Kod</th>
-                <th>İndirim</th>
-                <th>Kullanım Sayısı</th>
-                <th>Komisyon / Kullanım ($)</th>
-                <th style="padding-right: 1.5rem;">Toplam Kazanç</th>
+                <th style="padding-left: 1.5rem;" data-i18n="earnings.col_code">Kod</th>
+                <th data-i18n="earnings.col_discount">İndirim</th>
+                <th data-i18n="earnings.col_usage">Kullanım Sayısı</th>
+                <th data-i18n="earnings.col_commission">Komisyon / Kullanım ($)</th>
+                <th style="padding-right: 1.5rem;" data-i18n="earnings.col_total">Toplam Kazanç</th>
               </tr>
             </thead>
             <tbody id="codes-tbody">
@@ -200,6 +199,9 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('stat-earnings').textContent = '$' + totalEarnings.toFixed(2);
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof window.i18n !== 'undefined' && typeof window.i18n.translatePage === 'function') {
+          window.i18n.translatePage();
+        }
       } catch (err) {
         console.error(err);
         document.getElementById('loading-state').style.display = 'none';

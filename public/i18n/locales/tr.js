@@ -783,4 +783,17 @@ export default {
   "journal.switcher_title": "Hesaplar",
   "journal.switch_to": "{name} hesabına geç"
 
+  ,
+  "earnings.title": "Kazançlarım",
+  "earnings.loading": "Veriler yükleniyor...",
+  "earnings.empty_title": "Henüz bir kazanç profiliniz yok",
+  "earnings.empty_desc": "Size tanımlanmış bir indirim veya referans kodu bulunmuyor.<br>Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.",
+  "earnings.stat_usage": "Toplam Kullanım",
+  "earnings.stat_earnings": "Toplam Kazanç",
+  "earnings.table_title": "Tanımlı Kodlarınız",
+  "earnings.col_code": "Kod",
+  "earnings.col_discount": "İndirim",
+  "earnings.col_usage": "Kullanım Sayısı",
+  "earnings.col_commission": "Komisyon / Kullanım ($)",
+  "earnings.col_total": "Toplam Kazanç"
 };
