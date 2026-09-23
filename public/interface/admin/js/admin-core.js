@@ -227,7 +227,15 @@ function switchPanel(panelId, clickedEl) {
   
   try {
     if (panelId === 'panel-overview' && typeof renderOverviewContent === 'function') renderOverviewContent(adminState.overviewPeriod || 'week');
-    if (panelId === 'panel-users' && typeof renderUsersTable === 'function') renderUsersTable();
+    if (panelId === 'panel-users') {
+      if (typeof loadUsers === 'function') {
+        loadUsers().then(function() {
+          if (typeof renderUsersTable === 'function') renderUsersTable();
+        });
+      } else if (typeof renderUsersTable === 'function') {
+        renderUsersTable();
+      }
+    }
     if (panelId === 'panel-references' && typeof renderReferencesTable === 'function') renderReferencesTable();
     if (panelId === 'panel-analytics' && typeof loadAnalyticsData === 'function') loadAnalyticsData();
     if (panelId === 'panel-referral-codes' && typeof renderReferralCodesTable === 'function') renderReferralCodesTable();
@@ -437,6 +445,7 @@ async function initAdmin() {
     try { if (typeof loadReferralCodes === 'function') await loadReferralCodes(); } catch(e) { console.error('loadReferralCodes hatası:', e); }
     
     renderAdminPanel();
+    try { if (typeof initUsersRealtime === 'function') initUsersRealtime(); } catch(e) {}
     
     setTimeout(updatePlanBadge, 500);
     

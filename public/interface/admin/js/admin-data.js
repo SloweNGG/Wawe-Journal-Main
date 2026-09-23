@@ -42,6 +42,43 @@ async function loadUsers() {
   }
 }
 
+var _usersRealtimeSub = null;
+var _usersPollInterval = null;
+
+function initUsersRealtime() {
+  if (_usersRealtimeSub) return;
+  var client = getSbClient();
+  if (!client || typeof client.channel !== 'function') return;
+
+  try {
+    _usersRealtimeSub = client
+      .channel('admin-user-profiles-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, function(payload) {
+        wwLog.log('⚡ [Admin Realtime] Kullanıcı güncellemesi algılandı:', payload.eventType);
+        loadUsers().then(function() {
+          renderUsersTable();
+          if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
+            renderOverviewContent(adminState.overviewPeriod || 'week');
+          }
+        });
+      })
+      .subscribe();
+    wwLog.log('📡 [Admin] Kullanıcılar için canlı dinleyici (Realtime) başlatıldı.');
+  } catch (e) {
+    console.error('Realtime bağlanamadı:', e);
+  }
+
+  if (!_usersPollInterval) {
+    _usersPollInterval = setInterval(function() {
+      if (document.visibilityState === 'visible') {
+        loadUsers().then(function() {
+          renderUsersTable();
+        });
+      }
+    }, 15000);
+  }
+}
+
 async function loadReferences() {
   try {
     var client = getSbClient();

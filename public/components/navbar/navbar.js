@@ -193,6 +193,7 @@ function getNavbarHTML(translations) {
             <span data-i18n="nav.settings">${tt('nav.settings', 'Ayarlar')}</span>
           </a>
           <a href="/my-earnings.html" class="dropdown-item" data-i18n="nav.earnings">
+            <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
           </a>
           <span id="admin-link" style="display:none;">
@@ -289,7 +290,7 @@ function getNavbarHTML(translations) {
             <i data-lucide="settings" style="width:16px;height:16px;"></i> ${tt('nav.settings', 'Ayarlar')}
           </a>
           <a href="/my-earnings.html" data-i18n="nav.earnings">
-            ${tt('nav.earnings', 'Kazançlarım')}
+            <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> ${tt('nav.earnings', 'Kazançlarım')}
           </a>
           <span id="admin-link-mobile" style="display:none;">
             <a href="/admin.html" data-i18n="nav.admin">
@@ -779,7 +780,7 @@ function loadNavbar(containerId) {
       'nav.premium', 'nav.premium_dashboard', 'nav.theme_customization', 'nav.overtrade_alert',
       'nav.upgrade_premium', 'nav.notifications', 'nav.mark_read', 'nav.no_notifications',
       'nav.profile', 'nav.settings', 'nav.logout', 'nav.home', 'nav.premium_badge',
-      'nav.free_badge', 'nav.menu_general', 'nav.menu_premium', 'nav.menu_account', 'nav.earnings'
+      'nav.free_badge', 'nav.menu_general', 'nav.menu_premium', 'nav.menu_account'
     ];
     navbarKeys.forEach(function(key) { translations[key] = i18n.t(key); });
   }

@@ -123,7 +123,7 @@ export async function requireAuth() {
       return null;
     }
     
-    throttledUpdateLastActive(session.user.id).catch(() => {});
+    throttledUpdateLastActive(session.user).catch(() => {});
     return session.user;
   } catch (error) {
     console.error('requireAuth hatası:', error);
@@ -169,7 +169,7 @@ export async function requireAuthSilent() {
       return null;
     }
     
-    throttledUpdateLastActive(session.user.id).catch(() => {});
+    throttledUpdateLastActive(session.user).catch(() => {});
     return session.user;
   } catch (error) {
     return null;
@@ -190,15 +190,45 @@ export function isAdmin(user) {
   return user?.app_metadata?.role === 'admin';
 }
 
-export async function throttledUpdateLastActive(userId) {
+export async function throttledUpdateLastActive(userOrId) {
+  if (!userOrId) return;
+  const user = typeof userOrId === 'object' ? userOrId : null;
+  const userId = user ? user.id : userOrId;
+  if (!userId) return;
+
   const key = 'ww_last_active_push';
   const lastPush = parseInt(safeLocalStorageGet(key, '0'), 10);
   const now = Date.now();
   if (now - lastPush < ACTIVE_THROTTLE_MS) return;
   safeLocalStorageSet(key, String(now));
-  await sb
-    .from('user_profiles')
-    .upsert({ id: userId, last_active: new Date().toISOString() }, { onConflict: 'id' });
+
+  const updateData = { last_active: new Date().toISOString() };
+  if (user && user.email) {
+    updateData.email = user.email;
+    const metaUsername = user.user_metadata?.username || user.user_metadata?.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : null);
+    if (metaUsername) updateData.username = metaUsername;
+  }
+
+  try {
+    const { data, error } = await sb
+      .from('user_profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select('id');
+
+    if (!error && (!data || data.length === 0) && user) {
+      const username = user.user_metadata?.username || user.user_metadata?.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'trader');
+      await sb.from('user_profiles').insert([{
+        id: userId,
+        email: user.email || null,
+        username: username,
+        plan: 'free',
+        role: 'user',
+        is_active: true,
+        last_active: new Date().toISOString()
+      }]).catch(() => {});
+    }
+  } catch (e) {}
 }
 
 // ── LOGOUT ────────────────────────────────────────────────────
