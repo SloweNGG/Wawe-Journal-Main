@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // premium-dashboard.js - ANA DOSYA
 // Global state, init, event listeners, koordinasyon
 // ⭐ FIX: Scroll listener KALDIRILDI (gereksiz performans yükü)

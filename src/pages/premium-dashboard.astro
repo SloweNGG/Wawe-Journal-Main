@@ -1,4 +1,4 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" showQuickAdd={true}>
@@ -10,6 +10,16 @@ import Layout from '../layouts/Layout.astro';
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
+  
+  
+  <!-- SORTABLEJS -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline></script>
+  
+  <!-- APEXCHARTS -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline></script>
+  
+  <!-- LIGHTWEIGHT CHARTS -->
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline></script>
 
   <script is:inline>
     (function() {
@@ -48,25 +58,6 @@ import Layout from '../layouts/Layout.astro';
       background: #f4f4f9;
     }
   </style>
-
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" as="script" />
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts" as="script" />
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
-  <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js" is:inline defer></script>
-  <script type="module" src="/src/bundle.js" is:inline defer></script>
-  <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
-  <script type="module" src="/interface/premium-dashboard/js/helpers.js" is:inline defer></script>
-  <script type="module" src="/interface/premium-dashboard/js/chart-renderers.js" is:inline defer></script>
-  <script type="module" src="/interface/premium-dashboard/js/dashboard-manager.js" is:inline defer></script>
-  <script type="module" src="/interface/premium-dashboard/js/premium-dashboard.js" is:inline defer></script>
 </Fragment>
   <!-- NAVBAR CONTAINER -->
 
@@ -85,30 +76,29 @@ import Layout from '../layouts/Layout.astro';
        ============================================================ -->
 
   <!-- 1. ÜÇÜNCÜ PARTY KÜTÜPHANELER -->
-  
-  
-  
-  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" is:inline></script>
 
   <!-- 2. CORE KONFİG VE İ18N (ES5) -->
-  
-  
+  <script src="/config.js" is:inline></script>
+  <script src="/i18n.js" is:inline></script>
 
   <!-- 3. ⭐ ANA MODÜL SCRIPT (ES Module) -->
-  
+  <script type="module" src="/src/script.js" is:inline></script>
 
   <!-- 4. NAVBAR (ES5) -->
-  
+  <script src="/components/navbar/navbar.js" is:inline></script>
 
   <!-- 5. QUICK ADD (ES5) -->
-  
-  
+  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+  <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
   <!-- 6. ⭐ PREMIUM DASHBOARD - MODÜLER JS (ES Module) -->
-  
-  
-  
-  
+  <script type="module" src="/interface/premium-dashboard/js/helpers.js" is:inline></script>
+  <script type="module" src="/interface/premium-dashboard/js/chart-renderers.js" is:inline></script>
+  <script type="module" src="/interface/premium-dashboard/js/dashboard-manager.js" is:inline></script>
+  <script type="module" src="/interface/premium-dashboard/js/premium-dashboard.js" is:inline></script>
 
   <!-- 7. ⭐ QUICK ADD MANUEL BAŞLATICI (dashboard.html'den alındı) -->
   <script is:inline>
