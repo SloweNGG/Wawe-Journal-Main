@@ -30,6 +30,7 @@ export default {
   "nav.settings": "Ayarlar",
   "nav.logout": "Çıkış Yap",
   "nav.admin": "Admin",
+  "nav.earnings": "Kazançlarım",
   "nav.login": "Giriş Yap",
   "nav.register": "Kayıt Ol →",
 

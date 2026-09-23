@@ -30,6 +30,7 @@ export default {
   "nav.settings": "Einstellungen",
   "nav.logout": "Abmelden",
   "nav.admin": "Admin",
+  "nav.earnings": "Meine Einnahmen",
   "nav.login": "Anmelden",
   "nav.register": "Registrieren →",
 

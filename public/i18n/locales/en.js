@@ -30,6 +30,7 @@ export default {
   "nav.settings": "Settings",
   "nav.logout": "Logout",
   "nav.admin": "Admin",
+  "nav.earnings": "My Earnings",
   "nav.login": "Login",
   "nav.register": "Register →",
 
