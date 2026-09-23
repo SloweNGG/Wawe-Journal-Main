@@ -123,6 +123,7 @@ export async function requireAuth() {
       return null;
     }
     
+    throttledUpdateLastActive(session.user.id).catch(() => {});
     throttledUpdateLastActive(session.user).catch(() => {});
     return session.user;
   } catch (error) {
@@ -169,6 +170,7 @@ export async function requireAuthSilent() {
       return null;
     }
     
+    throttledUpdateLastActive(session.user.id).catch(() => {});
     throttledUpdateLastActive(session.user).catch(() => {});
     return session.user;
   } catch (error) {
