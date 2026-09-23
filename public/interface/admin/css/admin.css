@@ -8,7 +8,7 @@
    ⭐ GRAFİK ETİKETLERİ: DM Sans'a geçirildi ve büyütüldü
    ============================================================ */
 
-/* ⭐ FONT TANIMLAMALARI - ANA GÖVDE */
+/* ⭐ FONT TANIMLAMALARI - TÜM PANEL (INTER) */
 .admin-main,
 .admin-sidebar,
 .admin-panels,
@@ -19,10 +19,10 @@
 .price-card,
 .modal-box,
 .toast {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ⭐ BAŞLIKLAR - Syne */
+/* ⭐ BAŞLIKLAR - Inter (Okunaklı & Net) */
 .admin-main h1,
 .admin-main h2,
 .admin-main h3,
@@ -30,8 +30,9 @@
 .s-card-header h2,
 .page-header h1,
 .modal-header h2 {
-  font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 /* ⭐ SAYISAL DEĞERLER - Inter */
@@ -42,12 +43,12 @@
 .admin-main .bw-pnl,
 .ww-table td,
 .price-input-group input {
-  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* ⭐ ETİKETLER & TABLO BAŞLIKLARI - DM Mono'dan DM Sans'a geçti */
+/* ⭐ ETİKETLER & TABLO BAŞLIKLARI - Inter */
 .admin-main .ww-table th,
 .admin-main .stat-label,
 .admin-main .pstat-label,
@@ -56,13 +57,57 @@
 .admin-tab-btn,
 .field label,
 .section-divider {
-  font-family: 'DM Sans', 'DM Mono', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: 0.04em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* ⭐ CANLI BAĞLANTI DURUM ROZETİ */
+.live-connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  vertical-align: middle;
+}
+.live-connection-badge.online {
+  background: rgba(34, 197, 94, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.live-connection-badge.offline {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+.live-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.live-connection-badge.online .live-status-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  animation: liveBadgePulse 2s infinite ease-in-out;
+}
+.live-connection-badge.offline .live-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+}
+@keyframes liveBadgePulse {
+  0% { transform: scale(0.9); opacity: 0.75; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.75; }
 }
 
 /* ⭐ SPINNER - DM Sans */
 .admin-main .spinner {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* ⭐ SAYISAL DEĞERLER İÇİN ÖZEL - tabular nums */
@@ -140,12 +185,12 @@
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--muted);
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--surface2);
 }
 
 .admin-sidebar .sidebar-header .sidebar-username {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: var(--text);
@@ -154,7 +199,7 @@
 
 /* ⭐ SIDEBAR EMAIL - DM Mono KALIR (eposta için) */
 .admin-sidebar .sidebar-header .sidebar-email {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
   color: var(--muted);
   word-break: break-all;
@@ -171,7 +216,7 @@
   gap: .65rem;
   padding: .65rem .85rem;
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
   color: var(--muted);
@@ -358,7 +403,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .s-card-header h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text);
@@ -391,7 +436,7 @@ body.light-theme .panel-glow.prices-glow {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: .5rem .9rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
@@ -432,14 +477,14 @@ body.light-theme .panel-glow.prices-glow {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .page-header .subtitle {
   color: var(--muted);
   font-size: 0.9rem;
   margin: 0;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* ⭐ ADMIN BADGE - DM Mono KALIR (etiket) */
@@ -452,7 +497,7 @@ body.light-theme .panel-glow.prices-glow {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -479,7 +524,7 @@ body.light-theme .panel-glow.prices-glow {
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* ⭐ TABLO HÜCRELERİ - büyütüldü */
@@ -490,7 +535,7 @@ body.light-theme .panel-glow.prices-glow {
   vertical-align: middle;
   line-height: 1.5;
   font-size: 13.5px;
-  font-family: 'Inter', 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
@@ -524,7 +569,7 @@ body.light-theme .panel-glow.prices-glow {
 /* ⭐ STAT ETİKET - DM Sans, büyütüldü */
 .stat-card .stat-label {
   font-size: 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -533,7 +578,7 @@ body.light-theme .panel-glow.prices-glow {
 
 /* ⭐ STAT DEĞER - büyütüldü */
 .stat-card .stat-value {
-  font-family: 'Inter', 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--text);
@@ -560,7 +605,7 @@ body.light-theme .panel-glow.prices-glow {
   gap: 4px;
   padding: 0.2rem 0.65rem;
   border-radius: 20px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -603,7 +648,7 @@ body.light-theme .panel-glow.prices-glow {
 /* ⭐ EXPIRY TEXT - DM Mono KALIR (tarih) */
 .expiry-text {
   font-size: 11px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   color: var(--muted);
 }
 
@@ -624,7 +669,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .price-card .price-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text);
@@ -635,7 +680,7 @@ body.light-theme .panel-glow.prices-glow {
   font-size: 13px;
   color: var(--muted);
   margin-bottom: 0.75rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .price-input-group {
@@ -650,7 +695,7 @@ body.light-theme .panel-glow.prices-glow {
   font-weight: 500;
   color: var(--muted);
   min-width: 60px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .price-input-group input[type="number"] {
@@ -659,7 +704,7 @@ body.light-theme .panel-glow.prices-glow {
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   color: var(--text);
-  font-family: 'Inter', 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 15px;
   width: 110px;
   outline: none;
@@ -673,7 +718,7 @@ body.light-theme .panel-glow.prices-glow {
 
 /* ⭐ CURRENCY LABEL - DM Mono KALIR */
 .price-input-group .currency-label {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--muted);
 }
@@ -693,7 +738,7 @@ body.light-theme .panel-glow.prices-glow {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 0.35rem 0.85rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   color: var(--text);
 }
@@ -724,7 +769,7 @@ body.light-theme .panel-glow.prices-glow {
   border-radius: 8px;
   padding: 0.4rem 0.7rem;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   width: 80px;
   outline: none;
@@ -744,7 +789,7 @@ body.light-theme .panel-glow.prices-glow {
   font-size: 12px;
   cursor: pointer;
   transition: opacity 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .add-method-input button:hover {
@@ -798,7 +843,7 @@ body.light-theme .panel-glow.prices-glow {
   padding: 0.5rem 1rem 0.5rem 2.25rem;
   color: var(--text);
   font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   width: 220px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -815,7 +860,7 @@ body.light-theme .panel-glow.prices-glow {
 
 /* ⭐ ID CHIP - DM Mono KALIR */
 .id-chip {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
   color: var(--muted);
   background: var(--surface2);
@@ -832,7 +877,7 @@ body.light-theme .panel-glow.prices-glow {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
 }
 
 .role-admin {
@@ -855,7 +900,7 @@ body.light-theme .panel-glow.prices-glow {
   color: var(--green);
   font-size: 12px;
   font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .status-online::before {
@@ -874,7 +919,7 @@ body.light-theme .panel-glow.prices-glow {
   gap: 5px;
   color: var(--muted);
   font-size: 12px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .status-offline::before {
@@ -920,7 +965,7 @@ body.light-theme .panel-glow.prices-glow {
   font-weight: 700;
   font-size: 14px;
   color: var(--muted);
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .recent-premium-card .avatar-small img {
@@ -937,21 +982,21 @@ body.light-theme .panel-glow.prices-glow {
   font-weight: 600;
   color: var(--text);
   font-size: 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 /* ⭐ RECENT PREMIUM EMAIL - DM Mono KALIR */
 .recent-premium-card .info .email {
   font-size: 12px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
 }
 
 /* ⭐ PLAN TYPE - DM Mono KALIR */
 .recent-premium-card .info .plan-type {
   font-size: 11px;
   font-weight: 600;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   color: var(--accent2);
   background: rgba(139,92,246,0.1);
   padding: 0.1rem 0.5rem;
@@ -960,7 +1005,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .recent-premium-card .amount {
-  font-family: 'Inter', 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 16px;
   font-weight: 700;
   color: var(--green);
@@ -993,7 +1038,7 @@ body.light-theme .panel-glow.prices-glow {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   animation: toastIn 0.3s ease;
   max-width: 340px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .toast.success {
@@ -1078,7 +1123,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .modal-header h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: var(--text);
@@ -1131,7 +1176,7 @@ body.light-theme .panel-glow.prices-glow {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .field input,
@@ -1143,7 +1188,7 @@ body.light-theme .panel-glow.prices-glow {
   border-radius: 8px;
   padding: 0.6rem 0.85rem;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -1179,7 +1224,7 @@ body.light-theme .panel-glow.prices-glow {
 
 /* ⭐ SECTION DIVIDER - Syne, büyütüldü */
 .section-divider {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1232,7 +1277,7 @@ body.light-theme .panel-glow.prices-glow {
   font-size: 12px;
   border-radius: 6px;
   min-height: 28px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .btn.btn-primary {
@@ -1241,7 +1286,7 @@ body.light-theme .panel-glow.prices-glow {
   color: #fff;
   padding: 0.65rem 1.3rem;
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1259,7 +1304,7 @@ body.light-theme .panel-glow.prices-glow {
   color: var(--muted);
   padding: 0.65rem 1.3rem;
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1277,7 +1322,7 @@ body.light-theme .panel-glow.prices-glow {
   color: var(--red);
   padding: 0.65rem 1.3rem;
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1305,12 +1350,12 @@ body.light-theme .panel-glow.prices-glow {
 .charts-grid .s-card .recharts-legend-item-text,
 .charts-grid .s-card .recharts-tooltip-label,
 .charts-grid .s-card .recharts-tooltip-item {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* GRAFİK BAŞLIKLARI */
 .charts-grid .s-card .s-card-header h2 {
-  font-family: 'Syne', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 1rem !important;
   font-weight: 600 !important;
 }
@@ -1318,7 +1363,7 @@ body.light-theme .panel-glow.prices-glow {
 /* GRAFİK ALT BAŞLIKLARI / AÇIKLAMALARI */
 .charts-grid .s-card .s-card-header p,
 .charts-grid .s-card .chart-subtitle {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 13px !important;
   color: var(--muted) !important;
 }
@@ -1328,14 +1373,14 @@ body.light-theme .panel-glow.prices-glow {
 .charts-grid .s-card .recharts-cartesian-axis-tick-value,
 .charts-grid .s-card .recharts-x-axis .recharts-cartesian-axis-tick text,
 .charts-grid .s-card .recharts-y-axis .recharts-cartesian-axis-tick text {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 11px !important;
   fill: var(--muted) !important;
 }
 
 /* GRAFİK LEGEND (Free / Premium / User) */
 .charts-grid .s-card .recharts-legend-item-text {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   fill: var(--text) !important;
@@ -1343,13 +1388,13 @@ body.light-theme .panel-glow.prices-glow {
 
 /* GRAFİK TOOLTIP (hover ile gelen bilgi kutuları) */
 .charts-grid .s-card .recharts-tooltip-label {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
   color: var(--text) !important;
 }
 
 .charts-grid .s-card .recharts-tooltip-item {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
 }
 
@@ -1361,7 +1406,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .charts-grid .s-card .recharts-tooltip-item-list {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
 /* GRAFİK CUSTOM LABEL (değerler doğrudan grafik üzerinde gösteriliyorsa) */
@@ -1369,7 +1414,7 @@ body.light-theme .panel-glow.prices-glow {
 .charts-grid .s-card .custom-label,
 .charts-grid .s-card .recharts-bar-label text,
 .charts-grid .s-card .recharts-area-label text {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   fill: var(--text) !important;
@@ -1378,7 +1423,7 @@ body.light-theme .panel-glow.prices-glow {
 /* GRAFİK İÇİNDEKİ "Free", "Premium", "User" ETİKETLERİ */
 .charts-grid .s-card .legend-item,
 .charts-grid .s-card .recharts-legend-item {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
 }
 
@@ -1471,7 +1516,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .overview-main-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--text);
@@ -1506,7 +1551,7 @@ body.light-theme .panel-glow.prices-glow {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .period-pill-btn:hover {
@@ -1656,7 +1701,7 @@ body.light-theme .panel-glow.prices-glow {
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   white-space: nowrap;
 }
 
@@ -1765,7 +1810,7 @@ body.light-theme .panel-glow.prices-glow {
 
 .plan-count {
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
 }
 
@@ -1844,7 +1889,7 @@ body.light-theme .panel-glow.prices-glow {
   padding: 2px 8px;
   border-radius: 6px;
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .badge-sub-free {
@@ -1862,7 +1907,7 @@ body.light-theme .panel-glow.prices-glow {
 .user-mini-date {
   font-size: 11px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   min-width: 80px;
   text-align: right;
 }
@@ -2238,7 +2283,7 @@ body.light-theme .panel-glow.prices-glow {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .status-badge.status-active {
@@ -2375,7 +2420,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .coupon-code-chip strong {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -2407,7 +2452,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .coupon-referrer .text-muted {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 10px;
 }
 
@@ -2475,7 +2520,7 @@ body.light-theme .panel-glow.prices-glow {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
 }
@@ -2510,7 +2555,7 @@ body.light-theme .panel-glow.prices-glow {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .status-toggle-btn.active {
@@ -2601,7 +2646,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .pricing-config-header h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
@@ -2628,7 +2673,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .pricing-form-section .section-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2672,7 +2717,7 @@ body.light-theme .panel-glow.prices-glow {
   font-size: 12px;
   color: var(--muted);
   pointer-events: none;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .field-hint {
@@ -2692,7 +2737,7 @@ body.light-theme .panel-glow.prices-glow {
   gap: 8px;
   font-size: 12px;
   color: #34d399;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .pricing-calc-info strong {
@@ -2800,7 +2845,7 @@ body.light-theme .panel-glow.prices-glow {
   font-weight: 700;
   color: #a78bfa;
   margin-bottom: 2px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .preview-badge .live-dot {
@@ -2857,7 +2902,7 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 .preview-plan-name {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
@@ -3080,4 +3125,12 @@ body.light-theme .panel-glow.prices-glow {
     width: 100%;
     justify-content: center;
   }
+}
+
+
+/* ⭐ APEXCHARTS TYPOGRAPHY OVERRIDE */
+.apexcharts-canvas text,
+.apexcharts-tooltip,
+.apexcharts-legend-text {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }

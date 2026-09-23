@@ -128,7 +128,7 @@ async function loadAnalyticsData() {
               '<div class="email">' + escapeHtml(u.email) + '</div>' +
               '<div style="display:flex;align-items:center;gap:0.5rem;margin-top:2px;">' +
                 '<span class="plan-type">' + u.plan + '</span>' +
-                '<span style="font-size:10px;color:var(--muted);font-family:DM Mono,monospace;">' + formatDateFull(u.date) + '</span>' +
+                '<span style="font-size:11px;color:var(--muted);font-family:\'Inter\',sans-serif;">' + formatDateFull(u.date) + '</span>' +
               '</div>' +
             '</div>' +
             '<div class="amount">+$' + u.amount.toFixed(2) + '</div>' +
@@ -163,8 +163,8 @@ async function loadAnalyticsData() {
           height: '100%',
           toolbar: { show: false },
           background: 'transparent',
-          fontFamily: "'DM Sans', sans-serif",
-          animations: { enabled: true, speed: 400 }
+          fontFamily: "'Inter', sans-serif",
+          animations: { enabled: false }
         },
         plotOptions: {
           bar: {
@@ -198,7 +198,7 @@ async function loadAnalyticsData() {
           labels: {
             style: {
               colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Inter', sans-serif",
               fontSize: '11px'
             }
           },
@@ -209,7 +209,7 @@ async function loadAnalyticsData() {
           labels: {
             style: {
               colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Inter', sans-serif",
               fontSize: '11px'
             },
             formatter: function(val) { return Math.floor(val); }
@@ -217,7 +217,7 @@ async function loadAnalyticsData() {
         },
         tooltip: {
           theme: theme.mode,
-          style: { fontFamily: "'DM Sans', sans-serif", fontSize: '12px' }
+          style: { fontFamily: "'Inter', sans-serif", fontSize: '12px' }
         },
         legend: { show: false }
       };
@@ -238,8 +238,8 @@ async function loadAnalyticsData() {
           height: '100%',
           toolbar: { show: false },
           background: 'transparent',
-          fontFamily: "'DM Sans', sans-serif",
-          animations: { enabled: true, speed: 400 }
+          fontFamily: "'Inter', sans-serif",
+          animations: { enabled: false }
         },
         plotOptions: {
           bar: {
@@ -273,7 +273,7 @@ async function loadAnalyticsData() {
           labels: {
             style: {
               colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Inter', sans-serif",
               fontSize: '11px'
             }
           },
@@ -284,7 +284,7 @@ async function loadAnalyticsData() {
           labels: {
             style: {
               colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Inter', sans-serif",
               fontSize: '11px'
             },
             formatter: function(val) { return '$' + val; }
@@ -295,13 +295,13 @@ async function loadAnalyticsData() {
           y: {
             formatter: function(val) { return '$' + val.toFixed(2); }
           },
-          style: { fontFamily: "'DM Sans', sans-serif", fontSize: '12px' }
+          style: { fontFamily: "'Inter', sans-serif", fontSize: '12px' }
         },
         legend: {
           show: true,
           position: 'bottom',
           labels: { colors: theme.textColor },
-          fontFamily: "'DM Mono', monospace",
+          fontFamily: "'Inter', sans-serif",
           fontSize: '10px'
         }
       };
@@ -1239,10 +1239,11 @@ function renderOverviewContent(period) {
     '<div class="overview-container">' +
       '<div class="overview-header-bar">' +
         '<div>' +
-          '<h2 style="font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 4px 0;color:var(--text);display:flex;align-items:center;gap:8px;">' +
+          '<h2 style="font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 4px 0;color:var(--text);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
             'Platform Genel Bakış ' +
-            '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.15);color:#a78bfa;border:1px solid rgba(124,109,250,0.3);">' +
-              'Canlı Veriler' +
+            '<span class="live-connection-badge ' + (navigator.onLine ? 'online' : 'offline') + '" id="overview-live-badge">' +
+              '<span class="live-status-dot ' + (navigator.onLine ? 'pulse' : '') + '"></span>' +
+              '<span class="live-status-text">' + (navigator.onLine ? 'Güncellenme : Şuan Canlı' : 'İnternet bağlantısı kesildi') + '</span>' +
             '</span>' +
           '</h2>' +
           '<p style="font-size:13px;color:var(--muted);margin:0;">Sistem geneli kullanıcı, abonelik ve gelir metrikleri</p>' +
@@ -1432,7 +1433,8 @@ function renderOverviewContent(period) {
           toolbar: { show: false },
           zoom: { enabled: false },
           background: 'transparent',
-          fontFamily: 'Inter, sans-serif'
+          fontFamily: "'Inter', sans-serif",
+          animations: { enabled: false }
         },
         colors: ['#7c6dfa'],
         fill: {
@@ -1450,20 +1452,21 @@ function renderOverviewContent(period) {
           categories: bucketLabels,
           tickAmount: period === 'month' ? 6 : undefined,
           labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' }
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" }
           },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
         yaxis: {
           labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' },
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" },
             formatter: function(val) { return Math.round(val); }
           }
         },
         grid: { borderColor: theme.gridColor, strokeDashArray: 4 },
         tooltip: {
           theme: theme.mode,
+          style: { fontFamily: "'Inter', sans-serif" },
           y: { formatter: function(val) { return val + ' kullanıcı'; } }
         }
       };
@@ -1481,7 +1484,8 @@ function renderOverviewContent(period) {
           height: 280,
           toolbar: { show: false },
           background: 'transparent',
-          fontFamily: 'Inter, sans-serif'
+          fontFamily: "'Inter', sans-serif",
+          animations: { enabled: false }
         },
         plotOptions: {
           bar: {
@@ -1509,20 +1513,21 @@ function renderOverviewContent(period) {
           categories: bucketLabels,
           tickAmount: period === 'month' ? 6 : undefined,
           labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' }
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" }
           },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
         yaxis: {
           labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: 'DM Mono, monospace' },
+            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" },
             formatter: function(val) { return '$' + Math.round(val); }
           }
         },
         grid: { borderColor: theme.gridColor, strokeDashArray: 4 },
         tooltip: {
           theme: theme.mode,
+          style: { fontFamily: "'Inter', sans-serif" },
           y: { formatter: function(val) { return '$' + Number(val).toFixed(2); } }
         }
       };
@@ -1540,7 +1545,8 @@ function renderOverviewContent(period) {
           type: 'donut',
           height: 220,
           background: 'transparent',
-          fontFamily: 'Inter, sans-serif'
+          fontFamily: "'Inter', sans-serif",
+          animations: { enabled: false }
         },
         colors: ['#475569', '#7c6dfa'],
         stroke: { width: 0 },
@@ -1552,12 +1558,13 @@ function renderOverviewContent(period) {
               size: '72%',
               labels: {
                 show: true,
-                name: { show: true, fontSize: '12px', color: theme.textColor },
-                value: { show: true, fontSize: '20px', fontWeight: 700, color: theme.mode === 'dark' ? '#fff' : '#0f172a' },
+                name: { show: true, fontSize: '12px', fontFamily: "'Inter', sans-serif", color: theme.textColor },
+                value: { show: true, fontSize: '20px', fontFamily: "'Inter', sans-serif", fontWeight: 700, color: theme.mode === 'dark' ? '#fff' : '#0f172a' },
                 total: {
                   show: true,
                   label: 'Toplam',
                   fontSize: '12px',
+                  fontFamily: "'Inter', sans-serif",
                   color: theme.textColor,
                   formatter: function() { return totalUsers; }
                 }
@@ -1567,6 +1574,7 @@ function renderOverviewContent(period) {
         },
         tooltip: {
           theme: theme.mode,
+          style: { fontFamily: "'Inter', sans-serif" },
           y: {
             formatter: function(val) {
               return val + ' kullanıcı (%' + ((val / (totalUsers || 1)) * 100).toFixed(1) + ')';

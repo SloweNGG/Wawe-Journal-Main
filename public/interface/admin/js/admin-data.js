@@ -45,6 +45,27 @@ async function loadUsers() {
 var _usersRealtimeSub = null;
 var _usersPollInterval = null;
 
+function updateAdminConnectionStatus(isOnline) {
+  var online = isOnline !== undefined ? isOnline : (typeof navigator !== 'undefined' ? navigator.onLine : true);
+  var badges = document.querySelectorAll('.live-connection-badge');
+  badges.forEach(function(badge) {
+    if (online) {
+      badge.className = 'live-connection-badge online';
+      badge.innerHTML = '<span class="live-status-dot pulse"></span><span class="live-status-text">Güncellenme : Şuan Canlı</span>';
+    } else {
+      badge.className = 'live-connection-badge offline';
+      badge.innerHTML = '<span class="live-status-dot"></span><span class="live-status-text">İnternet bağlantısı kesildi</span>';
+    }
+  });
+}
+window.updateAdminConnectionStatus = updateAdminConnectionStatus;
+
+// İnternet kopma ve geri gelme dinleyicileri
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', function() { updateAdminConnectionStatus(true); });
+  window.addEventListener('offline', function() { updateAdminConnectionStatus(false); });
+}
+
 function initUsersRealtime() {
   if (_usersRealtimeSub) return;
   var client = getSbClient();
@@ -54,9 +75,32 @@ function initUsersRealtime() {
     _usersRealtimeSub = client
       .channel('admin-user-profiles-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, function(payload) {
-        wwLog.log('⚡ [Admin Realtime] Kullanıcı güncellemesi algılandı:', payload.eventType);
+        // ⭐ AKILLI FİLTRE: Sadece anlamlı değişikliklerde grafikleri ve tabloları güncelle
+        var isMeaningful = true;
+        if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+          // Eğer sadece last_active değişmişse (kullanıcı gezinirken olan tıklamalar), grafikleri boşuna zıplatma
+          var onlyLastActive = (
+            payload.new.plan === payload.old.plan &&
+            payload.new.role === payload.old.role &&
+            payload.new.is_active === payload.old.is_active &&
+            payload.new.email === payload.old.email &&
+            payload.new.username === payload.old.username &&
+            payload.new.plan_expires_at === payload.old.plan_expires_at
+          );
+          if (onlyLastActive) {
+            isMeaningful = false;
+            // Yerel nesneyi sessizce güncelle
+            if (adminState.users && payload.new.id) {
+              var found = adminState.users.find(function(u) { return u.id === payload.new.id; });
+              if (found) found.last_active = payload.new.last_active;
+            }
+          }
+        }
+
+        if (!isMeaningful) return;
+
+        wwLog.log('⚡ [Admin Realtime] Anlamlı kullanıcı güncellemesi:', payload.eventType);
         loadUsers().then(function() {
-          renderUsersTable();
           if (typeof renderUsersTable === 'function') renderUsersTable();
           if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
             renderOverviewContent(adminState.overviewPeriod || 'week');
@@ -66,28 +110,45 @@ function initUsersRealtime() {
           }
         });
       })
-      .subscribe();
-    wwLog.log('📡 [Admin] Kullanıcılar için canlı dinleyici (Realtime) başlatıldı.');
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+          updateAdminConnectionStatus(true);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (!navigator.onLine) {
+            updateAdminConnectionStatus(false);
+          }
+        }
+      });
+
     wwLog.log('📡 [Admin] Kullanıcılar ve istatistikler için canlı dinleyici (Realtime) başlatıldı.');
   } catch (e) {
     console.error('Realtime bağlanamadı:', e);
   }
 
+  // ⭐ 2-3 DAKİKALIK SESSİZ YEDEK YENİLEME (2 dakika = 120.000 ms)
   if (!_usersPollInterval) {
     _usersPollInterval = setInterval(function() {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && navigator.onLine !== false) {
+        var prevCount = (adminState.users || []).length;
+        var prevPrem = (adminState.users || []).filter(function(u) { return u.plan === 'premium'; }).length;
+
         loadUsers().then(function() {
-          renderUsersTable();
-          if (typeof renderUsersTable === 'function') renderUsersTable();
-          if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
-            renderOverviewContent(adminState.overviewPeriod || 'week');
-          }
-          if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
-            loadAnalyticsData();
+          var newCount = (adminState.users || []).length;
+          var newPrem = (adminState.users || []).filter(function(u) { return u.plan === 'premium'; }).length;
+
+          // Sadece sayı değiştiyse paneli yenile, veri aynıysa grafikleri titretme!
+          if (newCount !== prevCount || newPrem !== prevPrem) {
+            if (typeof renderUsersTable === 'function') renderUsersTable();
+            if (typeof renderOverviewContent === 'function' && adminState.currentTab === 'overview') {
+              renderOverviewContent(adminState.overviewPeriod || 'week');
+            }
+            if (typeof loadAnalyticsData === 'function' && adminState.currentTab === 'analytics') {
+              loadAnalyticsData();
+            }
           }
         });
       }
-    }, 15000);
+    }, 120000); // 2 dakika
   }
 }
 
@@ -170,7 +231,7 @@ async function renderUsersTable() {
       ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">'
       : '<span style="font-size:11px;font-weight:700;">' + getInitials(u.username) + '</span>';
     
-    return '<tr>\n          <td><span class="id-chip">' + (u.id || '').slice(0, 8) + '…</span></td>\n          <td>\n            <div style="display:flex;align-items:center;gap:8px;">\n              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">\n                ' + avatarHtml + '\n              </div>\n              <span style="font-weight:500;">' + escapeHtml(u.username || '—') + '</span>\n            </div>\n          </td>\n          <td style="color:var(--muted);font-size:12px;">' + escapeHtml(u.email || '—') + '</td>\n          <td>\n            <span class="plan-badge-user ' + (isPremium && !isExpired ? 'premium' : 'free') + '">\n              <span class="dot"></span>\n              ' + (isPremium && !isExpired ? 'Premium' : 'Free') + '\n            </span>\n          </td>\n          <td style="font-size:11px;font-family:\'DM Mono\',monospace;">\n            ' + (isPremium && !isExpired 
+    return '<tr>\n          <td><span class="id-chip">' + (u.id || '').slice(0, 8) + '…</span></td>\n          <td>\n            <div style="display:flex;align-items:center;gap:8px;">\n              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">\n                ' + avatarHtml + '\n              </div>\n              <span style="font-weight:500;">' + escapeHtml(u.username || '—') + '</span>\n            </div>\n          </td>\n          <td style="color:var(--muted);font-size:12px;">' + escapeHtml(u.email || '—') + '</td>\n          <td>\n            <span class="plan-badge-user ' + (isPremium && !isExpired ? 'premium' : 'free') + '">\n              <span class="dot"></span>\n              ' + (isPremium && !isExpired ? 'Premium' : 'Free') + '\n            </span>\n          </td>\n          <td style="font-size:11px;font-family:Inter,sans-serif;">\n            ' + (isPremium && !isExpired 
               ? '<span class="expiry-text ' + expiryClass + '">' + expiryText + '</span>'
               : '<span class="expiry-text">' + expiryText + '</span>') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">\n            ' + (isPremium && expiresAt && !isExpired ? formatDate(expiresAt) : '—') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">' + formatDate(u.created_at) + '</td>\n          <td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>\n          <td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>\n        </tr>';
   }).join('');
