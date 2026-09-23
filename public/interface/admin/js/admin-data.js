@@ -517,11 +517,58 @@ async function savePaymentSettings(payload) {
   var client = getSbClient();
   if (!client) return false;
   try {
-    var { error } = await client.from('system_settings').upsert({ key: 'payment_settings', value: payload });
-    if (error) throw error;
-    if (typeof showToast === 'function') showToast('Fiyat ayarları güncellendi', 'success');
+    // 1. payment_settings tablosunu güncelle (tüm detaylı ayarlar)
+    var { error: err1 } = await client.from('system_settings').upsert({ 
+      key: 'payment_settings', 
+      value: payload,
+      updated_at: new Date().toISOString()
+    });
+    if (err1) throw err1;
+
+    // 2. prices tablosunu da senkronize et (get_prices RPC'si ve anasayfa/fiyat modülü burayı okur)
+    var pricesPayload = {
+      monthly: payload.monthly_price_usd,
+      yearly: payload.yearly_price_usd,
+      currency: 'USD',
+      discount: { yearly: payload.yearly_discount_percent || 0, promo: 0 },
+      paymentMethods: ['BTC', 'LTC']
+    };
+    
+    var { error: err2 } = await client.from('system_settings').upsert({ 
+      key: 'prices', 
+      value: pricesPayload,
+      updated_at: new Date().toISOString()
+    });
+    if (err2) {
+      console.warn('prices key upsert uyarısı:', err2);
+    }
+
+    // 3. Güvence: set_prices RPC'sini de çağır (yetkili admin ise tetikler)
+    try {
+      await client.rpc('set_prices', {
+        p_monthly: payload.monthly_price_usd,
+        p_yearly: payload.yearly_price_usd,
+        p_currency: 'USD',
+        p_discount_yearly: payload.yearly_discount_percent || 0,
+        p_payment_methods: ['BTC', 'LTC']
+      });
+    } catch(rpcErr) {
+      console.warn('set_prices RPC uyarısı (upsert yeterlidir):', rpcErr);
+    }
+
+    // 4. Tarayıcı önbelleğini (localStorage) ve açık sekmeleri anında senkronize et
+    try {
+      localStorage.setItem('ww_monthly_price', payload.monthly_price_usd.toString());
+      localStorage.setItem('ww_yearly_price', payload.yearly_price_usd.toString());
+      if (typeof window.setMonthlyPrice === 'function') window.setMonthlyPrice(payload.monthly_price_usd);
+      if (typeof window.setYearlyPrice === 'function') window.setYearlyPrice(payload.yearly_price_usd);
+      if (typeof window.updateHomePrices === 'function') window.updateHomePrices();
+    } catch (storageErr) {}
+
+    if (typeof showToast === 'function') showToast('Fiyat ayarları başarıyla kaydedildi!', 'success');
     return true;
   } catch (e) {
+    console.error('savePaymentSettings hatası:', e);
     if (typeof showToast === 'function') showToast('Hata: ' + e.message, 'error');
     return false;
   }

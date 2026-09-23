@@ -944,13 +944,20 @@ async function renderPlan() {
 
     // Fiyatlari DB'den canli cek
     try {
-      var sb = window.sb || window.supabase;
-      if (sb) {
-        var { data: dbPrices } = await sb.rpc('get_prices');
-        if (dbPrices && dbPrices.monthly && dbPrices.yearly) {
-           if (window.adminUpdatePrices) {
-             window.adminUpdatePrices(dbPrices.monthly, dbPrices.yearly);
-           }
+      var sbClient = window.sb || window.supabase;
+      if (sbClient) {
+        var { data: dbPrices } = await sbClient.rpc('get_prices');
+        if (dbPrices) {
+          var mVal = parseFloat(dbPrices.monthly);
+          var yVal = parseFloat(dbPrices.yearly);
+          if (!isNaN(mVal) && mVal > 0) {
+            localStorage.setItem('ww_monthly_price', mVal.toString());
+            if (typeof window.setMonthlyPrice === 'function') window.setMonthlyPrice(mVal);
+          }
+          if (!isNaN(yVal) && yVal > 0) {
+            localStorage.setItem('ww_yearly_price', yVal.toString());
+            if (typeof window.setYearlyPrice === 'function') window.setYearlyPrice(yVal);
+          }
         }
       }
     } catch(err) { console.error('Plan prices fetch err:', err); }
@@ -2076,13 +2083,18 @@ async function checkAndActivatePremium() {
 
     // Fiyatlari DB'den canli cek
     try {
-      var sb = window.sb || window.supabase;
-      if (sb) {
-        var { data: dbPrices } = await sb.rpc('get_prices');
-        if (dbPrices && dbPrices.monthly && dbPrices.yearly) {
-           if (window.adminUpdatePrices) {
-             window.adminUpdatePrices(dbPrices.monthly, dbPrices.yearly);
-           }
+      var sbClient2 = window.sb || window.supabase;
+      if (sbClient2) {
+        var { data: dbPrices2 } = await sbClient2.rpc('get_prices');
+        if (dbPrices2) {
+          var mVal2 = parseFloat(dbPrices2.monthly);
+          var yVal2 = parseFloat(dbPrices2.yearly);
+          if (!isNaN(mVal2) && mVal2 > 0) {
+            localStorage.setItem('ww_monthly_price', mVal2.toString());
+          }
+          if (!isNaN(yVal2) && yVal2 > 0) {
+            localStorage.setItem('ww_yearly_price', yVal2.toString());
+          }
         }
       }
     } catch(err) { console.error('Plan prices fetch err:', err); }
