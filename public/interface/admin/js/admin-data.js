@@ -295,7 +295,7 @@ async function renderUsersTable() {
               : '<span class="expiry-text">' + expiryText + '</span>') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">\n            ' + (isPremium && expiresAt && !isExpired ? formatDate(expiresAt) : '—') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">' + formatDate(u.created_at) + '</td>\n          <td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>\n          <td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>\n        </tr>';
   }).join('');
 
-  container.innerHTML = '\n    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th><th>Durum</th><th>Rol</th></tr>\n          </thead>\n          <tbody>\n            ' + (rows || '<tr><td colspan="9"><div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;">Kullanıcı bulunamadı.</div></td></tr>') + '\n          </tbody>\n        </table>\n      </div>\n    </div>\n  ';
+  container.innerHTML = '\n    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th><th>Durum</th><th>Rol</th><th>İşlem</th></tr>\n          </thead>\n          <tbody>\n            ' + (rows || '<tr><td colspan="10"><div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;">Kullanıcı bulunamadı.</div></td></tr>') + '\n          </tbody>\n        </table>\n      </div>\n    </div>\n  ';
 }
 
 function renderReferencesTable() {
@@ -720,3 +720,280 @@ window.toggleReferralCodeStatus = toggleReferralCodeStatus;
 window.saveReferralCode = saveReferralCode;
 window.loadPaymentSettings = loadPaymentSettings;
 window.savePaymentSettings = savePaymentSettings;
+
+// ============================================================
+// PAYOUT REQUESTS (ÇEKİM TALEPLERİ)
+// ============================================================
+
+async function loadPayoutRequests() {
+  try {
+    var client = getSbClient();
+    if (!client) {
+      adminState.payouts = [];
+      return [];
+    }
+
+    var { data, error } = await client
+      .from('payout_requests')
+      .select('*, user_profiles:user_id(email, username, avatar_url)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('payout_requests joined query warning, trying fallback select:', error);
+      var { data: simpleData, error: simpleErr } = await client
+        .from('payout_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (simpleErr) throw simpleErr;
+
+      // Manuel user_profiles match if available in adminState.users
+      var usersMap = {};
+      (adminState.users || []).forEach(function(u) {
+        usersMap[u.id] = { email: u.email, username: u.username, avatar_url: u.avatar_url };
+      });
+
+      data = (simpleData || []).map(function(item) {
+        return Object.assign({}, item, {
+          user_profiles: usersMap[item.user_id] || null
+        });
+      });
+    }
+
+    adminState.payouts = data || [];
+    wwLog.log('💸 [Admin] ' + adminState.payouts.length + ' para çekme talebi yüklendi.');
+    return adminState.payouts;
+  } catch (e) {
+    console.error('loadPayoutRequests error:', e);
+    adminState.payouts = [];
+    return [];
+  }
+}
+
+async function processPayoutRequest(id, status, adminNote) {
+  try {
+    var client = getSbClient();
+    if (!client) throw new Error('Veritabanı bağlantısı kurulamadı');
+
+    var rpcSuccess = false;
+    try {
+      var { data, error } = await client.rpc('admin_process_payout', {
+        p_request_id: id,
+        p_status: status,
+        p_admin_note: adminNote || ''
+      });
+      if (!error) rpcSuccess = true;
+      else console.warn('admin_process_payout RPC warning:', error);
+    } catch(rpcErr) {
+      console.warn('admin_process_payout RPC exception:', rpcErr);
+    }
+
+    if (!rpcSuccess) {
+      var updatePayload = {
+        status: status,
+        admin_note: adminNote || null,
+        processed_at: new Date().toISOString()
+      };
+      var { error: updateErr } = await client
+        .from('payout_requests')
+        .update(updatePayload)
+        .eq('id', id);
+
+      if (updateErr) throw updateErr;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(status === 'approved' ? 'Talep onaylandı ve ödendi olarak işaretlendi!' : 'Talep reddedildi.', 'success');
+    }
+
+    await loadPayoutRequests();
+    if (typeof renderPayoutsTable === 'function') renderPayoutsTable();
+    return true;
+  } catch (e) {
+    console.error('processPayoutRequest hatası:', e);
+    if (typeof showToast === 'function') {
+      showToast('İşlem tamamlanamadı: ' + (e.message || e), 'error');
+    }
+    return false;
+  }
+}
+
+window.loadPayoutRequests = loadPayoutRequests;
+window.processPayoutRequest = processPayoutRequest;
+
+// ============================================================
+// PARTNER BAŞVURULARI YÖNETİMİ
+// ============================================================
+
+async function loadPartnerApplications() {
+  try {
+    var client = getSbClient();
+    if (!client) return [];
+
+    if (!adminState.users || adminState.users.length === 0) {
+      if (typeof loadUsers === 'function') await loadUsers();
+    }
+
+    var usersMap = {};
+    (adminState.users || []).forEach(function(u) {
+      usersMap[u.id] = { email: u.email, username: u.username };
+    });
+
+    var { data, error } = await client
+      .from('partner_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('loadPartnerApplications error:', error);
+      adminState.partnerApplications = [];
+      return [];
+    }
+
+    var apps = (data || []).map(function(item) {
+      return Object.assign({}, item, {
+        user: usersMap[item.user_id] || { email: 'Bilinmeyen Kullanıcı', username: '—' }
+      });
+    });
+
+    adminState.partnerApplications = apps;
+    wwLog.log('🤝 [Admin] ' + apps.length + ' partner başvurusu yüklendi.');
+    return apps;
+  } catch (e) {
+    console.error('loadPartnerApplications error:', e);
+    adminState.partnerApplications = [];
+    return [];
+  }
+}
+
+async function reviewPartnerApplication(appId, status, adminNote, code, discount, commission) {
+  try {
+    var client = getSbClient();
+    if (!client) throw new Error('Veritabanı bağlantısı yok');
+
+    var rpcOk = false;
+    try {
+      var { data: rpcData, error: rpcErr } = await client.rpc('admin_review_partner_application', {
+        p_application_id: appId,
+        p_status: status,
+        p_admin_note: adminNote || '',
+        p_code: code || null,
+        p_discount: discount ? parseFloat(discount) : 10,
+        p_commission: commission ? parseFloat(commission) : 4
+      });
+      if (!rpcErr && rpcData && rpcData.success) {
+        rpcOk = true;
+      } else {
+        var errMsg = (rpcErr && rpcErr.message) || (rpcData && rpcData.error);
+        console.warn('admin_review_partner_application RPC failed, fallback to direct update. Sebep:', errMsg);
+      }
+    } catch (rpcEx) {
+      console.warn('admin_review_partner_application exception, fallback to direct update:', rpcEx);
+    }
+
+    if (!rpcOk) {
+      var { data: updatedRows, error: updateErr } = await client
+        .from('partner_applications')
+        .update({
+          status: status,
+          admin_note: adminNote || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appId)
+        .select();
+
+      if (updateErr) {
+        console.error('Direct partner_applications update failed:', updateErr);
+        throw updateErr;
+      }
+
+      if (!updatedRows || updatedRows.length === 0) {
+        console.warn('Update yapıldı ancak 0 satır etkilendi. RLS izinlerini kontrol edin.');
+      }
+
+      if (status === 'approved' && code) {
+        var app = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
+        if (app && app.user_id) {
+          await client.from('referral_codes').insert([{
+            code: code.toUpperCase().trim(),
+            influencer_user_id: app.user_id,
+            discount_percent: discount ? parseFloat(discount) : 10,
+            commission_rate: commission ? parseFloat(commission) : 4,
+            is_active: true
+          }]);
+        }
+      }
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(status === 'approved' ? 'Başvuru onaylandı ve kod oluşturuldu!' : 'Başvuru reddedildi.', 'success');
+    }
+
+    await loadPartnerApplications();
+    if (typeof renderPartnerApplicationsTable === 'function') renderPartnerApplicationsTable();
+    return true;
+  } catch (e) {
+    console.error('reviewPartnerApplication error:', e);
+    if (typeof showToast === 'function') showToast('Hata: ' + (e.message || e), 'error');
+    return false;
+  }
+}
+
+window.loadPartnerApplications = loadPartnerApplications;
+window.reviewPartnerApplication = reviewPartnerApplication;
+
+
+// ============================================================
+// ADMIN NOTIFICATIONS
+// ============================================================
+window.openNotificationModal = function(userId, userName) {
+  var modal = document.getElementById('admin-notification-modal');
+  if (!modal) return;
+  document.getElementById('noti-modal-user-id').value = userId;
+  document.getElementById('noti-modal-user-name').textContent = userName;
+  document.getElementById('noti-modal-title').value = '';
+  document.getElementById('noti-modal-desc').value = '';
+  modal.classList.add('open');
+};
+
+window.closeNotificationModal = function() {
+  var modal = document.getElementById('admin-notification-modal');
+  if (modal) modal.classList.remove('open');
+};
+
+window.sendAdminNotification = async function() {
+  var userId = document.getElementById('noti-modal-user-id').value;
+  var type = document.getElementById('noti-modal-type').value;
+  var title = document.getElementById('noti-modal-title').value.trim();
+  var desc = document.getElementById('noti-modal-desc').value.trim();
+  var btn = document.getElementById('send-noti-btn');
+
+  if (!userId || !title || !desc) {
+    if (typeof showToast === 'function') showToast('Lütfen başlık ve açıklama girin.', 'error');
+    else alert('Lütfen başlık ve açıklama girin.');
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Gönderiliyor...';
+    var client = getSbClient();
+    var { error } = await client.rpc('admin_send_notification', {
+      p_user_id: userId,
+      p_type: type,
+      p_title_key: title,
+      p_message_key: desc,
+      p_meta_data: {}
+    });
+
+    if (error) throw error;
+    if (typeof showToast === 'function') showToast('Bildirim başarıyla gönderildi.', 'success');
+    window.closeNotificationModal();
+  } catch(e) {
+    console.error(e);
+    if (typeof showToast === 'function') showToast('Hata: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Bildirimi Gönder';
+  }
+};

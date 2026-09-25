@@ -1727,3 +1727,253 @@ window.renderPricesContent = renderPricesContent;
 window.renderPaymentSettingsUI = renderPaymentSettingsUI;
 window.initReferralModal = initReferralModal;
 window.renderReferralCodesTable = renderReferralCodesTable;
+
+// ============================================================
+// PARTNER BAŞVURULARI TABLOSU VE İŞLEMLERİ
+// ============================================================
+
+var currentPartnerAppFilter = 'all';
+var partnerAppSearchTerm = '';
+
+function renderPartnerApplicationsTable() {
+  var container = document.getElementById('partner-applications-container');
+  if (!container) return;
+
+  var apps = adminState.partnerApplications || [];
+  
+  var totalCount = apps.length;
+  var pendingCount = apps.filter(function(a) { return a.status === 'pending'; }).length;
+  var approvedCount = apps.filter(function(a) { return a.status === 'approved'; }).length;
+  var rejectedCount = apps.filter(function(a) { return a.status === 'rejected'; }).length;
+
+  var filtered = apps.filter(function(a) {
+    if (currentPartnerAppFilter !== 'all' && a.status !== currentPartnerAppFilter) return false;
+    if (partnerAppSearchTerm) {
+      var term = partnerAppSearchTerm.toLowerCase();
+      var userStr = ((a.user && a.user.email) || '').toLowerCase();
+      var instaStr = (a.instagram || '').toLowerCase();
+      var noteStr = (a.note || '').toLowerCase();
+      return userStr.indexOf(term) !== -1 || instaStr.indexOf(term) !== -1 || noteStr.indexOf(term) !== -1;
+    }
+    return true;
+  });
+
+  var html = '';
+
+  // KPI Cards
+  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-bottom:1.5rem;">';
+  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Toplam Başvuru</div><div class="stat-value" style="font-size:1.5rem; color:var(--text);">' + totalCount + '</div></div>';
+  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Bekleyen</div><div class="stat-value" style="font-size:1.5rem; color:#eab308;">' + pendingCount + '</div></div>';
+  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Onaylanan</div><div class="stat-value" style="font-size:1.5rem; color:#22c55e;">' + approvedCount + '</div></div>';
+  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Reddedilen</div><div class="stat-value" style="font-size:1.5rem; color:#ef4444;">' + rejectedCount + '</div></div>';
+  html += '</div>';
+
+  // Filters & Search Bar
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">';
+  html += '  <div style="display:flex; gap:6px;">';
+  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'all' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'all\')">Tümü (' + totalCount + ')</button>';
+  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'pending' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'pending\')">Bekleyen (' + pendingCount + ')</button>';
+  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'approved' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'approved\')">Onaylanan (' + approvedCount + ')</button>';
+  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'rejected' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'rejected\')">Reddedilen (' + rejectedCount + ')</button>';
+  html += '  </div>';
+  html += '  <div class="search-wrap">';
+  html += '    <input type="text" id="partner-app-search" class="search-input" placeholder="Kullanıcı veya Instagram ara..." value="' + (partnerAppSearchTerm ? partnerAppSearchTerm.replace(/"/g, '&quot;') : '') + '" oninput="handlePartnerAppSearch(this.value)" style="width:230px;" />';
+  html += '  </div>';
+  html += '</div>';
+
+  // Table
+  html += '<div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">';
+  html += '  <div style="overflow-x:auto;">';
+  html += '    <table class="ww-table">';
+  html += '      <thead>';
+  html += '        <tr>';
+  html += '          <th>Tarih</th>';
+  html += '          <th>Kullanıcı</th>';
+  html += '          <th>Instagram</th>';
+  html += '          <th>Kitle Boyutu</th>';
+  html += '          <th>Kripto</th>';
+  html += '          <th>Tanıtım Notu</th>';
+  html += '          <th>Durum</th>';
+  html += '          <th style="text-align:right;">İşlem</th>';
+  html += '        </tr>';
+  html += '      </thead>';
+  html += '      <tbody>';
+
+  if (filtered.length === 0) {
+    html += '<tr><td colspan="8" style="text-align:center; padding:3rem; color:var(--muted); font-size:14px;">Eşleşen partner başvurusu bulunamadı.</td></tr>';
+  } else {
+    filtered.forEach(function(item) {
+      var userEmail = (item.user && item.user.email) || '—';
+      var dateStr = typeof formatDateFull === 'function' ? formatDateFull(item.created_at) : (item.created_at || '—');
+      
+      var instaHandle = (item.instagram || '').replace(/^@/, '').trim();
+      var instaUrl = item.instagram.startsWith('http') ? item.instagram : ('https://instagram.com/' + instaHandle);
+
+      var cryptoBadge = item.uses_crypto 
+        ? '<span style="color:#22c55e; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Evet</span>'
+        : '<span style="color:var(--muted); font-size:11px;">Hayır</span>';
+
+      var statusBadge = '';
+      if (item.status === 'pending') statusBadge = '<span class="badge-status badge-pending">⏳ Beklemede</span>';
+      else if (item.status === 'approved') statusBadge = '<span class="badge-status badge-approved">✅ Onaylandı</span>';
+      else if (item.status === 'rejected') statusBadge = '<span class="badge-status badge-rejected">❌ Reddedildi</span>';
+
+      var noteShort = item.note ? (item.note.length > 40 ? item.note.substring(0, 40) + '...' : item.note) : '—';
+
+      var actionBtns = '';
+      if (item.status === 'pending') {
+        actionBtns = '\
+          <div style="display:flex; gap:6px; justify-content:flex-end;">\
+            <button class="btn btn-primary btn-sm" onclick="openPartnerAppModal(\'' + item.id + '\', \'approve\')" style="padding:3px 10px; font-size:11.5px; background:#22c55e; border-color:#22c55e;">Onayla & Kod Ata</button>\
+            <button class="btn btn-danger btn-sm" onclick="openPartnerAppModal(\'' + item.id + '\', \'reject\')" style="padding:3px 10px; font-size:11.5px;">Reddet</button>\
+          </div>';
+      } else if (item.status === 'approved') {
+        actionBtns = '<span style="color:#22c55e; font-size:12px; font-weight:600;">✓ Kod Tanımlandı</span>';
+      } else {
+        var reasonText = item.admin_note ? (' title="' + item.admin_note.replace(/"/g, '&quot;') + '"') : '';
+        actionBtns = '<span style="color:#ef4444; font-size:12px;"' + reasonText + '>Reddedildi</span>';
+      }
+
+      html += '<tr>';
+      html += '  <td style="font-size:12px; color:var(--muted); white-space:nowrap;">' + dateStr + '</td>';
+      html += '  <td style="font-weight:600; color:var(--text);">' + (userEmail ? userEmail.replace(/[&<>"']/g, '') : '') + '</td>';
+      html += '  <td><a href="' + instaUrl.replace(/"/g, '&quot;') + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">@' + (instaHandle ? instaHandle.replace(/[&<>"']/g, '') : '') + ' ↗</a></td>';
+      html += '  <td><span style="font-size:12px; color:var(--text); font-weight:600;">' + (item.follower_count ? item.follower_count.replace(/[&<>"']/g, '') : '—') + '</span></td>';
+      html += '  <td>' + cryptoBadge + '</td>';
+      html += '  <td style="font-size:12px; color:var(--muted); max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="' + (item.note ? item.note.replace(/"/g, '&quot;') : '') + '">' + (noteShort ? noteShort.replace(/[&<>"']/g, '') : '') + '</td>';
+      html += '  <td>' + statusBadge + '</td>';
+      html += '  <td style="text-align:right;">' + actionBtns + '</td>';
+      html += '</tr>';
+    });
+  }
+
+  html += '      </tbody>';
+  html += '    </table>';
+  html += '  </div>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function setPartnerAppFilter(filter) {
+  currentPartnerAppFilter = filter;
+  renderPartnerApplicationsTable();
+}
+
+function handlePartnerAppSearch(val) {
+  partnerAppSearchTerm = val;
+  clearTimeout(window._partnerAppSearchTimeout);
+  window._partnerAppSearchTimeout = setTimeout(function() {
+    renderPartnerApplicationsTable();
+  }, 250);
+}
+
+function openPartnerAppModal(appId, actionType) {
+  var app = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
+  if (!app) return;
+
+  var modal = document.getElementById('partner-app-modal');
+  if (!modal) return;
+
+  document.getElementById('pa-modal-id').value = appId;
+  document.getElementById('pa-modal-type').value = actionType;
+
+  var userEmail = (app.user && app.user.email) || '—';
+  document.getElementById('pa-modal-user').textContent = userEmail;
+
+  var instaHandle = (app.instagram || '').replace(/^@/, '').trim();
+  var instaEl = document.getElementById('pa-modal-instagram');
+  instaEl.textContent = '@' + instaHandle;
+  instaEl.href = app.instagram.startsWith('http') ? app.instagram : ('https://instagram.com/' + instaHandle);
+
+  document.getElementById('pa-modal-followers').textContent = app.follower_count || '—';
+  document.getElementById('pa-modal-crypto').textContent = app.uses_crypto ? 'Evet (BTC/LTC)' : 'Hayır';
+  document.getElementById('pa-modal-crypto').style.color = app.uses_crypto ? '#22c55e' : 'var(--muted)';
+  document.getElementById('pa-modal-user-note').textContent = app.note || 'Not girilmemiş';
+
+  var approveFields = document.getElementById('pa-approve-fields');
+  var confirmBtn = document.getElementById('confirm-partner-app-btn');
+  var titleEl = document.getElementById('partner-app-modal-title');
+  var noteLabel = document.getElementById('pa-note-label');
+  var noteInput = document.getElementById('pa-modal-admin-note');
+  noteInput.value = '';
+
+  if (actionType === 'approve') {
+    titleEl.textContent = 'Partner Başvurusunu Onayla & Kod Tanımla';
+    approveFields.style.display = 'flex';
+    confirmBtn.textContent = 'Onayla & Kodu Oluştur';
+    confirmBtn.className = 'btn btn-primary';
+    confirmBtn.style.background = '#22c55e';
+    confirmBtn.style.borderColor = '#22c55e';
+    noteLabel.textContent = 'Admin Notu (Opsiyonel)';
+    
+    var suggestedCode = instaHandle.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8) + '10';
+    document.getElementById('pa-code-input').value = suggestedCode;
+    document.getElementById('pa-discount-input').value = '10';
+    document.getElementById('pa-commission-input').value = '4';
+  } else {
+    titleEl.textContent = 'Partner Başvurusunu Reddet';
+    approveFields.style.display = 'none';
+    confirmBtn.textContent = 'Başvuruyu Reddet';
+    confirmBtn.className = 'btn btn-danger';
+    confirmBtn.style.background = '';
+    confirmBtn.style.borderColor = '';
+    noteLabel.textContent = 'Reddetme Gerekçesi (Kullanıcıya gösterilir) *';
+  }
+
+  modal.classList.add('open');
+}
+
+function closePartnerAppModal() {
+  var modal = document.getElementById('partner-app-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function confirmPartnerAppAction() {
+  var appId = document.getElementById('pa-modal-id').value;
+  var actionType = document.getElementById('pa-modal-type').value;
+  var adminNote = document.getElementById('pa-modal-admin-note').value.trim();
+
+  var code = null;
+  var discount = 10;
+  var commission = 4;
+
+  if (actionType === 'approve') {
+    code = document.getElementById('pa-code-input').value.trim().toUpperCase();
+    discount = parseFloat(document.getElementById('pa-discount-input').value) || 10;
+    commission = parseFloat(document.getElementById('pa-commission-input').value) || 4;
+
+    if (!code) {
+      if (typeof showToast === 'function') showToast('Lütfen referans kodu girin.', 'error');
+      else alert('Lütfen referans kodu girin.');
+      return;
+    }
+  } else {
+    if (!adminNote) {
+      if (typeof showToast === 'function') showToast('Lütfen ret gerekçesi giriniz (Kullanıcı bilgilendirmesi için zorunludur).', 'error');
+      else alert('Lütfen ret gerekçesi giriniz.');
+      return;
+    }
+  }
+
+  var btn = document.getElementById('confirm-partner-app-btn');
+  btn.disabled = true;
+  btn.textContent = 'İşleniyor...';
+
+  try {
+    var ok = await reviewPartnerApplication(appId, actionType === 'approve' ? 'approved' : 'rejected', adminNote, code, discount, commission);
+    if (ok) {
+      closePartnerAppModal();
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+window.renderPartnerApplicationsTable = renderPartnerApplicationsTable;
+window.setPartnerAppFilter = setPartnerAppFilter;
+window.handlePartnerAppSearch = handlePartnerAppSearch;
+window.openPartnerAppModal = openPartnerAppModal;
+window.closePartnerAppModal = closePartnerAppModal;
+window.confirmPartnerAppAction = confirmPartnerAppAction;
+

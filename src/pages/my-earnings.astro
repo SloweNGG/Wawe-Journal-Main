@@ -1,23 +1,50 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr">
+<Layout lang="en">
 <Fragment slot="head">
-  <title data-i18n="earnings.title">Kazançlarım - Wawe Journal</title>
+  <title data-i18n="earnings.title">Kazançlarım & Para Çekme - Wawe Journal</title>
   
   <style>
-    /* Özelleştirilmiş tablolar için gerekli css */
     .earnings-stat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 1rem;
       margin-bottom: 2rem;
+    }
+    .earnings-stat-grid .stat-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 102px;
+      padding: 1.1rem 1.25rem;
+    }
+    .earnings-stat-grid .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    .earnings-stat-grid .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 0.25rem 0;
+    }
+    .earnings-stat-grid .stat-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.3;
     }
     .earnings-table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
+      margin-bottom: 2rem;
     }
     .earnings-table-title {
       padding: 1.25rem 1.5rem;
@@ -25,17 +52,23 @@ import Layout from '../layouts/Layout.astro';
       font-size: 1rem;
       font-weight: 600;
       margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .code-chip {
       font-family: monospace;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
       background: var(--surface2);
       color: var(--accent);
       border: 1px solid var(--border);
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 6px;
       letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .earnings-empty {
       text-align: center;
@@ -43,6 +76,291 @@ import Layout from '../layouts/Layout.astro';
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      margin: 0;
+    }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-pending {
+      background: rgba(234, 179, 8, 0.12);
+      color: #eab308;
+      border: 1px solid rgba(234, 179, 8, 0.25);
+    }
+    .badge-approved {
+      background: rgba(34, 197, 94, 0.12);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+    .badge-rejected {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    /* Partner Hero & Application Stilleri */
+    .partner-hero-card {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, rgba(20, 20, 30, 0.5) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      margin-bottom: 2rem;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    }
+    .partner-hero-card::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+    .partner-hero-badge {
+      font-family: 'DM Sans', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+    .partner-hero-title {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      margin: 0 auto 0.85rem auto;
+      max-width: 650px;
+      line-height: 1.25;
+      -webkit-text-fill-color: initial !important;
+      background: none !important;
+    }
+    .partner-hero-desc {
+      font-family: 'DM Sans', sans-serif;
+      color: var(--muted);
+      font-size: clamp(13px, 1.2vw, 15px);
+      max-width: 580px;
+      margin: 0 auto 2.5rem auto;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+    .partner-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      text-align: left;
+    }
+    .partner-step-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .partner-step-card:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .step-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+    .step-title {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.01em;
+      -webkit-text-fill-color: initial !important;
+      background: none !important;
+    }
+    .step-desc {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+    .partner-cta-btn {
+      font-family: 'DM Sans', sans-serif;
+      padding: 0.9rem 2.2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .partner-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(139, 92, 246, 0.55);
+    }
+    .partner-status-banner {
+      border-radius: 14px;
+      padding: 1.25rem 1.75rem;
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .banner-pending {
+      background: rgba(234, 179, 8, 0.08);
+      border: 1px solid rgba(234, 179, 8, 0.25);
+    }
+    .banner-rejected {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .status-banner-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .crypto-radio-card {
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .crypto-radio-card.active {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.12);
+      color: #fff;
+    }
+
+    /* Modal Stilleri */
+    .earnings-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      padding: 1rem;
+    }
+    .earnings-modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .earnings-modal-card {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      overflow: hidden;
+      transform: translateY(15px);
+      transition: transform 0.2s ease;
+    }
+    .earnings-modal-overlay.open .earnings-modal-card {
+      transform: translateY(0);
+    }
+    .earnings-modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .earnings-modal-header h3 {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      -webkit-text-fill-color: initial !important;
+      background: none !important;
+    }
+    .earnings-modal-body {
+      font-family: 'DM Sans', sans-serif;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .earnings-modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      background: var(--surface2);
+    }
+    .crypto-radio-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .crypto-radio-card {
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .crypto-radio-card.active {
+      border-color: var(--accent);
+      background: rgba(124, 109, 250, 0.08);
+    }
+    .crypto-radio-card input {
       margin: 0;
     }
   </style>
@@ -56,9 +374,20 @@ import Layout from '../layouts/Layout.astro';
 
   <main class="main dashboard-main">
 
-    <div class="page-header">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
       <div>
-        <h1 data-i18n="earnings.title">Kazançlarım</h1>
+        <h1 data-i18n="earnings.title">Kazançlarım & Para Çekme</h1>
+        <p style="color:var(--muted); font-size:13px; margin-top:2px;" data-i18n="earnings.subtitle">Referans komisyonlarınızı yönetin ve çekim talebi oluşturun</p>
+      </div>
+      <div id="top-action-buttons" style="display:none; gap:0.5rem; flex-wrap:wrap;">
+        <button id="open-wallets-modal-btn" class="btn btn-ghost btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+          <i data-lucide="wallet" style="width:15px; height:15px;"></i>
+          <span data-i18n="earnings.btn_wallets">Cüzdan Adreslerim</span>
+        </button>
+        <button id="open-payout-modal-btn" class="btn btn-primary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+          <i data-lucide="arrow-up-right" style="width:15px; height:15px;"></i>
+          <span data-i18n="earnings.btn_request_payout">Para Çekme Talebi Gönder</span>
+        </button>
       </div>
     </div>
 
@@ -68,37 +397,133 @@ import Layout from '../layouts/Layout.astro';
       <p style="color:var(--muted); margin-top:1rem;" data-i18n="earnings.loading">Veriler yükleniyor...</p>
     </div>
 
-    <!-- Kod tanımlı değil -->
-    <div id="empty-state" class="earnings-empty" style="display:none;">
-      <i data-lucide="trending-up" style="width:48px;height:48px;color:var(--muted);margin-bottom:1rem;display:inline-block;"></i>
-      <h3 style="font-size:1.25rem; font-weight:600; margin-bottom:0.5rem;" data-i18n="earnings.empty_title">Henüz bir kazanç profiliniz yok</h3>
-      <p style="color:var(--muted);" data-i18n="earnings.empty_desc">Size tanımlanmış bir indirim veya referans kodu bulunmuyor.<br>Eğer bir partner iseniz, lütfen yönetici ile iletişime geçin.</p>
+    <!-- Partner Karşılama Alanı (Kodu Olmayan Kullanıcılar) -->
+    <div id="empty-state" style="display:none;">
+      <div class="partner-hero-card">
+        <div class="partner-hero-badge">
+          <i data-lucide="sparkles" style="width:14px; height:14px; color:var(--accent);"></i>
+          <span data-i18n="earnings.partner_badge">WJ PARTNER PROGRAMI</span>
+        </div>
+        
+        <h2 class="partner-hero-title" data-i18n="earnings.partner_hero_title">
+          Topluluğunuzu Büyütün, Her Satıştan Gelir Elde Edin
+        </h2>
+        <p class="partner-hero-desc" data-i18n="earnings.partner_hero_desc">
+          Wawe Journal ekosistemine yeni traderlar kazandırarak düzenli pasif gelir elde edin. Şeffaf komisyon ve kripto ile anında çekim imkanı.
+        </p>
+
+        <!-- 3 Adım Kartları (Lucide İkonlu) -->
+        <div class="partner-steps-grid">
+          <div class="partner-step-card">
+            <div class="step-icon-wrap">
+              <i data-lucide="tag" style="width:20px; height:20px;"></i>
+            </div>
+            <h4 class="step-title" data-i18n="earnings.step1_title">1. Kodunuzu Alın</h4>
+            <p class="step-desc" data-i18n="earnings.step1_desc">Başvurunuz onaylandığında takipçilerinize özel % indirim kodu ve size komisyon hakkı tanımlanır.</p>
+          </div>
+
+          <div class="partner-step-card">
+            <div class="step-icon-wrap">
+              <i data-lucide="share-2" style="width:20px; height:20px;"></i>
+            </div>
+            <h4 class="step-title" data-i18n="earnings.step2_title">2. Paylaşın & Kazandırın</h4>
+            <p class="step-desc" data-i18n="earnings.step2_desc">Takipçileriniz indirimli fiyata abone olsun, profesyonel analiz araçlarıyla hesaplarını büyütsün.</p>
+          </div>
+
+          <div class="partner-step-card">
+            <div class="step-icon-wrap">
+              <i data-lucide="wallet" style="width:20px; height:20px;"></i>
+            </div>
+            <h4 class="step-title" data-i18n="earnings.step3_title">3. Kripto ile Çekin</h4>
+            <p class="step-desc" data-i18n="earnings.step3_desc">Her abonelikten net $ komisyon kazanın, bakiyenizi dilediğiniz an BTC veya LTC ile çekin.</p>
+          </div>
+        </div>
+
+        <!-- Başvuru Durum Alanı (Dinamik JS ile yönetilir) -->
+        <div id="partner-status-container" style="margin-top:2.5rem; text-align:center;">
+          <!-- 1. Durum: Başvurusu Yok / Başvuru Yap Butonu -->
+          <div id="status-can-apply" style="display:none;">
+            <button id="btn-open-application-modal" class="btn btn-primary partner-cta-btn">
+              <i data-lucide="send" style="width:18px; height:18px;"></i>
+              <span data-i18n="earnings.btn_apply_partner">Partner Başvurusu Yap</span>
+            </button>
+          </div>
+
+          <!-- 2. Durum: Başvurusu Beklemede (Pending) -->
+          <div id="status-pending-app" class="partner-status-banner banner-pending" style="display:none;">
+            <div class="status-banner-header">
+              <i data-lucide="clock" style="width:20px; height:20px; color:#eab308;"></i>
+              <span data-i18n="earnings.app_pending_title">Başvurunuz Değerlendiriliyor</span>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin: 6px 0 0 0;" data-i18n="earnings.app_pending_desc">
+              Partner başvurunuz ekibimiz tarafından incelenmektedir. Ortalama değerlendirme süresi 24-48 saattir.
+            </p>
+          </div>
+
+          <!-- 3. Durum: Başvurusu Reddedildi (Rejected - 14 Gün Geri Sayım) -->
+          <div id="status-rejected-app" class="partner-status-banner banner-rejected" style="display:none;">
+            <div class="status-banner-header">
+              <i data-lucide="alert-circle" style="width:20px; height:20px; color:#ef4444;"></i>
+              <span data-i18n="earnings.app_rejected_title">Başvurunuz Onaylanmadı</span>
+            </div>
+            <p id="app-rejection-reason" style="font-size:13px; color:var(--muted); margin: 6px 0 0 0; display:none;"></p>
+            <div id="app-countdown-wrap" style="margin-top:10px; font-size:13px; color:#ef4444; font-weight:600;">
+              <i data-lucide="calendar" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>
+              <span id="app-countdown-text"></span>
+            </div>
+            <div id="status-can-reapply" style="margin-top:14px; display:none;">
+              <button id="btn-reapply-partner" class="btn btn-primary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+                <i data-lucide="rotate-cw" style="width:14px; height:14px;"></i>
+                <span data-i18n="earnings.btn_reapply_partner">Yeni Başvuru Yap</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- Ana İçerik -->
     <div id="data-state" style="display:none;">
 
+      <!-- 4'lü Stat Grid -->
       <div class="earnings-stat-grid">
         <div class="stat-card">
-          <div class="stat-label" data-i18n="earnings.stat_usage">Toplam Kullanım</div>
-          <div class="stat-value" id="stat-usage" style="color:var(--accent);">0</div>
+          <div class="stat-label" data-i18n="earnings.stat_available">Çekilebilir Bakiye</div>
+          <div class="stat-value" id="stat-available" style="color:#22c55e;">$0.00</div>
+          <div class="stat-sub" data-i18n="earnings.min_payout_note">Minimum çekim: $20.00</div>
         </div>
         <div class="stat-card">
           <div class="stat-label" data-i18n="earnings.stat_earnings">Toplam Kazanç</div>
-          <div class="stat-value positive" id="stat-earnings">$0.00</div>
+          <div class="stat-value" id="stat-earnings" style="color:var(--accent);">$0.00</div>
+          <div class="stat-sub" data-i18n="earnings.stat_earnings_sub">Tüm zamanların toplamı</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="earnings.stat_pending">Bekleyen Talepler</div>
+          <div class="stat-value" id="stat-pending" style="color:#eab308;">$0.00</div>
+          <div class="stat-sub" data-i18n="earnings.pending_sub">Admin onayı bekleniyor</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="earnings.stat_paid">Toplam Ödenen</div>
+          <div class="stat-value" id="stat-paid" style="color:#8b5cf6;">$0.00</div>
+          <div class="stat-sub" data-i18n="earnings.paid_sub">Tamamlanan çekimler</div>
         </div>
       </div>
 
+      <!-- Tanımlı Kodlar Tablosu -->
       <div class="earnings-table-wrap">
-        <h2 class="earnings-table-title" data-i18n="earnings.table_title">Tanımlı Kodlarınız</h2>
+        <div class="earnings-table-title">
+          <span data-i18n="earnings.table_title">Tanımlı Referans Kodlarınız</span>
+          <span style="font-size:12px; color:var(--muted); font-weight:normal;" data-i18n="earnings.table_subtitle">Abonelik alımlarında kodunuz kullanıldıkça komisyon hesabınıza işlenir</span>
+        </div>
         <div class="ww-table-wrapper" style="overflow-x:auto;">
           <table class="ww-table">
             <thead>
               <tr>
                 <th style="padding-left: 1.5rem;" data-i18n="earnings.col_code">Kod</th>
-                <th data-i18n="earnings.col_discount">İndirim</th>
-                <th data-i18n="earnings.col_usage">Kullanım Sayısı</th>
-                <th data-i18n="earnings.col_commission">Komisyon / Kullanım ($)</th>
+                <th data-i18n="earnings.col_discount">Kullanıcı İndirimi</th>
+                <th data-i18n="earnings.col_usage">Abonelik Alımları</th>
+                <th data-i18n="earnings.col_commission">Komisyon / Satış</th>
                 <th style="padding-right: 1.5rem;" data-i18n="earnings.col_total">Toplam Kazanç</th>
               </tr>
             </thead>
@@ -109,28 +534,690 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
+      <!-- Çekim Talepleri Geçmişi Tablosu -->
+      <div class="earnings-table-wrap">
+        <div class="earnings-table-title">
+          <span data-i18n="earnings.payouts_history_title">Para Çekme Talepleri Geçmişi</span>
+          <button id="refresh-payouts-btn" class="btn btn-ghost btn-sm" style="font-size:11px; padding:2px 8px;">
+            <i data-lucide="refresh-cw" style="width:12px; height:12px;"></i> <span data-i18n="earnings.btn_refresh">Yenile</span>
+          </button>
+        </div>
+        <div class="ww-table-wrapper" style="overflow-x:auto;">
+          <table class="ww-table">
+            <thead>
+              <tr>
+                <th style="padding-left: 1.5rem;" data-i18n="earnings.col_date">Tarih</th>
+                <th data-i18n="earnings.col_amount">Tutar ($)</th>
+                <th data-i18n="earnings.col_method">Yöntem</th>
+                <th data-i18n="earnings.col_address">Cüzdan Adresi</th>
+                <th data-i18n="earnings.col_status">Durum</th>
+                <th style="padding-right: 1.5rem;" data-i18n="earnings.col_note">Not / Açıklama</th>
+              </tr>
+            </thead>
+            <tbody id="payouts-tbody">
+              <!-- JS ile dolacak -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
   </main>
 
+  <!-- ============================================================ -->
+  <!-- MODAL 1: PARA ÇEKME TALEBİ GÖNDERME                          -->
+  <!-- ============================================================ -->
+  <div id="payout-modal" class="earnings-modal-overlay">
+    <div class="earnings-modal-card">
+      <div class="earnings-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:rgba(34,197,94,0.12); display:flex; align-items:center; justify-content:center; color:#22c55e;">
+            <i data-lucide="arrow-up-right" style="width:18px; height:18px;"></i>
+          </div>
+          <h3 data-i18n="earnings.modal_payout_title">Para Çekme Talebi</h3>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closePayoutModal()" style="padding:4px 8px;">✕</button>
+      </div>
+      
+      <div class="earnings-modal-body">
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:11px; color:var(--muted); text-transform:uppercase;" data-i18n="earnings.stat_available">Çekilebilir Bakiye</div>
+            <div id="modal-available-balance" style="font-size:1.3rem; font-weight:700; color:#22c55e;">$0.00</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px; color:var(--muted);" data-i18n="earnings.min_payout">Minimum Çekim</div>
+            <div style="font-weight:600; color:var(--text);">$20.00</div>
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;" data-i18n="earnings.payout_method_label">ÇEKİM YÖNTEMİ</label>
+          <div class="crypto-radio-group">
+            <div class="crypto-radio-card active" id="crypto-card-ltc" onclick="selectCryptoMethod('LTC')">
+              <input type="radio" name="payout_crypto" id="crypto-ltc" value="LTC" checked>
+              <div>
+                <strong style="display:block; font-size:13px;">Litecoin (LTC)</strong>
+                <span style="font-size:11px; color:var(--muted);" data-i18n="earnings.ltc_low_fee">Düşük ağ ücreti</span>
+              </div>
+            </div>
+            <div class="crypto-radio-card" id="crypto-card-btc" onclick="selectCryptoMethod('BTC')">
+              <input type="radio" name="payout_crypto" id="crypto-btc" value="BTC">
+              <div>
+                <strong style="display:block; font-size:13px;">Bitcoin (BTC)</strong>
+                <span style="font-size:11px; color:var(--muted);" data-i18n="earnings.btc_network">BTC ağı</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="font-size:12px; font-weight:600; color:var(--muted);" data-i18n="earnings.withdraw_amount_label">ÇEKİLECEK TUTAR ($)</label>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="setMaxWithdrawAmount()" style="font-size:11px; padding:1px 6px; color:var(--accent);" data-i18n="earnings.withdraw_all">Tümünü Çek</button>
+          </div>
+          <div style="position:relative;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-weight:600; color:var(--muted);">$</span>
+            <input type="number" id="payout-amount" min="20" step="1" placeholder="20.00" style="width:100%; padding:0.6rem 1rem 0.6rem 1.8rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:15px; font-weight:600;">
+          </div>
+          <div id="payout-amount-msg" style="font-size:11px; margin-top:4px; color:var(--muted);" data-i18n="earnings.min_amount_warning">Minimum çekilebilir tutar $20.00'dır.</div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">
+            <span id="payout-address-label">Litecoin (LTC)</span> <span data-i18n="earnings.payout_address_label_suffix">CÜZDAN ADRESİNİZ</span>
+          </label>
+          <input type="text" id="payout-wallet-address" placeholder="Cüzdan adresinizi girin..." style="width:100%; padding:0.6rem 0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:monospace; font-size:12px;">
+          <div style="margin-top:6px; display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="save-address-checkbox" checked style="cursor:pointer;">
+            <label for="save-address-checkbox" style="font-size:11px; color:var(--muted); cursor:pointer;" data-i18n="earnings.save_address_label">Bu adresi profilime kaydet (sonraki çekimlerde otomatik gelir)</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="earnings-modal-footer">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closePayoutModal()" data-i18n="common.cancel">Vazgeç</button>
+        <button type="button" class="btn btn-primary btn-sm" id="submit-payout-btn" onclick="submitPayoutRequest()" data-i18n="earnings.btn_submit_request">Talebi Gönder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL 2: CÜZDAN ADRESLERİNİ YÖNETME                          -->
+  <!-- ============================================================ -->
+  <div id="wallets-modal" class="earnings-modal-overlay">
+    <div class="earnings-modal-card">
+      <div class="earnings-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:rgba(124,109,250,0.12); display:flex; align-items:center; justify-content:center; color:var(--accent);">
+            <i data-lucide="wallet" style="width:18px; height:18px;"></i>
+          </div>
+          <h3 data-i18n="earnings.modal_wallets_title">Kayıtlı Cüzdan Adreslerim</h3>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeWalletsModal()" style="padding:4px 8px;">✕</button>
+      </div>
+
+      <div class="earnings-modal-body">
+        <p style="font-size:12px; color:var(--muted); margin:0;" data-i18n="earnings.modal_wallets_desc">
+          Para çekme taleplerinizde cüzdan adresleriniz otomatik olarak doldurulur. İstediğiniz zaman güncelleyebilirsiniz.
+        </p>
+
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;" data-i18n="earnings.ltc_address_label">Litecoin (LTC) Adresi</label>
+          <input type="text" id="pref-ltc-address" placeholder="LTC cüzdan adresiniz (örn: L... veya ltc1...)" style="width:100%; padding:0.6rem 0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:monospace; font-size:12px;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;" data-i18n="earnings.btc_address_label">Bitcoin (BTC) Adresi</label>
+          <input type="text" id="pref-btc-address" placeholder="BTC cüzdan adresiniz (örn: 1..., 3... veya bc1...)" style="width:100%; padding:0.6rem 0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:monospace; font-size:12px;">
+        </div>
+      </div>
+
+      <div class="earnings-modal-footer">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeWalletsModal()" data-i18n="common.close">Kapat</button>
+        <button type="button" class="btn btn-primary btn-sm" id="save-wallets-btn" onclick="saveWallets()" data-i18n="common.save">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL 3: PARTNER BAŞVURU MODALI                              -->
+  <!-- ============================================================ -->
+  <div id="partner-apply-modal" class="earnings-modal-overlay">
+    <div class="earnings-modal-card" style="max-width: 520px;">
+      <div class="earnings-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:rgba(139,92,246,0.15); display:flex; align-items:center; justify-content:center; color:var(--accent);">
+            <i data-lucide="badge-percent" style="width:18px; height:18px;"></i>
+          </div>
+          <div>
+            <h3 style="margin:0; font-size:1.1rem; font-weight:700;" data-i18n="earnings.modal_apply_title">WJ Partner Başvurusu</h3>
+            <p style="margin:2px 0 0; font-size:11px; color:var(--muted);" data-i18n="earnings.modal_apply_desc">Trading topluluğunuz veya kitleniz hakkında bilgi verin.</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeApplyModal()" style="padding:4px 8px;">✕</button>
+      </div>
+
+      <form id="partner-apply-form" onsubmit="submitPartnerApplication(event)">
+        <div class="earnings-modal-body">
+          <!-- Instagram -->
+          <div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">
+              <i data-lucide="instagram" style="width:13px; height:13px; color:#e1306c;"></i>
+              <span data-i18n="earnings.field_instagram">Instagram Adresiniz</span>
+            </label>
+            <input type="text" id="apply-instagram" placeholder="@kullaniciadi veya instagram.com/kullaniciadi" required style="width:100%; padding:0.65rem 0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:13px;">
+          </div>
+
+          <!-- Takipçi Boyutu -->
+          <div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">
+              <i data-lucide="users" style="width:13px; height:13px; color:var(--accent);"></i>
+              <span data-i18n="earnings.field_followers">Takipçi / Topluluk Boyutu</span>
+            </label>
+            <select id="apply-followers" required style="width:100%; padding:0.65rem 0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:13px;">
+              <option value="" disabled selected>Seçiniz...</option>
+              <option value="1.000 - 5.000" data-i18n="earnings.followers_opt_1">1.000 - 5.000 Takipçi</option>
+              <option value="5.000 - 20.000" data-i18n="earnings.followers_opt_2">5.000 - 20.000 Takipçi</option>
+              <option value="20.000 - 50.000" data-i18n="earnings.followers_opt_3">20.000 - 50.000 Takipçi</option>
+              <option value="50.000+" data-i18n="earnings.followers_opt_4">50.000+ Takipçi</option>
+            </select>
+          </div>
+
+          <!-- Kripto Kullanımı -->
+          <div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px;">
+              <i data-lucide="wallet" style="width:13px; height:13px; color:#f59e0b;"></i>
+              <span data-i18n="earnings.field_crypto">Kripto para kullanıyor musunuz?</span>
+            </label>
+            <p style="font-size:11px; color:var(--muted); margin:0 0 8px 0;" data-i18n="earnings.field_crypto_desc">Affiliate komisyon ödemeleri BTC ve LTC ağları üzerinden yapılmaktadır.</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+              <label class="crypto-radio-card active" id="crypto-opt-yes-card" onclick="selectCryptoUsage(true)">
+                <input type="radio" name="apply_crypto" value="true" checked style="display:none;">
+                <i data-lucide="check-circle-2" style="width:16px; height:16px; color:#22c55e;"></i>
+                <span data-i18n="earnings.crypto_yes">Evet, aktif kullanıyorum</span>
+              </label>
+              <label class="crypto-radio-card" id="crypto-opt-no-card" onclick="selectCryptoUsage(false)">
+                <input type="radio" name="apply_crypto" value="false" style="display:none;">
+                <i data-lucide="help-circle" style="width:16px; height:16px; color:var(--muted);"></i>
+                <span data-i18n="earnings.crypto_no">Hayır, henüz kullanmıyorum</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Kısa Not -->
+          <div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">
+              <i data-lucide="message-square" style="width:13px; height:13px; color:var(--accent);"></i>
+              <span data-i18n="earnings.field_note">Kısa Not / Tanıtım</span>
+            </label>
+            <textarea id="apply-note" rows="3" placeholder="İçerik türünüz, trading analizleriniz ve topluluğunuz hakkında kısa bilgi..." style="width:100%; padding:0.65rem 0.75rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:13px; resize:vertical;"></textarea>
+          </div>
+        </div>
+
+        <div class="earnings-modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeApplyModal()" data-i18n="common.cancel">İptal</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="submit-apply-btn" style="display:inline-flex; align-items:center; gap:6px;">
+            <i data-lucide="send" style="width:14px; height:14px;"></i>
+            <span data-i18n="earnings.btn_submit_app">Başvuruyu Gönder</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script is:inline>
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Supabase client helper to handle race conditions with module loading
-      async function getSb() {
-        if (window.sb) return window.sb;
-        for (let i = 0; i < 40; i++) {
-          if (window.sb) return window.sb;
-          if (typeof window.supabase !== 'undefined' && window.SUPABASE_URL) {
-            window.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-            return window.sb;
-          }
-          await new Promise(r => setTimeout(r, 100));
+    var EARNINGS_STATE = {
+      totalEarnings: 0,
+      availableBalance: 0,
+      pendingPayout: 0,
+      paidPayout: 0,
+      btcAddress: '',
+      ltcAddress: '',
+      selectedCrypto: 'LTC',
+      requests: []
+    };
+
+    function t(key, fallback, params) {
+      var res = fallback;
+      if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
+        var tr = window.i18n.t(key, params);
+        if (tr && tr !== key) res = tr;
+      }
+      if (params && typeof params === 'object') {
+        Object.keys(params).forEach(function(k) {
+          res = String(res).replace(new RegExp('\\{\\{?' + k + '\\}?\\}', 'g'), params[k]);
+        });
+      }
+      return res;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m];
+      });
+    }
+
+    function copyToClipboard(text, msg) {
+      if (!navigator.clipboard) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      var toastMsg = msg || t('earnings.toast_code_copied', 'Kopyalandı!');
+      if (typeof window.showToast === 'function') {
+        window.showToast(toastMsg, 'success');
+      } else {
+        alert(toastMsg);
+      }
+    }
+
+    function selectCryptoMethod(crypto) {
+      EARNINGS_STATE.selectedCrypto = crypto;
+      var cardLtc = document.getElementById('crypto-card-ltc');
+      var cardBtc = document.getElementById('crypto-card-btc');
+      var radLtc = document.getElementById('crypto-ltc');
+      var radBtc = document.getElementById('crypto-btc');
+      var lbl = document.getElementById('payout-address-label');
+      var input = document.getElementById('payout-wallet-address');
+
+      if (crypto === 'LTC') {
+        if (cardLtc) cardLtc.classList.add('active');
+        if (cardBtc) cardBtc.classList.remove('active');
+        if (radLtc) radLtc.checked = true;
+        if (lbl) lbl.textContent = 'Litecoin (LTC)';
+        if (input) input.value = EARNINGS_STATE.ltcAddress || '';
+      } else {
+        if (cardBtc) cardBtc.classList.add('active');
+        if (cardLtc) cardLtc.classList.remove('active');
+        if (radBtc) radBtc.checked = true;
+        if (lbl) lbl.textContent = 'Bitcoin (BTC)';
+        if (input) input.value = EARNINGS_STATE.btcAddress || '';
+      }
+    }
+
+    function openPayoutModal() {
+      if (EARNINGS_STATE.availableBalance < 20) {
+        var minWarn = t('earnings.toast_min_amount', 'Minimum çekim tutarı $20.00\'dır.') + ' (' + t('earnings.stat_available', 'Çekilebilir Bakiye') + ': $' + EARNINGS_STATE.availableBalance.toFixed(2) + ')';
+        if (typeof window.showToast === 'function') {
+          window.showToast(minWarn, 'error');
+        } else {
+          alert(minWarn);
         }
-        return null;
+        return;
       }
 
+      document.getElementById('modal-available-balance').textContent = '$' + EARNINGS_STATE.availableBalance.toFixed(2);
+      document.getElementById('payout-amount').value = Math.floor(EARNINGS_STATE.availableBalance);
+      selectCryptoMethod(EARNINGS_STATE.selectedCrypto || 'LTC');
+
+      document.getElementById('payout-modal').classList.add('open');
+    }
+
+    function closePayoutModal() {
+      document.getElementById('payout-modal').classList.remove('open');
+    }
+
+    function openWalletsModal() {
+      document.getElementById('pref-ltc-address').value = EARNINGS_STATE.ltcAddress || '';
+      document.getElementById('pref-btc-address').value = EARNINGS_STATE.btcAddress || '';
+      document.getElementById('wallets-modal').classList.add('open');
+    }
+
+    function closeWalletsModal() {
+      document.getElementById('wallets-modal').classList.remove('open');
+    }
+
+    function setMaxWithdrawAmount() {
+      document.getElementById('payout-amount').value = EARNINGS_STATE.availableBalance.toFixed(2);
+    }
+
+    async function saveWallets() {
+      var btn = document.getElementById('save-wallets-btn');
+      var btc = document.getElementById('pref-btc-address').value.trim();
+      var ltc = document.getElementById('pref-ltc-address').value.trim();
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        var client = await getSb();
+        var { data: { session } } = await client.auth.getSession();
+        if (!session) return;
+
+        // Try RPC first
+        var { error: rpcErr } = await client.rpc('save_payout_addresses', { p_btc: btc, p_ltc: ltc });
+        if (rpcErr) {
+          // Direct fallback
+          await client.from('user_profiles').update({
+            btc_payout_address: btc,
+            ltc_payout_address: ltc
+          }).eq('id', session.user.id);
+        }
+
+        EARNINGS_STATE.btcAddress = btc;
+        EARNINGS_STATE.ltcAddress = ltc;
+
+        if (typeof window.showToast === 'function') window.showToast(t('earnings.toast_wallets_saved', 'Cüzdan adresleri başarıyla kaydedildi!'), 'success');
+        closeWalletsModal();
+      } catch (e) {
+        console.error('saveWallets hatası:', e);
+        if (typeof window.showToast === 'function') window.showToast((e.message || e), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = t('common.save', 'Kaydet');
+      }
+    }
+
+    async function submitPayoutRequest() {
+      var btn = document.getElementById('submit-payout-btn');
+      var amount = parseFloat(document.getElementById('payout-amount').value);
+      var crypto = EARNINGS_STATE.selectedCrypto || 'LTC';
+      var address = document.getElementById('payout-wallet-address').value.trim();
+      var saveAddr = document.getElementById('save-address-checkbox').checked;
+
+      if (isNaN(amount) || amount < 20) {
+        var errMin = t('earnings.toast_min_amount', 'Minimum çekim tutarı $20.00 olmalıdır.');
+        if (typeof window.showToast === 'function') window.showToast(errMin, 'error');
+        else alert(errMin);
+        return;
+      }
+
+      if (amount > EARNINGS_STATE.availableBalance) {
+        var errBal = t('earnings.toast_insufficient_balance', 'Yetersiz bakiye. Maksimum çekilebilir: $') + EARNINGS_STATE.availableBalance.toFixed(2);
+        if (typeof window.showToast === 'function') window.showToast(errBal, 'error');
+        else alert(errBal);
+        return;
+      }
+
+      if (!address) {
+        var errAddr = t('earnings.toast_invalid_address', 'Lütfen geçerli bir cüzdan adresi girin.');
+        if (typeof window.showToast === 'function') window.showToast(errAddr, 'error');
+        else alert(errAddr);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        var client = await getSb();
+        var { data: { session } } = await client.auth.getSession();
+        if (!session) return;
+
+        // Try RPC
+        var { data: rpcRes, error: rpcErr } = await client.rpc('submit_payout_request', {
+          p_amount: amount,
+          p_currency: crypto,
+          p_address: address
+        });
+
+        if (rpcErr || (rpcRes && !rpcRes.success)) {
+          // Direct fallback if RPC is not available yet
+          var { error: insertErr } = await client.from('payout_requests').insert([{
+            user_id: session.user.id,
+            amount: amount,
+            currency: crypto,
+            payout_address: address,
+            status: 'pending'
+          }]);
+
+          if (insertErr) throw (rpcErr || insertErr);
+
+          if (saveAddr) {
+            var updatePayload = crypto === 'LTC' ? { ltc_payout_address: address } : { btc_payout_address: address };
+            await client.from('user_profiles').update(updatePayload).eq('id', session.user.id);
+          }
+        }
+
+        if (saveAddr) {
+          if (crypto === 'LTC') EARNINGS_STATE.ltcAddress = address;
+          else EARNINGS_STATE.btcAddress = address;
+        }
+
+        var successMsg = t('earnings.toast_payout_success', '🎉 Para çekme talebiniz başarıyla oluşturuldu! Admin onayından sonra cüzdanınıza transfer edilecektir.');
+        if (typeof window.showToast === 'function') {
+          window.showToast(successMsg, 'success');
+        } else {
+          alert(successMsg);
+        }
+
+        closePayoutModal();
+        await loadEarningsData();
+      } catch (e) {
+        console.error('submitPayoutRequest hatası:', e);
+        if (typeof window.showToast === 'function') window.showToast((e.message || e), 'error');
+        else alert('Hata: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = t('earnings.btn_submit_request', 'Talebi Gönder');
+      }
+    }
+
+    function openApplyModal() {
+      document.getElementById('partner-apply-form').reset();
+      selectCryptoUsage(true);
+      document.getElementById('partner-apply-modal').classList.add('open');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closeApplyModal() {
+      document.getElementById('partner-apply-modal').classList.remove('open');
+    }
+
+    function selectCryptoUsage(val) {
+      var yesCard = document.getElementById('crypto-opt-yes-card');
+      var noCard = document.getElementById('crypto-opt-no-card');
+      if (!yesCard || !noCard) return;
+      var yesRadio = yesCard.querySelector('input');
+      var noRadio = noCard.querySelector('input');
+
+      if (val) {
+        if (yesRadio) yesRadio.checked = true;
+        if (noRadio) noRadio.checked = false;
+        yesCard.classList.add('active');
+        noCard.classList.remove('active');
+      } else {
+        if (yesRadio) yesRadio.checked = false;
+        if (noRadio) noRadio.checked = true;
+        noCard.classList.add('active');
+        yesCard.classList.remove('active');
+      }
+    }
+
+    async function loadPartnerApplicationStatus() {
+      try {
+        var client = await getSb();
+        if (!client) return;
+
+        var hasLoaded = false;
+        try {
+          var { data, error } = await client.rpc('get_my_partner_application');
+          if (!error && data && data.has_application) {
+            hasLoaded = true;
+            if (data.status === 'pending') {
+              showApplyState('pending');
+            } else if (data.status === 'rejected') {
+              showApplyState('rejected', {
+                adminNote: data.admin_note,
+                canReapply: data.can_reapply,
+                daysUntilReapply: data.days_until_reapply
+              });
+            } else {
+              showApplyState('can_apply');
+            }
+            return;
+          }
+        } catch (rpcEx) {
+          console.warn('get_my_partner_application RPC failed, fallback to direct query:', rpcEx);
+        }
+
+        // Doğrudan partner_applications tablosundan oku (fallback)
+        var { data: { session } } = await client.auth.getSession();
+        if (!session || !session.user) {
+          showApplyState('can_apply');
+          return;
+        }
+
+        var { data: directRows, error: directErr } = await client
+          .from('partner_applications')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (!directErr && directRows && directRows.length > 0) {
+          var lastApp = directRows[0];
+          if (lastApp.status === 'pending') {
+            showApplyState('pending');
+          } else if (lastApp.status === 'rejected') {
+            var diffDays = Math.floor((new Date() - new Date(lastApp.created_at)) / (1000 * 60 * 60 * 24));
+            var canReapply = diffDays >= 14;
+            var daysLeft = Math.max(1, 14 - diffDays);
+            showApplyState('rejected', {
+              adminNote: lastApp.admin_note,
+              canReapply: canReapply,
+              daysUntilReapply: canReapply ? 0 : daysLeft
+            });
+          } else {
+            showApplyState('can_apply');
+          }
+        } else {
+          showApplyState('can_apply');
+        }
+      } catch (err) {
+        console.error('loadPartnerApplicationStatus error:', err);
+        showApplyState('can_apply');
+      }
+    }
+
+    function showApplyState(type, meta) {
+      meta = meta || {};
+      var canApplyEl = document.getElementById('status-can-apply');
+      var pendingEl = document.getElementById('status-pending-app');
+      var rejectedEl = document.getElementById('status-rejected-app');
+      var canReapplyWrap = document.getElementById('status-can-reapply');
+      var countdownWrap = document.getElementById('app-countdown-wrap');
+      var reasonEl = document.getElementById('app-rejection-reason');
+      var countdownTextEl = document.getElementById('app-countdown-text');
+
+      if (canApplyEl) canApplyEl.style.display = 'none';
+      if (pendingEl) pendingEl.style.display = 'none';
+      if (rejectedEl) rejectedEl.style.display = 'none';
+
+      if (type === 'can_apply') {
+        if (canApplyEl) canApplyEl.style.display = 'block';
+      } else if (type === 'pending') {
+        if (pendingEl) pendingEl.style.display = 'block';
+      } else if (type === 'rejected') {
+        if (rejectedEl) rejectedEl.style.display = 'block';
+        if (reasonEl) {
+          if (meta.adminNote) {
+            reasonEl.textContent = t('earnings.admin_reason', 'Yönetici Notu:') + ' ' + meta.adminNote;
+            reasonEl.style.display = 'block';
+          } else {
+            reasonEl.style.display = 'none';
+          }
+        }
+        if (meta.canReapply) {
+          if (countdownWrap) countdownWrap.style.display = 'none';
+          if (canReapplyWrap) canReapplyWrap.style.display = 'block';
+        } else {
+          if (countdownWrap) {
+            countdownWrap.style.display = 'block';
+            if (countdownTextEl) {
+              var trStr = t('earnings.app_reapply_countdown', 'Yeni başvuru yapabilmek için kalan süre: {days} gün');
+              var daysCount = (meta.daysUntilReapply !== undefined && meta.daysUntilReapply !== null) ? meta.daysUntilReapply : 14;
+              countdownTextEl.textContent = trStr.replace(/\{\{?days\}?\}/g, daysCount);
+            }
+          }
+          if (canReapplyWrap) canReapplyWrap.style.display = 'none';
+        }
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    async function submitPartnerApplication(e) {
+      if (e) e.preventDefault();
+      var instagram = document.getElementById('apply-instagram').value.trim();
+      var followers = document.getElementById('apply-followers').value;
+      var cryptoRadio = document.querySelector('input[name="apply_crypto"]:checked');
+      var usesCrypto = cryptoRadio ? (cryptoRadio.value === 'true') : true;
+      var note = document.getElementById('apply-note').value.trim();
+
+      if (!instagram) {
+        var errInsta = t('earnings.toast_instagram_required', 'Lütfen Instagram adresinizi giriniz.');
+        if (typeof window.showToast === 'function') window.showToast(errInsta, 'error');
+        else alert(errInsta);
+        return;
+      }
+      if (!followers) {
+        var errFol = t('earnings.toast_followers_required', 'Lütfen takipçi kitlenizi seçiniz.');
+        if (typeof window.showToast === 'function') window.showToast(errFol, 'error');
+        else alert(errFol);
+        return;
+      }
+
+      var submitBtn = document.getElementById('submit-apply-btn');
+      var originalBtnHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '...';
+
+      try {
+        var client = await getSb();
+        if (!client) throw new Error('Client not available');
+
+        var res = await client.rpc('submit_partner_application', {
+          p_instagram: instagram,
+          p_follower_count: followers,
+          p_uses_crypto: usesCrypto,
+          p_note: note
+        });
+
+        if (res.error) {
+          throw new Error(res.error.message || 'Başvuru gönderilemedi.');
+        }
+
+        var successMsg = t('earnings.toast_app_submitted', 'Partner başvurunuz başarıyla alındı! Değerlendirme sonucu bu sayfada görünecektir.');
+        if (typeof window.showToast === 'function') window.showToast(successMsg, 'success');
+        else alert(successMsg);
+
+        closeApplyModal();
+        await loadPartnerApplicationStatus();
+      } catch (err) {
+        console.error('submitPartnerApplication error:', err);
+        var errMsg = err.message || 'Başvuru gönderilirken bir hata oluştu.';
+        if (typeof window.showToast === 'function') window.showToast(errMsg, 'error');
+        else alert(errMsg);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+    }
+
+    async function getSb() {
+      if (window.sb) return window.sb;
+      for (let i = 0; i < 40; i++) {
+        if (window.sb) return window.sb;
+        if (typeof window.supabase !== 'undefined' && window.SUPABASE_URL) {
+          window.sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+          return window.sb;
+        }
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return null;
+    }
+
+    async function loadEarningsData() {
       var client = await getSb();
-      
       if (!client) {
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('empty-state').style.display = 'block';
@@ -144,20 +1231,18 @@ import Layout from '../layouts/Layout.astro';
       }
 
       try {
-        let rows = [];
+        // 1. Fetch Referral Codes
+        let codeRows = [];
         const { data: rpcData, error: rpcError } = await client.rpc('get_influencer_earnings');
-        
         if (!rpcError && Array.isArray(rpcData)) {
-          rows = rpcData;
+          codeRows = rpcData;
         } else {
-          // Fallback direct query if RPC doesn't exist
-          const { data: directData, error: directError } = await client
+          const { data: directData } = await client
             .from('referral_codes')
             .select('code, discount_percent, usage_count, commission_rate')
             .eq('influencer_user_id', session.user.id);
-            
-          if (!directError && Array.isArray(directData)) {
-            rows = directData.map(r => ({
+          if (Array.isArray(directData)) {
+            codeRows = directData.map(r => ({
               code: r.code,
               discount_percent: r.discount_percent,
               usage_count: r.usage_count || 0,
@@ -167,45 +1252,178 @@ import Layout from '../layouts/Layout.astro';
           }
         }
 
+        // 2. Fetch Payout Summary / User data
+        let totalEarnings = 0;
+        let totalUsage = 0;
+        codeRows.forEach(function(r) {
+          totalEarnings += parseFloat(r.total_earnings || 0);
+          totalUsage += parseInt(r.usage_count || 0, 10);
+        });
+
+        let pendingPayout = 0;
+        let paidPayout = 0;
+        let btcAddress = '';
+        let ltcAddress = '';
+        let requestsList = [];
+
+        // Try RPC summary first
+        const { data: summaryData, error: summaryErr } = await client.rpc('get_influencer_payout_summary');
+        if (!summaryErr && summaryData && !summaryData.error) {
+          totalEarnings = parseFloat(summaryData.total_earnings || totalEarnings);
+          pendingPayout = parseFloat(summaryData.pending_payout || 0);
+          paidPayout = parseFloat(summaryData.paid_payout || 0);
+          btcAddress = summaryData.btc_address || '';
+          ltcAddress = summaryData.ltc_address || '';
+          requestsList = summaryData.requests || [];
+        } else {
+          // Direct fallback
+          const { data: prof } = await client.from('user_profiles').select('btc_payout_address, ltc_payout_address').eq('id', session.user.id).maybeSingle();
+          if (prof) {
+            btcAddress = prof.btc_payout_address || '';
+            ltcAddress = prof.ltc_payout_address || '';
+          }
+
+          const { data: reqs } = await client.from('payout_requests').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
+          if (Array.isArray(reqs)) {
+            requestsList = reqs;
+            reqs.forEach(function(rq) {
+              var am = parseFloat(rq.amount || 0);
+              if (rq.status === 'pending') pendingPayout += am;
+              else if (rq.status === 'approved') paidPayout += am;
+            });
+          }
+        }
+
+        var availableBalance = Math.max(0, totalEarnings - pendingPayout - paidPayout);
+
+        EARNINGS_STATE.totalEarnings = totalEarnings;
+        EARNINGS_STATE.availableBalance = availableBalance;
+        EARNINGS_STATE.pendingPayout = pendingPayout;
+        EARNINGS_STATE.paidPayout = paidPayout;
+        EARNINGS_STATE.btcAddress = btcAddress;
+        EARNINGS_STATE.ltcAddress = ltcAddress;
+        EARNINGS_STATE.requests = requestsList;
+
         document.getElementById('loading-state').style.display = 'none';
 
-        if (rows.length === 0) {
+        if (codeRows.length === 0 && requestsList.length === 0) {
+          document.getElementById('data-state').style.display = 'none';
           document.getElementById('empty-state').style.display = 'block';
+          var topActions = document.getElementById('top-action-buttons');
+          if (topActions) topActions.style.display = 'none';
+
+          loadPartnerApplicationStatus();
+          if (typeof lucide !== 'undefined') lucide.createIcons();
           return;
         }
 
+        document.getElementById('empty-state').style.display = 'none';
         document.getElementById('data-state').style.display = 'block';
+        var topActions = document.getElementById('top-action-buttons');
+        if (topActions) topActions.style.display = 'flex';
 
-        let totalUsage = 0;
-        let totalEarnings = 0;
-        const tbody = document.getElementById('codes-tbody');
-        tbody.innerHTML = '';
-
-        rows.forEach(function(item) {
-          totalUsage += item.usage_count || 0;
-          totalEarnings += parseFloat(item.total_earnings || 0);
-
-          const tr = document.createElement('tr');
-          tr.innerHTML =
-            '<td style="padding-left: 1.5rem;"><span class="code-chip">' + item.code + '</span></td>' +
-            '<td>%' + item.discount_percent + '</td>' +
-            '<td>' + item.usage_count + '</td>' +
-            '<td>$' + (item.commission_rate || 0) + '</td>' +
-            '<td style="font-weight:600; color:#22c55e; padding-right: 1.5rem;">$' + parseFloat(item.total_earnings || 0).toFixed(2) + '</td>';
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById('stat-usage').textContent = totalUsage;
+        // Render Stats
+        document.getElementById('stat-available').textContent = '$' + availableBalance.toFixed(2);
         document.getElementById('stat-earnings').textContent = '$' + totalEarnings.toFixed(2);
+        document.getElementById('stat-pending').textContent = '$' + pendingPayout.toFixed(2);
+        document.getElementById('stat-paid').textContent = '$' + paidPayout.toFixed(2);
+
+        // Update Withdraw Button state
+        var openPayoutBtn = document.getElementById('open-payout-modal-btn');
+        if (openPayoutBtn) {
+          if (availableBalance < 20) {
+            openPayoutBtn.style.opacity = '0.6';
+            openPayoutBtn.title = t('earnings.min_payout_note', 'Minimum çekim: $20.00') + ' (' + t('earnings.stat_available', 'Çekilebilir Bakiye') + ': $' + availableBalance.toFixed(2) + ')';
+          } else {
+            openPayoutBtn.style.opacity = '1';
+            openPayoutBtn.title = t('earnings.btn_request_payout', 'Para çekme talebi oluştur');
+          }
+        }
+
+        // Render Referral Codes Table
+        var codesTbody = document.getElementById('codes-tbody');
+        codesTbody.innerHTML = '';
+        if (codeRows.length === 0) {
+          codesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--muted);">' + t('earnings.no_codes', 'Tanımlı referans kodu bulunamadı.') + '</td></tr>';
+        } else {
+          codeRows.forEach(function(item) {
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+              '<td style="padding-left: 1.5rem;"><span class="code-chip" style="cursor:pointer;" onclick="copyToClipboard(\'' + escapeHtml(item.code) + '\', \'' + escapeHtml(t('earnings.toast_code_copied', 'Referans kodu kopyalandı!')) + '\')" title="' + escapeHtml(t('earnings.col_code', 'Kodu Kopyala')) + '">' + escapeHtml(item.code) + '</span></td>' +
+              '<td>%' + item.discount_percent + '</td>' +
+              '<td><strong style="color:var(--text);">' + item.usage_count + ' ' + t('earnings.orders_unit', 'adet') + '</strong></td>' +
+              '<td>$' + parseFloat(item.commission_rate || 0).toFixed(2) + '</td>' +
+              '<td style="padding-right: 1.5rem; font-weight:700; color:#22c55e;">$' + parseFloat(item.total_earnings || 0).toFixed(2) + '</td>';
+            codesTbody.appendChild(tr);
+          });
+        }
+
+        // Render Payout Requests Table
+        var payoutsTbody = document.getElementById('payouts-tbody');
+        payoutsTbody.innerHTML = '';
+        if (requestsList.length === 0) {
+          payoutsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--muted);">' + t('earnings.no_payouts', 'Henüz bir para çekme talebiniz bulunmuyor.') + '</td></tr>';
+        } else {
+          var curLang = (window.i18n && window.i18n.currentLang) || 'tr';
+          var localeMap = { 'tr': 'tr-TR', 'en': 'en-US', 'de': 'de-DE' };
+          var dateLocale = localeMap[curLang] || 'tr-TR';
+
+          requestsList.forEach(function(req) {
+            var statusBadge = '';
+            if (req.status === 'pending') {
+              statusBadge = '<span class="badge-status badge-pending">' + t('earnings.status_pending', '⏳ Beklemede') + '</span>';
+            } else if (req.status === 'approved') {
+              statusBadge = '<span class="badge-status badge-approved">' + t('earnings.status_approved', '✅ Ödendi') + '</span>';
+            } else if (req.status === 'rejected') {
+              statusBadge = '<span class="badge-status badge-rejected">' + t('earnings.status_rejected', '❌ Reddedildi') + '</span>';
+            }
+
+            var dateStr = req.created_at ? new Date(req.created_at).toLocaleDateString(dateLocale, { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+            var shortAddr = req.payout_address ? (req.payout_address.slice(0, 8) + '...' + req.payout_address.slice(-6)) : '—';
+
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+              '<td style="padding-left: 1.5rem; font-size:12px; color:var(--muted);">' + dateStr + '</td>' +
+              '<td style="font-weight:700; color:var(--text); font-size:14px;">$' + parseFloat(req.amount).toFixed(2) + '</td>' +
+              '<td><span style="font-weight:600; font-size:12px; color:var(--accent);">' + escapeHtml(req.currency) + '</span></td>' +
+              '<td><span class="code-chip" style="font-size:11px; cursor:pointer;" onclick="copyToClipboard(\'' + escapeHtml(req.payout_address) + '\', \'' + escapeHtml(t('earnings.toast_address_copied', 'Cüzdan adresi kopyalandı!')) + '\')" title="Kopyala">' + shortAddr + '</span></td>' +
+              '<td>' + statusBadge + '</td>' +
+              '<td style="padding-right: 1.5rem; font-size:12px; color:var(--muted);">' + escapeHtml(req.admin_note || '—') + '</td>';
+            payoutsTbody.appendChild(tr);
+          });
+        }
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
-        if (typeof window.i18n !== 'undefined' && typeof window.i18n.translatePage === 'function') {
-          window.i18n.translatePage();
-        }
       } catch (err) {
-        console.error(err);
+        console.error('loadEarningsData hatası:', err);
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('empty-state').style.display = 'block';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadEarningsData();
+
+      var openBtn = document.getElementById('open-payout-modal-btn');
+      if (openBtn) openBtn.addEventListener('click', openPayoutModal);
+
+      var walletsBtn = document.getElementById('open-wallets-modal-btn');
+      if (walletsBtn) walletsBtn.addEventListener('click', openWalletsModal);
+
+      var openApplyBtn = document.getElementById('btn-open-application-modal');
+      if (openApplyBtn) openApplyBtn.addEventListener('click', openApplyModal);
+
+      var reapplyBtn = document.getElementById('btn-reapply-partner');
+      if (reapplyBtn) reapplyBtn.addEventListener('click', openApplyModal);
+
+      var refreshBtn = document.getElementById('refresh-payouts-btn');
+      if (refreshBtn) refreshBtn.addEventListener('click', loadEarningsData);
+
+      if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.onChange === 'function') {
+        window.i18n.onChange(function() {
+          if (window.i18n.apply) window.i18n.apply();
+          loadEarningsData();
+        });
       }
     });
   </script>

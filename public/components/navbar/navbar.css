@@ -1611,3 +1611,96 @@ body.light-theme .nav-menu {
   color: var(--muted);
   flex-shrink: 0;
 }
+
+/* ============================================================
+   NOTIFICATION ITEMS
+   ============================================================ */
+.noti-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  position: relative;
+}
+.noti-item:last-child {
+  margin-bottom: 0;
+}
+.noti-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+body.light-theme .noti-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.noti-item.unread {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+.noti-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.noti-icon.success { background: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); }
+.noti-icon.error { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+.noti-icon.warning { background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+.noti-icon.info { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); }
+.noti-icon.finance { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+.noti-content {
+  flex: 1;
+  min-width: 0;
+}
+.noti-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.noti-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0 0 6px 0;
+  word-break: break-word;
+}
+.noti-time {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.noti-mark-read {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  border-radius: 4px;
+  margin-top: -4px;
+  margin-right: -4px;
+}
+.noti-item:hover .noti-mark-read {
+  opacity: 1;
+}
+.noti-mark-read:hover {
+  color: var(--accent);
+  background: rgba(139, 92, 246, 0.1);
+}

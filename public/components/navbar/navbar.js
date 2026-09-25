@@ -17,7 +17,133 @@ window.wwToggleBell = function(e, btn) {
   e.stopPropagation();
   if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('bell');
   var p = document.getElementById('bell-panel');
-  if(p) p.classList.toggle('open');
+  if(p) {
+    var isOpen = p.classList.toggle('open');
+    if (isOpen) {
+      window.loadNotifications();
+    }
+  }
+};
+
+window.wwMarkAllAsRead = async function() {
+  try {
+    var sb = window.sb || window.supabase;
+    var user = window.SETTINGS_STATE?.currentUser;
+    if (!sb || !user) return;
+    await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
+    window.loadNotifications();
+  } catch (err) {
+    console.error('Mark all read error:', err);
+  }
+};
+
+window.wwMarkAsRead = async function(e, id) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  try {
+    var sb = window.sb || window.supabase;
+    var user = window.SETTINGS_STATE?.currentUser;
+    if (!sb || !user) return;
+    await sb.rpc('mark_notification_as_read', { p_user_id: user.id, p_notification_id: id });
+    window.loadNotifications();
+  } catch (err) {
+    console.error('Mark read error:', err);
+  }
+};
+
+window.loadNotifications = async function() {
+  try {
+    var sb = window.sb || window.supabase;
+    var user = window.SETTINGS_STATE?.currentUser;
+    if (!sb || !user) return;
+
+    var { data: notis, error } = await sb
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    var unreadCount = notis.filter(function(n) { return !n.is_read; }).length;
+    var dot = document.getElementById('bell-dot');
+    if (dot) dot.style.display = unreadCount > 0 ? 'block' : 'none';
+
+    var markReadBtn = document.getElementById('bell-mark-read-btn');
+    if (markReadBtn) markReadBtn.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+
+    var body = document.getElementById('bell-panel-body');
+    if (!body) return;
+
+    if (!notis || notis.length === 0) {
+      body.innerHTML = `
+        <div class="bell-panel-empty">
+          <i data-lucide="bell-off" style="width:24px;height:24px;color:var(--muted);margin-bottom:8px;"></i>
+          <span style="font-weight:600;color:var(--text);">${t('noti.empty_title', 'Yeni Bildirim Yok')}</span>
+          <span style="font-size:11px;margin-top:2px;">${t('noti.empty_desc', 'Şu an için her şey yolunda görünüyor.')}</span>
+        </div>
+      `;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      return;
+    }
+
+    var html = '';
+    notis.forEach(function(n) {
+      var iconName = 'bell';
+      var typeClass = 'info';
+      
+      if (n.type === 'success') { iconName = 'check-circle-2'; typeClass = 'success'; }
+      else if (n.type === 'error') { iconName = 'alert-circle'; typeClass = 'error'; }
+      else if (n.type === 'warning') { iconName = 'alert-triangle'; typeClass = 'warning'; }
+      else if (n.type === 'finance') { iconName = 'wallet'; typeClass = 'finance'; }
+      else if (n.type === 'info') { iconName = 'info'; typeClass = 'info'; }
+
+      var title = t(n.title_key, n.title_key, n.meta_data);
+      var desc = t(n.message_key, n.message_key, n.meta_data);
+      
+      var date = new Date(n.created_at);
+      var diffHours = Math.floor((new Date() - date) / (1000 * 60 * 60));
+      var diffDays = Math.floor(diffHours / 24);
+      var timeStr = '';
+      if (diffHours < 1) timeStr = t('noti.just_now', 'Şimdi');
+      else if (diffHours < 24) timeStr = t('noti.hours_ago', '{h} saat önce', { h: diffHours });
+      else timeStr = t('noti.days_ago', '{d} gün önce', { d: diffDays });
+
+      html += `
+        <div class="noti-item ${n.is_read ? '' : 'unread'}">
+          <div class="noti-icon ${typeClass}">
+            <i data-lucide="${iconName}" style="width:18px;height:18px;"></i>
+          </div>
+          <div class="noti-content">
+            <div class="noti-title">
+              <span>${window.sanitizeHTML ? sanitizeHTML(title) : title}</span>
+              ${!n.is_read ? `<button class="noti-mark-read" onclick="wwMarkAsRead(event, '${n.id}')" title="Okundu işaretle"><i data-lucide="check" style="width:14px;height:14px;"></i></button>` : ''}
+            </div>
+            <div class="noti-desc">${window.sanitizeHTML ? sanitizeHTML(desc) : desc}</div>
+            <div class="noti-time"><i data-lucide="clock" style="width:10px;height:10px;"></i> ${timeStr}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    body.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  } catch (err) {
+    console.error('Load notifications error:', err);
+  }
+};
+
+window.updateNotificationBadge = async function() {
+  try {
+    var sb = window.sb || window.supabase;
+    var user = window.SETTINGS_STATE?.currentUser;
+    if (!sb || !user) return;
+    var { data, error } = await sb.rpc('get_unread_notifications_count', { p_user_id: user.id });
+    if (!error && data > 0) {
+      var dot = document.getElementById('bell-dot');
+      if (dot) dot.style.display = 'block';
+    }
+  } catch (err) {}
 };
 
 window.wwToggleJournal = function(e, btn) {
@@ -40,12 +166,18 @@ window.closeMobileMenuAndNavigate = function(e, url) {
   if (url) window.location.href = url;
 };
 
-function t(key, fallback) {
+function t(key, fallback, params) {
+  var val = fallback;
   if (typeof i18n !== 'undefined' && i18n.t) {
-    var val = i18n.t(key);
-    return (val && val !== key) ? val : fallback;
+    var translated = i18n.t(key, params);
+    if (translated && translated !== key) val = translated;
   }
-  return fallback;
+  if (params && typeof params === 'object') {
+    for (var k in params) {
+      val = val.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
+    }
+  }
+  return val;
 }
 
 wwLog.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');
@@ -164,7 +296,7 @@ function getNavbarHTML(translations) {
             <div class="bell-panel-header">
               <h3 data-i18n="nav.notifications">🔔 ${tt('nav.notifications')}</h3>
               <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read">✓ ${tt('nav.mark_read')}</button>
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read" onclick="window.wwMarkAllAsRead()">✓ ${tt('nav.mark_read')}</button>
                 <button class="bell-panel-close" id="bell-panel-close">✕</button>
               </div>
             </div>
@@ -807,7 +939,7 @@ function loadNavbar(containerId) {
     setTimeout(function() {
       updateNavbarI18n();
       loadNavbarAvatar();
-      updateNavbarBadge();
+      updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge();
       setActiveNavLink();
       loadLucideIcons();
       initNavEvents();
@@ -841,7 +973,7 @@ function loadNavbar(containerId) {
   setTimeout(function() {
     initNavEvents();
     loadNavbarAvatar();
-    updateNavbarBadge();
+    updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge();
     updateNavbarJournal(0);
     wwLog.log('✅ Navbar tamamen yüklendi!');
   }, 50);
@@ -854,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
       initNavEvents();
       loadNavbarAvatar();
-      updateNavbarBadge();
+      updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge();
       setActiveNavLink();
       loadLucideIcons();
       updateNavbarJournal(0);
@@ -880,7 +1012,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.addEventListener('load', function() {
     setTimeout(setActiveNavLink, 100);
-    setTimeout(updateNavbarBadge, 150);
+    setTimeout(function() { updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); }, 150);
     loadLucideIcons();
     setTimeout(initNavEvents, 200);
   });
