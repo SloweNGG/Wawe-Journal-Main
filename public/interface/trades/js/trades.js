@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // TRADES - ANA JS DOSYASI
 // ============================================================
 // Bu dosyada değişen bölümler:
@@ -14,6 +14,9 @@
 //  - i18n v2: _t() defansif wrapper + tüm hardcoded string'ler
 //    (Açık, Düzenle, Sil, Notu göster, 📝 Not:, Not eklenmemiş,
 //     Veritabanı bağlantısı yok, Veriler yüklenemedi) i18n'e taşındı
+//  - PnL FIX: getTradePnL() artık önce DB'deki gerçek t.pnl değerini
+//    kullanır; yoksa hesaplamaya fallback yapar. Edit-kaydetme akışında
+//    ise entry/exit/lot/direction değişmediyse orijinal pnl korunur.
 // ============================================================
 
 (function() {
@@ -247,6 +250,12 @@
   function getTradePnL(t) {
     try {
       if (!t.exit_price) return null;
+
+      var storedPnl = parseFloat(t.pnl);
+      if (t.pnl !== null && t.pnl !== undefined && !isNaN(storedPnl)) {
+        return storedPnl;
+      }
+
       if (typeof window.calcPnL === 'function') {
         return window.calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
       }
@@ -348,8 +357,8 @@
     var base = 'stat-card-value' + (extraCls ? ' ' + extraCls : '');
     var len = (text || '').length;
     var sizeCls = '';
-    if (len >= 15) sizeCls = ' value-xlong';
-    else if (len >= 11) sizeCls = ' value-long';
+    if (len >= 13) sizeCls = ' value-xlong';
+    else if (len >= 9) sizeCls = ' value-long';
     el.className = base + sizeCls;
   }
 
@@ -1248,7 +1257,25 @@
             return; 
           }
           
-          var pnl = exit ? window.calcPnL(entry, exit, lot, direction, 'other', mult) : null;
+          // ── PnL koruma mantığı ──────────────────────────────
+          var originalTrade = allTrades.find(function(x) { return x.id === id; });
+          var storedPnl = originalTrade ? parseFloat(originalTrade.pnl) : NaN;
+          var pnl;
+
+          var entryUnchanged  = originalTrade && (parseFloat(originalTrade.entry_price) === entry);
+          var exitUnchanged   = originalTrade && ((originalTrade.exit_price === null && exit === null) ||
+                                                   (parseFloat(originalTrade.exit_price) === exit));
+          var lotUnchanged    = originalTrade && (parseFloat(originalTrade.lot) === lot);
+          var dirUnchanged    = originalTrade && (originalTrade.direction === direction);
+
+          if (originalTrade && originalTrade.pnl !== null && originalTrade.pnl !== undefined &&
+              !isNaN(storedPnl) && entryUnchanged && exitUnchanged && lotUnchanged && dirUnchanged) {
+            pnl = storedPnl;
+          } else {
+            pnl = exit ? window.calcPnL(entry, exit, lot, direction, 'other', mult) : null;
+          }
+          // ─────────────────────────────────────────────────────
+          
           var rr = (sl && tp) ? parseFloat(window.calcRR(entry, sl, tp, direction)) : null;
           
           try {
@@ -1354,5 +1381,5 @@
 
 })();
 
-wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 + tam i18n uygulandı)');
+wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 + tam i18n + PnL fix uygulandı)');
 document.addEventListener('journal-changed', () => window.location.reload());

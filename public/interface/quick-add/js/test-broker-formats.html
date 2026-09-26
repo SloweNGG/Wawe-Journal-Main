@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Multi-Broker Parser — Test Sayfası</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; max-width: 980px; margin: 32px auto; padding: 0 16px; background:#0f1115; color:#e6e6e6; }
+  h1 { font-size: 20px; }
+  .case { border: 1px solid #2a2d34; border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
+  .case-header { padding: 10px 14px; font-weight: 600; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+  .pass { background: #133a1f; border-left: 5px solid #35c96a; }
+  .fail { background: #3a1313; border-left: 5px solid #e0524a; }
+  .manual { background: #3a2f13; border-left: 5px solid #e0b34a; }
+  .case-body { padding: 10px 14px; font-size: 13px; display:none; background:#15181f; }
+  .case-body.open { display:block; }
+  pre { white-space: pre-wrap; word-break: break-word; background:#0b0d11; padding:8px; border-radius:6px; font-size:12px; }
+  table { border-collapse: collapse; width: 100%; margin-top:6px; font-size:12px; }
+  td, th { border: 1px solid #2a2d34; padding: 4px 6px; text-align:left; }
+  .tag { display:inline-block; font-size:11px; padding:2px 6px; border-radius:10px; background:#2a2d34; margin-left:6px; }
+  .summary { font-size:14px; margin: 16px 0; padding:10px 14px; border-radius:8px; background:#1b1e26; }
+</style>
+</head>
+<body>
+<h1>Multi-Broker CSV/XLSX Parser — Test Sayfası</h1>
+<div id="summary" class="summary">Çalıştırılıyor...</div>
+<div id="results"></div>
+
+<script src="broker-dictionary.js"></script>
+<script src="broker-detector.js"></script>
+<script src="fill-pairing.js"></script>
+<script src="parser-v2.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var CASES = [
+    {
+      name: 'MetaTrader 4 (EN, duplicate "Price"/"Time" columns)',
+      csv:
+        'Ticket,Open Time,Type,Size,Item,Price,S/L,T/P,Close Time,Price,Commission,Swap,Profit\n' +
+        '12345,2026.06.17 07:24:01,buy,0.25,EURUSD,1.16125,0,0,2026.06.17 07:32:23,1.16119,-1.25,0,-4.12\n' +
+        '12346,2026.06.17 08:01:10,sell,0.10,GBPUSD,1.27300,0,0,2026.06.17 08:40:02,1.27180,-0.50,0,12.00',
+      options: {},
+      expect: { minRows: 2, symbols: ['EURUSD', 'GBPUSD'] }
+    },
+    {
+      name: 'MetaTrader 5 (EN, duplicate "Price"/"Time" columns)',
+      csv:
+        'Time,Position,Symbol,Type,Volume,Price,S/L,T/P,Time,Price,Commission,Swap,Profit\n' +
+        '2026.06.17 07:24:01,555001,EURUSD,buy,0.25,1.16125,0,0,2026.06.17 07:32:23,1.16119,-1.25,0,-4.12',
+      options: {},
+      expect: { minRows: 1, symbols: ['EURUSD'] }
+    },
+    {
+      name: 'cTrader (Türkçe)',
+      csv:
+        'Sembol,İşlem açılış yönü,Kapatma zamanı,Giriş fiyatı,Kapanış fiyatı,Kapanış Miktarı,Kapanış hacmi,Net\n' +
+        'EURUSD,Al,17/06/2026 07:24:01,1.16125,1.16119,0.25,25000,-4.12',
+      options: {},
+      expect: { minRows: 1, symbols: ['EURUSD'] }
+    },
+    {
+      name: 'cTrader (English)',
+      csv:
+        'Symbol,Trade Type,Close Time,Entry Price,Closing Price,Volume,Net $\n' +
+        'EURUSD,Buy,17/06/2026 07:24:01,1.16125,1.16119,0.25,-4.12',
+      options: {},
+      expect: { minRows: 1, symbols: ['EURUSD'] }
+    },
+    {
+      name: 'XTB',
+      csv:
+        'Symbol,Type,Volume,Open Price,Close Price,Open Time,Close Time,Profit\n' +
+        'EURUSD,Buy,0.25,1.16125,1.16119,2026-06-17 07:24,2026-06-17 07:32,-4.12',
+      options: {},
+      expect: { minRows: 1, symbols: ['EURUSD'] }
+    },
+    {
+      name: 'OANDA',
+      csv:
+        'Instrument,Type,Units,Open Price,Close Price,Open Time,Close Time,Realized P/L\n' +
+        'EUR_USD,BUY,25000,1.16125,1.16119,2026-06-17,2026-06-17,-4.12',
+      options: {},
+      expect: { minRows: 1, symbols: ['EUR_USD'] }
+    },
+    {
+      name: 'Interactive Brokers (execution report — no exit price by design)',
+      csv:
+        'Symbol,Date/Time,Quantity,TradePrice,Buy/Sell\n' +
+        'EURUSD,2026-06-17 07:24:01,25000,1.16125,BUY',
+      options: {},
+      // IBKR's raw execution report has no round-trip exit price at all -
+      // correct behavior here is "needs manual mapping", not a full parse.
+      expect: { manual: true }
+    },
+    {
+      name: 'Binance (fill-based, spot)',
+      csv:
+        'Date,Pair,Side,Price,Executed,Amount,Fee\n' +
+        '2026-06-17 07:24:01,EURUSDT,BUY,1.16125,0.25,0.29,0.00029\n' +
+        '2026-06-17 07:32:23,EURUSDT,SELL,1.16119,0.25,0.29,0.00029',
+      options: {},
+      expect: { minRows: 1, symbols: ['EURUSDT'], fillBased: true }
+    },
+    {
+      name: 'Bybit derivatives (Closed P&L export — already a closed-trade row)',
+      csv:
+        'Contracts,Qty,Entry Price,Exit Price,Closing Direction,Closed P&L,Create Time\n' +
+        'BTCUSDT,0.010,65000.0,65420.5,Sell,4.205,2026-06-17 07:24:01',
+      options: {},
+      expect: { minRows: 1, symbols: ['BTCUSDT'] }
+    },
+    {
+      name: 'TradingView Strategy Tester (fill-based, Entry/Exit + Long/Short in Type)',
+      csv:
+        'Type,Signal,Date/Time,Price,Contracts,Profit\n' +
+        'Entry Long,Long Entry,2026-06-17 07:24,1.16125,1000,\n' +
+        'Exit Long,Long Exit,2026-06-17 07:32,1.16119,1000,-60',
+      options: { defaultSymbol: 'EURUSD' },
+      expect: { minRows: 1, symbols: ['EURUSD'], fillBased: true }
+    },
+    {
+      name: 'Türk yerli broker (legacy format — regression check)',
+      csv:
+        'Sembol,İşlem Açılış Yönü,Kapatma zamanı,Giriş Fiyatı,Kapanış Fiyatı,Kapanış Miktarı,Net\n' +
+        'XAUUSD,Satış,17.06.2026 07:24:01,2350.50,2348.10,0.10,24.00',
+      options: {},
+      expect: { minRows: 1, symbols: ['XAUUSD'] }
+    }
+  ];
+
+  var container = document.getElementById('results');
+  var passCount = 0, failCount = 0, manualCount = 0;
+
+  CASES.forEach(function (tc, idx) {
+    var result;
+    var pass = false;
+    var statusClass = 'fail';
+    var note = '';
+    try {
+      result = ParserV2.parse(tc.csv, tc.options);
+      console.log('--- ' + tc.name + ' ---', result);
+
+      if (result.needsManualMapping) {
+        if (tc.expect.manual) {
+          statusClass = 'pass';
+          note = 'OK (beklenen davranış) — manuel eşleme gerekiyor: ' + (result.missingFields || []).join(', ');
+          passCount++;
+        } else {
+          statusClass = 'manual';
+          note = 'Manuel eşleme gerekiyor: ' + (result.missingFields || []).join(', ');
+          manualCount++;
+        }
+      } else if (tc.expect.manual) {
+        statusClass = 'fail';
+        note = 'Manuel eşleme beklenirken tam parse oldu — beklenmeyen davranış.';
+        failCount++;
+      } else {
+        var rowsOk = result.rows.length >= (tc.expect.minRows || 1);
+        var symbolsOk = !tc.expect.symbols || tc.expect.symbols.every(function (s) {
+          return result.rows.some(function (r) { return r.symbol === s; });
+        });
+        var fillOk = tc.expect.fillBased === undefined || result.isFillBased === tc.expect.fillBased;
+        pass = rowsOk && symbolsOk && fillOk;
+        statusClass = pass ? 'pass' : 'fail';
+        if (!rowsOk) note += 'Beklenen satır sayısı gelmedi (geldi: ' + result.rows.length + '). ';
+        if (!symbolsOk) note += 'Beklenen sembol(ler) bulunamadı. ';
+        if (!fillOk) note += 'isFillBased beklenenden farklı. ';
+        if (pass) { note = 'OK — ' + result.rows.length + ' işlem, broker: ' + result.detected; passCount++; }
+        else failCount++;
+      }
+    } catch (e) {
+      statusClass = 'fail';
+      note = 'Hata fırlattı: ' + e.message;
+      console.error(tc.name, e);
+      failCount++;
+    }
+
+    var div = document.createElement('div');
+    div.className = 'case';
+    var header = document.createElement('div');
+    header.className = 'case-header ' + statusClass;
+    header.innerHTML = '<span>' + (idx + 1) + '. ' + tc.name + '</span>' +
+      '<span><span class="tag">' + statusClass.toUpperCase() + '</span></span>';
+    var body = document.createElement('div');
+    body.className = 'case-body';
+    body.innerHTML = '<div>' + note + '</div>' +
+      '<pre>' + escapeHtml(JSON.stringify(result, null, 2)) + '</pre>';
+    header.addEventListener('click', function () { body.classList.toggle('open'); });
+    div.appendChild(header);
+    div.appendChild(body);
+    container.appendChild(div);
+  });
+
+  document.getElementById('summary').textContent =
+    'Toplam ' + CASES.length + ' broker formatı — ' +
+    passCount + ' başarılı, ' + failCount + ' başarısız, ' + manualCount + ' manuel eşleme gerektiriyor. ' +
+    '(Detaylar için her satıra tıklayın; tam sonuç objeleri console\'da.)';
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+  }
+})();
+</script>
+</body>
+</html>

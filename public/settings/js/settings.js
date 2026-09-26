@@ -946,10 +946,10 @@ async function renderPlan() {
     try {
       var sbClient = window.sb || window.supabase;
       if (sbClient) {
-        var { data: dbPrices } = await sbClient.rpc('get_prices');
-        if (dbPrices) {
-          var mVal = parseFloat(dbPrices.monthly);
-          var yVal = parseFloat(dbPrices.yearly);
+        var { data: dbSettings } = await sbClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
+        if (dbSettings && dbSettings.value) {
+          var mVal = parseFloat(dbSettings.value.monthly_price_usd);
+          var yVal = parseFloat(dbSettings.value.yearly_price_usd);
           if (!isNaN(mVal) && mVal > 0) {
             localStorage.setItem('ww_monthly_price', mVal.toString());
             if (typeof window.setMonthlyPrice === 'function') window.setMonthlyPrice(mVal);
@@ -957,6 +957,20 @@ async function renderPlan() {
           if (!isNaN(yVal) && yVal > 0) {
             localStorage.setItem('ww_yearly_price', yVal.toString());
             if (typeof window.setYearlyPrice === 'function') window.setYearlyPrice(yVal);
+          }
+        } else {
+          var { data: dbPrices } = await sbClient.rpc('get_prices');
+          if (dbPrices) {
+            var mVal = parseFloat(dbPrices.monthly);
+            var yVal = parseFloat(dbPrices.yearly);
+            if (!isNaN(mVal) && mVal > 0) {
+              localStorage.setItem('ww_monthly_price', mVal.toString());
+              if (typeof window.setMonthlyPrice === 'function') window.setMonthlyPrice(mVal);
+            }
+            if (!isNaN(yVal) && yVal > 0) {
+              localStorage.setItem('ww_yearly_price', yVal.toString());
+              if (typeof window.setYearlyPrice === 'function') window.setYearlyPrice(yVal);
+            }
           }
         }
       }
@@ -1043,10 +1057,15 @@ async function renderPlan() {
 
     
     
-    // REFERANS KODU MANTIĞI
+    // REFERANS KODU MANTIĞI & TEMİZLİK (Cache ve önceki indirim kalıntılarını sıfırla)
+    window.SETTINGS_STATE.appliedReferralCode = null;
+    window.SETTINGS_STATE.appliedDiscount = 0;
+
     var refBtn = clone.querySelector('#apply-referral-btn');
     var refInput = clone.querySelector('#referral-input');
     var refMsg = clone.querySelector('#referral-msg');
+    if (refInput) refInput.value = '';
+    if (refMsg) { refMsg.textContent = ''; refMsg.style.color = ''; }
     
     var monthlyBtnSpan = clone.querySelector('#upgrade-monthly span[data-i18n]');
     var yearlyBtnSpan = clone.querySelector('#upgrade-yearly span[data-i18n]');
@@ -1064,7 +1083,7 @@ async function renderPlan() {
       
       if (isBtc) {
         if (discount > 0 && refMsg) {
-           refMsg.textContent = '❌ İndirim kodları BTC ödemelerinde geçerli değildir. Sadece LTC ile kullanılabilir.';
+           refMsg.textContent = t('settings.plan_referral_btc_warning');
            refMsg.style.color = 'var(--red)';
         }
       } else {
@@ -1072,26 +1091,31 @@ async function renderPlan() {
            finalMonthly = baseMonthly - (baseMonthly * (discount / 100));
            finalYearly = baseYearly - (baseYearly * (discount / 100));
            if (refMsg) {
-             refMsg.textContent = '✅ %' + discount + ' indirim uygulandı!';
+             refMsg.textContent = t('settings.plan_referral_discount_applied', { discount: discount });
              refMsg.style.color = 'var(--green)';
            }
         }
       }
 
+      var monthlyLabel = t('settings.plan_monthly_label');
+      if (!monthlyLabel || monthlyLabel === 'settings.plan_monthly_label') monthlyLabel = 'Aylık';
+      var yearlyLabel = t('settings.plan_yearly_label');
+      if (!yearlyLabel || yearlyLabel === 'settings.plan_yearly_label') yearlyLabel = 'Yıllık';
+
       if (monthlyBtn) {
          if (discount > 0 && !isBtc) {
-            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> Aylık: <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseMonthly + '</span> $' + finalMonthly.toFixed(2);
+            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + monthlyLabel + ': <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseMonthly + '</span> $' + finalMonthly.toFixed(2);
          } else {
-            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> Aylık: $' + baseMonthly;
+            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + monthlyLabel + ': $' + baseMonthly;
          }
          if(window.lucide) window.lucide.createIcons();
       }
 
       if (yearlyBtn) {
          if (discount > 0 && !isBtc) {
-            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> Yıllık: <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseYearly + '</span> $' + finalYearly.toFixed(2);
+            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + yearlyLabel + ': <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseYearly + '</span> $' + finalYearly.toFixed(2);
          } else {
-            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> Yıllık: $' + baseYearly;
+            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + yearlyLabel + ': $' + baseYearly;
          }
          if(window.lucide) window.lucide.createIcons();
       }
@@ -1117,17 +1141,17 @@ async function renderPlan() {
             window.SETTINGS_STATE.appliedDiscount = data.discount_percent;
             
             if (refMsg) {
-              refMsg.textContent = '✅ %' + data.discount_percent + ' indirim uygulandı!';
+              refMsg.textContent = t('settings.plan_referral_discount_applied', { discount: data.discount_percent });
               refMsg.style.color = 'var(--green)';
             }
             updatePriceDisplay(data.discount_percent);
           } else {
-            var errMsg = 'Geçersiz referans kodu.';
+            var errMsg = t('settings.plan_referral_invalid');
             if (data && data.error) {
-              if (data.error === 'expired_code') errMsg = 'Bu kodun kullanım süresi dolmuş.';
-              else if (data.error === 'usage_limit_reached') errMsg = 'Bu kod maksimum kullanım sınırına ulaşmış.';
-              else if (data.error === 'inactive_code') errMsg = 'Bu referans kodu şu anda aktif değil.';
-              else if (data.error === 'invalid_code') errMsg = 'Geçersiz referans kodu.';
+              if (data.error === 'expired_code') errMsg = t('settings.plan_referral_expired');
+              else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit');
+              else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive');
+              else if (data.error === 'invalid_code') errMsg = t('settings.plan_referral_invalid');
             }
             throw new Error(errMsg);
           }
@@ -1135,12 +1159,15 @@ async function renderPlan() {
           window.SETTINGS_STATE.appliedReferralCode = null;
           window.SETTINGS_STATE.appliedDiscount = 0;
           if (refMsg) {
-            refMsg.textContent = '❌ ' + (err.message || 'Kod doğrulanamadı');
+            refMsg.textContent = err.message || t('settings.plan_referral_error');
             refMsg.style.color = 'var(--red)';
           }
           updatePriceDisplay(0);
         } finally {
-          refBtn.textContent = 'Uygula';
+          refBtn.textContent = t('settings.plan_referral_apply');
+          if (!refBtn.textContent || refBtn.textContent === 'settings.plan_referral_apply') {
+            refBtn.textContent = 'Uygula';
+          }
           refBtn.disabled = false;
         }
       });
@@ -1155,8 +1182,8 @@ async function renderPlan() {
            updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
         });
       });
-      // Initial render
-      updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
+      // Initial render - sifir indirim ile temiz baslat
+      updatePriceDisplay(0);
     }, 100);
 
     clone.querySelectorAll('[data-icon]').forEach(function(el) {

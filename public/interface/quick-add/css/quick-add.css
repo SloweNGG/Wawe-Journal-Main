@@ -1,20 +1,12 @@
 /* ============================================================
-   QUICK ADD MODAL — FAB + MODAL
+   QUICK ADD MODAL — FAB + MODAL (HORIZONTAL DESKTOP & VERTICAL MOBILE)
    ------------------------------------------------------------
-   Sade / profesyonel yeniden tasarım.
+   Desktop: Modern geniş yatay (2 kolonlu) terminal stili, animasyonlu.
+   Mobil: Dikey bottom-sheet stili, dokunmatik uyumlu.
 
-   Tema renkleri (site paletinden):
-     Mor           #7c6dfa
-     Mor Açık      #9b8bfa
-     Koyu Arka Plan #0a0a0f
-     Kart Arka Planı #111118
-     Metin Beyaz   #e8e8f0
-     Yeşil         #22c55e
-     Kırmızı       #ef4444
-
-   ⭐ TEMA FIX: --qa-* değişkenleri artık body üzerinde tanımlı
-      ve body.light-theme altında override ediliyor. Böylece
-      modal hangi temadaysa o renkleri kullanıyor.
+   Tema Renkleri:
+     Dark (Varsayılan): #0a0a0f, kart #111118, mor #7c6dfa / #9b8bfa
+     Light: #f4f4f9, kart #ffffff, mor #6d5ce0
    ============================================================ */
 
 :root {
@@ -23,43 +15,53 @@
   --qa-font-mono: 'DM Mono', monospace;
   --qa-font-numeric: 'Inter', sans-serif;
 
-  --qa-header-h: 56px;
+  --qa-header-h: 58px;
   --qa-header-h-mobile: 50px;
 
   /* Yarıçap ölçeği */
   --qa-r-sm: 8px;
   --qa-r-md: 12px;
-  --qa-r-lg: 18px;
+  --qa-r-lg: 20px;
 
-  /* ⭐ Renk değişkenleri — DARK (varsayılan) */
+  /* Z-Index ölçeği */
+  --z-fab: 999;
+  --z-modal-overlay: 1000;
+
+  /* Renk değişkenleri — DARK (Varsayılan) */
   --qa-accent: #7c6dfa;
   --qa-accent-light: #9b8bfa;
   --qa-accent-tint: rgba(124, 109, 250, 0.08);
   --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
   --qa-surface: #111118;
-  --qa-surface2: #15151d;
-  --qa-border: rgba(232, 232, 240, 0.07);
-  --qa-border-strong: rgba(232, 232, 240, 0.14);
+  --qa-surface2: #161622;
+  --qa-surface3: #1c1c2b;
+  --qa-border: rgba(232, 232, 240, 0.08);
+  --qa-border-strong: rgba(232, 232, 240, 0.16);
   --qa-text: #e8e8f0;
-  --qa-muted: #6f6f80;
+  --qa-muted: #78788f;
   --qa-green: #22c55e;
+  --qa-green-tint: rgba(34, 197, 94, 0.12);
   --qa-red: #ef4444;
+  --qa-red-tint: rgba(239, 68, 68, 0.12);
 }
 
-/* ⭐ LIGHT TEMA - tüm --qa-* değişkenleri override */
+/* ⭐ LIGHT TEMA */
 body.light-theme {
   --qa-accent: #6d5ce0;
   --qa-accent-light: #7c6dfa;
   --qa-accent-tint: rgba(109, 92, 224, 0.08);
   --qa-accent-tint-strong: rgba(109, 92, 224, 0.16);
   --qa-surface: #ffffff;
-  --qa-surface2: #f5f5f8;
+  --qa-surface2: #f4f4f8;
+  --qa-surface3: #ebebf2;
   --qa-border: rgba(0, 0, 0, 0.08);
   --qa-border-strong: rgba(0, 0, 0, 0.15);
   --qa-text: #1e293b;
   --qa-muted: #64748b;
   --qa-green: #10b981;
+  --qa-green-tint: rgba(16, 185, 129, 0.12);
   --qa-red: #dc2626;
+  --qa-red-tint: rgba(220, 38, 38, 0.12);
 }
 
 .quick-add-fab,
@@ -71,32 +73,35 @@ body.light-theme {
 }
 
 /* ============================================================
-   FAB - z-index güncellendi
+   FAB BUTONU
    ============================================================ */
 .quick-add-fab {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
   z-index: var(--z-fab);
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: var(--qa-surface);
-  border: 1px solid var(--qa-border-strong);
+  border: 1.5px solid var(--qa-border-strong);
   color: var(--qa-text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .quick-add-fab:hover {
   border-color: var(--qa-accent);
-  color: var(--qa-accent-light);
-  background: var(--qa-accent-tint);
+  color: #fff;
+  background: linear-gradient(135deg, var(--qa-accent) 0%, var(--qa-accent-light) 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 28px rgba(124, 109, 250, 0.4);
 }
 .quick-add-fab:active {
-  background: var(--qa-accent-tint-strong);
+  transform: translateY(0) scale(0.98);
 }
 .quick-add-fab:focus-visible {
   outline: 2px solid var(--qa-accent);
@@ -105,14 +110,18 @@ body.light-theme {
 .quick-add-fab svg {
   width: 22px;
   height: 22px;
+  transition: transform 0.2s ease;
+}
+.quick-add-fab:hover svg {
+  transform: rotate(90deg);
 }
 
 @media (max-width: 768px) {
   .quick-add-fab {
     bottom: 1.25rem;
     right: 1.25rem;
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
   }
   .quick-add-fab svg {
     width: 20px;
@@ -121,26 +130,27 @@ body.light-theme {
 }
 
 /* ============================================================
-   MODAL OVERLAY - z-index güncellendi
+   MODAL OVERLAY (GLASSMORPHIC)
    ============================================================ */
 .quick-add-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 15, 0.82);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(8, 8, 14, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  animation: qaFadeIn 0.18s ease;
+  padding: 1.5rem;
+  animation: qaFadeIn 0.2s ease-out;
 }
-.quick-add-overlay.active { display: flex; }
+.quick-add-overlay.active {
+  display: flex;
+}
 
-/* ⭐ LIGHT TEMA - overlay daha açık */
 body.light-theme .quick-add-overlay {
-  background: rgba(240, 240, 245, 0.85);
+  background: rgba(235, 235, 245, 0.82);
 }
 
 @keyframes qaFadeIn {
@@ -149,31 +159,44 @@ body.light-theme .quick-add-overlay {
 }
 
 /* ============================================================
-   MODAL CONTAINER
+   MODAL CONTAINER — DESKTOP HORIZONTAL (860px)
    ============================================================ */
 .quick-add-modal {
   background: var(--qa-surface);
-  border: 1px solid var(--qa-border);
-  border-left: 3px solid var(--qa-accent);
+  border: 1px solid var(--qa-border-strong);
+  border-top: 3px solid var(--qa-accent);
   border-radius: var(--qa-r-lg);
-  max-width: 480px;
+  max-width: 860px;
   width: 100%;
-  max-height: 92vh;
+  max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
   position: relative;
   scrollbar-width: thin;
   scrollbar-color: var(--qa-border-strong) transparent;
+  animation: qaModalSpring 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.quick-add-modal::-webkit-scrollbar { width: 4px; }
+.quick-add-modal::-webkit-scrollbar {
+  width: 5px;
+}
 .quick-add-modal::-webkit-scrollbar-thumb {
   background: var(--qa-border-strong);
   border-radius: 99px;
 }
 
-/* ⭐ LIGHT TEMA - modal gölgesi daha yumuşak */
 body.light-theme .quick-add-modal {
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+@keyframes qaModalSpring {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* ============================================================
@@ -184,36 +207,45 @@ body.light-theme .quick-add-modal {
   align-items: center;
   justify-content: space-between;
   min-height: var(--qa-header-h);
-  padding: 1.1rem 1.35rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--qa-border);
   position: sticky;
   top: 0;
   background: var(--qa-surface);
   z-index: 3;
-  border-radius: 0 var(--qa-r-lg) 0 0;
 }
 .quick-add-header h2 {
   font-family: var(--qa-font-display);
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--qa-text);
   margin: 0;
   letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .quick-add-header .close-btn {
-  background: transparent;
-  border: none;
+  background: var(--qa-surface2);
+  border: 1px solid var(--qa-border);
   color: var(--qa-muted);
   cursor: pointer;
   padding: 6px;
   border-radius: var(--qa-r-sm);
   display: flex;
-  transition: color 0.15s ease, background 0.15s ease;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
 }
-.quick-add-header .close-btn svg { width: 17px; height: 17px; }
+.quick-add-header .close-btn svg {
+  width: 17px;
+  height: 17px;
+}
 .quick-add-header .close-btn:hover {
   color: var(--qa-text);
-  background: var(--qa-surface2);
+  border-color: var(--qa-border-strong);
+  background: var(--qa-surface3);
+  transform: rotate(90deg);
 }
 .quick-add-header .close-btn:focus-visible {
   outline: 2px solid var(--qa-accent);
@@ -226,9 +258,9 @@ body.light-theme .quick-add-modal {
 .quick-add-tabs {
   display: flex;
   border-bottom: 1px solid var(--qa-border);
-  padding: 0 1.35rem;
+  padding: 0 1.5rem;
   background: var(--qa-surface);
-  gap: 4px;
+  gap: 8px;
   position: sticky;
   top: var(--qa-header-h);
   z-index: 2;
@@ -238,50 +270,88 @@ body.light-theme .quick-add-modal {
   border: none;
   color: var(--qa-muted);
   font-family: var(--qa-font-body);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 0.65rem 0.4rem;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0.75rem 0.85rem;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  border-bottom: 2.5px solid transparent;
   margin-bottom: -1px;
-  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.18s ease;
 }
-.quick-tab:hover { color: var(--qa-text); }
+.quick-tab svg {
+  width: 15px;
+  height: 15px;
+}
+.quick-tab:hover {
+  color: var(--qa-text);
+  background: var(--qa-accent-tint);
+}
 .quick-tab.active {
   color: var(--qa-accent-light);
   border-bottom-color: var(--qa-accent);
+  background: var(--qa-accent-tint);
 }
 .quick-tab:focus-visible {
   outline: 2px solid var(--qa-accent);
   outline-offset: -2px;
 }
-.quick-tab-content { display: none; }
-.quick-tab-content.active { display: block; }
+.quick-tab-content {
+  display: none;
+  animation: qaTabFade 0.2s ease-out;
+}
+.quick-tab-content.active {
+  display: block;
+}
+
+@keyframes qaTabFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* ============================================================
-   BODY
+   BODY & 2-KOLONLU DESKTOP GRID LAYOUT
    ============================================================ */
-.quick-add-body { padding: 1.35rem; }
+.quick-add-body {
+  padding: 1.4rem 1.5rem;
+}
+
+.qa-grid-layout {
+  display: grid;
+  grid-template-columns: 1.12fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.qa-col-left,
+.qa-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
 .quick-add-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* ============================================================
-   FORM ALANLARI
+   FORM ALANLARI & ETİKETLER
    ============================================================ */
-.quick-add-field { margin-bottom: 1.1rem; }
-.quick-add-row .quick-add-field { margin-bottom: 0; }
-.quick-add-field:last-child { margin-bottom: 0; }
+.quick-add-field {
+  margin-bottom: 0;
+}
 
 .quick-add-field label {
   display: block;
   font-family: var(--qa-font-body);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--qa-muted);
   margin-bottom: 0.4rem;
@@ -296,28 +366,36 @@ body.light-theme .quick-add-modal {
   padding: 0.68rem 0.85rem;
   color: var(--qa-text);
   font-family: var(--qa-font-body);
-  font-size: 14px;
+  font-size: 13.5px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .quick-add-field input:focus,
 .quick-add-field select:focus {
   border-color: var(--qa-accent);
+  background: var(--qa-surface);
+  box-shadow: 0 0 0 3px var(--qa-accent-tint-strong);
 }
-.quick-add-field input::placeholder { color: var(--qa-muted); opacity: 0.6; }
+.quick-add-field input::placeholder {
+  color: var(--qa-muted);
+  opacity: 0.55;
+}
 .quick-add-field select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236f6f80' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2378788f' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 32px;
   cursor: pointer;
 }
-.quick-add-field select option { background: var(--qa-surface2); }
+.quick-add-field select option {
+  background: var(--qa-surface2);
+  color: var(--qa-text);
+}
 
 /* ============================================================
-   ENSTRÜMAN TİPİ
+   ENSTRÜMAN TİPİ SEÇİCİ
    ============================================================ */
 .quick-add-instrument-grid {
   display: grid;
@@ -325,23 +403,28 @@ body.light-theme .quick-add-modal {
   gap: 6px;
 }
 .quick-add-instrument-btn {
-  padding: 0.5rem 0.25rem;
+  padding: 0.45rem 0.2rem;
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
-  background: transparent;
+  background: var(--qa-surface2);
   color: var(--qa-muted);
   font-family: var(--qa-font-body);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: all 0.16s ease;
 }
-.quick-add-instrument-btn:hover { color: var(--qa-text); }
+.quick-add-instrument-btn:hover {
+  border-color: var(--qa-border-strong);
+  color: var(--qa-text);
+  transform: translateY(-1px);
+}
 .quick-add-instrument-btn.active {
   border-color: var(--qa-accent);
-  background: var(--qa-accent-tint);
+  background: var(--qa-accent-tint-strong);
   color: var(--qa-accent-light);
+  box-shadow: 0 0 12px rgba(124, 109, 250, 0.15);
 }
 .quick-add-instrument-btn:focus-visible {
   outline: 2px solid var(--qa-accent);
@@ -349,14 +432,17 @@ body.light-theme .quick-add-modal {
 }
 .quick-add-instrument-btn .inst-label {
   display: block;
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--qa-muted);
   font-weight: 400;
   margin-top: 1px;
 }
-.quick-add-instrument-btn.active .inst-label { color: var(--qa-accent-light); opacity: 0.7; }
+.quick-add-instrument-btn.active .inst-label {
+  color: var(--qa-accent-light);
+  opacity: 0.8;
+}
 
-#quick-custom-multiplier-wrap input {
+#price-custom-multiplier-wrap input {
   width: 100%;
   background: var(--qa-surface2);
   border: 1px solid var(--qa-border);
@@ -367,10 +453,13 @@ body.light-theme .quick-add-modal {
   font-size: 13px;
   outline: none;
 }
-#quick-custom-multiplier-wrap input:focus { border-color: var(--qa-accent); }
+#price-custom-multiplier-wrap input:focus {
+  border-color: var(--qa-accent);
+  box-shadow: 0 0 0 3px var(--qa-accent-tint-strong);
+}
 
 /* ============================================================
-   YÖN (Buy / Sell)
+   YÖN TOGGLE (BUY / SELL)
    ============================================================ */
 .quick-add-side-toggle {
   display: grid;
@@ -378,141 +467,105 @@ body.light-theme .quick-add-modal {
   gap: 8px;
 }
 .quick-add-side-btn {
-  padding: 0.62rem 1rem;
-  border: 1px solid var(--qa-border);
+  height: 38px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
   background: var(--qa-surface2);
   color: var(--qa-muted);
   font-family: var(--qa-font-body);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.quick-add-side-btn:hover { color: var(--qa-text); }
+.quick-add-side-btn:hover {
+  color: var(--qa-text);
+  border-color: var(--qa-border-strong);
+  transform: translateY(-1px);
+}
 .quick-add-side-btn.active-buy {
   border-color: var(--qa-green);
-  background: rgba(34, 197, 94, 0.08);
+  background: var(--qa-green-tint);
   color: var(--qa-green);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.22);
 }
 .quick-add-side-btn.active-sell {
   border-color: var(--qa-red);
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--qa-red-tint);
   color: var(--qa-red);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.22);
 }
 .quick-add-side-btn:focus-visible {
   outline: 2px solid var(--qa-accent);
   outline-offset: 2px;
 }
-.quick-add-side-btn svg { width: 15px; height: 15px; }
-
-/* ============================================================
-   P&L INPUT
-   ============================================================ */
-.quick-add-pnl-wrap { position: relative; }
-.quick-add-pnl-wrap .currency-symbol {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: var(--qa-font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--qa-muted);
-  pointer-events: none;
-}
-.quick-add-pnl-wrap input { padding-left: 28px; }
-.quick-add-pnl-wrap .pnl-suffix {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  color: var(--qa-muted);
-  pointer-events: none;
+.quick-add-side-btn svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ============================================================
-   LOT
+   LOT & PRESETS
    ============================================================ */
-.quick-add-lot-wrap { display: flex; gap: 6px; align-items: center; }
-.quick-add-lot-wrap input { flex: 1; }
-.quick-add-lot-wrap .lot-presets { display: flex; gap: 4px; flex-shrink: 0; }
+.quick-add-lot-wrap {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.quick-add-lot-wrap input {
+  flex: 1;
+  min-width: 0;
+}
+.quick-add-lot-wrap .lot-presets {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
 .quick-add-lot-wrap .lot-preset {
   background: var(--qa-surface2);
   border: 1px solid var(--qa-border);
   border-radius: 6px;
-  padding: 0.3rem 0.55rem;
+  padding: 0.35rem 0.5rem;
   font-family: var(--qa-font-body);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   color: var(--qa-muted);
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: all 0.15s ease;
 }
-.quick-add-lot-wrap .lot-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
+.quick-add-lot-wrap .lot-preset:hover {
+  border-color: var(--qa-accent);
+  color: var(--qa-text);
+}
 .quick-add-lot-wrap .lot-preset.active {
   border-color: var(--qa-accent);
-  background: var(--qa-accent-tint);
+  background: var(--qa-accent-tint-strong);
   color: var(--qa-accent-light);
 }
-.quick-add-lot-wrap .lot-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
-
-/* ============================================================
-   R/R RATIO
-   ============================================================ */
-.quick-add-rr-wrap { display: flex; align-items: center; gap: 8px; }
-.quick-add-rr-wrap .rr-label {
-  font-family: var(--qa-font-body);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--qa-text);
-  flex-shrink: 0;
+.quick-add-lot-wrap .lot-preset:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: 1px;
 }
-.quick-add-rr-wrap input {
-  flex: 1;
-  background: var(--qa-surface2);
-  border: 1px solid var(--qa-border);
-  border-radius: var(--qa-r-sm);
-  padding: 0.65rem 0.85rem;
-  color: var(--qa-text);
-  font-family: var(--qa-font-body);
-  font-size: 14px;
-  outline: none;
-}
-.quick-add-rr-wrap input:focus { border-color: var(--qa-accent); }
-.quick-add-rr-wrap .rr-presets { display: flex; gap: 4px; flex-shrink: 0; }
-.quick-add-rr-wrap .rr-preset {
-  background: var(--qa-surface2);
-  border: 1px solid var(--qa-border);
-  border-radius: 6px;
-  padding: 0.3rem 0.55rem;
-  font-family: var(--qa-font-body);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--qa-muted);
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.quick-add-rr-wrap .rr-preset:hover { border-color: var(--qa-accent); color: var(--qa-text); }
-.quick-add-rr-wrap .rr-preset.active {
-  border-color: var(--qa-accent);
-  background: var(--qa-accent-tint);
-  color: var(--qa-accent-light);
-}
-.quick-add-rr-wrap .rr-preset:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 1px; }
 
 /* ============================================================
    STRATEJİ
    ============================================================ */
-.quick-add-strategy-wrap { display: flex; gap: 8px; align-items: center; }
-.quick-add-strategy-wrap select { flex: 1; }
+.quick-add-strategy-wrap {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.quick-add-strategy-wrap select {
+  flex: 1;
+  min-width: 0;
+}
 .quick-add-strategy-wrap .create-strategy-btn {
-  background: transparent;
+  background: var(--qa-surface2);
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
   width: 38px;
@@ -523,11 +576,45 @@ body.light-theme .quick-add-modal {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: all 0.18s ease;
 }
-.quick-add-strategy-wrap .create-strategy-btn svg { width: 15px; height: 15px; }
-.quick-add-strategy-wrap .create-strategy-btn:hover { border-color: var(--qa-accent); color: var(--qa-accent-light); }
-.quick-add-strategy-wrap .create-strategy-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-add-strategy-wrap .create-strategy-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.quick-add-strategy-wrap .create-strategy-btn:hover {
+  border-color: var(--qa-accent);
+  color: var(--qa-accent-light);
+  background: var(--qa-accent-tint);
+}
+.quick-add-strategy-wrap .create-strategy-btn:focus-visible {
+  outline: 2px solid var(--qa-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   TARİH SEÇİCİ INPUT
+   ============================================================ */
+.qa-date-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.qa-date-input-wrap input {
+  cursor: pointer;
+  padding-right: 32px;
+}
+.qa-date-input-icon {
+  position: absolute;
+  right: 10px;
+  color: var(--qa-muted);
+  pointer-events: none;
+  display: flex;
+}
+.qa-date-input-icon svg {
+  width: 15px;
+  height: 15px;
+}
 
 /* ============================================================
    NOTLAR
@@ -537,159 +624,272 @@ body.light-theme .quick-add-modal {
   background: var(--qa-surface2);
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
-  padding: 0.68rem 0.85rem;
+  padding: 0.58rem 0.85rem;
   color: var(--qa-text);
   font-family: var(--qa-font-body);
   font-size: 13px;
   outline: none;
   resize: vertical;
-  min-height: 52px;
-  transition: border-color 0.15s ease;
+  min-height: 38px;
+  max-height: 90px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.quick-add-notes textarea:focus { border-color: var(--qa-accent); }
-.quick-add-notes textarea::placeholder { color: var(--qa-muted); opacity: 0.6; }
+.quick-add-notes textarea:focus {
+  border-color: var(--qa-accent);
+  box-shadow: 0 0 0 3px var(--qa-accent-tint-strong);
+}
+.quick-add-notes textarea::placeholder {
+  color: var(--qa-muted);
+  opacity: 0.55;
+}
 
 /* ============================================================
-   ÖN İZLEME
+   CANLI HESAPLAMA ÖN İZLEME KARTI (TERMINAL WIDGET)
    ============================================================ */
 .quick-add-preview {
-  display: none;
-  align-items: center;
-  gap: 1.25rem;
-  position: relative;
-  padding: 0.7rem 1rem 0.7rem 1.1rem;
   background: var(--qa-surface2);
-  border-radius: var(--qa-r-sm);
-  margin-top: 0.4rem;
-  flex-wrap: wrap;
+  border: 1px solid var(--qa-border);
+  border-radius: var(--qa-r-md);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
   overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 0.2rem;
 }
-.quick-add-preview.visible { display: flex; }
 .quick-add-preview .preview-rail {
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--qa-accent);
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3.5px;
+  background: var(--qa-border-strong);
+  transition: background 0.25s ease;
 }
-.quick-add-preview.rail-pos .preview-rail { background: var(--qa-green); }
-.quick-add-preview.rail-neg .preview-rail { background: var(--qa-red); }
-.quick-add-preview .preview-item { display: flex; flex-direction: column; gap: 2px; }
-.quick-add-preview .preview-item .p-label {
-  font-size: 8px;
+.quick-add-preview.rail-pos {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.04) 0%, var(--qa-surface2) 100%);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1);
+}
+.quick-add-preview.rail-pos .preview-rail {
+  background: var(--qa-green);
+}
+.quick-add-preview.rail-neg {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.04) 0%, var(--qa-surface2) 100%);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);
+}
+.quick-add-preview.rail-neg .preview-rail {
+  background: var(--qa-red);
+}
+
+.preview-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.preview-live-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--qa-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--qa-green);
+  box-shadow: 0 0 8px var(--qa-green);
+  animation: qaPulse 1.8s infinite ease-in-out;
+}
+@keyframes qaPulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.preview-items-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+}
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.preview-item .p-label {
+  font-size: 9px;
   font-family: var(--qa-font-body);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--qa-muted);
-}
-.quick-add-preview .preview-item .p-val {
-  font-size: 0.95rem;
   font-weight: 600;
+}
+.preview-item .p-val {
+  font-size: 1.25rem;
+  font-weight: 700;
   font-family: var(--qa-font-numeric);
   color: var(--qa-text);
+  letter-spacing: -0.01em;
+  transition: color 0.2s ease;
 }
-.quick-add-preview .preview-item .p-val.pos { color: var(--qa-green); }
-.quick-add-preview .preview-item .p-val.neg { color: var(--qa-red); }
-.quick-add-preview .preview-item .p-val.accent { color: var(--qa-accent-light); }
-.quick-add-preview .preview-divider { width: 1px; height: 26px; background: var(--qa-border-strong); }
+.preview-item .p-val.pos {
+  color: var(--qa-green);
+  text-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
+}
+.preview-item .p-val.neg {
+  color: var(--qa-red);
+  text-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+}
+.preview-item .p-val.accent {
+  color: var(--qa-accent-light);
+}
+.preview-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--qa-border-strong);
+}
 
 /* ============================================================
-   CSV İÇE AKTARMA
+   CSV İÇE AKTARMA & BULK TEXT
    ============================================================ */
-.quick-import-area { text-align: center; padding: 1rem 0.5rem; }
+.quick-import-area {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
 .quick-import-icon {
-  width: 56px; height: 56px;
+  width: 60px;
+  height: 60px;
   margin: 0 auto 0.75rem;
   background: var(--qa-accent-tint);
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-md);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
 }
-.quick-import-icon svg { stroke: var(--qa-accent-light); width: 24px; height: 24px; }
+.quick-import-icon svg {
+  stroke: var(--qa-accent-light);
+  width: 26px;
+  height: 26px;
+}
 .quick-import-area p {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--qa-muted);
-  margin-bottom: 1rem;
-  max-width: 300px;
-  margin-left: auto; margin-right: auto;
+  margin-bottom: 1.25rem;
+  max-width: 340px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .quick-import-btn {
   background: var(--qa-surface2);
-  border: 1px solid var(--qa-border);
+  border: 1px solid var(--qa-border-strong);
   border-radius: var(--qa-r-sm);
-  padding: 0.55rem 1.4rem;
+  padding: 0.65rem 1.6rem;
   color: var(--qa-text);
   font-family: var(--qa-font-body);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.quick-import-btn:hover { border-color: var(--qa-accent); }
-.quick-import-btn:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-import-btn:hover {
+  border-color: var(--qa-accent);
+  color: var(--qa-accent-light);
+  background: var(--qa-accent-tint);
+  transform: translateY(-1px);
+}
+.quick-import-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
 .quick-import-status {
-  display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-  margin-top: 0.75rem; padding: 0.5rem;
-  background: var(--qa-surface2); border-radius: var(--qa-r-sm);
-  font-size: 12px; color: var(--qa-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.6rem;
+  background: var(--qa-surface2);
+  border-radius: var(--qa-r-sm);
+  font-size: 12.5px;
+  color: var(--qa-text);
 }
-.quick-import-status .status-badge { font-weight: 600; color: var(--qa-accent-light); }
+.quick-import-status .status-badge {
+  font-weight: 700;
+  color: var(--qa-accent-light);
+}
+
 .quick-import-log {
-  margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
-  max-height: 120px; overflow-y: auto;
-  background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
+  margin-top: 0.75rem;
+  font-size: 11.5px;
+  color: var(--qa-muted);
+  max-height: 130px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.6rem;
+  border-radius: 8px;
   font-family: var(--qa-font-mono);
   text-align: left;
 }
-.quick-import-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.quick-import-log div:last-child { border-bottom: none; }
-
-body.light-theme .quick-import-log {
-  background: rgba(0,0,0,0.04);
-}
-body.light-theme .quick-import-log div {
-  border-bottom-color: rgba(0,0,0,0.06);
+.quick-import-log div {
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* ============================================================
-   TOPLU YAPIŞTIRMA
-   ============================================================ */
 .quick-bulk-area textarea {
-  width: 100%; min-height: 110px;
+  width: 100%;
+  min-height: 140px;
   background: var(--qa-surface2);
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
-  padding: 0.65rem;
+  padding: 0.75rem;
   color: var(--qa-text);
   font-family: var(--qa-font-mono);
-  font-size: 12px;
+  font-size: 12.5px;
   resize: vertical;
   outline: none;
 }
-.quick-bulk-area textarea:focus { border-color: var(--qa-accent); }
-.quick-bulk-progress { margin-top: 0.75rem; font-size: 12px; color: var(--qa-muted); font-family: var(--qa-font-body); }
+.quick-bulk-area textarea:focus {
+  border-color: var(--qa-accent);
+  box-shadow: 0 0 0 3px var(--qa-accent-tint-strong);
+}
+
+.quick-bulk-progress {
+  margin-top: 0.75rem;
+  font-size: 12px;
+  color: var(--qa-muted);
+  font-family: var(--qa-font-body);
+}
 .quick-bulk-progress .quick-bulk-bar {
-  width: 100%; height: 3px; background: var(--qa-border-strong);
-  border-radius: 99px; overflow: hidden; margin-top: 4px;
+  width: 100%;
+  height: 4px;
+  background: var(--qa-border-strong);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 4px;
 }
 .quick-bulk-progress .quick-bulk-bar .quick-bulk-fill {
-  height: 100%; background: var(--qa-accent);
-  border-radius: 99px; width: 0%; transition: width 0.25s ease;
-}
-.quick-bulk-log {
-  margin-top: 0.75rem; font-size: 11px; color: var(--qa-muted);
-  max-height: 120px; overflow-y: auto;
-  background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 6px;
-  font-family: var(--qa-font-mono);
-  text-align: left;
-}
-.quick-bulk-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.quick-bulk-log div:last-child { border-bottom: none; }
-
-body.light-theme .quick-bulk-log {
-  background: rgba(0,0,0,0.04);
-}
-body.light-theme .quick-bulk-log div {
-  border-bottom-color: rgba(0,0,0,0.06);
+  height: 100%;
+  background: var(--qa-accent);
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.25s ease;
 }
 
 /* ============================================================
@@ -697,9 +897,9 @@ body.light-theme .quick-bulk-log div {
    ============================================================ */
 .quick-add-footer {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   justify-content: flex-end;
-  padding: 1rem 1.35rem 1.15rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--qa-border);
   position: sticky;
   bottom: 0;
@@ -707,64 +907,83 @@ body.light-theme .quick-bulk-log div {
   border-radius: 0 0 var(--qa-r-lg) var(--qa-r-lg);
 }
 .quick-add-footer .btn-cancel {
-  background: transparent;
+  background: var(--qa-surface2);
   border: 1px solid var(--qa-border);
   border-radius: var(--qa-r-sm);
   color: var(--qa-muted);
   font-family: var(--qa-font-body);
   font-size: 13px;
-  font-weight: 500;
-  padding: 0.55rem 1.2rem;
+  font-weight: 600;
+  padding: 0.6rem 1.3rem;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: all 0.18s ease;
 }
-.quick-add-footer .btn-cancel:hover { border-color: var(--qa-border-strong); color: var(--qa-text); }
-.quick-add-footer .btn-cancel:focus-visible { outline: 2px solid var(--qa-accent); outline-offset: 2px; }
+.quick-add-footer .btn-cancel:hover {
+  border-color: var(--qa-border-strong);
+  color: var(--qa-text);
+  background: var(--qa-surface3);
+}
 .quick-add-footer .btn-save {
-  background: var(--qa-accent);
-  border: 1px solid var(--qa-accent);
+  background: linear-gradient(135deg, var(--qa-accent) 0%, var(--qa-accent-light) 100%);
+  border: none;
   border-radius: var(--qa-r-sm);
   color: #fff;
   font-family: var(--qa-font-body);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0.55rem 1.4rem;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 0.6rem 1.6rem;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 4px 14px rgba(124, 109, 250, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.quick-add-footer .btn-save svg { width: 15px; height: 15px; }
-.quick-add-footer .btn-save:hover { background: var(--qa-accent-light); transform: translateY(-1px); }
-.quick-add-footer .btn-save:active { transform: translateY(0); }
-.quick-add-footer .btn-save:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.quick-add-footer .btn-save svg {
+  width: 15px;
+  height: 15px;
+}
+.quick-add-footer .btn-save:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(124, 109, 250, 0.5);
+}
+.quick-add-footer .btn-save:active {
+  transform: translateY(0);
+}
 .quick-add-footer .btn-save:disabled {
-  opacity: 0.5; cursor: not-allowed; transform: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 /* ============================================================
-   LOADING
+   LOADING & ERROR
    ============================================================ */
 .quick-add-loading {
-  display: none; align-items: center; gap: 8px;
-  padding: 0.5rem 0; color: var(--qa-muted);
-  font-size: 13px; font-family: var(--qa-font-body);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 0;
+  color: var(--qa-muted);
+  font-size: 13px;
+  font-family: var(--qa-font-body);
 }
-.quick-add-loading.active { display: flex; }
+.quick-add-loading.active {
+  display: flex;
+}
 .quick-add-loading .spinner {
-  width: 16px; height: 16px;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--qa-border-strong);
   border-top-color: var(--qa-accent);
   border-radius: 50%;
   animation: qaSpin 0.6s linear infinite;
   flex-shrink: 0;
 }
-@keyframes qaSpin { to { transform: rotate(360deg); } }
+@keyframes qaSpin {
+  to { transform: rotate(360deg); }
+}
 
-/* ============================================================
-   HATA MESAJI
-   ============================================================ */
 .quick-add-error {
   display: none;
   align-items: center;
@@ -778,77 +997,118 @@ body.light-theme .quick-bulk-log div {
   font-family: var(--qa-font-body);
   margin-bottom: 0.9rem;
 }
-.quick-add-error.active { display: flex; }
-.quick-add-error svg { width: 15px; height: 15px; flex-shrink: 0; }
-
-/* ============================================================
-   ERİŞİLEBİLİRLİK
-   ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  .quick-add-fab,
-  .quick-add-overlay,
-  .quick-add-overlay * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .quick-add-loading .spinner {
-    animation-duration: 600ms !important;
-    animation-iteration-count: infinite !important;
-  }
+.quick-add-error.active {
+  display: flex;
+}
+.quick-add-error svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 /* ============================================================
-   MOBİL — 600px VE ALTI
+   MOBİL GÖRÜNÜM — DİKEY BOTTOM SHEET (< 768px)
    ============================================================ */
-@media (max-width: 600px) {
-  .quick-add-overlay { padding: 0; align-items: flex-end; }
+@media (max-width: 767px) {
+  .quick-add-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
   .quick-add-modal {
     max-width: 100%;
-    max-height: 94vh;
+    max-height: 92vh;
     border-radius: var(--qa-r-lg) var(--qa-r-lg) 0 0;
     border-left: 1px solid var(--qa-border);
     border-top: 3px solid var(--qa-accent);
-    animation: qaSlideUp 0.22s ease;
+    animation: qaSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes qaSlideUp {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(28px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .quick-add-header { min-height: var(--qa-header-h-mobile); padding: 0.9rem 1.1rem; }
-  .quick-add-tabs { top: var(--qa-header-h-mobile); padding: 0 0.75rem; overflow-x: auto; scrollbar-width: none; }
-  .quick-add-tabs::-webkit-scrollbar { display: none; }
-  .quick-tab { font-size: 11px; padding: 0.55rem 0.4rem; white-space: nowrap; }
 
-  .quick-add-body { padding: 1.1rem; }
-  .quick-add-field { margin-bottom: 0.9rem; }
-  .quick-add-row { gap: 8px; }
+  .qa-grid-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .qa-col-left,
+  .qa-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .quick-add-header {
+    min-height: var(--qa-header-h-mobile);
+    padding: 0.85rem 1.1rem;
+  }
+  .quick-add-tabs {
+    top: var(--qa-header-h-mobile);
+    padding: 0 0.75rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .quick-add-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .quick-tab {
+    font-size: 11.5px;
+    padding: 0.6rem 0.6rem;
+    white-space: nowrap;
+  }
+
+  .quick-add-body {
+    padding: 1.1rem;
+  }
+  .quick-add-row {
+    gap: 8px;
+  }
   .quick-add-field input,
-  .quick-add-field select { font-size: 14px; padding: 0.6rem 0.8rem; }
+  .quick-add-field select {
+    font-size: 13.5px;
+    padding: 0.6rem 0.75rem;
+  }
 
-  .quick-add-instrument-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
-  .quick-add-instrument-btn { font-size: 10px; padding: 0.4rem 0.25rem; }
+  .quick-add-instrument-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  .quick-add-instrument-btn {
+    font-size: 10px;
+    padding: 0.4rem 0.2rem;
+  }
 
-  .quick-add-side-btn { padding: 0.58rem 0.7rem; font-size: 12.5px; }
+  .quick-add-side-btn {
+    height: 36px;
+    font-size: 12px;
+  }
 
-  .quick-add-lot-wrap .lot-presets,
-  .quick-add-rr-wrap .rr-presets { display: none; }
+  .quick-add-lot-wrap .lot-presets {
+    display: none;
+  }
 
-  .quick-import-area p { font-size: 12px; }
-  .quick-bulk-area textarea { min-height: 90px; font-size: 11px; }
+  .quick-add-preview {
+    padding: 0.85rem 1rem;
+    gap: 0.6rem;
+  }
+  .preview-item .p-val {
+    font-size: 1.1rem;
+  }
 
-  .quick-add-preview { gap: 0.75rem; padding: 0.6rem 0.75rem 0.6rem 0.95rem; }
-  .quick-add-preview .preview-item .p-val { font-size: 0.85rem; }
-
-  .quick-add-footer { padding: 0.7rem 1.1rem 0.9rem; }
+  .quick-add-footer {
+    padding: 0.75rem 1.1rem 1rem;
+  }
   .quick-add-footer .btn-cancel,
-  .quick-add-footer .btn-save { font-size: 12.5px; padding: 0.5rem 1.1rem; }
+  .quick-add-footer .btn-save {
+    font-size: 12.5px;
+    padding: 0.55rem 1.2rem;
+  }
 }
 
-/* ============================================================
-   MOBİL — 400px VE ALTI
-   ============================================================ */
-@media (max-width: 400px) {
-  .quick-add-instrument-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 420px) {
+  .quick-add-instrument-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

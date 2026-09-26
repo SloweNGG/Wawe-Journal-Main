@@ -4,25 +4,29 @@
    ⭐ FONT FIX: TÜM DM Mono → DM Sans (okunabilirlik için)
    ⭐ SADECE semboller (pt-symbol) DM Mono kalır
    ⭐ FONT SIZE: Tüm metinler büyütüldü (okunabilirlik)
+   ⭐ MOBIL FIX: 7 sütun grid taşması önlendi, tam responsive
+   ⭐ MODAL: Strateji paneli ile birebir aynı modern popup tasarımı
    ============================================================ */
 
 .calendar-page-main {
-  padding: 0.9rem 1rem;
-  max-width: 1400px;
+  padding: 1rem clamp(1rem, 2vw, 2.5rem) 5rem;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
 .calendar-page-header h1 {
-  font-size: 1.6rem;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   margin-bottom: 0.2rem;
@@ -58,6 +62,8 @@
   border-radius: var(--radius);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .cal-header {
@@ -69,9 +75,10 @@
   gap: 0.75rem;
 }
 .cal-header .cal-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.4rem;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1.35rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text);
   display: flex;
   align-items: center;
@@ -229,8 +236,8 @@
 .cal-nav-btn.today-btn {
   background: rgba(139,92,246,0.08);
   color: var(--accent);
-  font-size: 10px;
-  padding: 0.2rem 0.7rem;
+  font-size: 11px;
+  padding: 0.25rem 0.75rem;
 }
 .cal-nav-btn.today-btn:hover {
   background: rgba(139,92,246,0.15);
@@ -238,29 +245,36 @@
 
 .cal-day-names {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
   margin-bottom: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 .cal-day-names .dname {
   font-family: 'DM Sans', sans-serif;
-  font-size: 11px; /* 10 → 11 */
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
   text-align: center;
   padding: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cal-day-names .dname.weekend {
   color: var(--accent2);
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
   touch-action: pan-y;
 }
 .cal-grid.anim-left {
@@ -280,8 +294,10 @@
 
 .cal-grid-skeleton {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .cal-grid-skeleton .skeleton-day {
   aspect-ratio: 1;
@@ -311,17 +327,22 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   border-radius: 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  min-height: 80px;
-  padding: 6px 8px;
+  min-height: clamp(85px, 10.5vh, 125px);
+  padding: 8px 8px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 .cal-day:hover {
   border-color: var(--accent);
-  transform: scale(1.02);
+  transform: translateY(-2px) scale(1.02);
   z-index: 2;
-  box-shadow: 0 6px 20px rgba(139,92,246,0.15);
+  box-shadow: 0 6px 20px rgba(139,92,246,0.18);
 }
 .cal-day:focus-visible {
   outline: 2px solid var(--accent);
@@ -346,24 +367,27 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   filter: blur(2px);
 }
 
-/* ⭐ GÜN SAYISI - BÜYÜTÜLDÜ */
 .cal-day .day-number {
-  font-family: 'Inter', sans-serif;
-  font-size: 17px; /* 14 → 17 */
-  font-weight: 700; /* 600 → 700 */
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text);
   position: relative;
   z-index: 1;
+  line-height: 1.1;
 }
 
-/* ⭐ GÜNLÜK P&L - BÜYÜTÜLDÜ */
 .cal-day .day-pnl {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px; /* 10 → 12 */
-  font-weight: 600; /* 500 → 600 */
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
   position: relative;
   z-index: 1;
-  margin-top: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.15;
 }
 .cal-day .day-pnl.positive {
   color: var(--green);
@@ -372,15 +396,15 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   color: var(--red);
 }
 
-/* ⭐ TRADE SAYISI - BÜYÜTÜLDÜ */
 .cal-day .day-trade-count {
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px; /* 8 → 10 */
-  font-weight: 500; /* 400 → 500 */
+  font-size: 10px;
+  font-weight: 500;
   color: var(--muted);
   position: relative;
   z-index: 1;
-  margin-top: 2px;
+  margin-top: 3px;
+  line-height: 1.1;
 }
 
 .cal-day .day-pnl-bar {
@@ -432,7 +456,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   background: transparent;
   border: 1px solid transparent;
   cursor: default;
-  min-height: 60px;
+  min-height: 50px;
 }
 .cal-day.empty:hover {
   transform: none;
@@ -454,7 +478,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 0.6rem;
+  margin-top: 0.75rem;
   flex-wrap: wrap;
 }
 .cal-legend .legend-group {
@@ -467,11 +491,9 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   height: 12px;
   border-radius: 3px;
 }
-
-/* ⭐ LEGEND - BÜYÜTÜLDÜ */
 .cal-legend .legend-label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px; /* 9 → 10 */
+  font-size: 10.5px;
   color: var(--muted);
   margin-left: 2px;
 }
@@ -571,20 +593,17 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
   min-width: 0;
 }
 
-/* ⭐ ÖZET ETİKETLER - BÜYÜTÜLDÜ */
 .summary-mini-card .s-info .s-label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px; /* 8 → 10 */
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
 }
-
-/* ⭐ ÖZET DEĞERLER - BÜYÜTÜLDÜ */
 .summary-mini-card .s-info .s-value {
   font-family: 'Inter', sans-serif;
-  font-size: 1.15rem; /* 1rem → 1.15rem (≈18.4px) */
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
   line-height: 1.1;
@@ -598,168 +617,261 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 .summary-mini-card .s-info .s-value.negative {
   color: var(--red);
 }
-
-/* ⭐ ÖZET ALT DEĞERLER (tarihler) - BÜYÜTÜLDÜ */
 .summary-mini-card .s-info .s-subvalue {
   font-family: 'DM Sans', sans-serif;
-  font-size: 11px; /* 9 → 11 */
-  font-weight: 500; /* 400 → 500 */
+  font-size: 11px;
+  font-weight: 500;
   color: var(--muted);
   margin-top: 1px;
 }
 
-.calendar-day-popup {
-  display: none;
+/* ============================================================
+   GÜN DETAY MODALI (Strateji paneli ile birebir aynı)
+   ============================================================ */
+.modal-overlay {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--surface);
-  border: 1px solid rgba(139,92,246,0.3);
-  border-radius: 16px;
-  padding: 1.25rem;
-  min-width: 280px;
-  max-width: 380px;
-  z-index: var(--z-popover);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.08);
-  backdrop-filter: blur(16px);
-}
-.calendar-day-popup.active {
-  display: block;
-  animation: popupIn 0.25s ease;
-}
-@keyframes popupIn {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-.calendar-day-popup .popup-header {
-  display: flex;
-  justify-content: space-between;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: var(--z-modal-overlay, 99999);
+  display: none;
   align-items: center;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
 }
-.calendar-day-popup .popup-header h4 {
+.modal-overlay.active,
+.modal-overlay[style*="display: flex"],
+.modal-overlay[style*="display:flex"] {
+  display: flex !important;
+}
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  animation: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.modal-box.modal-box-lg {
+  max-width: 880px;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.detail-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.detail-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px currentColor;
+}
+.modal-header h3 {
   font-family: 'Syne', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
 }
-.calendar-day-popup .popup-close {
-  background: none;
+.modal-close {
+  background: transparent;
   border: none;
   color: var(--muted);
-  font-size: 1.1rem;
   cursor: pointer;
-  transition: color 0.2s;
-}
-.calendar-day-popup .popup-close:hover {
-  color: var(--text);
-}
-.calendar-day-popup .popup-body {
-  max-height: 300px;
-  overflow-y: auto;
-}
-.calendar-day-popup .popup-body::-webkit-scrollbar {
-  width: 3px;
-}
-.calendar-day-popup .popup-body::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 99px;
-}
-.calendar-day-popup .popup-filter {
+  font-size: 1.2rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
   display: flex;
-  gap: 6px;
-  margin-bottom: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
-.calendar-day-popup .popup-filter button {
+.modal-close:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+}
+
+.modal-body {
+  padding: 1.25rem 1.35rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   flex: 1;
+}
+
+.detail-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 900px) {
+  .detail-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .detail-metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 0.45rem; }
+  .modal-box.modal-box-lg { max-width: 96vw; max-height: 94vh; max-height: 94dvh; }
+  .modal-header { padding: 0.85rem 1rem; }
+  .modal-body { padding: 0.85rem 1rem; }
+  .modal-footer { padding: 0.75rem 1rem; }
+}
+
+.detail-metric-box {
   background: var(--surface2);
   border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.6rem 0.7rem;
+}
+.detail-metric-lbl {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
-  border-radius: 20px;
-  padding: 4px 8px;
-  font-size: 10px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 0.25rem;
+}
+.detail-metric-val {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.detail-metric-val.pos { color: var(--green); }
+.detail-metric-val.neg { color: var(--red); }
+
+.detail-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 1.1rem 0 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.detail-table-wrap {
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  -webkit-overflow-scrolling: touch;
+}
+table.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+}
+table.detail-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+  z-index: 1;
+}
+table.detail-table tbody td {
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+table.detail-table tbody tr:last-child td { border-bottom: none; }
+table.detail-table tbody tr:hover { background: rgba(139,92,246,0.05); }
+table.detail-table td.pos { color: var(--green); font-weight: 600; }
+table.detail-table td.neg { color: var(--red); font-weight: 600; }
+
+.modal-footer {
+  padding: 0.85rem 1.35rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: var(--surface);
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-export:hover {
+  border-color: var(--accent2);
+  color: var(--accent2);
+  transform: translateY(-1px);
+}
+.btn-modal-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
-.calendar-day-popup .popup-filter button:hover {
+.btn-modal-cancel:hover {
+  border-color: var(--border2);
   color: var(--text);
 }
-.calendar-day-popup .popup-filter button.active {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
-  border-color: transparent;
-}
-.calendar-day-popup .popup-trade {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  font-family: 'DM Sans', sans-serif;
-}
-.calendar-day-popup .popup-trade:last-child {
-  border-bottom: none;
-}
-.calendar-day-popup .popup-trade .pt-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.calendar-day-popup .popup-trade .pt-badge {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-.calendar-day-popup .popup-trade .pt-badge.long {
-  background: rgba(34,197,94,0.15);
-  color: var(--green);
-  border: 1px solid rgba(34,197,94,0.2);
-}
-.calendar-day-popup .popup-trade .pt-badge.short {
-  background: rgba(239,68,68,0.15);
-  color: var(--red);
-  border: 1px solid rgba(239,68,68,0.2);
-}
-.calendar-day-popup .popup-trade .pt-symbol {
-  font-family: 'DM Mono', monospace; /* ⭐ KALIR - sembol */
-  font-weight: 500;
-  color: var(--text);
-}
-.calendar-day-popup .popup-trade .pt-pnl {
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
-}
-.calendar-day-popup .popup-trade .pt-pnl.positive {
-  color: var(--green);
-}
-.calendar-day-popup .popup-trade .pt-pnl.negative {
-  color: var(--red);
-}
-.calendar-day-popup .popup-empty {
+.detail-empty-note {
+  padding: 2rem 1rem;
   text-align: center;
   color: var(--muted);
   font-size: 13px;
-  padding: 1.5rem 0;
-}
-.calendar-popup-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-  z-index: calc(var(--z-popover) - 1);
-}
-.calendar-popup-overlay.active {
-  display: block;
+  font-family: 'DM Sans', sans-serif;
 }
 
 body.light-theme .cal-day.color-1 .day-bg { background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02)); }
@@ -775,51 +887,183 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
    📱 MOBİL - TABLET (max-width: 768px)
    ============================================================ */
 @media (max-width: 768px) {
-  .calendar-page-main { padding: 1rem; }
-  .cal-day { min-height: 60px; padding: 4px 6px; }
+  .calendar-page-main {
+    padding: 0.75rem 0.5rem calc(5.5rem + env(safe-area-inset-bottom, 20px));
+  }
+  .calendar-main-card {
+    padding: 1rem 0.6rem;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .cal-header {
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+  }
+  .cal-header .cal-title {
+    font-size: 1.15rem;
+  }
+  .cal-header .cal-title .cal-icon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+  .cal-header .cal-title .cal-icon-wrap svg {
+    width: 16px;
+    height: 16px;
+  }
+  .cal-nav-btn.today-btn {
+    font-size: 10px;
+    padding: 0.2rem 0.55rem;
+  }
+  .cal-day-names {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    margin-bottom: 4px;
+  }
+  .cal-day-names .dname {
+    font-size: 10px;
+    padding: 2px 0;
+    letter-spacing: 0.02em;
+  }
+  .cal-grid,
+  .cal-grid-skeleton {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+  }
+  .cal-day {
+    min-height: 52px;
+    padding: 3px 2px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  .cal-day .day-number {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .cal-day .day-pnl {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 2px;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cal-day .day-trade-count {
+    font-size: 8px;
+    line-height: 1;
+    margin-top: 1px;
+  }
   
-  /* ⭐ MOBILDE BÜYÜTÜLDÜ */
-  .cal-day .day-number { font-size: 15px; } /* 12 → 15 */
-  .cal-day .day-pnl { font-size: 10px; } /* 8 → 10 */
-  .cal-day .day-trade-count { font-size: 9px; } /* 7 → 9 */
-  
-  .calendar-summary-grid { grid-template-columns: repeat(2, 1fr); }
-  .calendar-summary-skeleton { grid-template-columns: repeat(2, 1fr); }
-  .cal-header .cal-title { font-size: 1.1rem; }
-  .cal-header .cal-title .cal-icon-wrap { width: 30px; height: 30px; }
-  .cal-header .cal-title .cal-icon-wrap svg { width: 16px; height: 16px; }
-  .cal-nav-btn.today-btn { font-size: 9px; padding: 0.15rem 0.5rem; }
-  .calendar-day-popup { min-width: 220px; max-width: 280px; padding: 1rem; }
-  
-  /* ⭐ MOBILDE ÖZET DEĞERLER */
-  .summary-mini-card .s-info .s-value { font-size: 1rem; } /* 0.85rem'den 1rem'e */
-  .summary-mini-card .s-info .s-label { font-size: 9px; }
-  .summary-mini-card .s-info .s-subvalue { font-size: 10px; }
+  .calendar-summary-grid,
+  .calendar-summary-skeleton {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+  }
+  .summary-mini-card {
+    padding: 0.6rem 0.6rem;
+    gap: 0.5rem;
+    border-radius: 8px;
+  }
+  .summary-mini-card .s-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .summary-mini-card .s-info .s-value {
+    font-size: 0.95rem;
+  }
+  .summary-mini-card .s-info .s-label {
+    font-size: 8.5px;
+  }
+  .summary-mini-card .s-info .s-subvalue {
+    font-size: 9.5px;
+  }
 }
 
 /* ============================================================
    📱 TELEFON (max-width: 480px)
    ============================================================ */
 @media (max-width: 480px) {
-  .cal-day { min-height: 48px; padding: 3px 4px; }
-  
-  /* ⭐ TELEFONDA BÜYÜTÜLDÜ */
-  .cal-day .day-number { font-size: 13px; } /* 10 → 13 */
-  .cal-day .day-pnl { font-size: 9px; } /* 7 → 9 */
-  .cal-day .day-trade-count { font-size: 8px; } /* 6 → 8 */
-  
-  .calendar-summary-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
-  .calendar-summary-skeleton { grid-template-columns: 1fr 1fr; gap: 4px; }
-  .summary-mini-card { padding: 0.5rem 0.6rem; }
-  .summary-mini-card .s-icon { width: 24px; height: 24px; }
-  .summary-mini-card .s-icon svg { width: 14px; height: 14px; }
-  
-  /* ⭐ TELEFONDA ÖZET DEĞERLER */
-  .summary-mini-card .s-info .s-value { font-size: 0.9rem; } /* 0.85rem'den 0.9rem'e */
-  .summary-mini-card .s-info .s-label { font-size: 8px; }
-  .summary-mini-card .s-info .s-subvalue { font-size: 9px; }
-  
-  .cal-day.today { border-width: 1.5px; }
-  .calendar-summary-skeleton .skeleton-stat { padding: 0.5rem 0.6rem; min-height: 42px; }
-  .calendar-summary-skeleton .skeleton-stat .skeleton-line { height: 6px; }
+  .calendar-page-main {
+    padding: 0.5rem 0.35rem calc(5.5rem + env(safe-area-inset-bottom, 20px));
+  }
+  .calendar-main-card {
+    padding: 0.75rem 0.35rem;
+  }
+  .cal-day-names {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2.5px;
+  }
+  .cal-day-names .dname {
+    font-size: 9px;
+  }
+  .cal-grid,
+  .cal-grid-skeleton {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2.5px;
+  }
+  .cal-day {
+    min-height: 46px;
+    padding: 2.5px 1.5px;
+    border-radius: 6px;
+  }
+  .cal-day .day-number {
+    font-size: 12px;
+  }
+  .cal-day .day-pnl {
+    font-size: 8px;
+  }
+  .cal-day .day-trade-count {
+    font-size: 7px;
+  }
+  .cal-legend {
+    justify-content: center;
+    gap: 6px;
+    margin-top: 0.5rem;
+  }
+  .cal-legend .legend-label {
+    font-size: 8.5px;
+    text-align: center;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .cal-day.today {
+    border-width: 1.5px;
+  }
+  .calendar-summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .summary-mini-card {
+    padding: 0.5rem 0.5rem;
+  }
+  .summary-mini-card .s-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .summary-mini-card .s-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+  .summary-mini-card .s-info .s-value {
+    font-size: 0.85rem;
+  }
+  .summary-mini-card .s-info .s-label {
+    font-size: 7.5px;
+  }
+  .summary-mini-card .s-info .s-subvalue {
+    font-size: 8.5px;
+  }
 }

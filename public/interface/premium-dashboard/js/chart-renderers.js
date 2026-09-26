@@ -17,6 +17,26 @@ import {
   getCurrencySymbol
 } from './helpers.js';
 
+// ⭐ i18n Safe Helper
+function _t(key, fallback) {
+  try {
+    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
+      var val = window.i18n.t(key);
+      if (val && val !== key) return val;
+    }
+  } catch (e) {}
+  return fallback !== undefined ? fallback : key;
+}
+
+function _getCurrentLang() {
+  try {
+    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.getCurrentLanguage === 'function') {
+      return window.i18n.getCurrentLanguage();
+    }
+  } catch (e) {}
+  return 'tr';
+}
+
 // ⭐ CHART STATE
 var charts = {
   lightweight: {},
@@ -195,7 +215,7 @@ export function renderWinLossChart(trades) {
 
   var total = wins + losses;
   if (total === 0) {
-    showEmptyChart(containerId, 'Henüz kapanan işlem yok');
+    showEmptyChart(containerId, 'empty.no_closed');
     clearApexChart('winloss');
     return;
   }
@@ -203,7 +223,7 @@ export function renderWinLossChart(trades) {
   renderOrUpdateApex('winloss', containerId, {
     chart: { type: 'donut' },
     series: [wins, losses],
-    labels: ['Kazanan', 'Kaybeden'],
+    labels: [_t('dashboard.stats.winners', 'Kazanan'), _t('dashboard.stats.losers', 'Kaybeden')],
     colors: [CHART_THEME.green, CHART_THEME.red],
     plotOptions: {
       pie: {
@@ -228,7 +248,7 @@ export function renderWinLossChart(trades) {
             },
             total: {
               show: true,
-              label: 'Win Rate',
+              label: _t('dashboard.stats.win_rate', 'Win Rate'),
               fontSize: '10px',
               fontFamily: "'DM Sans', sans-serif",
               fontWeight: 600,
@@ -255,7 +275,7 @@ export function renderWinLossChart(trades) {
     },
     stroke: { width: 0 },
     tooltip: {
-      y: { formatter: function(val) { return val + ' işlem'; } }
+      y: { formatter: function(val) { return val + ' ' + _t('dashboard.trades_count_suffix', 'işlem'); } }
     }
   });
 }
@@ -274,7 +294,7 @@ export function renderDirectionChart(trades) {
 
   var total = longs + shorts;
   if (total === 0) {
-    showEmptyChart(containerId, 'Henüz işlem yok');
+    showEmptyChart(containerId, 'empty.no_trades');
     clearApexChart('direction');
     return;
   }
@@ -282,7 +302,7 @@ export function renderDirectionChart(trades) {
   renderOrUpdateApex('direction', containerId, {
     chart: { type: 'donut' },
     series: [longs, shorts],
-    labels: ['Long', 'Short'],
+    labels: [_t('direction.long', 'Long'), _t('direction.short', 'Short')],
     colors: [CHART_THEME.purple, CHART_THEME.orange],
     plotOptions: {
       pie: {
@@ -307,7 +327,7 @@ export function renderDirectionChart(trades) {
             },
             total: {
               show: true,
-              label: 'Toplam',
+              label: _t('common.total', 'Toplam'),
               fontSize: '10px',
               fontFamily: "'DM Sans', sans-serif",
               fontWeight: 600,
@@ -332,7 +352,7 @@ export function renderDirectionChart(trades) {
     },
     stroke: { width: 0 },
     tooltip: {
-      y: { formatter: function(val) { return val + ' işlem'; } }
+      y: { formatter: function(val) { return val + ' ' + _t('dashboard.trades_count_suffix', 'işlem'); } }
     }
   });
 }
@@ -360,7 +380,7 @@ export function renderDailyChart(trades) {
   });
 
   if (!hasData) {
-    showEmptyChart(containerId, 'Son 30 günde işlem yok');
+    showEmptyChart(containerId, 'empty.no_recent');
     clearApexChart('daily');
     return;
   }
@@ -376,7 +396,7 @@ export function renderDailyChart(trades) {
 
   renderOrUpdateApex('daily', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Günlük K/Z', data: cappedData }],
+    series: [{ name: _t('dashboard.chart.daily', 'Günlük K/Z'), data: cappedData }],
     xaxis: {
       categories: dailyLabels,
       labels: { 
@@ -419,7 +439,7 @@ export function renderDailyChart(trades) {
   });
 }
 
-// ⭐ 4. SYMBOL CHART (Outlier korumalı)
+// ⭐ 4. SYMBOL CHART
 export function renderSymbolChart(trades) {
   var containerId = 'chart-symbol';
   var container = document.getElementById(containerId);
@@ -428,8 +448,9 @@ export function renderSymbolChart(trades) {
   var symbolMap = {};
   trades.forEach(function(t) {
     if (t.exit_price) {
+      var sym = (t.symbol || 'OTHER').trim().toUpperCase();
       var pnl = calcTradePnL(t);
-      symbolMap[t.symbol] = (symbolMap[t.symbol] || 0) + pnl;
+      symbolMap[sym] = (symbolMap[sym] || 0) + pnl;
     }
   });
 
@@ -438,30 +459,19 @@ export function renderSymbolChart(trades) {
   }).slice(0, 8);
 
   if (sorted.length === 0) {
-    showEmptyChart(containerId, 'Henüz işlem yok');
+    showEmptyChart(containerId, 'empty.no_trades');
     clearApexChart('symbol');
     return;
   }
 
   var labels = sorted.map(function(s) { return s[0]; });
-  var data = sorted.map(function(s) { return s[1]; });
-  
-  // ⭐ Outlier koruması - en büyük değer korunur
-  var cappedData = capOutliers(data);
+  var data = sorted.map(function(s) { return parseFloat(s[1].toFixed(2)); });
 
   renderOrUpdateApex('symbol', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Toplam K/Z', data: cappedData }],
+    series: [{ name: _t('dashboard.stats.total_pnl', 'Toplam K/Z'), data: data }],
     xaxis: {
       categories: labels,
-      labels: {
-        style: { 
-          fontSize: getFontSize(), 
-          colors: CHART_THEME.textColor 
-        },
-      }
-    },
-    yaxis: {
       labels: {
         style: { 
           fontSize: getFontSize(), 
@@ -470,10 +480,22 @@ export function renderSymbolChart(trades) {
         formatter: apexCurrencyFormatter,
       }
     },
+    yaxis: {
+      labels: {
+        style: { 
+          fontSize: getFontSize(), 
+          colors: CHART_THEME.textColor 
+        },
+        formatter: function(val) {
+          return String(val || '');
+        }
+      }
+    },
     plotOptions: {
       bar: {
         horizontal: true,
         borderRadius: 4,
+        barHeight: isMobile() ? '50%' : '60%',
         colors: {
           ranges: [
             { from: -Infinity, to: -0.01, color: CHART_THEME.red },
@@ -484,9 +506,8 @@ export function renderSymbolChart(trades) {
     },
     tooltip: {
       y: {
-        formatter: function(value, { dataPointIndex }) {
-          var realValue = data[dataPointIndex] || value;
-          return formatCurrency(realValue);
+        formatter: function(value) {
+          return formatCurrency(value);
         }
       }
     }
@@ -514,7 +535,7 @@ export function renderHourlyChart(trades) {
   });
 
   if (!hasData) {
-    showEmptyChart(containerId, 'Henüz işlem yok');
+    showEmptyChart(containerId, 'empty.no_trades');
     clearApexChart('hourly');
     return;
   }
@@ -531,7 +552,7 @@ export function renderHourlyChart(trades) {
 
   renderOrUpdateApex('hourly', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'K/Z', data: cappedBuckets }],
+    series: [{ name: _t('common.pnl', 'K/Z'), data: cappedBuckets }],
     xaxis: {
       categories: labels,
       labels: {
@@ -570,7 +591,7 @@ export function renderHourlyChart(trades) {
           return formatCurrency(realValue);
         }
       },
-      x: { formatter: function(val, opts) { return 'Saat ' + labels[opts.dataPointIndex]; } }
+      x: { formatter: function(val, opts) { return _t('premium_dash.hour_prefix', 'Saat ') + labels[opts.dataPointIndex]; } }
     }
   });
 }
@@ -581,7 +602,15 @@ export function renderDowChart(trades) {
   var container = document.getElementById(containerId);
   if (!container) return;
 
-  var dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+  var dayNames = [
+    _t('days.sun', 'Paz'),
+    _t('days.mon', 'Pzt'),
+    _t('days.tue', 'Sal'),
+    _t('days.wed', 'Çar'),
+    _t('days.thu', 'Per'),
+    _t('days.fri', 'Cum'),
+    _t('days.sat', 'Cmt')
+  ];
   var dowMap = {};
   for (var d = 0; d < 7; d++) dowMap[d] = 0;
 
@@ -595,7 +624,7 @@ export function renderDowChart(trades) {
   });
 
   if (!hasData) {
-    showEmptyChart(containerId, 'Henüz işlem yok');
+    showEmptyChart(containerId, 'empty.no_trades');
     clearApexChart('dow');
     return;
   }
@@ -607,7 +636,7 @@ export function renderDowChart(trades) {
 
   renderOrUpdateApex('dow', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Günlük K/Z', data: cappedData }],
+    series: [{ name: _t('dashboard.chart.daily', 'Günlük K/Z'), data: cappedData }],
     xaxis: {
       categories: dayNames,
       labels: { 
@@ -665,7 +694,7 @@ export function renderRRChart(trades) {
 
   var keys = Object.keys(rrData).sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
   if (keys.length === 0) {
-    showEmptyChart(containerId, 'Henüz RR verisi yok');
+    showEmptyChart(containerId, 'empty.no_rr');
     clearApexChart('rr');
     return;
   }
@@ -675,7 +704,7 @@ export function renderRRChart(trades) {
 
   renderOrUpdateApex('rr', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'İşlem Sayısı', data: data }],
+    series: [{ name: _t('premium_dash.trade_count', 'İşlem Sayısı'), data: data }],
     colors: [CHART_THEME.purple],
     xaxis: {
       categories: labels,
@@ -701,7 +730,7 @@ export function renderRRChart(trades) {
       }
     },
     tooltip: {
-      y: { formatter: function(val) { return val + ' işlem'; } }
+      y: { formatter: function(val) { return val + ' ' + _t('dashboard.trades_count_suffix', 'işlem'); } }
     }
   });
 }
@@ -725,7 +754,7 @@ export function renderLotChart(trades) {
   });
 
   if (sorted.length === 0) {
-    showEmptyChart(containerId, 'Henüz işlem yok');
+    showEmptyChart(containerId, 'empty.no_lot');
     clearApexChart('lot');
     return;
   }
@@ -738,7 +767,7 @@ export function renderLotChart(trades) {
 
   renderOrUpdateApex('lot', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: 'Lot Bazlı K/Z', data: cappedData }],
+    series: [{ name: _t('premium_dash.lot_pnl', 'Lot Bazlı K/Z'), data: cappedData }],
     xaxis: {
       categories: labels,
       labels: {
@@ -808,11 +837,17 @@ export function renderCumulativeChart(trades) {
   });
 
   if (points.length === 0) {
-    showEmptyChart(containerId, 'Yeterli veri yok');
+    showEmptyChart(containerId, 'empty.not_enough');
     return;
   }
 
   points = dedupeByTime(points);
+
+  if (points.length > 0) {
+    var firstTime = points[0].time;
+    var baseTime = typeof firstTime === 'number' ? firstTime - 86400 : firstTime;
+    points.unshift({ time: baseTime, value: 0 });
+  }
 
   var firstVal = points[0].value;
   var lastVal = points[points.length - 1].value;
@@ -838,12 +873,19 @@ export function renderCumulativeChart(trades) {
     },
     rightPriceScale: {
       borderVisible: false,
-      scaleMargins: { top: 0.1, bottom: 0.1 },
+      scaleMargins: { top: 0.18, bottom: 0.18 },
+      alignLabels: true,
+      autoScale: true
     },
     timeScale: {
       borderVisible: false,
       timeVisible: true,
       secondsVisible: false,
+      rightOffset: 0,
+      minBarSpacing: 0.001,
+      fixLeftEdge: true,
+      fixRightEdge: true,
+      lockVisibleTimeRangeOnResize: true,
       tickMarkFormatter: function(time) {
         var date = new Date(time * 1000);
         return date.getDate() + '/' + (date.getMonth() + 1);
@@ -864,7 +906,7 @@ export function renderCumulativeChart(trades) {
     lineColor: CHART_THEME.purple,
     topColor: 'rgba(139,92,246,0.35)',
     bottomColor: 'rgba(139,92,246,0.0)',
-    lineWidth: 2,
+    lineWidth: 2.5,
     priceFormat: {
       type: 'custom',
       formatter: function(price) {
@@ -875,7 +917,15 @@ export function renderCumulativeChart(trades) {
   });
 
   series.setData(points);
-  chart.timeScale().fitContent();
+  
+  if (points.length >= 2) {
+    chart.timeScale().setVisibleLogicalRange({
+      from: 0,
+      to: points.length - 1
+    });
+  } else {
+    chart.timeScale().fitContent();
+  }
 
   charts.lightweight.cumulative = {
     chart: chart,
@@ -912,12 +962,15 @@ export function renderCumulativeChart(trades) {
       return;
     }
     var date = new Date(data.time * 1000);
-    var dateStr = date.toLocaleDateString('tr-TR', {
+    var lang = _getCurrentLang();
+    var locale = lang === 'en' ? 'en-US' : (lang === 'de' ? 'de-DE' : 'tr-TR');
+    var dateStr = date.toLocaleDateString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
-    tooltip.innerHTML = '<div><strong>' + dateStr + '</strong></div><div>K/Z: ' + formatCurrency(data.value) + '</div>';
+    var pnlLabel = _t('common.pnl', 'K/Z');
+    tooltip.innerHTML = '<div><strong>' + dateStr + '</strong></div><div>' + pnlLabel + ': ' + formatCurrency(data.value) + '</div>';
     tooltip.style.display = 'block';
     var x = param.point.x;
     var y = param.point.y;
@@ -934,7 +987,7 @@ export function renderCharts(trades) {
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol',
                     'chart-direction', 'chart-hourly', 'chart-dow', 'chart-rr', 'chart-lot'];
     chartIds.forEach(function(id) {
-      showEmptyChart(id, 'Yeterli veri yok');
+      showEmptyChart(id, 'empty.not_enough');
     });
     clearAllApexCharts();
     clearLightweightChart();

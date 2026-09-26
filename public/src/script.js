@@ -1,4 +1,4 @@
-import './core/journal.js';
+﻿import './core/journal.js';
 ﻿// ============================================================
 // WAWE JOURNAL - ANA SCRIPT
 // Tüm modülleri import eder ve window'a atar
@@ -34,6 +34,7 @@ import './services/stats.js';
 import './features/theme.js';
 import './features/overtrade.js';
 import './features/notifications.js';
+import './features/csv-parsers.js';
 
 // ── Pricing ──────────────────────────────────────────────────
 import './pricing.js';

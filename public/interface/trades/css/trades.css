@@ -180,22 +180,19 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
-  /* ⭐ DEĞİŞİKLİK 1: tüm kartlar aynı yükseklikte kalsın */
   align-items: stretch;
 }
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 1rem 1.25rem;
+  padding: 0.9rem 1.15rem;
   transition: all 0.2s;
-  /* DEĞİŞİKLİK 1: Aşırı uzun değerlerde grid item'ın taşmasını engelle */
   min-width: 0;
-  /* ⭐ DEĞİŞİKLİK 1: Label + değeri dikey ortalamak için flex column */
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 84px;
+  min-height: 80px;
 }
 .stat-card:hover {
   border-color: rgba(139,92,246,0.3);
@@ -203,30 +200,30 @@
 }
 .stat-card-label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.35rem;
   flex-shrink: 0;
 }
 
 /* ============================================================
-   DEĞİŞİKLİK 1: Stat değeri — otomatik font küçültme + dikey ortalama
+   Stat değeri — otomatik font küçültme + tek satırda kalma
    ============================================================ */
 .stat-card-value {
   font-family: 'Inter', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
   color: var(--text);
-  /* Uzun değerlerde asla taşmasın */
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   min-width: 0;
-  line-height: 1.1;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
   transition: font-size 0.2s ease;
-  /* ⭐ DEĞİŞİKLİK 1: Kart içinde dikey ortada dursun */
   display: flex;
   align-items: center;
   flex: 1 1 auto;
@@ -235,14 +232,14 @@
 .stat-card-value.positive { color: var(--green); }
 .stat-card-value.negative { color: var(--red); }
 
-/* 11–14 karakter arası: font bir tık küçülür */
+/* 9-12 karakter arası: font orantılı küçülür */
 .stat-card-value.value-long {
-  font-size: 1.1rem;
+  font-size: 1.12rem;
   letter-spacing: -0.01em;
 }
-/* 15+ karakter: font daha da küçülür, sığması garanti */
+/* 13+ karakter: font daha da küçülür, tek satıra rahatça sığar */
 .stat-card-value.value-xlong {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   letter-spacing: -0.02em;
 }
 
@@ -782,11 +779,14 @@ body.light-theme .skeleton-row .skeleton-cell::after {
 }
 .trade-card-pnl {
   font-family: 'Inter', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  line-height: 1.1;
-  overflow-wrap: anywhere;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   min-width: 0;
+  font-variant-numeric: tabular-nums;
 }
 .trade-card-pnl.positive { color: var(--green); }
 .trade-card-pnl.negative { color: var(--red); }
@@ -929,7 +929,31 @@ body.light-theme .skeleton-row .skeleton-cell::after {
    DEĞİŞİKLİK 2 + 3: Mobil breakpoint
    ============================================================ */
 @media (max-width: 768px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 1.15rem;
+  }
+  .stat-card {
+    padding: 0.75rem 0.85rem;
+    min-height: 68px;
+    border-radius: 10px;
+  }
+  .stat-card-label {
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+  .stat-card-value {
+    font-size: 1.12rem;
+    font-weight: 700;
+  }
+  .stat-card-value.value-long {
+    font-size: 0.98rem;
+  }
+  .stat-card-value.value-xlong {
+    font-size: 0.82rem;
+  }
 
   /* DEĞİŞİKLİK 2: Native select'ler mobilde gizlenir, çipler görünür */
   .trades-toolbar { display: none; }

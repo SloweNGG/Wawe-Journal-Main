@@ -1,14 +1,9 @@
-﻿// ============================================================
+// ============================================================
 // premium-dashboard.js - ANA DOSYA
 // Global state, init, event listeners, koordinasyon
-// ⭐ FIX: Scroll listener KALDIRILDI (gereksiz performans yükü)
-// ⭐ Sadece resize ve drag-drop sonrası resize çalışır
-// ⭐ i18n: Hardcoded metinler i18n.t() çağrılarına + data-i18n
-//    attribute'larına dönüştürüldü (yükleme hatası, premium-only
-//    ekranı, ana içerik başlık/KPI etiketleri, hata toast'ları).
 // ============================================================
 
-// ⭐ Logger — global wwLog'a fallback ile bağlan
+// Logger — global wwLog'a fallback ile bağlan
 const wwLog = (typeof window !== 'undefined' && window.wwLog) 
   ? window.wwLog 
   : { log: () => {}, warn: () => {}, info: () => {}, debug: () => {}, error: console.error.bind(console) };
@@ -20,7 +15,8 @@ import {
   calcTradePnL,
   formatCurrency,
   formatCurrencyPDF,
-  bellEmptyStateHtml
+  bellEmptyStateHtml,
+  filterTradesByDate
 } from './helpers.js';
 
 import {
@@ -52,26 +48,41 @@ import {
   exportPDF
 } from './dashboard-manager.js';
 
-// ⭐ GLOBAL STATE
+// i18n Safe Helper
+function _t(key, fallback) {
+  try {
+    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
+      var val = window.i18n.t(key);
+      if (val && val !== key) return val;
+    }
+  } catch (e) {}
+  return fallback !== undefined ? fallback : key;
+}
+
+// GLOBAL STATE
 var currentUser = null;
 var allTrades = [];
+var currentFilteredTrades = [];
+var currentRange = 'all';
+var customRangeStart = null;
+var customRangeEnd = null;
 var isPageVisible = true;
 var chartRafId = null;
 
-// ⭐ TEMA OBSERVER
+// TEMA OBSERVER
 var themeObserver = new MutationObserver(function(mutations) {
   mutations.forEach(function(mutation) {
     if (mutation.attributeName === 'class') {
       updateChartTheme();
-      if (allTrades && allTrades.length > 0) {
-        renderCharts(allTrades);
+      if (currentFilteredTrades && currentFilteredTrades.length > 0) {
+        renderCharts(currentFilteredTrades);
       }
     }
   });
 });
 themeObserver.observe(document.body, { attributes: true });
 
-// ⭐ WINDOW RESIZE - SADECE RESIZE
+// WINDOW RESIZE - SADECE RESIZE
 var resizeTimer = null;
 window.addEventListener('resize', function() {
   if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
@@ -81,24 +92,21 @@ window.addEventListener('resize', function() {
   }, 300);
 });
 
-// ⭐ SCROLL LISTENER KALDIRILDI - gereksiz performans yükü
-// Drag-drop zaten onEnd'de resize tetikliyor
-
-// ⭐ VISIBILITY CHANGE
+// VISIBILITY CHANGE
 document.addEventListener('visibilitychange', function() {
   isPageVisible = !document.hidden;
-  if (isPageVisible && allTrades && allTrades.length > 0) {
+  if (isPageVisible && currentFilteredTrades && currentFilteredTrades.length > 0) {
     var hasCharts = document.querySelector('.chart-wrap .apexcharts-canvas, .chart-wrap .lwc-chart');
     if (!hasCharts) {
       if (chartRafId) cancelAnimationFrame(chartRafId);
       chartRafId = requestAnimationFrame(function() {
-        renderCharts(allTrades);
+        renderCharts(currentFilteredTrades);
       });
     }
   }
 });
 
-// ⭐ MENU FONKSİYONLARI
+// MENU FONKSİYONLARI
 export function openMenu() {
   var nt = document.getElementById('nav-toggle');
   var nm = document.getElementById('nav-menu');
@@ -119,19 +127,51 @@ export function closeMenu() {
   document.body.style.overflow = '';
 }
 
-// ⭐ LOAD PREMIUM DATA
+// DATE FILTER APPLIER
+function applyFilter(range, start, end) {
+  currentRange = range;
+  customRangeStart = start || null;
+  customRangeEnd = end || null;
+
+  currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
+
+  var options = document.querySelectorAll('#premium-date-filter-group .date-filter-option');
+  options.forEach(function(opt) {
+    if (opt.dataset.range === currentRange) {
+      opt.classList.add('active');
+    } else {
+      opt.classList.remove('active');
+    }
+  });
+
+  var customPanel = document.getElementById('premium-custom-range-panel');
+  if (customPanel) {
+    if (currentRange === 'custom') {
+      customPanel.classList.add('open');
+    } else {
+      customPanel.classList.remove('open');
+    }
+  }
+
+  renderPremiumStats(currentFilteredTrades);
+  renderKpiBar(currentFilteredTrades);
+  renderCharts(currentFilteredTrades);
+  loadStrategySection(currentFilteredTrades, currentUser);
+}
+
+// LOAD PREMIUM DATA
 async function loadPremiumData() {
-  wwLog.log('📊 loadPremiumData başlatıldı...');
+  wwLog.log('[Premium Dashboard] loadPremiumData başlatıldı...');
 
   if (typeof requireAuth === 'undefined') {
-    wwLog.warn('⏳ requireAuth henüz yüklenmedi, 1 saniye bekleniyor...');
+    wwLog.warn('[Premium Dashboard] requireAuth henüz yüklenmedi, 1 saniye bekleniyor...');
     await new Promise(function(resolve) { setTimeout(resolve, 1000); });
 
     if (typeof requireAuth === 'undefined') {
-      console.error('❌ requireAuth hala yüklenmedi!');
+      console.error('[Premium Dashboard] requireAuth hala yüklenmedi!');
       var main = document.getElementById('main-content');
       if (main) {
-        main.innerHTML = '\n          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem;padding:2rem;">\n            <div style="font-size:3rem;">⚠️</div>\n            <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);">' + i18n.t('premium_dash.load_error_title') + '</h2>\n            <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;">' + i18n.t('premium_dash.load_error_desc') + '</p>\n            <button onclick="location.reload()" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;">' + i18n.t('premium_dash.reload') + '</button>\n          </div>\n        ';
+        main.innerHTML = '\n          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem;padding:2rem;">\n            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>\n            <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="premium_dash.load_error_title">' + _t('premium_dash.load_error_title', 'Yükleme Hatası') + '</h2>\n            <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.load_error_desc">' + _t('premium_dash.load_error_desc', 'Gerekli modüller yüklenemedi. Lütfen sayfayı yenileyin.') + '</p>\n            <button onclick="location.reload()" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;" data-i18n="premium_dash.reload">' + _t('premium_dash.reload', 'Sayfayı Yenile') + '</button>\n          </div>\n        ';
       }
       return;
     }
@@ -143,17 +183,17 @@ async function loadPremiumData() {
     var user = await requireAuth();
     if (!user) return;
 
-  if (!window.journal) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
-    return;
-  }
-  await window.journal.ensureActiveJournal(user.id);
+    if (!window.journal) {
+      if (typeof wwLog !== 'undefined') wwLog.warn('[Premium Dashboard] journal.js henüz yüklenmedi, atlanıyor');
+      return;
+    }
+    await window.journal.ensureActiveJournal(user.id);
     currentUser = user;
 
     var planData = await getUserPlan();
     if (planData.plan !== 'premium') {
       var main = document.getElementById('main-content');
-      main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);">' + i18n.t('premium_dash.premium_only_title') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;">' + i18n.t('premium_dash.premium_only_desc') + '</p>\n          <a href="settings.html#panel-plan" class="btn btn-primary" style="padding:0.7rem 2rem;text-decoration:none;font-family:\'DM Sans\',sans-serif;">' + i18n.t('nav.upgrade_premium') + '</a>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;">' + i18n.t('premium_dash.back_standard') + '</a>\n        </div>\n      ';
+      main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="premium_dash.premium_only_title">' + _t('premium_dash.premium_only_title', 'Premium\'a Özel') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.premium_only_desc">' + _t('premium_dash.premium_only_desc', 'Bu sayfa sadece Premium üyelere özeldir.') + '</p>\n          <a href="settings.html#panel-plan" class="btn btn-primary" style="padding:0.7rem 2rem;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="nav.upgrade_premium">' + _t('nav.upgrade_premium', 'Premium\'a Geç →') + '</a>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.back_standard">' + _t('premium_dash.back_standard', '← Standart Dashboard\'a Dön') + '</a>\n        </div>\n      ';
       return;
     }
 
@@ -172,12 +212,11 @@ async function loadPremiumData() {
 
     await updateNavbarAvatar();
 
-    
-  var jid = window.journal ? window.journal.getActiveJournalId() : null;
-  if (!jid) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
-    return;
-  }
+    var jid = window.journal ? window.journal.getActiveJournalId() : null;
+    if (!jid) {
+      if (typeof wwLog !== 'undefined') wwLog.warn('[Premium Dashboard] Aktif journal yok, veri yüklenmiyor');
+      return;
+    }
 
     var { data, error } = await sb
       .from('trades')
@@ -187,50 +226,81 @@ async function loadPremiumData() {
       .order('trade_date', { ascending: true })
       .limit(2000);
     if (error) {
-      if (typeof showToast === 'function') showToast(i18n.t('common.load_error') + error.message, 'error');
+      if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
       return;
     }
 
     allTrades = data || [];
+    currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
 
     var main2 = document.getElementById('main-content');
-    main2.innerHTML = '\n      <div class="page-header">\n        <div>\n          <div class="page-header-title-row"><h1 data-i18n="premium_dash.title">' + i18n.t('premium_dash.title') + '</h1><span class="premium-crown-badge">Premium</span></div>\n          <p class="subtitle" data-i18n="premium_dash.subtitle">' + i18n.t('premium_dash.subtitle') + '</p>\n        </div>\n        <div class="header-actions">\n          <button class="btn-export" id="export-csv-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ' + i18n.t('dashboard.export_csv') + '</button>\n          <button class="btn-export" id="export-pdf-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ' + i18n.t('dashboard.export_pdf') + '</button>\n          <button class="layout-reset-btn" id="layout-reset-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> ' + i18n.t('premium_dash.reset_layout') + '</button>\n        </div>\n      </div>\n\n      <div class="premium-stats-grid" id="premium-stats-grid">\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.stats.total_trades">' + i18n.t('dashboard.stats.total_trades') + '</div><div class="pstat-value" id="pstat-total">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label" data-i18n="dashboard.stats.total_pnl">' + i18n.t('dashboard.stats.total_pnl') + '</div><div class="pstat-value" id="pstat-pnl">—</div></div>\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.stats.win_rate">' + i18n.t('dashboard.stats.win_rate') + '</div><div class="pstat-value" id="pstat-wr">—</div></div>\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.kpi.profit_factor">' + i18n.t('dashboard.kpi.profit_factor') + '</div><div class="pstat-value" id="pstat-pf">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label" data-i18n="premium_dash.sharpe_ratio">' + i18n.t('premium_dash.sharpe_ratio') + '</div><div class="pstat-value" id="pstat-sharpe">—</div></div>\n      </div>\n\n      <div class="kpi-bar">\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">' + i18n.t('dashboard.kpi.avg_win') + '</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">' + i18n.t('dashboard.kpi.avg_loss') + '</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">' + i18n.t('dashboard.kpi.profit_factor') + '</span><span class="kpi-value" id="kpi-pf">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">' + i18n.t('dashboard.kpi.max_drawdown') + '</span><span class="kpi-value negative" id="kpi-dd">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">' + i18n.t('dashboard.kpi.avg_rr') + '</span><span class="kpi-value" id="kpi-rr">—</span></div>\n      </div>\n\n      <div class="dashboard-grid" id="dashboard-grid"></div>\n    ';
+    main2.innerHTML = '\n      <div class="page-header">\n        <div>\n          <div class="page-header-title-row"><h1 data-i18n="premium_dash.title">' + _t('premium_dash.title', 'Premium Dashboard') + '</h1><span class="premium-crown-badge">Premium</span></div>\n          <p class="subtitle" data-i18n="premium_dash.subtitle">' + _t('premium_dash.subtitle', 'Gelişmiş analiz ve strateji takibi') + '</p>\n        </div>\n        <div class="header-actions">\n          <div class="date-filter-group" id="premium-date-filter-group">\n            <button type="button" class="date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">' + _t('dashboard.filter.all', 'Tümü') + '</button>\n            <button type="button" class="date-filter-option" data-range="week" data-i18n="dashboard.filter.week">' + _t('dashboard.filter.week', 'Bu Hafta') + '</button>\n            <button type="button" class="date-filter-option" data-range="month" data-i18n="dashboard.filter.month">' + _t('dashboard.filter.month', 'Bu Ay') + '</button>\n            <button type="button" class="date-filter-option" data-range="year" data-i18n="dashboard.filter.year">' + _t('dashboard.filter.year', 'Bu Yıl') + '</button>\n            <button type="button" class="date-filter-option" data-range="custom" id="premium-custom-range-btn" data-i18n="dashboard.filter.custom">' + _t('dashboard.filter.custom', 'Özel') + '</button>\n          </div>\n          <div class="custom-range-panel" id="premium-custom-range-panel">\n            <input type="date" id="premium-range-start" class="custom-range-input" />\n            <span class="custom-range-sep">–</span>\n            <input type="date" id="premium-range-end" class="custom-range-input" />\n            <button type="button" class="custom-range-apply" id="premium-range-apply" data-i18n="dashboard.filter.apply">' + _t('dashboard.filter.apply', 'Uygula') + '</button>\n          </div>\n          <button class="btn-export" id="export-csv-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span data-i18n="dashboard.export_csv">' + _t('dashboard.export_csv', 'CSV İndir') + '</span></button>\n          <button class="btn-export" id="export-pdf-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span data-i18n="dashboard.export_pdf">' + _t('dashboard.export_pdf', 'PDF İndir') + '</span></button>\n          <button class="layout-reset-btn" id="layout-reset-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> <span data-i18n="premium_dash.reset_layout">' + _t('premium_dash.reset_layout', 'Düzeni Sıfırla') + '</span></button>\n        </div>\n      </div>\n\n      <div class="premium-stats-grid" id="premium-stats-grid">\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.stats.total_trades">' + _t('dashboard.stats.total_trades', 'Toplam İşlem') + '</div><div class="pstat-value" id="pstat-total">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label" data-i18n="dashboard.stats.total_pnl">' + _t('dashboard.stats.total_pnl', 'Toplam K/Z') + '</div><div class="pstat-value" id="pstat-pnl">—</div></div>\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.stats.win_rate">' + _t('dashboard.stats.win_rate', 'Win Rate') + '</div><div class="pstat-value" id="pstat-wr">—</div></div>\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.kpi.profit_factor">' + _t('dashboard.kpi.profit_factor', 'Profit Factor') + '</div><div class="pstat-value" id="pstat-pf">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label" data-i18n="premium_dash.sharpe_ratio">' + _t('premium_dash.sharpe_ratio', 'Sharpe Ratio') + '</div><div class="pstat-value" id="pstat-sharpe">—</div></div>\n      </div>\n\n      <div class="kpi-bar">\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">' + _t('dashboard.kpi.avg_win', 'Ort. Kazanç') + '</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">' + _t('dashboard.kpi.avg_loss', 'Ort. Kayıp') + '</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">' + _t('dashboard.kpi.profit_factor', 'Profit Factor') + '</span><span class="kpi-value" id="kpi-pf">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">' + _t('dashboard.kpi.max_drawdown', 'Maks. Drawdown') + '</span><span class="kpi-value negative" id="kpi-dd">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">' + _t('dashboard.kpi.avg_rr', 'Ort. R:R') + '</span><span class="kpi-value" id="kpi-rr">—</span></div>\n      </div>\n\n      <div class="dashboard-grid" id="dashboard-grid"></div>\n    ';
 
-    // ⭐ DEĞİŞTİ: innerHTML sonrası i18n.apply() ile yeni DOM'u tara
-    if (typeof i18n !== 'undefined' && i18n.apply) i18n.apply();
+    if (typeof window !== 'undefined' && window.i18n && window.i18n.apply) window.i18n.apply();
 
     renderWidgets();
-    renderPremiumStats(allTrades);
-    renderKpiBar(allTrades);
+    renderPremiumStats(currentFilteredTrades);
+    renderKpiBar(currentFilteredTrades);
 
-    document.getElementById('export-csv-btn').addEventListener('click', function() { exportCSV(allTrades); });
-    document.getElementById('export-pdf-btn').addEventListener('click', function() { exportPDF(allTrades); });
+    // Filter toolbar click handlers
+    var filterGroup = document.getElementById('premium-date-filter-group');
+    if (filterGroup) {
+      filterGroup.addEventListener('click', function(e) {
+        var btn = e.target.closest('.date-filter-option');
+        if (!btn) return;
+        var range = btn.dataset.range;
+        if (range === 'custom') {
+          var customPanel = document.getElementById('premium-custom-range-panel');
+          if (customPanel) {
+            customPanel.classList.toggle('open');
+          }
+        } else {
+          applyFilter(range);
+        }
+      });
+    }
+
+    var rangeApplyBtn = document.getElementById('premium-range-apply');
+    if (rangeApplyBtn) {
+      rangeApplyBtn.addEventListener('click', function() {
+        var s = document.getElementById('premium-range-start');
+        var e = document.getElementById('premium-range-end');
+        var startVal = s ? s.value : '';
+        var endVal = e ? e.value : '';
+        if (startVal && endVal) {
+          applyFilter('custom', startVal, endVal);
+        }
+      });
+    }
+
+    document.getElementById('export-csv-btn').addEventListener('click', function() { exportCSV(currentFilteredTrades); });
+    document.getElementById('export-pdf-btn').addEventListener('click', function() { exportPDF(currentFilteredTrades); });
 
     var fabCsv = document.getElementById('export-csv-fab');
     var fabPdf = document.getElementById('export-pdf-fab');
-    if (fabCsv) fabCsv.addEventListener('click', function() { exportCSV(allTrades); });
-    if (fabPdf) fabPdf.addEventListener('click', function() { exportPDF(allTrades); });
+    if (fabCsv) fabCsv.addEventListener('click', function() { exportCSV(currentFilteredTrades); });
+    if (fabPdf) fabPdf.addEventListener('click', function() { exportPDF(currentFilteredTrades); });
 
     document.getElementById('layout-reset-btn').addEventListener('click', resetLayout);
 
     if (chartRafId) cancelAnimationFrame(chartRafId);
     chartRafId = requestAnimationFrame(function() {
-      renderCharts(allTrades);
+      renderCharts(currentFilteredTrades);
     });
 
-    loadStrategySection(allTrades, currentUser);
+    loadStrategySection(currentFilteredTrades, currentUser);
 
     hideSkeletons();
 
   } catch(e) {
-    console.error('Premium Dashboard hatası:', e);
-    if (typeof showToast === 'function') showToast(i18n.t('premium_dash.loading_error'), 'error');
+    console.error('[Premium Dashboard] Hata:', e);
+    if (typeof showToast === 'function') showToast(_t('premium_dash.loading_error', 'Premium Dashboard yüklenirken hata oluştu'), 'error');
   }
 }
 
-// ⭐ DOM READY
+// DOM READY
 document.addEventListener('DOMContentLoaded', function() {
-  wwLog.log('📄 DOM yüklendi, Premium Dashboard başlatılıyor...');
+  wwLog.log('[Premium Dashboard] DOM yüklendi, Premium Dashboard başlatılıyor...');
 
   // Avatar dropdown
   var ua = document.getElementById('user-avatar');
@@ -319,12 +389,13 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     loadPremiumData();
   }, 500);
-});s
+});
 
-// ⭐ GLOBAL EXPORT (window üzerinden)
+// GLOBAL EXPORT (window üzerinden)
 window.markOvertradeAsRead = markOvertradeAsRead;
 window.openMenu = openMenu;
 window.closeMenu = closeMenu;
-window.exportCSV = function() { exportCSV(allTrades); };
-window.exportPDF = function() { exportPDF(allTrades); };
+window.exportCSV = function() { exportCSV(currentFilteredTrades); };
+window.exportPDF = function() { exportPDF(currentFilteredTrades); };
 document.addEventListener('journal-changed', () => window.location.reload());
+

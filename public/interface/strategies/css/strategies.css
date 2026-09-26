@@ -8,10 +8,11 @@
    ============================================================ */
 
 .strategies-main {
-  padding: 0.9rem 1rem;
-  max-width: 1400px;
+  padding: 1rem clamp(1rem, 2vw, 2.5rem) 5rem;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* ⭐ FAZ 3.5: .page-header kopyası KALDIRILDI - styles.css'te tek kaynak */
@@ -58,6 +59,41 @@
   color: #fff;
   box-shadow: 0 2px 8px rgba(139,92,246,0.35);
 }
+.custom-range-panel {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 4px 10px;
+}
+.custom-range-input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  outline: none;
+}
+.custom-range-sep {
+  color: var(--muted);
+  font-size: 11px;
+}
+.custom-range-apply {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.custom-range-apply:hover {
+  background: var(--accent2);
+}
 
 .btn-export {
   display: inline-flex;
@@ -94,13 +130,16 @@
 .strategies-grid-skeleton {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: 0.85rem;
   margin-bottom: 1.25rem;
 }
-@media (max-width: 900px) {
+@media (min-width: 1600px) {
+  .strategies-grid-skeleton { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 1050px) {
   .strategies-grid-skeleton { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .strategies-grid-skeleton { grid-template-columns: 1fr; }
 }
 
@@ -154,13 +193,16 @@
 .strategies-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: 0.85rem;
   margin-bottom: 1.25rem;
 }
-@media (max-width: 900px) {
+@media (min-width: 1600px) {
+  .strategies-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 1050px) {
   .strategies-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .strategies-grid { grid-template-columns: 1fr; }
 }
 
@@ -223,7 +265,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 130px;
+  max-width: 100%;
   font-family: 'DM Sans', sans-serif;
 }
 .sc-wr-dot {
@@ -829,12 +871,48 @@ table.detail-table td.neg { color: var(--red); font-weight: 600; }
 }
 
 /* Responsive */
-@media (max-width: 600px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .page-header { flex-direction: column; align-items: stretch; }
-  .btn-add-strategy { justify-content: center; }
-  .page-header-actions { justify-content: stretch; }
-  .time-filter-group { justify-content: space-between; }
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .page-header { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .page-header-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .time-filter-group {
+    display: flex;
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding: 3px;
+  }
+  .time-filter-group::-webkit-scrollbar {
+    display: none;
+  }
+  .time-filter-btn {
+    flex: 1 0 auto;
+    text-align: center;
+    padding: 0.35rem 0.6rem;
+    font-size: 11px;
+  }
+  .custom-range-panel {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .btn-export {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+  }
+  .btn-add-strategy {
+    flex: 2 1 100%;
+    justify-content: center;
+  }
 }
 
 /* ⭐ ApexCharts tooltip görünürlüğü için */

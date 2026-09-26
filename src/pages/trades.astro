@@ -1,4 +1,4 @@
----
+﻿---
 // ============================================================
 // TRADES - SAYFA
 //  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet
@@ -12,16 +12,23 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
   
-  <link rel="stylesheet" href="/interface/trades/css/trades.css" />
+  <link rel="stylesheet" href="/interface/trades/css/trades.css?v=1790427300000" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
+
+  <!-- ⭐ ParserV2 — bundle.js'ten ÖNCE yüklenmeli -->
+<script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
+<script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
+<script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
+<script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
+
   <script type="module" src="/src/bundle.js" is:inline defer></script>
   <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
-  <script src="/interface/trades/js/trades.js" is:inline defer></script>
+  <script src="/interface/trades/js/trades.js?v=1790427300000" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
 </Fragment>

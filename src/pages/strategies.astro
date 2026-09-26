@@ -1,18 +1,15 @@
----
+﻿---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en" showQuickAdd={true}>
+<Layout lang="tr" showQuickAdd={true}>
 <Fragment slot="head">
   <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
 
-  <!-- ⭐ QUICK ADD MODAL CSS -->
+  <!-- QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
   <!-- STRATEGIES CSS -->
-  <link rel="stylesheet" href="/interface/strategies/css/strategies.css" />
-
-  <!-- ⭐ DEĞİŞİKLİK: Chart.js kaldırıldı (ApexCharts'a geçiş).
-       jspdf ve jspdf-autotable zaten body'de yükleniyordu, burada tekrar yüklemeye gerek yok. -->
+  <link rel="stylesheet" href="/interface/strategies/css/strategies.css?v=1790429200000" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" as="script" />
@@ -20,13 +17,22 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
-  <script type="module" src="/src/bundle.js" is:inline defer></script>
+
+<!-- ⭐ ParserV2 -->
+<script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
+<script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
+<script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
+<script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
+
+<script type="module" src="/src/bundle.js" is:inline defer></script>
+
+
   <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
-  <script src="/interface/strategies/js/strategies.js" is:inline defer></script>
+  <script src="/interface/strategies/js/strategies.js?v=1790429200000" is:inline defer></script>
 </Fragment>
-  <!-- ✅ NAVBAR CONTAINER -->
+  <!-- NAVBAR CONTAINER -->
 
   <main class="strategies-main">
 
@@ -38,19 +44,25 @@ import Layout from '../layouts/Layout.astro';
       </div>
       <div class="page-header-actions">
         <div class="time-filter-group" id="time-filter-group">
-          <button class="time-filter-btn active" data-range="all">Tümü</button>
-          <button class="time-filter-btn" data-range="7d">7G</button>
-          <button class="time-filter-btn" data-range="30d">30G</button>
-          <button class="time-filter-btn" data-range="90d">90G</button>
-          <button class="time-filter-btn" data-range="month">Bu Ay</button>
+          <button class="time-filter-btn active" data-range="all" data-i18n="dashboard.filter.all">Tümü</button>
+          <button class="time-filter-btn" data-range="week" data-i18n="dashboard.filter.week">Bu Hafta</button>
+          <button class="time-filter-btn" data-range="month" data-i18n="dashboard.filter.month">Bu Ay</button>
+          <button class="time-filter-btn" data-range="year" data-i18n="dashboard.filter.year">Bu Yıl</button>
+          <button class="time-filter-btn" data-range="custom" id="custom-range-btn" data-i18n="dashboard.filter.custom">Özel</button>
         </div>
-        <button id="export-all-csv" class="btn-export" title="Tüm stratejileri CSV olarak indir">
+        <div class="custom-range-panel" id="custom-range-panel" style="display:none;">
+          <input type="date" id="custom-range-start" class="custom-range-input" />
+          <span class="custom-range-sep">–</span>
+          <input type="date" id="custom-range-end" class="custom-range-input" />
+          <button class="custom-range-apply" id="custom-range-apply" data-i18n="dashboard.filter.apply">Uygula</button>
+        </div>
+        <button id="export-all-csv" class="btn-export" title="CSV">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          CSV
+          <span data-i18n="dashboard.export_csv">CSV</span>
         </button>
-        <button id="export-all-pdf" class="btn-export" title="Tüm stratejileri PDF olarak indir">
+        <button id="export-all-pdf" class="btn-export" title="PDF">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          PDF
+          <span data-i18n="dashboard.export_pdf">PDF</span>
         </button>
         <button id="open-add-strategy-modal" class="btn-add-strategy">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none">

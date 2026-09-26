@@ -246,25 +246,51 @@ function getTradePnL(t) {
 }
 
 // ============================================================
-// ZAMAN ARALIĞI FİLTRESİ
+// i18n HELPER
 // ============================================================
+function _t(key, fallback) {
+  if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
+    return i18n.t(key, fallback);
+  }
+  return fallback || key;
+}
+
+// ============================================================
+// ZAMAN ARALIĞI FİLTRESİ (DASHBOARD İLE AYNI)
+// ============================================================
+window._stratCustomRangeStart = null;
+window._stratCustomRangeEnd = null;
+
 function filterTradesByRange(trades, range) {
   if (!range || range === 'all') return trades;
-  var now = new Date();
-  var cutoff = null;
-  if (range === '7d') {
-    cutoff = new Date(now); cutoff.setDate(now.getDate() - 7);
-  } else if (range === '30d') {
-    cutoff = new Date(now); cutoff.setDate(now.getDate() - 30);
-  } else if (range === '90d') {
-    cutoff = new Date(now); cutoff.setDate(now.getDate() - 90);
-  } else if (range === 'month') {
-    cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (range === 'custom' && window._stratCustomRangeStart && window._stratCustomRangeEnd) {
+    var cStart = new Date(window._stratCustomRangeStart);
+    cStart.setHours(0, 0, 0, 0);
+    var cEnd = new Date(window._stratCustomRangeEnd);
+    cEnd.setHours(23, 59, 59, 999);
+    return trades.filter(function(t) {
+      if (!t.trade_date) return false;
+      var d = new Date(t.trade_date);
+      return d >= cStart && d <= cEnd;
+    });
   }
-  if (!cutoff) return trades;
+  var now = new Date();
+  var start = new Date();
+  if (range === 'week' || range === '7d') {
+    start.setDate(now.getDate() - 7);
+  } else if (range === 'month') {
+    start.setDate(1);
+  } else if (range === '30d') {
+    start.setDate(now.getDate() - 30);
+  } else if (range === '90d') {
+    start.setDate(now.getDate() - 90);
+  } else if (range === 'year') {
+    start.setMonth(0, 1);
+  }
+  start.setHours(0, 0, 0, 0);
   return trades.filter(function(t) {
     if (!t.trade_date) return false;
-    return new Date(t.trade_date) >= cutoff;
+    return new Date(t.trade_date) >= start;
   });
 }
 
@@ -536,14 +562,14 @@ function renderStrategiesGrid() {
     if (safeDescription) {
       descriptionHtml = '<div class="sc-desc">' + (safeDescription.length > 40 ? safeDescription.substring(0,40) + '…' : safeDescription) + '</div>';
     } else {
-      descriptionHtml = '<div class="sc-desc" style="opacity:.4" data-i18n="strategies.card.no_description">Açıklama Yok</div>';
+      descriptionHtml = '<div class="sc-desc" style="opacity:.4" data-i18n="strategies.card.no_description">' + _t('strategies.card.no_description', 'Açıklama Yok') + '</div>';
     }
 
     var instrumentTagHtml = '';
     if (hasData && perf.bestInstrument) {
       var bi = perf.bestInstrument;
       var displayName = sanitizeHTML(bi.instrument + ' ' + bi.symbol);
-      instrumentTagHtml = '<div class="sc-instrument-tag" title="En iyi enstrüman">' +
+      instrumentTagHtml = '<div class="sc-instrument-tag" title="' + _t('strategies.card.best_instrument', 'En iyi enstrüman') + '">' +
         '<span style="display:flex;align-items:center;gap:5px;">' +
           '<svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>' +
           '<span class="tag-name">' + displayName + '</span>' +
@@ -552,17 +578,16 @@ function renderStrategiesGrid() {
         '</div>';
     }
 
-    // ⭐ DEĞİŞİKLİK: canvas → div (ApexCharts uyumu)
     var sparkHtml = '';
     if (hasData && perf.pnlSeries.length > 1) {
-      sparkHtml = '<div class="sc-spark clickable" data-id="' + s.id + '" title="Equity curve\'yi büyüt"><span class="sc-spark-hint">büyüt ⤢</span><div id="' + sparkId + '" style="width:100%;height:100%;"></div></div>';
+      sparkHtml = '<div class="sc-spark clickable" data-id="' + s.id + '" title="' + _t('strategies.card.enlarge_equity', "Equity curve'yi büyüt") + '"><span class="sc-spark-hint">' + _t('strategies.card.enlarge', 'büyüt ⤢') + '</span><div id="' + sparkId + '" style="width:100%;height:100%;"></div></div>';
     } else {
-      sparkHtml = '<div class="sc-spark" style="display:flex;align-items:center;justify-content:center;opacity:.3;font-size:11px;color:var(--muted)"><span data-i18n="strategies.card.no_data">Veri Yok</span></div>';
+      sparkHtml = '<div class="sc-spark" style="display:flex;align-items:center;justify-content:center;opacity:.3;font-size:11px;color:var(--muted)"><span data-i18n="strategies.card.no_data">' + _t('strategies.card.no_data', 'Veri Yok') + '</span></div>';
     }
 
     var wrDotClass = hasData ? (perf.winRate >= 50 ? 'pos' : 'neg') : '';
     var wrDotHtml = hasData
-      ? '<span class="sc-wr-dot ' + wrDotClass + '" title="' + i18n.t('strategies.card.win_rate') + ': ' + perf.winRate + '%"></span>'
+      ? '<span class="sc-wr-dot ' + wrDotClass + '" title="' + _t('strategies.card.win_rate', 'Win Rate') + ': ' + perf.winRate + '%"></span>'
       : '<span style="font-size:13px;color:var(--muted);padding-right:4px;">—</span>';
 
     var longPill = (perf && perf.longCount > 0)
@@ -572,10 +597,10 @@ function renderStrategiesGrid() {
       ? '<span class="dp dp-short"><svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Short ' + perf.shortCount + '</span>'
       : '';
 
-    return '\n      <div class="strategy-card" data-id="' + s.id + '">\n        <div class="sc-top">\n          <div class="sc-header">\n            <div class="sc-name-row">\n              <div class="sc-color-bar" style="background:' + safeColor + '"></div>\n              <div>\n                <div class="sc-name">' + safeName + '</div>\n                ' + descriptionHtml + '\n              </div>\n            </div>\n            ' + wrDotHtml + '\n          </div>\n\n          <div class="sc-stats">\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.trades">İşlem</div>\n              <div class="sc-stat-val">' + (perf ? perf.totalTradesWithOpen : 0) + '</div>\n            </div>\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.win_rate">Win Rate</div>\n              <div class="sc-stat-val">' + (hasData ? perf.winRate + '%' : '—') + '</div>\n            </div>\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.pnl">K/Z</div>\n              <div class="sc-stat-val">' + (hasData ? formatCurrencySafe(perf.totalPnL) : '—') + '</div>\n            </div>\n          </div>\n\n          ' + instrumentTagHtml + '\n          ' + sparkHtml + '\n        </div>\n\n        <div class="sc-footer">\n          <div class="dir-pills">\n            ' + longPill + '\n            ' + shortPill + '\n            ' + (!perf || (perf.longCount === 0 && perf.shortCount === 0) ? '<span style="font-size:11px;color:var(--muted)">—</span>' : '') + '\n          </div>\n          <div class="sc-actions">\n            <button class="sc-btn edit-strategy-btn" data-id="' + s.id + '" aria-label="' + i18n.t('trades.edit') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>\n            <button class="sc-btn danger delete-strategy-btn" data-id="' + s.id + '" aria-label="' + i18n.t('trades.delete') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>\n          </div>\n        </div>\n      </div>';
+    return '\n      <div class="strategy-card" data-id="' + s.id + '">\n        <div class="sc-top">\n          <div class="sc-header">\n            <div class="sc-name-row">\n              <div class="sc-color-bar" style="background:' + safeColor + '"></div>\n              <div>\n                <div class="sc-name">' + safeName + '</div>\n                ' + descriptionHtml + '\n              </div>\n            </div>\n            ' + wrDotHtml + '\n          </div>\n\n          <div class="sc-stats">\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.trades">' + _t('strategies.card.trades', 'İşlem') + '</div>\n              <div class="sc-stat-val">' + (perf ? perf.totalTradesWithOpen : 0) + '</div>\n            </div>\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.win_rate">' + _t('strategies.card.win_rate', 'Win Rate') + '</div>\n              <div class="sc-stat-val">' + (hasData ? perf.winRate + '%' : '—') + '</div>\n            </div>\n            <div class="sc-stat">\n              <div class="sc-stat-lbl" data-i18n="strategies.card.pnl">' + _t('strategies.card.pnl', 'K/Z') + '</div>\n              <div class="sc-stat-val">' + (hasData ? formatCurrencySafe(perf.totalPnL) : '—') + '</div>\n            </div>\n          </div>\n\n          ' + instrumentTagHtml + '\n          ' + sparkHtml + '\n        </div>\n\n        <div class="sc-footer">\n          <div class="dir-pills">\n            ' + longPill + '\n            ' + shortPill + '\n            ' + (!perf || (perf.longCount === 0 && perf.shortCount === 0) ? '<span style="font-size:11px;color:var(--muted)">—</span>' : '') + '\n          </div>\n          <div class="sc-actions">\n            <button class="sc-btn edit-strategy-btn" data-id="' + s.id + '" aria-label="' + _t('common.edit', 'Düzenle') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>\n            <button class="sc-btn danger delete-strategy-btn" data-id="' + s.id + '" aria-label="' + _t('common.delete', 'Sil') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>\n          </div>\n        </div>\n      </div>';
   });
 
-  cards.push('\n    <div class="strategy-card-add" id="add-card-shortcut">\n      <div class="add-icon">\n        <svg width="18" height="18" viewBox="0 0 14 14" fill="none">\n          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\n        </svg>\n      </div>\n      <span class="add-label" data-i18n="strategies.add_button">Yeni Strateji Ekle</span>\n    </div>');
+  cards.push('\n    <div class="strategy-card-add" id="add-card-shortcut">\n      <div class="add-icon">\n        <svg width="18" height="18" viewBox="0 0 14 14" fill="none">\n          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\n        </svg>\n      </div>\n      <span class="add-label" data-i18n="strategies.add_button">' + _t('strategies.add_button', 'Yeni Strateji Ekle') + '</span>\n    </div>');
 
   container.innerHTML = '<div class="strategies-grid">' + cards.join('') + '</div>';
 
@@ -1411,11 +1436,35 @@ async function loadAllData() {
 
 function setupTimeFilterButtons() {
   var btns = document.querySelectorAll('.time-filter-btn');
+  var customPanel = document.getElementById('custom-range-panel');
+  var customApplyBtn = document.getElementById('custom-range-apply');
+  var startInput = document.getElementById('custom-range-start');
+  var endInput = document.getElementById('custom-range-end');
+
   btns.forEach(function(btn) {
     btn.addEventListener('click', function() {
+      var range = this.dataset.range;
+      if (range === 'custom') {
+        if (customPanel) {
+          var isHidden = (customPanel.style.display === 'none' || !customPanel.style.display);
+          customPanel.style.display = isHidden ? 'flex' : 'none';
+          if (isHidden && startInput && endInput && (!startInput.value || !endInput.value)) {
+            var now = new Date();
+            var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            var toYmd = function(d) {
+              return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            };
+            if (!startInput.value) startInput.value = toYmd(firstDay);
+            if (!endInput.value) endInput.value = toYmd(now);
+          }
+        }
+        return;
+      }
+
+      if (customPanel) customPanel.style.display = 'none';
       btns.forEach(function(b) { b.classList.remove('active'); });
       this.classList.add('active');
-      currentTimeRange = this.dataset.range;
+      currentTimeRange = range;
 
       strategyDataCache = {};
       strategyDataCacheTime = 0;
@@ -1424,40 +1473,74 @@ function setupTimeFilterButtons() {
       renderComparisonCharts();
     });
   });
+
+  if (customApplyBtn) {
+    customApplyBtn.addEventListener('click', function() {
+      var sVal = startInput ? startInput.value : '';
+      var eVal = endInput ? endInput.value : '';
+      if (!sVal || !eVal) {
+        if (typeof showToast === 'function') {
+          showToast(_t('dashboard.custom_range_required', 'Lütfen başlangıç ve bitiş tarihi seçin.'), 'error');
+        }
+        return;
+      }
+      currentTimeRange = 'custom';
+      window._stratCustomRangeStart = sVal;
+      window._stratCustomRangeEnd = eVal;
+
+      btns.forEach(function(b) { b.classList.toggle('active', b.dataset.range === 'custom'); });
+      if (customPanel) customPanel.style.display = 'none';
+
+      strategyDataCache = {};
+      strategyDataCacheTime = 0;
+
+      renderStrategiesGrid();
+      renderComparisonCharts();
+    });
+  }
 }
 
 // ============================================================
 // INIT STRATEGIES
 // ============================================================
+var isStrategiesInitialized = false;
+
 async function initStrategies() {
+  if (isStrategiesInitialized) return;
+  isStrategiesInitialized = true;
+
   try {
     wwLog.log('📊 Strategies başlatılıyor...');
 
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
+      hideStrategySkeleton();
       return;
     }
 
     showStrategySkeleton();
 
     currentUser = await requireAuth();
-    if (!currentUser) return;
+    if (!currentUser) {
+      hideStrategySkeleton();
+      return;
+    }
 
-  if (!window.journal) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
-    return;
-  }
-  await window.journal.ensureActiveJournal(currentUser.id);
+    if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+      try {
+        await window.journal.ensureActiveJournal(currentUser.id);
+      } catch(e) {}
+    }
 
     await updateNavbarAvatar();
     await updatePlanBadge();
 
     try {
-        if (typeof updateOvertradeBell === 'function') {
-            await updateOvertradeBell();
-        }
+      if (typeof updateOvertradeBell === 'function') {
+        await updateOvertradeBell();
+      }
     } catch(e) {
-        wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
+      wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
     }
 
     if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
@@ -1532,14 +1615,70 @@ async function initStrategies() {
     setupExportButtons();
     setupDetailAndEquityModals();
 
+    // Dil değişimini dinle
+    if (typeof i18n !== 'undefined' && i18n.onChange) {
+      i18n.onChange(function() {
+        renderStrategiesGrid();
+        renderComparisonCharts();
+        if (typeof i18n.apply === 'function') i18n.apply();
+      });
+    }
+
     wwLog.log('✅ Strategies başlatıldı!');
   } catch(e) {
     console.error('❌ Strategies init hatası:', e);
+    hideStrategySkeleton();
   }
+}
+
+// ============================================================
+// ⭐ START STRATEGIES - DEPENDENCY KONTROLLÜ BAŞLATMA
+// ============================================================
+var strategiesCheckAttempts = 0;
+var MAX_STRATEGIES_CHECK_ATTEMPTS = 160;
+
+function startStrategies() {
+  var isSbReady = typeof window.sb !== 'undefined';
+  var isAuthReady = typeof window.requireAuth === 'function';
+  var isJournalReady = typeof window.journal !== 'undefined';
+  var isApexReady = typeof window.ApexCharts !== 'undefined';
+
+  if (!isSbReady || !isAuthReady || !isJournalReady || !isApexReady) {
+    strategiesCheckAttempts++;
+    if (strategiesCheckAttempts >= MAX_STRATEGIES_CHECK_ATTEMPTS) {
+      if (typeof wwLog !== 'undefined') {
+        wwLog.warn('⚠️ [Strategies] Bağımlılıklar zaman aşımına uğradı');
+      }
+      hideStrategySkeleton();
+      return;
+    }
+    setTimeout(startStrategies, 50);
+    return;
+  }
+
+  if (typeof lucide !== 'undefined') {
+    try { lucide.createIcons(); } catch(e) {}
+  }
+
+  if (typeof loadNavbar === 'function') {
+    var container = document.getElementById('navbar-container');
+    if (container && container.innerHTML.trim() === '') {
+      try { loadNavbar('navbar-container'); } catch(e) {}
+    }
+  }
+
+  initStrategies();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startStrategies);
+} else {
+  startStrategies();
 }
 
 // ⭐ Global
 window.initStrategies = initStrategies;
+window.startStrategies = startStrategies;
 window.renderStrategiesGrid = renderStrategiesGrid;
 window.renderComparisonCharts = renderComparisonCharts;
 window.openEditModal = openEditModal;

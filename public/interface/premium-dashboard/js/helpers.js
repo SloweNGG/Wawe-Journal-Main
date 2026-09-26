@@ -11,6 +11,8 @@
 // ⭐ FIX (BUG): ES module scope'unda `i18n` doğrudan tanımlı olmadığı için
 //    `typeof i18n !== 'undefined'` kontrolü her zaman false dönüyordu.
 //    Artık `window.i18n` üzerinden güvenli erişim yapılıyor.
+// ⭐ PnL FIX: calcTradePnL() artık önce DB'deki gerçek t.pnl değerini
+//    kullanır; yoksa hesaplamaya fallback yapar.
 // ============================================================
 
 export function sanitizeHTML(str) {
@@ -49,7 +51,14 @@ export function getMultiplier(t) {
 
 export function calcTradePnL(t) {
   try {
-    if (!t.entry_price || !t.exit_price || !t.lot) return 0;
+    if (!t.exit_price) return 0;
+
+    var storedPnl = parseFloat(t.pnl);
+    if (t.pnl !== null && t.pnl !== undefined && !isNaN(storedPnl)) {
+      return storedPnl;
+    }
+
+    if (!t.entry_price || !t.lot) return 0;
     var mult = getMultiplier(t);
     var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
     return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
@@ -141,14 +150,52 @@ function _t(key, params) {
 // Hem yeni 'empty.*' type API'sini hem de eski Türkçe mesaj string'ini
 // algılar. Böylece chart-renderers.js'i değiştirmek zorunda kalmayız.
 
+export function filterTradesByDate(trades, range, customStart, customEnd) {
+  if (!trades || !Array.isArray(trades)) return [];
+  if (!range || range === 'all') return trades;
+
+  if (range === 'custom' && customStart && customEnd) {
+    var cStart = new Date(customStart);
+    cStart.setHours(0, 0, 0, 0);
+    var cEnd = new Date(customEnd);
+    cEnd.setHours(23, 59, 59, 999);
+    return trades.filter(function(t) {
+      if (!t.trade_date) return false;
+      var d = new Date(t.trade_date);
+      return d >= cStart && d <= cEnd;
+    });
+  }
+
+  var now = new Date();
+  var start = new Date();
+  if (range === 'week') {
+    start.setDate(now.getDate() - 7);
+  } else if (range === 'month') {
+    start.setMonth(now.getMonth() - 1);
+  } else if (range === 'year') {
+    start.setMonth(0, 1);
+  }
+  start.setHours(0, 0, 0, 0);
+
+  return trades.filter(function(t) {
+    if (!t.trade_date) return false;
+    var d = new Date(t.trade_date);
+    return d >= start;
+  });
+}
+
+// ============================================================
+// ⭐ BOŞ GRAFİK TİPİ ÇÖZÜMLEYİCİ & SVG İKONLAR
+// ============================================================
+
 var _EMPTY_TYPE_MAP = {
-  no_closed:  { icon: '⏳', msgKey: 'empty.no_closed',  actionKey: 'empty.action.view_trades',     link: '/trades.html' },
-  no_recent:  { icon: '📅', msgKey: 'empty.no_recent',  actionKey: 'empty.action.view_calendar',   link: '/calendar.html' },
-  no_rr:      { icon: '📈', msgKey: 'empty.no_rr',      actionKey: 'empty.action.view_strategies', link: '/strategies.html' },
-  no_lot:     { icon: '📐', msgKey: 'empty.no_lot',     actionKey: 'empty.action.add_trade',       quickAdd: true },
-  no_trades:  { icon: '📭', msgKey: 'empty.no_trades',  actionKey: 'empty.action.add_first_trade', quickAdd: true },
-  not_enough: { icon: '📉', msgKey: 'empty.not_enough', actionKey: 'empty.action.view_trades',     link: '/trades.html' },
-  default:    { icon: '📊', msgKey: 'empty.default',    actionKey: 'empty.action.back_dashboard',  link: '/dashboard.html' }
+  no_closed:  { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', msgKey: 'empty.no_closed',  actionKey: 'empty.action.view_trades',     link: '/trades.html' },
+  no_recent:  { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', msgKey: 'empty.no_recent',  actionKey: 'empty.action.view_calendar',   link: '/calendar.html' },
+  no_rr:      { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', msgKey: 'empty.no_rr',      actionKey: 'empty.action.view_strategies', link: '/strategies.html' },
+  no_lot:     { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>', msgKey: 'empty.no_lot',     actionKey: 'empty.action.add_trade',       quickAdd: true },
+  no_trades:  { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', msgKey: 'empty.no_trades',  actionKey: 'empty.action.add_first_trade', quickAdd: true },
+  not_enough: { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', msgKey: 'empty.not_enough', actionKey: 'empty.action.view_trades',     link: '/trades.html' },
+  default:    { icon: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', msgKey: 'empty.default',    actionKey: 'empty.action.back_dashboard',  link: '/dashboard.html' }
 };
 
 function _resolveEmptyType(input) {
@@ -175,12 +222,6 @@ function _resolveEmptyType(input) {
 // ============================================================
 // ⭐ BOŞ STATE - ZENGİNLEŞTİRİLMİŞ + i18n DESTEKLİ
 // ============================================================
-// Kullanım:
-//   showEmptyChart('chart-id', 'empty.no_closed')       → yeni type API
-//   showEmptyChart('chart-id', 'Yeterli kapanan işlem yok') → eski mesaj (chart-renderers.js'ten)
-//
-// Her iki durumda da buton metni ve link/quickAdd davranışı i18n'den
-// gelen metinlerle ve tip haritasıyla belirlenir.
 
 export function showEmptyChart(containerId, typeOrMessage) {
   var container = document.getElementById(containerId);
@@ -189,10 +230,6 @@ export function showEmptyChart(containerId, typeOrMessage) {
   var type = _resolveEmptyType(typeOrMessage);
   var cfg = _EMPTY_TYPE_MAP[type];
 
-  // Mesaj metni:
-  // - Yeni type API → i18n'den al
-  // - Eski mesaj string → aynen göster (chart-renderers zaten Türkçe veriyor)
-  // - Hiçbiri yoksa → i18n 'empty.not_enough'
   var displayMessage;
   if (typeof typeOrMessage === 'string' && typeOrMessage.indexOf('empty.') === 0) {
     displayMessage = _t(cfg.msgKey);
@@ -204,7 +241,6 @@ export function showEmptyChart(containerId, typeOrMessage) {
 
   var actionText = _t(cfg.actionKey);
 
-  // Ortak buton stili (a ve button için uyumlu)
   var btnStyle = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;";
   var btnHover = "onmouseover=\"this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';\" onmouseout=\"this.style.borderColor='var(--border)';this.style.background='var(--surface)';\"";
 
@@ -217,7 +253,7 @@ export function showEmptyChart(containerId, typeOrMessage) {
 
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:80px;padding:0.5rem;text-align:center;color:var(--muted);font-family:'DM Sans',sans-serif;">
-      <div style="font-size:2rem;margin-bottom:0.5rem;opacity:0.6;">${cfg.icon}</div>
+      <div style="margin-bottom:0.5rem;opacity:0.6;color:var(--muted);display:flex;align-items:center;justify-content:center;">${cfg.icon}</div>
       <p style="font-size:12px;margin:0 0 0.3rem;color:var(--muted);">${displayMessage}</p>
       ${buttonHtml}
     </div>
@@ -226,7 +262,7 @@ export function showEmptyChart(containerId, typeOrMessage) {
 
 export function bellEmptyStateHtml() {
   var emptyText = _t('nav.no_notifications');
-  return '<div class="bell-panel-empty" id="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText + '</span></div>';
+  return '<div class="bell-panel-empty" id="bell-panel-empty"><span class="empty-icon" style="opacity:0.5;display:inline-flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="2" y1="2" x2="22" y2="22"/></svg></span><span>' + emptyText + '</span></div>';
 }
 
 export function apexCurrencyFormatter(value) {

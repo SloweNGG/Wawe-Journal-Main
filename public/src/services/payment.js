@@ -7,6 +7,14 @@ import { safeLocalStorageGet, safeLocalStorageSet } from '../core/storage.js';
 import { showToast } from '../utils/ui.js';
 import { getUserPlan } from './user.js';
 
+function t(key, params, fallback) {
+  if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
+    var res = window.i18n.t(key, params);
+    if (res && res !== key) return res;
+  }
+  return fallback || key;
+}
+
 let selectedPayMethod = safeLocalStorageGet('ww_pay_method', 'BTC');
 
 export function getSystemSettings() {
@@ -49,7 +57,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
   try {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
-      showToast('Oturumunuz sona ermiş, lütfen tekrar giriş yapın.', 'error');
+      showToast(t('payment.session_expired', {}, 'Oturumunuz sona ermiş, lütfen tekrar giriş yapın.'), 'error');
       return null;
     }
 
@@ -80,14 +88,14 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
 
     if (!response.ok) {
       console.error('❌ create-payment API hatası:', response.status, data);
-      throw new Error(data.error || 'Ödeme başlatılamadı');
+      throw new Error(data.error || t('payment.link_failed', {}, 'Ödeme başlatılamadı'));
     }
 
     wwLog.log('✅ create-payment başarılı:', data);
     return data;
   } catch (error) {
     console.error('❌ createNowPaymentInvoice hatası:', error);
-    showToast('Ödeme başlatılamadı: ' + error.message, 'error');
+    showToast((t('payment.link_failed', {}, 'Ödeme başlatılamadı') + ': ' + error.message), 'error');
     return null;
   }
 }
@@ -98,12 +106,12 @@ export async function upgradeToPremium(planType, amount, currency, payMethod, re
   try {
     const user = await requireAuth();
     if (!user) {
-      showToast('Lütfen önce giriş yapın.', 'error');
+      showToast(t('payment.login_required', {}, 'Lütfen önce giriş yapın.'), 'error');
       return null;
     }
     
     const method = payMethod || selectedPayMethod || 'BTC';
-    showToast('💳 ' + method + ' ile ödeme sayfasına yönlendiriliyorsunuz...', 'info');
+    showToast(t('settings.redirecting_to_payment', { method: method }, method + ' ile ödeme sayfasına yönlendiriliyorsunuz...'), 'info');
     
     const result = await createNowPaymentInvoice(
       user.id,
@@ -118,12 +126,12 @@ export async function upgradeToPremium(planType, amount, currency, payMethod, re
       window.location.href = result.invoiceUrl;
       return result;
     } else {
-      showToast('Ödeme linki oluşturulamadı. Lütfen tekrar deneyin.', 'error');
+      showToast(t('payment.link_failed', {}, 'Ödeme linki oluşturulamadı. Lütfen tekrar deneyin.'), 'error');
       return null;
     }
   } catch (error) {
     console.error('upgradeToPremium hatası:', error);
-    showToast('Ödeme başlatılamadı: ' + error.message, 'error');
+    showToast(t('payment.link_failed', {}, 'Ödeme başlatılamadı: ') + error.message, 'error');
     return null;
   }
 }
@@ -135,7 +143,7 @@ export async function cancelPremium() {
   try {
     const user = await requireAuth();
     if (!user) {
-      showToast('Lütfen önce giriş yapın.', 'error');
+      showToast(t('payment.login_required', {}, 'Lütfen önce giriş yapın.'), 'error');
       return false;
     }
     
@@ -148,7 +156,7 @@ export async function cancelPremium() {
     
     if (profileError) {
       console.error('❌ Profil sorgusu hatası:', profileError);
-      showToast('Profil bilgileri alınamadı.', 'error');
+      showToast(t('settings.profile_fetch_error', {}, 'Profil bilgileri alınamadı.'), 'error');
       return false;
     }
     
@@ -156,21 +164,24 @@ export async function cancelPremium() {
     
     // Zaten premium değilse
     if (!profile || profile.plan !== 'premium') {
-      showToast('Zaten premium aboneliğiniz yok.', 'info');
+      showToast(t('settings.cancel_no_premium', {}, 'Zaten premium aboneliğiniz yok.'), 'info');
       return true;
     }
     
+    var lang = (typeof window !== 'undefined' && window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+    var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
+
     // Onay mesajı
     const expiryDate = profile.plan_expires_at ? 
-      new Date(profile.plan_expires_at).toLocaleDateString('tr-TR', { 
+      new Date(profile.plan_expires_at).toLocaleDateString(locale, { 
         day: '2-digit', 
         month: 'long', 
         year: 'numeric' 
-      }) : 'belirsiz';
+      }) : '—';
     
-    const confirmTitle = '⚠️ Premium Aboneliğini İptal Et';
-    const confirmMessage = 'Premium aboneliğinizi iptal etmek istediğinize emin misiniz?';
-    const confirmWarning = '📅 Bitiş tarihi: ' + expiryDate + '\n\nBu işlem geri alınamaz!';
+    const confirmTitle = t('settings.cancel_premium_title', {}, 'Premium Aboneliğini İptal Et');
+    const confirmMessage = t('settings.cancel_premium_message', {}, 'Premium aboneliğinizi iptal etmek istediğinize emin misiniz?');
+    const confirmWarning = t('settings.cancel_premium_warning', { date: expiryDate }, 'Bitiş tarihi: ' + expiryDate + '\n\nBu işlem geri alınamaz!');
     
     // Confirm modal'ı göster
     const confirmed = await new Promise(function(resolve) {
@@ -207,7 +218,7 @@ export async function cancelPremium() {
     
     if (updateError) {
       console.error('❌ Plan güncelleme hatası:', updateError);
-      showToast('Abonelik iptal edilemedi: ' + updateError.message, 'error');
+      showToast(t('settings.cancel_error', {}, 'Abonelik iptal edilemedi: ') + updateError.message, 'error');
       return false;
     }
     
@@ -218,7 +229,7 @@ export async function cancelPremium() {
       localStorage.removeItem('ww_user_plan');
     } catch(e) {}
     
-    showToast('✅ Premium aboneliğiniz iptal edildi.', 'success');
+    showToast(t('settings.cancel_subscription_success', {}, 'Premium aboneliğiniz iptal edildi.'), 'success');
     
     // ⭐ Plan panelini yenile (settings.js'deki renderPlan fonksiyonunu çağır)
     setTimeout(function() {
@@ -236,7 +247,7 @@ export async function cancelPremium() {
     
   } catch (error) {
     console.error('❌ Abonelik iptal hatası:', error);
-    showToast('Abonelik iptal edilemedi: ' + error.message, 'error');
+    showToast(t('settings.cancel_error', {}, 'Abonelik iptal edilemedi: ') + error.message, 'error');
     return false;
   }
 }

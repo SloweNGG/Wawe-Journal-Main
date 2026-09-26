@@ -32,7 +32,7 @@
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 240px;         /* ⭐ FIX: Sabit satır yüksekliği (feedback loop kırıcı) */
+  grid-auto-rows: auto;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -41,11 +41,12 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.9rem 1rem;
+  padding: 0.85rem 1rem;
   transition: all 0.2s ease;
   cursor: grab;
   position: relative;
-  min-height: 0;           /* ⭐ FIX: İçerik grid item'ı büyütemesin */
+  height: 220px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -161,16 +162,18 @@
   grid-column: span 2;
 }
 
-.grid-item.full {
+.grid-item.full,
+.grid-item[data-widget="strategies"] {
   grid-column: span 4;
-  /* ⭐ NOT: grid-row: span 2 KALDIRILDI — orijinal davranışta
-     full widget'lar da normal tek satır yüksekliğindeydi */
+  height: auto;
+  min-height: auto;
 }
 
-/* ⭐ NOT: .grid-item.tall kuralı KALDIRILDI
-   buildWidgets() 'cumulative' widget'ına 'wide tall' veriyor ama
-   orijinalde 'tall' CSS'te hiç tanımlı değildi, sadece işaretleyiciydi.
-   Artık grid-auto-rows ile tüm widget'lar aynı yükseklikte. */
+.grid-item[data-widget="strategies"] .chart-wrap {
+  flex: 0 0 auto;
+  min-height: auto;
+  height: auto;
+}
 
 /* ============================================================
    RESPONSIVE
@@ -187,16 +190,23 @@
   }
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 220px;   /* ⭐ FIX: tablet için sabit satır */
+  }
+  .grid-item {
+    height: 210px;
+    min-height: 210px;
   }
   .grid-item.wide {
     grid-column: span 1;
   }
-  .grid-item.full {
+  .grid-item.full,
+  .grid-item[data-widget="strategies"] {
     grid-column: span 2;
+    height: auto;
+    min-height: auto;
   }
+  .strategy-minimal-grid,
   .strategy-premium-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 
@@ -209,19 +219,26 @@
   }
   .dashboard-grid {
     grid-template-columns: 1fr;
-    grid-auto-rows: 200px;   /* ⭐ FIX: mobil için sabit satır */
+  }
+  .grid-item {
+    height: 190px;
+    min-height: 190px;
   }
   .grid-item.wide {
     grid-column: span 1;
   }
-  .grid-item.full {
+  .grid-item.full,
+  .grid-item[data-widget="strategies"] {
     grid-column: span 1;
+    height: auto;
+    min-height: auto;
   }
   .premium-main {
     padding: 0.9rem 1rem 5rem;
   }
+  .strategy-minimal-grid,
   .strategy-premium-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
   .page-header {
     flex-direction: column;
@@ -255,6 +272,17 @@
 }
 
 @media (max-width: 480px) {
+  .grid-item {
+    height: 180px;
+    min-height: 180px;
+  }
+  .grid-item.full,
+  .grid-item[data-widget="strategies"] {
+    grid-column: span 1;
+    height: auto;
+    min-height: auto;
+  }
+  .strategy-minimal-grid,
   .strategy-premium-grid {
     grid-template-columns: 1fr;
   }
@@ -263,9 +291,6 @@
   }
   .premium-stats-grid {
     grid-template-columns: 1fr 1fr;
-  }
-  .dashboard-grid {
-    grid-auto-rows: 180px;   /* ⭐ FIX: küçük telefon */
   }
 }
 

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // CALENDAR.JS - TAKVİM ÖZEL FONKSİYONLAR (OPTİMİZE EDİLMİŞ)
 // ============================================================
 
@@ -73,7 +73,7 @@ wwLog.log('📅 calendar.js yükleniyor...');
       }
       
       if (typeof renderCalendar === 'function') {
-        setTimeout(function() { renderCalendar(); }, 100);
+        renderCalendar();
       }
     }
   });
@@ -93,7 +93,7 @@ wwLog.log('📅 calendar.js yükleniyor...');
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
       
       if (typeof renderCalendar === 'function') {
-        setTimeout(function() { renderCalendar(); }, 100);
+        renderCalendar();
       }
     }
   });
@@ -105,24 +105,23 @@ wwLog.log('📅 calendar.js yükleniyor...');
       document.body.classList.toggle('light-theme', isLight);
       
       if (typeof renderCalendar === 'function') {
-        setTimeout(function() { renderCalendar(); }, 100);
+        renderCalendar();
       }
     }
   });
-  
-  wwLog.log('✅ [Calendar] Tema izleyici yüklendi!');
 })();
 
 // ============================================================
-// INSTRUMENT_MULTIPLIERS - script.js'den gelir
+// PnL & FORMAT YARDIMCILARI
 // ============================================================
 
-// ============================================================
-// PnL HESAPLAMA
-// ============================================================
 function calcTradePnL(t) {
   try {
+    if (t.pnl !== undefined && t.pnl !== null) return parseFloat(t.pnl);
     if (!t.entry_price || !t.exit_price || !t.lot) return 0;
+    if (typeof window.calcPnL === 'function') {
+      return window.calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
+    }
     var mult = t.multiplier || window.INSTRUMENT_MULTIPLIERS?.[t.instrument] || 100000;
     var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
     return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
@@ -131,21 +130,19 @@ function calcTradePnL(t) {
   }
 }
 
-// ============================================================
-// FORMAT FONKSİYONLARI
-// ============================================================
 function formatCurrency(value) {
   try {
+    if (typeof window.formatCurrency === 'function' && window.formatCurrency !== formatCurrency) {
+      return window.formatCurrency(value);
+    }
     var num = parseFloat(value) || 0;
     var currency = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '$';
     var absNum = Math.abs(num);
-    var formatted = absNum.toFixed(2);
-    var parts = formatted.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    formatted = parts.join(',');
+    var formatted = absNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return (num >= 0 ? '+' : '-') + currency + formatted;
   } catch(e) {
-    return (value >= 0 ? '+' : '') + value.toFixed(2);
+    var n = parseFloat(value) || 0;
+    return (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toFixed(2);
   }
 }
 
@@ -171,10 +168,27 @@ function formatShortPnL(value) {
   }
 }
 
+function formatLocalDate(year, month, day) {
+  var m = String(month + 1).padStart(2, '0');
+  var d = String(day).padStart(2, '0');
+  return year + '-' + m + '-' + d;
+}
+
+function getTradeDateKey(rawDate) {
+  if (!rawDate) return '';
+  return String(rawDate).split('T')[0].split(' ')[0];
+}
+
 function formatDayLabel(dateStr, lang) {
   try {
-    var d = new Date(dateStr + 'T00:00:00');
-    return d.getDate() + ' ' + getMonthNameShort(d.getMonth(), lang);
+    var parts = dateStr.split('-');
+    if (parts.length === 3) {
+      var d = parseInt(parts[2], 10);
+      var m = parseInt(parts[1], 10) - 1;
+      return d + ' ' + getMonthNameShort(m, lang);
+    }
+    var dt = new Date(dateStr + 'T00:00:00');
+    return dt.getDate() + ' ' + getMonthNameShort(dt.getMonth(), lang);
   } catch(e) {
     return '';
   }
@@ -183,6 +197,7 @@ function formatDayLabel(dateStr, lang) {
 // ============================================================
 // DİL FONKSİYONLARI
 // ============================================================
+
 function getMonthName(month, lang) {
   var names = {
     tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
@@ -210,9 +225,6 @@ function getDayNames(lang) {
   return names[lang] || names.en;
 }
 
-// ============================================================
-// GÜVENLİK FONKSİYONLARI
-// ============================================================
 function sanitizeHTML(str) {
   if (!str) return '';
   var temp = document.createElement('div');
@@ -223,6 +235,7 @@ function sanitizeHTML(str) {
 // ============================================================
 // SKELETON GÖSTER/GİZLE
 // ============================================================
+
 function showCalendarSkeleton() {
   var el1 = document.getElementById('cal-grid-skeleton');
   var el2 = document.getElementById('cal-grid');
@@ -252,25 +265,19 @@ function hideCalendarSkeleton() {
 }
 
 // ============================================================
-// TAKVİM FONKSİYONLARI
+// TAKVİM STATE & RENDER
 // ============================================================
+
 var calendarTrades = [];
 var currentMonth = new Date().getMonth();
 var currentYear = new Date().getFullYear();
 var jumpPopoverYear = currentYear;
 var lastNavDirection = null;
-var calendarRenderTimeout = null;
-
-// ⭐ PERFORMANS: Gün bazında gruplanmış veri
 var tradesByDate = {};
-var calendarRenderCache = {};
-var CALENDAR_CACHE_TTL = 30000; // 30 saniye
 
 function renderCalendar() {
   try {
-    hideCalendarSkeleton();
-
-    var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
+    var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'tr';
     var monthLabel = document.getElementById('calendar-month-label');
     var dayNamesContainer = document.getElementById('cal-day-names');
     var grid = document.getElementById('cal-grid');
@@ -290,6 +297,7 @@ function renderCalendar() {
 
     var daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     var firstDayOfWeek = firstDay.getDay();
+    // Monday as start of week: 0(Sun)->6, 1(Mon)->0, ..., 6(Sat)->5
     var startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
     var html = '';
@@ -299,27 +307,28 @@ function renderCalendar() {
     var bestDay = { date: '', pnl: -Infinity };
     var worstDay = { date: '', pnl: Infinity };
     var anyTradedDay = false;
-    var maxPnl = 0;
+
+    var now = new Date();
+    var todayStr = formatLocalDate(now.getFullYear(), now.getMonth(), now.getDate());
 
     for (var i = 0; i < startOffset; i++) {
       html += '<div class="cal-day empty"><div class="day-texture"></div></div>';
     }
 
     for (var d = 1; d <= daysInMonth; d++) {
+      var dateStr = formatLocalDate(currentYear, currentMonth, d);
+      var isToday = (dateStr === todayStr);
       var dateObj = new Date(currentYear, currentMonth, d);
-      var dateStr = dateObj.toISOString().split('T')[0];
-      var isToday = dateStr === new Date().toISOString().split('T')[0];
       var dow = dateObj.getDay();
       var isWeekend = (dow === 0 || dow === 6);
 
-      // ⭐ DOĞRUDAN GRUPLANMIŞ VERİDEN AL - FİLTRELEME YOK
       var dayTrades = tradesByDate[dateStr] || [];
       var hasTrade = dayTrades.length > 0;
 
       var dayPnl = 0;
       for (var j = 0; j < dayTrades.length; j++) {
         var t = dayTrades[j];
-        if (t.exit_price) {
+        if (t.exit_price || t.pnl !== undefined) {
           var pnl = calcTradePnL(t);
           dayPnl += pnl;
         }
@@ -332,7 +341,6 @@ function renderCalendar() {
         anyTradedDay = true;
         if (dayPnl > bestDay.pnl) bestDay = { date: dateStr, pnl: dayPnl };
         if (dayPnl < worstDay.pnl) worstDay = { date: dateStr, pnl: dayPnl };
-        if (Math.abs(dayPnl) > maxPnl) maxPnl = Math.abs(dayPnl);
       }
 
       var colorClass = '';
@@ -360,10 +368,17 @@ function renderCalendar() {
       var pnlClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       var barClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       
-      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.stats.trade_count') : 'işlem')) : '';
+      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.stats.trade_count', 'işlem') : 'işlem')) : '';
       var ariaLabel = d + ' ' + monthName + (hasTrade ? ', ' + dayTrades.length + ' işlem, ' + pnlDisplay : ', işlem yok');
 
-      html += '\n        <div class="cal-day ' + colorClass + ' ' + todayClass + ' ' + weekendClass2 + '" data-date="' + dateStr + '" role="button" tabindex="0" aria-label="' + ariaLabel + '" onclick="openDayPopup(\'' + dateStr + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openDayPopup(\'' + dateStr + '\');}">\n          <div class="day-bg ' + (colorClass ? 'show' : '') + '"></div>\n          <div class="day-bg glow ' + (colorClass ? 'show' : '') + '"></div>\n          <div class="day-number">' + d + '</div>\n          ' + (pnlDisplay ? '<div class="day-pnl ' + pnlClass + '">' + pnlDisplay + '</div>' : '') + '\n          ' + (tradeCountText ? '<div class="day-trade-count">' + tradeCountText + '</div>' : '') + '\n          <div class="day-pnl-bar ' + (hasTrade ? 'show' : '') + ' ' + barClass + '"></div>\n        </div>\n      ';
+      html += '<div class="cal-day ' + colorClass + ' ' + todayClass + ' ' + weekendClass2 + '" data-date="' + dateStr + '" role="button" tabindex="0" aria-label="' + ariaLabel + '" onclick="openDayModal(\'' + dateStr + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openDayModal(\'' + dateStr + '\');}">' +
+        '<div class="day-bg ' + (colorClass ? 'show' : '') + '"></div>' +
+        '<div class="day-bg glow ' + (colorClass ? 'show' : '') + '"></div>' +
+        '<div class="day-number">' + d + '</div>' +
+        (pnlDisplay ? '<div class="day-pnl ' + pnlClass + '">' + pnlDisplay + '</div>' : '') +
+        (tradeCountText ? '<div class="day-trade-count">' + tradeCountText + '</div>' : '') +
+        '<div class="day-pnl-bar ' + (hasTrade ? 'show' : '') + ' ' + barClass + '"></div>' +
+      '</div>';
     }
 
     if (grid) {
@@ -398,133 +413,507 @@ function renderCalendar() {
     var worstDateEl = document.getElementById('cal-summary-worst-date');
     if (worstEl) worstEl.textContent = anyTradedDay ? formatCurrency(worstDay.pnl) : '—';
     if (worstDateEl) worstDateEl.textContent = anyTradedDay ? formatDayLabel(worstDay.date, lang) : '';
+
+    hideCalendarSkeleton();
   } catch(e) {
     wwLog.warn('renderCalendar hatası:', e);
+    hideCalendarSkeleton();
   }
 }
 
 // ============================================================
-// POPUP FONKSİYONLARI
+// GÜN DETAY MODAL & PERFORMANS HESAPLAMA (STRATEJİ PANELİ İLE AYNI)
 // ============================================================
-var currentPopupFilter = 'all';
-var currentPopupDateTrades = [];
 
-function renderPopupTrades() {
-  var body = document.getElementById('popup-body');
-  if (!body) return;
-  var filtered = currentPopupDateTrades.filter(function(t) {
-    if (currentPopupFilter === 'all') return true;
-    var isLong = (t.direction === 'LONG' || t.direction === 'BUY');
-    return currentPopupFilter === 'long' ? isLong : !isLong;
-  });
-  if (filtered.length === 0) {
-    var noText = typeof i18n !== 'undefined' && i18n.t ? i18n.t('calendar.no_trades') : 'İşlem yok';
-    body.innerHTML = '<div class="popup-empty">' + noText + '</div>';
-    return;
-  }
-  body.innerHTML = filtered.map(function(t) {
-    var pnl = t.exit_price ? calcTradePnL(t) : null;
-    var pnlText = pnl !== null ? formatCurrency(pnl) : (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.open') : 'Açık');
-    var pnlClass = pnl !== null ? (pnl >= 0 ? 'positive' : 'negative') : '';
-    var isLong = t.direction === 'LONG' || t.direction === 'BUY';
-    var badgeClass = isLong ? 'long' : 'short';
-    var badgeText = isLong ? 'L' : 'S';
-    var safeSymbol = sanitizeHTML(t.symbol || '—');
-    return '<div class="popup-trade">\n        <div class="pt-left">\n          <span class="pt-badge ' + badgeClass + '">' + badgeText + '</span>\n          <span class="pt-symbol">' + safeSymbol + '</span>\n        </div>\n        <span class="pt-pnl ' + pnlClass + '">' + pnlText + '</span>\n      </div>';
-  }).join('');
-}
+var currentModalDateStr = null;
 
-function openDayPopup(dateStr) {
-  try {
-    var overlay = document.getElementById('calendar-popup-overlay');
-    var popup = document.getElementById('calendar-day-popup');
-    var title = document.getElementById('popup-date-title');
-    var filterBar = document.getElementById('popup-filter');
+function getDayPerformance(dateStr) {
+  var trades = tradesByDate[dateStr] || [];
+  var totalTrades = trades.length;
+  var closedTrades = trades.filter(function(t) { return t.exit_price != null || t.pnl != null; });
+  
+  var winTrades = 0;
+  var lossTrades = 0;
+  var grossWin = 0;
+  var grossLoss = 0;
+  var totalPnL = 0;
+  var runningPnL = 0;
+  var peakPnL = 0;
+  var maxDD = 0;
 
-    var date = new Date(dateStr + 'T00:00:00');
-    var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
-    if (title) title.textContent = date.toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' });
+  var currentWinStreak = 0;
+  var maxWinStreak = 0;
+  var currentLossStreak = 0;
+  var maxLossStreak = 0;
 
-    // ⭐ DOĞRUDAN GRUPLANMIŞ VERİDEN AL
-    currentPopupDateTrades = tradesByDate[dateStr] || [];
-    currentPopupFilter = 'all';
+  var instrumentMap = {};
 
-    if (filterBar) {
-      filterBar.style.display = currentPopupDateTrades.length > 0 ? 'flex' : 'none';
-      var btns = filterBar.querySelectorAll('button');
-      btns.forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-filter') === 'all'); });
+  var processedTrades = closedTrades.map(function(t) {
+    var pnl = calcTradePnL(t);
+    totalPnL += pnl;
+
+    runningPnL += pnl;
+    if (runningPnL > peakPnL) peakPnL = runningPnL;
+    var dd = peakPnL - runningPnL;
+    if (dd > maxDD) maxDD = dd;
+
+    if (pnl > 0) {
+      winTrades++;
+      grossWin += pnl;
+      currentWinStreak++;
+      if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
+      currentLossStreak = 0;
+    } else if (pnl < 0) {
+      lossTrades++;
+      grossLoss += Math.abs(pnl);
+      currentLossStreak++;
+      if (currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
+      currentWinStreak = 0;
+    } else {
+      currentWinStreak = 0;
+      currentLossStreak = 0;
     }
 
-    renderPopupTrades();
+    var instKey = (t.instrument || 'forex') + ' ' + (t.symbol || 'UNKNOWN');
+    if (!instrumentMap[instKey]) {
+      instrumentMap[instKey] = { instrument: t.instrument || 'forex', symbol: t.symbol || '', trades: 0, wins: 0, pnl: 0 };
+    }
+    instrumentMap[instKey].trades++;
+    if (pnl > 0) instrumentMap[instKey].wins++;
+    instrumentMap[instKey].pnl += pnl;
 
-    if (overlay) overlay.classList.add('active');
-    if (popup) popup.classList.add('active');
+    return {
+      trade_date: t.trade_date || t.date || dateStr,
+      symbol: t.symbol || '—',
+      instrument: t.instrument || 'forex',
+      direction: t.direction || 'BUY',
+      entry_price: t.entry_price,
+      exit_price: t.exit_price,
+      lot: t.lot,
+      pnl: pnl
+    };
+  });
+
+  var winRate = closedTrades.length > 0 ? Math.round((winTrades / closedTrades.length) * 100) : 0;
+  var avgWin = winTrades > 0 ? (grossWin / winTrades) : 0;
+  var avgLoss = lossTrades > 0 ? -(grossLoss / lossTrades) : 0;
+
+  var profitFactor = null;
+  if (grossLoss > 0) {
+    profitFactor = parseFloat((grossWin / grossLoss).toFixed(2));
+  } else if (grossWin > 0) {
+    profitFactor = null; // infinity
+  } else {
+    profitFactor = 0;
+  }
+
+  var avgRR = 0;
+  if (Math.abs(avgLoss) > 0) {
+    avgRR = parseFloat((avgWin / Math.abs(avgLoss)).toFixed(2));
+  } else if (avgWin > 0) {
+    avgRR = '∞';
+  }
+
+  var instrumentBreakdown = Object.values(instrumentMap).map(function(item) {
+    return {
+      instrument: item.instrument,
+      symbol: item.symbol,
+      trades: item.trades,
+      winRate: item.trades > 0 ? Math.round((item.wins / item.trades) * 100) : 0,
+      pnl: item.pnl
+    };
+  });
+
+  return {
+    totalTrades: totalTrades,
+    closedTradesCount: closedTrades.length,
+    winTrades: winTrades,
+    lossTrades: lossTrades,
+    winRate: winRate,
+    profitFactor: profitFactor,
+    avgRR: avgRR,
+    maxDrawdown: maxDD,
+    maxWinStreak: maxWinStreak,
+    maxLossStreak: maxLossStreak,
+    avgWin: avgWin,
+    avgLoss: avgLoss,
+    totalPnL: totalPnL,
+    instrumentBreakdown: instrumentBreakdown,
+    tradesDetail: processedTrades
+  };
+}
+
+function openDayModal(dateStr) {
+  try {
+    currentModalDateStr = dateStr;
+    var modal = document.getElementById('calendar-day-modal');
+    var title = document.getElementById('day-detail-title');
+    var dot = document.getElementById('day-detail-dot');
+    var body = document.getElementById('day-modal-body');
+
+    var date = new Date(dateStr + 'T00:00:00');
+    var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'tr';
+    var formattedDate = date.toLocaleDateString(lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US'), { day: '2-digit', month: 'long', year: 'numeric' });
+    if (title) title.textContent = formattedDate;
+
+    var perf = getDayPerformance(dateStr);
+
+    if (dot) {
+      if (perf.closedTradesCount === 0) {
+        dot.style.background = 'var(--accent)';
+        dot.style.boxShadow = '0 0 8px var(--accent)';
+      } else if (perf.totalPnL >= 0) {
+        dot.style.background = 'var(--green)';
+        dot.style.boxShadow = '0 0 8px rgba(34,197,94,0.4)';
+      } else {
+        dot.style.background = 'var(--red)';
+        dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.4)';
+      }
+    }
+
+    if (body) {
+      if (perf.totalTrades === 0) {
+        var noTradesText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('calendar.no_trades', 'Bu güne ait işlem yok.') : 'Bu güne ait işlem yok.';
+        body.innerHTML = '<div class="detail-empty-note">' + noTradesText + '</div>';
+      } else {
+        var pfDisplay = (perf.profitFactor === null) ? '∞' : perf.profitFactor;
+        var rrDisplay = (perf.avgRR === null) ? '∞' : perf.avgRR;
+
+        var tLblPF = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.profit_factor', 'PROFIT FACTOR') : 'PROFIT FACTOR';
+        var tLblRR = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.avg_rr', 'AVG R:R') : 'AVG R:R';
+        var tLblDD = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.max_drawdown', 'MAX DRAWDOWN') : 'MAX DRAWDOWN';
+        var tLblWR = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.win_rate', 'WIN RATE') : 'WIN RATE';
+        var tLblMWS = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.max_win_streak', 'MAX WIN STREAK') : 'MAX WIN STREAK';
+        var tLblMLS = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.max_loss_streak', 'MAX LOSS STREAK') : 'MAX LOSS STREAK';
+        var tLblAW = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.avg_win', 'AVG WIN') : 'AVG WIN';
+        var tLblAL = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.avg_loss', 'AVG LOSS') : 'AVG LOSS';
+
+        var metricsHtml = `
+          <div class="detail-metrics-grid">
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblPF}</div>
+              <div class="detail-metric-val ${perf.profitFactor !== null && perf.profitFactor >= 1 ? 'pos' : (perf.profitFactor !== null && perf.profitFactor > 0 ? 'neg' : '')}">${pfDisplay}</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblRR}</div>
+              <div class="detail-metric-val">${rrDisplay}</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblDD}</div>
+              <div class="detail-metric-val ${perf.maxDrawdown > 0 ? 'neg' : ''}">${perf.maxDrawdown > 0 ? '-' : ''}${formatCurrency(perf.maxDrawdown)}</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblWR}</div>
+              <div class="detail-metric-val ${perf.winRate >= 50 ? 'pos' : 'neg'}">${perf.winRate}%</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblMWS}</div>
+              <div class="detail-metric-val pos">${perf.maxWinStreak}</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblMLS}</div>
+              <div class="detail-metric-val neg">${perf.maxLossStreak}</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblAW}</div>
+              <div class="detail-metric-val pos">${formatCurrency(perf.avgWin)}</div>
+            </div>
+            <div class="detail-metric-box">
+              <div class="detail-metric-lbl">${tLblAL}</div>
+              <div class="detail-metric-val neg">${formatCurrency(perf.avgLoss)}</div>
+            </div>
+          </div>
+        `;
+
+        var tBreakdown = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.instrument_breakdown', 'Enstrüman Kırılımı') : 'Enstrüman Kırılımı';
+        var tTradeList = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.trade_list', 'İşlem Listesi') : 'İşlem Listesi';
+        var tInstrument = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.instrument', 'Enstrüman · Sembol') : 'Enstrüman · Sembol';
+        var tTrades = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.trades', 'İşlem') : 'İşlem';
+        var tWinRate = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.win_rate', 'Win Rate') : 'Win Rate';
+        var tPnL = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.pnl', 'K/Z') : 'K/Z';
+        var tDate = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.date', 'Tarih') : 'Tarih';
+        var tSymbol = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.symbol', 'Sembol') : 'Sembol';
+        var tDirection = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.direction', 'Yön') : 'Yön';
+        var tEntry = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.entry', 'Giriş') : 'Giriş';
+        var tExit = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.exit', 'Çıkış') : 'Çıkış';
+        var tLot = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.lot', 'Lot') : 'Lot';
+        var tNoData = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.no_data', 'Veri yok') : 'Veri yok';
+        var tNoTradesInList = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.no_trades_in_list', 'İşlem yok') : 'İşlem yok';
+
+        var instrumentRows = perf.instrumentBreakdown.map(function(ib) {
+          var displayName = sanitizeHTML((ib.instrument || '') + ' ' + (ib.symbol || ''));
+          return '<tr><td>' + displayName + '</td><td>' + ib.trades + '</td><td>' + ib.winRate + '%</td><td class="' + (ib.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrency(ib.pnl) + '</td></tr>';
+        }).join('');
+
+        var instrumentHtml = `
+          <div class="detail-section-title">${tBreakdown}</div>
+          <div class="detail-table-wrap" style="max-height:160px;">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>${tInstrument}</th>
+                  <th>${tTrades}</th>
+                  <th>${tWinRate}</th>
+                  <th>${tPnL}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${instrumentRows || '<tr><td colspan="4" style="text-align:center;color:var(--muted);">' + tNoData + '</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        var tradeRows = perf.tradesDetail.map(function(t) {
+          var dStr = t.trade_date ? t.trade_date.split('T')[0] : dateStr;
+          return '<tr>' +
+            '<td>' + dStr + '</td>' +
+            '<td><strong>' + sanitizeHTML(t.symbol) + '</strong></td>' +
+            '<td>' + sanitizeHTML(t.instrument) + '</td>' +
+            '<td><span style="color:' + (t.direction === 'LONG' || t.direction === 'BUY' ? 'var(--green)' : 'var(--red)') + ';font-weight:700;">' + sanitizeHTML(t.direction) + '</span></td>' +
+            '<td>' + (t.entry_price != null ? t.entry_price : '—') + '</td>' +
+            '<td>' + (t.exit_price != null ? t.exit_price : '—') + '</td>' +
+            '<td>' + (t.lot != null ? t.lot : '—') + '</td>' +
+            '<td class="' + (t.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrency(t.pnl) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        var tradesHtml = `
+          <div class="detail-section-title">${tTradeList} (${perf.tradesDetail.length})</div>
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>${tDate}</th>
+                  <th>${tSymbol}</th>
+                  <th>${tInstrument}</th>
+                  <th>${tDirection}</th>
+                  <th>${tEntry}</th>
+                  <th>${tExit}</th>
+                  <th>${tLot}</th>
+                  <th>${tPnL}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tradeRows || '<tr><td colspan="8" style="text-align:center;color:var(--muted);">' + tNoTradesInList + '</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        body.innerHTML = metricsHtml + instrumentHtml + tradesHtml;
+      }
+    }
+
+    if (modal) {
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+  } catch(e) {
+    console.error('openDayModal error:', e);
+  }
+}
+
+function closeDayModal() {
+  var modal = document.getElementById('calendar-day-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
+}
+
+// ============================================================
+// CSV / PDF EXPORT
+// ============================================================
+
+function downloadBlob(content, filename, mimeType) {
+  try {
+    var blob = new Blob([content], { type: mimeType });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 200);
   } catch(e) {}
 }
-window.openDayPopup = openDayPopup;
 
-function closeDayPopup() {
-  var overlay = document.getElementById('calendar-popup-overlay');
-  var popup = document.getElementById('calendar-day-popup');
-  if (overlay) overlay.classList.remove('active');
-  if (popup) popup.classList.remove('active');
+function csvEscape(val) {
+  var s = (val === null || val === undefined) ? '' : String(val);
+  return '"' + s.replace(/"/g, '""') + '"';
 }
+
+function exportDayCSV(dateStr) {
+  try {
+    var targetDate = dateStr || currentModalDateStr;
+    if (!targetDate) return;
+    var perf = getDayPerformance(targetDate);
+    var rows = [[
+      'Tarih', 'Sembol', 'Enstrüman', 'Yön', 'Giriş', 'Çıkış', 'Lot', 'K/Z'
+    ]];
+    perf.tradesDetail.forEach(function(t) {
+      rows.push([t.trade_date, t.symbol, t.instrument, t.direction, t.entry_price, t.exit_price, t.lot, t.pnl.toFixed(2)]);
+    });
+    rows.push([]);
+    var pfDisplay = (perf.profitFactor === null) ? '∞' : perf.profitFactor;
+    rows.push(['GÜNLÜK ÖZET']);
+    rows.push(['Toplam İşlem', perf.totalTrades]);
+    rows.push(['Win Rate', perf.winRate + '%']);
+    rows.push(['Toplam K/Z', perf.totalPnL.toFixed(2)]);
+    rows.push(['Profit Factor', pfDisplay]);
+    rows.push(['Maks. Drawdown', perf.maxDrawdown.toFixed(2)]);
+
+    var csvContent = rows.map(function(r) { return r.map(csvEscape).join(','); }).join('\r\n');
+    downloadBlob('\uFEFF' + csvContent, targetDate + '_islemler.csv', 'text/csv;charset=utf-8;');
+    if (typeof showToast === 'function') showToast(typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.csv_exported', 'CSV indirildi!') : 'CSV indirildi!');
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('CSV export error', 'error');
+  }
+}
+
+async function exportDayPDF(dateStr) {
+  try {
+    var targetDate = dateStr || currentModalDateStr;
+    if (!targetDate) return;
+    if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+      if (typeof window.loadJsPDF === 'function') {
+        await window.loadJsPDF(true);
+      }
+    }
+    var PDFConstructor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (typeof jsPDF !== 'undefined' ? jsPDF : null);
+    if (!PDFConstructor) {
+      window.print();
+      return;
+    }
+    var perf = getDayPerformance(targetDate);
+    var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var margin = 12;
+    var y = margin + 5;
+
+    doc.setFillColor(10, 10, 15);
+    doc.rect(0, 0, pageW, 6, 'F');
+    doc.setFillColor(139, 92, 246);
+    doc.rect(0, 0, pageW, 3, 'F');
+    doc.setTextColor(30, 30, 40);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Wawe Journal - Günlük Rapor: ' + targetDate, margin, y);
+    y += 10;
+
+    var pfDisplay = (perf.profitFactor === null) ? '∞' : perf.profitFactor;
+    var summaryRows = [
+      ['Toplam İşlem', String(perf.totalTrades), 'Win Rate', perf.winRate + '%'],
+      ['Toplam K/Z', formatCurrency(perf.totalPnL), 'Profit Factor', String(pfDisplay)],
+      ['Maks. Drawdown', formatCurrency(perf.maxDrawdown), 'Maks. Win/Loss Seri', perf.maxWinStreak + ' / ' + perf.maxLossStreak]
+    ];
+
+    if (doc.autoTable) {
+      doc.autoTable({
+        startY: y,
+        head: [['Metrik', 'Değer', 'Metrik', 'Değer']],
+        body: summaryRows,
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 246], textColor: [255, 255, 255], fontSize: 8 },
+        styles: { fontSize: 8, cellPadding: 2 },
+        margin: { left: margin, right: margin }
+      });
+      y = doc.lastAutoTable.finalY + 8;
+
+      var tradeTableRows = perf.tradesDetail.map(function(t) {
+        return [
+          t.trade_date ? t.trade_date.split('T')[0] : targetDate,
+          t.symbol,
+          t.instrument,
+          t.direction,
+          t.entry_price != null ? String(t.entry_price) : '—',
+          t.exit_price != null ? String(t.exit_price) : '—',
+          t.lot != null ? String(t.lot) : '—',
+          formatCurrency(t.pnl)
+        ];
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [['Tarih', 'Sembol', 'Enstrüman', 'Yön', 'Giriş', 'Çıkış', 'Lot', 'K/Z']],
+        body: tradeTableRows.length ? tradeTableRows : [['—', '—', '—', '—', '—', '—', '—', 'İşlem yok']],
+        theme: 'grid',
+        headStyles: { fillColor: [30, 30, 46], textColor: [255, 255, 255], fontSize: 7 },
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        margin: { left: margin, right: margin }
+      });
+    }
+
+    doc.save(targetDate + '_rapor.pdf');
+    if (typeof showToast === 'function') showToast(typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.pdf_exported', 'PDF indirildi!') : 'PDF indirildi!');
+  } catch(e) {
+    console.error('PDF export error:', e);
+    window.print();
+  }
+}
+
+// Global aliases
+window.openDayPopup = openDayModal;
+window.openDayModal = openDayModal;
+window.closeDayPopup = closeDayModal;
+window.closeDayModal = closeDayModal;
+window.exportDayCSV = exportDayCSV;
+window.exportDayPDF = exportDayPDF;
 
 // ============================================================
 // AY GEÇİŞİ
 // ============================================================
+
 function goToMonth(month, year, direction) {
   currentMonth = month;
   currentYear = year;
   lastNavDirection = direction || null;
-  showCalendarSkeleton();
-  if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
-  calendarRenderTimeout = setTimeout(renderCalendar, 180);
+  renderCalendar();
 }
 
 function loadCalendarTrades(trades) {
   calendarTrades = trades || [];
-  
-  // ⭐ İŞLEMLERİ GÜN BAZINDA GRUPLA - OPTİMİZASYON
   tradesByDate = {};
   calendarTrades.forEach(function(t) {
-    if (t.trade_date) {
-      if (!tradesByDate[t.trade_date]) tradesByDate[t.trade_date] = [];
-      tradesByDate[t.trade_date].push(t);
+    var dKey = getTradeDateKey(t.trade_date || t.date);
+    if (dKey) {
+      if (!tradesByDate[dKey]) tradesByDate[dKey] = [];
+      tradesByDate[dKey].push(t);
     }
   });
-  
-  showCalendarSkeleton();
-  if (calendarRenderTimeout) clearTimeout(calendarRenderTimeout);
-  calendarRenderTimeout = setTimeout(renderCalendar, 200);
+  renderCalendar();
 }
 
 // ============================================================
-// ⭐ OPTİMİZE EDİLMİŞ LOAD TRADES
+// DB'DEN İŞLEMLERİ YÜKLE
 // ============================================================
-async function loadCalendarTradesFromDB(userId) {
 
+async function loadCalendarTradesFromDB(userId) {
   var jid = window.journal ? window.journal.getActiveJournalId() : null;
   if (!jid) {
+    jid = localStorage.getItem('ww_active_journal_id') || localStorage.getItem('activeJournalId');
+  }
+  if (!jid) {
     if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
-    return;
+    return [];
   }
 
-  // ⭐ SADECE GEREKLİ KOLONLAR - OPTİMİZE EDİLDİ
   var { data, error } = await sb
     .from('trades')
-    .select('id,trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,symbol')
+    .select('id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl')
     .eq('user_id', userId)
     .eq('journal_id', jid)
     .order('trade_date', { ascending: true })
-    .limit(1000); // ⭐ MAX 1000 İŞLEM
+    .limit(2000);
   
   if (error) {
     if (typeof showToast === 'function') {
-      var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error') : 'Veri yüklenemedi: ';
+      var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
       showToast(errMsg + error.message, 'error');
     }
-    return null;
+    return [];
   }
   
   return data || [];
@@ -533,62 +922,79 @@ async function loadCalendarTradesFromDB(userId) {
 // ============================================================
 // INIT CALENDAR
 // ============================================================
+
+var isCalendarInitialized = false;
+
 async function initCalendar() {
+  if (isCalendarInitialized) return;
+  isCalendarInitialized = true;
+
   try {
     wwLog.log('📅 Calendar başlatılıyor...');
     
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
+      hideCalendarSkeleton();
       return;
     }
-    
-    // Event listener'lar
+
+    // Navigation buttons
     var prevBtn = document.getElementById('cal-prev');
     var nextBtn = document.getElementById('cal-next');
     var todayBtn = document.getElementById('cal-today');
-    var closeBtn = document.getElementById('popup-close');
-    var popupOverlay = document.getElementById('calendar-popup-overlay');
-    var popupFilterBar = document.getElementById('popup-filter');
     
     if (prevBtn) {
       prevBtn.addEventListener('click', function() {
-        var m = currentMonth, y = currentYear;
-        if (m === 0) { m = 11; y--; } else { m--; }
-        goToMonth(m, y, 'right');
+        if (currentMonth === 0) {
+          goToMonth(11, currentYear - 1, 'right');
+        } else {
+          goToMonth(currentMonth - 1, currentYear, 'right');
+        }
       });
     }
-    
+
     if (nextBtn) {
       nextBtn.addEventListener('click', function() {
-        var m = currentMonth, y = currentYear;
-        if (m === 11) { m = 0; y++; } else { m++; }
-        goToMonth(m, y, 'left');
+        if (currentMonth === 11) {
+          goToMonth(0, currentYear + 1, 'left');
+        } else {
+          goToMonth(currentMonth + 1, currentYear, 'left');
+        }
       });
     }
-    
+
     if (todayBtn) {
       todayBtn.addEventListener('click', function() {
-        var today = new Date();
-        var dir = (today.getFullYear() > currentYear || (today.getFullYear() === currentYear && today.getMonth() > currentMonth)) ? 'left' : (today.getFullYear() < currentYear || (today.getFullYear() === currentYear && today.getMonth() < currentMonth)) ? 'right' : null;
-        goToMonth(today.getMonth(), today.getFullYear(), dir);
+        var now = new Date();
+        var m = now.getMonth();
+        var y = now.getFullYear();
+        var dir = (y > currentYear || (y === currentYear && m > currentMonth)) ? 'left' : (y < currentYear || (y === currentYear && m < currentMonth)) ? 'right' : null;
+        goToMonth(m, y, dir);
       });
     }
     
-    if (closeBtn) closeBtn.addEventListener('click', closeDayPopup);
-    if (popupOverlay) popupOverlay.addEventListener('click', closeDayPopup);
-    
-    if (popupFilterBar) {
-      popupFilterBar.addEventListener('click', function(e) {
-        var btn = e.target.closest('button[data-filter]');
-        if (!btn) return;
-        currentPopupFilter = btn.getAttribute('data-filter');
-        var btns = popupFilterBar.querySelectorAll('button');
-        btns.forEach(function(b) { b.classList.toggle('active', b === btn); });
-        renderPopupTrades();
+    // Modal buttons
+    var closeBtn = document.getElementById('close-day-modal');
+    var closeBtn2 = document.getElementById('close-day-modal-btn');
+    var modalOverlay = document.getElementById('calendar-day-modal');
+    var dayCsvBtn = document.getElementById('day-export-csv');
+    var dayPdfBtn = document.getElementById('day-export-pdf');
+
+    if (closeBtn) closeBtn.addEventListener('click', closeDayModal);
+    if (closeBtn2) closeBtn2.addEventListener('click', closeDayModal);
+    if (modalOverlay) {
+      modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeDayModal();
       });
     }
+    if (dayCsvBtn) dayCsvBtn.addEventListener('click', function() { exportDayCSV(); });
+    if (dayPdfBtn) dayPdfBtn.addEventListener('click', function() { exportDayPDF(); });
     
-    // Touch events
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDayModal();
+    });
+    
+    // Touch events for mobile swipe
     var grid = document.getElementById('cal-grid');
     if (grid) {
       var touchStartX = 0, touchStartY = 0, touching = false;
@@ -616,7 +1022,7 @@ async function initCalendar() {
       }, { passive: true });
     }
     
-    // Jump popover
+    // Month / Year Jump popover
     var titleBtn = document.getElementById('cal-title-btn');
     var popover = document.getElementById('cal-jump-popover');
     var yearLabel = document.getElementById('jump-year-label');
@@ -628,7 +1034,7 @@ async function initCalendar() {
       function renderMonthsGrid() {
         if (!yearLabel || !monthsGrid) return;
         yearLabel.textContent = jumpPopoverYear;
-        var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'en';
+        var lang = typeof i18n !== 'undefined' && i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : 'tr';
         var html = '';
         for (var m = 0; m < 12; m++) {
           var isCurrent = (m === currentMonth && jumpPopoverYear === currentYear);
@@ -657,7 +1063,7 @@ async function initCalendar() {
       });
       
       document.addEventListener('click', function(e) {
-        if (!e.target.closest('.month-picker-popover') && !e.target.closest('#month-picker-btn')) closePopover();
+        if (!e.target.closest('#cal-jump-popover') && !e.target.closest('#cal-title-btn')) closePopover();
       });
       popover.addEventListener('click', function(e) { e.stopPropagation(); });
       
@@ -677,54 +1083,102 @@ async function initCalendar() {
       }
     }
     
-    // Auth ve veri yükleme
+    // Skeleton ve veri yükleme
     showCalendarSkeleton();
     
-    var user = await requireAuth();
-    if (!user) return;
-
-  if (!window.journal) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
-    return;
-  }
-  await window.journal.ensureActiveJournal(user.id);
-
-    // ⭐ Over-Trade bildirimlerini kontrol et (sadece premium kullanıcılar için)
-    try {
-        if (typeof updateOvertradeBell === 'function') {
-            await updateOvertradeBell();
-        }
-    } catch(e) {
-        wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
-    }
-    
-    // ⭐ TEK SORGU - OPTİMİZE EDİLDİ
-    var tradesData = await loadCalendarTradesFromDB(user.id);
-    if (tradesData === null) {
+    if (typeof requireAuth !== 'function') {
+      console.warn('⚠️ requireAuth tanımlı değil');
       hideCalendarSkeleton();
       return;
     }
+
+    var user = await requireAuth();
+    if (!user) {
+      hideCalendarSkeleton();
+      return;
+    }
+
+    if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+      try {
+        await window.journal.ensureActiveJournal(user.id);
+      } catch(e) {}
+    }
+
+    // Over-Trade bildirimleri
+    try {
+      if (typeof updateOvertradeBell === 'function') {
+        await updateOvertradeBell();
+      }
+    } catch(e) {}
     
+    // Verileri çek ve takvimi çiz
+    var tradesData = await loadCalendarTradesFromDB(user.id);
     loadCalendarTrades(tradesData || []);
     
     // i18n değişimlerini dinle
     if (typeof i18n !== 'undefined' && i18n.onChange) {
       i18n.onChange(function() {
         renderCalendar();
+        if (typeof i18n.apply === 'function') i18n.apply();
       });
     }
     
     wwLog.log('✅ Calendar başlatıldı!');
   } catch (e) {
     console.error('❌ Calendar init hatası:', e);
+    hideCalendarSkeleton();
   }
+}
+
+// ============================================================
+// ⭐ START CALENDAR - DEPENDENCY KONTROLLÜ BAŞLATMA
+// ============================================================
+
+var calendarCheckAttempts = 0;
+var MAX_CALENDAR_CHECK_ATTEMPTS = 160; // 160 * 50ms = 8 saniye max
+
+function startCalendar() {
+  var isSbReady = typeof window.sb !== 'undefined';
+  var isAuthReady = typeof window.requireAuth === 'function';
+  var isJournalReady = typeof window.journal !== 'undefined';
+
+  if (!isSbReady || !isAuthReady || !isJournalReady) {
+    calendarCheckAttempts++;
+    if (calendarCheckAttempts >= MAX_CALENDAR_CHECK_ATTEMPTS) {
+      if (typeof wwLog !== 'undefined') {
+        wwLog.warn('⚠️ [Calendar] Bağımlılıklar zaman aşımına uğradı');
+      }
+      hideCalendarSkeleton();
+      return;
+    }
+    setTimeout(startCalendar, 50);
+    return;
+  }
+
+  if (typeof lucide !== 'undefined') {
+    try { lucide.createIcons(); } catch(e) {}
+  }
+
+  if (typeof loadNavbar === 'function') {
+    var container = document.getElementById('navbar-container');
+    if (container && container.innerHTML.trim() === '') {
+      try { loadNavbar('navbar-container'); } catch(e) {}
+    }
+  }
+
+  initCalendar();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startCalendar);
+} else {
+  startCalendar();
 }
 
 // ⭐ Global
 window.initCalendar = initCalendar;
+window.startCalendar = startCalendar;
 window.renderCalendar = renderCalendar;
-window.openDayPopup = openDayPopup;
-window.closeDayPopup = closeDayPopup;
 window.calcTradePnL = calcTradePnL;
 window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;

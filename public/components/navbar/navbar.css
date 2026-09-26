@@ -55,7 +55,9 @@
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-shadow), 0 1px 0 rgba(255,255,255,0.02) inset;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: var(--glass-shadow);
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   font-size: var(--nav-font-size);
   line-height: var(--nav-line-height);
@@ -79,23 +81,14 @@ body:not(.light-theme) .nav {
   --glass-shadow: 0 4px 32px rgba(0, 0, 0, 0.12);
 }
 
-/* ⭐ Sadece ::after gradient çizgi (border-bottom yerine) */
-.nav::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 15%;
-  right: 15%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.15) 20%, rgba(139,92,246,0.4) 50%, rgba(139,92,246,0.15) 80%, transparent 100%);
-  opacity: 0.6;
-  transition: opacity 0.4s ease;
-}
-
-.nav:hover::after { opacity: 1; }
-
+/* ⭐ Nav altındaki çizgi kaldırıldı */
+.nav::after,
+.nav:hover::after,
 body.light-theme .nav::after {
-  background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.1) 20%, rgba(139,92,246,0.3) 50%, rgba(139,92,246,0.1) 80%, transparent 100%);
+  display: none !important;
+  content: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .nav-links {
@@ -631,50 +624,58 @@ body.light-theme .dropdown-menu {
   margin: 4px 0;
 }
 
-/* ⭐ HAMBURGER BUTONU – varsayılan boyut zil ile eşit (32px) */
+/* ⭐ HAMBURGER BUTONU – şık, kutusuz ikon tasarımı */
 .nav-toggle {
   display: none;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 9px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none;
+  border-radius: 8px;
   color: var(--text);
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 4px;
-  transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.2s ease;
+  gap: 4.5px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
   flex-shrink: 0;
   padding: 0;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body.light-theme .nav-toggle {
-  background: rgba(0,0,0,0.02);
+  background: transparent !important;
+  border: none !important;
 }
 
 .nav-toggle:hover {
-  border-color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  border: none !important;
+  background: transparent !important;
+  opacity: 0.8;
 }
 
-.nav-toggle:active { transform: scale(0.94); }
+.nav-toggle:active {
+  transform: scale(0.92);
+  background: transparent !important;
+}
 
 .nav-toggle .bar {
   display: block;
-  width: 18px;
+  width: 20px;
   height: 2px;
   background: currentColor;
   border-radius: 2px;
   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease;
 }
 
-.nav-toggle.open .bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle.open .bar:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
 .nav-toggle.open .bar:nth-child(2) { opacity: 0; }
-.nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+.nav-toggle.open .bar:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
 .nav-backdrop {
   display: none;
@@ -703,8 +704,11 @@ body.light-theme .nav-toggle {
   right: 0;
   bottom: 0;
   width: 280px;
-  height: calc(100vh - var(--nav-height)); /* ⭐ kalan yükseklik */
-  background: rgba(10,10,18,0.92);
+  max-width: 85vw;
+  height: calc(100vh - var(--nav-height));
+  height: calc(100dvh - var(--nav-height));
+  max-height: calc(100dvh - var(--nav-height));
+  background: rgba(10,10,18,0.96);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
   border-left: 1px solid var(--glass-border);
@@ -712,8 +716,10 @@ body.light-theme .nav-toggle {
   padding: 0;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
-  box-shadow: -16px 0 48px rgba(0,0,0,0.3);
+  box-shadow: -16px 0 48px rgba(0,0,0,0.4);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 body.light-theme .nav-menu {
@@ -729,7 +735,9 @@ body.light-theme .nav-menu {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 0.75rem 0.75rem 1.5rem; /* ⭐ padding-top azaltıldı, çünkü menü nav'in altından başlıyor */
+  padding: 0.75rem 0.75rem calc(6.5rem + env(safe-area-inset-bottom, 24px));
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 /* ⭐ KULLANICI KARTI */
@@ -943,13 +951,35 @@ body.light-theme .nav-menu {
     --nav-height: 56px; /* ⭐ mobil nav yüksekliği */
   }
 
+  #navbar-container,
+  .nav {
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  .nav::after {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    content: none !important;
+  }
+
   .nav-toggle {
     display: inline-flex;
-    width: 28px;   /* ⭐ zil ile aynı */
-    height: 28px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    gap: 4.5px;
+    padding: 0;
   }
   .nav-toggle .bar {
-    width: 15px;
+    width: 20px;
     height: 2px;
   }
 
@@ -960,7 +990,7 @@ body.light-theme .nav-menu {
     display: block;
   }
   .nav-right {
-    gap: 0.3rem;
+    gap: 0.4rem;
   }
   .nav {
     padding: 0 1rem;
@@ -968,10 +998,6 @@ body.light-theme .nav-menu {
     min-height: 56px;
     max-height: 56px;
     font-size: var(--nav-font-size-sm);
-  }
-  .nav::after {
-    left: 10%;
-    right: 10%;
   }
   
   /* ⭐ Mobil header'da avatar ve plan badge gizlendi */
@@ -1007,12 +1033,12 @@ body.light-theme .nav-menu {
   }
 
   .nav-bell-btn {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
   .nav-bell-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
   }
 
   .bell-panel {
@@ -1054,14 +1080,30 @@ body.light-theme .nav-menu {
     --nav-height: 48px;
   }
 
+  #navbar-container,
+  .nav {
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
   .nav-toggle {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    gap: 4px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
   .nav-toggle .bar {
-    width: 13px;
+    width: 18px;
     height: 2px;
   }
+  .nav-toggle.open .bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .nav-toggle.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
   .nav {
     padding: 0 0.75rem;
@@ -1071,11 +1113,13 @@ body.light-theme .nav-menu {
     font-size: var(--nav-font-size-xs);
   }
   .nav::after {
-    left: 5%;
-    right: 5%;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    content: none !important;
   }
   .nav-right {
-    gap: 0.2rem;
+    gap: 0.3rem;
   }
   .nav-logo-text {
     font-size: 0.85rem;
@@ -1089,8 +1133,8 @@ body.light-theme .nav-menu {
     height: 14px;
   }
   .nav-bell-btn {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
   }
   .nav-bell-btn svg {
     width: 13px;
@@ -1140,14 +1184,30 @@ body.light-theme .nav-menu {
     --nav-height: 44px;
   }
 
+  #navbar-container,
+  .nav {
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
   .nav-toggle {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    gap: 3.5px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
   .nav-toggle .bar {
-    width: 12px;
+    width: 16px;
     height: 2px;
   }
+  .nav-toggle.open .bar:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+  .nav-toggle.open .bar:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
 
   .nav {
     padding: 0 0.5rem;
@@ -1155,8 +1215,14 @@ body.light-theme .nav-menu {
     min-height: 44px;
     max-height: 44px;
   }
+  .nav::after {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    content: none !important;
+  }
   .nav-right {
-    gap: 0.15rem;
+    gap: 0.2rem;
   }
   .nav-logo-text {
     font-size: 0.75rem;
@@ -1170,8 +1236,8 @@ body.light-theme .nav-menu {
     height: 12px;
   }
   .nav-bell-btn {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
   }
   .nav-bell-btn svg {
     width: 12px;
@@ -1202,8 +1268,6 @@ body.light-theme .nav-menu {
    DOKUNMATİK HEDEF BOYUTLARI (WCAG uyumlu)
    ============================================================ */
 @media (max-width: 767px) {
-  .nav-toggle,
-  .nav-bell-btn,
   .bell-panel-close,
   .dropdown-item,
   .menu-section a,
@@ -1212,8 +1276,8 @@ body.light-theme .nav-menu {
     min-width: 44px;
   }
   .nav-bell-btn {
-    min-height: 36px;
-    min-width: 36px;
+    min-height: 32px;
+    min-width: 32px;
   }
   .bell-panel-close {
     min-height: 36px;

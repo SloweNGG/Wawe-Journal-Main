@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" showQuickAdd={true}>
 <Fragment slot="head">
-  <title>Premium Dashboard</title>
+  <title data-i18n="premium_dash.title">Premium Dashboard</title>
   
   <!-- PREMIUM DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/premium-dashboard/css/premium-dashboard.css" />
@@ -43,12 +43,12 @@ import Layout from '../layouts/Layout.astro';
       if (savedLang && ['en', 'tr', 'de'].includes(savedLang)) {
         document.documentElement.setAttribute('data-lang', savedLang);
         document.documentElement.lang = savedLang;
-        wwLog.log('🌐 [Preload] Dil geri yüklendi:', savedLang);
+        wwLog.log('[Preload] Dil geri yüklendi:', savedLang);
       } else {
         localStorage.setItem('ww_language', 'en');
         document.documentElement.setAttribute('data-lang', 'en');
         document.documentElement.lang = 'en';
-        wwLog.log('🌐 [Preload] Varsayılan dil ayarlandı: en');
+        wwLog.log('[Preload] Varsayılan dil ayarlandı: en');
       }
     })();
   </script>
@@ -67,7 +67,7 @@ import Layout from '../layouts/Layout.astro';
   <main class="premium-main" id="main-content">
     <div style="display:flex;justify-content:center;align-items:center;min-height:60vh;flex-direction:column;gap:1rem;">
       <div class="spinner"></div>
-      <p style="color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;">Premium Dashboard yükleniyor...</p>
+      <p style="color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;" data-i18n="premium_dash.loading">Premium Dashboard yükleniyor...</p>
     </div>
   </main>
 
@@ -91,7 +91,14 @@ import Layout from '../layouts/Layout.astro';
   <script src="/components/navbar/navbar.js" is:inline></script>
 
   <!-- 5. QUICK ADD (ES5) -->
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+<!-- ⭐ ParserV2 -->
+<script src="/interface/quick-add/js/broker-dictionary.js" is:inline></script>
+<script src="/interface/quick-add/js/broker-detector.js" is:inline></script>
+<script src="/interface/quick-add/js/fill-pairing.js" is:inline></script>
+<script src="/interface/quick-add/js/parser-v2.js" is:inline></script>
+
+<script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline></script>
+
   <script src="/interface/quick-add/js/quick-add.js" is:inline></script>
 
   <!-- 6. ⭐ PREMIUM DASHBOARD - MODÜLER JS (ES Module) -->
@@ -108,15 +115,24 @@ import Layout from '../layouts/Layout.astro';
         var fab = document.createElement('button');
         fab.id = 'quick-add-fab';
         fab.className = 'quick-add-fab';
-        fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
+        var ariaLabel = (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function')
+          ? window.i18n.t('nav.quick_add')
+          : 'Hızlı İşlem Ekle';
+        fab.setAttribute('aria-label', ariaLabel);
         fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
         fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
         fab.addEventListener('click', function() {
-          if (typeof quickAddOpen === 'function') quickAddOpen();
-          else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');
+          if (typeof quickAddOpen === 'function') {
+            quickAddOpen();
+          } else {
+            var errMsg = (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function')
+              ? window.i18n.t('premium_dash.quick_add_error')
+              : 'Quick Add yüklenemedi. Sayfayı yenileyin.';
+            alert(errMsg);
+          }
         });
         document.body.appendChild(fab);
-        wwLog.log('✅ Manuel FAB oluşturuldu');
+        wwLog.log('[FAB] Manuel FAB oluşturuldu');
       }
       
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -138,7 +154,7 @@ import Layout from '../layouts/Layout.astro';
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
-        wwLog.log('✅ Lucide icons initialized on premium dashboard!');
+        wwLog.log('[Lucide] Icons initialized on premium dashboard');
       }
     });
   </script>
@@ -148,9 +164,9 @@ import Layout from '../layouts/Layout.astro';
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadNavbar === 'function') {
         loadNavbar('navbar-container');
-        wwLog.log('✅ Navbar yüklendi!');
+        wwLog.log('[Navbar] Yüklendi');
       } else {
-        wwLog.warn('⚠️ loadNavbar fonksiyonu bulunamadı!');
+        wwLog.warn('[Navbar] loadNavbar fonksiyonu bulunamadı');
       }
     });
   </script>

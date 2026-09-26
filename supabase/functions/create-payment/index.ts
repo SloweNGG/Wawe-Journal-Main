@@ -361,16 +361,30 @@ serve(async (req) => {
       ltc_discount_enabled: true
     };
     
-    if (adminClient) {
-      const { data } = await adminClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
-      if (data?.value) paymentSettings = { ...paymentSettings, ...data.value };
-    }
+    let baseAmount = (planType === 'yearly') ? 99 : 12;
 
-    let baseAmount = 12;
-    if (planType === 'monthly' || planType === 'premium') {
-      baseAmount = Number(paymentSettings.monthly_price_usd) || 12;
-    } else if (planType === 'yearly') {
-      baseAmount = Number(paymentSettings.yearly_price_usd) || 99;
+    if (adminClient) {
+      try {
+        const { data: psData } = await adminClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
+        if (psData?.value) paymentSettings = { ...paymentSettings, ...psData.value };
+
+        const { data: prData } = await adminClient.from('system_settings').select('value').eq('key', 'prices').single();
+        if (prData?.value) {
+          if (planType === 'monthly' || planType === 'premium') {
+            baseAmount = Number(prData.value.monthly) || Number(paymentSettings.monthly_price_usd) || 12;
+          } else if (planType === 'yearly') {
+            baseAmount = Number(prData.value.yearly) || Number(paymentSettings.yearly_price_usd) || 99;
+          }
+        } else if (psData?.value) {
+          if (planType === 'monthly' || planType === 'premium') {
+            baseAmount = Number(paymentSettings.monthly_price_usd) || 12;
+          } else if (planType === 'yearly') {
+            baseAmount = Number(paymentSettings.yearly_price_usd) || 99;
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Error fetching price settings:', e);
+      }
     }
 
     if (priceCurrency !== 'USD') {

@@ -1,61 +1,9 @@
 // ============================================================
 // DASHBOARD - ANA JS DOSYASI (APEXCHARTS & LIGHTWEIGHT CHARTS)
-// ⭐ Chart.js → ApexCharts + Lightweight Charts GEÇİŞİ
-// ⭐ FIX: Chart boyutlandırma / container senkronizasyonu
-// ⭐ FIX: Tooltip'ler container dışında render
-// ⭐ FIX: Outlier capping - KALDIRILDI (otomatik ölçekleme yeterli)
-// ⭐ FIX: Number.MIN_VALUE → -Number.MAX_VALUE
-// ⭐ FIX: ResizeObserver feature-detection eklendi
-// ⭐ FIX: Her chart ayrı try/catch ile korundu
-// ⭐ FIX: visibilitychange'de SADECE resize
-// ⭐ FIX: chartContainers shadowing düzeltildi
-// ⭐ FIX: Donut beyaz kenarlık kaldırıldı (stroke: 0)
-// ⭐ FIX: Donut tooltip followCursor: true
-// ⭐ FIX: Emoji → Lucide ikon (strateji + recent trades)
-// ⭐ FIX: Sembol chart dataLabel taşması düzeltildi
-// ⭐ FIX: Donut boyutu 65% (orijinal Chart.js cutout ile aynı)
-// ⭐ Tüm FIX'ler korundu
-// ⭐ FIX: startDashboard() - window.ApexCharts kontrolü
-// ⭐ FIX: hideSkeletons() - Promise + requestAnimationFrame
-// ⭐ FIX: refresh() - await hideSkeletons()
-// ⭐ FIX: renderCharts() - renderAttempts limiti 5, allReady kaldırıldı
-// ⭐ DEĞİŞİKLİK: renderDailyChart xaxis rotateAlways/rotateAngle kaldırıldı, maxTicksLimit ve tickAmount kullanıldı
-// ⭐ DEĞİŞİKLİK: renderSymbolChart dataLabels bar içine hizalandı, outlier capping kaldırıldı
-// ⭐ DEĞİŞİKLİK: renderStats avgLoss negatif gönderildi, parent stat-card'a class eklendi
-// ⭐ DEĞİŞİKLİK: formatCurrency locale 'en-US' yapıldı, tek kaynak
-// ⭐ DEĞİŞİKLİK: renderRecentTrades'de saat gösterimi kaldırıldı, sadece gün/ay
-// ⭐ FIX (HATA): renderWinLossChart ve renderDirectionChart tooltip/legend formatter'larına güvenlik kontrolü eklendi
-// ⭐ FIX: ApexCharts eksen ayarları (tickAmount, datetime tipi) düzeltildi
-// ⭐ FIX: Mobilde kompakt para birimi formatı eklendi
-// ⭐ FIX: Stat ve KPI değerlerine title eklendi (tam değer)
-// ⭐ FIX: Aylık hedef yüzdesi -100..100 arası clamp edildi
-// ⭐ FIX: Donut grafikleri merkez yazısı kaldırıldı, boyut küçültüldü (SORUN 7)
-// ⭐ FIX: Welcome mesajı kaldırıldı (SORUN 4)
-// ⭐ FIX: Options menü eklendi, eski date-filter/export kaldırıldı (SORUN 3)
-// ⭐ FIX: Sembol grafiği tick ayarları iyileştirildi (SORUN 9)
-// ⭐ FIX: Son işlemler paneli yeniden tasarlandı (SORUN 10)
-// ⭐ FIX: Grafik büyütme modalı eklendi (SORUN 11)
-// ⭐ FIX: getApexColors mutedColor eşleştirildi (SORUN 1)
-// ⭐ FIX: Options menü dinamik fixed pozisyon (SORUN 3)
-// ⭐ FIX: Masaüstü toolbar + custom range eklendi (SORUN 4)
-// ⭐ FIX: Sembol grafiği mobilde grid/dataLabels gizlendi (SORUN 5)
-// ⭐ FIX: KPI accordion SADECE mobilde (SORUN 6)
-// ⭐ FIX: Mobil donut carousel eklendi (SORUN 7)
-// ⭐ FIX: Not ikonu trade-row-symbol-line içine taşındı (SORUN 8)
-// ⭐ FIX: Unterminated string literal düzeltildi (closeChartExpansion)
-// ⭐ FIX (TEMA): Sayfa başında tema localStorage'dan yükleniyor
-// ⭐ FIX (TEMA): storage / themeChanged event'leri dinleniyor
-// ⭐ FIX (TEMA): Tema değişince chart'lar yeniden render ediliyor
-// ⭐ FIX (LOCALE): formatCurrency + formatCompactCurrency tr-TR yapıldı
-//        (premium-dashboard/helpers.js ile tutarlılık sağlandı)
-// ⭐ FIX (BADGE): Kümülatif K/Z badge'i 0'a yakın bölmede patlamıyor
-//        (changePercent hesabına Math.abs + min baseline guard eklendi)
-// ⭐ TEMİZLİK: renderStreak() fonksiyonu SİLİNDİ
-//        - dashboard.astro'da #streak-dots/#streak-count/#streak-label
-//          elementleri hiç yok
-//        - safeEl uyarısı veriyordu, hiçbir görsel etkisi yoktu
-// ⭐ i18n: Tüm hardcoded metinler i18n.t() çağrılarına dönüştürüldü
 // ============================================================
+
+var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
+if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
 // ============================================================
 // ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
@@ -182,7 +130,14 @@
 
   function calcTradePnL(t) {
     try {
-      if (!t || !t.entry_price || !t.exit_price || !t.lot) return 0;
+      if (!t || !t.exit_price) return 0;
+
+      var storedPnl = parseFloat(t.pnl);
+      if (t.pnl !== null && t.pnl !== undefined && !isNaN(storedPnl)) {
+        return storedPnl;
+      }
+
+      if (!t.entry_price || !t.lot) return 0;
       if (typeof window.calcPnL === 'function') {
         return window.calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
       }
@@ -467,7 +422,6 @@
     if (!container) return;
 
     if (typeof ResizeObserver === 'undefined') {
-      wwLog.log('ℹ️ ResizeObserver desteklenmiyor, boyut takibi yapılamıyor.');
       return;
     }
 
@@ -479,23 +433,32 @@
     }
 
     try {
-      var lastW = 0, lastH = 0;
+      var lastW = 0;
       var resizeTimer = null;
       var observer = new ResizeObserver(function(entries) {
         for (var i = 0; i < entries.length; i++) {
           var entry = entries[i];
           var rect = entry.contentRect;
-          if (rect.width > 0 && rect.height > 0) {
-            if (Math.abs(rect.width - lastW) < 2 && Math.abs(rect.height - lastH) < 2) continue;
+          if (rect.width > 0) {
+            if (Math.abs(rect.width - lastW) < 2) continue;
             lastW = rect.width;
-            lastH = rect.height;
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(function() {
               try {
+                var isMobile = window.innerWidth < 768;
+                var targetH;
+                if (containerId === 'chart-cumulative' || containerId === 'chart-winloss') {
+                  targetH = isMobile ? 200 : 250;
+                } else if (containerId === 'chart-winloss-mobile' || containerId === 'chart-direction-mobile') {
+                  targetH = isMobile ? 180 : 200;
+                } else {
+                  targetH = isMobile ? 180 : 220;
+                }
+
                 if (chart && typeof chart.resize === 'function') {
-                  chart.resize(lastW, lastH);
+                  chart.resize(lastW, targetH);
                 } else if (chart && typeof chart.applyOptions === 'function') {
-                  chart.applyOptions({ width: lastW, height: lastH });
+                  chart.applyOptions({ width: lastW, height: targetH });
                 }
               } catch(e) {}
             }, 80);
@@ -1104,30 +1067,7 @@
       }
       var container = document.getElementById(id);
       if (container) {
-        if (id === 'chart-cumulative' || id === 'chart-daily') {
-          container.innerHTML = '';
-        }
-      } else {
-        var parentMap = {
-          'chart-cumulative': '.chart-wrap--tall',
-          'chart-winloss': '.chart-wrap--doughnut',
-          'chart-winloss-mobile': '.donut-mobile-slide:first-child .chart-wrap--doughnut',
-          'chart-daily': '#charts-bottom-grid .chart-card:nth-child(1) .chart-wrap',
-          'chart-symbol': '#charts-bottom-grid .chart-card:nth-child(2) .chart-wrap',
-          'chart-direction': '#charts-bottom-grid .chart-card:nth-child(3) .chart-wrap--doughnut',
-          'chart-direction-mobile': '.donut-mobile-slide:last-child .chart-wrap--doughnut'
-        };
-        var parentSelector = parentMap[id];
-        if (parentSelector) {
-          var parents = document.querySelectorAll(parentSelector);
-          parents.forEach(function(parent) {
-            if (!parent.querySelector('#' + id)) {
-              var newDiv = document.createElement('div');
-              newDiv.id = id;
-              parent.appendChild(newDiv);
-            }
-          });
-        }
+        container.innerHTML = '';
       }
     });
     cleanupResizeObservers();
@@ -1147,7 +1087,7 @@
 
     var closedTrades = (trades || []).filter(function(t) { return t.exit_price; });
     if (!closedTrades.length) {
-      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;">' + (i18n.t('dashboard.stats.no_trades') || 'İşlem bulunamadı') + '</div>';
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
       return null;
     }
 
@@ -1173,15 +1113,18 @@
     });
 
     var sortedDates = Object.keys(dayCumMap).sort();
-    var seriesData = sortedDates.map(function(d) {
-      return { time: d, value: dayCumMap[d] };
-    });
+    var seriesData = [];
 
-    if (seriesData.length === 1) {
-      var prevD = new Date(seriesData[0].time);
-      prevD.setDate(prevD.getDate() - 1);
-      var prevDStr = prevD.toISOString().split('T')[0];
-      seriesData.unshift({ time: prevDStr, value: 0 });
+    if (sortedDates.length > 0) {
+      // 0 baseline starting point 1 day before first trade
+      var firstD = new Date(sortedDates[0]);
+      firstD.setDate(firstD.getDate() - 1);
+      var firstDStr = firstD.toISOString().split('T')[0];
+      seriesData.push({ time: firstDStr, value: 0 });
+
+      sortedDates.forEach(function(d) {
+        seriesData.push({ time: d, value: dayCumMap[d] });
+      });
     }
 
     var firstPnL = seriesData[0] ? seriesData[0].value : 0;
@@ -1206,8 +1149,9 @@
     var topColor = isPositive ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.35)';
     var bottomColor = isPositive ? 'rgba(34, 197, 94, 0.01)' : 'rgba(239, 68, 68, 0.01)';
 
-    var width = container.clientWidth || (window.innerWidth < 768 ? 320 : 600);
-    var height = customHeight || (container.clientHeight > 80 ? container.clientHeight : 260);
+    var isMobile = window.innerWidth < 768;
+    var width = container.clientWidth || (isMobile ? 320 : 600);
+    var height = customHeight || (isMobile ? 180 : 250);
 
     container.innerHTML = '';
 
@@ -1240,22 +1184,33 @@
       },
       rightPriceScale: {
         borderColor: colors.gridColor,
-        scaleMargins: { top: 0.15, bottom: 0.15 }
+        scaleMargins: { top: 0.18, bottom: 0.18 },
+        alignLabels: true,
+        autoScale: true
       },
       timeScale: {
         borderColor: colors.gridColor,
         fixLeftEdge: true,
-        fixRightEdge: true
+        fixRightEdge: true,
+        rightOffset: 0,
+        minBarSpacing: 0.001,
+        shiftVisibleRangeOnNewBar: false,
+        lockVisibleTimeRangeOnResize: true
       },
       handleScroll: true,
-      handleScale: true
+      handleScale: true,
+      localization: {
+        priceFormatter: function(price) {
+          return formatCurrency(price);
+        }
+      }
     });
 
     var areaSeries = chart.addAreaSeries({
       topColor: topColor,
       bottomColor: bottomColor,
       lineColor: strokeColor,
-      lineWidth: 2,
+      lineWidth: 2.5,
       priceFormat: {
         type: 'custom',
         formatter: function(price) {
@@ -1265,7 +1220,15 @@
     });
 
     areaSeries.setData(seriesData);
-    chart.timeScale().fitContent();
+
+    if (seriesData.length >= 2) {
+      chart.timeScale().setVisibleLogicalRange({
+        from: 0,
+        to: seriesData.length - 1
+      });
+    } else {
+      chart.timeScale().fitContent();
+    }
 
     return chart;
   }
@@ -1299,12 +1262,13 @@
 
     var hasData = dailyData.some(function(item) { return item.value !== 0; });
     if (!hasData) {
-      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;">' + (i18n.t('dashboard.stats.no_trades') || 'İşlem bulunamadı') + '</div>';
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
       return null;
     }
 
-    var width = container.clientWidth || (window.innerWidth < 768 ? 320 : 380);
-    var height = customHeight || (container.clientHeight > 80 ? container.clientHeight : 220);
+    var isMobile = window.innerWidth < 768;
+    var width = container.clientWidth || (isMobile ? 320 : 380);
+    var height = customHeight || (isMobile ? 180 : 220);
 
     container.innerHTML = '';
 
@@ -1337,15 +1301,26 @@
       },
       rightPriceScale: {
         borderColor: colors.gridColor,
-        scaleMargins: { top: 0.2, bottom: 0.2 }
+        scaleMargins: { top: 0.2, bottom: 0.2 },
+        alignLabels: true,
+        autoScale: true
       },
       timeScale: {
         borderColor: colors.gridColor,
         fixLeftEdge: true,
-        fixRightEdge: true
+        fixRightEdge: true,
+        rightOffset: 0,
+        minBarSpacing: 0.001,
+        shiftVisibleRangeOnNewBar: false,
+        lockVisibleTimeRangeOnResize: true
       },
       handleScroll: true,
-      handleScale: true
+      handleScale: true,
+      localization: {
+        priceFormatter: function(price) {
+          return formatCurrency(price);
+        }
+      }
     });
 
     var histSeries = chart.addHistogramSeries({
@@ -1358,9 +1333,16 @@
     });
 
     histSeries.setData(dailyData);
-    chart.timeScale().fitContent();
 
-    return chart;
+    if (dailyData.length >= 2) {
+      chart.timeScale().setVisibleLogicalRange({
+        from: 0,
+        to: dailyData.length - 1
+      });
+    } else {
+      chart.timeScale().fitContent();
+    }
+
   }
 
   // ============================================================
@@ -1540,7 +1522,10 @@
         background: 'transparent'
       },
       colors: ['#22c55e', '#ef4444'],
-      labels: ['Kazanan', 'Kaybeden'],
+      labels: [
+        (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.stats.winners') || 'Kazanan') : 'Kazanan',
+        (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.stats.losers') || 'Kaybeden') : 'Kaybeden'
+      ],
       legend: {
         position: 'bottom',
         labels: {
@@ -1568,7 +1553,7 @@
       plotOptions: {
         pie: {
           donut: {
-            size: '78%',
+            size: '70%',
             labels: { show: false }
           }
         }
@@ -1864,7 +1849,10 @@
         background: 'transparent'
       },
       colors: ['#8b5cf6', '#f97316'],
-      labels: ['Long', 'Short'],
+      labels: [
+        (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.chart.long') || 'Long') : 'Long',
+        (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.chart.short') || 'Short') : 'Short'
+      ],
       legend: {
         position: 'bottom',
         labels: {
@@ -1892,7 +1880,7 @@
       plotOptions: {
         pie: {
           donut: {
-            size: '78%',
+            size: '70%',
             labels: { show: false }
           }
         }
@@ -2118,10 +2106,34 @@
       var card = document.querySelector(cfg.cardSelector);
       if (!card) return;
       card.classList.add('expandable');
-      card.onclick = function(e) {
+
+      var touchStartX = 0;
+      var touchStartY = 0;
+      var hasTouchMoved = false;
+
+      card.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          hasTouchMoved = false;
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 1) {
+          var dx = Math.abs(e.touches[0].clientX - touchStartX);
+          var dy = Math.abs(e.touches[0].clientY - touchStartY);
+          if (dx > 8 || dy > 8) {
+            hasTouchMoved = true;
+          }
+        }
+      }, { passive: true });
+
+      card.addEventListener('click', function(e) {
+        if (hasTouchMoved) return;
         if (e.target.closest('button') || e.target.closest('a')) return;
         openChartExpansion(cfg.type, cfg.title);
-      };
+      });
     });
 
     if (!window._chartExpandEscBound) {
@@ -2255,28 +2267,36 @@
     var winRate = totalCount > 0 ? ((winTrades.length / totalCount) * 100).toFixed(1) : '0.0';
     var lossRate = totalCount > 0 ? ((lossTrades.length / totalCount) * 100).toFixed(1) : '0.0';
 
+    var winTradesLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.stats.winners') : 'Kazanan';
+    var lossTradesLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.stats.losers') : 'Kaybeden';
+    var isTr = (typeof i18n === 'undefined' || !i18n.getCurrentLanguage || i18n.getCurrentLanguage() === 'tr');
+    var tradesSuffix = isTr ? ' İşlemler' : ' Trades';
+    var tradeCountSuffix = isTr ? ' işlem' : ' trades';
+    var noWinText = isTr ? 'Kazanan işlem yok' : 'No winning trades';
+    var noLossText = isTr ? 'Kaybeden işlem yok' : 'No losing trades';
+
     var winListHtml = '';
     if (topWinSymbols.length > 0) {
       winListHtml = topWinSymbols.map(function(s) {
-        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].winCount + ' işlem)</span><span class="item-val" style="color:var(--green)">+' + formatCurrency(symbolStats[s].winPnL).replace('+', '') + '</span></div>';
+        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].winCount + tradeCountSuffix + ')</span><span class="item-val" style="color:var(--green)">+' + formatCurrency(symbolStats[s].winPnL).replace('+', '') + '</span></div>';
       }).join('');
     } else {
-      winListHtml = '<div style="color:var(--muted);font-size:12px;">Kazanan işlem yok</div>';
+      winListHtml = '<div style="color:var(--muted);font-size:12px;">' + noWinText + '</div>';
     }
 
     var lossListHtml = '';
     if (topLossSymbols.length > 0) {
       lossListHtml = topLossSymbols.map(function(s) {
-        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].lossCount + ' işlem)</span><span class="item-val" style="color:var(--red)">' + formatCurrency(symbolStats[s].lossPnL) + '</span></div>';
+        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].lossCount + tradeCountSuffix + ')</span><span class="item-val" style="color:var(--red)">' + formatCurrency(symbolStats[s].lossPnL) + '</span></div>';
       }).join('');
     } else {
-      lossListHtml = '<div style="color:var(--muted);font-size:12px;">Kaybeden işlem yok</div>';
+      lossListHtml = '<div style="color:var(--muted);font-size:12px;">' + noLossText + '</div>';
     }
 
     var html = '' +
       '<div class="expand-summary-col wins">' +
         '<div class="expand-summary-header">' +
-          '<span class="expand-summary-title">Kazanan İşlemler (' + winTrades.length + ' adet • %' + winRate + ')</span>' +
+          '<span class="expand-summary-title">' + winTradesLabel + tradesSuffix + ' (' + winTrades.length + (isTr ? ' adet • %' : ' • %') + winRate + ')</span>' +
           '<span class="expand-summary-total">+' + formatCurrency(totalWinPnL).replace('+', '') + '</span>' +
         '</div>' +
         '<div class="expand-summary-list">' +
@@ -2285,7 +2305,7 @@
       '</div>' +
       '<div class="expand-summary-col losses">' +
         '<div class="expand-summary-header">' +
-          '<span class="expand-summary-title">Kaybeden İşlemler (' + lossTrades.length + ' adet • %' + lossRate + ')</span>' +
+          '<span class="expand-summary-title">' + lossTradesLabel + tradesSuffix + ' (' + lossTrades.length + (isTr ? ' adet • %' : ' • %') + lossRate + ')</span>' +
           '<span class="expand-summary-total">' + formatCurrency(totalLossPnL) + '</span>' +
         '</div>' +
         '<div class="expand-summary-list">' +
@@ -2582,13 +2602,41 @@
     var saveGoalBtn = safeEl('save-goal-btn');
     var goalAmountInput = safeEl('goal-amount');
 
+    function syncPresetChips(val) {
+      var numVal = parseFloat(val);
+      var chips = document.querySelectorAll('.goal-preset-chip');
+      chips.forEach(function(chip) {
+        var chipVal = parseFloat(chip.getAttribute('data-goal') || chip.dataset.goal);
+        if (!isNaN(chipVal) && !isNaN(numVal) && chipVal === numVal) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
     function openGoalModal() {
-      if (goalAmountInput) goalAmountInput.value = monthlyTarget;
-      if (goalModal) goalModal.style.display = 'flex';
+      if (goalAmountInput) {
+        goalAmountInput.value = monthlyTarget || 5000;
+        syncPresetChips(goalAmountInput.value);
+      }
+      if (goalModal) {
+        goalModal.style.display = 'flex';
+        goalModal.classList.add('active');
+        setTimeout(function() {
+          if (goalAmountInput) {
+            goalAmountInput.focus();
+            goalAmountInput.select();
+          }
+        }, 50);
+      }
     }
 
     function closeGoalModalFunc() {
-      if (goalModal) goalModal.style.display = 'none';
+      if (goalModal) {
+        goalModal.classList.remove('active');
+        goalModal.style.display = 'none';
+      }
     }
 
     function saveGoal() {
@@ -2604,15 +2652,46 @@
       showToast(i18n.t('dashboard.goal.updated'));
     }
 
+    // Event delegation on modal for preset chips (bulletproof)
+    if (goalModal) {
+      goalModal.addEventListener('click', function(e) {
+        var chip = e.target.closest('.goal-preset-chip');
+        if (chip) {
+          e.preventDefault();
+          e.stopPropagation();
+          var val = chip.getAttribute('data-goal') || chip.dataset.goal;
+          if (val && goalAmountInput) {
+            goalAmountInput.value = val;
+            syncPresetChips(val);
+            goalAmountInput.focus();
+          }
+          return;
+        }
+
+        if (e.target === goalModal) {
+          closeGoalModalFunc();
+        }
+      });
+    }
+
+    if (goalAmountInput) {
+      goalAmountInput.addEventListener('input', function() {
+        syncPresetChips(this.value);
+      });
+      goalAmountInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveGoal();
+        } else if (e.key === 'Escape') {
+          closeGoalModalFunc();
+        }
+      });
+    }
+
     if (editGoalBtn) editGoalBtn.addEventListener('click', openGoalModal);
     if (closeGoalModal) closeGoalModal.addEventListener('click', closeGoalModalFunc);
     if (cancelGoalBtn) cancelGoalBtn.addEventListener('click', closeGoalModalFunc);
     if (saveGoalBtn) saveGoalBtn.addEventListener('click', saveGoal);
-    if (goalModal) {
-      goalModal.addEventListener('click', function(e) {
-        if (e.target === goalModal) closeGoalModalFunc();
-      });
-    }
   }
 
   // ============================================================
@@ -2631,7 +2710,7 @@
   // ============================================================
 
   function setupDateFilterAndOptions() {
-    // Masaüstü toolbar date filter butonları
+    // Toolbar date filter butonları
     document.querySelectorAll('.date-filter-option').forEach(function(opt) {
       opt.addEventListener('click', function() {
         if (this.dataset.range === 'custom') {
@@ -2642,20 +2721,22 @@
           }
           return;
         }
+        var panel = safeEl('custom-range-panel');
+        if (panel) panel.style.display = 'none';
         setActiveDateRange(this.dataset.range);
-        var dropdown = safeEl('options-menu-dropdown');
-        if (dropdown) dropdown.classList.remove('open');
-        refresh();
+        refresh(false);
       });
     });
 
     var customRangeApplyBtn = safeEl('custom-range-apply');
     if (customRangeApplyBtn) {
       customRangeApplyBtn.addEventListener('click', function() {
-        var startVal = safeEl('custom-range-start').value;
-        var endVal = safeEl('custom-range-end').value;
+        var startInput = safeEl('custom-range-start');
+        var endInput = safeEl('custom-range-end');
+        var startVal = startInput ? startInput.value : '';
+        var endVal = endInput ? endInput.value : '';
         if (!startVal || !endVal) {
-          showToast(i18n.t('dashboard.custom_range_required'), 'error');
+          showToast(i18n.t('dashboard.custom_range_required') || 'Lütfen başlangıç ve bitiş tarihlerini seçin.', 'error');
           return;
         }
         currentRange = 'custom';
@@ -2665,7 +2746,7 @@
         document.querySelectorAll('[data-range="custom"]').forEach(function(opt) { opt.classList.add('active'); });
         var panel = safeEl('custom-range-panel');
         if (panel) panel.style.display = 'none';
-        refresh();
+        refresh(false);
       });
     }
 
@@ -2673,8 +2754,6 @@
     ['export-csv', 'export-csv-desktop'].forEach(function(id) {
       var btn = safeEl(id);
       if (btn) btn.addEventListener('click', function() {
-        var dropdown = safeEl('options-menu-dropdown');
-        if (dropdown) dropdown.classList.remove('open');
         exportCSV();
       });
     });
@@ -2683,65 +2762,10 @@
     ['export-pdf', 'export-pdf-desktop'].forEach(function(id) {
       var btn = safeEl(id);
       if (btn) btn.addEventListener('click', function() {
-        var dropdown = safeEl('options-menu-dropdown');
-        if (dropdown) dropdown.classList.remove('open');
         var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'en';
         generatePDF(lang);
       });
     });
-
-    // Options menu dropdown (SORUN 3 - position:fixed + JS)
-    var optionsMenuBtn = safeEl('options-menu-btn');
-    var optionsMenuDropdown = safeEl('options-menu-dropdown');
-    if (optionsMenuBtn && optionsMenuDropdown) {
-      function positionOptionsDropdown() {
-        var rect = optionsMenuBtn.getBoundingClientRect();
-        var dropdownWidth = optionsMenuDropdown.offsetWidth || 220;
-        var viewportWidth = window.innerWidth;
-        var left = rect.right - dropdownWidth;
-        if (left < 8) left = 8;
-        if (left + dropdownWidth > viewportWidth - 8) left = viewportWidth - dropdownWidth - 8;
-        optionsMenuDropdown.style.position = 'fixed';
-        optionsMenuDropdown.style.top = (rect.bottom + 8) + 'px';
-        optionsMenuDropdown.style.left = left + 'px';
-        optionsMenuDropdown.style.right = 'auto';
-      }
-
-      optionsMenuBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var isOpen = optionsMenuDropdown.classList.toggle('open');
-        optionsMenuBtn.classList.toggle('active', isOpen);
-        optionsMenuBtn.setAttribute('aria-expanded', isOpen);
-        if (isOpen) positionOptionsDropdown();
-      });
-
-      window.addEventListener('resize', function() {
-        if (optionsMenuDropdown.classList.contains('open')) positionOptionsDropdown();
-      });
-      window.addEventListener('scroll', function() {
-        if (optionsMenuDropdown.classList.contains('open')) positionOptionsDropdown();
-      }, true);
-
-      document.addEventListener('click', function(e) {
-        if (!e.target.closest('#options-menu-dropdown') && !e.target.closest('#options-menu-btn')) {
-          optionsMenuDropdown.classList.remove('open');
-          optionsMenuBtn.classList.remove('active');
-        }
-      });
-
-      // Mobil dropdown içindeki date filter option'lar
-      optionsMenuDropdown.querySelectorAll('.date-filter-option').forEach(function(opt) {
-        opt.addEventListener('click', function() {
-          var range = this.dataset.range;
-          setActiveDateRange(range);
-          optionsMenuDropdown.classList.remove('open');
-          optionsMenuBtn.classList.remove('active');
-          refresh();
-        });
-      });
-
-      // Mobil CSV/PDF butonları zaten yukarıda tanımlandı
-    }
   }
 
   function setActiveDateRange(range) {
@@ -2786,9 +2810,22 @@
     var donutTrack = safeEl('donut-mobile-track');
     if (donutTrack) {
       donutTrack.addEventListener('scroll', function() {
-        var index = Math.round(donutTrack.scrollLeft / donutTrack.clientWidth);
+        var slideWidth = donutTrack.clientWidth || 1;
+        var index = Math.round(donutTrack.scrollLeft / slideWidth);
         document.querySelectorAll('#donut-mobile-dots .dot').forEach(function(dot, i) {
           dot.classList.toggle('active', i === index);
+        });
+      }, { passive: true });
+
+      document.querySelectorAll('#donut-mobile-dots .dot').forEach(function(dot) {
+        dot.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var index = parseInt(this.dataset.index, 10) || 0;
+          var slideWidth = donutTrack.clientWidth;
+          donutTrack.scrollTo({
+            left: index * slideWidth,
+            behavior: 'smooth'
+          });
         });
       });
     }
@@ -2798,10 +2835,12 @@
   // ⭐ REFRESH FUNCTION
   // ============================================================
 
-  async function refresh() {
+  async function refresh(isInitial) {
     var myToken = ++refreshToken;
     try {
-      showSkeletons();
+      if (isInitial) {
+        showSkeletons();
+      }
 
       var filtered = filterByDate(allTrades, currentRange);
       var previous = getPreviousPeriodTrades(allTradesFullStats, currentRange);
@@ -2813,9 +2852,6 @@
 
       if (myToken !== refreshToken) return;
 
-      // ⭐ TEMİZLİK: renderStreak() çağrısı SİLİNDİ
-      // (dashboard.astro'da #streak-dots yok)
-
       await renderStrategyTags(filtered);
 
       if (myToken !== refreshToken) return;
@@ -2826,7 +2862,9 @@
         await updatePlanBadge();
       } catch (e) {}
 
-      await hideSkeletons();
+      if (isInitial) {
+        await hideSkeletons();
+      }
 
       if (myToken !== refreshToken) return;
 
@@ -2849,21 +2887,21 @@
 
       } else {
         destroyAllCharts();
-        var emptyChartWraps = document.querySelectorAll('.chart-wrap');
-        emptyChartWraps.forEach(function(container) {
-          var div = container.querySelector('div');
-          if (div) {
-            var parent = div.parentElement;
-            if (parent) {
-              parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + i18n.t('dashboard.no_trades_in_range') + '</div>';
-            }
+        var isMobileView = window.innerWidth < 768;
+        var winlossTargetId = isMobileView ? 'chart-winloss-mobile' : 'chart-winloss';
+        var directionTargetId = isMobileView ? 'chart-direction-mobile' : 'chart-direction';
+        var containerIds = ['chart-cumulative', winlossTargetId, 'chart-daily', 'chart-symbol', directionTargetId];
+        containerIds.forEach(function(cid) {
+          var el = safeEl(cid);
+          if (el) {
+            el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
           }
         });
       }
 
     } catch (e) {
       console.error('Refresh hatası:', e);
-      hideSkeletons();
+      if (isInitial) hideSkeletons();
     }
   }
 
@@ -3029,7 +3067,7 @@
         });
       }
 
-      await refresh();
+      await refresh(true);
 
       window.addEventListener('resize', function() {
         clearTimeout(window._chartExpandResizeTimer);

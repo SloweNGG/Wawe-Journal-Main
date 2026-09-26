@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL – i18n.js (CORE + LAZY LOADER)
 // ⭐ PERFORMANS: Dil dosyaları ayrı ve lazy yükleniyor.
 //    - Sadece aktif dil + İngilizce fallback çekilir
@@ -82,7 +82,7 @@
     if (SUPPORTED_LANGS.indexOf(lang) === -1) return null;
 
     try {
-      var url = I18N_PATH + lang + '.js';
+      var url = I18N_PATH + lang + '.js?v=1790432600';
       var mod = await import(/* @vite-ignore */ url);
       var dict = (mod && mod.default) ? mod.default : mod;
 
@@ -149,6 +149,7 @@
       var keys = Object.keys(params);
       for (var i = 0; i < keys.length; i++) {
         var p = keys[i];
+        text = text.replace(new RegExp('{{' + p + '}}', 'g'), params[p]);
         // Support both {param} and {{param}}
         text = text.replace(new RegExp('\\{\\{?' + p + '\\}?\\}', 'g'), params[p]);
       }

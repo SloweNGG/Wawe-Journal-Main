@@ -1,9 +1,9 @@
-// ============================================================
+﻿// ============================================================
 // WAWE JOURNAL - USER SERVICE
 // ============================================================
 
 import { sb, requireAuth } from '../core/supabase.js';
-import { FEATURES, STRATEGIES_CACHE_TTL } from '../core/config.js';
+import { FEATURES, STRATEGIES_CACHE_TTL, INSTRUMENT_MULTIPLIERS } from '../core/config.js';
 import { safeLocalStorageGet } from '../core/storage.js';
 import { calcPnL } from '../utils/helpers.js';
 import { showToast } from '../utils/ui.js';
@@ -256,8 +256,11 @@ export function calculateStrategyPerformance(trades, strategyId) {
   let losses = 0;
   
   strategyTrades.forEach(function(t) {
-    const mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
-    const pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', mult);
+    let pnl = parseFloat(t.pnl);
+    if (t.pnl === null || t.pnl === undefined || isNaN(pnl)) {
+      const mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
+      pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', mult);
+    }
     totalPnL += pnl;
     if (pnl > 0) wins++;
     else if (pnl < 0) losses++;

@@ -230,9 +230,9 @@ function getNavbarHTML(translations) {
     return fallback || key;
   };
 
-  var menuGeneral = tt('nav.menu_general') || 'GENEL';
-  var menuPremium = tt('nav.menu_premium') || 'PREMIUM';
-  var menuAccount = tt('nav.menu_account') || 'HESAP';
+  var menuGeneral = tt('nav.menu_general', 'GENEL');
+  var menuPremium = tt('nav.menu_premium', 'PREMIUM');
+  var menuAccount = tt('nav.menu_account', 'HESAP');
 
   return `
     <nav class="nav">
@@ -243,37 +243,37 @@ function getNavbarHTML(translations) {
       </a>
       
       <div class="nav-links">
-        <a href="/dashboard.html" data-i18n="nav.dashboard" data-page="dashboard">${tt('nav.dashboard', 'Dashboard')}</a>
-        <a href="/trades.html" data-i18n="nav.trades" data-page="trades">${tt('nav.trades', 'İşlemler')}</a>
-        <a href="/strategies.html" data-i18n="nav.strategies" data-page="strategies">${tt('nav.strategies', 'Stratejiler')}</a>
-        <a href="/calendar.html" data-i18n="nav.calendar" data-page="calendar">${tt('nav.calendar', 'Takvim')}</a>
+        <a href="/dashboard.html" data-page="dashboard"><span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span></a>
+        <a href="/trades.html" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
+        <a href="/strategies.html" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
+        <a href="/calendar.html" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
       </div>
       
       <div class="nav-right">
         <div class="nav-dropdown">
           <button class="nav-dropdown-btn" id="premium-dropdown-btn" onclick="wwTogglePremium(event, this)">
             <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.premium">${tt('nav.premium')}</span>
+            <span data-i18n="nav.premium">${tt('nav.premium', 'Premium')}</span>
             <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
           </button>
           <div class="nav-dropdown-menu" id="premium-dropdown-menu">
-            <div class="menu-label" data-i18n="nav.premium_features">✨ Premium Özellikler</div>
+            <div class="menu-label" data-i18n="nav.premium_features">${tt('nav.premium_features', '✨ Premium Özellikler')}</div>
             <a href="/premium-dashboard.html">
               <i data-lucide="layout-dashboard" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard')}</span>
+              <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
             </a>
             <a href="/settings.html#panel-appearance">
               <i data-lucide="palette" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.theme_customization">${tt('nav.theme_customization')}</span>
+              <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
             </a>
             <a href="/settings.html#panel-overtrade">
               <i data-lucide="bell" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert')}</span>
+              <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
             </a>
             <div class="dropdown-divider"></div>
             <a href="/settings.html#panel-plan" style="color:var(--accent); font-weight:700;">
               <i data-lucide="rocket" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium')}</span>
+              <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
             </a>
           </div>
         </div>
@@ -294,16 +294,16 @@ function getNavbarHTML(translations) {
           </button>
           <div class="bell-panel" id="bell-panel">
             <div class="bell-panel-header">
-              <h3 data-i18n="nav.notifications">🔔 ${tt('nav.notifications')}</h3>
+              <h3 data-i18n="nav.notifications">🔔 ${tt('nav.notifications', 'Bildirimler')}</h3>
               <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read" onclick="window.wwMarkAllAsRead()">✓ ${tt('nav.mark_read')}</button>
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read" onclick="window.wwMarkAllAsRead()">✓ ${tt('nav.mark_read', 'Okundu')}</button>
                 <button class="bell-panel-close" id="bell-panel-close">✕</button>
               </div>
             </div>
             <div class="bell-panel-body" id="bell-panel-body">
               <div class="bell-panel-empty">
                 <span class="empty-icon">🔕</span>
-                <span data-i18n="nav.no_notifications">${tt('nav.no_notifications')}</span>
+                <span data-i18n="nav.no_notifications">${tt('nav.no_notifications', 'Yeni bildirim yok')}</span>
               </div>
             </div>
           </div>
@@ -311,7 +311,7 @@ function getNavbarHTML(translations) {
         
         <div class="plan-badge" id="plan-badge">
           <span class="plan-dot"></span>
-          <span class="plan-text" id="plan-text">${tt('nav.free_badge') || 'Ücretsiz'}</span>
+          <span class="plan-text" id="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
         </div>
         
         <div class="user-avatar" id="user-avatar">
@@ -319,20 +319,20 @@ function getNavbarHTML(translations) {
         </div>
         
         <div class="dropdown-menu" id="dropdown-menu">
-          <a href="/settings.html#panel-profile" class="dropdown-item" data-i18n="nav.profile">
+          <a href="/settings.html#panel-profile" class="dropdown-item">
             <i data-lucide="user" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.profile">${tt('nav.profile')}</span>
+            <span data-i18n="nav.profile">${tt('nav.profile', 'Profil')}</span>
           </a>
-          <a href="/settings.html" class="dropdown-item" data-i18n="nav.settings">
+          <a href="/settings.html" class="dropdown-item">
             <i data-lucide="settings" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.settings">${tt('nav.settings', 'Ayarlar')}</span>
           </a>
-          <a href="/my-earnings.html" class="dropdown-item" data-i18n="nav.earnings">
+          <a href="/my-earnings.html" class="dropdown-item">
             <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
           </a>
           <span id="admin-link" style="display:none;">
-            <a href="/admin.html" class="dropdown-item" data-i18n="nav.admin">
+            <a href="/admin.html" class="dropdown-item">
               <i data-lucide="shield" style="width:16px;height:16px;"></i>
               <span data-i18n="nav.admin">${tt('nav.admin', 'Admin')}</span>
             </a>
@@ -340,10 +340,10 @@ function getNavbarHTML(translations) {
           <div class="dropdown-divider"></div>
           <a href="/settings.html#panel-plan" class="dropdown-item" style="color:var(--accent2);">
             <i data-lucide="crown" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium')}</span>
+            <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
           </a>
           <div class="dropdown-divider"></div>
-          <button class="dropdown-item" id="logout-dropdown-btn" data-i18n="nav.logout">
+          <button class="dropdown-item" id="logout-dropdown-btn">
             <i data-lucide="log-out" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.logout">${tt('nav.logout', 'Çıkış Yap')}</span>
           </button>
@@ -367,7 +367,7 @@ function getNavbarHTML(translations) {
             <div class="user-card-name" id="menu-user-name">Kullanıcı</div>
             <div class="user-card-plan" id="menu-user-plan">
               <span class="plan-dot"></span>
-              <span class="plan-text">${tt('nav.free_badge') || 'Ücretsiz'}</span>
+              <span class="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
             </div>
           </div>
         </div>
@@ -375,65 +375,65 @@ function getNavbarHTML(translations) {
         <a href="/journals.html" class="menu-journal-link" id="menu-journal-link" onclick="closeMobileMenuAndNavigate(event, '/journals.html')">
           <i data-lucide="folder" class="menu-journal-icon"></i>
           <span class="menu-journal-info">
-            <span class="menu-journal-label">${tt('nav.current_account', 'Aktif Hesap')}</span>
-            <span class="menu-journal-name" id="menu-journal-name">...</span>
+            <span class="menu-journal-label" data-i18n="nav.current_account">${tt('nav.current_account', 'Aktif Hesap')}</span>
+            <span class="menu-journal-name" id="menu-journal-name">Ana Hesap</span>
           </span>
           <i data-lucide="chevron-right" class="menu-journal-arrow"></i>
         </a>
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_general">${menuGeneral}</div>
-          <a href="/index.html" data-i18n="nav.home">
-            <i data-lucide="home" style="width:16px;height:16px;"></i> ${tt('nav.home')}
+          <a href="/index.html" onclick="closeMobileMenuAndNavigate(event, '/index.html')">
+            <i data-lucide="home" style="width:16px;height:16px;"></i> <span data-i18n="nav.home">${tt('nav.home', 'Ana Sayfa')}</span>
           </a>
-          <a href="/dashboard.html" data-i18n="nav.dashboard">
-            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${tt('nav.dashboard', 'Dashboard')}
+          <a href="/dashboard.html" onclick="closeMobileMenuAndNavigate(event, '/dashboard.html')">
+            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span>
           </a>
-          <a href="/trades.html" data-i18n="nav.trades">
-            <i data-lucide="list" style="width:16px;height:16px;"></i> ${tt('nav.trades', 'İşlemler')}
+          <a href="/trades.html" onclick="closeMobileMenuAndNavigate(event, '/trades.html')">
+            <i data-lucide="list" style="width:16px;height:16px;"></i> <span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span>
           </a>
-          <a href="/strategies.html" data-i18n="nav.strategies">
-            <i data-lucide="target" style="width:16px;height:16px;"></i> ${tt('nav.strategies', 'Stratejiler')}
+          <a href="/strategies.html" onclick="closeMobileMenuAndNavigate(event, '/strategies.html')">
+            <i data-lucide="target" style="width:16px;height:16px;"></i> <span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span>
           </a>
-          <a href="/calendar.html" data-i18n="nav.calendar">
-            <i data-lucide="calendar" style="width:16px;height:16px;"></i> ${tt('nav.calendar', 'Takvim')}
+          <a href="/calendar.html" onclick="closeMobileMenuAndNavigate(event, '/calendar.html')">
+            <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span>
           </a>
         </div>
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_premium">${menuPremium}</div>
-          <a href="/premium-dashboard.html" data-i18n="nav.premium_dashboard">
-            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> ${tt('nav.premium_dashboard')}
+          <a href="/premium-dashboard.html" onclick="closeMobileMenuAndNavigate(event, '/premium-dashboard.html')">
+            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
           </a>
-          <a href="/settings.html#panel-appearance" data-i18n="nav.theme_customization">
-            <i data-lucide="palette" style="width:16px;height:16px;"></i> ${tt('nav.theme_customization')}
+          <a href="/settings.html#panel-appearance" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-appearance')">
+            <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
           </a>
-          <a href="/settings.html#panel-overtrade" data-i18n="nav.overtrade_alert">
-            <i data-lucide="bell" style="width:16px;height:16px;"></i> ${tt('nav.overtrade_alert')}
+          <a href="/settings.html#panel-overtrade" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-overtrade')">
+            <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
           </a>
-          <a href="/settings.html#panel-plan" class="go-premium" data-i18n="nav.upgrade_premium">
-            <i data-lucide="rocket" style="width:16px;height:16px;"></i> ${tt('nav.upgrade_premium')}
+          <a href="/settings.html#panel-plan" class="go-premium" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-plan')">
+            <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
           </a>
         </div>
 
         <div class="menu-section">
           <div class="menu-section-title" data-i18n="nav.menu_account">${menuAccount}</div>
-          <a href="/settings.html#panel-profile" data-i18n="nav.profile">
-            <i data-lucide="user" style="width:16px;height:16px;"></i> ${tt('nav.profile')}
+          <a href="/settings.html#panel-profile" onclick="closeMobileMenuAndNavigate(event, '/settings.html#panel-profile')">
+            <i data-lucide="user" style="width:16px;height:16px;"></i> <span data-i18n="nav.profile">${tt('nav.profile', 'Profil')}</span>
           </a>
-          <a href="/settings.html" data-i18n="nav.settings">
-            <i data-lucide="settings" style="width:16px;height:16px;"></i> ${tt('nav.settings', 'Ayarlar')}
+          <a href="/settings.html" onclick="closeMobileMenuAndNavigate(event, '/settings.html')">
+            <i data-lucide="settings" style="width:16px;height:16px;"></i> <span data-i18n="nav.settings">${tt('nav.settings', 'Ayarlar')}</span>
           </a>
-          <a href="/my-earnings.html" data-i18n="nav.earnings">
-            <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> ${tt('nav.earnings', 'Kazançlarım')}
+          <a href="/my-earnings.html" onclick="closeMobileMenuAndNavigate(event, '/my-earnings.html')">
+            <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
           </a>
           <span id="admin-link-mobile" style="display:none;">
-            <a href="/admin.html" data-i18n="nav.admin">
-              <i data-lucide="shield" style="width:16px;height:16px;"></i> ${tt('nav.admin', 'Admin')}
+            <a href="/admin.html" onclick="closeMobileMenuAndNavigate(event, '/admin.html')">
+              <i data-lucide="shield" style="width:16px;height:16px;"></i> <span data-i18n="nav.admin">${tt('nav.admin', 'Admin')}</span>
             </a>
           </span>
-          <button id="logout-btn-mobile" data-i18n="nav.logout">
-            <i data-lucide="log-out" style="width:16px;height:16px;"></i> ${tt('nav.logout', 'Çıkış Yap')}
+          <button id="logout-btn-mobile">
+            <i data-lucide="log-out" style="width:16px;height:16px;"></i> <span data-i18n="nav.logout">${tt('nav.logout', 'Çıkış Yap')}</span>
           </button>
         </div>
 

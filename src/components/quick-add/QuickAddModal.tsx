@@ -306,257 +306,268 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           )}
 
           {activeTab === 'price' && (
-            <>
-              {/* ENSTRÜMAN */}
-              <div className={styles.field}>
-                <label>Enstrüman Tipi</label>
-                <div className={styles.instrumentGrid}>
-                  <button
-                    type="button"
-                    className={`${styles.instrumentBtn} ${instrument === 'forex' ? styles.active : ''}`}
-                    onClick={() => setInstrument('forex')}
-                  >
-                    Forex
-                    <span className={styles.instLabel}>100.000</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.instrumentBtn} ${instrument === 'gold' ? styles.active : ''}`}
-                    onClick={() => setInstrument('gold')}
-                  >
-                    Altın
-                    <span className={styles.instLabel}>100</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.instrumentBtn} ${instrument === 'index' ? styles.active : ''}`}
-                    onClick={() => setInstrument('index')}
-                  >
-                    Endeks
-                    <span className={styles.instLabel}>10</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.instrumentBtn} ${instrument === 'crypto' ? styles.active : ''}`}
-                    onClick={() => setInstrument('crypto')}
-                  >
-                    Kripto
-                    <span className={styles.instLabel}>1</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.instrumentBtn} ${instrument === 'other' ? styles.active : ''}`}
-                    onClick={() => setInstrument('other')}
-                  >
-                    Diğer
-                    <span className={styles.instLabel}>Manuel</span>
-                  </button>
-                </div>
-              </div>
-
-              {instrument === 'other' && (
-                <div className={styles.field}>
-                  <label>Manuel Çarpan</label>
-                  <input
-                    type="number"
-                    value={customMultiplier}
-                    onChange={(e) => setCustomMultiplier(e.target.value)}
-                    placeholder="1000"
-                  />
-                </div>
-              )}
-
-              {/* SEMBOL & LOT */}
-              <div className={styles.row}>
-                <div className={styles.field}>
-                  <label>Sembol *</label>
-                  <input
-                    type="text"
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                    placeholder="EURUSD"
-                    style={{ textTransform: 'uppercase' }}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label>Lot *</label>
-                  <div className={styles.lotWrap}>
+            <div className={styles.gridLayout}>
+              {/* Sol Kolon: İşlem Temel Bilgileri */}
+              <div className={styles.colLeft}>
+                {/* SEMBOL & YÖN */}
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label>Sembol *</label>
                     <input
                       type="text"
-                      value={lot}
-                      onChange={(e) => setLot(e.target.value)}
-                      placeholder="1.00"
+                      value={symbol}
+                      onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                      placeholder="EURUSD"
+                      style={{ textTransform: 'uppercase' }}
                     />
-                    <div className={styles.lotPresets}>
-                      {['0.01', '0.10', '1.00'].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          className={`${styles.lotPreset} ${lot === preset ? styles.active : ''}`}
-                          onClick={() => setLot(preset)}
-                        >
-                          {preset}
-                        </button>
-                      ))}
+                  </div>
+                  <div className={styles.field}>
+                    <label>Yön *</label>
+                    <div className={styles.sideToggle}>
+                      <button
+                        type="button"
+                        className={`${styles.sideBtn} ${side === 'BUY' ? styles.activeBuy : ''}`}
+                        onClick={() => setSide('BUY')}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
+                          <polyline points="3 17 9 11 13 15 21 6" />
+                          <polyline points="15 6 21 6 21 12" />
+                        </svg>
+                        Alış
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.sideBtn} ${side === 'SELL' ? styles.activeSell : ''}`}
+                        onClick={() => setSide('SELL')}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
+                          <polyline points="3 7 9 13 13 9 21 18" />
+                          <polyline points="15 18 21 18 21 12" />
+                        </svg>
+                        Satış
+                      </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* ENSTRÜMAN */}
+                <div className={styles.field}>
+                  <label>Enstrüman Tipi</label>
+                  <div className={styles.instrumentGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.instrumentBtn} ${instrument === 'forex' ? styles.active : ''}`}
+                      onClick={() => setInstrument('forex')}
+                    >
+                      Forex
+                      <span className={styles.instLabel}>100.000</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.instrumentBtn} ${instrument === 'gold' ? styles.active : ''}`}
+                      onClick={() => setInstrument('gold')}
+                    >
+                      Altın
+                      <span className={styles.instLabel}>100</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.instrumentBtn} ${instrument === 'index' ? styles.active : ''}`}
+                      onClick={() => setInstrument('index')}
+                    >
+                      Endeks
+                      <span className={styles.instLabel}>10</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.instrumentBtn} ${instrument === 'crypto' ? styles.active : ''}`}
+                      onClick={() => setInstrument('crypto')}
+                    >
+                      Kripto
+                      <span className={styles.instLabel}>1</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.instrumentBtn} ${instrument === 'other' ? styles.active : ''}`}
+                      onClick={() => setInstrument('other')}
+                    >
+                      Diğer
+                      <span className={styles.instLabel}>Manuel</span>
+                    </button>
+                  </div>
+                </div>
+
+                {instrument === 'other' && (
+                  <div className={styles.field}>
+                    <label>Manuel Çarpan</label>
+                    <input
+                      type="number"
+                      value={customMultiplier}
+                      onChange={(e) => setCustomMultiplier(e.target.value)}
+                      placeholder="1000"
+                    />
+                  </div>
+                )}
+
+                {/* LOT & STRATEJİ */}
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label>Lot *</label>
+                    <div className={styles.lotWrap}>
+                      <input
+                        type="text"
+                        value={lot}
+                        onChange={(e) => setLot(e.target.value)}
+                        placeholder="1.00"
+                      />
+                      <div className={styles.lotPresets}>
+                        {['0.01', '0.10', '1.00'].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            className={`${styles.lotPreset} ${lot === preset ? styles.active : ''}`}
+                            onClick={() => setLot(preset)}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.field}>
+                    <label>Strateji</label>
+                    <div className={styles.strategyWrap}>
+                      <select
+                        value={strategyId}
+                        onChange={(e) => setStrategyId(e.target.value)}
+                      >
+                        <option value="">— Strateji Yok —</option>
+                        {strategies.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TARİH & NOTLAR */}
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label>Tarih</label>
+                    <input
+                      type="date"
+                      value={tradeDate}
+                      onChange={(e) => setTradeDate(e.target.value)}
+                    />
+                  </div>
+                  <div className={`${styles.field} ${styles.notesArea}`}>
+                    <label>Notlar</label>
+                    <textarea
+                      rows={1}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Notlar…"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* YÖN */}
-              <div className={styles.field}>
-                <label>İşlem Yönü</label>
-                <div className={styles.sideToggle}>
-                  <button
-                    type="button"
-                    className={`${styles.sideBtn} ${side === 'BUY' ? styles.activeBuy : ''}`}
-                    onClick={() => setSide('BUY')}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
-                      <polyline points="3 17 9 11 13 15 21 6" />
-                      <polyline points="15 6 21 6 21 12" />
-                    </svg>
-                    Alış (Buy)
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.sideBtn} ${side === 'SELL' ? styles.activeSell : ''}`}
-                    onClick={() => setSide('SELL')}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
-                      <polyline points="3 7 9 13 13 9 21 18" />
-                      <polyline points="15 18 21 18 21 12" />
-                    </svg>
-                    Satış (Sell)
-                  </button>
+              {/* Sağ Kolon: Fiyatlar ve Canlı Hesaplama Terminali */}
+              <div className={styles.colRight}>
+                {/* GİRİŞ & ÇIKIŞ FİYATLARI */}
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label>Giriş Fiyatı *</label>
+                    <input
+                      type="text"
+                      value={entryPrice}
+                      onChange={(e) => setEntryPrice(e.target.value)}
+                      placeholder="1.08500"
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>Çıkış Fiyatı</label>
+                    <input
+                      type="text"
+                      value={exitPrice}
+                      onChange={(e) => setExitPrice(e.target.value)}
+                      placeholder="1.09000"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* GİRİŞ & ÇIKIŞ FİYATLARI */}
-              <div className={styles.row}>
-                <div className={styles.field}>
-                  <label>Giriş Fiyatı *</label>
-                  <input
-                    type="text"
-                    value={entryPrice}
-                    onChange={(e) => setEntryPrice(e.target.value)}
-                    placeholder="1.08500"
-                  />
+                {/* STOP LOSS & TAKE PROFIT */}
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label>Stop Loss</label>
+                    <input
+                      type="text"
+                      value={stopLoss}
+                      onChange={(e) => setStopLoss(e.target.value)}
+                      placeholder="1.08000"
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>Take Profit</label>
+                    <input
+                      type="text"
+                      value={takeProfit}
+                      onChange={(e) => setTakeProfit(e.target.value)}
+                      placeholder="1.09500"
+                    />
+                  </div>
                 </div>
-                <div className={styles.field}>
-                  <label>Çıkış Fiyatı</label>
-                  <input
-                    type="text"
-                    value={exitPrice}
-                    onChange={(e) => setExitPrice(e.target.value)}
-                    placeholder="1.09000"
-                  />
-                </div>
-              </div>
 
-              {/* STOP LOSS & TAKE PROFIT */}
-              <div className={styles.row}>
-                <div className={styles.field}>
-                  <label>Stop Loss</label>
-                  <input
-                    type="text"
-                    value={stopLoss}
-                    onChange={(e) => setStopLoss(e.target.value)}
-                    placeholder="1.08000"
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label>Take Profit</label>
-                  <input
-                    type="text"
-                    value={takeProfit}
-                    onChange={(e) => setTakeProfit(e.target.value)}
-                    placeholder="1.09500"
-                  />
-                </div>
-              </div>
-
-              {/* CANLI HESAPLAMA ÖNİZLEMESİ */}
-              {(calculations.pnl !== null || calculations.rr !== null) && (
+                {/* CANLI HESAPLAMA ÖNİZLEMESİ */}
                 <div
                   className={`${styles.previewBox} ${
                     calculations.pnl !== null
                       ? calculations.pnl >= 0
-                        ? styles.pos
-                        : styles.neg
+                        ? styles.railPos
+                        : styles.railNeg
                       : ''
                   }`}
                 >
                   <div className={styles.previewRail} />
-                  {calculations.pnl !== null && (
+                  <div className={styles.previewBadgeRow}>
+                    <span className={styles.previewLiveTag}>
+                      <span className={styles.pulseDot} />
+                      CANLI HESAPLAMA
+                    </span>
+                  </div>
+                  <div className={styles.previewItemsRow}>
                     <div className={styles.previewItem}>
                       <span className={styles.previewLabel}>Tahmini K/Z</span>
                       <span
                         className={`${styles.previewVal} ${
-                          calculations.pnl >= 0 ? styles.pos : styles.neg
+                          calculations.pnl !== null
+                            ? calculations.pnl >= 0
+                              ? styles.pos
+                              : styles.neg
+                            : ''
                         }`}
                       >
-                        {calculations.pnl >= 0 ? '+' : ''}$
-                        {calculations.pnl.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        {calculations.pnl !== null
+                          ? `${calculations.pnl >= 0 ? '+' : ''}$${calculations.pnl.toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}`
+                          : '—'}
                       </span>
                     </div>
-                  )}
-                  {calculations.pnl !== null && calculations.rr !== null && (
                     <div className={styles.previewDivider} />
-                  )}
-                  {calculations.rr !== null && (
                     <div className={styles.previewItem}>
                       <span className={styles.previewLabel}>Risk / Reward</span>
                       <span className={`${styles.previewVal} ${styles.accent}`}>
-                        1 : {calculations.rr}
+                        {calculations.rr !== null ? `1 : ${calculations.rr}` : '—'}
                       </span>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* STRATEJİ & TARİH */}
-              <div className={styles.row}>
-                <div className={styles.field}>
-                  <label>Strateji</label>
-                  <div className={styles.strategyWrap}>
-                    <select
-                      value={strategyId}
-                      onChange={(e) => setStrategyId(e.target.value)}
-                    >
-                      <option value="">— Strateji Yok —</option>
-                      {strategies.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                 </div>
-                <div className={styles.field}>
-                  <label>Tarih</label>
-                  <input
-                    type="date"
-                    value={tradeDate}
-                    onChange={(e) => setTradeDate(e.target.value)}
-                  />
-                </div>
               </div>
-
-              {/* NOTLAR */}
-              <div className={`${styles.field} ${styles.notesArea}`}>
-                <label>Notlar</label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="İşlem notları, psikolojik durum, gözlemler…"
-                />
-              </div>
-            </>
+            </div>
           )}
 
           {activeTab === 'csv' && (
