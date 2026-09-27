@@ -133,17 +133,34 @@ window.loadNotifications = async function() {
   }
 };
 
-window.updateNotificationBadge = async function() {
+var _lastBadgeFetch = 0;
+var _isFetchingBadge = false;
+
+window.updateNotificationBadge = async function(force) {
   try {
     var sb = window.sb || window.supabase;
     var user = window.SETTINGS_STATE?.currentUser;
     if (!sb || !user) return;
-    var { data, error } = await sb.rpc('get_unread_notifications_count', { p_user_id: user.id });
-    if (!error && data > 0) {
-      var dot = document.getElementById('bell-dot');
-      if (dot) dot.style.display = 'block';
+
+    var now = Date.now();
+    if (!force && (now - _lastBadgeFetch < 5000 || _isFetchingBadge)) {
+      return;
     }
-  } catch (err) {}
+    _isFetchingBadge = true;
+    _lastBadgeFetch = now;
+
+    var { data, error } = await sb.rpc('get_unread_notifications_count', { p_user_id: user.id });
+    var dot = document.getElementById('bell-dot');
+    if (!error && data > 0) {
+      if (dot) dot.style.display = 'block';
+    } else if (!error && data === 0) {
+      if (dot) dot.style.display = 'none';
+    }
+  } catch (err) {
+    // Graceful error handling
+  } finally {
+    _isFetchingBadge = false;
+  }
 };
 
 window.wwToggleJournal = function(e, btn) {
@@ -939,7 +956,8 @@ function loadNavbar(containerId) {
     setTimeout(function() {
       updateNavbarI18n();
       loadNavbarAvatar();
-      updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge();
+      updateNavbarBadge();
+      updateNotificationBadge();
       setActiveNavLink();
       loadLucideIcons();
       initNavEvents();
@@ -973,7 +991,8 @@ function loadNavbar(containerId) {
   setTimeout(function() {
     initNavEvents();
     loadNavbarAvatar();
-    updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge();
+    updateNavbarBadge();
+    updateNotificationBadge();
     updateNavbarJournal(0);
     wwLog.log('✅ Navbar tamamen yüklendi!');
   }, 50);
@@ -986,7 +1005,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
       initNavEvents();
       loadNavbarAvatar();
-      updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge();
+      updateNavbarBadge();
+      updateNotificationBadge();
       setActiveNavLink();
       loadLucideIcons();
       updateNavbarJournal(0);
@@ -1012,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.addEventListener('load', function() {
     setTimeout(setActiveNavLink, 100);
-    setTimeout(function() { updateNavbarBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); updateNotificationBadge(); }, 150);
+    setTimeout(function() { updateNavbarBadge(); updateNotificationBadge(); }, 150);
     loadLucideIcons();
     setTimeout(initNavEvents, 200);
   });

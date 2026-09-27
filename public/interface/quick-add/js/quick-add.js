@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // QUICK ADD MODAL - İŞLEM EKLEME
 // ⭐ Emoji temizlendi, tüm ikonlar SVG (Lucide tarzı)
 // ⭐ Custom Date Picker - dark/light tema uyumlu
@@ -840,9 +840,7 @@ async function fileToCsvText(file) {
                   <!-- Canlı Hesaplama Önizleme Kartı -->
                   <div class="quick-add-preview visible" id="price-preview">
                     <div class="preview-rail"></div>
-                    <div class="preview-badge-row">
-                      <span class="preview-live-tag"><span class="pulse-dot"></span>CANLI HESAPLAMA</span>
-                    </div>
+
                     <div class="preview-items-row">
                       <div class="preview-item">
                         <span class="p-label" data-quick-i18n="quickmodal.estimated_pnl">Tahmini K/Z</span>
@@ -861,7 +859,7 @@ async function fileToCsvText(file) {
 
             <div class="quick-tab-content" id="tab-csv">
               <div class="quick-import-area" id="quick-import-dropzone">
-                <div class="qa-drop-hint">📁 Dosyayı buraya bırak</div>
+                <div class="qa-drop-hint" data-quick-i18n="quickmodal.csv_drop_hint">📁 Dosyayı buraya bırak</div>
 
                 <div class="quick-import-icon">${ICONS.fileLarge}</div>
                 <p data-quick-i18n="quickmodal.csv_import_desc">MT4/MT5, cTrader, Binance veya Excel dışa aktarım dosyanızı yükleyin</p>
@@ -870,7 +868,7 @@ async function fileToCsvText(file) {
                   <label data-quick-i18n="quickmodal.broker_format">Broker Formatı</label>
                   <select id="quick-csv-broker">
                     <option value="auto" data-quick-i18n="quickmodal.broker_auto">🔍 Otomatik Algıla</option>
-                    <option value="turkish">Türkçe Broker</option>
+                    <option value="turkish" data-quick-i18n="quickmodal.broker_turkish">Türkçe Broker</option>
                     <option value="mt5">MetaTrader 4/5</option>
                     <option value="ctrader">cTrader</option>
                     <option value="binance">Binance</option>
@@ -1276,7 +1274,7 @@ async function fileToCsvText(file) {
         html += '<div>⚠️ ' + escapeHtml(e) + '</div>';
       });
       if (errors.length > 3) {
-        html += '<div>...ve ' + (errors.length - 3) + ' hata daha</div>';
+        html += '<div>' + escapeHtml(t('quickmodal.more_errors', { count: errors.length - 3 })) + '</div>';
       }
       html += '</div>';
     }
