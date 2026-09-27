@@ -22,9 +22,9 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4173',
 ];
 
-const LOGIN_WINDOW_MIN = 1;      // 🔧 TEST: 1 dakika (production'da 15 yap)
+const LOGIN_WINDOW_MIN = 15;     // 🛡️ Production: 15 dakika içinde maks 10 başarısız deneme
 const LOGIN_MAX_FAILED = 10;
-const REGISTER_WINDOW_MIN = 1;   // 🔧 TEST: 1 dakika (production'da 60 yap)
+const REGISTER_WINDOW_MIN = 60;  // 🛡️ Production: 1 saat içinde maks 5 kayıt denemesi
 const REGISTER_MAX_ATTEMPTS = 5;
 
 function getCorsHeaders(origin: string | null) {

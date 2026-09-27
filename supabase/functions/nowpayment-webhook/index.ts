@@ -80,38 +80,94 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
-// ⭐ Verify HMAC signature
-async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean> {
+// ⭐ Anahtarları alfabetik olarak özyinelemeli sıralar (NOWPayments IPN standardı)
+function sortObjectKeys(obj: any): any {
+  if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+    return obj;
+  }
+  return Object.keys(obj)
+    .sort()
+    .reduce((acc: any, key: string) => {
+      acc[key] = sortObjectKeys(obj[key]);
+      return acc;
+    }, {});
+}
+
+// ⭐ WebCrypto ile HMAC hesaplama
+async function computeHmacHex(message: string, secret: string, algorithm: 'SHA-512' | 'SHA-256'): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const bodyData = encoder.encode(message);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: algorithm },
+    false,
+    ['sign']
+  );
+
+  const signatureBytes = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    bodyData
+  );
+
+  return Array.from(new Uint8Array(signatureBytes))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// ⭐ NOWPayments IPN Doğrulama
+// NOWPayments resmi şartnamesine göre:
+// 1. Gelen parametrelerin anahtarları alfabetik olarak sıralanır.
+// 2. JSON.stringify ile string'e dönüştürülür.
+// 3. IPN Secret Key kullanılarak HMAC-SHA512 hesaplanır.
+// 4. x-nowpayments-sig başlığındaki hex imza ile karşılaştırılır.
+async function verifySignature(payloadObj: any, rawBody: string, signature: string, secret: string): Promise<boolean> {
   try {
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const bodyData = encoder.encode(payload);
+    const cleanSig = signature.trim().toLowerCase();
 
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
+    // 1. Resmi NOWPayments Yolu: Alfabetik sıralı JSON + HMAC-SHA512
+    if (payloadObj && typeof payloadObj === 'object') {
+      const sortedObj = sortObjectKeys(payloadObj);
+      const sortedJson = JSON.stringify(sortedObj);
+      const hmac512Sorted = await computeHmacHex(sortedJson, secret, 'SHA-512');
+      if (timingSafeEqual(hmac512Sorted, cleanSig)) {
+        return true;
+      }
 
-    const signatureBytes = await crypto.subtle.sign(
-      'HMAC',
-      cryptoKey,
-      bodyData
-    );
-
-    const computedSignature = Array.from(new Uint8Array(signatureBytes))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-
-    const isValid = timingSafeEqual(computedSignature, signature);
-
-    if (!isValid) {
-      console.warn('⚠️ Signature mismatch:', { computed: computedSignature.slice(0, 10), received: signature.slice(0, 10) });
+      // Flat sıralama kontrolü (sadece en üst düzey anahtarlar)
+      const flatSortedJson = JSON.stringify(payloadObj, Object.keys(payloadObj).sort());
+      if (flatSortedJson !== sortedJson) {
+        const hmac512Flat = await computeHmacHex(flatSortedJson, secret, 'SHA-512');
+        if (timingSafeEqual(hmac512Flat, cleanSig)) {
+          return true;
+        }
+      }
     }
 
-    return isValid;
+    // 2. Fallback: Ham body + HMAC-SHA512
+    const hmac512Raw = await computeHmacHex(rawBody, secret, 'SHA-512');
+    if (timingSafeEqual(hmac512Raw, cleanSig)) {
+      return true;
+    }
+
+    // 3. Fallback: Test araçları veya eski simülasyonlar için SHA-256
+    if (payloadObj && typeof payloadObj === 'object') {
+      const sortedJson = JSON.stringify(sortObjectKeys(payloadObj));
+      const hmac256 = await computeHmacHex(sortedJson, secret, 'SHA-256');
+      if (timingSafeEqual(hmac256, cleanSig)) {
+        return true;
+      }
+    }
+    const hmac256Raw = await computeHmacHex(rawBody, secret, 'SHA-256');
+    if (timingSafeEqual(hmac256Raw, cleanSig)) {
+      return true;
+    }
+
+    console.warn('⚠️ NOWPayments signature mismatch. Received sig prefix:', cleanSig.slice(0, 10));
+    return false;
   } catch (error) {
     console.error('❌ Signature verification error:', error);
     return false;
@@ -399,7 +455,19 @@ serve(async (req) => {
       });
     }
 
-    // ⭐ 5. İMZA KONTROLÜ — ARTIK KOŞULSUZ ZORUNLU (secret'ın varlığı 3. adımda
+    // ⭐ 5. JSON PARSE
+    let payload: any;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (e) {
+      console.error('❌ Invalid JSON payload. Raw body was:', rawBody);
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // ⭐ 6. İMZA KONTROLÜ — ARTIK KOŞULSUZ ZORUNLU (secret'ın varlığı 3. adımda
     // zaten garanti edildi).
     const signature = req.headers.get('x-nowpayments-sig');
 
@@ -411,7 +479,7 @@ serve(async (req) => {
       });
     }
 
-    const isValid = await verifySignature(rawBody, signature, NOWPAYMENTS_IPN_SECRET);
+    const isValid = await verifySignature(payload, rawBody, signature, NOWPAYMENTS_IPN_SECRET);
     if (!isValid) {
       console.error('❌ Invalid signature');
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
@@ -420,18 +488,6 @@ serve(async (req) => {
       });
     }
     console.log('✅ Signature verified');
-
-    // ⭐ 6. JSON PARSE
-    let payload;
-    try {
-      payload = JSON.parse(rawBody);
-    } catch (e) {
-      console.error('❌ Invalid JSON payload. Raw body was:', rawBody);
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: { ...headers, 'Content-Type': 'application/json' }
-      });
-    }
 
     console.log('📨 Webhook received:', JSON.stringify({
       invoice_id: payload.invoice_id,
@@ -482,6 +538,27 @@ serve(async (req) => {
 
     if (!userId && payload.user_id) {
       userId = payload.user_id;
+    }
+
+    // Fallback: order_id eksikse payments tablosundan invoice_id ile eşleştir
+    if ((!userId || !planType) && invoiceId && invoiceId !== 'unknown') {
+      try {
+        const { data: dbPayment } = await supabase
+          .from('payments')
+          .select('user_id, plan_type')
+          .eq('invoice_id', String(invoiceId))
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (dbPayment) {
+          userId = dbPayment.user_id;
+          planType = dbPayment.plan_type;
+          console.log(`ℹ️ Recovered userId (${userId}) and planType (${planType}) from payments table`);
+        }
+      } catch (dbErr) {
+        console.warn('⚠️ Could not lookup payment by invoice_id:', dbErr);
+      }
     }
 
     // ⭐ 10. VALİDASYON
