@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL - OVERTRADE FEATURE
 // ============================================================
 
@@ -488,104 +488,47 @@ export async function loadOvertradeSettingsUI(containerId) {
 // ⭐ GLOBAL OVERTRADE BELL FONKSİYONU
 export async function updateOvertradeBell() {
   try {
-    // ⭐ DEBUG: Elementlerin var olup olmadığını kontrol et
-    var body = document.getElementById('bell-panel-body');
-    var dot = document.getElementById('bell-dot');
-    var bellBtn = document.getElementById('overtrade-bell-btn');
-    var markReadBtn = document.getElementById('bell-mark-read-btn');
-    
-    wwLog.log('🔔 updateOvertradeBell - Elementler:', {
-      body: !!body,
-      dot: !!dot,
-      bellBtn: !!bellBtn,
-      markReadBtn: !!markReadBtn
-    });
-    
-    if (!body) {
-      wwLog.warn('⚠️ bell-panel-body bulunamadı');
+    const sbClient = window.sb || sb;
+    if (!sbClient) return;
+
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (!session) {
+      window._activeOvertradeWarnings = [];
+      if (typeof window.loadNotifications === 'function') {
+        window.loadNotifications();
+      }
       return;
     }
 
-    if (typeof checkAndRenderOvertrade === 'function') {
-      await checkAndRenderOvertrade('bell-panel-body');
-    }
-
-    var rawContent = body.innerHTML || '';
-    var tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rawContent;
-    var textContent = tempDiv.textContent || tempDiv.innerText || '';
-    var cleanText = textContent.replace(/\s/g, '').trim();
-    var hasContent = cleanText.length > 0;
-
-    if (!hasContent) {
-      var emptyText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
-      body.innerHTML = '<div class="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText + '</span></div>';
-      if (dot) dot.style.display = 'none';
-      if (bellBtn) bellBtn.classList.remove('has-alert');
-      if (markReadBtn) markReadBtn.style.display = 'none';
+    const { plan } = await getUserPlanSilent();
+    if (plan !== 'premium') {
+      window._activeOvertradeWarnings = [];
+      if (typeof window.loadNotifications === 'function') {
+        window.loadNotifications();
+      }
       return;
     }
 
-    var OVERTRADE_READ_KEY = 'ww_overtrade_read_signature';
-    var currentOvertradeSignature = textContent.replace(/\s/g, '');
-    var readSignature = localStorage.getItem(OVERTRADE_READ_KEY) || '';
+    const { data: trades, error } = await sbClient
+      .from('trades')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('trade_date', { ascending: false });
 
-    if (readSignature && readSignature === currentOvertradeSignature) {
-      var emptyText2 = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
-      body.innerHTML = '<div class="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText2 + '</span></div>';
-      if (dot) dot.style.display = 'none';
-      if (bellBtn) bellBtn.classList.remove('has-alert');
-      if (markReadBtn) markReadBtn.style.display = 'none';
+    if (error || !trades) {
+      window._activeOvertradeWarnings = [];
+      if (typeof window.loadNotifications === 'function') {
+        window.loadNotifications();
+      }
       return;
     }
 
-    if (dot) dot.style.display = 'block';
-    if (bellBtn) bellBtn.classList.add('has-alert');
-    if (markReadBtn) markReadBtn.style.display = 'inline-flex';
+    const warnings = checkOvertrade(trades || []) || [];
+    window._activeOvertradeWarnings = warnings;
 
-    // ⭐ BUG FIX: Okundu butonuna event listener bağla (onclick kullan - duplicate binding önler)
-    if (markReadBtn) {
-      markReadBtn.onclick = function(e) {
-        e.stopPropagation();
-        wwLog.log('✅ Okundu butonuna tıklandı, bildirimler kapatılıyor...');
-        
-        try {
-          // 1. Mevcut uyarı imzasını localStorage'a kaydet
-          if (currentOvertradeSignature) {
-            localStorage.setItem(OVERTRADE_READ_KEY, currentOvertradeSignature);
-            wwLog.log('💾 OVERTRADE_READ_KEY kaydedildi:', currentOvertradeSignature);
-          }
-          
-          // 2. Panel içeriğini boşalt
-          if (body) {
-            var emptyText3 = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('nav.no_notifications') : 'Yeni bildirim yok';
-            body.innerHTML = '<div class="bell-panel-empty"><span class="empty-icon">🔕</span><span>' + emptyText3 + '</span></div>';
-          }
-          
-          // 3. Zil uyarı durumunu kaldır
-          if (dot) dot.style.display = 'none';
-          if (bellBtn) bellBtn.classList.remove('has-alert');
-          if (markReadBtn) markReadBtn.style.display = 'none';
-          
-          // 4. Bell panelini kapat
-          var bellPanel = document.getElementById('bell-panel');
-          if (bellPanel) bellPanel.classList.remove('open');
-          
-          // 5. Toast göster
-          if (typeof showToast === 'function') {
-            showToast('✅ Bildirimler okundu olarak işaretlendi', 'success');
-          }
-          
-          wwLog.log('✅ OverTrade bildirimleri okundu olarak işaretlendi');
-        } catch(err) {
-          wwLog.warn('Okundu işaretleme hatası:', err);
-          if (typeof showToast === 'function') {
-            showToast('❌ Bildirimler okundu işaretlenirken hata oluştu', 'error');
-          }
-        }
-      };
+    if (typeof window.loadNotifications === 'function') {
+      await window.loadNotifications();
     }
-
   } catch(e) {
     wwLog.warn('updateOvertradeBell hatası:', e);
   }

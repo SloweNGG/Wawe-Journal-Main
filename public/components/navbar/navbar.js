@@ -1,27 +1,142 @@
+function closeAllNavDropdowns(except) {
+  // 1. Premium dropdown
+  if (except !== 'premium') {
+    var pMenu = document.getElementById('premium-dropdown-menu');
+    var pBtn = document.getElementById('premium-dropdown-btn');
+    if (pMenu) pMenu.classList.remove('open');
+    if (pBtn) pBtn.classList.remove('active');
+  }
+
+  // 2. Journal switcher
+  if (except !== 'journal') {
+    var js = document.getElementById('nav-journal-switcher');
+    if (js) js.classList.remove('open');
+  }
+
+  // 3. Bell notification panel
+  if (except !== 'bell') {
+    var bell = document.getElementById('bell-panel');
+    var bellBtn = document.getElementById('overtrade-bell-btn');
+    if (bell) bell.classList.remove('open');
+    if (bellBtn) bellBtn.classList.remove('active');
+  }
+
+  // 4. User avatar dropdown
+  if (except !== 'avatar') {
+    var av = document.getElementById('dropdown-menu');
+    var avBtn = document.getElementById('user-avatar');
+    if (av) av.classList.remove('show');
+    if (avBtn) avBtn.classList.remove('active');
+  }
+
+  // 5. Mobile menu
+  if (except !== 'mobile') {
+    var toggle = document.getElementById('nav-toggle');
+    var menu = document.getElementById('nav-menu');
+    var backdrop = document.getElementById('nav-backdrop');
+    if (toggle) toggle.classList.remove('open');
+    if (menu) menu.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+window.closeAllNavDropdowns = closeAllNavDropdowns;
+
 window.wwTogglePremium = function(e, btn) {
   if (e) {
     e.preventDefault();
     e.stopPropagation();
   }
-  if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('premium');
   var m = document.getElementById('premium-dropdown-menu');
   var b = btn || document.getElementById('premium-dropdown-btn');
+  var willOpen = m ? !m.classList.contains('open') : false;
+  closeAllNavDropdowns(willOpen ? 'premium' : null);
   if (m) {
-    var isOpen = m.classList.toggle('open');
-    if (b) b.classList.toggle('active', isOpen);
+    m.classList.toggle('open', willOpen);
+    if (b) b.classList.toggle('active', willOpen);
+  }
+};
+
+window.wwToggleJournal = function(e, btn) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  var js = document.getElementById('nav-journal-switcher');
+  var willOpen = js ? !js.classList.contains('open') : false;
+  closeAllNavDropdowns(willOpen ? 'journal' : null);
+  if (js) {
+    js.classList.toggle('open', willOpen);
   }
 };
 
 window.wwToggleBell = function(e, btn) {
-  e.preventDefault();
-  e.stopPropagation();
-  if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('bell');
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
   var p = document.getElementById('bell-panel');
-  if(p) {
-    var isOpen = p.classList.toggle('open');
-    if (isOpen) {
+  var b = btn || document.getElementById('overtrade-bell-btn');
+  var willOpen = p ? !p.classList.contains('open') : false;
+  closeAllNavDropdowns(willOpen ? 'bell' : null);
+  if (p) {
+    p.classList.toggle('open', willOpen);
+    if (b) b.classList.toggle('active', willOpen);
+    if (willOpen && typeof window.loadNotifications === 'function') {
       window.loadNotifications();
     }
+  }
+};
+
+window.wwToggleAvatar = function(e, btn) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  var d = document.getElementById('dropdown-menu');
+  var b = btn || document.getElementById('user-avatar');
+  var willOpen = d ? !d.classList.contains('show') : false;
+  closeAllNavDropdowns(willOpen ? 'avatar' : null);
+  if (d) {
+    d.classList.toggle('show', willOpen);
+    if (b) b.classList.toggle('active', willOpen);
+  }
+};
+
+window.wwNotifTab = 'all';
+window._allNotifications = [];
+
+window.wwGoToOvertradeSettings = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  var panel = document.getElementById('bell-panel');
+  if (panel) panel.classList.remove('open');
+
+  if (window.location.pathname.indexOf('settings') !== -1) {
+    if (typeof window.switchPanel === 'function') {
+      window.switchPanel('panel-overtrade');
+    } else {
+      window.location.hash = 'panel-overtrade';
+    }
+  } else {
+    window.location.href = '/settings.html#panel-overtrade';
+  }
+};
+
+window.wwSwitchNotifTab = function(tabName) {
+  window.wwNotifTab = tabName || 'all';
+  var buttons = document.querySelectorAll('.bell-tab-btn');
+  buttons.forEach(function(btn) {
+    if (btn.getAttribute('data-tab') === window.wwNotifTab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  if (typeof window.renderNotifications === 'function') {
+    window.renderNotifications();
   }
 };
 
@@ -29,9 +144,28 @@ window.wwMarkAllAsRead = async function() {
   try {
     var sb = window.sb || window.supabase;
     var user = window.SETTINGS_STATE?.currentUser;
-    if (!sb || !user) return;
-    await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
-    window.loadNotifications();
+
+    if (sb && user) {
+      await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
+    }
+
+    // Overtrade uyarılarını da okundu yap
+    if (Array.isArray(window._allNotifications)) {
+      window._allNotifications.forEach(function(item) {
+        if (item.is_overtrade && item.rawId && typeof window.dismissOvertradeWarning === 'function') {
+          window.dismissOvertradeWarning(item.rawId);
+        }
+        item.is_read = true;
+      });
+    }
+
+    if (typeof window.renderNotifications === 'function') {
+      window.renderNotifications();
+    }
+
+    if (typeof showToast === 'function') {
+      showToast('✅ Tüm bildirimler okundu olarak işaretlendi', 'success');
+    }
   } catch (err) {
     console.error('Mark all read error:', err);
   }
@@ -40,94 +174,308 @@ window.wwMarkAllAsRead = async function() {
 window.wwMarkAsRead = async function(e, id) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   try {
-    var sb = window.sb || window.supabase;
-    var user = window.SETTINGS_STATE?.currentUser;
-    if (!sb || !user) return;
-    await sb.rpc('mark_notification_as_read', { p_user_id: user.id, p_notification_id: id });
-    window.loadNotifications();
+    var item = (window._allNotifications || []).find(function(n) { return n.id === id; });
+    if (item) {
+      item.is_read = true;
+    }
+
+    if (id && id.toString().startsWith('ot_')) {
+      var otId = item ? item.rawId : id.replace(/^ot_/, '');
+      if (typeof window.dismissOvertradeWarning === 'function') {
+        window.dismissOvertradeWarning(otId);
+      }
+    } else {
+      var sb = window.sb || window.supabase;
+      var user = window.SETTINGS_STATE?.currentUser;
+      if (sb && user) {
+        await sb.rpc('mark_notification_as_read', { p_user_id: user.id, p_notification_id: id });
+      }
+    }
+
+    if (typeof window.renderNotifications === 'function') {
+      window.renderNotifications();
+    }
   } catch (err) {
     console.error('Mark read error:', err);
   }
+};
+
+function formatNotifTime(dateInput) {
+  try {
+    var date = new Date(dateInput);
+    if (isNaN(date.getTime())) return t('noti.just_now', 'Az önce');
+    var diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diffSec < 60) return t('noti.just_now', 'Az önce');
+    var diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) {
+      var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+      var minSuffix = lang === 'en' ? 'min ago' : lang === 'de' ? 'Min. zuvor' : 'dk önce';
+      return diffMin + ' ' + minSuffix;
+    }
+    var diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return t('noti.hours_ago', '{h} saat önce', { h: diffHours });
+    var diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return t('noti.days_ago', '{d} gün önce', { d: diffDays });
+    var currentLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+    var locale = currentLang === 'en' ? 'en-US' : currentLang === 'de' ? 'de-DE' : 'tr-TR';
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  } catch(e) {
+    return 'az önce';
+  }
+}
+
+window.renderNotifications = function() {
+  var body = document.getElementById('bell-panel-body');
+  var badge = document.getElementById('bell-badge');
+  var dot = document.getElementById('bell-dot');
+  var bellBtn = document.getElementById('overtrade-bell-btn');
+  var markReadBtn = document.getElementById('bell-mark-read-btn');
+  var unreadPill = document.getElementById('bell-unread-pill');
+
+  var all = window._allNotifications || [];
+  var unreadList = all.filter(function(n) { return !n.is_read; });
+  var riskList = all.filter(function(n) { return n.category === 'risk'; });
+  var systemList = all.filter(function(n) { return n.category !== 'risk'; });
+
+  // Tab sayılarını güncelle
+  var cAll = document.getElementById('bell-tab-all-count');
+  var cUnread = document.getElementById('bell-tab-unread-count');
+  var cRisk = document.getElementById('bell-tab-risk-count');
+  var cSys = document.getElementById('bell-tab-system-count');
+
+  if (cAll) cAll.textContent = all.length;
+  if (cUnread) cUnread.textContent = unreadList.length;
+  if (cRisk) cRisk.textContent = riskList.length;
+  if (cSys) cSys.textContent = systemList.length;
+
+  // Rozet ve sayaç güncelle
+  var totalUnread = unreadList.length;
+  if (totalUnread > 0) {
+    if (badge) {
+      badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+      badge.style.display = 'flex';
+    }
+    if (dot) dot.style.display = 'block';
+    if (bellBtn) bellBtn.classList.add('has-alert');
+    if (markReadBtn) markReadBtn.style.display = 'inline-flex';
+    if (unreadPill) {
+      unreadPill.textContent = totalUnread + ' ' + t('noti.new_suffix', 'yeni');
+      unreadPill.style.display = 'inline-block';
+    }
+  } else {
+    if (badge) badge.style.display = 'none';
+    if (dot) dot.style.display = 'none';
+    if (bellBtn) bellBtn.classList.remove('has-alert');
+    if (markReadBtn) markReadBtn.style.display = 'none';
+    if (unreadPill) {
+      unreadPill.textContent = t('noti.up_to_date', 'Güncel');
+      unreadPill.style.display = 'none';
+    }
+  }
+
+  if (!body) return;
+
+  // Filtreleme
+  var filtered = all;
+  var currentTab = window.wwNotifTab || 'all';
+  if (currentTab === 'unread') {
+    filtered = unreadList;
+  } else if (currentTab === 'risk') {
+    filtered = riskList;
+  } else if (currentTab === 'system') {
+    filtered = systemList;
+  }
+
+  if (filtered.length === 0) {
+    var emptyIcon = 'bell-off';
+    var emptyTitle = t('noti.empty_title', 'Yeni Bildirim Yok');
+    var emptyDesc = t('noti.empty_desc', 'Şu an için her şey yolunda görünüyor.');
+
+    if (currentTab === 'unread') {
+      emptyIcon = 'check-circle-2';
+      emptyTitle = t('noti.empty_unread_title', 'Tüm Bildirimler Okundu!');
+      emptyDesc = t('noti.empty_unread_desc', 'Okunmamış herhangi bir bildirim veya risk uyarınız bulunmuyor.');
+    } else if (currentTab === 'risk') {
+      emptyIcon = 'shield-check';
+      emptyTitle = t('noti.empty_risk_title', 'Risk Uyarısı Bulunmuyor');
+      emptyDesc = t('noti.empty_risk_desc', 'Tüm işlemleriniz ve overtrade risk limitleriniz güvenli seviyede.');
+    } else if (currentTab === 'system') {
+      emptyIcon = 'bell-off';
+      emptyTitle = t('noti.empty_system_title', 'Sistem Bildirimi Yok');
+      emptyDesc = t('noti.empty_system_desc', 'Hesabınız veya platform duyurularıyla ilgili yeni bir bildirim yok.');
+    }
+
+    body.innerHTML = `
+      <div class="bell-panel-empty">
+        <div class="bell-empty-icon-wrap">
+          <i data-lucide="${emptyIcon}"></i>
+        </div>
+        <div class="bell-empty-title">${emptyTitle}</div>
+        <div class="bell-empty-desc">${emptyDesc}</div>
+      </div>
+    `;
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(n) {
+    var timeStr = formatNotifTime(n.created_at);
+    var otStatsHtml = '';
+
+    if (n.stats) {
+      var isOver = (n.stats.current || 0) > (n.stats.limit || 0);
+      var typeTitle = n.stats.type === 'daily_trades' ? t('overtrade.daily_trades', 'Günlük İşlem') :
+                      n.stats.type === 'weekly_trades' ? t('overtrade.weekly_trades', 'Haftalık İşlem') :
+                      n.stats.type === 'daily_loss' ? t('overtrade.loss', 'Günlük Kayıp') : t('noti.tab_risk', 'Risk Limiti');
+      var limitExceededText = t('noti.limit_exceeded', 'LİMİT AŞILDI');
+      otStatsHtml = `
+        <div class="noti-ot-stats">
+          <div class="noti-stat-chip ${isOver ? 'limit-danger' : ''}">
+            <span>${n.stats.current || 0}</span>
+            <span style="opacity:0.4;">/</span>
+            <span style="opacity:0.8;">${n.stats.limit || 0}</span>
+          </div>
+          <span class="noti-stat-chip">${typeTitle}</span>
+          ${isOver ? `<span class="noti-stat-chip limit-danger">⚠️ ${limitExceededText}</span>` : ''}
+        </div>
+      `;
+    }
+
+    var markReadText = t('noti.mark_read_single', 'Okundu');
+    html += `
+      <div class="noti-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
+        ${!n.is_read ? '<span class="noti-unread-dot"></span>' : ''}
+        <div class="noti-icon ${n.type}">
+          <i data-lucide="${n.iconName}"></i>
+        </div>
+        <div class="noti-content">
+          <div class="noti-header-row">
+            <span class="noti-tag ${n.type}">${n.tagText}</span>
+            ${!n.is_read ? `
+              <button class="noti-mark-read" onclick="window.wwMarkAsRead(event, '${n.id}')" title="${markReadText}">
+                <i data-lucide="check"></i>
+                <span>${markReadText}</span>
+              </button>
+            ` : ''}
+          </div>
+          <h4 class="noti-title">${window.sanitizeHTML ? sanitizeHTML(n.title) : n.title}</h4>
+          <div class="noti-desc">${window.sanitizeHTML ? sanitizeHTML(n.message) : n.message}</div>
+          ${otStatsHtml}
+          <div class="noti-bottom-row">
+            <span class="noti-time">
+              <i data-lucide="clock"></i>
+              <span>${timeStr}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  body.innerHTML = html;
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 };
 
 window.loadNotifications = async function() {
   try {
     var sb = window.sb || window.supabase;
     var user = window.SETTINGS_STATE?.currentUser;
-    if (!sb || !user) return;
+    var combined = [];
 
-    var { data: notis, error } = await sb
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) throw error;
-
-    var unreadCount = notis.filter(function(n) { return !n.is_read; }).length;
-    var dot = document.getElementById('bell-dot');
-    if (dot) dot.style.display = unreadCount > 0 ? 'block' : 'none';
-
-    var markReadBtn = document.getElementById('bell-mark-read-btn');
-    if (markReadBtn) markReadBtn.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
-
-    var body = document.getElementById('bell-panel-body');
-    if (!body) return;
-
-    if (!notis || notis.length === 0) {
-      body.innerHTML = `
-        <div class="bell-panel-empty">
-          <i data-lucide="bell-off" style="width:24px;height:24px;color:var(--muted);margin-bottom:8px;"></i>
-          <span style="font-weight:600;color:var(--text);">${t('noti.empty_title', 'Yeni Bildirim Yok')}</span>
-          <span style="font-size:11px;margin-top:2px;">${t('noti.empty_desc', 'Şu an için her şey yolunda görünüyor.')}</span>
-        </div>
-      `;
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-      return;
+    // 1. OverTrade risk uyarılarını topla
+    var otWarnings = window._activeOvertradeWarnings || [];
+    if ((!otWarnings || otWarnings.length === 0) && typeof window.checkOvertrade === 'function' && sb && user) {
+      try {
+        var { data: trades } = await sb
+          .from('trades')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('trade_date', { ascending: false });
+        if (trades) {
+          otWarnings = window.checkOvertrade(trades) || [];
+          window._activeOvertradeWarnings = otWarnings;
+        }
+      } catch (otErr) {}
     }
 
-    var html = '';
-    notis.forEach(function(n) {
-      var iconName = 'bell';
-      var typeClass = 'info';
-      
-      if (n.type === 'success') { iconName = 'check-circle-2'; typeClass = 'success'; }
-      else if (n.type === 'error') { iconName = 'alert-circle'; typeClass = 'error'; }
-      else if (n.type === 'warning') { iconName = 'alert-triangle'; typeClass = 'warning'; }
-      else if (n.type === 'finance') { iconName = 'wallet'; typeClass = 'finance'; }
-      else if (n.type === 'info') { iconName = 'info'; typeClass = 'info'; }
+    if (Array.isArray(otWarnings)) {
+      otWarnings.forEach(function(w) {
+        var isDanger = w.level === 'danger';
+        var otId = w.id || w.type || 'warning';
+        var isDismissed = false;
+        if (typeof window.isOvertradeWarningDismissed === 'function') {
+          isDismissed = window.isOvertradeWarningDismissed(otId);
+        }
 
-      var title = t(n.title_key, n.title_key, n.meta_data);
-      var desc = t(n.message_key, n.message_key, n.meta_data);
-      
-      var date = new Date(n.created_at);
-      var diffHours = Math.floor((new Date() - date) / (1000 * 60 * 60));
-      var diffDays = Math.floor(diffHours / 24);
-      var timeStr = '';
-      if (diffHours < 1) timeStr = t('noti.just_now', 'Şimdi');
-      else if (diffHours < 24) timeStr = t('noti.hours_ago', '{h} saat önce', { h: diffHours });
-      else timeStr = t('noti.days_ago', '{d} gün önce', { d: diffDays });
+        var criticalText = t('noti.tag_critical', 'KRİTİK RİSK');
+        var warningText = t('noti.tag_warning', 'RİSK UYARISI');
+        var critTitle = t('noti.overtrade_warning_title', 'Kritik Risk Limiti Aşıldı!');
+        var warnTitle = t('noti.overtrade_warning_title', 'Over Trade Uyarısı');
 
-      html += `
-        <div class="noti-item ${n.is_read ? '' : 'unread'}">
-          <div class="noti-icon ${typeClass}">
-            <i data-lucide="${iconName}" style="width:18px;height:18px;"></i>
-          </div>
-          <div class="noti-content">
-            <div class="noti-title">
-              <span>${window.sanitizeHTML ? sanitizeHTML(title) : title}</span>
-              ${!n.is_read ? `<button class="noti-mark-read" onclick="wwMarkAsRead(event, '${n.id}')" title="Okundu işaretle"><i data-lucide="check" style="width:14px;height:14px;"></i></button>` : ''}
-            </div>
-            <div class="noti-desc">${window.sanitizeHTML ? sanitizeHTML(desc) : desc}</div>
-            <div class="noti-time"><i data-lucide="clock" style="width:10px;height:10px;"></i> ${timeStr}</div>
-          </div>
-        </div>
-      `;
-    });
+        combined.push({
+          id: 'ot_' + otId,
+          rawId: otId,
+          category: 'risk',
+          type: isDanger ? 'danger' : 'warning',
+          tagText: isDanger ? criticalText : warningText,
+          iconName: isDanger ? 'octagon-alert' : 'triangle-alert',
+          title: isDanger ? critTitle : warnTitle,
+          message: w.message || 'Belirlenen işlem limitinize yaklaştınız.',
+          stats: { current: w.current, limit: w.limit, type: w.type },
+          is_read: isDismissed,
+          created_at: Date.now(),
+          is_overtrade: true
+        });
+      });
+    }
 
-    body.innerHTML = html;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    // 2. Supabase sistem & kullanıcı bildirimlerini topla
+    if (sb && user) {
+      var { data: notis, error } = await sb
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if (!error && Array.isArray(notis)) {
+        notis.forEach(function(n) {
+          var isRisk = n.type === 'error' || n.type === 'warning';
+          var iconName = 'bell';
+          var tagText = t('noti.tag_info', 'SİSTEM');
+
+          if (n.type === 'success') { iconName = 'check-circle-2'; tagText = t('noti.tag_success', 'BAŞARILI'); }
+          else if (n.type === 'error') { iconName = 'alert-circle'; tagText = t('noti.tag_critical', 'KRİTİK RİSK'); }
+          else if (n.type === 'warning') { iconName = 'alert-triangle'; tagText = t('noti.tag_warning', 'RİSK UYARISI'); }
+          else if (n.type === 'finance') { iconName = 'wallet'; tagText = t('noti.tag_finance', 'FİNANS'); }
+          else if (n.type === 'premium') { iconName = 'crown'; tagText = t('noti.tag_premium', 'PREMİUM'); }
+          else { iconName = 'info'; tagText = t('noti.tag_info', 'SİSTEM'); }
+
+          var helperT = typeof t === 'function' ? t : function(k, f) { return f || k; };
+          var title = helperT(n.title_key, n.title_key, n.meta_data);
+          var desc = helperT(n.message_key, n.message_key, n.meta_data);
+
+          combined.push({
+            id: n.id,
+            rawId: n.id,
+            category: isRisk ? 'risk' : 'system',
+            type: n.type || 'info',
+            tagText: tagText,
+            iconName: iconName,
+            title: title,
+            message: desc,
+            stats: null,
+            is_read: !!n.is_read,
+            created_at: n.created_at,
+            is_overtrade: false
+          });
+        });
+      }
+    }
+
+    window._allNotifications = combined;
+    window.renderNotifications();
   } catch (err) {
     console.error('Load notifications error:', err);
   }
@@ -138,24 +486,14 @@ var _isFetchingBadge = false;
 
 window.updateNotificationBadge = async function(force) {
   try {
-    var sb = window.sb || window.supabase;
-    var user = window.SETTINGS_STATE?.currentUser;
-    if (!sb || !user) return;
-
     var now = Date.now();
-    if (!force && (now - _lastBadgeFetch < 5000 || _isFetchingBadge)) {
+    if (!force && (now - _lastBadgeFetch < 4000 || _isFetchingBadge)) {
       return;
     }
     _isFetchingBadge = true;
     _lastBadgeFetch = now;
 
-    var { data, error } = await sb.rpc('get_unread_notifications_count', { p_user_id: user.id });
-    var dot = document.getElementById('bell-dot');
-    if (!error && data > 0) {
-      if (dot) dot.style.display = 'block';
-    } else if (!error && data === 0) {
-      if (dot) dot.style.display = 'none';
-    }
+    await window.loadNotifications();
   } catch (err) {
     // Graceful error handling
   } finally {
@@ -268,30 +606,48 @@ function getNavbarHTML(translations) {
       
       <div class="nav-right">
         <div class="nav-dropdown">
-          <button class="nav-dropdown-btn" id="premium-dropdown-btn" onclick="wwTogglePremium(event, this)">
+          <button class="nav-dropdown-btn" id="premium-dropdown-btn" aria-haspopup="true" aria-expanded="false" onclick="wwTogglePremium(event, this)">
             <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.premium">${tt('nav.premium', 'Premium')}</span>
             <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
           </button>
-          <div class="nav-dropdown-menu" id="premium-dropdown-menu">
-            <div class="menu-label" data-i18n="nav.premium_features">${tt('nav.premium_features', '✨ Premium Özellikler')}</div>
-            <a href="/premium-dashboard.html">
-              <i data-lucide="layout-dashboard" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
-            </a>
-            <a href="/settings.html#panel-appearance">
-              <i data-lucide="palette" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
-            </a>
-            <a href="/settings.html#panel-overtrade">
-              <i data-lucide="bell" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="/settings.html#panel-plan" style="color:var(--accent); font-weight:700;">
-              <i data-lucide="rocket" class="premium-icon" style="width:16px;height:16px;"></i>
-              <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
-            </a>
+          <div class="nav-dropdown-menu premium-menu-glass" id="premium-dropdown-menu" role="menu">
+            <div class="premium-menu-header">
+              <span class="premium-menu-title" data-i18n="nav.premium_features">${tt('nav.premium_features', 'Premium Özellikler')}</span>
+              <span class="premium-menu-tag">PRO</span>
+            </div>
+            <div class="premium-menu-items">
+              <a href="/premium-dashboard.html" class="premium-menu-item" role="menuitem">
+                <div class="p-item-icon">
+                  <i data-lucide="layout-dashboard"></i>
+                </div>
+                <div class="p-item-content">
+                  <span class="p-item-title" data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
+                </div>
+              </a>
+              <a href="/settings.html#panel-appearance" class="premium-menu-item" role="menuitem">
+                <div class="p-item-icon">
+                  <i data-lucide="palette"></i>
+                </div>
+                <div class="p-item-content">
+                  <span class="p-item-title" data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
+                </div>
+              </a>
+              <a href="/settings.html#panel-overtrade" class="premium-menu-item" role="menuitem">
+                <div class="p-item-icon">
+                  <i data-lucide="shield-alert"></i>
+                </div>
+                <div class="p-item-content">
+                  <span class="p-item-title" data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
+                </div>
+              </a>
+            </div>
+            <div class="premium-menu-footer">
+              <a href="/settings.html#panel-plan" class="premium-upgrade-cta" role="menuitem">
+                <i data-lucide="sparkles" class="cta-sparkle"></i>
+                <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -307,31 +663,73 @@ function getNavbarHTML(translations) {
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
           <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="wwToggleBell(event, this)">
             <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <span class="bell-badge" id="bell-badge" style="display:none;">0</span>
             <span class="bell-dot" id="bell-dot" style="display:none;"></span>
           </button>
-          <div class="bell-panel" id="bell-panel">
+          <div class="bell-panel" id="bell-panel" role="dialog" aria-label="Bildirim Paneli">
             <div class="bell-panel-header">
-              <h3 data-i18n="nav.notifications">🔔 ${tt('nav.notifications', 'Bildirimler')}</h3>
-              <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read" onclick="window.wwMarkAllAsRead()">✓ ${tt('nav.mark_read', 'Okundu')}</button>
-                <button class="bell-panel-close" id="bell-panel-close">✕</button>
+              <div class="bell-panel-title-wrap">
+                <div class="bell-panel-title-text">
+                  <h3 data-i18n="nav.notifications">${tt('nav.notifications', 'Bildirimler')}</h3>
+                  <span class="bell-unread-pill" id="bell-unread-pill" style="display:none;">0 yeni</span>
+                </div>
               </div>
+              <div class="bell-panel-header-actions">
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read" onclick="window.wwMarkAllAsRead()" title="Tümünü Okundu İşaretle">
+                  <i data-lucide="check-check"></i>
+                  <span data-i18n="nav.mark_read">${tt('nav.mark_read', 'Tümünü Oku')}</span>
+                </button>
+                <button class="bell-panel-close" id="bell-panel-close" title="Kapat" aria-label="Kapat">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+            </div>
+            <div class="bell-filter-tabs" id="bell-filter-tabs">
+              <button type="button" class="bell-tab-btn active" data-tab="all" onclick="window.wwSwitchNotifTab('all')">
+                <span data-i18n="noti.tab_all">${tt('noti.tab_all', 'Tümü')}</span>
+                <span class="tab-count" id="bell-tab-all-count">0</span>
+              </button>
+              <button type="button" class="bell-tab-btn" data-tab="unread" onclick="window.wwSwitchNotifTab('unread')">
+                <span data-i18n="noti.tab_unread">${tt('noti.tab_unread', 'Okunmamış')}</span>
+                <span class="tab-count" id="bell-tab-unread-count">0</span>
+              </button>
+              <button type="button" class="bell-tab-btn" data-tab="risk" onclick="window.wwSwitchNotifTab('risk')">
+                <span data-i18n="noti.tab_risk">${tt('noti.tab_risk', 'Risk & Limit')}</span>
+                <span class="tab-count" id="bell-tab-risk-count">0</span>
+              </button>
+              <button type="button" class="bell-tab-btn" data-tab="system" onclick="window.wwSwitchNotifTab('system')">
+                <span data-i18n="noti.tab_system">${tt('noti.tab_system', 'Sistem')}</span>
+                <span class="tab-count" id="bell-tab-system-count">0</span>
+              </button>
             </div>
             <div class="bell-panel-body" id="bell-panel-body">
               <div class="bell-panel-empty">
-                <span class="empty-icon">🔕</span>
-                <span data-i18n="nav.no_notifications">${tt('nav.no_notifications', 'Yeni bildirim yok')}</span>
+                <div class="bell-empty-icon-wrap">
+                  <i data-lucide="bell-off"></i>
+                </div>
+                <div class="bell-empty-title" data-i18n="noti.empty_title">${tt('noti.empty_title', 'Yeni Bildirim Yok')}</div>
+                <div class="bell-empty-desc" data-i18n="noti.empty_desc">${tt('noti.empty_desc', 'Şu an için her şey yolunda görünüyor.')}</div>
               </div>
+            </div>
+            <div class="bell-panel-footer">
+              <a href="/settings.html#panel-overtrade" class="bell-footer-link" onclick="window.wwGoToOvertradeSettings(event)">
+                <i data-lucide="sliders-horizontal"></i>
+                <span data-i18n="noti.overtrade_settings">${tt('noti.overtrade_settings', 'Overtrade ve Risk Ayarları')}</span>
+              </a>
             </div>
           </div>
         </div>
         
-        <div class="plan-badge" id="plan-badge">
+        <div class="plan-badge" id="plan-badge" role="button" tabindex="0" aria-label="Abonelik Planı">
           <span class="plan-dot"></span>
           <span class="plan-text" id="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
+          <div class="plan-badge-tooltip" id="plan-badge-tooltip" role="tooltip">
+            <div class="plan-tooltip-title" id="plan-tooltip-title">${tt('nav.plan_tooltip_free', 'Ücretsiz Plan')}</div>
+            <div class="plan-tooltip-sub" id="plan-tooltip-sub">${tt('nav.plan_tooltip_free_desc', 'Sınırsız Süre')}</div>
+          </div>
         </div>
         
-        <div class="user-avatar" id="user-avatar">
+        <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleAvatar(event, this)">
           <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
         </div>
         
@@ -495,7 +893,31 @@ function updateNavbarI18n() {
   placeholderUpdates.forEach(function(item) { item.el.setAttribute('placeholder', item.translation); });
   htmlUpdates.forEach(function(item) { item.el.innerHTML = item.translation; });
 
+  if (typeof window.renderNotifications === 'function') {
+    try { window.renderNotifications(); } catch(e) {}
+  }
+
+  if (typeof updateNavbarJournal === 'function') {
+    try { updateNavbarJournal(0); } catch(e) {}
+  }
+
   updateNavbarBadgeSync();
+}
+
+if (typeof window !== 'undefined') {
+  if (window.i18n && typeof window.i18n.onChange === 'function') {
+    window.i18n.onChange(function() {
+      updateNavbarI18n();
+    });
+  } else if (window.i18nReady && typeof window.i18nReady.then === 'function') {
+    window.i18nReady.then(function() {
+      if (window.i18n && typeof window.i18n.onChange === 'function') {
+        window.i18n.onChange(function() {
+          updateNavbarI18n();
+        });
+      }
+    });
+  }
 }
 
 function applyAvatarToNav(url) {
@@ -616,10 +1038,12 @@ async function loadNavbarAvatar() {
   }
 }
 
-function updateBadgeUI(isPremium) {
+function updateBadgeUI(isPremium, expiresAt) {
   var badge = document.getElementById('plan-badge');
   var text = document.getElementById('plan-text');
   var menuPlan = document.getElementById('menu-user-plan');
+  var tipTitle = document.getElementById('plan-tooltip-title');
+  var tipSub = document.getElementById('plan-tooltip-sub');
 
   if (window.SETTINGS_STATE) window.SETTINGS_STATE.isPremium = isPremium;
 
@@ -632,6 +1056,47 @@ function updateBadgeUI(isPremium) {
   var freeText = t('nav.free_badge', 'Free');
 
   if (text) text.textContent = isPremium ? premiumText : freeText;
+
+  // Tooltip içeriğini güncelle (kalan süre ve bitiş tarihi)
+  if (tipTitle && tipSub) {
+    var currentLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+    var locale = currentLang === 'en' ? 'en-US' : currentLang === 'de' ? 'de-DE' : 'tr-TR';
+
+    if (!isPremium) {
+      tipTitle.textContent = t('nav.plan_tooltip_free', 'Ücretsiz Plan');
+      tipSub.textContent = t('nav.plan_tooltip_free_desc', 'Sınırsız Süre');
+    } else if (!expiresAt) {
+      tipTitle.textContent = t('nav.plan_tooltip_premium', 'Premium Üyelik');
+      tipSub.textContent = t('nav.plan_tooltip_lifetime', 'Sınırsız Erişim');
+    } else {
+      var exp = new Date(expiresAt);
+      if (isNaN(exp.getTime())) {
+        tipTitle.textContent = t('nav.plan_tooltip_premium', 'Premium Üyelik');
+        tipSub.textContent = t('nav.plan_tooltip_lifetime', 'Sınırsız Erişim');
+      } else {
+        var diffMs = exp.getTime() - Date.now();
+        if (diffMs <= 0) {
+          tipTitle.textContent = t('nav.plan_tooltip_expired', 'Süresi Doldu');
+          tipSub.textContent = t('nav.plan_tooltip_expires', 'Bitiş: {date}', {
+            date: exp.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+          });
+        } else {
+          var daysLeft = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          var dateStr = exp.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+          if (daysLeft > 0) {
+            tipTitle.textContent = t('nav.plan_tooltip_days_left', '{d} gün kaldı', { d: daysLeft });
+            tipSub.textContent = t('nav.plan_tooltip_expires', 'Bitiş: {date}', { date: dateStr });
+          } else {
+            var hoursLeft = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60)));
+            tipTitle.textContent = t('nav.plan_tooltip_hours_left', '{h} saat kaldı', { h: hoursLeft });
+            tipSub.textContent = t('nav.plan_tooltip_expires', 'Bitiş: {date}', {
+              date: exp.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+            });
+          }
+        }
+      }
+    }
+  }
 
   if (menuPlan) {
     var dot = menuPlan.querySelector('.plan-dot');
@@ -660,17 +1125,20 @@ async function updateNavbarBadge() {
 
     var now = Date.now();
     var storedPlan = sessionStorage.getItem('ww_user_plan');
+    var storedExp = sessionStorage.getItem('ww_user_plan_expires_at');
     var storedPlanTime = sessionStorage.getItem('ww_user_plan_time');
     if (storedPlan && storedPlanTime && (now - parseInt(storedPlanTime, 10)) < 300000) {
-      updateBadgeUI(storedPlan === 'premium');
+      updateBadgeUI(storedPlan === 'premium', storedExp || null);
       return;
     }
 
     if (window.__wwUserProfile && window.__wwUserProfile.plan) {
       var isPrem = window.__wwUserProfile.plan === 'premium';
+      var expVal = window.__wwUserProfile.plan_expires_at || null;
       sessionStorage.setItem('ww_user_plan', isPrem ? 'premium' : 'free');
+      sessionStorage.setItem('ww_user_plan_expires_at', expVal || '');
       sessionStorage.setItem('ww_user_plan_time', String(now));
-      updateBadgeUI(isPrem);
+      updateBadgeUI(isPrem, expVal);
       return;
     }
 
@@ -681,18 +1149,21 @@ async function updateNavbarBadge() {
     var user = sessionRes?.data?.session?.user;
     if (!user) { updateNavbarBadgeSync(); return; }
 
-    var { data: profile } = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
+    var { data: profile } = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
     var isPremium = profile?.plan === 'premium';
+    var expiresAt = profile?.plan_expires_at || null;
 
     try {
       sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
+      sessionStorage.setItem('ww_user_plan_expires_at', expiresAt || '');
       sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
     } catch (e) {}
 
-    updateBadgeUI(isPremium);
+    updateBadgeUI(isPremium, expiresAt);
   } catch (e) {
     var fallbackPlan = sessionStorage.getItem('ww_user_plan');
-    if (fallbackPlan) updateBadgeUI(fallbackPlan === 'premium');
+    var fallbackExp = sessionStorage.getItem('ww_user_plan_expires_at');
+    if (fallbackPlan) updateBadgeUI(fallbackPlan === 'premium', fallbackExp || null);
     else updateNavbarBadgeSync();
   }
 }
@@ -703,7 +1174,8 @@ function updateNavbarBadgeSync() {
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
     var isPremium = window.SETTINGS_STATE?.isPremium || false;
-    updateBadgeUI(isPremium);
+    var exp = sessionStorage.getItem('ww_user_plan_expires_at') || null;
+    updateBadgeUI(isPremium, exp);
   } catch (e) {}
 }
 
@@ -737,66 +1209,7 @@ var avatarDropdownInitialized = false;
 function setupAvatarDropdown() {
   if (avatarDropdownInitialized) return;
   avatarDropdownInitialized = true;
-
-  document.addEventListener('click', function(e) {
-    var avatar = document.getElementById('user-avatar');
-    var dropdown = document.getElementById('dropdown-menu');
-    if (!avatar || !dropdown) return;
-
-    if (e.target && e.target.closest && e.target.closest('#user-avatar')) {
-      e.preventDefault();
-      if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('avatar');
-      dropdown.classList.toggle('show');
-      return;
-    }
-    if (e.target && e.target.closest && !e.target.closest('#dropdown-menu')) {
-      dropdown.classList.remove('show');
-    } else if (e.target && e.target.closest && e.target.closest('#dropdown-menu') && e.target.closest('a')) {
-      dropdown.classList.remove('show');
-      var a = e.target.closest('a');
-      var href = a.getAttribute('href') || '';
-      if (href.indexOf('#panel-') !== -1) {
-        var panelId = href.split('#')[1];
-        if (panelId && typeof window.switchPanel === 'function') {
-          window.switchPanel(panelId);
-        }
-      }
-    }
-  }, true);
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      var dropdown = document.getElementById('dropdown-menu');
-      if (dropdown) dropdown.classList.remove('show');
-    }
-  });
 }
-
-function closeAllNavDropdowns(except) {
-  // Premium dropdown
-  if (except !== 'premium') {
-    var p = document.getElementById('premium-dropdown-menu');
-    var pb = document.getElementById('premium-dropdown-btn');
-    if (p) p.classList.remove('open');
-    if (pb) pb.classList.remove('active');
-  }
-  // Bell panel
-  if (except !== 'bell') {
-    var bell = document.getElementById('bell-panel');
-    if (bell) bell.classList.remove('open');
-  }
-  // Journal switcher
-  if (except !== 'journal') {
-    var js = document.getElementById('nav-journal-switcher');
-    if (js) js.classList.remove('open');
-  }
-  // Avatar dropdown
-  if (except !== 'avatar') {
-    var av = document.getElementById('dropdown-menu');
-    if (av) av.classList.remove('show');
-  }
-}
-window.closeAllNavDropdowns = closeAllNavDropdowns;
 
 // ============================================================
 // ⭐ FIX: initNavEvents — butonlara event listener EKLEMİYORUZ.
@@ -812,56 +1225,48 @@ function initNavEvents() {
     document.addEventListener('journal-changed', function() { updateNavbarJournal(0); });
   }
 
-  // Global: Journal switcher dışına tıklanınca kapat
-  if (!window._journalSwitcherDocBound) {
-    window._journalSwitcherDocBound = true;
+  // Global dropdown listener: outside-click, internal link click, and Escape
+  if (!window._navGlobalListenersBound) {
+    window._navGlobalListenersBound = true;
+
+    // 1. Dışarı tıklanınca tüm açık dropdown'ları kapat
     document.addEventListener('click', function(e) {
-      var js = document.getElementById('nav-journal-switcher');
-      if (js && e.target && !e.target.closest('#nav-journal-switcher')) {
-        js.classList.remove('open');
+      if (!e.target || !e.target.closest) return;
+      var isInsideNav = e.target.closest(
+        '#premium-dropdown-btn, #premium-dropdown-menu, ' +
+        '#overtrade-bell-btn, #bell-panel, ' +
+        '#nav-journal-switcher, ' +
+        '#user-avatar, #dropdown-menu, ' +
+        '#nav-toggle, #nav-menu'
+      );
+      if (!isInsideNav) {
+        closeAllNavDropdowns();
       }
     });
-  }
 
-  // Global: Premium dropdown dışına veya içindeki linklere tıklanınca kapat
-  if (!window._premiumDdGlobalBound) {
-    window._premiumDdGlobalBound = true;
+    // 2. Menü içindeki linklere tıklandığında menüleri kapat & panel yönlendirmesini sağla
     document.addEventListener('click', function(e) {
-      var m = document.getElementById('premium-dropdown-menu');
-      var b = document.getElementById('premium-dropdown-btn');
-      if (!m || !b || !e.target) return;
-
-      var insideMenu = e.target.closest('#premium-dropdown-menu');
-      var insideBtn = e.target.closest('#premium-dropdown-btn');
-
-      if (!insideMenu && !insideBtn) {
-        b.classList.remove('active');
-        m.classList.remove('open');
-      } else if (insideMenu && e.target.closest('a')) {
-        b.classList.remove('active');
-        m.classList.remove('open');
-        var a = e.target.closest('a');
+      if (!e.target || !e.target.closest) return;
+      var a = e.target.closest('#premium-dropdown-menu a, #journal-dropdown a, #journal-dropdown button, #bell-panel a, #dropdown-menu a');
+      if (a) {
         var href = a.getAttribute('href') || '';
-        if (href.indexOf('#panel-') !== -1) {
+        if (href.indexOf('#panel-') !== -1 && window.location.pathname.indexOf('settings') !== -1) {
           var panelId = href.split('#')[1];
           if (panelId && typeof window.switchPanel === 'function') {
+            e.preventDefault();
             window.switchPanel(panelId);
           }
         }
+        setTimeout(function() {
+          closeAllNavDropdowns();
+        }, 60);
       }
     });
-  }
 
-  // Global: Bell panel dışına tıklanınca kapat
-  if (!window._bellGlobalBound) {
-    window._bellGlobalBound = true;
-    document.addEventListener('click', function(e) {
-      var panel = document.getElementById('bell-panel');
-      var b = document.getElementById('overtrade-bell-btn');
-      if (panel && b && e.target) {
-        if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
-          panel.classList.remove('open');
-        }
+    // 3. ESC tuşuna basılınca tüm dropdown'ları kapat
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeAllNavDropdowns();
       }
     });
   }
@@ -1110,23 +1515,31 @@ async function updateNavbarJournal(retries) {
     var dropdown = document.getElementById('journal-dropdown');
     if (dropdown) {
       var swTitle = t('journal.switcher_title', 'Hesaplar');
-      var html = '<div class="journal-dropdown-header">' + swTitle + '</div>';
+      var html = '<div class="journal-menu-header">' +
+        '<span class="journal-menu-title">' + swTitle + '</span>' +
+        '<span class="journal-menu-count">' + journals.length + '</span>' +
+      '</div>';
 
+      html += '<div class="journal-menu-list">';
       journals.forEach(function(j) {
         var isActive = (j.id === activeJ.id) ? 'active' : '';
-        var tradesTxt = (j.trade_count || 0) + ' işlem';
-        html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '">' +
-          '<i data-lucide="' + (j.icon || 'folder') + '" class="journal-icon" style="color:' + (j.color || '#7c6dfa') + '"></i>' +
-          '<span class="journal-info">' +
-            '<span class="journal-name" style="font-family:\'Syne\',sans-serif;font-weight:600;">' + j.name + '</span>' +
+        var tradesTxt = (j.trade_count || 0) + ' ' + (t('nav.trades', 'işlem') || 'işlem');
+        var itemColor = j.color || '#7c6dfa';
+        html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
+          '<div class="journal-icon-wrap" style="background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;">' +
+            '<i data-lucide="' + (j.icon || 'folder') + '"></i>' +
+          '</div>' +
+          '<div class="journal-info">' +
+            '<span class="journal-name">' + (window.sanitizeHTML ? sanitizeHTML(j.name) : j.name) + '</span>' +
             '<span class="journal-count">' + tradesTxt + '</span>' +
-          '</span>' +
+          '</div>' +
           '<i data-lucide="check" class="journal-check"></i>' +
         '</button>';
       });
+      html += '</div>';
 
       var manageTxt = t('journal.manage', 'Hesapları Yönet');
-      html += '<div class="journal-dropdown-footer"><a href="/journals.html"><i data-lucide="settings" style="width:14px;height:14px;margin-right:6px;"></i> ' + manageTxt + ' →</a></div>';
+      html += '<div class="journal-menu-footer"><a href="/journals.html" class="journal-manage-link"><i data-lucide="settings"></i> <span>' + manageTxt + ' →</span></a></div>';
       dropdown.innerHTML = html;
 
       dropdown.querySelectorAll('.journal-item').forEach(function(btn) {
