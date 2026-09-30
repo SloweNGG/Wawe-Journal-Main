@@ -39,14 +39,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         if (settings.fontSize) {
           document.body.style.fontSize = settings.fontSize + 'px';
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     wwLog.log('🎨 [dashboard.js] Tema ayarlandı:', savedTheme || 'dark');
-  } catch (e) {}
+  } catch (e) { }
 })();
 
-(function() {
+(function () {
   'use strict';
 
   // ============================================================
@@ -115,9 +115,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (el7) el7.style.display = 'none';
     if (el8) el8.style.display = 'block';
 
-    return new Promise(function(resolve) {
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
+    return new Promise(function (resolve) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
           resolve();
         });
       });
@@ -313,7 +313,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           fontSize: '12px',
           fontFamily: "'DM Sans', sans-serif"
         },
-        custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        custom: function ({ series, seriesIndex, dataPointIndex, w }) {
           var label = w.globals.labels[dataPointIndex] || '';
           var seriesName = w.globals.seriesNames[seriesIndex] || '';
           var value = w.globals.series[seriesIndex][dataPointIndex] || 0;
@@ -355,7 +355,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var filtered = filterByDate(allTrades, currentRange);
     if (filtered && filtered.length > 0) {
       if (chartRafId) cancelAnimationFrame(chartRafId);
-      chartRafId = requestAnimationFrame(function() {
+      chartRafId = requestAnimationFrame(function () {
         chartRafId = null;
         renderCharts(filtered);
       });
@@ -363,7 +363,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
 
   // ⭐ storage event - başka sekmede tema değişirse
-  window.addEventListener('storage', function(e) {
+  window.addEventListener('storage', function (e) {
     if (e.key === 'ww_theme') {
       wwLog.log('🔄 [Dashboard] Tema değişikliği algılandı (storage):', e.newValue);
       var isLight = e.newValue === 'light';
@@ -382,7 +382,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
           if (settings.textColor) root.style.setProperty('--text', settings.textColor);
           if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-        } catch (e) {}
+        } catch (e) { }
       }
 
       setTimeout(resetChartsForTheme, 100);
@@ -390,7 +390,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   });
 
   // ⭐ themeChanged event - settings.js bu event'i dispatch ediyor
-  document.addEventListener('themeChanged', function(e) {
+  document.addEventListener('themeChanged', function (e) {
     wwLog.log('🔄 [Dashboard] themeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
@@ -408,7 +408,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   });
 
   // ⭐ chartsReset event - eski uyumluluk için
-  document.addEventListener('chartsReset', function(e) {
+  document.addEventListener('chartsReset', function (e) {
     wwLog.log('🔄 chartsReset event alındı, grafikler yeniden render ediliyor...');
     resetChartsForTheme();
   });
@@ -428,14 +428,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (resizeObservers[containerId]) {
       try {
         resizeObservers[containerId].disconnect();
-      } catch(e) {}
+      } catch (e) { }
       delete resizeObservers[containerId];
     }
 
     try {
       var lastW = 0;
       var resizeTimer = null;
-      var observer = new ResizeObserver(function(entries) {
+      var observer = new ResizeObserver(function (entries) {
         for (var i = 0; i < entries.length; i++) {
           var entry = entries[i];
           var rect = entry.contentRect;
@@ -443,11 +443,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             if (Math.abs(rect.width - lastW) < 2) continue;
             lastW = rect.width;
             clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
+            resizeTimer = setTimeout(function () {
               try {
                 var isMobile = window.innerWidth < 768;
                 var targetH;
-                if (containerId === 'chart-cumulative' || containerId === 'chart-winloss') {
+                if (containerId === 'chart-expand-container') {
+                  targetH = isMobile ? 260 : 380;
+                } else if (containerId === 'chart-cumulative' || containerId === 'chart-winloss') {
                   targetH = isMobile ? 200 : 250;
                 } else if (containerId === 'chart-winloss-mobile' || containerId === 'chart-direction-mobile') {
                   targetH = isMobile ? 180 : 200;
@@ -459,8 +461,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
                   chart.resize(lastW, targetH);
                 } else if (chart && typeof chart.applyOptions === 'function') {
                   chart.applyOptions({ width: lastW, height: targetH });
+                  if (typeof chart._fitCumulative === 'function') {
+                    chart._fitCumulative();
+                  } else if (chart.timeScale) {
+                    chart.timeScale().fitContent();
+                  }
                 }
-              } catch(e) {}
+              } catch (e) { }
             }, 80);
           }
         }
@@ -469,7 +476,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       observer.observe(container);
       resizeObservers[containerId] = observer;
       chartContainers[containerId] = container;
-    } catch(e) {
+    } catch (e) {
       wwLog.warn('ResizeObserver kurulamadı:', e);
     }
   }
@@ -478,7 +485,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     for (var key in resizeObservers) {
       try {
         resizeObservers[key].disconnect();
-      } catch(e) {}
+      } catch (e) { }
       delete resizeObservers[key];
     }
     chartContainers = {};
@@ -492,10 +499,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (range === 'all') return trades;
     if (range === 'custom' && window._customRangeStart && window._customRangeEnd) {
       var cStart = new Date(window._customRangeStart);
-      cStart.setHours(0,0,0,0);
+      cStart.setHours(0, 0, 0, 0);
       var cEnd = new Date(window._customRangeEnd);
-      cEnd.setHours(23,59,59,999);
-      return trades.filter(function(t) {
+      cEnd.setHours(23, 59, 59, 999);
+      return trades.filter(function (t) {
         var d = t.trade_date ? new Date(t.trade_date) : null;
         return d && d >= cStart && d <= cEnd;
       });
@@ -506,7 +513,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (range === 'month') start.setMonth(now.getMonth() - 1);
     if (range === 'year') start.setMonth(0, 1);
     start.setHours(0, 0, 0, 0);
-    return trades.filter(function(t) { return t.trade_date && new Date(t.trade_date) >= start; });
+    return trades.filter(function (t) { return t.trade_date && new Date(t.trade_date) >= start; });
   }
 
   function getPreviousPeriodTrades(trades, range) {
@@ -526,7 +533,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
     prevStart.setHours(0, 0, 0, 0);
 
-    return trades.filter(function(t) {
+    return trades.filter(function (t) {
       return t.trade_date && new Date(t.trade_date) >= prevStart && new Date(t.trade_date) < prevEnd;
     });
   }
@@ -584,7 +591,104 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
     };
-    return names[lang] || names.en;
+    return names[lang] || names.tr;
+  }
+
+  function getChartLocale() {
+    var lang = 'tr';
+    try {
+      if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
+        lang = i18n.getCurrentLanguage();
+      } else {
+        lang = localStorage.getItem('ww_language') || 'tr';
+      }
+    } catch (e) { }
+    if (lang === 'en') return 'en-US';
+    if (lang === 'de') return 'de-DE';
+    return 'tr-TR';
+  }
+
+  function formatChartTickMark(timePoint, tickMarkType) {
+    var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+    var months = getMonthNamesShort(lang);
+    var year = null, monthIdx = null, day = null;
+
+    if (timePoint && typeof timePoint === 'object' && timePoint.year && timePoint.month) {
+      year = timePoint.year;
+      monthIdx = timePoint.month - 1;
+      day = timePoint.day;
+    } else if (typeof timePoint === 'string') {
+      var parts = timePoint.split('-');
+      if (parts.length >= 3) {
+        year = parts[0];
+        monthIdx = parseInt(parts[1], 10) - 1;
+        day = parseInt(parts[2], 10);
+      }
+    } else if (typeof timePoint === 'number') {
+      var d = new Date(timePoint * 1000);
+      if (!isNaN(d.getTime())) {
+        year = d.getUTCFullYear();
+        monthIdx = d.getUTCMonth();
+        day = d.getUTCDate();
+      }
+    } else if (timePoint instanceof Date) {
+      if (!isNaN(timePoint.getTime())) {
+        year = timePoint.getUTCFullYear();
+        monthIdx = timePoint.getUTCMonth();
+        day = timePoint.getUTCDate();
+      }
+    }
+
+    if (monthIdx !== null && monthIdx >= 0 && monthIdx < 12) {
+      if (tickMarkType === 0) { // Year
+        return year ? year.toString() : '';
+      }
+      if (tickMarkType === 1) { // Month
+        return months[monthIdx];
+      }
+      if (tickMarkType === 2) { // Day of month
+        return day ? day.toString() : '';
+      }
+      return (day ? day + ' ' : '') + months[monthIdx];
+    }
+    return null;
+  }
+
+  function formatChartTime(timePoint) {
+    var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+    var months = getMonthNamesShort(lang);
+    var year = null, monthIdx = null, day = null;
+
+    if (typeof timePoint === 'string') {
+      var parts = timePoint.split('-');
+      if (parts.length >= 3) {
+        year = parts[0];
+        monthIdx = parseInt(parts[1], 10) - 1;
+        day = parseInt(parts[2], 10);
+      }
+    } else if (timePoint && typeof timePoint === 'object' && timePoint.year) {
+      year = timePoint.year;
+      monthIdx = timePoint.month - 1;
+      day = timePoint.day;
+    } else if (typeof timePoint === 'number') {
+      var d = new Date(timePoint * 1000);
+      if (!isNaN(d.getTime())) {
+        year = d.getUTCFullYear();
+        monthIdx = d.getUTCMonth();
+        day = d.getUTCDate();
+      }
+    } else if (timePoint instanceof Date) {
+      if (!isNaN(timePoint.getTime())) {
+        year = timePoint.getUTCFullYear();
+        monthIdx = timePoint.getUTCMonth();
+        day = timePoint.getUTCDate();
+      }
+    }
+
+    if (monthIdx !== null && monthIdx >= 0 && monthIdx < 12) {
+      return (day ? day + ' ' : '') + months[monthIdx] + (year ? ' ' + year : '');
+    }
+    return timePoint;
   }
 
   function loadMonthlyTarget() {
@@ -604,7 +708,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     try {
       monthlyTarget = target;
       localStorage.setItem(getTargetStorageKey(), target);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // ============================================================
@@ -662,7 +766,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var totalPnL = 0, wins = 0, losses = 0;
     var winPnLs = [], lossPnLs = [];
 
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       var pnl = calcTradePnL(t);
       totalPnL += pnl;
       if (pnl > 0) { wins++; winPnLs.push(pnl); }
@@ -670,12 +774,12 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     });
 
     var wr = total ? (wins / total) * 100 : 0;
-    var avgWin = winPnLs.length ? winPnLs.reduce(function(a, b) { return a + b; }, 0) / winPnLs.length : 0;
-    var avgLoss = lossPnLs.length ? -(Math.abs(lossPnLs.reduce(function(a, b) { return a + b; }, 0) / lossPnLs.length)) : 0;
-    var profitFactor = avgLoss !== 0 ? (winPnLs.reduce(function(a, b) { return a + b; }, 0) / Math.abs(lossPnLs.reduce(function(a, b) { return a + b; }, 0))) : 0;
+    var avgWin = winPnLs.length ? winPnLs.reduce(function (a, b) { return a + b; }, 0) / winPnLs.length : 0;
+    var avgLoss = lossPnLs.length ? -(Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0) / lossPnLs.length)) : 0;
+    var profitFactor = avgLoss !== 0 ? (winPnLs.reduce(function (a, b) { return a + b; }, 0) / Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0))) : 0;
 
     var cumulative = 0, maxCumulative = 0, maxDrawdown = 0;
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       if (t.exit_price) {
         cumulative += calcTradePnL(t);
         maxCumulative = Math.max(maxCumulative, cumulative);
@@ -684,7 +788,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     });
 
     var totalRR = 0, rrCount = 0;
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       if (t.rr_ratio) { totalRR += parseFloat(t.rr_ratio); rrCount++; }
     });
     var avgRR = rrCount ? totalRR / rrCount : 0;
@@ -766,7 +870,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (previousTrades && previousTrades.length > 0) {
       var prevTotal = previousTrades.length;
       var prevTotalPnL = 0, prevWins = 0, prevLosses = 0;
-      previousTrades.forEach(function(t) {
+      previousTrades.forEach(function (t) {
         var pnl = calcTradePnL(t);
         prevTotalPnL += pnl;
         if (pnl > 0) prevWins++;
@@ -807,7 +911,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var countDisplay = safeEl('strategy-count-display');
 
     var usedStrategyIds = new Set();
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       if (t.strategy_id) {
         usedStrategyIds.add(t.strategy_id);
       }
@@ -833,7 +937,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     var strategyNames = [];
-    usedStrategyIds.forEach(function(strategyId) {
+    usedStrategyIds.forEach(function (strategyId) {
       if (strategiesMap[strategyId]) {
         strategyNames.push(strategiesMap[strategyId]);
       }
@@ -852,7 +956,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       return;
     }
 
-    container.innerHTML = strategyNames.map(function(name) {
+    container.innerHTML = strategyNames.map(function (name) {
       var safeName = sanitizeHTML(name.length > 15 ? name.slice(0, 12) + '..' : name);
       return '<div class="strategy-pill pill-neutral"><span>' + safeName + '</span></div>';
     }).join('');
@@ -890,7 +994,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     var html = '<div class="trade-list">';
-    recent.forEach(function(t) {
+    recent.forEach(function (t) {
       var pnl = calcTradePnL(t);
       var isLong = t.direction === 'LONG' || t.direction === 'BUY';
       var tradeDate = new Date(t.trade_date);
@@ -910,8 +1014,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     html += '</div>';
     container.innerHTML = html;
 
-    document.querySelectorAll('.trade-row').forEach(function(row) {
-      row.addEventListener('click', function(e) {
+    document.querySelectorAll('.trade-row').forEach(function (row) {
+      row.addEventListener('click', function (e) {
         e.stopPropagation();
         var tradeId = row.dataset.tradeId;
         var noteDiv = safeEl('note-' + tradeId);
@@ -980,16 +1084,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var totalTrades = 0;
     var totalPnl = 0;
 
-    weekDays.forEach(function(date, index) {
+    weekDays.forEach(function (date, index) {
       var dateStr = localDateStr(date);
       var todayStr = localDateStr(today);
       var isToday = dateStr === todayStr;
 
-      var dayTrades = miniCalendarTrades.filter(function(t) { return t.trade_date === dateStr; });
+      var dayTrades = miniCalendarTrades.filter(function (t) { return t.trade_date === dateStr; });
       var hasTrade = dayTrades.length > 0;
 
       var dayPnl = 0;
-      dayTrades.forEach(function(t) {
+      dayTrades.forEach(function (t) {
         if (t.exit_price) {
           var pnl = calcTradePnL(t);
           dayPnl += pnl;
@@ -1023,9 +1127,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var todayInfo = safeEl('mini-cal-today-info');
     if (todayInfo) {
       var todayStr2 = localDateStr(today);
-      var todayTrades = miniCalendarTrades.filter(function(t) { return t.trade_date === todayStr2; });
+      var todayTrades = miniCalendarTrades.filter(function (t) { return t.trade_date === todayStr2; });
       var todayPnl = 0;
-      todayTrades.forEach(function(t) {
+      todayTrades.forEach(function (t) {
         if (t.exit_price) todayPnl += calcTradePnL(t);
       });
       var pnlText2 = todayPnl !== 0 ? formatCurrency(todayPnl) : '0';
@@ -1058,7 +1162,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       }
     }
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-winloss-mobile', 'chart-daily', 'chart-symbol', 'chart-direction', 'chart-direction-mobile'];
-    chartIds.forEach(function(id) {
+    chartIds.forEach(function (id) {
       if (apexCharts[id]) {
         try {
           apexCharts[id].destroy();
@@ -1085,13 +1189,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
     if (!container) return null;
 
-    var closedTrades = (trades || []).filter(function(t) { return t.exit_price; });
+    var closedTrades = (trades || []).filter(function (t) { return t.exit_price; });
     if (!closedTrades.length) {
       container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
       return null;
     }
 
-    var sorted = closedTrades.slice().sort(function(a, b) {
+    var sorted = closedTrades.slice().sort(function (a, b) {
       var dA = (a.trade_date || '').replace(' ', 'T');
       var dB = (b.trade_date || '').replace(' ', 'T');
       return new Date(dA).getTime() - new Date(dB).getTime();
@@ -1099,13 +1203,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var dayCumMap = {};
     var cum = 0;
-    sorted.forEach(function(t) {
+    sorted.forEach(function (t) {
       cum += calcTradePnL(t);
       var d = (t.trade_date || '').split('T')[0];
       if (!d || d.length < 10) {
         try {
           d = new Date(t.created_at || Date.now()).toISOString().split('T')[0];
-        } catch(e) {
+        } catch (e) {
           d = '2026-01-01';
         }
       }
@@ -1122,7 +1226,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var firstDStr = firstD.toISOString().split('T')[0];
       seriesData.push({ time: firstDStr, value: 0 });
 
-      sortedDates.forEach(function(d) {
+      sortedDates.forEach(function (d) {
         seriesData.push({ time: d, value: dayCumMap[d] });
       });
     }
@@ -1190,17 +1294,21 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       },
       timeScale: {
         borderColor: colors.gridColor,
-        fixLeftEdge: true,
-        fixRightEdge: true,
+        fixLeftEdge: false,
+        fixRightEdge: false,
         rightOffset: 0,
         minBarSpacing: 0.001,
         shiftVisibleRangeOnNewBar: false,
-        lockVisibleTimeRangeOnResize: true
+        lockVisibleTimeRangeOnResize: false,
+        tickMarkFormatter: formatChartTickMark
       },
       handleScroll: true,
       handleScale: true,
       localization: {
-        priceFormatter: function(price) {
+        locale: getChartLocale(),
+        dateFormat: 'dd MMM yyyy',
+        timeFormatter: formatChartTime,
+        priceFormatter: function (price) {
           return formatCurrency(price);
         }
       }
@@ -1213,7 +1321,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       lineWidth: 2.5,
       priceFormat: {
         type: 'custom',
-        formatter: function(price) {
+        formatter: function (price) {
           return formatCurrency(price);
         }
       }
@@ -1221,14 +1329,27 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     areaSeries.setData(seriesData);
 
-    if (seriesData.length >= 2) {
-      chart.timeScale().setVisibleLogicalRange({
-        from: 0,
-        to: seriesData.length - 1
-      });
-    } else {
-      chart.timeScale().fitContent();
+    function fitCumulative() {
+      if (!chart || !chart.timeScale) return;
+      if (seriesData.length >= 2) {
+        chart.timeScale().setVisibleLogicalRange({
+          from: 0.5,
+          to: seriesData.length - 0.5
+        });
+      } else {
+        chart.timeScale().fitContent();
+      }
     }
+
+    fitCumulative();
+    chart._fitCumulative = fitCumulative;
+
+    requestAnimationFrame(function () {
+      fitCumulative();
+    });
+    setTimeout(function () {
+      fitCumulative();
+    }, 120);
 
     return chart;
   }
@@ -1245,13 +1366,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       d.setDate(d.getDate() - i);
       days[localDateStr(d)] = 0;
     }
-    (trades || []).forEach(function(t) {
+    (trades || []).forEach(function (t) {
       if (t.exit_price && days[t.trade_date] !== undefined) {
         days[t.trade_date] += calcTradePnL(t);
       }
     });
 
-    var dailyData = Object.keys(days).sort().map(function(dateKey) {
+    var dailyData = Object.keys(days).sort().map(function (dateKey) {
       var val = parseFloat(days[dateKey].toFixed(2));
       return {
         time: dateKey,
@@ -1260,7 +1381,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       };
     });
 
-    var hasData = dailyData.some(function(item) { return item.value !== 0; });
+    var hasData = dailyData.some(function (item) { return item.value !== 0; });
     if (!hasData) {
       container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
       return null;
@@ -1312,12 +1433,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         rightOffset: 0,
         minBarSpacing: 0.001,
         shiftVisibleRangeOnNewBar: false,
-        lockVisibleTimeRangeOnResize: true
+        lockVisibleTimeRangeOnResize: false,
+        tickMarkFormatter: formatChartTickMark
       },
       handleScroll: true,
       handleScale: true,
       localization: {
-        priceFormatter: function(price) {
+        locale: getChartLocale(),
+        dateFormat: 'dd MMM yyyy',
+        timeFormatter: formatChartTime,
+        priceFormatter: function (price) {
           return formatCurrency(price);
         }
       }
@@ -1326,7 +1451,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var histSeries = chart.addHistogramSeries({
       priceFormat: {
         type: 'custom',
-        formatter: function(price) {
+        formatter: function (price) {
           return formatCurrency(price);
         }
       }
@@ -1357,7 +1482,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var cumData = [];
     var cumTimestamps = [];
 
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       var pnl = calcTradePnL(t);
       cum += pnl;
       cumData.push(parseFloat(cum.toFixed(2)));
@@ -1393,7 +1518,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var options = {
       series: [{
         name: 'Kümülatif K/Z',
-        data: cumTimestamps.map(function(ts, idx) {
+        data: cumTimestamps.map(function (ts, idx) {
           return [ts, cumData[idx]];
         })
       }],
@@ -1445,6 +1570,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             fontFamily: "'DM Sans', sans-serif",
             fontWeight: 500
           },
+          formatter: function (value, timestamp) {
+            var d = new Date(timestamp || value);
+            var loc = getChartLocale();
+            return d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+          },
           hideOverlappingLabels: true,
           trim: true
         },
@@ -1459,27 +1589,28 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             fontFamily: "'DM Sans', sans-serif",
             fontWeight: 500
           },
-          formatter: function(value) {
+          formatter: function (value) {
             return isMobile ? formatCompactCurrency(value) : formatCurrency(value);
           }
         },
-        min: function(min) {
+        min: function (min) {
           return min - Math.abs(min) * 0.1;
         },
-        max: function(max) {
+        max: function (max) {
           return max + Math.abs(max) * 0.1;
         }
       },
       tooltip: {
         theme: getApexTheme().mode,
         x: {
-          formatter: function(value) {
+          formatter: function (value) {
             var d = new Date(value);
-            return d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+            var loc = getChartLocale();
+            return d.toLocaleDateString(loc, { day: '2-digit', month: 'short', year: 'numeric' });
           }
         },
         y: {
-          formatter: function(value) {
+          formatter: function (value) {
             return formatCurrency(value);
           }
         },
@@ -1497,8 +1628,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   function renderWinLossChart(trades) {
     var colors = getApexColors();
     var wins = 0, losses = 0;
-    var closedTrades = trades.filter(function(t) { return t.exit_price; });
-    closedTrades.forEach(function(t) {
+    var closedTrades = trades.filter(function (t) { return t.exit_price; });
+    closedTrades.forEach(function (t) {
       if (calcTradePnL(t) > 0) wins++;
       else losses++;
     });
@@ -1540,7 +1671,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           vertical: 2
         },
         offsetY: -4,
-        formatter: function(seriesName, opts) {
+        formatter: function (seriesName, opts) {
           if (!opts || !opts.w || !opts.w.globals || !opts.w.globals.series) {
             return seriesName;
           }
@@ -1562,11 +1693,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         theme: getApexTheme().mode,
         followCursor: true,
         y: {
-          formatter: function(value, { seriesIndex, dataPointIndex, w }) {
+          formatter: function (value, { seriesIndex, dataPointIndex, w }) {
             if (!w || !w.globals || !w.globals.seriesTotals) {
               return value;
             }
-            var total2 = w.globals.seriesTotals.reduce(function(a, b) { return a + b; }, 0);
+            var total2 = w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
             var percent = total2 > 0 ? ((value / total2) * 100).toFixed(1) : 0;
             return value + ' (' + percent + '%)';
           }
@@ -1590,19 +1721,19 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       d.setDate(d.getDate() - i);
       days[localDateStr(d)] = 0;
     }
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       if (t.exit_price && days[t.trade_date] !== undefined) {
         days[t.trade_date] += calcTradePnL(t);
       }
     });
 
-    var dailyLabels = Object.keys(days).map(function(d) {
+    var dailyLabels = Object.keys(days).map(function (d) {
       var dt = new Date(d);
       return dt.getDate() + '/' + (dt.getMonth() + 1);
     });
     var dailyData = Object.values(days);
 
-    if (dailyData.every(function(v) { return v === 0; })) return null;
+    if (dailyData.every(function (v) { return v === 0; })) return null;
 
     var isMobile = window.innerWidth < 768;
     var colors_ = getApexColors();
@@ -1674,7 +1805,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             fontFamily: "'DM Sans', sans-serif",
             fontWeight: 500
           },
-          formatter: function(value) {
+          formatter: function (value) {
             return isMobile ? formatCompactCurrency(value) : formatCurrency(value);
           }
         }
@@ -1682,7 +1813,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       tooltip: {
         theme: getApexTheme().mode,
         y: {
-          formatter: function(value) {
+          formatter: function (value) {
             return formatCurrency(value);
           }
         },
@@ -1701,14 +1832,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   function renderSymbolChart(trades) {
     var colors = getApexColors();
     var symbolMap = {};
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       if (t.exit_price) {
         symbolMap[t.symbol] = (symbolMap[t.symbol] || 0) + calcTradePnL(t);
       }
     });
 
     var sortedSymbols = Object.entries(symbolMap)
-      .sort(function(a, b) { return Math.abs(b[1]) - Math.abs(a[1]); })
+      .sort(function (a, b) { return Math.abs(b[1]) - Math.abs(a[1]); })
       .slice(0, 8);
 
     if (sortedSymbols.length === 0) return null;
@@ -1719,7 +1850,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var options = {
       series: [{
         name: 'Sembol K/Z',
-        data: sortedSymbols.map(function(s) { return parseFloat(s[1].toFixed(2)); })
+        data: sortedSymbols.map(function (s) { return parseFloat(s[1].toFixed(2)); })
       }],
       chart: {
         type: 'bar',
@@ -1749,7 +1880,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       },
       dataLabels: {
         enabled: !isMobile,
-        formatter: function(value, { dataPointIndex }) {
+        formatter: function (value, { dataPointIndex }) {
           var realValue = sortedSymbols[dataPointIndex][1];
           return formatCurrency(realValue);
         },
@@ -1775,7 +1906,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         }
       },
       xaxis: {
-        categories: sortedSymbols.map(function(s) { return s[0]; }),
+        categories: sortedSymbols.map(function (s) { return s[0]; }),
         tickAmount: isMobile ? 3 : 5,
         labels: {
           show: !isMobile,
@@ -1785,7 +1916,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             fontFamily: "'DM Sans', sans-serif",
             fontWeight: 600
           },
-          formatter: function(value) {
+          formatter: function (value) {
             return formatCompactCurrency(value);
           },
           hideOverlappingLabels: true
@@ -1806,7 +1937,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       tooltip: {
         theme: getApexTheme().mode,
         y: {
-          formatter: function(value, { dataPointIndex }) {
+          formatter: function (value, { dataPointIndex }) {
             var realValue = sortedSymbols[dataPointIndex][1];
             return formatCurrency(realValue);
           }
@@ -1825,7 +1956,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   function renderDirectionChart(trades) {
     var colors = getApexColors();
     var longs = 0, shorts = 0;
-    trades.forEach(function(t) {
+    trades.forEach(function (t) {
       if (t.direction === 'LONG' || t.direction === 'BUY') longs++;
       else shorts++;
     });
@@ -1867,7 +1998,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           vertical: 2
         },
         offsetY: -4,
-        formatter: function(seriesName, opts) {
+        formatter: function (seriesName, opts) {
           if (!opts || !opts.w || !opts.w.globals || !opts.w.globals.series) {
             return seriesName;
           }
@@ -1889,11 +2020,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         theme: getApexTheme().mode,
         followCursor: true,
         y: {
-          formatter: function(value, { seriesIndex, dataPointIndex, w }) {
+          formatter: function (value, { seriesIndex, dataPointIndex, w }) {
             if (!w || !w.globals || !w.globals.seriesTotals) {
               return value;
             }
-            var total2 = w.globals.seriesTotals.reduce(function(a, b) { return a + b; }, 0);
+            var total2 = w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
             var percent = total2 > 0 ? ((value / total2) * 100).toFixed(1) : 0;
             return value + ' (' + percent + '%)';
           }
@@ -1948,7 +2079,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           wwLog.warn('⚠️ Container\'lar bulunamadı, grafik render atlanıyor.');
           return;
         }
-        setTimeout(function() {
+        setTimeout(function () {
           renderCharts(trades);
         }, 150);
         return;
@@ -1967,7 +2098,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             setupResizeObserver('chart-cumulative', chart);
           }
         }
-      } catch(e) {
+      } catch (e) {
         console.error('Cumulative chart render hatası:', e);
       }
 
@@ -1982,7 +2113,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             setupResizeObserver(winlossTargetId, chart2);
           }
         }
-      } catch(e) {
+      } catch (e) {
         console.error('Win/Loss chart render hatası:', e);
       }
 
@@ -1996,7 +2127,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             setupResizeObserver('chart-daily', chart3);
           }
         }
-      } catch(e) {
+      } catch (e) {
         console.error('Daily chart render hatası:', e);
       }
 
@@ -2011,7 +2142,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             setupResizeObserver('chart-symbol', chart4);
           }
         }
-      } catch(e) {
+      } catch (e) {
         console.error('Symbol chart render hatası:', e);
       }
 
@@ -2026,7 +2157,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             setupResizeObserver(directionTargetId, chart5);
           }
         }
-      } catch(e) {
+      } catch (e) {
         console.error('Direction chart render hatası:', e);
       }
 
@@ -2060,7 +2191,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
               apexCharts[key].resize(rect.width, rect.height);
             }
           }
-        } catch(e) {}
+        } catch (e) { }
       }
       for (var lkey in lwcCharts) {
         try {
@@ -2069,9 +2200,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             var lrect = lcontainer.getBoundingClientRect();
             if (lrect.width > 0 && lrect.height > 0) {
               lwcCharts[lkey].applyOptions({ width: lrect.width, height: lrect.height });
+              if (typeof lwcCharts[lkey]._fitCumulative === 'function') {
+                lwcCharts[lkey]._fitCumulative();
+              } else if (lwcCharts[lkey].timeScale) {
+                lwcCharts[lkey].timeScale().fitContent();
+              }
             }
           }
-        } catch(e) {}
+        } catch (e) { }
       }
       return;
     }
@@ -2081,7 +2217,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     destroyAllCharts();
 
     if (chartRafId) cancelAnimationFrame(chartRafId);
-    chartRafId = requestAnimationFrame(function() {
+    chartRafId = requestAnimationFrame(function () {
       chartRafId = null;
       renderCharts(trades);
     });
@@ -2102,7 +2238,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       { cardSelector: '.donut-mobile-slide:last-child', type: 'direction', title: i18n.t('dashboard.chart.direction') || 'Long / Short Dağılımı' }
     ];
 
-    chartConfigs.forEach(function(cfg) {
+    chartConfigs.forEach(function (cfg) {
       var card = document.querySelector(cfg.cardSelector);
       if (!card) return;
       card.classList.add('expandable');
@@ -2111,7 +2247,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var touchStartY = 0;
       var hasTouchMoved = false;
 
-      card.addEventListener('touchstart', function(e) {
+      card.addEventListener('touchstart', function (e) {
         if (e.touches.length === 1) {
           touchStartX = e.touches[0].clientX;
           touchStartY = e.touches[0].clientY;
@@ -2119,7 +2255,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         }
       }, { passive: true });
 
-      card.addEventListener('touchmove', function(e) {
+      card.addEventListener('touchmove', function (e) {
         if (e.touches.length === 1) {
           var dx = Math.abs(e.touches[0].clientX - touchStartX);
           var dy = Math.abs(e.touches[0].clientY - touchStartY);
@@ -2129,7 +2265,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         }
       }, { passive: true });
 
-      card.addEventListener('click', function(e) {
+      card.addEventListener('click', function (e) {
         if (hasTouchMoved) return;
         if (e.target.closest('button') || e.target.closest('a')) return;
         openChartExpansion(cfg.type, cfg.title);
@@ -2138,7 +2274,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     if (!window._chartExpandEscBound) {
       window._chartExpandEscBound = true;
-      document.addEventListener('keydown', function(e) {
+      document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeChartExpansion();
       });
     }
@@ -2156,22 +2292,39 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     overlay.style.display = 'flex';
 
     if (expandedChart) {
-      try { expandedChart.destroy(); } catch(e) {}
+      try { expandedChart.destroy(); } catch (e) { }
       expandedChart = null;
     }
     if (expandedLwcChart) {
-      try { expandedLwcChart.remove(); } catch(e) {}
+      try { expandedLwcChart.remove(); } catch (e) { }
       expandedLwcChart = null;
     }
     container.innerHTML = '';
 
     var filtered = filterByDate(allTrades, currentRange);
-    var modalHeight = window.innerWidth < 768 ? 300 : 400;
+    var isMobile = window.innerWidth < 768;
+    var modalHeight = isMobile ? 260 : 380;
 
     if (type === 'cumulative') {
       expandedLwcChart = renderCumulativeLwc(filtered, container, modalHeight);
+      if (expandedLwcChart) {
+        setupResizeObserver('chart-expand-container', expandedLwcChart);
+        requestAnimationFrame(function () {
+          if (expandedLwcChart && typeof expandedLwcChart._fitCumulative === 'function') {
+            expandedLwcChart._fitCumulative();
+          }
+        });
+        setTimeout(function () {
+          if (expandedLwcChart && typeof expandedLwcChart._fitCumulative === 'function') {
+            expandedLwcChart._fitCumulative();
+          }
+        }, 120);
+      }
     } else if (type === 'daily') {
       expandedLwcChart = renderDailyLwc(filtered, container, modalHeight);
+      if (expandedLwcChart) {
+        setupResizeObserver('chart-expand-container', expandedLwcChart);
+      }
     } else {
       var renderFn = null;
       if (type === 'winloss') renderFn = renderWinLossChart;
@@ -2185,6 +2338,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           options.chart.animations = { enabled: true, speed: 300 };
           expandedChart = new ApexCharts(container, options);
           expandedChart.render();
+          setupResizeObserver('chart-expand-container', expandedChart);
         }
       }
     }
@@ -2200,12 +2354,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       overlay.classList.remove('active');
       overlay.style.display = 'none';
     }
+    if (resizeObservers['chart-expand-container']) {
+      try { resizeObservers['chart-expand-container'].disconnect(); } catch (e) { }
+      delete resizeObservers['chart-expand-container'];
+    }
     if (expandedChart) {
-      try { expandedChart.destroy(); } catch(e) {}
+      try { expandedChart.destroy(); } catch (e) { }
       expandedChart = null;
     }
     if (expandedLwcChart) {
-      try { expandedLwcChart.remove(); } catch(e) {}
+      try { expandedLwcChart.remove(); } catch (e) { }
       expandedLwcChart = null;
     }
     var container = safeEl('chart-expand-container');
@@ -2220,9 +2378,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   function renderExpandSummary(trades, container) {
     if (!container) return;
-    var closed = (trades || []).filter(function(t) { return t.exit_price; });
+    var closed = (trades || []).filter(function (t) { return t.exit_price; });
     if (!closed.length) {
-      container.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px;">İşlem özeti bulunamadı.</div>';
+      container.innerHTML = '<div class="expand-summary-empty">' + (typeof i18n !== 'undefined' && i18n.t ? (i18n.t('dashboard.no_trades') || 'İşlem özeti bulunamadı.') : 'İşlem özeti bulunamadı.') + '</div>';
       return;
     }
 
@@ -2232,7 +2390,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var totalLossPnL = 0;
     var symbolStats = {};
 
-    closed.forEach(function(t) {
+    closed.forEach(function (t) {
       var pnl = calcTradePnL(t);
       var sym = (t.symbol || 'Diğer').toUpperCase();
 
@@ -2254,13 +2412,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     });
 
     var topWinSymbols = Object.keys(symbolStats)
-      .filter(function(s) { return symbolStats[s].winPnL > 0; })
-      .sort(function(a, b) { return symbolStats[b].winPnL - symbolStats[a].winPnL; })
+      .filter(function (s) { return symbolStats[s].winPnL > 0; })
+      .sort(function (a, b) { return symbolStats[b].winPnL - symbolStats[a].winPnL; })
       .slice(0, 3);
 
     var topLossSymbols = Object.keys(symbolStats)
-      .filter(function(s) { return symbolStats[s].lossPnL < 0; })
-      .sort(function(a, b) { return symbolStats[a].lossPnL - symbolStats[b].lossPnL; })
+      .filter(function (s) { return symbolStats[s].lossPnL < 0; })
+      .sort(function (a, b) { return symbolStats[a].lossPnL - symbolStats[b].lossPnL; })
       .slice(0, 3);
 
     var totalCount = closed.length;
@@ -2277,40 +2435,58 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var winListHtml = '';
     if (topWinSymbols.length > 0) {
-      winListHtml = topWinSymbols.map(function(s) {
-        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].winCount + tradeCountSuffix + ')</span><span class="item-val" style="color:var(--green)">+' + formatCurrency(symbolStats[s].winPnL).replace('+', '') + '</span></div>';
+      winListHtml = topWinSymbols.map(function (s) {
+        return '<div class="expand-summary-item">' +
+          '<div class="item-left"><span class="item-sym">' + s + '</span><span class="item-sub-count">' + symbolStats[s].winCount + tradeCountSuffix + '</span></div>' +
+          '<span class="item-val win">+' + formatCurrency(symbolStats[s].winPnL).replace('+', '') + '</span>' +
+          '</div>';
       }).join('');
     } else {
-      winListHtml = '<div style="color:var(--muted);font-size:12px;">' + noWinText + '</div>';
+      winListHtml = '<div class="expand-summary-empty">' + noWinText + '</div>';
     }
 
     var lossListHtml = '';
     if (topLossSymbols.length > 0) {
-      lossListHtml = topLossSymbols.map(function(s) {
-        return '<div class="expand-summary-item"><span class="item-sym">' + s + ' (' + symbolStats[s].lossCount + tradeCountSuffix + ')</span><span class="item-val" style="color:var(--red)">' + formatCurrency(symbolStats[s].lossPnL) + '</span></div>';
+      lossListHtml = topLossSymbols.map(function (s) {
+        return '<div class="expand-summary-item">' +
+          '<div class="item-left"><span class="item-sym">' + s + '</span><span class="item-sub-count">' + symbolStats[s].lossCount + tradeCountSuffix + '</span></div>' +
+          '<span class="item-val loss">' + formatCurrency(symbolStats[s].lossPnL) + '</span>' +
+          '</div>';
       }).join('');
     } else {
-      lossListHtml = '<div style="color:var(--muted);font-size:12px;">' + noLossText + '</div>';
+      lossListHtml = '<div class="expand-summary-empty">' + noLossText + '</div>';
     }
 
     var html = '' +
       '<div class="expand-summary-col wins">' +
-        '<div class="expand-summary-header">' +
-          '<span class="expand-summary-title">' + winTradesLabel + tradesSuffix + ' (' + winTrades.length + (isTr ? ' adet • %' : ' • %') + winRate + ')</span>' +
-          '<span class="expand-summary-total">+' + formatCurrency(totalWinPnL).replace('+', '') + '</span>' +
-        '</div>' +
-        '<div class="expand-summary-list">' +
-          winListHtml +
-        '</div>' +
+      '<div class="expand-summary-header">' +
+      '<div class="expand-summary-title-group">' +
+      '<div class="expand-indicator win"></div>' +
+      '<div class="expand-summary-title-text">' +
+      '<span class="expand-summary-title">' + winTradesLabel + tradesSuffix + '</span>' +
+      '<span class="expand-summary-badge win">' + winTrades.length + tradeCountSuffix + ' • %' + winRate + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<span class="expand-summary-total win">+' + formatCurrency(totalWinPnL).replace('+', '') + '</span>' +
+      '</div>' +
+      '<div class="expand-summary-list">' +
+      winListHtml +
+      '</div>' +
       '</div>' +
       '<div class="expand-summary-col losses">' +
-        '<div class="expand-summary-header">' +
-          '<span class="expand-summary-title">' + lossTradesLabel + tradesSuffix + ' (' + lossTrades.length + (isTr ? ' adet • %' : ' • %') + lossRate + ')</span>' +
-          '<span class="expand-summary-total">' + formatCurrency(totalLossPnL) + '</span>' +
-        '</div>' +
-        '<div class="expand-summary-list">' +
-          lossListHtml +
-        '</div>' +
+      '<div class="expand-summary-header">' +
+      '<div class="expand-summary-title-group">' +
+      '<div class="expand-indicator loss"></div>' +
+      '<div class="expand-summary-title-text">' +
+      '<span class="expand-summary-title">' + lossTradesLabel + tradesSuffix + '</span>' +
+      '<span class="expand-summary-badge loss">' + lossTrades.length + tradeCountSuffix + ' • %' + lossRate + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<span class="expand-summary-total loss">' + formatCurrency(totalLossPnL) + '</span>' +
+      '</div>' +
+      '<div class="expand-summary-list">' +
+      lossListHtml +
+      '</div>' +
       '</div>';
 
     container.innerHTML = html;
@@ -2333,7 +2509,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         i18n.t('csv.sl'), i18n.t('csv.tp'), i18n.t('csv.pnl'),
         i18n.t('csv.rr'), i18n.t('csv.date'), i18n.t('csv.notes')
       ];
-      var rows = trades.map(function(t) {
+      var rows = trades.map(function (t) {
         var pnl = calcTradePnL(t);
         return [
           t.symbol || '', t.direction || '', t.instrument || '', t.lot || '',
@@ -2397,7 +2573,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       }
 
       var totalPnL = 0, wins = 0, losses = 0;
-      trades.forEach(function(t) {
+      trades.forEach(function (t) {
         var pnl = calcTradePnL(t);
         totalPnL += pnl;
         if (pnl > 0) wins++;
@@ -2452,7 +2628,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       ];
 
       var cellW = (W - 24) / 5;
-      stats.forEach(function(s, idx) {
+      stats.forEach(function (s, idx) {
         var cx = 12 + idx * cellW;
         doc.setFillColor(17, 17, 24);
         doc.roundedRect(cx, yPos, cellW - 2, 15, 2, 2, 'F');
@@ -2486,7 +2662,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         { label: isTurkish ? 'Strateji' : (isGerman ? 'Strategie' : 'Strategy'), w: 40 },
         { label: isTurkish ? 'Tarih' : (isGerman ? 'Datum' : 'Date'), w: 28 },
       ];
-      var totalW = colDefs.reduce(function(s, c) { return s + c.w; }, 0);
+      var totalW = colDefs.reduce(function (s, c) { return s + c.w; }, 0);
       var startX = (W - totalW) / 2;
 
       doc.setFillColor(30, 30, 46);
@@ -2495,7 +2671,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       doc.setFontSize(6);
       doc.setFont('helvetica', 'bold');
       var hx = startX + 2;
-      colDefs.forEach(function(col) {
+      colDefs.forEach(function (col) {
         doc.text(col.label, hx, yPos + 4.5);
         hx += col.w;
       });
@@ -2505,7 +2681,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var maxRows = Math.floor((H - yPos - 15) / rowH);
       var displayTrades = trades.slice(-maxRows).reverse();
 
-      displayTrades.forEach(function(t, idx) {
+      displayTrades.forEach(function (t, idx) {
         var pnl = calcTradePnL(t);
         var isEven = idx % 2 === 0;
         var stratName = t.strategy_id ? (strategyNamesCache[t.strategy_id] || '—') : '—';
@@ -2605,7 +2781,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     function syncPresetChips(val) {
       var numVal = parseFloat(val);
       var chips = document.querySelectorAll('.goal-preset-chip');
-      chips.forEach(function(chip) {
+      chips.forEach(function (chip) {
         var chipVal = parseFloat(chip.getAttribute('data-goal') || chip.dataset.goal);
         if (!isNaN(chipVal) && !isNaN(numVal) && chipVal === numVal) {
           chip.classList.add('active');
@@ -2623,7 +2799,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       if (goalModal) {
         goalModal.style.display = 'flex';
         goalModal.classList.add('active');
-        setTimeout(function() {
+        setTimeout(function () {
           if (goalAmountInput) {
             goalAmountInput.focus();
             goalAmountInput.select();
@@ -2654,7 +2830,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     // Event delegation on modal for preset chips (bulletproof)
     if (goalModal) {
-      goalModal.addEventListener('click', function(e) {
+      goalModal.addEventListener('click', function (e) {
         var chip = e.target.closest('.goal-preset-chip');
         if (chip) {
           e.preventDefault();
@@ -2675,10 +2851,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     if (goalAmountInput) {
-      goalAmountInput.addEventListener('input', function() {
+      goalAmountInput.addEventListener('input', function () {
         syncPresetChips(this.value);
       });
-      goalAmountInput.addEventListener('keydown', function(e) {
+      goalAmountInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
           e.preventDefault();
           saveGoal();
@@ -2711,8 +2887,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   function setupDateFilterAndOptions() {
     // Toolbar date filter butonları
-    document.querySelectorAll('.date-filter-option').forEach(function(opt) {
-      opt.addEventListener('click', function() {
+    document.querySelectorAll('.date-filter-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
         if (this.dataset.range === 'custom') {
           var panel = safeEl('custom-range-panel');
           if (panel) {
@@ -2730,7 +2906,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var customRangeApplyBtn = safeEl('custom-range-apply');
     if (customRangeApplyBtn) {
-      customRangeApplyBtn.addEventListener('click', function() {
+      customRangeApplyBtn.addEventListener('click', function () {
         var startInput = safeEl('custom-range-start');
         var endInput = safeEl('custom-range-end');
         var startVal = startInput ? startInput.value : '';
@@ -2742,8 +2918,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         currentRange = 'custom';
         window._customRangeStart = startVal;
         window._customRangeEnd = endVal;
-        document.querySelectorAll('.date-filter-option').forEach(function(opt) { opt.classList.remove('active'); });
-        document.querySelectorAll('[data-range="custom"]').forEach(function(opt) { opt.classList.add('active'); });
+        document.querySelectorAll('.date-filter-option').forEach(function (opt) { opt.classList.remove('active'); });
+        document.querySelectorAll('[data-range="custom"]').forEach(function (opt) { opt.classList.add('active'); });
         var panel = safeEl('custom-range-panel');
         if (panel) panel.style.display = 'none';
         refresh(false);
@@ -2751,17 +2927,17 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     // CSV export butonları
-    ['export-csv', 'export-csv-desktop'].forEach(function(id) {
+    ['export-csv', 'export-csv-desktop'].forEach(function (id) {
       var btn = safeEl(id);
-      if (btn) btn.addEventListener('click', function() {
+      if (btn) btn.addEventListener('click', function () {
         exportCSV();
       });
     });
 
     // PDF export butonları
-    ['export-pdf', 'export-pdf-desktop'].forEach(function(id) {
+    ['export-pdf', 'export-pdf-desktop'].forEach(function (id) {
       var btn = safeEl(id);
-      if (btn) btn.addEventListener('click', function() {
+      if (btn) btn.addEventListener('click', function () {
         var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'en';
         generatePDF(lang);
       });
@@ -2770,7 +2946,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   function setActiveDateRange(range) {
     currentRange = range;
-    document.querySelectorAll('.date-filter-option').forEach(function(opt) {
+    document.querySelectorAll('.date-filter-option').forEach(function (opt) {
       opt.classList.toggle('active', opt.dataset.range === range);
     });
   }
@@ -2792,11 +2968,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           kpiToggleBtn.classList.add('collapsed');
           kpiToggleBtn.setAttribute('aria-expanded', 'false');
         }
-        kpiToggleBtn.addEventListener('click', function() {
+        kpiToggleBtn.addEventListener('click', function () {
           var isCollapsed = kpiBarWrapper.classList.toggle('collapsed');
           kpiToggleBtn.classList.toggle('collapsed', isCollapsed);
           kpiToggleBtn.setAttribute('aria-expanded', !isCollapsed);
-          try { localStorage.setItem('ww_kpi_collapsed', isCollapsed); } catch(e) {}
+          try { localStorage.setItem('ww_kpi_collapsed', isCollapsed); } catch (e) { }
         });
       }
     }
@@ -2809,16 +2985,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   function setupDonutCarousel() {
     var donutTrack = safeEl('donut-mobile-track');
     if (donutTrack) {
-      donutTrack.addEventListener('scroll', function() {
+      donutTrack.addEventListener('scroll', function () {
         var slideWidth = donutTrack.clientWidth || 1;
         var index = Math.round(donutTrack.scrollLeft / slideWidth);
-        document.querySelectorAll('#donut-mobile-dots .dot').forEach(function(dot, i) {
+        document.querySelectorAll('#donut-mobile-dots .dot').forEach(function (dot, i) {
           dot.classList.toggle('active', i === index);
         });
       }, { passive: true });
 
-      document.querySelectorAll('#donut-mobile-dots .dot').forEach(function(dot) {
-        dot.addEventListener('click', function(e) {
+      document.querySelectorAll('#donut-mobile-dots .dot').forEach(function (dot) {
+        dot.addEventListener('click', function (e) {
           e.stopPropagation();
           var index = parseInt(this.dataset.index, 10) || 0;
           var slideWidth = donutTrack.clientWidth;
@@ -2860,7 +3036,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       try {
         await updatePlanBadge();
-      } catch (e) {}
+      } catch (e) { }
 
       if (isInitial) {
         await hideSkeletons();
@@ -2874,9 +3050,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         destroyAllCharts();
 
         if (chartRafId) cancelAnimationFrame(chartRafId);
-        setTimeout(function() {
+        setTimeout(function () {
           if (myToken !== refreshToken) return;
-          chartRafId = requestAnimationFrame(function() {
+          chartRafId = requestAnimationFrame(function () {
             chartRafId = null;
             if (myToken !== refreshToken) return;
             renderAttempts = 0;
@@ -2891,7 +3067,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         var winlossTargetId = isMobileView ? 'chart-winloss-mobile' : 'chart-winloss';
         var directionTargetId = isMobileView ? 'chart-direction-mobile' : 'chart-direction';
         var containerIds = ['chart-cumulative', winlossTargetId, 'chart-daily', 'chart-symbol', directionTargetId];
-        containerIds.forEach(function(cid) {
+        containerIds.forEach(function (cid) {
           var el = safeEl(cid);
           if (el) {
             el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
@@ -2909,29 +3085,61 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // LOAD TRADES
   // ============================================================
 
-  async function loadTrades(userId) {
+  async function loadTrades(userId, targetJournalId) {
+    var jid = targetJournalId || (window.journal ? window.journal.getActiveJournalId() : null);
 
-  var jid = window.journal ? window.journal.getActiveJournalId() : null;
-  if (!jid) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
-    return;
-  }
-
-    var { data, error } = await sb
-      .from('trades')
-      .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-      .eq('user_id', userId)
-      .eq('journal_id', jid)
-      .order('trade_date', { ascending: false })
-      .limit(1000);
-
-    if (error) {
-      showToast(i18n.t('common.load_error') + error.message, 'error');
-      return null;
+    // Eğer jid hala yoksa ve window.journal varsa, defteri garantiye al
+    if (!jid && window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+      try {
+        jid = await window.journal.ensureActiveJournal(userId);
+      } catch (e) { }
     }
 
-    var result = data || [];
-    return result.reverse();
+    try {
+      var query = sb
+        .from('trades')
+        .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+        .eq('user_id', userId);
+
+      if (jid) {
+        query = query.eq('journal_id', jid);
+      }
+
+      query = query.order('trade_date', { ascending: false }).limit(1000);
+
+      var { data, error } = await query;
+
+      if (error) {
+        if (typeof showToast === 'function') {
+          showToast((window.i18n && window.i18n.t ? window.i18n.t('common.load_error') : 'Hata: ') + error.message, 'error');
+        }
+        return [];
+      }
+
+      var result = data || [];
+
+      // EĞER jid ile filtreledik ama 0 işlem döndüyse ve deftersiz (journal_id IS NULL) eski işlemler varsa kurtar
+      if (result.length === 0 && jid) {
+        try {
+          var { data: unassignedData } = await sb
+            .from('trades')
+            .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+            .eq('user_id', userId)
+            .is('journal_id', null)
+            .order('trade_date', { ascending: false })
+            .limit(1000);
+            
+          if (unassignedData && unassignedData.length > 0) {
+            result = unassignedData;
+          }
+        } catch (unErr) { }
+      }
+
+      return result.reverse();
+    } catch (e) {
+      console.error('loadTrades catch hatası:', e);
+      return [];
+    }
   }
 
   // ============================================================
@@ -2949,7 +3157,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       // ⭐ ThemeObserver - sadece light-theme sınıfı gerçekten değiştiğinde tetiklenir
       try {
         var currentIsLight = document.body.classList.contains('light-theme');
-        var themeObserver = new MutationObserver(function() {
+        var themeObserver = new MutationObserver(function () {
           var isLightNow = document.body.classList.contains('light-theme');
           if (isLightNow !== currentIsLight) {
             currentIsLight = isLightNow;
@@ -2957,9 +3165,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           }
         });
         themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-      } catch (e) {}
+      } catch (e) { }
 
-      document.addEventListener('visibilitychange', function() {
+      document.addEventListener('visibilitychange', function () {
         isPageVisible = !document.hidden;
         if (isPageVisible && allTrades.length > 0 && chartsInitialized) {
           var topGrid = safeEl('charts-top-grid');
@@ -2973,7 +3181,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
                     apexCharts[key].resize(rect.width, rect.height);
                   }
                 }
-              } catch(e) {}
+              } catch (e) { }
             }
           }
         }
@@ -2993,11 +3201,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         return;
       }
 
-  if (!window.journal) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('journal.js henüz yüklenmedi, atlanıyor');
-    return;
-  }
-  await window.journal.ensureActiveJournal(user.id);
+      var activeJournalId = null;
+      if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+        activeJournalId = await window.journal.ensureActiveJournal(user.id);
+      }
 
       currentUsername = (user.user_metadata && user.user_metadata.username) || user.email.split('@')[0];
 
@@ -3014,18 +3221,18 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         return;
       }
 
-      // Trades sorgusunu beklemeden hemen başlat
-      var tradesPromise = loadTrades(user.id);
+      // Trades sorgusunu garantili journalId ile hemen başlat
+      var tradesPromise = loadTrades(user.id, activeJournalId);
 
       try {
-        updatePlanBadge().catch(function() {});
-      } catch (e) {}
+        updatePlanBadge().catch(function () { });
+      } catch (e) { }
 
       try {
         if (typeof updateOvertradeBell === 'function') {
-          updateOvertradeBell().catch(function() {});
+          updateOvertradeBell().catch(function () { });
         }
-      } catch(e) {
+      } catch (e) {
         wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
       }
 
@@ -3034,16 +3241,15 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         if (savedPayMethod && typeof selectedPayMethod !== 'undefined') {
           selectedPayMethod = savedPayMethod;
         }
-      } catch (e) {}
+      } catch (e) { }
 
       var tradesData = await tradesPromise;
-      if (tradesData === null) {
-        hideSkeletons();
-        return;
+      if (!tradesData) {
+        tradesData = [];
       }
 
       allTrades = tradesData;
-      allTradesFullStats = allTrades.filter(function(t) { return t.exit_price; });
+      allTradesFullStats = allTrades.filter(function (t) { return t.exit_price; });
 
       // Setup date filter & options
       setupDateFilterAndOptions();
@@ -3058,9 +3264,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       setupDonutCarousel();
 
       if (typeof i18n !== 'undefined' && i18n.onChange) {
-        i18n.onChange(function() {
+        i18n.onChange(function () {
           // ⭐ DEĞİŞTİ: i18n.apply() tamamlandıktan sonra refresh et
-          requestAnimationFrame(function() {
+          requestAnimationFrame(function () {
             renderMiniCalendar();
             refresh();
           });
@@ -3069,9 +3275,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       await refresh(true);
 
-      window.addEventListener('resize', function() {
+      window.addEventListener('resize', function () {
         clearTimeout(window._chartExpandResizeTimer);
-        window._chartExpandResizeTimer = setTimeout(function() {
+        window._chartExpandResizeTimer = setTimeout(function () {
           setupChartExpansion();
         }, 300);
       });
@@ -3082,7 +3288,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       var chartExpandModal = safeEl('chart-expand-modal');
       if (chartExpandModal) {
-        chartExpandModal.addEventListener('click', function(e) {
+        chartExpandModal.addEventListener('click', function (e) {
           if (e.target === chartExpandModal) closeChartExpansion();
         });
       }
@@ -3129,14 +3335,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (typeof lucide !== 'undefined') {
       var dashboardIcons = document.querySelectorAll('.dashboard-main [data-lucide]');
       if (dashboardIcons.length > 0) {
-        try { lucide.createIcons(); } catch(e) {}
+        try { lucide.createIcons(); } catch (e) { }
       }
     }
 
     if (typeof loadNavbar === 'function') {
       var container = document.getElementById('navbar-container');
       if (container && container.innerHTML.trim() === '') {
-        try { loadNavbar('navbar-container'); } catch(e) {}
+        try { loadNavbar('navbar-container'); } catch (e) { }
       }
     }
 
@@ -3150,4 +3356,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
 
 })();
-document.addEventListener('journal-changed', () => window.location.reload());
+document.addEventListener('journal-changed', (e) => {
+  var newId = e && e.detail && e.detail.id;
+  var currentId = localStorage.getItem('ww_active_journal_id');
+  if (newId && currentId && newId === currentId) return;
+  window.location.reload();
+});

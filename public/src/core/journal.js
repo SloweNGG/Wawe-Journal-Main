@@ -7,15 +7,17 @@ export function getActiveJournalId() {
   return localStorage.getItem('ww_active_journal_id');
 }
 
-export function setActiveJournalId(id) {
+export function setActiveJournalId(id, silent = false) {
   if (typeof localStorage === 'undefined') return;
+  const oldId = localStorage.getItem('ww_active_journal_id');
   if (id) {
     localStorage.setItem('ww_active_journal_id', id);
   } else {
     localStorage.removeItem('ww_active_journal_id');
   }
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('journal-changed', { detail: { id } }));
+  // Yalnızca ID gerçekten değiştiyse ve sessiz modda değilse reload/change event'i fırlat
+  if (!silent && oldId !== id && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('journal-changed', { detail: { id, oldId } }));
   }
 }
 
@@ -48,21 +50,37 @@ function handleJournalError(error) {
 
 function getSbClient() {
   if (!window.sb) {
-    wwLog.error('Supabase client (window.sb) bulunamadı');
+    if (typeof wwLog !== 'undefined') wwLog.error('Supabase client (window.sb) bulunamadı');
     throw new Error('SUPABASE_NOT_READY');
   }
   return window.sb;
 }
 
 let _listJournalsPromise = null;
-export async function listJournals() {
-  if (_listJournalsPromise) return _listJournalsPromise;
+export async function listJournals(forceRefresh = false) {
+  if (!forceRefresh && _listJournalsPromise) return _listJournalsPromise;
   const sb = getSbClient();
   _listJournalsPromise = (async () => {
     try {
-      const { data, error } = await sb.rpc('list_journals');
+      let { data, error } = await sb.rpc('list_journals');
+      
+      // İlk girişte auth token header'a henüz oturmamışsa veya RPC boş dönerse bir kez yeniden dene
+      if ((error || !data || data.length === 0) && sb.auth) {
+        try {
+          const sessionRes = await sb.auth.getSession();
+          if (sessionRes?.data?.session) {
+            await new Promise(r => setTimeout(r, 200));
+            const retryRes = await sb.rpc('list_journals');
+            if (retryRes.data && retryRes.data.length > 0) {
+              data = retryRes.data;
+              error = retryRes.error;
+            }
+          }
+        } catch (retryErr) {}
+      }
+
       if (error) handleJournalError(error);
-      return data;
+      return data || [];
     } finally {
       setTimeout(() => { _listJournalsPromise = null; }, 2000);
     }
@@ -75,28 +93,26 @@ export async function ensureActiveJournal(userId) {
     if (typeof wwLog !== 'undefined') wwLog.warn('ensureActiveJournal: userId yok');
     return null;
   }
+
   const stored = getActiveJournalId();
-  if (stored) {
-    listJournals().then(journals => {
-      if (journals && journals.length > 0) {
-        let active = journals.find(j => j.id === stored);
-        if (!active) {
-          active = journals.find(j => j.is_default) || journals[0];
-          setActiveJournalId(active.id);
-        }
-      }
-    }).catch(() => {});
-    return stored;
-  }
+
   try {
     const journals = await listJournals();
     if (!journals || journals.length === 0) {
       if (typeof wwLog !== 'undefined') wwLog.warn('journals boş');
-      return null;
+      return stored || null;
     }
-    let active = journals.find(j => j.id === stored);
-    if (!active) active = journals.find(j => j.is_default) || journals[0];
-    setActiveJournalId(active.id);
+
+    // 1. Tarayıcıda saklanan ID bu kullanıcının mevcut defterleri arasında var mı?
+    let active = stored ? journals.find(j => j.id === stored) : null;
+    
+    // 2. Yoksa veya geçersizse varsayılan defteri veya ilk defteri seç
+    if (!active) {
+      active = journals.find(j => j.is_default) || journals[0];
+    }
+
+    // İlk açılışta sayfayı gereksiz reload döngüsüne sokmamak için sessizce kaydet
+    setActiveJournalId(active.id, true);
     return active.id;
   } catch (err) {
     if (typeof wwLog !== 'undefined') wwLog.error('ensureActiveJournal hatası:', err);

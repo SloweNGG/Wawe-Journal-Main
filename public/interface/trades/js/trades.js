@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // TRADES - ANA JS DOSYASI
 // ============================================================
 // Bu dosyada değişen bölümler:
@@ -940,27 +940,53 @@
   // ============================================================
   
   async function loadTrades(userId) {
-
-  var jid = window.journal ? window.journal.getActiveJournalId() : null;
-  if (!jid) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
-    return;
-  }
-
-    var { data, error } = await sb
-      .from('trades')
-      .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-      .eq('user_id', userId)
-      .eq('journal_id', jid)
-      .order('trade_date', { ascending: false })
-      .limit(1000);
-    
-    if (error) {
-      showToast(_t('common.load_error') + error.message, 'error');
-      return null;
+    var jid = window.journal ? window.journal.getActiveJournalId() : null;
+    if (!jid && window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+      try {
+        jid = await window.journal.ensureActiveJournal(userId);
+      } catch (e) { }
     }
-    
-    return data || [];
+
+    try {
+      var query = sb
+        .from('trades')
+        .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+        .eq('user_id', userId);
+
+      if (jid) {
+        query = query.eq('journal_id', jid);
+      }
+
+      query = query.order('trade_date', { ascending: false }).limit(1000);
+
+      var { data, error } = await query;
+      
+      if (error) {
+        showToast(_t('common.load_error') + error.message, 'error');
+        return [];
+      }
+      
+      var result = data || [];
+      if (result.length === 0 && jid) {
+        try {
+          var { data: unassignedData } = await sb
+            .from('trades')
+            .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+            .eq('user_id', userId)
+            .is('journal_id', null)
+            .order('trade_date', { ascending: false })
+            .limit(1000);
+          if (unassignedData && unassignedData.length > 0) {
+            result = unassignedData;
+          }
+        } catch (unErr) { }
+      }
+
+      return result;
+    } catch (e) {
+      console.error('trades.js loadTrades catch hatası:', e);
+      return [];
+    }
   }
 
   // ============================================================

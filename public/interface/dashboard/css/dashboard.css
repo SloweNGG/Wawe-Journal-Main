@@ -1580,19 +1580,21 @@ body.light-theme .mini-cal-day.loss:hover {
 }
 
 /* ============================================================
-   ⭐ CHART EXPAND MODAL (SORUN 11)
+   ⭐ CHART EXPAND MODAL & SUMMARY (Wawe Dark Purple Theme)
    ============================================================ */
 
 .chart-expand-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.85);
-  backdrop-filter: blur(6px);
-  z-index: var(--z-modal-overlay);
+  background: rgba(5, 4, 10, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: var(--z-modal-overlay, 9999);
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.5rem;
+  transition: opacity 0.25s ease;
 }
 
 .chart-expand-overlay.active {
@@ -1600,57 +1602,111 @@ body.light-theme .mini-cal-day.loss:hover {
 }
 
 .chart-expand-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: radial-gradient(ellipse 90% 45% at 50% -10%, rgba(139, 92, 246, 0.16), transparent 70%), #0c0b14;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 20px;
   width: 100%;
-  max-width: 900px;
+  max-width: 940px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), 0 0 40px -10px rgba(139, 92, 246, 0.2), inset 0 1px 0 rgba(168, 85, 247, 0.25);
   overflow: hidden;
+  animation: modalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalScaleIn {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .chart-expand-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.08) 0%, rgba(14, 14, 22, 0) 100%);
 }
 
 .chart-expand-header h3 {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text);
+  color: #f1f1f8;
   margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .chart-expand-close {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 1.2rem;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  color: #a0a0b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   cursor: pointer;
-  padding: 4px 8px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.chart-expand-close:hover {
+  background: rgba(139, 92, 246, 0.22);
+  color: #fff;
+  border-color: rgba(168, 85, 247, 0.45);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+  transform: scale(1.05);
+}
+
+.chart-expand-close:active {
+  transform: scale(0.95);
 }
 
 .chart-expand-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem 1.5rem;
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#chart-expand-container {
+  width: 100%;
+  height: 380px;
 }
 
 @media (max-width: 767px) {
+  .chart-expand-overlay {
+    padding: 0.5rem;
+  }
   .chart-expand-box {
-    width: 95vw;
-    max-height: 92vh;
+    width: 96vw;
+    max-height: 94vh;
+    border-radius: 16px;
+  }
+  .chart-expand-header {
+    padding: 0.85rem 1rem;
+  }
+  .chart-expand-header h3 {
+    font-size: 14px;
   }
   .chart-expand-body {
-    padding: 1rem;
+    padding: 0.85rem 1rem 1rem;
   }
   #chart-expand-container {
-    height: 320px !important;
+    height: 260px !important;
   }
 }
 
@@ -1665,98 +1721,219 @@ body.light-theme .mini-cal-day.loss:hover {
   border-color: var(--accent);
 }
 
-.chart-card.expandable:hover {
-  border-color: var(--accent);
-}
-
 /* ============================================================
-   ⭐ CHART EXPAND SUMMARY (Kazanan & Kaybeden İşlemler)
+   ⭐ CHART EXPAND SUMMARY (Wawe Dark Purple Theme)
    ============================================================ */
 .chart-expand-summary {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.15rem;
   margin-top: 1.25rem;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--border);
-}
-
-@media (max-width: 600px) {
-  .chart-expand-summary {
-    grid-template-columns: 1fr;
-  }
+  border-top: 1px solid rgba(139, 92, 246, 0.14);
 }
 
 .expand-summary-col {
-  background: var(--surface2, rgba(255,255,255,0.03));
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.85rem 1.15rem;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  background: #110f1e;
+  background: linear-gradient(165deg, rgba(22, 19, 38, 0.95) 0%, rgba(13, 12, 22, 0.98) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(168, 85, 247, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .expand-summary-col.wins {
-  border-left: 3px solid var(--green);
+  border-left: 3px solid #22c55e;
 }
 
 .expand-summary-col.losses {
-  border-left: 3px solid var(--red);
+  border-left: 3px solid #ef4444;
 }
 
 .expand-summary-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.expand-summary-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.expand-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.expand-indicator.win {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.expand-indicator.loss {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.expand-summary-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .expand-summary-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
+  letter-spacing: 0.06em;
+  color: #a0a0b8;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.expand-summary-badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  width: fit-content;
+}
+
+.expand-summary-badge.win {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.expand-summary-badge.loss {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .expand-summary-total {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
-.expand-summary-col.wins .expand-summary-total {
-  color: var(--green);
+.expand-summary-total.win {
+  color: #22c55e;
 }
 
-.expand-summary-col.losses .expand-summary-total {
-  color: var(--red);
+.expand-summary-total.loss {
+  color: #ef4444;
 }
 
 .expand-summary-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font-size: 12px;
-  margin-top: 2px;
+  gap: 6px;
+  margin-top: 4px;
 }
 
 .expand-summary-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--text);
-  padding: 2px 0;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  border-radius: 8px;
+  padding: 7px 11px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.expand-summary-item:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.22);
+}
+
+.expand-summary-item .item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .expand-summary-item .item-sym {
+  font-weight: 700;
+  font-size: 13px;
+  color: #f1f1f8;
+  letter-spacing: 0.02em;
+}
+
+.expand-summary-item .item-sub-count {
+  font-size: 11px;
   font-weight: 600;
-  color: var(--muted);
+  color: #c084fc;
+  background: rgba(139, 92, 246, 0.14);
+  padding: 2px 7px;
+  border-radius: 5px;
 }
 
 .expand-summary-item .item-val {
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.expand-summary-item .item-val.win {
+  color: #22c55e;
+}
+
+.expand-summary-item .item-val.loss {
+  color: #ef4444;
+}
+
+.expand-summary-empty {
+  color: #a0a0b8;
+  font-size: 12px;
+  font-style: italic;
+  padding: 8px 0;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .chart-expand-summary {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+  }
+  .expand-summary-col {
+    padding: 0.85rem 1rem;
+    gap: 0.6rem;
+    border-radius: 12px;
+  }
+  .expand-summary-header {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .expand-summary-total {
+    font-size: 16px;
+  }
+  .expand-summary-item {
+    padding: 6px 10px;
+  }
+  .expand-summary-item .item-sym {
+    font-size: 12px;
+  }
+  .expand-summary-item .item-val {
+    font-size: 13px;
+  }
 }
 
 
