@@ -11,6 +11,7 @@ export interface Props {
   canonical?: string;
   noIndex?: boolean;
   showNavbar?: boolean;
+  isAppPage?: boolean;
 }
 
 const {
@@ -22,12 +23,13 @@ const {
   canonical,
   noIndex,
   showNavbar = true,
+  isAppPage = showNavbar,
 } = Astro.props;
 ---
 <!DOCTYPE html>
 <html lang={lang}>
 <head>
-  <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} />
+  <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} isAppPage={isAppPage} />
   <slot name="head" />
 </head>
 <body class={bodyClass} style={bodyStyle}>

@@ -2,6 +2,47 @@
    WAWE JOURNAL — index.css (v8 final)
    ============================================================ */
 
+:root {
+  /* KOYU TEMA (Varsayılan) */
+  --bg: #07070c;
+  --bg2: #0d0d14;
+  --surface: #0e0e16;
+  --surface2: #161620;
+  --border: rgba(123,110,246,0.12);
+  --border2: rgba(123,110,246,0.2);
+
+  --accent: #8b5cf6;
+  --accent2: #c084fc;
+  --accent3: #a78bfa;
+  --accent-glow: rgba(139,92,246,0.4);
+
+  --accent-secondary: #fa6d9b;
+  --accent-secondary-bg: rgba(250,109,155,0.12);
+  --accent-tertiary: #6dd0fa;
+  --accent-tertiary-bg: rgba(109,208,250,0.12);
+
+  --green: #22c55e;
+  --green-bg: rgba(34,197,94,0.12);
+  --green-glow: rgba(34,197,94,0.3);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.12);
+  --red-glow: rgba(239,68,68,0.3);
+  --yellow: #fbbf24;
+  --yellow-bg: rgba(245,182,66,0.12);
+  --cyan: #06b6d4;
+  --pink: #ec4899;
+
+  --text: #f1f1f8;
+  --text-muted: #a0a0b8;
+  --muted: #a0a0b8;
+
+  --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+}
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 html {

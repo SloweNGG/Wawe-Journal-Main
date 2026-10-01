@@ -11,37 +11,40 @@ const { title, lang = 'en', description = 'Wawe Journal - Professional Trading J
 ---
 <Layout lang={lang} showNavbar={false} title={title} description={description}>
 <Fragment slot="head">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/index.css" />
   <link rel="stylesheet" href="/pages.css" />
-  <style>
+  <style is:global>
     * { box-sizing: border-box; }
-    html, body {
-      max-width: 100%;
-      overflow-x: hidden;
-      width: 100%;
-      margin: 0;
-      padding: 0;
+    html {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      scroll-behavior: smooth;
     }
-    #navbar-container { display: none !important; }
-    #app-scroll-container {
-      overflow: unset !important;
+    body {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
       height: auto !important;
       min-height: 100vh !important;
-      display: flex !important;
-      flex-direction: column !important;
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-    html { overflow-y: auto !important; }
-    body {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
       padding-top: 53px;
       background: var(--bg);
       color: var(--text);
       font-family: 'Space Grotesk', 'DM Sans', sans-serif;
       font-size: clamp(14px, 1.2vw, 16px);
       line-height: 1.6;
-      min-height: 100vh;
+    }
+    #navbar-container { display: none !important; }
+    #app-scroll-container {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      max-width: 100% !important;
     }
   </style>
 </Fragment>
@@ -56,7 +59,6 @@ const { title, lang = 'en', description = 'Wawe Journal - Professional Trading J
     </a>
 
     <div class="nav-links">
-      <a href="/#pricing" class="nav-link" data-i18n="nav.pricing">Pricing</a>
       <a href="/login" class="btn-login" data-i18n="nav.login">Login</a>
       <a href="/register" class="btn-register" data-i18n="nav.register">Sign Up →</a>
     </div>
@@ -83,7 +85,6 @@ const { title, lang = 'en', description = 'Wawe Journal - Professional Trading J
   </nav>
 
   <div class="mobile-menu" id="mobile-menu">
-    <a href="/#pricing" data-i18n="nav.pricing">Pricing</a>
     <a href="/login" data-i18n="nav.login">Login</a>
     <a href="/register" class="btn-register-mobile" data-i18n="nav.register">Sign Up →</a>
   </div>

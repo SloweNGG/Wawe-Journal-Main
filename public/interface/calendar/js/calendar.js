@@ -12,17 +12,17 @@ wwLog.log('📅 calendar.js yükleniyor...');
   var savedTheme = localStorage.getItem('ww_theme');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
-  
+
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
   } else {
     document.body.classList.remove('light-theme');
   }
-  
+
   if (savedFontSize) {
     document.body.style.fontSize = savedFontSize + 'px';
   }
-  
+
   if (savedTheme !== 'light' && customTheme) {
     try {
       var settings = JSON.parse(customTheme);
@@ -37,9 +37,9 @@ wwLog.log('📅 calendar.js yükleniyor...');
       if (settings.fontSize) {
         document.body.style.fontSize = settings.fontSize + 'px';
       }
-    } catch(e) {}
+    } catch (e) { }
   }
-  
+
   wwLog.log('🎨 [calendar.js] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
@@ -49,13 +49,13 @@ wwLog.log('📅 calendar.js yükleniyor...');
 
 (function listenThemeChanges() {
   wwLog.log('🎨 [Calendar] Tema izleyici başlatıldı...');
-  
-  window.addEventListener('storage', function(e) {
+
+  window.addEventListener('storage', function (e) {
     if (e.key === 'ww_theme') {
       wwLog.log('🔄 [Calendar] Tema değişikliği algılandı:', e.newValue);
       var isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
-      
+
       var customTheme = localStorage.getItem('ww_custom_theme');
       if (customTheme && !isLight) {
         try {
@@ -69,16 +69,16 @@ wwLog.log('📅 calendar.js yükleniyor...');
           if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
           if (settings.textColor) root.style.setProperty('--text', settings.textColor);
           if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-        } catch(e) {}
+        } catch (e) { }
       }
-      
+
       if (typeof renderCalendar === 'function') {
         renderCalendar();
       }
     }
   });
-  
-  document.addEventListener('themeChanged', function(e) {
+
+  document.addEventListener('themeChanged', function (e) {
     wwLog.log('🔄 [Calendar] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
@@ -91,19 +91,19 @@ wwLog.log('📅 calendar.js yükleniyor...');
       if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
       if (settings.textColor) root.style.setProperty('--text', settings.textColor);
       if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-      
+
       if (typeof renderCalendar === 'function') {
         renderCalendar();
       }
     }
   });
-  
-  document.addEventListener('visibilitychange', function() {
+
+  document.addEventListener('visibilitychange', function () {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
       var isLight = savedTheme === 'light';
       document.body.classList.toggle('light-theme', isLight);
-      
+
       if (typeof renderCalendar === 'function') {
         renderCalendar();
       }
@@ -125,7 +125,7 @@ function calcTradePnL(t) {
     var mult = t.multiplier || window.INSTRUMENT_MULTIPLIERS?.[t.instrument] || 100000;
     var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
     return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
-  } catch(e) {
+  } catch (e) {
     return 0;
   }
 }
@@ -140,7 +140,7 @@ function formatCurrency(value) {
     var absNum = Math.abs(num);
     var formatted = absNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return (num >= 0 ? '+' : '-') + currency + formatted;
-  } catch(e) {
+  } catch (e) {
     var n = parseFloat(value) || 0;
     return (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toFixed(2);
   }
@@ -163,7 +163,7 @@ function formatShortPnL(value) {
       formatted = absVal.toFixed(2);
     }
     return (num > 0 ? '+' : (num < 0 ? '-' : '')) + formatted;
-  } catch(e) {
+  } catch (e) {
     return '';
   }
 }
@@ -189,7 +189,7 @@ function formatDayLabel(dateStr, lang) {
     }
     var dt = new Date(dateStr + 'T00:00:00');
     return dt.getDate() + ' ' + getMonthNameShort(dt.getMonth(), lang);
-  } catch(e) {
+  } catch (e) {
     return '';
   }
 }
@@ -242,7 +242,7 @@ function showCalendarSkeleton() {
   var el3 = document.getElementById('calendar-summary-skeleton');
   var el4 = document.getElementById('calendar-summary');
   var el5 = document.getElementById('cal-legend');
-  
+
   if (el1) el1.style.display = 'grid';
   if (el2) el2.style.display = 'none';
   if (el3) el3.style.display = 'grid';
@@ -256,7 +256,7 @@ function hideCalendarSkeleton() {
   var el3 = document.getElementById('calendar-summary-skeleton');
   var el4 = document.getElementById('calendar-summary');
   var el5 = document.getElementById('cal-legend');
-  
+
   if (el1) el1.style.display = 'none';
   if (el2) el2.style.display = 'grid';
   if (el3) el3.style.display = 'none';
@@ -287,9 +287,9 @@ function renderCalendar() {
 
     var firstDay = new Date(currentYear, currentMonth, 1);
     var dayNames = getDayNames(lang);
-    
+
     if (dayNamesContainer) {
-      dayNamesContainer.innerHTML = dayNames.map(function(name, idx) {
+      dayNamesContainer.innerHTML = dayNames.map(function (name, idx) {
         var weekendClass = (idx === 5 || idx === 6) ? ' weekend' : '';
         return '<div class="dname' + weekendClass + '">' + name + '</div>';
       }).join('');
@@ -360,14 +360,14 @@ function renderCalendar() {
 
       var todayClass = isToday ? 'today' : '';
       var weekendClass2 = isWeekend ? 'weekend-cell' : '';
-      
+
       var pnlDisplay = '';
       if (hasTrade && dayPnl !== 0) {
         pnlDisplay = formatShortPnL(dayPnl);
       }
       var pnlClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       var barClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
-      
+
       var tradeCountText = hasTrade ? (dayTrades.length + ' ' + (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.stats.trade_count', 'işlem') : 'işlem')) : '';
       var ariaLabel = d + ' ' + monthName + (hasTrade ? ', ' + dayTrades.length + ' işlem, ' + pnlDisplay : ', işlem yok');
 
@@ -378,7 +378,7 @@ function renderCalendar() {
         (pnlDisplay ? '<div class="day-pnl ' + pnlClass + '">' + pnlDisplay + '</div>' : '') +
         (tradeCountText ? '<div class="day-trade-count">' + tradeCountText + '</div>' : '') +
         '<div class="day-pnl-bar ' + (hasTrade ? 'show' : '') + ' ' + barClass + '"></div>' +
-      '</div>';
+        '</div>';
     }
 
     if (grid) {
@@ -394,16 +394,16 @@ function renderCalendar() {
     var winRate = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
     var tradesEl = document.getElementById('cal-summary-trades');
     if (tradesEl) tradesEl.textContent = totalTrades;
-    
+
     var pnlEl = document.getElementById('cal-summary-pnl');
     if (pnlEl) {
       pnlEl.textContent = formatCurrency(totalPnl);
       pnlEl.className = 's-value' + (totalPnl >= 0 ? ' positive' : ' negative');
     }
-    
+
     var winrateEl = document.getElementById('cal-summary-winrate');
     if (winrateEl) winrateEl.textContent = winRate + '%';
-    
+
     var bestEl = document.getElementById('cal-summary-best');
     var bestDateEl = document.getElementById('cal-summary-best-date');
     if (bestEl) bestEl.textContent = anyTradedDay ? formatCurrency(bestDay.pnl) : '—';
@@ -415,7 +415,7 @@ function renderCalendar() {
     if (worstDateEl) worstDateEl.textContent = anyTradedDay ? formatDayLabel(worstDay.date, lang) : '';
 
     hideCalendarSkeleton();
-  } catch(e) {
+  } catch (e) {
     wwLog.warn('renderCalendar hatası:', e);
     hideCalendarSkeleton();
   }
@@ -430,8 +430,8 @@ var currentModalDateStr = null;
 function getDayPerformance(dateStr) {
   var trades = tradesByDate[dateStr] || [];
   var totalTrades = trades.length;
-  var closedTrades = trades.filter(function(t) { return t.exit_price != null || t.pnl != null; });
-  
+  var closedTrades = trades.filter(function (t) { return t.exit_price != null || t.pnl != null; });
+
   var winTrades = 0;
   var lossTrades = 0;
   var grossWin = 0;
@@ -448,7 +448,7 @@ function getDayPerformance(dateStr) {
 
   var instrumentMap = {};
 
-  var processedTrades = closedTrades.map(function(t) {
+  var processedTrades = closedTrades.map(function (t) {
     var pnl = calcTradePnL(t);
     totalPnL += pnl;
 
@@ -514,7 +514,7 @@ function getDayPerformance(dateStr) {
     avgRR = '∞';
   }
 
-  var instrumentBreakdown = Object.values(instrumentMap).map(function(item) {
+  var instrumentBreakdown = Object.values(instrumentMap).map(function (item) {
     return {
       instrument: item.instrument,
       symbol: item.symbol,
@@ -640,7 +640,7 @@ function openDayModal(dateStr) {
         var tNoData = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.no_data', 'Veri yok') : 'Veri yok';
         var tNoTradesInList = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.no_trades_in_list', 'İşlem yok') : 'İşlem yok';
 
-        var instrumentRows = perf.instrumentBreakdown.map(function(ib) {
+        var instrumentRows = perf.instrumentBreakdown.map(function (ib) {
           var displayName = sanitizeHTML((ib.instrument || '') + ' ' + (ib.symbol || ''));
           return '<tr><td>' + displayName + '</td><td>' + ib.trades + '</td><td>' + ib.winRate + '%</td><td class="' + (ib.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrency(ib.pnl) + '</td></tr>';
         }).join('');
@@ -664,7 +664,7 @@ function openDayModal(dateStr) {
           </div>
         `;
 
-        var tradeRows = perf.tradesDetail.map(function(t) {
+        var tradeRows = perf.tradesDetail.map(function (t) {
           var dStr = t.trade_date ? t.trade_date.split('T')[0] : dateStr;
           return '<tr>' +
             '<td>' + dStr + '</td>' +
@@ -709,7 +709,7 @@ function openDayModal(dateStr) {
       modal.classList.add('active');
       modal.style.display = 'flex';
     }
-  } catch(e) {
+  } catch (e) {
     console.error('openDayModal error:', e);
   }
 }
@@ -736,8 +736,8 @@ function downloadBlob(content, filename, mimeType) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(url); }, 200);
-  } catch(e) {}
+    setTimeout(function () { URL.revokeObjectURL(url); }, 200);
+  } catch (e) { }
 }
 
 function csvEscape(val) {
@@ -753,7 +753,7 @@ function exportDayCSV(dateStr) {
     var rows = [[
       'Tarih', 'Sembol', 'Enstrüman', 'Yön', 'Giriş', 'Çıkış', 'Lot', 'K/Z'
     ]];
-    perf.tradesDetail.forEach(function(t) {
+    perf.tradesDetail.forEach(function (t) {
       rows.push([t.trade_date, t.symbol, t.instrument, t.direction, t.entry_price, t.exit_price, t.lot, t.pnl.toFixed(2)]);
     });
     rows.push([]);
@@ -765,10 +765,10 @@ function exportDayCSV(dateStr) {
     rows.push(['Profit Factor', pfDisplay]);
     rows.push(['Maks. Drawdown', perf.maxDrawdown.toFixed(2)]);
 
-    var csvContent = rows.map(function(r) { return r.map(csvEscape).join(','); }).join('\r\n');
+    var csvContent = rows.map(function (r) { return r.map(csvEscape).join(','); }).join('\r\n');
     downloadBlob('\uFEFF' + csvContent, targetDate + '_islemler.csv', 'text/csv;charset=utf-8;');
     if (typeof showToast === 'function') showToast(typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.csv_exported', 'CSV indirildi!') : 'CSV indirildi!');
-  } catch(e) {
+  } catch (e) {
     if (typeof showToast === 'function') showToast('CSV export error', 'error');
   }
 }
@@ -822,7 +822,7 @@ async function exportDayPDF(dateStr) {
       });
       y = doc.lastAutoTable.finalY + 8;
 
-      var tradeTableRows = perf.tradesDetail.map(function(t) {
+      var tradeTableRows = perf.tradesDetail.map(function (t) {
         return [
           t.trade_date ? t.trade_date.split('T')[0] : targetDate,
           t.symbol,
@@ -848,7 +848,7 @@ async function exportDayPDF(dateStr) {
 
     doc.save(targetDate + '_rapor.pdf');
     if (typeof showToast === 'function') showToast(typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.pdf_exported', 'PDF indirildi!') : 'PDF indirildi!');
-  } catch(e) {
+  } catch (e) {
     console.error('PDF export error:', e);
     window.print();
   }
@@ -876,7 +876,7 @@ function goToMonth(month, year, direction) {
 function loadCalendarTrades(trades) {
   calendarTrades = trades || [];
   tradesByDate = {};
-  calendarTrades.forEach(function(t) {
+  calendarTrades.forEach(function (t) {
     var dKey = getTradeDateKey(t.trade_date || t.date);
     if (dKey) {
       if (!tradesByDate[dKey]) tradesByDate[dKey] = [];
@@ -907,7 +907,7 @@ async function loadCalendarTradesFromDB(userId) {
     .eq('journal_id', jid)
     .order('trade_date', { ascending: true })
     .limit(2000);
-  
+
   if (error) {
     if (typeof showToast === 'function') {
       var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
@@ -915,7 +915,7 @@ async function loadCalendarTradesFromDB(userId) {
     }
     return [];
   }
-  
+
   return data || [];
 }
 
@@ -931,7 +931,7 @@ async function initCalendar() {
 
   try {
     wwLog.log('📅 Calendar başlatılıyor...');
-    
+
     if (typeof sb === 'undefined' || !sb) {
       console.error('❌ Supabase client (sb) tanımlı değil!');
       hideCalendarSkeleton();
@@ -942,9 +942,9 @@ async function initCalendar() {
     var prevBtn = document.getElementById('cal-prev');
     var nextBtn = document.getElementById('cal-next');
     var todayBtn = document.getElementById('cal-today');
-    
+
     if (prevBtn) {
-      prevBtn.addEventListener('click', function() {
+      prevBtn.addEventListener('click', function () {
         if (currentMonth === 0) {
           goToMonth(11, currentYear - 1, 'right');
         } else {
@@ -954,7 +954,7 @@ async function initCalendar() {
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', function() {
+      nextBtn.addEventListener('click', function () {
         if (currentMonth === 11) {
           goToMonth(0, currentYear + 1, 'left');
         } else {
@@ -964,7 +964,7 @@ async function initCalendar() {
     }
 
     if (todayBtn) {
-      todayBtn.addEventListener('click', function() {
+      todayBtn.addEventListener('click', function () {
         var now = new Date();
         var m = now.getMonth();
         var y = now.getFullYear();
@@ -972,7 +972,7 @@ async function initCalendar() {
         goToMonth(m, y, dir);
       });
     }
-    
+
     // Modal buttons
     var closeBtn = document.getElementById('close-day-modal');
     var closeBtn2 = document.getElementById('close-day-modal-btn');
@@ -983,30 +983,30 @@ async function initCalendar() {
     if (closeBtn) closeBtn.addEventListener('click', closeDayModal);
     if (closeBtn2) closeBtn2.addEventListener('click', closeDayModal);
     if (modalOverlay) {
-      modalOverlay.addEventListener('click', function(e) {
+      modalOverlay.addEventListener('click', function (e) {
         if (e.target === modalOverlay) closeDayModal();
       });
     }
-    if (dayCsvBtn) dayCsvBtn.addEventListener('click', function() { exportDayCSV(); });
-    if (dayPdfBtn) dayPdfBtn.addEventListener('click', function() { exportDayPDF(); });
-    
-    document.addEventListener('keydown', function(e) {
+    if (dayCsvBtn) dayCsvBtn.addEventListener('click', function () { exportDayCSV(); });
+    if (dayPdfBtn) dayPdfBtn.addEventListener('click', function () { exportDayPDF(); });
+
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeDayModal();
     });
-    
+
     // Touch events for mobile swipe
     var grid = document.getElementById('cal-grid');
     if (grid) {
       var touchStartX = 0, touchStartY = 0, touching = false;
-      
-      grid.addEventListener('touchstart', function(e) {
+
+      grid.addEventListener('touchstart', function (e) {
         if (!e.touches || !e.touches.length) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         touching = true;
       }, { passive: true });
-      
-      grid.addEventListener('touchend', function(e) {
+
+      grid.addEventListener('touchend', function (e) {
         if (!touching) return;
         touching = false;
         var touch = (e.changedTouches && e.changedTouches[0]) || null;
@@ -1021,7 +1021,7 @@ async function initCalendar() {
         }
       }, { passive: true });
     }
-    
+
     // Month / Year Jump popover
     var titleBtn = document.getElementById('cal-title-btn');
     var popover = document.getElementById('cal-jump-popover');
@@ -1029,7 +1029,7 @@ async function initCalendar() {
     var monthsGrid = document.getElementById('jump-months-grid');
     var yearPrev = document.getElementById('jump-year-prev');
     var yearNext = document.getElementById('jump-year-next');
-    
+
     if (titleBtn && popover) {
       function renderMonthsGrid() {
         if (!yearLabel || !monthsGrid) return;
@@ -1042,7 +1042,7 @@ async function initCalendar() {
         }
         monthsGrid.innerHTML = html;
       }
-      
+
       function openPopover() {
         jumpPopoverYear = currentYear;
         renderMonthsGrid();
@@ -1050,28 +1050,28 @@ async function initCalendar() {
         titleBtn.classList.add('open');
         titleBtn.setAttribute('aria-expanded', 'true');
       }
-      
+
       function closePopover() {
         popover.classList.remove('open');
         titleBtn.classList.remove('open');
         titleBtn.setAttribute('aria-expanded', 'false');
       }
-      
-      titleBtn.addEventListener('click', function(e) {
+
+      titleBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         if (popover.classList.contains('open')) closePopover(); else openPopover();
       });
-      
-      document.addEventListener('click', function(e) {
+
+      document.addEventListener('click', function (e) {
         if (!e.target.closest('#cal-jump-popover') && !e.target.closest('#cal-title-btn')) closePopover();
       });
-      popover.addEventListener('click', function(e) { e.stopPropagation(); });
-      
-      if (yearPrev) yearPrev.addEventListener('click', function() { jumpPopoverYear--; renderMonthsGrid(); });
-      if (yearNext) yearNext.addEventListener('click', function() { jumpPopoverYear++; renderMonthsGrid(); });
-      
+      popover.addEventListener('click', function (e) { e.stopPropagation(); });
+
+      if (yearPrev) yearPrev.addEventListener('click', function () { jumpPopoverYear--; renderMonthsGrid(); });
+      if (yearNext) yearNext.addEventListener('click', function () { jumpPopoverYear++; renderMonthsGrid(); });
+
       if (monthsGrid) {
-        monthsGrid.addEventListener('click', function(e) {
+        monthsGrid.addEventListener('click', function (e) {
           var btn = e.target.closest('button[data-month]');
           if (!btn) return;
           var m = parseInt(btn.getAttribute('data-month'), 10);
@@ -1082,10 +1082,10 @@ async function initCalendar() {
         });
       }
     }
-    
+
     // Skeleton ve veri yükleme
     showCalendarSkeleton();
-    
+
     if (typeof requireAuth !== 'function') {
       console.warn('⚠️ requireAuth tanımlı değil');
       hideCalendarSkeleton();
@@ -1101,7 +1101,7 @@ async function initCalendar() {
     if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
       try {
         await window.journal.ensureActiveJournal(user.id);
-      } catch(e) {}
+      } catch (e) { }
     }
 
     // Over-Trade bildirimleri
@@ -1109,20 +1109,20 @@ async function initCalendar() {
       if (typeof updateOvertradeBell === 'function') {
         await updateOvertradeBell();
       }
-    } catch(e) {}
-    
+    } catch (e) { }
+
     // Verileri çek ve takvimi çiz
     var tradesData = await loadCalendarTradesFromDB(user.id);
     loadCalendarTrades(tradesData || []);
-    
+
     // i18n değişimlerini dinle
     if (typeof i18n !== 'undefined' && i18n.onChange) {
-      i18n.onChange(function() {
+      i18n.onChange(function () {
         renderCalendar();
         if (typeof i18n.apply === 'function') i18n.apply();
       });
     }
-    
+
     wwLog.log('✅ Calendar başlatıldı!');
   } catch (e) {
     console.error('❌ Calendar init hatası:', e);
@@ -1156,13 +1156,13 @@ function startCalendar() {
   }
 
   if (typeof lucide !== 'undefined') {
-    try { lucide.createIcons(); } catch(e) {}
+    try { lucide.createIcons(); } catch (e) { }
   }
 
   if (typeof loadNavbar === 'function') {
     var container = document.getElementById('navbar-container');
     if (container && container.innerHTML.trim() === '') {
-      try { loadNavbar('navbar-container'); } catch(e) {}
+      try { loadNavbar('navbar-container'); } catch (e) { }
     }
   }
 

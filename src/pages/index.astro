@@ -3,8 +3,6 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" showNavbar={false}>
 <Fragment slot="head">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
   <title>Wawe Journal (Wave Journal) - Professional Trading Journal for Traders</title>
   <meta name="description" content="Every great trader has a story. Wawe Journal helps you write yours." />
   <meta name="keywords" content="wawe journal, wave journal, wave trading journal, trading journal, wawejournal, crypto trading journal, forex journal" />
@@ -47,17 +45,30 @@ import Layout from '../layouts/Layout.astro';
   }
   </script>
 
-  <style>
+  <style is:global>
     * { box-sizing: border-box; }
-    html, body { max-width: 100%; overflow-x: hidden; }
+    html {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      scroll-behavior: smooth;
+    }
+    body {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      min-height: 100vh !important;
+      max-width: 100%;
+    }
     #navbar-container { display: none !important; }
     /* landing page: app-scroll-container normal flow (scroll on html/body, not container) */
     #app-scroll-container {
-      overflow: unset !important;
+      overflow: visible !important;
       height: auto !important;
+      min-height: 100vh !important;
       display: block !important;
+      width: 100% !important;
     }
-    html { overflow-y: auto !important; }
   </style>
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
@@ -77,7 +88,6 @@ import Layout from '../layouts/Layout.astro';
     </a>
 
     <div class="nav-links">
-      <a href="#pricing" class="nav-link" data-i18n="nav.pricing">Pricing</a>
       <a href="login.html" class="btn-login" data-i18n="nav.login">Login</a>
       <a href="register.html" class="btn-register" data-i18n="nav.register">Sign Up →</a>
     </div>
@@ -104,7 +114,6 @@ import Layout from '../layouts/Layout.astro';
   </nav>
 
   <div class="mobile-menu" id="mobile-menu">
-    <a href="#pricing" data-i18n="nav.pricing">Pricing</a>
     <a href="login.html" data-i18n="nav.login">Login</a>
     <a href="register.html" class="btn-register-mobile" data-i18n="nav.register">Sign Up →</a>
   </div>
@@ -242,7 +251,7 @@ import Layout from '../layouts/Layout.astro';
         <div class="cmp-sub" data-i18n="cmp.us.sub">Premium</div>
         <div class="cmp-price us">$12<span>/mo</span></div>
         <ul class="cmp-rows">
-          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v">1,000 / journal</span></li>
+          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v pos" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
           <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
           <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 20 charts</span></li>
           <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v mid" data-i18n="cmp.rows.coming">Yes (Coming soon)</span></li>

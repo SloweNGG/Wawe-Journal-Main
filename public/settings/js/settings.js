@@ -918,9 +918,6 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
 
 window.showConfirmModal = showConfirmModal;
 
-// ============================================================
-// ⭐ PLAN PANEL
-// ============================================================
 async function renderPlan() {
   var container = safeEl('plan-container');
   if (!container) return;

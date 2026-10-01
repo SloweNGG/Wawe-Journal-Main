@@ -22,8 +22,8 @@
   --glass-bg: rgba(10, 10, 18, 0.55);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
-  --glass-blur: 32px;
-  --glass-saturate: 200%;
+  --glass-blur: 16px;
+  --glass-saturate: 180%;
   --nav-height: 64px; /* ⭐ sabit nav yüksekliği (masaüstü) */
 }
 
@@ -36,6 +36,8 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .nav {
@@ -62,6 +64,7 @@
   font-size: var(--nav-font-size);
   line-height: var(--nav-line-height);
   animation: none !important;
+  transform: translateZ(0);
 }
 
 .nav * {

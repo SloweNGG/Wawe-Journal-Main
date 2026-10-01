@@ -201,7 +201,7 @@ html {
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 
 body {
   background: var(--bg);
@@ -223,6 +223,8 @@ body::before {
               radial-gradient(ellipse 50% 30% at 80% 70%, rgba(192,132,252,0.05) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
+  transform: translateZ(0);
+  will-change: transform;
 }
 body.light-theme::before {
   background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(139,92,246,0.04) 0%, transparent 50%),
@@ -443,6 +445,7 @@ body.light-theme h4, body.light-theme h5 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: clamp(0.5rem, 0.8vw, 0.9rem) clamp(0.6rem, 1vw, 1rem);
+  contain: paint;
 }
 .chart-card:hover {
   border-color: rgba(139,92,246,0.3);
@@ -908,15 +911,17 @@ body.light-theme h4, body.light-theme h5 {
   z-index: 1;
   margin-top: 1px;
 }
-.cal-day .day-pnl.positive { color: var(--green); }
-.cal-day .day-pnl.negative { color: var(--red); }
+.cal-day .day-pnl.positive { color: #4ade80; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
+.cal-day .day-pnl.negative { color: #ff7b7b; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .cal-day .day-trade-count {
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(5px, 0.5vw, 8px);
-  color: var(--muted);
+  color: #ffffff !important;
+  font-weight: 600;
   position: relative;
   z-index: 1;
   margin-top: 1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 
 /* PnL Bar */
@@ -937,12 +942,12 @@ body.light-theme h4, body.light-theme h5 {
   transform: scaleX(1);
 }
 .cal-day .day-pnl-bar.positive {
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green-glow);
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.7);
 }
 .cal-day .day-pnl-bar.negative {
-  background: var(--red);
-  box-shadow: 0 0 8px var(--red-glow);
+  background: #ff6565;
+  box-shadow: 0 0 8px rgba(255, 101, 101, 0.7);
 }
 
 /* Bugün */
@@ -994,14 +999,22 @@ body.light-theme h4, body.light-theme h5 {
 
 /* Renk skalası */
 .cal-day.color-0 .day-bg { background: transparent; }
-.cal-day.color-1 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02)); }
-.cal-day.color-2 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.04)); }
-.cal-day.color-3 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.28), rgba(34,197,94,0.06)); }
-.cal-day.color-4 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(34,197,94,0.1)); }
-.cal-day.color-neg1 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.02)); }
-.cal-day.color-neg2 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.16), rgba(239,68,68,0.04)); }
-.cal-day.color-neg3 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.28), rgba(239,68,68,0.06)); }
-.cal-day.color-neg4 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.45), rgba(239,68,68,0.1)); }
+.cal-day.color-1 { border-color: rgba(34,197,94,0.35); }
+.cal-day.color-1 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(34,197,94,0.05)); }
+.cal-day.color-2 { border-color: rgba(34,197,94,0.48); }
+.cal-day.color-2 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.28), rgba(34,197,94,0.08)); }
+.cal-day.color-3 { border-color: rgba(34,197,94,0.65); }
+.cal-day.color-3 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.38), rgba(34,197,94,0.12)); }
+.cal-day.color-4 { border-color: rgba(34,197,94,0.82); box-shadow: inset 0 0 20px rgba(34,197,94,0.14); }
+.cal-day.color-4 .day-bg { background: linear-gradient(135deg, rgba(34,197,94,0.50), rgba(34,197,94,0.18)); }
+.cal-day.color-neg1 { border-color: rgba(239,68,68,0.35); }
+.cal-day.color-neg1 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.18), rgba(239,68,68,0.05)); }
+.cal-day.color-neg2 { border-color: rgba(239,68,68,0.48); }
+.cal-day.color-neg2 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.28), rgba(239,68,68,0.08)); }
+.cal-day.color-neg3 { border-color: rgba(239,68,68,0.65); }
+.cal-day.color-neg3 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.38), rgba(239,68,68,0.12)); }
+.cal-day.color-neg4 { border-color: rgba(239,68,68,0.82); box-shadow: inset 0 0 20px rgba(239,68,68,0.14); }
+.cal-day.color-neg4 .day-bg { background: linear-gradient(135deg, rgba(239,68,68,0.50), rgba(239,68,68,0.18)); }
 
 /* Boş günler */
 .cal-day.empty {
@@ -2497,8 +2510,10 @@ body {
   width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
-  scroll-behavior: smooth !important;
+  scroll-behavior: auto !important;
+  -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
 }
 
 /* Scroll bar stilini koru */

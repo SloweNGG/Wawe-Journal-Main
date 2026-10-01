@@ -9,6 +9,7 @@ export interface Props {
   canonical?: string;
   ogImage?: string;
   noIndex?: boolean;
+  isAppPage?: boolean;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
   canonical,
   ogImage = 'https://wawejournal.com/og-image.jpg',
   noIndex = false,
+  isAppPage = true,
 } = Astro.props;
 ---
 
@@ -86,27 +88,28 @@ const {
 <!-- FONTS & CDNS -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500;1,9..40,600;1,9..40,700&family=DM+Mono:wght@400;500&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet" />
+{isAppPage ? (
+  <>
+    <!-- APP FONTS: display=swap ile FCP hızlandırıldı, gereksiz varyantlar elendi -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
 
-<!-- CORE CSS -->
-<link rel="stylesheet" href="/styles.css" />
-<link rel="stylesheet" href="/components/navbar/navbar.css" />
+    <!-- CORE CSS FOR APP -->
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/components/navbar/navbar.css" />
 
-<!-- LUCIDE ICONS (Pinned & Minified, non-blocking with defer) -->
-<link rel="preload" href="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js" as="script" />
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js" is:inline defer></script>
+    <!-- LUCIDE ICONS (Sadece panel sayfalarında) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js" as="script" />
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js" is:inline defer></script>
+  </>
+) : (
+  <!-- PUBLIC MARKETING & AUTH FONTS: Sadece gerekli 3 aile, display=swap -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+)}
 
 <!-- TEMA ÖN YÜKLEME — flash önlemek için sayfa render olmadan önce çalışır -->
 <script is:inline>
 (function() {
-  document.documentElement.style.overflow = 'hidden';
-  document.documentElement.style.height = '100%';
-  if (document.body) {
-    document.body.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-  }
-
   var savedTheme = localStorage.getItem('ww_theme');
   var savedFontSize = localStorage.getItem('ww_font_size');
   var customTheme = localStorage.getItem('ww_custom_theme');
@@ -121,13 +124,6 @@ const {
       document.documentElement.classList.remove('light-theme-pending');
     } else {
       document.body.classList.remove('light-theme');
-    }
-
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.height = '100%';
-    if (document.body) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.height = '100%';
     }
 
     if (savedTheme !== 'light' && customTheme) {
