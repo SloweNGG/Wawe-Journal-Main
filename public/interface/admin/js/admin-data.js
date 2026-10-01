@@ -925,8 +925,44 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
       }
     }
 
+    // Kullanıcıya bildirim gönder (RPC bildirim göndermediyse veya fallback kullanıldıysa)
+    var currentApp = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
+    var targetUserId = currentApp ? currentApp.user_id : null;
+    if (!targetUserId) {
+      try {
+        var { data: fetchedApp } = await client.from('partner_applications').select('user_id').eq('id', appId).maybeSingle();
+        if (fetchedApp) targetUserId = fetchedApp.user_id;
+      } catch (fErr) {}
+    }
+
+    if (targetUserId && (!rpcOk || !rpcData || !rpcData.notification_sent)) {
+      try {
+        var notifType = status === 'approved' ? 'success' : 'warning';
+        var titleKey = status === 'approved' ? 'noti.partner_approved_title' : 'noti.partner_rejected_title';
+        var msgKey = status === 'approved' 
+          ? 'noti.partner_approved_desc' 
+          : (adminNote ? 'noti.partner_rejected_desc_reason' : 'noti.partner_rejected_desc');
+        var metaData = status === 'approved'
+          ? { code: (code || '').toUpperCase().trim() }
+          : (adminNote ? { reason: adminNote } : {});
+
+        await client.from('notifications').insert([{
+          user_id: targetUserId,
+          type: notifType,
+          title_key: titleKey,
+          message_key: msgKey,
+          meta_data: metaData,
+          is_read: false,
+          created_at: new Date().toISOString()
+        }]);
+        wwLog.log('🔔 [Admin] Partner başvuru bildirimi gönderildi -> user_id: ' + targetUserId);
+      } catch (notifErr) {
+        console.warn('⚠️ Partner başvuru bildirimi tablosuna eklenemedi:', notifErr);
+      }
+    }
+
     if (typeof showToast === 'function') {
-      showToast(status === 'approved' ? 'Başvuru onaylandı ve kod oluşturuldu!' : 'Başvuru reddedildi.', 'success');
+      showToast(status === 'approved' ? 'Başvuru onaylandı, kod oluşturuldu ve bildirim gönderildi!' : 'Başvuru reddedildi ve kullanıcıya bildirildi.', 'success');
     }
 
     await loadPartnerApplications();
@@ -939,8 +975,80 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
   }
 }
 
+async function deletePartnerApplication(appId, userId) {
+  try {
+    var client = getSbClient();
+    if (!client) throw new Error('Veritabanı bağlantısı yok');
+
+    var rpcOk = false;
+    try {
+      var { data: rpcData, error: rpcErr } = await client.rpc('admin_delete_partner_application', {
+        p_application_id: appId
+      });
+      if (!rpcErr && rpcData && rpcData.success) {
+        rpcOk = true;
+      } else {
+        var errMsg = (rpcErr && rpcErr.message) || (rpcData && rpcData.error);
+        console.warn('admin_delete_partner_application RPC failed, fallback to direct delete. Sebep:', errMsg);
+      }
+    } catch (rpcEx) {
+      console.warn('admin_delete_partner_application exception, fallback to direct delete:', rpcEx);
+    }
+
+    if (!rpcOk) {
+      // 1. Kullanıcıya ait referral_codes (influencer kodu ve kazançları) sil
+      if (userId) {
+        var { error: refErr } = await client
+          .from('referral_codes')
+          .delete()
+          .eq('influencer_user_id', userId);
+        if (refErr) console.warn('referral_codes delete warning:', refErr);
+
+        // 2. Kullanıcıya ait payout_requests taleplerini sil
+        var { error: payErr } = await client
+          .from('payout_requests')
+          .delete()
+          .eq('user_id', userId);
+        if (payErr) console.warn('payout_requests delete warning:', payErr);
+
+        // 3. Kullanıcıya ait partner_applications satırlarını sil (tekrar başvuru yapabilmesi için)
+        var { error: delErr } = await client
+          .from('partner_applications')
+          .delete()
+          .eq('user_id', userId);
+
+        if (delErr) {
+          console.error('Direct partner_applications delete failed:', delErr);
+          throw delErr;
+        }
+      } else {
+        var { error: delErr2 } = await client
+          .from('partner_applications')
+          .delete()
+          .eq('id', appId);
+        if (delErr2) throw delErr2;
+      }
+    }
+
+    if (typeof showToast === 'function') {
+      showToast('Başvuru ve kazanç kaydı silindi. Kullanıcı yeniden başvuru yapabilir.', 'success');
+    }
+
+    await loadPartnerApplications();
+    if (typeof renderPartnerApplicationsTable === 'function') renderPartnerApplicationsTable();
+    if (typeof loadReferralCodes === 'function') await loadReferralCodes();
+    if (typeof renderReferralCodesTable === 'function') renderReferralCodesTable();
+    return true;
+  } catch (e) {
+    console.error('deletePartnerApplication error:', e);
+    if (typeof showToast === 'function') showToast('Hata: ' + (e.message || e), 'error');
+    return false;
+  }
+}
+
 window.loadPartnerApplications = loadPartnerApplications;
 window.reviewPartnerApplication = reviewPartnerApplication;
+window.deletePartnerApplication = deletePartnerApplication;
 
 
 // ============================================================

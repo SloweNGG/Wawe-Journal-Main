@@ -360,6 +360,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         renderCharts(filtered);
       });
     }
+
+    var overlay = safeEl('chart-expand-modal');
+    if (overlay && overlay.classList.contains('active') && currentExpandedType) {
+      openChartExpansion(currentExpandedType, currentExpandedTitle);
+    }
   }
 
   // ⭐ storage event - başka sekmede tema değişirse
@@ -1248,9 +1253,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     var colors = getApexColors();
+    var isLight = document.body.classList.contains('light-theme');
     var isPositive = lastPnL >= 0;
     var strokeColor = isPositive ? colors.green : colors.red;
-    var topColor = isPositive ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+    var topColor = isPositive ? (isLight ? 'rgba(16, 185, 129, 0.28)' : 'rgba(34, 197, 94, 0.35)') : (isLight ? 'rgba(220, 38, 38, 0.28)' : 'rgba(239, 68, 68, 0.35)');
     var bottomColor = isPositive ? 'rgba(34, 197, 94, 0.01)' : 'rgba(239, 68, 68, 0.01)';
 
     var isMobile = window.innerWidth < 768;
@@ -1277,13 +1283,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           color: colors.mutedColor,
           width: 1,
           style: 3,
-          labelBackgroundColor: colors.surface
+          labelBackgroundColor: isLight ? '#1e293b' : colors.surface
         },
         horzLine: {
           color: colors.mutedColor,
           width: 1,
           style: 3,
-          labelBackgroundColor: colors.surface
+          labelBackgroundColor: isLight ? '#1e293b' : colors.surface
         }
       },
       rightPriceScale: {
@@ -1359,6 +1365,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (!container) return null;
 
     var colors = getApexColors();
+    var isLight = document.body.classList.contains('light-theme');
     var days = {};
     var now = new Date();
     for (var i = 29; i >= 0; i--) {
@@ -1411,13 +1418,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           color: colors.mutedColor,
           width: 1,
           style: 3,
-          labelBackgroundColor: colors.surface
+          labelBackgroundColor: isLight ? '#1e293b' : colors.surface
         },
         horzLine: {
           color: colors.mutedColor,
           width: 1,
           style: 3,
-          labelBackgroundColor: colors.surface
+          labelBackgroundColor: isLight ? '#1e293b' : colors.surface
         }
       },
       rightPriceScale: {
@@ -2280,7 +2287,12 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
   }
 
+  var currentExpandedType = null;
+  var currentExpandedTitle = null;
+
   function openChartExpansion(type, title) {
+    currentExpandedType = type;
+    currentExpandedTitle = title;
     var overlay = safeEl('chart-expand-modal');
     var titleEl = safeEl('chart-expand-title');
     var container = safeEl('chart-expand-container');
@@ -2349,6 +2361,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
 
   function closeChartExpansion() {
+    currentExpandedType = null;
+    currentExpandedTitle = null;
     var overlay = safeEl('chart-expand-modal');
     if (overlay) {
       overlay.classList.remove('active');

@@ -500,77 +500,92 @@ body.light-theme .nav-bell-btn {
 }
 
 .nav-bell-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #ffffff;
+  background: rgba(139, 92, 246, 0.08);
 }
 
 .nav-bell-btn.has-alert {
-  color: var(--red);
-  border-color: rgba(239,68,68,0.35);
-  background: rgba(239,68,68,0.06);
-  animation: bellShake 4s ease-in-out infinite;
+  color: #fb7185;
+  border-color: rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.08);
+  box-shadow: 0 0 16px -2px rgba(244, 63, 94, 0.25);
 }
 
-@keyframes bellShake {
-  0%, 92%, 100% { transform: rotate(0deg); }
-  93% { transform: rotate(-12deg); }
-  94% { transform: rotate(10deg); }
-  95% { transform: rotate(-8deg); }
-  96% { transform: rotate(6deg); }
-  97% { transform: rotate(0deg); }
+body.light-theme .nav-bell-btn.has-alert {
+  color: #e11d48;
+  border-color: rgba(225, 29, 72, 0.35);
+  background: rgba(225, 29, 72, 0.08);
 }
 
-.bell-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #ef4444;
-  border: 2px solid var(--surface, #0f101b);
-  box-shadow: 0 0 8px rgba(239,68,68,0.7);
-  animation: bellPing 2s ease-in-out infinite;
+/* Bell ringing animation on the bell icon */
+.nav-bell-btn svg,
+.nav-bell-btn i {
+  transform-origin: top center;
+  transition: transform 0.2s ease;
 }
 
-@keyframes bellPing {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
-  50% { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+.nav-bell-btn.has-alert svg,
+.nav-bell-btn.has-alert i {
+  animation: bellRing 3s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+  transform-origin: top center;
+}
+
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0deg); }
+  6% { transform: rotate(15deg); }
+  12% { transform: rotate(-13deg); }
+  18% { transform: rotate(10deg); }
+  24% { transform: rotate(-8deg); }
+  30% { transform: rotate(5deg); }
+  36% { transform: rotate(-2deg); }
+  42% { transform: rotate(0deg); }
 }
 
 .bell-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4.5px;
   border-radius: 99px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
   color: #ffffff;
   font-family: 'DM Mono', monospace;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--surface, #0f101b);
-  box-shadow: 0 2px 8px rgba(239,68,68,0.55);
+  border: 2px solid var(--surface, #0d0e18);
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.55);
   pointer-events: none;
   line-height: 1;
-  animation: badgePulse 2.4s ease-in-out infinite;
+  z-index: 2;
 }
 
-@keyframes badgePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+.bell-badge::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 99px;
+  background: rgba(244, 63, 94, 0.5);
+  animation: badgePing 2.4s ease-out infinite;
+  z-index: -1;
 }
 
-.nav-bell-btn.has-alert {
-  border-color: rgba(239,68,68,0.5);
-  color: #ef4444;
-  box-shadow: 0 0 12px rgba(239,68,68,0.25);
+@keyframes badgePing {
+  0% { transform: scale(1); opacity: 0.8; }
+  60%, 100% { transform: scale(1.6); opacity: 0; }
+}
+
+body.light-theme .bell-badge {
+  border-color: #ffffff;
+}
+
+.bell-dot {
+  display: none !important;
 }
 
 /* ============================================================
@@ -2510,7 +2525,8 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-icon.finance,
-.noti-icon.premium {
+.noti-icon.premium,
+.noti-icon.partner {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(99, 102, 241, 0.1));
   color: #a78bfa;
   border: 1px solid rgba(139, 92, 246, 0.35);
@@ -2557,7 +2573,8 @@ body.light-theme .noti-item.unread {
   display: inline-block;
 }
 
-.noti-tag.danger {
+.noti-tag.danger,
+.noti-tag.error {
   background: rgba(239, 68, 68, 0.14);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.25);
@@ -2570,7 +2587,8 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-tag.finance,
-.noti-tag.premium {
+.noti-tag.premium,
+.noti-tag.partner {
   background: rgba(139, 92, 246, 0.14);
   color: #a78bfa;
   border: 1px solid rgba(139, 92, 246, 0.25);
@@ -2619,25 +2637,33 @@ body.light-theme .noti-item.unread {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 2px 7px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 7px;
   font-family: 'DM Mono', monospace;
-  font-size: 10px;
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
 body.light-theme .noti-stat-chip {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .noti-stat-chip.limit-danger {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.25);
-  color: #ef4444;
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fb7185;
   font-weight: 700;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.15);
+}
+
+body.light-theme .noti-stat-chip.limit-danger {
+  background: rgba(225, 29, 72, 0.1);
+  border-color: rgba(225, 29, 72, 0.3);
+  color: #e11d48;
 }
 
 .noti-bottom-row {

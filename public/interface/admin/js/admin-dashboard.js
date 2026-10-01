@@ -1820,18 +1820,36 @@ function renderPartnerApplicationsTable() {
 
       var noteShort = item.note ? (item.note.length > 40 ? item.note.substring(0, 40) + '...' : item.note) : '—';
 
+      var deleteBtn = '\
+        <button class="btn btn-ghost btn-sm" onclick="confirmDeletePartnerApp(\'' + item.id + '\', \'' + (item.user_id || '') + '\', \'' + ((item.user && item.user.email) || '').replace(/'/g, "\\'") + '\')" title="Başvuruyu ve Kazanç Kaydını Sil" style="color:#ef4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.06); padding:3px 8px; font-size:11.5px; display:inline-flex; align-items:center; gap:4px; border-radius:4px; cursor:pointer;">\
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>\
+          Sil\
+        </button>';
+
       var actionBtns = '';
       if (item.status === 'pending') {
         actionBtns = '\
-          <div style="display:flex; gap:6px; justify-content:flex-end;">\
+          <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">\
             <button class="btn btn-primary btn-sm" onclick="openPartnerAppModal(\'' + item.id + '\', \'approve\')" style="padding:3px 10px; font-size:11.5px; background:#22c55e; border-color:#22c55e;">Onayla & Kod Ata</button>\
             <button class="btn btn-danger btn-sm" onclick="openPartnerAppModal(\'' + item.id + '\', \'reject\')" style="padding:3px 10px; font-size:11.5px;">Reddet</button>\
+            ' + deleteBtn + '\
           </div>';
       } else if (item.status === 'approved') {
-        actionBtns = '<span style="color:#22c55e; font-size:12px; font-weight:600;">✓ Kod Tanımlandı</span>';
+        actionBtns = '\
+          <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">\
+            <span style="color:#22c55e; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">\
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>\
+              Kod Tanımlandı\
+            </span>\
+            ' + deleteBtn + '\
+          </div>';
       } else {
         var reasonText = item.admin_note ? (' title="' + item.admin_note.replace(/"/g, '&quot;') + '"') : '';
-        actionBtns = '<span style="color:#ef4444; font-size:12px;"' + reasonText + '>Reddedildi</span>';
+        actionBtns = '\
+          <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">\
+            <span style="color:#ef4444; font-size:12px;"' + reasonText + '>Reddedildi</span>\
+            ' + deleteBtn + '\
+          </div>';
       }
 
       html += '<tr>';
@@ -1970,10 +1988,27 @@ async function confirmPartnerAppAction() {
   }
 }
 
+function confirmDeletePartnerApp(appId, userId, userEmail) {
+  var userText = userEmail ? ('"' + userEmail + '" kullanıcısının ') : 'Bu ';
+  var msg = userText + 'partner başvurusunu ve bağlı tüm kazanç/referans kodu kayıtlarını silmek istediğinize emin misiniz?\n\n' +
+    '⚠️ Dikkat:\n' +
+    '1. Kullanıcının tanımlanmış referans kodu ve kazanç tablosu silinecektir.\n' +
+    '2. Kullanıcı /my-earnings sayfasından tekrar sıfırdan başvuru yapabilecek konuma gelecektir.';
+
+  if (!confirm(msg)) return;
+
+  if (typeof deletePartnerApplication === 'function') {
+    deletePartnerApplication(appId, userId);
+  } else if (window.deletePartnerApplication) {
+    window.deletePartnerApplication(appId, userId);
+  }
+}
+
 window.renderPartnerApplicationsTable = renderPartnerApplicationsTable;
 window.setPartnerAppFilter = setPartnerAppFilter;
 window.handlePartnerAppSearch = handlePartnerAppSearch;
 window.openPartnerAppModal = openPartnerAppModal;
 window.closePartnerAppModal = closePartnerAppModal;
 window.confirmPartnerAppAction = confirmPartnerAppAction;
+window.confirmDeletePartnerApp = confirmDeletePartnerApp;
 

@@ -1936,6 +1936,123 @@ body.light-theme .mini-cal-day.loss:hover {
   }
 }
 
+/* ============================================================
+   ⭐ LIGHT THEME OVERRIDES FOR CHART EXPAND MODAL
+   ============================================================ */
+
+body.light-theme .chart-expand-overlay {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.light-theme .chart-expand-box {
+  background: radial-gradient(ellipse 90% 45% at 50% -10%, rgba(139, 92, 246, 0.06), transparent 70%), #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04), 0 0 40px -10px rgba(139, 92, 246, 0.08);
+}
+
+body.light-theme .chart-expand-header {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+body.light-theme .chart-expand-header h3 {
+  color: #0f172a;
+}
+
+body.light-theme .chart-expand-close {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+body.light-theme .chart-expand-close:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #7c3aed;
+  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.2);
+}
+
+body.light-theme .chart-expand-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+body.light-theme .chart-expand-summary {
+  border-top: 1px solid #f1f5f9;
+}
+
+body.light-theme .expand-summary-col {
+  background: #ffffff;
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+body.light-theme .expand-summary-col.wins {
+  border-left: 3px solid #10b981;
+}
+
+body.light-theme .expand-summary-col.losses {
+  border-left: 3px solid #dc2626;
+}
+
+body.light-theme .expand-summary-title {
+  color: #64748b;
+}
+
+body.light-theme .expand-summary-badge.win {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+body.light-theme .expand-summary-badge.loss {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+body.light-theme .expand-summary-total.win {
+  color: #10b981;
+}
+
+body.light-theme .expand-summary-total.loss {
+  color: #dc2626;
+}
+
+body.light-theme .expand-summary-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+body.light-theme .expand-summary-item:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+body.light-theme .expand-summary-item .item-sym {
+  color: #0f172a;
+}
+
+body.light-theme .expand-summary-item .item-sub-count {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+}
+
+body.light-theme .expand-summary-item .item-val.win {
+  color: #10b981;
+}
+
+body.light-theme .expand-summary-item .item-val.loss {
+  color: #dc2626;
+}
+
+body.light-theme .expand-summary-empty {
+  color: #94a3b8;
+}
 
 /* ============================================================
    ⭐ DONUT MOBILE CAROUSEL (SORUN 7)

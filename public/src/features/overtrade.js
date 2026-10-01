@@ -61,12 +61,28 @@ export function setDismissedOvertradeWarnings(dismissedArray) {
 export function dismissOvertradeWarning(warningId) {
   try {
     if (!warningId) return false;
+    const strId = warningId.toString();
+    const cleanId = strId.replace(/^ot_/, '');
+    const prefixedId = 'ot_' + cleanId;
     const dismissed = getDismissedOvertradeWarnings();
-    if (!dismissed.includes(warningId)) {
-      dismissed.push(warningId);
-      setDismissedOvertradeWarnings(dismissed);
+
+    if (!dismissed.includes(strId)) dismissed.push(strId);
+    if (!dismissed.includes(cleanId)) dismissed.push(cleanId);
+    if (!dismissed.includes(prefixedId)) dismissed.push(prefixedId);
+    setDismissedOvertradeWarnings(dismissed);
+
+    // Aktif bellek içi uyarıları da anında filtrele
+    if (typeof window !== 'undefined' && Array.isArray(window._activeOvertradeWarnings)) {
+      window._activeOvertradeWarnings = window._activeOvertradeWarnings.filter(w => {
+        const wid = (w.id || w.type || '').toString();
+        const wClean = wid.replace(/^ot_/, '');
+        return wid !== strId && wid !== cleanId && wid !== prefixedId && wClean !== cleanId && w.type !== cleanId;
+      });
     }
-    const element = document.getElementById('ot-warning-' + warningId);
+
+    const element = document.getElementById('ot-warning-' + strId) ||
+                    document.getElementById('ot-warning-' + cleanId) ||
+                    document.getElementById('ot-warning-' + prefixedId);
     if (element) {
       element.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
       element.style.opacity = '0';
@@ -87,8 +103,11 @@ export function dismissOvertradeWarning(warningId) {
 export function isOvertradeWarningDismissed(warningId) {
   try {
     if (!warningId) return false;
+    const strId = warningId.toString();
+    const cleanId = strId.replace(/^ot_/, '');
+    const prefixedId = 'ot_' + cleanId;
     const dismissed = getDismissedOvertradeWarnings();
-    return dismissed.includes(warningId);
+    return dismissed.includes(strId) || dismissed.includes(cleanId) || dismissed.includes(prefixedId);
   } catch (e) {
     return false;
   }
@@ -139,13 +158,13 @@ export function checkOvertrade(trades) {
         }
       }
     });
+    todayPnL = Math.round(todayPnL * 100) / 100;
     
     const warnings = [];
-    const baseId = 'ot_' + Date.now() + '_';
     
     if (todayCount > settings.dailyLimit) {
-      const id = baseId + 'daily_' + todayCount + '_' + settings.dailyLimit;
-      if (!isOvertradeWarningDismissed(id)) {
+      const id = 'ot_daily_' + today;
+      if (!isOvertradeWarningDismissed(id) && !isOvertradeWarningDismissed('daily_trades')) {
         warnings.push({
           id: id,
           level: settings.warningLevel || 'warning',
@@ -160,8 +179,8 @@ export function checkOvertrade(trades) {
     }
     
     if (weekCount > settings.weeklyLimit) {
-      const id = baseId + 'weekly_' + weekCount + '_' + settings.weeklyLimit;
-      if (!isOvertradeWarningDismissed(id)) {
+      const id = 'ot_weekly_' + today;
+      if (!isOvertradeWarningDismissed(id) && !isOvertradeWarningDismissed('weekly_trades')) {
         warnings.push({
           id: id,
           level: settings.warningLevel || 'warning',
@@ -176,17 +195,22 @@ export function checkOvertrade(trades) {
     }
     
     if (todayPnL < -settings.dailyLossLimit) {
-      const id = baseId + 'loss_' + Math.abs(Math.round(todayPnL)) + '_' + settings.dailyLossLimit;
-      if (!isOvertradeWarningDismissed(id)) {
+      const roundedLoss = Math.abs(todayPnL);
+      const id = 'ot_loss_' + today;
+      if (!isOvertradeWarningDismissed(id) && !isOvertradeWarningDismissed('daily_loss')) {
+        const cSymbol = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : (window.currencySymbol || '$');
+        const fmtLoss = cSymbol + (roundedLoss % 1 === 0 ? roundedLoss.toLocaleString() : roundedLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        const fmtLimit = cSymbol + (Number(settings.dailyLossLimit) % 1 === 0 ? Number(settings.dailyLossLimit).toLocaleString() : Number(settings.dailyLossLimit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
         warnings.push({
           id: id,
           level: 'danger',
           type: 'daily_loss',
-          current: todayPnL,
+          current: roundedLoss,
           limit: settings.dailyLossLimit,
           message: (typeof i18n !== 'undefined' && i18n.t) 
-            ? i18n.t('overtrade.daily_loss_warning', { loss: window.formatCurrency ? window.formatCurrency(todayPnL) : todayPnL, limit: settings.dailyLossLimit }) 
-            : 'Bugün ' + (window.formatCurrency ? window.formatCurrency(todayPnL) : todayPnL) + ' kaybettin. Günlük kayıp limitin $' + settings.dailyLossLimit + '!'
+            ? i18n.t('overtrade.daily_loss_warning', { loss: fmtLoss, limit: fmtLimit }) 
+            : ('Bugün ' + fmtLoss + ' kaybettin. Günlük kayıp limitin ' + fmtLimit + '!')
         });
       }
     }
@@ -264,9 +288,27 @@ export function renderOvertradeWarning(warnings, containerId) {
       card.id = 'ot-warning-' + warningId;
       card.className = 'notif-item';
       
-      const isOverLimit = w.current > w.limit;
-      const currentDisplay = w.current || 0;
-      const limitDisplay = w.limit || 0;
+      const isLossType = w.type === 'daily_loss';
+      const cSymbol = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : (window.currencySymbol || '$');
+      let isOverLimit = false;
+      let currentDisplay = '';
+      let limitDisplay = '';
+
+      if (isLossType) {
+        const absVal = Math.abs(Number(w.current) || 0);
+        const limVal = Number(w.limit) || 0;
+        isOverLimit = absVal >= limVal;
+        const fCur = absVal % 1 === 0 ? absVal.toLocaleString() : absVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fLim = limVal % 1 === 0 ? limVal.toLocaleString() : limVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        currentDisplay = cSymbol + fCur;
+        limitDisplay = cSymbol + fLim;
+      } else {
+        const numCur = Math.round(Number(w.current) || 0);
+        const numLim = Math.round(Number(w.limit) || 0);
+        isOverLimit = numCur >= numLim;
+        currentDisplay = numCur.toLocaleString();
+        limitDisplay = numLim.toLocaleString();
+      }
       
       card.innerHTML = `
         <div class="notif-icon ${config.iconClass}">
@@ -288,7 +330,7 @@ export function renderOvertradeWarning(warnings, containerId) {
               <span style="opacity:0.7;">${limitDisplay}</span>
             </span>
             <span style="opacity:0.6;">${typeLabels[w.type] || w.type || 'Genel'}</span>
-            ${w.current > w.limit ? '<span style="font-size:9px;font-weight:600;color:var(--red);background:rgba(239,68,68,0.08);padding:0.05rem 0.4rem;border-radius:4px;border:1px solid rgba(239,68,68,0.15);">⚠️ LİMİT AŞIMI</span>' : ''}
+            ${isOverLimit ? '<span style="font-size:9px;font-weight:600;color:var(--red);background:rgba(239,68,68,0.08);padding:0.05rem 0.4rem;border-radius:4px;border:1px solid rgba(239,68,68,0.15);">⚠️ LİMİT AŞIMI</span>' : ''}
           </div>
         </div>
         <button class="notif-close" onclick="window.dismissOvertradeWarning('${warningId}')">

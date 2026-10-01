@@ -386,6 +386,25 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
   }
 
 
+  // ⭐ Kullanıcıya sistem bildirimi ekle
+  try {
+    const planLabel = (planType === 'yearly' || planType === 'year') ? '1 yıllık' : '1 aylık';
+    const amt = payload.actually_paid || payload.pay_amount || payload.price_amount || 0;
+    const cur = payload.pay_currency || payload.price_currency || 'USD';
+    await supabase.from('notifications').insert([{
+      user_id: userId,
+      type: 'premium',
+      title_key: 'noti.payment_success_title',
+      message_key: 'noti.payment_success_desc',
+      meta_data: { plan: planLabel, amount: amt, curr: cur },
+      is_read: false,
+      created_at: new Date().toISOString()
+    }]);
+    console.log(`✅ Inserted payment notification for user ${userId}`);
+  } catch (notifErr) {
+    console.warn('⚠️ Could not insert payment notification into notifications table:', notifErr);
+  }
+
   // ⭐ Telegram bildirimi gönder
   const email = profile.email || 'Bilinmiyor';
   await sendTelegramNotification(userId, email, planType, expiresAt);

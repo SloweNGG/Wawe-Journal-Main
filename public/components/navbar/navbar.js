@@ -140,31 +140,86 @@ window.wwSwitchNotifTab = function(tabName) {
   }
 };
 
+function getDismissedClientNotifs() {
+  try {
+    return JSON.parse(localStorage.getItem('ww_dismissed_client_notifs') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function dismissClientNotif(id) {
+  try {
+    var list = getDismissedClientNotifs();
+    if (!list.includes(id)) {
+      list.push(id);
+      localStorage.setItem('ww_dismissed_client_notifs', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function isClientNotifDismissed(id) {
+  return getDismissedClientNotifs().includes(id);
+}
+
 window.wwMarkAllAsRead = async function() {
   try {
     var sb = window.sb || window.supabase;
     var user = window.SETTINGS_STATE?.currentUser;
-
-    if (sb && user) {
-      await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
+    if (!user || !user.id) {
+      try {
+        var sess = await sb?.auth?.getSession();
+        user = sess?.data?.session?.user;
+      } catch (sessErr) {}
     }
 
-    // Overtrade uyarılarını da okundu yap
+    if (sb && user && user.id) {
+      try {
+        var { error: rpcErr } = await sb.rpc('mark_notifications_as_read', { p_user_id: user.id });
+        if (rpcErr) {
+          await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+        }
+      } catch (eRpc) {
+        try {
+          await sb.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+        } catch (eUpd) {}
+      }
+    }
+
+    // Overtrade ve yerel bildirimleri de okundu yap
     if (Array.isArray(window._allNotifications)) {
       window._allNotifications.forEach(function(item) {
-        if (item.is_overtrade && item.rawId && typeof window.dismissOvertradeWarning === 'function') {
-          window.dismissOvertradeWarning(item.rawId);
+        if (item.is_overtrade) {
+          var otRaw = (item.rawId || item.id || '').toString();
+          var otClean = otRaw.replace(/^ot_/, '');
+          var otPref = 'ot_' + otClean;
+          dismissClientNotif(otRaw);
+          dismissClientNotif(otClean);
+          dismissClientNotif(otPref);
+          if (item.id) dismissClientNotif(item.id.toString());
+          if (typeof window.dismissOvertradeWarning === 'function') {
+            window.dismissOvertradeWarning(otClean);
+            window.dismissOvertradeWarning(otPref);
+          }
+        }
+        if (item.id && (item.id.toString().startsWith('prem_') || item.id.toString().startsWith('pay_'))) {
+          dismissClientNotif(item.id.toString());
         }
         item.is_read = true;
       });
     }
+
+    // Aktif overtrade uyarılarını da sıfırla
+    window._activeOvertradeWarnings = [];
 
     if (typeof window.renderNotifications === 'function') {
       window.renderNotifications();
     }
 
     if (typeof showToast === 'function') {
-      showToast('✅ Tüm bildirimler okundu olarak işaretlendi', 'success');
+      var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+      var toastMsg = lang === 'en' ? 'All notifications marked as read' : lang === 'de' ? 'Alle Benachrichtigungen als gelesen markiert' : 'Tüm bildirimler okundu olarak işaretlendi';
+      showToast(toastMsg, 'success');
     }
   } catch (err) {
     console.error('Mark all read error:', err);
@@ -174,21 +229,60 @@ window.wwMarkAllAsRead = async function() {
 window.wwMarkAsRead = async function(e, id) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   try {
-    var item = (window._allNotifications || []).find(function(n) { return n.id === id; });
+    var strId = id ? id.toString() : '';
+    var item = (window._allNotifications || []).find(function(n) { 
+      return n.id === id || n.rawId === id || (n.id && n.id.toString() === strId) || (n.rawId && n.rawId.toString() === strId); 
+    });
     if (item) {
       item.is_read = true;
     }
 
-    if (id && id.toString().startsWith('ot_')) {
-      var otId = item ? item.rawId : id.replace(/^ot_/, '');
+    var isOt = strId.startsWith('ot_') || (item && item.is_overtrade);
+    if (isOt) {
+      var rawId = (item && item.rawId ? item.rawId : strId).toString();
+      var cleanId = rawId.replace(/^ot_/, '');
+      var prefixedId = 'ot_' + cleanId;
+
+      dismissClientNotif(strId);
+      dismissClientNotif(rawId);
+      dismissClientNotif(cleanId);
+      dismissClientNotif(prefixedId);
+
       if (typeof window.dismissOvertradeWarning === 'function') {
-        window.dismissOvertradeWarning(otId);
+        window.dismissOvertradeWarning(cleanId);
+        window.dismissOvertradeWarning(prefixedId);
+        window.dismissOvertradeWarning(rawId);
       }
+
+      if (Array.isArray(window._activeOvertradeWarnings)) {
+        window._activeOvertradeWarnings = window._activeOvertradeWarnings.filter(function(w) {
+          var wid = (w.id || w.type || '').toString();
+          var wClean = wid.replace(/^ot_/, '');
+          return wid !== strId && wid !== rawId && wid !== cleanId && wid !== prefixedId && wClean !== cleanId && w.type !== cleanId;
+        });
+      }
+    } else if (strId.startsWith('prem_') || strId.startsWith('pay_')) {
+      dismissClientNotif(strId);
     } else {
       var sb = window.sb || window.supabase;
       var user = window.SETTINGS_STATE?.currentUser;
-      if (sb && user) {
-        await sb.rpc('mark_notification_as_read', { p_user_id: user.id, p_notification_id: id });
+      if (!user || !user.id) {
+        try {
+          var sess = await sb?.auth?.getSession();
+          user = sess?.data?.session?.user;
+        } catch (sessErr) {}
+      }
+      if (sb && user && user.id) {
+        try {
+          var { error: rpcErr } = await sb.rpc('mark_notification_as_read', { p_user_id: user.id, p_notification_id: id });
+          if (rpcErr) {
+            await sb.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', user.id);
+          }
+        } catch (eRpc) {
+          try {
+            await sb.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', user.id);
+          } catch (eUpd) {}
+        }
       }
     }
 
@@ -255,7 +349,7 @@ window.renderNotifications = function() {
       badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
       badge.style.display = 'flex';
     }
-    if (dot) dot.style.display = 'block';
+    if (dot) dot.style.display = 'none';
     if (bellBtn) bellBtn.classList.add('has-alert');
     if (markReadBtn) markReadBtn.style.display = 'inline-flex';
     if (unreadPill) {
@@ -324,7 +418,28 @@ window.renderNotifications = function() {
     var otStatsHtml = '';
 
     if (n.stats) {
-      var isOver = (n.stats.current || 0) > (n.stats.limit || 0);
+      var isLoss = n.stats.type === 'daily_loss';
+      var isOver = false;
+      var curDisplay = '';
+      var limDisplay = '';
+
+      if (isLoss) {
+        var absLoss = Math.abs(Number(n.stats.current) || 0);
+        var numLimit = Number(n.stats.limit) || 0;
+        isOver = absLoss >= numLimit;
+        var cSym = (typeof window.getCurrencySymbol === 'function') ? window.getCurrencySymbol() : (window.currencySymbol || '$');
+        var fLoss = (absLoss % 1 === 0) ? absLoss.toLocaleString() : absLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var fLim = (numLimit % 1 === 0) ? numLimit.toLocaleString() : numLimit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        curDisplay = cSym + fLoss;
+        limDisplay = cSym + fLim;
+      } else {
+        var numCur = Math.round(Number(n.stats.current) || 0);
+        var numLim = Math.round(Number(n.stats.limit) || 0);
+        isOver = numCur >= numLim;
+        curDisplay = numCur.toLocaleString();
+        limDisplay = numLim.toLocaleString();
+      }
+
       var typeTitle = n.stats.type === 'daily_trades' ? t('overtrade.daily_trades', 'Günlük İşlem') :
                       n.stats.type === 'weekly_trades' ? t('overtrade.weekly_trades', 'Haftalık İşlem') :
                       n.stats.type === 'daily_loss' ? t('overtrade.loss', 'Günlük Kayıp') : t('noti.tab_risk', 'Risk Limiti');
@@ -332,12 +447,12 @@ window.renderNotifications = function() {
       otStatsHtml = `
         <div class="noti-ot-stats">
           <div class="noti-stat-chip ${isOver ? 'limit-danger' : ''}">
-            <span>${n.stats.current || 0}</span>
-            <span style="opacity:0.4;">/</span>
-            <span style="opacity:0.8;">${n.stats.limit || 0}</span>
+            <span class="noti-stat-cur">${curDisplay}</span>
+            <span class="noti-stat-sep" style="opacity:0.4;">/</span>
+            <span class="noti-stat-lim" style="opacity:0.8;">${limDisplay}</span>
           </div>
           <span class="noti-stat-chip">${typeTitle}</span>
-          ${isOver ? `<span class="noti-stat-chip limit-danger">⚠️ ${limitExceededText}</span>` : ''}
+          ${isOver ? `<span class="noti-stat-chip limit-danger">${limitExceededText}</span>` : ''}
         </div>
       `;
     }
@@ -346,12 +461,12 @@ window.renderNotifications = function() {
     html += `
       <div class="noti-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
         ${!n.is_read ? '<span class="noti-unread-dot"></span>' : ''}
-        <div class="noti-icon ${n.type}">
+        <div class="noti-icon ${n.iconType || n.type}">
           <i data-lucide="${n.iconName}"></i>
         </div>
         <div class="noti-content">
           <div class="noti-header-row">
-            <span class="noti-tag ${n.type}">${n.tagText}</span>
+            <span class="noti-tag ${n.tagClass || n.type}">${n.tagText}</span>
             ${!n.is_read ? `
               <button class="noti-mark-read" onclick="window.wwMarkAsRead(event, '${n.id}')" title="${markReadText}">
                 <i data-lucide="check"></i>
@@ -380,12 +495,56 @@ window.renderNotifications = function() {
 window.loadNotifications = async function() {
   try {
     var sb = window.sb || window.supabase;
+    if (!sb) return;
+
     var user = window.SETTINGS_STATE?.currentUser;
+    if (!user || !user.id) {
+      try {
+        var sessionRes = await sb.auth.getSession();
+        user = sessionRes?.data?.session?.user || null;
+        if (user) {
+          if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
+          window.SETTINGS_STATE.currentUser = user;
+          if (user.id) sessionStorage.setItem('ww_user_id', user.id);
+        }
+      } catch (sessErr) {
+        console.warn('🔔 [loadNotifications] getSession hatası:', sessErr);
+      }
+    }
+
+    if (user && user.id) {
+      console.log('🔔 [loadNotifications] Oturum açık kullanıcı ID:', user.id);
+
+      // Gerçek zamanlı bildirim dinleyicisi (Supabase Realtime)
+      if (!window._wwNotifSubscribed) {
+        window._wwNotifSubscribed = true;
+        try {
+          sb.channel('realtime_user_notifications_' + user.id)
+            .on('postgres_changes', {
+              event: '*',
+              schema: 'public',
+              table: 'notifications',
+              filter: 'user_id=eq.' + user.id
+            }, function(payload) {
+              console.log('🔔 [loadNotifications Realtime] Veritabanından bildirim değişikliği:', payload);
+              if (typeof window.loadNotifications === 'function') {
+                window.loadNotifications();
+              }
+            })
+            .subscribe();
+        } catch (rtErr) {
+          console.warn('🔔 [loadNotifications] Realtime dinleyici hatası:', rtErr);
+        }
+      }
+    } else {
+      console.warn('🔔 [loadNotifications] Oturum açmış kullanıcı bulunamadı.');
+    }
+
     var combined = [];
 
     // 1. OverTrade risk uyarılarını topla
     var otWarnings = window._activeOvertradeWarnings || [];
-    if ((!otWarnings || otWarnings.length === 0) && typeof window.checkOvertrade === 'function' && sb && user) {
+    if ((!otWarnings || otWarnings.length === 0) && typeof window.checkOvertrade === 'function' && sb && user && user.id) {
       try {
         var { data: trades } = await sb
           .from('trades')
@@ -402,10 +561,20 @@ window.loadNotifications = async function() {
     if (Array.isArray(otWarnings)) {
       otWarnings.forEach(function(w) {
         var isDanger = w.level === 'danger';
-        var otId = w.id || w.type || 'warning';
+        var otId = (w.id || w.type || 'warning').toString();
+        var cleanOtId = otId.replace(/^ot_/, '');
+        var prefixedOtId = 'ot_' + cleanOtId;
+
         var isDismissed = false;
         if (typeof window.isOvertradeWarningDismissed === 'function') {
-          isDismissed = window.isOvertradeWarningDismissed(otId);
+          isDismissed = window.isOvertradeWarningDismissed(otId) ||
+                        window.isOvertradeWarningDismissed(cleanOtId) ||
+                        window.isOvertradeWarningDismissed(prefixedOtId);
+        }
+        if (!isDismissed && typeof isClientNotifDismissed === 'function') {
+          isDismissed = isClientNotifDismissed(otId) ||
+                        isClientNotifDismissed(cleanOtId) ||
+                        isClientNotifDismissed(prefixedOtId);
         }
 
         var criticalText = t('noti.tag_critical', 'KRİTİK RİSK');
@@ -413,16 +582,28 @@ window.loadNotifications = async function() {
         var critTitle = t('noti.overtrade_warning_title', 'Kritik Risk Limiti Aşıldı!');
         var warnTitle = t('noti.overtrade_warning_title', 'Over Trade Uyarısı');
 
+        var msg = w.message || 'Belirlenen işlem limitinize yaklaştınız.';
+        if (w.type === 'daily_loss') {
+          var cSym = (typeof window.getCurrencySymbol === 'function') ? window.getCurrencySymbol() : (window.currencySymbol || '$');
+          var absCur = Math.abs(Number(w.current) || 0);
+          var numLim = Number(w.limit) || 0;
+          var fLoss = cSym + (absCur % 1 === 0 ? absCur.toLocaleString() : absCur.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+          var fLim = cSym + (numLim % 1 === 0 ? numLim.toLocaleString() : numLim.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+          msg = (typeof t === 'function')
+            ? t('overtrade.daily_loss_warning', 'Bugün {{loss}} kaybettin. Günlük kayıp limitin {{limit}}!', { loss: fLoss, limit: fLim })
+            : ('Bugün ' + fLoss + ' kaybettin. Günlük kayıp limitin ' + fLim + '!');
+        }
+
         combined.push({
-          id: 'ot_' + otId,
+          id: prefixedOtId,
           rawId: otId,
           category: 'risk',
           type: isDanger ? 'danger' : 'warning',
           tagText: isDanger ? criticalText : warningText,
           iconName: isDanger ? 'octagon-alert' : 'triangle-alert',
           title: isDanger ? critTitle : warnTitle,
-          message: w.message || 'Belirlenen işlem limitinize yaklaştınız.',
-          stats: { current: w.current, limit: w.limit, type: w.type },
+          message: msg,
+          stats: { current: Math.abs(Number(w.current) || 0), limit: Number(w.limit) || 0, type: w.type },
           is_read: isDismissed,
           created_at: Date.now(),
           is_overtrade: true
@@ -430,54 +611,253 @@ window.loadNotifications = async function() {
       });
     }
 
-    // 2. Supabase sistem & kullanıcı bildirimlerini topla
-    if (sb && user) {
+    // 2. Supabase sistem & kullanıcı bildirimlerini topla (notifications tablosu)
+    if (sb && user && user.id) {
       var { data: notis, error } = await sb
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(30);
+        .limit(50);
+
+      if (error) {
+        console.warn('⚠️ [loadNotifications] notifications tablosu sorgu hatası:', error);
+      } else {
+        console.log('✅ [loadNotifications] notifications tablosundan çekilen kayıt sayısı:', notis ? notis.length : 0);
+      }
 
       if (!error && Array.isArray(notis)) {
         notis.forEach(function(n) {
-          var isRisk = n.type === 'error' || n.type === 'warning';
+          var isPartner = (n.type === 'partner') || (n.title_key && n.title_key.indexOf('partner') !== -1);
+          var isRisk = !isPartner && (n.type === 'error' || n.type === 'warning' || n.type === 'danger');
           var iconName = 'bell';
           var tagText = t('noti.tag_info', 'SİSTEM');
+          var tagClass = isPartner ? 'partner' : (n.type || 'info');
+          var iconType = n.type || 'info';
 
-          if (n.type === 'success') { iconName = 'check-circle-2'; tagText = t('noti.tag_success', 'BAŞARILI'); }
-          else if (n.type === 'error') { iconName = 'alert-circle'; tagText = t('noti.tag_critical', 'KRİTİK RİSK'); }
+          if (isPartner) {
+            tagText = t('noti.tag_partner', 'PARTNER');
+            tagClass = 'partner';
+            if (n.type === 'success' || (n.title_key && n.title_key.indexOf('approved') !== -1)) {
+              iconName = 'award';
+              iconType = 'success';
+            } else {
+              iconName = 'info';
+              iconType = 'warning';
+            }
+          } else if (n.type === 'success') { iconName = 'check-circle-2'; tagText = t('noti.tag_success', 'BAŞARILI'); }
+          else if (n.type === 'error' || n.type === 'danger') { iconName = 'alert-circle'; tagText = t('noti.tag_critical', 'KRİTİK RİSK'); tagClass = 'danger'; iconType = 'danger'; }
           else if (n.type === 'warning') { iconName = 'alert-triangle'; tagText = t('noti.tag_warning', 'RİSK UYARISI'); }
           else if (n.type === 'finance') { iconName = 'wallet'; tagText = t('noti.tag_finance', 'FİNANS'); }
-          else if (n.type === 'premium') { iconName = 'crown'; tagText = t('noti.tag_premium', 'PREMİUM'); }
+          else if (n.type === 'premium' || (n.title_key && n.title_key.indexOf('premium') !== -1)) { iconName = 'crown'; tagText = t('noti.tag_premium', 'PREMİUM'); tagClass = 'premium'; iconType = 'premium'; }
           else { iconName = 'info'; tagText = t('noti.tag_info', 'SİSTEM'); }
 
-          var helperT = typeof t === 'function' ? t : function(k, f) { return f || k; };
-          var title = helperT(n.title_key, n.title_key, n.meta_data);
-          var desc = helperT(n.message_key, n.message_key, n.meta_data);
+          var helperT = typeof t === 'function' ? t : function(k, f, p) { return f || k; };
+          var metaData = Object.assign({}, n.meta_data || {});
+          if (!metaData.plan) {
+            var curLangCode = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+            metaData.plan = curLangCode === 'en' ? '1-month' : (curLangCode === 'de' ? '1-monatiges' : '1 aylık');
+          }
+
+          var title = n.title || (n.title_key ? helperT(n.title_key, n.title_key, metaData) : null) || 'Bildirim';
+          var desc = n.message || n.description || (n.message_key ? helperT(n.message_key, n.message_key, metaData) : '') || '';
+
+          var createdTs = n.created_at ? (typeof n.created_at === 'number' ? n.created_at : new Date(n.created_at).getTime()) : Date.now();
 
           combined.push({
             id: n.id,
             rawId: n.id,
             category: isRisk ? 'risk' : 'system',
-            type: n.type || 'info',
+            type: n.type === 'error' ? 'danger' : (n.type || 'info'),
+            tagClass: tagClass,
+            iconType: iconType,
             tagText: tagText,
             iconName: iconName,
             title: title,
             message: desc,
             stats: null,
             is_read: !!n.is_read,
-            created_at: n.created_at,
+            created_at: isNaN(createdTs) ? Date.now() : createdTs,
             is_overtrade: false
           });
         });
       }
     }
 
+    // 3. Premium süre & abonelik kontrolü
+    if (sb && user && user.id) {
+      try {
+        var profile = window.__wwUserProfile;
+        if (!profile || profile.id !== user.id) {
+          var { data: pData } = await sb
+            .from('user_profiles')
+            .select('id, plan, plan_expires_at')
+            .eq('id', user.id)
+            .single();
+          if (pData) profile = pData;
+        }
+
+        if (profile && profile.plan === 'premium' && profile.plan_expires_at) {
+          var expDate = new Date(profile.plan_expires_at);
+          var now = new Date();
+          var diffMs = expDate.getTime() - now.getTime();
+          var daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+          if (daysLeft <= 0) {
+            var expId = 'prem_expired_' + user.id + '_' + expDate.toISOString().slice(0, 10);
+            combined.push({
+              id: expId,
+              rawId: expId,
+              category: 'system',
+              type: 'warning',
+              tagText: t('noti.tag_premium', 'PREMİUM'),
+              iconName: 'hourglass',
+              title: t('noti.premium_expired_title', 'Premium Süreniz Sona Erdi'),
+              message: t('noti.premium_expired_desc', 'Premium üyeliğinizin süresi doldu. Özellikleri kesintisiz kullanmak için planınızı yenileyebilirsiniz.'),
+              stats: null,
+              is_read: isClientNotifDismissed(expId),
+              created_at: expDate.getTime(),
+              is_overtrade: false
+            });
+          } else if (daysLeft <= 7) {
+            var expiringId = 'prem_expiring_' + user.id + '_' + daysLeft + '_' + expDate.toISOString().slice(0, 10);
+            combined.push({
+              id: expiringId,
+              rawId: expiringId,
+              category: 'system',
+              type: 'warning',
+              tagText: t('noti.tag_premium', 'PREMİUM'),
+              iconName: 'crown',
+              title: t('noti.premium_expiring_title', 'Premium Süresi Doluyor'),
+              message: t('noti.premium_expiring_desc', 'Premium aboneliğinizin bitmesine {days} gün kaldı.', { days: daysLeft }),
+              stats: null,
+              is_read: isClientNotifDismissed(expiringId),
+              created_at: Date.now() - 1800000,
+              is_overtrade: false
+            });
+          }
+        }
+      } catch (premErr) {
+        console.warn('Premium notification check error:', premErr);
+      }
+    }
+
+    // 4. Finans & Ödeme bildirimleri (payments tablosundan)
+    if (sb && user && user.id) {
+      try {
+        var { data: userPayments } = await sb
+          .from('payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (Array.isArray(userPayments)) {
+          var existingRawIds = new Set(combined.map(function(c) { return c.rawId; }));
+
+          userPayments.forEach(function(p) {
+            if (existingRawIds.has(p.id) || (p.invoice_id && existingRawIds.has(p.invoice_id))) {
+              return;
+            }
+
+            var pId = 'pay_' + p.id;
+            var isRead = isClientNotifDismissed(pId);
+            var pDate = p.created_at ? new Date(p.created_at).getTime() : Date.now();
+            var isFinished = p.payment_status === 'finished' || p.payment_status === 'confirmed';
+            var isFailed = p.payment_status === 'failed' || p.payment_status === 'expired';
+            var isYearly = (p.plan_type === 'yearly' || p.plan_type === 'year');
+            var curLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
+            var planLabel = isYearly 
+              ? (curLang === 'en' ? '1-year' : curLang === 'de' ? '1-jähriges' : '1 yıllık')
+              : (curLang === 'en' ? '1-month' : curLang === 'de' ? '1-monatiges' : '1 aylık');
+            var pAmt = p.paid_amount || p.amount || 0;
+            var pCurr = p.paid_currency || p.currency || 'USD';
+
+            if (isFinished) {
+              combined.push({
+                id: pId,
+                rawId: p.id,
+                category: 'system',
+                type: 'premium',
+                tagClass: 'premium',
+                iconType: 'premium',
+                tagText: t('noti.tag_premium', 'PREMİUM'),
+                iconName: 'crown',
+                title: t('noti.payment_success_title', 'Premiuma Hoş Geldin'),
+                message: t('noti.payment_success_desc', '{plan} premium abonelik için teşekkürler', {
+                  plan: planLabel,
+                  amount: pAmt,
+                  curr: pCurr
+                }),
+                stats: null,
+                is_read: isRead,
+                created_at: pDate,
+                is_overtrade: false
+              });
+            } else if (isFailed) {
+              combined.push({
+                id: pId,
+                rawId: p.id,
+                category: 'system',
+                type: 'warning',
+                tagText: t('noti.tag_finance', 'FİNANS'),
+                iconName: 'alert-circle',
+                title: t('noti.payment_failed_title', 'Ödeme Tamamlanamadı'),
+                message: t('noti.payment_failed_desc', '{plan} Premium ödeme işleminiz zaman aşımına uğradı veya tamamlanamadı.', {
+                  plan: planLabel
+                }),
+                stats: null,
+                is_read: isRead,
+                created_at: pDate,
+                is_overtrade: false
+              });
+            }
+          });
+        }
+      } catch (payErr) {
+        console.warn('Payments notification check error:', payErr);
+      }
+    }
+
+    // Tarihe göre yeniden eskiye sırala (timestamp ms sayı karşılaştırması)
+    combined.sort(function(a, b) {
+      var timeA = typeof a.created_at === 'number' ? a.created_at : (new Date(a.created_at).getTime() || 0);
+      var timeB = typeof b.created_at === 'number' ? b.created_at : (new Date(b.created_at).getTime() || 0);
+      return timeB - timeA;
+    });
+
     window._allNotifications = combined;
     window.renderNotifications();
   } catch (err) {
     console.error('Load notifications error:', err);
+  }
+};
+
+// Doğrulama ve test için konsoldan çağrılabilir yardımcı
+window.testSendNotification = async function(type, title, message) {
+  var sb = window.sb || window.supabase;
+  var user = window.SETTINGS_STATE?.currentUser;
+  if (!user || !user.id) {
+    var s = await sb?.auth?.getSession();
+    user = s?.data?.session?.user;
+  }
+  if (!sb || !user || !user.id) {
+    console.error('❌ Oturum açmış kullanıcı bulunamadı! Lütfen önce giriş yapın.');
+    return;
+  }
+  var { data, error } = await sb.from('notifications').insert([{
+    user_id: user.id,
+    type: type || 'info',
+    title_key: title || 'Test Bildirimi',
+    message_key: message || 'Bu bir test sistem bildirimidir.',
+    meta_data: {},
+    is_read: false
+  }]).select();
+  if (error) {
+    console.error('❌ Bildirim eklenirken hata oluştu:', error);
+  } else {
+    console.log('✅ Bildirim veritabanına eklendi:', data);
+    await window.loadNotifications();
   }
 };
 
@@ -522,17 +902,17 @@ window.closeMobileMenuAndNavigate = function(e, url) {
 };
 
 function t(key, fallback, params) {
-  var val = fallback;
-  if (typeof i18n !== 'undefined' && i18n.t) {
+  var val = fallback || key || '';
+  if (typeof i18n !== 'undefined' && i18n.t && key) {
     var translated = i18n.t(key, params);
     if (translated && translated !== key) val = translated;
   }
-  if (params && typeof params === 'object') {
+  if (typeof val === 'string' && params && typeof params === 'object') {
     for (var k in params) {
-      val = val.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
+      val = val.replace(new RegExp('\\{+' + k + '\\}+', 'g'), params[k]);
     }
   }
-  return val;
+  return typeof val === 'string' ? val : String(val || '');
 }
 
 wwLog.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');
@@ -662,9 +1042,8 @@ function getNavbarHTML(translations) {
 
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
           <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="wwToggleBell(event, this)">
-            <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <i data-lucide="bell" class="nav-bell-icon"></i>
             <span class="bell-badge" id="bell-badge" style="display:none;">0</span>
-            <span class="bell-dot" id="bell-dot" style="display:none;"></span>
           </button>
           <div class="bell-panel" id="bell-panel" role="dialog" aria-label="Bildirim Paneli">
             <div class="bell-panel-header">
@@ -675,7 +1054,7 @@ function getNavbarHTML(translations) {
                 </div>
               </div>
               <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" data-i18n="nav.mark_read" onclick="window.wwMarkAllAsRead()" title="Tümünü Okundu İşaretle">
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" onclick="window.wwMarkAllAsRead()" title="Tümünü Okundu İşaretle">
                   <i data-lucide="check-check"></i>
                   <span data-i18n="nav.mark_read">${tt('nav.mark_read', 'Tümünü Oku')}</span>
                 </button>
@@ -972,20 +1351,26 @@ async function loadNavbarAvatar() {
     var sb = window.sb || window.supabase;
     if (!sb) return;
 
+    var storedUserId = sessionStorage.getItem('ww_user_id');
     var storedDisplayName = sessionStorage.getItem('ww_user_display_name');
     var storedAvatar = sessionStorage.getItem('ww_avatar_url');
     var storedTime = sessionStorage.getItem('ww_avatar_time');
     var storedIsAdmin = sessionStorage.getItem('ww_user_is_admin');
     var now = Date.now();
 
-    if (storedDisplayName) {
+    if (storedDisplayName || storedUserId) {
       if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
       if (!window.SETTINGS_STATE.currentUser) {
-        window.SETTINGS_STATE.currentUser = { user_metadata: { username: storedDisplayName } };
+        window.SETTINGS_STATE.currentUser = {
+          id: storedUserId || null,
+          user_metadata: { username: storedDisplayName || '' }
+        };
+      } else if (!window.SETTINGS_STATE.currentUser.id && storedUserId) {
+        window.SETTINGS_STATE.currentUser.id = storedUserId;
       }
     }
 
-    if (storedTime && (now - parseInt(storedTime, 10)) < 300000) {
+    if (storedTime && (now - parseInt(storedTime, 10)) < 300000 && storedUserId) {
       var av = (storedAvatar && storedAvatar !== 'none') ? storedAvatar : null;
       cachedAvatarUrl = av;
       applyAvatarToNav(av);
@@ -998,15 +1383,13 @@ async function loadNavbarAvatar() {
       return;
     }
 
-    var sb = window.sb || window.supabase;
-    if (!sb) return;
-
     var sessionRes = await sb.auth.getSession();
     var user = sessionRes?.data?.session?.user;
     if (!user) return;
 
     if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
     window.SETTINGS_STATE.currentUser = user;
+    if (user.id) sessionStorage.setItem('ww_user_id', user.id);
     
     var isAdminUser = (user?.app_metadata?.role === 'admin');
     sessionStorage.setItem('ww_user_is_admin', isAdminUser ? 'true' : 'false');
