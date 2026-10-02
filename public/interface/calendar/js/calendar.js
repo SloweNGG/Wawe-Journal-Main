@@ -1182,6 +1182,8 @@ window.renderCalendar = renderCalendar;
 window.calcTradePnL = calcTradePnL;
 window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;
+window.loadTrades = initCalendar;
+window.refresh = initCalendar;
 
 wwLog.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');
 document.addEventListener('journal-changed', () => window.location.reload());
