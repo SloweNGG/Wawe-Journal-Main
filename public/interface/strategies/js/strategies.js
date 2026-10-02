@@ -869,7 +869,22 @@ async function confirmAddStrategy() {
     await addStrategy(name, desc, color);
     document.getElementById('add-strategy-modal').style.display = 'none';
     await loadAllData();
-    showToast(i18n.t('strategies.added'));
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var isFromOnboarding = urlParams.get('action') === 'new' || sessionStorage.getItem('wj_from_onboarding') === 'true';
+    if (isFromOnboarding) {
+      sessionStorage.removeItem('wj_from_onboarding');
+      sessionStorage.setItem('wj_strategy_just_completed', 'true');
+      var successMsg = (typeof i18n !== 'undefined' && typeof i18n.t === 'function')
+        ? i18n.t('onboarding.task_strategy_toast')
+        : 'Strateji başarıyla eklendi! Görev tamamlandı.';
+      showToast(successMsg, 'success');
+      setTimeout(function() {
+        window.location.href = '/dashboard.html';
+      }, 1000);
+    } else {
+      showToast(i18n.t('strategies.added'));
+    }
   } catch (e) {
     showToast(i18n.t('strategies.error_add') + e.message, 'error');
   }
@@ -1625,6 +1640,16 @@ async function initStrategies() {
     }
 
     wwLog.log('✅ Strategies başlatıldı!');
+
+    // Onboarding veya parametre ile strateji ekleme modalını otomatik aç
+    try {
+      var urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('action') === 'new' || window.location.hash === '#add-strategy' || sessionStorage.getItem('wj_from_onboarding') === 'true') {
+        setTimeout(function() {
+          openAddStrategyModal();
+        }, 250);
+      }
+    } catch(e) {}
   } catch(e) {
     console.error('❌ Strategies init hatası:', e);
     hideStrategySkeleton();

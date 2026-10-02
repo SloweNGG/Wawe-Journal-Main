@@ -298,8 +298,8 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
 
   // ⭐ Zaten premium mu kontrol et
   const isCurrentlyPremium = profile.plan === 'premium' &&
-                            profile.plan_expires_at &&
-                            new Date(profile.plan_expires_at) > new Date();
+    profile.plan_expires_at &&
+    new Date(profile.plan_expires_at) > new Date();
 
   let expiresAt: Date;
   const durationDays = getPlanDuration(planType);
@@ -328,7 +328,7 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
   }
 
   // ⭐ Log the payment
-  
+
   // Referans kodu ayıklama (önce order_description regex, yoksa payments tablosundan fallback)
   let appliedReferral: string | null = null;
   if (payload.order_description) {
@@ -598,8 +598,8 @@ serve(async (req) => {
     // ⭐ 11. STATUS KONTROLÜ
     const isFinished = status === PAYMENT_STATUS.FINISHED;
     const isFailed = status === PAYMENT_STATUS.FAILED ||
-                     status === PAYMENT_STATUS.EXPIRED ||
-                     status === PAYMENT_STATUS.REFUNDED;
+      status === PAYMENT_STATUS.EXPIRED ||
+      status === PAYMENT_STATUS.REFUNDED;
 
     // ⭐ 12. İŞLEME
     if (isFinished && userId && planType) {
