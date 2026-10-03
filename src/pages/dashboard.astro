@@ -12,6 +12,29 @@ import Layout from '../layouts/Layout.astro';
     html.light-theme-pending body {
       background: #f4f4f9;
     }
+    /* ⭐ CLS SIFIRLAMA: Skeleton ile gerçek kartların birebir aynı yükseklikte kalmasını sağlar */
+    .skeleton-stats {
+      min-height: 84px;
+    }
+    .skeleton-stat {
+      min-height: 84px;
+      box-sizing: border-box;
+    }
+    #charts-top-skeleton .skeleton-chart {
+      height: 250px;
+      min-height: 250px;
+      box-sizing: border-box;
+    }
+    #charts-bottom-skeleton .skeleton-chart {
+      height: 220px;
+      min-height: 220px;
+      box-sizing: border-box;
+    }
+    #recent-trades-skeleton,
+    #recent-trades-container-wrap {
+      min-height: 270px;
+      box-sizing: border-box;
+    }
   </style>
 </Fragment>
 
