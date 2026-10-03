@@ -557,12 +557,27 @@ window.loadNotifications = async function() {
           var weekAgo = new Date();
           weekAgo.setDate(weekAgo.getDate() - 7);
           var weekAgoStr = weekAgo.toISOString().split('T')[0];
-          var { data: trades } = await sb
-            .from('trades')
-            .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
-            .eq('user_id', user.id)
-            .gte('trade_date', weekAgoStr)
-            .order('trade_date', { ascending: false });
+          var trades = null;
+
+          // ⚡ Eğer sayfada işlemler zaten önbelleğe alındıysa Supabase'e ek istek atma
+          if (typeof window.wwCache !== 'undefined') {
+            var activeJid = (typeof window.getActiveJournalId === 'function') ? window.getActiveJournalId() : localStorage.getItem('ww_active_journal_id');
+            var cached = window.wwCache.get('trades', user.id, activeJid) || window.wwCache.get('trades', user.id, 'all');
+            if (cached && Array.isArray(cached) && cached.length > 0) {
+              trades = cached.filter(function(t) { return t.trade_date && t.trade_date >= weekAgoStr; });
+            }
+          }
+
+          if (!trades) {
+            var { data: fetchedTrades } = await sb
+              .from('trades')
+              .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
+              .eq('user_id', user.id)
+              .gte('trade_date', weekAgoStr)
+              .order('trade_date', { ascending: false });
+            trades = fetchedTrades;
+          }
+
           if (trades) {
             otWarnings = window.checkOvertrade(trades) || [];
           } else {

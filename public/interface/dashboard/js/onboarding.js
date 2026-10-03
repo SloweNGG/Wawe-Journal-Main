@@ -951,13 +951,51 @@
   // ------------------------------------------------------------
   async function loadUserCounts() {
     if (!state.user || !window.sb) return;
+    var uid = state.user.id;
+
+    // ⚡ 1. Eğer kullanıcı görevleri tamamlayıp widget'ı kapattıysa sorgu atma
+    try {
+      var isDismissed = localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true';
+      var isAllDone = localStorage.getItem('wj_tasks_all_done_' + uid) === 'true';
+      if (isDismissed && isAllDone) {
+        state.tradesCount = 1;
+        state.strategiesCount = 1;
+        return;
+      }
+    } catch (e) {}
+
+    // ⚡ 2. SessionStorage önbellek kontrolü (3 dakika geçerli)
+    try {
+      var cachedStr = sessionStorage.getItem('ww_onboard_counts_' + uid);
+      if (cachedStr) {
+        var cached = JSON.parse(cachedStr);
+        if (cached && (Date.now() - cached.time < 3 * 60 * 1000)) {
+          state.tradesCount = cached.trades || 0;
+          state.strategiesCount = cached.strategies || 0;
+          return;
+        }
+      }
+    } catch (e) {}
+
     try {
       var [tradesRes, stratRes] = await Promise.all([
-        window.sb.from('trades').select('id', { count: 'exact', head: true }).eq('user_id', state.user.id),
-        window.sb.from('strategies').select('id', { count: 'exact', head: true }).eq('user_id', state.user.id)
+        window.sb.from('trades').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+        window.sb.from('strategies').select('id', { count: 'exact', head: true }).eq('user_id', uid)
       ]);
       state.tradesCount = (tradesRes && tradesRes.count) || 0;
       state.strategiesCount = (stratRes && stratRes.count) || 0;
+
+      // Sonucu önbelleğe al
+      try {
+        sessionStorage.setItem('ww_onboard_counts_' + uid, JSON.stringify({
+          time: Date.now(),
+          trades: state.tradesCount,
+          strategies: state.strategiesCount
+        }));
+        if (state.tradesCount > 0 && state.strategiesCount > 0) {
+          localStorage.setItem('wj_tasks_all_done_' + uid, 'true');
+        }
+      } catch (e) {}
     } catch (e) {
       wwLog.warn('Could not load user counts:', e);
     }

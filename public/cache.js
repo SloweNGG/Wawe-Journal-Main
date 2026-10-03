@@ -44,6 +44,48 @@
           }
           sessionStorage.removeItem('ww_cache_' + key);
         }
+
+        // ⚡ 3. Sayfalar Arası Akıllı Senkronizasyon (Cross-page SWR)
+        // Dashboard, Trades, Calendar, Strategies ve Premium Dashboard aynı defterdeki
+        // aynı işlem verisini paylaşır. Biri indirdiğinde diğerleri Supabase'e gitmeden anında faydalanır.
+        var isTradePrefix = prefix && prefix.indexOf('trades') === 0;
+        if (isTradePrefix) {
+          var mainKey = getCacheKey('trades', userId, journalId);
+          var dashKey = getCacheKey('trades_dashboard', userId, journalId);
+
+          if (prefix === 'trades_dashboard') {
+            // Dashboard kronolojik (ASC) sıra bekler. Ana 'trades' listesi (DESC) varsa ters çevirerek kullan.
+            var mainTrades = this.get('trades', userId, journalId);
+            if (mainTrades && Array.isArray(mainTrades) && mainTrades.length > 0) {
+              var ascTrades = mainTrades.slice().reverse();
+              memoryCache.set(dashKey, { timestamp: Date.now(), data: ascTrades });
+              return ascTrades;
+            }
+          } else {
+            // Diğer sayfalar (trades, calendar, strategies, premium) DESC sıra bekler.
+            // Eğer ana liste yok ama dashboard listesi varsa, ters çevirerek kullan.
+            if (prefix !== 'trades') {
+              var existingMain = this.get('trades', userId, journalId);
+              if (existingMain && Array.isArray(existingMain) && existingMain.length > 0) {
+                memoryCache.set(key, { timestamp: Date.now(), data: existingMain });
+                return existingMain;
+              }
+            }
+            var dashTrades = memoryCache.get(dashKey);
+            if (!dashTrades) {
+              var rawDash = sessionStorage.getItem('ww_cache_' + dashKey);
+              if (rawDash) {
+                try { dashTrades = JSON.parse(rawDash); } catch (e) {}
+              }
+            }
+            if (dashTrades && Array.isArray(dashTrades.data) && dashTrades.data.length > 0) {
+              var descTrades = dashTrades.data.slice().reverse();
+              memoryCache.set(key, { timestamp: Date.now(), data: descTrades });
+              memoryCache.set(mainKey, { timestamp: Date.now(), data: descTrades });
+              return descTrades;
+            }
+          }
+        }
       } catch (e) {
         // Kota/JSON hatası vs. sessizce geç
       }
@@ -66,11 +108,40 @@
 
         // Çok büyük listelerde quota hatası almamak için güvenli set
         try {
-          // 5000+ satırlarda sessionStorage'ı şişirmemek için limitli tutulabilir
           if (data.length <= 3000) {
             sessionStorage.setItem('ww_cache_' + key, JSON.stringify(entry));
           }
         } catch (storageErr) {}
+
+        // ⚡ Sayfalar arası çapraz besleme:
+        // Dashboard verisi kaydedildiyse, diğer sayfalar için DESC listeyi de hazırla
+        var isTradePrefix = prefix && prefix.indexOf('trades') === 0;
+        if (isTradePrefix) {
+          var mainKey = getCacheKey('trades', userId, journalId);
+          var dashKey = getCacheKey('trades_dashboard', userId, journalId);
+
+          if (prefix === 'trades_dashboard') {
+            var descData = data.slice().reverse();
+            memoryCache.set(mainKey, { timestamp: Date.now(), data: descData });
+            try {
+              if (descData.length <= 3000) {
+                sessionStorage.setItem('ww_cache_' + mainKey, JSON.stringify({ timestamp: Date.now(), data: descData }));
+              }
+            } catch (se) {}
+          } else {
+            // Trades, calendar veya strategies kaydedildiyse, dashboard için ASC listeyi de hazırla
+            if (prefix !== 'trades') {
+              memoryCache.set(mainKey, entry);
+            }
+            var ascData = data.slice().reverse();
+            memoryCache.set(dashKey, { timestamp: Date.now(), data: ascData });
+            try {
+              if (ascData.length <= 3000) {
+                sessionStorage.setItem('ww_cache_' + dashKey, JSON.stringify({ timestamp: Date.now(), data: ascData }));
+              }
+            } catch (se) {}
+          }
+        }
       } catch (e) {}
     },
 
