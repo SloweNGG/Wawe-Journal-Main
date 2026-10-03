@@ -337,8 +337,6 @@ import Layout from '../layouts/Layout.astro';
   <!-- SCRIPTS -->
   <Fragment slot="head">
     <!-- PRELOAD CRITICAL SCRIPTS -->
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts" as="script" />
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" is:inline defer></script>
@@ -349,14 +347,12 @@ import Layout from '../layouts/Layout.astro';
     <script src="/i18n.js?v=1790432600" is:inline defer></script>
 
     <!-- ⭐ ParserV2 -->
-<script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
-<script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
-<script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
-<script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
+    <script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
+    <script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
+    <script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
+    <script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
 
-<script type="module" src="/src/bundle.js" is:inline></script>
-
-
+    <script type="module" src="/src/bundle.js" is:inline defer></script>
    
     <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
 
