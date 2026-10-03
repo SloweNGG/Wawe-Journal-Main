@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // QUICK MODAL I18N - Hızlı İşlem Modal'ı Çevirileri
 // Dil: İngilizce (varsayılan), Türkçe, Almanca
 // ⭐ Emoji temizlendi - ikonlar JS ICONS objesinden geliyor
@@ -77,6 +77,8 @@ const quickTranslations = {
     "quickmodal.csv_processing": "Processing...",
     "quickmodal.csv_importing": "Importing...",
     "quickmodal.csv_import_success": "{{count}} trades imported successfully!",
+    "quickmodal.csv_all_duplicates": "All {{count}} trades are already imported! No duplicates added.",
+    "quickmodal.csv_duplicates_skipped": "{{count}} new trades imported ({{skipped}} duplicates skipped).",
     "quickmodal.csv_import_error": "{{success}} imported, {{failed}} errors!",
     "quickmodal.csv_no_data": "No data found in CSV file!",
     "quickmodal.csv_required_fields": "Missing required fields in row {{row}}",
@@ -194,6 +196,8 @@ const quickTranslations = {
     "quickmodal.csv_processing": "İşleniyor...",
     "quickmodal.csv_importing": "İçe aktarılıyor...",
     "quickmodal.csv_import_success": "{{count}} işlem başarıyla içe aktarıldı!",
+    "quickmodal.csv_all_duplicates": "Dosyadaki tüm işlemler ({{count}}) zaten kayıtlı! Mükerrer kayıt oluşturulmadı.",
+    "quickmodal.csv_duplicates_skipped": "{{count}} yeni işlem eklendi ({{skipped}} mükerrer işlem atlandı).",
     "quickmodal.csv_import_error": "{{success}} içe aktarıldı, {{failed}} hata!",
     "quickmodal.csv_no_data": "CSV dosyasında veri bulunamadı!",
     "quickmodal.csv_required_fields": "{{row}}. satırda zorunlu alanlar eksik",
@@ -299,6 +303,8 @@ const quickTranslations = {
     "quickmodal.csv_processing": "Verarbeite...",
     "quickmodal.csv_importing": "Importiere...",
     "quickmodal.csv_import_success": "{{count}} Trades erfolgreich importiert!",
+    "quickmodal.csv_all_duplicates": "Alle {{count}} Trades sind bereits importiert! Keine Duplikate hinzugefügt.",
+    "quickmodal.csv_duplicates_skipped": "{{count}} neue Trades importiert ({{skipped}} Duplikate übersprungen).",
     "quickmodal.csv_import_error": "{{success}} importiert, {{failed}} Fehler!",
     "quickmodal.csv_no_data": "Keine Daten in CSV-Datei gefunden!",
     "quickmodal.csv_required_fields": "Fehlende Pflichtfelder in Zeile {{row}}",

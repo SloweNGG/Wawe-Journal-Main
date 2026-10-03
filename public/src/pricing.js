@@ -155,32 +155,50 @@ window.addEventListener('storage', function(e) {
 });
 
 
-export async function fetchPricesFromDB() {
+let _priceFetchPromise = null;
+let _lastPriceFetchTime = 0;
+
+export async function fetchPricesFromDB(force = false) {
   try {
-    const sb = window.sb || window.supabase;
-    if (!sb) return;
-    
-    // Call the new RPC
-    const { data, error } = await sb.rpc('get_prices');
-    if (!error && data) {
-      if (data.monthly) setMonthlyPrice(data.monthly);
-      if (data.yearly) setYearlyPrice(data.yearly);
-      if (data.monthly) {
-        const m = parseFloat(data.monthly);
-        if (!isNaN(m)) {
-          currentMonthlyPrice = m;
-          safeLocalStorageSet('ww_monthly_price', m.toString());
-        }
-      }
-      if (data.yearly) {
-        const y = parseFloat(data.yearly);
-        if (!isNaN(y)) {
-          currentYearlyPrice = y;
-          safeLocalStorageSet('ww_yearly_price', y.toString());
-        }
-      }
-      updateHomePrices();
+    const now = Date.now();
+    if (!force && _priceFetchPromise) return _priceFetchPromise;
+    if (!force && now - _lastPriceFetchTime < 10 * 60 * 1000) {
+      return;
     }
+
+    _priceFetchPromise = (async () => {
+      try {
+        const sb = window.sb || window.supabase;
+        if (!sb) return;
+        
+        // Call the new RPC
+        const { data, error } = await sb.rpc('get_prices');
+        if (!error && data) {
+          if (data.monthly) setMonthlyPrice(data.monthly);
+          if (data.yearly) setYearlyPrice(data.yearly);
+          if (data.monthly) {
+            const m = parseFloat(data.monthly);
+            if (!isNaN(m)) {
+              currentMonthlyPrice = m;
+              safeLocalStorageSet('ww_monthly_price', m.toString());
+            }
+          }
+          if (data.yearly) {
+            const y = parseFloat(data.yearly);
+            if (!isNaN(y)) {
+              currentYearlyPrice = y;
+              safeLocalStorageSet('ww_yearly_price', y.toString());
+            }
+          }
+          _lastPriceFetchTime = Date.now();
+          updateHomePrices();
+        }
+      } finally {
+        _priceFetchPromise = null;
+      }
+    })();
+
+    return _priceFetchPromise;
   } catch (e) {
     console.error('fetchPricesFromDB hatasi:', e);
   }
@@ -189,7 +207,6 @@ export async function fetchPricesFromDB() {
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     updateHomePrices();
-    fetchPricesFromDB(); // <--- Fetch on load!
     fetchPricesFromDB();
   }, 300);
 });

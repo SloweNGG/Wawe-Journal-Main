@@ -388,10 +388,15 @@ export async function checkAndRenderOvertrade(containerId) {
       return;
     }
     
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
     const { data: trades, error } = await sb
       .from('trades')
-      .select('*')
+      .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
       .eq('user_id', session.user.id)
+      .gte('trade_date', weekAgoStr)
       .order('trade_date', { ascending: false });
     
     if (error) {
@@ -527,50 +532,75 @@ export async function loadOvertradeSettingsUI(containerId) {
   }
 }
 
+let _overtradePromise = null;
+let _lastOvertradeCheck = 0;
+
 // ⭐ GLOBAL OVERTRADE BELL FONKSİYONU
-export async function updateOvertradeBell() {
+export async function updateOvertradeBell(force = false) {
   try {
-    const sbClient = window.sb || sb;
-    if (!sbClient) return;
-
-    const { data: { session } } = await sbClient.auth.getSession();
-    if (!session) {
-      window._activeOvertradeWarnings = [];
-      if (typeof window.loadNotifications === 'function') {
-        window.loadNotifications();
-      }
+    const now = Date.now();
+    if (!force && _overtradePromise) return _overtradePromise;
+    if (!force && now - _lastOvertradeCheck < 60000 && window._activeOvertradeWarnings !== undefined) {
       return;
     }
 
-    const { plan } = await getUserPlanSilent();
-    if (plan !== 'premium') {
-      window._activeOvertradeWarnings = [];
-      if (typeof window.loadNotifications === 'function') {
-        window.loadNotifications();
+    _overtradePromise = (async () => {
+      try {
+        const sbClient = window.sb || sb;
+        if (!sbClient) return;
+
+        const { data: { session } } = await sbClient.auth.getSession();
+        if (!session) {
+          window._activeOvertradeWarnings = [];
+          if (typeof window.loadNotifications === 'function') {
+            window.loadNotifications();
+          }
+          return;
+        }
+
+        const { plan } = await getUserPlanSilent();
+        if (plan !== 'premium') {
+          window._activeOvertradeWarnings = [];
+          _lastOvertradeCheck = Date.now();
+          if (typeof window.loadNotifications === 'function') {
+            window.loadNotifications();
+          }
+          return;
+        }
+
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
+        const { data: trades, error } = await sbClient
+          .from('trades')
+          .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
+          .eq('user_id', session.user.id)
+          .gte('trade_date', weekAgoStr)
+          .order('trade_date', { ascending: false });
+
+        if (error || !trades) {
+          window._activeOvertradeWarnings = [];
+          _lastOvertradeCheck = Date.now();
+          if (typeof window.loadNotifications === 'function') {
+            window.loadNotifications();
+          }
+          return;
+        }
+
+        const warnings = checkOvertrade(trades || []) || [];
+        window._activeOvertradeWarnings = warnings;
+        _lastOvertradeCheck = Date.now();
+
+        if (typeof window.loadNotifications === 'function') {
+          await window.loadNotifications();
+        }
+      } finally {
+        _overtradePromise = null;
       }
-      return;
-    }
+    })();
 
-    const { data: trades, error } = await sbClient
-      .from('trades')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('trade_date', { ascending: false });
-
-    if (error || !trades) {
-      window._activeOvertradeWarnings = [];
-      if (typeof window.loadNotifications === 'function') {
-        window.loadNotifications();
-      }
-      return;
-    }
-
-    const warnings = checkOvertrade(trades || []) || [];
-    window._activeOvertradeWarnings = warnings;
-
-    if (typeof window.loadNotifications === 'function') {
-      await window.loadNotifications();
-    }
+    return _overtradePromise;
   } catch(e) {
     wwLog.warn('updateOvertradeBell hatası:', e);
   }

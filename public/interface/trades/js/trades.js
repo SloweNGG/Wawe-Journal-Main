@@ -270,7 +270,12 @@
   function formatDateTime(dateStr) {
     if (!dateStr) return '—';
     try {
-      var date = new Date(dateStr);
+      var str = String(dateStr).trim();
+      var hasTime = /T\d{1,2}:\d{2}|\s\d{1,2}:\d{2}/.test(str);
+      
+      var date = new Date(str);
+      if (isNaN(date.getTime())) return str;
+
       var lang = _lang();
       var monthNames = {
         tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
@@ -278,7 +283,16 @@
         de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
       };
       var month = monthNames[lang] ? monthNames[lang][date.getMonth()] : 'Jan';
-      return date.getDate() + ' ' + month + ' ' + date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+      var datePart = date.getDate() + ' ' + month + ' ' + date.getFullYear();
+
+      // Eğer orijinal veride saat bilgisi yoksa sadece tarihi göster
+      if (!hasTime) {
+        return datePart;
+      }
+
+      var hours = date.getHours().toString().padStart(2, '0');
+      var minutes = date.getMinutes().toString().padStart(2, '0');
+      return datePart + ' ' + hours + ':' + minutes;
     } catch(e) {
       return '—';
     }
@@ -619,6 +633,8 @@
       if (currentPage > totalPages) currentPage = totalPages;
       if (currentPage < 1) currentPage = 1;
 
+      renderStats(trades);
+
       var start = (currentPage - 1) * PAGE_SIZE;
       var end = Math.min(start + PAGE_SIZE, totalItems);
       filteredTrades = trades.slice(start, end);
@@ -755,7 +771,6 @@
     selectedTrades.clear();
     expandedNotes.clear();
     updateSelBar();
-    renderStats(trades);
     
     hideTableSkeleton();
     
@@ -805,6 +820,7 @@
       totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
       if (currentPage > totalPages) currentPage = totalPages;
       applyFiltersAndSort();
+      try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
     } catch (e) {
       console.error('Delete hatası:', e);
       showToast(_t('common.unexpected_error'), 'error');
@@ -862,6 +878,7 @@
       if (currentPage > totalPages) currentPage = totalPages;
       
       applyFiltersAndSort();
+      try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
       var modal3 = safeEl('bulk-modal');
       if (modal3) modal3.classList.remove('active');
     } catch (e) {
@@ -947,39 +964,86 @@
       } catch (e) { }
     }
 
+    // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
+    if (typeof window !== 'undefined' && window.wwCache) {
+      var cachedTrades = window.wwCache.get('trades', userId, jid);
+      if (cachedTrades && cachedTrades.length > 0) {
+        // Arka planda sessizce tazelemek üzere arka plan sorgusu tetiklenebilir
+        return cachedTrades;
+      }
+    }
+
     try {
-      var query = sb
-        .from('trades')
-        .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-        .eq('user_id', userId);
+      var allTrades = [];
+      var pageSize = 1000;
+      var from = 0;
+      var hasMore = true;
 
-      if (jid) {
-        query = query.eq('journal_id', jid);
+      while (hasMore) {
+        var query = sb
+          .from('trades')
+          .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+          .eq('user_id', userId);
+
+        if (jid) {
+          query = query.eq('journal_id', jid);
+        }
+
+        query = query
+          .order('trade_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1);
+        var { data, error } = await query;
+
+        if (error) {
+          showToast(_t('common.load_error') + error.message, 'error');
+          return [];
+        }
+
+        if (data && data.length > 0) {
+          allTrades = allTrades.concat(data);
+          if (data.length < pageSize) {
+            hasMore = false;
+          } else {
+            from += pageSize;
+          }
+        } else {
+          hasMore = false;
+        }
       }
-
-      query = query.order('trade_date', { ascending: false }).limit(1000);
-
-      var { data, error } = await query;
       
-      if (error) {
-        showToast(_t('common.load_error') + error.message, 'error');
-        return [];
-      }
-      
-      var result = data || [];
+      var result = allTrades;
       if (result.length === 0 && jid) {
         try {
-          var { data: unassignedData } = await sb
-            .from('trades')
-            .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-            .eq('user_id', userId)
-            .is('journal_id', null)
-            .order('trade_date', { ascending: false })
-            .limit(1000);
-          if (unassignedData && unassignedData.length > 0) {
-            result = unassignedData;
+          var unassignedTrades = [];
+          var uFrom = 0;
+          var uHasMore = true;
+          while (uHasMore) {
+            var { data: unassignedData } = await sb
+              .from('trades')
+              .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+              .eq('user_id', userId)
+              .is('journal_id', null)
+              .order('trade_date', { ascending: false })
+              .order('id', { ascending: true })
+              .range(uFrom, uFrom + pageSize - 1);
+            if (unassignedData && unassignedData.length > 0) {
+              unassignedTrades = unassignedTrades.concat(unassignedData);
+              if (unassignedData.length < pageSize) uHasMore = false;
+              else uFrom += pageSize;
+            } else {
+              uHasMore = false;
+            }
+          }
+          if (unassignedTrades.length > 0) {
+            result = unassignedTrades;
           }
         } catch (unErr) { }
+      }
+
+      // ⚡ Sonucu önbelleğe kaydet
+      if (typeof window !== 'undefined' && window.wwCache) {
+        window.wwCache.set('trades', userId, jid, result);
       }
 
       return result;

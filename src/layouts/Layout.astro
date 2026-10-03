@@ -31,6 +31,9 @@ const {
 <head>
   <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} isAppPage={isAppPage} />
   <slot name="head" />
+  {isAppPage && (
+    <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css?v=1790435000" />
+  )}
 </head>
 <body class={bodyClass} style={bodyStyle}>
   <div id="app-scroll-container">
@@ -41,5 +44,9 @@ const {
     )}
     <slot />
   </div>
+
+  {isAppPage && (
+    <script src="/interface/dashboard/js/onboarding.js?v=1790435000" is:inline defer></script>
+  )}
 </body>
 </html>

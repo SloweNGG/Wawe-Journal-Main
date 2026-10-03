@@ -64,18 +64,45 @@ function _qaDetectDelim(line) {
 }
 
 function _qaDate(raw) {
-  if (!raw) return new Date().toISOString().split('T')[0];
+  if (!raw) return new Date().toISOString();
   raw = String(raw).trim();
+  var hasOffset = /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(raw);
+
+  var mIsoTime = raw.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (mIsoTime) {
+    if (hasOffset) {
+      var parsedOffset = new Date(raw);
+      if (!isNaN(parsedOffset.getTime())) return parsedOffset.toISOString();
+    }
+    var localDate = new Date(+mIsoTime[1], +mIsoTime[2] - 1, +mIsoTime[3], +mIsoTime[4], +mIsoTime[5], +(mIsoTime[6] || 0));
+    if (!isNaN(localDate.getTime())) return localDate.toISOString();
+  }
+
+  var mDmyTime = raw.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (mDmyTime) {
+    var d1 = +mDmyTime[1], mo1 = +mDmyTime[2];
+    if (mo1 > 12 && d1 <= 12) { var tmp = d1; d1 = mo1; mo1 = tmp; }
+    if (hasOffset) {
+      var isoStr = mDmyTime[3] + '-' + String(mo1).padStart(2, '0') + '-' + String(d1).padStart(2, '0') + 'T' +
+                   mDmyTime[4].padStart(2, '0') + ':' + mDmyTime[5].padStart(2, '0') + ':' +
+                   (mDmyTime[6] || '00').padStart(2, '0') + (raw.match(/(?:Z|[+-]\d{2}(?::?\d{2})?)$/i)?.[0] || '');
+      var parsedDmyOffset = new Date(isoStr);
+      if (!isNaN(parsedDmyOffset.getTime())) return parsedDmyOffset.toISOString();
+    }
+    var localDmy = new Date(+mDmyTime[3], mo1 - 1, d1, +mDmyTime[4], +mDmyTime[5], +(mDmyTime[6] || 0));
+    if (!isNaN(localDmy.getTime())) return localDmy.toISOString();
+  }
+
   var m1 = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (m1) return m1[3] + '-' + m1[2] + '-' + m1[1];
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.substring(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
   var m2 = raw.match(/^(\d{4})\.(\d{2})\.(\d{2})/);
   if (m2) return m2[1] + '-' + m2[2] + '-' + m2[3];
   var m3 = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
   if (m3) return m3[3] + '-' + m3[2] + '-' + m3[1];
   var d = new Date(raw);
-  if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-  return new Date().toISOString().split('T')[0];
+  if (!isNaN(d.getTime())) return d.toISOString();
+  return new Date().toISOString();
 }
 
 function _qaDir(raw) {
@@ -1460,15 +1487,80 @@ async function fileToCsvText(file) {
 
     try {
       const trades = [];
+      let skippedDuplicates = 0;
+
+      // ⭐ Duplicate (Mükerrer İşlem) Önleme - Mevcut defterdeki işlemleri sayfalı çek
+      const existingSignatures = new Map();
+      try {
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: existingData, error: fetchErr } = await sb
+            .from('trades')
+            .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+            .eq('journal_id', journalId)
+            .order('trade_date', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, from + pageSize - 1);
+
+          if (fetchErr) {
+            throw fetchErr;
+          }
+
+          if (existingData && existingData.length > 0) {
+            existingData.forEach(function(et) {
+              const sig = (et.symbol || '').toUpperCase() + '|' +
+                          (et.direction || '').toUpperCase() + '|' +
+                          Number(et.entry_price || 0).toFixed(4) + '|' +
+                          (et.exit_price != null ? Number(et.exit_price).toFixed(4) : '') + '|' +
+                          Number(et.lot || 0).toFixed(4) + '|' +
+                          String(et.trade_date || '').substring(0, 10);
+              existingSignatures.set(sig, (existingSignatures.get(sig) || 0) + 1);
+            });
+            if (existingData.length < pageSize) {
+              hasMore = false;
+            } else {
+              from += pageSize;
+            }
+          } else {
+            hasMore = false;
+          }
+        }
+      } catch (fetchErr) {
+        wwLog.error('Mevcut işlemler sorgulanamadı:', fetchErr);
+        if (progressEl) progressEl.style.display = 'none';
+        if (badge) badge.innerHTML = badgeIcon('error');
+        isImporting = false;
+        showToast('Mevcut işlemler yüklenirken hata oluştu: ' + fetchErr.message + '. Yarım veriyle işleme devam edilmedi.', 'error');
+        return;
+      }
 
       if (csvPreviewData.isBrokerParsed) {
         const rows = csvPreviewData.parsed.rows || [];
+        const sigOccurrences = new Map();
 
         for (let i = 0; i < rows.length; i++) {
           const r = rows[i];
           if (!r.symbol || !r.direction || !r.lot || !r.entry_price) {
             log.push('<div>' + logTag('error') + ' — #' + (i + 1) + ' eksik alan</div>');
             failed++;
+            continue;
+          }
+
+          // Duplicate kontrolü
+          const sig = (r.symbol || '').toUpperCase() + '|' +
+                      (r.direction || '').toUpperCase() + '|' +
+                      Number(r.entry_price || 0).toFixed(4) + '|' +
+                      (r.exit_price != null ? Number(r.exit_price).toFixed(4) : '') + '|' +
+                      Number(r.lot || 0).toFixed(4) + '|' +
+                      String(r.trade_date || '').substring(0, 10);
+
+          if (existingSignatures.get(sig) > 0) {
+            existingSignatures.set(sig, existingSignatures.get(sig) - 1);
+            skippedDuplicates++;
+            log.push('<div>' + logTag('warning') + ' — #' + (i + 1) + ' ' + escapeHtml(r.symbol) + ' (' + (r.trade_date || '-') + ') mükerrer işlem, atlandı.</div>');
             continue;
           }
 
@@ -1486,6 +1578,17 @@ async function fileToCsvText(file) {
             pnl = diff * r.lot * multiplier;
           }
 
+          // Dosyadaki kaçıncı özdeş satır sayacı
+          const baseHash = (r.symbol || '').toUpperCase() + '|' +
+                           (r.direction || '').toUpperCase() + '|' +
+                           Number(r.entry_price || 0).toFixed(4) + '|' +
+                           (r.exit_price != null ? Number(r.exit_price).toFixed(4) : '') + '|' +
+                           Number(r.lot || 0).toFixed(4) + '|' +
+                           String(r.trade_date || '').trim();
+          const occ = (sigOccurrences.get(baseHash) || 0) + 1;
+          sigOccurrences.set(baseHash, occ);
+          const importHash = baseHash + '|' + (r.ticket || r.order_id || r.id || occ);
+
           trades.push({
             user_id: user.id,
             journal_id: journalId,
@@ -1501,6 +1604,7 @@ async function fileToCsvText(file) {
             notes: r.notes || 'CSV Import',
             multiplier: multiplier,
             pnl: pnl,
+            import_hash: importHash,
           });
         }
       }
@@ -1515,8 +1619,29 @@ async function fileToCsvText(file) {
           }
           const { error } = await sb.from('trades').insert(chunks[c]);
           if (error) {
-            log.push('<div>' + logTag('error') + ' — ' + escapeHtml(error.message) + '</div>');
-            failed += chunks[c].length;
+            // DB Unique Kısıtı İhlali veya Kısmi Hata Durumu (kod 23505 veya duplicate)
+            const isDuplicateError = error.code === '23505' || (error.message && error.message.toLowerCase().includes('duplicate'));
+            if (isDuplicateError) {
+              // Chunk'ı tek tek deneyip mükerrerleri atla, geçerlileri ekle
+              for (let itemIdx = 0; itemIdx < chunks[c].length; itemIdx++) {
+                const item = chunks[c][itemIdx];
+                const { error: singleErr } = await sb.from('trades').insert([item]);
+                if (singleErr) {
+                  if (singleErr.code === '23505' || (singleErr.message && singleErr.message.toLowerCase().includes('duplicate'))) {
+                    skippedDuplicates++;
+                    log.push('<div>' + logTag('warning') + ' — ' + escapeHtml(item.symbol) + ' (' + (item.trade_date || '-') + ') DB mükerrer kısıtı, atlandı.</div>');
+                  } else {
+                    log.push('<div>' + logTag('error') + ' — ' + escapeHtml(singleErr.message) + '</div>');
+                    failed++;
+                  }
+                } else {
+                  imported++;
+                }
+              }
+            } else {
+              log.push('<div>' + logTag('error') + ' — ' + escapeHtml(error.message) + '</div>');
+              failed += chunks[c].length;
+            }
           } else {
             imported += chunks[c].length;
           }
@@ -1527,9 +1652,29 @@ async function fileToCsvText(file) {
       if (progressEl) progressEl.style.display = 'none';
 
       if (imported > 0 && failed === 0) {
-        showToast(t('quickmodal.csv_import_success', { count: imported }), 'success');
+        try {
+          window.dispatchEvent(new CustomEvent('trade-saved'));
+        } catch (evErr) {}
+        if (typeof window.refreshOnboardingTasks === 'function') {
+          window.refreshOnboardingTasks();
+        }
+        if (skippedDuplicates > 0) {
+          showToast(t('quickmodal.csv_duplicates_skipped', { count: imported, skipped: skippedDuplicates }), 'success');
+        } else {
+          showToast(t('quickmodal.csv_import_success', { count: imported }), 'success');
+        }
       } else if (imported > 0) {
+        try {
+          window.dispatchEvent(new CustomEvent('trade-saved'));
+        } catch (evErr) {}
+        if (typeof window.refreshOnboardingTasks === 'function') {
+          window.refreshOnboardingTasks();
+        }
         showToast(t('quickmodal.csv_import_error', { success: imported, failed: failed }), 'error');
+      } else if (skippedDuplicates > 0 && failed === 0) {
+        if (statusText) statusText.textContent = t('quickmodal.csv_all_duplicates', { count: skippedDuplicates });
+        if (badge) badge.innerHTML = badgeIcon('warning');
+        showToast(t('quickmodal.csv_all_duplicates', { count: skippedDuplicates }), 'info');
       } else {
         showToast(t('quickmodal.error_general'), 'error');
       }
@@ -1802,6 +1947,13 @@ async function fileToCsvText(file) {
         wwLog.error('Insert hatası:', insertError);
         showError(t('quickmodal.error_save', { message: insertError.message }));
         return;
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent('trade-saved'));
+      } catch (evErr) {}
+      if (typeof window.refreshOnboardingTasks === 'function') {
+        window.refreshOnboardingTasks();
       }
 
       if (typeof showToast === 'function') {

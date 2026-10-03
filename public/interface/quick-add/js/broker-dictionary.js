@@ -160,11 +160,19 @@
       if (num > 20000 && num < 80000) return excelSerialToDate(num);
     }
 
+    // 1. Explicit offset check: has 'Z' or [+-]\d{2}(?::?\d{2})? at end
+    var offsetMatch = s.match(/(?:Z|[+-]\d{2}(?::?\d{2})?)$/i);
+
     // ⭐ ISO 8601 with optional milliseconds:
     //  2026-06-17T07:24:01.278 / 2026-06-17 07:24:01.278 / 2026.06.17 07:24:01
-    var m = s.match(/^(\d{4})[-.](\d{2})[-.](\d{2})[T ]?(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?/);
+    var m = s.match(/^(\d{4})[-.](\d{2})[-.](\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(.*)?$/);
     if (m) {
-      return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)));
+      if (offsetMatch) {
+        var parsedNative = new Date(s);
+        if (!isNaN(parsedNative.getTime())) return parsedNative;
+      }
+      // Saat dilimi yoksa kullanıcının yerel saati olarak yorumla (new Date(Y, M-1, D, H, m, s) yerel saatle oluşturur)
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
     }
 
     // Date only ISO-ish: 2026-06-17 / 2026.06.17
@@ -173,20 +181,35 @@
 
     // ⭐ DD/MM/YYYY or DD.MM.YYYY with time + optional milliseconds:
     //  17/06/2026 07:24:01.278
-    m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})[ T]?(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/);
+    m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(.*)?$/);
     if (m) {
       var d1 = +m[1], mo1 = +m[2];
       if (mo1 > 12 && d1 <= 12) { var t = d1; d1 = mo1; mo1 = t; }
-      return new Date(Date.UTC(+m[3], mo1 - 1, d1, +m[4], +m[5], +(m[6] || 0)));
+      if (offsetMatch) {
+        var isoStr = m[3] + '-' + String(mo1).padStart(2, '0') + '-' + String(d1).padStart(2, '0') + 'T' +
+                     String(+m[4]).padStart(2, '0') + ':' + String(+m[5]).padStart(2, '0') + ':' +
+                     String(+(m[6] || 0)).padStart(2, '0') + (m[7] || '');
+        var parsedOffset = new Date(isoStr);
+        if (!isNaN(parsedOffset.getTime())) return parsedOffset;
+      }
+      // Yerel saat olarak oluştur
+      return new Date(+m[3], mo1 - 1, d1, +m[4], +m[5], +(m[6] || 0));
     }
 
     // ⭐ DD/MM/YYYY or DD.MM.YYYY with time but WITHOUT seconds:
     //  17/06/2026 07:24
-    m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})[ T]?(\d{1,2}):(\d{2})$/);
+    m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})[ T](\d{1,2}):(\d{2})(.*)?$/);
     if (m) {
       var d2 = +m[1], mo2 = +m[2];
       if (mo2 > 12 && d2 <= 12) { var t2 = d2; d2 = mo2; mo2 = t2; }
-      return new Date(Date.UTC(+m[3], mo2 - 1, d2, +m[4], +m[5]));
+      if (offsetMatch) {
+        var isoStr2 = m[3] + '-' + String(mo2).padStart(2, '0') + '-' + String(d2).padStart(2, '0') + 'T' +
+                      String(+m[4]).padStart(2, '0') + ':' + String(+m[5]).padStart(2, '0') + ':00' + (m[6] || '');
+        var parsedOffset2 = new Date(isoStr2);
+        if (!isNaN(parsedOffset2.getTime())) return parsedOffset2;
+      }
+      // Yerel saat olarak oluştur
+      return new Date(+m[3], mo2 - 1, d2, +m[4], +m[5]);
     }
 
     // ⭐ DD/MM/YYYY or DD.MM.YYYY (date only)

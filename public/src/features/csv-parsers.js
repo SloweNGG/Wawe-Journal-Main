@@ -66,40 +66,49 @@ if (typeof window !== 'undefined') {
     return window.BrokerDetector.detect(headers).broker;
   };
 
-  // ⭐ Sağlam tarih formatlayıcı — her zaman YYYY-MM-DD döner, asla null değil
+  // ⭐ Sağlam tarih formatlayıcı — Saat varsa ISO UTC, saat yoksa YYYY-MM-DD döner
   function formatDateISO(date) {
-    // 1. Boş/undefined → bugün
-    if (!date) return new Date().toISOString().split('T')[0];
+    if (!date) return new Date().toISOString();
 
-    // 2. String → YYYY-MM-DD formatına sok
+    // 1. String
     if (typeof date === 'string') {
       var s = date.trim();
-      // Zaten ISO formatında mı?
-      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
-      // Değilse JS Date'e parse etmeyi dene
+      var hasOffset = /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(s);
+      var mIsoTime = s.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (mIsoTime) {
+        if (hasOffset) {
+          var parsedOffset = new Date(s);
+          if (!isNaN(parsedOffset.getTime())) return parsedOffset.toISOString();
+        }
+        var localDate = new Date(+mIsoTime[1], +mIsoTime[2] - 1, +mIsoTime[3], +mIsoTime[4], +mIsoTime[5], +(mIsoTime[6] || 0));
+        if (!isNaN(localDate.getTime())) return localDate.toISOString();
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
       var parsed = new Date(s);
-      if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0];
-      return new Date().toISOString().split('T')[0];
+      if (!isNaN(parsed.getTime())) return parsed.toISOString();
+      return new Date().toISOString();
     }
 
-    // 3. Date objesi
+    // 2. Date objesi
     if (date instanceof Date) {
-      if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
-      return new Date().toISOString().split('T')[0];
+      if (!isNaN(date.getTime())) {
+        // Eğer UTC saat 00:00:00 ise sadece tarih mi yoksa saat de var mı?
+        // Date objesi ISO string formatında güvenle döner
+        return date.toISOString();
+      }
+      return new Date().toISOString();
     }
 
-    // 4. Number (Excel serial vs.)
+    // 3. Number (Excel serial vs.)
     if (typeof date === 'number') {
-      // Excel epoch başlangıcı 1899-12-30
       var EXCEL_EPOCH = Date.UTC(1899, 11, 30);
       if (date > 20000 && date < 80000) {
         var ms = EXCEL_EPOCH + Math.round(date * 86400000);
-        return new Date(ms).toISOString().split('T')[0];
+        return new Date(ms).toISOString();
       }
     }
 
-    // 5. Bilinmeyen tip → bugün
-    return new Date().toISOString().split('T')[0];
+    return new Date().toISOString();
   }
 
   console.log('✅ csv-parsers.js (wrapper) yüklendi — ParserV2 aktif');

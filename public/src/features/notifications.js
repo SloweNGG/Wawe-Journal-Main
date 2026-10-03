@@ -178,10 +178,15 @@ export class NotificationManager {
       const { plan } = await getUserPlanSilent();
       if (plan !== 'premium') return;
       
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
       const { data: trades, error } = await sb
         .from('trades')
-        .select('*')
+        .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
         .eq('user_id', session.user.id)
+        .gte('trade_date', weekAgoStr)
         .order('trade_date', { ascending: false });
       
       if (error) return;

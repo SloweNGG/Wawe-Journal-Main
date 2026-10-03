@@ -543,20 +543,41 @@ window.loadNotifications = async function() {
     var combined = [];
 
     // 1. OverTrade risk uyarılarını topla
-    var otWarnings = window._activeOvertradeWarnings || [];
-    if ((!otWarnings || otWarnings.length === 0) && typeof window.checkOvertrade === 'function' && sb && user && user.id) {
+    var otWarnings = window._activeOvertradeWarnings;
+    if (otWarnings === undefined && typeof window.checkOvertrade === 'function' && sb && user && user.id) {
       try {
-        var { data: trades } = await sb
-          .from('trades')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('trade_date', { ascending: false });
-        if (trades) {
-          otWarnings = window.checkOvertrade(trades) || [];
-          window._activeOvertradeWarnings = otWarnings;
+        var isPrem = true;
+        if (typeof window.getUserPlanSilent === 'function') {
+          var planRes = await window.getUserPlanSilent();
+          if (planRes && planRes.plan !== 'premium') {
+            isPrem = false;
+          }
         }
-      } catch (otErr) {}
+        if (isPrem) {
+          var weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          var weekAgoStr = weekAgo.toISOString().split('T')[0];
+          var { data: trades } = await sb
+            .from('trades')
+            .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
+            .eq('user_id', user.id)
+            .gte('trade_date', weekAgoStr)
+            .order('trade_date', { ascending: false });
+          if (trades) {
+            otWarnings = window.checkOvertrade(trades) || [];
+          } else {
+            otWarnings = [];
+          }
+        } else {
+          otWarnings = [];
+        }
+        window._activeOvertradeWarnings = otWarnings;
+      } catch (otErr) {
+        otWarnings = [];
+        window._activeOvertradeWarnings = [];
+      }
     }
+    if (!otWarnings) otWarnings = [];
 
     if (Array.isArray(otWarnings)) {
       otWarnings.forEach(function(w) {

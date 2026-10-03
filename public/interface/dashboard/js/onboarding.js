@@ -9,6 +9,13 @@
 (function () {
   'use strict';
 
+  if (typeof window !== 'undefined' && window.__wj_onboarding_script_loaded) {
+    return;
+  }
+  if (typeof window !== 'undefined') {
+    window.__wj_onboarding_script_loaded = true;
+  }
+
   var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
 
   // Default Journal names & placeholders per language
@@ -89,7 +96,6 @@
     var modalHtml = `
       <div class="wj-onboarding-overlay" id="wj-onboarding-modal">
         <div class="wj-onboarding-card">
-          <div class="wj-onboarding-header-glow"></div>
           <div class="wj-wizard-progress-bar">
             <div class="wj-wizard-progress-fill" id="wj-progress-fill" style="width: 0%;"></div>
           </div>
@@ -116,12 +122,12 @@
                   <span class="wj-polyglot-title" id="wj-polyglot-text">Welcome</span>
                 </div>
 
-                <p class="wj-welcome-subtitle" id="wj-welcome-subtitle-p">
-                  <span class="wj-typewriter-text" id="wj-typewriter-target"></span><span class="wj-typewriter-cursor" id="wj-typewriter-cursor">|</span>
-                </p>
+                <div class="wj-welcome-subtitle">
+                  <p class="wj-welcome-subtitle-text" id="wj-polyglot-subtitle">Ready to elevate your trading discipline? We'll ask a few quick questions to personalize your workspace.</p>
+                </div>
 
-                <button class="wj-btn-primary" id="wj-hero-start-btn" style="padding: 0.9rem 2.2rem; font-size: 1.05rem;">
-                  <span data-i18n="onboarding.btn_start">${t('onboarding.btn_start', 'Başlayalım →')}</span>
+                <button class="wj-btn-primary" id="wj-hero-start-btn" style="padding: 0.9rem 2.5rem; font-size: 1.05rem;">
+                  <span>Get Started →</span>
                 </button>
               </div>
             </div>
@@ -341,78 +347,101 @@
   }
 
   // ------------------------------------------------------------
-  // 3 DİLLİ ANİMASYON DÖNGÜSÜ (Welcome -> Willkommen -> Hoş Geldiniz)
+  // 3 DİLLİ SENKRONİZE KARŞILAMA VE ANİMASYON DÖNGÜSÜ
+  // Sıralama: İngilizce -> Türkçe -> Almanca
   // ------------------------------------------------------------
   var polyglotTimer = null;
-  function startPolyglotGreeting() {
-    var el = document.getElementById('wj-polyglot-text');
-    if (!el) return;
-
-    var greetings = [
-      { text: 'Welcome', lang: 'English' },
-      { text: 'Willkommen', lang: 'Deutsch' },
-      { text: 'Hoş Geldiniz', lang: 'Türkçe' }
-    ];
-    var index = 0;
-
-    if (polyglotTimer) clearInterval(polyglotTimer);
-
-    polyglotTimer = setInterval(function () {
-      index = (index + 1) % greetings.length;
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(10px)';
-
-      setTimeout(function () {
-        el.textContent = greetings[index].text;
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-      }, 250);
-    }, 2200);
-  }
-
-  // ------------------------------------------------------------
-  // HIZLI YAZMA (TYPEWRITER) ANİMASYONU
-  // ------------------------------------------------------------
   var typewriterTimer = null;
-  function startSubtitleTypewriter() {
-    var targetEl = document.getElementById('wj-typewriter-target');
-    var cursorEl = document.getElementById('wj-typewriter-cursor');
-    if (!targetEl) return;
+  var polyglotActive = false;
 
+  var polyglotGreetings = [
+    {
+      title: 'Welcome',
+      subtitle: "Ready to elevate your trading discipline? We'll ask you a few quick questions to personalize your workspace."
+    },
+    {
+      title: 'Hoş Geldiniz',
+      subtitle: 'Trading disiplininizi zirveye taşımaya hazır mısınız? Alanınızı kişiselleştirmek için birkaç soru soracağız.'
+    },
+    {
+      title: 'Willkommen',
+      subtitle: 'Bereit, Ihre Trading-Disziplin auf ein neues Level zu heben? Wir stellen Ihnen ein paar kurze Fragen, um Ihren Bereich zu personalisieren.'
+    }
+  ];
+
+  function stopPolyglotCycle() {
+    polyglotActive = false;
+    if (polyglotTimer) {
+      clearTimeout(polyglotTimer);
+      polyglotTimer = null;
+    }
     if (typewriterTimer) {
       clearInterval(typewriterTimer);
       typewriterTimer = null;
     }
+  }
 
-    var fullText = t(
-      'onboarding.welcome_subtitle',
-      'Wawe Journal ile kaderini baştan yazmaya ve disiplinini zirveye taşımaya hazırmısın? Sana bir kaç soru sorucaz ve sana ait alanınını kişiselleştiricez.'
-    );
+  function startAnimatedPolyglotGreeting() {
+    stopPolyglotCycle();
+    polyglotActive = true;
+    showPolyglotSlide(0);
+  }
 
-    targetEl.textContent = '';
-    if (cursorEl) {
-      cursorEl.style.opacity = '1';
-      cursorEl.style.display = 'inline-block';
-    }
+  function showPolyglotSlide(index) {
+    if (!polyglotActive) return;
 
-    var charIndex = 0;
-    var speed = 16; // Hızlı, akıcı yazma hızı (16ms)
+    var titleEl = document.getElementById('wj-polyglot-text');
+    var subtitleEl = document.getElementById('wj-polyglot-subtitle');
+    if (!titleEl || !subtitleEl) return;
 
-    typewriterTimer = setInterval(function () {
-      if (charIndex < fullText.length) {
-        targetEl.textContent += fullText.charAt(charIndex);
-        charIndex++;
-      } else {
-        clearInterval(typewriterTimer);
-        typewriterTimer = null;
-        if (cursorEl) {
-          // Yazma tamamlandıktan sonra imleç hafifçe yanıp söner ve yumuşakça kaybolur
-          setTimeout(function () {
-            if (cursorEl) cursorEl.style.opacity = '0';
-          }, 1500);
-        }
-      }
-    }, speed);
+    var item = polyglotGreetings[index % polyglotGreetings.length];
+
+    // Önceki metinlerin yumuşakça yukarı süzülerek kaybolması (Fade & Slide Out)
+    titleEl.style.opacity = '0';
+    titleEl.style.transform = 'translateY(-10px)';
+    titleEl.style.filter = 'blur(4px)';
+
+    subtitleEl.style.opacity = '0';
+    subtitleEl.style.transform = 'translateY(-8px)';
+    subtitleEl.style.filter = 'blur(4px)';
+
+    setTimeout(function () {
+      if (!polyglotActive) return;
+
+      // İçeriği güncelle
+      titleEl.textContent = item.title;
+      subtitleEl.textContent = item.subtitle;
+
+      // Aşağıdan gelmek üzere konumlandır
+      titleEl.style.transition = 'none';
+      subtitleEl.style.transition = 'none';
+      titleEl.style.transform = 'translateY(12px)';
+      subtitleEl.style.transform = 'translateY(10px)';
+
+      // Yeniden yumuşakça parlat (Fade, Slide In & Unblur)
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (!polyglotActive) return;
+          titleEl.style.transition = 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease';
+          subtitleEl.style.transition = 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease';
+
+          titleEl.style.opacity = '1';
+          titleEl.style.transform = 'translateY(0)';
+          titleEl.style.filter = 'blur(0px)';
+
+          subtitleEl.style.opacity = '1';
+          subtitleEl.style.transform = 'translateY(0)';
+          subtitleEl.style.filter = 'blur(0px)';
+        });
+      });
+
+      // 3.4 saniye bekle, sonra sıradaki dile geç
+      polyglotTimer = setTimeout(function () {
+        if (!polyglotActive) return;
+        showPolyglotSlide(index + 1);
+      }, 3400);
+
+    }, 320);
   }
 
   function goToStep(stepIndex) {
@@ -433,14 +462,9 @@
     }
 
     if (stepIndex === 0) {
-      startPolyglotGreeting();
-      startSubtitleTypewriter();
+      startAnimatedPolyglotGreeting();
     } else {
-      if (polyglotTimer) clearInterval(polyglotTimer);
-      if (typewriterTimer) {
-        clearInterval(typewriterTimer);
-        typewriterTimer = null;
-      }
+      stopPolyglotCycle();
     }
 
     if (stepIndex === 4 && !state.hasCustomJournalName) {
@@ -623,11 +647,7 @@
         if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
       }, 400);
     }
-    if (polyglotTimer) clearInterval(polyglotTimer);
-    if (typewriterTimer) {
-      clearInterval(typewriterTimer);
-      typewriterTimer = null;
-    }
+    stopPolyglotCycle();
   }
 
   // Sihirbaz tamamlandığında hem localStorage'a hem DB'ye yaz
@@ -722,29 +742,29 @@
   function getTourSteps() {
     return [
       {
-        targetSelector: '.nav-links',
-        fallbackSelector: '#navbar-container',
+        targetSelector: '.nav-links, #nav-links, .nav-menu, #navbar-container',
+        fallbackSelector: '#navbar-container, nav, .nav',
         title: t('onboarding.tour_step1_title', 'Ana Menü & Sayfalar'),
         desc: t('onboarding.tour_step1_desc', 'Dashboard, İşlemler (Trades), Stratejiler ve Takvim sayfalarınıza buradan kolayca ulaşabilirsiniz.'),
         position: 'bottom'
       },
       {
-        targetSelector: '#nav-journal-switcher',
-        fallbackSelector: '.nav-right',
+        targetSelector: '#nav-journal-switcher, .journal-switcher, #journal-select',
+        fallbackSelector: '.nav-right, #navbar-container',
         title: t('onboarding.tour_step2_title', 'İşlem Günlüğü Seçici'),
         desc: t('onboarding.tour_step2_desc', 'Farklı stratejileriniz veya portföyleriniz için ayrı defterler oluşturabilir, buradan tek tıkla aralarında geçiş yapabilirsiniz.'),
         position: 'bottom'
       },
       {
-        targetSelector: '#stats-grid',
-        fallbackSelector: '.stats-grid',
+        targetSelector: '#stats-grid, .stats-grid, .stat-grid, #stats-skeleton, .page-header-actions, .time-filter-group, .calendar-main-card',
+        fallbackSelector: '.page-header, main',
         title: t('onboarding.tour_step3_title', 'Performans & İstatistikler'),
         desc: t('onboarding.tour_step3_desc', 'Toplam Kâr/Zarar (P&L), Win Rate oranınız ve işlem sonuçlarınız gerçek zamanlı olarak burada listelenir.'),
         position: 'bottom'
       },
       {
-        targetSelector: '#quick-add-fab',
-        fallbackSelector: '.quick-add-fab',
+        targetSelector: '#quick-add-fab, .quick-add-fab, #btn-new-journal, .btn-new-journal, #add-trade-btn, .header-actions',
+        fallbackSelector: 'body',
         title: t('onboarding.tour_step4_title', 'Hızlı İşlem Ekleme (+)'),
         desc: t('onboarding.tour_step4_desc', 'Bu butona tıklayarak manuel yeni trade ekleyebilir ya da borsa CSV dosyanızı sürükleyip anında içeri aktarabilirsiniz.'),
         position: 'top-left'
@@ -947,11 +967,29 @@
     if (!state.user) return;
 
     var uid = state.user.id;
-    var hasDismissed = localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true';
-    if (hasDismissed) {
-      var ex = document.getElementById('wj-tasks-floating-container');
-      if (ex) ex.remove();
-      return;
+    var isAccountDone = true;
+    var isJournalDone = true;
+    var isTradeDone = state.tradesCount > 0;
+    var isStrategyDone = state.strategiesCount > 0;
+
+    var completedTasks = [isAccountDone, isJournalDone, isTradeDone, isStrategyDone].filter(Boolean).length;
+    var pct = Math.round((completedTasks / 4) * 100);
+    var isAllCompleted = completedTasks === 4;
+
+    // ⭐ KURAL: Görevler tamamlanana kadar (completedTasks < 4) ASLA KALICI GİZLENEMEZ!
+    if (!isAllCompleted) {
+      // Eğer daha önce kaydedilmiş dismissed varsa temizle, görev bitmeden gizlenemez
+      try {
+        localStorage.removeItem('wj_tasks_dismissed_' + uid);
+      } catch (e) {}
+    } else {
+      // Yalnızca 4 görev de tamamlandıysa ve kullanıcı kapattıysa gizli tut
+      var hasDismissed = localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true';
+      if (hasDismissed) {
+        var ex = document.getElementById('wj-tasks-floating-container');
+        if (ex) ex.remove();
+        return;
+      }
     }
 
     var floatingWrapper = document.getElementById('wj-tasks-floating-container');
@@ -961,15 +999,6 @@
       floatingWrapper.className = 'wj-tasks-floating-container';
       document.body.appendChild(floatingWrapper);
     }
-
-    var isAccountDone = true;
-    var isJournalDone = true;
-    var isTradeDone = state.tradesCount > 0;
-    var isStrategyDone = state.strategiesCount > 0;
-
-    var completedTasks = [isAccountDone, isJournalDone, isTradeDone, isStrategyDone].filter(Boolean).length;
-    var pct = Math.round((completedTasks / 4) * 100);
-    var isAllCompleted = completedTasks === 4;
 
     var isMinimized = localStorage.getItem('wj_tasks_minimized_' + uid) === 'true';
     if (isMinimized) {
@@ -1134,17 +1163,27 @@
         if (fab) {
           fab.click();
         } else {
-          window.location.href = '/trades.html';
+          window.location.href = '/trades';
         }
       });
     }
 
-    // Strateji tıklandığında strateji sayfasını aç ve ekleme modalını çıkart
+    // Strateji tıklandığında strateji modalını aç veya strateji sayfasına git
     var strategyTask = document.getElementById('wj-task-strategy');
     if (strategyTask && !isStrategyDone) {
       strategyTask.addEventListener('click', function () {
-        sessionStorage.setItem('wj_from_onboarding', 'true');
-        window.location.href = '/strategies.html?action=new';
+        if (window.location.pathname.indexOf('strategies') !== -1) {
+          var openBtn = document.getElementById('open-add-strategy-modal') || document.getElementById('btn-add-strategy');
+          if (openBtn) {
+            openBtn.click();
+          } else {
+            var modal = document.getElementById('add-strategy-modal');
+            if (modal) modal.style.display = 'flex';
+          }
+        } else {
+          sessionStorage.setItem('wj_from_onboarding', 'true');
+          window.location.href = '/strategies?action=new';
+        }
       });
     }
 
@@ -1158,28 +1197,47 @@
 
   function dismissTasksWidget() {
     var floatingWrapper = document.getElementById('wj-tasks-floating-container');
-    if (floatingWrapper && state.user) {
+    if (!floatingWrapper || !state.user) return;
+
+    var isAccountDone = true;
+    var isJournalDone = true;
+    var isTradeDone = state.tradesCount > 0;
+    var isStrategyDone = state.strategiesCount > 0;
+    var isAllCompleted = (isAccountDone && isJournalDone && isTradeDone && isStrategyDone);
+
+    if (isAllCompleted) {
+      // 4 görev de başarıyla tamamlandı: Kalıcı kapat
       floatingWrapper.style.opacity = '0';
       floatingWrapper.style.transform = 'translateY(16px)';
       setTimeout(function () {
         localStorage.setItem('wj_tasks_dismissed_' + state.user.id, 'true');
         floatingWrapper.remove();
       }, 300);
+    } else {
+      // ⭐ Görevler tamamlanmadı: Asla yok olmasın! Sağ altta mini Pill (Hap) durumuna küçült
+      floatingWrapper.classList.add('minimized');
+      localStorage.setItem('wj_tasks_minimized_' + state.user.id, 'true');
     }
   }
 
   // ------------------------------------------------------------
   // 4. BAŞLANGIÇ YÖNETİMİ & KULLANICI KONTROLÜ
   // ------------------------------------------------------------
+  var isInitializing = false;
   async function initOnboarding() {
+    if (isInitializing) return;
     if (typeof window.requireAuth !== 'function') return;
 
+    isInitializing = true;
     var user = null;
     try {
       user = await window.requireAuth();
     } catch (e) { }
 
-    if (!user || !user.id || !window.sb) return;
+    if (!user || !user.id || !window.sb) {
+      isInitializing = false;
+      return;
+    }
     state.user = user;
     var uid = user.id;
 
@@ -1232,13 +1290,19 @@
       return;
     }
 
-    // 🚀 ADIM 2: Sihirbaz tamamlanmış ama rehber turu henüz yapılmamışsa -> TUR BAŞLAR!
+    // 🚀 ADIM 2: Sihirbaz tamamlanmış ama rehber turu henüz yapılmamışsa
     if (!isTourDone) {
-      wwLog.log('🚀 [Faz 2] Sihirbaz tamamlanmış, İnteraktif Rehber Turu başlatılıyor...');
-      setTimeout(function () {
-        startSpotlightTour();
-      }, 500);
-      return;
+      if (window.location.pathname === '/' || window.location.pathname.includes('dashboard')) {
+        wwLog.log('🚀 [Faz 2] Sihirbaz tamamlanmış, İnteraktif Rehber Turu başlatılıyor...');
+        setTimeout(function () {
+          startSpotlightTour();
+        }, 500);
+        return;
+      } else {
+        // Kullanıcı Dashboard dışındaki bir sayfadaysa (Trades, Strategies vs.) görevler kartı gösterilmeye devam eder!
+        renderTasksWidget();
+        return;
+      }
     }
 
     // 🚀 ADIM 3: Hem sihirbaz hem tur bittiyse -> SAĞ ALTTTAKİ GÖREVLER KARTI GÖSTERİLİR!
@@ -1248,14 +1312,39 @@
 
   // Yeni işlem kaydedildiğinde görevleri otomatik güncelle
   window.addEventListener('trade-saved', async function () {
-    state.tradesCount++;
+    await loadUserCounts();
     renderTasksWidget();
   });
 
-  // Global test ve reset fonksiyonları
+  // Yeni strateji kaydedildiğinde görevleri otomatik güncelle
+  window.addEventListener('strategy-saved', async function () {
+    await loadUserCounts();
+    renderTasksWidget();
+  });
+
+  // Sayfa odağı değiştiğinde (örneğin sekme veya sayfa geçişi) görevleri canlı güncelle
+  window.addEventListener('focus', async function () {
+    if (state.user) {
+      await loadUserCounts();
+      renderTasksWidget();
+    }
+  });
+
+  document.addEventListener('visibilitychange', async function () {
+    if (!document.hidden && state.user) {
+      await loadUserCounts();
+      renderTasksWidget();
+    }
+  });
+
+  // Global test, reset ve yenileme fonksiyonları
   window.startOnboardingTour = startSpotlightTour;
   window.startOnboardingWizard = openWizardModal;
   window.renderOnboardingTasks = renderTasksWidget;
+  window.refreshOnboardingTasks = async function () {
+    await loadUserCounts();
+    renderTasksWidget();
+  };
 
   // Test sıfırlama (Her şeyi, görevleri, stratejileri ve işlemleri sıfırlar ve 1. adımdan baştan açar)
   window.resetOnboarding = async function () {
@@ -1339,13 +1428,35 @@
     renderTasksWidget();
   };
 
+  // Sağlam poller ile Auth & Supabase hazır olduğunda başlat
+  function waitForAuthAndStart(maxAttempts, interval) {
+    maxAttempts = maxAttempts || 45;
+    interval = interval || 120;
+    var attempts = 0;
+    var poller = setInterval(function () {
+      attempts++;
+      var hasAuth = typeof window.requireAuth === 'function';
+      var hasSb = typeof window.sb !== 'undefined' && window.sb !== null;
+
+      if (hasAuth && hasSb) {
+        clearInterval(poller);
+        setTimeout(initOnboarding, 50);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(poller);
+        if (hasAuth) {
+          initOnboarding();
+        }
+      }
+    }, interval);
+  }
+
   // Başlat
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(initOnboarding, 400);
+      waitForAuthAndStart();
     });
   } else {
-    setTimeout(initOnboarding, 400);
+    waitForAuthAndStart();
   }
 
 })();

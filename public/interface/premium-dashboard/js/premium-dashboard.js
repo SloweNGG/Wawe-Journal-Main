@@ -218,19 +218,51 @@ async function loadPremiumData() {
       return;
     }
 
-    var { data, error } = await sb
-      .from('trades')
-      .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-      .eq('user_id', user.id)
-      .eq('journal_id', jid)
-      .order('trade_date', { ascending: true })
-      .limit(2000);
-    if (error) {
-      if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
-      return;
+    // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
+    var allTradesData = [];
+    if (typeof window !== 'undefined' && window.wwCache) {
+      var cachedTrades = window.wwCache.get('trades_premium', user.id, jid);
+      if (cachedTrades && cachedTrades.length > 0) {
+        allTradesData = cachedTrades;
+      }
     }
 
-    allTrades = data || [];
+    if (allTradesData.length === 0) {
+      var pageSize = 1000;
+      var from = 0;
+      var hasMore = true;
+
+      while (hasMore) {
+        var { data, error } = await sb
+          .from('trades')
+          .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+          .eq('user_id', user.id)
+          .eq('journal_id', jid)
+          .order('trade_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
+          return;
+        }
+
+        if (data && data.length > 0) {
+          allTradesData = allTradesData.concat(data);
+          if (data.length < pageSize) hasMore = false;
+          else from += pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // ⚡ Sonucu önbelleğe kaydet
+      if (typeof window !== 'undefined' && window.wwCache) {
+        window.wwCache.set('trades_premium', user.id, jid, allTradesData);
+      }
+    }
+
+    allTrades = allTradesData;
     currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
 
     var main2 = document.getElementById('main-content');

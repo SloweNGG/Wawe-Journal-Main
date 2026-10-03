@@ -1425,21 +1425,64 @@ async function deleteAllUserData() {
     var sb = getSb();
     if (!sb) throw new Error(t('common.db_connection_error'));
 
-    wwLog.log('🗑️ Trade verileri siliniyor...');
-    var tradesResult = await sb.from('trades').delete().eq('user_id', user.id);
-    if (tradesResult.error) throw tradesResult.error;
+    wwLog.log('🗑️ Kapsamlı kullanıcı verisi sıfırlama başlatılıyor...');
 
-    wwLog.log('🗑️ Backtest verileri siliniyor...');
+    // 1. Önce güvenli ve atomik RPC fonksiyonunu dene
+    var rpcDone = false;
     try {
-      var backtestResult = await sb.from('backtest_trades').delete().eq('user_id', user.id);
-      if (backtestResult.error) {
-        wwLog.warn('Backtest trades silinemedi:', backtestResult.error.message);
+      var rpcResult = await sb.rpc('reset_user_data');
+      if (!rpcResult.error) {
+        rpcDone = true;
+        wwLog.log('✅ reset_user_data RPC başarıyla tamamlandı');
+      } else {
+        wwLog.warn('reset_user_data RPC hatası, tablo bazlı silmeye geçiliyor:', rpcResult.error.message);
       }
-    } catch (btErr) {
-      wwLog.warn('Backtest tablosu yok olabilir:', btErr);
+    } catch (rpcErr) {
+      wwLog.warn('reset_user_data RPC çağrılamadı:', rpcErr);
     }
 
-    wwLog.log('✅ Veri silme tamamlandı');
+    // 2. RPC yoksa veya hata verdiyse tablo bazlı kapsamlı temizlik yap
+    if (!rpcDone) {
+      wwLog.log('🗑️ 1/5 Trade verileri siliniyor...');
+      var tradesResult = await sb.from('trades').delete().eq('user_id', user.id);
+      if (tradesResult.error) throw tradesResult.error;
+
+      wwLog.log('🗑️ 2/5 Backtest verileri siliniyor...');
+      try {
+        await sb.from('backtest_trades').delete().eq('user_id', user.id);
+      } catch (e) { wwLog.warn('backtest_trades silinemedi:', e); }
+
+      wwLog.log('🗑️ 3/5 Stratejiler siliniyor...');
+      try {
+        await sb.from('strategies').delete().eq('user_id', user.id);
+      } catch (e) { wwLog.warn('strategies silinemedi:', e); }
+
+      wwLog.log('🗑️ 4/5 Bildirimler ve onboarding siliniyor...');
+      try {
+        await sb.from('notifications').delete().eq('user_id', user.id);
+      } catch (e) { wwLog.warn('notifications silinemedi:', e); }
+      try {
+        await sb.from('user_onboarding').delete().eq('user_id', user.id);
+      } catch (e) { wwLog.warn('user_onboarding silinemedi:', e); }
+
+      wwLog.log('🗑️ 5/5 Defterler (özel günlükler) temizleniyor...');
+      try {
+        await sb.from('journals').delete().eq('user_id', user.id).eq('is_default', false);
+      } catch (e) { wwLog.warn('özel journals silinemedi:', e); }
+    }
+
+    // 3. Yerel tarayıcı önbelleklerini temizle
+    try {
+      localStorage.removeItem('ww_active_journal_id');
+      localStorage.removeItem('ww_overtrade_dismissed_v2');
+      localStorage.removeItem('ww_notifications');
+      sessionStorage.removeItem('ww_cached_profile');
+      sessionStorage.removeItem('ww_cached_profile_time');
+    } catch (cacheErr) {
+      wwLog.warn('Yerel depolama temizlenirken uyarı:', cacheErr);
+    }
+
+    wwLog.log('✅ Kapsamlı veri silme başarıyla tamamlandı');
     showMsg('✅ ' + t('settings.delete_success'), 'success');
 
     setTimeout(function() {

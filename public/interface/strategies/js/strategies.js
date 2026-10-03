@@ -870,6 +870,13 @@ async function confirmAddStrategy() {
     document.getElementById('add-strategy-modal').style.display = 'none';
     await loadAllData();
 
+    try {
+      window.dispatchEvent(new CustomEvent('strategy-saved'));
+    } catch (evErr) {}
+    if (typeof window.refreshOnboardingTasks === 'function') {
+      window.refreshOnboardingTasks();
+    }
+
     var urlParams = new URLSearchParams(window.location.search);
     var isFromOnboarding = urlParams.get('action') === 'new' || sessionStorage.getItem('wj_from_onboarding') === 'true';
     if (isFromOnboarding) {
@@ -880,8 +887,8 @@ async function confirmAddStrategy() {
         : 'Strateji başarıyla eklendi! Görev tamamlandı.';
       showToast(successMsg, 'success');
       setTimeout(function() {
-        window.location.href = '/dashboard.html';
-      }, 1000);
+        window.location.href = '/dashboard';
+      }, 1200);
     } else {
       showToast(i18n.t('strategies.added'));
     }
@@ -1423,13 +1430,54 @@ async function loadAllData() {
       .order('name');
     strategiesList = strategies || [];
 
-    var { data: trades } = await sb
-      .from('trades')
-      .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
-      .eq('user_id', currentUser.id)
-      .eq('journal_id', jid)
-      .limit(1000);
-    allTradesForStats = trades || [];
+    // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten al
+    var allTrades = [];
+    if (typeof window !== 'undefined' && window.wwCache) {
+      var cachedTrades = window.wwCache.get('trades_strategies', currentUser.id, jid);
+      if (cachedTrades && cachedTrades.length > 0) {
+        allTrades = cachedTrades;
+      }
+    }
+
+    if (allTrades.length === 0) {
+      var pageSize = 1000;
+      var from = 0;
+      var hasMore = true;
+
+      while (hasMore) {
+        var { data: tradesPage, error: tradesErr } = await sb
+          .from('trades')
+          .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
+          .eq('user_id', currentUser.id)
+          .eq('journal_id', jid)
+          .order('trade_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (tradesErr) {
+          console.error('Strateji işlemleri yüklenirken hata:', tradesErr);
+          if (typeof showToast === 'function') {
+            showToast('Strateji verileri yüklenemedi: ' + tradesErr.message, 'error');
+          }
+          allTrades = [];
+          break;
+        }
+
+        if (tradesPage && tradesPage.length > 0) {
+          allTrades = allTrades.concat(tradesPage);
+          if (tradesPage.length < pageSize) hasMore = false;
+          else from += pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // ⚡ Sonucu önbelleğe kaydet
+      if (typeof window !== 'undefined' && window.wwCache && allTrades.length > 0) {
+        window.wwCache.set('trades_strategies', currentUser.id, jid, allTrades);
+      }
+    }
+    allTradesForStats = allTrades;
 
     tradesByStrategy = {};
     allTradesForStats.forEach(function(t) {

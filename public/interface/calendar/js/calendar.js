@@ -900,23 +900,52 @@ async function loadCalendarTradesFromDB(userId) {
     return [];
   }
 
-  var { data, error } = await sb
-    .from('trades')
-    .select('id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl')
-    .eq('user_id', userId)
-    .eq('journal_id', jid)
-    .order('trade_date', { ascending: true })
-    .limit(2000);
-
-  if (error) {
-    if (typeof showToast === 'function') {
-      var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
-      showToast(errMsg + error.message, 'error');
+  // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
+  if (typeof window !== 'undefined' && window.wwCache) {
+    var cachedTrades = window.wwCache.get('trades_calendar', userId, jid);
+    if (cachedTrades && cachedTrades.length > 0) {
+      return cachedTrades;
     }
-    return [];
   }
 
-  return data || [];
+  var allTrades = [];
+  var pageSize = 1000;
+  var from = 0;
+  var hasMore = true;
+
+  while (hasMore) {
+    var { data: pageData, error } = await sb
+      .from('trades')
+      .select('id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl')
+      .eq('user_id', userId)
+      .eq('journal_id', jid)
+      .order('trade_date', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      if (typeof showToast === 'function') {
+        var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
+        showToast(errMsg + error.message, 'error');
+      }
+      return [];
+    }
+
+    if (pageData && pageData.length > 0) {
+      allTrades = allTrades.concat(pageData);
+      if (pageData.length < pageSize) hasMore = false;
+      else from += pageSize;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  // ⚡ Sonucu önbelleğe kaydet
+  if (typeof window !== 'undefined' && window.wwCache) {
+    window.wwCache.set('trades_calendar', userId, jid, allTrades);
+  }
+
+  return allTrades;
 }
 
 // ============================================================

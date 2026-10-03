@@ -955,28 +955,68 @@ import Layout from '../layouts/Layout.astro';
     function validateAndFormatDate(dateString, rowNumber) {
       if (!dateString || !dateString.trim()) {
         importLogs.push('⚠️ Satır ' + (rowNumber || '?') + ': Tarih boş, bugün kullanıldı.');
-        return new Date().toISOString().split('T')[0];
+        return new Date().toISOString();
       }
       dateString = dateString.trim();
-      var d = new Date(dateString);
-      if (!isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        return d.toISOString().split('T')[0];
+
+      // Açık saat dilimi ofseti kontrolü (Z veya +03:00 / -05:00 vs.)
+      var hasOffset = /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(dateString);
+
+      // 1. Standart ISO/SQL formatında saatli mi? örn: 2026-01-01 09:17:00 veya 2026-01-01T09:17:00
+      var mIsoTime = dateString.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (mIsoTime) {
+        if (hasOffset) {
+          var parsedWithOffset = new Date(dateString);
+          if (!isNaN(parsedWithOffset.getTime())) return parsedWithOffset.toISOString();
+        }
+        // Saat dilimi yoksa tarayıcının yerel saat dilimi kabul edip UTC'ye çevir
+        var localD = new Date(+mIsoTime[1], +mIsoTime[2] - 1, +mIsoTime[3], +mIsoTime[4], +mIsoTime[5], +(mIsoTime[6] || 0));
+        if (!isNaN(localD.getTime())) return localD.toISOString();
       }
 
-      var p = dateString.split('.');
-      if (p.length === 3) {
-        var dmy = new Date(p[2] + '-' + p[1] + '-' + p[0]);
-        if (!isNaN(dmy.getTime())) return dmy.toISOString().split('T')[0];
+      // 2. Yalnızca tarih YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
       }
-      p = dateString.split('/');
-      if (p.length === 3) {
-        var mdy = new Date(p[2] + '-' + p[0] + '-' + p[1]);
-        if (!isNaN(mdy.getTime())) return mdy.toISOString().split('T')[0];
-        var dmy2 = new Date(p[2] + '-' + p[1] + '-' + p[0]);
-        if (!isNaN(dmy2.getTime())) return dmy2.toISOString().split('T')[0];
+
+      // 3. DD.MM.YYYY veya DD/MM/YYYY saatli
+      var mDmyTime = dateString.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (mDmyTime) {
+        var d1 = +mDmyTime[1], mo1 = +mDmyTime[2];
+        if (mo1 > 12 && d1 <= 12) { var tmp = d1; d1 = mo1; mo1 = tmp; }
+        if (hasOffset) {
+          var isoStr = mDmyTime[3] + '-' + String(mo1).padStart(2, '0') + '-' + String(d1).padStart(2, '0') + 'T' +
+                       mDmyTime[4].padStart(2, '0') + ':' + mDmyTime[5].padStart(2, '0') + ':' +
+                       (mDmyTime[6] || '00').padStart(2, '0') + (dateString.match(/(?:Z|[+-]\d{2}(?::?\d{2})?)$/i)?.[0] || '');
+          var parsedOffset = new Date(isoStr);
+          if (!isNaN(parsedOffset.getTime())) return parsedOffset.toISOString();
+        }
+        var localDmy = new Date(+mDmyTime[3], mo1 - 1, d1, +mDmyTime[4], +mDmyTime[5], +(mDmyTime[6] || 0));
+        if (!isNaN(localDmy.getTime())) return localDmy.toISOString();
       }
+
+      // 4. DD.MM.YYYY veya DD/MM/YYYY sadece tarih
+      var pDot = dateString.split('.');
+      if (pDot.length === 3) {
+        return pDot[2] + '-' + pDot[1].padStart(2, '0') + '-' + pDot[0].padStart(2, '0');
+      }
+      var pSlash = dateString.split('/');
+      if (pSlash.length === 3) {
+        var p0 = +pSlash[0], p1 = +pSlash[1], p2 = pSlash[2];
+        if (p0 > 12 && p1 <= 12) {
+          return p2 + '-' + String(p1).padStart(2, '0') + '-' + String(p0).padStart(2, '0');
+        }
+        return p2 + '-' + String(p0).padStart(2, '0') + '-' + String(p1).padStart(2, '0');
+      }
+
+      // 5. JavaScript Date parsing fallback
+      var d = new Date(dateString);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString();
+      }
+
       importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + dateString + '", bugün kullanıldı.');
-      return new Date().toISOString().split('T')[0];
+      return new Date().toISOString();
     }
 
     function renderImportLog() {
@@ -1009,7 +1049,57 @@ import Layout from '../layouts/Layout.astro';
         }
 
         var headers = lines[0].split(',').map(function(h) { return h.trim().toLowerCase(); });
-        var imported = 0, failed = 0;
+        var imported = 0, failed = 0, skippedDuplicates = 0;
+        var activeJournalId = window.journal ? window.journal.getActiveJournalId() : null;
+
+        // ⭐ Duplicate (Mükerrer İşlem) Önleme - Mevcut defterdeki işlemleri sayfalı çek
+        var existingSignatures = new Map();
+        try {
+          var from = 0;
+          var pageSize = 1000;
+          var hasMore = true;
+
+          while (hasMore) {
+            var { data: existingData, error: fetchErr } = await sb
+              .from('trades')
+              .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+              .eq('journal_id', activeJournalId)
+              .order('trade_date', { ascending: false })
+              .order('id', { ascending: true })
+              .range(from, from + pageSize - 1);
+
+            if (fetchErr) {
+              throw fetchErr;
+            }
+
+            if (existingData && existingData.length > 0) {
+              existingData.forEach(function(et) {
+                var sig = (et.symbol || '').toUpperCase() + '|' +
+                          (et.direction || '').toUpperCase() + '|' +
+                          Number(et.entry_price || 0).toFixed(4) + '|' +
+                          (et.exit_price != null ? Number(et.exit_price).toFixed(4) : '') + '|' +
+                          Number(et.lot || 0).toFixed(4) + '|' +
+                          String(et.trade_date || '').substring(0, 10);
+                existingSignatures.set(sig, (existingSignatures.get(sig) || 0) + 1);
+              });
+              if (existingData.length < pageSize) {
+                hasMore = false;
+              } else {
+                from += pageSize;
+              }
+            } else {
+              hasMore = false;
+            }
+          }
+        } catch (fetchErr) {
+          console.error('Mevcut işlemler sorgulanamadı:', fetchErr);
+          if (progressDiv) progressDiv.style.display = 'none';
+          showToast('Mevcut işlemler yüklenirken hata oluştu: ' + fetchErr.message + '. Yarım veriyle işleme devam edilmedi.', 'error');
+          return;
+        }
+
+        var tradesToInsert = [];
+        var sigOccurrences = new Map();
 
         for (var i = 1; i < lines.length; i++) {
           var values = lines[i].split(',');
@@ -1041,19 +1131,68 @@ import Layout from '../layouts/Layout.astro';
           else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
           else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + direction + '", SHORT olarak kaydedildi.');
 
-          var trade = {
-            user_id: currentUser.id, journal_id: window.journal.getActiveJournalId(), symbol: symbol, direction: finalDir,
+          // Duplicate kontrolü
+          var sig = symbol + '|' + finalDir + '|' +
+                    Number(entry || 0).toFixed(4) + '|' +
+                    (exit != null ? Number(exit).toFixed(4) : '') + '|' +
+                    Number(lot || 0).toFixed(4) + '|' +
+                    String(tradeDate || '').substring(0, 10);
+
+          if (existingSignatures.get(sig) > 0) {
+            existingSignatures.set(sig, existingSignatures.get(sig) - 1);
+            skippedDuplicates++;
+            importLogs.push('ℹ️ Satır ' + i + ': ' + symbol + ' (' + tradeDate + ') mükerrer işlem, atlandı.');
+            continue;
+          }
+
+          var baseHash = symbol + '|' + finalDir + '|' +
+                         Number(entry || 0).toFixed(4) + '|' +
+                         (exit != null ? Number(exit).toFixed(4) : '') + '|' +
+                         Number(lot || 0).toFixed(4) + '|' +
+                         String(tradeDate || '').trim();
+          var occ = (sigOccurrences.get(baseHash) || 0) + 1;
+          sigOccurrences.set(baseHash, occ);
+          var ticket = row.ticket || row.order_id || row.id || occ;
+          var importHash = baseHash + '|' + ticket;
+
+          tradesToInsert.push({
+            user_id: currentUser.id, journal_id: activeJournalId, symbol: symbol, direction: finalDir,
             instrument: 'forex', lot: lot, entry_price: entry,
             exit_price: exit, trade_date: tradeDate,
-            notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR')
-          };
+            notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR'),
+            import_hash: importHash
+          });
+        }
 
-          var { error } = await sb.from('trades').insert([trade]);
-          if (error) { 
-            importLogs.push('❌ Satır ' + i + ': ' + error.message); 
-            failed++; 
+        // 200'lük chunk'lar halinde toplu insert
+        var CHUNK_SIZE = 200;
+        for (var cStart = 0; cStart < tradesToInsert.length; cStart += CHUNK_SIZE) {
+          var chunk = tradesToInsert.slice(cStart, cStart + CHUNK_SIZE);
+          var { error } = await sb.from('trades').insert(chunk);
+          if (error) {
+            var isDuplicateError = error.code === '23505' || (error.message && error.message.toLowerCase().includes('duplicate'));
+            if (isDuplicateError) {
+              for (var cItem = 0; cItem < chunk.length; cItem++) {
+                var singleItem = chunk[cItem];
+                var { error: sErr } = await sb.from('trades').insert([singleItem]);
+                if (sErr) {
+                  if (sErr.code === '23505' || (sErr.message && sErr.message.toLowerCase().includes('duplicate'))) {
+                    skippedDuplicates++;
+                    importLogs.push('ℹ️ ' + singleItem.symbol + ' (' + singleItem.trade_date + ') DB mükerrer kısıtı, atlandı.');
+                  } else {
+                    importLogs.push('❌ ' + singleItem.symbol + ': ' + sErr.message);
+                    failed++;
+                  }
+                } else {
+                  imported++;
+                }
+              }
+            } else {
+              importLogs.push('❌ Toplu kayıt hatası: ' + error.message);
+              failed += chunk.length;
+            }
           } else {
-            imported++;
+            imported += chunk.length;
           }
         }
 
@@ -1061,9 +1200,17 @@ import Layout from '../layouts/Layout.astro';
         if (progressDiv) progressDiv.style.display = 'none';
         if (csvFileInput) csvFileInput.value = '';
 
-        var msg = imported + ' işlem içe aktarıldı' + (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
-        showToast(msg, failed > 0 ? 'error' : 'success');
-        if (imported > 0) setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
+        if (imported > 0) {
+          var msg = imported + ' işlem içe aktarıldı' + 
+                    (skippedDuplicates > 0 ? ' (' + skippedDuplicates + ' mükerrer atlandı)' : '') + 
+                    (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
+          showToast(msg, failed > 0 ? 'error' : 'success');
+          setTimeout(function() { window.location.href = 'trades.html'; }, 2000);
+        } else if (skippedDuplicates > 0 && failed === 0) {
+          showToast('Tüm işlemler (' + skippedDuplicates + ') zaten kayıtlı! Mükerrer kayıt oluşturulmadı.', 'info');
+        } else {
+          showToast('İşlem eklenemedi' + (failed > 0 ? ' (' + failed + ' başarısız)' : '') + '.', 'error');
+        }
       } catch(e) {
         if (progressDiv) progressDiv.style.display = 'none';
         showToast('CSV okuma hatası: ' + e.message, 'error');
@@ -1119,7 +1266,54 @@ import Layout from '../layouts/Layout.astro';
 
         var trades = [];
         var errors = [];
+        var skippedDuplicates = 0;
         var defaultDate = new Date().toISOString().split('T')[0];
+        var activeJournalId = window.journal ? window.journal.getActiveJournalId() : null;
+
+        // Duplicate kontrolü için mevcut işlemleri sayfalı al
+        var existingSignatures = new Map();
+        try {
+          var from = 0;
+          var pageSize = 1000;
+          var hasMore = true;
+
+          while (hasMore) {
+            var { data: existingData, error: fetchErr } = await sb
+              .from('trades')
+              .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+              .eq('journal_id', activeJournalId)
+              .order('trade_date', { ascending: false })
+              .order('id', { ascending: true })
+              .range(from, from + pageSize - 1);
+
+            if (fetchErr) throw fetchErr;
+
+            if (existingData && existingData.length > 0) {
+              existingData.forEach(function(et) {
+                var sig = (et.symbol || '').toUpperCase() + '|' +
+                          (et.direction || '').toUpperCase() + '|' +
+                          Number(et.entry_price || 0).toFixed(4) + '|' +
+                          (et.exit_price != null ? Number(et.exit_price).toFixed(4) : '') + '|' +
+                          Number(et.lot || 0).toFixed(4) + '|' +
+                          String(et.trade_date || '').substring(0, 10);
+                existingSignatures.set(sig, (existingSignatures.get(sig) || 0) + 1);
+              });
+              if (existingData.length < pageSize) {
+                hasMore = false;
+              } else {
+                from += pageSize;
+              }
+            } else {
+              hasMore = false;
+            }
+          }
+        } catch (fetchErr) {
+          console.error('Mevcut işlemler sorgulanamadı:', fetchErr);
+          showToast('Mevcut işlemler yüklenirken hata oluştu: ' + fetchErr.message + '. Yarım veriyle işleme devam edilmedi.', 'error');
+          return;
+        }
+
+        var sigOccurrences = new Map();
 
         for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           var parts = lines[lineIdx].split(',').map(function(p) { return p.trim(); });
@@ -1144,9 +1338,31 @@ import Layout from '../layouts/Layout.astro';
           var finalDir = 'SHORT';
           if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
 
+          // Duplicate kontrolü
+          var sig = symbol + '|' + finalDir + '|' +
+                    Number(entry || 0).toFixed(4) + '|' +
+                    (exit != null ? Number(exit).toFixed(4) : '') + '|' +
+                    Number(lot || 0).toFixed(4) + '|' +
+                    String(date || '').substring(0, 10);
+
+          if (existingSignatures.get(sig) > 0) {
+            existingSignatures.set(sig, existingSignatures.get(sig) - 1);
+            skippedDuplicates++;
+            continue;
+          }
+
+          var baseHash = symbol + '|' + finalDir + '|' +
+                         Number(entry || 0).toFixed(4) + '|' +
+                         (exit != null ? Number(exit).toFixed(4) : '') + '|' +
+                         Number(lot || 0).toFixed(4) + '|' +
+                         String(date || '').trim();
+          var occ = (sigOccurrences.get(baseHash) || 0) + 1;
+          sigOccurrences.set(baseHash, occ);
+          var importHash = baseHash + '|' + occ;
+
           trades.push({
             user_id: currentUser.id,
-            journal_id: window.journal.getActiveJournalId(),
+            journal_id: activeJournalId,
             symbol: symbol,
             direction: finalDir,
             instrument: 'forex',
@@ -1155,7 +1371,8 @@ import Layout from '../layouts/Layout.astro';
             exit_price: exit,
             trade_date: date,
             notes: notes || null,
-            multiplier: 100000
+            multiplier: 100000,
+            import_hash: importHash
           });
         }
 
@@ -1175,7 +1392,11 @@ import Layout from '../layouts/Layout.astro';
         }
 
         if (trades.length === 0) {
-          showToast('Geçerli işlem bulunamadı!', 'error');
+          if (skippedDuplicates > 0) {
+            showToast('Tüm işlemler (' + skippedDuplicates + ') zaten kayıtlı! Mükerrer kayıt eklenmedi.', 'info');
+          } else {
+            showToast('Geçerli işlem bulunamadı!', 'error');
+          }
           return;
         }
 
@@ -1188,17 +1409,36 @@ import Layout from '../layouts/Layout.astro';
 
         var success = 0;
         var failed = 0;
+        var CHUNK_SIZE = 200;
 
-        for (var tIdx = 0; tIdx < trades.length; tIdx++) {
-          var trade = trades[tIdx];
-          var { error } = await sb.from('trades').insert([trade]);
+        for (var tIdx = 0; tIdx < trades.length; tIdx += CHUNK_SIZE) {
+          var chunk = trades.slice(tIdx, tIdx + CHUNK_SIZE);
+          var { error } = await sb.from('trades').insert(chunk);
           if (error) {
-            failed++;
-            errors.push('Satır ' + (tIdx+1) + ': ' + error.message);
+            var isDuplicateError = error.code === '23505' || (error.message && error.message.toLowerCase().includes('duplicate'));
+            if (isDuplicateError) {
+              for (var cItem = 0; cItem < chunk.length; cItem++) {
+                var singleItem = chunk[cItem];
+                var { error: sErr } = await sb.from('trades').insert([singleItem]);
+                if (sErr) {
+                  if (sErr.code === '23505' || (sErr.message && sErr.message.toLowerCase().includes('duplicate'))) {
+                    skippedDuplicates++;
+                  } else {
+                    failed++;
+                    errors.push(singleItem.symbol + ': ' + sErr.message);
+                  }
+                } else {
+                  success++;
+                }
+              }
+            } else {
+              failed += chunk.length;
+              errors.push(error.message);
+            }
           } else {
-            success++;
+            success += chunk.length;
           }
-          var progress = ((tIdx + 1) / trades.length) * 100;
+          var progress = (Math.min(tIdx + CHUNK_SIZE, trades.length) / trades.length) * 100;
           if (bulkFill) bulkFill.style.width = progress + '%';
           if (bulkStatus) bulkStatus.textContent = success + ' / ' + trades.length + ' işlem eklendi (' + failed + ' başarısız)';
         }
