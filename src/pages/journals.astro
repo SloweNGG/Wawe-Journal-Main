@@ -78,6 +78,170 @@ import Layout from '../layouts/Layout.astro';
         <!-- JS fills -->
       </div>
     </div>
+
+    <!-- ⭐ PROP FIRM MODU TOGGLE -->
+    <div class="journal-prop-toggle-card">
+      <div class="journal-prop-toggle-info">
+        <div>
+          <div class="journal-prop-toggle-title">
+            <span data-i18n="prop.mode">Prop Firm Modu</span>
+            <span class="journal-prop-tag" data-i18n="prop.evaluation">EVALUATION</span>
+          </div>
+          <div class="journal-prop-toggle-sub" data-i18n="prop.toggle_sub">Kuralları, günlük kaybı ve hedefleri otomatik takip et</div>
+        </div>
+      </div>
+      <label class="journal-switch" for="journal-prop-toggle">
+        <input type="checkbox" id="journal-prop-toggle">
+        <span class="journal-slider"></span>
+      </label>
+    </div>
+
+    <!-- Quota Warning if limit reached -->
+    <div id="prop-quota-warning" class="journal-prop-alert danger" style="display:none;">
+      <div>
+        <strong data-i18n="prop.quota_title">Prop Hesabı Kotası Doldu</strong>
+        <div id="prop-quota-desc" style="font-size:0.75rem;margin-top:2px;" data-i18n="prop.quota_desc">Free planda 1 aktif prop hesabı oluşturabilirsiniz. Daha fazla hesap için Premium'a yükseltin.</div>
+        <a href="/settings.html#panel-plan" style="color:#fff;text-decoration:underline;font-weight:600;font-size:0.75rem;display:inline-block;margin-top:4px;" data-i18n="prop.upgrade_plan">Planı Yükselt →</a>
+      </div>
+    </div>
+
+    <!-- Prop Settings Section (shown when toggle is on) -->
+    <div id="journal-prop-section" class="journal-prop-section">
+      <input type="hidden" id="prop-account-id" value="">
+
+      <!-- Şablon & Faz -->
+      <div class="journal-prop-row">
+        <div class="journal-field" style="margin-bottom:0;">
+          <label data-i18n="prop.firm_template">Prop Firması / Şablon</label>
+          <select id="prop-template-select" class="journal-prop-select">
+            <!-- JS fills from PropTemplates -->
+          </select>
+        </div>
+        <div class="journal-field" style="margin-bottom:0;">
+          <label data-i18n="prop.phase">Aşama / Faz</label>
+          <select id="prop-phase-select" class="journal-prop-select">
+            <!-- JS fills based on template -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Bakiye & Başlangıç Tarihi -->
+      <div class="journal-prop-row">
+        <div class="journal-field" style="margin-bottom:0;">
+          <label data-i18n="prop.starting_balance">Başlangıç Bakiyesi ($)</label>
+          <select id="prop-balance-select" class="journal-prop-select">
+            <option value="5000">5.000 $</option>
+            <option value="10000">10.000 $</option>
+            <option value="25000">25.000 $</option>
+            <option value="50000">50.000 $</option>
+            <option value="100000" selected>100.000 $</option>
+            <option value="200000">200.000 $</option>
+            <option value="custom" data-i18n="prop.custom_amount">Özel Tutar...</option>
+          </select>
+          <input type="number" id="prop-custom-balance" class="journal-prop-input" placeholder="Örn: 150000" data-i18n-placeholder="prop.custom_placeholder" style="display:none;margin-top:6px;" min="100">
+        </div>
+        <div class="journal-field" style="margin-bottom:0;">
+          <label data-i18n="prop.start_date">Başlangıç Tarihi</label>
+          <input type="date" id="prop-start-date" class="journal-prop-input">
+          <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.start_date_hint">Challenge'a başladığın günü gir (öncesindeki işlemler sayılmaz).</div>
+        </div>
+      </div>
+
+      <!-- Reset Saat Dilimi (reset_tz) -->
+      <div class="journal-field" style="margin-bottom:0.75rem;">
+        <label data-i18n="prop.reset_tz">Gün Sonu / Reset Saat Dilimi</label>
+        <select id="prop-reset-tz-select" class="journal-prop-select">
+          <option value="">-- Saat Dilimi Seçiniz / Select Timezone --</option>
+          <option value="Europe/Prague">Europe/Prague (FTMO — CET/CEST Gece Yarısı)</option>
+          <option value="Etc/GMT-3">Etc/GMT-3 (FundingPips — UTC+3 Gece Yarısı)</option>
+          <option value="Europe/Athens">Europe/Athens (FundedNext — Öneri: MT5 Sunucu Saati)</option>
+          <option value="UTC">UTC (Evrensel Gece Yarısı)</option>
+          <option value="America/New_York">America/New_York (ABD Doğu Saati)</option>
+          <option value="Europe/London">Europe/London (GMT/BST)</option>
+          <option value="Asia/Dubai">Asia/Dubai (GST - UTC+4)</option>
+        </select>
+      </div>
+
+      <!-- Broker Saat Kaydırma (time_shift_hours) -->
+      <div class="journal-field" style="margin-bottom:0.75rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <label data-i18n="prop.time_shift_hours" style="margin-bottom:0;">Broker Saat Kaydırma (time_shift_hours)</label>
+          <span id="prop-time-shift-display" style="font-weight:600;font-size:0.8rem;color:var(--accent);">0 saat</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <input type="range" id="prop-time-shift" min="-14" max="14" step="0.5" value="0" class="journal-prop-slider" style="flex:1;">
+          <input type="number" id="prop-time-shift-num" min="-14" max="14" step="0.5" value="0" class="journal-prop-input" style="width:65px;text-align:center;padding:0.35rem 0.5rem;">
+        </div>
+        <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.time_shift_hint">Broker sunucu saatiniz ile yerel veya reset saati arasındaki farkı ayarlayın (-14 ile +14).</div>
+        
+        <!-- Son 3 işlem saat önizlemesi -->
+        <div id="prop-time-shift-preview" class="journal-prop-time-preview">
+          <div class="journal-prop-time-preview-title" data-i18n="prop.time_shift_preview_title">Son 3 işlemin saati bu ayarla şöyle görünüyor:</div>
+          <div id="prop-time-shift-preview-list" class="journal-prop-time-preview-list">
+            <div data-i18n="prop.time_shift_no_trades">Henüz işlem bulunmuyor (örnek önizleme: 14:00 ➔ 16:00 UTC+2)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Doğrulanmadı Uyarısı (verified: false) -->
+      <div id="prop-unverified-alert" class="journal-prop-alert warning" style="display:none;margin-bottom:0.75rem;">
+        <span data-i18n="prop.unverified_warning">Bu fazın kuralları doğrulanmadı, firmanın sitesinden kontrol et.</span>
+      </div>
+
+      <!-- FundedNext MT5 Server Timezone Uyarısı -->
+      <div id="prop-tz-required-alert" class="journal-prop-alert warning" style="display:none;margin-bottom:0.75rem;">
+        <span data-i18n="prop.tz_required_warning">Saat Dilimi Seçimi Zorunludur: Bu firma günü broker server saatine göre bitirir. MT5 hesabınızın server saat dilimini seçiniz (ör. Europe/Athens).</span>
+      </div>
+
+      <!-- Equity Bazlı Günlük/Max Kayıp Tahmini Uyarısı -->
+      <div id="prop-estimated-alert" class="journal-prop-alert info" style="display:none;margin-bottom:0.75rem;">
+        <span data-i18n="prop.estimated_warning">Tahmini Kural Uyarısı: Bu firmanın günlük veya maksimum kayıp kuralı equity (açık işlem) bazlıdır; Wawe Journal'da açık pozisyon tutulmadığından kapanmış işlemlerle tahmini hesaplanacaktır.</span>
+      </div>
+
+      <!-- Gelişmiş Kural Ayarları (Tüm Şablonlar İçin Özelleştirilebilir) -->
+      <details id="prop-advanced-rules-box" class="journal-custom-rules-box" style="margin-top:0.75rem;cursor:pointer;">
+        <summary class="journal-custom-rules-header" style="display:flex;justify-content:space-between;align-items:center;user-select:none;">
+          <span data-i18n="prop.advanced_rules">Gelişmiş Kural Ayarları</span>
+          <span id="prop-customized-badge" style="display:none;font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.2);color:var(--accent);border:1px solid rgba(124,109,250,0.3);" data-i18n="prop.customized">Özelleştirildi</span>
+        </summary>
+        <div class="journal-custom-grid" style="margin-top:0.75rem;cursor:default;">
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.profit_target">Kâr Hedefi (%)</label>
+            <input type="number" id="prop-rule-target" class="journal-prop-input" value="10" step="0.5" min="0">
+          </div>
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.daily_loss">Günlük Kayıp (%)</label>
+            <input type="number" id="prop-rule-daily" class="journal-prop-input" value="5" step="0.5" min="0">
+          </div>
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.daily_loss_base">Günlük Kayıp Tabanı</label>
+            <select id="prop-rule-daily-base" class="journal-prop-select">
+              <option value="initial_balance" data-i18n="prop.base_initial">Başlangıç Bakiyesi</option>
+              <option value="day_start_balance" data-i18n="prop.base_day_start">Gün Başı Bakiyesi</option>
+            </select>
+          </div>
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.max_loss">Maksimum Kayıp (%)</label>
+            <input type="number" id="prop-rule-max" class="journal-prop-input" value="10" step="0.5" min="0">
+          </div>
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.max_loss_type">Maksimum Kayıp Tipi</label>
+            <select id="prop-rule-max-type" class="journal-prop-select">
+              <option value="static" data-i18n="prop.type_static">Sabit (Static)</option>
+              <option value="eod_trailing" data-i18n="prop.type_trailing_eod">Gün Sonu Takip Eden (Trailing EOD)</option>
+            </select>
+          </div>
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.min_trading_days">Min İşlem Günü</label>
+            <input type="number" id="prop-rule-min-days" class="journal-prop-input" value="4" min="0">
+          </div>
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="prop.consistency_rule">Tutarlılık Kuralı (%)</label>
+            <input type="number" id="prop-rule-consistency" class="journal-prop-input" placeholder="Yok (Örn: 50)" step="1" min="0" max="100">
+          </div>
+        </div>
+      </details>
+    </div>
     
     </div>
     <div class="journal-modal-footer">
@@ -113,7 +277,240 @@ import Layout from '../layouts/Layout.astro';
   var journalsData = [];
   var isPremium = false;
   var deleteId = null;
+  var currentModalMode = 'create';
   
+  function populatePropTemplates() {
+    var sel = document.getElementById('prop-template-select');
+    if (!sel || !window.PropTemplates) return;
+    sel.innerHTML = '';
+    var templates = window.PropTemplates.getPropTemplates();
+    templates.forEach(function(tmpl) {
+      var opt = document.createElement('option');
+      opt.value = tmpl.key;
+      opt.textContent = tmpl.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getSelectedPhase() {
+    var tmplSel = document.getElementById('prop-template-select');
+    var phaseSel = document.getElementById('prop-phase-select');
+    if (!tmplSel || !phaseSel || !window.PropTemplates) return null;
+    var tmpl = window.PropTemplates.getPropTemplate(tmplSel.value);
+    if (!tmpl || !tmpl.phases) return null;
+    var pIdx = parseInt(phaseSel.value, 10) || 0;
+    return tmpl.phases.find(function(p) { return p.phase_index === pIdx; }) || tmpl.phases[0];
+  }
+
+  function syncAdvancedRulesInputs(phaseRules) {
+    if (!phaseRules) return;
+    var targetEl = document.getElementById('prop-rule-target');
+    var dailyEl = document.getElementById('prop-rule-daily');
+    var dailyBaseEl = document.getElementById('prop-rule-daily-base');
+    var maxEl = document.getElementById('prop-rule-max');
+    var maxTypeEl = document.getElementById('prop-rule-max-type');
+    var minDaysEl = document.getElementById('prop-rule-min-days');
+    var consistencyEl = document.getElementById('prop-rule-consistency');
+
+    if (targetEl) targetEl.value = (phaseRules.profit_target_pct !== null && phaseRules.profit_target_pct !== undefined) ? phaseRules.profit_target_pct : '';
+    if (dailyEl) dailyEl.value = (phaseRules.daily_loss_limit_pct !== null && phaseRules.daily_loss_limit_pct !== undefined) ? phaseRules.daily_loss_limit_pct : 5;
+    if (dailyBaseEl) dailyBaseEl.value = phaseRules.daily_loss_amount_base || 'initial_balance';
+    if (maxEl) maxEl.value = (phaseRules.max_loss_limit_pct !== null && phaseRules.max_loss_limit_pct !== undefined) ? phaseRules.max_loss_limit_pct : 10;
+    if (maxTypeEl) maxTypeEl.value = phaseRules.max_loss_type || 'static';
+    if (minDaysEl) minDaysEl.value = (phaseRules.min_trading_days !== null && phaseRules.min_trading_days !== undefined) ? phaseRules.min_trading_days : 0;
+    if (consistencyEl) {
+      var cPct = (phaseRules.consistency_rule && phaseRules.consistency_rule.enabled) ? phaseRules.consistency_rule.max_single_day_profit_pct : '';
+      consistencyEl.value = cPct || '';
+    }
+    checkIsCustomized();
+  }
+
+  function checkIsCustomized() {
+    var tmplSel = document.getElementById('prop-template-select');
+    var phaseSel = document.getElementById('prop-phase-select');
+    var badge = document.getElementById('prop-customized-badge');
+    if (!tmplSel || !phaseSel || !window.PropTemplates) return false;
+
+    var tmplKey = tmplSel.value;
+    var phaseIdx = parseInt(phaseSel.value, 10) || 0;
+    var def = window.PropTemplates.getDefaultRules(tmplKey, phaseIdx);
+    if (!def) return false;
+
+    if (tmplKey === 'custom') {
+      if (badge) badge.style.display = 'inline-block';
+      return true;
+    }
+
+    var targetVal = document.getElementById('prop-rule-target')?.value;
+    var curTarget = (targetVal === '' || targetVal === null) ? null : Number(targetVal);
+    var curDaily = Number(document.getElementById('prop-rule-daily')?.value);
+    var curDailyBase = document.getElementById('prop-rule-daily-base')?.value;
+    var curMax = Number(document.getElementById('prop-rule-max')?.value);
+    var curMaxType = document.getElementById('prop-rule-max-type')?.value;
+    var curMinDays = Number(document.getElementById('prop-rule-min-days')?.value);
+    var conVal = document.getElementById('prop-rule-consistency')?.value;
+    var curCon = conVal ? Number(conVal) : null;
+
+    var defCon = (def.consistency_rule && def.consistency_rule.enabled) ? def.consistency_rule.max_single_day_profit_pct : null;
+
+    var isDiff = (
+      curTarget !== def.profit_target_pct ||
+      curDaily !== def.daily_loss_limit_pct ||
+      curDailyBase !== def.daily_loss_amount_base ||
+      curMax !== def.max_loss_limit_pct ||
+      curMaxType !== def.max_loss_type ||
+      curMinDays !== def.min_trading_days ||
+      curCon !== defCon
+    );
+
+    if (badge) badge.style.display = isDiff ? 'inline-block' : 'none';
+    return isDiff;
+  }
+
+  function onPropPhaseChange() {
+    var phase = getSelectedPhase();
+    if (!phase) return;
+
+    // verified: false warning
+    var unverifiedAlert = document.getElementById('prop-unverified-alert');
+    if (unverifiedAlert) {
+      unverifiedAlert.style.display = (phase.verified === false) ? 'flex' : 'none';
+    }
+
+    syncAdvancedRulesInputs(phase);
+  }
+
+  function onPropTemplateChange() {
+    var tmplSel = document.getElementById('prop-template-select');
+    var phaseSel = document.getElementById('prop-phase-select');
+    var tzSel = document.getElementById('prop-reset-tz-select');
+    var tzAlert = document.getElementById('prop-tz-required-alert');
+    var estAlert = document.getElementById('prop-estimated-alert');
+
+    if (!tmplSel || !window.PropTemplates) return;
+    var tmplKey = tmplSel.value;
+    var tmpl = window.PropTemplates.getPropTemplate(tmplKey);
+    if (!tmpl) return;
+
+    // Phases
+    phaseSel.innerHTML = '';
+    (tmpl.phases || []).forEach(function(p) {
+      var opt = document.createElement('option');
+      opt.value = p.phase_index;
+      opt.textContent = p.phase_name + (p.profit_target_pct ? ' (%' + p.profit_target_pct + ' Hedef)' : '');
+      phaseSel.appendChild(opt);
+    });
+
+    // Reset timezone defaults & requirements
+    if (tmpl.reset_tz_required) {
+      if (tzAlert) tzAlert.style.display = 'flex';
+      // FundedNext requires broker server timezone. Do not carry over fixed timezones; leave empty to force selection (Europe/Athens suggested in note).
+      tzSel.value = '';
+    } else {
+      if (tzAlert) tzAlert.style.display = 'none';
+      if (tmpl.reset_tz) {
+        tzSel.value = tmpl.reset_tz;
+      }
+    }
+
+    // Estimated rules alert (daily loss or max loss equity based)
+    var hasEst = (tmpl.estimated_rules && tmpl.estimated_rules.length > 0);
+    if (estAlert) estAlert.style.display = hasEst ? 'flex' : 'none';
+
+    onPropPhaseChange();
+    updateTimeShiftPreview();
+  }
+
+  async function updateTimeShiftPreview(journalId) {
+    var previewList = document.getElementById('prop-time-shift-preview-list');
+    var shiftEl = document.getElementById('prop-time-shift-num');
+    var tzSel = document.getElementById('prop-reset-tz-select');
+    if (!previewList) return;
+
+    var parsedShift = parseFloat(shiftEl ? shiftEl.value : 0);
+    var shiftHours = isNaN(parsedShift) ? 0 : Math.min(14, Math.max(-14, parsedShift));
+    var targetTz = (tzSel && tzSel.value) ? tzSel.value : 'UTC';
+
+    var trades = [];
+    var jId = journalId || (document.getElementById('journal-id') ? document.getElementById('journal-id').value : null);
+
+    if (jId && window.wwCache) {
+      var uId = (window.currentUser && window.currentUser.id) || (window.__wwUserProfile && window.__wwUserProfile.id);
+      if (uId) {
+        var cached = window.wwCache.get('trades_dashboard', uId, jId) || window.wwCache.get('trades', uId, jId);
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          trades = cached.slice(-3);
+        }
+      }
+    }
+
+    if (trades.length === 0 && jId && window.sb) {
+      try {
+        var res = await window.sb
+          .from('trades')
+          .select('trade_date, pnl')
+          .eq('journal_id', jId)
+          .order('trade_date', { ascending: false })
+          .limit(3);
+        if (res.data && res.data.length > 0) {
+          trades = res.data;
+        }
+      } catch (e) {}
+    }
+
+    if (!trades || trades.length === 0) {
+      var now = new Date();
+      var shiftedSample = new Date(now.getTime() + (shiftHours * 3600000));
+      var sampleStr;
+      try {
+        sampleStr = new Intl.DateTimeFormat('tr-TR', {
+          timeZone: targetTz,
+          month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        }).format(shiftedSample);
+      } catch (e) {
+        sampleStr = shiftedSample.toISOString().slice(11, 16);
+      }
+      previewList.innerHTML = `
+        <div style="font-style:italic;color:var(--muted);">${window.i18n ? window.i18n.t('prop.time_shift_no_trades') : 'Henüz işlem bulunmuyor.'} (Örnek: şu anki saat ${shiftHours >= 0 ? '+' + shiftHours : shiftHours}h ➔ ${sampleStr} ${targetTz})</div>
+      `;
+      return;
+    }
+
+    var html = '';
+    trades.forEach(function(t) {
+      var origDate = new Date(t.trade_date);
+      var shiftedDate = new Date(origDate.getTime() + (shiftHours * 3600000));
+      var shiftedFormatted;
+      try {
+        shiftedFormatted = new Intl.DateTimeFormat('tr-TR', {
+          timeZone: targetTz,
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit'
+        }).format(shiftedDate);
+      } catch (e) {
+        shiftedFormatted = shiftedDate.toISOString().replace('T', ' ').slice(0, 16);
+      }
+      var origRaw = String(t.trade_date).replace('T', ' ').slice(0, 16);
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
+          <span style="opacity:0.7;">${escapeHtml(origRaw)} (ham)</span>
+          <span style="font-weight:600;color:var(--accent);">➔ ${escapeHtml(shiftedFormatted)} (${escapeHtml(targetTz)})</span>
+        </div>
+      `;
+    });
+    previewList.innerHTML = html;
+  }
+
   function initModals() {
     var cGrid = document.getElementById('color-grid');
     COLORS.forEach(function(c) {
@@ -140,6 +537,88 @@ import Layout from '../layouts/Layout.astro';
       };
       iGrid.appendChild(btn);
     });
+
+    // Prop template setup
+    populatePropTemplates();
+
+    var tmplSel = document.getElementById('prop-template-select');
+    if (tmplSel) tmplSel.addEventListener('change', onPropTemplateChange);
+
+    var phaseSel = document.getElementById('prop-phase-select');
+    if (phaseSel) phaseSel.addEventListener('change', onPropPhaseChange);
+
+    var tzSel = document.getElementById('prop-reset-tz-select');
+    if (tzSel) {
+      tzSel.addEventListener('change', function() { updateTimeShiftPreview(); });
+    }
+
+    var timeSlider = document.getElementById('prop-time-shift');
+    var timeNum = document.getElementById('prop-time-shift-num');
+    var timeDisplay = document.getElementById('prop-time-shift-display');
+    if (timeSlider && timeNum) {
+      function onTimeShiftInput(val) {
+        var v = parseFloat(val);
+        if (isNaN(v)) v = 0;
+        if (v < -14) v = -14;
+        if (v > 14) v = 14;
+        timeSlider.value = v;
+        timeNum.value = v;
+        if (timeDisplay) timeDisplay.textContent = (v > 0 ? '+' + v : v) + ' saat';
+        updateTimeShiftPreview();
+      }
+      timeSlider.addEventListener('input', function() { onTimeShiftInput(timeSlider.value); });
+      timeNum.addEventListener('input', function() { onTimeShiftInput(timeNum.value); });
+    }
+
+    var advInputs = [
+      'prop-rule-target', 'prop-rule-daily', 'prop-rule-daily-base',
+      'prop-rule-max', 'prop-rule-max-type', 'prop-rule-min-days', 'prop-rule-consistency'
+    ];
+    advInputs.forEach(function(inpId) {
+      var el = document.getElementById(inpId);
+      if (el) el.addEventListener('input', checkIsCustomized);
+    });
+
+    var balSel = document.getElementById('prop-balance-select');
+    var customBal = document.getElementById('prop-custom-balance');
+    if (balSel) {
+      balSel.addEventListener('change', function() {
+        if (balSel.value === 'custom') {
+          customBal.style.display = 'block';
+          customBal.focus();
+        } else {
+          customBal.style.display = 'none';
+        }
+      });
+    }
+
+    var propToggle = document.getElementById('journal-prop-toggle');
+    var propSection = document.getElementById('journal-prop-section');
+    if (propToggle) {
+      propToggle.addEventListener('change', async function() {
+        if (propToggle.checked) {
+          if (currentModalMode === 'create' && window.PropService) {
+            try {
+              var quota = await window.PropService.checkPropAccountQuota();
+              if (!quota.canCreate) {
+                var quotaWarn = document.getElementById('prop-quota-warning');
+                if (quotaWarn) quotaWarn.style.display = 'flex';
+                propToggle.checked = false;
+                if (window.showToast) {
+                  window.showToast('Prop hesabı kotasına ulaştınız. (' + quota.count + '/' + quota.limit + ')', 'warning');
+                }
+                return;
+              }
+            } catch (qErr) {}
+          }
+          propSection.classList.add('active');
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          updateTimeShiftPreview();
+        } else {
+          propSection.classList.remove('active');
+        }
+      });
+    }
   }
   
   function getSelectedColor() {
@@ -152,14 +631,28 @@ import Layout from '../layouts/Layout.astro';
     return active ? active.dataset.icon : ICONS[0];
   }
   
-  function openModal(mode, id) {
+  async function openModal(mode, id) {
+    currentModalMode = mode;
     var titleEl = document.getElementById('journal-modal-title');
     var idEl = document.getElementById('journal-id');
     var nameEl = document.getElementById('journal-name');
     var descEl = document.getElementById('journal-desc');
-    
+    var propToggle = document.getElementById('journal-prop-toggle');
+    var propSection = document.getElementById('journal-prop-section');
+    var propAccountIdEl = document.getElementById('prop-account-id');
+    var propQuotaWarn = document.getElementById('prop-quota-warning');
+    var propBalSel = document.getElementById('prop-balance-select');
+    var propCustomBal = document.getElementById('prop-custom-balance');
+    var propStartDate = document.getElementById('prop-start-date');
+    var propTmplSel = document.getElementById('prop-template-select');
+    var propPhaseSel = document.getElementById('prop-phase-select');
+    var propTzSel = document.getElementById('prop-reset-tz-select');
+
     document.querySelectorAll('.journal-color-btn, .journal-icon-btn').forEach(b => b.classList.remove('active'));
-    
+    if (propQuotaWarn) propQuotaWarn.style.display = 'none';
+    if (propCustomBal) propCustomBal.style.display = 'none';
+    if (propAccountIdEl) propAccountIdEl.value = '';
+
     if (mode === 'create') {
       titleEl.textContent = i18n.t('journal.create_title');
       titleEl.setAttribute('data-i18n', 'journal.create_title');
@@ -168,6 +661,49 @@ import Layout from '../layouts/Layout.astro';
       descEl.value = '';
       document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]').classList.add('active');
       document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]').classList.add('active');
+
+      if (propToggle) {
+        propToggle.checked = false;
+        propToggle.disabled = false;
+      }
+      if (propSection) propSection.classList.remove('active');
+      if (propStartDate) {
+        propStartDate.value = new Date().toISOString().slice(0, 10);
+        propStartDate.max = new Date().toISOString().slice(0, 10);
+      }
+      if (propBalSel) propBalSel.value = '100000';
+      
+      var timeSlider = document.getElementById('prop-time-shift');
+      var timeNum = document.getElementById('prop-time-shift-num');
+      var timeDisplay = document.getElementById('prop-time-shift-display');
+      if (timeSlider) timeSlider.value = 0;
+      if (timeNum) timeNum.value = 0;
+      if (timeDisplay) timeDisplay.textContent = '0 saat';
+
+      var advBox = document.getElementById('prop-advanced-rules-box');
+      if (advBox) advBox.open = false;
+
+      if (propTmplSel) {
+        propTmplSel.value = 'ftmo-2step';
+        onPropTemplateChange();
+      }
+      updateTimeShiftPreview();
+
+      // Check quota in advance
+      if (window.PropService) {
+        window.PropService.checkPropAccountQuota().then(function(quota) {
+          if (!quota.canCreate && propQuotaWarn) {
+            propQuotaWarn.style.display = 'flex';
+            var desc = document.getElementById('prop-quota-desc');
+            if (desc) {
+              desc.textContent = quota.isPremium 
+                ? (window.i18n ? window.i18n.t('prop.quota_premium_desc') : 'Premium planda maksimum 10 aktif prop hesabı açabilirsiniz.') 
+                : (window.i18n ? window.i18n.t('prop.quota_desc') : 'Free planda yalnızca 1 aktif prop hesabı açabilirsiniz. Daha fazlası için Premium\'a yükseltin.');
+            }
+          }
+        }).catch(function() {});
+      }
+
     } else {
       titleEl.textContent = i18n.t('journal.edit_title');
       titleEl.setAttribute('data-i18n', 'journal.edit_title');
@@ -184,10 +720,75 @@ import Layout from '../layouts/Layout.astro';
         var iBtn = document.querySelector('.journal-icon-btn[data-icon="' + (j.icon || ICONS[0]) + '"]');
         if (iBtn) iBtn.classList.add('active');
         else document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]').classList.add('active');
+
+        // Check if journal has an active prop account
+        if (propToggle) propToggle.disabled = false;
+        if (window.PropService) {
+          try {
+            var propAcc = await window.PropService.getPropAccountByJournalId(j.id);
+            if (propAcc) {
+              if (propAccountIdEl) propAccountIdEl.value = propAcc.id;
+              if (propToggle) propToggle.checked = true;
+              if (propSection) propSection.classList.add('active');
+
+              if (propTmplSel && propAcc.template_key) {
+                propTmplSel.value = propAcc.template_key;
+                onPropTemplateChange();
+              }
+              if (propPhaseSel && propAcc.phase_index !== undefined) {
+                propPhaseSel.value = propAcc.phase_index;
+              }
+              if (propStartDate && propAcc.start_date) {
+                propStartDate.value = String(propAcc.start_date).slice(0, 10);
+                propStartDate.max = new Date().toISOString().slice(0, 10);
+              }
+              if (propTzSel && propAcc.reset_tz) {
+                propTzSel.value = propAcc.reset_tz;
+              }
+
+              // Time shift
+              var timeSlider = document.getElementById('prop-time-shift');
+              var timeNum = document.getElementById('prop-time-shift-num');
+              var timeDisplay = document.getElementById('prop-time-shift-display');
+              var shiftVal = propAcc.time_shift_hours !== undefined ? propAcc.time_shift_hours : 0;
+              if (timeSlider) timeSlider.value = shiftVal;
+              if (timeNum) timeNum.value = shiftVal;
+              if (timeDisplay) timeDisplay.textContent = (shiftVal > 0 ? '+' + shiftVal : shiftVal) + ' saat';
+
+              var balVal = String(Number(propAcc.starting_balance) || 100000);
+              var stdVals = ['5000', '10000', '25000', '50000', '100000', '200000'];
+              if (stdVals.includes(balVal)) {
+                if (propBalSel) propBalSel.value = balVal;
+                if (propCustomBal) propCustomBal.style.display = 'none';
+              } else {
+                if (propBalSel) propBalSel.value = 'custom';
+                if (propCustomBal) {
+                  propCustomBal.style.display = 'block';
+                  propCustomBal.value = balVal;
+                }
+              }
+
+              // Load rules into advanced inputs
+              if (propAcc.rules) {
+                syncAdvancedRulesInputs(propAcc.rules);
+              }
+              checkIsCustomized();
+              updateTimeShiftPreview(j.id);
+            } else {
+              if (propToggle) propToggle.checked = false;
+              if (propSection) propSection.classList.remove('active');
+            }
+          } catch (propErr) {
+            if (propToggle) propToggle.checked = false;
+            if (propSection) propSection.classList.remove('active');
+          }
+        }
       }
     }
     
+    if (window.i18n && window.i18n.apply) window.i18n.apply();
     document.getElementById('journal-modal').classList.add('active');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   }
   
   function closeModal() {
@@ -209,11 +810,24 @@ import Layout from '../layouts/Layout.astro';
       isPremium = profile?.plan === 'premium';
       journalsData = await window.journal.listJournals();
       var count = journalsData.length;
+
+      // Active prop accounts lookup
+      var propAccountsMap = new Map();
+      if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
+        try {
+          var activeProps = await window.PropService.getActivePropAccounts();
+          (activeProps || []).forEach(function(pa) {
+            propAccountsMap.set(pa.journal_id, pa);
+          });
+        } catch (propLoadErr) {
+          if (window.wwLog) window.wwLog.warn('Prop accounts load error:', propLoadErr);
+        }
+      }
       
-      // max_journals kaynagi: RPC eger gonderiyorsa onu kullan, yoksa fallback
+      // max_journals kaynagi: RPC eger gonderiyorsa onu kullan, yoksa fallback (premium için en az 10)
       var maxJournals = (count > 0 && journalsData[0].max_journals !== undefined) 
-                        ? journalsData[0].max_journals 
-                        : (profile?.max_journals || (isPremium ? 5 : 2));
+                        ? Math.max(journalsData[0].max_journals, isPremium ? 10 : 2) 
+                        : Math.max(profile?.max_journals || 0, isPremium ? 10 : 2);
       
       var usageTmpl = i18n.t('journal.usage');
       var usageTxt = usageTmpl.replace('{used}', count).replace('{limit}', maxJournals);
@@ -236,7 +850,7 @@ import Layout from '../layouts/Layout.astro';
         return;
       }
       
-            journalsData.forEach(function(j) {
+      journalsData.forEach(function(j) {
         var card = document.createElement('div');
         card.className = 'journal-card';
         card.dataset.id = j.id;
@@ -256,9 +870,29 @@ import Layout from '../layouts/Layout.astro';
         
         var defaultBadge = j.is_default ? `<div class="journal-card-badge"><i data-lucide="star" style="width:12px;height:12px;fill:currentColor;"></i> ${i18n.t('journal.default_badge')}</div>` : '';
         var tradesTxt = i18n.t('journal.trades_count').replace('{count}', j.trade_count || 0);
+
+        // Prop firm badge on card
+        var propBadge = '';
+        var propAcc = propAccountsMap.get(j.id);
+        if (propAcc) {
+          var tmplKey = propAcc.template_key;
+          var tmpl = window.PropTemplates ? window.PropTemplates.getPropTemplate(tmplKey) : null;
+          var firmName = tmpl ? tmpl.firm : (propAcc.rules?.firm || 'Prop');
+          var phaseNum = (propAcc.phase_index !== undefined ? propAcc.phase_index + 1 : 1);
+          var phaseLabel = (propAcc.rules && propAcc.rules.phase_name) 
+            ? propAcc.rules.phase_name 
+            : (window.i18n ? window.i18n.t('prop.phase_num', { n: phaseNum }) : ('Faz ' + phaseNum));
+          var isCustomized = Boolean(propAcc.rules && propAcc.rules.is_customized);
+          var custLabel = isCustomized ? (' (' + (window.i18n ? window.i18n.t('prop.customized') : 'Özelleştirildi') + ')') : '';
+          var propBadgeText = (window.i18n ? window.i18n.t('prop.badge') : 'PROP') + ': ' + escapeHtml(firmName) + ' (' + escapeHtml(phaseLabel) + ')' + custLabel;
+          propBadge = `<div class="journal-card-prop-badge" title="${escapeHtml(firmName)} - ${escapeHtml(phaseLabel)}"><span>${propBadgeText}</span></div>`;
+        }
         
+        var safeName = escapeHtml(j.name);
+        var safeDesc = escapeHtml(j.description || '');
+
         card.innerHTML = `
-          <button class="journal-menu-btn" data-id="${j.id}">
+          <button class="journal-menu-btn" data-id="${escapeHtml(j.id)}">
             <i data-lucide="more-vertical"></i>
           </button>
           <div class="journal-menu-dropdown">
@@ -268,14 +902,16 @@ import Layout from '../layouts/Layout.astro';
           </div>
           
           <div class="journal-icon-wrap">
-            <i data-lucide="${iconStr}"></i>
+            <i data-lucide="${escapeHtml(iconStr)}"></i>
           </div>
           
-          <div class="journal-card-name" title="${j.name}">${j.name}</div>
-          <div class="journal-card-desc">${j.description || ''}</div>
+          <div class="journal-card-name" title="${safeName}">${safeName}</div>
+          <div class="journal-card-desc">${safeDesc}</div>
+
+          ${propBadge}
           
-          <div class="journal-card-stats">
-            <span>${tradesTxt}</span>
+          <div class="journal-card-stats" style="margin-top:auto;padding-top:0.75rem;">
+            <span>${escapeHtml(tradesTxt)}</span>
             <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
           </div>
           
@@ -350,32 +986,153 @@ import Layout from '../layouts/Layout.astro';
       var desc = document.getElementById('journal-desc').value.trim();
       var color = getSelectedColor();
       var icon = getSelectedIcon();
+
+      var isProp = document.getElementById('journal-prop-toggle').checked;
+      var propAccountId = document.getElementById('prop-account-id').value;
+      var propTmplKey = document.getElementById('prop-template-select').value;
+      var propPhaseIdx = Number(document.getElementById('prop-phase-select').value) || 0;
+      var propBalSelVal = document.getElementById('prop-balance-select').value;
+      var propStartingBal = propBalSelVal === 'custom' 
+        ? Number(document.getElementById('prop-custom-balance').value) 
+        : Number(propBalSelVal);
+      var propStartDate = document.getElementById('prop-start-date').value;
+      var propResetTz = document.getElementById('prop-reset-tz-select').value;
       
       if (!name) {
         if (window.showToast) window.showToast(i18n.t('journal.err_invalid_name'), 'error');
         return;
+      }
+
+      if (isProp) {
+        if (!propStartingBal || propStartingBal <= 0 || isNaN(propStartingBal)) {
+          if (window.showToast) window.showToast(i18n.t('prop.err_invalid_balance'), 'error');
+          return;
+        }
+        if (!propStartDate) {
+          if (window.showToast) window.showToast(i18n.t('prop.err_select_start_date'), 'error');
+          return;
+        }
+        var todayStr = new Date().toISOString().slice(0, 10);
+        if (propStartDate > todayStr) {
+          if (window.showToast) window.showToast(i18n.t('prop.err_future_start_date'), 'error');
+          return;
+        }
+        if (!propResetTz) {
+          if (window.showToast) window.showToast(i18n.t('prop.err_select_reset_tz'), 'error');
+          return;
+        }
       }
       
       try {
         var btn = document.getElementById('journal-modal-save');
         btn.disabled = true;
         btn.textContent = '...';
+
+        var journalId = id;
         
         if (id) {
           await window.journal.updateJournal(id, { name, description: desc, color, icon });
-          if (window.showToast) window.showToast('Hesap güncellendi.', 'success');
         } else {
-          await window.journal.createJournal({ name, description: desc, color, icon });
-          if (window.showToast) window.showToast('Yeni hesap oluşturuldu.', 'success');
+          var newJ = await window.journal.createJournal({ name, description: desc, color, icon });
+          journalId = (newJ && newJ.id) ? newJ.id : (typeof newJ === 'string' ? newJ : null);
+          if (!journalId) {
+            var refreshedList = await window.journal.listJournals(true);
+            var found = refreshedList.find(function(x) { return x.name === name; });
+            if (found) journalId = found.id;
+          }
+        }
+
+        // Manage prop account record
+        if (window.PropService && journalId) {
+          if (isProp) {
+            var rawShift = parseFloat(document.getElementById('prop-time-shift-num').value);
+            var propTimeShift = isNaN(rawShift) ? 0 : Math.min(14, Math.max(-14, rawShift));
+            var defaultRules = (window.PropTemplates && propTmplKey !== 'custom') 
+              ? window.PropTemplates.getDefaultRules(propTmplKey, propPhaseIdx) 
+              : {};
+            var isCustomized = checkIsCustomized();
+            var propRules = Object.assign({}, defaultRules);
+
+            if (isCustomized || propTmplKey === 'custom') {
+              propRules.is_customized = true;
+              var targetVal = document.getElementById('prop-rule-target').value;
+              propRules.profit_target_pct = (targetVal === '' || targetVal === null) ? null : Number(targetVal);
+              propRules.daily_loss_limit_pct = Number(document.getElementById('prop-rule-daily').value) || 5;
+              propRules.daily_loss_amount_base = document.getElementById('prop-rule-daily-base').value || 'initial_balance';
+              propRules.max_loss_limit_pct = Number(document.getElementById('prop-rule-max').value) || 10;
+              propRules.max_loss_type = document.getElementById('prop-rule-max-type').value || 'static';
+              propRules.min_trading_days = Number(document.getElementById('prop-rule-min-days').value) || 0;
+              
+              var conVal = document.getElementById('prop-rule-consistency').value;
+              if (conVal && Number(conVal) > 0) {
+                propRules.consistency_rule = { enabled: true, max_single_day_profit_pct: Number(conVal) };
+              } else {
+                propRules.consistency_rule = { enabled: false, max_single_day_profit_pct: null };
+              }
+            } else {
+              propRules.is_customized = false;
+            }
+            propRules.reset_tz = propResetTz;
+            propRules.phase_index = propPhaseIdx;
+
+            var chosenPhase = getSelectedPhase();
+            if (chosenPhase) {
+              propRules.verified = Boolean(chosenPhase.verified);
+              propRules.phase_name = chosenPhase.phase_name;
+            }
+
+            var propPayload = {
+              journal_id: journalId,
+              template_key: propTmplKey,
+              starting_balance: propStartingBal,
+              start_date: propStartDate,
+              reset_tz: propResetTz,
+              time_shift_hours: propTimeShift,
+              phase_index: propPhaseIdx,
+              rules: propRules
+            };
+
+            if (propAccountId) {
+              await window.PropService.updatePropAccount(propAccountId, propPayload);
+            } else {
+              // Check if journal already had one previously
+              var existing = await window.PropService.getPropAccountByJournalId(journalId);
+              if (existing) {
+                await window.PropService.updatePropAccount(existing.id, propPayload);
+              } else {
+                await window.PropService.createPropAccount(propPayload);
+              }
+            }
+          } else {
+            // Prop mode was turned OFF
+            if (propAccountId) {
+              await window.PropService.deletePropAccount(propAccountId);
+            } else if (id) {
+              var existingAcc = await window.PropService.getPropAccountByJournalId(id);
+              if (existingAcc) {
+                await window.PropService.deletePropAccount(existingAcc.id);
+              }
+            }
+          }
+        }
+        
+        if (window.showToast) {
+          window.showToast(i18n.t(id ? 'prop.account_updated' : 'prop.account_created'), 'success');
         }
         
         closeModal();
         renderJournals();
       } catch (err) {
-        var msgKey = err.code ? 'journal.err_' + err.code.toLowerCase() : 'journal.err_generic';
-        var msg = i18n.t(msgKey);
-        if (msg === msgKey) msg = err.message;
-        if (window.showToast) window.showToast(msg, 'error');
+        if (err.code === 'PROP_LIMIT_EXCEEDED') {
+          if (window.showToast) window.showToast(i18n.t('prop.err_quota_exceeded', { limit: err.limit || 1 }), 'error');
+        } else if (err.code === 'INVALID_TZ') {
+          if (window.showToast) window.showToast(i18n.t('prop.err_invalid_tz'), 'error');
+        } else {
+          var msgKey = err.code ? 'journal.err_' + err.code.toLowerCase() : 'journal.err_generic';
+          var msg = i18n.t(msgKey);
+          if (msg === msgKey) msg = err.message;
+          if (window.showToast) window.showToast(msg, 'error');
+        }
       } finally {
         var btn = document.getElementById('journal-modal-save');
         btn.disabled = false;
@@ -394,9 +1151,19 @@ import Layout from '../layouts/Layout.astro';
         var btn = document.getElementById('delete-modal-confirm');
         btn.disabled = true;
         btn.textContent = '...';
+
+        // Soft-delete prop account if linked
+        if (window.PropService) {
+          try {
+            var linkedProp = await window.PropService.getPropAccountByJournalId(deleteId);
+            if (linkedProp) {
+              await window.PropService.deletePropAccount(linkedProp.id);
+            }
+          } catch (pDelErr) {}
+        }
         
         await window.journal.deleteJournal(deleteId);
-        if (window.showToast) window.showToast('Hesap silindi.', 'success');
+        if (window.showToast) window.showToast(i18n.t('prop.account_deleted'), 'success');
         
         document.getElementById('delete-modal').classList.remove('active');
         deleteId = null;

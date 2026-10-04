@@ -1201,6 +1201,10 @@ import Layout from '../layouts/Layout.astro';
         if (csvFileInput) csvFileInput.value = '';
 
         if (imported > 0) {
+          try {
+            if (window.wwCache) window.wwCache.invalidate('trades');
+            window.dispatchEvent(new CustomEvent('trade-saved'));
+          } catch(e) {}
           var msg = imported + ' işlem içe aktarıldı' + 
                     (skippedDuplicates > 0 ? ' (' + skippedDuplicates + ' mükerrer atlandı)' : '') + 
                     (failed > 0 ? ', ' + failed + ' başarısız' : '') + '.';
@@ -1459,6 +1463,10 @@ import Layout from '../layouts/Layout.astro';
             bulkFill.style.background = 'var(--green)';
           }
           if (bulkStatus) bulkStatus.textContent = '✅ ' + success + ' işlem başarıyla eklendi!';
+          try {
+            if (window.wwCache) window.wwCache.invalidate('trades');
+            window.dispatchEvent(new CustomEvent('trade-saved'));
+          } catch(e) {}
           setTimeout(function() {
             if (bulkOverlay) bulkOverlay.classList.remove('active');
             if (bulkProgress) bulkProgress.style.display = 'none';
@@ -1556,6 +1564,18 @@ import Layout from '../layouts/Layout.astro';
         }
 
         showToast(i18n.t('addtrade.save_success'));
+        try {
+          if (window.wwCache) window.wwCache.invalidate('trades');
+          window.dispatchEvent(new CustomEvent('trade-saved'));
+          if (window.PropService && window.journal) {
+            var jid = window.journal.getActiveJournalId();
+            window.PropService.syncPropAccountStatus(jid).then(function(pSync) {
+              if (pSync && pSync.status) {
+                window.PropService.checkAndNotifyPropAccount(pSync.account, pSync.status);
+              }
+            }).catch(function() {});
+          }
+        } catch (e) {}
         setTimeout(function() { window.location.href = 'trades.html'; }, 1200);
       });
     }

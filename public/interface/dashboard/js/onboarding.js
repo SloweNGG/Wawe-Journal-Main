@@ -947,19 +947,21 @@
   }
 
   // ------------------------------------------------------------
+  // ------------------------------------------------------------
   // 3. FAZ 3: SAĞ ALTTTAKİ BAŞLANGIÇ GÖREVLERİ KARTI (TASKS WIDGET)
   // ------------------------------------------------------------
   async function loadUserCounts() {
     if (!state.user || !window.sb) return;
     var uid = state.user.id;
 
-    // ⚡ 1. Eğer kullanıcı görevleri tamamlayıp widget'ı kapattıysa sorgu atma
+    // ⚡ 1. Eğer kullanıcı görevleri tamamladıysa veya kalıcı gizlendiyse sorgu atma
     try {
       var isDismissed = localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true';
       var isAllDone = localStorage.getItem('wj_tasks_all_done_' + uid) === 'true';
-      if (isDismissed && isAllDone) {
-        state.tradesCount = 1;
-        state.strategiesCount = 1;
+      var isMetaDone = !!(state.user.user_metadata && state.user.user_metadata.tasks_completed);
+      if (isDismissed || isAllDone || isMetaDone) {
+        state.tradesCount = Math.max(state.tradesCount, 1);
+        state.strategiesCount = Math.max(state.strategiesCount, 1);
         return;
       }
     } catch (e) {}
@@ -994,6 +996,11 @@
         }));
         if (state.tradesCount > 0 && state.strategiesCount > 0) {
           localStorage.setItem('wj_tasks_all_done_' + uid, 'true');
+          localStorage.setItem('wj_tasks_dismissed_' + uid, 'true');
+          localStorage.setItem('ww_tasks_dismissed', 'true');
+          if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
+            window.sb.auth.updateUser({ data: { tasks_completed: true } }).catch(function () {});
+          }
         }
       } catch (e) {}
     } catch (e) {
@@ -1005,6 +1012,18 @@
     if (!state.user) return;
 
     var uid = state.user.id;
+
+    // ⚡ 1. Kalıcı kontrol: Eğer görevler daha önceden tamamlanmış veya kapatılmışsa ASLA GÖSTERME
+    var isAlreadyDismissed = localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true';
+    var isAlreadyAllDone = localStorage.getItem('wj_tasks_all_done_' + uid) === 'true';
+    var isMetaDone = !!(state.user.user_metadata && state.user.user_metadata.tasks_completed);
+
+    if (isAlreadyDismissed || isAlreadyAllDone || isMetaDone) {
+      var exExisting = document.getElementById('wj-tasks-floating-container');
+      if (exExisting) exExisting.remove();
+      return;
+    }
+
     var isAccountDone = true;
     var isJournalDone = true;
     var isTradeDone = state.tradesCount > 0;
@@ -1014,20 +1033,37 @@
     var pct = Math.round((completedTasks / 4) * 100);
     var isAllCompleted = completedTasks === 4;
 
-    // ⭐ KURAL: Görevler tamamlanana kadar (completedTasks < 4) ASLA KALICI GİZLENEMEZ!
-    if (!isAllCompleted) {
-      // Eğer daha önce kaydedilmiş dismissed varsa temizle, görev bitmeden gizlenemez
+    // ⭐ KURAL: Görevler tamamlandıktan sonra BİR DAHA KULLANICININ KARŞISINA ÇIKMASIN!
+    if (isAllCompleted) {
       try {
-        localStorage.removeItem('wj_tasks_dismissed_' + uid);
+        localStorage.setItem('wj_tasks_dismissed_' + uid, 'true');
+        localStorage.setItem('wj_tasks_all_done_' + uid, 'true');
+        localStorage.setItem('ww_tasks_dismissed', 'true');
       } catch (e) {}
-    } else {
-      // Yalnızca 4 görev de tamamlandıysa ve kullanıcı kapattıysa gizli tut
-      var hasDismissed = localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true';
-      if (hasDismissed) {
-        var ex = document.getElementById('wj-tasks-floating-container');
-        if (ex) ex.remove();
-        return;
+
+      if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
+        window.sb.auth.updateUser({ data: { tasks_completed: true } }).catch(function () {});
       }
+
+      var existingWrapper = document.getElementById('wj-tasks-floating-container');
+      if (existingWrapper) {
+        // Eğer kullanıcı sayfadayken görev bittiyse yumuşakça kaybolsun ve tebrik bildirimi çıksın
+        existingWrapper.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        existingWrapper.style.opacity = '0';
+        existingWrapper.style.transform = 'translateY(16px)';
+        setTimeout(function () {
+          if (existingWrapper && existingWrapper.parentNode) {
+            existingWrapper.parentNode.removeChild(existingWrapper);
+          }
+        }, 400);
+
+        // Kullanıcıya tek seferlik tebrik bildirimi
+        if (typeof window.showToast === 'function') {
+          var toastMsg = t('onboarding.tasks_all_completed_toast', 'Tebrikler! Tüm başlangıç görevlerini tamamladınız. 🎉');
+          window.showToast(toastMsg, 'success');
+        }
+      }
+      return;
     }
 
     var floatingWrapper = document.getElementById('wj-tasks-floating-container');
@@ -1046,111 +1082,66 @@
     }
     floatingWrapper.style.display = 'block';
 
-    var widgetHtml = '';
+    var widgetHtml = `
+      <!-- Minimized Pill Button -->
+      <button class="wj-tasks-min-pill" id="wj-tasks-expand-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>${t('onboarding.tasks_pill', 'Görevler ({count}/4)').replace('{count}', completedTasks)}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </button>
 
-    if (isAllCompleted) {
-      widgetHtml = `
-        <!-- Minimized Pill Button -->
-        <button class="wj-tasks-min-pill" id="wj-tasks-expand-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span style="color:#10b981;">${t('onboarding.tasks_pill', 'Görevler ({count}/4)').replace('{count}', '4')}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
-        </button>
-
-        <!-- Expanded Floating Card (All Completed) -->
-        <div class="wj-tasks-widget wj-tasks-completed-widget" id="wj-tasks-widget">
-          <div class="wj-tasks-header" style="margin-bottom:0.25rem;">
-            <div class="wj-tasks-title-wrap">
-              <div class="wj-tasks-icon-box" style="background:rgba(16, 185, 129, 0.15); border-color:rgba(16, 185, 129, 0.35); color:#10b981;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              </div>
-              <div>
-                <h3 class="wj-tasks-title" data-i18n="onboarding.tasks_title">${t('onboarding.tasks_title', 'Başlangıç Görevleri')}</h3>
-                <p class="wj-tasks-subtitle" style="color:#10b981;">${t('onboarding.tasks_progress', '{count}/4 Tamamlandı').replace('{count}', '4')}</p>
-              </div>
+      <!-- Expanded Floating Card -->
+      <div class="wj-tasks-widget" id="wj-tasks-widget">
+        <div class="wj-tasks-header">
+          <div class="wj-tasks-title-wrap">
+            <div class="wj-tasks-icon-box">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div class="wj-tasks-header-right">
-              <span class="wj-tasks-pct-pill" style="background:rgba(16, 185, 129, 0.18); border-color:rgba(16, 185, 129, 0.35); color:#10b981;">%100</span>
-              <button class="wj-tasks-dismiss-btn" id="wj-tasks-dismiss-btn" title="Kapat">✕</button>
+            <div>
+              <h3 class="wj-tasks-title" data-i18n="onboarding.tasks_title">${t('onboarding.tasks_title', 'Başlangıç Görevleri')}</h3>
+              <p class="wj-tasks-subtitle">${t('onboarding.tasks_progress', '{count}/4 Tamamlandı').replace('{count}', completedTasks)}</p>
             </div>
           </div>
-
-          <div class="wj-tasks-success-box">
-            <div class="wj-tasks-success-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-            <h3 class="wj-tasks-success-title" data-i18n="onboarding.tasks_success_title">${t('onboarding.tasks_success_title', 'Başarıyla Tamamlandı!')}</h3>
-            <p class="wj-tasks-success-desc" data-i18n="onboarding.tasks_success_desc">${t('onboarding.tasks_success_desc', 'Tüm başlangıç görevlerini eksiksiz tamamladınız. Artık Wawe Journal\'ı tam verimle kullanabilirsiniz.')}</p>
-            <button class="wj-btn-primary" id="wj-tasks-finish-btn" style="padding: 0.65rem 1.6rem; font-size: 0.88rem; border-radius: 10px; width:100%;">
-              <span data-i18n="onboarding.tasks_success_btn">${t('onboarding.tasks_success_btn', 'Harika, Teşekkürler')}</span>
-            </button>
+          <div class="wj-tasks-header-right">
+            <span class="wj-tasks-pct-pill">%${pct}</span>
+            <button class="wj-tasks-min-btn" id="wj-tasks-min-btn" title="Küçült">–</button>
+            <button class="wj-tasks-dismiss-btn" id="wj-tasks-dismiss-btn" title="Kapat">✕</button>
           </div>
         </div>
-      `;
-    } else {
-      widgetHtml = `
-        <!-- Minimized Pill Button -->
-        <button class="wj-tasks-min-pill" id="wj-tasks-expand-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <span>${t('onboarding.tasks_pill', 'Görevler ({count}/4)').replace('{count}', completedTasks)}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
-        </button>
 
-        <!-- Expanded Floating Card -->
-        <div class="wj-tasks-widget" id="wj-tasks-widget">
-          <div class="wj-tasks-header">
-            <div class="wj-tasks-title-wrap">
-              <div class="wj-tasks-icon-box">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              </div>
-              <div>
-                <h3 class="wj-tasks-title" data-i18n="onboarding.tasks_title">${t('onboarding.tasks_title', 'Başlangıç Görevleri')}</h3>
-                <p class="wj-tasks-subtitle">${t('onboarding.tasks_progress', '{count}/4 Tamamlandı').replace('{count}', completedTasks)}</p>
-              </div>
-            </div>
-            <div class="wj-tasks-header-right">
-              <span class="wj-tasks-pct-pill">%${pct}</span>
-              <button class="wj-tasks-min-btn" id="wj-tasks-min-btn" title="Küçült">–</button>
-              <button class="wj-tasks-dismiss-btn" id="wj-tasks-dismiss-btn" title="Kapat">✕</button>
-            </div>
+        <div class="wj-tasks-bar">
+          <div class="wj-tasks-bar-fill" style="width: ${pct}%;"></div>
+        </div>
+
+        <div class="wj-tasks-list">
+          <!-- 1. Hesap -->
+          <div class="wj-task-item completed">
+            <div class="wj-task-check">✓</div>
+            <span class="wj-task-name" data-i18n="onboarding.task_account">${t('onboarding.task_account', 'Hesap oluşturuldu')}</span>
           </div>
 
-          <div class="wj-tasks-bar">
-            <div class="wj-tasks-bar-fill" style="width: ${pct}%;"></div>
+          <!-- 2. Defter -->
+          <div class="wj-task-item completed">
+            <div class="wj-task-check">✓</div>
+            <span class="wj-task-name" data-i18n="onboarding.task_journal">${t('onboarding.task_journal', 'İşlem günlüğü oluşturuldu')}</span>
           </div>
 
-          <div class="wj-tasks-list">
-            <!-- 1. Hesap -->
-            <div class="wj-task-item completed">
-              <div class="wj-task-check">✓</div>
-              <span class="wj-task-name" data-i18n="onboarding.task_account">${t('onboarding.task_account', 'Hesap oluşturuldu')}</span>
-            </div>
+          <!-- 3. İlk Trade -->
+          <div class="wj-task-item ${isTradeDone ? 'completed' : ''}" id="wj-task-trade">
+            <div class="wj-task-check">${isTradeDone ? '✓' : ''}</div>
+            <span class="wj-task-name" data-i18n="onboarding.task_trade">${t('onboarding.task_trade', 'İlk tradeni kaydet')}</span>
+            ${!isTradeDone ? `<span class="wj-task-action-icon" data-i18n="onboarding.btn_add_action">${t('onboarding.btn_add_action', '+ Ekle')}</span>` : ''}
+          </div>
 
-            <!-- 2. Defter -->
-            <div class="wj-task-item completed">
-              <div class="wj-task-check">✓</div>
-              <span class="wj-task-name" data-i18n="onboarding.task_journal">${t('onboarding.task_journal', 'İşlem günlüğü oluşturuldu')}</span>
-            </div>
-
-            <!-- 3. İlk Trade -->
-            <div class="wj-task-item ${isTradeDone ? 'completed' : ''}" id="wj-task-trade">
-              <div class="wj-task-check">${isTradeDone ? '✓' : ''}</div>
-              <span class="wj-task-name" data-i18n="onboarding.task_trade">${t('onboarding.task_trade', 'İlk tradeni kaydet')}</span>
-              ${!isTradeDone ? `<span class="wj-task-action-icon" data-i18n="onboarding.btn_add_action">${t('onboarding.btn_add_action', '+ Ekle')}</span>` : ''}
-            </div>
-
-            <!-- 4. İlk Strateji -->
-            <div class="wj-task-item ${isStrategyDone ? 'completed' : ''}" id="wj-task-strategy">
-              <div class="wj-task-check">${isStrategyDone ? '✓' : ''}</div>
-              <span class="wj-task-name" data-i18n="onboarding.task_strategy">${t('onboarding.task_strategy', 'İlk stratejini kaydet')}</span>
-              ${!isStrategyDone ? `<span class="wj-task-action-icon" data-i18n="onboarding.btn_add_action">${t('onboarding.btn_add_action', '+ Ekle')}</span>` : ''}
-            </div>
+          <!-- 4. İlk Strateji -->
+          <div class="wj-task-item ${isStrategyDone ? 'completed' : ''}" id="wj-task-strategy">
+            <div class="wj-task-check">${isStrategyDone ? '✓' : ''}</div>
+            <span class="wj-task-name" data-i18n="onboarding.task_strategy">${t('onboarding.task_strategy', 'İlk stratejini kaydet')}</span>
+            ${!isStrategyDone ? `<span class="wj-task-action-icon" data-i18n="onboarding.btn_add_action">${t('onboarding.btn_add_action', '+ Ekle')}</span>` : ''}
           </div>
         </div>
-      `;
-    }
+      </div>
+    `;
 
     floatingWrapper.innerHTML = widgetHtml;
     refreshLucideIcons();
@@ -1179,15 +1170,6 @@
     var dismissBtn = document.getElementById('wj-tasks-dismiss-btn');
     if (dismissBtn) {
       dismissBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        dismissTasksWidget();
-      });
-    }
-
-    // Başarıyla tamamlandı butonu
-    var finishBtn = document.getElementById('wj-tasks-finish-btn');
-    if (finishBtn) {
-      finishBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         dismissTasksWidget();
       });
@@ -1224,19 +1206,13 @@
         }
       });
     }
-
-    // 4 görev de bitince 6 saniye sonra otomatik kapat (veya kullanıcı kapatabilir) - KESİNLİKLE KONFETİ YOK!
-    if (isAllCompleted && !hasDismissed) {
-      setTimeout(function () {
-        dismissTasksWidget();
-      }, 6000);
-    }
   }
 
   function dismissTasksWidget() {
     var floatingWrapper = document.getElementById('wj-tasks-floating-container');
     if (!floatingWrapper || !state.user) return;
 
+    var uid = state.user.id;
     var isAccountDone = true;
     var isJournalDone = true;
     var isTradeDone = state.tradesCount > 0;
@@ -1245,16 +1221,24 @@
 
     if (isAllCompleted) {
       // 4 görev de başarıyla tamamlandı: Kalıcı kapat
+      try {
+        localStorage.setItem('wj_tasks_dismissed_' + uid, 'true');
+        localStorage.setItem('wj_tasks_all_done_' + uid, 'true');
+        localStorage.setItem('ww_tasks_dismissed', 'true');
+      } catch (e) {}
+      if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
+        window.sb.auth.updateUser({ data: { tasks_completed: true } }).catch(function () {});
+      }
+      floatingWrapper.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
       floatingWrapper.style.opacity = '0';
       floatingWrapper.style.transform = 'translateY(16px)';
       setTimeout(function () {
-        localStorage.setItem('wj_tasks_dismissed_' + state.user.id, 'true');
-        floatingWrapper.remove();
+        if (floatingWrapper.parentNode) floatingWrapper.parentNode.removeChild(floatingWrapper);
       }, 300);
     } else {
-      // ⭐ Görevler tamamlanmadı: Asla yok olmasın! Sağ altta mini Pill (Hap) durumuna küçült
+      // Görevler henüz bitmedi: Sağ altta mini Pill (Hap) durumuna küçült
       floatingWrapper.classList.add('minimized');
-      localStorage.setItem('wj_tasks_minimized_' + state.user.id, 'true');
+      localStorage.setItem('wj_tasks_minimized_' + uid, 'true');
     }
   }
 
@@ -1337,25 +1321,32 @@
         }, 500);
         return;
       } else {
-        // Kullanıcı Dashboard dışındaki bir sayfadaysa (Trades, Strategies vs.) görevler kartı gösterilmeye devam eder!
+        // Kullanıcı Dashboard dışındaki bir sayfadaysa görevler henüz bitmediyse göster
         renderTasksWidget();
         return;
       }
     }
 
-    // 🚀 ADIM 3: Hem sihirbaz hem tur bittiyse -> SAĞ ALTTTAKİ GÖREVLER KARTI GÖSTERİLİR!
-    wwLog.log('🚀 [Faz 3] Sağ alttaki Başlangıç Görevleri kartı aktif.');
+    // 🚀 ADIM 3: Hem sihirbaz hem tur bittiyse -> Görevler tamamlanmadıysa SAĞ ALTTTAKİ GÖREVLER KARTI GÖSTERİLİR!
     renderTasksWidget();
   }
 
   // Yeni işlem kaydedildiğinde görevleri otomatik güncelle
   window.addEventListener('trade-saved', async function () {
+    var uid = state.user && state.user.id;
+    if (uid && (localStorage.getItem('wj_tasks_all_done_' + uid) === 'true' || localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true')) {
+      return;
+    }
     await loadUserCounts();
     renderTasksWidget();
   });
 
   // Yeni strateji kaydedildiğinde görevleri otomatik güncelle
   window.addEventListener('strategy-saved', async function () {
+    var uid = state.user && state.user.id;
+    if (uid && (localStorage.getItem('wj_tasks_all_done_' + uid) === 'true' || localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true')) {
+      return;
+    }
     await loadUserCounts();
     renderTasksWidget();
   });
@@ -1363,6 +1354,10 @@
   // Sayfa odağı değiştiğinde (örneğin sekme veya sayfa geçişi) görevleri canlı güncelle
   window.addEventListener('focus', async function () {
     if (state.user) {
+      var uid = state.user.id;
+      if (localStorage.getItem('wj_tasks_all_done_' + uid) === 'true' || localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true') {
+        return;
+      }
       await loadUserCounts();
       renderTasksWidget();
     }
@@ -1370,6 +1365,10 @@
 
   document.addEventListener('visibilitychange', async function () {
     if (!document.hidden && state.user) {
+      var uid = state.user.id;
+      if (localStorage.getItem('wj_tasks_all_done_' + uid) === 'true' || localStorage.getItem('wj_tasks_dismissed_' + uid) === 'true') {
+        return;
+      }
       await loadUserCounts();
       renderTasksWidget();
     }
@@ -1392,6 +1391,10 @@
       localStorage.removeItem('wj_tour_done_' + uid);
       localStorage.removeItem('wj_tasks_dismissed_' + uid);
       localStorage.removeItem('wj_tasks_minimized_' + uid);
+      localStorage.removeItem('wj_tasks_all_done_' + uid);
+      if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
+        window.sb.auth.updateUser({ data: { tasks_completed: false } }).catch(function () {});
+      }
     }
     localStorage.removeItem('ww_onboarding_completed');
     localStorage.removeItem('ww_tour_completed');
@@ -1447,6 +1450,10 @@
       var uid = state.user.id;
       localStorage.removeItem('wj_tasks_dismissed_' + uid);
       localStorage.removeItem('wj_tasks_minimized_' + uid);
+      localStorage.removeItem('wj_tasks_all_done_' + uid);
+      if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
+        window.sb.auth.updateUser({ data: { tasks_completed: false } }).catch(function () {});
+      }
       sessionStorage.removeItem('wj_from_onboarding');
       sessionStorage.removeItem('wj_strategy_just_completed');
 

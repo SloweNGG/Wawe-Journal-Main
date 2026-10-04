@@ -32,7 +32,10 @@ const {
   <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} isAppPage={isAppPage} />
   <slot name="head" />
   {isAppPage && (
-    <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css?v=1790435000" />
+    <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css?v=1790436000" />
+    <script src="/src/core/prop-templates.js" is:inline defer></script>
+    <script src="/src/utils/prop-calculator.js" is:inline defer></script>
+    <script src="/src/services/prop-service.js" is:inline defer></script>
   )}
 </head>
 <body class={bodyClass} style={bodyStyle}>
@@ -46,7 +49,7 @@ const {
   </div>
 
   {isAppPage && (
-    <script src="/interface/dashboard/js/onboarding.js?v=1790435000" is:inline defer></script>
+    <script src="/interface/dashboard/js/onboarding.js?v=1790436000" is:inline defer></script>
   )}
 </body>
 </html>

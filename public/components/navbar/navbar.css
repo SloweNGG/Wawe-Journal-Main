@@ -2060,6 +2060,21 @@ body.light-theme .nav-menu {
   margin-left: 1rem;
 }
 
+.nav-prop-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(124, 109, 250, 0.25);
+  color: #c4b5fd;
+  border: 1px solid rgba(124, 109, 250, 0.35);
+  margin-left: 5px;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
 .journal-switch-btn {
   display: flex;
   align-items: center;

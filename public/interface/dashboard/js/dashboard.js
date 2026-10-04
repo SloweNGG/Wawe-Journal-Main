@@ -107,7 +107,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var el8 = safeEl('recent-trades-container-wrap');
 
     if (el1) el1.style.display = 'none';
-    if (el2) el2.style.display = 'grid';
+    if (el2) el2.style.display = (window._isPropAccountActive && window._propViewMode !== 'standard') ? 'none' : 'grid';
     if (el3) el3.style.display = 'none';
     if (el4) el4.style.display = 'grid';
     if (el5) el5.style.display = 'none';
@@ -3175,7 +3175,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
               .order('trade_date', { ascending: false })
               .order('id', { ascending: true })
               .range(uFrom, uFrom + pageSize - 1);
-              
+
             if (unassignedData && unassignedData.length > 0) {
               unassignedTrades = unassignedTrades.concat(unassignedData);
               if (unassignedData.length < pageSize) uHasMore = false;

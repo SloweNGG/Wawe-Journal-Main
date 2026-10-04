@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" showQuickAdd={true}>
@@ -7,6 +7,7 @@ import Layout from '../layouts/Layout.astro';
   
   <!-- PREMIUM DASHBOARD CSS -->
   <link rel="stylesheet" href="/interface/premium-dashboard/css/premium-dashboard.css" />
+  <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css" />
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
@@ -63,6 +64,78 @@ import Layout from '../layouts/Layout.astro';
 
   <!-- QUICK ADD MODAL CONTAINER -->
   <div id="quick-add-container"></div>
+
+  <!-- FIXED PROP BANNER CONTAINER (Outside Sortable / Grid) -->
+  <div class="premium-prop-banner-wrapper" style="max-width:1440px;margin:0 auto;padding:1rem 1.5rem 0;">
+    <div id="premium-prop-banner" class="stats-grid prop-morph-grid" style="display:none;"></div>
+  </div>
+
+  <!-- PROP FIRM ADVANCE PHASE MODAL -->
+  <div id="premium-advance-phase-modal" class="prop-modal-backdrop" style="display:none;">
+    <div class="prop-modal-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:0.75rem;">
+        <h3 style="margin:0;font-size:1.05rem;font-weight:700;" data-i18n="prop.advance_modal_title">
+          <span>Sonraki Faza Geç</span>
+        </h3>
+        <button id="close-premium-advance-modal" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
+      </div>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.45;" data-i18n="prop.advance_modal_desc">
+        Yeni faza geçtiğinizde başlangıç tarihi güncellenir ve eski işlemler bu faza dahil edilmez.
+      </p>
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px;" data-i18n="prop.advance_start_date_label">Yeni Faz Başlangıç Tarihi</label>
+        <input type="date" id="premium-advance-start-date" class="journal-prop-input" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0d0d14);color:var(--text);box-sizing:border-box;" />
+      </div>
+
+      <!-- İşlem Çakışması Uyarısı (Yeni start_date'te işlem varsa) -->
+      <div id="premium-advance-trades-warning" style="display:none;margin-bottom:1rem;padding:0.75rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.8rem;color:#f59e0b;">
+        <div>
+          <span id="premium-advance-trades-warning-text">Bu tarihte işlemler var, yeni faza dahil edilecek.</span>
+          <div style="margin-top:6px;">
+            <button type="button" id="premium-advance-bump-date-btn" style="background:#f59e0b;color:#000;border:none;border-radius:4px;padding:3px 8px;font-size:0.75rem;font-weight:600;cursor:pointer;" data-i18n="prop.advance_bump_date">
+              Başlangıç tarihini ertesi güne al
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Özelleştirilmiş Kuralları Koruma Seçeneği -->
+      <div id="premium-advance-custom-rules-choice" style="display:none;margin-bottom:1rem;padding:0.75rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
+        <div style="font-weight:600;margin-bottom:6px;" data-i18n="prop.advance_rules_title">Kural Ayarları</div>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;">
+          <input type="radio" name="premium-advance-rules-mode" value="keep" id="premium-advance-rules-keep" checked />
+          <span data-i18n="prop.advance_rules_keep">Özelleştirilmiş kurallarımı koru</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="premium-advance-rules-mode" value="template" id="premium-advance-rules-template" />
+          <span data-i18n="prop.advance_rules_template">Yeni faz varsayılanlarını kullan</span>
+        </label>
+      </div>
+
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px;" data-i18n="prop.advance_balance_label">Yeni Başlangıç Bakiyesi ($)</label>
+        <input type="number" id="premium-advance-starting-balance" class="journal-prop-input" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0d0d14);color:var(--text);box-sizing:border-box;" min="1" step="100" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+        <button id="cancel-premium-advance-modal" class="journal-btn-cancel" style="padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;" data-i18n="journal.cancel">İptal</button>
+        <button id="confirm-premium-advance-modal" class="journal-btn-save" style="padding:0.5rem 1.25rem;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;" data-i18n="prop.advance_confirm_btn">Faza Geç</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROP NOTICES / RULES MODAL -->
+  <div id="premium-prop-notices-modal" class="prop-modal-backdrop" style="display:none;">
+    <div class="prop-notices-modal-content">
+      <div class="prop-notices-modal-header">
+        <h3 class="prop-notices-modal-title">
+          <span id="premium-prop-notices-title" data-i18n="prop.rule_notices_modal_title">Kurallar ve Bildirimler</span>
+        </h3>
+        <button id="close-premium-prop-notices" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
+      </div>
+      <div id="premium-prop-notices-body" class="prop-notices-list"></div>
+      <div id="premium-prop-notices-disclaimer" class="prop-native-disclaimer" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid rgba(255,255,255,0.06);"></div>
+    </div>
+  </div>
 
   <main class="premium-main" id="main-content">
     <div style="display:flex;justify-content:center;align-items:center;min-height:60vh;flex-direction:column;gap:1rem;">
@@ -169,5 +242,537 @@ import Layout from '../layouts/Layout.astro';
         wwLog.warn('[Navbar] loadNavbar fonksiyonu bulunamadı');
       }
     });
+  </script>
+  <!-- 10. ⭐ PREMIUM PROP FIRM BANNER LOGIC -->
+  <script is:inline>
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    var _currentPremiumPropSync = null;
+
+    async function refreshPremiumPropBanner() {
+      if (!window.PropService || !window.journal) return;
+      var bannerEl = document.getElementById('premium-prop-banner');
+      var badgeEl = document.getElementById('premium-prop-badge');
+      var statsGrid = document.getElementById('premium-stats-grid');
+      if (!bannerEl) return;
+
+      var activeId = window.journal.getActiveJournalId();
+      if (!activeId) {
+        window._isPremiumPropActive = false;
+        bannerEl.style.display = 'none';
+        bannerEl.innerHTML = '';
+        if (badgeEl) badgeEl.innerHTML = '';
+        if (statsGrid) statsGrid.style.display = 'grid';
+        return;
+      }
+
+      try {
+        // Cache-first trade retrieval
+        var uId = (window.currentUser && window.currentUser.id) ||
+                  (window.__wwUserProfile && window.__wwUserProfile.id) || null;
+        var cachedTrades = null;
+        if (window.wwCache && uId && activeId) {
+          cachedTrades = window.wwCache.get('trades_dashboard', uId, activeId) ||
+                         window.wwCache.get('trades_premium', uId, activeId) ||
+                         window.wwCache.get('trades', uId, activeId);
+        }
+
+        var syncRes = await window.PropService.syncPropAccountStatus(activeId, cachedTrades);
+        if (!syncRes || !syncRes.account || !syncRes.status) {
+          window._isPremiumPropActive = false;
+          bannerEl.style.display = 'none';
+          bannerEl.innerHTML = '';
+          if (badgeEl) badgeEl.innerHTML = '';
+          if (statsGrid) statsGrid.style.display = 'grid';
+          return;
+        }
+
+        window._isPremiumPropActive = true;
+        _currentPremiumPropSync = syncRes;
+        var account = syncRes.account;
+        var status = syncRes.status;
+        var tmplKey = account.template_key;
+        var tmpl = window.PropTemplates ? window.PropTemplates.getPropTemplate(tmplKey) : null;
+        var firmName = tmpl ? tmpl.firm : (account.rules?.firm || 'Prop');
+        var phaseNum = (account.phase_index !== undefined ? account.phase_index + 1 : 1);
+        var t = function (key, params) {
+          return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
+        };
+        var phaseName = account.rules?.phase_name || t('prop.phase_num', { n: phaseNum });
+
+        // If rules are invalid, show an isolated error state
+        if (status.overall_status === 'invalid_rules') {
+          if (badgeEl) {
+            badgeEl.innerHTML = `
+              <div class="prop-header-hud">
+                <div class="prop-hud-segment">
+                  <span>${escapeHtml(firmName)}</span>
+                </div>
+                <span class="prop-hud-sep"></span>
+                <span class="prop-status-pill failed">
+                  <span class="prop-status-dot"></span>
+                  <span>${escapeHtml(t('prop.status_invalid_rules') || 'Kural Hatası')}</span>
+                </span>
+              </div>
+            `;
+          }
+          bannerEl.className = 'stats-grid prop-morph-grid';
+          bannerEl.innerHTML = `
+            <div class="stat-card prop-morph-card" style="grid-column: 1 / -1; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); padding: 1rem 1.25rem;">
+              <div style="display:flex;align-items:center;gap:10px;color:var(--red,#ef4444);font-weight:600;font-size:0.9rem;">
+                <span>${escapeHtml(t('prop.err_invalid_rules_desc') || 'Hesap kuralları geçersiz')} (${escapeHtml(status.error_code || 'INVALID_RULES')}). ${escapeHtml(t('prop.err_fix_in_journals') || 'Lütfen defter ayarlarından kuralları düzenleyin.')}</span>
+              </div>
+            </div>
+          `;
+          bannerEl.style.display = 'grid';
+          if (statsGrid) statsGrid.style.display = 'none';
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          return;
+        }
+
+        var st = status.overall_status || 'in_progress';
+        var stLabel = st === 'passed' ? t('prop.status_passed') : (st === 'failed' ? t('prop.status_failed') : t('prop.status_in_progress'));
+        var fmt = window.formatCurrency || (val => '$' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 }));
+
+        var warningsList = (status.warnings || []).slice();
+        if (account.rules && account.rules.verified === false) {
+          warningsList.unshift('UNVERIFIED_PHASE_RULES');
+        }
+
+        // Action buttons
+        var currentPhaseIdx = account.phase_index !== undefined ? account.phase_index : 0;
+        var nextPhaseIdx = currentPhaseIdx + 1;
+        var hasNextPhase = Boolean(tmpl && tmpl.phases && tmpl.phases.length > nextPhaseIdx);
+        var advanceBtnHtml = '';
+        if (hasNextPhase) {
+          advanceBtnHtml = `
+            <button type="button" id="premium-advance-phase-btn" class="prop-header-btn advance" title="${escapeHtml(t('prop.advance_phase_btn'))}">
+              <span>${escapeHtml(t('prop.advance_phase_btn'))}</span>
+            </button>
+          `;
+        }
+
+        var noticesBtnHtml = '';
+        if (warningsList.length > 0) {
+          noticesBtnHtml = `
+            <button type="button" id="premium-open-notices-btn" class="prop-header-btn notices" title="${escapeHtml(t('prop.rule_notices_modal_title') || 'Kurallar & Uyarılar')}">
+              <span>${warningsList.length} ${escapeHtml(t('prop.alerts_capsule_title') || 'Uyarı')}</span>
+            </button>
+          `;
+        }
+
+        var toggleViewBtnHtml = `
+          <button type="button" id="premium-toggle-view-btn" class="prop-header-btn view-toggle" title="${window._premiumPropViewMode === 'standard' ? 'Prop Kurallarına Dön' : 'Klasik İstatistikleri Göster'}">
+            <span>${window._premiumPropViewMode === 'standard' ? 'Prop Modu' : 'Klasik'}</span>
+          </button>
+        `;
+
+        // 1. Render Header Inline HUD next to title
+        if (badgeEl) {
+          badgeEl.innerHTML = `
+            <div class="prop-header-hud">
+              <div class="prop-hud-segment">
+                <span>${escapeHtml(firmName)}</span>
+                <span class="prop-hud-phase">${escapeHtml(phaseName)}</span>
+              </div>
+              <span class="prop-hud-sep"></span>
+              <span class="prop-status-pill ${st}">
+                <span class="prop-status-dot"></span>
+                <span>${escapeHtml(stLabel)}</span>
+              </span>
+              ${noticesBtnHtml}
+              ${advanceBtnHtml}
+              ${toggleViewBtnHtml}
+            </div>
+          `;
+        }
+
+        // Check if user toggled to standard performance stats
+        if (window._premiumPropViewMode === 'standard') {
+          bannerEl.style.display = 'none';
+          if (statsGrid) statsGrid.style.display = 'grid';
+          bindPremiumHudButtons(account, tmpl, nextPhaseIdx, warningsList);
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          return;
+        }
+
+        // Hide standard stats-grid to prevent double rows
+        if (statsGrid) statsGrid.style.display = 'none';
+
+        // Card 1 Calculations: Daily margin
+        var dailyRem = status.daily_loss.remaining_margin;
+        var dailyLimit = status.daily_loss.limit_amount || 0;
+        var dailyPct = dailyLimit > 0 ? Math.min(100, Math.max(0, Math.round(((dailyLimit - dailyRem) / dailyLimit) * 100))) : 0;
+        var dailyBarColor = dailyRem <= 0 ? 'var(--red,#ef4444)' : (dailyPct > 75 ? '#f59e0b' : 'var(--green,#22c55e)');
+        var dailyValColor = dailyRem <= 0 ? 'var(--red,#ef4444)' : 'var(--green,#22c55e)';
+
+        // Card 2 Calculations: Max Loss floor
+        var maxStop = status.max_loss.hard_stop_level;
+        var maxDist = status.max_loss.distance_to_stop;
+        var maxDistPct = Number(status.max_loss.distance_to_stop_pct) || 0;
+        var maxBarColor = maxDist <= 0 ? 'var(--red,#ef4444)' : (maxDistPct <= 25 ? '#f59e0b' : 'var(--green,#22c55e)');
+
+        // Card 3 Calculations: Profit target
+        var targetAmount = status.profit_target.target_amount;
+        var targetRem = Number(status.profit_target.remaining_amount) || 0;
+        var targetPct = Number(status.profit_target.progress_pct) || 0;
+        var targetBarFill = targetAmount ? Math.min(100, Math.max(0, targetPct)) : 0;
+
+        // Card 4 Calculations: Trading days
+        var dayCount = status.trading_days.count || 0;
+        var dayMin = status.trading_days.min_required || 0;
+        var dayPct = dayMin > 0 ? Math.min(100, Math.round((dayCount / dayMin) * 100)) : 100;
+        var dayBarColor = dayMin > 0 && dayCount < dayMin ? '#38bdf8' : 'var(--green,#22c55e)';
+
+        // Card 5 Calculations: Net PnL & Win Rate Performance
+        var tradeList = (syncRes.trades && Array.isArray(syncRes.trades)) ? syncRes.trades : [];
+        var totalTrades = tradeList.length;
+        var totalPnl = tradeList.reduce((acc, tr) => acc + (Number(tr.pnl) || 0), 0);
+        var wins = tradeList.filter(tr => (Number(tr.pnl) || 0) > 0).length;
+        var losses = tradeList.filter(tr => (Number(tr.pnl) || 0) < 0).length;
+        var wrPct = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
+        var pnlValColor = totalPnl >= 0 ? 'var(--green,#22c55e)' : 'var(--red,#ef4444)';
+
+        // 2. Render Single Row of 5 Native Morph Cards into bannerEl
+        bannerEl.className = 'stats-grid prop-morph-grid';
+        bannerEl.innerHTML = `
+          <!-- CARD 1: DAILY MARGIN -->
+          <div class="stat-card prop-morph-card" style="--card-accent:${dailyRem <= 0 ? 'var(--red,#ef4444)' : '#60a5fa'};">
+            <div class="stat-label">
+              <span>${escapeHtml(t('prop.today_margin'))}</span>
+            </div>
+            <div class="stat-value" style="color:${dailyValColor};">
+              ${fmt(dailyRem)}
+            </div>
+            <div class="stat-subline">
+              <span class="prop-sub-left">${escapeHtml(t('prop.limit'))}: ${fmt(dailyLimit)}</span>
+              <span class="prop-sub-right">${escapeHtml(t('prop.today'))}: ${fmt(status.daily_loss.today_pnl)}</span>
+            </div>
+            <div class="prop-card-bar">
+              <div class="prop-card-bar-fill" style="width:${dailyPct}%; background:${dailyBarColor};"></div>
+            </div>
+          </div>
+
+          <!-- CARD 2: MAX LOSS FLOOR -->
+          <div class="stat-card prop-morph-card" style="--card-accent:${maxDist <= 0 ? 'var(--red,#ef4444)' : '#f59e0b'};">
+            <div class="stat-label">
+              <span>${escapeHtml(t('prop.max_loss_floor'))}</span>
+            </div>
+            <div class="stat-value">
+              ${fmt(maxStop)}
+            </div>
+            <div class="stat-subline">
+              <span class="prop-sub-left">${escapeHtml(t('prop.floor_distance'))}: ${fmt(maxDist)}</span>
+              <span class="prop-sub-right">Stop: %${maxDistPct}</span>
+            </div>
+            <div class="prop-card-bar">
+              <div class="prop-card-bar-fill" style="width:${Math.min(100, maxDistPct)}%; background:${maxBarColor};"></div>
+            </div>
+          </div>
+
+          <!-- CARD 3: PROFIT TARGET -->
+          <div class="stat-card prop-morph-card" style="--card-accent:#818cf8;">
+            <div class="stat-label">
+              <span>${escapeHtml(t('prop.target'))}</span>
+            </div>
+            <div class="stat-value" style="color:#818cf8;">
+              ${targetAmount ? fmt(targetAmount) : escapeHtml(t('prop.no_target'))}
+            </div>
+            <div class="stat-subline">
+              ${targetAmount
+                ? `<span class="prop-sub-left">${targetRem <= 0 ? 'Hedef Tamam' : escapeHtml(t('prop.remaining')) + ': ' + fmt(targetRem)}</span><span class="prop-sub-right">%${targetPct}</span>`
+                : `<span class="prop-sub-left">${escapeHtml(t('prop.unlimited_days'))}</span><span class="prop-sub-right">—</span>`
+              }
+            </div>
+            <div class="prop-card-bar">
+              <div class="prop-card-bar-fill" style="width:${targetBarFill}%; background:#818cf8;"></div>
+            </div>
+          </div>
+
+          <!-- CARD 4: TRADING DAYS -->
+          <div class="stat-card prop-morph-card" style="--card-accent:#38bdf8;">
+            <div class="stat-label">
+              <span>${escapeHtml(t('prop.trading_days_balance'))}</span>
+            </div>
+            <div class="stat-value">
+              ${dayCount} ${dayMin ? ('/ ' + dayMin + ' ' + escapeHtml(t('prop.days'))) : escapeHtml(t('prop.days'))}
+            </div>
+            <div class="stat-subline">
+              <span class="prop-sub-left">${escapeHtml(t('prop.balance'))}: ${fmt(status.current_balance)}</span>
+              <span class="prop-sub-right">${escapeHtml(t('prop.starting'))}: ${fmt(status.account.starting_balance)}</span>
+            </div>
+            <div class="prop-card-bar">
+              <div class="prop-card-bar-fill" style="width:${dayPct}%; background:${dayBarColor};"></div>
+            </div>
+          </div>
+
+          <!-- CARD 5: NET PnL & WIN RATE (PERFORMANCE) -->
+          <div class="stat-card prop-morph-card" style="--card-accent:${pnlValColor};">
+            <div class="stat-label">
+              <span>${escapeHtml(t('dashboard.stats.total_pnl') || 'Toplam K/Z')}</span>
+            </div>
+            <div class="stat-value" style="color:${pnlValColor};">
+              ${fmt(totalPnl)}
+            </div>
+            <div class="stat-subline">
+              <span class="prop-sub-left">Win Rate: %${wrPct}</span>
+              <span class="prop-sub-right">${totalTrades} İşlem (${wins}K / ${losses}K)</span>
+            </div>
+            <div class="prop-card-bar">
+              <div class="prop-card-bar-fill" style="width:${wrPct}%; background:${pnlValColor};"></div>
+            </div>
+          </div>
+        `;
+
+        bannerEl.style.display = 'grid';
+
+        bindPremiumHudButtons(account, tmpl, nextPhaseIdx, warningsList);
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      } catch (err) {
+        if (window.wwLog) window.wwLog.error('refreshPremiumPropBanner err:', err);
+        bannerEl.style.display = 'none';
+        if (statsGrid) statsGrid.style.display = 'grid';
+      }
+    }
+
+    function bindPremiumHudButtons(account, tmpl, nextPhaseIdx, warningsList) {
+      var t = function (key, params) {
+        return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
+      };
+
+      // Toggle View button
+      var toggleBtn = document.getElementById('premium-toggle-view-btn');
+      if (toggleBtn) {
+        toggleBtn.onclick = function() {
+          window._premiumPropViewMode = window._premiumPropViewMode === 'standard' ? 'prop' : 'standard';
+          refreshPremiumPropBanner();
+        };
+      }
+
+      // Prepare notices modal content
+      var noticesBodyEl = document.getElementById('premium-prop-notices-body');
+      var noticesDiscEl = document.getElementById('premium-prop-notices-disclaimer');
+      if (noticesBodyEl) {
+        var itemsHtml = '';
+        (warningsList || []).forEach(function(w) {
+          var msg = '';
+          if (w === 'UNVERIFIED_PHASE_RULES') msg = t('prop.unverified_warning');
+          else if (w === 'EQUITY_BASED_ESTIMATED') msg = t('prop.warn_equity_estimated');
+          else if (w === 'INTRADAY_BREACH_POSSIBLE') msg = t('prop.warn_intraday_breach');
+          else if (w === 'INTRADAY_ORDER_UNKNOWN') msg = t('prop.warn_intraday_order');
+          else if (w === 'CONSISTENCY_NOT_MET') msg = t('prop.warn_consistency');
+          else msg = w;
+          itemsHtml += `
+            <div class="prop-notice-item">
+              <span>${escapeHtml(msg)}</span>
+            </div>
+          `;
+        });
+        noticesBodyEl.innerHTML = itemsHtml || `<div style="font-size:0.85rem;color:var(--muted);padding:0.5rem 0;">${escapeHtml(t('prop.no_warnings') || 'Aktif kural uyarısı bulunmuyor.')}</div>`;
+      }
+      if (noticesDiscEl) {
+        noticesDiscEl.innerHTML = `
+          <span>${escapeHtml(t('prop.disclaimer', { last_verified: (account.rules && account.rules.last_verified) || (tmpl && tmpl.last_verified) || '2026-10-04' }))}</span>
+        `;
+      }
+
+      // Bind notices button
+      var openNoticesBtn = document.getElementById('premium-open-notices-btn');
+      if (openNoticesBtn) {
+        openNoticesBtn.onclick = function() {
+          var modal = document.getElementById('premium-prop-notices-modal');
+          if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+          }
+        };
+      }
+
+      var advBtn = document.getElementById('premium-advance-phase-btn');
+      if (advBtn) {
+        advBtn.onclick = function() {
+          openPremiumAdvancePhaseModal(account, tmpl, nextPhaseIdx);
+        };
+      }
+    }
+
+    function updatePremiumTradesOnDateWarning(dateVal) {
+      var warnBox = document.getElementById('premium-advance-trades-warning');
+      var warnText = document.getElementById('premium-advance-trades-warning-text');
+      var bumpBtn = document.getElementById('premium-advance-bump-date-btn');
+      if (!warnBox || !warnText || !dateVal) return;
+
+      var tradesList = [];
+      if (_currentPremiumPropSync && _currentPremiumPropSync.trades && Array.isArray(_currentPremiumPropSync.trades)) {
+        tradesList = _currentPremiumPropSync.trades;
+      } else if (window.wwCache && window.currentUser) {
+        var jid = window.journal ? window.journal.getActiveJournalId() : null;
+        tradesList = window.wwCache.get('trades_dashboard', window.currentUser.id, jid) ||
+                     window.wwCache.get('trades_premium', window.currentUser.id, jid) || [];
+      }
+
+      var count = 0;
+      for (var i = 0; i < tradesList.length; i++) {
+        var td = String(tradesList[i].trade_date || '').slice(0, 10);
+        if (td === dateVal) count++;
+      }
+
+      if (count > 0) {
+        var d = new Date(dateVal + 'T00:00:00');
+        d.setDate(d.getDate() + 1);
+        var tomorrowStr = d.toISOString().slice(0, 10);
+        var tFn = function(k, p) { return (window.i18n && window.i18n.t) ? window.i18n.t(k, p) : k; };
+        warnText.textContent = tFn('prop.advance_trades_on_date_warn', { n: count, tomorrow: tomorrowStr }) || ('Bu tarihte ' + count + ' işlem var, yeni faza dahil edilecek. Başlangıç tarihini ertesi güne (' + tomorrowStr + ') almak ister misin?');
+        if (bumpBtn) {
+          bumpBtn.onclick = function() {
+            var dateInput = document.getElementById('premium-advance-start-date');
+            if (dateInput) {
+              dateInput.value = tomorrowStr;
+              updatePremiumTradesOnDateWarning(tomorrowStr);
+            }
+          };
+        }
+        warnBox.style.display = 'block';
+      } else {
+        warnBox.style.display = 'none';
+      }
+    }
+
+    function openPremiumAdvancePhaseModal(account, tmpl, nextPhaseIdx) {
+      var modal = document.getElementById('premium-advance-phase-modal');
+      var dateInput = document.getElementById('premium-advance-start-date');
+      var balInput = document.getElementById('premium-advance-starting-balance');
+      var customChoice = document.getElementById('premium-advance-custom-rules-choice');
+      if (!modal || !dateInput || !balInput) return;
+
+      var todayStr = new Date().toISOString().slice(0, 10);
+      dateInput.value = todayStr;
+      balInput.value = account.starting_balance || 100000;
+
+      if (customChoice) {
+        var isCust = Boolean(account.rules && account.rules.is_customized);
+        customChoice.style.display = isCust ? 'block' : 'none';
+        var keepRadio = document.getElementById('premium-advance-rules-keep');
+        if (keepRadio) keepRadio.checked = true;
+      }
+
+      updatePremiumTradesOnDateWarning(todayStr);
+      dateInput.onchange = function() { updatePremiumTradesOnDateWarning(dateInput.value); };
+      dateInput.oninput = function() { updatePremiumTradesOnDateWarning(dateInput.value); };
+
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closePremiumAdvancePhaseModal() {
+      var modal = document.getElementById('premium-advance-phase-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var closeBtn = document.getElementById('close-premium-advance-modal');
+      var cancelBtn = document.getElementById('cancel-premium-advance-modal');
+      var confirmBtn = document.getElementById('confirm-premium-advance-modal');
+      if (closeBtn) closeBtn.onclick = closePremiumAdvancePhaseModal;
+      if (cancelBtn) cancelBtn.onclick = closePremiumAdvancePhaseModal;
+
+      var closeNoticesBtn = document.getElementById('close-premium-prop-notices');
+      if (closeNoticesBtn) {
+        closeNoticesBtn.onclick = function() {
+          var modal = document.getElementById('premium-prop-notices-modal');
+          if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+          }
+        };
+      }
+
+      var advModal = document.getElementById('premium-advance-phase-modal');
+      if (advModal) {
+        advModal.addEventListener('click', function(e) {
+          if (e.target === advModal) closePremiumAdvancePhaseModal();
+        });
+      }
+      var noticesModal = document.getElementById('premium-prop-notices-modal');
+      if (noticesModal) {
+        noticesModal.addEventListener('click', function(e) {
+          if (e.target === noticesModal) {
+            noticesModal.style.display = 'none';
+            noticesModal.classList.remove('active');
+          }
+        });
+      }
+
+      if (confirmBtn) {
+        confirmBtn.onclick = async function() {
+          if (!_currentPremiumPropSync || !_currentPremiumPropSync.account) return;
+          var account = _currentPremiumPropSync.account;
+          var nextPhaseIdx = (account.phase_index !== undefined ? account.phase_index + 1 : 1);
+          var startDate = document.getElementById('premium-advance-start-date').value;
+          var balance = Number(document.getElementById('premium-advance-starting-balance').value);
+          var keepCustomRules = document.getElementById('premium-advance-rules-keep') ? document.getElementById('premium-advance-rules-keep').checked : false;
+          var t = function (key) {
+            return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key) : key;
+          };
+
+          if (!startDate) {
+            if (window.showToast) window.showToast(t('prop.err_select_start_date'), 'error');
+            return;
+          }
+          if (isNaN(balance) || balance <= 0) {
+            if (window.showToast) window.showToast(t('prop.err_invalid_balance'), 'error');
+            return;
+          }
+
+          try {
+            confirmBtn.disabled = true;
+            await window.PropService.advancePhase(account.id, {
+              newPhaseIndex: nextPhaseIdx,
+              startDate: startDate,
+              startingBalance: balance,
+              keepCustomRules: keepCustomRules
+            });
+            if (window.showToast) window.showToast(t('prop.advance_success'), 'success');
+            closePremiumAdvancePhaseModal();
+            refreshPremiumPropBanner();
+          } catch (err) {
+            if (window.showToast) window.showToast(err.message, 'error');
+          } finally {
+            confirmBtn.disabled = false;
+          }
+        };
+      }
+
+      setTimeout(refreshPremiumPropBanner, 700);
+    });
+
+    window.addEventListener('journal-changed', function() {
+      setTimeout(refreshPremiumPropBanner, 300);
+    });
+    window.addEventListener('trade-saved', function() {
+      setTimeout(refreshPremiumPropBanner, 300);
+    });
+    window.addEventListener('trade-deleted', function() {
+      setTimeout(refreshPremiumPropBanner, 300);
+    });
+    if (window.i18n && typeof window.i18n.onChange === 'function') {
+      window.i18n.onChange(function() {
+        refreshPremiumPropBanner();
+      });
+    }
   </script>
 </Layout>

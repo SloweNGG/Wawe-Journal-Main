@@ -1916,14 +1916,42 @@ async function updateNavbarJournal(retries) {
     var activeJ = journals.find(function(j) { return j.id === activeId; });
     if (!activeJ) activeJ = journals.find(function(j) { return j.is_default; }) || journals[0];
 
+    // Prop accounts map
+    var propMap = {};
+    if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
+      try {
+        var activeProps = await window.PropService.getActivePropAccounts();
+        (activeProps || []).forEach(function(pa) { propMap[pa.journal_id] = pa; });
+      } catch (pErr) {}
+    }
+
+    function safeEscape(str) {
+      if (typeof window !== 'undefined' && typeof window.sanitizeHTML === 'function') {
+        return window.sanitizeHTML(str);
+      }
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     var swName = document.querySelector('.nav-journal-switcher .journal-name');
     var swIcon = document.querySelector('.nav-journal-switcher .journal-icon');
-    if (swName) swName.textContent = activeJ.name;
+    if (swName) {
+      var isPropActive = Boolean(propMap[activeJ.id]);
+      swName.innerHTML = safeEscape(activeJ.name) + (isPropActive ? '<span class="nav-prop-tag">PROP</span>' : '');
+    }
     if (swIcon) swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
 
     // Mobil menü göstergesi
     var menuJournalName = document.getElementById('menu-journal-name');
-    if (menuJournalName && activeJ) menuJournalName.textContent = activeJ.name;
+    if (menuJournalName && activeJ) {
+      var isPropActive = Boolean(propMap[activeJ.id]);
+      menuJournalName.innerHTML = safeEscape(activeJ.name) + (isPropActive ? '<span class="nav-prop-tag">PROP</span>' : '');
+    }
     
     var menuJournalIcon = document.querySelector('.menu-journal-icon');
     if (menuJournalIcon && activeJ) {
@@ -1944,12 +1972,14 @@ async function updateNavbarJournal(retries) {
         var isActive = (j.id === activeJ.id) ? 'active' : '';
         var tradesTxt = (j.trade_count || 0) + ' ' + (t('nav.trades', 'işlem') || 'işlem');
         var itemColor = j.color || '#7c6dfa';
+        var hasProp = Boolean(propMap[j.id]);
+        var propItemBadge = hasProp ? '<span class="nav-prop-tag">PROP</span>' : '';
         html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
           '<div class="journal-icon-wrap" style="background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;">' +
             '<i data-lucide="' + (j.icon || 'folder') + '"></i>' +
           '</div>' +
           '<div class="journal-info">' +
-            '<span class="journal-name">' + (window.sanitizeHTML ? sanitizeHTML(j.name) : j.name) + '</span>' +
+            '<span class="journal-name">' + safeEscape(j.name) + propItemBadge + '</span>' +
             '<span class="journal-count">' + tradesTxt + '</span>' +
           '</div>' +
           '<i data-lucide="check" class="journal-check"></i>' +

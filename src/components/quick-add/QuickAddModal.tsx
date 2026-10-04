@@ -214,6 +214,19 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         showToast('İşlem başarıyla eklendi!', 'success');
       }
 
+      try {
+        if ((window as any).wwCache) (window as any).wwCache.invalidate('trades');
+        window.dispatchEvent(new CustomEvent('trade-saved'));
+        if ((window as any).PropService && (window as any).journal) {
+          const jid = (window as any).journal.getActiveJournalId();
+          (window as any).PropService.syncPropAccountStatus(jid).then((pSync: any) => {
+            if (pSync && pSync.status) {
+              (window as any).PropService.checkAndNotifyPropAccount(pSync.account, pSync.status);
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {}
+
       handleClose();
 
       // Sayfadaki işlem listesini yenile

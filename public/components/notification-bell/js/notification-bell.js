@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // notification-bell.js
 // BİLDİRİM BELL - JAVASCRIPT (window.notificationManager kullanır)
 // ============================================================
@@ -29,6 +29,16 @@
         </div>
       </div>
     `;
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function getTimeAgoSimple(timestamp) {
@@ -90,16 +100,16 @@
 
           var iconClass = 'info';
           var iconName = 'info';
-          if (n.type === 'overtrade_critical') {
+          if (n.type === 'overtrade_critical' || n.type === 'prop_daily_breach' || n.type === 'prop_max_breach') {
             iconClass = 'danger';
             iconName = 'octagon-alert';
-          } else if (n.type === 'overtrade_warning') {
+          } else if (n.type === 'overtrade_warning' || n.type === 'prop_daily_warning') {
             iconClass = 'warning';
             iconName = 'triangle-alert';
           } else if (n.type === 'premium_expired') {
             iconClass = 'danger';
             iconName = 'octagon-alert';
-          } else if (n.type === 'premium_upgraded') {
+          } else if (n.type === 'premium_upgraded' || n.type === 'prop_target_passed') {
             iconClass = 'success';
             iconName = 'circle-check';
           }
@@ -125,8 +135,8 @@
                 <i data-lucide="${iconName}"></i>
               </div>
               <div class="notif-content">
-                <div class="notif-title">${title}</div>
-                <div class="notif-desc">${description}</div>
+                <div class="notif-title">${escapeHtml(title)}</div>
+                <div class="notif-desc">${escapeHtml(description)}</div>
                 ${otStats}
                 <span class="notif-time">${timeAgo}</span>
               </div>

@@ -1,0 +1,453 @@
+/* ============================================================
+   WAWE JOURNAL - PROP FIRM NATIVE DASHBOARD MORPH
+   Pure native dashboard integration with zero extra banners
+   All icons strictly use Lucide SVG (No Emojis)
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. Header Inline HUD (Pill Capsule next to Page Title)
+   ------------------------------------------------------------ */
+.prop-header-hud {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 18, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 4px 6px 4px 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  vertical-align: middle;
+  font-family: 'Inter', -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+.prop-hud-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text, #f8fafc);
+}
+
+.prop-hud-segment svg {
+  width: 14px;
+  height: 14px;
+  color: #818cf8;
+}
+
+.prop-hud-phase {
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(124, 109, 250, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(124, 109, 250, 0.25);
+}
+
+.prop-hud-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 2px;
+}
+
+/* Status Pill with Pulsing Glow Dot */
+.prop-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.prop-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.prop-status-pill.in_progress {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.prop-status-pill.in_progress .prop-status-dot {
+  background: #60a5fa;
+  box-shadow: 0 0 6px rgba(96, 165, 250, 0.8);
+}
+
+.prop-status-pill.passed {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.prop-status-pill.passed .prop-status-dot {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+}
+
+.prop-status-pill.failed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.prop-status-pill.failed .prop-status-dot {
+  background: #f87171;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.8);
+}
+
+/* Clean Header Buttons (Strict CSS reset — Zero browser default button style) */
+.prop-header-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: 'Inter', -apple-system, sans-serif;
+  line-height: 1;
+  user-select: none;
+}
+
+.prop-header-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.prop-header-btn.notices {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.prop-header-btn.notices:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.4);
+  transform: translateY(-1px);
+}
+
+.prop-header-btn.advance {
+  background: linear-gradient(135deg, #7c6dfa, #6366f1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(124, 109, 250, 0.35);
+}
+
+.prop-header-btn.advance:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.prop-header-btn.view-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted, #94a3b8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prop-header-btn.view-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------
+   2. 5-Card Native Morph Grid
+   ------------------------------------------------------------ */
+.prop-morph-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(0.4rem, 0.9vw, 0.75rem);
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 1024px) and (min-width: 768px) {
+  .prop-morph-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .prop-morph-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem;
+  }
+
+  .prop-morph-grid .stat-card:last-child {
+    grid-column: span 2;
+  }
+}
+
+/* Morph Card styling (inherits .stat-card) */
+.prop-morph-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface, #12121a);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius, 12px);
+  padding: 0.75rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 98px;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prop-morph-card:hover {
+  border-color: rgba(124, 109, 250, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.prop-morph-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--card-accent, #7c6dfa);
+}
+
+.prop-morph-card .stat-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #94a3b8);
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  margin-bottom: 2px;
+}
+
+.prop-morph-card .stat-label-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.prop-morph-card .stat-label svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.prop-morph-card .stat-value {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+  font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 4px 0 2px 0;
+  word-break: break-all;
+}
+
+.prop-morph-card .stat-subline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 11px;
+  color: var(--muted, #94a3b8);
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  gap: 4px;
+}
+
+.prop-sub-left,
+.prop-sub-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.prop-card-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.prop-card-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* ------------------------------------------------------------
+   3. Notices & Rule Details Modal & Advance Phase Modal
+   ------------------------------------------------------------ */
+.prop-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(8, 8, 16, 0.78) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  z-index: 99999 !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+}
+
+.prop-modal-backdrop.active,
+.prop-modal-backdrop[style*="display: flex"],
+.prop-modal-backdrop[style*="display:flex"] {
+  display: flex !important;
+}
+
+.prop-modal-backdrop[style*="display: none"],
+.prop-modal-backdrop[style*="display:none"] {
+  display: none !important;
+}
+
+.prop-modal-box {
+  margin: auto !important;
+  background: var(--surface, #12121a);
+  border: 1px solid var(--border, #262636);
+  border-radius: 16px;
+  width: 92%;
+  max-width: 450px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
+  animation: propModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes propModalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.prop-notices-modal-content {
+  background: var(--surface, #12121a);
+  border: 1px solid var(--border, #262636);
+  border-radius: 16px;
+  width: 92%;
+  max-width: 480px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: auto !important;
+  animation: propModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.prop-notices-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 0.75rem;
+}
+
+.prop-notices-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text, #f8fafc);
+  margin: 0;
+}
+
+.prop-notices-modal-title svg {
+  width: 16px;
+  height: 16px;
+  color: #fbbf24;
+}
+
+.prop-notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.prop-notice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text, #e2e8f0);
+  line-height: 1.45;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.prop-notice-item svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #fbbf24;
+}
+
+/* Light Theme Compatibility */
+body.light-theme .prop-header-hud,
+html.light-theme .prop-header-hud {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .prop-hud-segment,
+html.light-theme .prop-hud-segment {
+  color: #0f172a;
+}
+
+body.light-theme .prop-notices-modal-content,
+html.light-theme .prop-notices-modal-content {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .prop-notice-item,
+html.light-theme .prop-notice-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}

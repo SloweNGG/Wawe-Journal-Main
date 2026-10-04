@@ -820,7 +820,7 @@
       totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
       if (currentPage > totalPages) currentPage = totalPages;
       applyFiltersAndSort();
-      try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
+      try { window.dispatchEvent(new CustomEvent('trade-deleted')); window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
     } catch (e) {
       console.error('Delete hatası:', e);
       showToast(_t('common.unexpected_error'), 'error');
@@ -878,7 +878,7 @@
       if (currentPage > totalPages) currentPage = totalPages;
       
       applyFiltersAndSort();
-      try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
+      try { window.dispatchEvent(new CustomEvent('trade-deleted')); window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
       var modal3 = safeEl('bulk-modal');
       if (modal3) modal3.classList.remove('active');
     } catch (e) {
@@ -1401,6 +1401,7 @@
             showToast(_t('trades.updated'));
             closeModal();
             applyFiltersAndSort();
+            try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
           } catch (e) {
             console.error('Save hatası:', e);
             showToast(_t('common.unexpected_error'), 'error');
