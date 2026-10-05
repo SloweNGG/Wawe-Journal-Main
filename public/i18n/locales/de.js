@@ -915,7 +915,12 @@ export default {
   "journal.err_generic": "Ein Fehler ist aufgetreten.",
   "journal.upgrade_cta": "Auf Premium Upgraden",
   "journal.switcher_title": "Konten",
-  "journal.switch_to": "Wechseln zu {name}"
+  "journal.switch_to": "Wechseln zu {name}",
+  "journal.section_account": "Kontodetails",
+  "journal.section_prop": "Prop-Firm & Verfolgung",
+  "prop.standard_mode_title": "Standard-Portfoliokonto",
+  "prop.standard_mode_desc": "Verfolgen Sie alle Ihre Trades frei ohne Regelbeschränkungen oder Verlustlimits.",
+  "prop.standard_mode_tip": "💡 Aktivieren Sie oben den Prop-Firm-Modus, um Evaluierungsregeln wie FTMO, FundedNext usw. automatisch zu verfolgen."
   ,
   "earnings.title": "Meine Einnahmen & Auszahlungen",
   "earnings.subtitle": "Verwalten Sie Ihre Empfehlungsprovisionen und fordern Sie Auszahlungen an",

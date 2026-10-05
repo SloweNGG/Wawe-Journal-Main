@@ -949,7 +949,12 @@ export default {
   "journal.err_generic": "An error occurred.",
   "journal.upgrade_cta": "Upgrade to Premium",
   "journal.switcher_title": "Accounts",
-  "journal.switch_to": "Switch to {name}"
+  "journal.switch_to": "Switch to {name}",
+  "journal.section_account": "Account Details",
+  "journal.section_prop": "Prop Firm & Tracking",
+  "prop.standard_mode_title": "Standard Portfolio Account",
+  "prop.standard_mode_desc": "Track all your trades freely without rule constraints or loss limits.",
+  "prop.standard_mode_tip": "💡 Enable Prop Firm Mode above to automatically track evaluation rules like FTMO, FundedNext, etc."
   ,
   "earnings.title": "My Earnings & Payouts",
   "earnings.subtitle": "Manage your referral commissions and request payouts",

@@ -55,59 +55,83 @@ import Layout from '../layouts/Layout.astro';
     <div class="journal-modal-header"><h3 id="journal-modal-title" data-i18n="journal.create_title">Yeni Hesap Oluştur</h3><button class="journal-modal-close" onclick="closeModal()"><i data-lucide="x"></i></button></div><div class="journal-modal-body">
     <input type="hidden" id="journal-id" value="">
     
-    <div class="journal-field">
-      <label data-i18n="journal.name_label">Hesap Adı</label>
-      <input type="text" id="journal-name" maxlength="60" data-i18n-placeholder="journal.name_placeholder" placeholder="Örn: Scalping, Swing, Prop Firm">
-    </div>
-    
-    <div class="journal-field">
-      <label data-i18n="journal.description_label">Açıklama (opsiyonel)</label>
-      <textarea id="journal-desc" rows="2" maxlength="200"></textarea>
-    </div>
-    
-    <div class="journal-field">
-      <label data-i18n="journal.color_label">Renk</label>
-      <div class="journal-color-picker" id="color-grid">
-        <!-- JS fills -->
-      </div>
-    </div>
-    
-    <div class="journal-field">
-      <label data-i18n="journal.icon_label">İkon</label>
-      <div class="journal-icon-picker" id="icon-grid">
-        <!-- JS fills -->
-      </div>
-    </div>
+    <div class="journal-modal-grid">
+      <!-- SOL PANEL: Temel Hesap Bilgileri -->
+      <div class="journal-modal-col">
+        <div class="journal-col-heading">
+          <i data-lucide="wallet"></i>
+          <span data-i18n="journal.section_account">Hesap Bilgileri</span>
+        </div>
 
-    <!-- ⭐ PROP FIRM MODU TOGGLE -->
-    <div class="journal-prop-toggle-card">
-      <div class="journal-prop-toggle-info">
-        <div>
-          <div class="journal-prop-toggle-title">
-            <span data-i18n="prop.mode">Prop Firm Modu</span>
-            <span class="journal-prop-tag" data-i18n="prop.evaluation">EVALUATION</span>
+        <div class="journal-field">
+          <label data-i18n="journal.name_label">Hesap Adı</label>
+          <input type="text" id="journal-name" maxlength="60" data-i18n-placeholder="journal.name_placeholder" placeholder="Örn: Scalping, Swing, Prop Firm">
+        </div>
+        
+        <div class="journal-field">
+          <label data-i18n="journal.description_label">Açıklama (opsiyonel)</label>
+          <textarea id="journal-desc" rows="3" maxlength="200"></textarea>
+        </div>
+        
+        <div class="journal-field">
+          <label data-i18n="journal.color_label">Renk</label>
+          <div class="journal-color-picker" id="color-grid">
+            <!-- JS fills -->
           </div>
-          <div class="journal-prop-toggle-sub" data-i18n="prop.toggle_sub">Kuralları, günlük kaybı ve hedefleri otomatik takip et</div>
+        </div>
+        
+        <div class="journal-field">
+          <label data-i18n="journal.icon_label">İkon</label>
+          <div class="journal-icon-picker" id="icon-grid">
+            <!-- JS fills -->
+          </div>
         </div>
       </div>
-      <label class="journal-switch" for="journal-prop-toggle">
-        <input type="checkbox" id="journal-prop-toggle">
-        <span class="journal-slider"></span>
-      </label>
-    </div>
 
-    <!-- Quota Warning if limit reached -->
-    <div id="prop-quota-warning" class="journal-prop-alert danger" style="display:none;">
-      <div>
-        <strong data-i18n="prop.quota_title">Prop Hesabı Kotası Doldu</strong>
-        <div id="prop-quota-desc" style="font-size:0.75rem;margin-top:2px;" data-i18n="prop.quota_desc">Free planda 1 aktif prop hesabı oluşturabilirsiniz. Daha fazla hesap için Premium'a yükseltin.</div>
-        <a href="/settings.html#panel-plan" style="color:#fff;text-decoration:underline;font-weight:600;font-size:0.75rem;display:inline-block;margin-top:4px;" data-i18n="prop.upgrade_plan">Planı Yükselt →</a>
-      </div>
-    </div>
+      <!-- SAĞ PANEL: Prop Firm & Mod Ayarları -->
+      <div class="journal-modal-col">
+        <div class="journal-col-heading">
+          <i data-lucide="award"></i>
+          <span data-i18n="journal.section_prop">Prop Firm & Takip</span>
+        </div>
 
-    <!-- Prop Settings Section (shown when toggle is on) -->
-    <div id="journal-prop-section" class="journal-prop-section">
-      <input type="hidden" id="prop-account-id" value="">
+        <!-- ⭐ PROP FIRM MODU TOGGLE -->
+        <div class="journal-prop-toggle-card">
+          <div class="journal-prop-toggle-info">
+            <div>
+              <div class="journal-prop-toggle-title">
+                <span data-i18n="prop.mode">Prop Firm Modu</span>
+                <span class="journal-prop-tag" data-i18n="prop.evaluation">DEĞERLENDİRME</span>
+              </div>
+              <div class="journal-prop-toggle-sub" data-i18n="prop.toggle_sub">Kuralları, günlük kaybı ve hedefleri otomatik takip et</div>
+            </div>
+          </div>
+          <label class="journal-switch" for="journal-prop-toggle">
+            <input type="checkbox" id="journal-prop-toggle">
+            <span class="journal-slider"></span>
+          </label>
+        </div>
+
+        <!-- Quota Warning if limit reached -->
+        <div id="prop-quota-warning" class="journal-prop-alert danger" style="display:none;">
+          <div>
+            <strong data-i18n="prop.quota_title">Prop Hesabı Kotası Doldu</strong>
+            <div id="prop-quota-desc" style="font-size:0.75rem;margin-top:2px;" data-i18n="prop.quota_desc">Free planda 1 aktif prop hesabı oluşturabilirsiniz. Daha fazla hesap için Premium'a yükseltin.</div>
+            <a href="/settings.html#panel-plan" style="color:#fff;text-decoration:underline;font-weight:600;font-size:0.75rem;display:inline-block;margin-top:4px;" data-i18n="prop.upgrade_plan">Planı Yükselt →</a>
+          </div>
+        </div>
+
+        <!-- Prop Inactive Info Box (Prop kapalıyken sağ paneli bilgilendirici ve dolu tutar) -->
+        <div id="prop-inactive-card" class="journal-prop-inactive-box">
+          <div class="journal-prop-inactive-icon"><i data-lucide="shield-check"></i></div>
+          <div class="journal-prop-inactive-title" data-i18n="prop.standard_mode_title">Standart Portföy Hesabı</div>
+          <p class="journal-prop-inactive-desc" data-i18n="prop.standard_mode_desc">Bu hesapta kural ve kayıp limiti olmadan tüm işlemlerinizi serbestçe takip edebilirsiniz.</p>
+          <div class="journal-prop-inactive-tip" data-i18n="prop.standard_mode_tip">💡 FTMO, FundedNext gibi değerlendirme kurallarını izlemek için yukarıdan Prop Firm Modu'nu açın.</div>
+        </div>
+
+        <!-- Prop Settings Section (shown when toggle is on) -->
+        <div id="journal-prop-section" class="journal-prop-section">
+          <input type="hidden" id="prop-account-id" value="">
 
       <!-- Şablon & Faz -->
       <div class="journal-prop-row">
@@ -242,7 +266,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </details>
     </div>
-    
+      </div>
+    </div>
     </div>
     <div class="journal-modal-footer">
       <button class="journal-btn-cancel" id="journal-modal-cancel" data-i18n="journal.cancel">İptal</button>
@@ -594,6 +619,7 @@ import Layout from '../layouts/Layout.astro';
 
     var propToggle = document.getElementById('journal-prop-toggle');
     var propSection = document.getElementById('journal-prop-section');
+    var inactiveCard = document.getElementById('prop-inactive-card');
     if (propToggle) {
       propToggle.addEventListener('change', async function() {
         if (propToggle.checked) {
@@ -604,6 +630,7 @@ import Layout from '../layouts/Layout.astro';
                 var quotaWarn = document.getElementById('prop-quota-warning');
                 if (quotaWarn) quotaWarn.style.display = 'flex';
                 propToggle.checked = false;
+                if (inactiveCard) inactiveCard.style.display = 'block';
                 if (window.showToast) {
                   window.showToast('Prop hesabı kotasına ulaştınız. (' + quota.count + '/' + quota.limit + ')', 'warning');
                 }
@@ -612,10 +639,12 @@ import Layout from '../layouts/Layout.astro';
             } catch (qErr) {}
           }
           propSection.classList.add('active');
+          if (inactiveCard) inactiveCard.style.display = 'none';
           if (typeof lucide !== 'undefined') lucide.createIcons();
           updateTimeShiftPreview();
         } else {
           propSection.classList.remove('active');
+          if (inactiveCard) inactiveCard.style.display = 'block';
         }
       });
     }
@@ -639,6 +668,7 @@ import Layout from '../layouts/Layout.astro';
     var descEl = document.getElementById('journal-desc');
     var propToggle = document.getElementById('journal-prop-toggle');
     var propSection = document.getElementById('journal-prop-section');
+    var inactiveCard = document.getElementById('prop-inactive-card');
     var propAccountIdEl = document.getElementById('prop-account-id');
     var propQuotaWarn = document.getElementById('prop-quota-warning');
     var propBalSel = document.getElementById('prop-balance-select');
@@ -667,6 +697,7 @@ import Layout from '../layouts/Layout.astro';
         propToggle.disabled = false;
       }
       if (propSection) propSection.classList.remove('active');
+      if (inactiveCard) inactiveCard.style.display = 'block';
       if (propStartDate) {
         propStartDate.value = new Date().toISOString().slice(0, 10);
         propStartDate.max = new Date().toISOString().slice(0, 10);
@@ -727,6 +758,7 @@ import Layout from '../layouts/Layout.astro';
           try {
             var propAcc = await window.PropService.getPropAccountByJournalId(j.id);
             if (propAcc) {
+              if (inactiveCard) inactiveCard.style.display = 'none';
               if (propAccountIdEl) propAccountIdEl.value = propAcc.id;
               if (propToggle) propToggle.checked = true;
               if (propSection) propSection.classList.add('active');
@@ -775,10 +807,12 @@ import Layout from '../layouts/Layout.astro';
               checkIsCustomized();
               updateTimeShiftPreview(j.id);
             } else {
+              if (inactiveCard) inactiveCard.style.display = 'block';
               if (propToggle) propToggle.checked = false;
               if (propSection) propSection.classList.remove('active');
             }
           } catch (propErr) {
+            if (inactiveCard) inactiveCard.style.display = 'block';
             if (propToggle) propToggle.checked = false;
             if (propSection) propSection.classList.remove('active');
           }

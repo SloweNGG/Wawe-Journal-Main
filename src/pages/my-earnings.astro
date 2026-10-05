@@ -1286,16 +1286,25 @@ import Layout from '../layouts/Layout.astro';
         } else {
           const { data: directData } = await client
             .from('referral_codes')
-            .select('code, discount_percent, usage_count, commission_rate')
+            .select('code, discount_percent, usage_count, usage_count_monthly, usage_count_yearly, commission_rate, commission_rate_yearly')
             .eq('influencer_user_id', session.user.id);
           if (Array.isArray(directData)) {
-            codeRows = directData.map(r => ({
-              code: r.code,
-              discount_percent: r.discount_percent,
-              usage_count: r.usage_count || 0,
-              commission_rate: r.commission_rate || 0,
-              total_earnings: (r.usage_count || 0) * (r.commission_rate || 0)
-            }));
+            codeRows = directData.map(r => {
+              const uMonthly = r.usage_count_monthly !== undefined && r.usage_count_monthly !== null ? r.usage_count_monthly : (r.usage_count || 0);
+              const uYearly = r.usage_count_yearly || 0;
+              const cMonthly = r.commission_rate || 0;
+              const cYearly = r.commission_rate_yearly || 0;
+              return {
+                code: r.code,
+                discount_percent: r.discount_percent,
+                usage_count: r.usage_count || 0,
+                usage_count_monthly: uMonthly,
+                usage_count_yearly: uYearly,
+                commission_rate: cMonthly,
+                commission_rate_yearly: cYearly,
+                total_earnings: (uMonthly * cMonthly) + (uYearly * cYearly)
+              };
+            });
           }
         }
 
@@ -1395,12 +1404,24 @@ import Layout from '../layouts/Layout.astro';
         } else {
           codeRows.forEach(function(item) {
             var tr = document.createElement('tr');
+            var uMonthly = parseInt(item.usage_count_monthly !== undefined && item.usage_count_monthly !== null ? item.usage_count_monthly : (item.usage_count || 0), 10);
+            var uYearly = parseInt(item.usage_count_yearly || 0, 10);
+            var cMonthly = parseFloat(item.commission_rate || 0).toFixed(2);
+            var cYearly = parseFloat(item.commission_rate_yearly || 0).toFixed(2);
+            var totalEarningsVal = parseFloat(item.total_earnings || 0).toFixed(2);
+
             tr.innerHTML =
               '<td style="padding-left: 1.5rem;"><span class="code-chip" style="cursor:pointer;" onclick="copyToClipboard(\'' + escapeHtml(item.code) + '\', \'' + escapeHtml(t('earnings.toast_code_copied', 'Referans kodu kopyalandı!')) + '\')" title="' + escapeHtml(t('earnings.col_code', 'Kodu Kopyala')) + '">' + escapeHtml(item.code) + '</span></td>' +
-              '<td>%' + item.discount_percent + '</td>' +
-              '<td><strong style="color:var(--text);">' + item.usage_count + ' ' + t('earnings.orders_unit', 'adet') + '</strong></td>' +
-              '<td>$' + parseFloat(item.commission_rate || 0).toFixed(2) + '</td>' +
-              '<td style="padding-right: 1.5rem; font-weight:700; color:#22c55e;">$' + parseFloat(item.total_earnings || 0).toFixed(2) + '</td>';
+              '<td><span style="font-weight:600; color:var(--text);">%' + item.discount_percent + '</span></td>' +
+              '<td>' +
+                '<strong style="color:var(--text);">' + item.usage_count + ' ' + t('earnings.orders_unit', 'adet') + '</strong>' +
+                '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' + uMonthly + ' Aylık / ' + uYearly + ' Yıllık</div>' +
+              '</td>' +
+              '<td>' +
+                '<div style="font-size:12px;color:#22c55e;font-weight:600;">$' + cMonthly + ' <span style="font-size:10.5px;color:var(--muted);font-weight:normal;">(Aylık)</span></div>' +
+                '<div style="font-size:12px;color:#818cf8;font-weight:600;margin-top:1px;">$' + cYearly + ' <span style="font-size:10.5px;color:var(--muted);font-weight:normal;">(Yıllık)</span></div>' +
+              '</td>' +
+              '<td style="padding-right: 1.5rem; font-weight:700; color:#22c55e; font-size:1rem;">$' + totalEarningsVal + '</td>';
             codesTbody.appendChild(tr);
           });
         }

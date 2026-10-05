@@ -733,6 +733,10 @@ async function loadPayoutRequests() {
       return [];
     }
 
+    if (!adminState.users || adminState.users.length === 0) {
+      if (typeof loadUsers === 'function') await loadUsers();
+    }
+
     var { data, error } = await client
       .from('payout_requests')
       .select('*, user_profiles:user_id(email, username, avatar_url)')
@@ -778,12 +782,15 @@ async function processPayoutRequest(id, status, adminNote) {
     var rpcSuccess = false;
     try {
       var { data, error } = await client.rpc('admin_process_payout', {
-        p_request_id: id,
+        p_id: id,
         p_status: status,
         p_admin_note: adminNote || ''
       });
-      if (!error) rpcSuccess = true;
-      else console.warn('admin_process_payout RPC warning:', error);
+      if (!error && (!data || data.success !== false)) {
+        rpcSuccess = true;
+      } else {
+        console.warn('admin_process_payout RPC warning:', error || data);
+      }
     } catch(rpcErr) {
       console.warn('admin_process_payout RPC exception:', rpcErr);
     }
@@ -792,7 +799,7 @@ async function processPayoutRequest(id, status, adminNote) {
       var updatePayload = {
         status: status,
         admin_note: adminNote || null,
-        processed_at: new Date().toISOString()
+        updated_at: new Date().toISOString()
       };
       var { error: updateErr } = await client
         .from('payout_requests')
@@ -800,6 +807,31 @@ async function processPayoutRequest(id, status, adminNote) {
         .eq('id', id);
 
       if (updateErr) throw updateErr;
+    }
+
+    // Bildirim gönderme (opsiyonel)
+    try {
+      var payoutItem = (adminState.payouts || []).find(function(p) { return p.id === id; });
+      var targetUserId = payoutItem ? payoutItem.user_id : null;
+      if (targetUserId) {
+        var notifType = status === 'approved' ? 'success' : 'warning';
+        var notifTitle = status === 'approved' ? 'Para Çekme Talebiniz Ödendi' : 'Para Çekme Talebiniz Reddedildi';
+        var notifMsg = status === 'approved'
+          ? (adminNote ? ('Ödeme tamamlandı. Ref/TxID: ' + adminNote) : 'Para çekme talebiniz onaylandı ve cüzdanınıza transfer edildi.')
+          : (adminNote ? ('Çekim talebiniz reddedildi. Gerekçe: ' + adminNote) : 'Para çekme talebiniz reddedildi ve bakiye hesabınıza iade edildi.');
+
+        await client.from('notifications').insert([{
+          user_id: targetUserId,
+          type: notifType,
+          title: notifTitle,
+          message: notifMsg,
+          meta_data: { payout_id: id, status: status, note: adminNote || '' },
+          is_read: false,
+          created_at: new Date().toISOString()
+        }]);
+      }
+    } catch (notifErr) {
+      console.warn('Payout bildirimi tablosuna eklenemedi:', notifErr);
     }
 
     if (typeof showToast === 'function') {
@@ -866,10 +898,13 @@ async function loadPartnerApplications() {
   }
 }
 
-async function reviewPartnerApplication(appId, status, adminNote, code, discount, commission) {
+async function reviewPartnerApplication(appId, status, adminNote, code, discount, commission, commissionYearly) {
   try {
     var client = getSbClient();
     if (!client) throw new Error('Veritabanı bağlantısı yok');
+
+    var commMonthly = commission ? parseFloat(commission) : 4;
+    var commYearly = commissionYearly ? parseFloat(commissionYearly) : 25;
 
     var rpcOk = false;
     try {
@@ -879,7 +914,8 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
         p_admin_note: adminNote || '',
         p_code: code || null,
         p_discount: discount ? parseFloat(discount) : 10,
-        p_commission: commission ? parseFloat(commission) : 4
+        p_commission: commMonthly,
+        p_commission_yearly: commYearly
       });
       if (!rpcErr && rpcData && rpcData.success) {
         rpcOk = true;
@@ -918,7 +954,8 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
             code: code.toUpperCase().trim(),
             influencer_user_id: app.user_id,
             discount_percent: discount ? parseFloat(discount) : 10,
-            commission_rate: commission ? parseFloat(commission) : 4,
+            commission_rate: commMonthly,
+            commission_rate_yearly: commYearly,
             is_active: true
           }]);
         }

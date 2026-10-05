@@ -375,11 +375,14 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
       created_at: new Date().toISOString()
     }]);
 
-  // Referans kodu geçerliyse kullanımı artır
+  // Referans kodu geçerliyse kullanımı artır (Aylık/Yıllık ayrımı ile)
   if (appliedReferral) {
     try {
-      await supabase.rpc('increment_referral_usage', { p_code: appliedReferral });
-      console.log(`✅ Incremented referral usage: ${appliedReferral}`);
+      await supabase.rpc('increment_referral_usage', { 
+        p_code: appliedReferral,
+        p_plan_type: planType || 'monthly'
+      });
+      console.log(`✅ Incremented referral usage: ${appliedReferral} (plan: ${planType})`);
     } catch (e) {
       console.warn(`⚠️ Could not increment referral ${appliedReferral}:`, e);
     }

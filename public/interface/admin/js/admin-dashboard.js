@@ -523,6 +523,7 @@ function renderReferralCodesTable() {
               <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>\
             </div>\
             ' + (item.referrer_name ? '<div class="coupon-referrer">' + escapeHtml(item.referrer_name) + (item.referrer_email ? ' <span class="text-muted">(' + escapeHtml(item.referrer_email) + ')</span>' : '') + '</div>' : '<div class="coupon-referrer text-muted">Genel Kampanya</div>') + '\
+            <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">Komisyon: <span style="color:#22c55e;font-weight:600;">$' + (item.commission_rate || 0) + ' (Aylık)</span> / <span style="color:#818cf8;font-weight:600;">$' + (item.commission_rate_yearly || 0) + ' (Yıllık)</span></div>\
           </div>\
         </td>\
         <td>\
@@ -607,6 +608,9 @@ window.editReferralCode = function(id) {
   
   var commEl = document.getElementById('rc-commission');
   if (commEl) commEl.value = item.commission_rate || '0';
+
+  var commYrEl = document.getElementById('rc-commission-yearly');
+  if (commYrEl) commYrEl.value = item.commission_rate_yearly || '0';
   
   var titleEl = document.getElementById('rc-modal-title');
   if (titleEl) titleEl.textContent = 'Referans Kodunu Düzenle';
@@ -647,6 +651,8 @@ function initReferralModal() {
       document.getElementById('rc-active').value = 'true';
       document.getElementById('rc-influencer-email').value = '';
       document.getElementById('rc-commission').value = '';
+      var rcCommYr = document.getElementById('rc-commission-yearly');
+      if (rcCommYr) rcCommYr.value = '';
       document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
       modal.classList.add('open');
     });
@@ -676,6 +682,8 @@ function initReferralModal() {
       
       var influencerEmail = document.getElementById('rc-influencer-email').value.trim().toLowerCase();
       var commissionRate = parseFloat(document.getElementById('rc-commission').value);
+      var commYrEl = document.getElementById('rc-commission-yearly');
+      var commissionRateYearly = commYrEl ? parseFloat(commYrEl.value) : 0;
       
       var influencerUserId = null;
       if (influencerEmail) {
@@ -701,6 +709,7 @@ function initReferralModal() {
         referrer_email: document.getElementById('rc-email').value.trim() || null,
         influencer_user_id: influencerUserId,
         commission_rate: isNaN(commissionRate) ? 0 : commissionRate,
+        commission_rate_yearly: isNaN(commissionRateYearly) ? 0 : commissionRateYearly,
         max_usage: maxUsageVal ? parseInt(maxUsageVal, 10) : null,
         expires_at: expiresVal ? new Date(expiresVal).toISOString() : null,
         is_active: document.getElementById('rc-active').value === 'true'
@@ -1929,6 +1938,8 @@ function openPartnerAppModal(appId, actionType) {
     document.getElementById('pa-code-input').value = suggestedCode;
     document.getElementById('pa-discount-input').value = '10';
     document.getElementById('pa-commission-input').value = '4';
+    var paCommYrEl = document.getElementById('pa-commission-yearly-input');
+    if (paCommYrEl) paCommYrEl.value = '25';
   } else {
     titleEl.textContent = 'Partner Başvurusunu Reddet';
     approveFields.style.display = 'none';
@@ -1960,6 +1971,8 @@ async function confirmPartnerAppAction() {
     code = document.getElementById('pa-code-input').value.trim().toUpperCase();
     discount = parseFloat(document.getElementById('pa-discount-input').value) || 10;
     commission = parseFloat(document.getElementById('pa-commission-input').value) || 4;
+    var paCommYr = document.getElementById('pa-commission-yearly-input');
+    var commissionYearly = paCommYr ? (parseFloat(paCommYr.value) || 25) : 25;
 
     if (!code) {
       if (typeof showToast === 'function') showToast('Lütfen referans kodu girin.', 'error');
@@ -1979,7 +1992,7 @@ async function confirmPartnerAppAction() {
   btn.textContent = 'İşleniyor...';
 
   try {
-    var ok = await reviewPartnerApplication(appId, actionType === 'approve' ? 'approved' : 'rejected', adminNote, code, discount, commission);
+    var ok = await reviewPartnerApplication(appId, actionType === 'approve' ? 'approved' : 'rejected', adminNote, code, discount, commission, commissionYearly);
     if (ok) {
       closePartnerAppModal();
     }
@@ -2011,4 +2024,303 @@ window.openPartnerAppModal = openPartnerAppModal;
 window.closePartnerAppModal = closePartnerAppModal;
 window.confirmPartnerAppAction = confirmPartnerAppAction;
 window.confirmDeletePartnerApp = confirmDeletePartnerApp;
+
+// ============================================================
+// PAYOUT REQUESTS MANAGEMENT (ÇEKİM TALEPLERİ)
+// ============================================================
+
+var currentPayoutFilter = 'all';
+var payoutSearchTerm = '';
+
+function renderPayoutsTable() {
+  var container = document.getElementById('payouts-admin-container');
+  if (!container) return;
+
+  var payouts = adminState.payouts || [];
+  
+  var totalCount = payouts.length;
+  var pendingList = payouts.filter(function(p) { return p.status === 'pending'; });
+  var approvedList = payouts.filter(function(p) { return p.status === 'approved'; });
+  var rejectedList = payouts.filter(function(p) { return p.status === 'rejected'; });
+
+  var pendingCount = pendingList.length;
+  var approvedCount = approvedList.length;
+  var rejectedCount = rejectedList.length;
+
+  var pendingSum = pendingList.reduce(function(sum, p) { return sum + (parseFloat(p.amount) || 0); }, 0);
+  var approvedSum = approvedList.reduce(function(sum, p) { return sum + (parseFloat(p.amount) || 0); }, 0);
+
+  var filtered = payouts.filter(function(item) {
+    if (currentPayoutFilter !== 'all' && item.status !== currentPayoutFilter) return false;
+    if (payoutSearchTerm) {
+      var term = payoutSearchTerm.toLowerCase();
+      var user = item.user_profiles || (adminState.users || []).find(function(u) { return u.id === item.user_id; }) || {};
+      var userEmail = (user.email || '').toLowerCase();
+      var addr = (item.payout_address || '').toLowerCase();
+      var note = (item.admin_note || '').toLowerCase();
+      var curr = (item.currency || '').toLowerCase();
+      return userEmail.indexOf(term) !== -1 || addr.indexOf(term) !== -1 || note.indexOf(term) !== -1 || curr.indexOf(term) !== -1;
+    }
+    return true;
+  });
+
+  var html = '';
+
+  // KPI Summary Cards
+  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">';
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Toplam Çekim Talebi</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:var(--text);">' + totalCount + '</div>';
+  html += '  </div>';
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Bekleyen Ödemeler</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#f59e0b;">$' + pendingSum.toFixed(2) + ' <span style="font-size:12px; font-weight:normal; color:var(--muted);">(' + pendingCount + ')</span></div>';
+  html += '  </div>';
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Tamamlanan Ödemeler</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#22c55e;">$' + approvedSum.toFixed(2) + ' <span style="font-size:12px; font-weight:normal; color:var(--muted);">(' + approvedCount + ')</span></div>';
+  html += '  </div>';
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Reddedilen Talepler</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#ef4444;">' + rejectedCount + '</div>';
+  html += '  </div>';
+  html += '</div>';
+
+  // Filters & Search Bar
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">';
+  html += '  <div class="payout-filters">';
+  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'all' ? ' active' : '') + '" onclick="setPayoutFilter(\'all\')">Tümü (' + totalCount + ')</button>';
+  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'pending' ? ' active' : '') + '" onclick="setPayoutFilter(\'pending\')">Bekleyen (' + pendingCount + ')</button>';
+  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'approved' ? ' active' : '') + '" onclick="setPayoutFilter(\'approved\')">Ödenen (' + approvedCount + ')</button>';
+  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'rejected' ? ' active' : '') + '" onclick="setPayoutFilter(\'rejected\')">Reddedilen (' + rejectedCount + ')</button>';
+  html += '  </div>';
+  html += '  <div class="search-wrap">';
+  html += '    <input type="text" id="payout-search-input" class="search-input" placeholder="Kullanıcı veya cüzdan ara..." value="' + (payoutSearchTerm ? payoutSearchTerm.replace(/"/g, '&quot;') : '') + '" oninput="handlePayoutSearch(this.value)" style="width:230px;" />';
+  html += '  </div>';
+  html += '</div>';
+
+  // Table
+  html += '<div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">';
+  html += '  <div style="overflow-x:auto;">';
+  html += '    <table class="ww-table">';
+  html += '      <thead>';
+  html += '        <tr>';
+  html += '          <th>Tarih</th>';
+  html += '          <th>Kullanıcı</th>';
+  html += '          <th>Tutar</th>';
+  html += '          <th>Kripto</th>';
+  html += '          <th>Çekim Adresi</th>';
+  html += '          <th>Durum</th>';
+  html += '          <th>TxID / Admin Notu</th>';
+  html += '          <th style="text-align:right;">İşlem</th>';
+  html += '        </tr>';
+  html += '      </thead>';
+  html += '      <tbody>';
+
+  if (filtered.length === 0) {
+    html += '<tr><td colspan="8" style="text-align:center; padding:3rem; color:var(--muted); font-size:14px;">Herhangi bir para çekme talebi bulunamadı.</td></tr>';
+  } else {
+    filtered.forEach(function(item) {
+      var user = item.user_profiles || (adminState.users || []).find(function(u) { return u.id === item.user_id; }) || {};
+      var userEmail = user.email || user.username || '—';
+      var dateStr = typeof formatDateFull === 'function' ? formatDateFull(item.created_at) : (item.created_at || '—');
+      var amountVal = parseFloat(item.amount) || 0;
+      var curr = (item.currency || 'LTC').toUpperCase();
+      var currClass = curr === 'BTC' ? 'crypto-btc' : 'crypto-ltc';
+
+      var statusBadge = '';
+      if (item.status === 'pending') {
+        statusBadge = '<span class="payout-status-badge pending">⏳ Beklemede</span>';
+      } else if (item.status === 'approved') {
+        statusBadge = '<span class="payout-status-badge approved">✅ Ödendi</span>';
+      } else if (item.status === 'rejected') {
+        statusBadge = '<span class="payout-status-badge rejected">❌ Reddedildi</span>';
+      }
+
+      var noteShort = item.admin_note ? (item.admin_note.length > 35 ? item.admin_note.substring(0, 35) + '...' : item.admin_note) : '—';
+
+      var safeAddr = (item.payout_address || '').replace(/'/g, "\\'");
+      var addrChip = '\
+        <div class="payout-address-chip" onclick="copyPayoutAddress(\'' + safeAddr + '\')" title="Kopyalamak için tıklayın">\
+          <span class="addr-text">' + (item.payout_address || '—') + '</span>\
+          <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>\
+        </div>';
+
+      var actionBtns = '';
+      if (item.status === 'pending') {
+        actionBtns = '\
+          <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">\
+            <button class="btn btn-primary btn-sm" onclick="openPayoutModal(\'' + item.id + '\', \'approve\')" style="padding:4px 10px; font-size:11.5px; background:#22c55e; border-color:#22c55e; display:inline-flex; align-items:center; gap:4px;">\
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>\
+              Öde & Onayla\
+            </button>\
+            <button class="btn btn-danger btn-sm" onclick="openPayoutModal(\'' + item.id + '\', \'reject\')" style="padding:4px 10px; font-size:11.5px;">\
+              Reddet\
+            </button>\
+          </div>';
+      } else if (item.status === 'approved') {
+        actionBtns = '\
+          <div style="display:flex; justify-content:flex-end; align-items:center;">\
+            <span style="color:#22c55e; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">\
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>\
+              Ödeme Yapıldı\
+            </span>\
+          </div>';
+      } else {
+        var rejectReason = item.admin_note ? (' title="' + item.admin_note.replace(/"/g, '&quot;') + '"') : '';
+        actionBtns = '\
+          <div style="display:flex; justify-content:flex-end; align-items:center;">\
+            <span style="color:#ef4444; font-size:12px; font-weight:600;"' + rejectReason + '>Talebi Reddedildi</span>\
+          </div>';
+      }
+
+      html += '<tr>';
+      html += '  <td style="font-size:12px; color:var(--muted); white-space:nowrap;">' + dateStr + '</td>';
+      html += '  <td style="font-weight:600; color:var(--text);">' + (userEmail.replace(/[&<>"']/g, '')) + '</td>';
+      html += '  <td><strong style="color:#22c55e; font-size:13.5px;">$' + amountVal.toFixed(2) + '</strong></td>';
+      html += '  <td><span class="crypto-badge ' + currClass + '">' + curr + '</span></td>';
+      html += '  <td>' + addrChip + '</td>';
+      html += '  <td>' + statusBadge + '</td>';
+      html += '  <td style="font-size:12px; color:var(--muted); max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="' + (item.admin_note ? item.admin_note.replace(/"/g, '&quot;') : '') + '">' + (noteShort.replace(/[&<>"']/g, '')) + '</td>';
+      html += '  <td style="text-align:right;">' + actionBtns + '</td>';
+      html += '</tr>';
+    });
+  }
+
+  html += '      </tbody>';
+  html += '    </table>';
+  html += '  </div>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function setPayoutFilter(filter) {
+  currentPayoutFilter = filter;
+  renderPayoutsTable();
+}
+
+function handlePayoutSearch(val) {
+  payoutSearchTerm = val;
+  clearTimeout(window._payoutSearchTimeout);
+  window._payoutSearchTimeout = setTimeout(function() {
+    renderPayoutsTable();
+  }, 250);
+}
+
+function copyPayoutAddress(addr) {
+  if (!addr) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(addr).then(function() {
+      if (typeof showToast === 'function') showToast('Cüzdan adresi kopyalandı: ' + addr, 'success');
+      else alert('Kopyalandı: ' + addr);
+    }).catch(function() {
+      fallbackCopyText(addr);
+    });
+  } else {
+    fallbackCopyText(addr);
+  }
+}
+
+function fallbackCopyText(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    if (typeof showToast === 'function') showToast('Cüzdan adresi kopyalandı', 'success');
+  } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+function openPayoutModal(payoutId, actionType) {
+  var payout = (adminState.payouts || []).find(function(p) { return p.id === payoutId; });
+  if (!payout) return;
+
+  var modal = document.getElementById('payout-action-modal');
+  if (!modal) return;
+
+  document.getElementById('payout-action-id').value = payoutId;
+  document.getElementById('payout-action-type').value = actionType;
+
+  var user = payout.user_profiles || (adminState.users || []).find(function(u) { return u.id === payout.user_id; }) || {};
+  var userEmail = user.email || user.username || '—';
+  document.getElementById('payout-modal-user').textContent = userEmail;
+  document.getElementById('payout-modal-amount').textContent = '$' + (parseFloat(payout.amount) || 0).toFixed(2);
+  document.getElementById('payout-modal-currency').textContent = (payout.currency || 'LTC').toUpperCase();
+  document.getElementById('payout-modal-address').textContent = payout.payout_address || '—';
+
+  var noteInput = document.getElementById('payout-modal-note');
+  noteInput.value = '';
+
+  var titleEl = document.getElementById('payout-modal-title');
+  var noteLabel = document.getElementById('payout-note-label');
+  var noteHelp = document.getElementById('payout-note-help');
+  var confirmBtn = document.getElementById('confirm-payout-btn');
+
+  if (actionType === 'approve') {
+    titleEl.textContent = 'Çekim Talebini Onayla (Ödeme Yapıldı)';
+    noteLabel.textContent = 'Admin Notu / İşlem Referansı (TxID)';
+    noteInput.placeholder = 'Örn: LTC TXID: 3a2c5f... veya Transfer tamamlandı';
+    noteHelp.textContent = 'Girilen TxID veya not kullanıcının çekim geçmişinde gösterilir.';
+    confirmBtn.textContent = 'Onayla & Ödendi Olarak İşaretle';
+    confirmBtn.className = 'btn btn-primary';
+    confirmBtn.style.background = '#22c55e';
+    confirmBtn.style.borderColor = '#22c55e';
+  } else {
+    titleEl.textContent = 'Çekim Talebini Reddet';
+    noteLabel.textContent = 'Reddetme Gerekçesi (Zorunlu) *';
+    noteInput.placeholder = 'Örn: Cüzdan adresi hatalı veya bakiye şartı sağlanamadı.';
+    noteHelp.textContent = 'Bu açıklama kullanıcıya gösterilecek ve çekim tutarı iade edilecektir.';
+    confirmBtn.textContent = 'Talebi Reddet';
+    confirmBtn.className = 'btn btn-danger';
+    confirmBtn.style.background = '#ef4444';
+    confirmBtn.style.borderColor = '#ef4444';
+  }
+
+  modal.classList.add('open');
+}
+
+function closePayoutModal() {
+  var modal = document.getElementById('payout-action-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function confirmPayoutAction() {
+  var payoutId = document.getElementById('payout-action-id').value;
+  var actionType = document.getElementById('payout-action-type').value;
+  var note = document.getElementById('payout-modal-note').value.trim();
+
+  if (actionType === 'reject' && !note) {
+    if (typeof showToast === 'function') showToast('Lütfen çekim talebinin reddedilme gerekçesini belirtin.', 'error');
+    else alert('Lütfen red gerekçesini belirtin.');
+    return;
+  }
+
+  var btn = document.getElementById('confirm-payout-btn');
+  btn.disabled = true;
+  btn.textContent = 'İşleniyor...';
+
+  try {
+    var status = actionType === 'approve' ? 'approved' : 'rejected';
+    var ok = await processPayoutRequest(payoutId, status, note);
+    if (ok) {
+      closePayoutModal();
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+window.renderPayoutsTable = renderPayoutsTable;
+window.setPayoutFilter = setPayoutFilter;
+window.handlePayoutSearch = handlePayoutSearch;
+window.copyPayoutAddress = copyPayoutAddress;
+window.openPayoutModal = openPayoutModal;
+window.closePayoutModal = closePayoutModal;
+window.confirmPayoutAction = confirmPayoutAction;
+
 

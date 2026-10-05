@@ -1,4 +1,4 @@
-﻿---
+---
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr">
@@ -168,14 +168,18 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
         <div class="field-row">
-          <div class="field">
-            <label>Influencer HesabÄ± (Sistem E-postasÄ±)</label>
-            <input type="email" id="rc-influencer-email" placeholder="Sisteme kayÄ±tlÄ± e-posta..." />
-            <small style="color:var(--muted);font-size:0.75rem;">BoÅŸ bÄ±rakÄ±lÄ±rsa panele yansÄ±maz.</small>
+          <div class="field" style="flex:1.5;">
+            <label>Influencer Hesabı (Sistem E-postası)</label>
+            <input type="email" id="rc-influencer-email" placeholder="Sisteme kayıtlı e-posta..." />
+            <small style="color:var(--muted);font-size:0.75rem;">Boş bırakılırsa panele yansımaz.</small>
           </div>
           <div class="field">
-            <label>Komisyon OranÄ± ($)</label>
-            <input type="number" id="rc-commission" placeholder="KullanÄ±m baÅŸÄ±na kazanÃ§ (Ã¶rn: 5)" min="0" step="0.01" />
+            <label>Aylık Komisyon ($)</label>
+            <input type="number" id="rc-commission" placeholder="Örn: 4" min="0" step="0.01" />
+          </div>
+          <div class="field">
+            <label>Yıllık Komisyon ($)</label>
+            <input type="number" id="rc-commission-yearly" placeholder="Örn: 25" min="0" step="0.01" />
           </div>
         </div>
         <div class="field-row">
@@ -209,8 +213,8 @@ import Layout from '../layouts/Layout.astro';
   <div id="payout-action-modal" class="modal-overlay">
     <div class="modal-box" style="max-width:480px;">
       <div class="modal-header">
-        <h2 id="payout-modal-title">Ã‡ekim Talebi Ä°ÅŸlemi</h2>
-        <button class="modal-close" id="close-payout-modal" onclick="if(window.closePayoutModal) window.closePayoutModal();">âœ•</button>
+        <h2 id="payout-modal-title">Çekim Talebi İşlemi</h2>
+        <button class="modal-close" id="close-payout-modal" onclick="if(window.closePayoutModal) window.closePayoutModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="payout-action-id" />
@@ -218,31 +222,31 @@ import Layout from '../layouts/Layout.astro';
 
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem;font-size:13px;">
           <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">KullanÄ±cÄ±:</span>
-            <strong id="payout-modal-user" style="color:var(--text);">â€”</strong>
+            <span style="color:var(--muted);">Kullanıcı:</span>
+            <strong id="payout-modal-user" style="color:var(--text);">—</strong>
           </div>
           <div style="display:flex;justify-content:space-between;">
             <span style="color:var(--muted);">Tutar:</span>
-            <strong id="payout-modal-amount" style="color:#22c55e;font-size:15px;">â€”</strong>
+            <strong id="payout-modal-amount" style="color:#22c55e;font-size:15px;">—</strong>
           </div>
           <div style="display:flex;justify-content:space-between;">
             <span style="color:var(--muted);">Kripto Para:</span>
-            <span id="payout-modal-currency" style="font-weight:600;">â€”</span>
+            <span id="payout-modal-currency" style="font-weight:600;">—</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;">
-            <span style="color:var(--muted);">Ã‡ekim Adresi:</span>
-            <div id="payout-modal-address" style="font-family:monospace;background:var(--surface);border:1px solid var(--border);padding:6px 8px;border-radius:6px;word-break:break-all;font-size:12px;color:var(--text);user-select:all;">â€”</div>
+            <span style="color:var(--muted);">Çekim Adresi:</span>
+            <div id="payout-modal-address" style="font-family:monospace;background:var(--surface);border:1px solid var(--border);padding:6px 8px;border-radius:6px;word-break:break-all;font-size:12px;color:var(--text);user-select:all;">—</div>
           </div>
         </div>
 
         <div class="field">
-          <label id="payout-note-label">Admin Notu / Ä°ÅŸlem ReferansÄ± (TxID)</label>
-          <textarea id="payout-modal-note" rows="3" placeholder="Ã–rn: TXID: a1b2c3d4... veya onaylandÄ±/reddedildi aÃ§Ä±klamasÄ±"></textarea>
-          <small id="payout-note-help" style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">Bu not kullanÄ±cÄ± tarafÄ±ndan da gÃ¶rÃ¼ntÃ¼lenebilir.</small>
+          <label id="payout-note-label">Admin Notu / İşlem Referansı (TxID)</label>
+          <textarea id="payout-modal-note" rows="3" placeholder="Örn: TXID: a1b2c3d4... veya onaylandı/reddedildi açıklaması"></textarea>
+          <small id="payout-note-help" style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">Bu not kullanıcı tarafından da görüntülenebilir.</small>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancel-payout-btn" onclick="if(window.closePayoutModal) window.closePayoutModal();">VazgeÃ§</button>
+        <button class="btn btn-ghost" id="cancel-payout-btn" onclick="if(window.closePayoutModal) window.closePayoutModal();">Vazgeç</button>
         <button class="btn btn-primary" id="confirm-payout-btn" onclick="if(window.confirmPayoutAction) window.confirmPayoutAction();">Onayla</button>
       </div>
     </div>
@@ -294,10 +298,15 @@ import Layout from '../layouts/Layout.astro';
               <label>KullanÄ±cÄ± Ä°ndirimi (%) *</label>
               <input type="number" id="pa-discount-input" value="10" min="0" max="100" />
             </div>
-          </div>
-          <div class="field">
-            <label>Komisyon OranÄ± ($/satÄ±ÅŸ) *</label>
-            <input type="number" id="pa-commission-input" value="4" min="0" step="0.5" />
+          <div class="field-row">
+            <div class="field">
+              <label>Aylık Komisyon ($/satış) *</label>
+              <input type="number" id="pa-commission-input" value="4" min="0" step="0.5" />
+            </div>
+            <div class="field">
+              <label>Yıllık Komisyon ($/satış) *</label>
+              <input type="number" id="pa-commission-yearly-input" value="25" min="0" step="0.5" />
+            </div>
           </div>
         </div>
 

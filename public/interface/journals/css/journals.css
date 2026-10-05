@@ -340,13 +340,19 @@
 .journal-modal {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
   animation: modalIn 0.2s ease-out;
+}
+
+#journal-modal .journal-modal {
+  max-width: 900px;
 }
 
 @keyframes modalIn {
@@ -365,8 +371,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem 1.35rem;
+  padding: 1.1rem 1.45rem;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .journal-modal-header h3 {
@@ -393,7 +400,62 @@
 }
 
 .journal-modal-body {
-  padding: 1.25rem 1.35rem;
+  padding: 1.35rem 1.45rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.journal-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.journal-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.journal-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+.journal-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Yatay İki Kolonlu Modal Düzeni */
+.journal-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.08fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.journal-modal-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.journal-col-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.journal-col-heading svg,
+.journal-col-heading i {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
 }
 
 .journal-field {
@@ -504,9 +566,70 @@
 .journal-modal-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 0.65rem;
-  padding: 0.85rem 1.35rem 1.1rem;
+  padding: 0.95rem 1.45rem;
   border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+/* Standart Hesap Bilgilendirme Kartı (Prop Kapalıyken) */
+.journal-prop-inactive-box {
+  background: linear-gradient(145deg, rgba(124, 109, 250, 0.05), rgba(168, 85, 247, 0.02));
+  border: 1px dashed rgba(139, 92, 246, 0.28);
+  border-radius: 12px;
+  padding: 1.35rem 1.1rem;
+  text-align: center;
+  margin-top: 0.85rem;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.journal-prop-inactive-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(124, 109, 250, 0.12);
+  border: 1px solid rgba(124, 109, 250, 0.25);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+}
+
+.journal-prop-inactive-icon svg,
+.journal-prop-inactive-icon i {
+  width: 20px;
+  height: 20px;
+}
+
+.journal-prop-inactive-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.journal-prop-inactive-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0 0 0.85rem 0;
+}
+
+.journal-prop-inactive-tip {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.76rem;
+  color: #c4b5fd;
+  background: rgba(124, 109, 250, 0.08);
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  line-height: 1.45;
+  text-align: left;
 }
 
 .journal-btn-cancel {
@@ -890,6 +1013,41 @@ body.light-theme .journal-prop-section {
   stroke: currentColor;
 }
 
+/* Tablet & Mobil Responsive */
+@media (max-width: 768px) {
+  .journal-modal {
+    max-height: 94vh;
+    border-radius: 14px;
+    margin: 0.5rem;
+  }
+
+  #journal-modal .journal-modal {
+    max-width: 100%;
+  }
+
+  .journal-modal-header {
+    padding: 1rem 1.15rem;
+  }
+
+  .journal-modal-body {
+    padding: 1.1rem;
+  }
+
+  .journal-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .journal-prop-row,
+  .journal-custom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-modal-footer {
+    padding: 0.85rem 1.15rem;
+  }
+}
+
 /* Mobil */
 @media (max-width: 640px) {
   .journals-page-main {
@@ -914,11 +1072,20 @@ body.light-theme .journal-prop-section {
   }
 
   .journal-icon-picker {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(6, 1fr);
   }
+}
 
-  .journal-prop-row,
-  .journal-custom-grid {
-    grid-template-columns: 1fr;
-  }
+/* Light Theme Ekleri */
+body.light-theme .journal-col-heading {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+body.light-theme .journal-prop-inactive-box {
+  background: rgba(124, 109, 250, 0.04);
+  border-color: rgba(124, 109, 250, 0.22);
+}
+body.light-theme .journal-prop-inactive-tip {
+  background: rgba(124, 109, 250, 0.06);
+  color: #6366f1;
+  border-color: rgba(124, 109, 250, 0.15);
 }

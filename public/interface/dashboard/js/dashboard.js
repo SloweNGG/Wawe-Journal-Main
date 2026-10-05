@@ -160,19 +160,20 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     return (num >= 0 ? '+' : '-') + symbol + formatted;
   }
 
-  // ⭐ FIX (LOCALE): tr-TR yapıldı
+  // Standard financial notation: K (thousand), M (million), B (billion)
   function formatCompactCurrency(value) {
     var symbol = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
     var num = parseFloat(value) || 0;
     var abs = Math.abs(num);
     var compact;
-    try {
-      compact = new Intl.NumberFormat('tr-TR', {
-        notation: 'compact',
-        maximumFractionDigits: 1
-      }).format(abs);
-    } catch (e) {
-      compact = abs.toFixed(0);
+    if (abs >= 1e9) {
+      compact = (abs / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    } else if (abs >= 1e6) {
+      compact = (abs / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else if (abs >= 1e3) {
+      compact = (abs / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    } else {
+      compact = abs.toFixed(abs % 1 === 0 ? 0 : 2);
     }
     return (num >= 0 ? '+' : '-') + symbol + compact;
   }
@@ -454,10 +455,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
                 var targetH;
                 if (containerId === 'chart-expand-container') {
                   targetH = isMobile ? 260 : 380;
-                } else if (containerId === 'chart-cumulative' || containerId === 'chart-winloss') {
+                } else if (containerId === 'chart-cumulative') {
                   targetH = isMobile ? 200 : 250;
-                } else if (containerId === 'chart-winloss-mobile' || containerId === 'chart-direction-mobile') {
-                  targetH = isMobile ? 180 : 200;
+                } else if (containerId === 'chart-winloss' || containerId === 'chart-direction') {
+                  targetH = isMobile ? 180 : 210;
                 } else {
                   targetH = isMobile ? 180 : 220;
                 }
@@ -1166,7 +1167,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         delete lwcCharts[lwcId];
       }
     }
-    var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-winloss-mobile', 'chart-daily', 'chart-symbol', 'chart-direction', 'chart-direction-mobile'];
+    var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol', 'chart-direction'];
     chartIds.forEach(function (id) {
       if (apexCharts[id]) {
         try {
@@ -1374,8 +1375,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       days[localDateStr(d)] = 0;
     }
     (trades || []).forEach(function (t) {
-      if (t.exit_price && days[t.trade_date] !== undefined) {
-        days[t.trade_date] += calcTradePnL(t);
+      var dStr = (t.trade_date || '').split('T')[0].split(' ')[0];
+      if (!dStr && t.created_at) {
+        try { dStr = new Date(t.created_at).toISOString().split('T')[0]; } catch(e) {}
+      }
+      var pnl = calcTradePnL(t);
+      if (dStr && (t.exit_price || t.pnl !== null && t.pnl !== undefined)) {
+        if (days[dStr] === undefined) {
+          days[dStr] = 0;
+        }
+        days[dStr] += pnl;
       }
     });
 
@@ -1729,8 +1738,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       days[localDateStr(d)] = 0;
     }
     trades.forEach(function (t) {
-      if (t.exit_price && days[t.trade_date] !== undefined) {
-        days[t.trade_date] += calcTradePnL(t);
+      var dStr = (t.trade_date || '').split('T')[0].split(' ')[0];
+      if (!dStr && t.created_at) {
+        try { dStr = new Date(t.created_at).toISOString().split('T')[0]; } catch(e) {}
+      }
+      var pnl = calcTradePnL(t);
+      if (dStr && (t.exit_price || t.pnl !== null && t.pnl !== undefined)) {
+        if (days[dStr] === undefined) {
+          days[dStr] = 0;
+        }
+        days[dStr] += pnl;
       }
     });
 
@@ -2063,11 +2080,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     chartsBusy = true;
 
     try {
-      var isMobileView = window.innerWidth < 768;
-      var winlossTargetId = isMobileView ? 'chart-winloss-mobile' : 'chart-winloss';
-      var directionTargetId = isMobileView ? 'chart-direction-mobile' : 'chart-direction';
-
-      var containerIds = ['chart-cumulative', winlossTargetId, 'chart-daily', 'chart-symbol', directionTargetId];
+      var winlossTargetId = 'chart-winloss';
+      var directionTargetId = 'chart-direction';
+      var containerIds = ['chart-cumulative', 'chart-daily', 'chart-symbol', winlossTargetId, directionTargetId];
       var allContainersExist = true;
 
       for (var c = 0; c < containerIds.length; c++) {
@@ -2237,12 +2252,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   function setupChartExpansion() {
     var chartConfigs = [
       { cardSelector: '#charts-top-grid .chart-card:nth-child(1)', type: 'cumulative', title: i18n.t('dashboard.chart.cumulative') || 'Kümülatif K/Z Serisi' },
-      { cardSelector: '#charts-top-grid .chart-card:nth-child(2)', type: 'winloss', title: i18n.t('dashboard.chart.winloss') || 'Win / Loss Dağılımı' },
       { cardSelector: '#charts-bottom-grid .chart-card:nth-child(1)', type: 'daily', title: i18n.t('dashboard.chart.daily') || 'Günlük K/Z – Son 30 Gün' },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(2)', type: 'symbol', title: i18n.t('dashboard.chart.symbol') || 'Sembol Bazlı Performans' },
-      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(3)', type: 'direction', title: i18n.t('dashboard.chart.direction') || 'Long / Short Dağılımı' },
-      { cardSelector: '.donut-mobile-slide:first-child', type: 'winloss', title: i18n.t('dashboard.chart.winloss') || 'Win / Loss Dağılımı' },
-      { cardSelector: '.donut-mobile-slide:last-child', type: 'direction', title: i18n.t('dashboard.chart.direction') || 'Long / Short Dağılımı' }
+      { cardSelector: '#charts-bottom-grid .chart-card:nth-child(2)', type: 'symbol', title: i18n.t('dashboard.chart.symbol') || 'Sembol Bazlı Performans' }
     ];
 
     chartConfigs.forEach(function (cfg) {
@@ -2278,6 +2289,22 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         openChartExpansion(cfg.type, cfg.title);
       });
     });
+
+    // Donut slider card expansion
+    var donutCard = document.getElementById('donut-slider-card');
+    if (donutCard) {
+      donutCard.classList.add('expandable');
+      donutCard.addEventListener('click', function (e) {
+        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.donut-slider-controls')) return;
+        var activeDot = document.querySelector('#donut-slider-dots .donut-slider-dot.active');
+        var slideIdx = activeDot ? parseInt(activeDot.getAttribute('data-slide'), 10) : 0;
+        if (slideIdx === 1) {
+          openChartExpansion('direction', i18n.t('dashboard.chart.direction') || 'Long / Short Dağılımı');
+        } else {
+          openChartExpansion('winloss', i18n.t('dashboard.chart.winloss') || 'Win / Loss Dağılımı');
+        }
+      });
+    }
 
     if (!window._chartExpandEscBound) {
       window._chartExpandEscBound = true;
@@ -3072,15 +3099,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             renderAttempts = 0;
             renderCharts(filtered);
             setupChartExpansion();
+            try { window.dispatchEvent(new CustomEvent('dashboard-refreshed')); } catch (e) {}
           });
         }, 100);
 
       } else {
         destroyAllCharts();
-        var isMobileView = window.innerWidth < 768;
-        var winlossTargetId = isMobileView ? 'chart-winloss-mobile' : 'chart-winloss';
-        var directionTargetId = isMobileView ? 'chart-direction-mobile' : 'chart-direction';
-        var containerIds = ['chart-cumulative', winlossTargetId, 'chart-daily', 'chart-symbol', directionTargetId];
+        var containerIds = ['chart-cumulative', 'chart-daily', 'chart-symbol', 'chart-winloss', 'chart-direction'];
         containerIds.forEach(function (cid) {
           var el = safeEl(cid);
           if (el) {

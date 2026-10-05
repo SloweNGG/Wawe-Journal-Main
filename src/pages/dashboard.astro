@@ -147,7 +147,16 @@ import Layout from '../layouts/Layout.astro';
     <!-- CHARTS - SKELETON -->
     <div class="charts-top-grid" id="charts-top-skeleton">
       <div class="chart-card"><div class="skeleton-chart"><div class="skeleton-bar-group"><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div></div><div class="skeleton-label"></div></div></div>
-      <div class="chart-card"><div class="skeleton-chart" style="justify-content:center;"><div class="skeleton-doughnut"></div></div></div>
+      <div class="chart-card prop-dashboard-card-skeleton">
+        <div class="skeleton-prop-header"><div class="skeleton-line" style="width:48%;"></div><div class="skeleton-line" style="width:28%;"></div></div>
+        <div class="skeleton-prop-target"><div class="skeleton-line" style="width:65%;height:10px;"></div><div class="skeleton-line" style="width:100%;height:8px;border-radius:4px;"></div></div>
+        <div class="skeleton-prop-metrics">
+          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
+          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
+          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
+          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
+        </div>
+      </div>
     </div>
 
     <!-- CHARTS - GERÇEK -->
@@ -161,12 +170,11 @@ import Layout from '../layouts/Layout.astro';
           <div id="chart-cumulative"></div>
         </div>
       </div>
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3 data-i18n="dashboard.chart.winloss">Win / Loss Dağılımı</h3>
-        </div>
-        <div class="chart-wrap chart-wrap--tall">
-          <div id="chart-winloss"></div>
+      <!-- PROP FIRM OVERVIEW KARTI (Win/Loss yerine) -->
+      <div class="chart-card prop-dashboard-card" id="dashboard-prop-card">
+        <div class="prop-card-loading">
+          <div class="prop-card-spinner"></div>
+          <span>Yükleniyor...</span>
         </div>
       </div>
     </div>
@@ -192,29 +200,41 @@ import Layout from '../layouts/Layout.astro';
           <div id="chart-symbol"></div>
         </div>
       </div>
-      <div class="chart-card">
-        <h3 data-i18n="dashboard.chart.direction">Long / Short Dağılımı</h3>
-        <div class="chart-wrap">
-          <div id="chart-direction"></div>
+      <!-- 2'Lİ DONUT SLIDER KARTI (Win/Loss + Long/Short) -->
+      <div class="chart-card donut-slider-card" id="donut-slider-card">
+        <div class="chart-header donut-slider-header">
+          <div class="donut-slider-title-box">
+            <h3 id="donut-slider-title" data-i18n="dashboard.chart.winloss">Win / Loss Dağılımı</h3>
+          </div>
+          <div class="donut-slider-controls">
+            <button type="button" class="donut-nav-btn prev" id="donut-prev-btn" title="Önceki" aria-label="Önceki Dağılım">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="donut-slider-dots" id="donut-slider-dots">
+              <button type="button" class="donut-slider-dot active" data-slide="0" aria-label="Win / Loss Dağılımı"></button>
+              <button type="button" class="donut-slider-dot" data-slide="1" aria-label="Long / Short Dağılımı"></button>
+            </div>
+            <button type="button" class="donut-nav-btn next" id="donut-next-btn" title="Sonraki" aria-label="Sonraki Dağılım">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- MOBİL DONUT CAROUSEL -->
-    <div class="donut-mobile-carousel" id="donut-mobile-carousel">
-      <div class="donut-mobile-track" id="donut-mobile-track">
-        <div class="donut-mobile-slide">
-          <h3 data-i18n="dashboard.chart.winloss_title">WIN / LOSS DAĞILIMI</h3>
-          <div class="chart-wrap chart-wrap--doughnut"><div id="chart-winloss-mobile"></div></div>
+        <div class="donut-slider-viewport" id="donut-slider-viewport">
+          <div class="donut-slider-track" id="donut-slider-track">
+            <!-- SLIDE 0: WIN / LOSS -->
+            <div class="donut-slider-slide" data-slide-index="0" data-title-key="dashboard.chart.winloss" data-default-title="Win / Loss Dağılımı">
+              <div class="chart-wrap chart-wrap--doughnut">
+                <div id="chart-winloss"></div>
+              </div>
+            </div>
+            <!-- SLIDE 1: LONG / SHORT -->
+            <div class="donut-slider-slide" data-slide-index="1" data-title-key="dashboard.chart.direction" data-default-title="Long / Short Dağılımı">
+              <div class="chart-wrap chart-wrap--doughnut">
+                <div id="chart-direction"></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="donut-mobile-slide">
-          <h3 data-i18n="dashboard.chart.direction_title">LONG / SHORT DAĞILIMI</h3>
-          <div class="chart-wrap chart-wrap--doughnut"><div id="chart-direction-mobile"></div></div>
-        </div>
-      </div>
-      <div class="donut-mobile-dots" id="donut-mobile-dots">
-        <span class="dot active" data-index="0"></span>
-        <span class="dot" data-index="1"></span>
       </div>
     </div>
 
@@ -471,19 +491,27 @@ import Layout from '../layouts/Layout.astro';
     var _currentPropSync = null;
 
     async function refreshDashboardPropBanner() {
-      if (!window.PropService || !window.journal) return;
-      var bannerEl = document.getElementById('dashboard-prop-banner');
+      var propCardEl = document.getElementById('dashboard-prop-card');
       var badgeEl = document.getElementById('dashboard-prop-badge');
       var statsGrid = document.getElementById('stats-grid');
-      if (!bannerEl || !badgeEl) return;
+      var bannerEl = document.getElementById('dashboard-prop-banner');
+      if (bannerEl) {
+        bannerEl.style.display = 'none';
+        bannerEl.innerHTML = '';
+      }
+      if (statsGrid) statsGrid.style.display = 'grid';
+
+      if (!window.PropService || !window.journal) {
+        renderStandardAccountCard(propCardEl);
+        if (badgeEl) badgeEl.innerHTML = '';
+        return;
+      }
 
       var activeId = window.journal.getActiveJournalId();
       if (!activeId) {
         window._isPropAccountActive = false;
-        bannerEl.style.display = 'none';
-        bannerEl.innerHTML = '';
-        badgeEl.innerHTML = '';
-        if (statsGrid) statsGrid.style.display = 'grid';
+        renderStandardAccountCard(propCardEl);
+        if (badgeEl) badgeEl.innerHTML = '';
         return;
       }
 
@@ -491,10 +519,8 @@ import Layout from '../layouts/Layout.astro';
         var syncRes = await window.PropService.syncPropAccountStatus(activeId);
         if (!syncRes || !syncRes.account || !syncRes.status) {
           window._isPropAccountActive = false;
-          bannerEl.style.display = 'none';
-          bannerEl.innerHTML = '';
-          badgeEl.innerHTML = '';
-          if (statsGrid) statsGrid.style.display = 'grid';
+          renderStandardAccountCard(propCardEl);
+          if (badgeEl) badgeEl.innerHTML = '';
           return;
         }
 
@@ -510,128 +536,45 @@ import Layout from '../layouts/Layout.astro';
           return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
         };
         var phaseName = account.rules?.phase_name || t('prop.phase_num', { n: phaseNum });
+        var fmt = window.formatCurrency || (val => '$' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
-        // If rules are invalid, show an isolated error state
-        if (status.overall_status === 'invalid_rules') {
-          badgeEl.innerHTML = `
-            <div class="prop-header-hud">
-              <div class="prop-hud-segment">
-                <span>${escapeHtml(firmName)}</span>
-              </div>
-              <span class="prop-hud-sep"></span>
-              <span class="prop-status-pill failed">
-                <span class="prop-status-dot"></span>
-                <span>${escapeHtml(t('prop.status_invalid_rules') || 'Kural Hatası')}</span>
-              </span>
-            </div>
-          `;
-          bannerEl.className = 'stats-grid prop-morph-grid';
-          bannerEl.innerHTML = `
-            <div class="stat-card prop-morph-card" style="grid-column: 1 / -1; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); padding: 1rem 1.25rem;">
-              <div style="display:flex;align-items:center;gap:10px;color:var(--red,#ef4444);font-weight:600;font-size:0.9rem;">
-                <span>${escapeHtml(t('prop.err_invalid_rules_desc') || 'Hesap kuralları geçersiz')} (${escapeHtml(status.error_code || 'INVALID_RULES')}). ${escapeHtml(t('prop.err_fix_in_journals') || 'Lütfen defter ayarlarından kuralları düzenleyin.')}</span>
-              </div>
-            </div>
-          `;
-          bannerEl.style.display = 'grid';
-          if (statsGrid) statsGrid.style.display = 'none';
-          if (typeof lucide !== 'undefined') lucide.createIcons();
-          return;
-        }
-
-        var st = status.overall_status || 'in_progress';
-        var stLabel = st === 'passed' ? t('prop.status_passed') : (st === 'failed' ? t('prop.status_failed') : t('prop.status_in_progress'));
-        var fmt = window.formatCurrency || (val => '$' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 }));
-
+        // Action buttons & warnings
         var warningsList = (status.warnings || []).slice();
         if (account.rules && account.rules.verified === false) {
           warningsList.unshift('UNVERIFIED_PHASE_RULES');
         }
-
-        // Action buttons
         var currentPhaseIdx = account.phase_index !== undefined ? account.phase_index : 0;
         var nextPhaseIdx = currentPhaseIdx + 1;
         var hasNextPhase = Boolean(tmpl && tmpl.phases && tmpl.phases.length > nextPhaseIdx);
-        var advanceBtnHtml = '';
-        if (hasNextPhase) {
-          advanceBtnHtml = `
-            <button type="button" id="dashboard-advance-phase-btn" class="prop-header-btn advance" title="${escapeHtml(t('prop.advance_phase_btn'))}">
-              <span>${escapeHtml(t('prop.advance_phase_btn'))}</span>
-            </button>
-          `;
+
+        var st = status.overall_status || 'in_progress';
+        var stLabel = st === 'passed' ? (t('prop.status_passed') || 'AŞAMA GEÇİLDİ') : (st === 'failed' ? (t('prop.status_failed') || 'KURAL İHLALİ') : (t('prop.status_in_progress') || 'DEVAM EDİYOR'));
+
+        // Başlığın sağındaki prop firm ibareleri kaldırıldı
+        if (badgeEl) {
+          badgeEl.innerHTML = '';
+          badgeEl.style.display = 'none';
         }
+        bindHudButtons(account, tmpl, nextPhaseIdx, warningsList);
 
-        var noticesBtnHtml = '';
-        if (warningsList.length > 0) {
-          noticesBtnHtml = `
-            <button type="button" id="dashboard-open-notices-btn" class="prop-header-btn notices" title="${escapeHtml(t('prop.rule_notices_modal_title') || 'Kurallar & Uyarılar')}">
-              <span>${warningsList.length} ${escapeHtml(t('prop.alerts_capsule_title') || 'Uyarı')}</span>
-            </button>
-          `;
-        }
-
-        var toggleViewBtnHtml = `
-          <button type="button" id="dashboard-toggle-view-btn" class="prop-header-btn view-toggle" title="${window._propViewMode === 'standard' ? 'Prop Kurallarına Dön' : 'Klasik İstatistikleri Göster'}">
-            <span>${window._propViewMode === 'standard' ? 'Prop Modu' : 'Klasik'}</span>
-          </button>
-        `;
-
-        // 1. Render Sleek Unified Glass Capsule HUD
-        badgeEl.innerHTML = `
-          <div class="prop-header-hud">
-            <div class="prop-hud-segment">
-              <span>${escapeHtml(firmName)}</span>
-              <span class="prop-hud-phase">${escapeHtml(phaseName)}</span>
-            </div>
-            <span class="prop-hud-sep"></span>
-            <span class="prop-status-pill ${st}">
-              <span class="prop-status-dot"></span>
-              <span>${escapeHtml(stLabel)}</span>
-            </span>
-            ${noticesBtnHtml}
-            ${advanceBtnHtml}
-            ${toggleViewBtnHtml}
-          </div>
-        `;
-
-        // Check if user toggled to standard performance stats
-        if (window._propViewMode === 'standard') {
-          bannerEl.style.display = 'none';
-          if (statsGrid) statsGrid.style.display = 'grid';
-          bindHudButtons(account, tmpl, nextPhaseIdx, warningsList);
-          if (typeof lucide !== 'undefined') lucide.createIcons();
-          return;
-        }
-
-        // Hide standard stats-grid to prevent double rows
-        if (statsGrid) statsGrid.style.display = 'none';
-
-        // Card 1 Calculations: Daily margin
-        var dailyRem = status.daily_loss.remaining_margin;
-        var dailyLimit = status.daily_loss.limit_amount || 0;
-        var dailyPct = dailyLimit > 0 ? Math.min(100, Math.max(0, Math.round(((dailyLimit - dailyRem) / dailyLimit) * 100))) : 0;
-        var dailyBarColor = dailyRem <= 0 ? 'var(--red,#ef4444)' : (dailyPct > 75 ? '#f59e0b' : 'var(--green,#22c55e)');
+        // Calculations for Prop Card
+        var dailyRem = status.daily_loss ? Number(status.daily_loss.remaining_margin || 0) : 0;
+        var dailyLimit = status.daily_loss ? Number(status.daily_loss.limit_amount || 0) : 0;
+        var dailyToday = status.daily_loss ? Number(status.daily_loss.today_pnl || 0) : 0;
         var dailyValColor = dailyRem <= 0 ? 'var(--red,#ef4444)' : 'var(--green,#22c55e)';
 
-        // Card 2 Calculations: Max Loss floor
-        var maxStop = status.max_loss.hard_stop_level;
-        var maxDist = status.max_loss.distance_to_stop;
-        var maxDistPct = Number(status.max_loss.distance_to_stop_pct) || 0;
-        var maxBarColor = maxDist <= 0 ? 'var(--red,#ef4444)' : (maxDistPct <= 25 ? '#f59e0b' : 'var(--green,#22c55e)');
+        var maxStop = status.max_loss ? Number(status.max_loss.hard_stop_level || 0) : 0;
+        var maxDist = status.max_loss ? Number(status.max_loss.distance_to_stop || 0) : 0;
+        var maxDistPct = status.max_loss ? Number(status.max_loss.distance_to_stop_pct || 0) : 0;
 
-        // Card 3 Calculations: Profit target
-        var targetAmount = status.profit_target.target_amount;
-        var targetRem = Number(status.profit_target.remaining_amount) || 0;
-        var targetPct = Number(status.profit_target.progress_pct) || 0;
-        var targetBarFill = targetAmount ? Math.min(100, Math.max(0, targetPct)) : 0;
+        var targetAmount = status.profit_target ? Number(status.profit_target.target_amount || 0) : 0;
+        var targetRem = status.profit_target ? Number(status.profit_target.remaining_amount || 0) : 0;
+        var targetPct = status.profit_target ? Number(status.profit_target.progress_pct || 0) : 0;
+        var targetBarFill = targetAmount > 0 ? Math.min(100, Math.max(0, targetPct)) : 0;
 
-        // Card 4 Calculations: Trading days
-        var dayCount = status.trading_days.count || 0;
-        var dayMin = status.trading_days.min_required || 0;
-        var dayPct = dayMin > 0 ? Math.min(100, Math.round((dayCount / dayMin) * 100)) : 100;
-        var dayBarColor = dayMin > 0 && dayCount < dayMin ? '#38bdf8' : 'var(--green,#22c55e)';
+        var dayCount = status.trading_days ? (status.trading_days.count || 0) : 0;
+        var dayMin = status.trading_days ? (status.trading_days.min_required || 0) : 0;
 
-        // Card 5 Calculations: Net PnL & Win Rate Performance
         var tradeList = (syncRes.trades && Array.isArray(syncRes.trades)) ? syncRes.trades : [];
         var totalTrades = tradeList.length;
         var totalPnl = tradeList.reduce((acc, tr) => acc + (Number(tr.pnl) || 0), 0);
@@ -640,107 +583,219 @@ import Layout from '../layouts/Layout.astro';
         var wrPct = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
         var pnlValColor = totalPnl >= 0 ? 'var(--green,#22c55e)' : 'var(--red,#ef4444)';
 
-        // 2. Render Single Row of 5 Native Morph Cards into bannerEl
-        bannerEl.className = 'stats-grid prop-morph-grid';
-        bannerEl.innerHTML = `
-          <!-- CARD 1: DAILY MARGIN -->
-          <div class="stat-card prop-morph-card" style="--card-accent:${dailyRem <= 0 ? 'var(--red,#ef4444)' : '#60a5fa'};">
-            <div class="stat-label">
-              <span>${escapeHtml(t('prop.today_margin'))}</span>
-            </div>
-            <div class="stat-value" style="color:${dailyValColor};">
-              ${fmt(dailyRem)}
-            </div>
-            <div class="stat-subline">
-              <span class="prop-sub-left">${escapeHtml(t('prop.limit'))}: ${fmt(dailyLimit)}</span>
-              <span class="prop-sub-right">${escapeHtml(t('prop.today'))}: ${fmt(status.daily_loss.today_pnl)}</span>
-            </div>
-            <div class="prop-card-bar">
-              <div class="prop-card-bar-fill" style="width:${dailyPct}%; background:${dailyBarColor};"></div>
-            </div>
-          </div>
+        // Status description text for phase (Lucide SVG icon instead of emojis)
+        var phaseStatusIcon = '';
+        var phaseStatusText = '';
+        var phaseStatusClass = st;
+        if (st === 'passed') {
+          phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon passed"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+          phaseStatusText = 'Hedefe ulaşıldı.';
+        } else if (st === 'failed') {
+          phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon failed"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+          phaseStatusText = (t('prop.status_failed') || 'Kural İhlali:') + ' ' + (status.failed_rule || 'Hesap limitleri aşıldı.');
+        } else {
+          phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon target"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`;
+          if (targetAmount > 0) {
+            phaseStatusText = targetRem <= 0 
+              ? 'Hedefe ulaşıldı.' 
+              : 'Hedefe Kalan: ' + fmt(targetRem) + ' (Hedef: ' + fmt(targetAmount) + ')';
+          } else {
+            phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon info"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+            phaseStatusText = 'Sınırsız süre - Kural limitlerine dikkat ederek işlem yapın.';
+          }
+        }
 
-          <!-- CARD 2: MAX LOSS FLOOR -->
-          <div class="stat-card prop-morph-card" style="--card-accent:${maxDist <= 0 ? 'var(--red,#ef4444)' : '#f59e0b'};">
-            <div class="stat-label">
-              <span>${escapeHtml(t('prop.max_loss_floor'))}</span>
+        // Render into dashboard-prop-card
+        if (propCardEl) {
+          propCardEl.innerHTML = `
+            <div class="prop-card-header">
+              <div class="prop-card-firm-title">
+                <span class="prop-card-firm-name">${escapeHtml(firmName)}</span>
+                <span class="prop-card-phase-tag">${escapeHtml(phaseName)}</span>
+              </div>
+              <div class="prop-card-badge-row">
+                ${warningsList.length > 0 ? `
+                  <button type="button" id="prop-card-notices-btn" class="prop-card-btn-notices" title="${warningsList.length} Uyarı">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span>${warningsList.length}</span>
+                  </button>
+                ` : ''}
+                <span class="prop-status-pill ${st}">
+                  <span class="prop-status-dot"></span>
+                  <span>${escapeHtml(stLabel)}</span>
+                </span>
+                ${(hasNextPhase && st === 'passed') ? `
+                  <button type="button" id="prop-card-advance-btn" class="prop-card-btn-advance">
+                    Sonraki Aşama
+                  </button>
+                ` : ''}
+              </div>
             </div>
-            <div class="stat-value">
-              ${fmt(maxStop)}
-            </div>
-            <div class="stat-subline">
-              <span class="prop-sub-left">${escapeHtml(t('prop.floor_distance'))}: ${fmt(maxDist)}</span>
-              <span class="prop-sub-right">Stop: %${maxDistPct}</span>
-            </div>
-            <div class="prop-card-bar">
-              <div class="prop-card-bar-fill" style="width:${Math.min(100, maxDistPct)}%; background:${maxBarColor};"></div>
-            </div>
-          </div>
 
-          <!-- CARD 3: PROFIT TARGET -->
-          <div class="stat-card prop-morph-card" style="--card-accent:#818cf8;">
-            <div class="stat-label">
-              <span>${escapeHtml(t('prop.target'))}</span>
+            <!-- PHASE DURUMU & HEDEF İLERLEMESİ -->
+            <div class="prop-card-phase-banner ${phaseStatusClass}">
+              <div class="prop-card-phase-banner-top">
+                <span class="prop-card-phase-desc">
+                  ${phaseStatusIcon}
+                  <span>${escapeHtml(phaseStatusText)}</span>
+                </span>
+                <span class="prop-card-phase-pct">%${Math.round(targetPct)}</span>
+              </div>
+              <div class="prop-card-progress-bar">
+                <div class="prop-card-progress-fill ${st}" style="width: ${targetBarFill}%;"></div>
+              </div>
             </div>
-            <div class="stat-value" style="color:#818cf8;">
-              ${targetAmount ? fmt(targetAmount) : escapeHtml(t('prop.no_target'))}
+
+            <!-- METRİK IZGARASI (KALAN MARGIN, MAX LOSS, TOTAL PNL, GÜNLER/BAKİYE) -->
+            <div class="prop-card-grid">
+              <!-- 1. KALAN MARGIN -->
+              <div class="prop-card-box">
+                <div class="prop-card-box-label">
+                  <span>Kalan Margin</span>
+                  <span class="prop-card-dot" style="background:${dailyValColor};"></span>
+                </div>
+                <div class="prop-card-box-value" style="color:${dailyValColor};">
+                  ${fmt(dailyRem)}
+                </div>
+                <div class="prop-card-box-sub">
+                  <span>Limit: ${fmt(dailyLimit)}</span>
+                  <span>Bugün: ${fmt(dailyToday)}</span>
+                </div>
+              </div>
+
+              <!-- 2. MAX LOSS FLOOR MESAFESİ -->
+              <div class="prop-card-box">
+                <div class="prop-card-box-label">
+                  <span>Max Loss Mesafesi</span>
+                  <span class="prop-card-dot" style="background:${maxDist <= 0 ? 'var(--red,#ef4444)' : (maxDistPct <= 25 ? '#f59e0b' : 'var(--green,#22c55e)')};"></span>
+                </div>
+                <div class="prop-card-box-value" style="color:${maxDist <= 0 ? 'var(--red,#ef4444)' : 'inherit'};">
+                  ${fmt(maxDist)}
+                </div>
+                <div class="prop-card-box-sub">
+                  <span>Stop: ${fmt(maxStop)}</span>
+                  <span>Kalan: %${Math.round(maxDistPct)}</span>
+                </div>
+              </div>
+
+              <!-- 3. TOTAL PNL -->
+              <div class="prop-card-box">
+                <div class="prop-card-box-label">
+                  <span>Total P&L</span>
+                  <span class="prop-card-dot" style="background:${pnlValColor};"></span>
+                </div>
+                <div class="prop-card-box-value" style="color:${pnlValColor};">
+                  ${fmt(totalPnl)}
+                </div>
+                <div class="prop-card-box-sub">
+                  <span>WR: %${wrPct}</span>
+                  <span>${totalTrades} İşlem (${wins}K / ${losses}K)</span>
+                </div>
+              </div>
+
+              <!-- 4. BAKİYE & GÜN -->
+              <div class="prop-card-box">
+                <div class="prop-card-box-label">
+                  <span>Bakiye & Günler</span>
+                  <span class="prop-card-dot" style="background:#38bdf8;"></span>
+                </div>
+                <div class="prop-card-box-value">
+                  ${fmt(status.current_balance || status.account?.starting_balance)}
+                </div>
+                <div class="prop-card-box-sub">
+                  <span>Gün: ${dayCount}${dayMin ? '/' + dayMin : ''}</span>
+                  <span>Başlangıç: ${fmt(status.account?.starting_balance)}</span>
+                </div>
+              </div>
             </div>
-            <div class="stat-subline">
-              ${targetAmount
-                ? `<span class="prop-sub-left">${targetRem <= 0 ? 'Hedef Tamam' : escapeHtml(t('prop.remaining')) + ': ' + fmt(targetRem)}</span><span class="prop-sub-right">%${targetPct}</span>`
-                : `<span class="prop-sub-left">${escapeHtml(t('prop.unlimited_days'))}</span><span class="prop-sub-right">—</span>`
+          `;
+
+          // Bind advance button in card if present
+          var cardAdvBtn = document.getElementById('prop-card-advance-btn');
+          if (cardAdvBtn) {
+            cardAdvBtn.onclick = function() {
+              var mainAdvBtn = document.getElementById('dashboard-advance-phase-btn');
+              if (mainAdvBtn) mainAdvBtn.click();
+            };
+          }
+
+          // Bind notices button in card if present
+          var cardNoticesBtn = document.getElementById('prop-card-notices-btn');
+          if (cardNoticesBtn) {
+            cardNoticesBtn.onclick = function() {
+              var modal = document.getElementById('dashboard-prop-notices-modal');
+              if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('active');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
               }
-            </div>
-            <div class="prop-card-bar">
-              <div class="prop-card-bar-fill" style="width:${targetBarFill}%; background:#818cf8;"></div>
-            </div>
-          </div>
-
-          <!-- CARD 4: TRADING DAYS -->
-          <div class="stat-card prop-morph-card" style="--card-accent:#38bdf8;">
-            <div class="stat-label">
-              <span>${escapeHtml(t('prop.trading_days_balance'))}</span>
-            </div>
-            <div class="stat-value">
-              ${dayCount} ${dayMin ? ('/ ' + dayMin + ' ' + escapeHtml(t('prop.days'))) : escapeHtml(t('prop.days'))}
-            </div>
-            <div class="stat-subline">
-              <span class="prop-sub-left">${escapeHtml(t('prop.balance'))}: ${fmt(status.current_balance)}</span>
-              <span class="prop-sub-right">${escapeHtml(t('prop.starting'))}: ${fmt(status.account.starting_balance)}</span>
-            </div>
-            <div class="prop-card-bar">
-              <div class="prop-card-bar-fill" style="width:${dayPct}%; background:${dayBarColor};"></div>
-            </div>
-          </div>
-
-          <!-- CARD 5: NET PnL & WIN RATE (PERFORMANCE) -->
-          <div class="stat-card prop-morph-card" style="--card-accent:${pnlValColor};">
-            <div class="stat-label">
-              <span>${escapeHtml(t('dashboard.stats.total_pnl') || 'Toplam K/Z')}</span>
-            </div>
-            <div class="stat-value" style="color:${pnlValColor};">
-              ${fmt(totalPnl)}
-            </div>
-            <div class="stat-subline">
-              <span class="prop-sub-left">Win Rate: %${wrPct}</span>
-              <span class="prop-sub-right">${totalTrades} İşlem (${wins}K / ${losses}K)</span>
-            </div>
-            <div class="prop-card-bar">
-              <div class="prop-card-bar-fill" style="width:${wrPct}%; background:${pnlValColor};"></div>
-            </div>
-          </div>
-        `;
-
-        bannerEl.style.display = 'grid';
-
-        bindHudButtons(account, tmpl, nextPhaseIdx, warningsList);
+            };
+          }
+        }
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
       } catch (err) {
         if (window.wwLog) window.wwLog.error('refreshDashboardPropBanner err:', err);
-        bannerEl.style.display = 'none';
-        if (statsGrid) statsGrid.style.display = 'grid';
+        renderStandardAccountCard(propCardEl);
       }
+    }
+
+    function renderStandardAccountCard(propCardEl) {
+      if (!propCardEl) return;
+      var t = function (key, params) {
+        return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
+      };
+      var fmt = window.formatCurrency || (val => '$' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      
+      var pnlEl = document.getElementById('stat-pnl');
+      var wrEl = document.getElementById('stat-winrate');
+      var totalEl = document.getElementById('stat-total');
+      var currentPnl = pnlEl ? pnlEl.textContent : '—';
+      var currentWr = wrEl ? wrEl.textContent : '—';
+      var currentTotal = totalEl ? totalEl.textContent : '—';
+
+      propCardEl.innerHTML = `
+        <div class="prop-card-header">
+          <div class="prop-card-firm-title">
+            <span class="prop-card-firm-name">Standart Hesap</span>
+            <span class="prop-card-phase-tag standard">Genel Özet</span>
+          </div>
+          <span class="prop-status-pill in_progress" style="background:rgba(124,109,250,0.12);color:#c4b5fd;border-color:rgba(124,109,250,0.25);">
+            <span class="prop-status-dot" style="background:#c4b5fd;"></span>
+            <span>Standart Defter</span>
+          </span>
+        </div>
+        <div class="prop-card-phase-banner" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
+          <div class="prop-card-phase-banner-top">
+            <span class="prop-card-phase-desc">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#818cf8;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Bireysel trading günlüğü ve performans analitiği.</span>
+            </span>
+          </div>
+        </div>
+        <div class="prop-card-grid">
+          <div class="prop-card-box">
+            <div class="prop-card-box-label"><span>Toplam P&L</span></div>
+            <div class="prop-card-box-value">${currentPnl}</div>
+            <div class="prop-card-box-sub"><span>Net Kazanç / Kayıp</span></div>
+          </div>
+          <div class="prop-card-box">
+            <div class="prop-card-box-label"><span>Win Rate</span></div>
+            <div class="prop-card-box-value">${currentWr}</div>
+            <div class="prop-card-box-sub"><span>Başarı Oranı</span></div>
+          </div>
+          <div class="prop-card-box">
+            <div class="prop-card-box-label"><span>Toplam İşlem</span></div>
+            <div class="prop-card-box-value">${currentTotal}</div>
+            <div class="prop-card-box-sub"><span>Kaydedilen İşlemler</span></div>
+          </div>
+          <div class="prop-card-box">
+            <div class="prop-card-box-label"><span>Hesap Türü</span></div>
+            <div class="prop-card-box-value" style="font-size:0.95rem;">Standart</div>
+            <div class="prop-card-box-sub"><span>Defter Ayarları</span></div>
+          </div>
+        </div>
+      `;
     }
 
     function bindHudButtons(account, tmpl, nextPhaseIdx, warningsList) {
@@ -957,6 +1012,92 @@ import Layout from '../layouts/Layout.astro';
         };
       }
 
+      // ============================================================
+      // DUAL DONUT SLIDER (WIN/LOSS & LONG/SHORT)
+      // ============================================================
+      function initDonutSlider() {
+        var card = document.getElementById('donut-slider-card');
+        var track = document.getElementById('donut-slider-track');
+        var prevBtn = document.getElementById('donut-prev-btn');
+        var nextBtn = document.getElementById('donut-next-btn');
+        var dots = document.querySelectorAll('#donut-slider-dots .donut-slider-dot');
+        var titleEl = document.getElementById('donut-slider-title');
+        if (!card || !track) return;
+
+        var currentSlide = 0;
+        var totalSlides = 2;
+
+        function updateSlide(idx) {
+          currentSlide = (idx + totalSlides) % totalSlides;
+          track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+          
+          dots.forEach(function(dot, i) {
+            if (i === currentSlide) {
+              dot.classList.add('active');
+            } else {
+              dot.classList.remove('active');
+            }
+          });
+
+          if (titleEl) {
+            var t = function(key, fallback) {
+              return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key) : fallback;
+            };
+            if (currentSlide === 0) {
+              titleEl.textContent = t('dashboard.chart.winloss') || 'Win / Loss Dağılımı';
+              titleEl.setAttribute('data-i18n', 'dashboard.chart.winloss');
+            } else {
+              titleEl.textContent = t('dashboard.chart.direction') || 'Long / Short Dağılımı';
+              titleEl.setAttribute('data-i18n', 'dashboard.chart.direction');
+            }
+          }
+        }
+
+        if (prevBtn) {
+          prevBtn.onclick = function(e) {
+            e.stopPropagation();
+            updateSlide(currentSlide - 1);
+          };
+        }
+        if (nextBtn) {
+          nextBtn.onclick = function(e) {
+            e.stopPropagation();
+            updateSlide(currentSlide + 1);
+          };
+        }
+        dots.forEach(function(dot) {
+          dot.onclick = function(e) {
+            e.stopPropagation();
+            var slideIdx = parseInt(dot.getAttribute('data-slide'), 10) || 0;
+            updateSlide(slideIdx);
+          };
+        });
+
+        // Touch swipe support
+        var touchStartX = 0;
+        var touchEndX = 0;
+        card.addEventListener('touchstart', function(e) {
+          touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        card.addEventListener('touchend', function(e) {
+          touchEndX = e.changedTouches[0].screenX;
+          var diff = touchStartX - touchEndX;
+          if (Math.abs(diff) > 40) {
+            if (diff > 0) {
+              updateSlide(currentSlide + 1);
+            } else {
+              updateSlide(currentSlide - 1);
+            }
+          }
+        }, { passive: true });
+
+        window._updateDonutSlider = updateSlide;
+        updateSlide(0);
+      }
+
+      initDonutSlider();
+
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
         if (typeof wwLog !== 'undefined' && wwLog.log) {
@@ -975,9 +1116,15 @@ import Layout from '../layouts/Layout.astro';
     window.addEventListener('trade-deleted', function() {
       setTimeout(refreshDashboardPropBanner, 300);
     });
+    window.addEventListener('dashboard-refreshed', function() {
+      refreshDashboardPropBanner();
+    });
     if (window.i18n && typeof window.i18n.onChange === 'function') {
       window.i18n.onChange(function() {
         refreshDashboardPropBanner();
+        if (typeof window._updateDonutSlider === 'function') {
+          window._updateDonutSlider(0);
+        }
       });
     }
   </script>

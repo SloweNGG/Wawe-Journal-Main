@@ -373,8 +373,14 @@ export function renderDailyChart(trades) {
 
   var hasData = false;
   trades.forEach(function(t) {
-    if (t.exit_price && days[t.trade_date] !== undefined) {
-      days[t.trade_date] += calcTradePnL(t);
+    var dStr = (t.trade_date || '').split('T')[0].split(' ')[0];
+    if (!dStr && t.created_at) {
+      try { dStr = new Date(t.created_at).toISOString().split('T')[0]; } catch(e) {}
+    }
+    var pnl = calcTradePnL(t);
+    if (dStr && (t.exit_price || t.pnl !== null && t.pnl !== undefined)) {
+      if (days[dStr] === undefined) days[dStr] = 0;
+      days[dStr] += pnl;
       hasData = true;
     }
   });

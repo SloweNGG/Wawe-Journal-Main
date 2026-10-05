@@ -892,7 +892,12 @@ export default {
   "journal.err_generic": "Bir hata oluştu.",
   "journal.upgrade_cta": "Premium'a Geç",
   "journal.switcher_title": "Hesaplar",
-  "journal.switch_to": "{name} hesabına geç"
+  "journal.switch_to": "{name} hesabına geç",
+  "journal.section_account": "Hesap Bilgileri",
+  "journal.section_prop": "Prop Firm & Takip",
+  "prop.standard_mode_title": "Standart Portföy Hesabı",
+  "prop.standard_mode_desc": "Bu hesapta kural ve kayıp limiti olmadan tüm işlemlerinizi serbestçe takip edebilirsiniz.",
+  "prop.standard_mode_tip": "💡 FTMO, FundedNext gibi değerlendirme kurallarını izlemek için yukarıdan Prop Firm Modu'nu açın."
 
   ,
   "earnings.title": "Kazançlarım & Para Çekme",
