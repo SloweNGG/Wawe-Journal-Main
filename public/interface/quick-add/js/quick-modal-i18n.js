@@ -42,6 +42,11 @@ const quickTranslations = {
     "quickmodal.stop_loss": "Stop Loss",
     "quickmodal.take_profit": "Take Profit",
     "quickmodal.lot": "Lot *",
+    "quickmodal.commission": "Commission",
+    "quickmodal.swap": "Swap",
+    "quickmodal.gross": "Gross",
+    "quickmodal.net": "Net",
+    "quickmodal.comm_auto_hint": "Auto",
     "quickmodal.estimated_pnl": "Est. P&L",
     "quickmodal.rr_calculated": "R:R",
     "quickmodal.calculate_from_price": "Calculate from price",
@@ -127,7 +132,22 @@ const quickTranslations = {
     "quickmodal.cancel": "Cancel",
     "quickmodal.save": "Save",
     "quickmodal.import": "Import",
-    "quickmodal.paste_add": "Add Trades"
+    "quickmodal.paste_add": "Add Trades",
+
+    // Commission Modal
+    "quickmodal.comm_modal_title": "Commission & Swap Templates",
+    "quickmodal.comm_presets_title": "PRESETS",
+    "quickmodal.comm_template_name": "TEMPLATE NAME",
+    "quickmodal.comm_template_name_ph": "e.g. cTrader Raw",
+    "quickmodal.comm_rate_per_lot": "COMMISSION PER LOT",
+    "quickmodal.comm_auto_toggle": "Calculate automatically by lot in future trades",
+    "quickmodal.comm_delete": "Delete Template",
+    "quickmodal.comm_save_apply": "Save & Apply",
+    "quickmodal.comm_new_template": "+ New Template",
+    "quickmodal.comm_zero_label": "Zero Commission",
+    "quickmodal.comm_updated_msg": "Commission template updated: ",
+    "quickmodal.comm_deleted_msg": "Template deleted.",
+    "quickmodal.dismiss": "Cancel"
   },
 
   tr: {
@@ -164,6 +184,11 @@ const quickTranslations = {
     "quickmodal.stop_loss": "Stop Loss",
     "quickmodal.take_profit": "Take Profit",
     "quickmodal.lot": "Lot *",
+    "quickmodal.commission": "Komisyon",
+    "quickmodal.swap": "Swap",
+    "quickmodal.gross": "Brüt",
+    "quickmodal.net": "Net",
+    "quickmodal.comm_auto_hint": "Otomatik",
     "quickmodal.estimated_pnl": "Tahmini K/Z",
     "quickmodal.rr_calculated": "R/R",
     "quickmodal.calculate_from_price": "Fiyattan hesapla",
@@ -234,7 +259,22 @@ const quickTranslations = {
     "quickmodal.cancel": "İptal",
     "quickmodal.save": "Kaydet",
     "quickmodal.import": "İçe Aktar",
-    "quickmodal.paste_add": "İşlemleri Ekle"
+    "quickmodal.paste_add": "İşlemleri Ekle",
+
+    // Commission Modal
+    "quickmodal.comm_modal_title": "Komisyon & Swap Şablonları",
+    "quickmodal.comm_presets_title": "HAZIR ŞABLONLAR",
+    "quickmodal.comm_template_name": "ŞABLON ADI",
+    "quickmodal.comm_template_name_ph": "örn: cTrader Raw",
+    "quickmodal.comm_rate_per_lot": "LOT BAŞI ORAN",
+    "quickmodal.comm_auto_toggle": "Sonraki işlemlerde lota göre otomatik hesapla",
+    "quickmodal.comm_delete": "Şablonu Sil",
+    "quickmodal.comm_save_apply": "Kaydet ve Uygula",
+    "quickmodal.comm_new_template": "+ Yeni Şablon",
+    "quickmodal.comm_zero_label": "Sıfır Komisyon",
+    "quickmodal.comm_updated_msg": "Komisyon şablonu güncellendi: ",
+    "quickmodal.comm_deleted_msg": "Şablon silindi.",
+    "quickmodal.dismiss": "Vazgeç"
   },
 
   de: {
@@ -271,6 +311,11 @@ const quickTranslations = {
     "quickmodal.stop_loss": "Stop Loss",
     "quickmodal.take_profit": "Take Profit",
     "quickmodal.lot": "Lot *",
+    "quickmodal.commission": "Kommission",
+    "quickmodal.swap": "Swap",
+    "quickmodal.gross": "Brutto",
+    "quickmodal.net": "Netto",
+    "quickmodal.comm_auto_hint": "Auto",
     "quickmodal.estimated_pnl": "Gesch. P&L",
     "quickmodal.rr_calculated": "R/R",
     "quickmodal.calculate_from_price": "Vom Preis berechnen",
@@ -349,7 +394,22 @@ const quickTranslations = {
     "quickmodal.cancel": "Abbrechen",
     "quickmodal.save": "Speichern",
     "quickmodal.import": "Importieren",
-    "quickmodal.paste_add": "Trades hinzufügen"
+    "quickmodal.paste_add": "Trades hinzufügen",
+
+    // Commission Modal
+    "quickmodal.comm_modal_title": "Kommission & Swap Vorlagen",
+    "quickmodal.comm_presets_title": "VORLAGEN",
+    "quickmodal.comm_template_name": "VORLAGENNAME",
+    "quickmodal.comm_template_name_ph": "z.B. cTrader Raw",
+    "quickmodal.comm_rate_per_lot": "KOMMISSION PRO LOT",
+    "quickmodal.comm_auto_toggle": "Bei zukünftigen Trades automatisch nach Lots berechnen",
+    "quickmodal.comm_delete": "Vorlage löschen",
+    "quickmodal.comm_save_apply": "Speichern & Anwenden",
+    "quickmodal.comm_new_template": "+ Neue Vorlage",
+    "quickmodal.comm_zero_label": "Null-Kommission",
+    "quickmodal.comm_updated_msg": "Kommissionsvorlage aktualisiert: ",
+    "quickmodal.comm_deleted_msg": "Vorlage gelöscht.",
+    "quickmodal.dismiss": "Abbrechen"
   }
 };
 

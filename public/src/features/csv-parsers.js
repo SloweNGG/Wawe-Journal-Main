@@ -36,6 +36,7 @@ if (typeof window !== 'undefined') {
 
     return {
       rows: (result.rows || []).map(function(r) {
+        var note = (r.comment && String(r.comment).trim()) ? String(r.comment).trim() : (r.notes || 'CSV Import');
         return {
           symbol: r.symbol,
           direction: r.direction,
@@ -46,8 +47,12 @@ if (typeof window !== 'undefined') {
           take_profit: r.tp,
           // ⭐ Fallback: tarih parse edilemezse bugünü kullan (DB NOT NULL için)
           trade_date: formatDateISO(r.date) || new Date().toISOString().split('T')[0],
-          notes: 'CSV Import',
-          pnl: r.pnl
+          notes: note,
+          pnl: r.pnl,
+          gross_pnl: r.gross_pnl != null ? r.gross_pnl : null,
+          commission: r.commission != null ? Math.abs(r.commission) : (r.fee != null ? Math.abs(r.fee) : 0),
+          swap: r.swap != null ? r.swap : 0,
+          ticket: r.ticket || null
         };
       }),
       errors: result.errors || [],

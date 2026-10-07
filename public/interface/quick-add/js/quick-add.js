@@ -142,15 +142,20 @@ function _qaInlineParse(text, broker) {
   }
 
   var idx = {
-    symbol:    fi('sembol', 'symbol', 'enstruman', 'parite', 'item'),
-    direction: fi('islemacilisyonu', 'islemyonu', 'yon', 'direction', 'side', 'type'),
-    date:      fi('kapatmazamani', 'kapaniszamani', 'tarih', 'date', 'time', 'opentime'),
-    entry:     fi('girisfiyati', 'entryprice', 'entry', 'giris', 'openprice', 'price'),
-    exit:      fi('kapanisfiyati', 'cikisfiyati', 'exitprice', 'exit', 'cikis', 'closeprice'),
-    lot:       fi('kapanismiktari', 'miktar', 'lot', 'size', 'volume', 'qty', 'quantity'),
-    pnl:       fi('net', 'net$', 'kz', 'kar', 'profit', 'pnl'),
-    sl:        fi('sl', 'stoploss', 'zarardurdur'),
-    tp:        fi('tp', 'takeprofit', 'karal')
+    symbol:     fi('sembol', 'symbol', 'enstruman', 'parite', 'item'),
+    direction:  fi('islemacilisyonu', 'islemyonu', 'yon', 'direction', 'side', 'type'),
+    date:       fi('kapatmazamani', 'kapaniszamani', 'closedatetime', 'closetime', 'tarih', 'date', 'time', 'opentime'),
+    entry:      fi('girisfiyati', 'openprice', 'entryprice', 'entry', 'giris', 'price'),
+    exit:       fi('kapanisfiyati', 'closeprice', 'cikisfiyati', 'exitprice', 'exit', 'cikis'),
+    lot:        fi('kapanismiktari', 'miktar', 'lot', 'size', 'volume', 'qty', 'quantity'),
+    pnl:        fi('totalpnl', 'net', 'net$', 'kz', 'kar', 'profit', 'pnl'),
+    gross_pnl:  fi('positionpnl', 'grosspnl', 'gross', 'brut'),
+    commission: fi('commission', 'komisyon', 'fee', 'ucret'),
+    swap:       fi('swap', 'rollover', 'faiz'),
+    comment:    fi('comment', 'yorum', 'aciklama', 'not', 'notes'),
+    ticket:     fi('positionid', 'ticket', 'position', 'orderid'),
+    sl:         fi('sl', 'stoploss', 'zarardurdur'),
+    tp:         fi('tp', 'takeprofit', 'karal')
   };
 
   if (idx.symbol < 0) return { rows: [], errors: ['Sembol kolonu bulunamadı'], detected: 'unknown' };
@@ -175,11 +180,24 @@ function _qaInlineParse(text, broker) {
     var sl = idx.sl >= 0 ? _qaNum(v[idx.sl]) : null;
     var tp = idx.tp >= 0 ? _qaNum(v[idx.tp]) : null;
 
+    var comm = idx.commission >= 0 ? _qaNum(v[idx.commission]) : 0;
+    if (isNaN(comm)) comm = 0;
+    comm = Math.abs(comm);
+
+    var sw = idx.swap >= 0 ? _qaNum(v[idx.swap]) : 0;
+    if (isNaN(sw)) sw = 0;
+
+    var grossPnl = idx.gross_pnl >= 0 ? _qaNum(v[idx.gross_pnl]) : null;
+    if (isNaN(grossPnl)) grossPnl = null;
+
     var pnl = null;
     if (idx.pnl >= 0) {
       var pp = _qaNum(v[idx.pnl]);
       if (!isNaN(pp)) pnl = pp;
     }
+
+    var cmt = idx.comment >= 0 && v[idx.comment] ? String(v[idx.comment]).trim() : '';
+    var tkt = idx.ticket >= 0 && v[idx.ticket] ? String(v[idx.ticket]).trim() : '';
 
     rows.push({
       symbol: sym,
@@ -190,8 +208,12 @@ function _qaInlineParse(text, broker) {
       stop_loss: (sl === null || isNaN(sl)) ? null : sl,
       take_profit: (tp === null || isNaN(tp)) ? null : tp,
       trade_date: _qaDate(v[idx.date]),
-      notes: 'CSV Import',
-      pnl: pnl
+      notes: cmt || 'CSV Import',
+      pnl: pnl,
+      gross_pnl: grossPnl,
+      commission: comm,
+      swap: sw,
+      ticket: tkt || null
     });
   }
 
@@ -488,7 +510,8 @@ async function fileToCsvText(file) {
     spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:qaSpin 0.6s linear infinite;"><circle cx="12" cy="12" r="9" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>',
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
     chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
-    chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+    chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
   };
 
   function badgeIcon(type) {
@@ -864,19 +887,55 @@ async function fileToCsvText(file) {
                     </div>
                   </div>
 
+                  <div class="quick-add-row" style="position:relative;">
+                    <div class="quick-add-field">
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                          <label data-quick-i18n="quickmodal.commission">Komisyon</label>
+                          <button type="button" class="qa-comm-btn-gear" id="qa-comm-gear-btn" title="Komisyon Oran ve Şablon Ayarı">
+                            ${ICONS.settings}
+                          </button>
+                        </div>
+                        <span id="price-comm-badge" class="qa-comm-auto-badge" style="display:none;" data-quick-i18n="quickmodal.comm_auto_hint">Otomatik</span>
+                      </div>
+                      <input type="text" inputmode="decimal" id="price-commission" placeholder="0.00">
+                    </div>
+                    <div class="quick-add-field">
+                      <label data-quick-i18n="quickmodal.swap">Swap</label>
+                      <input type="text" inputmode="decimal" id="price-swap" placeholder="0.00">
+                    </div>
+                  </div>
+
                   <!-- Canlı Hesaplama Önizleme Kartı -->
                   <div class="quick-add-preview visible" id="price-preview">
                     <div class="preview-rail"></div>
 
                     <div class="preview-items-row">
                       <div class="preview-item">
-                        <span class="p-label" data-quick-i18n="quickmodal.estimated_pnl">Tahmini K/Z</span>
+                        <span class="p-label" data-quick-i18n="quickmodal.estimated_pnl">Net K/Z</span>
                         <span class="p-val" id="preview-pnl">—</span>
                       </div>
                       <div class="preview-divider"></div>
                       <div class="preview-item">
                         <span class="p-label" data-quick-i18n="quickmodal.risk_reward">Risk / Reward</span>
                         <span class="p-val accent" id="preview-rr">—</span>
+                      </div>
+                    </div>
+
+                    <div class="preview-breakdown" id="preview-breakdown" style="display:none;">
+                      <div class="breakdown-item">
+                        <span class="breakdown-lbl" data-quick-i18n="quickmodal.gross">Brüt</span>:
+                        <span class="breakdown-val" id="preview-gross">—</span>
+                      </div>
+                      <span class="breakdown-sep">·</span>
+                      <div class="breakdown-item">
+                        <span class="breakdown-lbl" data-quick-i18n="quickmodal.commission">Komisyon</span>:
+                        <span class="breakdown-val" id="preview-comm">—</span>
+                      </div>
+                      <span class="breakdown-sep">·</span>
+                      <div class="breakdown-item">
+                        <span class="breakdown-lbl" data-quick-i18n="quickmodal.swap">Swap</span>:
+                        <span class="breakdown-val" id="preview-swap">—</span>
                       </div>
                     </div>
                   </div>
@@ -945,6 +1004,57 @@ async function fileToCsvText(file) {
             <button class="btn-save" id="quick-add-save">${ICONS.check}<span data-quick-i18n="quickmodal.save">Kaydet</span></button>
             <button class="btn-save" id="quick-import-btn" style="display:none;">${ICONS.upload}<span data-quick-i18n="quickmodal.import">İçe Aktar</span></button>
             <button class="btn-save" id="quick-bulk-btn" style="display:none;">${ICONS.send}<span data-quick-i18n="quickmodal.paste_add">İşlemleri Ekle</span></button>
+          </div>
+
+          <!-- Komisyon & Swap Şablon Modalı (Panelin Ortasında Açılır) -->
+          <div class="qa-comm-modal-overlay" id="qa-comm-popover" style="display:none;">
+            <div class="qa-comm-modal-dialog">
+              <div class="qa-comm-modal-header">
+                <div class="qa-comm-modal-title">
+                  <span class="qa-comm-title-icon">${ICONS.settings}</span>
+                  <span data-quick-i18n="quickmodal.comm_modal_title">Komisyon & Swap Şablonları</span>
+                </div>
+                <button type="button" class="qa-comm-modal-close" id="qa-comm-popover-close" aria-label="Kapat">✕</button>
+              </div>
+
+              <div class="qa-comm-presets">
+                <div class="qa-comm-presets-label" data-quick-i18n="quickmodal.comm_presets_title">HAZIR ŞABLONLAR</div>
+                <div class="qa-comm-chips" id="qa-comm-chips-list"></div>
+              </div>
+
+              <div class="qa-comm-modal-grid">
+                <div class="quick-add-field">
+                  <label data-quick-i18n="quickmodal.comm_template_name">ŞABLON ADI</label>
+                  <input type="text" id="qa-comm-input-name" data-quick-i18n-placeholder="quickmodal.comm_template_name_ph" placeholder="örn: cTrader Raw">
+                </div>
+                <div class="quick-add-field">
+                  <label data-quick-i18n="quickmodal.comm_rate_per_lot">LOT BAŞI ORAN</label>
+                  <div class="qa-comm-input-wrap">
+                    <input type="text" inputmode="decimal" id="qa-comm-input-rate" placeholder="2.26">
+                    <span class="qa-comm-input-suffix">$/lot</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="qa-comm-toggle-bar">
+                <label class="qa-comm-toggle-switch">
+                  <input type="checkbox" id="qa-comm-auto-toggle" checked>
+                  <span class="qa-comm-switch-track"></span>
+                  <span class="qa-comm-switch-text" data-quick-i18n="quickmodal.comm_auto_toggle">Sonraki işlemlerde lota göre otomatik hesapla</span>
+                </label>
+              </div>
+
+              <div class="qa-comm-modal-actions">
+                <button type="button" class="qa-comm-btn-del" id="qa-comm-btn-del" style="display:none;" data-quick-i18n="quickmodal.comm_delete">Şablonu Sil</button>
+                <div class="qa-comm-actions-right">
+                  <button type="button" class="qa-comm-btn-cancel" id="qa-comm-btn-cancel" data-quick-i18n="quickmodal.dismiss">Vazgeç</button>
+                  <button type="button" class="qa-comm-btn-save" id="qa-comm-btn-save">
+                    ${ICONS.check}
+                    <span data-quick-i18n="quickmodal.comm_save_apply">Kaydet ve Uygula</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -1035,7 +1145,283 @@ async function fileToCsvText(file) {
     return currentMultiplier || 1;
   }
 
+  // ============================================================
+  // KOMİSYON VE SWAP ŞABLON YÖNETİMİ
+  // ============================================================
+  var DEFAULT_COMM_PROFILES = [
+    { id: 'ctrader', name: 'cTrader Raw', commPerLot: 9.04 },
+    { id: 'prop', name: 'Prop Firm', commPerLot: 6.00 },
+    { id: 'zero', name: 'Sıfır Komisyon', commPerLot: 0 }
+  ];
+
+  function getCommProfiles() {
+    try {
+      var raw = localStorage.getItem('ww_comm_profiles');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch(e) {}
+    return DEFAULT_COMM_PROFILES;
+  }
+
+  function saveCommProfiles(list) {
+    try {
+      localStorage.setItem('ww_comm_profiles', JSON.stringify(list));
+    } catch(e) {}
+  }
+
+  function isAutoCommEnabled() {
+    var saved = localStorage.getItem('ww_comm_auto_enabled');
+    return saved !== 'false';
+  }
+
+  function getActiveCommProfile() {
+    var profiles = getCommProfiles();
+    var activeId = localStorage.getItem('ww_comm_active_profile_id') || 'ctrader';
+    var found = profiles.find(function(p) { return p.id === activeId; });
+    return found || profiles[0] || { id: 'custom', name: 'Özel', commPerLot: 0 };
+  }
+
+  function renderCommChips() {
+    var listEl = el('qa-comm-chips-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    var profiles = getCommProfiles();
+    var activeProf = getActiveCommProfile();
+
+    profiles.forEach(function(prof) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'qa-comm-chip' + (prof.id === activeProf.id ? ' active' : '');
+      var displayName = prof.name;
+      if (prof.id === 'zero') {
+        displayName = (typeof quickI18n !== 'undefined' ? quickI18n.t('quickmodal.comm_zero_label') : 'Sıfır Komisyon');
+      }
+      btn.textContent = displayName + (prof.commPerLot > 0 ? (' (' + prof.commPerLot + ')') : ' (0)');
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        selectCommProfile(prof.id);
+      });
+      listEl.appendChild(btn);
+    });
+
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'qa-comm-chip qa-comm-chip-add';
+    var addText = (typeof quickI18n !== 'undefined' ? quickI18n.t('quickmodal.comm_new_template') : '+ Yeni Şablon');
+    addBtn.innerHTML = addText;
+    addBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      prepareNewCommProfile();
+    });
+    listEl.appendChild(addBtn);
+  }
+
+  function selectCommProfile(id) {
+    var profiles = getCommProfiles();
+    var prof = profiles.find(function(p) { return p.id === id; });
+    if (!prof) return;
+
+    localStorage.setItem('ww_comm_active_profile_id', prof.id);
+    localStorage.setItem('ww_commission_per_lot', String(prof.commPerLot));
+
+    var nameInput = el('qa-comm-input-name');
+    var rateInput = el('qa-comm-input-rate');
+    var delBtn = el('qa-comm-btn-del');
+
+    if (nameInput) nameInput.value = prof.name;
+    if (rateInput) rateInput.value = prof.commPerLot;
+
+    var isStandard = (prof.id === 'ctrader' || prof.id === 'prop' || prof.id === 'zero');
+    if (delBtn) delBtn.style.display = isStandard ? 'none' : 'inline-block';
+
+    renderCommChips();
+    syncCommissionWithLot(true);
+  }
+
+  function prepareNewCommProfile() {
+    var nameInput = el('qa-comm-input-name');
+    var rateInput = el('qa-comm-input-rate');
+    var delBtn = el('qa-comm-btn-del');
+
+    if (nameInput) {
+      nameInput.value = '';
+      nameInput.focus();
+    }
+    if (rateInput) rateInput.value = '';
+    if (delBtn) delBtn.style.display = 'none';
+
+    document.querySelectorAll('.qa-comm-chip').forEach(function(c) { c.classList.remove('active'); });
+  }
+
+  function syncCommissionWithLot(forceRecalc) {
+    var autoEnabled = isAutoCommEnabled();
+    var activeProf = getActiveCommProfile();
+    var commInput = el('price-commission');
+    var commBadge = el('price-comm-badge');
+    var lot = parseFloat(el('price-lot')?.value);
+
+    if (!autoEnabled) {
+      if (commBadge) {
+        commBadge.textContent = 'Manuel';
+        commBadge.style.display = 'inline-block';
+        commBadge.title = 'Otomatik komisyon hesabı kapalı';
+      }
+      if (commInput && !commInput.value) commInput.placeholder = '0.00';
+      updatePricePreview();
+      return;
+    }
+
+    if (commBadge) {
+      var badgeText = activeProf.name + (activeProf.commPerLot > 0 ? (' ' + activeProf.commPerLot + '/lot') : ' (0)');
+      commBadge.textContent = badgeText;
+      commBadge.style.display = 'inline-block';
+      commBadge.title = activeProf.name + ' şablonuna göre otomatik hesaplanıyor';
+    }
+
+    var isUserEdited = commInput && commInput.dataset.userEdited === 'true';
+
+    if (forceRecalc || !isUserEdited) {
+      if (commInput && !isNaN(lot) && lot > 0) {
+        var calculated = parseFloat((lot * activeProf.commPerLot).toFixed(2));
+        commInput.value = calculated > 0 ? calculated.toFixed(2) : (activeProf.commPerLot === 0 ? '0.00' : '');
+        commInput.dataset.userEdited = 'false';
+      }
+    }
+    updatePricePreview();
+  }
+
+  function initCommissionPopover() {
+    var gearBtn = el('qa-comm-gear-btn');
+    var popover = el('qa-comm-popover');
+    var closeBtn = el('qa-comm-popover-close');
+    var cancelBtn = el('qa-comm-btn-cancel');
+    var autoToggle = el('qa-comm-auto-toggle');
+    var saveBtn = el('qa-comm-btn-save');
+    var delBtn = el('qa-comm-btn-del');
+
+    if (autoToggle) {
+      autoToggle.checked = isAutoCommEnabled();
+      autoToggle.addEventListener('change', function() {
+        localStorage.setItem('ww_comm_auto_enabled', this.checked ? 'true' : 'false');
+        syncCommissionWithLot(true);
+      });
+    }
+
+    if (gearBtn && popover) {
+      gearBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var isHidden = (popover.style.display === 'none' || !popover.style.display);
+        popover.style.display = isHidden ? 'flex' : 'none';
+        if (isHidden) {
+          var activeProf = getActiveCommProfile();
+          selectCommProfile(activeProf.id);
+        }
+      });
+    }
+
+    if (closeBtn && popover) {
+      closeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        popover.style.display = 'none';
+      });
+    }
+
+    if (cancelBtn && popover) {
+      cancelBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        popover.style.display = 'none';
+      });
+    }
+
+    // Karartılmış backdrop'a tıklayınca modalı kapatma
+    if (popover) {
+      popover.addEventListener('click', function(e) {
+        if (e.target === popover) {
+          popover.style.display = 'none';
+        }
+      });
+    }
+
+    // Escape tuşuyla kapatma
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && popover && popover.style.display !== 'none') {
+        popover.style.display = 'none';
+      }
+    });
+
+    // Enter ile hızlı kaydetme
+    var nameInput = el('qa-comm-input-name');
+    var rateInput = el('qa-comm-input-rate');
+    [nameInput, rateInput].forEach(function(inp) {
+      if (inp) {
+        inp.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (saveBtn) saveBtn.click();
+          }
+        });
+      }
+    });
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        var nInput = el('qa-comm-input-name');
+        var rInput = el('qa-comm-input-rate');
+        var name = (nInput?.value || '').trim() || 'Özel Şablon';
+        var rate = parseFloat(rInput?.value?.replace(',', '.')) || 0;
+
+        var profiles = getCommProfiles();
+        var activeId = localStorage.getItem('ww_comm_active_profile_id') || ('custom_' + Date.now());
+        var existingIdx = profiles.findIndex(function(p) { return p.id === activeId; });
+
+        if (existingIdx > -1) {
+          profiles[existingIdx].name = name;
+          profiles[existingIdx].commPerLot = rate;
+        } else {
+          var newId = 'custom_' + Date.now();
+          profiles.push({ id: newId, name: name, commPerLot: rate });
+          activeId = newId;
+        }
+
+        saveCommProfiles(profiles);
+        localStorage.setItem('ww_comm_active_profile_id', activeId);
+        localStorage.setItem('ww_commission_per_lot', String(rate));
+        if (autoToggle) {
+          localStorage.setItem('ww_comm_auto_enabled', autoToggle.checked ? 'true' : 'false');
+        }
+
+        renderCommChips();
+        syncCommissionWithLot(true);
+        if (popover) popover.style.display = 'none';
+        if (typeof showToast === 'function') {
+          var updatedMsg = (typeof quickI18n !== 'undefined' ? quickI18n.t('quickmodal.comm_updated_msg') : 'Komisyon şablonu güncellendi: ') + name;
+          showToast(updatedMsg, 'success');
+        }
+      });
+    }
+
+    if (delBtn) {
+      delBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        var activeId = localStorage.getItem('ww_comm_active_profile_id');
+        var profiles = getCommProfiles().filter(function(p) { return p.id !== activeId; });
+        saveCommProfiles(profiles);
+        selectCommProfile(profiles[0]?.id || 'ctrader');
+        if (typeof showToast === 'function') {
+          var delMsg = (typeof quickI18n !== 'undefined' ? quickI18n.t('quickmodal.comm_deleted_msg') : 'Şablon silindi.');
+          showToast(delMsg, 'info');
+        }
+      });
+    }
+  }
+
   function updatePricePreview() {
+    const symbol = (el('price-symbol')?.value || '').trim().toUpperCase();
     const entry = parseFloat(el('price-entry')?.value);
     const exit = parseFloat(el('price-exit')?.value);
     const lot = parseFloat(el('price-lot')?.value);
@@ -1044,9 +1430,45 @@ async function fileToCsvText(file) {
     const dir = currentSide === 'BUY' ? 'LONG' : 'SHORT';
     const mult = getMultiplier();
 
+    const commInput = el('price-commission');
+    const swapInput = el('price-swap');
+    const commBadge = el('price-comm-badge');
     const previewEl = el('price-preview');
     const pnlEl = el('preview-pnl');
     const rrEl = el('preview-rr');
+    const breakdownEl = el('preview-breakdown');
+    const grossEl = el('preview-gross');
+    const commEl = el('preview-comm');
+    const swapValEl = el('preview-swap');
+
+    // Otomatik komisyon kontrolü
+    const autoEnabled = isAutoCommEnabled();
+    const activeProf = getActiveCommProfile();
+    let commission = 0;
+    const isUserEdited = commInput && commInput.dataset.userEdited === 'true';
+
+    if (autoEnabled) {
+      if (!isUserEdited && !isNaN(lot) && lot > 0) {
+        commission = parseFloat((lot * activeProf.commPerLot).toFixed(2));
+        if (commInput && (!commInput.value || commInput.value.trim() === '')) {
+          commInput.value = commission > 0 ? commission.toFixed(2) : (activeProf.commPerLot === 0 ? '0.00' : '');
+        }
+      } else {
+        commission = parseFloat(commInput?.value) || 0;
+      }
+      if (commBadge) {
+        commBadge.textContent = isUserEdited ? 'Özel' : (activeProf.name + (activeProf.commPerLot > 0 ? (' ' + activeProf.commPerLot + '/lot') : ' (0)'));
+        commBadge.style.display = 'inline-block';
+      }
+    } else {
+      commission = parseFloat(commInput?.value) || 0;
+      if (commBadge) {
+        commBadge.textContent = 'Manuel';
+        commBadge.style.display = 'inline-block';
+      }
+    }
+
+    const swap = parseFloat(swapInput?.value) || 0;
 
     let hasPnl = false;
     let hasRr = false;
@@ -1055,19 +1477,35 @@ async function fileToCsvText(file) {
     if (entry && lot && !isNaN(entry) && !isNaN(lot) && mult !== null) {
       if (exit && !isNaN(exit)) {
         try {
-          let pnl = 0;
-          if (typeof calcPnL === 'function') {
-            pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
-          } else {
-            const direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
-            pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+          const direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
+          const rawPnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+          
+          let gross = rawPnl;
+          const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+          const isEurAccount = (curr === '€' || curr === 'EUR');
+          
+          // cTrader EUR hesabı EURUSD dönüşümü (Pip kazancı USD / çıkış fiyatı = EUR)
+          if (isEurAccount && symbol.endsWith('USD') && parseFloat(exit) > 0) {
+            gross = rawPnl / parseFloat(exit);
           }
+
+          gross = parseFloat(gross.toFixed(2));
+          const net = parseFloat((gross - commission + swap).toFixed(2));
+
           if (pnlEl && typeof formatCurrency === 'function') {
-            pnlEl.textContent = formatCurrency(pnl);
-            pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
+            pnlEl.textContent = formatCurrency(net);
+            pnlEl.className = 'p-val' + (net >= 0 ? ' pos' : ' neg');
           }
-          pnlSign = pnl >= 0 ? 1 : -1;
+          pnlSign = net >= 0 ? 1 : -1;
           hasPnl = true;
+
+          // Breakdown detayları
+          if (breakdownEl && grossEl && commEl && swapValEl && typeof formatCurrency === 'function') {
+            grossEl.textContent = formatCurrency(gross);
+            commEl.textContent = '-' + formatCurrency(Math.abs(commission)).replace('+', '');
+            swapValEl.textContent = (swap > 0 ? '+' : '') + formatCurrency(swap);
+            breakdownEl.style.display = 'flex';
+          }
         } catch(e) {}
       }
 
@@ -1092,6 +1530,7 @@ async function fileToCsvText(file) {
     if (pnlEl && !hasPnl) {
       pnlEl.textContent = '—';
       pnlEl.className = 'p-val';
+      if (breakdownEl) breakdownEl.style.display = 'none';
     }
     if (rrEl && !hasRr) {
       rrEl.textContent = '—';
@@ -1122,6 +1561,9 @@ async function fileToCsvText(file) {
 
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    renderCommChips();
+    syncCommissionWithLot(true);
 
     setTimeout(function() {
       const symbol = el('price-symbol');
@@ -1199,6 +1641,18 @@ async function fileToCsvText(file) {
 
     const preview = el('price-preview');
     if (preview) preview.classList.remove('visible', 'rail-pos', 'rail-neg');
+    const breakdown = el('preview-breakdown');
+    if (breakdown) breakdown.style.display = 'none';
+
+    const pComm = el('price-commission');
+    if (pComm) {
+      pComm.value = '';
+      pComm.dataset.userEdited = 'false';
+    }
+    const pSwap = el('price-swap');
+    if (pSwap) pSwap.value = '';
+    const pCommBadge = el('price-comm-badge');
+    if (pCommBadge) pCommBadge.style.display = 'none';
 
     const previewContainer = el('csv-preview-container');
     if (previewContainer) { previewContainer.style.display = 'none'; previewContainer.innerHTML = ''; }
@@ -1257,7 +1711,7 @@ async function fileToCsvText(file) {
     qsa('.lot-preset').forEach(function(btn) {
       btn.classList.toggle('active', parseFloat(btn.dataset.lot) === parseFloat(value));
     });
-    updatePricePreview();
+    syncCommissionWithLot(false);
   }
 
   // ============================================================
@@ -1308,8 +1762,17 @@ async function fileToCsvText(file) {
 
     html += '<div style="overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;border-radius:6px;border:1px solid var(--border);">';
     html += '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;">';
-    html += '<thead><tr style="background:var(--surface);position:sticky;top:0;z-index:1;">';
-    ['Symbol', 'Side', 'Lot', 'Entry', 'Exit', 'P&L', 'Date'].forEach(function(h) {
+    const hasCommOrSwap = rows.some(function(r) {
+      return (r.commission != null && Number(r.commission) > 0) || (r.swap != null && Number(r.swap) !== 0);
+    });
+
+    const headers = ['Symbol', 'Side', 'Lot', 'Entry', 'Exit', 'P&L'];
+    if (hasCommOrSwap) {
+      headers.push('Comm', 'Swap');
+    }
+    headers.push('Date');
+
+    headers.forEach(function(h) {
       html += '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--muted);font-size:10px;letter-spacing:0.05em;">' + h + '</th>';
     });
     html += '</tr></thead><tbody>';
@@ -1332,12 +1795,21 @@ async function fileToCsvText(file) {
       }
       html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:' + pnlColor + ';font-weight:600;">' + pnlDisplay + '</td>';
 
+      if (hasCommOrSwap) {
+        var commNum = parseFloat(r.commission);
+        var commStr = (!isNaN(commNum) && commNum > 0) ? '-' + commNum.toFixed(2) : '—';
+        var swapNum = parseFloat(r.swap);
+        var swapStr = (!isNaN(swapNum) && swapNum !== 0) ? (swapNum > 0 ? '+' : '') + swapNum.toFixed(2) : '—';
+        html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + commStr + '</td>';
+        html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + swapStr + '</td>';
+      }
+
       html += '<td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);">' + escapeHtml(r.trade_date) + '</td>';
       html += '</tr>';
     });
 
     if (rows.length > 30) {
-      html += '<tr><td colspan="7" style="padding:8px;text-align:center;color:var(--muted);">+ve ' + (rows.length - 30) + ' kayıt daha</td></tr>';
+      html += '<tr><td colspan="' + headers.length + '" style="padding:8px;text-align:center;color:var(--muted);">+ve ' + (rows.length - 30) + ' kayıt daha</td></tr>';
     }
     html += '</tbody></table></div></div>';
 
@@ -1589,6 +2061,13 @@ async function fileToCsvText(file) {
           sigOccurrences.set(baseHash, occ);
           const importHash = baseHash + '|' + (r.ticket || r.order_id || r.id || occ);
 
+          const commVal = r.commission != null ? Math.abs(Number(r.commission) || 0) : (r.fee != null ? Math.abs(Number(r.fee) || 0) : 0);
+          const swapVal = r.swap != null ? (Number(r.swap) || 0) : 0;
+          let grossVal = r.gross_pnl != null ? (Number(r.gross_pnl) || 0) : null;
+          if (grossVal == null && pnl != null) {
+            grossVal = parseFloat((pnl + commVal - swapVal).toFixed(2));
+          }
+
           trades.push({
             user_id: user.id,
             journal_id: journalId,
@@ -1601,9 +2080,12 @@ async function fileToCsvText(file) {
             stop_loss: r.stop_loss != null ? r.stop_loss : null,
             take_profit: r.take_profit != null ? r.take_profit : null,
             trade_date: r.trade_date,
-            notes: r.notes || 'CSV Import',
+            notes: (r.comment && String(r.comment).trim()) ? String(r.comment).trim() : (r.notes || 'CSV Import'),
             multiplier: multiplier,
             pnl: pnl,
+            gross_pnl: grossVal,
+            commission: commVal,
+            swap: swapVal,
             import_hash: importHash,
           });
         }
@@ -1914,6 +2396,41 @@ async function fileToCsvText(file) {
 
     const direction = currentSide === 'BUY' ? 'LONG' : 'SHORT';
 
+    // Komisyon ve Swap
+    const commInput = el('price-commission');
+    const swapInput = el('price-swap');
+    let commission = parseFloat(commInput?.value);
+    if (isNaN(commission)) {
+      const defCommPerLot = parseFloat(localStorage.getItem('ww_commission_per_lot') || '0');
+      commission = defCommPerLot > 0 ? parseFloat((lot * defCommPerLot).toFixed(2)) : 0;
+    }
+    const swap = parseFloat(swapInput?.value) || 0;
+
+    let calculatedGross = null;
+    let calculatedNet = null;
+    let calculatedRr = null;
+
+    if (exit && !isNaN(exit)) {
+      const dirSign = direction === 'LONG' ? 1 : -1;
+      let rawPnl = dirSign * (exit - entry) * lot * (mult || 100000);
+      
+      const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+      const isEurAccount = (curr === '€' || curr === 'EUR');
+      if (isEurAccount && symbol.endsWith('USD') && exit > 0) {
+        calculatedGross = parseFloat((rawPnl / exit).toFixed(2));
+      } else {
+        calculatedGross = parseFloat(rawPnl.toFixed(2));
+      }
+
+      calculatedNet = parseFloat((calculatedGross - commission + swap).toFixed(2));
+    }
+
+    if (sl && tp && !isNaN(sl) && !isNaN(tp)) {
+      const risk = Math.abs(entry - sl);
+      const reward = Math.abs(tp - entry);
+      if (risk > 0) calculatedRr = parseFloat((reward / risk).toFixed(2));
+    }
+
     const tradeData = {
       journal_id: window.journal.getActiveJournalId(),
       user_id: user.id,
@@ -1925,8 +2442,11 @@ async function fileToCsvText(file) {
       exit_price: exit,
       stop_loss: sl,
       take_profit: tp,
-      pnl: null,
-      rr_ratio: null,
+      gross_pnl: calculatedGross,
+      commission: commission || 0,
+      swap: swap || 0,
+      pnl: calculatedNet,
+      rr_ratio: calculatedRr,
       trade_date: date,
       strategy_id: strategyId || null,
       notes: notes,
@@ -2129,16 +2649,30 @@ async function fileToCsvText(file) {
 
     const body = document.querySelector('.quick-add-body');
     if (body) {
-      const previewIds = ['price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-lot', 'price-custom-multiplier'];
+      const previewIds = ['price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-lot', 'price-custom-multiplier', 'price-commission', 'price-swap', 'price-symbol'];
       body.addEventListener('input', function(e) {
         const id = e.target.id;
+        if (id === 'price-commission') {
+          e.target.dataset.userEdited = e.target.value.trim() !== '' ? 'true' : 'false';
+        }
+        if (id === 'price-lot') {
+          syncCommissionWithLot(false);
+        }
         if (previewIds.indexOf(id) !== -1) updatePricePreview();
         if (id === 'price-symbol') e.target.value = e.target.value.toUpperCase();
       });
       body.addEventListener('change', function(e) {
+        if (e.target.id === 'price-commission') {
+          e.target.dataset.userEdited = e.target.value.trim() !== '' ? 'true' : 'false';
+        }
+        if (e.target.id === 'price-lot') {
+          syncCommissionWithLot(false);
+        }
         if (previewIds.indexOf(e.target.id) !== -1) updatePricePreview();
       });
     }
+
+    initCommissionPopover();
 
     const saveBtn = document.getElementById('quick-add-save');
     if (saveBtn) saveBtn.addEventListener('click', saveTrade);
@@ -2181,6 +2715,7 @@ async function fileToCsvText(file) {
           if (iso) di.value = formatDateDisplay(iso);
         }
         if (datePickerState.isOpen) renderDatePicker();
+        renderCommChips();
       });
     }
 

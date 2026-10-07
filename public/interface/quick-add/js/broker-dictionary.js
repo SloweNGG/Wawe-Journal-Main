@@ -269,7 +269,7 @@
   // ---------------------------------------------------------------------
   // Field dictionaries
   // ---------------------------------------------------------------------
-  var FIELD_ORDER = ['symbol', 'direction', 'date', 'entry', 'exit', 'lot', 'pnl', 'sl', 'tp', 'fee'];
+  var FIELD_ORDER = ['symbol', 'direction', 'date', 'entry', 'exit', 'lot', 'pnl', 'gross_pnl', 'commission', 'swap', 'sl', 'tp', 'fee', 'comment', 'ticket'];
 
   var FIELD_CANDIDATES = {
     symbol: [
@@ -311,14 +311,25 @@
       'cantidad', 'quantidade', 'объем', 'количество'
     ],
     pnl: [
-      'kapatmakz', 'closedpl', 'closedpnl', 'net', 'netdollar', 'kz', 'kar',
+      'totalpnl', 'kapatmakz', 'closedpl', 'closedpnl', 'net', 'netdollar', 'kz', 'kar',
       'realizedprofit', 'realizedpl', 'netprofit', 'profit', 'pnl',
       'gewinn', 'nettogewinn', 'ganancia', 'beneficio', 'lucro', 'ganho',
-      'прибыль', 'чистаяприбыль'
+      'прибыль', 'чистаяприбыль', 'toplamkz', 'totalprofit'
+    ],
+    gross_pnl: [
+      'positionpnl', 'grosspnl', 'gross', 'brutkz', 'brut', 'brutkar', 'brutpnl'
+    ],
+    commission: [
+      'commission', 'komisyon', 'fee', 'ucret', 'gebuhr', 'comision', 'taxa', 'комиссия'
+    ],
+    swap: [
+      'swap', 'rollover', 'gecelikmaliyet', 'faiz', 'tasimamaliyeti'
     ],
     sl: ['sl', 'stoploss', 'zarardurdur', 'verlustbegrenzung', 'стоплосс'],
     tp: ['tp', 'takeprofit', 'karal', 'gewinnmitnahme', 'тейкпрофит'],
-    fee: ['fee', 'commission', 'komisyon', 'ucret', 'gebuhr', 'comision', 'taxa', 'комиссия']
+    fee: ['fee', 'commission', 'komisyon', 'ucret', 'gebuhr', 'comision', 'taxa', 'комиссия'],
+    comment: ['comment', 'yorum', 'aciklama', 'not', 'notes', 'memo', 'description'],
+    ticket: ['positionid', 'ticket', 'position', 'deal', 'orderid', 'orderticket', 'bilet']
   };
 
   global.BrokerDictionary = {

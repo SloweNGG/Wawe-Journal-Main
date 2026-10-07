@@ -53,23 +53,57 @@
     {
       broker: 'mt5',
       required: ['symbol', 'volume'],
-      weight: ['time', 'price', 'sl', 'tp', 'profit', 'position', 'commission', 'swap'],
+      weight: ['time', 'price', 'sl', 'tp', 'profit', 'position', 'commission', 'swap', 'positionid', 'totalpnl', 'positionpnl', 'comment'],
       isFillBased: false,
       explicitMap: function (rawHeaders) {
         var n = rawHeaders.map(norm);
-        var priceIdx = indicesOf(n, 'price');
-        var timeIdx = indicesOf(n, function (h) { return h.indexOf('time') >= 0; });
         var map = {};
         map.symbol = firstIndexOf(n, 'symbol');
-        map.direction = firstIndexOf(n, 'type');
-        map.lot = firstIndexOf(n, 'volume');
-        map.pnl = firstIndexOf(n, 'profit');
-        map.sl = firstIndexOf(n, 'sl');
-        map.tp = firstIndexOf(n, 'tp');
-        if (priceIdx.length >= 2) { map.entry = priceIdx[0]; map.exit = priceIdx[1]; }
-        else if (priceIdx.length === 1) { map.entry = priceIdx[0]; }
-        if (timeIdx.length >= 2) { map.date = timeIdx[1]; map.dateOpen = timeIdx[0]; }
-        else if (timeIdx.length === 1) { map.date = timeIdx[0]; }
+        map.direction = firstIndexOf(n, function (h) { return h === 'type' || h === 'side' || h === 'direction' || h === 'buysell'; });
+        map.lot = firstIndexOf(n, function (h) { return h === 'volume' || h === 'size' || h === 'lot'; });
+
+        // Prices: support Open Price / Close Price and duplicate Price
+        var openPriceIdx = firstIndexOf(n, function(h) { return h === 'openprice' || h === 'entryprice' || h === 'entry'; });
+        var closePriceIdx = firstIndexOf(n, function(h) { return h === 'closeprice' || h === 'closingprice' || h === 'exitprice' || h === 'exit'; });
+        var priceIdx = indicesOf(n, function(h) { return h === 'price'; });
+        if (openPriceIdx >= 0) {
+          map.entry = openPriceIdx;
+          if (closePriceIdx >= 0) map.exit = closePriceIdx;
+        } else if (priceIdx.length >= 2) {
+          map.entry = priceIdx[0];
+          map.exit = priceIdx[1];
+        } else if (priceIdx.length === 1) {
+          map.entry = priceIdx[0];
+        }
+
+        // Times: support Open Date/Time / Close Date/Time and duplicate Time
+        var closeTimeIdx = firstIndexOf(n, function(h) { return (h.indexOf('close') >= 0 && h.indexOf('time') >= 0) || h === 'closedatetime' || h === 'closetime'; });
+        var openTimeIdx = firstIndexOf(n, function(h) { return (h.indexOf('open') >= 0 && h.indexOf('time') >= 0) || h === 'opendatetime' || h === 'opentime'; });
+        var timeIdx = indicesOf(n, function (h) { return h.indexOf('time') >= 0; });
+        if (closeTimeIdx >= 0) {
+          map.date = closeTimeIdx;
+          if (openTimeIdx >= 0) map.dateOpen = openTimeIdx;
+        } else if (timeIdx.length >= 2) {
+          map.date = timeIdx[1];
+          map.dateOpen = timeIdx[0];
+        } else if (timeIdx.length === 1) {
+          map.date = timeIdx[0];
+        }
+
+        // PnL & Gross PnL
+        map.pnl = firstIndexOf(n, function(h) { return h === 'totalpnl' || h === 'profit' || h === 'net' || h === 'pnl' || h === 'totalprofit'; });
+        map.gross_pnl = firstIndexOf(n, function(h) { return h === 'positionpnl' || h === 'grosspnl' || h === 'gross' || h === 'brutkz'; });
+
+        // Commission & Swap & Comment & Ticket
+        map.commission = firstIndexOf(n, function(h) { return h === 'commission' || h === 'fee' || h === 'komisyon'; });
+        map.swap = firstIndexOf(n, function(h) { return h === 'swap'; });
+        map.comment = firstIndexOf(n, function(h) { return h === 'comment' || h === 'notes' || h === 'yorum'; });
+        map.ticket = firstIndexOf(n, function(h) { return h === 'positionid' || h === 'ticket' || h === 'position'; });
+
+        // SL & TP
+        map.sl = firstIndexOf(n, function(h) { return h === 'sl' || h === 'stoploss'; });
+        map.tp = firstIndexOf(n, function(h) { return h === 'tp' || h === 'takeprofit'; });
+
         return map;
       }
     },
@@ -185,8 +219,9 @@
     for (var i = 0; i < normHeaders.length; i++) if (test(normHeaders[i])) out.push(i);
     return out;
   }
-  function firstIndexOf(normHeaders, token) {
-    for (var i = 0; i < normHeaders.length; i++) if (normHeaders[i] === token) return i;
+  function firstIndexOf(normHeaders, matcher) {
+    var test = typeof matcher === 'function' ? matcher : function (h) { return h === matcher; };
+    for (var i = 0; i < normHeaders.length; i++) if (test(normHeaders[i])) return i;
     return -1;
   }
 

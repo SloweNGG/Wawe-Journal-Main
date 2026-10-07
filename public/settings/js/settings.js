@@ -1968,7 +1968,27 @@ function initCurrencySelector() {
     });
   });
 
-  wwLog.log('✅ Para birimi seçici başlatıldı! (' + btns.length + ' buton)');
+  // Lot Başına Komisyon ayarı
+  var commInput = safeEl('settings-commission-per-lot');
+  if (commInput) {
+    commInput.value = localStorage.getItem('ww_commission_per_lot') || '';
+    if (!commInput._bound) {
+      commInput._bound = true;
+      commInput.addEventListener('change', function() {
+        var val = parseFloat(this.value.replace(',', '.'));
+        if (!isNaN(val) && val >= 0) {
+          localStorage.setItem('ww_commission_per_lot', String(val));
+          showMsg('Lot başına komisyon kaydedildi!', 'success');
+        } else {
+          localStorage.removeItem('ww_commission_per_lot');
+          this.value = '';
+          showMsg('Lot başına komisyon sıfırlandı.', 'info');
+        }
+      });
+    }
+  }
+
+  wwLog.log('✅ Para birimi ve komisyon ayarları başlatıldı!');
 }
 
 // ============================================================

@@ -632,6 +632,17 @@ import Layout from '../layouts/Layout.astro';
             <input type="text" inputmode="decimal" id="tp" placeholder="1.09500" />
           </div>
         </div>
+
+        <div class="grid-2" style="margin-top:12px;">
+          <div class="field">
+            <label>Komisyon</label>
+            <input type="text" inputmode="decimal" id="commission" placeholder="0.00" />
+          </div>
+          <div class="field">
+            <label>Swap</label>
+            <input type="text" inputmode="decimal" id="swap" placeholder="0.00" />
+          </div>
+        </div>
       </div>
 
       <!-- STRATEJİ & NOTLAR -->
@@ -841,7 +852,7 @@ import Layout from '../layouts/Layout.astro';
     // ============================================================
     // PREVIEW - calcPnL ve calcRR fonksiyonları script.js'den çağrılır
     // ============================================================
-    var previewInputs = ['entry', 'exit', 'lot', 'instrument', 'custom-multiplier', 'sl', 'tp'];
+    var previewInputs = ['entry', 'exit', 'lot', 'instrument', 'custom-multiplier', 'sl', 'tp', 'commission', 'swap', 'symbol'];
     previewInputs.forEach(function(id) {
       var el = document.getElementById(id);
       if (el) {
@@ -892,18 +903,24 @@ import Layout from '../layouts/Layout.astro';
 
       if (entry && lot && dir && mult !== null) {
         if (exit) {
-          var pnl = 0;
+          var gross = 0;
+          var comm = parseFloat(document.getElementById('commission')?.value) || 0;
+          var swp = parseFloat(document.getElementById('swap')?.value) || 0;
           try {
-            if (typeof calcPnL !== 'undefined') {
-              pnl = calcPnL(entry, exit, lot, dir, 'other', mult);
+            var direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
+            var raw = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+            var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+            var sym = (symEl ? symEl.value : '').trim().toUpperCase();
+            if ((curr === '€' || curr === 'EUR') && sym.endsWith('USD') && parseFloat(exit) > 0) {
+              gross = raw / parseFloat(exit);
             } else {
-              var direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
-              pnl = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
+              gross = raw;
             }
           } catch(e) {}
+          var net = gross - comm + swp;
           if (pnlEl) {
-            pnlEl.textContent = formatCurrency(pnl);
-            pnlEl.className = 'p-val' + (pnl >= 0 ? ' pos' : ' neg');
+            pnlEl.textContent = formatCurrency(net);
+            pnlEl.className = 'p-val' + (net >= 0 ? ' pos' : ' neg');
           }
           hasPnl = true;
         }
@@ -1544,10 +1561,22 @@ import Layout from '../layouts/Layout.astro';
           }
         } catch(e) {}
 
+        var comm = parseFloat(document.getElementById('commission')?.value) || 0;
+        var swp = parseFloat(document.getElementById('swap')?.value) || 0;
+        var gross = pnl;
+        var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+        if (gross !== null && (curr === '€' || curr === 'EUR') && symbol.endsWith('USD') && exit > 0) {
+          gross = parseFloat((gross / exit).toFixed(2));
+        } else if (gross !== null) {
+          gross = parseFloat(gross.toFixed(2));
+        }
+        var net = gross !== null ? parseFloat((gross - comm + swp).toFixed(2)) : null;
+
         var { error } = await sb.from('trades').insert([{
           user_id: currentUser.id, journal_id: window.journal.getActiveJournalId(), symbol: symbol, direction: direction, instrument: instrument, lot: lot,
           entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp,
-          trade_date: tradeDate, notes: notes || null, pnl: pnl,
+          gross_pnl: gross, commission: comm, swap: swp,
+          trade_date: tradeDate, notes: notes || null, pnl: net,
           rr_ratio: rr ? parseFloat(rr) : null, multiplier: mult, strategy_id: strategyId
         }]);
 

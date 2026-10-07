@@ -322,10 +322,19 @@
       var exit = Dict.parseNumber(get(row, 'exit'));
       var lot = Dict.parseNumber(get(row, 'lot'));
       var pnl = Dict.parseNumber(get(row, 'pnl'));
+      var gross_pnl = Dict.parseNumber(get(row, 'gross_pnl'));
       var sl = Dict.parseNumber(get(row, 'sl'));
       var tp = Dict.parseNumber(get(row, 'tp'));
       var fee = Dict.parseNumber(get(row, 'fee'));
+      var commission = Dict.parseNumber(get(row, 'commission'));
+      var swap = Dict.parseNumber(get(row, 'swap'));
+      var comment = get(row, 'comment');
+      var ticket = get(row, 'ticket');
       var date = Dict.parseDate(get(row, 'date'));
+
+      if (commission === null && fee !== null) commission = fee;
+      if (commission !== null) commission = Math.abs(commission);
+      if (swap === null) swap = 0;
 
       if (!symbol || entry === null || exit === null) {
         errors.push('Satır ' + lineNo + ': sembol/giriş/çıkış fiyatı eksik ya da geçersiz, atlandı.');
@@ -334,13 +343,19 @@
 
       if (pnl === null && lot !== null) {
         var sign = direction === 'SHORT' ? -1 : 1;
-        pnl = (exit - entry) * lot * sign;
-        rowWarnings.push('pnl kolonu bulunamadı, entry/exit/lot üzerinden hesaplandı (komisyon/swap dahil değil)');
+        var calcGross = (exit - entry) * lot * sign;
+        if (gross_pnl === null) gross_pnl = calcGross;
+        pnl = calcGross - (commission || 0) + (swap || 0);
+        rowWarnings.push('pnl kolonu bulunamadı, entry/exit/lot üzerinden hesaplandı');
       }
 
       rows.push({
         symbol: symbol, direction: direction, date: date,
-        entry: entry, exit: exit, lot: lot, pnl: pnl, sl: sl, tp: tp, fee: fee,
+        entry: entry, exit: exit, lot: lot, pnl: pnl, gross_pnl: gross_pnl,
+        commission: commission || 0, swap: swap || 0, fee: fee,
+        sl: sl, tp: tp,
+        comment: comment ? String(comment).trim() : null,
+        ticket: ticket ? String(ticket).trim() : null,
         partial: false, warnings: rowWarnings
       });
     });

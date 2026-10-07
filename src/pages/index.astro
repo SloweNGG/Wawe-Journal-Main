@@ -161,6 +161,9 @@ import Layout from '../layouts/Layout.astro';
 
       <h1>
         <span class="l1" data-i18n="hero.title">Stop guessing which trades work.</span>
+        <span class="hero-destiny-wrap">
+          <span class="hero-destiny" data-i18n="hero.destiny">Rewrite your destiny.</span>
+        </span>
       </h1>
 
       <p class="hero-sub" data-i18n="hero.subtitle">
@@ -196,6 +199,215 @@ import Layout from '../layouts/Layout.astro';
       <div class="hstat"><div class="hstat-val" id="stat-total-trades">—</div><div class="hstat-label" data-i18n="stats.total_trades">Trades Logged</div></div>
       <div class="hstat"><div class="hstat-val" id="stat-today-users">—</div><div class="hstat-label" data-i18n="stats.today_users">New Today</div></div>
       <div class="hstat"><div class="hstat-val" id="stat-today-trades">—</div><div class="hstat-label" data-i18n="stats.today_trades">Trades Today</div></div>
+    </div>
+  </section>
+
+  <!-- ═══ SUPPORTED PLATFORMS MARQUEE (METHOD 1) ═══ -->
+  <section class="platforms-section reveal">
+    <div class="platforms-marquee-wrap">
+      <div class="platforms-marquee-track">
+        <!-- 1st SET -->
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/mt5.png" alt="MetaTrader 5" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">MetaTrader 5</span>
+            <span class="platform-chip-badge">Forex & Multi-Asset</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/mt4.png" alt="MetaTrader 4" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">MetaTrader 4</span>
+            <span class="platform-chip-badge">Forex & CFD</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/ctrader_icon.png" alt="cTrader" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">cTrader</span>
+            <span class="platform-chip-badge">ECN Platform</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/tradingview.svg" alt="TradingView" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">TradingView</span>
+            <span class="platform-chip-badge">Charts & Paper</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/binance.svg" alt="Binance" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Binance</span>
+            <span class="platform-chip-badge">Spot & Futures</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/bybit_icon.png" alt="Bybit" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Bybit</span>
+            <span class="platform-chip-badge">Derivatives</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/ibkr_icon.png" alt="Interactive Brokers" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Interactive Brokers</span>
+            <span class="platform-chip-badge">Global Stocks</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/xtb_icon.png" alt="XTB" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">XTB xStation</span>
+            <span class="platform-chip-badge">Multi-Asset</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/oanda_icon.png" alt="OANDA" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">OANDA</span>
+            <span class="platform-chip-badge">Forex</span>
+          </div>
+        </div>
+
+        <div class="platform-chip">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/excel.svg" alt="Universal CSV & Excel" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Universal CSV & Excel</span>
+            <span class="platform-chip-badge">Smart Auto-Detect</span>
+          </div>
+        </div>
+
+        <!-- 2nd SET (for seamless infinite loop) -->
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/mt5.png" alt="MetaTrader 5" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">MetaTrader 5</span>
+            <span class="platform-chip-badge">Forex & Multi-Asset</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/mt4.png" alt="MetaTrader 4" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">MetaTrader 4</span>
+            <span class="platform-chip-badge">Forex & CFD</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/ctrader_icon.png" alt="cTrader" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">cTrader</span>
+            <span class="platform-chip-badge">ECN Platform</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/tradingview.svg" alt="TradingView" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">TradingView</span>
+            <span class="platform-chip-badge">Charts & Paper</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/binance.svg" alt="Binance" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Binance</span>
+            <span class="platform-chip-badge">Spot & Futures</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/bybit_icon.png" alt="Bybit" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Bybit</span>
+            <span class="platform-chip-badge">Derivatives</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/ibkr_icon.png" alt="Interactive Brokers" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Interactive Brokers</span>
+            <span class="platform-chip-badge">Global Stocks</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/xtb_icon.png" alt="XTB" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">XTB xStation</span>
+            <span class="platform-chip-badge">Multi-Asset</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/oanda_icon.png" alt="OANDA" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">OANDA</span>
+            <span class="platform-chip-badge">Forex</span>
+          </div>
+        </div>
+
+        <div class="platform-chip" aria-hidden="true">
+          <div class="platform-chip-icon">
+            <img src="/images/platforms/excel.svg" alt="Universal CSV & Excel" width="22" height="22" loading="lazy" />
+          </div>
+          <div class="platform-chip-info">
+            <span class="platform-chip-name">Universal CSV & Excel</span>
+            <span class="platform-chip-badge">Smart Auto-Detect</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

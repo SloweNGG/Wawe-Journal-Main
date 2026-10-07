@@ -12,6 +12,7 @@
       hero: {
         beta: 'BETA',
         title: 'Stop guessing which trades work.',
+        destiny: 'Rewrite your destiny.',
         subtitle: 'Log every trade, see your real edge, and drop the strategies that only feel right. Your data, your discipline.',
         start_free: 'Start Free →',
         login: 'Login',
@@ -21,6 +22,10 @@
         current_price: 'XAUUSD'
       },
       stats: { total_users: 'Total Users', total_trades: 'Trades Logged', today_users: 'New Today', today_trades: 'Trades Today' },
+      platforms: {
+        label: 'SUPPORTED PLATFORMS & BROKERS',
+        sub: 'Seamless 1-click import with zero data loss · Auto commission & swap tracking'
+      },
       refs: { tag: 'Trusted By', title: 'Names We <em>Trust</em>', desc: 'Experienced traders and content creators we work with.', empty: 'No references added yet.', error: 'Failed to load references.' },
       ai: {
         tag: '01 — AI-powered analysis',
@@ -220,6 +225,7 @@
       hero: {
         beta: 'BETA',
         title: 'Hangi işlemlerin işe yaradığını tahmin etmeyi bırak.',
+        destiny: 'Kaderini yeniden yaz.',
         subtitle: 'Her işlemi kaydet, gerçek avantajını gör ve sadece iyi hissettiren stratejileri bırak. Verin senin, disiplinin senin.',
         start_free: 'Ücretsiz Başla →',
         login: 'Giriş',
@@ -229,6 +235,10 @@
         current_price: 'XAUUSD'
       },
       stats: { total_users: 'Toplam Kullanıcı', total_trades: 'Kaydedilen İşlem', today_users: 'Bugün Yeni', today_trades: 'Bugün İşlem' },
+      platforms: {
+        label: 'DESTEKLENEN PLATFORMLAR & BROKERLAR',
+        sub: 'Kayıpsız tek tıkla aktarım · Otomatik komisyon ve swap hesaplama'
+      },
       refs: { tag: 'Güvenenler', title: 'Güvendiğimiz <em>İsimler</em>', desc: 'Birlikte çalıştığımız deneyimli traderlar ve içerik üreticileri.', empty: 'Henüz referans eklenmemiş.', error: 'Referanslar yüklenemedi.' },
       ai: {
         tag: '01 — AI destekli analiz',
@@ -422,6 +432,7 @@
       hero: {
         beta: 'BETA',
         title: 'Hör auf zu raten, welche Trades funktionieren.',
+        destiny: 'Schreibe dein Schicksal neu.',
         subtitle: 'Protokolliere jeden Trade, erkenne deinen echten Vorteil und lass die Strategien fallen, die sich nur richtig anfühlen.',
         start_free: 'Kostenlos starten →',
         login: 'Anmelden',
@@ -431,6 +442,10 @@
         current_price: 'XAUUSD'
       },
       stats: { total_users: 'Gesamtnutzer', total_trades: 'Protokollierte Trades', today_users: 'Neu heute', today_trades: 'Trades heute' },
+      platforms: {
+        label: 'UNTERSTÜTZTE PLATTFORMEN & BROKER',
+        sub: 'Nahtloser 1-Klick-Import ohne Datenverlust · Automatische Provisions- & Swap-Erfassung'
+      },
       refs: { tag: 'Vertraut von', title: 'Namen, denen wir <em>vertrauen</em>', desc: 'Erfahrene Trader und Content Creator, mit denen wir zusammenarbeiten.', empty: 'Noch keine Referenzen hinzugefügt.', error: 'Referenzen konnten nicht geladen werden.' },
       ai: {
         tag: '01 — KI-gestützte Analyse',
@@ -669,6 +684,12 @@
       const v = t(el.getAttribute('data-i18n-html'));
       if (typeof v === 'string') el.innerHTML = v;
     });
+    const destinyEl = document.querySelector('.hero-destiny');
+    if (destinyEl) {
+      destinyEl.style.animation = 'none';
+      void destinyEl.offsetHeight;
+      destinyEl.style.animation = '';
+    }
     document.documentElement.lang = currentLang;
   }
 

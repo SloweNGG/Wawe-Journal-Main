@@ -1,4 +1,4 @@
-﻿---
+---
 // ============================================================
 // TRADES - SAYFA
 //  - DEĞİŞİKLİK 2: Mobil filtre bottom sheet
@@ -247,6 +247,17 @@ import Layout from '../layouts/Layout.astro';
         <div class="field">
           <label data-i18n="trades.take_profit">Take Profit</label>
           <input type="text" inputmode="decimal" id="edit-tp" />
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="field">
+          <label>Komisyon</label>
+          <input type="text" inputmode="decimal" id="edit-commission" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label>Swap</label>
+          <input type="text" inputmode="decimal" id="edit-swap" placeholder="0.00" />
         </div>
       </div>
 

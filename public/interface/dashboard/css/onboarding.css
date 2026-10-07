@@ -965,8 +965,19 @@ body.light-theme .wj-tour-btn-skip:hover {
   width: 330px;
   max-width: calc(100vw - 2.5rem);
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
+}
+
+.wj-tasks-floating-container.is-dragging {
+  transition: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.wj-tasks-floating-container.is-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 @media (max-width: 768px) {
@@ -975,6 +986,11 @@ body.light-theme .wj-tour-btn-skip:hover {
     right: 1.25rem;
     width: calc(100vw - 2.5rem);
   }
+}
+
+.wj-tasks-floating-container.minimized {
+  width: auto;
+  max-width: max-content;
 }
 
 /* Minimized Pill Button */
@@ -990,9 +1006,11 @@ body.light-theme .wj-tour-btn-skip:hover {
   font-size: 0.86rem;
   font-weight: 600;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(124, 109, 250, 0.25);
-  cursor: pointer;
-  transition: all 0.22s ease;
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
   user-select: none;
+  -webkit-user-select: none;
   margin-left: auto;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1002,6 +1020,12 @@ body.light-theme .wj-tour-btn-skip:hover {
   transform: translateY(-2px);
   border-color: #7c6dfa;
   box-shadow: 0 12px 35px rgba(124, 109, 250, 0.45);
+}
+
+.wj-tasks-min-pill:active,
+.wj-tasks-floating-container.is-dragging .wj-tasks-min-pill {
+  cursor: grabbing !important;
+  transform: scale(0.98);
 }
 
 body.light-theme .wj-tasks-min-pill {
@@ -1017,6 +1041,7 @@ body.light-theme .wj-tasks-min-pill {
 
 .wj-tasks-floating-container.minimized .wj-tasks-min-pill {
   display: inline-flex;
+  margin-left: 0;
 }
 
 /* Expanded Card */
@@ -1053,6 +1078,20 @@ body.light-theme .wj-tasks-widget {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.wj-tasks-header:active,
+.wj-tasks-floating-container.is-dragging .wj-tasks-header {
+  cursor: grabbing !important;
+}
+
+.wj-tasks-header button {
+  cursor: pointer;
+  touch-action: auto;
 }
 
 .wj-tasks-title-wrap {

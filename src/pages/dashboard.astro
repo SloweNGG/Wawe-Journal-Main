@@ -468,10 +468,10 @@ import Layout from '../layouts/Layout.astro';
    
     <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
 
-    <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
-    <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
+    <script src="/interface/quick-add/js/quick-modal-i18n.js?v=1791383000" is:inline defer></script>
+    <script src="/interface/quick-add/js/quick-add.js?v=1791383000" is:inline defer></script>
 
-    <script src="/interface/dashboard/js/dashboard.js?v=1790433200" is:inline defer></script>
+    <script src="/interface/dashboard/js/dashboard.js?v=1791381500" is:inline defer></script>
   </Fragment>
 
   <script is:inline>
@@ -494,6 +494,14 @@ import Layout from '../layouts/Layout.astro';
       if (bannerEl) {
         bannerEl.style.display = 'none';
         bannerEl.innerHTML = '';
+      }
+
+      var statsGridEl = document.getElementById('stats-grid');
+      if (statsGridEl && statsGridEl.style.display === 'none') {
+        var statsSkelEl = document.getElementById('stats-skeleton');
+        if (statsSkelEl && statsSkelEl.style.display === 'none') {
+          statsGridEl.style.display = 'grid';
+        }
       }
 
       if (!window.PropService || !window.journal) {

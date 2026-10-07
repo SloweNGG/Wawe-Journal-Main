@@ -4,7 +4,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" bodyClass="journals-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/journals/css/journals.css" />
+  <link rel="stylesheet" href="/interface/journals/css/journals.css?v=1791381600" />
   <title data-i18n="journal.title">Hesaplarım – Wawe Journal</title>
     
 
@@ -38,7 +38,7 @@ import Layout from '../layouts/Layout.astro';
     <!-- Skeleton -->
     <div class="journal-card" style="opacity:0.5;">
       <div class="journal-color-bar" style="background:var(--border);"></div>
-      <div class="journal-header">
+      <div class="journal-card-top">
         <div class="journal-icon-wrap" style="background:var(--border);width:32px;height:32px;border-radius:8px;"></div>
       </div>
       <div class="journal-body">
@@ -926,17 +926,24 @@ import Layout from '../layouts/Layout.astro';
         var safeDesc = escapeHtml(j.description || '');
 
         card.innerHTML = `
-          <button class="journal-menu-btn" data-id="${escapeHtml(j.id)}">
-            <i data-lucide="more-vertical"></i>
-          </button>
-          <div class="journal-menu-dropdown">
-            ${!j.is_default ? `<button class="journal-menu-item btn-make-default"><i data-lucide="check-circle"></i> ${i18n.t('journal.set_default')}</button>` : ''}
-            <button class="journal-menu-item btn-edit"><i data-lucide="edit"></i> ${i18n.t('journal.edit')}</button>
-            ${!j.is_default ? `<button class="journal-menu-item danger btn-delete"><i data-lucide="trash-2"></i> ${i18n.t('journal.delete')}</button>` : ''}
-          </div>
-          
-          <div class="journal-icon-wrap">
-            <i data-lucide="${escapeHtml(iconStr)}"></i>
+          <div class="journal-card-top">
+            <div class="journal-icon-wrap">
+              <i data-lucide="${escapeHtml(iconStr)}"></i>
+            </div>
+            
+            <div class="journal-card-actions">
+              ${defaultBadge}
+              <div class="journal-menu-wrap">
+                <button class="journal-menu-btn" data-id="${escapeHtml(j.id)}" aria-label="Menü">
+                  <i data-lucide="more-vertical"></i>
+                </button>
+                <div class="journal-menu-dropdown">
+                  ${!j.is_default ? `<button class="journal-menu-item btn-make-default"><i data-lucide="check-circle"></i> ${i18n.t('journal.set_default')}</button>` : ''}
+                  <button class="journal-menu-item btn-edit"><i data-lucide="edit"></i> ${i18n.t('journal.edit')}</button>
+                  ${!j.is_default ? `<button class="journal-menu-item danger btn-delete"><i data-lucide="trash-2"></i> ${i18n.t('journal.delete')}</button>` : ''}
+                </div>
+              </div>
+            </div>
           </div>
           
           <div class="journal-card-name" title="${safeName}">${safeName}</div>
@@ -948,8 +955,6 @@ import Layout from '../layouts/Layout.astro';
             <span>${escapeHtml(tradesTxt)}</span>
             <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
           </div>
-          
-          ${defaultBadge}
         `;
         
         grid.appendChild(card);

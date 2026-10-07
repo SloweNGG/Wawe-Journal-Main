@@ -1084,7 +1084,7 @@
 
     var widgetHtml = `
       <!-- Minimized Pill Button -->
-      <button class="wj-tasks-min-pill" id="wj-tasks-expand-btn">
+      <button class="wj-tasks-min-pill" id="wj-tasks-expand-btn" title="${t('onboarding.drag_pill_tooltip', 'Sürükleyin veya açmak için tıklayın')}">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         <span>${t('onboarding.tasks_pill', 'Görevler ({count}/4)').replace('{count}', completedTasks)}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
@@ -1092,7 +1092,7 @@
 
       <!-- Expanded Floating Card -->
       <div class="wj-tasks-widget" id="wj-tasks-widget">
-        <div class="wj-tasks-header">
+        <div class="wj-tasks-header" id="wj-tasks-header" title="${t('onboarding.drag_header_tooltip', 'Sürüklemek için basılı tutun')}">
           <div class="wj-tasks-title-wrap">
             <div class="wj-tasks-icon-box">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -1161,8 +1161,34 @@
     if (expandBtn) {
       expandBtn.addEventListener('click', function (e) {
         e.stopPropagation();
+        if (floatingWrapper._wasDragged) {
+          e.preventDefault();
+          return;
+        }
         floatingWrapper.classList.remove('minimized');
         localStorage.setItem('wj_tasks_minimized_' + uid, 'false');
+
+        // Genişleyince ekran dışına taşmaması için pozisyonu gerekirse içeri kaydır
+        requestAnimationFrame(function () {
+          if (floatingWrapper.style.left && floatingWrapper.style.left !== 'auto') {
+            var curLeft = parseFloat(floatingWrapper.style.left);
+            var curTop = parseFloat(floatingWrapper.style.top);
+            if (!isNaN(curLeft) && !isNaN(curTop)) {
+              var rect = floatingWrapper.getBoundingClientRect();
+              var margin = 12;
+              var maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+              var maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+              var clampedX = Math.round(Math.min(Math.max(margin, curLeft), maxLeft));
+              var clampedY = Math.round(Math.min(Math.max(margin, curTop), maxTop));
+              floatingWrapper.style.left = clampedX + 'px';
+              floatingWrapper.style.top = clampedY + 'px';
+              try {
+                var posKey = uid ? ('wj_tasks_pos_' + uid) : 'wj_tasks_pos';
+                localStorage.setItem(posKey, JSON.stringify({ left: clampedX, top: clampedY }));
+              } catch (err) {}
+            }
+          }
+        });
       });
     }
 
@@ -1206,6 +1232,193 @@
         }
       });
     }
+
+    // Sürüklenebilirlik (Drag & Drop) kurulumu
+    setupTasksWidgetDraggable(floatingWrapper, uid);
+  }
+
+  // Görevler widget'ını (hap butonu ve açık kartı) hem fare hem de dokunmatik ekranlar için sürüklenebilir yapma
+  function setupTasksWidgetDraggable(floatingWrapper, uid) {
+    if (!floatingWrapper) return;
+    var posKey = uid ? ('wj_tasks_pos_' + uid) : 'wj_tasks_pos';
+
+    function clampPosition(x, y) {
+      var margin = 12;
+      var rect = floatingWrapper.getBoundingClientRect();
+      var width = rect.width || (floatingWrapper.classList.contains('minimized') ? 160 : 330);
+      var height = rect.height || 50;
+      var maxLeft = Math.max(margin, window.innerWidth - width - margin);
+      var maxTop = Math.max(margin, window.innerHeight - height - margin);
+      return {
+        left: Math.round(Math.min(Math.max(margin, x), maxLeft)),
+        top: Math.round(Math.min(Math.max(margin, y), maxTop))
+      };
+    }
+
+    // Kayıtlı pozisyonu geri yükle
+    try {
+      var saved = localStorage.getItem(posKey) || localStorage.getItem('wj_tasks_pos');
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        if (parsed && typeof parsed.left === 'number' && typeof parsed.top === 'number') {
+          var clamped = clampPosition(parsed.left, parsed.top);
+          floatingWrapper.style.left = clamped.left + 'px';
+          floatingWrapper.style.top = clamped.top + 'px';
+          floatingWrapper.style.right = 'auto';
+          floatingWrapper.style.bottom = 'auto';
+        }
+      }
+    } catch (e) {}
+
+    // Ekran yeniden boyutlandığında taşmayı önle
+    if (!window._wjTasksResizeAttached) {
+      window._wjTasksResizeAttached = true;
+      window.addEventListener('resize', function () {
+        var fw = document.getElementById('wj-tasks-floating-container');
+        if (fw && fw.style.left && fw.style.left !== 'auto') {
+          var curLeft = parseFloat(fw.style.left);
+          var curTop = parseFloat(fw.style.top);
+          if (!isNaN(curLeft) && !isNaN(curTop)) {
+            var rect = fw.getBoundingClientRect();
+            var margin = 12;
+            var maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+            var maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+            var clampedX = Math.round(Math.min(Math.max(margin, curLeft), maxLeft));
+            var clampedY = Math.round(Math.min(Math.max(margin, curTop), maxTop));
+            fw.style.left = clampedX + 'px';
+            fw.style.top = clampedY + 'px';
+          }
+        }
+      });
+    }
+
+    var expandBtn = document.getElementById('wj-tasks-expand-btn');
+    var headerEl = floatingWrapper.querySelector('.wj-tasks-header');
+
+    var isDragging = false;
+    var hasMoved = false;
+    var startX = 0;
+    var startY = 0;
+    var startElemLeft = 0;
+    var startElemTop = 0;
+    var dragThreshold = 5;
+
+    function getCoords(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onDragStart(e) {
+      // Header içerisindeki butonlara (– veya ✕) tıklandığında sürükleme başlatma
+      if (e.target.closest('#wj-tasks-min-btn') || e.target.closest('#wj-tasks-dismiss-btn')) {
+        return;
+      }
+      if (e.target.closest('button') && !e.target.closest('#wj-tasks-expand-btn')) {
+        return;
+      }
+      // Fare ile tıklandıysa sadece sol tık
+      if (e.button !== undefined && e.button !== 0) {
+        return;
+      }
+
+      var coords = getCoords(e);
+      startX = coords.x;
+      startY = coords.y;
+
+      var rect = floatingWrapper.getBoundingClientRect();
+      startElemLeft = rect.left;
+      startElemTop = rect.top;
+      hasMoved = false;
+      isDragging = false;
+
+      if (window.PointerEvent && e instanceof PointerEvent) {
+        try {
+          if (e.target.setPointerCapture) {
+            e.target.setPointerCapture(e.pointerId);
+          }
+        } catch (err) {}
+      }
+
+      window.addEventListener('pointermove', onDragMove, { passive: false });
+      window.addEventListener('pointerup', onDragEnd);
+      window.addEventListener('pointercancel', onDragEnd);
+      window.addEventListener('mousemove', onDragMove);
+      window.addEventListener('mouseup', onDragEnd);
+      window.addEventListener('touchmove', onDragMove, { passive: false });
+      window.addEventListener('touchend', onDragEnd);
+      window.addEventListener('touchcancel', onDragEnd);
+    }
+
+    function onDragMove(e) {
+      var coords = getCoords(e);
+      var dx = coords.x - startX;
+      var dy = coords.y - startY;
+      var dist = Math.hypot(dx, dy);
+
+      if (!hasMoved && dist > dragThreshold) {
+        hasMoved = true;
+        isDragging = true;
+        floatingWrapper.classList.add('is-dragging');
+        floatingWrapper.style.right = 'auto';
+        floatingWrapper.style.bottom = 'auto';
+      }
+
+      if (isDragging) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        var nextX = startElemLeft + dx;
+        var nextY = startElemTop + dy;
+        var clamped = clampPosition(nextX, nextY);
+        floatingWrapper.style.left = clamped.left + 'px';
+        floatingWrapper.style.top = clamped.top + 'px';
+      }
+    }
+
+    function onDragEnd(e) {
+      window.removeEventListener('pointermove', onDragMove);
+      window.removeEventListener('pointerup', onDragEnd);
+      window.removeEventListener('pointercancel', onDragEnd);
+      window.removeEventListener('mousemove', onDragMove);
+      window.removeEventListener('mouseup', onDragEnd);
+      window.removeEventListener('touchmove', onDragMove);
+      window.removeEventListener('touchend', onDragEnd);
+      window.removeEventListener('touchcancel', onDragEnd);
+
+      if (isDragging) {
+        isDragging = false;
+        floatingWrapper.classList.remove('is-dragging');
+
+        var rect = floatingWrapper.getBoundingClientRect();
+        var clamped = clampPosition(rect.left, rect.top);
+        floatingWrapper.style.left = clamped.left + 'px';
+        floatingWrapper.style.top = clamped.top + 'px';
+
+        try {
+          localStorage.setItem(posKey, JSON.stringify(clamped));
+        } catch (err) {}
+
+        floatingWrapper._wasDragged = true;
+        setTimeout(function () {
+          floatingWrapper._wasDragged = false;
+        }, 180);
+      }
+    }
+
+    var handles = [expandBtn, headerEl].filter(Boolean);
+    handles.forEach(function (handle) {
+      if (window.PointerEvent) {
+        handle.addEventListener('pointerdown', onDragStart);
+      } else {
+        handle.addEventListener('mousedown', onDragStart);
+        handle.addEventListener('touchstart', onDragStart, { passive: true });
+      }
+    });
   }
 
   function dismissTasksWidget() {
@@ -1392,6 +1605,7 @@
       localStorage.removeItem('wj_tasks_dismissed_' + uid);
       localStorage.removeItem('wj_tasks_minimized_' + uid);
       localStorage.removeItem('wj_tasks_all_done_' + uid);
+      localStorage.removeItem('wj_tasks_pos_' + uid);
       if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
         window.sb.auth.updateUser({ data: { tasks_completed: false } }).catch(function () {});
       }
@@ -1399,6 +1613,7 @@
     localStorage.removeItem('ww_onboarding_completed');
     localStorage.removeItem('ww_tour_completed');
     localStorage.removeItem('ww_tasks_dismissed');
+    localStorage.removeItem('wj_tasks_pos');
     sessionStorage.removeItem('wj_from_onboarding');
     sessionStorage.removeItem('wj_strategy_just_completed');
 

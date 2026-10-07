@@ -488,6 +488,61 @@ nav.nav {
   max-width: 14ch;
 }
 
+.hero-destiny-wrap {
+  display: block;
+  overflow: hidden;
+  margin-top: 8px;
+  line-height: 1.15;
+}
+
+.hero-destiny {
+  display: inline-block;
+  font-size: clamp(1.6rem, 3.4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  background: linear-gradient(
+    120deg,
+    var(--text) 0%,
+    var(--accent2) 25%,
+    var(--text) 50%,
+    var(--accent2) 75%,
+    var(--text) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0;
+  transform: translateY(110%);
+  filter: blur(6px);
+  animation: 
+    heroDestinyReveal 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards,
+    heroDestinyColorFlow 6s linear infinite 1.6s;
+  will-change: transform, opacity, filter, background-position;
+}
+
+@keyframes heroDestinyReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(110%);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes heroDestinyColorFlow {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
 .hero-sub {
   color: var(--muted);
   font-size: clamp(0.9rem, 1.1vw, 1rem);
@@ -697,6 +752,133 @@ nav.nav {
   color: var(--muted);
   letter-spacing: 0.8px;
   text-transform: uppercase;
+}
+
+/* ============================================================
+   SUPPORTED PLATFORMS MARQUEE (METHOD 1)
+   ============================================================ */
+.platforms-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.5rem clamp(16px, 3vw, 40px) 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.platforms-marquee-wrap {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  padding: 8px 0;
+}
+
+.platforms-marquee-track {
+  display: flex;
+  gap: 32px;
+  width: max-content;
+  animation: platformsMarqueeScroll 38s linear infinite;
+  will-change: transform;
+  align-items: center;
+}
+
+.platforms-marquee-wrap:hover .platforms-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes platformsMarqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.platform-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 6px 4px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.platform-chip:hover {
+  background: transparent;
+  border: none;
+  transform: translateY(-2px);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.platform-chip-icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
+}
+
+.platform-chip-icon img,
+.platform-chip-icon svg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}
+
+.platform-chip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.platform-chip-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.platform-chip-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 9.5px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+body.light-theme .platform-chip {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  opacity: 0.85;
+}
+body.light-theme .platform-chip:hover {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  opacity: 1;
+}
+body.light-theme .platform-chip-icon {
+  background: transparent;
+  border: none;
 }
 
 /* ============================================================
@@ -1765,6 +1947,11 @@ footer.site-footer {
 
   .hero h1 .l1 {
     font-size: clamp(1.8rem, 7vw, 3rem);
+    max-width: 100%;
+  }
+
+  .hero-destiny {
+    font-size: clamp(1.4rem, 5.5vw, 2.2rem);
     max-width: 100%;
   }
 

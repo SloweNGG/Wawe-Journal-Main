@@ -78,6 +78,26 @@
           <button class="currency-btn" data-currency="₿" title="Bitcoin">₿ BTC</button>
         </div>
       </div>
+
+      <!-- LOT BAŞINA KOMİSYON -->
+      <div class="theme-toggle-row">
+        <div class="theme-toggle-info">
+          <div class="theme-toggle-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+              <line x1="12" y1="14" x2="12" y2="18"/>
+            </svg>
+          </div>
+          <div class="theme-toggle-text">
+            <h4>Lot Başına Komisyon</h4>
+            <p>Fiyattan hesaplarken otomatik doldurulacak varsayılan komisyon (örn: 9.04)</p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="text" inputmode="decimal" id="settings-commission-per-lot" placeholder="0.00" style="width:85px; text-align:center; padding:6px 10px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.85rem;" />
+        </div>
+      </div>
     </div>
 
     <div class="theme-customization-section" id="theme-customization-section">

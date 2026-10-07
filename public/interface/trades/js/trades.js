@@ -909,6 +909,8 @@
     var multiplierEl = safeEl('edit-multiplier');
     var strategyEl = safeEl('edit-strategy');
     var customWrap = safeEl('edit-custom-wrap');
+    var commEl = safeEl('edit-commission');
+    var swapEl = safeEl('edit-swap');
     var errEl = safeEl('edit-err');
     
     if (idEl) idEl.value = t.id;
@@ -920,6 +922,8 @@
     if (exitEl) exitEl.value = t.exit_price ?? '';
     if (slEl) slEl.value = t.stop_loss ?? '';
     if (tpEl) tpEl.value = t.take_profit ?? '';
+    if (commEl) commEl.value = t.commission ?? '';
+    if (swapEl) swapEl.value = t.swap ?? '';
     if (dateEl) dateEl.value = t.trade_date || '';
     if (notesEl) notesEl.value = t.notes || '';
     if (multiplierEl) multiplierEl.value = t.multiplier ?? '';
@@ -1319,6 +1323,8 @@
           var exit = parseFloat(safeEl('edit-exit')?.value) || null;
           var sl = parseFloat(safeEl('edit-sl')?.value) || null;
           var tp = parseFloat(safeEl('edit-tp')?.value) || null;
+          var commission = parseFloat(safeEl('edit-commission')?.value) || 0;
+          var swap = parseFloat(safeEl('edit-swap')?.value) || 0;
           var tradeDate = safeEl('edit-date')?.value;
           var notes = safeEl('edit-notes')?.value.trim();
           var strategyId = safeEl('edit-strategy')?.value || null;
@@ -1351,18 +1357,28 @@
           var originalTrade = allTrades.find(function(x) { return x.id === id; });
           var storedPnl = originalTrade ? parseFloat(originalTrade.pnl) : NaN;
           var pnl;
+          var gross_pnl = originalTrade ? originalTrade.gross_pnl : null;
 
           var entryUnchanged  = originalTrade && (parseFloat(originalTrade.entry_price) === entry);
           var exitUnchanged   = originalTrade && ((originalTrade.exit_price === null && exit === null) ||
                                                    (parseFloat(originalTrade.exit_price) === exit));
           var lotUnchanged    = originalTrade && (parseFloat(originalTrade.lot) === lot);
           var dirUnchanged    = originalTrade && (originalTrade.direction === direction);
+          var commUnchanged   = originalTrade && ((parseFloat(originalTrade.commission) || 0) === commission);
+          var swapUnchanged   = originalTrade && ((parseFloat(originalTrade.swap) || 0) === swap);
 
           if (originalTrade && originalTrade.pnl !== null && originalTrade.pnl !== undefined &&
-              !isNaN(storedPnl) && entryUnchanged && exitUnchanged && lotUnchanged && dirUnchanged) {
+              !isNaN(storedPnl) && entryUnchanged && exitUnchanged && lotUnchanged && dirUnchanged && commUnchanged && swapUnchanged) {
             pnl = storedPnl;
+          } else if (exit) {
+            var raw = window.calcPnL(entry, exit, lot, direction, 'other', mult);
+            var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+            var gross = ((curr === '€' || curr === 'EUR') && symbol.endsWith('USD') && exit > 0) ? (raw / exit) : raw;
+            gross_pnl = parseFloat(gross.toFixed(2));
+            pnl = parseFloat((gross_pnl - commission + swap).toFixed(2));
           } else {
-            pnl = exit ? window.calcPnL(entry, exit, lot, direction, 'other', mult) : null;
+            pnl = null;
+            gross_pnl = null;
           }
           // ─────────────────────────────────────────────────────
           
@@ -1376,7 +1392,9 @@
             var { error } = await sb.from('trades').update({
               instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
               entry_price: entry, exit_price: exit,
-              stop_loss: sl, take_profit: tp, trade_date: tradeDate, notes: notes || null,
+              stop_loss: sl, take_profit: tp,
+              gross_pnl: gross_pnl, commission: commission, swap: swap,
+              trade_date: tradeDate, notes: notes || null,
               pnl: pnl, rr_ratio: rr, multiplier: mult, strategy_id: strategyId
             }).eq('id', id);
             
@@ -1393,6 +1411,7 @@
               allTrades[idx] = { 
                 id: id, instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
                 entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp, 
+                gross_pnl: gross_pnl, commission: commission, swap: swap,
                 trade_date: tradeDate, notes: notes, pnl: pnl, rr_ratio: rr, 
                 multiplier: mult, strategy_id: strategyId 
               };
