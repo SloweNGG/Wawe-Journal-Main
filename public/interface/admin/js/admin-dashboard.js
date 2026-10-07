@@ -2323,4 +2323,839 @@ window.openPayoutModal = openPayoutModal;
 window.closePayoutModal = closePayoutModal;
 window.confirmPayoutAction = confirmPayoutAction;
 
+// ============================================================
+// HATA BİLDİRİMLERİ, DESTEK VE KULLANICI ENGELLEME PANELİ
+// ============================================================
+
+var currentBugFilter = 'all';
+var bugSearchTerm = '';
+var currentBugSubTab = 'reports'; // 'reports' or 'bans'
+
+function setBugFilter(filter) {
+  currentBugFilter = filter;
+  renderBugReportsPanel();
+}
+window.setBugFilter = setBugFilter;
+
+function setBugSubTab(tab) {
+  currentBugSubTab = tab;
+  renderBugReportsPanel();
+}
+window.setBugSubTab = setBugSubTab;
+
+function handleBugSearch(val) {
+  bugSearchTerm = val;
+  renderBugReportsPanel();
+}
+window.handleBugSearch = handleBugSearch;
+
+async function renderBugReportsPanel() {
+  var container = document.getElementById('bug-reports-admin-container');
+  if (!container) return;
+
+  var reports = adminState.bugReports || [];
+  var bans = adminState.supportBans || [];
+  var statusData = adminState.supportStatus || {
+    status: 'online',
+    label: 'Teknik Destek: Aktif & Çevrim İçi',
+    note: 'Ortalama yanıt süresi 15 dakika.'
+  };
+
+  var totalReports = reports.length;
+  var pendingReports = reports.filter(function(r) { return r.status === 'pending' || r.status === 'in_progress'; });
+  var answeredReports = reports.filter(function(r) { return r.status === 'answered' || r.status === 'closed'; });
+  var rejectedReports = reports.filter(function(r) { return r.status === 'rejected'; });
+  var totalBans = bans.length;
+
+  var categoryMap = {
+    ui: 'Arayüz / Tasarım',
+    chart: 'Grafik & Hesaplama',
+    trade: 'İşlem / Veri',
+    perf: 'Performans / Yavaşlık',
+    feature: 'Öneri / Fikir',
+    other: 'Diğer'
+  };
+
+  var html = '';
+
+  // 1. CANLI TEKNİK DESTEK DURUM AYARLARI KARTI
+  html += '<div class="s-card" style="margin-bottom:1.5rem; border:1px solid rgba(124, 109, 250, 0.25); background:linear-gradient(135deg, rgba(124, 109, 250, 0.04) 0%, rgba(20, 20, 32, 0.6) 100%);">';
+  html += '  <div class="s-card-header">';
+  html += '    <div class="header-icon" style="background:rgba(124,109,250,0.15); color:var(--accent);">';
+  html += '      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  html += '    </div>';
+  html += '    <div>';
+  html += '      <h2>Teknik Destek Canlı Durum Ayarı</h2>';
+  html += '      <p>Kullanıcıların /report-bug sayfasında gördüğü destek rozetini ve durum mesajını canlı ayarlayın.</p>';
+  html += '    </div>';
+  html += '    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">';
+  
+  var statusBadgeColor = '#22c55e';
+  var statusBadgeText = statusData.label || 'Teknik Destek: Aktif & Çevrim İçi';
+  if (statusData.status === 'busy') { statusBadgeColor = '#f59e0b'; }
+  else if (statusData.status === 'offline') { statusBadgeColor = '#ef4444'; }
+  else if (statusData.status === 'maintenance') { statusBadgeColor = '#a855f7'; }
+
+  html += '      <span style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:700; color:' + statusBadgeColor + '; background:rgba(255,255,255,0.04); border:1px solid ' + statusBadgeColor + '40;">';
+  html += '        <span style="width:7px; height:7px; border-radius:50%; background:' + statusBadgeColor + '; box-shadow:0 0 6px ' + statusBadgeColor + ';"></span>';
+  html += '        <span>' + statusBadgeText + '</span>';
+  html += '      </span>';
+  html += '    </div>';
+  html += '  </div>';
+
+  html += '  <div class="s-card-body" style="padding-top:0.5rem;">';
+  html += '    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; align-items:end;">';
+  
+  // Durum Seçici
+  html += '      <div class="field">';
+  html += '        <label style="font-weight:700; font-size:12px; margin-bottom:4px; display:block;">Destek Modu</label>';
+  html += '        <select id="admin-support-status-select" class="ww-select" onchange="onSupportModeChange(this.value)" style="width:100%;">';
+  html += '          <option value="online"' + (statusData.status === 'online' ? ' selected' : '') + '>🟢 Aktif & Çevrim İçi</option>';
+  html += '          <option value="busy"' + (statusData.status === 'busy' ? ' selected' : '') + '>🟡 Yoğunluk Nedeniyle Gecikmeli</option>';
+  html += '          <option value="offline"' + (statusData.status === 'offline' ? ' selected' : '') + '>🔴 Mesai Dışı / Çevrim Dışı</option>';
+  html += '          <option value="maintenance"' + (statusData.status === 'maintenance' ? ' selected' : '') + '>🛠️ Bakım Modu</option>';
+  html += '        </select>';
+  html += '      </div>';
+
+  // Durum Başlık Metni
+  html += '      <div class="field">';
+  html += '        <label style="font-weight:700; font-size:12px; margin-bottom:4px; display:block;">Görüntülenen Durum Metni</label>';
+  html += '        <input type="text" id="admin-support-status-label" class="ww-input" value="' + (statusData.label || 'Teknik Destek: Aktif & Çevrim İçi').replace(/"/g, '&quot;') + '" style="width:100%; box-sizing:border-box;" />';
+  html += '      </div>';
+
+  // Yanıt Süresi / Not
+  html += '      <div class="field">';
+  html += '        <label style="font-weight:700; font-size:12px; margin-bottom:4px; display:block;">Ortalama Yanıt Süresi Notu</label>';
+  html += '        <input type="text" id="admin-support-status-note" class="ww-input" placeholder="Örn: Ortalama yanıt süresi 15 dakika." value="' + (statusData.note || '').replace(/"/g, '&quot;') + '" style="width:100%; box-sizing:border-box;" />';
+  html += '      </div>';
+
+  // Kaydet Butonu
+  html += '      <div>';
+  html += '        <button class="btn btn-primary" onclick="saveSupportStatusFromUI()" style="width:100%; padding:0.65rem 1rem; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;">';
+  html += '          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+  html += '          Durumu Güncelle';
+  html += '        </button>';
+  html += '      </div>';
+
+  html += '    </div>';
+  html += '  </div>';
+  html += '</div>';
+
+  // 2. 5 ADET KPI İSTATİSTİK KARTI
+  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-bottom:1.5rem;">';
+  
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Toplam Bildirim</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:var(--text);">' + totalReports + '</div>';
+  html += '  </div>';
+
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">İncelenen / Bekleyen</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#f59e0b;">' + pendingReports.length + '</div>';
+  html += '  </div>';
+
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Yanıtlanan Bildirimler</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#22c55e;">' + answeredReports.length + '</div>';
+  html += '  </div>';
+
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Reddedilen Bildirimler</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#ef4444;">' + rejectedReports.length + '</div>';
+  html += '  </div>';
+
+  html += '  <div class="stat-card" style="padding:1rem;">';
+  html += '    <div class="stat-label">Engellenen Kullanıcılar</div>';
+  html += '    <div class="stat-value" style="font-size:1.5rem; color:#f43f5e;">' + totalBans + '</div>';
+  html += '  </div>';
+
+  html += '</div>';
+
+  // 3. ALT SEKMELER & FİLTRELER
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">';
+  
+  // Sekmeler (Bildirimler vs Engelliler)
+  html += '  <div style="display:flex; gap:6px;">';
+  html += '    <button class="btn btn-sm ' + (currentBugSubTab === 'reports' ? 'btn-primary' : 'btn-ghost') + '" onclick="setBugSubTab(\'reports\')" style="display:inline-flex; align-items:center; gap:6px;">';
+  html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/></svg>';
+  html += '      Bildirim Akışı & Yanıtlama (' + totalReports + ')';
+  html += '    </button>';
+  html += '    <button class="btn btn-sm ' + (currentBugSubTab === 'bans' ? 'btn-danger' : 'btn-ghost') + '" onclick="setBugSubTab(\'bans\')" style="display:inline-flex; align-items:center; gap:6px;' + (currentBugSubTab === 'bans' ? 'background:#f43f5e;color:#fff;' : '') + '">';
+  html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+  html += '      Engellenen Kullanıcılar (' + totalBans + ')';
+  html += '    </button>';
+  html += '  </div>';
+
+  if (currentBugSubTab === 'reports') {
+    // Filtre butonları ve Arama
+    html += '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
+    html += '    <div class="payout-filters">';
+    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'all' ? ' active' : '') + '" onclick="setBugFilter(\'all\')">Tümü (' + totalReports + ')</button>';
+    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'pending' ? ' active' : '') + '" onclick="setBugFilter(\'pending\')">Bekleyenler (' + pendingReports.length + ')</button>';
+    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'answered' ? ' active' : '') + '" onclick="setBugFilter(\'answered\')">Yanıtlananlar (' + answeredReports.length + ')</button>';
+    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'rejected' ? ' active' : '') + '" onclick="setBugFilter(\'rejected\')">Reddedilenler (' + rejectedReports.length + ')</button>';
+    html += '    </div>';
+    html += '    <div class="search-wrap">';
+    html += '      <input type="text" id="bug-search-input" class="search-input" placeholder="Konu, kullanıcı veya içerik..." value="' + (bugSearchTerm ? bugSearchTerm.replace(/"/g, '&quot;') : '') + '" oninput="handleBugSearch(this.value)" style="width:220px;" />';
+    html += '    </div>';
+    html += '  </div>';
+  }
+
+  html += '</div>';
+
+  // 4. İÇERİK: BİLDİRİMLER LİSTESİ VEYA ENGELLENENLER LİSTESİ
+  if (currentBugSubTab === 'reports') {
+    // FİLTRELENMİŞ BİLDİRİMLER
+    var filteredReports = reports.filter(function(r) {
+      if (currentBugFilter === 'pending' && !(r.status === 'pending' || r.status === 'in_progress')) return false;
+      if (currentBugFilter === 'answered' && !(r.status === 'answered' || r.status === 'closed')) return false;
+      if (currentBugFilter === 'rejected' && r.status !== 'rejected') return false;
+      if (bugSearchTerm) {
+        var term = bugSearchTerm.toLowerCase();
+        var subj = (r.subject || '').toLowerCase();
+        var desc = (r.description || '').toLowerCase();
+        var email = (r.user_email || '').toLowerCase();
+        var name = (r.user_name || '').toLowerCase();
+        return subj.indexOf(term) !== -1 || desc.indexOf(term) !== -1 || email.indexOf(term) !== -1 || name.indexOf(term) !== -1;
+      }
+      return true;
+    });
+
+    if (filteredReports.length === 0) {
+      html += '<div class="s-card" style="text-align:center; padding:3.5rem 1rem; color:var(--muted);">';
+      html += '  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:0.75rem; opacity:0.3;"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>';
+      html += '  <p style="font-size:14px; font-weight:600; margin:0;">Kayıtlı bildirim bulunamadı.</p>';
+      html += '</div>';
+    } else {
+      html += '<div style="display:flex; flex-direction:column; gap:1rem;">';
+      filteredReports.forEach(function(r) {
+        var isAnswered = (r.status === 'answered' || r.status === 'closed');
+        var isRejected = (r.status === 'rejected');
+        var userBanned = bans.some(function(b) { return (r.user_id && b.user_id === r.user_id) || (r.user_email && b.user_email === r.user_email); });
+        
+        var prioColor = '#38bdf8';
+        var prioText = 'Düşük';
+        if (r.priority === 'high') { prioColor = '#f43f5e'; prioText = 'Yüksek (Kritik)'; }
+        else if (r.priority === 'medium') { prioColor = '#fbbf24'; prioText = 'Orta'; }
+
+        var dateStr = r.created_at ? new Date(r.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+        var borderLeftColor = isRejected ? '#ef4444' : (isAnswered ? '#22c55e' : '#f59e0b');
+
+        html += '<div class="s-card" style="padding:1.25rem; border-left:3px solid ' + borderLeftColor + ';">';
+        
+        // Kart Üst Satır
+        html += '  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:0.75rem;">';
+        html += '    <div>';
+        html += '      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">';
+        html += '        <span style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.06); text-transform:uppercase; letter-spacing:0.03em;">' + (categoryMap[r.category] || r.category || 'Bildirim') + '</span>';
+        html += '        <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:' + prioColor + '; padding:2px 8px; border-radius:999px; background:' + prioColor + '18; border:1px solid ' + prioColor + '30;">';
+        html += '          <span style="width:6px; height:6px; border-radius:50%; background:' + prioColor + ';"></span>';
+        html += '          ' + prioText;
+        html += '        </span>';
+        
+        if (isRejected) {
+          html += '      <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#f87171; padding:2px 8px; border-radius:999px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25);">';
+          html += '        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+          html += '        Reddedildi';
+          html += '      </span>';
+        } else if (isAnswered) {
+          html += '      <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#4ade80; padding:2px 8px; border-radius:999px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.25);">';
+          html += '        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+          html += '        ' + (r.status === 'closed' ? 'Çözüldü & Kapatıldı' : 'Yanıtlandı');
+          html += '      </span>';
+        } else {
+          html += '      <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#fbbf24; padding:2px 8px; border-radius:999px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.25);">';
+          html += '        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+          html += '        ' + (r.status === 'in_progress' ? 'İnceleniyor' : 'Beklemede');
+          html += '      </span>';
+        }
+
+        if (userBanned) {
+          html += '      <span style="font-size:11px; font-weight:700; color:#fda4af; padding:2px 8px; border-radius:999px; background:rgba(244,63,94,0.18); border:1px solid rgba(244,63,94,0.35);">';
+          html += '        ⛔ Bu Kullanıcı Engelli';
+          html += '      </span>';
+        }
+
+        html += '      </div>';
+        html += '      <h3 style="font-size:1.05rem; font-weight:700; color:var(--text); margin:0 0 3px;">' + escapeHtml(r.subject || 'Konusuz') + '</h3>';
+        html += '      <div style="font-size:12px; color:var(--muted);">';
+        html += '        <span>Gönderen: <strong style="color:var(--text);">' + escapeHtml(r.user_name || 'Kullanıcı') + '</strong> (' + escapeHtml(r.user_email || '—') + ')</span>';
+        html += '        <span style="margin:0 6px;">•</span>';
+        html += '        <span>' + dateStr + '</span>';
+        html += '      </div>';
+        html += '    </div>';
+
+        // Kayıt önbelleğine al
+        if (r && r.id) {
+          window.bugReportsMap = window.bugReportsMap || {};
+          window.bugReportsMap[String(r.id)] = r;
+        }
+
+        // Aksiyon Butonları
+        html += '    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; position:relative; z-index:10;">';
+        
+        // Cevapla / Yanıtla Butonu
+        html += '      <button type="button" class="btn btn-primary btn-sm btn-bug-action" data-action="reply-bug" data-report-id="' + escapeHtml(String(r.id || '')) + '" onclick="window.handleBugActionClick && window.handleBugActionClick(event, this);" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; padding:0.35rem 0.75rem; cursor:pointer;">';
+        html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>';
+        html += '        ' + (isAnswered ? 'Cevabı Düzenle' : 'Cevapla');
+        html += '      </button>';
+
+        // Reddet Butonu
+        if (!isRejected) {
+          html += '      <button type="button" class="btn btn-danger btn-sm btn-bug-action" data-action="reject-bug" data-report-id="' + escapeHtml(String(r.id || '')) + '" onclick="window.handleBugActionClick && window.handleBugActionClick(event, this);" style="background:rgba(239, 68, 68, 0.12); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); display:inline-flex; align-items:center; gap:5px; font-weight:600; padding:0.35rem 0.75rem; cursor:pointer;">';
+          html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+          html += '        Reddet';
+          html += '      </button>';
+        }
+
+        // Engelle Butonu
+        if (!userBanned && (r.user_id || r.user_email)) {
+          html += '      <button type="button" class="btn btn-ghost btn-sm btn-bug-action" data-action="ban-bug-user" data-report-id="' + escapeHtml(String(r.id || '')) + '" onclick="window.handleBugActionClick && window.handleBugActionClick(event, this);" style="color:#f43f5e; border-color:rgba(244,63,94,0.3); display:inline-flex; align-items:center; gap:5px; padding:0.35rem 0.75rem; cursor:pointer;">';
+          html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+          html += '        Engelle';
+          html += '      </button>';
+        }
+
+        html += '    </div>';
+        html += '  </div>';
+
+        // Açıklama Metni
+        html += '  <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.85rem 1rem; margin-bottom:0.75rem; font-size:13.5px; line-height:1.55; color:var(--text); white-space:pre-wrap;">' + escapeHtml(r.description || '') + '</div>';
+
+        // Sistem Tanı Bilgileri / Ekran Görüntüsü Varsa
+        var hasSys = r.system_info && typeof r.system_info === 'object' && Object.keys(r.system_info).length > 0;
+        var rawUrl = (r.screenshot_url || '').trim();
+        var isValidImgUrl = /^(https?:\/\/|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(rawUrl);
+        var safeImgUrl = isValidImgUrl ? escapeHtml(rawUrl) : null;
+        var hasImg = !!safeImgUrl;
+
+        if (hasSys || hasImg) {
+          html += '  <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:0.75rem;">';
+          if (hasImg) {
+            html += '    <a href="' + safeImgUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; padding:4px 8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:6px; text-decoration:none; color:var(--text); transition:all 0.15s ease;" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,0.12)\'">';
+            html += '      <img src="' + safeImgUrl + '" alt="Ekran Görüntüsü" style="width:28px; height:28px; object-fit:cover; border-radius:4px; border:1px solid rgba(255,255,255,0.15); display:block;" onerror="this.style.display=\'none\';" />';
+            html += '      <span style="font-size:11.5px; font-weight:600; color:var(--accent); display:flex; align-items:center; gap:4px;">';
+            html += '        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+            html += '        Ekran Görüntüsü';
+            html += '      </span>';
+            html += '    </a>';
+          }
+          if (hasSys) {
+            var sys = r.system_info;
+            if (sys.browser) html += '<span style="font-family:monospace; font-size:11px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--muted);">Browser: ' + escapeHtml(sys.browser) + '</span>';
+            if (sys.os) html += '<span style="font-family:monospace; font-size:11px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--muted);">OS: ' + escapeHtml(sys.os) + '</span>';
+            if (sys.resolution) html += '<span style="font-family:monospace; font-size:11px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--muted);">Res: ' + escapeHtml(sys.resolution) + '</span>';
+          }
+          html += '  </div>';
+        }
+
+        // Varsa Admin Yanıtı / Ret Gerekçesi
+        if (r.admin_reply) {
+          var isRej = (r.status === 'rejected');
+          var replyDate = r.replied_at ? new Date(r.replied_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+          var boxBg = isRej ? 'rgba(239, 68, 68, 0.08)' : 'rgba(124, 109, 250, 0.08)';
+          var boxBorder = isRej ? 'rgba(239, 68, 68, 0.25)' : 'rgba(124, 109, 250, 0.25)';
+          var boxLeft = isRej ? '#ef4444' : '#7c6dfa';
+          var boxTagColor = isRej ? '#fca5a5' : '#c4b5fd';
+          var boxLabel = isRej ? 'Reddetme Gerekçesi (Admin)' : (r.replied_by || 'Wawe Journal Ekibi (Admin)');
+
+          html += '  <div style="background:' + boxBg + '; border:1px solid ' + boxBorder + '; border-left:3px solid ' + boxLeft + '; border-radius:8px; padding:0.85rem 1rem;">';
+          html += '    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">';
+          html += '      <span style="font-size:11.5px; font-weight:700; color:' + boxTagColor + '; display:inline-flex; align-items:center; gap:4px;">';
+          html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>';
+          html += '        ' + escapeHtml(boxLabel);
+          html += '      </span>';
+          html += '      <span style="font-size:11px; color:var(--muted);">' + replyDate + '</span>';
+          html += '    </div>';
+          html += '    <p style="font-size:13px; line-height:1.5; color:var(--text); margin:0;">' + escapeHtml(r.admin_reply) + '</p>';
+          html += '  </div>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+  } else {
+    // ENGELLENEN KULLANICILAR SEKMESİ
+    html += '<div class="s-card" style="margin-bottom:1.5rem;">';
+    html += '  <div class="s-card-header">';
+    html += '    <div class="header-icon" style="background:rgba(244,63,94,0.15); color:#f43f5e;">';
+    html += '      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+    html += '    </div>';
+    html += '    <div>';
+    html += '      <h2>Hızlı Manuel Kullanıcı Engelleme</h2>';
+    html += '      <p>Bir kullanıcıyı e-posta adresiyle doğrudan engelleyebilir ve nedenini belirtebilirsiniz.</p>';
+    html += '    </div>';
+    html += '  </div>';
+    html += '  <div class="s-card-body" style="padding-top:0.5rem;">';
+    html += '    <div style="display:grid; grid-template-columns:1fr 2fr auto; gap:0.75rem; align-items:end;">';
+    html += '      <div class="field">';
+    html += '        <label style="font-size:12px; font-weight:700;">Kullanıcı E-Postası *</label>';
+    html += '        <input type="email" id="manual-ban-email" class="ww-input" placeholder="user@example.com" style="width:100%; box-sizing:border-box;" />';
+    html += '      </div>';
+    html += '      <div class="field">';
+    html += '        <label style="font-size:12px; font-weight:700;">Engelleme Gerekçesi *</label>';
+    html += '        <input type="text" id="manual-ban-reason" class="ww-input" placeholder="Örn: Sürekli anlamsız spam ve uygunsuz bildirimler" style="width:100%; box-sizing:border-box;" />';
+    html += '      </div>';
+    html += '      <button class="btn btn-danger" onclick="submitManualBan()" style="background:#f43f5e; color:#fff; padding:0.65rem 1.1rem; font-weight:700;">Engelle</button>';
+    html += '    </div>';
+    html += '  </div>';
+    html += '</div>';
+
+    // Engelliler Tablosu
+    if (bans.length === 0) {
+      html += '<div class="s-card" style="text-align:center; padding:3.5rem 1rem; color:var(--muted);">';
+      html += '  <p style="font-size:14px; font-weight:600; margin:0;">Şu anda engellenmiş hiçbir kullanıcı yok.</p>';
+      html += '</div>';
+    } else {
+      html += '<div class="s-card">';
+      html += '  <div class="s-card-body" style="padding:0;">';
+      html += '    <table class="ww-table" style="width:100%;">';
+      html += '      <thead>';
+      html += '        <tr>';
+      html += '          <th>Kullanıcı / E-posta</th>';
+      html += '          <th>Engelleme Gerekçesi (Kullanıcıya Gösterilen)</th>';
+      html += '          <th>Tarih</th>';
+      html += '          <th style="text-align:right;">İşlem</th>';
+      html += '        </tr>';
+      html += '      </thead>';
+      html += '      <tbody>';
+
+      bans.forEach(function(b) {
+        var banDate = b.created_at ? new Date(b.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+        var banEmailEsc = (b.user_email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+        html += '        <tr>';
+        html += '          <td>';
+        html += '            <strong style="color:var(--text); display:block;">' + escapeHtml(b.user_name || 'Kullanıcı') + '</strong>';
+        html += '            <span style="font-size:12px; color:var(--muted); font-family:monospace;">' + escapeHtml(b.user_email || '—') + '</span>';
+        html += '          </td>';
+        html += '          <td style="color:#fda4af; max-width:320px; font-size:13px;">' + escapeHtml(b.reason || '—') + '</td>';
+        html += '          <td style="color:var(--muted); font-size:12px;">' + banDate + '</td>';
+        html += '          <td style="text-align:right;">';
+        html += '            <button class="btn btn-ghost btn-sm" onclick="unbanUserFromSupport(\'' + b.id + '\', \'' + banEmailEsc + '\').then(function(){ renderBugReportsPanel(); })" style="color:#22c55e; border-color:rgba(34,197,94,0.3); font-size:11.5px; font-weight:700;">';
+        html += '              Engeli Kaldır';
+        html += '            </button>';
+        html += '          </td>';
+        html += '        </tr>';
+      });
+
+      html += '      </tbody>';
+      html += '    </table>';
+      html += '  </div>';
+      html += '</div>';
+    }
+  }
+
+  container.innerHTML = html;
+
+  // Doğrudan DOM elemanlarına tıklama dinleyicilerini bağla (fail-safe)
+  try {
+    var bugActionButtons = container.querySelectorAll('.btn-bug-action');
+    bugActionButtons.forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        if (window.handleBugActionClick) {
+          window.handleBugActionClick(e, btn);
+        }
+      });
+    });
+  } catch(e) {
+    console.warn('[renderBugReportsPanel] Buton dinleyici hatası:', e);
+  }
+}
+window.renderBugReportsPanel = renderBugReportsPanel;
+
+// MERKEZİ AKSİYON TIKLAMA YÖNETİCİSİ
+function handleBugActionClick(e, btn) {
+  if (e) {
+    try {
+      e.preventDefault();
+      e.stopPropagation();
+    } catch(err) {}
+  }
+  if (!btn) return;
+  var action = btn.getAttribute('data-action');
+  var reportId = btn.getAttribute('data-report-id');
+
+  console.log('🚀 [BugAction]', action, 'Report ID:', reportId);
+
+  if (action === 'reply-bug') {
+    openBugReplyModal(reportId);
+  } else if (action === 'reject-bug') {
+    openBugRejectModal(reportId);
+  } else if (action === 'ban-bug-user') {
+    openSupportBanModalByReport(reportId);
+  }
+}
+window.handleBugActionClick = handleBugActionClick;
+
+// MODAL VE AKSİYON HELPERLARI
+
+function onSupportModeChange(val) {
+  var labelInput = document.getElementById('admin-support-status-label');
+  if (!labelInput) return;
+  if (val === 'online') labelInput.value = 'Teknik Destek: Aktif & Çevrim İçi';
+  else if (val === 'busy') labelInput.value = 'Teknik Destek: Yoğunluk Nedeniyle Gecikmeli';
+  else if (val === 'offline') labelInput.value = 'Teknik Destek: Çevrim Dışı';
+  else if (val === 'maintenance') labelInput.value = 'Teknik Destek: Sistem Bakımda';
+}
+window.onSupportModeChange = onSupportModeChange;
+
+async function saveSupportStatusFromUI() {
+  var select = document.getElementById('admin-support-status-select');
+  var labelInput = document.getElementById('admin-support-status-label');
+  var noteInput = document.getElementById('admin-support-status-note');
+
+  var status = select ? select.value : 'online';
+  var label = labelInput ? labelInput.value.trim() : 'Teknik Destek: Aktif & Çevrim İçi';
+  var note = noteInput ? noteInput.value.trim() : '';
+
+  var ok = await saveSupportStatus({ status: status, label: label, note: note });
+  if (ok) {
+    renderBugReportsPanel();
+  }
+}
+window.saveSupportStatusFromUI = saveSupportStatusFromUI;
+
+// 1. BAN (KULLANICI ENGELLEME) MODAL
+function openSupportBanModal(userId, email, name) {
+  var modal = document.getElementById('support-ban-modal');
+  if (!modal) {
+    console.error('Modal #support-ban-modal bulunamadı.');
+    return;
+  }
+
+  // Teleport: Modal scroll container içinde sıkışmasın diye doğrudan body'ye ekle
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  var idEl = document.getElementById('ban-modal-user-id');
+  var emailEl = document.getElementById('ban-modal-user-email');
+  var nameEl = document.getElementById('ban-modal-user-name');
+  var dispName = document.getElementById('ban-modal-display-name');
+  var dispEmail = document.getElementById('ban-modal-display-email');
+  var reasonEl = document.getElementById('ban-modal-reason');
+
+  if (idEl) idEl.value = userId || '';
+  if (emailEl) emailEl.value = email || '';
+  if (nameEl) nameEl.value = name || email || '';
+  if (dispName) dispName.textContent = name || email || 'Kullanıcı';
+  if (dispEmail) dispEmail.textContent = email || '—';
+  if (reasonEl) reasonEl.value = 'Uygunsuz üslup ve asılsız bildirim gönderimi sebebiyle destek erişiminiz askıya alınmıştır.';
+
+  modal.classList.add('open', 'active');
+  modal.style.display = 'flex';
+  modal.style.visibility = 'visible';
+  modal.style.opacity = '1';
+  modal.style.zIndex = '999999';
+
+  setTimeout(function() {
+    if (reasonEl) reasonEl.focus();
+  }, 100);
+}
+window.openSupportBanModal = openSupportBanModal;
+
+function closeBanModal() {
+  var modal = document.getElementById('support-ban-modal');
+  if (modal) {
+    modal.classList.remove('open', 'active');
+    modal.style.display = 'none';
+  }
+}
+window.closeBanModal = closeBanModal;
+
+async function confirmSupportBan() {
+  var idEl = document.getElementById('ban-modal-user-id');
+  var emailEl = document.getElementById('ban-modal-user-email');
+  var nameEl = document.getElementById('ban-modal-user-name');
+  var reasonEl = document.getElementById('ban-modal-reason');
+
+  var userId = idEl ? idEl.value : '';
+  var email = emailEl ? emailEl.value : '';
+  var name = nameEl ? nameEl.value : '';
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+
+  if (!reason) {
+    if (typeof showToast === 'function') showToast('Lütfen engelleme nedenini belirtin.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('confirm-ban-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Engelleniyor...';
+  }
+
+  try {
+    var ok = await banUserFromSupport(userId, email, name, reason);
+    if (ok) {
+      closeBanModal();
+      renderBugReportsPanel();
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Engelle ve Erişimi Durdur';
+    }
+  }
+}
+window.confirmSupportBan = confirmSupportBan;
+
+async function submitManualBan() {
+  var emailInput = document.getElementById('manual-ban-email');
+  var reasonInput = document.getElementById('manual-ban-reason');
+  var email = emailInput ? emailInput.value.trim() : '';
+  var reason = reasonInput ? reasonInput.value.trim() : '';
+
+  if (!email || !reason) {
+    if (typeof showToast === 'function') showToast('Lütfen e-posta ve gerekçe alanlarını doldurunuz.', 'error');
+    return;
+  }
+
+  var ok = await banUserFromSupport(null, email, email, reason);
+  if (ok) {
+    if (emailInput) emailInput.value = '';
+    if (reasonInput) reasonInput.value = '';
+    renderBugReportsPanel();
+  }
+}
+window.submitManualBan = submitManualBan;
+
+// Helper: Open ban modal directly from report ID
+function openSupportBanModalByReport(reportId, fallbackUserId, fallbackEmail, fallbackName) {
+  var r = (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
+          (adminState.bugReports || []).find(function(item) {
+            return String(item.id) === String(reportId);
+          });
+
+  var uid = (r && r.user_id) || fallbackUserId || null;
+  var email = (r && r.user_email) || fallbackEmail || '';
+  var name = (r && r.user_name) || fallbackName || email || 'Kullanıcı';
+
+  openSupportBanModal(uid, email, name);
+}
+window.openSupportBanModalByReport = openSupportBanModalByReport;
+
+// 2. CEVAPLA (REPLY) MODAL
+function openBugReplyModal(reportId, subject, sender, currentReply, currentStatus) {
+  var modal = document.getElementById('bug-reply-modal');
+  if (!modal) {
+    console.error('Modal #bug-reply-modal bulunamadı.');
+    return;
+  }
+
+  // Teleport to body
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  var r = (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
+          (adminState.bugReports || []).find(function(item) {
+            return String(item.id) === String(reportId);
+          });
+
+  var finalSubject = (r && r.subject) || subject || '—';
+  var finalSender = r ? ((r.user_name || 'Kullanıcı') + ' (' + (r.user_email || '—') + ')') : (sender || '—');
+  var finalReply = (r && r.admin_reply) || currentReply || '';
+  var finalStatus = (r && (r.status === 'pending' ? 'answered' : r.status)) || currentStatus || 'answered';
+
+  var idEl = document.getElementById('reply-modal-report-id');
+  var subjEl = document.getElementById('reply-modal-subject');
+  var senderEl = document.getElementById('reply-modal-sender');
+  var textEl = document.getElementById('reply-modal-text');
+  var statusEl = document.getElementById('reply-modal-status');
+
+  if (idEl) idEl.value = reportId || (r ? r.id : '');
+  if (subjEl) subjEl.textContent = finalSubject;
+  if (senderEl) senderEl.textContent = finalSender;
+  if (textEl) textEl.value = finalReply;
+  if (statusEl) statusEl.value = finalStatus;
+
+  modal.classList.add('open', 'active');
+  modal.style.display = 'flex';
+  modal.style.visibility = 'visible';
+  modal.style.opacity = '1';
+  modal.style.zIndex = '999999';
+
+  setTimeout(function() {
+    if (textEl) textEl.focus();
+  }, 100);
+}
+window.openBugReplyModal = openBugReplyModal;
+
+function closeBugReplyModal() {
+  var modal = document.getElementById('bug-reply-modal');
+  if (modal) {
+    modal.classList.remove('open', 'active');
+    modal.style.display = 'none';
+  }
+}
+window.closeBugReplyModal = closeBugReplyModal;
+
+async function confirmBugReply() {
+  var idEl = document.getElementById('reply-modal-report-id');
+  var textEl = document.getElementById('reply-modal-text');
+  var statusEl = document.getElementById('reply-modal-status');
+
+  var reportId = idEl ? idEl.value : '';
+  var replyText = textEl ? textEl.value.trim() : '';
+  var status = statusEl ? statusEl.value : 'answered';
+
+  if (!replyText) {
+    if (typeof showToast === 'function') showToast('Lütfen bir yanıt metni girin.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('confirm-reply-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Gönderiliyor...';
+  }
+
+  try {
+    var ok = await replyBugReport(reportId, replyText, status);
+    if (ok) {
+      closeBugReplyModal();
+      renderBugReportsPanel();
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Cevabı Gönder';
+    }
+  }
+}
+window.confirmBugReply = confirmBugReply;
+
+// 3. REDDET (REJECT) MODAL & PRESETS
+var BUG_REJECT_PRESETS = {
+  invalid: 'İnceleme sonucunda bildirilen durum sistem genelinde veya belirtilen akışta doğrulanamamıştır. Eğer sorun devam ediyorsa lütfen tekrarlama adımlarını daha detaylı belirterek yeni bir bildirim iletiniz.',
+  user_error: 'İncelenen durum sistemsel bir yazılım hatası değil, tarayıcı/cihaz ayarları veya hesap yapılandırması kaynaklıdır.',
+  duplicate: 'Bu konu hakkında daha önce açılmış aktif bir bildirim veya devam eden bir geliştirme bulunmaktadır. Tekrar bildirim oluşturmanıza gerek yoktur.',
+  missing_info: 'Bildirilen sorunu tespit edebilmek için yeterli detay veya tekrarlama adımı bulunmamaktadır. Ekran görüntüsü ve detaylı adımlarla tekrar iletebilirsiniz.',
+  spam: 'Bildirim içeriği anlamsız, spam veya destek kurallarına aykırı olarak değerlendirilmiştir.',
+  custom: ''
+};
+window.BUG_REJECT_PRESETS = BUG_REJECT_PRESETS;
+
+function openBugRejectModal(reportId, fallbackSubject, fallbackSender) {
+  var modal = document.getElementById('bug-reject-modal');
+  if (!modal) {
+    console.error('Modal #bug-reject-modal bulunamadı.');
+    return;
+  }
+
+  // Teleport to body
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  var r = (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
+          (adminState.bugReports || []).find(function(item) {
+            return String(item.id) === String(reportId);
+          });
+
+  var finalSubject = (r && r.subject) || fallbackSubject || '—';
+  var finalSender = r ? ((r.user_name || 'Kullanıcı') + ' (' + (r.user_email || '—') + ')') : (fallbackSender || '—');
+
+  var idEl = document.getElementById('reject-modal-report-id');
+  var subjEl = document.getElementById('reject-modal-subject');
+  var senderEl = document.getElementById('reject-modal-sender');
+  var presetEl = document.getElementById('reject-preset-select');
+  var reasonEl = document.getElementById('reject-modal-reason');
+
+  if (idEl) idEl.value = reportId || (r ? r.id : '');
+  if (subjEl) subjEl.textContent = finalSubject;
+  if (senderEl) senderEl.textContent = finalSender;
+  if (presetEl) presetEl.value = 'invalid';
+  if (reasonEl) reasonEl.value = BUG_REJECT_PRESETS.invalid;
+
+  modal.classList.add('open', 'active');
+  modal.style.display = 'flex';
+  modal.style.visibility = 'visible';
+  modal.style.opacity = '1';
+  modal.style.zIndex = '999999';
+
+  setTimeout(function() {
+    if (reasonEl) reasonEl.focus();
+  }, 100);
+}
+window.openBugRejectModal = openBugRejectModal;
+
+function closeBugRejectModal() {
+  var modal = document.getElementById('bug-reject-modal');
+  if (modal) {
+    modal.classList.remove('open', 'active');
+    modal.style.display = 'none';
+  }
+}
+window.closeBugRejectModal = closeBugRejectModal;
+
+function onBugRejectPresetChange(presetKey) {
+  var reasonEl = document.getElementById('reject-modal-reason');
+  if (!reasonEl) return;
+  if (presetKey === 'custom') {
+    reasonEl.value = '';
+    reasonEl.focus();
+  } else if (BUG_REJECT_PRESETS[presetKey] !== undefined) {
+    reasonEl.value = BUG_REJECT_PRESETS[presetKey];
+  }
+}
+window.onBugRejectPresetChange = onBugRejectPresetChange;
+
+async function confirmBugReject() {
+  var idEl = document.getElementById('reject-modal-report-id');
+  var reasonEl = document.getElementById('reject-modal-reason');
+  var reportId = idEl ? idEl.value : '';
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+
+  if (!reason) {
+    if (typeof showToast === 'function') showToast('Lütfen bir ret gerekçesi belirtin.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('confirm-reject-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Reddediliyor...';
+  }
+
+  try {
+    var ok = await replyBugReport(reportId, reason, 'rejected');
+    if (ok) {
+      closeBugRejectModal();
+      renderBugReportsPanel();
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Bildirimi Reddet';
+    }
+  }
+}
+window.confirmBugReject = confirmBugReject;
+
+// Global Event Delegation & Backdrop Click Listeners
+if (typeof document !== 'undefined' && !window.__bugReportsListenersAttached) {
+  window.__bugReportsListenersAttached = true;
+  document.addEventListener('click', function(e) {
+    // 1. Any Bug Action Button (Reply, Reject, Ban)
+    var btn = e.target.closest('.btn-bug-action, [data-action="reply-bug"], [data-action="reject-bug"], [data-action="ban-bug-user"]');
+    if (btn) {
+      if (window.handleBugActionClick) {
+        window.handleBugActionClick(e, btn);
+      }
+      return;
+    }
+
+    // 2. Modal Backdrop Click to Close
+    if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+      e.target.classList.remove('open', 'active');
+      e.target.style.display = 'none';
+    }
+  });
+}
+
+
 

@@ -253,12 +253,19 @@ async function renderUsersTable() {
 
   var tradeCounts = {};
   try {
-    var client = getSbClient();
-    if (client) {
-      var { data: trades } = await client.from('trades').select('user_id');
-      (trades || []).forEach(function(t) {
-        tradeCounts[t.user_id] = (tradeCounts[t.user_id] || 0) + 1;
-      });
+    var nowMs = Date.now();
+    if (adminState._tradeCountsCache && (nowMs - (adminState._tradeCountsCacheTime || 0) < 60000)) {
+      tradeCounts = adminState._tradeCountsCache;
+    } else {
+      var client = getSbClient();
+      if (client) {
+        var { data: trades } = await client.from('trades').select('user_id');
+        (trades || []).forEach(function(t) {
+          tradeCounts[t.user_id] = (tradeCounts[t.user_id] || 0) + 1;
+        });
+        adminState._tradeCountsCache = tradeCounts;
+        adminState._tradeCountsCacheTime = nowMs;
+      }
     }
   } catch(e) {}
 
@@ -1142,3 +1149,321 @@ window.sendAdminNotification = async function() {
     btn.textContent = 'Bildirimi Gönder';
   }
 };
+
+// ============================================================
+// HATA BİLDİRİMLERİ, KULLANICI DESTEK & ENGELLEME YÖNETİMİ
+// ============================================================
+
+// 1. Destek Durumunu Yükle (system_settings -> support_status)
+async function loadSupportStatus() {
+  var client = getSbClient();
+  var defaultStatus = {
+    status: 'online',
+    label: 'Teknik Destek: Aktif & Çevrim İçi',
+    note: 'Ortalama yanıt süresi 15 dakika.',
+    updated_at: new Date().toISOString()
+  };
+
+  if (!client) {
+    adminState.supportStatus = defaultStatus;
+    return defaultStatus;
+  }
+
+  try {
+    var { data, error } = await client
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'support_status')
+      .maybeSingle();
+
+    if (error || !data || !data.value) {
+      adminState.supportStatus = defaultStatus;
+      return defaultStatus;
+    }
+
+    adminState.supportStatus = data.value;
+    return data.value;
+  } catch (e) {
+    console.warn('loadSupportStatus error:', e);
+    adminState.supportStatus = defaultStatus;
+    return defaultStatus;
+  }
+}
+window.loadSupportStatus = loadSupportStatus;
+
+// 2. Destek Durumunu Kaydet
+async function saveSupportStatus(statusData) {
+  var client = getSbClient();
+  if (!client) return false;
+
+  try {
+    var payload = {
+      status: statusData.status || 'online',
+      label: statusData.label || 'Teknik Destek: Aktif & Çevrim İçi',
+      note: statusData.note || '',
+      updated_at: new Date().toISOString()
+    };
+
+    var { error } = await client.from('system_settings').upsert({
+      key: 'support_status',
+      value: payload,
+      updated_at: new Date().toISOString()
+    });
+
+    if (error) throw error;
+    adminState.supportStatus = payload;
+    if (typeof showToast === 'function') showToast('Teknik destek durumu güncellendi!', 'success');
+    return true;
+  } catch (e) {
+    console.error('saveSupportStatus error:', e);
+    if (typeof showToast === 'function') showToast('Durum güncellenemedi: ' + (e.message || ''), 'error');
+    return false;
+  }
+}
+window.saveSupportStatus = saveSupportStatus;
+
+// 3. Hata Bildirimlerini Yükle (bug_reports tablosu veya fallback system_settings)
+async function loadBugReports() {
+  var client = getSbClient();
+  if (!client) {
+    adminState.bugReports = adminState.bugReports || [];
+    return adminState.bugReports;
+  }
+
+  try {
+    var { data, error } = await client
+      .from('bug_reports')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      // Tablo henüz SQL'de çalıştırılmadıysa fallback olarak system_settings kontrol et
+      console.warn('bug_reports tablosu okunamadı, fallback kontrol ediliyor:', error.message);
+      var { data: fbData } = await client
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'bug_reports_stream')
+        .maybeSingle();
+
+      adminState.bugReports = (fbData && fbData.value && Array.isArray(fbData.value)) ? fbData.value : [];
+    } else {
+      adminState.bugReports = data || [];
+    }
+  } catch (e) {
+    console.warn('loadBugReports exception:', e);
+    adminState.bugReports = adminState.bugReports || [];
+  }
+
+  return adminState.bugReports;
+}
+window.loadBugReports = loadBugReports;
+
+// 4. Bildirime Admin Olarak Yanıt Ver veya Reddet
+async function replyBugReport(reportId, replyText, newStatus) {
+  var client = getSbClient();
+  if (!client || !reportId || !replyText) return false;
+
+  var status = newStatus || 'answered';
+  var now = new Date().toISOString();
+  var replierName = (status === 'rejected' ? 'Wawe Journal Ekibi (Ret Bildirimi)' : 'Wawe Journal Ekibi (Admin)');
+
+  try {
+    var { error } = await client
+      .from('bug_reports')
+      .update({
+        admin_reply: replyText,
+        replied_at: now,
+        replied_by: replierName,
+        status: status,
+        updated_at: now
+      })
+      .eq('id', reportId);
+
+    if (error) {
+      // Fallback in system_settings if table was not ready
+      console.warn('bug_reports update error, fallback güncelleniyor:', error.message);
+      var reports = adminState.bugReports || [];
+      var idx = reports.findIndex(function(r) { return String(r.id) === String(reportId); });
+      if (idx !== -1) {
+        reports[idx].admin_reply = replyText;
+        reports[idx].replied_at = now;
+        reports[idx].replied_by = replierName;
+        reports[idx].status = status;
+        reports[idx].updated_at = now;
+        await client.from('system_settings').upsert({
+          key: 'bug_reports_stream',
+          value: reports,
+          updated_at: now
+        });
+      }
+    } else {
+      // Local state güncelle
+      var reports = adminState.bugReports || [];
+      var r = reports.find(function(item) { return String(item.id) === String(reportId); });
+      if (r) {
+        r.admin_reply = replyText;
+        r.replied_at = now;
+        r.replied_by = replierName;
+        r.status = status;
+        r.updated_at = now;
+      }
+    }
+
+    // Kullanıcıya bildirim gönder (varsa)
+    try {
+      var rTarget = (adminState.bugReports || []).find(function(item) { return String(item.id) === String(reportId); });
+      if (rTarget && rTarget.user_id) {
+        var notifTitle = (status === 'rejected') ? 'Hata Bildiriminiz Değerlendirildi (Reddedildi)' : 'Hata Bildiriminize Yanıt Verildi';
+        var notifType = (status === 'rejected') ? 'warning' : 'info';
+        await client.from('notifications').insert([{
+          user_id: rTarget.user_id,
+          type: notifType,
+          title: notifTitle,
+          message: replyText.slice(0, 180) + (replyText.length > 180 ? '...' : ''),
+          meta_data: { bug_report_id: reportId, status: status, subject: rTarget.subject || '' },
+          is_read: false,
+          created_at: now
+        }]);
+      }
+    } catch (notifErr) {
+      console.warn('Kullanıcı bildirimi eklenemedi:', notifErr);
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(status === 'rejected' ? 'Bildirim başarıyla reddedildi.' : 'Cevabınız başarıyla iletildi!', 'success');
+    }
+    return true;
+  } catch (e) {
+    console.error('replyBugReport error:', e);
+    if (typeof showToast === 'function') showToast('İşlem başarısız: ' + (e.message || ''), 'error');
+    return false;
+  }
+}
+window.replyBugReport = replyBugReport;
+
+// 5. Destek Engellerini Yükle
+async function loadSupportBans() {
+  var client = getSbClient();
+  if (!client) {
+    adminState.supportBans = adminState.supportBans || [];
+    return adminState.supportBans;
+  }
+
+  try {
+    var { data, error } = await client
+      .from('support_bans')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      // Fallback system_settings support_bans
+      var { data: fbData } = await client
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'support_bans')
+        .maybeSingle();
+
+      adminState.supportBans = (fbData && fbData.value && Array.isArray(fbData.value)) ? fbData.value : [];
+    } else {
+      adminState.supportBans = data || [];
+    }
+  } catch (e) {
+    console.warn('loadSupportBans error:', e);
+    adminState.supportBans = adminState.supportBans || [];
+  }
+
+  return adminState.supportBans;
+}
+window.loadSupportBans = loadSupportBans;
+
+// 6. Kullanıcıyı Destekten Engelle
+async function banUserFromSupport(userId, email, userName, reason) {
+  var client = getSbClient();
+  if (!client) return false;
+
+  if (!reason || !reason.trim()) {
+    if (typeof showToast === 'function') showToast('Lütfen engelleme gerekçesini belirtin.', 'error');
+    return false;
+  }
+
+  try {
+    var payload = {
+      user_id: userId || null,
+      user_email: email || '',
+      user_name: userName || email || 'Kullanıcı',
+      reason: reason.trim(),
+      banned_by: 'Admin',
+      created_at: new Date().toISOString()
+    };
+
+    var { data, error } = await client
+      .from('support_bans')
+      .insert([payload])
+      .select();
+
+    if (error) {
+      // Fallback
+      console.warn('support_bans insert error, fallback yapılıyor:', error.message);
+      var bans = adminState.supportBans || [];
+      payload.id = 'ban-' + Date.now();
+      bans.unshift(payload);
+      adminState.supportBans = bans;
+      await client.from('system_settings').upsert({
+        key: 'support_bans',
+        value: bans,
+        updated_at: new Date().toISOString()
+      });
+    } else {
+      if (data && data[0]) {
+        adminState.supportBans = adminState.supportBans || [];
+        adminState.supportBans.unshift(data[0]);
+      }
+    }
+
+    if (typeof showToast === 'function') showToast('Kullanıcı hata bildiriminden engellendi.', 'success');
+    return true;
+  } catch (e) {
+    console.error('banUserFromSupport error:', e);
+    if (typeof showToast === 'function') showToast('Kullanıcı engellenemedi: ' + (e.message || ''), 'error');
+    return false;
+  }
+}
+window.banUserFromSupport = banUserFromSupport;
+
+// 7. Kullanıcının Engelini Kaldır
+async function unbanUserFromSupport(banId, email) {
+  var client = getSbClient();
+  if (!client) return false;
+
+  try {
+    if (banId && !String(banId).startsWith('ban-')) {
+      var { error } = await client
+        .from('support_bans')
+        .delete()
+        .eq('id', banId);
+
+      if (error) console.warn('support_bans delete error:', error.message);
+    }
+
+    // Local state ve fallback temizle
+    adminState.supportBans = (adminState.supportBans || []).filter(function(b) {
+      return b.id !== banId && (!email || b.user_email !== email);
+    });
+
+    await client.from('system_settings').upsert({
+      key: 'support_bans',
+      value: adminState.supportBans,
+      updated_at: new Date().toISOString()
+    });
+
+    if (typeof showToast === 'function') showToast('Kullanıcının engeli kaldırıldı.', 'success');
+    return true;
+  } catch (e) {
+    console.error('unbanUserFromSupport error:', e);
+    if (typeof showToast === 'function') showToast('Engel kaldırılamadı.', 'error');
+    return false;
+  }
+}
+window.unbanUserFromSupport = unbanUserFromSupport;
+

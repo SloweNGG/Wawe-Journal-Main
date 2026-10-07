@@ -74,9 +74,6 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- PROP FIRM EVALUATION BANNER (when active journal is a prop account) -->
-    <div id="dashboard-prop-banner" class="stats-grid prop-morph-grid" style="display:none;"></div>
-
     <!-- STATS - SKELETON (5 EŞİT KART) -->
     <div id="stats-skeleton" class="skeleton-stats">
       <div class="skeleton-stat"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%;"></div></div>
@@ -147,14 +144,14 @@ import Layout from '../layouts/Layout.astro';
     <!-- CHARTS - SKELETON -->
     <div class="charts-top-grid" id="charts-top-skeleton">
       <div class="chart-card"><div class="skeleton-chart"><div class="skeleton-bar-group"><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div><div class="skeleton-bar"></div></div><div class="skeleton-label"></div></div></div>
-      <div class="chart-card prop-dashboard-card-skeleton">
-        <div class="skeleton-prop-header"><div class="skeleton-line" style="width:48%;"></div><div class="skeleton-line" style="width:28%;"></div></div>
-        <div class="skeleton-prop-target"><div class="skeleton-line" style="width:65%;height:10px;"></div><div class="skeleton-line" style="width:100%;height:8px;border-radius:4px;"></div></div>
-        <div class="skeleton-prop-metrics">
-          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
-          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
-          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
-          <div class="skeleton-prop-box"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div></div>
+      <div class="chart-card performance-card-skeleton">
+        <div class="skeleton-perf-header"><div class="skeleton-line" style="width:42%;"></div><div class="skeleton-line" style="width:24%;"></div></div>
+        <div class="skeleton-perf-banner"><div class="skeleton-line" style="width:55%;height:10px;"></div><div class="skeleton-line" style="width:100%;height:5px;border-radius:999px;"></div></div>
+        <div class="skeleton-perf-grid">
+          <div class="skeleton-perf-box"><div class="skeleton-line" style="width:50%;"></div><div class="skeleton-line" style="width:70%;"></div></div>
+          <div class="skeleton-perf-box"><div class="skeleton-line" style="width:50%;"></div><div class="skeleton-line" style="width:70%;"></div></div>
+          <div class="skeleton-perf-box"><div class="skeleton-line" style="width:50%;"></div><div class="skeleton-line" style="width:70%;"></div></div>
+          <div class="skeleton-perf-box"><div class="skeleton-line" style="width:50%;"></div><div class="skeleton-line" style="width:70%;"></div></div>
         </div>
       </div>
     </div>
@@ -493,13 +490,11 @@ import Layout from '../layouts/Layout.astro';
     async function refreshDashboardPropBanner() {
       var propCardEl = document.getElementById('dashboard-prop-card');
       var badgeEl = document.getElementById('dashboard-prop-badge');
-      var statsGrid = document.getElementById('stats-grid');
       var bannerEl = document.getElementById('dashboard-prop-banner');
       if (bannerEl) {
         bannerEl.style.display = 'none';
         bannerEl.innerHTML = '';
       }
-      if (statsGrid) statsGrid.style.display = 'grid';
 
       if (!window.PropService || !window.journal) {
         renderStandardAccountCard(propCardEl);
@@ -515,14 +510,28 @@ import Layout from '../layouts/Layout.astro';
         return;
       }
 
+      // Fast-render: if previously cached as standard, render immediately without waiting
+      var isPropCached = false;
+      try {
+        var rawCache = sessionStorage.getItem('ww_is_prop_' + activeId);
+        if (rawCache === '1') isPropCached = true;
+      } catch (e) {}
+
+      if (!isPropCached && !window._isPropAccountActive) {
+        renderStandardAccountCard(propCardEl);
+      }
+
       try {
         var syncRes = await window.PropService.syncPropAccountStatus(activeId);
         if (!syncRes || !syncRes.account || !syncRes.status) {
           window._isPropAccountActive = false;
+          try { sessionStorage.setItem('ww_is_prop_' + activeId, '0'); } catch (e) {}
           renderStandardAccountCard(propCardEl);
           if (badgeEl) badgeEl.innerHTML = '';
           return;
         }
+
+        try { sessionStorage.setItem('ww_is_prop_' + activeId, '1'); } catch (e) {}
 
         window._isPropAccountActive = true;
         _currentPropSync = syncRes;
@@ -745,57 +754,230 @@ import Layout from '../layouts/Layout.astro';
       var t = function (key, params) {
         return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
       };
-      var fmt = window.formatCurrency || (val => '$' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      
-      var pnlEl = document.getElementById('stat-pnl');
-      var wrEl = document.getElementById('stat-winrate');
-      var totalEl = document.getElementById('stat-total');
-      var currentPnl = pnlEl ? pnlEl.textContent : '—';
-      var currentWr = wrEl ? wrEl.textContent : '—';
-      var currentTotal = totalEl ? totalEl.textContent : '—';
+      var sym = (typeof window.getCurrencySymbol === 'function') ? window.getCurrencySymbol() : '$';
+      var fmtPnl = function (val) {
+        if (typeof window.formatCurrency === 'function') {
+          return window.formatCurrency(val);
+        }
+        var num = parseFloat(val) || 0;
+        var formatted = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return (num >= 0 ? '+' : '-') + sym + formatted;
+      };
+      var fmtTarget = function (val) {
+        var num = Math.abs(parseFloat(val) || 0);
+        return sym + num.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      };
+
+      // Get trades from dashboard state
+      var trades = (window._currentDashboardTrades && Array.isArray(window._currentDashboardTrades))
+        ? window._currentDashboardTrades
+        : ((window._allDashboardTrades && Array.isArray(window._allDashboardTrades)) ? window._allDashboardTrades : []);
+
+      var closed = trades.filter(function (tr) {
+        return tr && (tr.exit_price || (tr.pnl !== null && tr.pnl !== undefined && !isNaN(parseFloat(tr.pnl))));
+      });
+
+      var calcPnl = function (tr) {
+        if (typeof window.calcTradePnL === 'function') return window.calcTradePnL(tr);
+        var p = parseFloat(tr.pnl);
+        return !isNaN(p) ? p : 0;
+      };
+
+      var bestTrade = null;
+      var worstTrade = null;
+      var totalWins = 0;
+      var winCount = 0;
+      var totalLosses = 0;
+      var lossCount = 0;
+      var totalPnL = 0;
+
+      closed.forEach(function (tr) {
+        var pnl = calcPnl(tr);
+        totalPnL += pnl;
+        if (!bestTrade || pnl > bestTrade.pnl) {
+          bestTrade = { pnl: pnl, symbol: tr.symbol || '' };
+        }
+        if (!worstTrade || pnl < worstTrade.pnl) {
+          worstTrade = { pnl: pnl, symbol: tr.symbol || '' };
+        }
+        if (pnl > 0) {
+          totalWins += pnl;
+          winCount++;
+        } else if (pnl < 0) {
+          totalLosses += Math.abs(pnl);
+          lossCount++;
+        }
+      });
+
+      // Fallback PnL from DOM stat-pnl if closed is empty but DOM has value
+      if (closed.length === 0) {
+        var pnlDom = document.getElementById('stat-pnl');
+        if (pnlDom && pnlDom.textContent && pnlDom.textContent !== '—') {
+          var cleaned = pnlDom.textContent.replace(/[^0-9.-]/g, '');
+          var parsed = parseFloat(cleaned);
+          if (!isNaN(parsed)) totalPnL = parsed;
+        }
+      }
+
+      // Target calculations
+      var jid = window.journal ? window.journal.getActiveJournalId() : '';
+      var savedTarget = localStorage.getItem('ww_monthly_target_' + jid);
+      var monthlyTarget = (savedTarget && !isNaN(parseFloat(savedTarget))) ? parseFloat(savedTarget) : 5000;
+
+      var rawGoalPct = monthlyTarget > 0 ? ((totalPnL / monthlyTarget) * 100) : 0;
+      var goalPctText = rawGoalPct > 100 ? '>100%' : (rawGoalPct < -100 ? '<-100%' : rawGoalPct.toFixed(1) + '%');
+      var goalFillWidth = Math.min(100, Math.max(0, rawGoalPct));
+      var goalGradient = rawGoalPct >= 100
+        ? 'linear-gradient(90deg, #10b981, #22c55e)'
+        : (rawGoalPct > 0 ? 'linear-gradient(90deg, #6366f1, #818cf8)' : 'rgba(255,255,255,0.08)');
+      var goalPctColor = rawGoalPct >= 100 ? '#4ade80' : (rawGoalPct > 0 ? '#818cf8' : 'var(--muted)');
+
+      // Box 1: En İyi İşlem
+      var bestText = '—';
+      var bestSub = t('dashboard.card.no_trades') || 'Kayıtlı İşlem Yok';
+      if (bestTrade && bestTrade.pnl > 0) {
+        bestText = fmtPnl(bestTrade.pnl);
+        bestSub = bestTrade.symbol ? (bestTrade.symbol + ' • ' + (t('dashboard.card.profit_tag') || 'Kazanç')) : (t('dashboard.card.best_trade') || 'En İyi İşlem');
+      } else if (closed.length > 0) {
+        bestText = sym + '0,00';
+        bestSub = t('dashboard.card.no_win') || 'Kârlı İşlem Yok';
+      }
+
+      // Box 2: En Kötü İşlem
+      var worstText = '—';
+      var worstSub = t('dashboard.card.no_trades') || 'Kayıtlı İşlem Yok';
+      var worstColor = 'var(--text)';
+      if (worstTrade && worstTrade.pnl < 0) {
+        worstText = fmtPnl(worstTrade.pnl);
+        worstColor = '#f87171';
+        worstSub = worstTrade.symbol ? (worstTrade.symbol + ' • ' + (t('dashboard.card.loss_tag') || 'Kayıp')) : (t('dashboard.card.worst_trade') || 'En Kötü İşlem');
+      } else if (closed.length > 0) {
+        worstText = sym + '0,00';
+        worstColor = 'var(--text)';
+        worstSub = t('dashboard.card.no_loss') || 'Kayıp İşlem Yok';
+      }
+
+      // Box 3: Expectancy (İşlem Başına Matematiksel Beklenti)
+      var expVal = closed.length > 0 ? (totalPnL / closed.length) : null;
+      var expText = '—';
+      var expColor = 'var(--text)';
+      if (expVal !== null) {
+        expText = fmtPnl(expVal);
+        expColor = expVal >= 0 ? '#4ade80' : '#f87171';
+      }
+
+      // Box 4: Payoff Ratio (Ort. Kazanç / Ort. Kayıp)
+      var avgWin = winCount > 0 ? (totalWins / winCount) : 0;
+      var avgLoss = lossCount > 0 ? (totalLosses / lossCount) : 0;
+      var payoffText = '—';
+      var payoffSub = t('dashboard.card.payoff_sub') || 'Ort. Win / Ort. Loss';
+      if (avgLoss > 0 && avgWin > 0) {
+        payoffText = (avgWin / avgLoss).toFixed(2) + 'x';
+      } else if (avgWin > 0 && avgLoss === 0) {
+        payoffText = 'Max';
+        payoffSub = t('dashboard.card.no_loss') || 'Kayıp İşlem Yok';
+      } else if (closed.length > 0) {
+        payoffText = '0.00x';
+      }
 
       propCardEl.innerHTML = `
         <div class="prop-card-header">
           <div class="prop-card-firm-title">
-            <span class="prop-card-firm-name">Standart Hesap</span>
-            <span class="prop-card-phase-tag standard">Genel Özet</span>
+            <span class="prop-card-firm-name">${t('dashboard.card.performance_edge') || 'Performans & Edge'}</span>
           </div>
-          <span class="prop-status-pill in_progress" style="background:rgba(124,109,250,0.12);color:#c4b5fd;border-color:rgba(124,109,250,0.25);">
-            <span class="prop-status-dot" style="background:#c4b5fd;"></span>
-            <span>Standart Defter</span>
-          </span>
+          <button type="button" class="prop-card-btn-notices" id="standard-edit-goal-btn" title="${t('dashboard.goal.title') || 'Aylık Hedef Belirle'}" style="background:rgba(124,109,250,0.12);color:#c4b5fd;border-color:rgba(124,109,250,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;">
+            <i data-lucide="target"></i>
+            <span>${t('dashboard.card.set_goal') || 'Hedef Belirle'}</span>
+          </button>
         </div>
+
         <div class="prop-card-phase-banner" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
           <div class="prop-card-phase-banner-top">
-            <span class="prop-card-phase-desc">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:#818cf8;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              <span>Bireysel trading günlüğü ve performans analitiği.</span>
+            <span class="prop-card-phase-desc" style="display:inline-flex;align-items:center;gap:6px;">
+              <i data-lucide="target" style="color:#818cf8;flex-shrink:0;"></i>
+              <span>${t('dashboard.card.monthly_target') || 'Aylık Hedef'}: <strong style="color:var(--text);">${fmtPnl(totalPnL)}</strong> / ${fmtTarget(monthlyTarget)}</span>
             </span>
+            <span class="prop-card-phase-pct" style="color:${goalPctColor};">${goalPctText}</span>
+          </div>
+          <div class="prop-card-progress-bar">
+            <div class="prop-card-progress-fill" style="width:${goalFillWidth}%;background:${goalGradient};"></div>
           </div>
         </div>
+
         <div class="prop-card-grid">
           <div class="prop-card-box">
-            <div class="prop-card-box-label"><span>Toplam P&L</span></div>
-            <div class="prop-card-box-value">${currentPnl}</div>
-            <div class="prop-card-box-sub"><span>Net Kazanç / Kayıp</span></div>
+            <div class="prop-card-box-label">
+              <span style="display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="arrow-up-right" style="color:#4ade80;"></i>
+                <span>${t('dashboard.card.best_trade') || 'En İyi İşlem'}</span>
+              </span>
+              <span class="prop-card-dot" style="background:#4ade80;"></span>
+            </div>
+            <div class="prop-card-box-value" style="color:#4ade80;">${bestText}</div>
+            <div class="prop-card-box-sub"><span>${bestSub}</span></div>
           </div>
+
           <div class="prop-card-box">
-            <div class="prop-card-box-label"><span>Win Rate</span></div>
-            <div class="prop-card-box-value">${currentWr}</div>
-            <div class="prop-card-box-sub"><span>Başarı Oranı</span></div>
+            <div class="prop-card-box-label">
+              <span style="display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="arrow-down-right" style="color:#f87171;"></i>
+                <span>${t('dashboard.card.worst_trade') || 'En Kötü İşlem'}</span>
+              </span>
+              <span class="prop-card-dot" style="background:#f87171;"></span>
+            </div>
+            <div class="prop-card-box-value" style="color:${worstColor};">${worstText}</div>
+            <div class="prop-card-box-sub"><span>${worstSub}</span></div>
           </div>
+
           <div class="prop-card-box">
-            <div class="prop-card-box-label"><span>Toplam İşlem</span></div>
-            <div class="prop-card-box-value">${currentTotal}</div>
-            <div class="prop-card-box-sub"><span>Kaydedilen İşlemler</span></div>
+            <div class="prop-card-box-label">
+              <span style="display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="scale" style="color:#818cf8;"></i>
+                <span>${t('dashboard.card.expectancy') || 'Beklenti (Exp.)'}</span>
+              </span>
+              <span class="prop-card-dot" style="background:#818cf8;"></span>
+            </div>
+            <div class="prop-card-box-value" style="color:${expColor};">${expText}</div>
+            <div class="prop-card-box-sub"><span>${t('dashboard.card.expectancy_sub') || 'İşlem Başı Ort. K/Z'}</span></div>
           </div>
+
           <div class="prop-card-box">
-            <div class="prop-card-box-label"><span>Hesap Türü</span></div>
-            <div class="prop-card-box-value" style="font-size:0.95rem;">Standart</div>
-            <div class="prop-card-box-sub"><span>Defter Ayarları</span></div>
+            <div class="prop-card-box-label">
+              <span style="display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="zap" style="color:#38bdf8;"></i>
+                <span>${t('dashboard.card.payoff_ratio') || 'Payoff Ratio'}</span>
+              </span>
+              <span class="prop-card-dot" style="background:#38bdf8;"></span>
+            </div>
+            <div class="prop-card-box-value" style="color:#38bdf8;">${payoffText}</div>
+            <div class="prop-card-box-sub"><span>${payoffSub}</span></div>
           </div>
         </div>
       `;
+
+      var editBtn = document.getElementById('standard-edit-goal-btn');
+      if (editBtn) {
+        editBtn.onclick = function () {
+          var mainBtn = document.getElementById('edit-goal-btn');
+          if (mainBtn) {
+            mainBtn.click();
+          } else {
+            var modal = document.getElementById('goal-modal');
+            if (modal) {
+              modal.style.display = 'flex';
+              modal.classList.add('active');
+            }
+          }
+        };
+      }
+
+      if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+        try {
+          lucide.createIcons({ root: propCardEl });
+        } catch (e) {
+          lucide.createIcons();
+        }
+      }
     }
 
     function bindHudButtons(account, tmpl, nextPhaseIdx, warningsList) {
@@ -1104,17 +1286,17 @@ import Layout from '../layouts/Layout.astro';
           wwLog.log('✅ Lucide icons initialized on dashboard!');
         }
       }
-      setTimeout(refreshDashboardPropBanner, 600);
+      refreshDashboardPropBanner();
     });
 
     window.addEventListener('journal-changed', function() {
-      setTimeout(refreshDashboardPropBanner, 300);
+      refreshDashboardPropBanner();
     });
     window.addEventListener('trade-saved', function() {
-      setTimeout(refreshDashboardPropBanner, 300);
+      refreshDashboardPropBanner();
     });
     window.addEventListener('trade-deleted', function() {
-      setTimeout(refreshDashboardPropBanner, 300);
+      refreshDashboardPropBanner();
     });
     window.addEventListener('dashboard-refreshed', function() {
       refreshDashboardPropBanner();

@@ -1135,6 +1135,12 @@ function getNavbarHTML(translations) {
           </div>
         </div>
         
+        <div class="nav-bug-wrapper" id="nav-bug-wrapper">
+          <a href="/report-bug.html" class="nav-bug-btn" id="nav-bug-btn" aria-label="Hata Bildir" title="${tt('nav.report_bug', 'Hata Bildir')}">
+            <i data-lucide="bug" class="nav-bug-icon"></i>
+          </a>
+        </div>
+        
         <div class="plan-badge" id="plan-badge" role="button" tabindex="0" aria-label="Abonelik Planı">
           <span class="plan-dot"></span>
           <span class="plan-text" id="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
@@ -1160,6 +1166,10 @@ function getNavbarHTML(translations) {
           <a href="/my-earnings.html" class="dropdown-item">
             <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
+          </a>
+          <a href="/report-bug.html" class="dropdown-item">
+            <i data-lucide="bug" style="width:16px;height:16px;"></i>
+            <span data-i18n="nav.report_bug">${tt('nav.report_bug', 'Hata Bildir')}</span>
           </a>
           <span id="admin-link" style="display:none;">
             <a href="/admin.html" class="dropdown-item">
@@ -1256,6 +1266,9 @@ function getNavbarHTML(translations) {
           </a>
           <a href="/my-earnings.html" onclick="closeMobileMenuAndNavigate(event, '/my-earnings.html')">
             <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">${tt('nav.earnings', 'Kazançlarım')}</span>
+          </a>
+          <a href="/report-bug.html" onclick="closeMobileMenuAndNavigate(event, '/report-bug.html')">
+            <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">${tt('nav.report_bug', 'Hata Bildir')}</span>
           </a>
           <span id="admin-link-mobile" style="display:none;">
             <a href="/admin.html" onclick="closeMobileMenuAndNavigate(event, '/admin.html')">
@@ -1797,7 +1810,7 @@ function loadNavbar(containerId) {
       'nav.premium', 'nav.premium_dashboard', 'nav.theme_customization', 'nav.overtrade_alert',
       'nav.upgrade_premium', 'nav.notifications', 'nav.mark_read', 'nav.no_notifications',
       'nav.profile', 'nav.settings', 'nav.logout', 'nav.home', 'nav.premium_badge',
-      'nav.free_badge', 'nav.menu_general', 'nav.menu_premium', 'nav.menu_account'
+      'nav.free_badge', 'nav.menu_general', 'nav.menu_premium', 'nav.menu_account', 'nav.report_bug'
     ];
     navbarKeys.forEach(function(key) { translations[key] = i18n.t(key); });
   }
@@ -1822,21 +1835,31 @@ function loadNavbar(containerId) {
   }, 50);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+function hydrateExistingNavbar() {
+  if (window.__wwNavbarHydrated) return true;
   var container = document.getElementById('navbar-container');
   if (container && container.children.length > 0) {
+    window.__wwNavbarHydrated = true;
     navbarRendered = true;
-    setTimeout(function() {
-      initNavEvents();
-      loadNavbarAvatar();
-      updateNavbarBadge();
-      updateNotificationBadge();
-      setActiveNavLink();
-      loadLucideIcons();
-      updateNavbarJournal(0);
-    }, 50);
-  } else if (container) {
-    loadNavbar('navbar-container');
+    setActiveNavLink();
+    initNavEvents();
+    loadNavbarAvatar();
+    updateNavbarBadge();
+    updateNotificationBadge();
+    loadLucideIcons();
+    updateNavbarJournal(0);
+    return true;
+  }
+  return false;
+}
+
+function initNavbarBoot() {
+  if (window.__wwNavbarBooted) return;
+  window.__wwNavbarBooted = true;
+
+  if (!hydrateExistingNavbar()) {
+    var container = document.getElementById('navbar-container');
+    if (container) loadNavbar('navbar-container');
   }
 
   window.addEventListener('hashchange', function() {
@@ -1847,31 +1870,32 @@ document.addEventListener('DOMContentLoaded', function() {
     if (menu) menu.classList.remove('open');
     if (backdrop) backdrop.classList.remove('open');
     document.body.style.overflow = '';
-    setTimeout(setActiveNavLink, 50);
+    setActiveNavLink();
   });
 
   window.addEventListener('popstate', function() {
-    setTimeout(setActiveNavLink, 50);
+    setActiveNavLink();
   });
 
   window.addEventListener('load', function() {
-    setTimeout(setActiveNavLink, 100);
-    setTimeout(function() { updateNavbarBadge(); updateNotificationBadge(); }, 150);
     loadLucideIcons();
-    setTimeout(initNavEvents, 200);
   });
 
   window.addEventListener('storage', function(e) {
     if (e.key === 'ww_language' && e.newValue) {
-      setTimeout(function() {
-        updateNavbarI18n();
-        updateNavbarBadgeSync();
-        loadLucideIcons();
-        initNavEvents();
-      }, 100);
+      updateNavbarI18n();
+      updateNavbarBadgeSync();
+      loadLucideIcons();
+      initNavEvents();
     }
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNavbarBoot);
+} else {
+  initNavbarBoot();
+}
 
 window.setActiveNavLink = setActiveNavLink;
 window.updateNavbarI18n = updateNavbarI18n;

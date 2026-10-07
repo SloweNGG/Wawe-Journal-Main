@@ -3,12 +3,12 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" showNavbar={false}>
 <Fragment slot="head">
-  <title>Wawe Journal (Wave Journal) - Professional Trading Journal for Traders</title>
-  <meta name="description" content="Every great trader has a story. Wawe Journal helps you write yours." />
-  <meta name="keywords" content="wawe journal, wave journal, wave trading journal, trading journal, wawejournal, crypto trading journal, forex journal" />
+  <title>Wawe Journal - Professional Trading Journal for Traders</title>
+  <meta name="description" content="Every great trader has a story. Wawe Journal helps you write yours. Track trades, analyze metrics, and build discipline." />
+  <meta name="keywords" content="wawe journal, wawejournal, trading journal, crypto trading journal, forex journal, stock trading log, trading analytics" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://wawejournal.com/" />
-  <meta property="og:title" content="Wawe Journal (Wave Journal) - Professional Trading Journal" />
+  <meta property="og:title" content="Wawe Journal - Professional Trading Journal" />
   <meta property="og:description" content="Track your trades, analyze your performance, and build discipline." />
   <meta property="og:url" content="https://wawejournal.com/" />
   <meta property="og:type" content="website" />
@@ -30,18 +30,50 @@ import Layout from '../layouts/Layout.astro';
 
   <link rel="stylesheet" href="/index.css" />
 
+  <!-- Google Site Name, Brand Entity & WebSite Schema -->
   <script type="application/ld+json" is:inline>
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Wawe Journal",
-    "alternateName": ["Wave Journal", "WaveJournal", "WaweJournal", "Wave Trading Journal"],
-    "description": "Wawe Journal (also known as Wave Journal) is a modern trading journal and trade performance analytics platform for crypto, forex, and stock traders.",
-    "applicationCategory": "FinanceApplication",
-    "operatingSystem": "Web",
-    "url": "https://wawejournal.com",
-    "author": { "@type": "Organization", "name": "WaweDev Inc" },
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://wawejournal.com/#website",
+        "url": "https://wawejournal.com/",
+        "name": "Wawe Journal",
+        "alternateName": ["WaweJournal", "Wawe Journal Trading"],
+        "publisher": { "@id": "https://wawejournal.com/#organization" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://wawejournal.com/#organization",
+        "name": "Wawe Journal",
+        "alternateName": ["WaweJournal"],
+        "url": "https://wawejournal.com/",
+        "logo": "https://wawejournal.com/og-image.jpg",
+        "sameAs": [
+          "https://x.com/wawejournal",
+          "https://twitter.com/wawejournal",
+          "https://www.instagram.com/wawejournal/",
+          "https://youtube.com/@wawedev"
+        ]
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://wawejournal.com/#app",
+        "name": "Wawe Journal",
+        "alternateName": ["WaweJournal"],
+        "description": "Wawe Journal is an advanced crypto, forex, and stock trading journal and performance analytics platform for disciplined traders.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "url": "https://wawejournal.com/",
+        "author": { "@id": "https://wawejournal.com/#organization" },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
   }
   </script>
 

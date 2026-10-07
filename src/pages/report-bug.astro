@@ -1,0 +1,2056 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout lang="tr">
+<Fragment slot="head">
+  <title data-i18n="bug_report.title">Hata Bildir & Geri Bildirim – Wawe Journal</title>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/components/navbar/navbar.js?v=1790153939" is:inline defer></script>
+
+  <style is:global>
+    /* ============================================================
+       WAWE JOURNAL - HATA BİLDİRİM & DESTEK (SaaS PREMIUM EDİTİON)
+       ============================================================ */
+
+    .bug-main {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 4.5rem;
+      min-height: calc(100vh - 56px);
+    }
+
+    .bug-container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+    }
+
+    /* Page Header alignment with actions */
+    .page-header {
+      margin-bottom: 0.5rem;
+    }
+
+    /* Support Status Chip */
+    .support-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #4ade80;
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .support-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: supportPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes supportPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    .support-status-chip.busy {
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.28);
+    }
+    .support-status-chip.busy .support-pulse-dot {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .support-status-chip.offline {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.28);
+    }
+    .support-status-chip.offline .support-pulse-dot {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      animation: none;
+    }
+    .support-status-chip.maintenance {
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.08);
+      border-color: rgba(168, 85, 247, 0.28);
+    }
+    .support-status-chip.maintenance .support-pulse-dot {
+      background: #a855f7;
+      box-shadow: 0 0 8px #a855f7;
+    }
+
+    /* Modern Segmented Navigation Tabs */
+    .bug-tab-bar {
+      display: inline-flex;
+      background: var(--surface2, #14141e);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      gap: 4px;
+      align-self: flex-start;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .bug-tab-btn {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted, #a0a0b8);
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .bug-tab-btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .bug-tab-btn:hover {
+      color: var(--text, #f1f1f8);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .bug-tab-btn.active {
+      background: var(--surface, #1e1e2d);
+      color: var(--text, #ffffff);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    .bug-tab-count {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.18);
+      color: var(--accent3, #c084fc);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    /* Bug Card Frame */
+    .bug-card {
+      background: var(--surface, #0e0e16);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.14));
+      border-radius: 16px;
+      padding: 1.65rem 1.85rem;
+      box-sizing: border-box;
+      position: relative;
+      box-shadow: 0 10px 35px -10px rgba(0, 0, 0, 0.35);
+      animation: fadeInCard 0.25s ease;
+    }
+
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form Layout */
+    .bug-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .form-row-compact {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .form-group.flex-1 {
+      flex: 1 1 340px;
+    }
+
+    .form-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text, #f1f1f8);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .form-label .required {
+      color: #f43f5e;
+    }
+
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .paste-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted, #a0a0b8);
+      font-weight: 500;
+    }
+
+    .paste-hint svg {
+      width: 12px;
+      height: 12px;
+      color: var(--accent2, #c084fc);
+    }
+
+    /* Type Chips - Compact Segmented Style */
+    .type-chips-compact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .type-chip-pill {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.42rem 0.75rem;
+      border-radius: 8px;
+      background: var(--surface2, #161622);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      color: var(--muted, #a0a0b8);
+      font-size: 0.79rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .type-chip-pill svg {
+      width: 13.5px;
+      height: 13.5px;
+      flex-shrink: 0;
+    }
+
+    .type-chip-pill:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: var(--text, #ffffff);
+    }
+
+    .type-chip-pill.active {
+      background: rgba(139, 92, 246, 0.14);
+      border-color: rgba(139, 92, 246, 0.45);
+      color: #c4b5fd;
+      box-shadow: 0 0 12px -2px rgba(139, 92, 246, 0.25);
+    }
+
+    /* Priority Compact Chips */
+    .priority-compact {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .priority-chip {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.42rem 0.75rem;
+      border-radius: 8px;
+      background: var(--surface2, #161622);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      color: var(--muted, #a0a0b8);
+      font-size: 0.79rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .priority-dot {
+      width: 6.5px;
+      height: 6.5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .priority-dot.low { background: #38bdf8; }
+    .priority-dot.med { background: #fbbf24; }
+    .priority-dot.high { background: #f43f5e; }
+
+    .priority-chip:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text, #ffffff);
+    }
+
+    .priority-chip.active.low {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #7dd3fc;
+    }
+    .priority-chip.active.med {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+    }
+    .priority-chip.active.high {
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fda4af;
+    }
+
+    /* Form Inputs */
+    .bug-input,
+    .bug-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--surface2, #14141e);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.14));
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text, #f1f1f8);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .bug-input:focus,
+    .bug-textarea:focus {
+      border-color: rgba(139, 92, 246, 0.65);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+      background: var(--surface, #161622);
+    }
+
+    .bug-textarea {
+      resize: vertical;
+      min-height: 110px;
+      line-height: 1.5;
+    }
+
+    /* Composer Attachment & Diagnostics Bar */
+    .composer-attachment-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px dashed var(--border, rgba(123, 110, 246, 0.15));
+    }
+
+    .attachment-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-attach {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent3, #c084fc);
+      background: rgba(139, 92, 246, 0.09);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-attach svg { width: 13.5px; height: 13.5px; }
+
+    .btn-attach:hover {
+      background: rgba(139, 92, 246, 0.16);
+      border-color: rgba(139, 92, 246, 0.4);
+      color: #ffffff;
+    }
+
+    .selected-file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(34, 197, 94, 0.09);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      color: #86efac;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .selected-file-chip svg { width: 13px; height: 13px; }
+
+    .btn-remove-chip {
+      all: unset;
+      cursor: pointer;
+      color: #f87171;
+      display: flex;
+      align-items: center;
+      padding: 1px;
+      border-radius: 4px;
+    }
+    .btn-remove-chip:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+    .btn-remove-chip svg { width: 12px; height: 12px; }
+
+    .diagnostics-subtle {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .diag-toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--muted, #a0a0b8);
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .diag-toggle-label input[type="checkbox"] {
+      accent-color: var(--accent, #8b5cf6);
+      width: 13px;
+      height: 13px;
+      cursor: pointer;
+    }
+
+    /* Action Submit Bar */
+    .form-actions-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding-top: 0.35rem;
+    }
+
+    .bug-submit-btn {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0.75rem 1.75rem;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c6dfa 0%, #6366f1 50%, #4f46e5 100%);
+      color: #ffffff;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 18px -2px rgba(124, 109, 250, 0.45);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bug-submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px -2px rgba(124, 109, 250, 0.6);
+      filter: brightness(1.06);
+    }
+
+    .bug-submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .bug-submit-btn svg { width: 15px; height: 15px; }
+
+    .bug-submit-btn.loading {
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    /* Banned Alert Box */
+    .banned-alert-box {
+      background: rgba(244, 63, 94, 0.06);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 12px;
+      padding: 2.25rem 1.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      box-sizing: border-box;
+      margin-bottom: 1rem;
+    }
+
+    .banned-alert-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(244, 63, 94, 0.15);
+      color: #f43f5e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(244, 63, 94, 0.25);
+    }
+    .banned-alert-icon svg { width: 24px; height: 24px; }
+
+    .banned-alert-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fda4af;
+      margin: 0;
+    }
+
+    .banned-alert-desc {
+      font-size: 0.86rem;
+      color: var(--muted, #a0a0b8);
+      line-height: 1.5;
+      max-width: 440px;
+      margin: 0;
+    }
+
+    .banned-reason-container {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(244, 63, 94, 0.45);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      text-align: left;
+      box-sizing: border-box;
+    }
+
+    .banned-reason-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fb7185;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .banned-reason-text {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.45;
+    }
+
+    .banned-blocked-msg {
+      font-size: 12px;
+      font-weight: 600;
+      color: #f43f5e;
+      margin: 0;
+    }
+
+    /* TAB 2: HISTORY / TICKETS FEED */
+    .replies-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border, rgba(123, 110, 246, 0.1));
+    }
+
+    .filter-pills-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-pill-btn {
+      all: unset;
+      box-sizing: border-box;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--muted, #a0a0b8);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.1));
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-pill-btn:hover {
+      color: var(--text, #ffffff);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .filter-pill-btn.active {
+      color: #ffffff;
+      background: rgba(139, 92, 246, 0.22);
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+
+    .btn-new-ticket-shortcut {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent3, #c084fc);
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(139, 92, 246, 0.1);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-new-ticket-shortcut svg { width: 13px; height: 13px; }
+    .btn-new-ticket-shortcut:hover {
+      background: rgba(139, 92, 246, 0.2);
+      color: #ffffff;
+    }
+
+    .tickets-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+    }
+
+    .stream-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      gap: 8px;
+      color: var(--muted, #a0a0b8);
+      font-size: 0.88rem;
+    }
+
+    /* Ticket Card */
+    .ticket-card {
+      background: var(--surface2, #141420);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .ticket-card:hover {
+      border-color: rgba(139, 92, 246, 0.35);
+    }
+
+    .ticket-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ticket-tags {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-category {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text, #f1f1f8);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .tag-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .tag-status.answered {
+      background: rgba(34, 197, 94, 0.12);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.28);
+    }
+
+    .tag-status.in_progress {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.28);
+    }
+
+    .tag-status.rejected {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.28);
+    }
+
+    .ticket-date {
+      font-size: 11px;
+      color: var(--muted, #a0a0b8);
+    }
+
+    .ticket-title {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--text, #f1f1f8);
+      margin: 0;
+      line-height: 1.35;
+    }
+
+    .ticket-body {
+      font-size: 0.85rem;
+      color: var(--muted, #a0a0b8);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .ticket-screenshot-wrap {
+      margin-top: 0.4rem;
+    }
+    .ticket-screenshot-thumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border, rgba(123, 110, 246, 0.18));
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text, #fff);
+      transition: all 0.2s ease;
+    }
+    .ticket-screenshot-thumb:hover {
+      background: rgba(139, 92, 246, 0.12);
+      border-color: rgba(139, 92, 246, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* Admin Response Card */
+    .admin-response-box {
+      margin-top: 0.35rem;
+      padding: 0.85rem 1rem;
+      background: rgba(139, 92, 246, 0.06);
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      border-left: 3px solid #8b5cf6;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .admin-response-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .admin-name-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #c4b5fd;
+    }
+    .admin-name-badge svg {
+      width: 13px;
+      height: 13px;
+      color: #a78bfa;
+    }
+
+    .admin-response-time {
+      font-size: 10.5px;
+      color: var(--muted, #a0a0b8);
+    }
+
+    .admin-response-text {
+      font-size: 0.84rem;
+      color: var(--text, #f1f1f8);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .admin-response-box.rejected {
+      background: rgba(239, 68, 68, 0.06);
+      border-color: rgba(239, 68, 68, 0.25);
+      border-left: 3px solid #ef4444;
+    }
+    .admin-response-box.rejected .admin-name-badge {
+      color: #fca5a5;
+    }
+    .admin-response-box.rejected .admin-name-badge svg {
+      color: #ef4444;
+    }
+
+    /* Empty State */
+    .tickets-empty {
+      text-align: center;
+      padding: 3.5rem 1.5rem;
+      color: var(--muted, #a0a0b8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px dashed var(--border, rgba(123, 110, 246, 0.15));
+      border-radius: 12px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .tickets-empty .empty-icon-wrap {
+      width: 48px !important;
+      height: 48px !important;
+      max-width: 48px !important;
+      max-height: 48px !important;
+      border-radius: 50%;
+      background: rgba(139, 92, 246, 0.12);
+      color: var(--accent3, #c084fc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.25rem;
+      flex-shrink: 0;
+    }
+
+    .tickets-empty svg {
+      width: 24px !important;
+      height: 24px !important;
+      max-width: 24px !important;
+      max-height: 24px !important;
+      display: block !important;
+      flex-shrink: 0 !important;
+    }
+
+    .tickets-empty .empty-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text, #f1f1f8);
+      margin: 0;
+    }
+
+    .tickets-empty .empty-desc {
+      font-size: 0.82rem;
+      color: var(--muted, #a0a0b8);
+      margin: 0;
+      line-height: 1.5;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .btn-empty-compose {
+      all: unset;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 0.35rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: var(--accent, #8b5cf6);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-empty-compose svg { width: 14px; height: 14px; }
+    .btn-empty-compose:hover {
+      background: #7c4dff;
+      transform: translateY(-1px);
+    }
+
+    /* ============================================================
+       AÇIK TEMA (LIGHT THEME) - YÜKSEK KONTRAST & UYUM
+       ============================================================ */
+
+    body.light-theme .support-status-chip {
+      background: rgba(34, 197, 94, 0.12);
+      color: #15803d;
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    body.light-theme .bug-tab-bar {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+    body.light-theme .bug-tab-btn {
+      color: #475569;
+    }
+    body.light-theme .bug-tab-btn:hover {
+      color: #0f172a;
+      background: #e2e8f0;
+    }
+    body.light-theme .bug-tab-btn.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    body.light-theme .bug-tab-count {
+      background: #f5f3ff;
+      color: #6d28d9;
+      border-color: #ddd6fe;
+    }
+
+    body.light-theme .bug-card {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    body.light-theme .form-label {
+      color: #1e293b;
+    }
+    body.light-theme .paste-hint {
+      color: #64748b;
+    }
+
+    body.light-theme .type-chip-pill {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      color: #334155;
+    }
+    body.light-theme .type-chip-pill:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    body.light-theme .type-chip-pill.active {
+      background: rgba(124, 109, 250, 0.12);
+      border-color: #7c6dfa;
+      color: #5b21b6;
+      box-shadow: 0 2px 8px rgba(124, 109, 250, 0.15);
+    }
+
+    body.light-theme .priority-chip {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      color: #334155;
+    }
+    body.light-theme .priority-chip:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    body.light-theme .priority-chip.active.low {
+      background: rgba(2, 132, 199, 0.08);
+      border-color: #0284c7;
+      color: #0369a1;
+      font-weight: 700;
+    }
+    body.light-theme .priority-chip.active.med {
+      background: rgba(217, 119, 6, 0.09);
+      border-color: #d97706;
+      color: #b45309;
+      font-weight: 700;
+    }
+    body.light-theme .priority-chip.active.high {
+      background: rgba(225, 29, 72, 0.08);
+      border-color: #e11d48;
+      color: #be123c;
+      font-weight: 700;
+    }
+
+    body.light-theme .bug-input,
+    body.light-theme .bug-textarea {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+    }
+    body.light-theme .bug-input::placeholder,
+    body.light-theme .bug-textarea::placeholder {
+      color: #94a3b8;
+    }
+    body.light-theme .bug-input:focus,
+    body.light-theme .bug-textarea:focus {
+      border-color: #7c6dfa;
+      box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.15);
+      background: #ffffff;
+    }
+
+    body.light-theme .composer-attachment-bar {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+    body.light-theme .btn-attach {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #4338ca;
+    }
+    body.light-theme .diag-toggle-label {
+      color: #475569;
+    }
+
+    body.light-theme .replies-filter-bar {
+      border-bottom-color: #f1f5f9;
+    }
+    body.light-theme .filter-pill-btn {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      color: #475569;
+    }
+    body.light-theme .filter-pill-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    body.light-theme .filter-pill-btn.active {
+      background: #7c6dfa;
+      border-color: #7c6dfa;
+      color: #ffffff;
+    }
+
+    body.light-theme .btn-new-ticket-shortcut {
+      background: #f5f3ff;
+      color: #6d28d9;
+    }
+
+    body.light-theme .ticket-card {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+    body.light-theme .ticket-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+    body.light-theme .tag-category {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    body.light-theme .ticket-date {
+      color: #64748b;
+    }
+    body.light-theme .ticket-title {
+      color: #0f172a;
+    }
+    body.light-theme .ticket-body {
+      color: #334155;
+    }
+
+    body.light-theme .admin-response-box {
+      background: #f5f3ff;
+      border-color: #ddd6fe;
+      border-left: 3px solid #7c6dfa;
+    }
+    body.light-theme .admin-name-badge {
+      color: #5b21b6;
+    }
+    body.light-theme .admin-name-badge svg {
+      color: #7c6dfa;
+    }
+    body.light-theme .admin-response-time {
+      color: #64748b;
+    }
+    body.light-theme .admin-response-text {
+      color: #1e293b;
+    }
+
+    body.light-theme .tag-status.rejected {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+    body.light-theme .admin-response-box.rejected {
+      background: #fef2f2;
+      border-color: #fecaca;
+      border-left-color: #dc2626;
+    }
+    body.light-theme .admin-response-box.rejected .admin-name-badge {
+      color: #b91c1c;
+    }
+    body.light-theme .admin-response-box.rejected .admin-name-badge svg {
+      color: #dc2626;
+    }
+
+    body.light-theme .tickets-empty {
+      background: #f8fafc !important;
+      border-color: #e2e8f0 !important;
+    }
+    body.light-theme .tickets-empty .empty-icon-wrap {
+      background: rgba(124, 109, 250, 0.12) !important;
+      color: #6366f1 !important;
+    }
+    body.light-theme .tickets-empty .empty-title {
+      color: #0f172a !important;
+    }
+    body.light-theme .tickets-empty .empty-desc {
+      color: #475569 !important;
+    }
+  </style>
+</Fragment>
+
+<main class="main bug-main">
+  <div class="bug-container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="bug_report.title">Hata Bildir & Geri Bildirim</h1>
+        <p class="subtitle" data-i18n="bug_report.subtitle">
+          Platformda karşılaştığınız bir sorunu veya önerinizi bize iletin, geliştirici ekibimiz hızla incelesin.
+        </p>
+      </div>
+      <div class="header-actions">
+        <div class="support-status-chip" id="support-status-chip">
+          <span class="support-pulse-dot" id="support-pulse-dot"></span>
+          <span id="support-status-text" data-i18n="bug_report.support_online">Teknik Destek: Aktif & Çevrim İçi</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODERN SEGMENTED TAB SWITCHER -->
+    <div class="bug-tab-bar">
+      <button type="button" class="bug-tab-btn active" id="tab-btn-compose" data-tab="compose">
+        <i data-lucide="edit-3"></i>
+        <span>Yeni Bildirim Oluştur</span>
+      </button>
+      <button type="button" class="bug-tab-btn" id="tab-btn-history" data-tab="history">
+        <i data-lucide="inbox"></i>
+        <span>Bildirimlerim & Cevaplar</span>
+        <span class="bug-tab-count" id="tab-count-badge">0</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: YENİ BİLDİRİM FORMU -->
+    <div class="bug-tab-pane" id="pane-compose">
+      <div class="bug-card">
+        
+        <!-- Engellenen Kullanıcı Uyarısı -->
+        <div class="banned-alert-box" id="banned-alert-box" style="display:none;">
+          <div class="banned-alert-icon">
+            <i data-lucide="shield-alert"></i>
+          </div>
+          <h3 class="banned-alert-title" data-i18n="bug_report.banned_title">Hata Bildirim Yetkiniz Askıya Alındı</h3>
+          <p class="banned-alert-desc" data-i18n="bug_report.banned_desc">
+            Hesabınızdan sistem kurallarına aykırı veya spam bildirimler yapıldığı tespit edildiği için hata bildirme yetkiniz durdurulmuştur.
+          </p>
+          <div class="banned-reason-container">
+            <div class="banned-reason-label" data-i18n="bug_report.banned_reason_label">Engellenme Nedeni:</div>
+            <div class="banned-reason-text" id="banned-reason-display">—</div>
+          </div>
+          <p class="banned-blocked-msg" data-i18n="bug_report.banned_blocked_msg">Engellendiğiniz için şu anda yeni bir bildirim gönderemezsiniz.</p>
+        </div>
+
+        <form class="bug-form" id="bug-report-form">
+          <!-- Üst Satır: Kategori & Öncelik Seçimi -->
+          <div class="form-row-compact">
+            <div class="form-group flex-1">
+              <label class="form-label">
+                <span data-i18n="bug_report.type_label">Bildirim Türü</span>
+                <span class="required">*</span>
+              </label>
+              <div class="type-chips-compact" id="type-chips-container">
+                <button type="button" class="type-chip-pill active" data-type="ui">
+                  <i data-lucide="layout"></i>
+                  <span data-i18n="bug_report.type_ui">Arayüz</span>
+                </button>
+                <button type="button" class="type-chip-pill" data-type="chart">
+                  <i data-lucide="line-chart"></i>
+                  <span data-i18n="bug_report.type_chart">Grafik & Hesap</span>
+                </button>
+                <button type="button" class="type-chip-pill" data-type="trade">
+                  <i data-lucide="database"></i>
+                  <span data-i18n="bug_report.type_trade">İşlem & Veri</span>
+                </button>
+                <button type="button" class="type-chip-pill" data-type="perf">
+                  <i data-lucide="zap"></i>
+                  <span data-i18n="bug_report.type_perf">Performans</span>
+                </button>
+                <button type="button" class="type-chip-pill" data-type="feature">
+                  <i data-lucide="sparkles"></i>
+                  <span data-i18n="bug_report.type_feature">Öneri</span>
+                </button>
+              </div>
+              <input type="hidden" id="bug-type-input" value="ui" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span data-i18n="bug_report.priority_label">Öncelik</span>
+              </label>
+              <div class="priority-compact" id="priority-container">
+                <button type="button" class="priority-chip low" data-priority="low" title="Kozmetik / Önemsiz">
+                  <span class="priority-dot low"></span>
+                  <span>Düşük</span>
+                </button>
+                <button type="button" class="priority-chip med active" data-priority="medium" title="Kullanımı Etkiliyor">
+                  <span class="priority-dot med"></span>
+                  <span>Orta</span>
+                </button>
+                <button type="button" class="priority-chip high" data-priority="high" title="Kritik / İşlem Yapılamıyor">
+                  <span class="priority-dot high"></span>
+                  <span>Yüksek</span>
+                </button>
+              </div>
+              <input type="hidden" id="bug-priority-input" value="medium" />
+            </div>
+          </div>
+
+          <!-- Konu Başlığı -->
+          <div class="form-group">
+            <label class="form-label" for="bug-subject">
+              <span data-i18n="bug_report.subject_label">Konu Başlığı</span>
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="bug-subject"
+              class="bug-input"
+              data-i18n-placeholder="bug_report.subject_placeholder"
+              placeholder="Örn: Kümülatif grafikte son işlem görünmüyor"
+              required
+            />
+          </div>
+
+          <!-- Detaylı Açıklama (Cmd+V Görsel Yapıştırma Destekli) -->
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label" for="bug-desc">
+                <span data-i18n="bug_report.desc_label">Detaylı Açıklama</span>
+                <span class="required">*</span>
+              </label>
+              <span class="paste-hint">
+                <i data-lucide="clipboard"></i>
+                <span>Görseli doğrudan buraya yapıştırabilirsiniz (Cmd+V)</span>
+              </span>
+            </div>
+            <textarea
+              id="bug-desc"
+              class="bug-textarea"
+              data-i18n-placeholder="bug_report.desc_placeholder"
+              placeholder="Sorun ne zaman ve hangi adımları uygularken oluştu? Varsa detayları açıklayınız..."
+              required
+            ></textarea>
+          </div>
+
+          <!-- Kompakt Dosya Ekleme & Otomatik Tanı Çubuğu -->
+          <div class="composer-attachment-bar">
+            <div class="attachment-left">
+              <input type="file" id="bug-file-input" accept="image/png, image/jpeg, image/webp" style="display:none;" />
+              <button type="button" class="btn-attach" id="btn-trigger-upload">
+                <i data-lucide="paperclip"></i>
+                <span data-i18n="bug_report.screenshot_label">Ekran Görüntüsü Ekle</span>
+              </button>
+              <div class="selected-file-chip" id="selected-file-preview" style="display:none;">
+                <img id="selected-file-thumb" src="" alt="Önizleme" style="width:22px;height:22px;object-fit:cover;border-radius:4px;border:1px solid rgba(255,255,255,0.2);display:none;" />
+                <i data-lucide="image" id="selected-file-icon"></i>
+                <span id="selected-file-name">screenshot.png</span>
+                <button type="button" class="btn-remove-chip" id="btn-remove-file" title="Kaldır">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="diagnostics-subtle">
+              <label class="diag-toggle-label">
+                <input type="checkbox" id="include-system-info" checked />
+                <span id="diag-summary-text">✓ Sistem Tanısı Dahil (Tarayıcı & OS)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Gönder Butonu -->
+          <div class="form-actions-bar">
+            <button type="submit" id="submit-bug-btn" class="bug-submit-btn">
+              <i data-lucide="send" id="btn-icon"></i>
+              <span id="btn-text" data-i18n="bug_report.btn_submit">Hata Raporunu Gönder</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 2: BİLDİRİMLERİM & YANITLAR (GEÇMİŞ) -->
+    <div class="bug-tab-pane" id="pane-history" style="display:none;">
+      <div class="bug-card">
+        <!-- Filtre ve Yeni Bildirim Butonu -->
+        <div class="replies-filter-bar">
+          <div class="filter-pills-wrap">
+            <button type="button" class="filter-pill-btn active" data-filter="all">
+              <span data-i18n="bug_report.filter_all">Tümü</span> (<span id="count-all">0</span>)
+            </button>
+            <button type="button" class="filter-pill-btn" data-filter="answered">
+              <span data-i18n="bug_report.filter_answered">Yanıtlananlar</span> (<span id="count-answered">0</span>)
+            </button>
+            <button type="button" class="filter-pill-btn" data-filter="pending">
+              <span data-i18n="bug_report.filter_pending">İncelenenler</span> (<span id="count-pending">0</span>)
+            </button>
+            <button type="button" class="filter-pill-btn" data-filter="rejected">
+              <span>Reddedilenler</span> (<span id="count-rejected">0</span>)
+            </button>
+          </div>
+
+          <button type="button" class="btn-new-ticket-shortcut" id="btn-goto-compose">
+            <i data-lucide="plus"></i>
+            <span>Yeni Bildirim</span>
+          </button>
+        </div>
+
+        <!-- Bildirim Akışı -->
+        <div class="tickets-stream" id="tickets-stream">
+          <div class="stream-loader">
+            <div class="spinner"></div>
+            <span>Bildirimler yükleniyor...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script is:inline>
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // 1. Sistem Tanı Bilgilerini Tespit Et
+    function detectSystemInfo() {
+      var ua = navigator.userAgent;
+      var browser = 'Diğer';
+      if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
+      else if (ua.indexOf('SamsungBrowser') > -1) browser = 'Samsung';
+      else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) browser = 'Opera';
+      else if (ua.indexOf('Trident') > -1) browser = 'IE';
+      else if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg') > -1) browser = 'Edge';
+      else if (ua.indexOf('Chrome') > -1) browser = 'Chrome';
+      else if (ua.indexOf('Safari') > -1) browser = 'Safari';
+
+      var os = 'Bilinmiyor';
+      if (ua.indexOf('Mac') > -1) os = 'macOS';
+      else if (ua.indexOf('Win') > -1) os = 'Windows';
+      else if (ua.indexOf('Linux') > -1) os = 'Linux';
+      else if (ua.indexOf('Android') > -1) os = 'Android';
+      else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'iOS';
+
+      var res = window.screen.width + 'x' + window.screen.height;
+
+      var summaryEl = document.getElementById('diag-summary-text');
+      if (summaryEl) {
+        summaryEl.textContent = '✓ Sistem Tanısı Dahil (' + os + ' • ' + browser + ')';
+      }
+
+      return { browser: browser, os: os, resolution: res, url: window.location.href };
+    }
+
+    var sysInfo = detectSystemInfo();
+
+    // 2. Tab Switcher (Sekme Yönetimi)
+    var tabBtnCompose = document.getElementById('tab-btn-compose');
+    var tabBtnHistory = document.getElementById('tab-btn-history');
+    var paneCompose = document.getElementById('pane-compose');
+    var paneHistory = document.getElementById('pane-history');
+    var btnGotoCompose = document.getElementById('btn-goto-compose');
+
+    function switchBugTab(target) {
+      if (target === 'history') {
+        if (paneCompose) paneCompose.style.display = 'none';
+        if (paneHistory) paneHistory.style.display = 'block';
+        if (tabBtnCompose) tabBtnCompose.classList.remove('active');
+        if (tabBtnHistory) tabBtnHistory.classList.add('active');
+      } else {
+        if (paneCompose) paneCompose.style.display = 'block';
+        if (paneHistory) paneHistory.style.display = 'none';
+        if (tabBtnCompose) tabBtnCompose.classList.add('active');
+        if (tabBtnHistory) tabBtnHistory.classList.remove('active');
+      }
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    if (tabBtnCompose) tabBtnCompose.addEventListener('click', function() { switchBugTab('compose'); });
+    if (tabBtnHistory) tabBtnHistory.addEventListener('click', function() { switchBugTab('history'); });
+    if (btnGotoCompose) btnGotoCompose.addEventListener('click', function() { switchBugTab('compose'); });
+
+    // 3. Bildirim Türü Seçimi
+    var typeChips = document.querySelectorAll('.type-chip-pill');
+    var typeInput = document.getElementById('bug-type-input');
+    typeChips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        typeChips.forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        if (typeInput) typeInput.value = chip.getAttribute('data-type');
+      });
+    });
+
+    // 4. Öncelik Seçimi
+    var priorityChips = document.querySelectorAll('.priority-chip');
+    var priorityInput = document.getElementById('bug-priority-input');
+    priorityChips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        priorityChips.forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        if (priorityInput) priorityInput.value = chip.getAttribute('data-priority');
+      });
+    });
+
+    // 5. Dosya Yükleme & Pano (Paste) Desteği
+    var triggerUploadBtn = document.getElementById('btn-trigger-upload');
+    var fileInput = document.getElementById('bug-file-input');
+    var previewWrap = document.getElementById('selected-file-preview');
+    var fileNameSpan = document.getElementById('selected-file-name');
+    var removeFileBtn = document.getElementById('btn-remove-file');
+    var descTextarea = document.getElementById('bug-desc');
+    var selectedFile = null;
+
+    if (triggerUploadBtn && fileInput) {
+      triggerUploadBtn.addEventListener('click', function() { fileInput.click(); });
+      fileInput.addEventListener('change', function() {
+        if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
+      });
+    }
+
+    // ⭐ SÜPER SAAS DENEYİMİ: Cmd+V / Ctrl+V ile doğrudan görsel yapıştırma
+    if (descTextarea) {
+      descTextarea.addEventListener('paste', function(e) {
+        if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+          var item = e.clipboardData.files[0];
+          if (item.type.indexOf('image/') === 0) {
+            e.preventDefault();
+            handleFile(item);
+            if (typeof showToast === 'function') {
+              showToast('Ekran görüntüsü eklendi!', 'info');
+            }
+          }
+        }
+      });
+    }
+
+    var currentScreenshotDataUrl = null;
+
+    // Base64 -> Blob Dönüştürücü (Supabase Storage'a 5-10MB yerine 60-80KB yüklemek için)
+    function dataUrlToBlob(dataUrl) {
+      try {
+        var parts = dataUrl.split(',');
+        var mime = parts[0].match(/:(.*?);/)[1] || 'image/jpeg';
+        var bstr = atob(parts[1]);
+        var n = bstr.length;
+        var u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Görsel Sıkıştırma / Optimize Etme (Supabase kotasını korumak için max 1280px & %76 kalite)
+    async function compressImageFile(file, maxWidth, quality) {
+      maxWidth = maxWidth || 1280;
+      quality = quality || 0.76;
+      return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var img = new Image();
+          img.onload = function() {
+            var w = img.width;
+            var h = img.height;
+            if (w > maxWidth) {
+              h = Math.round((h * maxWidth) / w);
+              w = maxWidth;
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrl);
+          };
+          img.onerror = function() {
+            resolve(e.target.result);
+          };
+          img.src = e.target.result;
+        };
+        reader.onerror = function() {
+          resolve(null);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        var msg = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.err_filesize') : 'Dosya boyutu maksimum 10MB olabilir.';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        else alert(msg);
+        return;
+      }
+      selectedFile = file;
+      if (fileNameSpan) fileNameSpan.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        currentScreenshotDataUrl = ev.target.result;
+        var thumb = document.getElementById('selected-file-thumb');
+        var icon = document.getElementById('selected-file-icon');
+        if (thumb) {
+          thumb.src = ev.target.result;
+          thumb.style.display = 'inline-block';
+        }
+        if (icon) icon.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+
+      if (previewWrap) previewWrap.style.display = 'inline-flex';
+      if (triggerUploadBtn) triggerUploadBtn.style.display = 'none';
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    if (removeFileBtn) {
+      removeFileBtn.addEventListener('click', function () {
+        selectedFile = null;
+        currentScreenshotDataUrl = null;
+        var thumb = document.getElementById('selected-file-thumb');
+        var icon = document.getElementById('selected-file-icon');
+        if (thumb) {
+          thumb.src = '';
+          thumb.style.display = 'none';
+        }
+        if (icon) icon.style.display = 'inline-block';
+        if (fileInput) fileInput.value = '';
+        if (previewWrap) previewWrap.style.display = 'none';
+        if (triggerUploadBtn) triggerUploadBtn.style.display = 'inline-flex';
+      });
+    }
+
+    var isUserBanned = false;
+    var currentUser = null;
+
+    function getSb() {
+      return (typeof window !== 'undefined' && window.sb) ? window.sb : null;
+    }
+
+    // 6. Destek Canlı Durumu
+    async function loadLiveSupportStatus() {
+      var sb = getSb();
+      var chip = document.getElementById('support-status-chip');
+      var text = document.getElementById('support-status-text');
+      if (!chip || !text || !sb) return;
+
+      try {
+        var { data } = await sb
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'support_status')
+          .maybeSingle();
+
+        if (data && data.value) {
+          var val = data.value;
+          var status = val.status || 'online';
+          var label = val.label || 'Teknik Destek: Aktif & Çevrim İçi';
+
+          chip.className = 'support-status-chip ' + status;
+          text.textContent = label;
+        }
+      } catch (e) {
+        console.warn('loadLiveSupportStatus hatası:', e);
+      }
+    }
+
+    // 7. Kullanıcı Engeli Kontrolü & Biletleri Yükleme
+    async function checkBanAndLoadTickets() {
+      var sb = getSb();
+      var userId = null;
+      var userEmail = null;
+
+      if (sb) {
+        try {
+          var { data: authData } = await sb.auth.getUser();
+          currentUser = (authData && authData.user) ? authData.user : null;
+          userId = currentUser ? currentUser.id : null;
+          userEmail = currentUser ? currentUser.email : null;
+        } catch (e) {}
+      }
+
+      // Engel kontrolü
+      var banFound = null;
+      if (sb && (userId || userEmail)) {
+        try {
+          var query = sb.from('support_bans').select('*');
+          if (userId && userEmail) {
+            query = query.or(`user_id.eq.${userId},user_email.eq.${userEmail}`);
+          } else if (userId) {
+            query = query.eq('user_id', userId);
+          } else {
+            query = query.eq('user_email', userEmail);
+          }
+
+          var { data: banData, error: banErr } = await query.maybeSingle();
+          if (!banErr && banData) {
+            banFound = banData;
+          }
+        } catch (e) {}
+
+        if (!banFound) {
+          try {
+            var { data: fbData } = await sb.from('system_settings').select('value').eq('key', 'support_bans').maybeSingle();
+            if (fbData && fbData.value && Array.isArray(fbData.value)) {
+              banFound = fbData.value.find(function(b) {
+                return (userId && b.user_id === userId) || (userEmail && b.user_email === userEmail);
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (banFound) {
+        isUserBanned = true;
+        var alertBox = document.getElementById('banned-alert-box');
+        var formEl = document.getElementById('bug-report-form');
+        var reasonSpan = document.getElementById('banned-reason-display');
+        
+        if (reasonSpan) reasonSpan.textContent = banFound.reason || 'Sistem kurallarına aykırı bildirim gönderimi.';
+        if (alertBox) alertBox.style.display = 'flex';
+        if (formEl) {
+          formEl.style.display = 'none';
+          var inputs = formEl.querySelectorAll('input, textarea, button');
+          inputs.forEach(function(el) { el.disabled = true; });
+        }
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+      }
+
+      await loadUserTickets(userId, userEmail);
+    }
+
+    async function loadUserTickets(userId, userEmail) {
+      var sb = getSb();
+      var stream = document.getElementById('tickets-stream');
+      var tabCountBadge = document.getElementById('tab-count-badge');
+      var countAllEl = document.getElementById('count-all');
+      var countAnsweredEl = document.getElementById('count-answered');
+      var countPendingEl = document.getElementById('count-pending');
+      var countRejectedEl = document.getElementById('count-rejected');
+      if (!stream) return;
+
+      var userTickets = [];
+
+      // 1. Supabase'den çek
+      if (sb && (userId || userEmail)) {
+        try {
+          var query = sb.from('bug_reports').select('*').order('created_at', { ascending: false }).limit(40);
+          if (userId && userEmail) {
+            query = query.or(`user_id.eq.${userId},user_email.eq.${userEmail}`);
+          } else if (userId) {
+            query = query.eq('user_id', userId);
+          } else {
+            query = query.eq('user_email', userEmail);
+          }
+
+          var { data, error } = await query;
+          if (!error && data && data.length > 0) {
+            userTickets = data;
+          }
+        } catch (e) {}
+
+        if (userTickets.length === 0) {
+          try {
+            var { data: fbData } = await sb.from('system_settings').select('value').eq('key', 'bug_reports_stream').maybeSingle();
+            if (fbData && fbData.value && Array.isArray(fbData.value)) {
+              userTickets = fbData.value.filter(function(r) {
+                return (userId && r.user_id === userId) || (userEmail && r.user_email === userEmail);
+              });
+            }
+          } catch(e) {}
+        }
+      }
+
+      // 2. Lokal tarayıcı kayıtlarıyla birleştir
+      try {
+        var localList = JSON.parse(localStorage.getItem('my_bug_reports') || '[]');
+        if (Array.isArray(localList) && localList.length > 0) {
+          localList.forEach(function(localItem) {
+            var exists = userTickets.some(function(t) {
+              return (localItem.id && t.id === localItem.id) ||
+                     (localItem.subject === t.subject && localItem.description === t.description);
+            });
+            if (!exists) {
+              userTickets.push(localItem);
+            }
+          });
+        }
+      } catch (e) {}
+
+      // Tarihe göre sırala
+      userTickets.sort(function(a, b) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+
+      // Sayaçları güncelle
+      var answeredCount = userTickets.filter(function(t) { return t.status === 'answered' || t.status === 'closed'; }).length;
+      var rejectedCount = userTickets.filter(function(t) { return t.status === 'rejected'; }).length;
+      var pendingCount = userTickets.filter(function(t) { return t.status !== 'answered' && t.status !== 'closed' && t.status !== 'rejected'; }).length;
+
+      if (countAllEl) countAllEl.textContent = userTickets.length;
+      if (countAnsweredEl) countAnsweredEl.textContent = answeredCount;
+      if (countPendingEl) countPendingEl.textContent = pendingCount;
+      if (countRejectedEl) countRejectedEl.textContent = rejectedCount;
+      if (tabCountBadge) tabCountBadge.textContent = userTickets.length;
+
+      stream.innerHTML = '';
+
+      // Sıfır bildirim varsa temiz Empty State
+      if (userTickets.length === 0) {
+        stream.innerHTML = `
+          <div class="tickets-empty">
+            <div class="empty-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+            </div>
+            <p class="empty-title">Henüz Bir Bildiriminiz Bulunmuyor</p>
+            <p class="empty-desc">
+              Karşılaştığınız bir hata veya iletmek istediğiniz öneri olduğunda dilediğiniz zaman bildirim oluşturabilirsiniz. Ekibimizin yanıtları buraya anında yansır.
+            </p>
+            <button type="button" class="btn-empty-compose" id="btn-empty-create">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Yeni Bildirim Oluştur</span>
+            </button>
+          </div>
+        `;
+
+        var btnEmptyCreate = document.getElementById('btn-empty-create');
+        if (btnEmptyCreate) {
+          btnEmptyCreate.addEventListener('click', function() { switchBugTab('compose'); });
+        }
+        return;
+      }
+
+      var typeMap = {
+        ui: 'Arayüz',
+        chart: 'Grafik & Hesap',
+        trade: 'İşlem & Veri',
+        perf: 'Performans',
+        feature: 'Öneri'
+      };
+
+      userTickets.forEach(function(t) {
+        var isRejected = (t.status === 'rejected');
+        var isAnswered = (t.status === 'answered' || t.status === 'closed');
+        var dateStr = t.created_at ? new Date(t.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+        var card = document.createElement('div');
+        card.className = 'ticket-card';
+        card.setAttribute('data-status', isRejected ? 'rejected' : (isAnswered ? 'answered' : 'pending'));
+
+        var statusBadgeHtml = '';
+        if (isRejected) {
+          statusBadgeHtml = `<span class="tag-status rejected"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>Reddedildi</span></span>`;
+        } else if (isAnswered) {
+          statusBadgeHtml = `<span class="tag-status answered"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>Yanıtlandı</span></span>`;
+        } else {
+          statusBadgeHtml = `<span class="tag-status in_progress"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>İnceleniyor</span></span>`;
+        }
+
+        var screenshotHtml = '';
+        var rawUrl = (t.screenshot_url || '').trim();
+        var isValidImgUrl = /^(https?:\/\/|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(rawUrl);
+        if (isValidImgUrl) {
+          var safeImgUrl = escapeHtml(rawUrl);
+          screenshotHtml = `
+            <div class="ticket-screenshot-wrap">
+              <a href="${safeImgUrl}" target="_blank" rel="noopener noreferrer" class="ticket-screenshot-thumb" title="Tam boyutta görüntülemek için tıklayın">
+                <img src="${safeImgUrl}" alt="Ekran Görüntüsü" style="width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#000;" />
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span style="font-size:11.5px; font-weight:700; color:var(--accent2, #c084fc); display:inline-flex; align-items:center; gap:4px;">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Ekran Görüntüsü
+                  </span>
+                  <span style="font-size:10.5px; color:var(--muted, #a0a0b8);">Tam boyutta incele ↗</span>
+                </div>
+              </a>
+            </div>
+          `;
+        }
+
+        var cardHtml = `
+          <div class="ticket-header">
+            <div class="ticket-tags">
+              <span class="tag-category">${typeMap[t.category] || 'Bildirim'}</span>
+              ${statusBadgeHtml}
+            </div>
+            <span class="ticket-date">${dateStr}</span>
+          </div>
+          <h3 class="ticket-title">${escapeHtml(t.subject || '')}</h3>
+          <p class="ticket-body">${escapeHtml(t.description || '')}</p>
+          ${screenshotHtml}
+        `;
+
+        if (t.admin_reply) {
+          var replyDate = t.replied_at ? new Date(t.replied_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+          var adminLabel = isRejected ? 'Reddetme Gerekçesi (Admin)' : (t.replied_by || 'Wawe Journal Ekibi (Admin)');
+          cardHtml += `
+            <div class="admin-response-box ${isRejected ? 'rejected' : ''}">
+              <div class="admin-response-top">
+                <span class="admin-name-badge">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                  <span>${escapeHtml(adminLabel)}</span>
+                </span>
+                <span class="admin-response-time">${replyDate}</span>
+              </div>
+              <p class="admin-response-text">${escapeHtml(t.admin_reply)}</p>
+            </div>
+          `;
+        }
+
+        card.innerHTML = cardHtml;
+        stream.appendChild(card);
+      });
+
+      // Aktif filtre kontrolü
+      var activeFilterBtn = document.querySelector('.filter-pill-btn.active');
+      if (activeFilterBtn) {
+        var currentFilter = activeFilterBtn.getAttribute('data-filter');
+        if (currentFilter && currentFilter !== 'all') {
+          var currentCards = stream.querySelectorAll('.ticket-card');
+          currentCards.forEach(function(c) {
+            if (c.getAttribute('data-status') === currentFilter) c.style.display = 'flex';
+            else c.style.display = 'none';
+          });
+        }
+      }
+    }
+
+    // 8. Filtre Butonları
+    var filterBtns = document.querySelectorAll('.filter-pill-btn');
+    filterBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        filterBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.getAttribute('data-filter');
+        var currentCards = document.querySelectorAll('.ticket-card');
+        currentCards.forEach(function(card) {
+          if (filter === 'all' || card.getAttribute('data-status') === filter) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // 9. Form Gönderimi
+    var form = document.getElementById('bug-report-form');
+    var submitBtn = document.getElementById('submit-bug-btn');
+    var btnText = document.getElementById('btn-text');
+
+    if (form) {
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        if (isUserBanned) {
+          var banMsg = 'Hata bildirme yetkiniz askıya alınmıştır. Yeni bildirim gönderemezsiniz.';
+          if (typeof showToast === 'function') showToast(banMsg, 'error');
+          else alert(banMsg);
+          return;
+        }
+
+        var subject = (document.getElementById('bug-subject')?.value || '').trim();
+        var desc = (document.getElementById('bug-desc')?.value || '').trim();
+        var type = typeInput ? typeInput.value : 'ui';
+        var priority = priorityInput ? priorityInput.value : 'medium';
+        var includeSys = document.getElementById('include-system-info')?.checked;
+
+        if (!subject || !desc) {
+          var reqMsg = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.err_required') : 'Lütfen konu başlığı ve açıklama alanlarını doldurunuz.';
+          if (typeof showToast === 'function') showToast(reqMsg, 'error');
+          else alert(reqMsg);
+          return;
+        }
+
+        if (submitBtn) {
+          submitBtn.classList.add('loading');
+          if (btnText) {
+            btnText.textContent = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.btn_submitting') : 'Gönderiliyor...';
+          }
+        }
+
+        var sb = getSb();
+        var userId = currentUser ? currentUser.id : null;
+        var userEmail = currentUser ? currentUser.email : '';
+        var userName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.username) ? currentUser.user_metadata.username : (userEmail ? userEmail.split('@')[0] : 'Trader');
+
+        // Görsel Yükleme / Sıkıştırma İşlemi
+        var screenshotUrl = null;
+        if (selectedFile) {
+          if (btnText) btnText.textContent = 'Görsel Yükleniyor...';
+          try {
+            var compressedDataUrl = await compressImageFile(selectedFile, 1280, 0.76);
+            var blobToUpload = (compressedDataUrl && dataUrlToBlob(compressedDataUrl)) || selectedFile;
+
+            // 1. Supabase Storage yüklemeyi dene (Sadece 50-80 KB ultra hafif dosya yüklenir)
+            if (sb && sb.storage) {
+              var fileName = 'bug_' + Date.now() + '_' + Math.random().toString(36).substring(7) + '.jpg';
+              var storagePath = 'screenshots/' + fileName;
+
+              var buckets = ['bug-reports', 'references-images', 'avatars'];
+              for (var b = 0; b < buckets.length; b++) {
+                try {
+                  var bucket = buckets[b];
+                  var { error: upErr } = await sb.storage.from(bucket).upload(storagePath, blobToUpload, {
+                    contentType: 'image/jpeg',
+                    cacheControl: '3600',
+                    upsert: true
+                  });
+                  if (!upErr) {
+                    var { data: pubData } = sb.storage.from(bucket).getPublicUrl(storagePath);
+                    if (pubData && pubData.publicUrl) {
+                      screenshotUrl = pubData.publicUrl;
+                      break;
+                    }
+                  }
+                } catch(e) {}
+              }
+            }
+
+            // 2. Storage bucket yoksa veya izin verilmediyse Base64 Data URL kullan (100% garantili)
+            if (!screenshotUrl && compressedDataUrl) {
+              screenshotUrl = compressedDataUrl;
+            } else if (!screenshotUrl && currentScreenshotDataUrl) {
+              screenshotUrl = currentScreenshotDataUrl;
+            }
+          } catch(err) {
+            console.warn('Screenshot upload exception:', err);
+            if (currentScreenshotDataUrl) screenshotUrl = currentScreenshotDataUrl;
+          }
+        }
+
+        var payload = {
+          user_id: userId,
+          user_email: userEmail,
+          user_name: userName,
+          category: type,
+          priority: priority,
+          subject: subject,
+          description: desc,
+          system_info: includeSys ? sysInfo : {},
+          screenshot_url: screenshotUrl,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        };
+
+        var savedReport = null;
+
+        if (sb) {
+          try {
+            var { data, error } = await sb.from('bug_reports').insert([payload]).select();
+            if (!error && data && data[0]) {
+              savedReport = data[0];
+            } else {
+              var { data: fbData } = await sb.from('system_settings').select('value').eq('key', 'bug_reports_stream').maybeSingle();
+              var streamArr = (fbData && fbData.value && Array.isArray(fbData.value)) ? fbData.value : [];
+              payload.id = 'report-' + Date.now();
+              streamArr.unshift(payload);
+              if (streamArr.length > 50) streamArr = streamArr.slice(0, 50);
+              await sb.from('system_settings').upsert({
+                key: 'bug_reports_stream',
+                value: streamArr,
+                updated_at: new Date().toISOString()
+              });
+              savedReport = payload;
+            }
+          } catch(err) {
+            console.warn('bug report submission exception:', err);
+            payload.id = 'report-' + Date.now();
+            savedReport = payload;
+          }
+        } else {
+          payload.id = 'report-' + Date.now();
+          savedReport = payload;
+        }
+
+        if (savedReport) {
+          try {
+            var localList = JSON.parse(localStorage.getItem('my_bug_reports') || '[]');
+            localList.unshift(savedReport);
+            localStorage.setItem('my_bug_reports', JSON.stringify(localList));
+          } catch (e) {}
+        }
+
+        if (submitBtn) submitBtn.classList.remove('loading');
+        if (btnText) {
+          btnText.textContent = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.btn_submit') : 'Hata Raporunu Gönder';
+        }
+
+        // Formu temizle
+        form.reset();
+        if (removeFileBtn) removeFileBtn.click();
+
+        // Biletleri yeniden yükle
+        await loadUserTickets(userId, userEmail);
+
+        // Kullanıcıyı otomatik olarak "Bildirimlerim & Cevaplar" sekmesine geçir
+        switchBugTab('history');
+
+        if (typeof showToast === 'function') {
+          showToast((window.i18n && window.i18n.t) ? window.i18n.t('bug_report.success_title') : 'Hata raporunuz iletildi!', 'success');
+        }
+      });
+    }
+
+    // Canlı durum ve kullanıcı biletlerini başlat
+    loadLiveSupportStatus();
+    checkBanAndLoadTickets();
+
+    if (typeof loadNavbar === 'function') {
+      try { loadNavbar('navbar-container'); } catch (e) {}
+    }
+
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    }
+  });
+</script>
+</Layout>

@@ -148,6 +148,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       return 0;
     }
   }
+  window.calcTradePnL = calcTradePnL;
 
   // ⭐ FIX (LOCALE): tr-TR yapıldı → premium-dashboard/helpers.js ile tutarlı
   function formatCurrency(value) {
@@ -3062,6 +3063,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var filtered = filterByDate(allTrades, currentRange);
       var previous = getPreviousPeriodTrades(allTradesFullStats, currentRange);
 
+      window._currentDashboardTrades = filtered;
+      window._allDashboardTrades = allTrades;
+
       if (myToken !== refreshToken) return;
 
       renderStats(filtered, previous, true);
@@ -3099,7 +3103,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             renderAttempts = 0;
             renderCharts(filtered);
             setupChartExpansion();
-            try { window.dispatchEvent(new CustomEvent('dashboard-refreshed')); } catch (e) {}
+            try { window.dispatchEvent(new CustomEvent('dashboard-refreshed', { detail: { trades: filtered, allTrades: allTrades } })); } catch (e) {}
           });
         }, 100);
 
@@ -3112,6 +3116,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
             el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
           }
         });
+        try { window.dispatchEvent(new CustomEvent('dashboard-refreshed', { detail: { trades: [], allTrades: allTrades } })); } catch (e) {}
       }
 
     } catch (e) {
@@ -3337,6 +3342,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       allTrades = tradesData;
       allTradesFullStats = allTrades.filter(function (t) { return t.exit_price; });
+      window._allDashboardTrades = allTrades;
+      window._currentDashboardTrades = allTrades;
 
       // Setup date filter & options
       setupDateFilterAndOptions();

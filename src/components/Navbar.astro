@@ -1,0 +1,296 @@
+---
+// Server-rendered static Navbar for instant 0ms load without client-side layout shift
+const pathname = Astro.url.pathname || '';
+const isActive = (page: string) => {
+  if (page === 'dashboard' && (pathname === '/dashboard.html' || pathname === '/dashboard' || pathname === '/' || pathname === '')) return true;
+  if (page === 'trades' && (pathname.includes('/trades') || pathname.includes('/add-trade'))) return true;
+  if (page === 'strategies' && pathname.includes('/strategies')) return true;
+  if (page === 'calendar' && pathname.includes('/calendar')) return true;
+  if (page === 'journals' && pathname.includes('/journals')) return true;
+  if (page === 'settings' && pathname.includes('/settings')) return true;
+  if (page === 'report-bug' && pathname.includes('/report-bug')) return true;
+  if (page === 'premium-dashboard' && pathname.includes('/premium-dashboard')) return true;
+  if (page === 'my-earnings' && pathname.includes('/my-earnings')) return true;
+  if (page === 'admin' && pathname.includes('/admin')) return true;
+  return false;
+};
+---
+<nav class="nav">
+  <a href="/index.html" class="nav-logo" title="Wawe Journal - Ana Sayfa">
+    <div class="logo-icon">
+      <svg class="logo-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+        <polyline points="17 6 23 6 23 12"></polyline>
+      </svg>
+    </div>
+  </a>
+  
+  <div class="nav-links">
+    <a href="/dashboard.html" data-page="dashboard" class={`loaded ${isActive('dashboard') ? 'active' : ''}`}><span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="/trades.html" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`}><span data-i18n="nav.trades">İşlemler</span></a>
+    <a href="/strategies.html" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
+    <a href="/calendar.html" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
+  </div>
+  
+  <div class="nav-right">
+    <div class="nav-dropdown">
+      <button class="nav-dropdown-btn" id="premium-dropdown-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwTogglePremium && window.wwTogglePremium(event, this)">
+        <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.premium">Premium</span>
+        <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
+      </button>
+      <div class="nav-dropdown-menu premium-menu-glass" id="premium-dropdown-menu" role="menu">
+        <div class="premium-menu-header">
+          <span class="premium-menu-title" data-i18n="nav.premium_features">Premium Özellikler</span>
+          <span class="premium-menu-tag">PRO</span>
+        </div>
+        <div class="premium-menu-items">
+          <a href="/premium-dashboard.html" class="premium-menu-item" role="menuitem">
+            <div class="p-item-icon">
+              <i data-lucide="layout-dashboard"></i>
+            </div>
+            <div class="p-item-content">
+              <span class="p-item-title" data-i18n="nav.premium_dashboard">Premium Dashboard</span>
+            </div>
+          </a>
+          <a href="/settings.html#panel-appearance" class="premium-menu-item" role="menuitem">
+            <div class="p-item-icon">
+              <i data-lucide="palette"></i>
+            </div>
+            <div class="p-item-content">
+              <span class="p-item-title" data-i18n="nav.theme_customization">Tema Özelleştirme</span>
+            </div>
+          </a>
+          <a href="/settings.html#panel-overtrade" class="premium-menu-item" role="menuitem">
+            <div class="p-item-icon">
+              <i data-lucide="shield-alert"></i>
+            </div>
+            <div class="p-item-content">
+              <span class="p-item-title" data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
+            </div>
+          </a>
+        </div>
+        <div class="premium-menu-footer">
+          <a href="/settings.html#panel-plan" class="premium-upgrade-cta" role="menuitem">
+            <i data-lucide="sparkles" class="cta-sparkle"></i>
+            <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-journal-switcher" id="nav-journal-switcher">
+      <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleJournal && window.wwToggleJournal(event, this)">
+        <i data-lucide="folder" class="journal-icon"></i>
+        <span class="journal-name">Ana Hesap</span>
+        <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="journal-dropdown" id="journal-dropdown"></div>
+    </div>
+
+    <div class="nav-bell-wrapper" id="nav-bell-wrapper">
+      <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="window.wwToggleBell && window.wwToggleBell(event, this)">
+        <i data-lucide="bell" class="nav-bell-icon"></i>
+        <span class="bell-badge" id="bell-badge" style="display:none;">0</span>
+      </button>
+      <div class="bell-panel" id="bell-panel" role="dialog" aria-label="Bildirim Paneli">
+        <div class="bell-panel-header">
+          <div class="bell-panel-title-wrap">
+            <div class="bell-panel-title-text">
+              <h3 data-i18n="nav.notifications">Bildirimler</h3>
+              <span class="bell-unread-pill" id="bell-unread-pill" style="display:none;">0 yeni</span>
+            </div>
+          </div>
+          <div class="bell-panel-header-actions">
+            <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" onclick="window.wwMarkAllAsRead && window.wwMarkAllAsRead()" title="Tümünü Okundu İşaretle">
+              <i data-lucide="check-check"></i>
+              <span data-i18n="nav.mark_read">Tümünü Oku</span>
+            </button>
+            <button class="bell-panel-close" id="bell-panel-close" title="Kapat" aria-label="Kapat">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        </div>
+        <div class="bell-filter-tabs" id="bell-filter-tabs">
+          <button type="button" class="bell-tab-btn active" data-tab="all" onclick="window.wwSwitchNotifTab && window.wwSwitchNotifTab('all')">
+            <span data-i18n="noti.tab_all">Tümü</span>
+            <span class="tab-count" id="bell-tab-all-count">0</span>
+          </button>
+          <button type="button" class="bell-tab-btn" data-tab="unread" onclick="window.wwSwitchNotifTab && window.wwSwitchNotifTab('unread')">
+            <span data-i18n="noti.tab_unread">Okunmamış</span>
+            <span class="tab-count" id="bell-tab-unread-count">0</span>
+          </button>
+          <button type="button" class="bell-tab-btn" data-tab="risk" onclick="window.wwSwitchNotifTab && window.wwSwitchNotifTab('risk')">
+            <span data-i18n="noti.tab_risk">Risk & Limit</span>
+            <span class="tab-count" id="bell-tab-risk-count">0</span>
+          </button>
+          <button type="button" class="bell-tab-btn" data-tab="system" onclick="window.wwSwitchNotifTab && window.wwSwitchNotifTab('system')">
+            <span data-i18n="noti.tab_system">Sistem</span>
+            <span class="tab-count" id="bell-tab-system-count">0</span>
+          </button>
+        </div>
+        <div class="bell-panel-body" id="bell-panel-body">
+          <div class="bell-panel-empty">
+            <div class="bell-empty-icon-wrap">
+              <i data-lucide="bell-off"></i>
+            </div>
+            <div class="bell-empty-title" data-i18n="noti.empty_title">Yeni Bildirim Yok</div>
+            <div class="bell-empty-desc" data-i18n="noti.empty_desc">Şu an için her şey yolunda görünüyor.</div>
+          </div>
+        </div>
+        <div class="bell-panel-footer">
+          <a href="/settings.html#panel-overtrade" class="bell-footer-link" onclick="window.wwGoToOvertradeSettings && window.wwGoToOvertradeSettings(event)">
+            <i data-lucide="sliders-horizontal"></i>
+            <span data-i18n="noti.overtrade_settings">Overtrade ve Risk Ayarları</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="nav-bug-wrapper" id="nav-bug-wrapper">
+      <a href="/report-bug.html" class={`nav-bug-btn ${isActive('report-bug') ? 'active' : ''}`} id="nav-bug-btn" aria-label="Hata Bildir" title="Hata Bildir">
+        <i data-lucide="bug" class="nav-bug-icon"></i>
+      </a>
+    </div>
+    
+    <div class="plan-badge" id="plan-badge" role="button" tabindex="0" aria-label="Abonelik Planı">
+      <span class="plan-dot"></span>
+      <span class="plan-text" id="plan-text">Ücretsiz</span>
+      <div class="plan-badge-tooltip" id="plan-badge-tooltip" role="tooltip">
+        <div class="plan-tooltip-title" id="plan-tooltip-title">Ücretsiz Plan</div>
+        <div class="plan-tooltip-sub" id="plan-tooltip-sub">Sınırsız Süre</div>
+      </div>
+    </div>
+    
+    <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleAvatar && window.wwToggleAvatar(event, this)">
+      <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
+    </div>
+    
+    <div class="dropdown-menu" id="dropdown-menu">
+      <a href="/settings.html#panel-profile" class="dropdown-item">
+        <i data-lucide="user" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.profile">Profil</span>
+      </a>
+      <a href="/settings.html" class="dropdown-item">
+        <i data-lucide="settings" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.settings">Ayarlar</span>
+      </a>
+      <a href="/my-earnings.html" class="dropdown-item">
+        <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.earnings">Kazançlarım</span>
+      </a>
+      <a href="/report-bug.html" class="dropdown-item">
+        <i data-lucide="bug" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.report_bug">Hata Bildir</span>
+      </a>
+      <span id="admin-link" style="display:none;">
+        <a href="/admin.html" class="dropdown-item">
+          <i data-lucide="shield" style="width:16px;height:16px;"></i>
+          <span data-i18n="nav.admin">Admin</span>
+        </a>
+      </span>
+      <div class="dropdown-divider"></div>
+      <a href="/settings.html#panel-plan" class="dropdown-item" style="color:var(--accent2);">
+        <i data-lucide="crown" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
+      </a>
+      <div class="dropdown-divider"></div>
+      <button class="dropdown-item" id="logout-dropdown-btn">
+        <i data-lucide="log-out" style="width:16px;height:16px;"></i>
+        <span data-i18n="nav.logout">Çıkış Yap</span>
+      </button>
+    </div>
+    
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
+  </div>
+</nav>
+
+<div class="nav-backdrop" id="nav-backdrop"></div>
+<div class="nav-menu" id="nav-menu">
+  <div class="nav-menu-inner">
+    
+    <div class="user-card" id="menu-user-card">
+      <div class="user-card-avatar" id="menu-user-avatar">
+        <span id="menu-avatar-text">?</span>
+      </div>
+      <div class="user-card-info">
+        <div class="user-card-name" id="menu-user-name">Kullanıcı</div>
+        <div class="user-card-plan" id="menu-user-plan">
+          <span class="plan-dot"></span>
+          <span class="plan-text">Ücretsiz</span>
+        </div>
+      </div>
+    </div>
+
+    <a href="/journals.html" class="menu-journal-link" id="menu-journal-link">
+      <i data-lucide="folder" class="menu-journal-icon"></i>
+      <span class="menu-journal-info">
+        <span class="menu-journal-label" data-i18n="nav.current_account">Aktif Hesap</span>
+        <span class="menu-journal-name" id="menu-journal-name">Ana Hesap</span>
+      </span>
+      <i data-lucide="chevron-right" class="menu-journal-arrow"></i>
+    </a>
+
+    <div class="menu-section">
+      <div class="menu-section-title" data-i18n="nav.menu_general">GENEL</div>
+      <a href="/index.html">
+        <i data-lucide="home" style="width:16px;height:16px;"></i> <span data-i18n="nav.home">Ana Sayfa</span>
+      </a>
+      <a href="/dashboard.html" class={isActive('dashboard') ? 'active' : ''}>
+        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.dashboard">Dashboard</span>
+      </a>
+      <a href="/trades.html" class={isActive('trades') ? 'active' : ''}>
+        <i data-lucide="list" style="width:16px;height:16px;"></i> <span data-i18n="nav.trades">İşlemler</span>
+      </a>
+      <a href="/strategies.html" class={isActive('strategies') ? 'active' : ''}>
+        <i data-lucide="target" style="width:16px;height:16px;"></i> <span data-i18n="nav.strategies">Stratejiler</span>
+      </a>
+      <a href="/calendar.html" class={isActive('calendar') ? 'active' : ''}>
+        <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">Takvim</span>
+      </a>
+    </div>
+
+    <div class="menu-section">
+      <div class="menu-section-title" data-i18n="nav.menu_premium">PREMIUM</div>
+      <a href="/premium-dashboard.html" class={isActive('premium-dashboard') ? 'active' : ''}>
+        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.premium_dashboard">Premium Dashboard</span>
+      </a>
+      <a href="/settings.html#panel-appearance">
+        <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
+      </a>
+      <a href="/settings.html#panel-overtrade">
+        <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
+      </a>
+      <a href="/settings.html#panel-plan" class="go-premium">
+        <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
+      </a>
+    </div>
+
+    <div class="menu-section">
+      <div class="menu-section-title" data-i18n="nav.menu_account">HESAP</div>
+      <a href="/settings.html#panel-profile">
+        <i data-lucide="user" style="width:16px;height:16px;"></i> <span data-i18n="nav.profile">Profil</span>
+      </a>
+      <a href="/settings.html" class={isActive('settings') ? 'active' : ''}>
+        <i data-lucide="settings" style="width:16px;height:16px;"></i> <span data-i18n="nav.settings">Ayarlar</span>
+      </a>
+      <a href="/my-earnings.html" class={isActive('my-earnings') ? 'active' : ''}>
+        <i data-lucide="dollar-sign" style="width:16px;height:16px;"></i> <span data-i18n="nav.earnings">Kazançlarım</span>
+      </a>
+      <a href="/report-bug.html" class={isActive('report-bug') ? 'active' : ''}>
+        <i data-lucide="bug" style="width:16px;height:16px;"></i> <span data-i18n="nav.report_bug">Hata Bildir</span>
+      </a>
+      <span id="admin-link-mobile" style="display:none;">
+        <a href="/admin.html">
+          <i data-lucide="shield" style="width:16px;height:16px;"></i> <span data-i18n="nav.admin">Admin</span>
+        </a>
+      </span>
+      <button id="logout-btn-mobile">
+        <i data-lucide="log-out" style="width:16px;height:16px;"></i> <span data-i18n="nav.logout">Çıkış Yap</span>
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -2551,9 +2551,12 @@ body {
 }
 
 .modal-overlay.active,
+.modal-overlay.open,
 .modal-overlay[style*="display: flex"],
 .modal-overlay[style*="display:flex"] {
   display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .modal-box {

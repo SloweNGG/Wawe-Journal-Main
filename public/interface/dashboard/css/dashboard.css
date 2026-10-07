@@ -2336,7 +2336,34 @@ body.light-theme .expand-summary-empty {
   margin-top: 1px;
 }
 
-/* Skeleton for Prop Card */
+.prop-card-box-label svg.lucide,
+.prop-card-box-label i[data-lucide] {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+.prop-card-phase-desc svg.lucide,
+.prop-card-phase-desc i[data-lucide] {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+.prop-card-phase-tag svg.lucide,
+.prop-card-phase-tag i[data-lucide],
+.prop-card-btn-notices svg.lucide,
+.prop-card-btn-notices i[data-lucide] {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+/* Skeleton for Performance / Overview Card */
+.performance-card-skeleton,
 .prop-dashboard-card-skeleton {
   min-height: 250px;
   display: flex;
@@ -2346,6 +2373,7 @@ body.light-theme .expand-summary-empty {
   padding: 0.85rem 1rem;
 }
 
+.skeleton-perf-header,
 .skeleton-prop-header {
   display: flex;
   justify-content: space-between;
@@ -2353,13 +2381,15 @@ body.light-theme .expand-summary-empty {
   width: 100%;
 }
 
+.skeleton-perf-banner,
 .skeleton-prop-target {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0.3rem 0;
+  padding: 0.35rem 0;
 }
 
+.skeleton-perf-grid,
 .skeleton-prop-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2367,12 +2397,15 @@ body.light-theme .expand-summary-empty {
   flex: 1;
 }
 
+.skeleton-perf-box,
 .skeleton-prop-box {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 8px;
-  padding: 0.55rem;
+  padding: 0.55rem 0.65rem;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 6px;
 }
 

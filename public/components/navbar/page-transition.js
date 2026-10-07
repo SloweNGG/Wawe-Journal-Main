@@ -1,268 +1,191 @@
-﻿// ============================================================
+// ============================================================
 // PAGE-TRANSITION.JS - components/navbar/page-transition.js
-// Sayfa Geçiş Animasyonu + DİL KORUMA
+// Ultra-Hızlı ve Pürüzsüz Sayfa Geçişi + Akıllı Link Prefetching + Dil Koruma
 // ============================================================
 
-wwLog.log('🔄 Sayfa geçiş animasyonu yükleniyor...');
+(function() {
+  var prefetchedUrls = new Set();
 
-var PageTransition = {
-  isTransitioning: false,
-  timeoutId: null,
-  currentLang: null,
+  function prefetchUrl(url) {
+    if (!url || typeof url !== 'string') return;
+    if (prefetchedUrls.has(url)) return;
 
-  getMainElement: function() {
-    return document.querySelector('.main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap, .trades-main');
-  },
-
-  enter: function() {
-    var main = this.getMainElement();
-    if (!main) return;
-    
-    if (main.classList.contains('page-visible')) return;
-    
-    main.classList.remove('page-exit');
-    main.classList.add('page-enter');
-    
-    main.style.opacity = '0';
-    main.style.transform = 'translateY(16px)';
-    main.style.transition = 'none';
-    
-    requestAnimationFrame(function() {
-      main.style.transition = 'opacity 0.4s cubic-bezier(0.4,0,0.2,1), transform 0.4s cubic-bezier(0.4,0,0.2,1)';
-      main.style.opacity = '1';
-      main.style.transform = 'translateY(0)';
-      main.classList.add('page-visible');
-    });
-    
-    clearTimeout(this.timeoutId);
-    this.timeoutId = setTimeout(function() {
-      main.style.transition = '';
-      main.classList.remove('page-enter');
-    }, 500);
-    
-    this.restoreLanguage();
-  },
-
-  exit: function(callback) {
-    var main = this.getMainElement();
-    if (!main) {
-      if (typeof callback === 'function') callback();
+    // Harici linkleri, anchor ve protokolleri es geç
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || 
+        url.startsWith('#') || url.startsWith('javascript:') || url.startsWith('mailto:')) {
       return;
     }
-    
-    if (this.isTransitioning) return;
-    this.isTransitioning = true;
-    
-    main.classList.add('page-exit');
-    main.classList.remove('page-visible');
-    main.style.transition = 'opacity 0.25s ease, transform 0.3s ease';
-    main.style.opacity = '0';
-    main.style.transform = 'translateY(-10px)';
-    
-    this.saveLanguageBeforeExit();
-    
-    setTimeout(function() {
-      main.style.transition = '';
-      PageTransition.isTransitioning = false;
-      if (typeof callback === 'function') callback();
-    }, 350);
-  },
 
-  saveLanguageBeforeExit: function() {
+    var clean = url.split('#')[0].split('?')[0];
+    if (!clean.endsWith('.html') && !clean.endsWith('/') && clean !== '') return;
+
+    prefetchedUrls.add(url);
     try {
-      if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
-        var currentLang = i18n.getCurrentLanguage();
-        localStorage.setItem('ww_language', currentLang);
-      }
+      var link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = url;
+      link.as = 'document';
+      document.head.appendChild(link);
     } catch (e) {}
-  },
+  }
 
-  restoreLanguage: function() {
-    try {
-      var savedLang = localStorage.getItem('ww_language');
-      
-      if (savedLang && typeof i18n !== 'undefined') {
-        var currentLang = i18n.getCurrentLanguage();
-        
-        if (currentLang !== savedLang) {
-          i18n.setLanguage(savedLang);
-        } else {
-          i18n.apply();
+  var PageTransition = {
+    isTransitioning: false,
+    timeoutId: null,
+
+    getMainElement: function() {
+      // Sayfadaki ana içerik alanını bul (navbar hariç)
+      var target = document.querySelector('main, .main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap, .trades-main, .bug-main, .journals-main, .my-earnings-container, .admin-main, .premium-main');
+      if (target) return target;
+
+      var container = document.getElementById('app-scroll-container');
+      if (container && container.children) {
+        for (var i = 0; i < container.children.length; i++) {
+          var ch = container.children[i];
+          if (ch.id !== 'navbar-container') return ch;
         }
-        
-        if (typeof window.updateNavbarI18n === 'function') {
-          window.updateNavbarI18n();
-        }
-        
-        document.documentElement.setAttribute('data-lang', savedLang);
       }
-    } catch (e) {}
-  },
+      return document.body;
+    },
 
-  init: function() {
-    this.restoreLanguage();
-    
-    var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
-    
-    navLinks.forEach(function(link) {
-      var href = link.getAttribute('href');
-      
-      if (href && 
-          !href.startsWith('http') && 
-          !href.startsWith('#') && 
-          href !== '/' &&
-          href !== '#' &&
-          href !== '') {
-        
-        var newLink = link.cloneNode(true);
-        link.parentNode.replaceChild(newLink, link);
-        
-        newLink.addEventListener('click', function(e) {
-          e.preventDefault();
-          var targetHref = this.getAttribute('href');
-          
-          if (targetHref === window.location.pathname) {
-            return;
+    enter: function() {
+      var main = this.getMainElement();
+      if (!main) return;
+
+      main.classList.remove('page-exit');
+      main.classList.add('page-enter');
+
+      clearTimeout(this.timeoutId);
+      this.timeoutId = setTimeout(function() {
+        if (main) main.classList.remove('page-enter');
+      }, 220);
+
+      this.restoreLanguage();
+    },
+
+    exit: function(targetHref) {
+      if (this.isTransitioning) return;
+      this.isTransitioning = true;
+
+      this.saveLanguageBeforeExit();
+
+      var main = this.getMainElement();
+      if (main) {
+        main.classList.remove('page-enter');
+        main.classList.add('page-exit');
+      }
+
+      setTimeout(function() {
+        window.location.href = targetHref;
+      }, 130);
+    },
+
+    saveLanguageBeforeExit: function() {
+      try {
+        if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
+          var currentLang = i18n.getCurrentLanguage();
+          localStorage.setItem('ww_language', currentLang);
+        }
+      } catch (e) {}
+    },
+
+    restoreLanguage: function() {
+      try {
+        var savedLang = localStorage.getItem('ww_language');
+        if (savedLang && typeof i18n !== 'undefined') {
+          var currentLang = i18n.getCurrentLanguage ? i18n.getCurrentLanguage() : null;
+          if (currentLang !== savedLang) {
+            if (typeof i18n.setLanguage === 'function') i18n.setLanguage(savedLang);
+          } else if (typeof i18n.apply === 'function') {
+            i18n.apply();
           }
-          
-          PageTransition.saveLanguageBeforeExit();
-          
-          PageTransition.exit(function() {
-            window.location.href = targetHref;
-          });
-        });
+          if (typeof window.updateNavbarI18n === 'function') {
+            window.updateNavbarI18n();
+          }
+          document.documentElement.setAttribute('data-lang', savedLang);
+        }
+      } catch (e) {}
+    },
+
+    isInternalNavLink: function(anchor) {
+      if (!anchor) return false;
+      var href = anchor.getAttribute('href');
+      if (!href) return false;
+
+      // Harici veya aksiyon linkleri filtrele
+      if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//') ||
+          href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') ||
+          href === '#') {
+        return false;
       }
+
+      // Sadece uygulama içi HTML sayfaları veya root
+      return true;
+    },
+
+    init: function() {
+      this.restoreLanguage();
+      this.enter();
+
+      // Fare link üzerine geldiğinde veya dokunulduğunda akıllı prefetch yap
+      document.addEventListener('mouseover', function(e) {
+        var a = e.target.closest('a[href]');
+        if (a && PageTransition.isInternalNavLink(a)) {
+          prefetchUrl(a.getAttribute('href'));
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchstart', function(e) {
+        var a = e.target.closest('a[href]');
+        if (a && PageTransition.isInternalNavLink(a)) {
+          prefetchUrl(a.getAttribute('href'));
+        }
+      }, { passive: true });
+
+      // Link tıklamalarında pürüzsüz micro-exit animasyonu
+      document.addEventListener('click', function(e) {
+        // Yeni sekmede açma veya tuş kombinasyonlarını tarayıcıya bırak
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || e.defaultPrevented) return;
+
+        var a = e.target.closest('a[href]');
+        if (!a || !PageTransition.isInternalNavLink(a)) return;
+
+        var href = a.getAttribute('href');
+        var targetUrl = new URL(a.href, window.location.href);
+
+        // Zaten aynı sayfadaysak (veya sadece anchor ise) tarayıcıya bırak veya iptal et
+        if (targetUrl.pathname === window.location.pathname && (!targetUrl.search || targetUrl.search === window.location.search)) {
+          if (targetUrl.hash) return; // anchor scroll'u serbest bırak
+          e.preventDefault();
+          return;
+        }
+
+        e.preventDefault();
+        PageTransition.exit(href);
+      });
+    }
+  };
+
+  // Sayfa ilk yüklendiğinde başlat
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      PageTransition.init();
     });
-    
-    setTimeout(function() {
-      PageTransition.enter();
-    }, 80);
-  },
-
-  updateActiveLink: function() {
-    var currentPath = window.location.pathname;
-    var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
-    
-    navLinks.forEach(function(link) {
-      var href = link.getAttribute('href');
-      link.classList.remove('active');
-      
-      if (currentPath === '/' || currentPath === '/index.html') {
-        if (href === '/index.html' || href === '/') {
-          link.classList.add('active');
-        }
-      } else if (href && currentPath.includes(href.replace('/', ''))) {
-        link.classList.add('active');
-      } else if (href === currentPath) {
-        link.classList.add('active');
-      } else if (currentPath.includes('/settings/') && href === '/settings.html') {
-        link.classList.add('active');
-      }
-    });
-  },
-
-  fullRefresh: function() {
-    this.restoreLanguage();
-    this.enter();
-    this.updateActiveLink();
-    
-    if (typeof window.updateNavbarI18n === 'function') {
-      setTimeout(function() {
-        window.updateNavbarI18n();
-      }, 100);
-    }
+  } else {
+    PageTransition.init();
   }
-};
 
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    PageTransition.restoreLanguage();
-  }, 0);
-  
-  PageTransition.init();
-  PageTransition.updateActiveLink();
-});
-
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    var savedLang = localStorage.getItem('ww_language');
-    if (savedLang && typeof i18n !== 'undefined') {
-      var currentLang = i18n.getCurrentLanguage();
-      if (currentLang !== savedLang) {
-        i18n.setLanguage(savedLang);
-        if (typeof window.updateNavbarI18n === 'function') {
-          window.updateNavbarI18n();
-        }
-      }
+  // Tarayıcı İleri/Geri (bfcache) desteği
+  window.addEventListener('pageshow', function(e) {
+    PageTransition.isTransitioning = false;
+    var main = PageTransition.getMainElement();
+    if (main) {
+      main.classList.remove('page-exit');
     }
-    
     PageTransition.enter();
-    PageTransition.updateActiveLink();
-  }, 100);
-});
+  });
 
-window.addEventListener('popstate', function() {
-  setTimeout(function() {
-    PageTransition.restoreLanguage();
-    PageTransition.enter();
-    PageTransition.updateActiveLink();
-    
-    if (typeof window.updateNavbarI18n === 'function') {
-      setTimeout(function() {
-        window.updateNavbarI18n();
-      }, 50);
-    }
-  }, 150);
-});
-
-window.addEventListener('hashchange', function() {
-  setTimeout(function() {
-    PageTransition.restoreLanguage();
-    PageTransition.updateActiveLink();
-  }, 100);
-});
-
-window.addEventListener('storage', function(e) {
-  if (e.key === 'ww_language' && e.newValue) {
-    if (typeof i18n !== 'undefined') {
-      i18n.setLanguage(e.newValue);
-      
-      if (typeof window.updateNavbarI18n === 'function') {
-        setTimeout(function() {
-          window.updateNavbarI18n();
-        }, 50);
-      }
-      
-      document.documentElement.setAttribute('data-lang', e.newValue);
-    }
-  }
-});
-
-document.addEventListener('visibilitychange', function() {
-  if (!document.hidden) {
-    var savedLang = localStorage.getItem('ww_language');
-    if (savedLang && typeof i18n !== 'undefined') {
-      var currentLang = i18n.getCurrentLanguage();
-      if (currentLang !== savedLang) {
-        i18n.setLanguage(savedLang);
-        if (typeof window.updateNavbarI18n === 'function') {
-          window.updateNavbarI18n();
-        }
-      }
-    }
-  }
-});
-
-window.addEventListener('beforeunload', function() {
-  try {
-    if (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) {
-      localStorage.setItem('ww_language', i18n.getCurrentLanguage());
-    }
-  } catch (e) {}
-});
-
-window.PageTransition = PageTransition;
-window.restoreLanguage = PageTransition.restoreLanguage;
-window.saveLanguageBeforeExit = PageTransition.saveLanguageBeforeExit;
-
-wwLog.log('✅ page-transition.js yüklendi!');
+  window.PageTransition = PageTransition;
+  window.restoreLanguage = PageTransition.restoreLanguage;
+  window.saveLanguageBeforeExit = PageTransition.saveLanguageBeforeExit;
+})();
