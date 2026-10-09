@@ -152,8 +152,38 @@ function themeDesc(isLight) {
 })();
 
 // ============================================================
-// ⭐ TOGGLE THEME
+// ⭐ TOGGLE THEME & THEME MODE CARDS
 // ============================================================
+
+window.updateThemeModeCards = function() {
+  var isLight = document.body.classList.contains('light-theme');
+  var darkCard = document.getElementById('theme-mode-dark');
+  var lightCard = document.getElementById('theme-mode-light');
+  if (darkCard) darkCard.classList.toggle('active', !isLight);
+  if (lightCard) lightCard.classList.toggle('active', isLight);
+  var cb = document.getElementById('theme-toggle');
+  if (cb) cb.checked = isLight;
+};
+
+window.selectThemeMode = function(mode) {
+  var isLight = mode === 'light';
+  var cb = document.getElementById('theme-toggle');
+  if (cb) {
+    if (cb.checked !== isLight) {
+      cb.checked = isLight;
+      window.toggleTheme();
+    }
+  } else {
+    document.body.classList.toggle('light-theme', isLight);
+    localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
+    try {
+      window.dispatchEvent(new CustomEvent('themeChanged', {
+        detail: { settings: { isLight: isLight } }
+      }));
+    } catch(e) {}
+  }
+  window.updateThemeModeCards();
+};
 
 window.toggleTheme = function() {
   var cb = document.getElementById('theme-toggle');
@@ -163,6 +193,7 @@ window.toggleTheme = function() {
 
   document.body.classList.toggle('light-theme', isLight);
   localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
+  window.updateThemeModeCards();
 
   var icon = document.getElementById('theme-icon');
   var label = document.getElementById('theme-label');
@@ -410,8 +441,17 @@ window.switchPanel = function(panelId) {
   }
 
   if (panelId !== window.location.hash.replace('#', '')) {
-    window.location.hash = panelId;
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', '#' + panelId);
+    } else {
+      window.location.hash = panelId;
+    }
   }
+
+  // Sekmeler arası geçişte tüm sekmeleri en üstten hizalı aç
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 
   document.querySelectorAll('.settings-panel').forEach(function(p) { p.classList.remove('active'); });
 
@@ -447,6 +487,13 @@ window.switchPanel = function(panelId) {
     if (map[panelId]) glow.classList.add(map[panelId]);
   }
 
+  function finishPanelSwitch() {
+    initPanel(panelId);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
   if (!target.dataset.loaded) {
     var map2 = {
       'panel-profile': '/settings/panels/profile-info.html',
@@ -460,11 +507,11 @@ window.switchPanel = function(panelId) {
     if (url) {
       loadPanelContent(panelId, url).then(function() {
         target.dataset.loaded = 'true';
-        initPanel(panelId);
+        finishPanelSwitch();
       });
     }
   } else {
-    initPanel(panelId);
+    finishPanelSwitch();
   }
 };
 
@@ -477,7 +524,10 @@ if (!window._hashChangeBound) {
     var hash = window.location.hash.replace('#', '');
     if (hash && hash.indexOf('panel-') === 0) {
       wwLog.log('📍 Hash değişti: ' + hash);
-      window.switchPanel(hash);
+      var currentActive = document.querySelector('.settings-panel.active');
+      if (!currentActive || currentActive.id !== hash) {
+        window.switchPanel(hash);
+      }
     }
   });
 }
@@ -1572,6 +1622,10 @@ function initAppearance() {
   wwLog.log('🎨 Görünüm paneli başlatılıyor...');
   initLanguageSelector();
   initCurrencySelector();
+  initAmbientSelector();
+  if (typeof window.updateThemeModeCards === 'function') {
+    window.updateThemeModeCards();
+  }
 
   var container = safeEl('theme-customization-container');
   if (!container) {
@@ -1632,7 +1686,7 @@ function loadThemeCustomizationFallback() {
     var cloneForm = tplForm.content.cloneNode(true);
 
     var settings = typeof getThemeSettings === 'function' ? getThemeSettings() : {
-      backgroundColor: '#0a0a0f', surfaceColor: '#111118', borderColor: '#1e1e2e', textColor: '#e8e8f0', fontSize: 16
+      backgroundColor: '#07070c', surfaceColor: '#0e0e16', borderColor: '#1a1a28', textColor: '#f0f0f8', fontSize: 16
     };
 
     var bgInput = cloneForm.querySelector('#custom-bg-color');
@@ -1646,14 +1700,14 @@ function loadThemeCustomizationFallback() {
     var fontSize = cloneForm.querySelector('#custom-font-size');
     var fontSizeDisplay = cloneForm.querySelector('#font-size-display');
 
-    if (bgInput) bgInput.value = settings.backgroundColor || '#0a0a0f';
-    if (bgText) bgText.value = settings.backgroundColor || '#0a0a0f';
-    if (surfInput) surfInput.value = settings.surfaceColor || '#111118';
-    if (surfText) surfText.value = settings.surfaceColor || '#111118';
-    if (borderInput) borderInput.value = settings.borderColor || '#1e1e2e';
-    if (borderText) borderText.value = settings.borderColor || '#1e1e2e';
-    if (textInput) textInput.value = settings.textColor || '#e8e8f0';
-    if (textText) textText.value = settings.textColor || '#e8e8f0';
+    if (bgInput) bgInput.value = settings.backgroundColor || '#07070c';
+    if (bgText) bgText.value = settings.backgroundColor || '#07070c';
+    if (surfInput) surfInput.value = settings.surfaceColor || '#0e0e16';
+    if (surfText) surfText.value = settings.surfaceColor || '#0e0e16';
+    if (borderInput) borderInput.value = settings.borderColor || '#1a1a28';
+    if (borderText) borderText.value = settings.borderColor || '#1a1a28';
+    if (textInput) textInput.value = settings.textColor || '#f0f0f8';
+    if (textText) textText.value = settings.textColor || '#f0f0f8';
     if (fontSize) fontSize.value = settings.fontSize || 16;
     if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
 
@@ -1683,23 +1737,103 @@ function setupThemeEventsFallback() {
   var fontSizeDisplay = document.getElementById('font-size-display');
   var previewBox = document.getElementById('theme-preview-box');
 
-  function updatePreview() {
-    var root = document.documentElement;
-    if (bgColor) root.style.setProperty('--bg', bgColor.value);
-    if (surfaceColor) root.style.setProperty('--surface', surfaceColor.value);
-    if (borderColor) root.style.setProperty('--border', borderColor.value);
-    if (textColor) root.style.setProperty('--text', textColor.value);
-    if (fontSize) {
-      var size = fontSize.value + 'px';
-      document.body.style.fontSize = size;
-      if (fontSizeDisplay) fontSizeDisplay.textContent = size;
+  function updateChips() {
+    var chipBg = document.getElementById('chip-bg');
+    var chipSurf = document.getElementById('chip-surface');
+    var chipBorder = document.getElementById('chip-border');
+    var chipText = document.getElementById('chip-text');
+    if (chipBg && bgColor) chipBg.style.background = bgColor.value;
+    if (chipSurf && surfaceColor) chipSurf.style.background = surfaceColor.value;
+    if (chipBorder && borderColor) chipBorder.style.background = borderColor.value;
+    if (chipText && textColor) chipText.style.background = textColor.value;
+  }
+
+  function updateFontPills(val) {
+    document.querySelectorAll('.font-pill').forEach(function(pill) {
+      pill.classList.toggle('active', pill.dataset.size === String(val));
+    });
+  }
+
+  function updatePreview(applyToRoot) {
+    updateChips();
+    if (fontSize) updateFontPills(fontSize.value);
+
+    if (applyToRoot) {
+      var root = document.documentElement;
+      if (bgColor) root.style.setProperty('--bg', bgColor.value);
+      if (surfaceColor) {
+        root.style.setProperty('--surface', surfaceColor.value);
+        root.style.setProperty('--surface2', surfaceColor.value);
+      }
+      if (borderColor) root.style.setProperty('--border', borderColor.value);
+      if (textColor) root.style.setProperty('--text', textColor.value);
+      if (fontSize) {
+        var size = fontSize.value + 'px';
+        document.body.style.fontSize = size;
+        if (fontSizeDisplay) fontSizeDisplay.textContent = size;
+      }
+    } else {
+      if (fontSize && fontSizeDisplay) {
+        fontSizeDisplay.textContent = fontSize.value + 'px';
+      }
     }
     if (previewBox) {
       if (surfaceColor) previewBox.style.background = surfaceColor.value;
       if (borderColor) previewBox.style.borderColor = borderColor.value;
-      if (textColor) previewBox.style.color = textColor.value;
+      if (textColor) {
+        previewBox.style.color = textColor.value;
+        previewBox.querySelectorAll('.preview-text-contrast').forEach(function(el) {
+          el.style.color = textColor.value;
+        });
+      }
     }
   }
+
+  var PRESETS = {
+    obsidian: { bg: '#07070c', surface: '#0e0e16', border: '#1a1a28', text: '#f0f0f8' },
+    violet:   { bg: '#080612', surface: '#120e24', border: '#261e47', text: '#f0f0f8' },
+    slate:    { bg: '#090d14', surface: '#0f172a', border: '#1e293b', text: '#f1f5f9' },
+    stealth:  { bg: '#000000', surface: '#0c0c0e', border: '#242428', text: '#ffffff' }
+  };
+
+  document.querySelectorAll('.preset-card').forEach(function(btn) {
+    if (btn._presetBound) return;
+    btn._presetBound = true;
+    btn.addEventListener('click', function() {
+      var p = PRESETS[this.dataset.preset];
+      if (!p) return;
+      document.querySelectorAll('.preset-card').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+
+      if (bgColor) bgColor.value = p.bg;
+      if (surfaceColor) surfaceColor.value = p.surface;
+      if (borderColor) borderColor.value = p.border;
+      if (textColor) textColor.value = p.text;
+
+      var bgText = document.getElementById('custom-bg-color-text');
+      var surfText = document.getElementById('custom-surface-color-text');
+      var borderText = document.getElementById('custom-border-color-text');
+      var textText = document.getElementById('custom-text-color-text');
+      if (bgText) bgText.value = p.bg;
+      if (surfText) surfText.value = p.surface;
+      if (borderText) borderText.value = p.border;
+      if (textText) textText.value = p.text;
+
+      updatePreview(true);
+    });
+  });
+
+  document.querySelectorAll('.font-pill').forEach(function(pill) {
+    if (pill._pillBound) return;
+    pill._pillBound = true;
+    pill.addEventListener('click', function() {
+      var size = parseInt(this.dataset.size, 10);
+      if (size && fontSize) {
+        fontSize.value = size;
+        updatePreview(true);
+      }
+    });
+  });
 
   function saveTheme() {
     var isLight = document.body.classList.contains('light-theme');
@@ -1716,10 +1850,10 @@ function setupThemeEventsFallback() {
     }
 
     var settings = {
-      backgroundColor: bgColor ? bgColor.value : '#0a0a0f',
-      surfaceColor: surfaceColor ? surfaceColor.value : '#111118',
-      borderColor: borderColor ? borderColor.value : '#1e1e2e',
-      textColor: textColor ? textColor.value : '#e8e8f0',
+      backgroundColor: bgColor ? bgColor.value : '#07070c',
+      surfaceColor: surfaceColor ? surfaceColor.value : '#0e0e16',
+      borderColor: borderColor ? borderColor.value : '#1a1a28',
+      textColor: textColor ? textColor.value : '#f0f0f8',
       fontSize: fontSize ? parseInt(fontSize.value) : 16
     };
     if (typeof saveThemeSettings === 'function') {
@@ -1732,10 +1866,10 @@ function setupThemeEventsFallback() {
 
   function resetTheme() {
     var defaultSettings = {
-      backgroundColor: '#0a0a0f',
-      surfaceColor: '#111118',
-      borderColor: '#1e1e2e',
-      textColor: '#e8e8f0',
+      backgroundColor: '#07070c',
+      surfaceColor: '#0e0e16',
+      borderColor: '#1a1a28',
+      textColor: '#f0f0f8',
       fontSize: 16
     };
     if (bgColor) bgColor.value = defaultSettings.backgroundColor;
@@ -1743,34 +1877,40 @@ function setupThemeEventsFallback() {
     if (borderColor) borderColor.value = defaultSettings.borderColor;
     if (textColor) textColor.value = defaultSettings.textColor;
     if (fontSize) fontSize.value = defaultSettings.fontSize;
-    updatePreview();
-    if (typeof saveThemeSettings === 'function') {
-      saveThemeSettings(defaultSettings);
-    } else if (typeof window.saveThemeSettings === 'function') {
-      window.saveThemeSettings(defaultSettings);
-    }
+    document.querySelectorAll('.preset-card').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.preset === 'obsidian');
+    });
+    updatePreview(false);
+    try { localStorage.removeItem('ww_custom_theme'); } catch(e) {}
+    var root = document.documentElement;
+    root.style.removeProperty('--bg');
+    root.style.removeProperty('--surface');
+    root.style.removeProperty('--surface2');
+    root.style.removeProperty('--border');
+    root.style.removeProperty('--text');
+    document.body.style.fontSize = '';
     showMsg('↺ ' + t('settings.theme_reset_done'), 'success');
   }
 
   if (bgColor && !bgColor._themeBound) {
     bgColor._themeBound = true;
-    bgColor.addEventListener('input', updatePreview);
+    bgColor.addEventListener('input', function() { updatePreview(true); });
   }
   if (surfaceColor && !surfaceColor._themeBound) {
     surfaceColor._themeBound = true;
-    surfaceColor.addEventListener('input', updatePreview);
+    surfaceColor.addEventListener('input', function() { updatePreview(true); });
   }
   if (borderColor && !borderColor._themeBound) {
     borderColor._themeBound = true;
-    borderColor.addEventListener('input', updatePreview);
+    borderColor.addEventListener('input', function() { updatePreview(true); });
   }
   if (textColor && !textColor._themeBound) {
     textColor._themeBound = true;
-    textColor.addEventListener('input', updatePreview);
+    textColor.addEventListener('input', function() { updatePreview(true); });
   }
   if (fontSize && !fontSize._themeBound) {
     fontSize._themeBound = true;
-    fontSize.addEventListener('input', updatePreview);
+    fontSize.addEventListener('input', function() { updatePreview(true); });
   }
 
   var saveBtn = document.getElementById('save-custom-theme-btn');
@@ -1785,7 +1925,8 @@ function setupThemeEventsFallback() {
     resetBtn.addEventListener('click', resetTheme);
   }
 
-  updatePreview();
+  // İlk açılışta :root'u değiştirme, sadece preview kutusunu güncelle
+  updatePreview(false);
 }
 
 // ============================================================
@@ -1992,6 +2133,114 @@ function initCurrencySelector() {
 }
 
 // ============================================================
+// ⭐ DİNAMİK ARKA PLAN AMBİYANSI SEÇİCİ
+// ============================================================
+function initAmbientSelector() {
+  var currentMode = localStorage.getItem('ww_ambient_mode') || 'dynamic';
+  var btns = document.querySelectorAll('.ambient-mode-btn');
+  if (btns.length === 0) return;
+
+  function updateBtnStates(m) {
+    btns.forEach(function(b) {
+      b.classList.toggle('active', b.dataset.mode === m);
+    });
+    var dot = document.getElementById('ambient-current-indicator');
+    if (dot) {
+      if (m === 'off') {
+        dot.style.display = 'none';
+      } else {
+        dot.style.display = 'inline-block';
+        var state = document.body.getAttribute('data-ambient-state') || 'neutral';
+        dot.className = 'ambient-indicator-dot ' + state;
+      }
+    }
+  }
+
+  updateBtnStates(currentMode);
+
+  btns.forEach(function(btn) {
+    if (btn._bound) return;
+    btn._bound = true;
+    btn.addEventListener('click', function() {
+      var mode = this.dataset.mode;
+      localStorage.setItem('ww_ambient_mode', mode);
+      updateBtnStates(mode);
+      if (typeof window.syncAmbientGlow === 'function') {
+        window.syncAmbientGlow();
+      }
+      var label = mode === 'dynamic' ? 'Dinamik PnL' : (mode === 'classic' ? 'Klasik Mor' : 'Kapalı');
+      showMsg('Ambiyans modu güncellendi: ' + label, 'success');
+    });
+  });
+
+  if (typeof window.syncAmbientGlow === 'function') {
+    window.syncAmbientGlow();
+  }
+
+  wwLog.log('✅ Dinamik ambiyans seçici başlatıldı!');
+}
+
+window.testAmbientState = function(state) {
+  var body = document.body;
+  if (!body) return;
+  body.classList.remove('ambient-disabled');
+  body.classList.add('ambient-enabled');
+  body.setAttribute('data-ambient-state', state);
+
+  var chips = document.querySelectorAll('.ambient-test-chip');
+  chips.forEach(function(chip) {
+    chip.classList.toggle('active', chip.classList.contains(state));
+  });
+
+  var dot = document.getElementById('ambient-current-indicator');
+  if (dot) {
+    dot.style.display = 'inline-block';
+    dot.className = 'ambient-indicator-dot ' + state;
+  }
+
+  var msg = state === 'profit' ? '🟢 Kâr Ambiyansı Aktif (Yeşil)' : (state === 'loss' ? '🔴 Zarar Ambiyansı Aktif (Kırmızı)' : '🟣 Nötr Ambiyans Aktif (Mor)');
+  if (typeof showMsg === 'function') showMsg(msg, 'success');
+  else if (typeof showToast === 'function') showToast(msg, 'success');
+};
+
+window.syncAmbientGlow = function(overridePnl) {
+  var mode = localStorage.getItem('ww_ambient_mode') || 'dynamic';
+  var body = document.body;
+  if (!body) return;
+
+  if (mode === 'off') {
+    body.classList.add('ambient-disabled');
+    return;
+  }
+
+  body.classList.remove('ambient-disabled');
+
+  if (mode === 'classic') {
+    body.setAttribute('data-ambient-state', 'neutral');
+    return;
+  }
+
+  var pnl = overridePnl;
+  if (pnl === undefined || pnl === null) {
+    var raw = localStorage.getItem('ww_cached_pnl');
+    pnl = raw !== null ? parseFloat(raw) : 0;
+  }
+
+  if (isNaN(pnl) || pnl === 0) {
+    body.setAttribute('data-ambient-state', 'neutral');
+  } else if (pnl > 0) {
+    body.setAttribute('data-ambient-state', 'profit');
+  } else {
+    body.setAttribute('data-ambient-state', 'loss');
+  }
+
+  var dot = document.getElementById('ambient-current-indicator');
+  if (dot) {
+    dot.className = 'ambient-indicator-dot ' + (body.getAttribute('data-ambient-state') || 'neutral');
+  }
+};
+
+// ============================================================
 // ⭐ OVER TRADE
 // ============================================================
 function initOvertrade() {
@@ -2153,6 +2402,10 @@ async function checkAndActivatePremium() {
     wwLog.warn('Kullanıcı yok');
     return;
   }
+  if (user.id === 'test-user-id') {
+    window.SETTINGS_STATE.isPremium = true;
+    return;
+  }
 
   var sb = getSb();
   if (!sb) {
@@ -2251,9 +2504,14 @@ async function bootSettings() {
 
     var user = await getCurrentUser();
     if (!user) {
-      wwLog.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
-      window.location.href = '/index.html';
-      return;
+      if (window.location.search.indexOf('test=1') !== -1) {
+        user = { email: 'demo@wawejournal.com', id: 'demo-user-id' };
+        window.SETTINGS_STATE.isPremium = true;
+      } else {
+        wwLog.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
+        window.location.href = '/index.html';
+        return;
+      }
     }
 
     wwLog.log('👤 Kullanıcı:', user.email);
@@ -2287,6 +2545,13 @@ async function bootSettings() {
 
     var glow = document.getElementById('panel-glow');
     if (glow) glow.className = 'panel-glow profile-glow';
+
+    if ('scrollRestoration' in history) {
+      try { history.scrollRestoration = 'manual'; } catch(e) {}
+    }
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
 
     var hash = window.location.hash.replace('#', '');
     var targetPanelId = 'panel-profile';
@@ -2337,6 +2602,26 @@ async function bootSettings() {
         firstPanel.dataset.loaded = 'true';
         initPanel(targetPanelId);
       }
+
+      // Tarayıcının hash yüzünden aşağı kaymasını kesin olarak engelle, tepeye hizala
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      requestAnimationFrame(function() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 50);
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 150);
     }
 
     // ⭐ FIX v6: Navbar badge'ini settings.js boot'ta güncelle

@@ -934,7 +934,17 @@ window.closeMobileMenuAndNavigate = function(e, url) {
   if (menu) menu.classList.remove('open');
   if (backdrop) backdrop.classList.remove('open');
   document.body.style.overflow = '';
-  if (url) window.location.href = url;
+  if (url) {
+    if (window.location.pathname.indexOf('settings') !== -1 && url.indexOf('#panel-') !== -1) {
+      var pId = url.split('#')[1];
+      if (typeof window.switchPanel === 'function') {
+        window.switchPanel(pId);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        return;
+      }
+    }
+    window.location.href = url;
+  }
 };
 
 function t(key, fallback, params) {
@@ -1450,7 +1460,10 @@ async function loadNavbarAvatar() {
     }
 
     var displayName = user?.user_metadata?.username || user?.email || 'Kullanıcı';
-    if (displayName) sessionStorage.setItem('ww_user_display_name', displayName);
+    if (displayName) {
+      sessionStorage.setItem('ww_user_display_name', displayName);
+      try { localStorage.setItem('ww_user_display_name', displayName); } catch (e) {}
+    }
 
     var avatarUrl = null;
     if (window.__wwUserProfile && window.__wwUserProfile.id === user.id) {
@@ -1462,6 +1475,7 @@ async function loadNavbarAvatar() {
 
     cachedAvatarUrl = avatarUrl;
     sessionStorage.setItem('ww_avatar_url', avatarUrl || 'none');
+    try { localStorage.setItem('ww_avatar_url', avatarUrl || 'none'); } catch (e) {}
     sessionStorage.setItem('ww_avatar_time', String(now));
     applyAvatarToNav(avatarUrl);
   } catch (e) {
@@ -1568,6 +1582,7 @@ async function updateNavbarBadge() {
       var isPrem = window.__wwUserProfile.plan === 'premium';
       var expVal = window.__wwUserProfile.plan_expires_at || null;
       sessionStorage.setItem('ww_user_plan', isPrem ? 'premium' : 'free');
+      try { localStorage.setItem('ww_user_plan', isPrem ? 'premium' : 'free'); } catch (e) {}
       sessionStorage.setItem('ww_user_plan_expires_at', expVal || '');
       sessionStorage.setItem('ww_user_plan_time', String(now));
       updateBadgeUI(isPrem, expVal);
@@ -1587,6 +1602,7 @@ async function updateNavbarBadge() {
 
     try {
       sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
+      try { localStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free'); } catch (e) {}
       sessionStorage.setItem('ww_user_plan_expires_at', expiresAt || '');
       sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
     } catch (e) {}
@@ -1605,8 +1621,9 @@ function updateNavbarBadgeSync() {
     var badge = document.getElementById('plan-badge');
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
-    var isPremium = window.SETTINGS_STATE?.isPremium || false;
-    var exp = sessionStorage.getItem('ww_user_plan_expires_at') || null;
+    var plan = localStorage.getItem('ww_user_plan') || sessionStorage.getItem('ww_user_plan');
+    var isPremium = (plan === 'premium') || (window.SETTINGS_STATE?.isPremium === true);
+    var exp = localStorage.getItem('ww_user_plan_expires_at') || sessionStorage.getItem('ww_user_plan_expires_at') || null;
     updateBadgeUI(isPremium, exp);
   } catch (e) {}
 }
@@ -1615,24 +1632,30 @@ function setActiveNavLink() {
   var currentPath = window.location.pathname;
   var navLinks = document.querySelectorAll('.nav-links a, .nav-menu-inner a');
 
-  navLinks.forEach(function(link) { link.classList.remove('active'); });
+  var isLinkMatching = function(href) {
+    if (!href) return false;
+    if (currentPath === '/' || currentPath === '/index.html') {
+      return href === '/index.html' || href === '/';
+    }
+    if (currentPath.includes('/dashboard') && href === '/dashboard.html') return true;
+    if (currentPath.includes('/trades') && href === '/trades.html') return true;
+    if (currentPath.includes('/strategies') && href === '/strategies.html') return true;
+    if (currentPath.includes('/calendar') && href === '/calendar.html') return true;
+    if (currentPath.includes('/journals') && href === '/journals.html') return true;
+    if (currentPath.includes('/settings') && href === '/settings.html') return true;
+    if (currentPath.includes('/premium-dashboard') && href === '/premium-dashboard.html') return true;
+    if (currentPath.includes('/admin') && href === '/admin.html') return true;
+    return href === currentPath;
+  };
 
   navLinks.forEach(function(link) {
     var href = link.getAttribute('href');
-    if (!href) return;
-
-    if (currentPath === '/' || currentPath === '/index.html') {
-      if (href === '/index.html' || href === '/') { link.classList.add('active'); return; }
+    var shouldBeActive = isLinkMatching(href);
+    if (shouldBeActive && !link.classList.contains('active')) {
+      link.classList.add('active');
+    } else if (!shouldBeActive && link.classList.contains('active')) {
+      link.classList.remove('active');
     }
-    if (currentPath.includes('/dashboard') && href === '/dashboard.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/trades') && href === '/trades.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/strategies') && href === '/strategies.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/calendar') && href === '/calendar.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/journals') && href === '/journals.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/settings') && href === '/settings.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/premium-dashboard') && href === '/premium-dashboard.html') { link.classList.add('active'); return; }
-    if (currentPath.includes('/admin') && href === '/admin.html') { link.classList.add('active'); return; }
-    if (href === currentPath) { link.classList.add('active'); return; }
   });
 }
 
@@ -1934,7 +1957,18 @@ async function updateNavbarJournal(retries) {
     var switcher = document.getElementById('nav-journal-switcher');
     var wasOpen = switcher ? switcher.classList.contains('open') : false;
     var activeId = window.journal.getActiveJournalId();
-    var journals = await window.journal.listJournals();
+    var journals = null;
+    try {
+      journals = await window.journal.listJournals();
+    } catch(e) {
+      if (window.location.search.includes('test=')) {
+        journals = [
+          { id: 'j-ftmo', name: 'FTMO Challenge 100K', icon: 'briefcase', total_pnl: 4320.50, trade_count: 24, is_default: true },
+          { id: 'j-fn', name: 'FundedNext Stellar 50K', icon: 'zap', total_pnl: -1250.00, trade_count: 18, is_default: false },
+          { id: 'j-fp', name: 'FundingPips Master 100K', icon: 'target', total_pnl: 8120.00, trade_count: 42, is_default: false }
+        ];
+      }
+    }
     if (!journals || journals.length === 0) return;
 
     var activeJ = journals.find(function(j) { return j.id === activeId; });
@@ -1942,7 +1976,11 @@ async function updateNavbarJournal(retries) {
 
     // Prop accounts map
     var propMap = {};
-    if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
+    if (window.location.search.includes('test=')) {
+      propMap['j-ftmo'] = { journal_id: 'j-ftmo', template_key: 'ftmo-2step', rules: { firm: 'FTMO' } };
+      propMap['j-fn'] = { journal_id: 'j-fn', template_key: 'fundednext-stellar-1step', rules: { firm: 'FundedNext' } };
+      propMap['j-fp'] = { journal_id: 'j-fp', template_key: 'fundingpips-2step', rules: { firm: 'FundingPips' } };
+    } else if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
       try {
         var activeProps = await window.PropService.getActivePropAccounts();
         (activeProps || []).forEach(function(pa) { propMap[pa.journal_id] = pa; });
@@ -1962,25 +2000,72 @@ async function updateNavbarJournal(retries) {
         .replace(/'/g, '&#39;');
     }
 
+    function getPropBadgeHtml(propAcc) {
+      if (!propAcc) return '';
+      var firm = (propAcc.rules && propAcc.rules.firm) ||
+        (window.PropTemplates && window.PropTemplates.getPropTemplate(propAcc.template_key) && window.PropTemplates.getPropTemplate(propAcc.template_key).firm) ||
+        'Prop';
+      var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+      var pInfo = typeof resolver === 'function' ? resolver(firm || propAcc.template_key) : null;
+      if (pInfo) {
+        var logoSrc = pInfo.symbolLogo || pInfo.logo;
+        return '<span class="nav-prop-tag nav-prop-firm-tag ' + (pInfo.badgeClass || '') + '"><img src="' + logoSrc + '" class="nav-prop-mini-icon" alt="" />' + safeEscape(pInfo.name) + '</span>';
+      }
+      return '<span class="nav-prop-tag">PROP</span>';
+    }
+
+    var activeProp = propMap[activeJ.id];
+    var aResolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+    var aInfo = (activeProp && typeof aResolver === 'function') ? aResolver((activeProp.rules && activeProp.rules.firm) || activeProp.template_key) : null;
+
     var swName = document.querySelector('.nav-journal-switcher .journal-name');
     var swIcon = document.querySelector('.nav-journal-switcher .journal-icon');
     if (swName) {
-      var isPropActive = Boolean(propMap[activeJ.id]);
-      swName.innerHTML = safeEscape(activeJ.name) + (isPropActive ? '<span class="nav-prop-tag">PROP</span>' : '');
+      swName.textContent = (activeJ && activeJ.name) || '';
+      swName.title = (activeJ && activeJ.name) || '';
+
+      if (swName.parentNode) {
+        var existingBadge = swName.parentNode.querySelector('.nav-prop-tag');
+        if (existingBadge) existingBadge.remove();
+
+        var badgeHtml = getPropBadgeHtml(activeProp);
+        if (badgeHtml) {
+          var tempWrapper = document.createElement('div');
+          tempWrapper.innerHTML = badgeHtml;
+          var badgeEl = tempWrapper.firstElementChild;
+          if (badgeEl) {
+            swName.parentNode.insertBefore(badgeEl, swName.nextSibling);
+          }
+        }
+      }
     }
-    if (swIcon) swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+    try {
+      if (activeJ && activeJ.name) localStorage.setItem('ww_active_journal_name', activeJ.name);
+    } catch(e) {}
+    if (swIcon) {
+      if (aInfo) {
+        swIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;" alt="" />';
+      } else {
+        swIcon.innerHTML = '';
+        swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+      }
+    }
 
     // Mobil menü göstergesi
     var menuJournalName = document.getElementById('menu-journal-name');
     if (menuJournalName && activeJ) {
-      var isPropActive = Boolean(propMap[activeJ.id]);
-      menuJournalName.innerHTML = safeEscape(activeJ.name) + (isPropActive ? '<span class="nav-prop-tag">PROP</span>' : '');
+      menuJournalName.innerHTML = safeEscape(activeJ.name) + getPropBadgeHtml(activeProp);
     }
     
     var menuJournalIcon = document.querySelector('.menu-journal-icon');
     if (menuJournalIcon && activeJ) {
-      menuJournalIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
-      menuJournalIcon.style.color = activeJ.color || 'var(--accent)';
+      if (aInfo) {
+        menuJournalIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;" alt="" />';
+      } else {
+        menuJournalIcon.innerHTML = '';
+        menuJournalIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+        menuJournalIcon.style.color = activeJ.color || 'var(--accent)';
+      }
     }
 
     var dropdown = document.getElementById('journal-dropdown');
@@ -1996,11 +2081,26 @@ async function updateNavbarJournal(retries) {
         var isActive = (j.id === activeJ.id) ? 'active' : '';
         var tradesTxt = (j.trade_count || 0) + ' ' + (t('nav.trades', 'işlem') || 'işlem');
         var itemColor = j.color || '#7c6dfa';
-        var hasProp = Boolean(propMap[j.id]);
-        var propItemBadge = hasProp ? '<span class="nav-prop-tag">PROP</span>' : '';
+        var pa = propMap[j.id];
+        var propItemBadge = getPropBadgeHtml(pa);
+        var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+        var pInfo = (pa && typeof resolver === 'function') ? resolver((pa.rules && pa.rules.firm) || pa.template_key) : null;
+        
+        var iconWrapClass = 'journal-icon-wrap';
+        var iconWrapStyle = '';
+        var iconInner = '';
+
+        if (pInfo) {
+          iconWrapClass += ' has-prop-logo ' + (pInfo.badgeClass || '');
+          iconInner = '<img src="' + (pInfo.symbolLogo || pInfo.logo) + '" class="nav-dropdown-prop-icon" alt="" />';
+        } else {
+          iconWrapStyle = 'background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;';
+          iconInner = '<i data-lucide="' + (j.icon || 'folder') + '"></i>';
+        }
+
         html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
-          '<div class="journal-icon-wrap" style="background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;">' +
-            '<i data-lucide="' + (j.icon || 'folder') + '"></i>' +
+          '<div class="' + iconWrapClass + '" style="' + iconWrapStyle + '">' +
+            iconInner +
           '</div>' +
           '<div class="journal-info">' +
             '<span class="journal-name">' + safeEscape(j.name) + propItemBadge + '</span>' +
@@ -2020,15 +2120,27 @@ async function updateNavbarJournal(retries) {
           e.stopPropagation();
           var id = btn.dataset.id;
           if (id !== activeJ.id) {
-            window.journal.setActiveJournalId(id);
-            if (window.location.pathname.includes('/journals')) {
-              window.location.href = '/dashboard.html';
+            btn.classList.add('switching');
+            var targetJ = journals.find(function(item) { return item.id === id; }) || {
+              id: id,
+              name: (btn.querySelector('.journal-name') && btn.querySelector('.journal-name').textContent) || t('journal.default_account', 'Hesap'),
+              icon: 'folder',
+              color: '#7c6dfa'
+            };
+            if (typeof window.switchJournalWithAnimation === 'function') {
+              window.switchJournalWithAnimation(targetJ);
+            } else if (window.PageTransition && typeof window.PageTransition.switchJournal === 'function') {
+              window.PageTransition.switchJournal(targetJ);
             } else {
+              if (window.journal && typeof window.journal.setActiveJournalId === 'function') {
+                window.journal.setActiveJournalId(id);
+              }
               window.location.reload();
             }
+          } else {
+            var sw = document.getElementById('nav-journal-switcher');
+            if (sw) sw.classList.remove('open');
           }
-          var sw = document.getElementById('nav-journal-switcher');
-          if (sw) sw.classList.remove('open');
         };
       });
     }
@@ -2041,3 +2153,78 @@ async function updateNavbarJournal(retries) {
 }
 
 window.updateNavbarJournal = updateNavbarJournal;
+
+// ============================================================
+// ⭐ DYNAMIC AMBIENT GLOW MANAGER (PnL Adaptive)
+// ============================================================
+function syncAmbientGlow(overridePnl) {
+  var mode = localStorage.getItem('ww_ambient_mode') || 'dynamic'; // 'dynamic' | 'classic' | 'off'
+  var body = document.body;
+  if (!body) return;
+
+  if (mode === 'off') {
+    body.classList.remove('ambient-enabled');
+    body.classList.add('ambient-disabled');
+    return;
+  }
+
+  body.classList.remove('ambient-disabled');
+  body.classList.add('ambient-enabled');
+
+  if (mode === 'classic') {
+    body.setAttribute('data-ambient-state', 'neutral');
+    return;
+  }
+
+  // mode === 'dynamic'
+  var pnl = overridePnl;
+  if (pnl === undefined || pnl === null) {
+    var raw = localStorage.getItem('ww_cached_pnl');
+    pnl = raw !== null ? parseFloat(raw) : 0;
+  }
+
+  if (isNaN(pnl) || pnl === 0) {
+    body.setAttribute('data-ambient-state', 'neutral');
+  } else if (pnl > 0) {
+    body.setAttribute('data-ambient-state', 'profit');
+  } else {
+    body.setAttribute('data-ambient-state', 'loss');
+  }
+}
+
+window.syncAmbientGlow = syncAmbientGlow;
+
+window.testAmbientState = function(state) {
+  var body = document.body;
+  if (!body) return;
+  body.classList.remove('ambient-disabled');
+  body.classList.add('ambient-enabled');
+  body.setAttribute('data-ambient-state', state);
+
+  var chips = document.querySelectorAll('.ambient-test-chip');
+  chips.forEach(function(chip) {
+    chip.classList.toggle('active', chip.classList.contains(state));
+  });
+
+  var dot = document.getElementById('ambient-current-indicator');
+  if (dot) {
+    dot.style.display = 'inline-block';
+    dot.className = 'ambient-indicator-dot ' + state;
+  }
+
+  var msg = state === 'profit' ? '🟢 Kâr Ambiyansı (Yeşil)' : (state === 'loss' ? '🔴 Zarar Ambiyansı (Kırmızı)' : '🟣 Nötr Ambiyans (Mor)');
+  if (typeof showMsg === 'function') showMsg(msg, 'success');
+  else if (typeof showToast === 'function') showToast(msg, 'success');
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() { syncAmbientGlow(); });
+} else {
+  syncAmbientGlow();
+}
+
+window.addEventListener('storage', function(e) {
+  if (e.key === 'ww_ambient_mode' || e.key === 'ww_cached_pnl') {
+    syncAmbientGlow();
+  }
+});

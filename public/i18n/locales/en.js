@@ -1017,6 +1017,10 @@ export default {
   "journal.switch_to": "Switch to {name}",
   "journal.section_account": "Account Details",
   "journal.section_prop": "Prop Firm & Tracking",
+  "journal.transit_active": "Active",
+  "journal.transit_switching": "Switching",
+  "journal.transit_ready": "Ready",
+  "journal.default_account": "Account",
   "prop.standard_mode_title": "Standard Portfolio Account",
   "prop.standard_mode_desc": "Track all your trades freely without rule constraints or loss limits.",
   "prop.standard_mode_tip": "💡 Enable Prop Firm Mode above to automatically track evaluation rules like FTMO, FundedNext, etc."

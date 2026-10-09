@@ -962,6 +962,10 @@ export default {
   "journal.switch_to": "{name} hesabına geç",
   "journal.section_account": "Hesap Bilgileri",
   "journal.section_prop": "Prop Firm & Takip",
+  "journal.transit_active": "Aktif",
+  "journal.transit_switching": "Geçiliyor",
+  "journal.transit_ready": "Hazır",
+  "journal.default_account": "Hesap",
   "prop.standard_mode_title": "Standart Portföy Hesabı",
   "prop.standard_mode_desc": "Bu hesapta kural ve kayıp limiti olmadan tüm işlemlerinizi serbestçe takip edebilirsiniz.",
   "prop.standard_mode_tip": "💡 FTMO, FundedNext gibi değerlendirme kurallarını izlemek için yukarıdan Prop Firm Modu'nu açın."

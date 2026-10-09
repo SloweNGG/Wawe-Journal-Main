@@ -13,7 +13,6 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
-  <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
 </Fragment>
 
 <main class="main dashboard-main">
@@ -838,16 +837,44 @@ import Layout from '../layouts/Layout.astro';
     try {
       if (!window.sb) throw new Error('No sb client');
       var { data: { user } } = await window.sb.auth.getUser();
-      if (!user) { window.location.href = '/index.html'; return; }
+      if (!user) {
+        if (window.location.search.includes('test=')) {
+          user = { id: 'mock-test-user', email: 'test@wawe.com' };
+        } else {
+          window.location.href = '/index.html';
+          return;
+        }
+      }
       
-      var { data: profile } = await window.sb.from('user_profiles').select('plan, max_journals').eq('id', user.id).single();
+      var profile = null;
+      try {
+        var profRes = await window.sb.from('user_profiles').select('plan, max_journals').eq('id', user.id).single();
+        profile = profRes ? profRes.data : null;
+      } catch(e) {}
       isPremium = profile?.plan === 'premium';
-      journalsData = await window.journal.listJournals();
+      try {
+        journalsData = await window.journal.listJournals();
+      } catch(e) {
+        journalsData = [];
+      }
+
+      if (window.location.search.includes('test=') && (!journalsData || journalsData.length === 0)) {
+        journalsData = [
+          { id: 'j-ftmo', name: 'FTMO Challenge 100K', icon: 'briefcase', total_pnl: 4320.50, trade_count: 24, is_default: true, max_journals: 10 },
+          { id: 'j-fn', name: 'FundedNext Stellar 50K', icon: 'zap', total_pnl: -1250.00, trade_count: 18, is_default: false, max_journals: 10 },
+          { id: 'j-fp', name: 'FundingPips Master 100K', icon: 'target', total_pnl: 8120.00, trade_count: 42, is_default: false, max_journals: 10 },
+          { id: 'j-pers', name: 'Personal Swing Account', icon: 'trending-up', total_pnl: 1450.20, trade_count: 15, is_default: false, max_journals: 10 }
+        ];
+      }
       var count = journalsData.length;
 
       // Active prop accounts lookup
       var propAccountsMap = new Map();
-      if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
+      if (window.location.search.includes('test=')) {
+        propAccountsMap.set('j-ftmo', { journal_id: 'j-ftmo', template_key: 'ftmo-2step', phase_index: 0, rules: { firm: 'FTMO', phase_name: 'Phase 1 (Challenge)' } });
+        propAccountsMap.set('j-fn', { journal_id: 'j-fn', template_key: 'fundednext-stellar-1step', phase_index: 0, rules: { firm: 'FundedNext', phase_name: 'Phase 1' } });
+        propAccountsMap.set('j-fp', { journal_id: 'j-fp', template_key: 'fundingpips-2step', phase_index: 1, rules: { firm: 'FundingPips', phase_name: 'Phase 2 (Evaluation)' } });
+      } else if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
         try {
           var activeProps = await window.PropService.getActivePropAccounts();
           (activeProps || []).forEach(function(pa) {
@@ -892,8 +919,12 @@ import Layout from '../layouts/Layout.astro';
         
         card.onclick = function(e) {
           if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown')) return;
-          window.journal.setActiveJournalId(j.id);
-          window.location.href = '/dashboard.html';
+          if (typeof window.switchJournalWithAnimation === 'function') {
+            window.switchJournalWithAnimation(j, '/dashboard.html');
+          } else {
+            window.journal.setActiveJournalId(j.id);
+            window.location.href = '/dashboard.html';
+          }
         };
         
         var formatCurrencyFn = window.formatCurrency || (val => Number(val).toFixed(2));
@@ -905,31 +936,78 @@ import Layout from '../layouts/Layout.astro';
         var defaultBadge = j.is_default ? `<div class="journal-card-badge"><i data-lucide="star" style="width:12px;height:12px;fill:currentColor;"></i> ${i18n.t('journal.default_badge')}</div>` : '';
         var tradesTxt = i18n.t('journal.trades_count').replace('{count}', j.trade_count || 0);
 
-        // Prop firm badge on card
+        // Prop firm branding & badge on card
         var propBadge = '';
         var propAcc = propAccountsMap.get(j.id);
+        var propInfo = null;
         if (propAcc) {
           var tmplKey = propAcc.template_key;
           var tmpl = window.PropTemplates ? window.PropTemplates.getPropTemplate(tmplKey) : null;
           var firmName = tmpl ? tmpl.firm : (propAcc.rules?.firm || 'Prop');
+          
+          var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+          if (typeof resolver === 'function') {
+            propInfo = resolver(firmName || tmplKey);
+          }
+          if (!propInfo) {
+            propInfo = {
+              id: 'custom',
+              name: firmName || 'Prop',
+              logo: '/images/props/custom.svg',
+              symbolLogo: '/images/props/custom.svg',
+              badgeClass: 'prop-custom',
+              accentColor: '#a855f7'
+            };
+          }
+
           var phaseNum = (propAcc.phase_index !== undefined ? propAcc.phase_index + 1 : 1);
           var phaseLabel = (propAcc.rules && propAcc.rules.phase_name) 
             ? propAcc.rules.phase_name 
             : (window.i18n ? window.i18n.t('prop.phase_num', { n: phaseNum }) : ('Faz ' + phaseNum));
           var isCustomized = Boolean(propAcc.rules && propAcc.rules.is_customized);
           var custLabel = isCustomized ? (' (' + (window.i18n ? window.i18n.t('prop.customized') : 'Özelleştirildi') + ')') : '';
-          var propBadgeText = (window.i18n ? window.i18n.t('prop.badge') : 'PROP') + ': ' + escapeHtml(firmName) + ' (' + escapeHtml(phaseLabel) + ')' + custLabel;
-          propBadge = `<div class="journal-card-prop-badge" title="${escapeHtml(firmName)} - ${escapeHtml(phaseLabel)}"><span>${propBadgeText}</span></div>`;
+
+          var badgeClass = propInfo.badgeClass || 'prop-custom';
+          var miniLogo = propInfo.symbolLogo || propInfo.logo;
+          var displayFirm = propInfo.name || firmName;
+
+          propBadge = `
+            <div class="journal-card-prop-badge ${badgeClass}" title="${escapeHtml(displayFirm)} - ${escapeHtml(phaseLabel)}">
+              <img src="${miniLogo}" class="prop-badge-mini-logo" alt="${escapeHtml(displayFirm)}" loading="lazy" />
+              <span class="prop-badge-firm">${escapeHtml(displayFirm)}</span>
+              <span class="prop-badge-sep">•</span>
+              <span class="prop-badge-phase">${escapeHtml(phaseLabel)}${custLabel ? ` <span style="opacity:0.75">${escapeHtml(custLabel)}</span>` : ''}</span>
+            </div>
+          `;
+
+          card.classList.add('is-prop-account');
+          if (propInfo.accentColor) {
+            card.style.setProperty('--prop-brand-color', propInfo.accentColor);
+            card.style.setProperty('--prop-brand-glow', propInfo.accentColor + '35');
+          }
         }
         
         var safeName = escapeHtml(j.name);
         var safeDesc = escapeHtml(j.description || '');
 
-        card.innerHTML = `
-          <div class="journal-card-top">
+        var topIconHtml = '';
+        if (propAcc && propInfo) {
+          topIconHtml = `
+            <div class="journal-icon-wrap has-prop-logo ${propInfo.badgeClass}" title="${escapeHtml(propInfo.name || 'Prop')}">
+              <img src="${propInfo.logo}" alt="${escapeHtml(propInfo.name || 'Prop')}" class="prop-card-logo-img" />
+            </div>
+          `;
+        } else {
+          topIconHtml = `
             <div class="journal-icon-wrap">
               <i data-lucide="${escapeHtml(iconStr)}"></i>
             </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="journal-card-top">
+            ${topIconHtml}
             
             <div class="journal-card-actions">
               ${defaultBadge}

@@ -780,6 +780,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       else if (pnl < 0) { losses++; lossPnLs.push(pnl); }
     });
 
+    try {
+      localStorage.setItem('ww_cached_pnl', String(totalPnL));
+      if (typeof window.syncAmbientGlow === 'function') {
+        window.syncAmbientGlow(totalPnL);
+      }
+    } catch(e) {}
+
     var wr = total ? (wins / total) * 100 : 0;
     var avgWin = winPnLs.length ? winPnLs.reduce(function (a, b) { return a + b; }, 0) / winPnLs.length : 0;
     var avgLoss = lossPnLs.length ? -(Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0) / lossPnLs.length)) : 0;
@@ -3451,6 +3458,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
 })();
 document.addEventListener('journal-changed', (e) => {
+  if (window.__wj_journal_transitioning) return;
   var newId = e && e.detail && e.detail.id;
   var currentId = localStorage.getItem('ww_active_journal_id');
   if (newId && currentId && newId === currentId) return;

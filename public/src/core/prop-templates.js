@@ -591,11 +591,131 @@
     };
   }
 
+  /**
+   * Returns branding info for a prop firm (official logo, symbol, badge CSS class, colors).
+   * @param {string} firmOrKey - Firm name or template key (e.g. 'FTMO', 'ftmo-2step', 'FundedNext', 'FundingPips')
+   */
+  function getPropFirmInfo(firmOrKey) {
+    var raw = String(firmOrKey || '').trim().toLowerCase();
+    
+    if (raw.indexOf('ftmo') !== -1) {
+      return {
+        id: 'ftmo',
+        name: 'FTMO',
+        logo: '/images/props/ftmo-symbol.svg',
+        symbolLogo: '/images/props/ftmo-symbol.svg',
+        badgeClass: 'prop-ftmo',
+        accentColor: '#00d2ff',
+        bgGradient: 'linear-gradient(135deg, rgba(8, 14, 37, 0.95), rgba(10, 24, 55, 0.85))'
+      };
+    }
+    
+    if (raw.indexOf('fundednext') !== -1 || raw.indexOf('funded next') !== -1) {
+      return {
+        id: 'fundednext',
+        name: 'FundedNext',
+        logo: '/images/props/fundednext-symbol.svg',
+        symbolLogo: '/images/props/fundednext-symbol.svg',
+        badgeClass: 'prop-fundednext',
+        accentColor: '#d946ef',
+        bgGradient: 'linear-gradient(135deg, rgba(20, 9, 43, 0.95), rgba(30, 11, 60, 0.85))'
+      };
+    }
+    
+    if (raw.indexOf('fundingpips') !== -1 || raw.indexOf('funding pips') !== -1) {
+      return {
+        id: 'fundingpips',
+        name: 'FundingPips',
+        logo: '/images/props/fundingpips-symbol.svg',
+        symbolLogo: '/images/props/fundingpips-symbol.svg',
+        badgeClass: 'prop-fundingpips',
+        accentColor: '#38bdf8',
+        bgGradient: 'linear-gradient(135deg, rgba(6, 12, 29, 0.95), rgba(8, 20, 48, 0.85))'
+      };
+    }
+
+    if (raw.indexOf('apex') !== -1) {
+      return {
+        id: 'apex',
+        name: 'Apex Trader Funding',
+        logo: '/images/props/apex-symbol.svg',
+        symbolLogo: '/images/props/apex-symbol.svg',
+        badgeClass: 'prop-apex',
+        accentColor: '#f97316',
+        bgGradient: 'linear-gradient(135deg, rgba(28, 14, 6, 0.95), rgba(42, 18, 8, 0.85))'
+      };
+    }
+
+    if (raw.indexOf('topstep') !== -1) {
+      return {
+        id: 'topstep',
+        name: 'Topstep',
+        logo: '/images/props/topstep-symbol.svg',
+        symbolLogo: '/images/props/topstep-symbol.svg',
+        badgeClass: 'prop-topstep',
+        accentColor: '#eab308',
+        bgGradient: 'linear-gradient(135deg, rgba(28, 22, 6, 0.95), rgba(42, 32, 8, 0.85))'
+      };
+    }
+
+    if (raw.indexOf('5ers') !== -1 || raw.indexOf('the5ers') !== -1 || raw.indexOf('five percent') !== -1) {
+      return {
+        id: 'the5ers',
+        name: 'The5ers',
+        logo: '/images/props/the5ers-symbol.svg',
+        symbolLogo: '/images/props/the5ers-symbol.svg',
+        badgeClass: 'prop-the5ers',
+        accentColor: '#22c55e',
+        bgGradient: 'linear-gradient(135deg, rgba(6, 26, 14, 0.95), rgba(8, 38, 20, 0.85))'
+      };
+    }
+
+    if (raw.indexOf('e8') !== -1) {
+      return {
+        id: 'e8',
+        name: 'E8 Markets',
+        logo: '/images/props/e8-symbol.svg',
+        symbolLogo: '/images/props/e8-symbol.svg',
+        badgeClass: 'prop-e8',
+        accentColor: '#4fe3a4',
+        bgGradient: 'linear-gradient(135deg, rgba(6, 24, 22, 0.95), rgba(8, 36, 32, 0.85))'
+      };
+    }
+
+    if (raw.indexOf('alpha') !== -1 || raw.indexOf('acg') !== -1) {
+      return {
+        id: 'alpha',
+        name: 'Alpha Capital',
+        logo: '/images/props/alpha-symbol.svg',
+        symbolLogo: '/images/props/alpha-symbol.svg',
+        badgeClass: 'prop-alpha',
+        accentColor: '#f59e0b',
+        bgGradient: 'linear-gradient(135deg, rgba(28, 20, 6, 0.95), rgba(38, 28, 8, 0.85))'
+      };
+    }
+    
+    return {
+      id: 'custom',
+      name: firmOrKey || 'Prop',
+      logo: '/images/props/custom-symbol.svg',
+      symbolLogo: '/images/props/custom-symbol.svg',
+      badgeClass: 'prop-custom',
+      accentColor: '#a855f7',
+      bgGradient: 'linear-gradient(135deg, rgba(18, 14, 36, 0.95), rgba(30, 20, 55, 0.85))'
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    window.getPropFirmInfo = getPropFirmInfo;
+  }
+
   return {
     DEFAULT_STARTING_BALANCES: DEFAULT_STARTING_BALANCES,
     PROP_TEMPLATES: PROP_TEMPLATES,
     getPropTemplates: getPropTemplates,
     getPropTemplate: getPropTemplate,
-    getDefaultRules: getDefaultRules
+    getDefaultRules: getDefaultRules,
+    getPropFirmInfo: getPropFirmInfo
   };
 });
+

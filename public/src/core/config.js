@@ -92,11 +92,11 @@ export const WW_CONFIG = {
   // ⭐ public/config.js'ten oku, yoksa fallback
   TURNSTILE_SITE_KEY: (_existingWindowConfig && _existingWindowConfig.TURNSTILE_SITE_KEY) || '0x4AAAAAAEzAoR2XhUtPTxV7',
   THEME: {
-    backgroundColor: '#0a0a0f',
+    backgroundColor: '#07070c',
     fontSize: 16,
-    surfaceColor: '#111118',
-    borderColor: '#1e1e2e',
-    textColor: '#e8e8f0'
+    surfaceColor: '#0e0e16',
+    borderColor: '#1a1a28',
+    textColor: '#f0f0f8'
   },
   DEFAULT_PRICES: {
     monthly: 12.00,

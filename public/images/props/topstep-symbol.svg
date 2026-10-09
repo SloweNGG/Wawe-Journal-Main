@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="ts-gold" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <filter id="ts-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#eab308" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#ts-glow)">
+    <!-- Topstep T with stepped geometric accent -->
+    <path d="M16 18H84V34H58V86H42V34H16V18Z" fill="url(#ts-gold)"/>
+    <path d="M68 60H86V86H68V60Z" fill="#ffffff" fill-opacity="0.9"/>
+    <path d="M68 38H86V54H68V38Z" fill="url(#ts-gold)" fill-opacity="0.5"/>
+  </g>
+</svg>

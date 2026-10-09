@@ -207,6 +207,66 @@ const isActive = (page: string) => {
   </div>
 </nav>
 
+<!-- ⚡ 0MS NAVBAR PRE-HYDRATION: Parse anında senkron çalışır, Frame 0 boyanmadan önce navbar'ı son haline getirir -->
+<script is:inline>
+(function() {
+  try {
+    // 1. Dil senkronizasyonu
+    var lang = localStorage.getItem('ww_language') || document.documentElement.getAttribute('data-lang') || 'en';
+    if (lang === 'en' || lang === 'de') {
+      var dict = {
+        en: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategies', 'nav.calendar': 'Calendar', 'nav.premium': 'Premium' },
+        de: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategien', 'nav.calendar': 'Kalender', 'nav.premium': 'Premium' }
+      }[lang];
+      if (dict) {
+        document.querySelectorAll('.nav-links a span[data-i18n]').forEach(function(sp) {
+          var k = sp.getAttribute('data-i18n');
+          if (dict[k]) sp.textContent = dict[k];
+        });
+      }
+    }
+
+    // 2. Plan rozeti senkronizasyonu (Free vs Premium)
+    var plan = localStorage.getItem('ww_user_plan') || sessionStorage.getItem('ww_user_plan');
+    if (plan) {
+      var badge = document.getElementById('plan-badge');
+      var text = document.getElementById('plan-text');
+      if (badge && text) {
+        if (plan === 'premium') {
+          badge.classList.add('premium');
+          text.textContent = 'Premium';
+        } else {
+          badge.classList.remove('premium');
+          text.textContent = (lang === 'en' ? 'Free' : (lang === 'de' ? 'Kostenlos' : 'Ücretsiz'));
+        }
+      }
+    }
+
+    // 3. Aktif defter adı senkronizasyonu
+    var jName = localStorage.getItem('ww_active_journal_name');
+    if (jName) {
+      var swName = document.querySelector('.nav-journal-switcher .journal-name');
+      if (swName) swName.textContent = jName;
+      var menuJName = document.getElementById('menu-journal-name');
+      if (menuJName) menuJName.textContent = jName;
+    }
+
+    // 4. Avatar senkronizasyonu
+    var avUrl = localStorage.getItem('ww_avatar_url') || sessionStorage.getItem('ww_avatar_url');
+    var dName = localStorage.getItem('ww_user_display_name') || sessionStorage.getItem('ww_user_display_name');
+    var avEl = document.getElementById('user-avatar');
+    var avTxt = document.getElementById('nav-avatar-text');
+    if (avEl) {
+      if (avUrl && avUrl !== 'none' && !avUrl.startsWith('data:') && !avUrl.startsWith('blob:')) {
+        avEl.innerHTML = '<img src="' + avUrl + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="" />';
+      } else if (dName && avTxt) {
+        avTxt.textContent = dName.trim().slice(0, 2).toUpperCase();
+      }
+    }
+  } catch (e) {}
+})();
+</script>
+
 <div class="nav-backdrop" id="nav-backdrop"></div>
 <div class="nav-menu" id="nav-menu">
   <div class="nav-menu-inner">

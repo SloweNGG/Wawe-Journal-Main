@@ -36,8 +36,6 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  transform: translateZ(0);
-  will-change: transform;
 }
 
 .nav {
@@ -48,9 +46,8 @@
   padding: 0 1.75rem;
   box-sizing: border-box;
   width: 100%;
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -64,7 +61,6 @@
   font-size: var(--nav-font-size);
   line-height: var(--nav-line-height);
   animation: none !important;
-  transform: translateZ(0);
 }
 
 .nav * {
@@ -116,7 +112,7 @@ body.light-theme .nav::after {
   text-decoration: none;
   white-space: nowrap;
   font-family: 'DM Sans', sans-serif;
-  min-width: 72px;
+  min-width: 88px;
   text-align: center;
   display: inline-flex;
   align-items: center;
@@ -125,7 +121,7 @@ body.light-theme .nav::after {
   visibility: visible;
   opacity: 1;
   animation: none !important;
-  transition: color 0.15s ease, background-color 0.15s ease, transform 0.2s ease;
+  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .nav-links a.loaded {
@@ -139,12 +135,12 @@ body.light-theme .nav::after {
   color: var(--accent2);
   background: rgba(139,92,246,0.12);
   transition: none !important;
+  transform: none !important;
 }
 
 .nav-links a:hover {
   color: var(--accent2);
   background: rgba(139,92,246,0.08);
-  transform: translateY(-1px);
 }
 
 .nav-links a::after {
@@ -265,7 +261,7 @@ body.light-theme .nav::after {
   background: rgba(34,197,94,0.1);
   border: 1px solid rgba(34,197,94,0.22);
   color: var(--green);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   white-space: nowrap;
   height: 28px;
   backdrop-filter: blur(8px);
@@ -497,9 +493,13 @@ body.light-theme .nav-bell-btn {
   background: rgba(0,0,0,0.02);
 }
 
-.nav-bell-btn svg {
+.nav-bell-btn svg,
+.nav-bell-btn i {
   width: 16px;
   height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-bell-btn:hover {
@@ -2017,15 +2017,188 @@ body.light-theme .nav-menu {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 767px) {
-  .main,
-  .dashboard-main,
-  .calendar-page-main,
-  .strategies-main,
-  .trades-main,
-  .bug-main {
-    animation: fadeInContent 0.18s cubic-bezier(0.2, 0, 0.2, 1) both;
-  }
+/* ============================================================
+   ⭐ LINEAR / RAYCAST ULTRA-FAST JOURNAL TRANSITION (160ms Micro-Slide & Spring)
+   GPU Compositor Only — Zero Paint Reflows — Zero GPU Blur Overhead
+   ============================================================ */
+
+/* 1. Tıklanan defter maddesi - Mikro yaylanma */
+.journal-item.switching {
+  background: rgba(139, 92, 246, 0.2) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  transform: scale(0.985);
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1), background 0.1s ease;
+}
+.journal-item.switching .journal-check {
+  opacity: 1 !important;
+  animation: checkPop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275) both !important;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 2. Navbar buton yaylanması (Raycast Spring) */
+.nav-journal-switcher.morphing,
+.nav-journal-switcher.morphing * {
+  animation: raycastPillSpring 0.22s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+@keyframes raycastPillSpring {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.95); }
+  70% { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+
+/* 3. Sayfa içeriği - SADECE GPU (transform & opacity) - KESİNLİKLE AĞIR BLUR YOK */
+.journal-switching-out {
+  opacity: 0 !important;
+  transform: translate3d(0, 6px, 0) scale(0.995) !important;
+  will-change: transform, opacity !important;
+  backface-visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 0.13s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.13s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.journal-switching-in {
+  opacity: 0 !important;
+  transform: translate3d(0, -6px, 0) scale(0.995) !important;
+  will-change: transform, opacity !important;
+  backface-visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.journal-switching-in-active {
+  opacity: 1 !important;
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  will-change: transform, opacity !important;
+  backface-visibility: hidden !important;
+  transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* 4. Raycast-Style Lightweight Command HUD Pill */
+.wj-journal-transit-hud {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  transform: translate3d(-50%, -12px, 0) scale(0.96);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px 5px 8px;
+  background: rgba(13, 14, 23, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7),
+              0 0 0 1px rgba(255, 255, 255, 0.04),
+              0 0 24px -4px var(--transit-glow, rgba(139, 92, 246, 0.25));
+  border-radius: 99px;
+  z-index: 10001;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transition: opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.light-theme .wj-journal-transit-hud {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 36px -8px rgba(15, 23, 42, 0.15),
+              0 0 0 1px rgba(0, 0, 0, 0.04),
+              0 0 24px -4px var(--transit-glow, rgba(139, 92, 246, 0.2));
+}
+
+.wj-journal-transit-hud.visible {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+.wj-journal-transit-hud.hiding {
+  opacity: 0;
+  transform: translate3d(-50%, -10px, 0) scale(0.97);
+}
+
+.wj-journal-transit-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid currentColor;
+}
+.wj-journal-transit-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.2;
+}
+
+.wj-journal-transit-text {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  line-height: 1;
+}
+
+.wj-journal-transit-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text, #fff);
+  white-space: nowrap;
+}
+
+.wj-journal-transit-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body.light-theme .wj-journal-transit-dot {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.wj-journal-transit-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.wj-journal-transit-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--transit-color, var(--accent));
+  border-radius: 50%;
+  animation: transitSpin 0.5s linear infinite;
+  margin-left: 2px;
+}
+
+@keyframes transitSpin {
+  to { transform: rotate(360deg); }
+}
+
+.wj-journal-transit-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #22c55e;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  animation: checkPop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
 /* ============================================================
@@ -2136,22 +2309,97 @@ body.light-theme .nav-menu {
   vertical-align: middle;
 }
 
+.nav-prop-tag.nav-prop-firm-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px 2px 4px;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.nav-prop-tag .nav-prop-mini-icon {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.nav-prop-tag.prop-ftmo {
+  background: rgba(0, 210, 255, 0.15);
+  border-color: rgba(0, 210, 255, 0.4);
+  color: #00d2ff;
+}
+
+.nav-prop-tag.prop-fundednext {
+  background: rgba(217, 70, 239, 0.15);
+  border-color: rgba(217, 70, 239, 0.4);
+  color: #f472b6;
+}
+
+.nav-prop-tag.prop-fundingpips {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.nav-prop-tag.prop-apex {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #fb923c;
+}
+
+.nav-prop-tag.prop-topstep {
+  background: rgba(234, 179, 8, 0.15);
+  border-color: rgba(234, 179, 8, 0.4);
+  color: #facc15;
+}
+
+.nav-prop-tag.prop-the5ers {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.nav-prop-tag.prop-e8 {
+  background: rgba(79, 227, 164, 0.15);
+  border-color: rgba(79, 227, 164, 0.4);
+  color: #4fe3a4;
+}
+
+.nav-prop-tag.prop-alpha {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.nav-prop-tag.prop-custom {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+}
+
 .journal-switch-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: transparent;
   border: none;
   color: var(--muted);
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
-  padding: clamp(0.2rem, 0.3vw, 0.3rem) clamp(0.4rem, 0.6vw, 0.7rem);
+  padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   min-height: 32px;
-  transition: all 0.2s;
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
 .journal-switch-btn:hover {
@@ -2170,10 +2418,12 @@ body.light-theme .nav-menu {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100px;
+  max-width: clamp(130px, 15vw, 240px);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
   color: inherit;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .journal-arrow {
@@ -2182,6 +2432,7 @@ body.light-theme .nav-menu {
   margin-left: 2px;
   width: 12px;
   height: 12px;
+  flex-shrink: 0;
 }
 
 .nav-journal-switcher.open .journal-arrow {
@@ -2355,6 +2606,78 @@ body.light-theme .journal-item.active {
 .journal-icon-wrap svg {
   width: 14px;
   height: 14px;
+}
+
+.journal-icon-wrap.has-prop-logo {
+  position: relative;
+  overflow: visible;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-ftmo {
+  background: rgba(0, 210, 255, 0.12) !important;
+  border: 1px solid rgba(0, 210, 255, 0.38) !important;
+  box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-fundednext {
+  background: rgba(217, 70, 239, 0.12) !important;
+  border: 1px solid rgba(217, 70, 239, 0.38) !important;
+  box-shadow: 0 0 10px rgba(217, 70, 239, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-fundingpips {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border: 1px solid rgba(56, 189, 248, 0.38) !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-apex {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border: 1px solid rgba(249, 115, 22, 0.38) !important;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-topstep {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.38) !important;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-the5ers {
+  background: rgba(34, 197, 94, 0.12) !important;
+  border: 1px solid rgba(34, 197, 94, 0.38) !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-e8 {
+  background: rgba(79, 227, 164, 0.12) !important;
+  border: 1px solid rgba(79, 227, 164, 0.38) !important;
+  box-shadow: 0 0 10px rgba(79, 227, 164, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-alpha {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.38) !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.journal-icon-wrap.has-prop-logo.prop-custom {
+  background: rgba(168, 85, 247, 0.12) !important;
+  border: 1px solid rgba(168, 85, 247, 0.38) !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.nav-dropdown-prop-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.journal-item:hover .nav-dropdown-prop-icon {
+  transform: scale(1.15);
 }
 
 .journal-info {

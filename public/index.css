@@ -2024,7 +2024,97 @@ footer.site-footer {
 
   .glow-line::after,
   .hero-beta-badge,
-  .beta-dot {
-    animation: none;
+  .beta-dot,
+  .wj-ambient-orb-1,
+  .wj-ambient-orb-2 {
+    animation: none !important;
   }
+}
+
+/* ============================================================
+   ⭐ DYNAMIC AMBIENT BACKDROP (PnL Adaptive Glow)
+   ============================================================ */
+:root {
+  --ambient-color-1: rgba(139, 92, 246, 0.12); /* Wawe Purple */
+  --ambient-color-2: rgba(99, 102, 241, 0.08);  /* Deep Indigo */
+}
+
+/* KÂR (Profit): Emerald Green Aura */
+body[data-ambient-state="profit"] {
+  --ambient-color-1: rgba(34, 197, 94, 0.15);
+  --ambient-color-2: rgba(16, 185, 129, 0.09);
+}
+
+/* ZARAR (Loss): Crimson Red Aura */
+body[data-ambient-state="loss"] {
+  --ambient-color-1: rgba(239, 68, 68, 0.15);
+  --ambient-color-2: rgba(220, 38, 38, 0.09);
+}
+
+/* NÖTR (Neutral): Signature Purple Aura */
+body[data-ambient-state="neutral"] {
+  --ambient-color-1: rgba(139, 92, 246, 0.13);
+  --ambient-color-2: rgba(168, 85, 247, 0.08);
+}
+
+.wj-ambient-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+body.ambient-enabled .wj-ambient-backdrop {
+  opacity: 1;
+}
+
+body.light-theme .wj-ambient-backdrop {
+  opacity: 0.45;
+}
+
+.wj-ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  will-change: transform;
+  pointer-events: none;
+  transition: background 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wj-ambient-orb-1 {
+  width: min(650px, 50vw);
+  height: min(650px, 50vw);
+  top: -100px;
+  right: 2%;
+  background: radial-gradient(circle, var(--ambient-color-1) 0%, transparent 72%);
+  animation: ambientFloat1 24s ease-in-out infinite alternate;
+}
+
+.wj-ambient-orb-2 {
+  width: min(550px, 45vw);
+  height: min(550px, 45vw);
+  top: 38%;
+  left: -80px;
+  background: radial-gradient(circle, var(--ambient-color-2) 0%, transparent 72%);
+  animation: ambientFloat2 28s ease-in-out infinite alternate;
+}
+
+@keyframes ambientFloat1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-60px, 70px, 0) scale(1.08); }
+  100% { transform: translate3d(-25px, 35px, 0) scale(0.96); }
+}
+
+@keyframes ambientFloat2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(65px, -55px, 0) scale(1.1); }
+  100% { transform: translate3d(30px, -20px, 0) scale(0.94); }
+}
+
+#app-scroll-container {
+  position: relative;
+  z-index: 1;
 }

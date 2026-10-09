@@ -1492,4 +1492,7 @@
 })();
 
 wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 + tam i18n + PnL fix uygulandı)');
-document.addEventListener('journal-changed', () => window.location.reload());
+document.addEventListener('journal-changed', () => {
+  if (window.__wj_journal_transitioning) return;
+  window.location.reload();
+});

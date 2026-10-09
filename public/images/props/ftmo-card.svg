@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="ftmo-sq-bg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#070e24"/>
+      <stop offset="100%" stop-color="#030612"/>
+    </linearGradient>
+    <linearGradient id="ftmo-sq-cyan" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#0066fe"/>
+    </linearGradient>
+    <filter id="ftmo-sq-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#00d2ff" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#ftmo-sq-bg)"/>
+  <rect x="1" y="1" width="98" height="98" rx="21" stroke="#00d2ff" stroke-opacity="0.35" stroke-width="2"/>
+  <!-- FTMO Authentic Geometric Diamond Symbol Scaled to 100x100 -->
+  <g transform="translate(18, 14) scale(0.233)" filter="url(#ftmo-sq-glow)">
+    <path d="M128.943 256.083L86.6758 213.817L128.943 171.551L128.943 256.083ZM128.943 60.9111L31.3578 158.497L0.90114 128.04L128.943 -0.00232837L128.943 60.9111ZM128.943 146.687L74.2455 201.384L43.7888 170.928L128.943 85.7737V146.687ZM146.348 256.082V195.169L213.476 128.04L146.348 60.9111L146.348 -0.00232837L274.39 128.04L146.348 256.082Z" fill="url(#ftmo-sq-cyan)"/>
+  </g>
+  <!-- FTMO text at bottom -->
+  <text x="50" y="87" fill="#ffffff" font-family="'Syne', 'Inter', -apple-system, sans-serif" font-size="12" font-weight="900" letter-spacing="1.5" text-anchor="middle">FTMO</text>
+</svg>

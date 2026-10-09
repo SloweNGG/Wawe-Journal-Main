@@ -984,6 +984,10 @@ export default {
   "journal.switch_to": "Wechseln zu {name}",
   "journal.section_account": "Kontodetails",
   "journal.section_prop": "Prop-Firm & Verfolgung",
+  "journal.transit_active": "Aktiv",
+  "journal.transit_switching": "Wechseln",
+  "journal.transit_ready": "Bereit",
+  "journal.default_account": "Konto",
   "prop.standard_mode_title": "Standard-Portfoliokonto",
   "prop.standard_mode_desc": "Verfolgen Sie alle Ihre Trades frei ohne Regelbeschränkungen oder Verlustlimits.",
   "prop.standard_mode_tip": "💡 Aktivieren Sie oben den Prop-Firm-Modus, um Evaluierungsregeln wie FTMO, FundedNext usw. automatisch zu verfolgen."

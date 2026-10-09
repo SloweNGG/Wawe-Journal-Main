@@ -189,11 +189,17 @@ function hideStrategySkeleton() {
   var el6 = document.getElementById('comparison-section');
 
   if (el1) el1.style.display = 'none';
-  if (el2) el2.style.display = 'grid';
   if (el3) el3.style.display = 'none';
   if (el4) el4.style.display = 'block';
   if (el5) el5.style.display = 'none';
-  if (el6) el6.style.display = 'block';
+
+  if (strategiesList && strategiesList.length > 0) {
+    if (el2) el2.style.display = 'grid';
+    if (el6) el6.style.display = 'block';
+  } else {
+    if (el2) el2.style.display = 'none';
+    if (el6) el6.style.display = 'none';
+  }
 }
 
 // ============================================================
@@ -462,46 +468,93 @@ function fmtDate(dateStr) {
 }
 
 // ============================================================
+// APEXCHARTS READY HELPER (Non-blocking)
+// ============================================================
+var _apexReadyCallbacks = [];
+var _apexReadyPoller = null;
+
+function whenApexReady(callback) {
+  if (typeof window.ApexCharts !== 'undefined') {
+    callback();
+    return;
+  }
+  _apexReadyCallbacks.push(callback);
+  if (!_apexReadyPoller) {
+    var attempts = 0;
+    _apexReadyPoller = setInterval(function() {
+      attempts++;
+      if (typeof window.ApexCharts !== 'undefined') {
+        clearInterval(_apexReadyPoller);
+        _apexReadyPoller = null;
+        var cbs = _apexReadyCallbacks.slice();
+        _apexReadyCallbacks = [];
+        cbs.forEach(function(cb) {
+          try { cb(); } catch(e) { console.error('whenApexReady callback error:', e); }
+        });
+      } else if (attempts >= 150) {
+        clearInterval(_apexReadyPoller);
+        _apexReadyPoller = null;
+      }
+    }, 30);
+  }
+}
+
+// ============================================================
 // DRAW SPARKLINE - ApexCharts
 // ============================================================
 function drawSparkline(containerId, data, color) {
-  try {
-    var container = document.getElementById(containerId);
-    if (!container) return;
-    if (sparkCharts[containerId]) {
-      try { sparkCharts[containerId].destroy(); } catch(e) {}
-      sparkCharts[containerId] = null;
+  whenApexReady(function() {
+    try {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      if (sparkCharts[containerId]) {
+        try { sparkCharts[containerId].destroy(); } catch(e) {}
+        sparkCharts[containerId] = null;
+      }
+      container.innerHTML = '';
+
+      var plotData = (data && data.length === 1) ? [0, data[0]] : (data || []);
+      if (!plotData.length) return;
+
+      var isNeg = plotData[plotData.length - 1] < 0;
+      var lineColor = isNeg ? '#ef4444' : (color || '#8b5cf6');
+
+      var options = {
+        series: [{ name: 'Equity', data: plotData }],
+        chart: {
+          type: 'area',
+          height: 42,
+          sparkline: { enabled: true },
+          animations: { enabled: true, speed: 500 },
+          background: 'transparent',
+          toolbar: { show: false }
+        },
+        stroke: {
+          curve: 'smooth',
+          width: 2,
+          colors: [lineColor]
+        },
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.38,
+            opacityTo: 0.02,
+            stops: [0, 100]
+          }
+        },
+        colors: [lineColor],
+        markers: { size: 0 },
+        tooltip: { enabled: false },
+        grid: { show: false }
+      };
+
+      sparkCharts[containerId] = new ApexCharts(container, options);
+      sparkCharts[containerId].render();
+    } catch(e) {
+      console.warn('drawSparkline error:', e);
     }
-    container.innerHTML = '';
-
-    var isNeg = data.length > 0 && data[data.length - 1] < 0;
-    var lineColor = isNeg ? '#ef4444' : color;
-
-    var options = {
-      series: [{ name: 'Equity', data: data }],
-      chart: {
-        type: 'line',
-        height: '100%',
-        width: '100%',
-        sparkline: { enabled: true },
-        animations: { enabled: true, speed: 700 },
-        background: 'transparent',
-        toolbar: { show: false }
-      },
-      stroke: {
-        curve: 'smooth',
-        width: 1.5,
-        colors: [lineColor]
-      },
-      fill: { type: 'solid', opacity: 0 },
-      markers: { size: 0 },
-      tooltip: { enabled: false },
-      grid: { show: false }
-    };
-
-    sparkCharts[containerId] = new ApexCharts(container, options);
-    sparkCharts[containerId].render();
-  } catch(e) {}
+  });
 }
 
 // ============================================================
@@ -517,8 +570,9 @@ function renderStrategiesGrid() {
     var statsBar = document.getElementById('summary-stats-bar');
     if (compSection) compSection.style.display = 'none';
     if (statsBar) statsBar.style.display = 'none';
-    container.innerHTML = '\n      <div class="empty-strategies">\n        <div class="empty-icon">📭</div>\n        <h3 data-i18n="strategies.empty.title">Henüz strateji eklenmemiş</h3>\n        <p data-i18n="strategies.empty.desc">"Yeni Strateji Ekle" butonu ile ilk stratejini oluştur.</p>\n      </div>';
-    if (typeof i18n !== 'undefined') i18n.apply();
+    container.innerHTML = '\n      <div class="empty-strategies">\n        <div class="empty-icon">\n          <i data-lucide="target">\n            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">\n              <circle cx="12" cy="12" r="10"></circle>\n              <circle cx="12" cy="12" r="6"></circle>\n              <circle cx="12" cy="12" r="2"></circle>\n            </svg>\n          </i>\n        </div>\n        <h3 data-i18n="strategies.empty.title">' + (typeof _t === 'function' ? _t('strategies.empty.title', 'Henüz strateji eklenmemiş') : 'Henüz strateji eklenmemiş') + '</h3>\n        <p data-i18n="strategies.empty.desc">' + (typeof _t === 'function' ? _t('strategies.empty.desc', '"Yeni Strateji Ekle" butonu ile ilk stratejini oluştur.') : '"Yeni Strateji Ekle" butonu ile ilk stratejini oluştur.') + '</p>\n      </div>';
+    if (typeof i18n !== 'undefined' && i18n.apply) i18n.apply();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     return;
   }
 
@@ -579,10 +633,30 @@ function renderStrategiesGrid() {
     }
 
     var sparkHtml = '';
-    if (hasData && perf.pnlSeries.length > 1) {
+    if (hasData && perf.pnlSeries.length >= 1) {
       sparkHtml = '<div class="sc-spark clickable" data-id="' + s.id + '" title="' + _t('strategies.card.enlarge_equity', "Equity curve'yi büyüt") + '"><span class="sc-spark-hint">' + _t('strategies.card.enlarge', 'büyüt ⤢') + '</span><div id="' + sparkId + '" style="width:100%;height:100%;"></div></div>';
     } else {
-      sparkHtml = '<div class="sc-spark" style="display:flex;align-items:center;justify-content:center;opacity:.3;font-size:11px;color:var(--muted)"><span data-i18n="strategies.card.no_data">' + _t('strategies.card.no_data', 'Veri Yok') + '</span></div>';
+      var safeGradId = 'empty-spark-grad-' + String(s.id).replace(/[^a-zA-Z0-9_-]/g, '');
+      sparkHtml = '<div class="sc-spark sc-spark-empty" title="' + _t('strategies.card.no_data', 'Veri Yok') + '">' +
+        '<svg class="sc-spark-empty-svg" viewBox="0 0 280 42" preserveAspectRatio="none" aria-hidden="true">' +
+          '<defs>' +
+            '<linearGradient id="' + safeGradId + '" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="' + safeColor + '" stop-opacity="0.22"/>' +
+              '<stop offset="100%" stop-color="' + safeColor + '" stop-opacity="0"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<line x1="0" y1="14" x2="280" y2="14" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3" stroke-width="1"/>' +
+          '<line x1="0" y1="28" x2="280" y2="28" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3" stroke-width="1"/>' +
+          '<path d="M 0,26 C 45,26 70,16 110,21 C 150,26 185,15 225,20 C 250,24 268,18 280,19 L 280,42 L 0,42 Z" fill="url(#' + safeGradId + ')"/>' +
+          '<path d="M 0,26 C 45,26 70,16 110,21 C 150,26 185,15 225,20 C 250,24 268,18 280,19" fill="none" stroke="' + safeColor + '" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4,3" opacity="0.4"/>' +
+        '</svg>' +
+        '<div class="sc-spark-empty-badge">' +
+          '<svg class="sc-spark-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>' +
+          '</svg>' +
+          '<span data-i18n="strategies.card.no_data">' + _t('strategies.card.no_data', 'Veri Yok') + '</span>' +
+        '</div>' +
+      '</div>';
     }
 
     var wrDotClass = hasData ? (perf.winRate >= 50 ? 'pos' : 'neg') : '';
@@ -610,7 +684,7 @@ function renderStrategiesGrid() {
     var perf = getStrategyPerformance(s.id);
     var sparkId = 'spark-' + s.id;
 
-    if (perf && perf.totalTrades > 0 && perf.pnlSeries.length > 1) {
+    if (perf && perf.totalTrades > 0 && perf.pnlSeries.length >= 1) {
       drawSparkline(sparkId, perf.pnlSeries, s.color);
     }
   }
@@ -629,6 +703,8 @@ function renderStrategiesGrid() {
       e.stopPropagation();
       if (confirm(i18n.t('strategies.delete_confirm'))) {
         var ok = await deleteStrategy(this.dataset.id);
+        if (window.wwCache) window.wwCache.invalidate('strategies');
+        try { window.dispatchEvent(new CustomEvent('strategy-deleted')); } catch(ev) {}
         if (ok) await loadAllData();
       }
     });
@@ -660,6 +736,12 @@ function renderStrategiesGrid() {
 // RENDER COMPARISON CHARTS - ApexCharts
 // ============================================================
 function renderComparisonCharts() {
+  whenApexReady(function() {
+    _renderComparisonChartsActual();
+  });
+}
+
+function _renderComparisonChartsActual() {
   try {
     if (!strategiesList.length) return;
     var labels = [], wrData = [], pnlData = [], colors = [];
@@ -867,6 +949,7 @@ async function confirmAddStrategy() {
 
   try {
     await addStrategy(name, desc, color);
+    if (window.wwCache) window.wwCache.invalidate('strategies');
     document.getElementById('add-strategy-modal').style.display = 'none';
     await loadAllData();
 
@@ -939,6 +1022,8 @@ async function confirmEditStrategy() {
 
   try {
     await updateStrategy(id, { name: name, description: desc, color: color });
+    if (window.wwCache) window.wwCache.invalidate('strategies');
+    try { window.dispatchEvent(new CustomEvent('strategy-saved')); } catch(ev) {}
     document.getElementById('edit-strategy-modal').style.display = 'none';
     await loadAllData();
     showToast(i18n.t('strategies.updated'));
@@ -1030,14 +1115,15 @@ function openEquityModal(strategyId) {
     var modalEl = document.getElementById('equity-curve-modal');
     if (modalEl) modalEl.style.display = 'flex';
 
-    var equityEl = document.getElementById('equity-curve-canvas');
-    if (!equityEl) return;
+    whenApexReady(function() {
+      var equityEl = document.getElementById('equity-curve-canvas');
+      if (!equityEl) return;
 
-    if (equityChartInstance) {
-      try { equityChartInstance.destroy(); } catch(e) {}
-      equityChartInstance = null;
-    }
-    equityEl.innerHTML = '';
+      if (equityChartInstance) {
+        try { equityChartInstance.destroy(); } catch(e) {}
+        equityChartInstance = null;
+      }
+      equityEl.innerHTML = '';
 
     var theme = getStrategiesApexTheme();
     var labels = perf.tradesDetail.map(function(t, i) { return fmtDate(t.trade_date); });
@@ -1125,6 +1211,7 @@ function openEquityModal(strategyId) {
 
     equityChartInstance = new ApexCharts(equityEl, equityOptions);
     equityChartInstance.render();
+    });
   } catch(e) {
     console.error('openEquityModal hatası:', e);
   }
@@ -1413,87 +1500,147 @@ function setupExportButtons() {
 // ============================================================
 // LOAD ALL DATA
 // ============================================================
+function applyTradesByStrategy() {
+  tradesByStrategy = {};
+  allTradesForStats.forEach(function(t) {
+    var sid = t.strategy_id || 'unassigned';
+    if (!tradesByStrategy[sid]) tradesByStrategy[sid] = [];
+    tradesByStrategy[sid].push(t);
+  });
+  strategyDataCache = {};
+  strategyDataCacheTime = 0;
+}
+
 async function loadAllData() {
   try {
+    var jid = (window.journal && typeof window.journal.getActiveJournalId === 'function')
+      ? window.journal.getActiveJournalId()
+      : (localStorage.getItem('ww_active_journal_id') || localStorage.getItem('activeJournalId'));
 
-  var jid = window.journal ? window.journal.getActiveJournalId() : null;
-  if (!jid) {
-    if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
-    return;
-  }
+    if (!jid && window.journal && typeof window.journal.ensureActiveJournal === 'function' && currentUser) {
+      try {
+        jid = await window.journal.ensureActiveJournal(currentUser.id);
+      } catch(e) {}
+    }
 
-    var { data: strategies } = await sb
+    if (!jid) {
+      if (typeof wwLog !== 'undefined') wwLog.warn('Aktif journal yok, veri yüklenmiyor');
+      hideStrategySkeleton();
+      return;
+    }
+
+    // ⚡ SWR Önbellek Kontrolü: Stratejiler ve işlemler önbellekte varsa 0ms'de render et!
+    var cachedStrategies = (window.wwCache && window.wwCache.get) ? window.wwCache.get('strategies', currentUser.id, jid) : null;
+    var cachedTrades = (window.wwCache && window.wwCache.get) ? (window.wwCache.get('trades_strategies', currentUser.id, jid) || window.wwCache.get('trades', currentUser.id, jid)) : null;
+
+    var renderedFromCache = false;
+    if (cachedStrategies && Array.isArray(cachedStrategies)) {
+      strategiesList = cachedStrategies;
+      allTradesForStats = cachedTrades || [];
+      applyTradesByStrategy();
+      renderStrategiesGrid();
+      renderComparisonCharts();
+      hideStrategySkeleton();
+      renderedFromCache = true;
+    }
+
+    // ⚡ Paralel Veri Çekimi: Strategies ve Trades eşzamanlı çekilir
+    var fetchStrategiesPromise = sb
       .from('strategies')
       .select('id, name, description, color, user_id, is_active, created_at')
       .eq('user_id', currentUser.id)
       .eq('journal_id', jid)
       .order('name');
-    strategiesList = strategies || [];
 
-    // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten al
-    var allTrades = [];
-    if (typeof window !== 'undefined' && window.wwCache) {
-      var cachedTrades = window.wwCache.get('trades_strategies', currentUser.id, jid);
-      if (cachedTrades && cachedTrades.length > 0) {
-        allTrades = cachedTrades;
-      }
-    }
+    var fetchTradesPromise = (renderedFromCache && cachedTrades && cachedTrades.length > 0)
+      ? Promise.resolve({ data: cachedTrades })
+      : (async function() {
+          var allTrades = [];
+          var pageSize = 1000;
+          var from = 0;
+          var hasMore = true;
 
-    if (allTrades.length === 0) {
-      var pageSize = 1000;
-      var from = 0;
-      var hasMore = true;
+          while (hasMore) {
+            var { data: tradesPage, error: tradesErr } = await sb
+              .from('trades')
+              .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
+              .eq('user_id', currentUser.id)
+              .eq('journal_id', jid)
+              .order('trade_date', { ascending: false })
+              .order('id', { ascending: true })
+              .range(from, from + pageSize - 1);
 
-      while (hasMore) {
-        var { data: tradesPage, error: tradesErr } = await sb
-          .from('trades')
-          .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, strategy_id, multiplier')
-          .eq('user_id', currentUser.id)
-          .eq('journal_id', jid)
-          .order('trade_date', { ascending: false })
-          .order('id', { ascending: true })
-          .range(from, from + pageSize - 1);
+            if (tradesErr) {
+              console.error('Strateji işlemleri yüklenirken hata:', tradesErr);
+              if (typeof showToast === 'function' && !renderedFromCache) {
+                showToast('Strateji verileri yüklenemedi: ' + tradesErr.message, 'error');
+              }
+              break;
+            }
 
-        if (tradesErr) {
-          console.error('Strateji işlemleri yüklenirken hata:', tradesErr);
-          if (typeof showToast === 'function') {
-            showToast('Strateji verileri yüklenemedi: ' + tradesErr.message, 'error');
+            if (tradesPage && tradesPage.length > 0) {
+              allTrades = allTrades.concat(tradesPage);
+              if (tradesPage.length < pageSize) hasMore = false;
+              else from += pageSize;
+            } else {
+              hasMore = false;
+            }
           }
-          allTrades = [];
-          break;
-        }
+          return { data: allTrades };
+        })();
 
-        if (tradesPage && tradesPage.length > 0) {
-          allTrades = allTrades.concat(tradesPage);
-          if (tradesPage.length < pageSize) hasMore = false;
-          else from += pageSize;
-        } else {
-          hasMore = false;
-        }
-      }
+    var [stratRes, tradesRes] = await Promise.all([fetchStrategiesPromise, fetchTradesPromise]);
 
-      // ⚡ Sonucu önbelleğe kaydet
-      if (typeof window !== 'undefined' && window.wwCache && allTrades.length > 0) {
-        window.wwCache.set('trades_strategies', currentUser.id, jid, allTrades);
+    var freshStrategies = (stratRes && stratRes.data) ? stratRes.data : strategiesList;
+    var freshTrades = (tradesRes && tradesRes.data) ? tradesRes.data : allTradesForStats;
+
+    // Önbellekten render edilmişse ve veriler BİREBİR AYNIYSA gereksiz 2. render'ı engelle!
+    var dataChanged = !renderedFromCache;
+    if (renderedFromCache) {
+      if (freshStrategies.length !== strategiesList.length || freshTrades.length !== allTradesForStats.length) {
+        dataChanged = true;
+      } else {
+        for (var si = 0; si < freshStrategies.length; si++) {
+          var fs = freshStrategies[si], cs = strategiesList[si];
+          if (!cs || fs.id !== cs.id || fs.name !== cs.name || fs.color !== cs.color || fs.description !== cs.description) {
+            dataChanged = true;
+            break;
+          }
+        }
+        if (!dataChanged) {
+          var checkCount = Math.min(freshTrades.length, 50);
+          for (var ti = 0; ti < checkCount; ti++) {
+            var ft = freshTrades[ti], ct = allTradesForStats[ti];
+            if (!ct || ft.id !== ct.id || ft.exit_price !== ct.exit_price || ft.pnl !== ct.pnl || ft.strategy_id !== ct.strategy_id) {
+              dataChanged = true;
+              break;
+            }
+          }
+        }
       }
     }
-    allTradesForStats = allTrades;
 
-    tradesByStrategy = {};
-    allTradesForStats.forEach(function(t) {
-      var sid = t.strategy_id || 'unassigned';
-      if (!tradesByStrategy[sid]) tradesByStrategy[sid] = [];
-      tradesByStrategy[sid].push(t);
-    });
+    if (stratRes && stratRes.data && window.wwCache) {
+      window.wwCache.set('strategies', currentUser.id, jid, stratRes.data);
+    }
+    if (tradesRes && tradesRes.data && tradesRes.data.length > 0 && window.wwCache) {
+      window.wwCache.set('trades_strategies', currentUser.id, jid, tradesRes.data);
+    }
 
-    strategyDataCache = {};
-    strategyDataCacheTime = 0;
+    if (dataChanged) {
+      strategiesList = freshStrategies;
+      allTradesForStats = freshTrades;
+      applyTradesByStrategy();
+      strategyDataCache = {};
+      strategyDataCacheTime = 0;
+      renderStrategiesGrid();
+      renderComparisonCharts();
+    }
 
-    renderStrategiesGrid();
-    renderComparisonCharts();
     hideStrategySkeleton();
   } catch(e) {
     console.error('loadAllData hatası:', e);
+    hideStrategySkeleton();
   }
 }
 
@@ -1589,22 +1736,25 @@ async function initStrategies() {
       return;
     }
 
+    // Aktif defteri arka planda garanti et (varsa bekletme)
     if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
-      try {
-        await window.journal.ensureActiveJournal(currentUser.id);
-      } catch(e) {}
+      var existingJid = window.journal.getActiveJournalId ? window.journal.getActiveJournalId() : localStorage.getItem('ww_active_journal_id');
+      if (!existingJid) {
+        try { await window.journal.ensureActiveJournal(currentUser.id); } catch(e) {}
+      } else {
+        window.journal.ensureActiveJournal(currentUser.id).catch(function() {});
+      }
     }
 
-    await updateNavbarAvatar();
-    await updatePlanBadge();
-
+    // Navbar ve bildirimleri arka planda güncelle (skeleton süresini ASLA geciktirmesin)
+    updateNavbarAvatar().catch(function() {});
+    updatePlanBadge().catch(function() {});
     try {
       if (typeof updateOvertradeBell === 'function') {
-        await updateOvertradeBell();
+        var bellPromise = updateOvertradeBell();
+        if (bellPromise && typeof bellPromise.catch === 'function') bellPromise.catch(function() {});
       }
-    } catch(e) {
-      wwLog.warn('Over-Trade bildirimi kontrol edilemedi:', e);
-    }
+    } catch(e) {}
 
     if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
       var adminLink = document.getElementById('admin-link');
@@ -1673,6 +1823,14 @@ async function initStrategies() {
       });
     }
 
+    // İşlem ekleme / silme olaylarını dinle (başka yerden işlem eklenirse strateji verilerini tazele)
+    window.addEventListener('trade-saved', function() {
+      if (currentUser) loadAllData();
+    });
+    window.addEventListener('trade-deleted', function() {
+      if (currentUser) loadAllData();
+    });
+
     await loadAllData();
     setupTimeFilterButtons();
     setupExportButtons();
@@ -1714,9 +1872,8 @@ function startStrategies() {
   var isSbReady = typeof window.sb !== 'undefined';
   var isAuthReady = typeof window.requireAuth === 'function';
   var isJournalReady = typeof window.journal !== 'undefined';
-  var isApexReady = typeof window.ApexCharts !== 'undefined';
 
-  if (!isSbReady || !isAuthReady || !isJournalReady || !isApexReady) {
+  if (!isSbReady || !isAuthReady || !isJournalReady) {
     strategiesCheckAttempts++;
     if (strategiesCheckAttempts >= MAX_STRATEGIES_CHECK_ATTEMPTS) {
       if (typeof wwLog !== 'undefined') {
@@ -1725,7 +1882,7 @@ function startStrategies() {
       hideStrategySkeleton();
       return;
     }
-    setTimeout(startStrategies, 50);
+    setTimeout(startStrategies, 30);
     return;
   }
 
@@ -1762,4 +1919,7 @@ window.exportStrategyPDF = exportStrategyPDF;
 window.openAddStrategyModal = openAddStrategyModal;
 
 wwLog.log('✅ strategies.js yüklendi!');
-document.addEventListener('journal-changed', () => window.location.reload());
+document.addEventListener('journal-changed', () => {
+  if (window.__wj_journal_transitioning) return;
+  window.location.reload();
+});

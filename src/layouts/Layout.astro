@@ -33,12 +33,17 @@ const {
   <slot name="head" />
   {isAppPage && (
     <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css?v=1791381400" />
-    <script src="/src/core/prop-templates.js" is:inline defer></script>
-    <script src="/src/utils/prop-calculator.js" is:inline defer></script>
-    <script src="/src/services/prop-service.js" is:inline defer></script>
+    <script src="/src/core/prop-templates.js?v=1791480000" is:inline defer></script>
+    <script src="/src/utils/prop-calculator.js?v=1791480000" is:inline defer></script>
+    <script src="/src/services/prop-service.js?v=1791480000" is:inline defer></script>
   )}
 </head>
 <body class={bodyClass} style={bodyStyle}>
+  <div class="wj-ambient-backdrop" id="wj-ambient-backdrop" aria-hidden="true">
+    <div class="wj-ambient-mesh"></div>
+    <div class="wj-ambient-orb wj-ambient-orb-1"></div>
+    <div class="wj-ambient-orb wj-ambient-orb-2"></div>
+  </div>
   <div id="app-scroll-container">
     {showNavbar && (
       <div id="navbar-container">
@@ -52,8 +57,8 @@ const {
     <script src="/interface/dashboard/js/onboarding.js?v=1791381400" is:inline defer></script>
   )}
   {showNavbar && (
-    <script src="/components/navbar/navbar.js?v=1790439000" is:inline defer></script>
-    <script src="/components/navbar/page-transition.js?v=1790439000" is:inline defer></script>
+    <script src="/components/navbar/navbar.js?v=1791480020" is:inline defer></script>
+    <script src="/components/navbar/page-transition.js?v=1791480020" is:inline defer></script>
   )}
 </body>
 </html>

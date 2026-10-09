@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="fp-cyan-blue" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <filter id="fp-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#38bdf8" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#fp-glow)">
+    <!-- Top-left detached pip dot -->
+    <circle cx="26" cy="22" r="8" fill="#38bdf8"/>
+    <!-- Bottom-right detached pip dot inside loop -->
+    <circle cx="56" cy="66" r="8" fill="#38bdf8"/>
+    <!-- Main FundingPips rounded P loop ribbon -->
+    <path d="M42 22C42 15.37 47.37 10 54 10H66C78.15 10 88 19.85 88 32C88 44.15 78.15 54 66 54H44C35.16 54 28 61.16 28 70V78C28 83.52 32.48 88 38 88C43.52 88 48 83.52 48 78V68C48 64.69 50.69 62 54 62H66C82.57 62 96 48.57 96 32C96 15.43 82.57 2 66 2H54C42.95 2 34 10.95 34 22H42Z" fill="url(#fp-cyan-blue)"/>
+  </g>
+</svg>

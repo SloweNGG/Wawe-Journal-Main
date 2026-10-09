@@ -27,7 +27,7 @@ import Layout from '../layouts/Layout.astro';
   }
   </script>
   
-  <link rel="stylesheet" href="/settings/css/settings.css" />
+  <link rel="stylesheet" href="/settings/css/settings.css?v=10" />
   
   <!-- ⭐ NAVBAR CSS -->
   
@@ -78,8 +78,8 @@ import Layout from '../layouts/Layout.astro';
        ============================================================ */
     .settings-wrap {
       display: grid;
-      grid-template-columns: 220px 1fr;
-      gap: 1.25rem;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem;
       align-items: start;
     }
     .settings-sidebar {
@@ -89,6 +89,10 @@ import Layout from '../layouts/Layout.astro';
       overflow: hidden;
       position: sticky;
       top: 80px;
+      align-self: start;
+      height: fit-content;
+      box-sizing: border-box;
+      width: 100%;
     }
     .sidebar-profile {
       padding: 1.25rem 1rem;
@@ -161,11 +165,12 @@ import Layout from '../layouts/Layout.astro';
       font-weight: 500;
       color: var(--muted);
       cursor: pointer;
-      transition: all .2s;
+      transition: background 0.15s ease, color 0.15s ease;
       border: none;
       background: none;
       width: 100%;
       text-align: left;
+      box-sizing: border-box;
     }
     .sidebar-nav-item .nav-icon {
       width: 16px;
@@ -196,6 +201,7 @@ import Layout from '../layouts/Layout.astro';
     .settings-panels {
       position: relative;
       min-width: 0;
+      min-height: 620px;
     }
     
     .panel-glow {
@@ -220,8 +226,17 @@ import Layout from '../layouts/Layout.astro';
       animation: glowPulse 3s ease-in-out infinite;
     }
     .panel-glow.appearance-glow {
-      background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(139,92,246,0.5), transparent 70%);
+      background: radial-gradient(ellipse 70% 30% at 50% 0%, var(--ambient-panel-glow, rgba(139,92,246,0.5)), transparent 70%);
       animation: glowPulse 3s ease-in-out infinite;
+    }
+    body[data-ambient-state="profit"] .panel-glow.appearance-glow {
+      background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(34,197,94,0.6), transparent 70%) !important;
+    }
+    body[data-ambient-state="loss"] .panel-glow.appearance-glow {
+      background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(239,68,68,0.6), transparent 70%) !important;
+    }
+    body[data-ambient-state="neutral"] .panel-glow.appearance-glow {
+      background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(139,92,246,0.5), transparent 70%) !important;
     }
     .panel-glow.danger-glow {
       background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(239,68,68,0.55), transparent 70%);
@@ -265,15 +280,17 @@ import Layout from '../layouts/Layout.astro';
       position: relative;
       z-index: 1;
       background: transparent;
+      min-height: 480px;
+      scroll-margin-top: 240px;
     }
     .settings-panel.active {
       display: block;
-      animation: panelFadeIn 0.3s ease;
+      animation: panelFadeIn 0.25s ease;
     }
     
     @keyframes panelFadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     /* ============================================================
@@ -1458,8 +1475,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js?v=8" is:inline defer></script>
   <script src="/i18n.js?v=8" is:inline defer></script>
   <script type="module" src="/src/bundle.js?v=8" is:inline defer></script>
-  <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
-  <script src="/settings/js/settings.js?v=8" is:inline defer></script>
+  <script src="/settings/js/settings.js?v=10" is:inline defer></script>
 </Fragment>
   <!-- ⭐ NAVBAR CONTAINER -->
 
@@ -1469,7 +1485,6 @@ import Layout from '../layouts/Layout.astro';
   <main class="main dashboard-main">
 
     <div class="settings-page-header">
-      <div class="settings-page-header-eyebrow" data-i18n="settings.eyebrow">Hesap Yönetimi</div>
       <h1 data-i18n="settings.title">Ayarlar</h1>
       <p data-i18n="settings.subtitle">Hesabını ve tercihlerini buradan yönetebilirsin.</p>
     </div>
@@ -1544,42 +1559,42 @@ import Layout from '../layouts/Layout.astro';
 
         <!-- PANEL: Profil -->
         <div class="settings-panel active" id="panel-profile">
-          <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="min-height:480px;display:flex;align-items:center;justify-content:center;">
             <div class="spinner" style="width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.5s linear infinite;margin:0 auto;"></div>
           </div>
         </div>
 
         <!-- PANEL: Plan -->
         <div class="settings-panel" id="panel-plan">
-          <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="min-height:480px;display:flex;align-items:center;justify-content:center;">
             <div class="spinner" style="width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.5s linear infinite;margin:0 auto;"></div>
           </div>
         </div>
 
         <!-- PANEL: Şifre -->
         <div class="settings-panel" id="panel-password">
-          <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="min-height:480px;display:flex;align-items:center;justify-content:center;">
             <div class="spinner" style="width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.5s linear infinite;margin:0 auto;"></div>
           </div>
         </div>
 
         <!-- PANEL: Görünüm -->
         <div class="settings-panel" id="panel-appearance">
-          <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="min-height:480px;display:flex;align-items:center;justify-content:center;">
             <div class="spinner" style="width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.5s linear infinite;margin:0 auto;"></div>
           </div>
         </div>
 
         <!-- PANEL: Over Trade -->
         <div class="settings-panel" id="panel-overtrade">
-          <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="min-height:480px;display:flex;align-items:center;justify-content:center;">
             <div class="spinner" style="width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.5s linear infinite;margin:0 auto;"></div>
           </div>
         </div>
 
         <!-- PANEL: Tehlikeli -->
         <div class="settings-panel" id="panel-danger">
-          <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="min-height:480px;display:flex;align-items:center;justify-content:center;">
             <div class="spinner" style="width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.5s linear infinite;margin:0 auto;"></div>
           </div>
         </div>

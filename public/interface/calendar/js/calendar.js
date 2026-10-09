@@ -900,49 +900,71 @@ async function loadCalendarTradesFromDB(userId) {
     return [];
   }
 
-  // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
+  // ⚡ SWR Önbellek Kontrolü: trades_calendar, trades veya trades_dashboard varsa 0ms beklemeden dön
   if (typeof window !== 'undefined' && window.wwCache) {
-    var cachedTrades = window.wwCache.get('trades_calendar', userId, jid);
+    var cachedTrades = window.wwCache.get('trades_calendar', userId, jid) ||
+                       window.wwCache.get('trades', userId, jid) ||
+                       window.wwCache.get('trades_dashboard', userId, jid);
     if (cachedTrades && cachedTrades.length > 0) {
+      // Arka planda sessizce taze verileri kontrol et (SWR revalidate)
+      fetchFreshCalendarTrades(userId, jid);
       return cachedTrades;
     }
   }
 
+  return await fetchFreshCalendarTrades(userId, jid, true);
+}
+
+async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
   var allTrades = [];
   var pageSize = 1000;
   var from = 0;
   var hasMore = true;
 
-  while (hasMore) {
-    var { data: pageData, error } = await sb
-      .from('trades')
-      .select('id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl')
-      .eq('user_id', userId)
-      .eq('journal_id', jid)
-      .order('trade_date', { ascending: false })
-      .order('id', { ascending: true })
-      .range(from, from + pageSize - 1);
+  try {
+    while (hasMore) {
+      var { data: pageData, error } = await sb
+        .from('trades')
+        .select('id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl')
+        .eq('user_id', userId)
+        .eq('journal_id', jid)
+        .order('trade_date', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (error) {
-      if (typeof showToast === 'function') {
-        var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
-        showToast(errMsg + error.message, 'error');
+      if (error) {
+        if (isInitialLoad && typeof showToast === 'function') {
+          var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
+          showToast(errMsg + error.message, 'error');
+        }
+        return [];
       }
-      return [];
+
+      if (pageData && pageData.length > 0) {
+        allTrades = allTrades.concat(pageData);
+        if (pageData.length < pageSize) hasMore = false;
+        else from += pageSize;
+      } else {
+        hasMore = false;
+      }
     }
 
-    if (pageData && pageData.length > 0) {
-      allTrades = allTrades.concat(pageData);
-      if (pageData.length < pageSize) hasMore = false;
-      else from += pageSize;
-    } else {
-      hasMore = false;
+    // ⚡ Sonucu önbelleğe kaydet
+    if (typeof window !== 'undefined' && window.wwCache) {
+      window.wwCache.set('trades_calendar', userId, jid, allTrades);
+      window.wwCache.set('trades', userId, jid, allTrades);
     }
-  }
 
-  // ⚡ Sonucu önbelleğe kaydet
-  if (typeof window !== 'undefined' && window.wwCache) {
-    window.wwCache.set('trades_calendar', userId, jid, allTrades);
+    if (!isInitialLoad && trades) {
+      // SWR Revalidation: Veri değiştiyse takvimi güncelle
+      var isCountChanged = trades.length !== allTrades.length;
+      var isFirstItemChanged = trades.length > 0 && allTrades.length > 0 && trades[0].id !== allTrades[0].id;
+      if (isCountChanged || isFirstItemChanged) {
+        loadCalendarTrades(allTrades);
+      }
+    }
+  } catch (err) {
+    console.error('fetchFreshCalendarTrades hatası:', err);
   }
 
   return allTrades;
@@ -1127,16 +1149,22 @@ async function initCalendar() {
       return;
     }
 
-    if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+    var jid = (window.journal && typeof window.journal.getActiveJournalId === 'function')
+      ? window.journal.getActiveJournalId()
+      : (localStorage.getItem('ww_active_journal_id') || localStorage.getItem('activeJournalId'));
+
+    if (!jid && window.journal && typeof window.journal.ensureActiveJournal === 'function') {
       try {
         await window.journal.ensureActiveJournal(user.id);
       } catch (e) { }
+    } else if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
+      window.journal.ensureActiveJournal(user.id).catch(function () {});
     }
 
-    // Over-Trade bildirimleri
+    // Over-Trade bildirimleri (arka planda bloklamayan)
     try {
       if (typeof updateOvertradeBell === 'function') {
-        await updateOvertradeBell();
+        updateOvertradeBell().catch(function () {});
       }
     } catch (e) { }
 
@@ -1215,4 +1243,7 @@ window.loadTrades = initCalendar;
 window.refresh = initCalendar;
 
 wwLog.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');
-document.addEventListener('journal-changed', () => window.location.reload());
+document.addEventListener('journal-changed', () => {
+  if (window.__wj_journal_transitioning) return;
+  window.location.reload();
+});

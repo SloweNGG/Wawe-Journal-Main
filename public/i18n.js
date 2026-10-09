@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL – i18n.js (CORE + LAZY LOADER)
 // ⭐ PERFORMANS: Dil dosyaları ayrı ve lazy yükleniyor.
 //    - Sadece aktif dil + İngilizce fallback çekilir
@@ -28,28 +28,69 @@
   // ⭐ SYNC FALLBACK — dil dosyası yüklenene kadar (~50ms) gösterilecek metinler
   //    Bu sözlüğü minimum tut! Sadece ilk boyamada görünecek kritik metinler.
   //    (İngilizce fallback olduğu için EN değerleri kullanılıyor)
-  var CRITICAL_FALLBACK = {
-    'app_name': 'Journal',
-    'nav.dashboard': 'Dashboard',
-    'nav.trades': 'Trades',
-    'nav.strategies': 'Strategies',
-    'nav.calendar': 'Calendar',
-    'nav.settings': 'Settings',
-    'nav.logout': 'Logout',
-    'nav.premium': 'Premium',
-    'nav.login': 'Login',
-    'nav.register': 'Register',
-    'common.save': 'Save',
-    'common.cancel': 'Cancel',
-    'common.delete': 'Delete',
-    'common.close': 'Close',
-    'common.load_error': 'Failed to load: ',
-    'common.unexpected_error': 'Something went wrong.',
-    'common.db_connection_error': 'No database connection!',
-    'toast.csv_exported': 'CSV downloaded!',
-    'toast.pdf_exported': 'PDF downloaded!',
-    'toast.no_trades_export': 'No trades to export.'
+  var CRITICAL_FALLBACK_BY_LANG = {
+    tr: {
+      'app_name': 'Journal',
+      'nav.dashboard': 'Dashboard',
+      'nav.trades': 'İşlemler',
+      'nav.strategies': 'Stratejiler',
+      'nav.calendar': 'Takvim',
+      'nav.settings': 'Ayarlar',
+      'nav.logout': 'Çıkış Yap',
+      'nav.premium': 'Premium',
+      'nav.login': 'Giriş Yap',
+      'nav.register': 'Kayıt Ol',
+      'common.save': 'Kaydet',
+      'common.cancel': 'İptal',
+      'common.delete': 'Sil',
+      'common.close': 'Kapat',
+      'journal.transit_active': 'Aktif',
+      'journal.transit_switching': 'Geçiliyor',
+      'journal.transit_ready': 'Hazır',
+      'journal.default_account': 'Hesap'
+    },
+    en: {
+      'app_name': 'Journal',
+      'nav.dashboard': 'Dashboard',
+      'nav.trades': 'Trades',
+      'nav.strategies': 'Strategies',
+      'nav.calendar': 'Calendar',
+      'nav.settings': 'Settings',
+      'nav.logout': 'Logout',
+      'nav.premium': 'Premium',
+      'nav.login': 'Login',
+      'nav.register': 'Register',
+      'common.save': 'Save',
+      'common.cancel': 'Cancel',
+      'common.delete': 'Delete',
+      'common.close': 'Close',
+      'journal.transit_active': 'Active',
+      'journal.transit_switching': 'Switching',
+      'journal.transit_ready': 'Ready',
+      'journal.default_account': 'Account'
+    },
+    de: {
+      'app_name': 'Journal',
+      'nav.dashboard': 'Dashboard',
+      'nav.trades': 'Trades',
+      'nav.strategies': 'Strategien',
+      'nav.calendar': 'Kalender',
+      'nav.settings': 'Einstellungen',
+      'nav.logout': 'Abmelden',
+      'nav.premium': 'Premium',
+      'nav.login': 'Anmelden',
+      'nav.register': 'Registrieren',
+      'common.save': 'Speichern',
+      'common.cancel': 'Abbrechen',
+      'common.delete': 'Löschen',
+      'common.close': 'Schließen',
+      'journal.transit_active': 'Aktiv',
+      'journal.transit_switching': 'Wechseln',
+      'journal.transit_ready': 'Bereit',
+      'journal.default_account': 'Konto'
+    }
   };
+  var CRITICAL_FALLBACK = CRITICAL_FALLBACK_BY_LANG.en;
 
   // ════════════════════════════════════════════════════════════
   // I18n SINIFI
@@ -139,10 +180,14 @@
     }
     params = params || {};
 
+    var langFallback = (CRITICAL_FALLBACK_BY_LANG && CRITICAL_FALLBACK_BY_LANG[this.currentLang]) || null;
+    var defaultFallback = (CRITICAL_FALLBACK_BY_LANG && CRITICAL_FALLBACK_BY_LANG[this.defaultLang]) || CRITICAL_FALLBACK;
+
     var text =
       (this.translations[this.currentLang] && this.translations[this.currentLang][key]) ||
       (this.translations[this.defaultLang] && this.translations[this.defaultLang][key]) ||
-      CRITICAL_FALLBACK[key] ||
+      (langFallback && langFallback[key]) ||
+      (defaultFallback && defaultFallback[key]) ||
       key;
 
     if (params && typeof params === 'object') {

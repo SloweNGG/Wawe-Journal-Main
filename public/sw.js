@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v8';
+const CACHE_VERSION = 'wawe-v9';
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

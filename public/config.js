@@ -268,11 +268,11 @@ const WW_CONFIG = {
     paymentMethods: ['BTC', 'LTC']
   },
   THEME: {
-    backgroundColor: '#0a0a0f',
+    backgroundColor: '#07070c',
     fontSize: 16,
-    surfaceColor: '#111118',
-    borderColor: '#1e1e2e',
-    textColor: '#e8e8f0'
+    surfaceColor: '#0e0e16',
+    borderColor: '#1a1a28',
+    textColor: '#f0f0f8'
   }
 };
 

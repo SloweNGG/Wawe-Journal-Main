@@ -430,6 +430,91 @@ function getSimpleStrategyPerf(strategyId, trades) {
   return { totalTrades: strategyTrades.length, closedCount: closed.length, winRate: winRate, totalPnL: totalPnL };
 }
 
+function renderStrategyCardsDOM(strategiesList, trades, section) {
+  if (!strategiesList.length) {
+    section.innerHTML = `
+      <div class="strategy-empty-note" style="padding:1.5rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" style="opacity:0.5;">
+          <path d="M22 12h-4l-3 9H9l-3-9H2"/>
+          <path d="M5 3h14l-2 6H7L5 3z"/>
+        </svg>
+        <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">${_t('premium_dash.no_strategies', 'Henüz strateji eklenmemiş.')}</span>
+        <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">${_t('premium_dash.create_strategy', 'Strateji oluştur →')}</a>
+      </div>
+    `;
+    return;
+  }
+
+  var strategyData = strategiesList.map(function(s) {
+    var perf = getSimpleStrategyPerf(s.id, trades);
+    return { ...s, perf: perf };
+  });
+
+  strategyData.sort(function(a, b) { return b.perf.totalPnL - a.perf.totalPnL; });
+
+  var maxPnL = Math.max(1, Math.max.apply(null, strategyData.map(function(s) { return Math.abs(s.perf.totalPnL); })));
+
+  var cardsHtml = strategyData.map(function(s, index) {
+    var perf = s.perf;
+    var rank = index + 1;
+    var rankClass = rank === 1 ? 'top' : (rank <= 3 ? 'mid' : 'bottom');
+    var progressPct = maxPnL > 0 ? Math.min(100, Math.max(6, (Math.abs(perf.totalPnL) / maxPnL) * 100)) : 0;
+    var progressClass = perf.totalPnL >= 0 ? 'pos' : 'neg';
+
+    var displayWinRate = perf.closedCount > 0 ? perf.winRate + '%' : '—';
+    var displayPnL = perf.closedCount > 0 ? formatCurrency(perf.totalPnL) : '—';
+    var pnlClass = perf.totalPnL >= 0 ? 'pos' : 'neg';
+
+    var safeName = sanitizeHTML(s.name || _t('premium_dash.strategy_fallback', 'Strateji'));
+    var tradesCountText = perf.totalTrades + ' ' + _t('dashboard.trades_count_suffix', 'işlem');
+
+    return '<div class="strategy-minimal-card">' +
+      '<div class="smc-header">' +
+        '<div class="smc-title-area">' +
+          '<span class="smc-rank ' + rankClass + '">#' + rank + '</span>' +
+          '<span class="smc-color-dot" style="background:' + (s.color || 'var(--accent)') + '"></span>' +
+          '<span class="smc-name" title="' + safeName + '">' + safeName + '</span>' +
+        '</div>' +
+        '<div class="smc-pnl ' + pnlClass + '">' + displayPnL + '</div>' +
+      '</div>' +
+      '<div class="smc-meta-row">' +
+        '<span class="smc-meta-item"><span class="smc-meta-label">' + _t('premium_dash.win_rate_label', 'Win Rate') + ':</span> <strong>' + displayWinRate + '</strong></span>' +
+        '<span class="smc-meta-dot">•</span>' +
+        '<span class="smc-meta-item">' + tradesCountText + '</span>' +
+      '</div>' +
+      '<div class="smc-progress"><div class="smc-fill ' + progressClass + '" style="width:' + progressPct + '%;"></div></div>' +
+    '</div>';
+  }).join('');
+
+  section.innerHTML = '<div class="strategy-minimal-grid">' + cardsHtml + '</div>';
+}
+
+async function fetchFreshStrategies(userId, jid, trades, section) {
+  try {
+    var { data: strategies, error } = await sb
+      .from('strategies')
+      .select('*')
+      .eq('user_id', userId)
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Strateji çekme hatası:', error);
+      if (!allStrategies.length) {
+        section.innerHTML = '<div class="strategy-empty-note">' + _t('premium_dash.strategies_load_error', 'Stratejiler yüklenirken hata oluştu.') + '</div>';
+      }
+      return;
+    }
+
+    allStrategies = strategies || [];
+    if (typeof window !== 'undefined' && window.wwCache) {
+      window.wwCache.set('strategies', userId, jid, allStrategies);
+    }
+    renderStrategyCardsDOM(allStrategies, trades, section);
+  } catch (e) {
+    console.error('fetchFreshStrategies hatası:', e);
+  }
+}
+
 export async function loadStrategySection(trades, user) {
   var section = document.getElementById('strategy-section-body');
   if (!section) return;
@@ -439,81 +524,26 @@ export async function loadStrategySection(trades, user) {
     return;
   }
 
-  try {
-    var { data: strategies, error } = await sb
-      .from('strategies')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name', { ascending: true });
+  var activeJid = (window.journal && typeof window.journal.getActiveJournalId === 'function')
+    ? window.journal.getActiveJournalId()
+    : (localStorage.getItem('ww_active_journal_id') || 'all');
 
-    if (error) {
-      console.error('Strateji çekme hatası:', error);
-      section.innerHTML = '<div class="strategy-empty-note">' + _t('premium_dash.strategies_load_error', 'Stratejiler yüklenirken hata oluştu.') + '</div>';
-      return;
-    }
+  // ⚡ SWR Önbellek Kontrolü: Stratejiler önbellekte varsa 0ms beklemeden hemen çiz
+  var cachedStrategies = (typeof window !== 'undefined' && window.wwCache)
+    ? (window.wwCache.get('strategies', user.id, activeJid) ||
+       window.wwCache.get('strategies', user.id, 'all') ||
+       window.wwCache.get('strategies', user.id, null))
+    : null;
 
-    allStrategies = strategies || [];
-
-    if (!allStrategies.length) {
-      section.innerHTML = `
-        <div class="strategy-empty-note" style="padding:1.5rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" style="opacity:0.5;">
-            <path d="M22 12h-4l-3 9H9l-3-9H2"/>
-            <path d="M5 3h14l-2 6H7L5 3z"/>
-          </svg>
-          <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">${_t('premium_dash.no_strategies', 'Henüz strateji eklenmemiş.')}</span>
-          <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">${_t('premium_dash.create_strategy', 'Strateji oluştur →')}</a>
-        </div>
-      `;
-      return;
-    }
-
-    var strategyData = allStrategies.map(function(s) {
-      var perf = getSimpleStrategyPerf(s.id, trades);
-      return { ...s, perf: perf };
-    });
-
-    strategyData.sort(function(a, b) { return b.perf.totalPnL - a.perf.totalPnL; });
-
-    var maxPnL = Math.max(1, Math.max.apply(null, strategyData.map(function(s) { return Math.abs(s.perf.totalPnL); })));
-
-    var cardsHtml = strategyData.map(function(s, index) {
-      var perf = s.perf;
-      var rank = index + 1;
-      var rankClass = rank === 1 ? 'top' : (rank <= 3 ? 'mid' : 'bottom');
-      var progressPct = maxPnL > 0 ? Math.min(100, Math.max(6, (Math.abs(perf.totalPnL) / maxPnL) * 100)) : 0;
-      var progressClass = perf.totalPnL >= 0 ? 'pos' : 'neg';
-
-      var displayWinRate = perf.closedCount > 0 ? perf.winRate + '%' : '—';
-      var displayPnL = perf.closedCount > 0 ? formatCurrency(perf.totalPnL) : '—';
-      var pnlClass = perf.totalPnL >= 0 ? 'pos' : 'neg';
-
-      var safeName = sanitizeHTML(s.name || _t('premium_dash.strategy_fallback', 'Strateji'));
-      var tradesCountText = perf.totalTrades + ' ' + _t('dashboard.trades_count_suffix', 'işlem');
-
-      return '<div class="strategy-minimal-card">' +
-        '<div class="smc-header">' +
-          '<div class="smc-title-area">' +
-            '<span class="smc-rank ' + rankClass + '">#' + rank + '</span>' +
-            '<span class="smc-color-dot" style="background:' + (s.color || 'var(--accent)') + '"></span>' +
-            '<span class="smc-name" title="' + safeName + '">' + safeName + '</span>' +
-          '</div>' +
-          '<div class="smc-pnl ' + pnlClass + '">' + displayPnL + '</div>' +
-        '</div>' +
-        '<div class="smc-meta-row">' +
-          '<span class="smc-meta-item"><span class="smc-meta-label">' + _t('premium_dash.win_rate_label', 'Win Rate') + ':</span> <strong>' + displayWinRate + '</strong></span>' +
-          '<span class="smc-meta-dot">•</span>' +
-          '<span class="smc-meta-item">' + tradesCountText + '</span>' +
-        '</div>' +
-        '<div class="smc-progress"><div class="smc-fill ' + progressClass + '" style="width:' + progressPct + '%;"></div></div>' +
-      '</div>';
-    }).join('');
-
-    section.innerHTML = '<div class="strategy-minimal-grid">' + cardsHtml + '</div>';
-  } catch(e) {
-    console.error('loadStrategySection hatası:', e);
-    section.innerHTML = '<div class="strategy-empty-note">' + _t('premium_dash.strategies_load_error', 'Stratejiler yüklenirken hata oluştu.') + '</div>';
+  if (cachedStrategies && Array.isArray(cachedStrategies) && cachedStrategies.length > 0) {
+    allStrategies = cachedStrategies;
+    renderStrategyCardsDOM(allStrategies, trades, section);
+    // Arka planda sessizce taze veriyi kontrol et (SWR revalidate)
+    fetchFreshStrategies(user.id, activeJid, trades, section);
+    return;
   }
+
+  await fetchFreshStrategies(user.id, activeJid, trades, section);
 }
 
 // ⭐ OVERTRADE BELL - MARK AS READ

@@ -1009,29 +1009,261 @@ body.light-theme .journal-prop-section {
   gap: 0.75rem;
 }
 
-/* Prop Badge on Card - Purple Pill */
+/* Prop Card Top Icon Wrap with Official Logo */
+.journal-icon-wrap.has-prop-logo {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-ftmo {
+  background: rgba(0, 210, 255, 0.12) !important;
+  border: 1px solid rgba(0, 210, 255, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(0, 210, 255, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-fundednext {
+  background: rgba(217, 70, 239, 0.12) !important;
+  border: 1px solid rgba(217, 70, 239, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(217, 70, 239, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-fundingpips {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-apex {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border: 1px solid rgba(249, 115, 22, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-topstep {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-the5ers {
+  background: rgba(34, 197, 94, 0.12) !important;
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-e8 {
+  background: rgba(79, 227, 164, 0.12) !important;
+  border: 1px solid rgba(79, 227, 164, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(79, 227, 164, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-alpha {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25) !important;
+}
+
+.journal-icon-wrap.has-prop-logo.prop-custom {
+  background: rgba(168, 85, 247, 0.12) !important;
+  border: 1px solid rgba(168, 85, 247, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.25) !important;
+}
+
+.prop-card-logo-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+.journal-card:hover .prop-card-logo-img {
+  transform: scale(1.15);
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-ftmo {
+  box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-fundednext {
+  box-shadow: 0 6px 20px rgba(217, 70, 239, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-fundingpips {
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-apex {
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-topstep {
+  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-the5ers {
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-e8 {
+  box-shadow: 0 6px 20px rgba(79, 227, 164, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-alpha {
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4) !important;
+}
+
+.journal-card:hover .journal-icon-wrap.has-prop-logo.prop-custom {
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4) !important;
+}
+
+/* Prop Badge on Card - Branded Pill with Official Logo */
 .journal-card-prop-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, rgba(124, 109, 250, 0.25), rgba(168, 85, 247, 0.18));
-  border: 1px solid rgba(139, 92, 246, 0.45);
-  color: #e9d5ff;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
+  gap: 7px;
+  background: rgba(14, 15, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text, #fff);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 20px;
   margin-top: 0.5rem;
   align-self: flex-start;
-  box-shadow: 0 2px 8px rgba(124, 109, 250, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
 }
 
-.journal-card-prop-badge svg {
-  width: 12px;
-  height: 12px;
-  stroke: currentColor;
+.journal-card-prop-badge .prop-badge-mini-logo {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.journal-card-prop-badge .prop-badge-firm {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.journal-card-prop-badge .prop-badge-sep {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+}
+
+.journal-card-prop-badge .prop-badge-phase {
+  color: var(--muted, #94a3b8);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* FTMO */
+.journal-card-prop-badge.prop-ftmo {
+  border-color: rgba(0, 210, 255, 0.35);
+  background: linear-gradient(135deg, rgba(8, 14, 37, 0.92), rgba(10, 24, 55, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(0, 210, 255, 0.2);
+}
+.journal-card-prop-badge.prop-ftmo .prop-badge-firm {
+  color: #00d2ff;
+}
+
+/* FundedNext */
+.journal-card-prop-badge.prop-fundednext {
+  border-color: rgba(217, 70, 239, 0.35);
+  background: linear-gradient(135deg, rgba(20, 10, 43, 0.92), rgba(30, 12, 56, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(217, 70, 239, 0.2);
+}
+.journal-card-prop-badge.prop-fundednext .prop-badge-firm {
+  color: #f472b6;
+}
+
+/* FundingPips */
+.journal-card-prop-badge.prop-fundingpips {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: linear-gradient(135deg, rgba(6, 18, 38, 0.92), rgba(10, 28, 55, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(56, 189, 248, 0.2);
+}
+.journal-card-prop-badge.prop-fundingpips .prop-badge-firm {
+  color: #38bdf8;
+}
+
+/* Apex Trader Funding */
+.journal-card-prop-badge.prop-apex {
+  border-color: rgba(249, 115, 22, 0.35);
+  background: linear-gradient(135deg, rgba(30, 14, 6, 0.92), rgba(42, 18, 8, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(249, 115, 22, 0.2);
+}
+.journal-card-prop-badge.prop-apex .prop-badge-firm {
+  color: #fb923c;
+}
+
+/* Topstep */
+.journal-card-prop-badge.prop-topstep {
+  border-color: rgba(234, 179, 8, 0.35);
+  background: linear-gradient(135deg, rgba(28, 22, 6, 0.92), rgba(42, 32, 8, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(234, 179, 8, 0.2);
+}
+.journal-card-prop-badge.prop-topstep .prop-badge-firm {
+  color: #facc15;
+}
+
+/* The5ers */
+.journal-card-prop-badge.prop-the5ers {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: linear-gradient(135deg, rgba(6, 26, 14, 0.92), rgba(8, 38, 20, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(34, 197, 94, 0.2);
+}
+.journal-card-prop-badge.prop-the5ers .prop-badge-firm {
+  color: #4ade80;
+}
+
+/* E8 Markets */
+.journal-card-prop-badge.prop-e8 {
+  border-color: rgba(79, 227, 164, 0.35);
+  background: linear-gradient(135deg, rgba(6, 24, 22, 0.92), rgba(8, 36, 32, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(79, 227, 164, 0.2);
+}
+.journal-card-prop-badge.prop-e8 .prop-badge-firm {
+  color: #4fe3a4;
+}
+
+/* Alpha Capital Group */
+.journal-card-prop-badge.prop-alpha {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, rgba(28, 20, 6, 0.92), rgba(38, 28, 8, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(245, 158, 11, 0.2);
+}
+.journal-card-prop-badge.prop-alpha .prop-badge-firm {
+  color: #fbbf24;
+}
+
+/* Custom */
+.journal-card-prop-badge.prop-custom {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: linear-gradient(135deg, rgba(22, 18, 45, 0.92), rgba(16, 12, 34, 0.82));
+  box-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.2);
+}
+.journal-card-prop-badge.prop-custom .prop-badge-firm {
+  color: #c084fc;
+}
+
+.journal-card.is-prop-account:hover {
+  border-color: var(--prop-brand-color, rgba(139, 92, 246, 0.5));
+  box-shadow: 0 12px 32px -8px var(--prop-brand-glow, rgba(139, 92, 246, 0.25));
 }
 
 /* Tablet & Mobil Responsive */

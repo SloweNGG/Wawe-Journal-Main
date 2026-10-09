@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="custom-sym-accent" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="custom-sym-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#a855f7" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#custom-sym-glow)">
+    <path d="M50 12L76 24V48C76 66 65 79 50 85C35 79 24 66 24 48V24L50 12Z" fill="url(#custom-sym-accent)" fill-opacity="0.3" stroke="url(#custom-sym-accent)" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M50 28L54 40.5L67 41L56.5 48.5L60.5 61L50 53L39.5 61L43.5 48.5L33 41L46 40.5L50 28Z" fill="#ffffff"/>
+  </g>
+</svg>

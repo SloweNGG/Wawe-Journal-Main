@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="the5ers-grad" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="50%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <filter id="the5ers-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#22c55e" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#the5ers-glow)">
+    <!-- 5ers Green 5 and percent mark -->
+    <path d="M22 18H62V32H38V44H50C60 44 68 52 68 62C68 72 60 80 50 80H22V66H50C52.2 66 54 64.2 54 62C54 59.8 52.2 58 50 58H22V18Z" fill="url(#the5ers-grad)"/>
+    <circle cx="78" cy="28" r="6" fill="#ffffff"/>
+    <path d="M84 46L68 82H78L94 46H84Z" fill="#ffffff" fill-opacity="0.9"/>
+  </g>
+</svg>

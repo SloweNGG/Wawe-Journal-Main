@@ -9,7 +9,7 @@ import Layout from '../layouts/Layout.astro';
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
   <!-- STRATEGIES CSS -->
-  <link rel="stylesheet" href="/interface/strategies/css/strategies.css?v=1790429200000" />
+  <link rel="stylesheet" href="/interface/strategies/css/strategies.css?v=1791542000000" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" as="script" />
@@ -27,10 +27,9 @@ import Layout from '../layouts/Layout.astro';
 <script type="module" src="/src/bundle.js" is:inline defer></script>
 
 
-  <script src="/components/navbar/navbar.js?v=1790153937" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
-  <script src="/interface/strategies/js/strategies.js?v=1790433400000" is:inline defer></script>
+  <script src="/interface/strategies/js/strategies.js?v=1791541000000" is:inline defer></script>
 </Fragment>
   <!-- NAVBAR CONTAINER -->
 
@@ -369,16 +368,6 @@ import Layout from '../layouts/Layout.astro';
       if (typeof loadNavbar === 'function') {
         loadNavbar('navbar-container');
         wwLog.log('✅ Navbar yüklendi!');
-      }
-      if (typeof initStrategies === 'function') {
-        setTimeout(function() {
-          try {
-            initStrategies();
-            wwLog.log('✅ Strategies panel başlatıldı!');
-          } catch(e) {
-            console.error('❌ Strategies init hatası:', e);
-          }
-        }, 300);
       }
     });
   </script>

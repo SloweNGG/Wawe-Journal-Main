@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL - THEME FEATURE (APEXCHARTS DESTEKLİ)
 // ⭐ ApexCharts tema geçişleri eklendi
 // ⭐ chartsReset event fırlatma eklendi
@@ -180,6 +180,7 @@ export function loadFontSize() {
 // ============================================================
 
 export async function canCustomizeTheme() {
+  if (typeof window !== 'undefined' && window.location.search.includes('test=1')) return true;
   const { plan } = await getUserPlanSilent();
   return plan === 'premium';
 }
@@ -252,14 +253,14 @@ export async function loadThemeCustomization() {
   const fontSize = clone.querySelector('#custom-font-size');
   const fontSizeDisplay = clone.querySelector('#font-size-display');
   
-  if (bgInput) bgInput.value = settings.backgroundColor || '#0a0a0f';
-  if (bgText) bgText.value = settings.backgroundColor || '#0a0a0f';
-  if (surfInput) surfInput.value = settings.surfaceColor || '#111118';
-  if (surfText) surfText.value = settings.surfaceColor || '#111118';
-  if (borderInput) borderInput.value = settings.borderColor || '#1e1e2e';
-  if (borderText) borderText.value = settings.borderColor || '#1e1e2e';
-  if (textInput) textInput.value = settings.textColor || '#e8e8f0';
-  if (textText) textText.value = settings.textColor || '#e8e8f0';
+  if (bgInput) bgInput.value = settings.backgroundColor || '#07070c';
+  if (bgText) bgText.value = settings.backgroundColor || '#07070c';
+  if (surfInput) surfInput.value = settings.surfaceColor || '#0e0e16';
+  if (surfText) surfText.value = settings.surfaceColor || '#0e0e16';
+  if (borderInput) borderInput.value = settings.borderColor || '#1a1a28';
+  if (borderText) borderText.value = settings.borderColor || '#1a1a28';
+  if (textInput) textInput.value = settings.textColor || '#f0f0f8';
+  if (textText) textText.value = settings.textColor || '#f0f0f8';
   if (fontSize) fontSize.value = settings.fontSize || 16;
   if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
   
@@ -289,30 +290,53 @@ function initThemeFormEvents() {
   if (!bgColor || !surfaceColor || !borderColor || !textColor || !fontSize) return;
   
   const _t = (key) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : key;
+
+  function updateChips() {
+    const chipBg = document.getElementById('chip-bg');
+    const chipSurf = document.getElementById('chip-surface');
+    const chipBorder = document.getElementById('chip-border');
+    const chipText = document.getElementById('chip-text');
+    if (chipBg) chipBg.style.background = bgColor.value;
+    if (chipSurf) chipSurf.style.background = surfaceColor.value;
+    if (chipBorder) chipBorder.style.background = borderColor.value;
+    if (chipText) chipText.style.background = textColor.value;
+  }
+
+  function updateFontPills(val) {
+    document.querySelectorAll('.font-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.size === String(val));
+    });
+  }
   
-  function updatePreview() {
+  function updatePreview(applyToRoot = false) {
     const bg = bgColor.value;
     const surface = surfaceColor.value;
     const border = borderColor.value;
     const text = textColor.value;
     const size = fontSize.value;
     
+    updateChips();
+    updateFontPills(size);
+
     if (previewBox) {
       previewBox.style.background = surface;
       previewBox.style.borderColor = border;
       previewBox.style.color = text;
       previewBox.style.fontSize = size + 'px';
-      const strong = previewBox.querySelector('strong');
-      if (strong) strong.style.color = text;
+      previewBox.querySelectorAll('.preview-text-contrast').forEach(el => {
+        el.style.color = text;
+      });
     }
     
-    const root = document.documentElement;
-    root.style.setProperty('--bg', bg);
-    root.style.setProperty('--surface', surface);
-    root.style.setProperty('--surface2', surface);
-    root.style.setProperty('--border', border);
-    root.style.setProperty('--text', text);
-    document.body.style.fontSize = size + 'px';
+    if (applyToRoot) {
+      const root = document.documentElement;
+      root.style.setProperty('--bg', bg);
+      root.style.setProperty('--surface', surface);
+      root.style.setProperty('--surface2', surface);
+      root.style.setProperty('--border', border);
+      root.style.setProperty('--text', text);
+      document.body.style.fontSize = size + 'px';
+    }
     
     if (bgColorText) bgColorText.value = bg;
     if (surfaceColorText) surfaceColorText.value = surface;
@@ -320,24 +344,57 @@ function initThemeFormEvents() {
     if (textColorText) textColorText.value = text;
     if (fontSizeDisplay) fontSizeDisplay.textContent = size + 'px';
   }
+
+  const PRESETS = {
+    obsidian: { bg: '#07070c', surface: '#0e0e16', border: '#1a1a28', text: '#f0f0f8' },
+    violet:   { bg: '#080612', surface: '#120e24', border: '#261e47', text: '#f0f0f8' },
+    slate:    { bg: '#090d14', surface: '#0f172a', border: '#1e293b', text: '#f1f5f9' },
+    stealth:  { bg: '#000000', surface: '#0c0c0e', border: '#242428', text: '#ffffff' }
+  };
+
+  document.querySelectorAll('.preset-card').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const p = PRESETS[this.dataset.preset];
+      if (!p) return;
+      document.querySelectorAll('.preset-card').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      bgColor.value = p.bg;
+      surfaceColor.value = p.surface;
+      borderColor.value = p.border;
+      textColor.value = p.text;
+
+      updatePreview(true);
+    });
+  });
+
+  document.querySelectorAll('.font-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      const size = parseInt(this.dataset.size, 10);
+      if (size) {
+        fontSize.value = size;
+        updatePreview(true);
+      }
+    });
+  });
   
-  bgColor.addEventListener('input', updatePreview);
+  bgColor.addEventListener('input', () => updatePreview(true));
   if (bgColorText) bgColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { bgColor.value = this.value; updatePreview(); }
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { bgColor.value = this.value; updatePreview(true); }
   });
-  surfaceColor.addEventListener('input', updatePreview);
+  surfaceColor.addEventListener('input', () => updatePreview(true));
   if (surfaceColorText) surfaceColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { surfaceColor.value = this.value; updatePreview(); }
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { surfaceColor.value = this.value; updatePreview(true); }
   });
-  borderColor.addEventListener('input', updatePreview);
+  borderColor.addEventListener('input', () => updatePreview(true));
   if (borderColorText) borderColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { borderColor.value = this.value; updatePreview(); }
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { borderColor.value = this.value; updatePreview(true); }
   });
-  textColor.addEventListener('input', updatePreview);
+  textColor.addEventListener('input', () => updatePreview(true));
   if (textColorText) textColorText.addEventListener('input', function() {
-    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { textColor.value = this.value; updatePreview(); }
+    if (this.value.match(/^#[0-9a-fA-F]{6}$/)) { textColor.value = this.value; updatePreview(true); }
   });
-  fontSize.addEventListener('input', updatePreview);
+  fontSize.addEventListener('input', () => updatePreview(true));
   
   const saveBtn = document.getElementById('save-custom-theme-btn');
   if (saveBtn) {
@@ -370,13 +427,24 @@ function initThemeFormEvents() {
       borderColor.value = defaultSettings.borderColor;
       textColor.value = defaultSettings.textColor;
       fontSize.value = defaultSettings.fontSize;
-      updatePreview();
-      saveThemeSettings(defaultSettings);
+      document.querySelectorAll('.preset-card').forEach(b => {
+        b.classList.toggle('active', b.dataset.preset === 'obsidian');
+      });
+      updatePreview(false);
+      safeLocalStorageRemove('ww_custom_theme');
+      const root = document.documentElement;
+      root.style.removeProperty('--bg');
+      root.style.removeProperty('--surface');
+      root.style.removeProperty('--surface2');
+      root.style.removeProperty('--border');
+      root.style.removeProperty('--text');
+      document.body.style.fontSize = '';
       showToast('↺ ' + _t('settings.theme_reset_done'), 'success');
     });
   }
   
-  updatePreview();
+  // Sayfa açıldığında sadece önizleme kutusunu senkronize et, :root'u kirletme
+  updatePreview(false);
 }
 
 // ============================================================

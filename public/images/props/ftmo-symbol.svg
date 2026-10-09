@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 275 257" fill="none">
+  <defs>
+    <linearGradient id="ftmo-sym-grad" x1="0" y1="0" x2="275" y2="257" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="50%" stop-color="#00a6ff"/>
+      <stop offset="100%" stop-color="#0055ff"/>
+    </linearGradient>
+    <filter id="ftmo-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00d2ff" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#ftmo-glow)">
+    <path d="M128.943 256.083L86.6758 213.817L128.943 171.551L128.943 256.083ZM128.943 60.9111L31.3578 158.497L0.90114 128.04L128.943 -0.00232837L128.943 60.9111ZM128.943 146.687L74.2455 201.384L43.7888 170.928L128.943 85.7737V146.687ZM146.348 256.082V195.169L213.476 128.04L146.348 60.9111L146.348 -0.00232837L274.39 128.04L146.348 256.082Z" fill="url(#ftmo-sym-grad)"/>
+  </g>
+</svg>

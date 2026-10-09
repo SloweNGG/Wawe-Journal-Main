@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="fn-purp-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14092b"/>
+      <stop offset="100%" stop-color="#090314"/>
+    </linearGradient>
+    <linearGradient id="fn-accent" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#fn-purp-grad)"/>
+  <rect x="1" y="1" width="98" height="98" rx="21" stroke="url(#fn-accent)" stroke-opacity="0.35" stroke-width="2"/>
+  <!-- Official FN Shape -->
+  <!-- F -->
+  <path d="M22 28H46C49 28 51 30 51 33V37C51 40 49 42 46 42H33V49H43C45 49 47 51 47 53V57C47 59 45 61 43 61H33V74H22V28Z" fill="#ffffff"/>
+  <!-- N -->
+  <path d="M55 28H66V47L77 28H88V74H77V54L66 74H55V28Z" fill="#ffffff"/>
+  <!-- Signature Purple/Blue Corner Accent -->
+  <path d="M72 18L88 18L88 34Z" fill="#6366f1"/>
+</svg>

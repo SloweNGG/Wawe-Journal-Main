@@ -169,7 +169,7 @@
   // Global erişim
   global.wwCache = WwCache;
 
-  // Global olayları dinle: işlem eklendiğinde veya silindiğinde önbelleği düşür
+  // Global olayları dinle: işlem/strateji eklendiğinde veya silindiğinde önbelleği düşür
   if (typeof window !== 'undefined') {
     window.addEventListener('trade-saved', function() {
       WwCache.invalidate('trades');
@@ -177,9 +177,16 @@
     window.addEventListener('trade-deleted', function() {
       WwCache.invalidate('trades');
     });
+    window.addEventListener('strategy-saved', function() {
+      WwCache.invalidate('strategies');
+    });
+    window.addEventListener('strategy-deleted', function() {
+      WwCache.invalidate('strategies');
+    });
     window.addEventListener('storage', function(e) {
       if (e.key === 'ww_active_journal_id' || e.key === 'activeJournalId') {
         WwCache.invalidate('trades');
+        WwCache.invalidate('strategies');
       }
     });
   }

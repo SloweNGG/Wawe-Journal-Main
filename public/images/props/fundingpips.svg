@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="fp-blue-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00A3FF"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <filter id="fp-glow-fx" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00A3FF" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="#060c1d"/>
+  <rect x="1" y="1" width="98" height="98" rx="21" stroke="#00A3FF" stroke-opacity="0.35" stroke-width="2"/>
+  <!-- FundingPips Iconic Geometric Dual Pip Mark -->
+  <g filter="url(#fp-glow-fx)">
+    <path d="M50 16L76 42L50 68L24 42L50 16Z" fill="url(#fp-blue-grad)"/>
+    <path d="M50 42L68 60L50 78L32 60L50 42Z" fill="#60a5fa" fill-opacity="0.85"/>
+    <path d="M50 28L64 42L50 56L36 42L50 28Z" fill="#ffffff" fill-opacity="0.95"/>
+  </g>
+  <circle cx="50" cy="85" r="3.5" fill="#00A3FF"/>
+</svg>

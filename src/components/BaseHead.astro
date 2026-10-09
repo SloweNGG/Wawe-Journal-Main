@@ -92,15 +92,12 @@ const {
 <link rel="dns-prefetch" href="https://odasapyhtdopbnlfhwde.supabase.co" />
 {isAppPage ? (
   <>
-    <!-- APP FONTS: non-render-blocking with display=swap -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" media="print" onload="this.media='all'" />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" />
-    </noscript>
+    <!-- APP FONTS: render-blocking with display=block to eliminate FOUT / layout shift -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=block" />
 
     <!-- CORE CSS FOR APP -->
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/components/navbar/navbar.css" />
+    <link rel="stylesheet" href="/styles.css?v=1791480020" />
+    <link rel="stylesheet" href="/components/navbar/navbar.css?v=1791480020" />
 
     <!-- CLIENT SWR CACHE -->
     <script src="/cache.js" is:inline></script>
@@ -170,6 +167,8 @@ const {
   }
 })();
 </script>
+
+
 <!-- SERVICE WORKER REGISTRATION (Force Update on Navigation) -->
 <script is:inline>
   if ('serviceWorker' in navigator) {
