@@ -27,23 +27,45 @@
         sub: 'Seamless 1-click import with zero data loss · Auto commission & swap tracking'
       },
       refs: { tag: 'Trusted By', title: 'Names We <em>Trust</em>', desc: 'Experienced traders and content creators we work with.', empty: 'No references added yet.', error: 'Failed to load references.' },
-      ai: {
-        tag: '01 — AI-powered analysis',
-        title: "It reads your journal so you don't have to.",
-        desc: "Wawe scans your logged trades and surfaces the patterns you'd otherwise miss.",
-        msg1: "Your Thursday short trades close at a loss 71% of the time.",
-        msg2: "Your breakout strategy has been your most consistent setup over the last 30 days.",
-        msg3: "When a position stays open over 2 hours, your win rate drops by 18%.",
-        coming: 'Wawe AI chatbot — Coming soon'
+      dash: {
+        tag: '01 — Trading Journal Dashboard',
+        title: 'Your complete performance edge on one clean screen.',
+        desc: 'Cumulative P&L curve, win rate, profit factor, daily breakdown, and best/worst trade analytics — all tracked in real time.'
       },
       strategy: {
-        tag: '02 — Strategy analytics',
+        tag: '02 — Strategy Analytics',
         title: 'See which strategy is actually making money.',
-        desc: 'Tag every trade with its strategy, then compare win rate, R-multiple and volume side by side.',
-        breakout: 'Breakout', pullback: 'Pullback', news_fade: 'News-fade'
+        desc: 'Tag every trade with setups like ICT, SMT or Breakout. Compare win rate, P&L curves, and volume side by side.',
+        trades: 'Trades',
+        win_rate: 'Win Rate',
+        pnl: 'P&L',
+        no_desc: 'No Description'
+      },
+      ot: {
+        tag: '03 — Over-Trade & Risk Protection',
+        title: 'Stop emotional trading. Protect your capital.',
+        desc: 'Instant visual alerts and limit counters trigger the moment you exceed your daily trade quota or maximum loss threshold.',
+        notif_title: 'Notifications',
+        new_count: '3 new',
+        mark_read: 'Mark as Read',
+        tab_all: 'All',
+        tab_unread: 'Unread',
+        tab_risk: 'Risk & Limits',
+        tab_system: 'System',
+        crit_risk: 'CRITICAL RISK',
+        risk_warn: 'RISK WARNING',
+        warn_title: 'Risk Warning',
+        msg_daily_trades: 'You made 12 trades today. Your daily max limit is 5!',
+        msg_daily_loss: 'You lost $1,420 today. Your daily loss limit is $1,000!',
+        msg_weekly_trades: 'You made 24 trades this week. Your weekly limit is 20!',
+        daily_trades: 'Daily Trades',
+        daily_loss: 'Daily Loss',
+        limit_exceeded: 'LIMIT EXCEEDED',
+        just_now: 'Just now',
+        settings: 'Overtrade & Risk Settings'
       },
       cal: {
-        tag: '03 — Calendar & consistency',
+        tag: '04 — Calendar & Consistency',
         title: 'Discipline shows up as a pattern, not a mood.',
         desc: "A week at a glance — win days, loss days, and the days you didn't trade at all.",
         mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun'
@@ -240,23 +262,45 @@
         sub: 'Kayıpsız tek tıkla aktarım · Otomatik komisyon ve swap hesaplama'
       },
       refs: { tag: 'Güvenenler', title: 'Güvendiğimiz <em>İsimler</em>', desc: 'Birlikte çalıştığımız deneyimli traderlar ve içerik üreticileri.', empty: 'Henüz referans eklenmemiş.', error: 'Referanslar yüklenemedi.' },
-      ai: {
-        tag: '01 — AI destekli analiz',
-        title: 'Günlüğünü senin yerine okuyor.',
-        desc: 'Wawe kaydettiğin işlemleri tarar ve gözden kaçıracağın kalıpları yüzeye çıkarır.',
-        msg1: "Perşembe günleri açtığın short işlemlerin %71'i zararla kapanıyor.",
-        msg2: "Breakout stratejin, son 30 günde ortalama 1.8R ile en tutarlı setup'ın.",
-        msg3: 'Pozisyon 2 saatten uzun açık kaldığında kazanma oranın %18 düşüyor.',
-        coming: 'Wawe AI sohbet botu — Yakında'
+      dash: {
+        tag: '01 — Trading Journal Dashboard',
+        title: 'Tüm performans avantajın tek ve net ekranda.',
+        desc: 'Kümülatif P&L eğrisi, kazanma oranı, kâr faktörü, günlük dağılım ve en iyi/kötü işlem analizleri — hepsi anlık takip edilir.'
       },
       strategy: {
-        tag: '02 — Strateji analitiği',
-        title: 'Hangi stratejinin gerçekten para kazandığını gör.',
-        desc: 'Her işlemi stratejisiyle etiketle, ardından kazanma oranını, R-katını ve hacmi yan yana karşılaştır.',
-        breakout: 'Breakout', pullback: 'Pullback', news_fade: 'Haber-fade'
+        tag: '02 — Strateji Analitiği',
+        title: 'Hangi stratejinin gerçekten para kazandırdığını gör.',
+        desc: 'Her işlemi ICT, SMT veya Breakout gibi etiketle. Kazanma oranı, P&L eğrisi ve hacmi yan yana kıyasla.',
+        trades: 'İşlem',
+        win_rate: 'Win Rate',
+        pnl: 'K/Z',
+        no_desc: 'Açıklama Yok'
+      },
+      ot: {
+        tag: '03 — Over-Trade & Risk Koruması',
+        title: 'Duygusal işlemleri durdur. Sermayeni koru.',
+        desc: 'Günlük işlem limitini veya maksimum zarar sınırını aştığın an anında görsel bildirimler ve sayaçlar devreye girer.',
+        notif_title: 'Bildirimler',
+        new_count: '3 yeni',
+        mark_read: 'Okundu Olarak İşaretle',
+        tab_all: 'Tümü',
+        tab_unread: 'Okunmamış',
+        tab_risk: 'Risk & Limitler',
+        tab_system: 'Sistem',
+        crit_risk: 'KRİTİK RİSK',
+        risk_warn: 'RİSK UYARISI',
+        warn_title: 'Risk Uyarısı',
+        msg_daily_trades: 'Bugün 12 işlem yaptın. Günlük maksimum limitin 5!',
+        msg_daily_loss: 'Bugün $1.420 kaybettin. Günlük zarar limitin $1.000!',
+        msg_weekly_trades: 'Bu hafta 24 işlem yaptın. Haftalık limitin 20!',
+        daily_trades: 'Günlük İşlem',
+        daily_loss: 'Günlük Zarar',
+        limit_exceeded: 'LİMİT AŞILDI',
+        just_now: 'Az önce',
+        settings: 'Overtrade & Risk Ayarları'
       },
       cal: {
-        tag: '03 — Takvim & istikrar',
+        tag: '04 — Takvim & İstikrar',
         title: 'Disiplin bir ruh hali değil, bir kalıp olarak görünür.',
         desc: 'Bir haftaya bakış — kazanç günleri, kayıp günleri ve hiç işlem yapmadığın günler.',
         mon: 'Pzt', tue: 'Sal', wed: 'Çar', thu: 'Per', fri: 'Cum', sat: 'Cmt', sun: 'Paz'
@@ -447,23 +491,45 @@
         sub: 'Nahtloser 1-Klick-Import ohne Datenverlust · Automatische Provisions- & Swap-Erfassung'
       },
       refs: { tag: 'Vertraut von', title: 'Namen, denen wir <em>vertrauen</em>', desc: 'Erfahrene Trader und Content Creator, mit denen wir zusammenarbeiten.', empty: 'Noch keine Referenzen hinzugefügt.', error: 'Referenzen konnten nicht geladen werden.' },
-      ai: {
-        tag: '01 — KI-gestützte Analyse',
-        title: 'Liest dein Journal, damit du es nicht musst.',
-        desc: 'Wawe scannt deine Trades und deckt Muster auf, die dir sonst entgehen würden.',
-        msg1: 'Deine Short-Trades am Donnerstag schließen in 71 % der Fälle mit Verlust.',
-        msg2: 'Deine Breakout-Strategie war in den letzten 30 Tagen dein konstantestes Setup.',
-        msg3: 'Wenn eine Position länger als 2 Stunden offen bleibt, sinkt deine Gewinnrate um 18 %.',
-        coming: 'Wawe KI-Chatbot — Demnächst'
+      dash: {
+        tag: '01 — Trading Journal Dashboard',
+        title: 'Deine gesamte Performance auf einem klaren Screen.',
+        desc: 'Kumulative G&V-Kurve, Win-Rate, Profit-Faktor, Tagesverteilung und detaillierte Trade-Statistiken in Echtzeit.'
       },
       strategy: {
         tag: '02 — Strategie-Analytik',
         title: 'Finde heraus, welche Strategie wirklich profitabel ist.',
-        desc: 'Kennzeichne jeden Trade mit seiner Strategie und vergleiche Gewinnrate, R-Multiple und Volumen.',
-        breakout: 'Breakout', pullback: 'Pullback', news_fade: 'News-Fade'
+        desc: 'Kennzeichne jeden Trade mit Setups wie ICT oder SMT und vergleiche Gewinnrate, G&V-Kurven und Volumen nebeneinander.',
+        trades: 'Trades',
+        win_rate: 'Win-Rate',
+        pnl: 'G&V',
+        no_desc: 'Keine Beschreibung'
+      },
+      ot: {
+        tag: '03 — Over-Trade & Risikoschutz',
+        title: 'Stoppe emotionales Trading. Schütze dein Kapital.',
+        desc: 'Sofortige visuelle Benachrichtigungen und Limit-Zähler, sobald du dein tägliches Trade-Limit oder deine Verlustgrenze erreichst.',
+        notif_title: 'Benachrichtigungen',
+        new_count: '3 neu',
+        mark_read: 'Als gelesen markieren',
+        tab_all: 'Alle',
+        tab_unread: 'Ungelesen',
+        tab_risk: 'Risiko & Limits',
+        tab_system: 'System',
+        crit_risk: 'KRITISCHES RISIKO',
+        risk_warn: 'RISIKOWARNUNG',
+        warn_title: 'Risikowarnung',
+        msg_daily_trades: 'Heute 12 Trades ausgeführt. Dein Tageslimit liegt bei 5!',
+        msg_daily_loss: 'Heute $1.420 verloren. Dein tägliches Verlustlimit ist $1.000!',
+        msg_weekly_trades: 'Diese Woche 24 Trades ausgeführt. Dein Wochenlimit ist 20!',
+        daily_trades: 'Tägliche Trades',
+        daily_loss: 'Täglicher Verlust',
+        limit_exceeded: 'LIMIT ÜBERSCHRITTEN',
+        just_now: 'Gerade eben',
+        settings: 'Overtrade- & Risikoeinstellungen'
       },
       cal: {
-        tag: '03 — Kalender & Konstanz',
+        tag: '04 — Kalender & Konstanz',
         title: 'Disziplin zeigt sich als Muster, nicht als Laune.',
         desc: 'Eine Woche im Überblick — Gewinntage, Verlusttage und Tage ohne Trading.',
         mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa', sun: 'So'
@@ -699,9 +765,9 @@
     try {
       localStorage.setItem(STORAGE_KEY, lang);
       localStorage.setItem(ALT_STORAGE_KEY, lang);
-    } catch (e) {}
+    } catch (e) { }
     apply();
-    listeners.forEach(cb => { try { cb(lang); } catch (e) {} });
+    listeners.forEach(cb => { try { cb(lang); } catch (e) { } });
   }
 
   function getCurrentLanguage() { return currentLang; }

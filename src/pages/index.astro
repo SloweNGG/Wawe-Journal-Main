@@ -152,55 +152,71 @@ import Layout from '../layouts/Layout.astro';
   <div class="menu-overlay" id="menu-overlay"></div>
 
   <!-- ═══ HERO ═══ -->
-  <section class="hero">
-    <div class="hero-left">
-      <div class="hero-beta-badge">
-        <span class="beta-dot"></span>
-        <span data-i18n="hero.beta">BETA</span>
-      </div>
-
-      <h1>
-        <span class="l1" data-i18n="hero.title">Stop guessing which trades work.</span>
-        <span class="hero-destiny-wrap">
-          <span class="hero-destiny" data-i18n="hero.destiny">Rewrite your destiny.</span>
-        </span>
-      </h1>
-
-      <p class="hero-sub" data-i18n="hero.subtitle">
-        Log every trade, see your real edge, and drop the strategies that only feel right. Your data, your discipline.
-      </p>
-
-      <div class="hero-actions">
-        <a href="register.html" class="btn-primary" data-i18n="hero.start_free">Start Free →</a>
-        <a href="login.html" class="btn-ghost" data-i18n="hero.login">Login</a>
-      </div>
-
-      <div class="hero-note" data-i18n="hero.note">Analyze beyond the standards.</div>
+  <div class="hero-ambient-wrap">
+    <div class="hero-video-backdrop" aria-hidden="true">
+      <video
+        src="https://odasapyhtdopbnlfhwde.supabase.co/storage/v1/object/public/landing-assets/dashboardlong.mp4"
+        class="hero-bg-video"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="auto"
+      ></video>
+      <div class="hero-video-overlay"></div>
+      <div class="hero-video-glow"></div>
     </div>
 
-    <div class="hero-chart-wrap">
-      <canvas id="hero-chart-canvas"></canvas>
-      <div class="hero-float-card hfc-top">
-        <div class="hfc-label" data-i18n="hero.win_rate">WIN RATE</div>
-        <div class="hfc-value hfc-green">83.4%</div>
-      </div>
-      <div class="hero-float-card hfc-mid">
-        <div class="hfc-label" data-i18n="hero.total_pnl">TOTAL P&L</div>
-        <div class="hfc-value hfc-green">+$4,820</div>
-      </div>
-      <div class="hero-float-card hfc-bot">
-        <div class="hfc-label" data-i18n="hero.current_price">XAUUSD</div>
-        <div class="hfc-value">2341.80 <span class="hfc-green">↑</span></div>
-      </div>
-    </div>
+    <section class="hero">
+      <div class="hero-left">
+        <div class="hero-beta-badge">
+          <span class="beta-dot"></span>
+          <span data-i18n="hero.beta">BETA</span>
+        </div>
 
-    <div class="hero-stats">
-      <div class="hstat"><div class="hstat-val" id="stat-total-users">—</div><div class="hstat-label" data-i18n="stats.total_users">Total Users</div></div>
-      <div class="hstat"><div class="hstat-val" id="stat-total-trades">—</div><div class="hstat-label" data-i18n="stats.total_trades">Trades Logged</div></div>
-      <div class="hstat"><div class="hstat-val" id="stat-today-users">—</div><div class="hstat-label" data-i18n="stats.today_users">New Today</div></div>
-      <div class="hstat"><div class="hstat-val" id="stat-today-trades">—</div><div class="hstat-label" data-i18n="stats.today_trades">Trades Today</div></div>
-    </div>
-  </section>
+        <h1>
+          <span class="l1" data-i18n="hero.title">Stop guessing which trades work.</span>
+          <span class="hero-destiny-wrap">
+            <span class="hero-destiny" data-i18n="hero.destiny">Rewrite your destiny.</span>
+          </span>
+        </h1>
+
+        <p class="hero-sub" data-i18n="hero.subtitle">
+          Log every trade, see your real edge, and drop the strategies that only feel right. Your data, your discipline.
+        </p>
+
+        <div class="hero-actions">
+          <a href="register.html" class="btn-primary" data-i18n="hero.start_free">Start Free →</a>
+          <a href="login.html" class="btn-ghost" data-i18n="hero.login">Login</a>
+        </div>
+
+        <div class="hero-note" data-i18n="hero.note">Analyze beyond the standards.</div>
+      </div>
+
+      <div class="hero-chart-wrap">
+        <canvas id="hero-chart-canvas"></canvas>
+        <div class="hero-float-card hfc-top">
+          <div class="hfc-label" data-i18n="hero.win_rate">WIN RATE</div>
+          <div class="hfc-value hfc-green">83.4%</div>
+        </div>
+        <div class="hero-float-card hfc-mid">
+          <div class="hfc-label" data-i18n="hero.total_pnl">TOTAL P&L</div>
+          <div class="hfc-value hfc-green">+$4,820</div>
+        </div>
+        <div class="hero-float-card hfc-bot">
+          <div class="hfc-label" data-i18n="hero.current_price">XAUUSD</div>
+          <div class="hfc-value">2341.80 <span class="hfc-green">↑</span></div>
+        </div>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-val" id="stat-total-users">—</div><div class="hstat-label" data-i18n="stats.total_users">Total Users</div></div>
+        <div class="hstat"><div class="hstat-val" id="stat-total-trades">—</div><div class="hstat-label" data-i18n="stats.total_trades">Trades Logged</div></div>
+        <div class="hstat"><div class="hstat-val" id="stat-today-users">—</div><div class="hstat-label" data-i18n="stats.today_users">New Today</div></div>
+        <div class="hstat"><div class="hstat-val" id="stat-today-trades">—</div><div class="hstat-label" data-i18n="stats.today_trades">Trades Today</div></div>
+      </div>
+    </section>
+  </div>
 
   <!-- ═══ SUPPORTED PLATFORMS MARQUEE (METHOD 1) ═══ -->
   <section class="platforms-section reveal">
@@ -413,46 +429,26 @@ import Layout from '../layouts/Layout.astro';
 
   <div class="glow-line"></div>
 
-  <!-- ═══ 01 AI ═══ -->
-  <div class="section reveal">
-    <div class="nsection">
-      <div class="ntext">
-        <div class="ntag" data-i18n="ai.tag">01 — AI-powered analysis</div>
-        <h2 class="section-title" data-i18n="ai.title">It reads your journal so you don't have to.</h2>
-        <p class="section-desc" data-i18n="ai.desc">Wawe scans your logged trades and surfaces the patterns you'd otherwise miss.</p>
-      </div>
-      <div class="nmock">
-        <div class="ai-msg"><div class="ai-dot">AI</div><div class="ai-text" data-i18n="ai.msg1">Your Thursday short trades close at a loss 71% of the time.</div></div>
-        <div class="ai-msg"><div class="ai-dot">AI</div><div class="ai-text" data-i18n="ai.msg2">Your breakout strategy has been your most consistent setup over the last 30 days.</div></div>
-        <div class="ai-msg"><div class="ai-dot">AI</div><div class="ai-text" data-i18n="ai.msg3">When a position stays open over 2 hours, your win rate drops by 18%.</div></div>
-        <div class="ai-soon"><span class="ai-soon-dot"></span><span data-i18n="ai.coming">Wawe AI chatbot — Coming soon</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="glow-line"></div>
-
-  <!-- ═══ 02 STRATEGY ═══ -->
+  <!-- ═══ 01 DASHBOARD OVERVIEW ═══ -->
   <div class="section reveal">
     <div class="nsection reverse">
       <div class="ntext">
-        <div class="ntag" data-i18n="strategy.tag">02 — Strategy analytics</div>
-        <h2 class="section-title" data-i18n="strategy.title">See which strategy is actually making money.</h2>
-        <p class="section-desc" data-i18n="strategy.desc">Tag every trade with its strategy, then compare win rate, R-multiple and volume side by side.</p>
+        <div class="ntag" data-i18n="dash.tag">01 — Trading Journal Dashboard</div>
+        <h2 class="section-title" data-i18n="dash.title">Your complete performance edge on one clean screen.</h2>
+        <p class="section-desc" data-i18n="dash.desc">Cumulative P&L curve, win rate, profit factor, daily breakdown, and best/worst trade analytics — all tracked in real time.</p>
       </div>
-      <div class="nmock">
-        <div class="sa-wrap">
-          <div class="sa-donut"></div>
-          <div class="sa-bars">
-            <div class="sa-row"><span class="name">breakout</span><div class="sa-track"><div class="sa-fill" style="width:82%;background:var(--accent)"></div></div><span class="sa-pct">82%</span></div>
-            <div class="sa-row"><span class="name">pullback</span><div class="sa-track"><div class="sa-fill" style="width:61%;background:var(--accent2)"></div></div><span class="sa-pct">61%</span></div>
-            <div class="sa-row"><span class="name">news-fade</span><div class="sa-track"><div class="sa-fill" style="width:34%;background:var(--border)"></div></div><span class="sa-pct">34%</span></div>
-          </div>
-        </div>
-        <div class="sa-legend">
-          <span><i style="background:var(--accent)"></i><span data-i18n="strategy.breakout">Breakout</span> · 46%</span>
-          <span><i style="background:var(--accent2)"></i><span data-i18n="strategy.pullback">Pullback</span> · 32%</span>
-          <span><i style="background:var(--border)"></i><span data-i18n="strategy.news_fade">News-fade</span> · 22%</span>
+      <div class="nmock-video-frame">
+        <div class="nmock-video-glow"></div>
+        <div class="nmock nmock-image-wrap">
+          <video
+            src="https://odasapyhtdopbnlfhwde.supabase.co/storage/v1/object/public/landing-assets/Video%20Project%208.mp4"
+            class="nmock-video"
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="auto"
+          ></video>
         </div>
       </div>
     </div>
@@ -460,11 +456,296 @@ import Layout from '../layouts/Layout.astro';
 
   <div class="glow-line"></div>
 
-  <!-- ═══ 03 CALENDAR ═══ -->
+  <!-- ═══ 02 STRATEGY ANALYTICS ═══ -->
   <div class="section reveal">
     <div class="nsection">
       <div class="ntext">
-        <div class="ntag" data-i18n="cal.tag">03 — Calendar & consistency</div>
+        <div class="ntag" data-i18n="strategy.tag">02 — Strategy Analytics</div>
+        <h2 class="section-title" data-i18n="strategy.title">See which strategy is actually making money.</h2>
+        <p class="section-desc" data-i18n="strategy.desc">Tag every trade with setups like ICT, SMT or Breakout. Compare win rate, P&L curves, and volume side by side.</p>
+      </div>
+      <div class="nmock nmock-strat-showcase">
+        <div class="strat-cards-grid">
+          <!-- Card 1: ICT (Losing setup) -->
+          <div class="strat-card-model strat-card-ict">
+            <div class="sc-top">
+              <div class="sc-header">
+                <div class="sc-name-row">
+                  <div class="sc-color-bar" style="background:#22c55e;"></div>
+                  <div>
+                    <div class="sc-name">ICT</div>
+                    <div class="sc-desc" data-i18n="strategy.no_desc">No Description</div>
+                  </div>
+                </div>
+                <span class="sc-wr-dot neg" title="Win Rate: 0%"></span>
+              </div>
+
+              <div class="sc-stats">
+                <div class="sc-stat">
+                  <div class="sc-stat-lbl" data-i18n="strategy.trades">Trades</div>
+                  <div class="sc-stat-val">2</div>
+                </div>
+                <div class="sc-stat">
+                  <div class="sc-stat-lbl" data-i18n="strategy.win_rate">Win Rate</div>
+                  <div class="sc-stat-val neg">0%</div>
+                </div>
+                <div class="sc-stat">
+                  <div class="sc-stat-lbl" data-i18n="strategy.pnl">P&L</div>
+                  <div class="sc-stat-val neg">-$685,00</div>
+                </div>
+              </div>
+
+              <div class="sc-instrument-tag">
+                <span class="sc-instrument-left">
+                  <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                    <path d="M4 22h16"/>
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                  </svg>
+                  <span class="tag-name">forex EURUSD</span>
+                </span>
+                <span class="tag-pnl neg">-$685,00</span>
+              </div>
+
+              <div class="sc-spark-chart">
+                <svg viewBox="0 0 240 44" preserveAspectRatio="none" class="sc-spark-svg" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="ict-spark-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.32"/>
+                      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0,16 C 50,16 90,20 140,28 C 180,34 210,38 240,40 L 240,44 L 0,44 Z" fill="url(#ict-spark-grad)"/>
+                  <path d="M 0,16 C 50,16 90,20 140,28 C 180,34 210,38 240,40" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="sc-footer">
+              <div class="dir-pills">
+                <span class="dp dp-long">
+                  <svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                    <polyline points="16 7 22 7 22 13"/>
+                  </svg>
+                  Long 2
+                </span>
+              </div>
+              <div class="sc-actions">
+                <span class="sc-mock-btn" title="Edit">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </span>
+                <span class="sc-mock-btn danger" title="Delete">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: SMT (Winning setup) -->
+          <div class="strat-card-model strat-card-smt">
+            <div class="sc-top">
+              <div class="sc-header">
+                <div class="sc-name-row">
+                  <div class="sc-color-bar" style="background:#eab308;"></div>
+                  <div>
+                    <div class="sc-name">SMT</div>
+                    <div class="sc-desc" data-i18n="strategy.no_desc">No Description</div>
+                  </div>
+                </div>
+                <span class="sc-wr-dot pos" title="Win Rate: 100%"></span>
+              </div>
+
+              <div class="sc-stats">
+                <div class="sc-stat">
+                  <div class="sc-stat-lbl" data-i18n="strategy.trades">Trades</div>
+                  <div class="sc-stat-val">1</div>
+                </div>
+                <div class="sc-stat">
+                  <div class="sc-stat-lbl" data-i18n="strategy.win_rate">Win Rate</div>
+                  <div class="sc-stat-val pos">100%</div>
+                </div>
+                <div class="sc-stat">
+                  <div class="sc-stat-lbl" data-i18n="strategy.pnl">P&L</div>
+                  <div class="sc-stat-val pos">+$3.346,00</div>
+                </div>
+              </div>
+
+              <div class="sc-instrument-tag">
+                <span class="sc-instrument-left">
+                  <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                    <path d="M4 22h16"/>
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                  </svg>
+                  <span class="tag-name">forex EURUSD</span>
+                </span>
+                <span class="tag-pnl pos">+$3.346,00</span>
+              </div>
+
+              <div class="sc-spark-chart">
+                <svg viewBox="0 0 240 44" preserveAspectRatio="none" class="sc-spark-svg" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="smt-spark-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#eab308" stop-opacity="0.32"/>
+                      <stop offset="100%" stop-color="#eab308" stop-opacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0,38 C 50,38 95,34 140,26 C 180,18 210,12 240,10 L 240,44 L 0,44 Z" fill="url(#smt-spark-grad)"/>
+                  <path d="M 0,38 C 50,38 95,34 140,26 C 180,18 210,12 240,10" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="sc-footer">
+              <div class="dir-pills">
+                <span class="dp dp-long">
+                  <svg class="dp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                    <polyline points="16 7 22 7 22 13"/>
+                  </svg>
+                  Long 1
+                </span>
+              </div>
+              <div class="sc-actions">
+                <span class="sc-mock-btn" title="Edit">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </span>
+                <span class="sc-mock-btn danger" title="Delete">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- ═══ 03 OVER-TRADE & RISK ═══ -->
+  <div class="section reveal">
+    <div class="nsection reverse">
+      <div class="ntext">
+        <div class="ntag" data-i18n="ot.tag">03 — Over-Trade & Risk Protection</div>
+        <h2 class="section-title" data-i18n="ot.title">Stop emotional trading. Protect your capital.</h2>
+        <p class="section-desc" data-i18n="ot.desc">Instant visual alerts and limit counters trigger the moment you exceed your daily trade quota or maximum loss threshold.</p>
+      </div>
+      <div class="nmock-notif-modal">
+        <!-- Header -->
+        <div class="notif-mock-head">
+          <div class="notif-mock-title-wrap">
+            <span class="notif-mock-title" data-i18n="ot.notif_title">Notifications</span>
+            <span class="notif-mock-badge-new" data-i18n="ot.new_count">3 new</span>
+          </div>
+          <div class="notif-mock-head-actions">
+            <button class="notif-mock-mark-read" type="button">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span data-i18n="ot.mark_read">Mark as Read</span>
+            </button>
+            <span class="notif-mock-close-btn" aria-hidden="true">✕</span>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="notif-mock-tabs">
+          <span class="notif-mock-tab active"><span data-i18n="ot.tab_all">All</span><span class="notif-mock-tab-count">4</span></span>
+          <span class="notif-mock-tab"><span data-i18n="ot.tab_unread">Unread</span><span class="notif-mock-tab-count">3</span></span>
+          <span class="notif-mock-tab"><span data-i18n="ot.tab_risk">Risk & Limits</span><span class="notif-mock-tab-count">3</span></span>
+          <span class="notif-mock-tab"><span data-i18n="ot.tab_system">System</span><span class="notif-mock-tab-count">1</span></span>
+        </div>
+
+        <!-- Notification List -->
+        <div class="notif-mock-list">
+          <!-- Item 1: Daily Trades Limit Exceeded -->
+          <div class="notif-mock-card danger">
+            <div class="notif-mock-card-head">
+              <div class="notif-mock-icon-wrap danger">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div class="notif-mock-head-info">
+                <div class="notif-mock-badge-row">
+                  <span class="notif-mock-risk-badge danger" data-i18n="ot.crit_risk">CRITICAL RISK</span>
+                  <span class="notif-mock-unread-dot" title="Unread"></span>
+                </div>
+                <h4 class="notif-mock-item-title" data-i18n="ot.warn_title">Risk Warning</h4>
+              </div>
+            </div>
+            <p class="notif-mock-item-desc" data-i18n="ot.msg_daily_trades">Bugün 12 işlem yaptın. Günlük maksimum limitin 5!</p>
+            <div class="notif-mock-pills-row">
+              <span class="notif-pill-metric">12 / 5</span>
+              <span class="notif-pill-label" data-i18n="ot.daily_trades">Daily Trades</span>
+              <span class="notif-pill-exceeded" data-i18n="ot.limit_exceeded">LIMIT EXCEEDED</span>
+            </div>
+            <div class="notif-mock-time-row">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span data-i18n="ot.just_now">Just now</span>
+            </div>
+          </div>
+
+          <!-- Item 2: Daily Loss Limit Exceeded -->
+          <div class="notif-mock-card danger">
+            <div class="notif-mock-card-head">
+              <div class="notif-mock-icon-wrap danger">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div class="notif-mock-head-info">
+                <div class="notif-mock-badge-row">
+                  <span class="notif-mock-risk-badge danger" data-i18n="ot.crit_risk">CRITICAL RISK</span>
+                  <span class="notif-mock-unread-dot" title="Unread"></span>
+                </div>
+                <h4 class="notif-mock-item-title" data-i18n="ot.warn_title">Risk Warning</h4>
+              </div>
+            </div>
+            <p class="notif-mock-item-desc" data-i18n="ot.msg_daily_loss">You lost $1.420 today. Your daily loss limit is $1.000!</p>
+            <div class="notif-mock-pills-row">
+              <span class="notif-pill-metric">$1.420 / $1.000</span>
+              <span class="notif-pill-label" data-i18n="ot.daily_loss">Daily Loss</span>
+              <span class="notif-pill-exceeded" data-i18n="ot.limit_exceeded">LIMIT EXCEEDED</span>
+            </div>
+            <div class="notif-mock-time-row">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span data-i18n="ot.just_now">Just now</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="notif-mock-footer">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          <span data-i18n="ot.settings">Overtrade & Risk Settings</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- ═══ 04 CALENDAR ═══ -->
+  <div class="section reveal">
+    <div class="nsection">
+      <div class="ntext">
+        <div class="ntag" data-i18n="cal.tag">04 — Calendar & consistency</div>
         <h2 class="section-title" data-i18n="cal.title">Discipline shows up as a pattern, not a mood.</h2>
         <p class="section-desc" data-i18n="cal.desc">A week at a glance — win days, loss days, and the days you didn't trade at all.</p>
       </div>
@@ -484,65 +765,7 @@ import Layout from '../layouts/Layout.astro';
 
   <div class="glow-line"></div>
 
-  <!-- ═══ COMPARISON ═══ -->
-  <div class="section reveal">
-    <div class="section-tag" data-i18n="cmp.tag">Comparison</div>
-    <h2 class="section-title" data-i18n="cmp.title">How Wawe Journal compares</h2>
-    <p class="section-desc" data-i18n="cmp.desc">Public pricing and feature info as of 2026 — verify before deciding.</p>
-    <div class="cmp-grid">
-      <div class="cmp-card us">
-        <div class="cmp-name" data-i18n="cmp.us.name">Wawe Journal</div>
-        <div class="cmp-sub" data-i18n="cmp.us.sub">Premium</div>
-        <div class="cmp-price us">$12<span>/mo</span></div>
-        <ul class="cmp-rows">
-          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v pos" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
-          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
-          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 20 charts</span></li>
-          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v mid" data-i18n="cmp.rows.coming">Yes (Coming soon)</span></li>
-          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v mid" data-i18n="cmp.rows.coming">Yes (Coming soon)</span></li>
-        </ul>
-      </div>
-      <div class="cmp-card">
-        <div class="cmp-name" data-i18n="cmp.tz.name">TradeZella</div>
-        <div class="cmp-sub" data-i18n="cmp.tz.sub">Essential</div>
-        <div class="cmp-price">$35<span>/mo</span></div>
-        <ul class="cmp-rows">
-          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v neg" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
-          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
-          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 300+ reports</span></li>
-          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v pos">Yes (Zella AI)</span></li>
-          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v neg" data-i18n="cmp.rows.pro_only">Pro plan only</span></li>
-        </ul>
-      </div>
-      <div class="cmp-card">
-        <div class="cmp-name" data-i18n="cmp.ew.name">Edgewonk</div>
-        <div class="cmp-sub" data-i18n="cmp.ew.sub">Single plan</div>
-        <div class="cmp-price">~$16<span>/mo</span></div>
-        <ul class="cmp-rows">
-          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v neg" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
-          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos">Yes (Checklist)</span></li>
-          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos">Yes · 17 charts</span></li>
-          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v neg" data-i18n="cmp.rows.partial">Partial</span></li>
-          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v neg" data-i18n="cmp.rows.no">No</span></li>
-        </ul>
-      </div>
-      <div class="cmp-card">
-        <div class="cmp-name" data-i18n="cmp.ts.name">TraderSync</div>
-        <div class="cmp-sub" data-i18n="cmp.ts.sub">Pro</div>
-        <div class="cmp-price">$29.95<span>/mo</span></div>
-        <ul class="cmp-rows">
-          <li><span class="k" data-i18n="cmp.rows.trades">Trade limit</span><span class="v neg" data-i18n="cmp.rows.unlimited">Unlimited</span></li>
-          <li><span class="k" data-i18n="cmp.rows.strategies">Strategy tagging</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
-          <li><span class="k" data-i18n="cmp.rows.charts">Advanced charts</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
-          <li><span class="k" data-i18n="cmp.rows.ai">AI-powered analysis</span><span class="v neg" data-i18n="cmp.rows.limited">Limited · 5 msgs/day</span></li>
-          <li><span class="k" data-i18n="cmp.rows.chat">AI chat assistant</span><span class="v pos" data-i18n="cmp.rows.yes">Yes</span></li>
-        </ul>
-      </div>
-    </div>
-    <p class="cmp-foot" data-i18n="cmp.foot">Source: providers' public pricing pages, 2026. Prices and content may change.</p>
-  </div>
 
-  <div class="glow-line"></div>
 
   <!-- ═══ FEATURES ═══ -->
   <div class="section reveal" id="features-detail">
@@ -579,7 +802,6 @@ import Layout from '../layouts/Layout.astro';
           <li data-i18n="plans.free_f2">Calendar view</li>
           <li data-i18n="plans.free_f3">CSV / PDF import</li>
           <li data-i18n="plans.free_f4">Basic charts</li>
-          <li data-i18n="plans.free_f5">Limited AI analysis</li>
         </ul>
         <a href="register.html" class="btn-plan ghost" data-i18n="plans.free_btn">Start free</a>
       </div>
@@ -596,7 +818,6 @@ import Layout from '../layouts/Layout.astro';
           <li data-i18n="plans.monthly_f3">Theme settings</li>
           <li data-i18n="plans.monthly_f4">Over trade notifications</li>
           <li data-i18n="plans.monthly_f5">Advanced strategy analytics</li>
-          <li data-i18n="plans.monthly_f6">AI analysis / Wawe AI chat bot</li>
           <li data-i18n="plans.monthly_f7">Customize Wawe journal</li>
           <li data-i18n="plans.monthly_f8">Movable charts</li>
         </ul>

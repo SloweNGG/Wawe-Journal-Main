@@ -5,6 +5,11 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title>Login – Wawe Journal</title>
 
+  <!-- Preconnect & Prefetch for Speed -->
+  <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
+  <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
+  <link rel="prefetch" href="dashboard.html" />
+
   <!-- Turnstile Callbacks (Global Scope) -->
   <script is:inline>
     window.latestTurnstileToken = '';
@@ -534,9 +539,8 @@ import Layout from '../layouts/Layout.astro';
   </style>
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
-  <script src="/config.js" is:inline></script>
-  <script type="module" src="/src/bundle.js" is:inline></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
 </Fragment>
 
   <a href="/" class="brand-logo" aria-label="Wawe Journal Home">
@@ -744,7 +748,7 @@ import Layout from '../layouts/Layout.astro';
       return true;
     }
 
-    // Yedek render: Eğer 1 saniye sonra kutu henüz çizilmemişse manuel çiz
+    // Yedek render: DOM hazır olduğunda veya gecikme durumunda manuel tetikle
     function ensureTurnstileRender() {
       var c = document.getElementById('turnstile-container');
       if (c && !c.hasChildNodes() && typeof window.turnstile !== 'undefined' && typeof window.turnstile.render === 'function') {
@@ -760,14 +764,31 @@ import Layout from '../layouts/Layout.astro';
         } catch (e) {}
       }
     }
-    setTimeout(ensureTurnstileRender, 1000);
-    setTimeout(ensureTurnstileRender, 2500);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', ensureTurnstileRender);
+    } else {
+      ensureTurnstileRender();
+    }
+    setTimeout(ensureTurnstileRender, 500);
 
-    // ─── Mevcut Oturum Kontrolü ─────────────────────────────
+    // ─── Mevcut Oturum Kontrolü (Hızlı 0ms Denetim) ─────────
     function checkExistingSession() {
       if (window.location.search.includes('error=') || window.location.hash.includes('error=') || window.location.search.includes('auth_error=')) {
         return; // Hata incelenirken yönlendirme yapma
       }
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) {
+            var raw = localStorage.getItem(k);
+            if (raw && (raw.indexOf('access_token') !== -1 || raw.indexOf('currentSession') !== -1)) {
+              window.location.replace('dashboard.html');
+              return;
+            }
+          }
+        }
+      } catch (e) {}
+
       var client = getSupabase();
       if (client && client.auth) {
         client.auth.getSession().then(function(res) {
@@ -777,7 +798,7 @@ import Layout from '../layouts/Layout.astro';
         }).catch(function() {});
       }
     }
-    setTimeout(checkExistingSession, 400);
+    checkExistingSession();
 
     // ─── Google OAuth Girişi ─────────────────────────────────
     async function signInWithGoogle() {
@@ -908,7 +929,7 @@ import Layout from '../layouts/Layout.astro';
 
         btn.textContent = 'Login Successful! ✓';
         toast('Welcome back! Redirecting to dashboard... 🎉', 'success');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 180);
 
       } catch (err) {
         console.error('Login error:', err);
