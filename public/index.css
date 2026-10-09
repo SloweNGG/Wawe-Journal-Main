@@ -178,6 +178,7 @@ nav.nav {
   font-size: 13px;
   font-weight: 500;
   transition: all .2s;
+  white-space: nowrap;
 }
 
 .btn-login:hover {
@@ -195,6 +196,7 @@ nav.nav {
   font-size: 13px;
   font-weight: 600;
   transition: all .2s;
+  white-space: nowrap;
 }
 
 .btn-register:hover {
@@ -343,7 +345,7 @@ nav.nav {
   flex-direction: column;
   gap: 0.5rem;
   transition: right 0.3s ease;
-  z-index: 100;
+  z-index: 1000;
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
 }
 
@@ -391,7 +393,7 @@ nav.nav {
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
-  z-index: 99;
+  z-index: 998;
 }
 
 .menu-overlay.active {
@@ -2703,8 +2705,28 @@ footer.site-footer {
    RESPONSIVE
    ============================================================ */
 @media (max-width: 900px) {
+  nav.nav {
+    height: 54px;
+    padding: 0 clamp(16px, 4vw, 24px);
+  }
+
+  .nav-links {
+    display: none !important;
+  }
+
+  .lang-selector {
+    margin-left: auto;
+  }
+
+  .hamburger {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
   .hero {
     grid-template-columns: 1fr;
+    padding: clamp(38px, 8vw, 48px) 20px 40px;
   }
 
   .hero-left {
@@ -2727,20 +2749,35 @@ footer.site-footer {
     font-size: clamp(1.4rem, 5.5vw, 2.2rem);
     max-width: 100%;
   }
+}
 
-  .nav-links .btn-login,
-  .nav-links .nav-link {
-    display: none;
+@media (max-width: 768px) {
+  .hero-video-backdrop {
+    opacity: 0.2;
+    filter: blur(20px);
   }
 
-  .hamburger {
-    display: flex;
+  .hero-bg-video {
+    min-width: 100%;
+    width: 100%;
+    height: 100%;
+    transform: none;
+    left: 0;
+    top: 0;
+    opacity: 0.10;
+    object-fit: cover;
+  }
+
+  .hero-video-overlay {
+    background:
+      radial-gradient(ellipse 100% 80% at 50% 30%, rgba(7, 7, 12, 0.8) 0%, rgba(7, 7, 12, 0.96) 60%, #07070c 100%),
+      linear-gradient(180deg, rgba(7, 7, 12, 0.9) 0%, transparent 20%, transparent 60%, #07070c 100%);
   }
 }
 
 @media (max-width: 600px) {
   .hero {
-    padding: 32px 20px 40px;
+    padding: 40px 18px 40px;
   }
 
   .bcell {
