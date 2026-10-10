@@ -550,8 +550,53 @@ import Layout from '../layouts/Layout.astro';
         var t = function (key, params) {
           return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
         };
-        var phaseName = account.rules?.phase_name || t('prop.phase_num', { n: phaseNum });
-        var fmt = window.formatCurrency || (val => '$' + Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        var curLang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+        var localeStr = curLang === 'tr' ? 'tr-TR' : (curLang === 'de' ? 'de-DE' : 'en-US');
+
+        function localizePhaseName(rawPhase) {
+          if (!rawPhase) return '';
+          if (curLang === 'tr') {
+            return String(rawPhase)
+              .replace(/Phase 1 \(Challenge\)/i, 'Faz 1 (Challenge)')
+              .replace(/Phase 1 \(Evaluation\)/i, 'Faz 1 (Değerlendirme)')
+              .replace(/Phase 1 \(Single Phase\)/i, 'Faz 1 (Tek Aşama)')
+              .replace(/Phase 2 \(Verification\)/i, 'Faz 2 (Doğrulama)')
+              .replace(/Phase 2/i, 'Faz 2')
+              .replace(/Phase 1/i, 'Faz 1')
+              .replace(/Funded \((.*?)\)/i, 'Fonlandı ($1)')
+              .replace(/^Funded$/i, 'Fonlandı (Canlı)');
+          } else if (curLang === 'de') {
+            return String(rawPhase)
+              .replace(/Phase 1 \(Challenge\)/i, 'Phase 1 (Challenge)')
+              .replace(/Phase 1 \(Evaluation\)/i, 'Phase 1 (Bewertung)')
+              .replace(/Phase 1 \(Single Phase\)/i, 'Phase 1 (Einzelschritt)')
+              .replace(/Phase 2 \(Verification\)/i, 'Phase 2 (Verifizierung)')
+              .replace(/Funded \((.*?)\)/i, 'Gefördert ($1)')
+              .replace(/^Funded$/i, 'Gefördert (Live)');
+          }
+          return rawPhase;
+        }
+
+        var rawPhaseName = account.rules?.phase_name || t('prop.phase_num', { n: phaseNum });
+        var phaseName = localizePhaseName(rawPhaseName);
+
+        var currSym = (typeof window.getCurrencySymbol === 'function') 
+          ? window.getCurrencySymbol() 
+          : (localStorage.getItem('ww_currency') || '$');
+
+        var fmtPlain = function(val) {
+          var n = Number(val) || 0;
+          return currSym + Math.abs(n).toLocaleString(localeStr, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+        var fmtDelta = function(val) {
+          var n = Number(val) || 0;
+          var sign = n > 0 ? '+' : (n < 0 ? '-' : '');
+          return sign + currSym + Math.abs(n).toLocaleString(localeStr, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+        var fmtPct = function(pct) {
+          var p = Math.round(Number(pct) || 0);
+          return curLang === 'tr' ? '%' + p : p + '%';
+        };
 
         // Action buttons & warnings
         var warningsList = (status.warnings || []).slice();
@@ -563,7 +608,7 @@ import Layout from '../layouts/Layout.astro';
         var hasNextPhase = Boolean(tmpl && tmpl.phases && tmpl.phases.length > nextPhaseIdx);
 
         var st = status.overall_status || 'in_progress';
-        var stLabel = st === 'passed' ? (t('prop.status_passed') || 'AŞAMA GEÇİLDİ') : (st === 'failed' ? (t('prop.status_failed') || 'KURAL İHLALİ') : (t('prop.status_in_progress') || 'DEVAM EDİYOR'));
+        var stLabel = st === 'passed' ? t('prop.status_passed') : (st === 'failed' ? t('prop.status_failed') : t('prop.status_in_progress'));
 
         // Başlığın sağındaki prop firm ibareleri kaldırıldı
         if (badgeEl) {
@@ -604,19 +649,19 @@ import Layout from '../layouts/Layout.astro';
         var phaseStatusClass = st;
         if (st === 'passed') {
           phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon passed"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
-          phaseStatusText = 'Hedefe ulaşıldı.';
+          phaseStatusText = t('prop.target_reached_desc');
         } else if (st === 'failed') {
           phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon failed"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-          phaseStatusText = (t('prop.status_failed') || 'Kural İhlali:') + ' ' + (status.failed_rule || 'Hesap limitleri aşıldı.');
+          phaseStatusText = t('prop.status_failed') + ': ' + (status.failed_rule || t('prop.limits_exceeded'));
         } else {
           phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon target"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`;
           if (targetAmount > 0) {
             phaseStatusText = targetRem <= 0 
-              ? 'Hedefe ulaşıldı.' 
-              : 'Hedefe Kalan: ' + fmt(targetRem) + ' (Hedef: ' + fmt(targetAmount) + ')';
+              ? t('prop.target_reached_desc')
+              : t('prop.target_remaining_info', { rem: fmtPlain(targetRem), target: fmtPlain(targetAmount) });
           } else {
             phaseStatusIcon = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="prop-status-icon info"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
-            phaseStatusText = 'Sınırsız süre - Kural limitlerine dikkat ederek işlem yapın.';
+            phaseStatusText = t('prop.unlimited_time_hint');
           }
         }
 
@@ -630,7 +675,7 @@ import Layout from '../layouts/Layout.astro';
               </div>
               <div class="prop-card-badge-row">
                 ${warningsList.length > 0 ? `
-                  <button type="button" id="prop-card-notices-btn" class="prop-card-btn-notices" title="${warningsList.length} Uyarı">
+                  <button type="button" id="prop-card-notices-btn" class="prop-card-btn-notices" title="${escapeHtml(t('prop.notices_count_title', { n: warningsList.length }))}">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <span>${warningsList.length}</span>
                   </button>
@@ -641,7 +686,7 @@ import Layout from '../layouts/Layout.astro';
                 </span>
                 ${(hasNextPhase && st === 'passed') ? `
                   <button type="button" id="prop-card-advance-btn" class="prop-card-btn-advance">
-                    Sonraki Aşama
+                    ${escapeHtml(t('prop.next_phase'))}
                   </button>
                 ` : ''}
               </div>
@@ -654,7 +699,7 @@ import Layout from '../layouts/Layout.astro';
                   ${phaseStatusIcon}
                   <span>${escapeHtml(phaseStatusText)}</span>
                 </span>
-                <span class="prop-card-phase-pct">%${Math.round(targetPct)}</span>
+                <span class="prop-card-phase-pct">${fmtPct(targetPct)}</span>
               </div>
               <div class="prop-card-progress-bar">
                 <div class="prop-card-progress-fill ${st}" style="width: ${targetBarFill}%;"></div>
@@ -666,60 +711,60 @@ import Layout from '../layouts/Layout.astro';
               <!-- 1. KALAN MARGIN -->
               <div class="prop-card-box">
                 <div class="prop-card-box-label">
-                  <span>Kalan Margin</span>
+                  <span>${escapeHtml(t('prop.remaining_margin'))}</span>
                   <span class="prop-card-dot" style="background:${dailyValColor};"></span>
                 </div>
                 <div class="prop-card-box-value" style="color:${dailyValColor};">
-                  ${fmt(dailyRem)}
+                  ${fmtDelta(dailyRem)}
                 </div>
                 <div class="prop-card-box-sub">
-                  <span>Limit: ${fmt(dailyLimit)}</span>
-                  <span>Bugün: ${fmt(dailyToday)}</span>
+                  <span>${escapeHtml(t('prop.limit'))}: ${fmtPlain(dailyLimit)}</span>
+                  <span>${escapeHtml(t('prop.today'))}: ${fmtDelta(dailyToday)}</span>
                 </div>
               </div>
 
               <!-- 2. MAX LOSS FLOOR MESAFESİ -->
               <div class="prop-card-box">
                 <div class="prop-card-box-label">
-                  <span>Max Loss Mesafesi</span>
+                  <span>${escapeHtml(t('prop.max_loss_distance'))}</span>
                   <span class="prop-card-dot" style="background:${maxDist <= 0 ? 'var(--red,#ef4444)' : (maxDistPct <= 25 ? '#f59e0b' : 'var(--green,#22c55e)')};"></span>
                 </div>
                 <div class="prop-card-box-value" style="color:${maxDist <= 0 ? 'var(--red,#ef4444)' : 'inherit'};">
-                  ${fmt(maxDist)}
+                  ${fmtPlain(maxDist)}
                 </div>
                 <div class="prop-card-box-sub">
-                  <span>Stop: ${fmt(maxStop)}</span>
-                  <span>Kalan: %${Math.round(maxDistPct)}</span>
+                  <span>${escapeHtml(t('prop.stop_level'))}: ${fmtPlain(maxStop)}</span>
+                  <span>${escapeHtml(t('prop.remaining'))}: ${fmtPct(maxDistPct)}</span>
                 </div>
               </div>
 
               <!-- 3. TOTAL PNL -->
               <div class="prop-card-box">
                 <div class="prop-card-box-label">
-                  <span>Total P&L</span>
+                  <span>${escapeHtml(t('prop.total_pnl'))}</span>
                   <span class="prop-card-dot" style="background:${pnlValColor};"></span>
                 </div>
                 <div class="prop-card-box-value" style="color:${pnlValColor};">
-                  ${fmt(totalPnl)}
+                  ${fmtDelta(totalPnl)}
                 </div>
                 <div class="prop-card-box-sub">
-                  <span>WR: %${wrPct}</span>
-                  <span>${totalTrades} İşlem (${wins}K / ${losses}K)</span>
+                  <span>${escapeHtml(t('prop.win_rate'))}: ${fmtPct(wrPct)}</span>
+                  <span>${escapeHtml(t('prop.trades_summary', { count: totalTrades, wins: wins, losses: losses }))}</span>
                 </div>
               </div>
 
               <!-- 4. BAKİYE & GÜN -->
               <div class="prop-card-box">
                 <div class="prop-card-box-label">
-                  <span>Bakiye & Günler</span>
+                  <span>${escapeHtml(t('prop.balance_and_days'))}</span>
                   <span class="prop-card-dot" style="background:#38bdf8;"></span>
                 </div>
                 <div class="prop-card-box-value">
-                  ${fmt(status.current_balance || status.account?.starting_balance)}
+                  ${fmtPlain(status.current_balance || status.account?.starting_balance)}
                 </div>
                 <div class="prop-card-box-sub">
-                  <span>Gün: ${dayCount}${dayMin ? '/' + dayMin : ''}</span>
-                  <span>Başlangıç: ${fmt(status.account?.starting_balance)}</span>
+                  <span>${escapeHtml(t('prop.day'))}: ${dayCount}${dayMin ? '/' + dayMin : ''}</span>
+                  <span>${escapeHtml(t('prop.starting'))}: ${fmtPlain(status.account?.starting_balance)}</span>
                 </div>
               </div>
             </div>

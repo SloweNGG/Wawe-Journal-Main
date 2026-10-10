@@ -469,11 +469,22 @@ async function fileToCsvText(file) {
   const MULTIPLIER_MAP = { forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 };
 
   function guessInstrument(symbol) {
-    const s = String(symbol || '').toUpperCase();
-    if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK)/.test(s)) return 'crypto';
-    if (/(XAU|GOLD|XAG|SILVER)/.test(s)) return 'gold';
-    if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|FRA40)/.test(s)) return 'index';
-    if (/^[A-Z]{6}$/.test(s)) return 'forex';
+    if (typeof BrokerDictionary !== 'undefined' && typeof BrokerDictionary.guessInstrument === 'function') {
+      return BrokerDictionary.guessInstrument(symbol);
+    }
+    const s = String(symbol || '').toUpperCase().trim();
+    if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(s)) return 'crypto';
+    if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+    if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
+    const clean = s.replace(/[^A-Z]/g, '');
+    if (clean.length === 6) return 'forex';
+    if (clean.length >= 6) {
+      const prefix = clean.slice(0, 6);
+      const forexCurrencies = /(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH)/;
+      if (forexCurrencies.test(prefix.slice(0, 3)) && forexCurrencies.test(prefix.slice(3, 6))) {
+        return 'forex';
+      }
+    }
     return 'other';
   }
 
@@ -1788,8 +1799,18 @@ async function fileToCsvText(file) {
 
       var pnlDisplay = '—';
       var pnlColor = 'var(--muted)';
-      if (r.pnl != null && !isNaN(r.pnl)) {
-        var pnlNum = parseFloat(r.pnl);
+      var pnlVal = r.pnl;
+
+      // Fallback: Eğer r.pnl yoksa veya null ise, entry/exit/lot üzerinden çarpanla hesapla
+      if ((pnlVal == null || isNaN(pnlVal)) && r.entry_price != null && r.exit_price != null && r.lot != null) {
+        var inst = guessInstrument(r.symbol);
+        var mult = MULTIPLIER_MAP[inst] || 1;
+        var diff = r.direction === 'LONG' ? (r.exit_price - r.entry_price) : (r.entry_price - r.exit_price);
+        pnlVal = diff * r.lot * mult - (Math.abs(Number(r.commission) || 0)) + (Number(r.swap) || 0);
+      }
+
+      if (pnlVal != null && !isNaN(pnlVal)) {
+        var pnlNum = parseFloat(pnlVal);
         pnlDisplay = (pnlNum >= 0 ? '+' : '') + pnlNum.toFixed(2);
         pnlColor = pnlNum >= 0 ? 'var(--green)' : 'var(--red)';
       }

@@ -332,6 +332,31 @@
     ticket: ['positionid', 'ticket', 'position', 'deal', 'orderid', 'orderticket', 'bilet']
   };
 
+  var INSTRUMENT_MULTIPLIERS = { forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 };
+
+  function guessInstrument(symbol) {
+    if (!symbol) return 'other';
+    var s = String(symbol).toUpperCase().trim();
+    if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(s)) return 'crypto';
+    if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+    if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
+    var clean = s.replace(/[^A-Z]/g, '');
+    if (clean.length === 6) return 'forex';
+    if (clean.length >= 6) {
+      var prefix = clean.slice(0, 6);
+      var forexCurrencies = /(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH)/;
+      if (forexCurrencies.test(prefix.slice(0, 3)) && forexCurrencies.test(prefix.slice(3, 6))) {
+        return 'forex';
+      }
+    }
+    return 'other';
+  }
+
+  function getMultiplier(symbol) {
+    var inst = guessInstrument(symbol);
+    return INSTRUMENT_MULTIPLIERS[inst] || 1;
+  }
+
   global.BrokerDictionary = {
     normalizeHeader: normalizeHeader,
     normalizeValue: normalizeValue,
@@ -339,6 +364,9 @@
     parseNumber: parseNumber,
     parseDate: parseDate,
     normalizeDirection: normalizeDirection,
+    guessInstrument: guessInstrument,
+    getMultiplier: getMultiplier,
+    INSTRUMENT_MULTIPLIERS: INSTRUMENT_MULTIPLIERS,
     FIELD_ORDER: FIELD_ORDER,
     FIELD_CANDIDATES: FIELD_CANDIDATES,
     EXCEL_EPOCH: EXCEL_EPOCH

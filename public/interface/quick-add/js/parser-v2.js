@@ -342,8 +342,9 @@
       }
 
       if (pnl === null && lot !== null) {
+        var mult = (Dict && typeof Dict.getMultiplier === 'function') ? Dict.getMultiplier(symbol) : 1;
         var sign = direction === 'SHORT' ? -1 : 1;
-        var calcGross = (exit - entry) * lot * sign;
+        var calcGross = (exit - entry) * lot * sign * mult;
         if (gross_pnl === null) gross_pnl = calcGross;
         pnl = calcGross - (commission || 0) + (swap || 0);
         rowWarnings.push('pnl kolonu bulunamadı, entry/exit/lot üzerinden hesaplandı');

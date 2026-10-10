@@ -64,9 +64,12 @@
         exitPrice = incoming.price; // incoming BUY covers it
       }
 
-      var rawDiff = closingDirectionOfQueue === 'LONG'
+      var mult = (global.BrokerDictionary && typeof global.BrokerDictionary.getMultiplier === 'function')
+        ? global.BrokerDictionary.getMultiplier(lot.symbol)
+        : 1;
+      var rawDiff = (closingDirectionOfQueue === 'LONG'
         ? (exitPrice - entryPrice) * matchedQty
-        : (entryPrice - exitPrice) * matchedQty;
+        : (entryPrice - exitPrice) * matchedQty) * mult;
       var pnl = rawDiff - lotFeeShare - incFeeShare;
 
       var isPartial = matchedQty < lot.originalQty || matchedQty < incoming.qty;

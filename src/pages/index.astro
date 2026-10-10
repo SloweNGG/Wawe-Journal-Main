@@ -638,102 +638,65 @@ import Layout from '../layouts/Layout.astro';
         <h2 class="section-title" data-i18n="ot.title">Stop emotional trading. Protect your capital.</h2>
         <p class="section-desc" data-i18n="ot.desc">Instant visual alerts and limit counters trigger the moment you exceed your daily trade quota or maximum loss threshold.</p>
       </div>
-      <div class="nmock-notif-modal">
-        <!-- Header -->
-        <div class="notif-mock-head">
-          <div class="notif-mock-title-wrap">
-            <span class="notif-mock-title" data-i18n="ot.notif_title">Notifications</span>
-            <span class="notif-mock-badge-new" data-i18n="ot.new_count">3 new</span>
-          </div>
-          <div class="notif-mock-head-actions">
-            <button class="notif-mock-mark-read" type="button">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span data-i18n="ot.mark_read">Mark as Read</span>
-            </button>
-            <span class="notif-mock-close-btn" aria-hidden="true">✕</span>
-          </div>
-        </div>
-
-        <!-- Filter Tabs -->
-        <div class="notif-mock-tabs">
-          <span class="notif-mock-tab active"><span data-i18n="ot.tab_all">All</span><span class="notif-mock-tab-count">4</span></span>
-          <span class="notif-mock-tab"><span data-i18n="ot.tab_unread">Unread</span><span class="notif-mock-tab-count">3</span></span>
-          <span class="notif-mock-tab"><span data-i18n="ot.tab_risk">Risk & Limits</span><span class="notif-mock-tab-count">3</span></span>
-          <span class="notif-mock-tab"><span data-i18n="ot.tab_system">System</span><span class="notif-mock-tab-count">1</span></span>
-        </div>
-
-        <!-- Notification List -->
-        <div class="notif-mock-list">
-          <!-- Item 1: Daily Trades Limit Exceeded -->
-          <div class="notif-mock-card danger">
-            <div class="notif-mock-card-head">
-              <div class="notif-mock-icon-wrap danger">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </div>
-              <div class="notif-mock-head-info">
-                <div class="notif-mock-badge-row">
-                  <span class="notif-mock-risk-badge danger" data-i18n="ot.crit_risk">CRITICAL RISK</span>
-                  <span class="notif-mock-unread-dot" title="Unread"></span>
-                </div>
-                <h4 class="notif-mock-item-title" data-i18n="ot.warn_title">Risk Warning</h4>
-              </div>
+      <div class="notif-showcase-stack">
+        <!-- Item 1: Critical Risk (Danger - Red) -->
+        <div class="notif-card danger">
+          <span class="notif-unread-dot" title="Unread"></span>
+          <div class="notif-card-header">
+            <div class="notif-card-icon danger">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
             </div>
-            <p class="notif-mock-item-desc" data-i18n="ot.msg_daily_trades">Bugün 12 işlem yaptın. Günlük maksimum limitin 5!</p>
-            <div class="notif-mock-pills-row">
-              <span class="notif-pill-metric">12 / 5</span>
-              <span class="notif-pill-label" data-i18n="ot.daily_trades">Daily Trades</span>
-              <span class="notif-pill-exceeded" data-i18n="ot.limit_exceeded">LIMIT EXCEEDED</span>
-            </div>
-            <div class="notif-mock-time-row">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span data-i18n="ot.just_now">Just now</span>
+            <div class="notif-card-meta">
+              <span class="notif-risk-badge danger" data-i18n="ot.crit_risk">KRİTİK RİSK</span>
+              <h4 class="notif-card-title" data-i18n="ot.warn_title">Risk Uyarısı</h4>
             </div>
           </div>
-
-          <!-- Item 2: Daily Loss Limit Exceeded -->
-          <div class="notif-mock-card danger">
-            <div class="notif-mock-card-head">
-              <div class="notif-mock-icon-wrap danger">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </div>
-              <div class="notif-mock-head-info">
-                <div class="notif-mock-badge-row">
-                  <span class="notif-mock-risk-badge danger" data-i18n="ot.crit_risk">CRITICAL RISK</span>
-                  <span class="notif-mock-unread-dot" title="Unread"></span>
-                </div>
-                <h4 class="notif-mock-item-title" data-i18n="ot.warn_title">Risk Warning</h4>
-              </div>
-            </div>
-            <p class="notif-mock-item-desc" data-i18n="ot.msg_daily_loss">You lost $1.420 today. Your daily loss limit is $1.000!</p>
-            <div class="notif-mock-pills-row">
-              <span class="notif-pill-metric">$1.420 / $1.000</span>
-              <span class="notif-pill-label" data-i18n="ot.daily_loss">Daily Loss</span>
-              <span class="notif-pill-exceeded" data-i18n="ot.limit_exceeded">LIMIT EXCEEDED</span>
-            </div>
-            <div class="notif-mock-time-row">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span data-i18n="ot.just_now">Just now</span>
-            </div>
+          <p class="notif-card-desc" data-i18n="ot.msg_daily_trades">Bugün 12 işlem yaptın. Günlük maksimum limitin 5!</p>
+          <div class="notif-pills-row">
+            <span class="notif-pill-metric danger">12 / 5</span>
+            <span class="notif-pill-label" data-i18n="ot.daily_trades">Günlük İşlem</span>
+            <span class="notif-pill-status danger" data-i18n="ot.limit_exceeded">LİMİT AŞILDI</span>
+          </div>
+          <div class="notif-time-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span data-i18n="ot.just_now">Az önce</span>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="notif-mock-footer">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
-            <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
-            <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
-          </svg>
-          <span data-i18n="ot.settings">Overtrade & Risk Settings</span>
+        <!-- Item 2: Risk Warning (Warning - Yellow / Amber) -->
+        <div class="notif-card warning">
+          <span class="notif-unread-dot warning" title="Unread"></span>
+          <div class="notif-card-header">
+            <div class="notif-card-icon warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="notif-card-meta">
+              <span class="notif-risk-badge warning" data-i18n="ot.risk_warn">RİSK UYARISI</span>
+              <h4 class="notif-card-title" data-i18n="ot.warn_title">Risk Uyarısı</h4>
+            </div>
+          </div>
+          <p class="notif-card-desc" data-i18n="ot.msg_warn_trades">Bugün 4 işlem yaptın. Günlük maksimum limitin 5!</p>
+          <div class="notif-pills-row">
+            <span class="notif-pill-metric warning">4 / 5</span>
+            <span class="notif-pill-label" data-i18n="ot.daily_trades">Günlük İşlem</span>
+            <span class="notif-pill-status warning" data-i18n="ot.limit_approaching">LİMİTE YAKLAŞILDI</span>
+          </div>
+          <div class="notif-time-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span data-i18n="ot.time_12m">12 dk önce</span>
+          </div>
         </div>
       </div>
     </div>
@@ -747,17 +710,19 @@ import Layout from '../layouts/Layout.astro';
       <div class="ntext">
         <div class="ntag" data-i18n="cal.tag">04 — Calendar & consistency</div>
         <h2 class="section-title" data-i18n="cal.title">Discipline shows up as a pattern, not a mood.</h2>
-        <p class="section-desc" data-i18n="cal.desc">A week at a glance — win days, loss days, and the days you didn't trade at all.</p>
+        <p class="section-desc" data-i18n="cal.desc">A month at a glance — win days, loss days, net P&L, and trading consistency.</p>
       </div>
-      <div class="nmock">
-        <div class="mock-cal">
-          <div class="mock-cal-day win"><div class="n" data-i18n="cal.mon">Mon</div><div class="p">+2.1%</div></div>
-          <div class="mock-cal-day loss"><div class="n" data-i18n="cal.tue">Tue</div><div class="p">−0.6%</div></div>
-          <div class="mock-cal-day win"><div class="n" data-i18n="cal.wed">Wed</div><div class="p">+1.4%</div></div>
-          <div class="mock-cal-day win"><div class="n" data-i18n="cal.thu">Thu</div><div class="p">+0.9%</div></div>
-          <div class="mock-cal-day loss"><div class="n" data-i18n="cal.fri">Fri</div><div class="p">−1.1%</div></div>
-          <div class="mock-cal-day"><div class="n" data-i18n="cal.sat">Sat</div><div class="p">—</div></div>
-          <div class="mock-cal-day"><div class="n" data-i18n="cal.sun">Sun</div><div class="p">—</div></div>
+      <div class="nmock-cal-frame">
+        <div class="nmock-cal-glow"></div>
+        <div class="nmock nmock-image-wrap nmock-cal-wrap">
+          <img
+            src="/images/features/calendar-preview.png"
+            alt="Calendar & Consistency - Wawe Journal"
+            class="nmock-img nmock-cal-img"
+            loading="lazy"
+            width="1024"
+            height="502"
+          />
         </div>
       </div>
     </div>
@@ -767,17 +732,197 @@ import Layout from '../layouts/Layout.astro';
 
 
 
-  <!-- ═══ FEATURES ═══ -->
+  <!-- ═══ FEATURES & PROP FIRM ORBIT ═══ -->
   <div class="section reveal" id="features-detail">
-    <div class="section-tag" data-i18n="features.tag">Features</div>
-    <h2 class="section-title" data-i18n-html="features.title">Built around one <em>habit</em>: writing it down.</h2>
-    <p class="section-desc" data-i18n="features.desc">Spend less time reconstructing what happened and more time recognizing what works.</p>
+    <div class="section-tag" data-i18n="features.tag">Özellikler & Ekosistem</div>
+    <h2 class="section-title" data-i18n-html="features.title">Tek bir <em>ekosistem</em>, sınırsız performans.</h2>
+    <p class="section-desc" data-i18n="features.desc">Tüm prop firmaları, brokerlar ve gelişmiş analiz araçları tek bir sezgisel merkezde birleşti.</p>
 
-    <div class="bgrid">
-      <div class="bcell"><div class="bnum">01</div><h3 data-i18n="features.c1.t">Fast trade entry</h3><p data-i18n="features.c1.d">Log trades in detail, fast.</p></div>
-      <div class="bcell"><div class="bnum">02</div><h3 data-i18n="features.c2.t">Advanced metrics</h3><p data-i18n="features.c2.d">Sharpe ratio, profit factor, and deeper stats.</p></div>
-      <div class="bcell"><div class="bnum">03</div><h3 data-i18n="features.c3.t">Find winning strategies</h3><p data-i18n="features.c3.d">Let charts tell you which strategy makes money.</p></div>
-      <div class="bcell"><div class="bnum">04</div><h3 data-i18n="features.c4.t">Build streaks, stop over-trading</h3><p data-i18n="features.c4.d">Over-trade alerts keep you from breaking your rules.</p></div>
+    <!-- ═══ REVOLVING PROP FIRMS ORBIT SHOWCASE ═══ -->
+    <div class="wj-orbit-container">
+      <div class="wj-orbit-header-pill">
+        <span class="wj-orbit-pulse-dot"></span>
+        <span data-i18n="features.orbit_badge">Desteklenen Prop Firmaları & Broker Ekosistemi</span>
+      </div>
+
+      <div class="wj-orbit-stage" aria-label="Wawe Journal Prop Firm Orbit">
+        <!-- Ambient radial glow and orbital tracks -->
+        <div class="wj-orbit-ambient-glow"></div>
+        <div class="wj-orbit-track wj-track-outer"></div>
+        <div class="wj-orbit-track wj-track-middle"></div>
+
+        <!-- Central Core: Wawe Journal Logo -->
+        <div class="wj-orbit-center" title="Wawe Journal Central Core">
+          <div class="wj-center-ripple ripple-1"></div>
+          <div class="wj-center-ripple ripple-2"></div>
+          <div class="wj-center-core">
+            <div class="wj-center-icon-wrap">
+              <svg class="wj-center-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <polyline points="2,17 7,10 12,14 20,5" stroke="url(#wjCenterGrad)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                  <linearGradient id="wjCenterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#c084fc"/>
+                    <stop offset="50%" stop-color="#8b5cf6"/>
+                    <stop offset="100%" stop-color="#38bdf8"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="wj-center-text">
+              <span class="wj-brand-name">Wawe<span class="wj-brand-accent">Journal</span></span>
+              <span class="wj-brand-sub">CORE HUB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rotating Ring with 8 Prop Firms -->
+        <div class="wj-orbit-ring">
+          <!-- 1. FTMO (0deg) -->
+          <div class="wj-orbit-node" style="--angle: 0deg;" data-prop="ftmo">
+            <div class="wj-orbit-bubble" title="FTMO">
+              <img src="/images/props/ftmo-symbol.svg" alt="FTMO" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">FTMO</span>
+            </div>
+          </div>
+
+          <!-- 2. FundedNext (45deg) -->
+          <div class="wj-orbit-node" style="--angle: 45deg;" data-prop="fundednext">
+            <div class="wj-orbit-bubble" title="FundedNext">
+              <img src="/images/props/fundednext-symbol.svg" alt="FundedNext" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">FundedNext</span>
+            </div>
+          </div>
+
+          <!-- 3. Topstep (90deg) -->
+          <div class="wj-orbit-node" style="--angle: 90deg;" data-prop="topstep">
+            <div class="wj-orbit-bubble" title="Topstep">
+              <img src="/images/props/topstep-symbol.svg" alt="Topstep" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">Topstep</span>
+            </div>
+          </div>
+
+          <!-- 4. Funding Pips (135deg) -->
+          <div class="wj-orbit-node" style="--angle: 135deg;" data-prop="fundingpips">
+            <div class="wj-orbit-bubble" title="Funding Pips">
+              <img src="/images/props/fundingpips-symbol.svg" alt="Funding Pips" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">Funding Pips</span>
+            </div>
+          </div>
+
+          <!-- 5. The 5%ers (180deg) -->
+          <div class="wj-orbit-node" style="--angle: 180deg;" data-prop="the5ers">
+            <div class="wj-orbit-bubble" title="The 5%ers">
+              <img src="/images/props/the5ers-symbol.svg" alt="The 5%ers" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">The 5%ers</span>
+            </div>
+          </div>
+
+          <!-- 6. E8 Markets (225deg) -->
+          <div class="wj-orbit-node" style="--angle: 225deg;" data-prop="e8">
+            <div class="wj-orbit-bubble" title="E8 Markets">
+              <img src="/images/props/e8-symbol.svg" alt="E8 Markets" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">E8 Markets</span>
+            </div>
+          </div>
+
+          <!-- 7. Apex Trader Funding (270deg) -->
+          <div class="wj-orbit-node" style="--angle: 270deg;" data-prop="apex">
+            <div class="wj-orbit-bubble" title="Apex Trader Funding">
+              <img src="/images/props/apex-symbol.svg" alt="Apex Trader Funding" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">Apex</span>
+            </div>
+          </div>
+
+          <!-- 8. Alpha Capital (315deg) -->
+          <div class="wj-orbit-node" style="--angle: 315deg;" data-prop="alpha">
+            <div class="wj-orbit-bubble" title="Alpha Capital">
+              <img src="/images/props/alpha-symbol.svg" alt="Alpha Capital" width="36" height="36" loading="lazy" />
+              <span class="wj-bubble-label">Alpha Capital</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 5 FEATURE CARDS GRID ═══ -->
+    <div class="wj-feat-grid">
+      <!-- Feature 1: Akıllı CSV & Broker Ekleme -->
+      <div class="wj-feat-card wj-feat-prominent">
+        <div class="wj-feat-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          AUTO-DETECT V2
+        </div>
+        <h3 class="wj-feat-title" data-i18n="features.f_csv_title">Akıllı CSV & Broker Ekleme</h3>
+        <p class="wj-feat-desc" data-i18n="features.f_csv_desc">MetaTrader 4/5, cTrader, TradingView, Bybit, Binance veya Excel dosyanızı sürükleyin; semboller, yön ve komisyonlar saniyeler içinde otomatik algılansın.</p>
+        <div class="wj-feat-chips">
+          <span class="wj-chip">MT4 / MT5</span>
+          <span class="wj-chip">cTrader</span>
+          <span class="wj-chip">TradingView</span>
+          <span class="wj-chip">Binance / Bybit</span>
+          <span class="wj-chip">Excel & CSV</span>
+        </div>
+      </div>
+
+      <!-- Feature 2: Prop Firm Simülasyonu -->
+      <div class="wj-feat-card wj-feat-prominent">
+        <div class="wj-feat-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          DRAWDOWN GUARD
+        </div>
+        <h3 class="wj-feat-title" data-i18n="features.f_prop_title">Prop Firm Simülasyonu</h3>
+        <p class="wj-feat-desc" data-i18n="features.f_prop_desc">FTMO, FundedNext, Topstep gibi fon şirketlerinin günlük zarar ve maksimum drawdown kurallarını canlı simüle edin; ihlal riski olmadan fon kazanın.</p>
+        <div class="wj-feat-chips">
+          <span class="wj-chip">Canlı DD Takibi</span>
+          <span class="wj-chip">Günlük Zarar Limiti</span>
+          <span class="wj-chip">Gece Kuralı Koruması</span>
+          <span class="wj-chip">Hedef Hesaplayıcı</span>
+        </div>
+      </div>
+
+      <!-- Feature 3: Gelişmiş Grafikler -->
+      <div class="wj-feat-card">
+        <div class="wj-feat-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          INSTITUTIONAL METRICS
+        </div>
+        <h3 class="wj-feat-title" data-i18n="features.f_chart_title">Gelişmiş Grafikler</h3>
+        <p class="wj-feat-desc" data-i18n="features.f_chart_desc">Kümülatif K/Z eğrileri, Sharpe oranı, kâr faktörü, gün ve seans bazlı derin matematiksel analizlerle gerçek performansınızı görün.</p>
+        <div class="wj-feat-chips">
+          <span class="wj-chip">Kümülatif K/Z</span>
+          <span class="wj-chip">Sharpe & R:R</span>
+          <span class="wj-chip">Seans Dağılımı</span>
+        </div>
+      </div>
+
+      <!-- Feature 4: Sezgisel Tasarım ve Özelleştirme Seçenekleri -->
+      <div class="wj-feat-card">
+        <div class="wj-feat-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          MODULAR UX
+        </div>
+        <h3 class="wj-feat-title" data-i18n="features.f_design_title">Sezgisel Tasarım ve Özelleştirme</h3>
+        <p class="wj-feat-desc" data-i18n="features.f_design_desc">Karanlık ve aydınlık tema seçenekleri, esnek panel görünümleri ve dikkatinizi dağıtmayan akıcı kullanıcı deneyimiyle tam kontrol sizde.</p>
+        <div class="wj-feat-chips">
+          <span class="wj-chip">Dark & Light</span>
+          <span class="wj-chip">Özel Panel</span>
+          <span class="wj-chip">Akıcı UX</span>
+        </div>
+      </div>
+
+      <!-- Feature 5: Gizlilik Odaklı -->
+      <div class="wj-feat-card">
+        <div class="wj-feat-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          ZERO-KNOWLEDGE
+        </div>
+        <h3 class="wj-feat-title" data-i18n="features.f_privacy_title">Gizlilik Odaklı</h3>
+        <p class="wj-feat-desc" data-i18n="features.f_privacy_desc">İşlem stratejileriniz ve verileriniz tamamen size özeldir. Üçüncü taraflarla asla paylaşılmaz; şifrelenmiş güvenli altyapı.</p>
+        <div class="wj-feat-chips">
+          <span class="wj-chip">AES-256 Şifreleme</span>
+          <span class="wj-chip">Sıfır Paylaşım</span>
+          <span class="wj-chip">Gizli Stratejiler</span>
+        </div>
+      </div>
     </div>
   </div>
 

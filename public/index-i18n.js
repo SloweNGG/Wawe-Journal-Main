@@ -56,18 +56,21 @@
         risk_warn: 'RISK WARNING',
         warn_title: 'Risk Warning',
         msg_daily_trades: 'You made 12 trades today. Your daily max limit is 5!',
+        msg_warn_trades: 'You made 4 trades today. Your daily max limit is 5!',
         msg_daily_loss: 'You lost $1,420 today. Your daily loss limit is $1,000!',
         msg_weekly_trades: 'You made 24 trades this week. Your weekly limit is 20!',
         daily_trades: 'Daily Trades',
         daily_loss: 'Daily Loss',
         limit_exceeded: 'LIMIT EXCEEDED',
+        limit_approaching: 'APPROACHING LIMIT',
         just_now: 'Just now',
+        time_12m: '12m ago',
         settings: 'Overtrade & Risk Settings'
       },
       cal: {
         tag: '04 — Calendar & Consistency',
         title: 'Discipline shows up as a pattern, not a mood.',
-        desc: "A week at a glance — win days, loss days, and the days you didn't trade at all.",
+        desc: "A month at a glance — win days, loss days, net P&L, and trading consistency.",
         mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun'
       },
       cmp: {
@@ -87,13 +90,20 @@
         ts: { name: 'TraderSync', sub: 'Pro' }
       },
       features: {
-        tag: 'Features',
-        title: 'Built around one <em>habit</em>: writing it down.',
-        desc: 'Spend less time reconstructing what happened and more time recognizing what works.',
-        c1: { t: 'Fast trade entry', d: 'Log trades in detail, fast.' },
-        c2: { t: 'Advanced metrics', d: 'Sharpe ratio, profit factor, and deeper stats.' },
-        c3: { t: 'Find winning strategies', d: 'Let charts tell you which strategy makes money.' },
-        c4: { t: 'Build streaks, stop over-trading', d: 'Over-trade alerts keep you from breaking your rules.' }
+        tag: 'Features & Ecosystem',
+        title: 'One unified <em>ecosystem</em>, limitless edge.',
+        desc: 'All major prop firms, brokers, and institutional analytics united into one intuitive hub.',
+        orbit_badge: 'Supported Prop Firms & Broker Ecosystem',
+        f_csv_title: 'Smart CSV & Broker Import',
+        f_csv_desc: 'Drag & drop MT4/5, cTrader, TradingView, Bybit, Binance, or Excel statements; smart auto-detect pairs symbols, direction, and fees in seconds.',
+        f_prop_title: 'Prop Firm Simulation',
+        f_prop_desc: 'Simulate and live-track daily loss and maximum drawdown rules for FTMO, FundedNext, and Topstep to secure and pass evaluations without breach risk.',
+        f_chart_title: 'Advanced Charts & Analytics',
+        f_chart_desc: 'Cumulative P&L curves, Sharpe ratio, profit factor, session and weekday breakdowns to reveal your true mathematical edge.',
+        f_design_title: 'Intuitive Design & Customization',
+        f_design_desc: 'Dark and light themes, customizable cockpit layouts, and a distraction-free fluid UX tailored to your trading style.',
+        f_privacy_title: 'Privacy-Focused',
+        f_privacy_desc: 'Your trading logs and strategies remain strictly confidential. Never shared with third parties; protected by secure end-to-end encryption.'
       },
       plans: {
         tag: '💎 Pricing',
@@ -291,18 +301,21 @@
         risk_warn: 'RİSK UYARISI',
         warn_title: 'Risk Uyarısı',
         msg_daily_trades: 'Bugün 12 işlem yaptın. Günlük maksimum limitin 5!',
+        msg_warn_trades: 'Bugün 4 işlem yaptın. Günlük maksimum limitin 5!',
         msg_daily_loss: 'Bugün $1.420 kaybettin. Günlük zarar limitin $1.000!',
         msg_weekly_trades: 'Bu hafta 24 işlem yaptın. Haftalık limitin 20!',
         daily_trades: 'Günlük İşlem',
         daily_loss: 'Günlük Zarar',
         limit_exceeded: 'LİMİT AŞILDI',
+        limit_approaching: 'LİMİTE YAKLAŞILDI',
         just_now: 'Az önce',
+        time_12m: '12 dk önce',
         settings: 'Overtrade & Risk Ayarları'
       },
       cal: {
         tag: '04 — Takvim & İstikrar',
         title: 'Disiplin bir ruh hali değil, bir kalıp olarak görünür.',
-        desc: 'Bir haftaya bakış — kazanç günleri, kayıp günleri ve hiç işlem yapmadığın günler.',
+        desc: 'Tüm aya bakış — kazanç günleri, kayıp günleri, net K/Z ve işlem istikrarı.',
         mon: 'Pzt', tue: 'Sal', wed: 'Çar', thu: 'Per', fri: 'Cum', sat: 'Cmt', sun: 'Paz'
       },
       cmp: {
@@ -321,13 +334,20 @@
         ts: { name: 'TraderSync', sub: 'Pro' }
       },
       features: {
-        tag: 'Özellikler',
-        title: 'Tek bir <em>alışkanlık</em> etrafında inşa edildi: kaydetmek.',
-        desc: 'Ne olduğunu yeniden hatırlamaya daha az, neyin işe yaradığını fark etmeye daha çok zaman ayır.',
-        c1: { t: 'Hızlı işlem girişi', d: 'İşlemleri hızla ve detaylıca kaydet.' },
-        c2: { t: 'Gelişmiş metrikler', d: 'Sharpe oranı, kâr faktörü ve daha derin istatistikler.' },
-        c3: { t: 'Kazandıran stratejileri bul', d: 'Hangi stratejinin para kazandırdığını grafikler söylesin.' },
-        c4: { t: 'Seriler yakala, aşırı işlem yapma', d: 'Over-trade uyarıları kurallarını çiğnemeni engeller.' }
+        tag: 'Özellikler & Ekosistem',
+        title: 'Tek bir <em>ekosistem</em>, sınırsız performans.',
+        desc: 'Tüm prop firmaları, brokerlar ve gelişmiş analiz araçları tek bir sezgisel merkezde birleşti.',
+        orbit_badge: 'Desteklenen Prop Firmaları & Broker Ekosistemi',
+        f_csv_title: 'Akıllı CSV & Broker Ekleme',
+        f_csv_desc: 'MetaTrader 4/5, cTrader, TradingView, Bybit, Binance veya Excel dosyanızı sürükleyin; semboller, yön ve komisyonlar saniyeler içinde otomatik algılansın.',
+        f_prop_title: 'Prop Firm Simülasyonu',
+        f_prop_desc: 'FTMO, FundedNext, Topstep gibi fon şirketlerinin günlük zarar ve maksimum drawdown kurallarını canlı simüle edin; ihlal riski olmadan fon kazanın.',
+        f_chart_title: 'Gelişmiş Grafikler',
+        f_chart_desc: 'Kümülatif K/Z eğrileri, Sharpe oranı, kâr faktörü, gün ve seans bazlı derin matematiksel analizlerle gerçek performansınızı görün.',
+        f_design_title: 'Sezgisel Tasarım ve Özelleştirme',
+        f_design_desc: 'Karanlık ve aydınlık tema seçenekleri, esnek panel görünümleri ve dikkatinizi dağıtmayan akıcı kullanıcı deneyimiyle tam kontrol sizde.',
+        f_privacy_title: 'Gizlilik Odaklı',
+        f_privacy_desc: 'İşlem stratejileriniz ve verileriniz tamamen size özeldir. Üçüncü taraflarla asla paylaşılmaz; şifrelenmiş güvenli altyapı.'
       },
       plans: {
         tag: '💎 Fiyatlandırma',
@@ -520,18 +540,21 @@
         risk_warn: 'RISIKOWARNUNG',
         warn_title: 'Risikowarnung',
         msg_daily_trades: 'Heute 12 Trades ausgeführt. Dein Tageslimit liegt bei 5!',
+        msg_warn_trades: 'Heute 4 Trades ausgeführt. Dein Tageslimit liegt bei 5!',
         msg_daily_loss: 'Heute $1.420 verloren. Dein tägliches Verlustlimit ist $1.000!',
         msg_weekly_trades: 'Diese Woche 24 Trades ausgeführt. Dein Wochenlimit ist 20!',
         daily_trades: 'Tägliche Trades',
         daily_loss: 'Täglicher Verlust',
         limit_exceeded: 'LIMIT ÜBERSCHRITTEN',
+        limit_approaching: 'LIMIT FAST ERREICHT',
         just_now: 'Gerade eben',
+        time_12m: 'Vor 12 Min.',
         settings: 'Overtrade- & Risikoeinstellungen'
       },
       cal: {
         tag: '04 — Kalender & Konstanz',
         title: 'Disziplin zeigt sich als Muster, nicht als Laune.',
-        desc: 'Eine Woche im Überblick — Gewinntage, Verlusttage und Tage ohne Trading.',
+        desc: 'Ein ganzer Monat auf einen Blick — Gewinntage, Verlusttage, Netto-G&V und Trading-Konstanz.',
         mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa', sun: 'So'
       },
       cmp: {
@@ -550,13 +573,20 @@
         ts: { name: 'TraderSync', sub: 'Pro' }
       },
       features: {
-        tag: 'Funktionen',
-        title: 'Rund um eine <em>Gewohnheit</em> gebaut: Aufschreiben.',
-        desc: 'Weniger Zeit mit Rekonstruieren verbringen, mehr Zeit mit Erkennen, was funktioniert.',
-        c1: { t: 'Schnelle Trade-Eingabe', d: 'Trades schnell und präzise protokollieren.' },
-        c2: { t: 'Erweiterte Metriken', d: 'Sharpe Ratio, Profit Factor und tiefe Analysen.' },
-        c3: { t: 'Gewinnstrategien finden', d: 'Charts zeigen dir, welche Strategie profitabel ist.' },
-        c4: { t: 'Serien aufbauen, Overtrading stoppen', d: 'Over-Trade-Warnungen schützen deine Disziplin.' }
+        tag: 'Funktionen & Ökosystem',
+        title: 'Ein einheitliches <em>Ökosystem</em>, grenzenloser Vorteil.',
+        desc: 'Alle führenden Prop Firms, Broker und professionellen Analysetools vereint in einem intuitiven Hub.',
+        orbit_badge: 'Unterstützte Prop Firms & Broker-Ökosystem',
+        f_csv_title: 'Smarter CSV- & Broker-Import',
+        f_csv_desc: 'MT4/5, cTrader, TradingView, Bybit, Binance oder Excel Statements per Drag & Drop importieren; automatische Erkennung in Sekunden.',
+        f_prop_title: 'Prop Firm Simulation',
+        f_prop_desc: 'Tagesverlust- und Drawdown-Regeln für FTMO, FundedNext und Topstep live simulieren und Challenges ohne Regelverletzung bestehen.',
+        f_chart_title: 'Erweiterte Charts & Analysen',
+        f_chart_desc: 'Kumulierte G&V-Kurven, Sharpe Ratio, Profit Factor sowie Sitzungs- und Wochentagsanalysen für deinen mathematischen Vorsprung.',
+        f_design_title: 'Intuitives Design & Anpassung',
+        f_design_desc: 'Dark- und Light-Themes, anpassbare Dashboards und ein ablenkungsfreies, flüssiges Design ganz nach deinen Vorlieben.',
+        f_privacy_title: 'Datenschutz & Privatsphäre',
+        f_privacy_desc: 'Deine Trading-Daten und Strategien gehören nur dir. Niemals an Dritte weitergegeben; geschützt durch modernste Verschlüsselung.'
       },
       plans: {
         tag: '💎 Preise',
