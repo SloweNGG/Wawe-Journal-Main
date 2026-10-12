@@ -127,7 +127,7 @@
 
       setTimeout(function() {
         window.location.href = targetHref;
-      }, 130);
+      }, 40);
     },
 
     saveLanguageBeforeExit: function() {

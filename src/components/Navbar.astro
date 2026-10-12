@@ -42,37 +42,25 @@ const isActive = (page: string) => {
       <div class="nav-dropdown-menu premium-menu-glass" id="premium-dropdown-menu" role="menu">
         <div class="premium-menu-header">
           <span class="premium-menu-title" data-i18n="nav.premium_features">Premium Özellikler</span>
-          <span class="premium-menu-tag">PRO</span>
         </div>
         <div class="premium-menu-items">
-          <a href="/premium-dashboard.html" class="premium-menu-item" role="menuitem">
-            <div class="p-item-icon">
-              <i data-lucide="layout-dashboard"></i>
-            </div>
-            <div class="p-item-content">
-              <span class="p-item-title" data-i18n="nav.premium_dashboard">Premium Dashboard</span>
-            </div>
+          <a href="/premium-dashboard.html" class="dropdown-item" role="menuitem">
+            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i>
+            <span data-i18n="nav.premium_dashboard">Premium Dashboard</span>
           </a>
-          <a href="/settings.html#panel-appearance" class="premium-menu-item" role="menuitem">
-            <div class="p-item-icon">
-              <i data-lucide="palette"></i>
-            </div>
-            <div class="p-item-content">
-              <span class="p-item-title" data-i18n="nav.theme_customization">Tema Özelleştirme</span>
-            </div>
+          <a href="/settings.html#panel-appearance" class="dropdown-item" role="menuitem">
+            <i data-lucide="palette" style="width:16px;height:16px;"></i>
+            <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
           </a>
-          <a href="/settings.html#panel-overtrade" class="premium-menu-item" role="menuitem">
-            <div class="p-item-icon">
-              <i data-lucide="shield-alert"></i>
-            </div>
-            <div class="p-item-content">
-              <span class="p-item-title" data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
-            </div>
+          <a href="/settings.html#panel-overtrade" class="dropdown-item" role="menuitem">
+            <i data-lucide="shield-alert" style="width:16px;height:16px;"></i>
+            <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
           </a>
         </div>
-        <div class="premium-menu-footer">
-          <a href="/settings.html#panel-plan" class="premium-upgrade-cta" role="menuitem">
-            <i data-lucide="sparkles" class="cta-sparkle"></i>
+        <div class="premium-menu-footer nav-upgrade-wrapper" id="premium-menu-footer">
+          <div class="dropdown-divider"></div>
+          <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" role="menuitem" style="color:var(--accent2);">
+            <i data-lucide="crown" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
           </a>
         </div>
@@ -223,8 +211,8 @@ const isActive = (page: string) => {
           <span data-i18n="nav.admin">Admin</span>
         </a>
       </span>
-      <div class="dropdown-divider"></div>
-      <a href="/settings.html#panel-plan" class="dropdown-item" style="color:var(--accent2);">
+      <div class="dropdown-divider nav-upgrade-divider" id="avatar-upgrade-divider"></div>
+      <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
         <i data-lucide="crown" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
       </a>
@@ -265,14 +253,16 @@ const isActive = (page: string) => {
     if (plan) {
       var badge = document.getElementById('plan-badge');
       var text = document.getElementById('plan-text');
-      if (badge && text) {
-        if (plan === 'premium') {
-          badge.classList.add('premium');
-          text.textContent = 'Premium';
-        } else {
-          badge.classList.remove('premium');
-          text.textContent = (lang === 'en' ? 'Free' : (lang === 'de' ? 'Kostenlos' : 'Ücretsiz'));
-        }
+      if (plan === 'premium') {
+        document.documentElement.classList.add('is-premium');
+        if (document.body) document.body.classList.add('is-premium');
+        if (badge) badge.classList.add('premium');
+        if (text) text.textContent = 'Premium';
+      } else {
+        document.documentElement.classList.remove('is-premium');
+        if (document.body) document.body.classList.remove('is-premium');
+        if (badge) badge.classList.remove('premium');
+        if (text) text.textContent = (lang === 'en' ? 'Free' : (lang === 'de' ? 'Kostenlos' : 'Ücretsiz'));
       }
     }
 

@@ -96,8 +96,8 @@ const {
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=block" />
 
     <!-- CORE CSS FOR APP -->
-    <link rel="stylesheet" href="/styles.css?v=1791480020" />
-    <link rel="stylesheet" href="/components/navbar/navbar.css?v=1791480020" />
+    <link rel="stylesheet" href="/styles.css?v=1791480040" />
+    <link rel="stylesheet" href="/components/navbar/navbar.css?v=1791480040" />
 
     <!-- CLIENT SWR CACHE -->
     <script src="/cache.js" is:inline></script>
@@ -117,38 +117,109 @@ const {
   </>
 )}
 
-<!-- TEMA ÖN YÜKLEME — flash önlemek için sayfa render olmadan önce çalışır -->
+<!-- ⭐ ZERO-FLASH TEMA & AMBİYANS ÖN YÜKLEME — Sayfa render olmadan önce senkron çalışır -->
 <script is:inline>
 (function() {
-  var savedTheme = localStorage.getItem('ww_theme');
-  var savedFontSize = localStorage.getItem('ww_font_size');
-  var customTheme = localStorage.getItem('ww_custom_theme');
+  try {
+    var root = document.documentElement;
 
-  if (savedTheme === 'light') {
-    document.documentElement.classList.add('light-theme-pending');
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Tema (Açık / Koyu)
+    var savedTheme = localStorage.getItem('ww_theme');
     if (savedTheme === 'light') {
-      document.body.classList.add('light-theme');
-      document.documentElement.classList.remove('light-theme-pending');
+      root.classList.add('light-theme');
+      root.classList.add('light-theme-pending');
     } else {
-      document.body.classList.remove('light-theme');
+      root.classList.remove('light-theme');
     }
 
+    // 2. Özel Tema Renkleri (--bg, --surface, --accent vs.)
+    var customTheme = localStorage.getItem('ww_custom_theme');
     if (savedTheme !== 'light' && customTheme) {
       try {
         var theme = JSON.parse(customTheme);
-        var root = document.documentElement;
         if (theme.accent)  root.style.setProperty('--accent', theme.accent);
         if (theme.accent2) root.style.setProperty('--accent2', theme.accent2);
         if (theme.bg)      root.style.setProperty('--bg', theme.bg);
+        if (theme.surface) {
+          root.style.setProperty('--surface', theme.surface);
+          root.style.setProperty('--surface2', theme.surface);
+        }
+        if (theme.border)  root.style.setProperty('--border', theme.border);
+        if (theme.textColor) root.style.setProperty('--text', theme.textColor);
       } catch(e) {}
     }
 
-    if (savedFontSize) {
-      document.documentElement.style.fontSize = savedFontSize + 'px';
+    // 3. Ambiyans Arka Plan Durumu (Mor parlamayı/flash'ı tamamen engeller)
+    var ambientMode = localStorage.getItem('ww_ambient_mode') || 'dynamic';
+    if (ambientMode === 'off') {
+      root.classList.add('ambient-disabled');
+      root.classList.remove('ambient-enabled');
+    } else {
+      root.classList.add('ambient-enabled');
+      root.classList.remove('ambient-disabled');
+
+      // Önce doğrudan kayıtlı state var mı bak (en hızlı yol)
+      var savedState = localStorage.getItem('ww_ambient_state');
+      if (savedState && ['profit', 'loss', 'neutral'].includes(savedState)) {
+        root.setAttribute('data-ambient-state', savedState);
+      } else if (ambientMode === 'dynamic') {
+        var cachedPnl = localStorage.getItem('ww_cached_pnl');
+        var pnl = cachedPnl !== null ? parseFloat(cachedPnl) : 0;
+        var dynState = (!isNaN(pnl) && pnl > 0) ? 'profit' : ((!isNaN(pnl) && pnl < 0) ? 'loss' : 'neutral');
+        root.setAttribute('data-ambient-state', dynState);
+      } else {
+        root.setAttribute('data-ambient-state', 'neutral');
+      }
     }
+
+    // 4. Font Boyutu
+    var savedFontSize = localStorage.getItem('ww_font_size');
+    if (savedFontSize) {
+      root.style.fontSize = savedFontSize + 'px';
+    }
+
+    // 5. Plan Durumu (Premium vs Free — Upgrade butonlarını 0ms gizler)
+    var userPlan = localStorage.getItem('ww_user_plan') || sessionStorage.getItem('ww_user_plan');
+    if (userPlan === 'premium') {
+      root.classList.add('is-premium');
+    } else {
+      root.classList.remove('is-premium');
+    }
+  } catch(e) {}
+
+  // DOMContentLoaded olduğunda body ile senkronize et
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      var root = document.documentElement;
+      var body = document.body;
+      if (!body) return;
+
+      if (root.classList.contains('is-premium')) {
+        body.classList.add('is-premium');
+      } else {
+        body.classList.remove('is-premium');
+      }
+
+      if (root.classList.contains('light-theme')) {
+        body.classList.add('light-theme');
+        root.classList.remove('light-theme-pending');
+      } else {
+        body.classList.remove('light-theme');
+      }
+
+      if (root.classList.contains('ambient-disabled')) {
+        body.classList.add('ambient-disabled');
+        body.classList.remove('ambient-enabled');
+      } else {
+        body.classList.add('ambient-enabled');
+        body.classList.remove('ambient-disabled');
+      }
+
+      var ambState = root.getAttribute('data-ambient-state');
+      if (ambState) {
+        body.setAttribute('data-ambient-state', ambState);
+      }
+    } catch(e) {}
   });
 })();
 </script>

@@ -2632,16 +2632,19 @@ html[data-ambient-state="neutral"] {
   transition: background 0.8s ease, opacity 0.6s ease;
 }
 
-body.ambient-disabled .wj-ambient-backdrop {
+body.ambient-disabled .wj-ambient-backdrop,
+html.ambient-disabled .wj-ambient-backdrop {
   opacity: 0 !important;
   display: none !important;
 }
 
-body.ambient-enabled::before {
+body.ambient-enabled::before,
+html.ambient-enabled::before {
   display: none !important;
 }
 
-body.light-theme .wj-ambient-backdrop {
+body.light-theme .wj-ambient-backdrop,
+html.light-theme .wj-ambient-backdrop {
   opacity: 0.5;
 }
 

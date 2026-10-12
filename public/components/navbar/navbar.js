@@ -1050,37 +1050,25 @@ function getNavbarHTML(translations) {
           <div class="nav-dropdown-menu premium-menu-glass" id="premium-dropdown-menu" role="menu">
             <div class="premium-menu-header">
               <span class="premium-menu-title" data-i18n="nav.premium_features">${tt('nav.premium_features', 'Premium Özellikler')}</span>
-              <span class="premium-menu-tag">PRO</span>
             </div>
             <div class="premium-menu-items">
-              <a href="/premium-dashboard.html" class="premium-menu-item" role="menuitem">
-                <div class="p-item-icon">
-                  <i data-lucide="layout-dashboard"></i>
-                </div>
-                <div class="p-item-content">
-                  <span class="p-item-title" data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
-                </div>
+              <a href="/premium-dashboard.html" class="dropdown-item" role="menuitem">
+                <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i>
+                <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
               </a>
-              <a href="/settings.html#panel-appearance" class="premium-menu-item" role="menuitem">
-                <div class="p-item-icon">
-                  <i data-lucide="palette"></i>
-                </div>
-                <div class="p-item-content">
-                  <span class="p-item-title" data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
-                </div>
+              <a href="/settings.html#panel-appearance" class="dropdown-item" role="menuitem">
+                <i data-lucide="palette" style="width:16px;height:16px;"></i>
+                <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
               </a>
-              <a href="/settings.html#panel-overtrade" class="premium-menu-item" role="menuitem">
-                <div class="p-item-icon">
-                  <i data-lucide="shield-alert"></i>
-                </div>
-                <div class="p-item-content">
-                  <span class="p-item-title" data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
-                </div>
+              <a href="/settings.html#panel-overtrade" class="dropdown-item" role="menuitem">
+                <i data-lucide="shield-alert" style="width:16px;height:16px;"></i>
+                <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
               </a>
             </div>
-            <div class="premium-menu-footer">
-              <a href="/settings.html#panel-plan" class="premium-upgrade-cta" role="menuitem">
-                <i data-lucide="sparkles" class="cta-sparkle"></i>
+            <div class="premium-menu-footer nav-upgrade-wrapper" id="premium-menu-footer">
+              <div class="dropdown-divider"></div>
+              <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" role="menuitem" style="color:var(--accent2);">
+                <i data-lucide="crown" style="width:16px;height:16px;"></i>
                 <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
               </a>
             </div>
@@ -1197,8 +1185,8 @@ function getNavbarHTML(translations) {
               <span data-i18n="nav.admin">${tt('nav.admin', 'Admin')}</span>
             </a>
           </span>
-          <div class="dropdown-divider"></div>
-          <a href="/settings.html#panel-plan" class="dropdown-item" style="color:var(--accent2);">
+          <div class="dropdown-divider nav-upgrade-divider" id="avatar-upgrade-divider"></div>
+          <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
             <i data-lucide="crown" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
           </a>
@@ -1507,6 +1495,22 @@ function updateBadgeUI(isPremium, expiresAt) {
     if (isPremium) badge.classList.add('premium');
     else badge.classList.remove('premium');
   }
+
+  if (isPremium) {
+    document.documentElement.classList.add('is-premium');
+    if (document.body) document.body.classList.add('is-premium');
+  } else {
+    document.documentElement.classList.remove('is-premium');
+    if (document.body) document.body.classList.remove('is-premium');
+  }
+
+  // Premium kullanıcılarda upgrade butonlarını ve PRO etiketini tamamen gizle
+  try {
+    var upgradeEls = document.querySelectorAll('.nav-upgrade-wrapper, .nav-upgrade-item, .nav-upgrade-divider, .go-premium, #premium-menu-footer, #avatar-upgrade-link, #avatar-upgrade-divider, .premium-menu-tag');
+    upgradeEls.forEach(function(el) {
+      el.style.display = isPremium ? 'none' : '';
+    });
+  } catch (e) {}
 
   var premiumText = t('nav.premium_badge', 'Premium');
   var freeText = t('nav.free_badge', 'Free');
@@ -2300,19 +2304,28 @@ window.updateNavbarJournal = updateNavbarJournal;
 function syncAmbientGlow(overridePnl) {
   var mode = localStorage.getItem('ww_ambient_mode') || 'dynamic'; // 'dynamic' | 'classic' | 'off'
   var body = document.body;
-  if (!body) return;
+  var root = document.documentElement;
+  if (!body && !root) return;
+
+  var setCls = function(add, rem) {
+    if (root) { root.classList.add(add); root.classList.remove(rem); }
+    if (body) { body.classList.add(add); body.classList.remove(rem); }
+  };
+  var setAttr = function(val) {
+    if (root) root.setAttribute('data-ambient-state', val);
+    if (body) body.setAttribute('data-ambient-state', val);
+    try { localStorage.setItem('ww_ambient_state', val); } catch(e) {}
+  };
 
   if (mode === 'off') {
-    body.classList.remove('ambient-enabled');
-    body.classList.add('ambient-disabled');
+    setCls('ambient-disabled', 'ambient-enabled');
     return;
   }
 
-  body.classList.remove('ambient-disabled');
-  body.classList.add('ambient-enabled');
+  setCls('ambient-enabled', 'ambient-disabled');
 
   if (mode === 'classic') {
-    body.setAttribute('data-ambient-state', 'neutral');
+    setAttr('neutral');
     return;
   }
 
@@ -2324,11 +2337,11 @@ function syncAmbientGlow(overridePnl) {
   }
 
   if (isNaN(pnl) || pnl === 0) {
-    body.setAttribute('data-ambient-state', 'neutral');
+    setAttr('neutral');
   } else if (pnl > 0) {
-    body.setAttribute('data-ambient-state', 'profit');
+    setAttr('profit');
   } else {
-    body.setAttribute('data-ambient-state', 'loss');
+    setAttr('loss');
   }
 }
 
