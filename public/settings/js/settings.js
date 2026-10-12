@@ -1198,6 +1198,7 @@ async function renderPlan() {
               if (data.error === 'expired_code') errMsg = t('settings.plan_referral_expired');
               else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit');
               else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive');
+              else if (data.error === 'self_referral_not_allowed') errMsg = t('settings.plan_referral_self', {}, 'Kendi referans kodunuzu kullanamazsınız.');
               else if (data.error === 'invalid_code') errMsg = t('settings.plan_referral_invalid');
             }
             throw new Error(errMsg);

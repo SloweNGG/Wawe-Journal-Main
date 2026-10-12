@@ -715,6 +715,7 @@ export default {
   "settings.plan_referral_limit": "Dieser Code hat sein Nutzungslimit erreicht.",
   "settings.plan_referral_inactive": "Dieser Empfehlungscode ist derzeit inaktiv.",
   "settings.plan_referral_invalid": "Ungültiger Empfehlungscode.",
+  "settings.plan_referral_self": "Sie können Ihren eigenen Empfehlungscode nicht verwenden.",
   "settings.plan_referral_error": "Code konnte nicht überprüft werden.",
   "settings.plan_monthly_label": "Monatlich",
   "settings.plan_yearly_label": "Jährlich",

@@ -1,4 +1,4 @@
-﻿import './core/journal.js';
+import './core/journal.js';
 ﻿// ============================================================
 // WAWE JOURNAL - ANA SCRIPT
 // Tüm modülleri import eder ve window'a atar
@@ -100,7 +100,8 @@ import {
   getSystemSettings, 
   createNowPaymentInvoice, 
   upgradeToPremium, 
-  cancelPremium 
+  cancelPremium,
+  checkAndSyncPaymentStatus
 } from './services/payment.js';
 
 // Services - stats
@@ -213,6 +214,7 @@ window.getSystemSettings = getSystemSettings;
 window.createNowPaymentInvoice = createNowPaymentInvoice;
 window.upgradeToPremium = upgradeToPremium;
 window.cancelPremium = cancelPremium;
+window.checkAndSyncPaymentStatus = checkAndSyncPaymentStatus;
 
 // Services - stats
 window.loadPlatformStats = loadPlatformStats;

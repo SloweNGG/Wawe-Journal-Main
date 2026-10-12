@@ -35,10 +35,10 @@ const ALLOWED_ORIGINS = [
   'https://6d35b7d5.wawe-journal.pages.dev'
 ];
 
-function getCorsHeaders(origin: string | null) {
-  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const isAllowed = !!(origin && ALLOWED_ORIGINS.includes(origin));
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-nowpayments-sig, x-nowpayments-ipn',
     'Access-Control-Max-Age': '86400',
@@ -378,11 +378,22 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
   // Referans kodu geçerliyse kullanımı artır (Aylık/Yıllık ayrımı ile)
   if (appliedReferral) {
     try {
-      await supabase.rpc('increment_referral_usage', { 
-        p_code: appliedReferral,
-        p_plan_type: planType || 'monthly'
-      });
-      console.log(`✅ Incremented referral usage: ${appliedReferral} (plan: ${planType})`);
+      // 🛡️ SELF-REFERRAL BLOCK: Kodun sahibi ile ödeyen kişi aynıysa komisyon işletme!
+      const { data: refOwner } = await supabase
+        .from('referral_codes')
+        .select('influencer_user_id')
+        .eq('code', appliedReferral)
+        .maybeSingle();
+
+      if (refOwner?.influencer_user_id && refOwner.influencer_user_id === userId) {
+        console.warn(`⛔ Webhook blocked self-referral commission: User ${userId} paid using their own code ${appliedReferral}`);
+      } else {
+        await supabase.rpc('increment_referral_usage', { 
+          p_code: appliedReferral,
+          p_plan_type: planType || 'monthly'
+        });
+        console.log(`✅ Incremented referral usage: ${appliedReferral} (plan: ${planType})`);
+      }
     } catch (e) {
       console.warn(`⚠️ Could not increment referral ${appliedReferral}:`, e);
     }
@@ -415,7 +426,7 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
   return { success: true, expiresAt };
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
   const headers = getCorsHeaders(origin);
 

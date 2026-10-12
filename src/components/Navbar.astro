@@ -86,6 +86,40 @@ const isActive = (page: string) => {
         <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="journal-dropdown" id="journal-dropdown"></div>
+      <script is:inline>
+        // ⚡ 0ms INSTANT PRE-HYDRATION: Sayfa parse edildiği an FTMO/Prop firm rozetini ve hesap adını gecikmesiz bas
+        (function() {
+          try {
+            var jName = localStorage.getItem('ww_active_journal_name');
+            var pBadge = localStorage.getItem('ww_active_prop_badge_html');
+            var ctDot = localStorage.getItem('ww_active_ctrader_dot_html');
+            var jIcon = localStorage.getItem('ww_active_journal_icon_html');
+            var sw = document.getElementById('nav-journal-switcher');
+            if (!sw) return;
+            var nameEl = sw.querySelector('.journal-name');
+            var iconEl = sw.querySelector('.journal-icon');
+            if (nameEl && jName) {
+              nameEl.textContent = jName;
+              nameEl.title = jName;
+            }
+            if (nameEl && nameEl.parentNode) {
+              if (ctDot && !sw.querySelector('.ctrader-status-dot')) {
+                var dWrap = document.createElement('span');
+                dWrap.innerHTML = ctDot;
+                if (dWrap.firstElementChild) nameEl.parentNode.insertBefore(dWrap.firstElementChild, nameEl);
+              }
+              if (pBadge && !sw.querySelector('.nav-prop-tag')) {
+                var bWrap = document.createElement('span');
+                bWrap.innerHTML = pBadge;
+                if (bWrap.firstElementChild) nameEl.parentNode.insertBefore(bWrap.firstElementChild, nameEl.nextSibling);
+              }
+            }
+            if (iconEl && jIcon) {
+              iconEl.innerHTML = jIcon;
+            }
+          } catch(e) {}
+        })();
+      </script>
     </div>
 
     <div class="nav-bell-wrapper" id="nav-bell-wrapper">

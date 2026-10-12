@@ -286,3 +286,18 @@ wwLog.log('📊 INSTRUMENT_MULTIPLIERS:', window.INSTRUMENT_MULTIPLIERS ? '✅' 
 wwLog.log('🎯 FEATURES:', window.FEATURES ? '✅' : '❌');
 wwLog.log('🔔 NOTIFICATION_TYPES:', window.NOTIFICATION_TYPES ? '✅' : '❌');
 wwLog.log('🛡️ Turnstile:', window.isTurnstileConfigured() ? '✅' : '⚠️ (not configured)');
+
+// ⭐ cTrader Open API Public Config
+window.CTRADER_CONFIG = {
+  CLIENT_ID: '43858_q2fHIVwRbRjCKFKGriwr9jqlkhUFPjQjJ7HYZGd8PYwqsUMWdL',
+  getRedirectUri: function() {
+    return (typeof window !== 'undefined' && window.location ? window.location.origin : 'https://wawejournal.com') + '/ctrader-callback.html';
+  },
+  getAuthUrl: function() {
+    var redirect = encodeURIComponent(window.CTRADER_CONFIG.getRedirectUri());
+    return 'https://id.ctrader.com/my/settings/openapi/grantingaccess/?client_id=' +
+      encodeURIComponent(window.CTRADER_CONFIG.CLIENT_ID) +
+      '&redirect_uri=' + redirect +
+      '&scope=accounts&product=web';
+  }
+};

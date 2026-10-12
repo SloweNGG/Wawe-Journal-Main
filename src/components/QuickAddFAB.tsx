@@ -12,6 +12,7 @@ export interface QuickAddFABProps {
 declare global {
   interface Window {
     quickAddOpen?: () => void;
+    quickAddClose?: () => void;
     wwLog?: {
       log: (...args: any[]) => void;
       warn: (...args: any[]) => void;

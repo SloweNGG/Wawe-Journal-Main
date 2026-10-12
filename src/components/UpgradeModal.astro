@@ -1,0 +1,786 @@
+---
+// UpgradeModal.astro — Premium Paywall & Limit Exceeded Modal
+---
+<div id="ww-upgrade-modal-backdrop" class="ww-up-backdrop" aria-hidden="true" style="display:none;">
+  <div class="ww-up-modal" role="dialog" aria-modal="true" aria-labelledby="ww-up-notice-title">
+    
+    <!-- Top Bar: Logo & Close Button -->
+    <div class="ww-up-topbar">
+      <div class="ww-up-logo" aria-label="Wawe Journal">
+        <!-- Wawe Journal Original Trending-Up Logo -->
+        <svg class="ww-up-logo-svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+      </div>
+      <button type="button" class="ww-up-close-btn" id="ww-up-close-btn" aria-label="Kapat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Hero Visual: Real Premium Dashboard Screenshot Preview -->
+    <div class="ww-up-preview-card">
+      <img 
+        src="/images/premium-dashboard-preview.png" 
+        alt="Wawe Journal Premium Dashboard" 
+        class="ww-up-preview-img" 
+        loading="eager"
+      />
+      <!-- Subtle bottom gradient vignette -->
+      <div class="ww-up-preview-fade"></div>
+    </div>
+
+    <!-- Plan Name & Pricing Row -->
+    <div class="ww-up-plan-header">
+      <div class="ww-up-plan-name" id="ww-up-plan-name">Basic</div>
+      <div class="ww-up-plan-price">
+        <span class="ww-up-price-num" id="ww-up-price-num">$19</span>
+        <span class="ww-up-price-period" id="ww-up-price-period">/mo</span>
+      </div>
+    </div>
+
+    <!-- Plan Features Checklist (2 columns) -->
+    <div class="ww-up-features-grid">
+      <div class="ww-up-feat-item">
+        <svg class="ww-up-check-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n-key="feat_unlimited_trades">Journal Unlimited Trades</span>
+      </div>
+      <div class="ww-up-feat-item">
+        <svg class="ww-up-check-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="ww-up-feat-accounts">Up to 3 Trading Accounts</span>
+      </div>
+      <div class="ww-up-feat-item">
+        <svg class="ww-up-check-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="ww-up-feat-strategies">Up to 3 Trading Strategies</span>
+      </div>
+      <div class="ww-up-feat-item">
+        <svg class="ww-up-check-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n-key="feat_full_analytics">Full Analytics & Statistics</span>
+      </div>
+      <div class="ww-up-feat-item">
+        <svg class="ww-up-check-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n-key="feat_auto_sync">Auto Sync Trades / Import CSVs</span>
+      </div>
+      <div class="ww-up-feat-item">
+        <svg class="ww-up-check-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n-key="feat_calendar_view">P&L Calendar View</span>
+      </div>
+    </div>
+
+    <!-- Segmented Control 1: Tier Selector (Basic / Pro) -->
+    <div class="ww-up-pill-group" id="ww-up-tier-switch" role="tablist">
+      <button type="button" class="ww-up-pill-btn active" data-tier="basic" role="tab" aria-selected="true">Basic</button>
+      <button type="button" class="ww-up-pill-btn" data-tier="pro" role="tab" aria-selected="false">Pro</button>
+    </div>
+
+    <!-- Segmented Control 2: Billing Period Selector (Monthly / 6 months / Yearly) -->
+    <div class="ww-up-pill-group" id="ww-up-period-switch" role="tablist">
+      <button type="button" class="ww-up-pill-btn active" data-period="monthly" role="tab" aria-selected="true" data-i18n-key="period_monthly">Monthly</button>
+      <button type="button" class="ww-up-pill-btn" data-period="6months" role="tab" aria-selected="false" data-i18n-key="period_6months">6 months</button>
+      <button type="button" class="ww-up-pill-btn" data-period="yearly" role="tab" aria-selected="false" data-i18n-key="period_yearly">Yearly</button>
+    </div>
+
+    <!-- Feature Not Included / Limit Warning Notice Box -->
+    <div class="ww-up-notice-card">
+      <h3 class="ww-up-notice-title" id="ww-up-notice-title">Feature not included</h3>
+      <p class="ww-up-notice-desc" id="ww-up-notice-desc">Auto Sync Trades / Import CSVs is not included in your Free plan.</p>
+      <p class="ww-up-notice-sub" id="ww-up-notice-sub">Choose a plan above to continue with a higher limit or unlock this feature.</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="ww-up-action-row">
+      <button type="button" class="ww-up-btn-primary" id="ww-up-btn-upgrade" data-i18n-key="btn_upgrade">Upgrade</button>
+      <button type="button" class="ww-up-btn-secondary" id="ww-up-btn-compare">
+        <span data-i18n-key="btn_compare">Compare Plans</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     UPGRADE / PAYWALL MODAL STYLING
+     Pixel-perfect dark luxury trading SaaS aesthetic
+     ============================================================ */
+
+  .ww-up-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(3, 4, 8, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.24s ease;
+  }
+
+  .ww-up-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .ww-up-modal {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: 92vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #0b0c10;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 20px 22px 24px;
+    box-shadow: 
+      0 32px 80px -16px rgba(0, 0, 0, 0.85),
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 0 45px -10px rgba(139, 92, 246, 0.12);
+    color: #f1f2f6;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transform: scale(0.94) translateY(12px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+
+  .ww-up-backdrop.active .ww-up-modal {
+    transform: scale(1) translateY(0);
+  }
+
+  .ww-up-modal::-webkit-scrollbar {
+    width: 5px;
+  }
+  .ww-up-modal::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 99px;
+  }
+
+  /* Top Bar */
+  .ww-up-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 14px;
+  }
+
+  .ww-up-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .ww-up-logo-svg {
+    width: 20px;
+    height: 20px;
+    color: #ffffff;
+    stroke: #ffffff;
+  }
+
+  .ww-up-close-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #8b8e9f;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .ww-up-close-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Hero Dashboard Preview */
+  .ww-up-preview-card {
+    position: relative;
+    background: #090a10;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 18px;
+    overflow: hidden;
+    height: 175px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+  }
+
+  .ww-up-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Bottom fade vignette */
+  .ww-up-preview-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50px;
+    background: linear-gradient(180deg, transparent 0%, rgba(11, 12, 16, 0.98) 100%);
+    pointer-events: none;
+  }
+
+  /* Plan Name & Price */
+  .ww-up-plan-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .ww-up-plan-name {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .ww-up-plan-price {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .ww-up-price-period {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #8b8e9f;
+  }
+
+  /* Features Grid */
+  .ww-up-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+    margin-bottom: 18px;
+  }
+
+  .ww-up-feat-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11.5px;
+    color: #9ea1b5;
+    line-height: 1.35;
+  }
+
+  .ww-up-check-svg {
+    color: #717488;
+    flex-shrink: 0;
+  }
+
+  /* Segmented Pill Switchers */
+  .ww-up-pill-group {
+    display: flex;
+    background: #121319;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 3px;
+    margin-bottom: 8px;
+    gap: 3px;
+  }
+
+  .ww-up-pill-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #7b7e92;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-align: center;
+  }
+
+  .ww-up-pill-btn:hover {
+    color: #c4c6d6;
+  }
+
+  .ww-up-pill-btn.active {
+    background: #1e202a;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Notice Box */
+  .ww-up-notice-card {
+    text-align: center;
+    margin: 22px 0 20px;
+    padding: 0 10px;
+  }
+
+  .ww-up-notice-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    margin: 0 0 10px 0;
+  }
+
+  .ww-up-notice-desc {
+    font-size: 12.5px;
+    color: #8b8e9f;
+    line-height: 1.48;
+    margin: 0 0 10px 0;
+  }
+
+  .ww-up-notice-sub {
+    font-size: 12px;
+    color: #717488;
+    line-height: 1.48;
+    margin: 0;
+  }
+
+  /* Action Buttons */
+  .ww-up-action-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .ww-up-btn-primary {
+    flex: 1;
+    height: 44px;
+    background: #ffffff;
+    color: #0b0c10;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ww-up-btn-primary:hover {
+    background: #eaeaf2;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(255, 255, 255, 0.18);
+  }
+
+  .ww-up-btn-secondary {
+    flex: 1;
+    height: 44px;
+    background: #14151c;
+    color: #dfe1ee;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+
+  .ww-up-btn-secondary:hover {
+    background: #1c1d27;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  @media (max-width: 480px) {
+    .ww-up-modal {
+      padding: 16px 16px 20px;
+      border-radius: 20px;
+    }
+    .ww-up-features-grid {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .ww-up-action-row {
+      flex-direction: column;
+    }
+    .ww-up-btn-primary, .ww-up-btn-secondary {
+      width: 100%;
+    }
+  }
+</style>
+
+<script is:inline>
+(function() {
+  // UPGRADE MODAL CLIENT LOGIC
+  var modalState = {
+    tier: 'basic',      // 'basic' | 'pro'
+    period: 'monthly',  // 'monthly' | '6months' | 'yearly'
+    feature: 'journal'  // 'journal' | 'premium_dashboard' | 'csv' | 'generic'
+  };
+
+  var I18N_DICT = {
+    tr: {
+      period_monthly: 'Aylık',
+      period_6months: '6 Aylık',
+      period_yearly: 'Yıllık',
+      btn_upgrade: 'Yükselt',
+      btn_compare: 'Planları Karşılaştır',
+      feat_unlimited_trades: 'Sınırsız İşlem Günlüğü',
+      feat_accounts_basic: '3\'e Kadar İşlem Defteri',
+      feat_accounts_pro: 'Sınırsız İşlem Defteri',
+      feat_strategies_basic: '3\'e Kadar Strateji',
+      feat_strategies_pro: 'Sınırsız Strateji',
+      feat_full_analytics: 'Tam Analitik ve İstatistikler',
+      feat_auto_sync: 'Otomatik Eşitleme / CSV İçe Aktarma',
+      feat_calendar_view: 'Kâr/Zarar Takvim Görünümü',
+      
+      // Feature-specific Notice Titles & Descriptions
+      notice_journal_title: 'Hesap Limitine Ulaşıldı',
+      notice_journal_desc: 'Maksimum defter sınırına ulaştınız. Ücretsiz planda en fazla 1 defter oluşturabilirsiniz.',
+      notice_journal_sub: 'Daha fazla hesap eklemek veya limitleri kaldırmak için yukarıdaki planlardan birini seçin.',
+
+      notice_dash_title: 'Özellik Dahil Değil',
+      notice_dash_desc: 'Premium Dashboard özelliği Ücretsiz planınıza dahil değildir.',
+      notice_dash_sub: 'Gelişmiş analitik panelini ve tüm göstergeleri açmak için yukarıdaki planlardan birini seçin.',
+
+      notice_csv_title: 'Özellik Dahil Değil',
+      notice_csv_desc: 'Otomatik Eşitleme ve CSV İçe Aktarma Ücretsiz planınıza dahil değildir.',
+      notice_csv_sub: 'Devam etmek veya bu özelliğin kilidini açmak için yukarıdaki planlardan birini seçin.',
+
+      notice_default_title: 'Özellik Dahil Değil',
+      notice_default_desc: 'Bu özellik Ücretsiz planınıza dahil değildir.',
+      notice_default_sub: 'Daha yüksek limitlerle devam etmek veya özellikleri açmak için bir plana geçin.'
+    },
+    en: {
+      period_monthly: 'Monthly',
+      period_6months: '6 months',
+      period_yearly: 'Yearly',
+      btn_upgrade: 'Upgrade',
+      btn_compare: 'Compare Plans',
+      feat_unlimited_trades: 'Journal Unlimited Trades',
+      feat_accounts_basic: 'Up to 3 Trading Accounts',
+      feat_accounts_pro: 'Unlimited Trading Accounts',
+      feat_strategies_basic: 'Up to 3 Trading Strategies',
+      feat_strategies_pro: 'Unlimited Trading Strategies',
+      feat_full_analytics: 'Full Analytics & Statistics',
+      feat_auto_sync: 'Auto Sync Trades / Import CSVs',
+      feat_calendar_view: 'P&L Calendar View',
+      
+      notice_journal_title: 'Account limit reached',
+      notice_journal_desc: 'Creating additional trading journals is not included in your Free plan.',
+      notice_journal_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.',
+
+      notice_dash_title: 'Feature not included',
+      notice_dash_desc: 'Premium Dashboard is not included in your Free plan.',
+      notice_dash_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.',
+
+      notice_csv_title: 'Feature not included',
+      notice_csv_desc: 'Auto Sync Trades / Import CSVs is not included in your Free plan.',
+      notice_csv_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.',
+
+      notice_default_title: 'Feature not included',
+      notice_default_desc: 'This feature is not included in your Free plan.',
+      notice_default_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.'
+    },
+    de: {
+      period_monthly: 'Monatlich',
+      period_6months: '6 Monate',
+      period_yearly: 'Jährlich',
+      btn_upgrade: 'Upgraden',
+      btn_compare: 'Pläne vergleichen',
+      feat_unlimited_trades: 'Unbegrenzte Trades protokollieren',
+      feat_accounts_basic: 'Bis zu 3 Trading-Konten',
+      feat_accounts_pro: 'Unbegrenzte Trading-Konten',
+      feat_strategies_basic: 'Bis zu 3 Strategien',
+      feat_strategies_pro: 'Unbegrenzte Strategien',
+      feat_full_analytics: 'Vollständige Analysen & Statistiken',
+      feat_auto_sync: 'Auto-Sync / CSV-Import',
+      feat_calendar_view: 'P&L Kalenderansicht',
+      
+      notice_journal_title: 'Kontolimit erreicht',
+      notice_journal_desc: 'Das Erstellen weiterer Trading-Tagebücher ist in Ihrem Free-Plan nicht enthalten.',
+      notice_journal_sub: 'Wählen Sie oben einen Plan, um Ihr Limit zu erhöhen oder Features freizuschalten.',
+
+      notice_dash_title: 'Funktion nicht enthalten',
+      notice_dash_desc: 'Das Premium Dashboard ist in Ihrem Free-Plan nicht enthalten.',
+      notice_dash_sub: 'Wählen Sie oben einen Plan, um dieses Feature freizuschalten.',
+
+      notice_csv_title: 'Funktion nicht enthalten',
+      notice_csv_desc: 'Auto-Sync / CSV-Import ist in Ihrem Free-Plan nicht enthalten.',
+      notice_csv_sub: 'Wählen Sie oben einen Plan, um dieses Feature freizuschalten.',
+
+      notice_default_title: 'Funktion nicht enthalten',
+      notice_default_desc: 'Diese Funktion ist in Ihrem Free-Plan nicht enthalten.',
+      notice_default_sub: 'Wählen Sie oben einen Plan, um dieses Feature freizuschalten.'
+    }
+  };
+
+  function getLang() {
+    try {
+      if (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') {
+        return window.i18n.getCurrentLanguage();
+      }
+      var l = localStorage.getItem('ww_language') || document.documentElement.getAttribute('data-lang');
+      if (l && ['en', 'tr', 'de'].includes(l)) return l;
+    } catch (e) {}
+    return 'en';
+  }
+
+  function tStr(key) {
+    var l = getLang();
+    var dict = I18N_DICT[l] || I18N_DICT.en;
+    return dict[key] || (I18N_DICT.en[key] || key);
+  }
+
+  // Price Table Matrix ($)
+  var PRICES = {
+    basic: {
+      monthly: { num: '$19', period: '/mo' },
+      '6months': { num: '$15', period: '/mo' },
+      yearly: { num: '$12', period: '/mo' }
+    },
+    pro: {
+      monthly: { num: '$29', period: '/mo' },
+      '6months': { num: '$24', period: '/mo' },
+      yearly: { num: '$19', period: '/mo' }
+    }
+  };
+
+  function updateModalUI() {
+    var pData = PRICES[modalState.tier][modalState.period] || PRICES.basic.monthly;
+    
+    // Plan title & price
+    var nameEl = document.getElementById('ww-up-plan-name');
+    if (nameEl) nameEl.textContent = modalState.tier === 'pro' ? 'Pro' : 'Basic';
+
+    var priceNumEl = document.getElementById('ww-up-price-num');
+    if (priceNumEl) priceNumEl.textContent = pData.num;
+
+    var pricePerEl = document.getElementById('ww-up-price-period');
+    if (pricePerEl) pricePerEl.textContent = pData.period;
+
+    // Feature items
+    var featAcc = document.getElementById('ww-up-feat-accounts');
+    if (featAcc) {
+      featAcc.textContent = modalState.tier === 'pro' ? tStr('feat_accounts_pro') : tStr('feat_accounts_basic');
+    }
+
+    var featStrat = document.getElementById('ww-up-feat-strategies');
+    if (featStrat) {
+      featStrat.textContent = modalState.tier === 'pro' ? tStr('feat_strategies_pro') : tStr('feat_strategies_basic');
+    }
+
+    // Static text translations
+    document.querySelectorAll('[data-i18n-key]').forEach(function(el) {
+      var k = el.getAttribute('data-i18n-key');
+      el.textContent = tStr(k);
+    });
+
+    // Update Notice Box based on feature
+    var titleEl = document.getElementById('ww-up-notice-title');
+    var descEl = document.getElementById('ww-up-notice-desc');
+    var subEl = document.getElementById('ww-up-notice-sub');
+
+    var feat = modalState.feature || 'generic';
+    if (feat === 'journal' || feat === 'account') {
+      if (titleEl) titleEl.textContent = tStr('notice_journal_title');
+      if (descEl) descEl.textContent = tStr('notice_journal_desc');
+      if (subEl) subEl.textContent = tStr('notice_journal_sub');
+    } else if (feat === 'premium_dashboard' || feat === 'dashboard') {
+      if (titleEl) titleEl.textContent = tStr('notice_dash_title');
+      if (descEl) descEl.textContent = tStr('notice_dash_desc');
+      if (subEl) subEl.textContent = tStr('notice_dash_sub');
+    } else if (feat === 'csv' || feat === 'csv_import') {
+      if (titleEl) titleEl.textContent = tStr('notice_csv_title');
+      if (descEl) descEl.textContent = tStr('notice_csv_desc');
+      if (subEl) subEl.textContent = tStr('notice_csv_sub');
+    } else {
+      if (titleEl) titleEl.textContent = tStr('notice_default_title');
+      if (descEl) descEl.textContent = tStr('notice_default_desc');
+      if (subEl) subEl.textContent = tStr('notice_default_sub');
+    }
+
+    // Tier buttons state
+    document.querySelectorAll('#ww-up-tier-switch .ww-up-pill-btn').forEach(function(btn) {
+      var active = btn.dataset.tier === modalState.tier;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    // Period buttons state
+    document.querySelectorAll('#ww-up-period-switch .ww-up-pill-btn').forEach(function(btn) {
+      var active = btn.dataset.period === modalState.period;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+  }
+
+  // GLOBAL OPEN & CLOSE METHODS
+  window.openUpgradeModal = function(opts) {
+    opts = opts || {};
+    if (opts.feature) modalState.feature = opts.feature;
+    if (opts.tier) modalState.tier = opts.tier;
+    if (opts.period) modalState.period = opts.period;
+
+    updateModalUI();
+
+    var backdrop = document.getElementById('ww-upgrade-modal-backdrop');
+    if (backdrop) {
+      backdrop.style.display = 'flex';
+      requestAnimationFrame(function() {
+        backdrop.classList.add('active');
+      });
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  window.closeUpgradeModal = function() {
+    var backdrop = document.getElementById('ww-upgrade-modal-backdrop');
+    if (backdrop) {
+      backdrop.classList.remove('active');
+      setTimeout(function() {
+        backdrop.style.display = 'none';
+        document.body.style.overflow = '';
+      }, 240);
+    }
+  };
+
+  // DOM Event Bindings
+  document.addEventListener('DOMContentLoaded', function() {
+    var backdrop = document.getElementById('ww-upgrade-modal-backdrop');
+    var closeBtn = document.getElementById('ww-up-close-btn');
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        window.closeUpgradeModal();
+      });
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', function(e) {
+        if (e.target === backdrop) {
+          window.closeUpgradeModal();
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && backdrop && backdrop.classList.contains('active')) {
+        window.closeUpgradeModal();
+      }
+    });
+
+    // Tier Switcher
+    document.querySelectorAll('#ww-up-tier-switch .ww-up-pill-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        modalState.tier = btn.dataset.tier || 'basic';
+        updateModalUI();
+      });
+    });
+
+    // Period Switcher
+    document.querySelectorAll('#ww-up-period-switch .ww-up-pill-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        modalState.period = btn.dataset.period || 'monthly';
+        updateModalUI();
+      });
+    });
+
+    // Upgrade CTA Action
+    var upgradeBtn = document.getElementById('ww-up-btn-upgrade');
+    if (upgradeBtn) {
+      upgradeBtn.addEventListener('click', function() {
+        try {
+          sessionStorage.setItem('ww_selected_tier', modalState.tier);
+          sessionStorage.setItem('ww_selected_period', modalState.period);
+        } catch(e) {}
+        window.closeUpgradeModal();
+        if (window.location.pathname.includes('/settings')) {
+          if (typeof window.switchPanel === 'function') {
+            window.switchPanel('panel-plan');
+          } else {
+            window.location.hash = '#panel-plan';
+          }
+        } else {
+          window.location.href = '/settings.html#panel-plan';
+        }
+      });
+    }
+
+    // Compare Plans CTA Action
+    var compareBtn = document.getElementById('ww-up-btn-compare');
+    if (compareBtn) {
+      compareBtn.addEventListener('click', function() {
+        window.closeUpgradeModal();
+        if (window.location.pathname.includes('/settings')) {
+          if (typeof window.switchPanel === 'function') {
+            window.switchPanel('panel-plan');
+          } else {
+            window.location.hash = '#panel-plan';
+          }
+        } else {
+          window.location.href = '/settings.html#panel-plan';
+        }
+      });
+    }
+
+    // Smart Interceptor: Premium Dashboard clicks for free users
+    document.addEventListener('click', function(e) {
+      var premiumLink = e.target.closest('a[href*="premium-dashboard"]');
+      if (!premiumLink) return;
+
+      var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
+      var isPremiumUser = cachedPlan === 'premium' || (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium');
+
+      if (!isPremiumUser) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.openUpgradeModal({ feature: 'premium_dashboard' });
+      }
+    }, true); // capture phase to intercept before page-transition.js
+
+    // If on premium-dashboard.html directly without premium plan, trigger modal
+    if (window.location.pathname.includes('/premium-dashboard')) {
+      setTimeout(function() {
+        var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
+        if (cachedPlan !== 'premium') {
+          window.openUpgradeModal({ feature: 'premium_dashboard' });
+        }
+      }, 400);
+    }
+  });
+})();
+</script>

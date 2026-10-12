@@ -27,8 +27,8 @@ const LOGIN_MAX_FAILED = 10;
 const REGISTER_WINDOW_MIN = 60;  // 🛡️ Production: 1 saat içinde maks 5 kayıt denemesi
 const REGISTER_MAX_ATTEMPTS = 5;
 
-function getCorsHeaders(origin: string | null) {
-  let isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  let isAllowed = !!(origin && ALLOWED_ORIGINS.includes(origin));
   if (!isAllowed && origin) {
     for (const pattern of ALLOWED_ORIGINS) {
       if (pattern.includes('*')) {
@@ -38,7 +38,7 @@ function getCorsHeaders(origin: string | null) {
     }
   }
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : (ALLOWED_ORIGINS[0] || '*'),
+    'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : (ALLOWED_ORIGINS[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
     'Access-Control-Max-Age': '86400',
@@ -97,7 +97,7 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get('origin');
   const cors = getCorsHeaders(origin);
 

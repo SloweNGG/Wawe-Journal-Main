@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v9';
+const CACHE_VERSION = 'wawe-v10';
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
@@ -29,9 +29,14 @@ self.addEventListener('fetch', (event) => {
   // Admin panel sayfalarını ve admin varlıklarını ASLA SW'ye sokma (her zaman güncel kalsın)
   if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/interface/admin/')) return;
 
-  // ⭐ YENİ: /interface/ altındaki tüm JS/CSS modülleri her zaman sunucudan taze çekilsin.
-  // Böylece quick-add.js gibi sık güncellenen dosyalar SW cache'ine takılıp kalmaz.
-  if (url.pathname.startsWith('/interface/')) return;
+  // ⭐ /interface/, /components/, /src/ ve /settings/ altındaki tüm JS/CSS modülleri her zaman sunucudan taze çekilsin.
+  // Böylece navbar.js, bundle.js gibi sık güncellenen kritik dosyalar SW cache'ine takılıp kalmaz.
+  if (
+    url.pathname.startsWith('/interface/') ||
+    url.pathname.startsWith('/components/') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/settings/')
+  ) return;
 
   // HTML ve API isteklerini SW'ye sokma
   if (url.pathname.endsWith('.html') || url.pathname.startsWith('/api/')) return;

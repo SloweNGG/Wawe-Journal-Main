@@ -261,6 +261,48 @@
 
       try {
         localStorage.setItem('ww_active_journal_id', targetJournal.id);
+        localStorage.setItem('ww_active_journal_name', name);
+
+        // Hedef hesabın prop rozetini ve cTrader durumunu önbellekte anında hazırla
+        var rawProps = localStorage.getItem('ww_cached_props_map');
+        if (rawProps) {
+          try {
+            var pMap = JSON.parse(rawProps);
+            var targetProp = pMap[targetJournal.id];
+            if (targetProp) {
+              var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+              var firm = (targetProp.rules && targetProp.rules.firm) || (window.PropTemplates && window.PropTemplates.getPropTemplate(targetProp.template_key) && window.PropTemplates.getPropTemplate(targetProp.template_key).firm) || 'Prop';
+              var pInfo = typeof resolver === 'function' ? resolver(firm || targetProp.template_key) : null;
+              if (pInfo) {
+                var logoSrc = pInfo.symbolLogo || pInfo.logo;
+                var badgeHtml = '<span class="nav-prop-tag nav-prop-firm-tag ' + (pInfo.badgeClass || '') + '"><img src="' + logoSrc + '" class="nav-prop-mini-icon" alt="" />' + pInfo.name + '</span>';
+                localStorage.setItem('ww_active_prop_badge_html', badgeHtml);
+                localStorage.setItem('ww_active_journal_icon_html', '<img src="' + logoSrc + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;" alt="" />');
+              } else {
+                localStorage.setItem('ww_active_prop_badge_html', '<span class="nav-prop-tag">PROP</span>');
+              }
+            } else {
+              localStorage.removeItem('ww_active_prop_badge_html');
+              localStorage.removeItem('ww_active_journal_icon_html');
+            }
+          } catch(pe) {}
+        }
+
+        var rawCt = localStorage.getItem('ww_cached_ctrader_map');
+        if (rawCt) {
+          try {
+            var ctMap = JSON.parse(rawCt);
+            var targetCt = ctMap[targetJournal.id];
+            if (targetCt) {
+              var dotCls = targetCt.is_live ? 'live' : 'demo';
+              var dotTit = 'cTrader ' + (targetCt.is_live ? 'Live' : 'Demo') + ' (' + (targetCt.broker_name || 'Hesap') + ')';
+              localStorage.setItem('ww_active_ctrader_dot_html', '<span class="ctrader-status-dot ' + dotCls + '" id="nav-ctrader-dot" title="' + dotTit + '"></span>');
+            } else {
+              localStorage.removeItem('ww_active_ctrader_dot_html');
+            }
+          } catch(cte) {}
+        }
+
         sessionStorage.setItem('ww_journal_transit', JSON.stringify({
           id: targetJournal.id,
           name: name,

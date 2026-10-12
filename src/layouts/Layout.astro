@@ -1,6 +1,7 @@
 ---
 import Navbar from '../components/Navbar.astro';
 import BaseHead from '../components/BaseHead.astro';
+import UpgradeModal from '../components/UpgradeModal.astro';
 
 export interface Props {
   lang?: string;
@@ -52,6 +53,8 @@ const {
     )}
     <slot />
   </div>
+
+  <UpgradeModal />
 
   {isAppPage && (
     <script src="/interface/dashboard/js/onboarding.js?v=1791381400" is:inline defer></script>

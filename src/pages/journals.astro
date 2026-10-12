@@ -46,55 +46,120 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
   </div>
+  <script is:inline>
+    (function() {
+      try {
+        var rawJ = localStorage.getItem('ww_cached_journals_list');
+        if (rawJ) {
+          var list = JSON.parse(rawJ);
+          if (Array.isArray(list) && list.length > 0) {
+            var grid = document.getElementById('journals-grid');
+            if (grid) {
+              var cur = localStorage.getItem('ww_currency') || '$';
+              grid.innerHTML = list.map(function(j) {
+                var pnl = Number(j.total_pnl || 0);
+                var pnlClass = pnl > 0 ? 'positive' : (pnl < 0 ? 'negative' : 'neutral');
+                var pnlFormatted = (pnl < 0 ? '-' : (pnl > 0 ? '+' : '')) + cur + Math.abs(pnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                var defaultBadge = j.is_default ? '<div class="journal-card-badge">★ Varsayılan</div>' : '';
+                var safeName = (j.name || '').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+                var safeDesc = (j.description || '').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+                var trades = (j.trade_count || 0) + ' işlem';
+                return '<div class="journal-card" data-id="' + j.id + '" style="--journal-color:' + (j.color || '#7c6dfa') + '">' +
+                  '<div class="journal-card-top">' +
+                    '<div class="journal-icon-wrap"><i data-lucide="' + (j.icon || 'folder') + '"></i></div>' +
+                    '<div class="journal-card-actions">' + defaultBadge + '</div>' +
+                  '</div>' +
+                  '<div class="journal-card-name" title="' + safeName + '">' + safeName + '</div>' +
+                  '<div class="journal-card-desc">' + safeDesc + '</div>' +
+                  '<div class="journal-card-stats" style="margin-top:auto;padding-top:0.75rem;">' +
+                    '<span>' + trades + '</span>' +
+                    '<span class="journal-card-pnl ' + pnlClass + '">' + pnlFormatted + '</span>' +
+                  '</div>' +
+                '</div>';
+              }).join('');
+            }
+          }
+        }
+      } catch(e) {}
+    })();
+  </script>
 </main>
 
-<!-- Create / Edit Modal -->
+<!-- Create / Edit Modal (3 Adımlı Wizard) -->
 <div class="journal-modal-overlay" id="journal-modal">
-  <div class="journal-modal">
-    <div class="journal-modal-header"><h3 id="journal-modal-title" data-i18n="journal.create_title">Yeni Hesap Oluştur</h3><button class="journal-modal-close" onclick="closeModal()"><i data-lucide="x"></i></button></div><div class="journal-modal-body">
-    <input type="hidden" id="journal-id" value="">
-    
-    <div class="journal-modal-grid">
-      <!-- SOL PANEL: Temel Hesap Bilgileri -->
-      <div class="journal-modal-col">
-        <div class="journal-col-heading">
+  <div class="journal-modal" style="max-width: 680px;">
+    <div class="journal-modal-header">
+      <h3 id="journal-modal-title" data-i18n="journal.create_title">Yeni Hesap Oluştur</h3>
+      <button class="journal-modal-close" onclick="closeModal()"><i data-lucide="x"></i></button>
+    </div>
+
+    <!-- ⭐ ADIM GÖSTERGESİ (WIZARD STEPS) -->
+    <div class="journal-wizard-steps" id="wizard-steps-header">
+      <div class="wizard-step-item active" data-step="1" id="wizard-step-tab-1" onclick="goToWizardStep(1)">
+        <span class="step-num">1</span>
+        <span class="step-title">Hesap Bilgileri</span>
+      </div>
+      <div class="wizard-step-line" id="wizard-step-line-1"></div>
+      <div class="wizard-step-item" data-step="2" id="wizard-step-tab-2" onclick="goToWizardStep(2)">
+        <span class="step-num">2</span>
+        <span class="step-title">Prop Takip</span>
+      </div>
+      <div class="wizard-step-line" id="wizard-step-line-2"></div>
+      <div class="wizard-step-item" data-step="3" id="wizard-step-tab-3" onclick="goToWizardStep(3)">
+        <span class="step-num">3</span>
+        <span class="step-title">Broker Bağla</span>
+      </div>
+    </div>
+
+    <div class="journal-modal-body" style="padding: 1.5rem;">
+      <input type="hidden" id="journal-id" value="">
+      
+      <!-- ==========================================
+           ADIM 1: TEMEL HESAP BİLGİLERİ
+           ========================================== -->
+      <div class="wizard-step-panel active" id="wizard-panel-1">
+        <div class="journal-col-heading" style="margin-bottom:1.25rem;">
           <i data-lucide="wallet"></i>
-          <span data-i18n="journal.section_account">Hesap Bilgileri</span>
+          <span>Temel Hesap Bilgileri</span>
         </div>
 
         <div class="journal-field">
-          <label data-i18n="journal.name_label">Hesap Adı</label>
-          <input type="text" id="journal-name" maxlength="60" data-i18n-placeholder="journal.name_placeholder" placeholder="Örn: Scalping, Swing, Prop Firm">
+          <label data-i18n="journal.name_label">Hesap Adı *</label>
+          <input type="text" id="journal-name" maxlength="60" data-i18n-placeholder="journal.name_placeholder" placeholder="Örn: Scalping, Swing, FTMO Challenge">
         </div>
         
         <div class="journal-field">
           <label data-i18n="journal.description_label">Açıklama (opsiyonel)</label>
-          <textarea id="journal-desc" rows="3" maxlength="200"></textarea>
+          <textarea id="journal-desc" rows="2" maxlength="200" placeholder="Bu hesabın stratejisi veya hedefleri..."></textarea>
         </div>
         
-        <div class="journal-field">
-          <label data-i18n="journal.color_label">Renk</label>
-          <div class="journal-color-picker" id="color-grid">
-            <!-- JS fills -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="journal.color_label">Renk</label>
+            <div class="journal-color-picker" id="color-grid">
+              <!-- JS fills -->
+            </div>
           </div>
-        </div>
-        
-        <div class="journal-field">
-          <label data-i18n="journal.icon_label">İkon</label>
-          <div class="journal-icon-picker" id="icon-grid">
-            <!-- JS fills -->
+          
+          <div class="journal-field" style="margin-bottom:0;">
+            <label data-i18n="journal.icon_label">İkon</label>
+            <div class="journal-icon-picker" id="icon-grid">
+              <!-- JS fills -->
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- SAĞ PANEL: Prop Firm & Mod Ayarları -->
-      <div class="journal-modal-col">
-        <div class="journal-col-heading">
+      <!-- ==========================================
+           ADIM 2: PROP FIRM TAKİP AYARLARI
+           ========================================== -->
+      <div class="wizard-step-panel" id="wizard-panel-2">
+        <div class="journal-col-heading" style="margin-bottom:1.25rem;">
           <i data-lucide="award"></i>
-          <span data-i18n="journal.section_prop">Prop Firm & Takip</span>
+          <span>Prop Firm & Takip Modu</span>
         </div>
 
-        <!-- ⭐ PROP FIRM MODU TOGGLE -->
+        <!-- PROP FIRM MODU TOGGLE -->
         <div class="journal-prop-toggle-card">
           <div class="journal-prop-toggle-info">
             <div>
@@ -120,7 +185,7 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
 
-        <!-- Prop Inactive Info Box (Prop kapalıyken sağ paneli bilgilendirici ve dolu tutar) -->
+        <!-- Prop Inactive Info Box -->
         <div id="prop-inactive-card" class="journal-prop-inactive-box">
           <div class="journal-prop-inactive-icon"><i data-lucide="shield-check"></i></div>
           <div class="journal-prop-inactive-title" data-i18n="prop.standard_mode_title">Standart Portföy Hesabı</div>
@@ -132,145 +197,243 @@ import Layout from '../layouts/Layout.astro';
         <div id="journal-prop-section" class="journal-prop-section">
           <input type="hidden" id="prop-account-id" value="">
 
-      <!-- Şablon & Faz -->
-      <div class="journal-prop-row">
-        <div class="journal-field" style="margin-bottom:0;">
-          <label data-i18n="prop.firm_template">Prop Firması / Şablon</label>
-          <select id="prop-template-select" class="journal-prop-select">
-            <!-- JS fills from PropTemplates -->
-          </select>
-        </div>
-        <div class="journal-field" style="margin-bottom:0;">
-          <label data-i18n="prop.phase">Aşama / Faz</label>
-          <select id="prop-phase-select" class="journal-prop-select">
-            <!-- JS fills based on template -->
-          </select>
-        </div>
-      </div>
-
-      <!-- Bakiye & Başlangıç Tarihi -->
-      <div class="journal-prop-row">
-        <div class="journal-field" style="margin-bottom:0;">
-          <label data-i18n="prop.starting_balance">Başlangıç Bakiyesi ($)</label>
-          <select id="prop-balance-select" class="journal-prop-select">
-            <option value="5000">5.000 $</option>
-            <option value="10000">10.000 $</option>
-            <option value="25000">25.000 $</option>
-            <option value="50000">50.000 $</option>
-            <option value="100000" selected>100.000 $</option>
-            <option value="200000">200.000 $</option>
-            <option value="custom" data-i18n="prop.custom_amount">Özel Tutar...</option>
-          </select>
-          <input type="number" id="prop-custom-balance" class="journal-prop-input" placeholder="Örn: 150000" data-i18n-placeholder="prop.custom_placeholder" style="display:none;margin-top:6px;" min="100">
-        </div>
-        <div class="journal-field" style="margin-bottom:0;">
-          <label data-i18n="prop.start_date">Başlangıç Tarihi</label>
-          <input type="date" id="prop-start-date" class="journal-prop-input">
-          <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.start_date_hint">Challenge'a başladığın günü gir (öncesindeki işlemler sayılmaz).</div>
-        </div>
-      </div>
-
-      <!-- Reset Saat Dilimi (reset_tz) -->
-      <div class="journal-field" style="margin-bottom:0.75rem;">
-        <label data-i18n="prop.reset_tz">Gün Sonu / Reset Saat Dilimi</label>
-        <select id="prop-reset-tz-select" class="journal-prop-select">
-          <option value="">-- Saat Dilimi Seçiniz / Select Timezone --</option>
-          <option value="Europe/Prague">Europe/Prague (FTMO — CET/CEST Gece Yarısı)</option>
-          <option value="Etc/GMT-3">Etc/GMT-3 (FundingPips — UTC+3 Gece Yarısı)</option>
-          <option value="Europe/Athens">Europe/Athens (FundedNext — Öneri: MT5 Sunucu Saati)</option>
-          <option value="UTC">UTC (Evrensel Gece Yarısı)</option>
-          <option value="America/New_York">America/New_York (ABD Doğu Saati)</option>
-          <option value="Europe/London">Europe/London (GMT/BST)</option>
-          <option value="Asia/Dubai">Asia/Dubai (GST - UTC+4)</option>
-        </select>
-      </div>
-
-      <!-- Broker Saat Kaydırma (time_shift_hours) -->
-      <div class="journal-field" style="margin-bottom:0.75rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <label data-i18n="prop.time_shift_hours" style="margin-bottom:0;">Broker Saat Kaydırma (time_shift_hours)</label>
-          <span id="prop-time-shift-display" style="font-weight:600;font-size:0.8rem;color:var(--accent);">0 saat</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <input type="range" id="prop-time-shift" min="-14" max="14" step="0.5" value="0" class="journal-prop-slider" style="flex:1;">
-          <input type="number" id="prop-time-shift-num" min="-14" max="14" step="0.5" value="0" class="journal-prop-input" style="width:65px;text-align:center;padding:0.35rem 0.5rem;">
-        </div>
-        <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.time_shift_hint">Broker sunucu saatiniz ile yerel veya reset saati arasındaki farkı ayarlayın (-14 ile +14).</div>
-        
-        <!-- Son 3 işlem saat önizlemesi -->
-        <div id="prop-time-shift-preview" class="journal-prop-time-preview">
-          <div class="journal-prop-time-preview-title" data-i18n="prop.time_shift_preview_title">Son 3 işlemin saati bu ayarla şöyle görünüyor:</div>
-          <div id="prop-time-shift-preview-list" class="journal-prop-time-preview-list">
-            <div data-i18n="prop.time_shift_no_trades">Henüz işlem bulunmuyor (örnek önizleme: 14:00 ➔ 16:00 UTC+2)</div>
+          <!-- Şablon & Faz -->
+          <div class="journal-prop-row">
+            <div class="journal-field" style="margin-bottom:0;">
+              <label data-i18n="prop.firm_template">Prop Firması / Şablon</label>
+              <select id="prop-template-select" class="journal-prop-select">
+                <!-- JS fills from PropTemplates -->
+              </select>
+            </div>
+            <div class="journal-field" style="margin-bottom:0;">
+              <label data-i18n="prop.phase">Aşama / Faz</label>
+              <select id="prop-phase-select" class="journal-prop-select">
+                <!-- JS fills based on template -->
+              </select>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Doğrulanmadı Uyarısı (verified: false) -->
-      <div id="prop-unverified-alert" class="journal-prop-alert warning" style="display:none;margin-bottom:0.75rem;">
-        <span data-i18n="prop.unverified_warning">Bu fazın kuralları doğrulanmadı, firmanın sitesinden kontrol et.</span>
-      </div>
-
-      <!-- FundedNext MT5 Server Timezone Uyarısı -->
-      <div id="prop-tz-required-alert" class="journal-prop-alert warning" style="display:none;margin-bottom:0.75rem;">
-        <span data-i18n="prop.tz_required_warning">Saat Dilimi Seçimi Zorunludur: Bu firma günü broker server saatine göre bitirir. MT5 hesabınızın server saat dilimini seçiniz (ör. Europe/Athens).</span>
-      </div>
-
-      <!-- Equity Bazlı Günlük/Max Kayıp Tahmini Uyarısı -->
-      <div id="prop-estimated-alert" class="journal-prop-alert info" style="display:none;margin-bottom:0.75rem;">
-        <span data-i18n="prop.estimated_warning">Tahmini Kural Uyarısı: Bu firmanın günlük veya maksimum kayıp kuralı equity (açık işlem) bazlıdır; Wawe Journal'da açık pozisyon tutulmadığından kapanmış işlemlerle tahmini hesaplanacaktır.</span>
-      </div>
-
-      <!-- Gelişmiş Kural Ayarları (Tüm Şablonlar İçin Özelleştirilebilir) -->
-      <details id="prop-advanced-rules-box" class="journal-custom-rules-box" style="margin-top:0.75rem;cursor:pointer;">
-        <summary class="journal-custom-rules-header" style="display:flex;justify-content:space-between;align-items:center;user-select:none;">
-          <span data-i18n="prop.advanced_rules">Gelişmiş Kural Ayarları</span>
-          <span id="prop-customized-badge" style="display:none;font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.2);color:var(--accent);border:1px solid rgba(124,109,250,0.3);" data-i18n="prop.customized">Özelleştirildi</span>
-        </summary>
-        <div class="journal-custom-grid" style="margin-top:0.75rem;cursor:default;">
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.profit_target">Kâr Hedefi (%)</label>
-            <input type="number" id="prop-rule-target" class="journal-prop-input" value="10" step="0.5" min="0">
+          <!-- Bakiye & Başlangıç Tarihi -->
+          <div class="journal-prop-row">
+            <div class="journal-field" style="margin-bottom:0;">
+              <label data-i18n="prop.starting_balance">Başlangıç Bakiyesi ($)</label>
+              <select id="prop-balance-select" class="journal-prop-select">
+                <option value="5000">5.000 $</option>
+                <option value="10000">10.000 $</option>
+                <option value="25000">25.000 $</option>
+                <option value="50000">50.000 $</option>
+                <option value="100000" selected>100.000 $</option>
+                <option value="200000">200.000 $</option>
+                <option value="custom" data-i18n="prop.custom_amount">Özel Tutar...</option>
+              </select>
+              <input type="number" id="prop-custom-balance" class="journal-prop-input" placeholder="Örn: 150000" data-i18n-placeholder="prop.custom_placeholder" style="display:none;margin-top:6px;" min="100">
+            </div>
+            <div class="journal-field" style="margin-bottom:0;">
+              <label data-i18n="prop.start_date">Başlangıç Tarihi</label>
+              <input type="date" id="prop-start-date" class="journal-prop-input">
+              <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.start_date_hint">Challenge'a başladığın günü gir (öncesindeki işlemler sayılmaz).</div>
+            </div>
           </div>
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.daily_loss">Günlük Kayıp (%)</label>
-            <input type="number" id="prop-rule-daily" class="journal-prop-input" value="5" step="0.5" min="0">
-          </div>
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.daily_loss_base">Günlük Kayıp Tabanı</label>
-            <select id="prop-rule-daily-base" class="journal-prop-select">
-              <option value="initial_balance" data-i18n="prop.base_initial">Başlangıç Bakiyesi</option>
-              <option value="day_start_balance" data-i18n="prop.base_day_start">Gün Başı Bakiyesi</option>
+
+          <!-- Reset Saat Dilimi -->
+          <div class="journal-field" style="margin-bottom:0.75rem;">
+            <label data-i18n="prop.reset_tz">Gün Sonu / Reset Saat Dilimi</label>
+            <select id="prop-reset-tz-select" class="journal-prop-select">
+              <option value="">-- Saat Dilimi Seçiniz / Select Timezone --</option>
+              <option value="Europe/Prague">Europe/Prague (FTMO — CET/CEST Gece Yarısı)</option>
+              <option value="Etc/GMT-3">Etc/GMT-3 (FundingPips — UTC+3 Gece Yarısı)</option>
+              <option value="Europe/Athens">Europe/Athens (FundedNext — MT5 Sunucu Saati)</option>
+              <option value="UTC">UTC (Evrensel Gece Yarısı)</option>
+              <option value="America/New_York">America/New_York (ABD Doğu Saati)</option>
+              <option value="Europe/London">Europe/London (GMT/BST)</option>
+              <option value="Asia/Dubai">Asia/Dubai (GST - UTC+4)</option>
             </select>
           </div>
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.max_loss">Maksimum Kayıp (%)</label>
-            <input type="number" id="prop-rule-max" class="journal-prop-input" value="10" step="0.5" min="0">
+
+          <!-- Broker Saat Kaydırma -->
+          <div class="journal-field" style="margin-bottom:0.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <label data-i18n="prop.time_shift_hours" style="margin-bottom:0;">Broker Saat Kaydırma (time_shift_hours)</label>
+              <span id="prop-time-shift-display" style="font-weight:600;font-size:0.8rem;color:var(--accent);">0 saat</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+              <input type="range" id="prop-time-shift" min="-14" max="14" step="0.5" value="0" class="journal-prop-slider" style="flex:1;">
+              <input type="number" id="prop-time-shift-num" min="-14" max="14" step="0.5" value="0" class="journal-prop-input" style="width:65px;text-align:center;padding:0.35rem 0.5rem;">
+            </div>
+            <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.time_shift_hint">Broker sunucu saatiniz ile yerel saat arasındaki fark (-14 ile +14).</div>
+            
+            <div id="prop-time-shift-preview" class="journal-prop-time-preview">
+              <div class="journal-prop-time-preview-title" data-i18n="prop.time_shift_preview_title">Son 3 işlemin saati önizlemesi:</div>
+              <div id="prop-time-shift-preview-list" class="journal-prop-time-preview-list">
+                <div data-i18n="prop.time_shift_no_trades">Henüz işlem bulunmuyor (örnek önizleme: 14:00 ➔ 16:00 UTC+2)</div>
+              </div>
+            </div>
           </div>
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.max_loss_type">Maksimum Kayıp Tipi</label>
-            <select id="prop-rule-max-type" class="journal-prop-select">
-              <option value="static" data-i18n="prop.type_static">Sabit (Static)</option>
-              <option value="eod_trailing" data-i18n="prop.type_trailing_eod">Gün Sonu Takip Eden (Trailing EOD)</option>
-            </select>
+
+          <!-- Uyarılar -->
+          <div id="prop-unverified-alert" class="journal-prop-alert warning" style="display:none;margin-bottom:0.75rem;">
+            <span data-i18n="prop.unverified_warning">Bu fazın kuralları doğrulanmadı, firmanın sitesinden kontrol et.</span>
           </div>
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.min_trading_days">Min İşlem Günü</label>
-            <input type="number" id="prop-rule-min-days" class="journal-prop-input" value="4" min="0">
+          <div id="prop-tz-required-alert" class="journal-prop-alert warning" style="display:none;margin-bottom:0.75rem;">
+            <span data-i18n="prop.tz_required_warning">Saat Dilimi Seçimi Zorunludur: MT5 hesabınızın server saat dilimini seçiniz (ör. Europe/Athens).</span>
           </div>
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="prop.consistency_rule">Tutarlılık Kuralı (%)</label>
-            <input type="number" id="prop-rule-consistency" class="journal-prop-input" placeholder="Yok (Örn: 50)" step="1" min="0" max="100">
+          <div id="prop-estimated-alert" class="journal-prop-alert info" style="display:none;margin-bottom:0.75rem;">
+            <span data-i18n="prop.estimated_warning">Tahmini Kural Uyarısı: Bu firmanın kuralları equity bazlıdır; kapanmış işlemlerle tahmini hesaplanacaktır.</span>
+          </div>
+
+          <!-- Gelişmiş Kural Ayarları -->
+          <details id="prop-advanced-rules-box" class="journal-custom-rules-box" style="margin-top:0.75rem;cursor:pointer;">
+            <summary class="journal-custom-rules-header" style="display:flex;justify-content:space-between;align-items:center;user-select:none;">
+              <span data-i18n="prop.advanced_rules">Gelişmiş Kural Ayarları</span>
+              <span id="prop-customized-badge" style="display:none;font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.2);color:var(--accent);border:1px solid rgba(124,109,250,0.3);" data-i18n="prop.customized">Özelleştirildi</span>
+            </summary>
+            <div class="journal-custom-grid" style="margin-top:0.75rem;cursor:default;">
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.profit_target">Kâr Hedefi (%)</label>
+                <input type="number" id="prop-rule-target" class="journal-prop-input" value="10" step="0.5" min="0">
+              </div>
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.daily_loss">Günlük Kayıp (%)</label>
+                <input type="number" id="prop-rule-daily" class="journal-prop-input" value="5" step="0.5" min="0">
+              </div>
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.daily_loss_base">Günlük Kayıp Tabanı</label>
+                <select id="prop-rule-daily-base" class="journal-prop-select">
+                  <option value="initial_balance" data-i18n="prop.base_initial">Başlangıç Bakiyesi</option>
+                  <option value="day_start_balance" data-i18n="prop.base_day_start">Gün Başı Bakiyesi</option>
+                </select>
+              </div>
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.max_loss">Maksimum Kayıp (%)</label>
+                <input type="number" id="prop-rule-max" class="journal-prop-input" value="10" step="0.5" min="0">
+              </div>
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.max_loss_type">Maksimum Kayıp Tipi</label>
+                <select id="prop-rule-max-type" class="journal-prop-select">
+                  <option value="static" data-i18n="prop.type_static">Sabit (Static)</option>
+                  <option value="eod_trailing" data-i18n="prop.type_trailing_eod">Gün Sonu Takip Eden (Trailing EOD)</option>
+                </select>
+              </div>
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.min_trading_days">Min İşlem Günü</label>
+                <input type="number" id="prop-rule-min-days" class="journal-prop-input" value="4" min="0">
+              </div>
+              <div class="journal-field" style="margin-bottom:0;">
+                <label data-i18n="prop.consistency_rule">Tutarlılık Kuralı (%)</label>
+                <input type="number" id="prop-rule-consistency" class="journal-prop-input" placeholder="Yok (Örn: 50)" step="1" min="0" max="100">
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADIM 3: BROKER ENTEGRASYONU (İSTEĞE BAĞLI)
+           ========================================== -->
+      <div class="wizard-step-panel" id="wizard-panel-3">
+        <div class="journal-col-heading" style="margin-bottom:0.75rem;">
+          <i data-lucide="link-2"></i>
+          <span>Broker Entegrasyonu (İsteğe Bağlı)</span>
+        </div>
+        <p style="font-size:0.83rem;color:var(--muted);line-height:1.45;margin-bottom:1rem;">
+          Bu hesaba cTrader bağlayarak kapanmış işlemlerinizi tek tıkla senkronize edebilirsiniz. İsterseniz bu adımı atlayıp daha sonra da bağlayabilirsiniz.
+        </p>
+
+        <!-- Düzenleme Modunda: Zaten Bağlı Olan cTrader Hesabı Bilgisi -->
+        <div id="wizard-already-linked-banner" style="display:none;margin-bottom:1.25rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.3);border-radius:12px;padding:0.9rem 1.1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="ctrader-status-dot live" id="wizard-linked-dot"></span>
+              <div>
+                <div style="font-weight:700;font-size:0.88rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+                  <span id="wizard-linked-title">cTrader Bağlı</span>
+                  <span style="font-size:0.7rem;padding:2px 6px;border-radius:6px;background:rgba(34,197,94,0.15);color:#4ade80;font-weight:600;">Aktif</span>
+                </div>
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;" id="wizard-linked-sub">Otomatik senkronizasyon açık.</div>
+              </div>
+            </div>
+            <button type="button" class="journal-btn-cancel" style="padding:0.4rem 0.8rem;font-size:0.76rem;color:#f87171;border-color:rgba(239,68,68,0.35);cursor:pointer;" onclick="unlinkCurrentJournalCtrader()">Bağlantıyı Kes</button>
           </div>
         </div>
-      </details>
-    </div>
+
+        <div id="wizard-broker-selection-section">
+          <!-- Broker Kartları Seçimi -->
+          <div class="broker-choice-grid">
+            <!-- Seçenek A: Manuel / Bağlama -->
+            <div class="broker-choice-card active" id="choice-none" onclick="selectBrokerChoice('none')">
+              <div class="broker-choice-icon" style="background:rgba(255,255,255,0.05);color:var(--muted);">
+                <i data-lucide="file-text"></i>
+              </div>
+              <div class="broker-choice-info">
+                <div class="broker-choice-title">Şimdilik Broker Bağlama</div>
+                <div class="broker-choice-desc">İşlemleri manuel veya CSV dosyasından yükleyerek takip edin.</div>
+              </div>
+              <div class="broker-choice-radio"></div>
+            </div>
+
+            <!-- Seçenek B: cTrader -->
+            <div class="broker-choice-card" id="choice-ctrader" onclick="selectBrokerChoice('ctrader')">
+              <div class="broker-choice-icon" style="background:linear-gradient(135deg,#8B5CF6,#06B6D4);color:#fff;">
+                cT
+              </div>
+              <div class="broker-choice-info">
+                <div class="broker-choice-title" style="display:flex;align-items:center;gap:6px;">
+                  <span>cTrader</span>
+                  <span style="font-size:0.7rem;padding:2px 6px;border-radius:10px;background:rgba(34,197,94,0.15);color:#4ade80;font-weight:600;">Otomatik Senkron</span>
+                </div>
+                <div class="broker-choice-desc">Geçmiş kapanmış işlemlerinizi tek tıkla hesabınıza senkronize edin.</div>
+              </div>
+              <div class="broker-choice-radio"></div>
+            </div>
+
+            <!-- Seçenek C: MetaTrader (Yakında) -->
+            <div class="broker-choice-card disabled" id="choice-mt">
+              <div class="broker-choice-icon" style="background:rgba(255,255,255,0.03);color:var(--muted);">
+                MT
+              </div>
+              <div class="broker-choice-info">
+                <div class="broker-choice-title" style="color:var(--muted);">MetaTrader 4 / 5</div>
+                <div class="broker-choice-desc">Çok yakında desteklenecek.</div>
+              </div>
+              <span style="font-size:0.7rem;color:var(--muted);font-weight:600;">Yakında</span>
+            </div>
+          </div>
+
+          <!-- cTrader seçildiğinde beliren hesap seçimi / yetkilendirme alanı -->
+          <div id="wizard-ctrader-subpanel" style="display:none;margin-top:1rem;background:var(--surface);padding:1rem;border-radius:12px;border:1px solid var(--border);">
+            <div id="wizard-existing-accounts-wrap" style="display:none;margin-bottom:0.75rem;">
+              <label style="font-size:0.8rem;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
+              <select id="wizard-existing-ctrader-select" style="width:100%;padding:0.6rem 0.8rem;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:0.88rem;"></select>
+            </div>
+            <div id="wizard-oauth-action-wrap">
+              <div style="font-size:0.78rem;color:var(--muted);line-height:1.4;">
+                🔒 <strong>Güvenlik:</strong> Sadece geçmiş işlemleriniz okunur. Hesap oluşturulduktan sonra cTrader yetkilendirme ekranına yönlendirileceksiniz.
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
+
     </div>
-    </div>
-    <div class="journal-modal-footer">
-      <button class="journal-btn-cancel" id="journal-modal-cancel" data-i18n="journal.cancel">İptal</button>
-      <button class="journal-btn-save" id="journal-modal-save" data-i18n="journal.save">Kaydet</button>
+
+    <!-- ⭐ DİNAMİK WIZARD FOOTER -->
+    <div class="journal-modal-footer" style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;">
+      <button class="journal-btn-cancel" id="wizard-btn-prev" onclick="wizardPrevStep()" style="display:none;">
+        <i data-lucide="arrow-left" style="width:14px;height:14px;margin-right:4px;"></i>
+        <span>Geri</span>
+      </button>
+      <button class="journal-btn-cancel" id="wizard-btn-cancel" onclick="closeModal()">İptal</button>
+
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-new-journal" id="wizard-btn-next" onclick="wizardNextStep()">
+          <span>Devam Et</span>
+          <i data-lucide="arrow-right" style="width:14px;height:14px;margin-left:4px;"></i>
+        </button>
+        <button class="journal-btn-save" id="journal-modal-save" style="display:none;" onclick="saveJournalModal()">
+          <span>Hesabı Oluştur</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -288,6 +451,57 @@ import Layout from '../layouts/Layout.astro';
   </div>
 </div>
 
+<!-- ⭐ Broker Connect Modal -->
+<div class="journal-modal-overlay" id="broker-modal">
+  <div class="journal-modal" style="max-width: 500px;">
+    <div class="journal-modal-header">
+      <h3 style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="link-2" style="color:#06B6D4;"></i>
+        <span>Hesabı Brokera Bağla</span>
+      </h3>
+      <button class="journal-modal-close" onclick="closeBrokerModal()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="journal-modal-body" style="padding:1.5rem;">
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;">
+        <strong id="broker-modal-journal-name" style="color:var(--text);"></strong> defterinizi cTrader hesabınıza bağlayarak kapanmış işlemlerinizi tek tıkla senkronize edin.
+      </p>
+
+      <!-- Broker Kartları -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem;">
+        <div style="border:2px solid #8B5CF6;background:rgba(139,92,246,0.08);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:#fff;font-weight:700;font-size:0.85rem;">cT</div>
+          <div style="font-weight:700;font-size:0.92rem;color:var(--text);">cTrader</div>
+          <div style="font-size:0.75rem;color:#4ade80;margin-top:2px;">● Otomatik Senkron</div>
+        </div>
+
+        <div style="border:1px solid var(--border);background:var(--surface2);border-radius:12px;padding:0.9rem;opacity:0.5;text-align:center;cursor:not-allowed;">
+          <div style="width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:var(--muted);font-weight:700;font-size:0.85rem;">MT</div>
+          <div style="font-weight:700;font-size:0.92rem;color:var(--muted);">MetaTrader</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Yakında</div>
+        </div>
+      </div>
+
+      <!-- Bağlı Hesaplar Varsa Listele -->
+      <div id="existing-ctrader-wrap" style="display:none;margin-bottom:1.25rem;background:var(--surface2);padding:1rem;border-radius:12px;border:1px solid var(--border);">
+        <label style="font-size:0.8rem;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
+        <select id="existing-ctrader-select" style="width:100%;padding:0.6rem 0.8rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:0.88rem;"></select>
+        <button type="button" class="btn-save-ot" id="btn-link-existing-ctrader" style="width:100%;margin-top:10px;padding:0.6rem;background:#8B5CF6;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;">Bu Hesabı Deftere Bağla</button>
+        <div style="text-align:center;margin:10px 0 4px;font-size:0.75rem;color:var(--muted);">— veya yeni hesap yetkilendirin —</div>
+      </div>
+
+      <!-- Güvenlik Notu -->
+      <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:0.75rem;font-size:0.8rem;color:#67e8f9;line-height:1.4;margin-bottom:1.25rem;">
+        🔒 <strong>Güvenlik Garantisi:</strong> Yalnızca kapanmış işlem geçmişiniz okunur. Adınıza işlem açılamaz, paranıza erişilemez.
+      </div>
+
+      <button type="button" id="btn-oauth-ctrader" style="width:100%;padding:0.85rem;border-radius:10px;font-weight:700;background:linear-gradient(90deg,#8B5CF6,#06B6D4);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s;">
+        <i data-lucide="external-link"></i>
+        <span>cTrader ile Yetkilendir & Bağla</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -295,6 +509,14 @@ import Layout from '../layouts/Layout.astro';
 
 
 <script is:inline>
+  var i18n = window.i18n || {
+    t: function(k, params) {
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        return window.i18n.t(k, params);
+      }
+      return k;
+    }
+  };
   var COLORS = ['#7c6dfa','#22c55e','#ef4444','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316'];
   var ICONS = ['folder', 'chart-bar', 'trending-up', 'target', 'rocket', 'gem', 'flame', 'zap', 'waves', 'crown', 'star', 'palette'];
   
@@ -648,19 +870,231 @@ import Layout from '../layouts/Layout.astro';
       });
     }
   }
-  
+
   function getSelectedColor() {
     var active = document.querySelector('.journal-color-btn.active');
     return active ? active.dataset.color : COLORS[0];
   }
-  
+
   function getSelectedIcon() {
     var active = document.querySelector('.journal-icon-btn.active');
     return active ? active.dataset.icon : ICONS[0];
   }
-  
+
+  var currentWizardStep = 1;
+  var selectedBrokerChoice = 'none';
+
+  function goToWizardStep(step) {
+    if (step === currentWizardStep) return;
+
+    // Oluşturma modunda adımları sırayla geçmeye zorla & validasyon yap
+    if (currentModalMode === 'create') {
+      if (step > 1) {
+        var nameVal = (document.getElementById('journal-name')?.value || '').trim();
+        if (!nameVal) {
+          if (window.showToast) window.showToast('Lütfen önce hesap adını giriniz.', 'warning');
+          document.getElementById('journal-name')?.focus();
+          return;
+        }
+      }
+
+      if (step > 2) {
+        var isPropOn = document.getElementById('journal-prop-toggle')?.checked;
+        if (isPropOn) {
+          var balSelVal = document.getElementById('prop-balance-select')?.value;
+          var startBal = balSelVal === 'custom' 
+            ? Number(document.getElementById('prop-custom-balance')?.value) 
+            : Number(balSelVal);
+          var sDate = document.getElementById('prop-start-date')?.value;
+          var rTz = document.getElementById('prop-reset-tz-select')?.value;
+
+          if (!startBal || startBal <= 0 || isNaN(startBal)) {
+            if (window.showToast) window.showToast('Lütfen geçerli bir başlangıç bakiyesi giriniz.', 'warning');
+            return;
+          }
+          if (!sDate) {
+            if (window.showToast) window.showToast('Lütfen başlangıç tarihi seçiniz.', 'warning');
+            return;
+          }
+          var todayStr = new Date().toISOString().slice(0, 10);
+          if (sDate > todayStr) {
+            if (window.showToast) window.showToast('Başlangıç tarihi bugünden ileri bir tarih olamaz.', 'warning');
+            return;
+          }
+          if (!rTz) {
+            if (window.showToast) window.showToast('Lütfen gün sonu / reset saat dilimini seçiniz.', 'warning');
+            return;
+          }
+        }
+      }
+    }
+
+    currentWizardStep = step;
+    updateWizardUI();
+  }
+
+  function wizardNextStep() {
+    if (currentWizardStep < 3) {
+      goToWizardStep(currentWizardStep + 1);
+    }
+  }
+
+  function wizardPrevStep() {
+    if (currentWizardStep > 1) {
+      goToWizardStep(currentWizardStep - 1);
+    }
+  }
+
+  function updateWizardUI() {
+    [1, 2, 3].forEach(function(s) {
+      var tab = document.getElementById('wizard-step-tab-' + s);
+      var panel = document.getElementById('wizard-panel-' + s);
+      if (!tab || !panel) return;
+
+      tab.classList.remove('active', 'completed');
+      if (s === currentWizardStep) {
+        tab.classList.add('active');
+        panel.classList.add('active');
+      } else if (s < currentWizardStep) {
+        tab.classList.add('completed');
+        panel.classList.remove('active');
+      } else {
+        panel.classList.remove('active');
+      }
+    });
+
+    var line1 = document.getElementById('wizard-step-line-1');
+    var line2 = document.getElementById('wizard-step-line-2');
+    if (line1) {
+      if (currentWizardStep > 1) line1.classList.add('active');
+      else line1.classList.remove('active');
+    }
+    if (line2) {
+      if (currentWizardStep > 2) line2.classList.add('active');
+      else line2.classList.remove('active');
+    }
+
+    var btnPrev = document.getElementById('wizard-btn-prev');
+    var btnCancel = document.getElementById('wizard-btn-cancel');
+    var btnNext = document.getElementById('wizard-btn-next');
+    var btnSave = document.getElementById('journal-modal-save');
+
+    if (currentModalMode === 'edit') {
+      // Düzenleme modunda: her adımda serbest geçiş ve doğrudan kaydetme
+      if (btnPrev) btnPrev.style.display = currentWizardStep > 1 ? 'inline-flex' : 'none';
+      if (btnCancel) btnCancel.style.display = 'inline-flex';
+      if (btnNext) btnNext.style.display = currentWizardStep < 3 ? 'inline-flex' : 'none';
+      if (btnSave) {
+        btnSave.style.display = 'inline-flex';
+        btnSave.textContent = 'Değişiklikleri Kaydet';
+      }
+    } else {
+      // Oluşturma modunda: adımlı sihirbaz
+      if (btnPrev) btnPrev.style.display = currentWizardStep > 1 ? 'inline-flex' : 'none';
+      if (btnCancel) btnCancel.style.display = currentWizardStep === 1 ? 'inline-flex' : 'none';
+
+      if (currentWizardStep < 3) {
+        if (btnNext) btnNext.style.display = 'inline-flex';
+        if (btnSave) btnSave.style.display = 'none';
+      } else {
+        if (btnNext) btnNext.style.display = 'none';
+        if (btnSave) {
+          btnSave.style.display = 'inline-flex';
+          var saveTxt = (selectedBrokerChoice === 'ctrader') ? 'Hesabı Oluştur & cTrader\'a Bağlan' : 'Hesabı Oluştur';
+          btnSave.textContent = saveTxt;
+        }
+      }
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function selectBrokerChoice(choice) {
+    selectedBrokerChoice = choice;
+    document.querySelectorAll('.broker-choice-card').forEach(function(c) {
+      c.classList.remove('active');
+    });
+    var activeCard = document.getElementById('choice-' + choice);
+    if (activeCard) activeCard.classList.add('active');
+
+    var subpanel = document.getElementById('wizard-ctrader-subpanel');
+    if (subpanel) {
+      subpanel.style.display = (choice === 'ctrader') ? 'block' : 'none';
+    }
+
+    if (currentModalMode === 'create' && currentWizardStep === 3) {
+      var btnSave = document.getElementById('journal-modal-save');
+      if (btnSave) {
+        btnSave.textContent = (choice === 'ctrader') ? 'Hesabı Oluştur & cTrader\'a Bağlan' : 'Hesabı Oluştur';
+      }
+    }
+  }
+
+  function populateWizardCtraderAccounts(journalId) {
+    var accounts = window._allCtraderAccounts || [];
+    var unlinked = accounts.filter(function(a) { return !a.journal_id || a.journal_id === journalId; });
+    var select = document.getElementById('wizard-existing-ctrader-select');
+    var wrap = document.getElementById('wizard-existing-accounts-wrap');
+    if (!select || !wrap) return;
+
+    select.innerHTML = '';
+    if (unlinked.length > 0) {
+      unlinked.forEach(function(a) {
+        var opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = (a.is_live ? '[LIVE] ' : '[DEMO] ') + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+        select.appendChild(opt);
+      });
+      var newOpt = document.createElement('option');
+      newOpt.value = 'new_oauth';
+      newOpt.textContent = '+ Yeni bir cTrader hesabı bağla (OAuth)';
+      select.appendChild(newOpt);
+      wrap.style.display = 'block';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  window.unlinkCurrentJournalCtrader = async function() {
+    var jId = document.getElementById('journal-id')?.value;
+    if (!jId) return;
+    var linkedAcc = (window._allCtraderAccounts || []).find(function(a) { return a.journal_id === jId; });
+    if (!linkedAcc) return;
+
+    if (!confirm('cTrader hesabının bu defterle olan bağlantısını kesmek istediğinize emin misiniz? (İşlemleriniz silinmez)')) {
+      return;
+    }
+
+    try {
+      var res = await window.sb.rpc('unlink_ctrader_account', { p_account_id: linkedAcc.id });
+      if (res && res.data && res.data.success) {
+        if (window.showToast) window.showToast('cTrader bağlantısı kesildi.', 'success');
+        linkedAcc.journal_id = null;
+        var banner = document.getElementById('wizard-already-linked-banner');
+        if (banner) banner.style.display = 'none';
+        var sec = document.getElementById('wizard-broker-selection-section');
+        if (sec) sec.style.display = 'block';
+        selectBrokerChoice('none');
+        populateWizardCtraderAccounts(jId);
+        renderJournals();
+      } else {
+        throw new Error(res?.data?.error || 'Bağlantı kesilemedi.');
+      }
+    } catch(e) {
+      if (window.showToast) window.showToast(e.message, 'error');
+    }
+  };
+
+  window.goToWizardStep = goToWizardStep;
+  window.wizardNextStep = wizardNextStep;
+  window.wizardPrevStep = wizardPrevStep;
+  window.selectBrokerChoice = selectBrokerChoice;
+
   async function openModal(mode, id) {
     currentModalMode = mode;
+    currentWizardStep = 1;
+    selectedBrokerChoice = 'none';
+
     var titleEl = document.getElementById('journal-modal-title');
     var idEl = document.getElementById('journal-id');
     var nameEl = document.getElementById('journal-name');
@@ -682,14 +1116,17 @@ import Layout from '../layouts/Layout.astro';
     if (propCustomBal) propCustomBal.style.display = 'none';
     if (propAccountIdEl) propAccountIdEl.value = '';
 
+    var linkedBanner = document.getElementById('wizard-already-linked-banner');
+    var brokerSec = document.getElementById('wizard-broker-selection-section');
+
     if (mode === 'create') {
       titleEl.textContent = i18n.t('journal.create_title');
       titleEl.setAttribute('data-i18n', 'journal.create_title');
       idEl.value = '';
       nameEl.value = '';
       descEl.value = '';
-      document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]').classList.add('active');
-      document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]').classList.add('active');
+      document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]')?.classList.add('active');
+      document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]')?.classList.add('active');
 
       if (propToggle) {
         propToggle.checked = false;
@@ -719,7 +1156,13 @@ import Layout from '../layouts/Layout.astro';
       }
       updateTimeShiftPreview();
 
-      // Check quota in advance
+      // Step 3 hazırlığı
+      if (linkedBanner) linkedBanner.style.display = 'none';
+      if (brokerSec) brokerSec.style.display = 'block';
+      selectBrokerChoice('none');
+      populateWizardCtraderAccounts(null);
+
+      // Kota kontrolü
       if (window.PropService) {
         window.PropService.checkPropAccountQuota().then(function(quota) {
           if (!quota.canCreate && propQuotaWarn) {
@@ -735,6 +1178,7 @@ import Layout from '../layouts/Layout.astro';
       }
 
     } else {
+      // DÜZENLEME MODU (EDIT)
       titleEl.textContent = i18n.t('journal.edit_title');
       titleEl.setAttribute('data-i18n', 'journal.edit_title');
       var j = journalsData.find(x => x.id === id);
@@ -745,13 +1189,13 @@ import Layout from '../layouts/Layout.astro';
         
         var cBtn = document.querySelector('.journal-color-btn[data-color="' + (j.color || COLORS[0]) + '"]');
         if (cBtn) cBtn.classList.add('active');
-        else document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]').classList.add('active');
+        else document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]')?.classList.add('active');
         
         var iBtn = document.querySelector('.journal-icon-btn[data-icon="' + (j.icon || ICONS[0]) + '"]');
         if (iBtn) iBtn.classList.add('active');
-        else document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]').classList.add('active');
+        else document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]')?.classList.add('active');
 
-        // Check if journal has an active prop account
+        // Prop hesabı durumu
         if (propToggle) propToggle.disabled = false;
         if (window.PropService) {
           try {
@@ -777,7 +1221,6 @@ import Layout from '../layouts/Layout.astro';
                 propTzSel.value = propAcc.reset_tz;
               }
 
-              // Time shift
               var timeSlider = document.getElementById('prop-time-shift');
               var timeNum = document.getElementById('prop-time-shift-num');
               var timeDisplay = document.getElementById('prop-time-shift-display');
@@ -799,7 +1242,6 @@ import Layout from '../layouts/Layout.astro';
                 }
               }
 
-              // Load rules into advanced inputs
               if (propAcc.rules) {
                 syncAdvancedRulesInputs(propAcc.rules);
               }
@@ -816,46 +1258,451 @@ import Layout from '../layouts/Layout.astro';
             if (propSection) propSection.classList.remove('active');
           }
         }
+
+        // Step 3 Broker durumu (Düzenleme modu)
+        var ctAcc = (window._allCtraderAccounts || []).find(function(a) { return a.journal_id === j.id; });
+        if (ctAcc) {
+          if (linkedBanner) {
+            linkedBanner.style.display = 'block';
+            var titleLinked = document.getElementById('wizard-linked-title');
+            if (titleLinked) titleLinked.textContent = 'cTrader ' + (ctAcc.is_live ? 'Live' : 'Demo') + ' (#' + (ctAcc.trader_login || ctAcc.ctid_trader_account_id) + ')';
+            var subLinked = document.getElementById('wizard-linked-sub');
+            if (subLinked) subLinked.textContent = (ctAcc.broker_name || 'cTrader') + ' • Son senkron: ' + (ctAcc.last_sync_at ? new Date(ctAcc.last_sync_at).toLocaleTimeString() : 'Henüz yapılmadı');
+            var dotLinked = document.getElementById('wizard-linked-dot');
+            if (dotLinked) dotLinked.className = 'ctrader-status-dot ' + (ctAcc.is_live ? 'live' : 'demo');
+          }
+          if (brokerSec) brokerSec.style.display = 'none';
+        } else {
+          if (linkedBanner) linkedBanner.style.display = 'none';
+          if (brokerSec) brokerSec.style.display = 'block';
+          selectBrokerChoice('none');
+          populateWizardCtraderAccounts(j.id);
+        }
       }
     }
     
+    currentWizardStep = 1;
+    updateWizardUI();
+
     if (window.i18n && window.i18n.apply) window.i18n.apply();
     document.getElementById('journal-modal').classList.add('active');
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
-  
+
   function closeModal() {
     document.getElementById('journal-modal').classList.remove('active');
   }
   
   function showUpgradeModal() {
     wwLog.log('Show upgrade modal');
-    window.location.href = '/settings.html#panel-plan';
+    if (typeof window.openUpgradeModal === 'function') {
+      window.openUpgradeModal({ feature: 'journal' });
+    } else {
+      window.location.href = '/settings.html#panel-plan';
+    }
   }
   
-  async function renderJournals() {
+  var _isRenderingJournals = false;
+
+  async function ensureDependencies() {
+    var attempts = 0;
+    while ((!window.sb || !window.journal || typeof window.journal.listJournals !== 'function') && attempts < 25) {
+      await new Promise(function(r) { setTimeout(r, 30); });
+      attempts++;
+    }
+    return Boolean(window.sb && window.journal && typeof window.journal.listJournals === 'function');
+  }
+
+  async function getAuthenticatedUser() {
+    if (window.location.search.includes('test=')) {
+      return { id: 'mock-test-user', email: 'test@wawe.com' };
+    }
+    if (window.currentUser && window.currentUser.id) return window.currentUser;
+    if (window.__wwUserProfile && window.__wwUserProfile.id) return window.__wwUserProfile;
+
     try {
-      if (!window.sb) throw new Error('No sb client');
-      var { data: { user } } = await window.sb.auth.getUser();
-      if (!user) {
-        if (window.location.search.includes('test=')) {
-          user = { id: 'mock-test-user', email: 'test@wawe.com' };
+      var cachedProf = sessionStorage.getItem('ww_cached_profile');
+      if (cachedProf) {
+        var cp = JSON.parse(cachedProf);
+        if (cp && cp.id) {
+          window.currentUser = cp;
+          return cp;
+        }
+      }
+    } catch (e) {}
+
+    if (typeof window.requireAuth === 'function') {
+      try {
+        var user = await window.requireAuth();
+        if (user) {
+          window.currentUser = user;
+          return user;
+        }
+      } catch (e) {}
+    }
+
+    if (window.sb && window.sb.auth) {
+      try {
+        var sess = await window.sb.auth.getSession();
+        if (sess && sess.data && sess.data.session && sess.data.session.user) {
+          window.currentUser = sess.data.session.user;
+          return sess.data.session.user;
+        }
+      } catch (e) {}
+    }
+
+    return null;
+  }
+
+  function drawJournalsGrid(list, propAccountsMap, ctraderAccountsMap, isPrem, profile) {
+    journalsData = list || [];
+    var count = journalsData.length;
+    var maxJournals = (count > 0 && journalsData[0].max_journals !== undefined) 
+                      ? Math.max(journalsData[0].max_journals, isPrem ? 10 : 2) 
+                      : Math.max(profile?.max_journals || 0, isPrem ? 10 : 2);
+    
+    var usageTmpl = (i18n && typeof i18n.t === 'function') ? i18n.t('journal.usage') : '{used} / {limit} hesap';
+    var usageTxt = usageTmpl.replace('{used}', count).replace('{limit}', maxJournals);
+    var usageEl = document.getElementById('usage-text');
+    if (usageEl) usageEl.innerHTML = '<strong>' + usageTxt + '</strong>';
+    
+    var btnNew = document.getElementById('btn-new-journal');
+    if (btnNew) {
+      if (count >= maxJournals) {
+        btnNew.onclick = showUpgradeModal;
+        btnNew.title = (i18n && typeof i18n.t === 'function') ? i18n.t('journal.err_quota') : 'Kota dolu';
+      } else {
+        btnNew.onclick = () => openModal('create');
+        btnNew.title = '';
+      }
+    }
+    
+    var grid = document.getElementById('journals-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    if (journalsData.length === 0) {
+      grid.innerHTML = '<div style="color:var(--muted);padding:2rem 1rem;text-align:center;">' + ((i18n && typeof i18n.t === 'function') ? i18n.t('journal.empty') : 'Henüz bir hesap bulunmuyor.') + '</div>';
+      return;
+    }
+    
+    journalsData.forEach(function(j) {
+      var card = document.createElement('div');
+      card.className = 'journal-card';
+      card.dataset.id = j.id;
+      card.style.setProperty('--journal-color', j.color || '#7c6dfa');
+      
+      card.onclick = function(e) {
+        if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown') || e.target.closest('.btn-card-sync')) return;
+        if (typeof window.switchJournalWithAnimation === 'function') {
+          window.switchJournalWithAnimation(j, '/dashboard.html');
         } else {
-          window.location.href = '/index.html';
-          return;
+          if (window.journal && typeof window.journal.setActiveJournalId === 'function') {
+            window.journal.setActiveJournalId(j.id);
+          }
+          window.location.href = '/dashboard.html';
+        }
+      };
+      
+      var formatCurrencyFn = window.formatCurrency || (val => Number(val).toFixed(2));
+      var pnl = Number(j.total_pnl || 0);
+      var pnlClass = pnl > 0 ? 'positive' : (pnl < 0 ? 'negative' : 'neutral');
+      var pnlText = pnl === 0 ? '0.00' : formatCurrencyFn(pnl);
+      var iconStr = j.icon || 'folder';
+      
+      var defaultBadge = j.is_default ? `<div class="journal-card-badge"><i data-lucide="star" style="width:12px;height:12px;fill:currentColor;"></i> ${i18n.t('journal.default_badge')}</div>` : '';
+      var tradesTxt = (i18n && typeof i18n.t === 'function') ? i18n.t('journal.trades_count').replace('{count}', j.trade_count || 0) : ((j.trade_count || 0) + ' işlem');
+
+      // Prop firm branding & badge on card
+      var propBadge = '';
+      var propAcc = propAccountsMap ? propAccountsMap.get(j.id) : null;
+      var propInfo = null;
+      if (propAcc) {
+        var tmplKey = propAcc.template_key;
+        var tmpl = window.PropTemplates ? window.PropTemplates.getPropTemplate(tmplKey) : null;
+        var firmName = tmpl ? tmpl.firm : (propAcc.rules?.firm || 'Prop');
+        
+        var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+        if (typeof resolver === 'function') {
+          propInfo = resolver(firmName || tmplKey);
+        }
+        if (!propInfo) {
+          propInfo = {
+            id: 'custom',
+            name: firmName || 'Prop',
+            logo: '/images/props/custom.svg',
+            symbolLogo: '/images/props/custom.svg',
+            badgeClass: 'prop-custom',
+            accentColor: '#a855f7'
+          };
+        }
+
+        var phaseNum = (propAcc.phase_index !== undefined ? propAcc.phase_index + 1 : 1);
+        var phaseLabel = (propAcc.rules && propAcc.rules.phase_name) 
+          ? propAcc.rules.phase_name 
+          : (window.i18n ? window.i18n.t('prop.phase_num', { n: phaseNum }) : ('Faz ' + phaseNum));
+        var isCustomized = Boolean(propAcc.rules && propAcc.rules.is_customized);
+        var custLabel = isCustomized ? (' (' + (window.i18n ? window.i18n.t('prop.customized') : 'Özelleştirildi') + ')') : '';
+
+        var badgeClass = propInfo.badgeClass || 'prop-custom';
+        var miniLogo = propInfo.symbolLogo || propInfo.logo;
+        var displayFirm = propInfo.name || firmName;
+
+        propBadge = `
+          <div class="journal-card-prop-badge ${badgeClass}" title="${escapeHtml(displayFirm)} - ${escapeHtml(phaseLabel)}">
+            <img src="${miniLogo}" class="prop-badge-mini-logo" alt="${escapeHtml(displayFirm)}" loading="lazy" />
+            <span class="prop-badge-firm">${escapeHtml(displayFirm)}</span>
+            <span class="prop-badge-sep">•</span>
+            <span class="prop-badge-phase">${escapeHtml(phaseLabel)}${custLabel ? ` <span style="opacity:0.75">${escapeHtml(custLabel)}</span>` : ''}</span>
+          </div>
+        `;
+
+        card.classList.add('is-prop-account');
+        if (propInfo.accentColor) {
+          card.style.setProperty('--prop-brand-color', propInfo.accentColor);
+          card.style.setProperty('--prop-brand-glow', propInfo.accentColor + '35');
         }
       }
       
-      var profile = null;
-      try {
-        var profRes = await window.sb.from('user_profiles').select('plan, max_journals').eq('id', user.id).single();
-        profile = profRes ? profRes.data : null;
-      } catch(e) {}
+      var safeName = escapeHtml(j.name);
+      var safeDesc = escapeHtml(j.description || '');
+
+      var topIconHtml = '';
+      if (propAcc && propInfo) {
+        topIconHtml = `
+          <div class="journal-icon-wrap has-prop-logo ${propInfo.badgeClass}" title="${escapeHtml(propInfo.name || 'Prop')}">
+            <img src="${propInfo.logo}" alt="${escapeHtml(propInfo.name || 'Prop')}" class="prop-card-logo-img" />
+          </div>
+        `;
+      } else {
+        topIconHtml = `
+          <div class="journal-icon-wrap">
+            <i data-lucide="${escapeHtml(iconStr)}"></i>
+          </div>
+        `;
+      }
+
+      var ctAcc = ctraderAccountsMap ? ctraderAccountsMap.get(j.id) : null;
+      var ctBarHtml = '';
+      var ctMenuHtml = '';
+
+      if (ctAcc) {
+        var dotCls = ctAcc.is_live ? 'live' : 'demo';
+        var typeTxt = ctAcc.is_live ? 'Live' : 'Demo';
+        var loginTxt = ctAcc.trader_login || ctAcc.ctid_trader_account_id;
+        ctBarHtml = `
+          <div class="journal-card-ctrader-bar" style="margin-top:0.75rem;padding:0.45rem 0.65rem;border-radius:10px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.18);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.76rem;">
+              <span class="ctrader-status-dot ${dotCls}"></span>
+              <span style="font-weight:600;color:var(--text);">cTrader ${typeTxt}</span>
+              <span style="color:var(--muted);font-size:0.7rem;">(#${loginTxt})</span>
+            </div>
+            <button class="btn-card-sync" type="button" style="background:transparent;border:none;color:#06B6D4;font-weight:600;cursor:pointer;font-size:0.72rem;display:flex;align-items:center;gap:4px;" onclick="window.wwSyncCtrader(event, '${ctAcc.ctid_trader_account_id}', '${j.id}', this)" title="Son senkron: ${ctAcc.last_sync_at ? new Date(ctAcc.last_sync_at).toLocaleTimeString() : 'Henüz yapılmadı'}">
+              <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+              <span>Senkronla</span>
+            </button>
+          </div>
+        `;
+        ctMenuHtml = `<button class="journal-menu-item danger btn-unlink-ctrader" data-acid="${ctAcc.id}"><i data-lucide="unlink"></i> cTrader Bağlantısını Kes</button>`;
+      } else {
+        ctBarHtml = '';
+        ctMenuHtml = '';
+      }
+
+      card.innerHTML = `
+        <div class="journal-card-top">
+          ${topIconHtml}
+          <div class="journal-card-actions">
+            ${defaultBadge}
+            <div class="journal-menu-wrap">
+              <button class="journal-menu-btn" data-id="${escapeHtml(j.id)}" aria-label="Menü">
+                <i data-lucide="more-vertical"></i>
+              </button>
+              <div class="journal-menu-dropdown">
+                ${!j.is_default ? `<button class="journal-menu-item btn-make-default"><i data-lucide="check-circle"></i> ${i18n.t('journal.set_default')}</button>` : ''}
+                <button class="journal-menu-item btn-edit"><i data-lucide="edit"></i> ${i18n.t('journal.edit')}</button>
+                ${ctMenuHtml}
+                ${!j.is_default ? `<button class="journal-menu-item danger btn-delete"><i data-lucide="trash-2"></i> ${i18n.t('journal.delete')}</button>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="journal-card-name" title="${safeName}">${safeName}</div>
+        <div class="journal-card-desc">${safeDesc}</div>
+
+        ${propBadge}
+        
+        <div class="journal-card-stats" style="margin-top:auto;padding-top:0.75rem;">
+          <span>${escapeHtml(tradesTxt)}</span>
+          <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
+        </div>
+
+        ${ctBarHtml}
+      `;
+      
+      grid.appendChild(card);
+      
+      // Events
+      var moreBtnEl = card.querySelector('.journal-menu-btn');
+      var dropdown = card.querySelector('.journal-menu-dropdown');
+      moreBtnEl.onclick = function(e) {
+        e.stopPropagation();
+        document.querySelectorAll('.journal-menu-dropdown.open').forEach(el => {
+          if (el !== dropdown) el.classList.remove('open');
+        });
+        dropdown.classList.toggle('open');
+      };
+
+      var btnUnlink = card.querySelector('.btn-unlink-ctrader');
+      if (btnUnlink) {
+        btnUnlink.onclick = async function(e) {
+          e.stopPropagation();
+          dropdown.classList.remove('open');
+          var acid = btnUnlink.dataset.acid;
+          if (confirm('Bu defterin cTrader bağlantısını kesmek istediğinize emin misiniz?')) {
+            try {
+              await window.sb.rpc('unlink_ctrader_account', { p_account_id: acid });
+              if (window.showToast) window.showToast('Bağlantı kesildi.', 'success');
+              renderJournals();
+            } catch(err) {
+              if (window.showToast) window.showToast('Hata: ' + err.message, 'error');
+            }
+          }
+        };
+      }
+      
+      var btnEdit = card.querySelector('.btn-edit');
+      if (btnEdit) {
+        btnEdit.onclick = function(e) { e.stopPropagation(); dropdown.classList.remove('open'); openModal('edit', j.id); };
+      }
+      
+      var btnDef = card.querySelector('.btn-make-default');
+      if (btnDef) {
+        btnDef.onclick = async function(e) {
+          e.stopPropagation(); dropdown.classList.remove('open');
+          try {
+            await window.journal.switchDefaultJournal(j.id);
+            if (window.showToast) window.showToast('Varsayılan hesap değiştirildi.', 'success');
+            renderJournals();
+          } catch (err) {
+            if (window.showToast) window.showToast(err.message, 'error');
+          }
+        };
+      }
+      
+      var btnDel = card.querySelector('.btn-delete');
+      if (btnDel) {
+        btnDel.onclick = function(e) {
+          e.stopPropagation(); dropdown.classList.remove('open');
+          deleteId = j.id;
+          var msg = i18n.t('journal.delete_message').replace('{tradeCount}', j.trade_count || 0).replace('{strategyCount}', '0');
+          document.getElementById('delete-modal-msg').textContent = msg;
+          document.getElementById('delete-modal').classList.add('active');
+        };
+      }
+    });
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  function tryRenderCachedJournals() {
+    try {
+      var rawJ = localStorage.getItem('ww_cached_journals_list');
+      var rawProps = localStorage.getItem('ww_cached_props_map');
+      var rawCt = localStorage.getItem('ww_cached_ctrader_map');
+      if (rawJ) {
+        var parsedJ = JSON.parse(rawJ);
+        if (Array.isArray(parsedJ) && parsedJ.length > 0) {
+          var pMap = new Map();
+          if (rawProps) {
+            var po = JSON.parse(rawProps);
+            Object.keys(po).forEach(function(k) { pMap.set(k, po[k]); });
+          }
+          var cMap = new Map();
+          if (rawCt) {
+            var co = JSON.parse(rawCt);
+            Object.keys(co).forEach(function(k) { cMap.set(k, co[k]); });
+          }
+          drawJournalsGrid(parsedJ, pMap, cMap, isPremium, window.__wwUserProfile || null);
+        }
+      }
+    } catch(e) {}
+  }
+
+  async function renderJournals() {
+    // ⚡ 0ms SWR ÖNBELLEK: Önce RAM/localStorage'daki veriyi hemen bas
+    tryRenderCachedJournals();
+
+    if (_isRenderingJournals) return;
+    _isRenderingJournals = true;
+
+    try {
+      await ensureDependencies();
+
+      var user = await getAuthenticatedUser();
+      if (!user) {
+        var gridEl = document.getElementById('journals-grid');
+        if (gridEl && (!journalsData || journalsData.length === 0)) gridEl.innerHTML = '';
+        return;
+      }
+
+      // 🚀 PARALEL SORGULAMA: Profil, Defterler, Prop Hesapları ve cTrader verilerini tek turda eşzamanlı çek!
+      var profilePromise = (async function() {
+        if (window.__wwUserProfile) return { data: window.__wwUserProfile };
+        if (!window.sb) return { data: null };
+        try {
+          var res = await window.sb.from('user_profiles').select('plan, max_journals').eq('id', user.id).maybeSingle();
+          return res || { data: null };
+        } catch (e) {
+          return { data: null };
+        }
+      })();
+
+      var journalsPromise = (async function() {
+        if (!window.journal || typeof window.journal.listJournals !== 'function') return null;
+        try {
+          var res = await window.journal.listJournals();
+          return Array.isArray(res) ? res : null;
+        } catch (e) {
+          console.warn('listJournals hatası:', e);
+          return null;
+        }
+      })();
+
+      var propPromise = (async function() {
+        if (!window.PropService || typeof window.PropService.getActivePropAccounts !== 'function') return [];
+        try {
+          var res = await window.PropService.getActivePropAccounts();
+          return Array.isArray(res) ? res : [];
+        } catch (e) {
+          return [];
+        }
+      })();
+
+      var ctraderPromise = (async function() {
+        if (!window.sb || typeof window.sb.rpc !== 'function') return { data: { accounts: [] } };
+        try {
+          return await Promise.race([
+            window.sb.rpc('get_ctrader_status'),
+            new Promise(function(resolve) { setTimeout(function() { resolve({ data: { accounts: [] } }); }, 1500); })
+          ]);
+        } catch (e) {
+          return { data: { accounts: [] } };
+        }
+      })();
+
+      var [profRes, jListData, activeProps, ctRes] = await Promise.all([
+        profilePromise,
+        journalsPromise,
+        propPromise,
+        ctraderPromise
+      ]);
+
+      var profile = profRes ? profRes.data : null;
       isPremium = profile?.plan === 'premium';
-      try {
-        journalsData = await window.journal.listJournals();
-      } catch(e) {
-        journalsData = [];
+      if (jListData !== null) {
+        journalsData = jListData;
       }
 
       if (window.location.search.includes('test=') && (!journalsData || journalsData.length === 0)) {
@@ -866,7 +1713,6 @@ import Layout from '../layouts/Layout.astro';
           { id: 'j-pers', name: 'Personal Swing Account', icon: 'trending-up', total_pnl: 1450.20, trade_count: 15, is_default: false, max_journals: 10 }
         ];
       }
-      var count = journalsData.length;
 
       // Active prop accounts lookup
       var propAccountsMap = new Map();
@@ -874,277 +1720,121 @@ import Layout from '../layouts/Layout.astro';
         propAccountsMap.set('j-ftmo', { journal_id: 'j-ftmo', template_key: 'ftmo-2step', phase_index: 0, rules: { firm: 'FTMO', phase_name: 'Phase 1 (Challenge)' } });
         propAccountsMap.set('j-fn', { journal_id: 'j-fn', template_key: 'fundednext-stellar-1step', phase_index: 0, rules: { firm: 'FundedNext', phase_name: 'Phase 1' } });
         propAccountsMap.set('j-fp', { journal_id: 'j-fp', template_key: 'fundingpips-2step', phase_index: 1, rules: { firm: 'FundingPips', phase_name: 'Phase 2 (Evaluation)' } });
-      } else if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
-        try {
-          var activeProps = await window.PropService.getActivePropAccounts();
-          (activeProps || []).forEach(function(pa) {
+      } else if (Array.isArray(activeProps)) {
+        activeProps.forEach(function(pa) {
+          if (pa && pa.journal_id) {
             propAccountsMap.set(pa.journal_id, pa);
-          });
-        } catch (propLoadErr) {
-          if (window.wwLog) window.wwLog.warn('Prop accounts load error:', propLoadErr);
-        }
+          }
+        });
       }
-      
-      // max_journals kaynagi: RPC eger gonderiyorsa onu kullan, yoksa fallback (premium için en az 10)
-      var maxJournals = (count > 0 && journalsData[0].max_journals !== undefined) 
-                        ? Math.max(journalsData[0].max_journals, isPremium ? 10 : 2) 
-                        : Math.max(profile?.max_journals || 0, isPremium ? 10 : 2);
-      
-      var usageTmpl = i18n.t('journal.usage');
-      var usageTxt = usageTmpl.replace('{used}', count).replace('{limit}', maxJournals);
-      document.getElementById('usage-text').innerHTML = '<strong>' + usageTxt + '</strong>';
-      
-      var btnNew = document.getElementById('btn-new-journal');
-      if (count >= maxJournals) {
-        btnNew.onclick = showUpgradeModal;
-        btnNew.title = i18n.t('journal.err_quota');
-      } else {
-        btnNew.onclick = () => openModal('create');
-        btnNew.title = '';
+
+      // ⭐ cTrader hesap eşlemelerini yükle
+      var ctraderAccountsMap = new Map();
+      var allCtraderAccounts = [];
+      if (ctRes && ctRes.data && Array.isArray(ctRes.data.accounts)) {
+        allCtraderAccounts = ctRes.data.accounts;
+        allCtraderAccounts.forEach(function(acc) {
+          if (acc.journal_id) {
+            ctraderAccountsMap.set(acc.journal_id, acc);
+          }
+        });
       }
-      
-      var grid = document.getElementById('journals-grid');
-      grid.innerHTML = '';
-      
-      if (journalsData.length === 0) {
-        grid.innerHTML = '<div style="color:var(--muted);">' + i18n.t('journal.empty') + '</div>';
-        return;
+      window._allCtraderAccounts = allCtraderAccounts;
+
+      // Izgarayı taze verilerle güncelle
+      drawJournalsGrid(journalsData, propAccountsMap, ctraderAccountsMap, isPremium, profile);
+
+      // Cache'e yaz (sadece başarılı bir liste alındığında)
+      if (jListData !== null) {
+        try {
+          localStorage.setItem('ww_cached_journals_list', JSON.stringify(journalsData));
+          var pObj = {};
+          propAccountsMap.forEach(function(v, k) { pObj[k] = v; });
+          localStorage.setItem('ww_cached_props_map', JSON.stringify(pObj));
+          var cObj = {};
+          ctraderAccountsMap.forEach(function(v, k) { cObj[k] = v; });
+          localStorage.setItem('ww_cached_ctrader_map', JSON.stringify(cObj));
+        } catch(e) {}
       }
-      
-      journalsData.forEach(function(j) {
-        var card = document.createElement('div');
-        card.className = 'journal-card';
-        card.dataset.id = j.id;
-        card.style.setProperty('--journal-color', j.color || '#7c6dfa');
-        
-        card.onclick = function(e) {
-          if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown')) return;
-          if (typeof window.switchJournalWithAnimation === 'function') {
-            window.switchJournalWithAnimation(j, '/dashboard.html');
-          } else {
-            window.journal.setActiveJournalId(j.id);
-            window.location.href = '/dashboard.html';
-          }
-        };
-        
-        var formatCurrencyFn = window.formatCurrency || (val => Number(val).toFixed(2));
-        var pnl = Number(j.total_pnl || 0);
-        var pnlClass = pnl > 0 ? 'positive' : (pnl < 0 ? 'negative' : 'neutral');
-        var pnlText = pnl === 0 ? '0.00' : formatCurrencyFn(pnl);
-        var iconStr = j.icon || 'folder';
-        
-        var defaultBadge = j.is_default ? `<div class="journal-card-badge"><i data-lucide="star" style="width:12px;height:12px;fill:currentColor;"></i> ${i18n.t('journal.default_badge')}</div>` : '';
-        var tradesTxt = i18n.t('journal.trades_count').replace('{count}', j.trade_count || 0);
 
-        // Prop firm branding & badge on card
-        var propBadge = '';
-        var propAcc = propAccountsMap.get(j.id);
-        var propInfo = null;
-        if (propAcc) {
-          var tmplKey = propAcc.template_key;
-          var tmpl = window.PropTemplates ? window.PropTemplates.getPropTemplate(tmplKey) : null;
-          var firmName = tmpl ? tmpl.firm : (propAcc.rules?.firm || 'Prop');
-          
-          var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
-          if (typeof resolver === 'function') {
-            propInfo = resolver(firmName || tmplKey);
-          }
-          if (!propInfo) {
-            propInfo = {
-              id: 'custom',
-              name: firmName || 'Prop',
-              logo: '/images/props/custom.svg',
-              symbolLogo: '/images/props/custom.svg',
-              badgeClass: 'prop-custom',
-              accentColor: '#a855f7'
-            };
-          }
-
-          var phaseNum = (propAcc.phase_index !== undefined ? propAcc.phase_index + 1 : 1);
-          var phaseLabel = (propAcc.rules && propAcc.rules.phase_name) 
-            ? propAcc.rules.phase_name 
-            : (window.i18n ? window.i18n.t('prop.phase_num', { n: phaseNum }) : ('Faz ' + phaseNum));
-          var isCustomized = Boolean(propAcc.rules && propAcc.rules.is_customized);
-          var custLabel = isCustomized ? (' (' + (window.i18n ? window.i18n.t('prop.customized') : 'Özelleştirildi') + ')') : '';
-
-          var badgeClass = propInfo.badgeClass || 'prop-custom';
-          var miniLogo = propInfo.symbolLogo || propInfo.logo;
-          var displayFirm = propInfo.name || firmName;
-
-          propBadge = `
-            <div class="journal-card-prop-badge ${badgeClass}" title="${escapeHtml(displayFirm)} - ${escapeHtml(phaseLabel)}">
-              <img src="${miniLogo}" class="prop-badge-mini-logo" alt="${escapeHtml(displayFirm)}" loading="lazy" />
-              <span class="prop-badge-firm">${escapeHtml(displayFirm)}</span>
-              <span class="prop-badge-sep">•</span>
-              <span class="prop-badge-phase">${escapeHtml(phaseLabel)}${custLabel ? ` <span style="opacity:0.75">${escapeHtml(custLabel)}</span>` : ''}</span>
-            </div>
-          `;
-
-          card.classList.add('is-prop-account');
-          if (propInfo.accentColor) {
-            card.style.setProperty('--prop-brand-color', propInfo.accentColor);
-            card.style.setProperty('--prop-brand-glow', propInfo.accentColor + '35');
-          }
-        }
-        
-        var safeName = escapeHtml(j.name);
-        var safeDesc = escapeHtml(j.description || '');
-
-        var topIconHtml = '';
-        if (propAcc && propInfo) {
-          topIconHtml = `
-            <div class="journal-icon-wrap has-prop-logo ${propInfo.badgeClass}" title="${escapeHtml(propInfo.name || 'Prop')}">
-              <img src="${propInfo.logo}" alt="${escapeHtml(propInfo.name || 'Prop')}" class="prop-card-logo-img" />
-            </div>
-          `;
-        } else {
-          topIconHtml = `
-            <div class="journal-icon-wrap">
-              <i data-lucide="${escapeHtml(iconStr)}"></i>
-            </div>
-          `;
-        }
-
-        card.innerHTML = `
-          <div class="journal-card-top">
-            ${topIconHtml}
-            
-            <div class="journal-card-actions">
-              ${defaultBadge}
-              <div class="journal-menu-wrap">
-                <button class="journal-menu-btn" data-id="${escapeHtml(j.id)}" aria-label="Menü">
-                  <i data-lucide="more-vertical"></i>
-                </button>
-                <div class="journal-menu-dropdown">
-                  ${!j.is_default ? `<button class="journal-menu-item btn-make-default"><i data-lucide="check-circle"></i> ${i18n.t('journal.set_default')}</button>` : ''}
-                  <button class="journal-menu-item btn-edit"><i data-lucide="edit"></i> ${i18n.t('journal.edit')}</button>
-                  ${!j.is_default ? `<button class="journal-menu-item danger btn-delete"><i data-lucide="trash-2"></i> ${i18n.t('journal.delete')}</button>` : ''}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="journal-card-name" title="${safeName}">${safeName}</div>
-          <div class="journal-card-desc">${safeDesc}</div>
-
-          ${propBadge}
-          
-          <div class="journal-card-stats" style="margin-top:auto;padding-top:0.75rem;">
-            <span>${escapeHtml(tradesTxt)}</span>
-            <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
-          </div>
-        `;
-        
-        grid.appendChild(card);
-        
-        // Events
-        var moreBtnEl = card.querySelector('.journal-menu-btn');
-        var dropdown = card.querySelector('.journal-menu-dropdown');
-        moreBtnEl.onclick = function(e) {
-          e.stopPropagation();
-          document.querySelectorAll('.journal-menu-dropdown.open').forEach(el => {
-            if (el !== dropdown) el.classList.remove('open');
-          });
-          dropdown.classList.toggle('open');
-        };
-        
-        var btnEdit = card.querySelector('.btn-edit');
-        if (btnEdit) {
-          btnEdit.onclick = function(e) { e.stopPropagation(); dropdown.classList.remove('open'); openModal('edit', j.id); };
-        }
-        
-        var btnDef = card.querySelector('.btn-make-default');
-        if (btnDef) {
-          btnDef.onclick = async function(e) {
-            e.stopPropagation(); dropdown.classList.remove('open');
-            try {
-              await window.journal.switchDefaultJournal(j.id);
-              if (window.showToast) window.showToast('Varsayılan hesap değiştirildi.', 'success');
-              renderJournals();
-            } catch (err) {
-              if (window.showToast) window.showToast(err.message, 'error');
-            }
-          };
-        }
-        
-        var btnDel = card.querySelector('.btn-delete');
-        if (btnDel) {
-          btnDel.onclick = function(e) {
-            e.stopPropagation(); dropdown.classList.remove('open');
-            deleteId = j.id;
-            var msg = i18n.t('journal.delete_message').replace('{tradeCount}', j.trade_count || 0).replace('{strategyCount}', '0');
-            document.getElementById('delete-modal-msg').textContent = msg;
-            document.getElementById('delete-modal').classList.add('active');
-          };
-        }
-      });
-      
-      document.addEventListener('click', function(e) {
-        if (!e.target.closest('.journal-menu-dropdown')) {
-          document.querySelectorAll('.journal-menu-dropdown.open').forEach(el => el.classList.remove('open'));
-        }
-      });
-      
       if (typeof lucide !== 'undefined') lucide.createIcons();
       
     } catch(err) {
       wwLog.error(err);
+    } finally {
+      _isRenderingJournals = false;
     }
   }
   
-  document.addEventListener('DOMContentLoaded', function() {
+  function bootJournals() {
     initModals();
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.journal-menu-dropdown')) {
+        document.querySelectorAll('.journal-menu-dropdown.open').forEach(function(el) {
+          el.classList.remove('open');
+        });
+      }
+    });
     
-    document.getElementById('journal-modal-cancel').onclick = closeModal;
+    var cancelBtn = document.getElementById('wizard-btn-cancel') || document.getElementById('journal-modal-cancel');
+    if (cancelBtn) cancelBtn.onclick = closeModal;
     
-    document.getElementById('journal-modal-save').onclick = async function() {
-      var id = document.getElementById('journal-id').value;
-      var name = document.getElementById('journal-name').value.trim();
-      var desc = document.getElementById('journal-desc').value.trim();
+    window.saveJournalModal = async function() {
+      var id = document.getElementById('journal-id')?.value;
+      var name = (document.getElementById('journal-name')?.value || '').trim();
+      var desc = (document.getElementById('journal-desc')?.value || '').trim();
       var color = getSelectedColor();
       var icon = getSelectedIcon();
 
-      var isProp = document.getElementById('journal-prop-toggle').checked;
-      var propAccountId = document.getElementById('prop-account-id').value;
-      var propTmplKey = document.getElementById('prop-template-select').value;
-      var propPhaseIdx = Number(document.getElementById('prop-phase-select').value) || 0;
-      var propBalSelVal = document.getElementById('prop-balance-select').value;
+      var isProp = document.getElementById('journal-prop-toggle')?.checked;
+      var propAccountId = document.getElementById('prop-account-id')?.value;
+      var propTmplKey = document.getElementById('prop-template-select')?.value;
+      var propPhaseIdx = Number(document.getElementById('prop-phase-select')?.value) || 0;
+      var propBalSelVal = document.getElementById('prop-balance-select')?.value;
       var propStartingBal = propBalSelVal === 'custom' 
-        ? Number(document.getElementById('prop-custom-balance').value) 
+        ? Number(document.getElementById('prop-custom-balance')?.value) 
         : Number(propBalSelVal);
-      var propStartDate = document.getElementById('prop-start-date').value;
-      var propResetTz = document.getElementById('prop-reset-tz-select').value;
+      var propStartDate = document.getElementById('prop-start-date')?.value;
+      var propResetTz = document.getElementById('prop-reset-tz-select')?.value;
       
       if (!name) {
         if (window.showToast) window.showToast(i18n.t('journal.err_invalid_name'), 'error');
+        goToWizardStep(1);
         return;
       }
 
       if (isProp) {
         if (!propStartingBal || propStartingBal <= 0 || isNaN(propStartingBal)) {
           if (window.showToast) window.showToast(i18n.t('prop.err_invalid_balance'), 'error');
+          goToWizardStep(2);
           return;
         }
         if (!propStartDate) {
           if (window.showToast) window.showToast(i18n.t('prop.err_select_start_date'), 'error');
+          goToWizardStep(2);
           return;
         }
         var todayStr = new Date().toISOString().slice(0, 10);
         if (propStartDate > todayStr) {
           if (window.showToast) window.showToast(i18n.t('prop.err_future_start_date'), 'error');
+          goToWizardStep(2);
           return;
         }
         if (!propResetTz) {
           if (window.showToast) window.showToast(i18n.t('prop.err_select_reset_tz'), 'error');
+          goToWizardStep(2);
           return;
         }
       }
       
-      try {
-        var btn = document.getElementById('journal-modal-save');
+      var btn = document.getElementById('journal-modal-save');
+      if (btn) {
         btn.disabled = true;
         btn.textContent = '...';
+      }
 
+      try {
         var journalId = id;
         
         if (id) {
@@ -1162,7 +1852,7 @@ import Layout from '../layouts/Layout.astro';
         // Manage prop account record
         if (window.PropService && journalId) {
           if (isProp) {
-            var rawShift = parseFloat(document.getElementById('prop-time-shift-num').value);
+            var rawShift = parseFloat(document.getElementById('prop-time-shift-num')?.value);
             var propTimeShift = isNaN(rawShift) ? 0 : Math.min(14, Math.max(-14, rawShift));
             var defaultRules = (window.PropTemplates && propTmplKey !== 'custom') 
               ? window.PropTemplates.getDefaultRules(propTmplKey, propPhaseIdx) 
@@ -1172,15 +1862,15 @@ import Layout from '../layouts/Layout.astro';
 
             if (isCustomized || propTmplKey === 'custom') {
               propRules.is_customized = true;
-              var targetVal = document.getElementById('prop-rule-target').value;
+              var targetVal = document.getElementById('prop-rule-target')?.value;
               propRules.profit_target_pct = (targetVal === '' || targetVal === null) ? null : Number(targetVal);
-              propRules.daily_loss_limit_pct = Number(document.getElementById('prop-rule-daily').value) || 5;
-              propRules.daily_loss_amount_base = document.getElementById('prop-rule-daily-base').value || 'initial_balance';
-              propRules.max_loss_limit_pct = Number(document.getElementById('prop-rule-max').value) || 10;
-              propRules.max_loss_type = document.getElementById('prop-rule-max-type').value || 'static';
-              propRules.min_trading_days = Number(document.getElementById('prop-rule-min-days').value) || 0;
+              propRules.daily_loss_limit_pct = Number(document.getElementById('prop-rule-daily')?.value) || 5;
+              propRules.daily_loss_amount_base = document.getElementById('prop-rule-daily-base')?.value || 'initial_balance';
+              propRules.max_loss_limit_pct = Number(document.getElementById('prop-rule-max')?.value) || 10;
+              propRules.max_loss_type = document.getElementById('prop-rule-max-type')?.value || 'static';
+              propRules.min_trading_days = Number(document.getElementById('prop-rule-min-days')?.value) || 0;
               
-              var conVal = document.getElementById('prop-rule-consistency').value;
+              var conVal = document.getElementById('prop-rule-consistency')?.value;
               if (conVal && Number(conVal) > 0) {
                 propRules.consistency_rule = { enabled: true, max_single_day_profit_pct: Number(conVal) };
               } else {
@@ -1212,7 +1902,6 @@ import Layout from '../layouts/Layout.astro';
             if (propAccountId) {
               await window.PropService.updatePropAccount(propAccountId, propPayload);
             } else {
-              // Check if journal already had one previously
               var existing = await window.PropService.getPropAccountByJournalId(journalId);
               if (existing) {
                 await window.PropService.updatePropAccount(existing.id, propPayload);
@@ -1232,16 +1921,52 @@ import Layout from '../layouts/Layout.astro';
             }
           }
         }
-        
-        if (window.showToast) {
-          window.showToast(i18n.t(id ? 'prop.account_updated' : 'prop.account_created'), 'success');
+
+        // Step 3: Broker Bağlantısı İşlemleri
+        if (selectedBrokerChoice === 'ctrader' && journalId) {
+          var select = document.getElementById('wizard-existing-ctrader-select');
+          var chosenVal = select ? select.value : null;
+
+          if (chosenVal && chosenVal !== 'new_oauth') {
+            try {
+              await window.sb.rpc('link_ctrader_account', {
+                p_account_id: chosenVal,
+                p_journal_id: journalId
+              });
+              if (window.showToast) {
+                window.showToast('Hesap kaydedildi ve cTrader hesabınız bağlandı!', 'success');
+              }
+            } catch (ctLinkErr) {
+              if (window.showToast) window.showToast('Hesap kaydedildi fakat broker bağlanamadı: ' + ctLinkErr.message, 'warning');
+            }
+          } else {
+            // Yeni cTrader OAuth yetkilendirmesi
+            localStorage.setItem('ww_ctrader_target_journal', journalId);
+            if (window.showToast) {
+              window.showToast('Hesap oluşturuldu! cTrader yetkilendirme ekranına yönlendiriliyorsunuz...', 'info');
+            }
+            if (window.CTRADER_CONFIG && typeof window.CTRADER_CONFIG.getAuthUrl === 'function') {
+              setTimeout(function() {
+                window.location.href = window.CTRADER_CONFIG.getAuthUrl();
+              }, 600);
+              return;
+            }
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast(i18n.t(id ? 'prop.account_updated' : 'prop.account_created'), 'success');
+          }
         }
         
         closeModal();
         renderJournals();
       } catch (err) {
-        if (err.code === 'PROP_LIMIT_EXCEEDED') {
-          if (window.showToast) window.showToast(i18n.t('prop.err_quota_exceeded', { limit: err.limit || 1 }), 'error');
+        if (err.code === 'QUOTA_EXCEEDED' || err.code === 'PROP_LIMIT_EXCEEDED') {
+          if (typeof window.openUpgradeModal === 'function') {
+            window.openUpgradeModal({ feature: 'journal' });
+          } else if (window.showToast) {
+            window.showToast(i18n.t('prop.err_quota_exceeded', { limit: err.limit || 1 }), 'error');
+          }
         } else if (err.code === 'INVALID_TZ') {
           if (window.showToast) window.showToast(i18n.t('prop.err_invalid_tz'), 'error');
         } else {
@@ -1252,8 +1977,10 @@ import Layout from '../layouts/Layout.astro';
         }
       } finally {
         var btn = document.getElementById('journal-modal-save');
-        btn.disabled = false;
-        btn.textContent = i18n.t('journal.save');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = (currentModalMode === 'edit') ? 'Değişiklikleri Kaydet' : 'Hesabı Oluştur';
+        }
       }
     };
     
@@ -1296,13 +2023,102 @@ import Layout from '../layouts/Layout.astro';
         btn.textContent = i18n.t('journal.delete_confirm');
       }
     };
-    
-    if (window.i18nReady) {
-      window.i18nReady.then(renderJournals);
-    } else {
-      setTimeout(renderJournals, 500);
+
+    // ⭐ cTrader Broker Modal İşlemleri
+    var currentBrokerJournalId = null;
+
+    window.openBrokerModal = function(journalId, journalName) {
+      currentBrokerJournalId = journalId;
+      var modal = document.getElementById('broker-modal');
+      var nameEl = document.getElementById('broker-modal-journal-name');
+      if (nameEl) nameEl.textContent = journalName || 'Seçili';
+
+      var existingWrap = document.getElementById('existing-ctrader-wrap');
+      var existingSelect = document.getElementById('existing-ctrader-select');
+      var accounts = window._allCtraderAccounts || [];
+      var unlinkedAccounts = accounts.filter(function(a) { return !a.journal_id || a.journal_id === journalId; });
+
+      if (unlinkedAccounts.length > 0 && existingSelect && existingWrap) {
+        existingSelect.innerHTML = '';
+        unlinkedAccounts.forEach(function(a) {
+          var opt = document.createElement('option');
+          opt.value = a.id;
+          opt.textContent = (a.is_live ? '[LIVE] ' : '[DEMO] ') + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+          existingSelect.appendChild(opt);
+        });
+        existingWrap.style.display = 'block';
+      } else if (existingWrap) {
+        existingWrap.style.display = 'none';
+      }
+
+      if (modal) modal.classList.add('active');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
+
+    window.closeBrokerModal = function() {
+      var modal = document.getElementById('broker-modal');
+      if (modal) modal.classList.remove('active');
+      currentBrokerJournalId = null;
+    };
+
+    var btnLinkExisting = document.getElementById('btn-link-existing-ctrader');
+    if (btnLinkExisting) {
+      btnLinkExisting.onclick = async function() {
+        var select = document.getElementById('existing-ctrader-select');
+        var accId = select ? select.value : null;
+        if (!accId || !currentBrokerJournalId) return;
+
+        btnLinkExisting.disabled = true;
+        btnLinkExisting.textContent = 'Bağlanıyor...';
+
+        try {
+          var res = await window.sb.rpc('link_ctrader_account', {
+            p_account_id: accId,
+            p_journal_id: currentBrokerJournalId
+          });
+          if (res && res.data && res.data.success) {
+            if (window.showToast) window.showToast('cTrader hesabı defterinize bağlandı!', 'success');
+            closeBrokerModal();
+            renderJournals();
+          } else {
+            throw new Error(res?.data?.error || 'Bağlantı kurulamadı.');
+          }
+        } catch(e) {
+          if (window.showToast) window.showToast(e.message, 'error');
+        } finally {
+          btnLinkExisting.disabled = false;
+          btnLinkExisting.textContent = 'Bu Hesabı Deftere Bağla';
+        }
+      };
     }
-  });
+
+    var btnOauth = document.getElementById('btn-oauth-ctrader');
+    if (btnOauth) {
+      btnOauth.onclick = function() {
+        if (!currentBrokerJournalId) return;
+        localStorage.setItem('ww_ctrader_target_journal', currentBrokerJournalId);
+        if (window.CTRADER_CONFIG && typeof window.CTRADER_CONFIG.getAuthUrl === 'function') {
+          window.location.href = window.CTRADER_CONFIG.getAuthUrl();
+        } else {
+          alert('cTrader konfigürasyonu bulunamadı.');
+        }
+      };
+    }
+    
+    // Anında render et (gecikmesiz)
+    renderJournals();
+    if (window.i18nReady) {
+      window.i18nReady.then(function() {
+        if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootJournals);
+  } else {
+    bootJournals();
+  }
   
   document.addEventListener('journal-changed', renderJournals);
   

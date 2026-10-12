@@ -83,8 +83,8 @@ function checkRateLimit(clientId: string): { allowed: boolean, remaining: number
 }
 
 // ⭐ CORS Headers
-function getCorsHeaders(origin: string | null) {
-  let isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  let isAllowed = !!(origin && ALLOWED_ORIGINS.includes(origin));
 
   if (!isAllowed && origin) {
     for (let i = 0; i < ALLOWED_ORIGINS.length; i++) {
@@ -100,7 +100,7 @@ function getCorsHeaders(origin: string | null) {
   }
 
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : (ALLOWED_ORIGINS[0] || '*'),
+    'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : (ALLOWED_ORIGINS[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -232,7 +232,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeout: numb
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
   const headers = getCorsHeaders(origin);
 
@@ -406,19 +406,30 @@ serve(async (req) => {
 
     if (cleanRefCode && isLtc && isLtcDiscountEnabled && adminClient) {
       try {
-        const { data: refData, error: refErr } = await adminClient.rpc('validate_referral_code', { p_code: cleanRefCode });
-        if (refErr) {
-          console.warn('⚠️ validate_referral_code RPC hatası:', refErr);
-        } else if (refData && refData.valid) {
-          const discountPct = Number(refData.discount_percent) || 0;
-          if (discountPct > 0 && discountPct <= 100) {
-            finalAmount = Number((baseAmount * (1 - (discountPct / 100))).toFixed(2));
-            appliedReferralCode = cleanRefCode;
-            orderDesc += ` (Ref: ${appliedReferralCode})`;
-            console.log(`✅ Applied referral discount ${discountPct}% with code ${appliedReferralCode}. New price: ${finalAmount}`);
-          }
+        // 🛡️ SELF-REFERRAL BLOCK: Kullanıcı kendi kodunu kullanamaz!
+        const { data: refOwner } = await adminClient
+          .from('referral_codes')
+          .select('influencer_user_id')
+          .eq('code', cleanRefCode)
+          .maybeSingle();
+
+        if (refOwner?.influencer_user_id && refOwner.influencer_user_id === userId) {
+          console.warn(`⛔ Self-referral attempt blocked: User ${userId} tried to use their own code ${cleanRefCode}`);
         } else {
-          console.log(`ℹ️ Referral code ${cleanRefCode} invalid:`, refData);
+          const { data: refData, error: refErr } = await adminClient.rpc('validate_referral_code', { p_code: cleanRefCode });
+          if (refErr) {
+            console.warn('⚠️ validate_referral_code RPC hatası:', refErr);
+          } else if (refData && refData.valid) {
+            const discountPct = Number(refData.discount_percent) || 0;
+            if (discountPct > 0 && discountPct <= 100) {
+              finalAmount = Number((baseAmount * (1 - (discountPct / 100))).toFixed(2));
+              appliedReferralCode = cleanRefCode;
+              orderDesc += ` (Ref: ${appliedReferralCode})`;
+              console.log(`✅ Applied referral discount ${discountPct}% with code ${appliedReferralCode}. New price: ${finalAmount}`);
+            }
+          } else {
+            console.log(`ℹ️ Referral code ${cleanRefCode} invalid:`, refData);
+          }
         }
       } catch (e) {
         console.warn('⚠️ Referral validation failed:', e);
@@ -552,7 +563,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ create-payment error:', error);
 
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       return new Response(JSON.stringify({
         error: 'Request timeout',
         details: 'Payment service took too long to respond'

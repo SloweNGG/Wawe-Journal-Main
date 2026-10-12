@@ -78,7 +78,7 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
           currency: currency,
           payCurrency: payCurrency,
           referralCode: referralCode,
-          successUrl: window.location.origin + '/dashboard.html',
+          successUrl: window.location.origin + '/dashboard.html?payment=success',
           cancelUrl: window.location.origin + '/settings.html'
         })
       }
@@ -90,6 +90,12 @@ export async function createNowPaymentInvoice(userId, planType, amount, currency
       console.error('❌ create-payment API hatası:', response.status, data);
       throw new Error(data.error || t('payment.link_failed', {}, 'Ödeme başlatılamadı'));
     }
+
+    try {
+      sessionStorage.setItem('ww_pending_payment', 'true');
+      sessionStorage.setItem('ww_pending_payment_time', String(Date.now()));
+      localStorage.setItem('ww_pending_payment', 'true');
+    } catch(e) {}
 
     wwLog.log('✅ create-payment başarılı:', data);
     return data;
@@ -224,9 +230,14 @@ export async function cancelPremium() {
     
     wwLog.log('✅ Abonelik iptal edildi!');
     
-    // LocalStorage'ı temizle
+    // Storage'ı temizle
     try {
       localStorage.removeItem('ww_user_plan');
+      sessionStorage.removeItem('ww_user_plan');
+      sessionStorage.removeItem('ww_user_plan_time');
+      sessionStorage.removeItem('ww_cached_profile');
+      sessionStorage.removeItem('ww_cached_profile_time');
+      window.__wwUserProfile = null;
     } catch(e) {}
     
     showToast(t('settings.cancel_subscription_success', {}, 'Premium aboneliğiniz iptal edildi.'), 'success');
@@ -251,3 +262,152 @@ export async function cancelPremium() {
     return false;
   }
 }
+
+// ============================================================
+// ⭐ POST-PAYMENT SYNC & REALTIME PREMIUM AKTİVASYON YÖNETİCİSİ
+// Ödeme yapıldıktan sonra tarayıcıya dönüldüğünde veya arka planda
+// blokzincir/webhook onayı geldiğinde anında 0ms Premium'a geçirir.
+// ============================================================
+let _planSyncStarted = false;
+
+export async function checkAndSyncPaymentStatus() {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasPaymentSuccess = urlParams.has('payment') && urlParams.get('payment') === 'success';
+    const hasPendingFlag = sessionStorage.getItem('ww_pending_payment') === 'true' || localStorage.getItem('ww_pending_payment') === 'true';
+
+    const { data: { session } } = await sb.auth.getSession();
+    const user = session?.user;
+    if (!user) return;
+
+    // Realtime Postgres Changes dinleyicisi başlat (her kullanıcı için arka planda çalışır)
+    if (!_planSyncStarted && sb && typeof sb.channel === 'function') {
+      _planSyncStarted = true;
+      try {
+        const channelName = 'ww_plan_listener_' + user.id.slice(0, 8);
+        sb.channel(channelName)
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'user_profiles',
+            filter: 'id=eq.' + user.id
+          }, (payload) => {
+            if (payload && payload.new && payload.new.plan === 'premium') {
+              applyLivePremium(payload.new);
+            }
+          })
+          .subscribe();
+      } catch(chanErr) {
+        console.warn('Realtime plan channel warning:', chanErr);
+      }
+    }
+
+    if (!hasPaymentSuccess && !hasPendingFlag) return;
+
+    // 1. Bayat önbellekleri sil ve veritabanını zorla sorgula
+    sessionStorage.removeItem('ww_user_plan');
+    sessionStorage.removeItem('ww_user_plan_time');
+    sessionStorage.removeItem('ww_cached_profile');
+    sessionStorage.removeItem('ww_cached_profile_time');
+    window.__wwUserProfile = null;
+
+    const { data: profile, error } = await sb
+      .from('user_profiles')
+      .select('plan, plan_expires_at')
+      .eq('id', user.id)
+      .single();
+
+    if (!error && profile && profile.plan === 'premium') {
+      applyLivePremium(profile, true);
+      return;
+    }
+
+    // Henüz onay gelmediyse kullanıcıya bilgi ver ve akıllı polling başlat
+    if (hasPaymentSuccess) {
+      showToast(t('settings.plan_confirming', {}, '⏳ Ödemeniz işleniyor, blokzincir onayı bekleniyor. Sayfada kalın, otomatik güncellenecektir...'), 'info');
+    }
+
+    let pollAttempts = 0;
+    const maxAttempts = 25; // ~100 saniye
+    const pollInterval = setInterval(async () => {
+      pollAttempts++;
+      if (pollAttempts >= maxAttempts) {
+        clearInterval(pollInterval);
+        return;
+      }
+
+      try {
+        const { data: liveProfile } = await sb
+          .from('user_profiles')
+          .select('plan, plan_expires_at')
+          .eq('id', user.id)
+          .single();
+
+        if (liveProfile && liveProfile.plan === 'premium') {
+          clearInterval(pollInterval);
+          applyLivePremium(liveProfile, true);
+        }
+      } catch(e) {}
+    }, 4000);
+
+  } catch(err) {
+    console.error('checkAndSyncPaymentStatus err:', err);
+  }
+}
+
+function applyLivePremium(profile, isExplicitSync = false) {
+  try {
+    sessionStorage.setItem('ww_user_plan', 'premium');
+    try { localStorage.setItem('ww_user_plan', 'premium'); } catch(e) {}
+    if (profile.plan_expires_at) {
+      sessionStorage.setItem('ww_user_plan_expires_at', profile.plan_expires_at);
+      try { localStorage.setItem('ww_user_plan_expires_at', profile.plan_expires_at); } catch(e) {}
+    }
+    sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+    sessionStorage.removeItem('ww_pending_payment');
+    try { localStorage.removeItem('ww_pending_payment'); } catch(e) {}
+
+    // URL'deki ?payment=success parametresini temizle
+    if (window.location.search.includes('payment=success')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('payment');
+      window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+    }
+
+    // Navbar rozetini 0ms Premium stiline çevir
+    const badge = document.getElementById('plan-badge');
+    const text = document.getElementById('plan-text');
+    if (badge) badge.classList.add('premium');
+    if (text) text.textContent = 'Premium';
+
+    if (typeof window.updateBadgeUI === 'function') {
+      window.updateBadgeUI(true, profile.plan_expires_at);
+    }
+    if (typeof window.updateNavbarBadge === 'function') {
+      window.updateNavbarBadge();
+    }
+
+    // Kutlama bildirimi
+    showToast(t('settings.plan_upgraded_success', {}, '🎉 Tebrikler! Premium hesabınız başarıyla aktifleştirildi.'), 'success');
+
+    // Eğer ayarlar plan panelindeyse orayı yenile
+    if (typeof window.renderPlan === 'function') {
+      window.renderPlan();
+    }
+  } catch(e) {
+    console.error('applyLivePremium err:', e);
+  }
+}
+
+// Otomatik kontrolü sayfa yüklendiğinde başlat
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAndSyncPaymentStatus);
+  } else {
+    setTimeout(checkAndSyncPaymentStatus, 300);
+  }
+}
+
+window.checkAndSyncPaymentStatus = checkAndSyncPaymentStatus;

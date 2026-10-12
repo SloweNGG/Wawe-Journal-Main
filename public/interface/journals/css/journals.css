@@ -156,6 +156,7 @@
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-bottom: 0.75rem;
@@ -1341,4 +1342,186 @@ body.light-theme .journal-prop-inactive-tip {
   background: rgba(124, 109, 250, 0.06);
   color: #6366f1;
   border-color: rgba(124, 109, 250, 0.15);
+}
+
+/* ============================================================
+   MULTI-STEP WIZARD (ADIM ADIM DEFTER OLUŞTURMA) STILLERI
+   ============================================================ */
+.journal-wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.75rem 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border);
+}
+
+.wizard-step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.45;
+  transition: all 0.2s ease;
+}
+
+.wizard-step-item.active {
+  opacity: 1;
+}
+
+.wizard-step-item.completed {
+  opacity: 0.85;
+}
+
+.wizard-step-item .step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+
+.wizard-step-item.active .step-num {
+  background: linear-gradient(135deg, var(--accent, #8B5CF6), #06B6D4);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+}
+
+.wizard-step-item.completed .step-num {
+  background: #22c55e;
+  border-color: transparent;
+  color: #fff;
+}
+
+.wizard-step-item .step-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wizard-step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  margin: 0 12px;
+  transition: background 0.2s;
+}
+
+.wizard-step-line.active {
+  background: linear-gradient(90deg, #8B5CF6, #06B6D4);
+}
+
+.wizard-step-panel {
+  display: none;
+  animation: wizard-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wizard-step-panel.active {
+  display: block;
+}
+
+@keyframes wizard-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Broker Seçim Kartları */
+.broker-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.broker-choice-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.broker-choice-card:hover:not(.disabled) {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.broker-choice-card.active {
+  border-color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.08);
+  box-shadow: 0 0 0 1px #8B5CF6, 0 4px 16px rgba(139, 92, 246, 0.15);
+}
+
+.broker-choice-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.broker-choice-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.broker-choice-info {
+  flex: 1;
+}
+
+.broker-choice-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.broker-choice-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.broker-choice-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.broker-choice-card.active .broker-choice-radio {
+  border-color: #8B5CF6;
+  background: #8B5CF6;
+}
+
+.broker-choice-card.active .broker-choice-radio::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
 }

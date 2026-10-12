@@ -273,6 +273,7 @@ body.light-theme .wj-welcome-logo-accent {
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #ffffff 30%, #a78bfa 70%, #38bdf8 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
   transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
@@ -282,6 +283,7 @@ body.light-theme .wj-welcome-logo-accent {
 body.light-theme .wj-polyglot-title {
   background: linear-gradient(135deg, #0f172a 30%, #6366f1 70%, #0284c7 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -325,8 +327,6 @@ body.light-theme .wj-welcome-subtitle-text {
 #wj-hero-start-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 34px rgba(124, 109, 250, 0.5);
-}
-  }
 }
 
 /* ------------------------------------------------------------

@@ -86,10 +86,10 @@ function checkRateLimit(clientId: string): { allowed: boolean, remaining: number
 }
 
 // ⭐ CORS headers
-function getCorsHeaders(origin: string | null) {
-  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const isAllowed = !!(origin && ALLOWED_ORIGINS.includes(origin));
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -125,7 +125,7 @@ async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<R
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
   const headers = getCorsHeaders(origin);
   

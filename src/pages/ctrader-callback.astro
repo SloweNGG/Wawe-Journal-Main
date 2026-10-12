@@ -1,0 +1,277 @@
+---
+// src/pages/ctrader-callback.astro
+// cTrader OAuth 2.0 Callback Sayfası (ctrader-callback.html)
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout lang="tr">
+  <Fragment slot="head">
+    <title>cTrader Bağlantısı – Wawe Journal</title>
+    <link rel="stylesheet" href="/settings/css/settings.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+    <script src="/config.js" is:inline defer></script>
+    <script src="/i18n.js" is:inline defer></script>
+
+    <style>
+      .callback-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+      .callback-card {
+        background: var(--surface, #0e0e16);
+        border: 1px solid var(--border, #1a1a28);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        max-width: 460px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        position: relative;
+        overflow: hidden;
+      }
+      .callback-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #8B5CF6, #06B6D4);
+      }
+      .callback-icon-wrap {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        position: relative;
+      }
+      .callback-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(139, 92, 246, 0.2);
+        border-top-color: #8B5CF6;
+        border-right-color: #06B6D4;
+        border-radius: 50%;
+        animation: cb-spin 0.9s linear infinite;
+      }
+      @keyframes cb-spin {
+        to { transform: rotate(360deg); }
+      }
+      .callback-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text, #f0f0f8);
+        margin-bottom: 0.5rem;
+      }
+      .callback-desc {
+        font-size: 0.9rem;
+        color: var(--muted, #8a8aa3);
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+      }
+      .callback-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background: #8B5CF6;
+        color: #fff;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .callback-btn:hover {
+        background: #7c3aed;
+        transform: translateY(-1px);
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 0.35rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      .status-badge.loading {
+        background: rgba(139, 92, 246, 0.15);
+        color: #c4b5fd;
+      }
+      .status-badge.success {
+        background: rgba(34, 197, 94, 0.15);
+        color: #4ade80;
+      }
+      .status-badge.error {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+    </style>
+  </Fragment>
+
+  <main class="callback-container">
+    <div class="callback-card" id="callback-card">
+      <div class="callback-icon-wrap" id="icon-container">
+        <div class="callback-spinner" id="spinner"></div>
+      </div>
+      <span class="status-badge loading" id="status-badge">Yetkilendiriliyor</span>
+      <h2 class="callback-title" id="callback-title">cTrader Hesabı Bağlanıyor</h2>
+      <p class="callback-desc" id="callback-desc">
+        Güvenli bağlantı kuruluyor ve hesap bilgileriniz alınıyor, lütfen bekleyin...
+      </p>
+      <div id="action-container" style="display: none;">
+        <a href="/journals.html" class="callback-btn" id="action-btn">Hesaplarıma Dön</a>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    (async function initCallback() {
+      var titleEl = document.getElementById('callback-title');
+      var descEl = document.getElementById('callback-desc');
+      var badgeEl = document.getElementById('status-badge');
+      var iconContainer = document.getElementById('icon-container');
+      var actionContainer = document.getElementById('action-container');
+      var actionBtn = document.getElementById('action-btn');
+
+      function showError(msg) {
+        badgeEl.className = 'status-badge error';
+        badgeEl.textContent = 'Bağlantı Başarısız';
+        titleEl.textContent = 'Bir Hata Oluştu';
+        descEl.textContent = msg || 'cTrader hesabı bağlanırken bir sorun oluştu.';
+        iconContainer.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        actionContainer.style.display = 'block';
+        actionBtn.textContent = 'Hesaplarıma Geri Dön';
+      }
+
+      function showSuccess(msg) {
+        badgeEl.className = 'status-badge success';
+        badgeEl.textContent = 'Bağlandı';
+        titleEl.textContent = 'cTrader Başarıyla Bağlandı!';
+        descEl.textContent = msg || 'Hesabınız bağlandı. Hesaplar sayfasına yönlendiriliyorsunuz...';
+        iconContainer.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+        setTimeout(function() {
+          window.location.href = '/journals.html';
+        }, 1500);
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get('code');
+      var error = params.get('error');
+      var errorDesc = params.get('error_description');
+
+      if (error) {
+        showError(errorDesc || error || 'cTrader yetkilendirmesi iptal edildi veya reddedildi.');
+        return;
+      }
+
+      if (!code) {
+        showError('URL içinde yetkilendirme kodu (code) bulunamadı.');
+        return;
+      }
+
+      // Supabase istemcisinin hazır olmasını bekle
+      var attempts = 0;
+      while ((!window.sb || !window.sb.auth) && attempts < 25) {
+        await new Promise(function(r) { setTimeout(r, 100); });
+        attempts++;
+      }
+
+      if (!window.sb || !window.sb.auth) {
+        showError('Veritabanı bağlantısı başlatılamadı. Lütfen sayfayı yenileyin.');
+        return;
+      }
+
+      var sessionRes = await window.sb.auth.getSession();
+      var session = sessionRes?.data?.session;
+
+      if (!session) {
+        // Oturum yoksa login'e yönlendir ve geri dönüş için code'u sakla
+        showError('Oturumunuz bulunamadı. Lütfen önce giriş yapın.');
+        setTimeout(function() {
+          window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.href);
+        }, 1500);
+        return;
+      }
+
+      descEl.textContent = 'cTrader ile hesap bilgileri alınıyor...';
+
+      try {
+        var redirectUri = window.location.origin + window.location.pathname;
+        var token = session.access_token;
+
+        // Edge Function çağrısı: ctrader-connect
+        var response = await fetch((window.SUPABASE_URL || '') + '/functions/v1/ctrader-connect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'apikey': window.SUPABASE_ANON_KEY || ''
+          },
+          body: JSON.stringify({
+            code: code,
+            redirectUri: redirectUri
+          })
+        });
+
+        var result = await response.json();
+
+        if (!response.ok || !result.success) {
+          showError(result.error || 'cTrader hesabı bağlanırken bir hata oluştu.');
+          return;
+        }
+
+        // Eğer kullanıcı belirli bir defterden geldiyse otomatik eşle ve ilk senkronu yap
+        var targetJournalId = localStorage.getItem('ww_ctrader_target_journal');
+        var accounts = result.accounts || [];
+
+        if (targetJournalId && accounts.length > 0) {
+          descEl.textContent = 'Defteriniz eşleştiriliyor ve işlemler aktarılıyor...';
+          var selectedAcc = accounts[0]; // İlk hesabı bağla
+          
+          try {
+            await window.sb.rpc('link_ctrader_account', {
+              p_account_id: selectedAcc.id,
+              p_journal_id: targetJournalId
+            });
+
+            // İlk senkronu otomatik başlat
+            await fetch((window.SUPABASE_URL || '') + '/functions/v1/ctrader-sync', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'apikey': window.SUPABASE_ANON_KEY || ''
+              },
+              body: JSON.stringify({
+                ctidTraderAccountId: selectedAcc.ctid_trader_account_id,
+                journalId: targetJournalId
+              })
+            });
+          } catch (linkErr) {
+            console.warn('Otomatik eşleme/senkron uyarısı:', linkErr);
+          } finally {
+            localStorage.removeItem('ww_ctrader_target_journal');
+          }
+        }
+
+        showSuccess('Hesabınız başarıyla bağlandı ve senkronize edildi!');
+
+      } catch (err) {
+        console.error('Callback error:', err);
+        showError('Sunucuya bağlanırken bir ağ hatası oluştu: ' + (err.message || ''));
+      }
+    })();
+  </script>
+</Layout>

@@ -738,106 +738,190 @@ import Layout from '../layouts/Layout.astro';
     <h2 class="section-title" data-i18n-html="features.title">Tek bir <em>ekosistem</em>, sınırsız performans.</h2>
     <p class="section-desc" data-i18n="features.desc">Tüm prop firmaları, brokerlar ve gelişmiş analiz araçları tek bir sezgisel merkezde birleşti.</p>
 
-    <!-- ═══ REVOLVING PROP FIRMS ORBIT SHOWCASE ═══ -->
-    <div class="wj-orbit-container">
-      <div class="wj-orbit-header-pill">
-        <span class="wj-orbit-pulse-dot"></span>
+    <!-- ═══ SUPPORTED PROP FIRMS MARQUEE (BROKERS STYLE) ═══ -->
+    <div class="prop-marquee-section">
+      <div class="prop-marquee-header-pill">
+        <span class="prop-marquee-pulse-dot"></span>
         <span data-i18n="features.orbit_badge">Desteklenen Prop Firmaları & Broker Ekosistemi</span>
       </div>
 
-      <div class="wj-orbit-stage" aria-label="Wawe Journal Prop Firm Orbit">
-        <!-- Ambient radial glow and orbital tracks -->
-        <div class="wj-orbit-ambient-glow"></div>
-        <div class="wj-orbit-track wj-track-outer"></div>
-        <div class="wj-orbit-track wj-track-middle"></div>
-
-        <!-- Central Core: Wawe Journal Logo -->
-        <div class="wj-orbit-center" title="Wawe Journal Central Core">
-          <div class="wj-center-ripple ripple-1"></div>
-          <div class="wj-center-ripple ripple-2"></div>
-          <div class="wj-center-core">
-            <div class="wj-center-icon-wrap">
-              <svg class="wj-center-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <polyline points="2,17 7,10 12,14 20,5" stroke="url(#wjCenterGrad)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-                <defs>
-                  <linearGradient id="wjCenterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#c084fc"/>
-                    <stop offset="50%" stop-color="#8b5cf6"/>
-                    <stop offset="100%" stop-color="#38bdf8"/>
-                  </linearGradient>
-                </defs>
-              </svg>
+      <div class="prop-marquee-wrap">
+        <div class="prop-marquee-track">
+          <!-- 1st SET -->
+          <!-- 1. FTMO -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/ftmo-symbol.svg" alt="FTMO" width="22" height="22" loading="lazy" />
             </div>
-            <div class="wj-center-text">
-              <span class="wj-brand-name">Wawe<span class="wj-brand-accent">Journal</span></span>
-              <span class="wj-brand-sub">CORE HUB</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Rotating Ring with 8 Prop Firms -->
-        <div class="wj-orbit-ring">
-          <!-- 1. FTMO (0deg) -->
-          <div class="wj-orbit-node" style="--angle: 0deg;" data-prop="ftmo">
-            <div class="wj-orbit-bubble" title="FTMO">
-              <img src="/images/props/ftmo-symbol.svg" alt="FTMO" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">FTMO</span>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">FTMO</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_ftmo">2-Step & Instant • Max DD %10</span>
             </div>
           </div>
 
-          <!-- 2. FundedNext (45deg) -->
-          <div class="wj-orbit-node" style="--angle: 45deg;" data-prop="fundednext">
-            <div class="wj-orbit-bubble" title="FundedNext">
-              <img src="/images/props/fundednext-symbol.svg" alt="FundedNext" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">FundedNext</span>
+          <!-- 2. FundedNext -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/fundednext-symbol.svg" alt="FundedNext" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">FundedNext</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_fundednext">Stellar & Express • Bakiye Koruma</span>
             </div>
           </div>
 
-          <!-- 3. Topstep (90deg) -->
-          <div class="wj-orbit-node" style="--angle: 90deg;" data-prop="topstep">
-            <div class="wj-orbit-bubble" title="Topstep">
-              <img src="/images/props/topstep-symbol.svg" alt="Topstep" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">Topstep</span>
+          <!-- 3. Topstep -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/topstep-symbol.svg" alt="Topstep" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Topstep</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_topstep">Futures Engine • Trailing DD</span>
             </div>
           </div>
 
-          <!-- 4. Funding Pips (135deg) -->
-          <div class="wj-orbit-node" style="--angle: 135deg;" data-prop="fundingpips">
-            <div class="wj-orbit-bubble" title="Funding Pips">
-              <img src="/images/props/fundingpips-symbol.svg" alt="Funding Pips" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">Funding Pips</span>
+          <!-- 4. Funding Pips -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/fundingpips-symbol.svg" alt="Funding Pips" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Funding Pips</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_fundingpips">Evaluation & Master • %5 Günlük</span>
             </div>
           </div>
 
-          <!-- 5. The 5%ers (180deg) -->
-          <div class="wj-orbit-node" style="--angle: 180deg;" data-prop="the5ers">
-            <div class="wj-orbit-bubble" title="The 5%ers">
-              <img src="/images/props/the5ers-symbol.svg" alt="The 5%ers" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">The 5%ers</span>
+          <!-- 5. The 5%ers -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/the5ers-symbol.svg" alt="The 5%ers" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">The 5%ers</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_the5ers">Hyper Growth • Statik DD</span>
             </div>
           </div>
 
-          <!-- 6. E8 Markets (225deg) -->
-          <div class="wj-orbit-node" style="--angle: 225deg;" data-prop="e8">
-            <div class="wj-orbit-bubble" title="E8 Markets">
-              <img src="/images/props/e8-symbol.svg" alt="E8 Markets" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">E8 Markets</span>
+          <!-- 6. E8 Markets -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/e8-symbol.svg" alt="E8 Markets" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">E8 Markets</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_e8">E8 Track • Dinamik DD</span>
             </div>
           </div>
 
-          <!-- 7. Apex Trader Funding (270deg) -->
-          <div class="wj-orbit-node" style="--angle: 270deg;" data-prop="apex">
-            <div class="wj-orbit-bubble" title="Apex Trader Funding">
-              <img src="/images/props/apex-symbol.svg" alt="Apex Trader Funding" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">Apex</span>
+          <!-- 7. Apex Trader Funding -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/apex-symbol.svg" alt="Apex Trader" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Apex Trader</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_apex">Rithmic & Tradovate • Hızlı Eşleme</span>
             </div>
           </div>
 
-          <!-- 8. Alpha Capital (315deg) -->
-          <div class="wj-orbit-node" style="--angle: 315deg;" data-prop="alpha">
-            <div class="wj-orbit-bubble" title="Alpha Capital">
-              <img src="/images/props/alpha-symbol.svg" alt="Alpha Capital" width="36" height="36" loading="lazy" />
-              <span class="wj-bubble-label">Alpha Capital</span>
+          <!-- 8. Alpha Capital -->
+          <div class="prop-marquee-chip">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/alpha-symbol.svg" alt="Alpha Capital" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Alpha Capital</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_alpha">Raw Spreads • Ücretsiz Tekrar</span>
+            </div>
+          </div>
+
+          <!-- 2nd SET (for seamless infinite loop) -->
+          <!-- 1. FTMO -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/ftmo-symbol.svg" alt="FTMO" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">FTMO</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_ftmo">2-Step & Instant • Max DD %10</span>
+            </div>
+          </div>
+
+          <!-- 2. FundedNext -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/fundednext-symbol.svg" alt="FundedNext" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">FundedNext</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_fundednext">Stellar & Express • Bakiye Koruma</span>
+            </div>
+          </div>
+
+          <!-- 3. Topstep -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/topstep-symbol.svg" alt="Topstep" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Topstep</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_topstep">Futures Engine • Trailing DD</span>
+            </div>
+          </div>
+
+          <!-- 4. Funding Pips -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/fundingpips-symbol.svg" alt="Funding Pips" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Funding Pips</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_fundingpips">Evaluation & Master • %5 Günlük</span>
+            </div>
+          </div>
+
+          <!-- 5. The 5%ers -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/the5ers-symbol.svg" alt="The 5%ers" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">The 5%ers</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_the5ers">Hyper Growth • Statik DD</span>
+            </div>
+          </div>
+
+          <!-- 6. E8 Markets -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/e8-symbol.svg" alt="E8 Markets" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">E8 Markets</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_e8">E8 Track • Dinamik DD</span>
+            </div>
+          </div>
+
+          <!-- 7. Apex Trader Funding -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/apex-symbol.svg" alt="Apex Trader" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Apex Trader</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_apex">Rithmic & Tradovate • Hızlı Eşleme</span>
+            </div>
+          </div>
+
+          <!-- 8. Alpha Capital -->
+          <div class="prop-marquee-chip" aria-hidden="true">
+            <div class="prop-marquee-chip-icon">
+              <img src="/images/props/alpha-symbol.svg" alt="Alpha Capital" width="22" height="22" loading="lazy" />
+            </div>
+            <div class="prop-marquee-chip-info">
+              <span class="prop-marquee-chip-name">Alpha Capital</span>
+              <span class="prop-marquee-chip-badge" data-i18n="features.tag_alpha">Raw Spreads • Ücretsiz Tekrar</span>
             </div>
           </div>
         </div>

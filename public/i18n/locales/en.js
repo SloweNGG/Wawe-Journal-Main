@@ -741,6 +741,7 @@ export default {
   "settings.plan_referral_limit": "This code has reached its usage limit.",
   "settings.plan_referral_inactive": "This referral code is currently inactive.",
   "settings.plan_referral_invalid": "Invalid referral code.",
+  "settings.plan_referral_self": "You cannot use your own referral code.",
   "settings.plan_referral_error": "Could not verify referral code.",
   "settings.plan_monthly_label": "Monthly",
   "settings.plan_yearly_label": "Yearly",

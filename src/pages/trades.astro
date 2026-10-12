@@ -34,9 +34,15 @@ import Layout from '../layouts/Layout.astro';
 
   <main class="main trades-main">
 
-    <div class="page-header">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
       <div>
         <h1 data-i18n="trades.title">Tüm İşlemler</h1>
+      </div>
+      <div id="trades-ctrader-sync-wrap" style="display:none;">
+        <button id="btn-trades-ctrader-sync" type="button" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);color:#c4b5fd;padding:0.45rem 0.9rem;border-radius:10px;font-size:0.82rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;">
+          <svg class="ctrader-sync-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span id="trades-ctrader-sync-text">cTrader'dan Senkronla</span>
+        </button>
       </div>
     </div>
 
@@ -334,10 +340,38 @@ import Layout from '../layouts/Layout.astro';
   </script>
 
   <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
         wwLog.log('✅ Lucide icons initialized on trades!');
+      }
+
+      var wrap = document.getElementById('trades-ctrader-sync-wrap');
+      var btn = document.getElementById('btn-trades-ctrader-sync');
+      var text = document.getElementById('trades-ctrader-sync-text');
+      if (!wrap || !btn || !window.sb || typeof window.sb.rpc !== 'function') return;
+
+      try {
+        var activeJournalId = window.journal?.getActiveJournalId?.() || localStorage.getItem('ww_active_journal');
+        if (!activeJournalId) return;
+
+        var res = await window.sb.rpc('get_ctrader_status');
+        var accounts = res?.data?.accounts || [];
+        var matched = accounts.find(function(a) { return a.journal_id === activeJournalId; });
+
+        if (matched) {
+          wrap.style.display = 'block';
+          if (text) {
+            text.textContent = 'cTrader Senkronla (' + (matched.is_live ? 'Live' : 'Demo') + ')';
+          }
+          btn.onclick = function(e) {
+            if (window.wwSyncCtrader) {
+              window.wwSyncCtrader(e, matched.ctid_trader_account_id, activeJournalId, btn);
+            }
+          };
+        }
+      } catch (e) {
+        console.warn('Trades cTrader button check error:', e);
       }
     });
   </script>

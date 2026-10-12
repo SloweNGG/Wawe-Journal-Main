@@ -935,6 +935,16 @@ window.closeMobileMenuAndNavigate = function(e, url) {
   if (backdrop) backdrop.classList.remove('open');
   document.body.style.overflow = '';
   if (url) {
+    if (url.indexOf('premium-dashboard') !== -1) {
+      var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
+      var isPrem = cachedPlan === 'premium' || (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium');
+      if (!isPrem) {
+        if (typeof window.openUpgradeModal === 'function') {
+          window.openUpgradeModal({ feature: 'premium_dashboard' });
+          return;
+        }
+      }
+    }
     if (window.location.pathname.indexOf('settings') !== -1 && url.indexOf('#panel-') !== -1) {
       var pId = url.split('#')[1];
       if (typeof window.switchPanel === 'function') {
@@ -1562,6 +1572,7 @@ function updateBadgeUI(isPremium, expiresAt) {
     }
   }
 }
+window.updateBadgeUI = updateBadgeUI;
 
 async function updateNavbarBadge() {
   try {
@@ -1569,11 +1580,15 @@ async function updateNavbarBadge() {
     var text = document.getElementById('plan-text');
     if (!badge || !text) return;
 
+    var isPendingPay = sessionStorage.getItem('ww_pending_payment') === 'true' || 
+                       localStorage.getItem('ww_pending_payment') === 'true' ||
+                       window.location.search.includes('payment=success');
+
     var now = Date.now();
     var storedPlan = sessionStorage.getItem('ww_user_plan');
     var storedExp = sessionStorage.getItem('ww_user_plan_expires_at');
     var storedPlanTime = sessionStorage.getItem('ww_user_plan_time');
-    if (storedPlan && storedPlanTime && (now - parseInt(storedPlanTime, 10)) < 300000) {
+    if (!isPendingPay && storedPlan && storedPlanTime && (now - parseInt(storedPlanTime, 10)) < 300000) {
       updateBadgeUI(storedPlan === 'premium', storedExp || null);
       return;
     }
@@ -1942,212 +1957,337 @@ window.refreshNavbar = function() {
 wwLog.log('✅ navbar.js yüklendi! (CLIENT-SIDE RENDER + AVATAR CACHE + FRESH BADGE)');
 
 // ============================================================
-// updateNavbarJournal — retry mekanizması + window.journal guard
 // ============================================================
-async function updateNavbarJournal(retries) {
-  retries = retries || 0;
-  try {
-    if (!window.journal) {
-      if (retries < 15) {
-        setTimeout(function() { updateNavbarJournal(retries + 1); }, 200);
-      }
-      return;
-    }
+// ⭐ INSTANT NAVBAR JOURNAL (CACHE-FIRST + 0ms SWR)
+// ============================================================
+function safeEscape(str) {
+  if (typeof window !== 'undefined' && typeof window.sanitizeHTML === 'function') {
+    return window.sanitizeHTML(str);
+  }
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-    var switcher = document.getElementById('nav-journal-switcher');
-    var wasOpen = switcher ? switcher.classList.contains('open') : false;
-    var activeId = window.journal.getActiveJournalId();
-    var journals = null;
-    try {
-      journals = await window.journal.listJournals();
-    } catch(e) {
+function getPropBadgeHtml(propAcc) {
+  if (!propAcc) return '';
+  var firm = (propAcc.rules && propAcc.rules.firm) ||
+    (window.PropTemplates && window.PropTemplates.getPropTemplate(propAcc.template_key) && window.PropTemplates.getPropTemplate(propAcc.template_key).firm) ||
+    'Prop';
+  var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+  var pInfo = typeof resolver === 'function' ? resolver(firm || propAcc.template_key) : null;
+  if (pInfo) {
+    var logoSrc = pInfo.symbolLogo || pInfo.logo;
+    return '<span class="nav-prop-tag nav-prop-firm-tag ' + (pInfo.badgeClass || '') + '"><img src="' + logoSrc + '" class="nav-prop-mini-icon" alt="" />' + safeEscape(pInfo.name) + '</span>';
+  }
+  return '<span class="nav-prop-tag">PROP</span>';
+}
+
+function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
+  if (!journals || journals.length === 0 || !activeJ) return;
+  var switcher = document.getElementById('nav-journal-switcher');
+  var wasOpen = switcher ? switcher.classList.contains('open') : false;
+
+  propMap = propMap || {};
+  ctraderMap = ctraderMap || {};
+
+  var activeProp = propMap[activeJ.id];
+  var aResolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+  var aInfo = (activeProp && typeof aResolver === 'function') ? aResolver((activeProp.rules && activeProp.rules.firm) || activeProp.template_key) : null;
+  var activeCtrader = ctraderMap[activeJ.id];
+
+  var swName = document.querySelector('.nav-journal-switcher .journal-name');
+  var swIcon = document.querySelector('.nav-journal-switcher .journal-icon');
+  var badgeHtml = getPropBadgeHtml(activeProp);
+
+  if (swName) {
+    swName.textContent = activeJ.name || '';
+    swName.title = activeJ.name || '';
+
+    if (swName.parentNode) {
+      var existingBadge = swName.parentNode.querySelector('.nav-prop-tag');
+      if (existingBadge) existingBadge.remove();
+
+      var existingCtDot = swName.parentNode.querySelector('.ctrader-status-dot');
+      if (existingCtDot) existingCtDot.remove();
+
+      // ⭐ Canlı Yeşil veya Neon Mor Işık Ekle
+      if (activeCtrader) {
+        var dotClass = activeCtrader.is_live ? 'live' : 'demo';
+        var dotTitle = 'cTrader ' + (activeCtrader.is_live ? 'Live' : 'Demo') + ' (' + (activeCtrader.broker_name || 'Hesap') + ')';
+        var dotEl = document.createElement('span');
+        dotEl.className = 'ctrader-status-dot ' + dotClass;
+        dotEl.id = 'nav-ctrader-dot';
+        dotEl.title = dotTitle;
+        swName.parentNode.insertBefore(dotEl, swName);
+      }
+
+      if (badgeHtml) {
+        var tempWrapper = document.createElement('div');
+        tempWrapper.innerHTML = badgeHtml;
+        var badgeEl = tempWrapper.firstElementChild;
+        if (badgeEl) {
+          swName.parentNode.insertBefore(badgeEl, swName.nextSibling);
+        }
+      }
+    }
+  }
+
+  if (swIcon) {
+    if (aInfo) {
+      swIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;" alt="" />';
+    } else {
+      swIcon.innerHTML = '';
+      swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+    }
+  }
+
+  // Mobil menü göstergesi
+  var menuJournalName = document.getElementById('menu-journal-name');
+  if (menuJournalName) {
+    menuJournalName.innerHTML = safeEscape(activeJ.name) + badgeHtml;
+  }
+  
+  var menuJournalIcon = document.querySelector('.menu-journal-icon');
+  if (menuJournalIcon) {
+    if (aInfo) {
+      menuJournalIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;" alt="" />';
+    } else {
+      menuJournalIcon.innerHTML = '';
+      menuJournalIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
+      menuJournalIcon.style.color = activeJ.color || 'var(--accent)';
+    }
+  }
+
+  // Dropdown listesini doldur
+  var dropdown = document.getElementById('journal-dropdown');
+  if (dropdown) {
+    var swTitle = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('journal.switcher_title') : 'Hesaplar';
+    var html = '<div class="journal-menu-header">' +
+      '<span class="journal-menu-title">' + swTitle + '</span>' +
+      '<span class="journal-menu-count">' + journals.length + '</span>' +
+    '</div>';
+
+    html += '<div class="journal-menu-list">';
+    journals.forEach(function(j) {
+      var isActive = (j.id === activeJ.id) ? 'active' : '';
+      var tradesTxt = (j.trade_count || 0) + ' ' + ((window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t('nav.trades') : 'işlem') || 'işlem');
+      var itemColor = j.color || '#7c6dfa';
+      var pa = propMap[j.id];
+      var propItemBadge = getPropBadgeHtml(pa);
+      var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
+      var pInfo = (pa && typeof resolver === 'function') ? resolver((pa.rules && pa.rules.firm) || pa.template_key) : null;
+      
+      var iconWrapClass = 'journal-icon-wrap';
+      var iconWrapStyle = '';
+      var iconInner = '';
+
+      if (pInfo) {
+        iconWrapClass += ' has-prop-logo ' + (pInfo.badgeClass || '');
+        iconInner = '<img src="' + (pInfo.symbolLogo || pInfo.logo) + '" class="nav-dropdown-prop-icon" alt="" />';
+      } else {
+        iconWrapStyle = 'background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;';
+        iconInner = '<i data-lucide="' + (j.icon || 'folder') + '"></i>';
+      }
+
+      var ctAcc = ctraderMap[j.id];
+      var ctBadgeHtml = '';
+      var ctSyncBtnHtml = '';
+      if (ctAcc) {
+        ctBadgeHtml = '<span class="ctrader-nav-tag ' + (ctAcc.is_live ? 'live' : 'demo') + '">' + (ctAcc.is_live ? 'LIVE' : 'DEMO') + '</span>';
+        ctSyncBtnHtml = '<button class="ctrader-nav-sync-btn" type="button" title="cTrader ile Senkronla" onclick="window.wwSyncCtrader && window.wwSyncCtrader(event, \'' + ctAcc.ctid_trader_account_id + '\', \'' + j.id + '\', this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg></button>';
+      }
+
+      html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
+        '<div class="' + iconWrapClass + '" style="' + iconWrapStyle + '">' +
+          iconInner +
+        '</div>' +
+        '<div class="journal-info">' +
+          '<span class="journal-name">' + safeEscape(j.name) + propItemBadge + ctBadgeHtml + '</span>' +
+          '<span class="journal-count">' + tradesTxt + '</span>' +
+        '</div>' +
+        ctSyncBtnHtml +
+        '<i data-lucide="check" class="journal-check"></i>' +
+      '</button>';
+    });
+    html += '</div>';
+
+    var manageTxt = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('journal.manage') : 'Hesapları Yönet';
+    html += '<div class="journal-menu-footer"><a href="/journals.html" class="journal-manage-link"><i data-lucide="settings"></i> <span>' + manageTxt + ' →</span></a></div>';
+    dropdown.innerHTML = html;
+
+    dropdown.querySelectorAll('.journal-item').forEach(function(btn) {
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        var id = btn.dataset.id;
+        if (id !== activeJ.id) {
+          btn.classList.add('switching');
+          var targetJ = journals.find(function(item) { return item.id === id; }) || {
+            id: id,
+            name: (btn.querySelector('.journal-name') && btn.querySelector('.journal-name').textContent) || 'Hesap',
+            icon: 'folder',
+            color: '#7c6dfa'
+          };
+          if (typeof window.switchJournalWithAnimation === 'function') {
+            window.switchJournalWithAnimation(targetJ);
+          } else if (window.PageTransition && typeof window.PageTransition.switchJournal === 'function') {
+            window.PageTransition.switchJournal(targetJ);
+          } else {
+            if (window.journal && typeof window.journal.setActiveJournalId === 'function') {
+              window.journal.setActiveJournalId(id);
+            }
+            window.location.reload();
+          }
+        } else {
+          var sw = document.getElementById('nav-journal-switcher');
+          if (sw) sw.classList.remove('open');
+        }
+      };
+    });
+  }
+
+  // ⭐ Cache'i anında güncelle (Bir sonraki sayfa açılışı 0ms olsun)
+  try {
+    if (activeJ && activeJ.name) {
+      localStorage.setItem('ww_active_journal_name', activeJ.name);
+      localStorage.setItem('ww_active_journal_id', activeJ.id);
+    }
+    if (badgeHtml) {
+      localStorage.setItem('ww_active_prop_badge_html', badgeHtml);
+    } else {
+      localStorage.removeItem('ww_active_prop_badge_html');
+    }
+    if (swIcon) {
+      localStorage.setItem('ww_active_journal_icon_html', swIcon.innerHTML);
+    }
+    if (activeCtrader) {
+      var dotCls = activeCtrader.is_live ? 'live' : 'demo';
+      var dotTit = 'cTrader ' + (activeCtrader.is_live ? 'Live' : 'Demo') + ' (' + (activeCtrader.broker_name || 'Hesap') + ')';
+      localStorage.setItem('ww_active_ctrader_dot_html', '<span class="ctrader-status-dot ' + dotCls + '" id="nav-ctrader-dot" title="' + dotTit + '"></span>');
+    } else {
+      localStorage.removeItem('ww_active_ctrader_dot_html');
+    }
+    localStorage.setItem('ww_cached_journals_list', JSON.stringify(journals));
+    localStorage.setItem('ww_cached_props_map', JSON.stringify(propMap));
+    localStorage.setItem('ww_cached_ctrader_map', JSON.stringify(ctraderMap));
+  } catch(e) {}
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  if (wasOpen && switcher) switcher.classList.add('open');
+}
+
+function renderNavbarFromCache() {
+  try {
+    var rawJournals = localStorage.getItem('ww_cached_journals_list');
+    var rawProps = localStorage.getItem('ww_cached_props_map');
+    var rawCtrader = localStorage.getItem('ww_cached_ctrader_map');
+    var activeId = (typeof window.getActiveJournalId === 'function')
+      ? window.getActiveJournalId()
+      : (localStorage.getItem('ww_active_journal_id') || null);
+
+    if (rawJournals) {
+      var journals = JSON.parse(rawJournals);
+      var propMap = rawProps ? JSON.parse(rawProps) : {};
+      var ctraderMap = rawCtrader ? JSON.parse(rawCtrader) : {};
+      if (Array.isArray(journals) && journals.length > 0) {
+        var activeJ = (activeId && journals.find(function(j) { return j.id === activeId; }))
+          || journals.find(function(j) { return j.is_default; })
+          || journals[0];
+        renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap);
+      }
+    }
+  } catch(e) {}
+}
+
+// Sayfa yüklenir yüklenmez önbellekten anında çiz
+try {
+  renderNavbarFromCache();
+} catch(e) {}
+
+async function updateNavbarJournal(retries) {
+  // 1. Önce RAM/localStorage önbelleğinden 0ms içinde ekrana bas
+  renderNavbarFromCache();
+
+  try {
+    var activeId = (window.journal && typeof window.journal.getActiveJournalId === 'function')
+      ? window.journal.getActiveJournalId()
+      : (localStorage.getItem('ww_active_journal_id') || null);
+
+    // 2. Arka planda paralel sorgula
+    var journalsPromise = (async function() {
       if (window.location.search.includes('test=')) {
-        journals = [
+        return [
           { id: 'j-ftmo', name: 'FTMO Challenge 100K', icon: 'briefcase', total_pnl: 4320.50, trade_count: 24, is_default: true },
           { id: 'j-fn', name: 'FundedNext Stellar 50K', icon: 'zap', total_pnl: -1250.00, trade_count: 18, is_default: false },
           { id: 'j-fp', name: 'FundingPips Master 100K', icon: 'target', total_pnl: 8120.00, trade_count: 42, is_default: false }
         ];
       }
-    }
+      if (window.journal && typeof window.journal.listJournals === 'function') {
+        try {
+          var res = await window.journal.listJournals();
+          return Array.isArray(res) ? res : [];
+        } catch(e) { return []; }
+      }
+      return [];
+    })();
+
+    var propPromise = (async function() {
+      if (window.location.search.includes('test=')) {
+        return [
+          { journal_id: 'j-ftmo', template_key: 'ftmo-2step', rules: { firm: 'FTMO' } },
+          { journal_id: 'j-fn', template_key: 'fundednext-stellar-1step', rules: { firm: 'FundedNext' } },
+          { journal_id: 'j-fp', template_key: 'fundingpips-2step', rules: { firm: 'FundingPips' } }
+        ];
+      }
+      if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
+        try {
+          var res = await window.PropService.getActivePropAccounts();
+          return Array.isArray(res) ? res : [];
+        } catch(e) { return []; }
+      }
+      return [];
+    })();
+
+    var ctraderPromise = (async function() {
+      if (window.sb && typeof window.sb.rpc === 'function') {
+        try {
+          return await Promise.race([
+            window.sb.rpc('get_ctrader_status'),
+            new Promise(function(r) { setTimeout(function() { r({ data: { accounts: [] } }); }, 1200); })
+          ]);
+        } catch(e) { return { data: { accounts: [] } }; }
+      }
+      return { data: { accounts: [] } };
+    })();
+
+    var [journals, activeProps, ctStatus] = await Promise.all([
+      journalsPromise,
+      propPromise,
+      ctraderPromise
+    ]);
+
     if (!journals || journals.length === 0) return;
 
-    var activeJ = journals.find(function(j) { return j.id === activeId; });
-    if (!activeJ) activeJ = journals.find(function(j) { return j.is_default; }) || journals[0];
+    var activeJ = (activeId && journals.find(function(j) { return j.id === activeId; }))
+      || journals.find(function(j) { return j.is_default; })
+      || journals[0];
 
-    // Prop accounts map
     var propMap = {};
-    if (window.location.search.includes('test=')) {
-      propMap['j-ftmo'] = { journal_id: 'j-ftmo', template_key: 'ftmo-2step', rules: { firm: 'FTMO' } };
-      propMap['j-fn'] = { journal_id: 'j-fn', template_key: 'fundednext-stellar-1step', rules: { firm: 'FundedNext' } };
-      propMap['j-fp'] = { journal_id: 'j-fp', template_key: 'fundingpips-2step', rules: { firm: 'FundingPips' } };
-    } else if (window.PropService && typeof window.PropService.getActivePropAccounts === 'function') {
-      try {
-        var activeProps = await window.PropService.getActivePropAccounts();
-        (activeProps || []).forEach(function(pa) { propMap[pa.journal_id] = pa; });
-      } catch (pErr) {}
-    }
+    (activeProps || []).forEach(function(pa) { if (pa && pa.journal_id) propMap[pa.journal_id] = pa; });
 
-    function safeEscape(str) {
-      if (typeof window !== 'undefined' && typeof window.sanitizeHTML === 'function') {
-        return window.sanitizeHTML(str);
-      }
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function getPropBadgeHtml(propAcc) {
-      if (!propAcc) return '';
-      var firm = (propAcc.rules && propAcc.rules.firm) ||
-        (window.PropTemplates && window.PropTemplates.getPropTemplate(propAcc.template_key) && window.PropTemplates.getPropTemplate(propAcc.template_key).firm) ||
-        'Prop';
-      var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
-      var pInfo = typeof resolver === 'function' ? resolver(firm || propAcc.template_key) : null;
-      if (pInfo) {
-        var logoSrc = pInfo.symbolLogo || pInfo.logo;
-        return '<span class="nav-prop-tag nav-prop-firm-tag ' + (pInfo.badgeClass || '') + '"><img src="' + logoSrc + '" class="nav-prop-mini-icon" alt="" />' + safeEscape(pInfo.name) + '</span>';
-      }
-      return '<span class="nav-prop-tag">PROP</span>';
-    }
-
-    var activeProp = propMap[activeJ.id];
-    var aResolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
-    var aInfo = (activeProp && typeof aResolver === 'function') ? aResolver((activeProp.rules && activeProp.rules.firm) || activeProp.template_key) : null;
-
-    var swName = document.querySelector('.nav-journal-switcher .journal-name');
-    var swIcon = document.querySelector('.nav-journal-switcher .journal-icon');
-    if (swName) {
-      swName.textContent = (activeJ && activeJ.name) || '';
-      swName.title = (activeJ && activeJ.name) || '';
-
-      if (swName.parentNode) {
-        var existingBadge = swName.parentNode.querySelector('.nav-prop-tag');
-        if (existingBadge) existingBadge.remove();
-
-        var badgeHtml = getPropBadgeHtml(activeProp);
-        if (badgeHtml) {
-          var tempWrapper = document.createElement('div');
-          tempWrapper.innerHTML = badgeHtml;
-          var badgeEl = tempWrapper.firstElementChild;
-          if (badgeEl) {
-            swName.parentNode.insertBefore(badgeEl, swName.nextSibling);
-          }
-        }
-      }
-    }
-    try {
-      if (activeJ && activeJ.name) localStorage.setItem('ww_active_journal_name', activeJ.name);
-    } catch(e) {}
-    if (swIcon) {
-      if (aInfo) {
-        swIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;" alt="" />';
-      } else {
-        swIcon.innerHTML = '';
-        swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
-      }
-    }
-
-    // Mobil menü göstergesi
-    var menuJournalName = document.getElementById('menu-journal-name');
-    if (menuJournalName && activeJ) {
-      menuJournalName.innerHTML = safeEscape(activeJ.name) + getPropBadgeHtml(activeProp);
-    }
-    
-    var menuJournalIcon = document.querySelector('.menu-journal-icon');
-    if (menuJournalIcon && activeJ) {
-      if (aInfo) {
-        menuJournalIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;" alt="" />';
-      } else {
-        menuJournalIcon.innerHTML = '';
-        menuJournalIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
-        menuJournalIcon.style.color = activeJ.color || 'var(--accent)';
-      }
-    }
-
-    var dropdown = document.getElementById('journal-dropdown');
-    if (dropdown) {
-      var swTitle = t('journal.switcher_title', 'Hesaplar');
-      var html = '<div class="journal-menu-header">' +
-        '<span class="journal-menu-title">' + swTitle + '</span>' +
-        '<span class="journal-menu-count">' + journals.length + '</span>' +
-      '</div>';
-
-      html += '<div class="journal-menu-list">';
-      journals.forEach(function(j) {
-        var isActive = (j.id === activeJ.id) ? 'active' : '';
-        var tradesTxt = (j.trade_count || 0) + ' ' + (t('nav.trades', 'işlem') || 'işlem');
-        var itemColor = j.color || '#7c6dfa';
-        var pa = propMap[j.id];
-        var propItemBadge = getPropBadgeHtml(pa);
-        var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
-        var pInfo = (pa && typeof resolver === 'function') ? resolver((pa.rules && pa.rules.firm) || pa.template_key) : null;
-        
-        var iconWrapClass = 'journal-icon-wrap';
-        var iconWrapStyle = '';
-        var iconInner = '';
-
-        if (pInfo) {
-          iconWrapClass += ' has-prop-logo ' + (pInfo.badgeClass || '');
-          iconInner = '<img src="' + (pInfo.symbolLogo || pInfo.logo) + '" class="nav-dropdown-prop-icon" alt="" />';
-        } else {
-          iconWrapStyle = 'background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;';
-          iconInner = '<i data-lucide="' + (j.icon || 'folder') + '"></i>';
-        }
-
-        html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
-          '<div class="' + iconWrapClass + '" style="' + iconWrapStyle + '">' +
-            iconInner +
-          '</div>' +
-          '<div class="journal-info">' +
-            '<span class="journal-name">' + safeEscape(j.name) + propItemBadge + '</span>' +
-            '<span class="journal-count">' + tradesTxt + '</span>' +
-          '</div>' +
-          '<i data-lucide="check" class="journal-check"></i>' +
-        '</button>';
-      });
-      html += '</div>';
-
-      var manageTxt = t('journal.manage', 'Hesapları Yönet');
-      html += '<div class="journal-menu-footer"><a href="/journals.html" class="journal-manage-link"><i data-lucide="settings"></i> <span>' + manageTxt + ' →</span></a></div>';
-      dropdown.innerHTML = html;
-
-      dropdown.querySelectorAll('.journal-item').forEach(function(btn) {
-        btn.onclick = function(e) {
-          e.stopPropagation();
-          var id = btn.dataset.id;
-          if (id !== activeJ.id) {
-            btn.classList.add('switching');
-            var targetJ = journals.find(function(item) { return item.id === id; }) || {
-              id: id,
-              name: (btn.querySelector('.journal-name') && btn.querySelector('.journal-name').textContent) || t('journal.default_account', 'Hesap'),
-              icon: 'folder',
-              color: '#7c6dfa'
-            };
-            if (typeof window.switchJournalWithAnimation === 'function') {
-              window.switchJournalWithAnimation(targetJ);
-            } else if (window.PageTransition && typeof window.PageTransition.switchJournal === 'function') {
-              window.PageTransition.switchJournal(targetJ);
-            } else {
-              if (window.journal && typeof window.journal.setActiveJournalId === 'function') {
-                window.journal.setActiveJournalId(id);
-              }
-              window.location.reload();
-            }
-          } else {
-            var sw = document.getElementById('nav-journal-switcher');
-            if (sw) sw.classList.remove('open');
-          }
-        };
+    var ctraderMap = {};
+    if (ctStatus && ctStatus.data && Array.isArray(ctStatus.data.accounts)) {
+      ctStatus.data.accounts.forEach(function(acc) {
+        if (acc && acc.journal_id) ctraderMap[acc.journal_id] = acc;
       });
     }
 
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    if (wasOpen && switcher) switcher.classList.add('open');
-  } catch (err) {
+    renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap);
+  } catch(err) {
     if (typeof wwLog !== 'undefined') wwLog.error('updateNavbarJournal err', err);
   }
 }
@@ -2228,3 +2368,69 @@ window.addEventListener('storage', function(e) {
     syncAmbientGlow();
   }
 });
+
+// ⭐ cTrader Global Senkronizasyon Tetikleyici
+window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (!ctid || !journalId) return;
+
+  var dot = document.getElementById('nav-ctrader-dot');
+  if (btn) btn.classList.add('spinning');
+  if (dot) {
+    dot.dataset.prevClass = dot.className;
+    dot.className = 'ctrader-status-dot syncing';
+  }
+
+  var toastFn = window.showToast || window.showMsg || function(m) { console.log(m); };
+  toastFn('cTrader işlemleri senkronize ediliyor...', 'info');
+
+  try {
+    var sessionRes = await window.sb.auth.getSession();
+    var token = sessionRes?.data?.session?.access_token;
+    if (!token) throw new Error('Oturum bulunamadı.');
+
+    var res = await fetch((window.SUPABASE_URL || '') + '/functions/v1/ctrader-sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        'apikey': window.SUPABASE_ANON_KEY || ''
+      },
+      body: JSON.stringify({
+        ctidTraderAccountId: Number(ctid),
+        journalId: journalId
+      })
+    });
+
+    var data = await res.json();
+    if (!res.ok || data.error) {
+      if (data.needs_reconnect) {
+        toastFn('cTrader yetkilendirme süresi dolmuş. Lütfen hesabı yeniden bağlayın.', 'warning');
+        setTimeout(function() { window.location.href = '/journals.html'; }, 1500);
+        return;
+      }
+      throw new Error(data.error || 'Senkronizasyon başarısız.');
+    }
+
+    var successMsg = data.message || (data.inserted + ' yeni işlem başarıyla yüklendi!');
+    toastFn(successMsg, 'success');
+
+    // Sayfadaki işlem listesini yenile
+    setTimeout(function() {
+      if (typeof window.loadTrades === 'function') {
+        window.loadTrades();
+      } else {
+        window.location.reload();
+      }
+    }, 1000);
+
+  } catch(err) {
+    console.error('Sync error:', err);
+    toastFn(err.message || 'Senkronizasyon hatası', 'error');
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+    if (dot) {
+      dot.className = dot.dataset.prevClass || 'ctrader-status-dot';
+    }
+  }
+};
