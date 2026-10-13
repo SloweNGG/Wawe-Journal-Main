@@ -420,7 +420,10 @@ serve(async (req: Request) => {
         if (refOwner?.influencer_user_id && refOwner.influencer_user_id === userId) {
           console.warn(`⛔ Self-referral attempt blocked: User ${userId} tried to use their own code ${cleanRefCode}`);
         } else {
-          const { data: refData, error: refErr } = await adminClient.rpc('validate_referral_code', { p_code: cleanRefCode });
+          const { data: refData, error: refErr } = await adminClient.rpc('validate_referral_code', { 
+            p_code: cleanRefCode,
+            p_user_id: userId || null 
+          });
           if (refErr) {
             console.warn('⚠️ validate_referral_code RPC hatası:', refErr);
           } else if (refData && refData.valid) {

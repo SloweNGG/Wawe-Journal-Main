@@ -1333,7 +1333,25 @@ function setupPlanWizard(wizardRoot, isExtending) {
       try {
         var sb = window.sb || window.supabase;
         if (!sb) throw new Error(t('common.db_connection_error', {}, 'Veritabanı bağlantı hatası'));
-        var { data, error } = await sb.rpc('validate_referral_code', { p_code: code });
+
+        var user = window.SETTINGS_STATE.currentUser;
+        if (!user && typeof getCurrentUser === 'function') {
+          try { user = await getCurrentUser(); } catch(e) {}
+        }
+        var userId = user ? user.id : null;
+
+        // Çakışmayı önlemek için p_user_id ile çağırılır (public.validate_referral_code(text, uuid))
+        var rpcRes = await sb.rpc('validate_referral_code', { 
+          p_code: code,
+          p_user_id: userId
+        });
+
+        if (rpcRes && rpcRes.error && rpcRes.error.message && rpcRes.error.message.includes('p_user_id')) {
+          rpcRes = await sb.rpc('validate_referral_code', { p_code: code });
+        }
+
+        var data = rpcRes ? rpcRes.data : null;
+        var error = rpcRes ? rpcRes.error : null;
         if (error) throw error;
 
         if (data && data.valid) {
@@ -1359,10 +1377,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
       } catch (err) {
         appliedReferralCode = null;
         appliedDiscount = 0;
+        var errStr = (err && err.message) ? err.message : (typeof err === 'string' ? err : '');
+        if (!errStr || errStr === '[object Object]') {
+          errStr = t('settings.plan_referral_error', {}, 'Kod doğrulanamadı.');
+        }
         if (couponStatus) {
           couponStatus.style.display = 'block';
           couponStatus.className = 'coupon-status-box error';
-          couponStatus.textContent = err.message || t('settings.plan_referral_error', {}, 'Kod doğrulanamadı.');
+          couponStatus.textContent = errStr;
         }
         if (btnTo4) btnTo4.style.display = 'none';
         if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_skip_coupon', {}, 'Kuponum Yok, Bu Adımı Atla →');
