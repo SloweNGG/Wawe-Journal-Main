@@ -2906,7 +2906,18 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .rc-val.vip-text {
-  color: var(--accent);
+  color: #c4b5fd;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
+.vip-diamond-icon {
+  color: #a78bfa;
+  stroke: #a78bfa;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.65));
 }
 
 .rc-val.discount-green {
@@ -3630,6 +3641,12 @@ body.light-theme .panel-glow.overtrade-glow {
   justify-content: center;
   font-size: 20px;
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.premium-gem-circle svg {
+  color: #c4b5fd;
+  stroke: #c4b5fd;
+  filter: drop-shadow(0 0 8px rgba(196, 181, 253, 0.65));
 }
 
 .premium-badge-pill {
