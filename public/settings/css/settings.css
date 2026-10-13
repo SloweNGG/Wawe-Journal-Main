@@ -2124,6 +2124,11 @@ body.light-theme .panel-glow.overtrade-glow {
 
 .step-node.completed {
   opacity: 0.95;
+  cursor: pointer;
+}
+
+.step-node.completed:hover {
+  opacity: 1;
 }
 
 .step-circle {
