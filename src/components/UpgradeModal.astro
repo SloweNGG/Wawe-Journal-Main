@@ -7,8 +7,8 @@
     <!-- Top Bar: Logo & Close Button -->
     <div class="ww-up-topbar">
       <div class="ww-up-logo" aria-label="Wawe Journal">
-        <!-- Wawe Journal Original Trending-Up Logo -->
-        <svg class="ww-up-logo-svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+        <!-- Wawe Journal Signature Purple Logo -->
+        <svg class="ww-up-logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
           <polyline points="17 6 23 6 23 12"></polyline>
         </svg>
@@ -35,10 +35,13 @@
 
     <!-- Plan Name & Pricing Row -->
     <div class="ww-up-plan-header">
-      <div class="ww-up-plan-name" id="ww-up-plan-name">Basic</div>
-      <div class="ww-up-plan-price">
-        <span class="ww-up-price-num" id="ww-up-price-num">$19</span>
-        <span class="ww-up-price-period" id="ww-up-price-period">/mo</span>
+      <div class="ww-up-plan-name" id="ww-up-plan-name">Premium</div>
+      <div class="ww-up-plan-price-wrap">
+        <div class="ww-up-plan-price">
+          <span class="ww-up-price-num" id="ww-up-price-num">$12</span>
+          <span class="ww-up-price-period" id="ww-up-price-period">/ay</span>
+        </div>
+        <div class="ww-up-price-subnote" id="ww-up-price-subnote" style="display:none;"></div>
       </div>
     </div>
 
@@ -70,17 +73,16 @@
       </div>
     </div>
 
-    <!-- Segmented Control 1: Tier Selector (Basic / Pro) -->
+    <!-- Segmented Control 1: Tier Selector (Basic / Premium) -->
     <div class="ww-up-pill-group" id="ww-up-tier-switch" role="tablist">
-      <button type="button" class="ww-up-pill-btn active" data-tier="basic" role="tab" aria-selected="true">Basic</button>
-      <button type="button" class="ww-up-pill-btn" data-tier="pro" role="tab" aria-selected="false">Pro</button>
+      <button type="button" class="ww-up-pill-btn" data-tier="basic" role="tab" aria-selected="false">Basic</button>
+      <button type="button" class="ww-up-pill-btn active" data-tier="premium" role="tab" aria-selected="true">Premium</button>
     </div>
 
-    <!-- Segmented Control 2: Billing Period Selector (Monthly / 6 months / Yearly) -->
+    <!-- Segmented Control 2: Billing Period Selector (Monthly / Yearly) -->
     <div class="ww-up-pill-group" id="ww-up-period-switch" role="tablist">
-      <button type="button" class="ww-up-pill-btn active" data-period="monthly" role="tab" aria-selected="true" data-i18n-key="period_monthly">Monthly</button>
-      <button type="button" class="ww-up-pill-btn" data-period="6months" role="tab" aria-selected="false" data-i18n-key="period_6months">6 months</button>
-      <button type="button" class="ww-up-pill-btn" data-period="yearly" role="tab" aria-selected="false" data-i18n-key="period_yearly">Yearly</button>
+      <button type="button" class="ww-up-pill-btn active" data-period="monthly" role="tab" aria-selected="true" data-i18n-key="period_monthly">Aylık</button>
+      <button type="button" class="ww-up-pill-btn" data-period="yearly" role="tab" aria-selected="false" data-i18n-key="period_yearly">Yıllık</button>
     </div>
 
     <!-- Feature Not Included / Limit Warning Notice Box -->
@@ -183,15 +185,23 @@
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(124, 58, 237, 0.08));
+    border: 1px solid rgba(139, 92, 246, 0.38);
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.32);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .ww-up-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.5);
   }
 
   .ww-up-logo-svg {
     width: 20px;
     height: 20px;
-    color: #ffffff;
-    stroke: #ffffff;
+    color: #a78bfa;
+    stroke: #a78bfa;
+    filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.55));
   }
 
   .ww-up-close-btn {
@@ -269,17 +279,34 @@
     letter-spacing: -0.02em;
   }
 
+  .ww-up-plan-price-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
   .ww-up-plan-price {
     font-size: 1.35rem;
     font-weight: 700;
     color: #ffffff;
     letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
   }
 
   .ww-up-price-period {
     font-size: 0.95rem;
     font-weight: 500;
     color: #8b8e9f;
+  }
+
+  .ww-up-price-subnote {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #8b8e9f;
+    letter-spacing: -0.01em;
   }
 
   /* Features Grid */
@@ -439,29 +466,88 @@
       width: 100%;
     }
   }
+
+  /* Light Theme Support */
+  body.light-theme .ww-up-modal,
+  [data-theme="light"] .ww-up-modal {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #0f172a;
+    box-shadow: 0 32px 80px -16px rgba(0, 0, 0, 0.16), 0 0 35px -10px rgba(139, 92, 246, 0.12);
+  }
+  body.light-theme .ww-up-plan-name,
+  [data-theme="light"] .ww-up-plan-name,
+  body.light-theme .ww-up-plan-price,
+  [data-theme="light"] .ww-up-plan-price,
+  body.light-theme .ww-up-notice-title,
+  [data-theme="light"] .ww-up-notice-title {
+    color: #0f172a;
+  }
+  body.light-theme .ww-up-pill-group,
+  [data-theme="light"] .ww-up-pill-group {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+  }
+  body.light-theme .ww-up-pill-btn,
+  [data-theme="light"] .ww-up-pill-btn {
+    color: #64748b;
+  }
+  body.light-theme .ww-up-pill-btn.active,
+  [data-theme="light"] .ww-up-pill-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  body.light-theme .ww-up-btn-primary,
+  [data-theme="light"] .ww-up-btn-primary {
+    background: #7c3aed;
+    color: #ffffff;
+  }
+  body.light-theme .ww-up-btn-primary:hover,
+  [data-theme="light"] .ww-up-btn-primary:hover {
+    background: #6d28d9;
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.3);
+  }
+  body.light-theme .ww-up-btn-secondary,
+  [data-theme="light"] .ww-up-btn-secondary {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #cbd5e1;
+  }
+  body.light-theme .ww-up-btn-secondary:hover,
+  [data-theme="light"] .ww-up-btn-secondary:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+  body.light-theme .ww-up-preview-card,
+  [data-theme="light"] .ww-up-preview-card {
+    border-color: #e2e8f0;
+  }
 </style>
 
 <script is:inline>
 (function() {
   // UPGRADE MODAL CLIENT LOGIC
   var modalState = {
-    tier: 'basic',      // 'basic' | 'pro'
-    period: 'monthly',  // 'monthly' | '6months' | 'yearly'
+    tier: 'premium',    // 'basic' | 'premium'
+    period: 'monthly',  // 'monthly' | 'yearly'
     feature: 'journal'  // 'journal' | 'premium_dashboard' | 'csv' | 'generic'
   };
 
   var I18N_DICT = {
     tr: {
       period_monthly: 'Aylık',
-      period_6months: '6 Aylık',
       period_yearly: 'Yıllık',
+      period_mo_label: '/ay',
+      period_yr_label: '/ay',
+      billed_yearly: 'Yıllık {total}',
       btn_upgrade: 'Yükselt',
       btn_compare: 'Planları Karşılaştır',
       feat_unlimited_trades: 'Sınırsız İşlem Günlüğü',
       feat_accounts_basic: '3\'e Kadar İşlem Defteri',
-      feat_accounts_pro: 'Sınırsız İşlem Defteri',
+      feat_accounts_premium: 'Sınırsız İşlem Defteri',
       feat_strategies_basic: '3\'e Kadar Strateji',
-      feat_strategies_pro: 'Sınırsız Strateji',
+      feat_strategies_premium: 'Sınırsız Strateji',
       feat_full_analytics: 'Tam Analitik ve İstatistikler',
       feat_auto_sync: 'Otomatik Eşitleme / CSV İçe Aktarma',
       feat_calendar_view: 'Kâr/Zarar Takvim Görünümü',
@@ -485,15 +571,17 @@
     },
     en: {
       period_monthly: 'Monthly',
-      period_6months: '6 months',
       period_yearly: 'Yearly',
+      period_mo_label: '/mo',
+      period_yr_label: '/mo',
+      billed_yearly: '{total} billed yearly',
       btn_upgrade: 'Upgrade',
       btn_compare: 'Compare Plans',
       feat_unlimited_trades: 'Journal Unlimited Trades',
       feat_accounts_basic: 'Up to 3 Trading Accounts',
-      feat_accounts_pro: 'Unlimited Trading Accounts',
+      feat_accounts_premium: 'Unlimited Trading Accounts',
       feat_strategies_basic: 'Up to 3 Trading Strategies',
-      feat_strategies_pro: 'Unlimited Trading Strategies',
+      feat_strategies_premium: 'Unlimited Trading Strategies',
       feat_full_analytics: 'Full Analytics & Statistics',
       feat_auto_sync: 'Auto Sync Trades / Import CSVs',
       feat_calendar_view: 'P&L Calendar View',
@@ -516,15 +604,17 @@
     },
     de: {
       period_monthly: 'Monatlich',
-      period_6months: '6 Monate',
       period_yearly: 'Jährlich',
+      period_mo_label: '/mt',
+      period_yr_label: '/mt',
+      billed_yearly: '{total} jährlich abgerechnet',
       btn_upgrade: 'Upgraden',
       btn_compare: 'Pläne vergleichen',
       feat_unlimited_trades: 'Unbegrenzte Trades protokollieren',
       feat_accounts_basic: 'Bis zu 3 Trading-Konten',
-      feat_accounts_pro: 'Unbegrenzte Trading-Konten',
+      feat_accounts_premium: 'Unbegrenzte Trading-Konten',
       feat_strategies_basic: 'Bis zu 3 Strategien',
-      feat_strategies_pro: 'Unbegrenzte Strategien',
+      feat_strategies_premium: 'Unbegrenzte Strategien',
       feat_full_analytics: 'Vollständige Analysen & Statistiken',
       feat_auto_sync: 'Auto-Sync / CSV-Import',
       feat_calendar_view: 'P&L Kalenderansicht',
@@ -564,42 +654,112 @@
     return dict[key] || (I18N_DICT.en[key] || key);
   }
 
-  // Price Table Matrix ($)
-  var PRICES = {
-    basic: {
-      monthly: { num: '$19', period: '/mo' },
-      '6months': { num: '$15', period: '/mo' },
-      yearly: { num: '$12', period: '/mo' }
-    },
-    pro: {
-      monthly: { num: '$29', period: '/mo' },
-      '6months': { num: '$24', period: '/mo' },
-      yearly: { num: '$19', period: '/mo' }
-    }
-  };
+  // ⭐ Config ve Sistem Ayarlarından Dinamik Fiyatları Çek
+  function getPricingData() {
+    var monthly = 12;
+    var yearly = 99;
+    var currSym = '$';
+
+    try {
+      if (typeof window.getPrices === 'function') {
+        var p = window.getPrices();
+        if (p && typeof p.monthly === 'number' && p.monthly > 0) monthly = p.monthly;
+        if (p && typeof p.yearly === 'number' && p.yearly > 0) yearly = p.yearly;
+        if (p && p.currency === 'TRY') currSym = '₺';
+        else if (p && p.currency === 'EUR') currSym = '€';
+        else if (p && p.currency === 'GBP') currSym = '£';
+      } else {
+        if (typeof window.getMonthlyPrice === 'function') {
+          var m = window.getMonthlyPrice();
+          if (m && m > 0) monthly = m;
+        }
+        if (typeof window.getYearlyPrice === 'function') {
+          var y = window.getYearlyPrice();
+          if (y && y > 0) yearly = y;
+        }
+      }
+    } catch(e) {}
+
+    // Fallback directly to WW_CONFIG if globals were not populated
+    try {
+      if (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES) {
+        if (window.WW_CONFIG.DEFAULT_PRICES.monthly) monthly = window.WW_CONFIG.DEFAULT_PRICES.monthly;
+        if (window.WW_CONFIG.DEFAULT_PRICES.yearly) yearly = window.WW_CONFIG.DEFAULT_PRICES.yearly;
+      }
+    } catch(e) {}
+
+    var basicMonthly = (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES && window.WW_CONFIG.DEFAULT_PRICES.basic_monthly) || Math.round(monthly * 0.6) || 6;
+    var basicYearly = (window.WW_CONFIG && window.WW_CONFIG.DEFAULT_PRICES && window.WW_CONFIG.DEFAULT_PRICES.basic_yearly) || Math.round(yearly * 0.6) || 49;
+
+    var formatNum = function(n) {
+      return (n % 1 === 0) ? n.toFixed(0) : n.toFixed(2);
+    };
+
+    return {
+      premium: {
+        monthly: {
+          num: currSym + formatNum(monthly),
+          periodKey: 'period_mo_label',
+          total: currSym + formatNum(monthly)
+        },
+        yearly: {
+          num: currSym + formatNum(yearly / 12),
+          periodKey: 'period_yr_label',
+          total: currSym + formatNum(yearly)
+        }
+      },
+      basic: {
+        monthly: {
+          num: currSym + formatNum(basicMonthly),
+          periodKey: 'period_mo_label',
+          total: currSym + formatNum(basicMonthly)
+        },
+        yearly: {
+          num: currSym + formatNum(basicYearly / 12),
+          periodKey: 'period_yr_label',
+          total: currSym + formatNum(basicYearly)
+        }
+      }
+    };
+  }
 
   function updateModalUI() {
-    var pData = PRICES[modalState.tier][modalState.period] || PRICES.basic.monthly;
-    
+    var pricingMatrix = getPricingData();
+    var tierKey = (modalState.tier === 'basic') ? 'basic' : 'premium';
+    var periodKey = (modalState.period === 'yearly') ? 'yearly' : 'monthly';
+    var pData = pricingMatrix[tierKey][periodKey];
+
     // Plan title & price
     var nameEl = document.getElementById('ww-up-plan-name');
-    if (nameEl) nameEl.textContent = modalState.tier === 'pro' ? 'Pro' : 'Basic';
+    if (nameEl) {
+      nameEl.textContent = (tierKey === 'basic') ? 'Basic' : 'Premium';
+    }
 
     var priceNumEl = document.getElementById('ww-up-price-num');
     if (priceNumEl) priceNumEl.textContent = pData.num;
 
     var pricePerEl = document.getElementById('ww-up-price-period');
-    if (pricePerEl) pricePerEl.textContent = pData.period;
+    if (pricePerEl) pricePerEl.textContent = tStr(pData.periodKey);
+
+    var priceSubnoteEl = document.getElementById('ww-up-price-subnote');
+    if (priceSubnoteEl) {
+      if (periodKey === 'yearly') {
+        priceSubnoteEl.style.display = 'block';
+        priceSubnoteEl.textContent = '(' + tStr('billed_yearly').replace('{total}', pData.total) + ')';
+      } else {
+        priceSubnoteEl.style.display = 'none';
+      }
+    }
 
     // Feature items
     var featAcc = document.getElementById('ww-up-feat-accounts');
     if (featAcc) {
-      featAcc.textContent = modalState.tier === 'pro' ? tStr('feat_accounts_pro') : tStr('feat_accounts_basic');
+      featAcc.textContent = (tierKey === 'premium') ? tStr('feat_accounts_premium') : tStr('feat_accounts_basic');
     }
 
     var featStrat = document.getElementById('ww-up-feat-strategies');
     if (featStrat) {
-      featStrat.textContent = modalState.tier === 'pro' ? tStr('feat_strategies_pro') : tStr('feat_strategies_basic');
+      featStrat.textContent = (tierKey === 'premium') ? tStr('feat_strategies_premium') : tStr('feat_strategies_basic');
     }
 
     // Static text translations
@@ -651,8 +811,8 @@
   window.openUpgradeModal = function(opts) {
     opts = opts || {};
     if (opts.feature) modalState.feature = opts.feature;
-    if (opts.tier) modalState.tier = opts.tier;
-    if (opts.period) modalState.period = opts.period;
+    modalState.tier = opts.tier || 'premium';
+    modalState.period = opts.period || 'monthly';
 
     updateModalUI();
 
@@ -706,7 +866,7 @@
     // Tier Switcher
     document.querySelectorAll('#ww-up-tier-switch .ww-up-pill-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        modalState.tier = btn.dataset.tier || 'basic';
+        modalState.tier = btn.dataset.tier || 'premium';
         updateModalUI();
       });
     });
@@ -726,6 +886,11 @@
         try {
           sessionStorage.setItem('ww_selected_tier', modalState.tier);
           sessionStorage.setItem('ww_selected_period', modalState.period);
+          // Set wizard state so settings page picks up the period
+          var wState = {};
+          try { wState = JSON.parse(sessionStorage.getItem('ww_wizard_state_v1') || '{}'); } catch(e) {}
+          wState.period = modalState.period;
+          sessionStorage.setItem('ww_wizard_state_v1', JSON.stringify(wState));
         } catch(e) {}
         window.closeUpgradeModal();
         if (window.location.pathname.includes('/settings')) {

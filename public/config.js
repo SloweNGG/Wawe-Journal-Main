@@ -263,6 +263,8 @@ const WW_CONFIG = {
   DEFAULT_PRICES: {
     monthly: 12,
     yearly: 99,
+    basic_monthly: 6,
+    basic_yearly: 49,
     currency: 'USD',
     discount: { yearly: 27, promo: 0 },
     paymentMethods: ['BTC', 'LTC']
