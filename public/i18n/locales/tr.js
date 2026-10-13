@@ -835,6 +835,8 @@ export default {
   "settings.plan_step4_title": "Sipariş Özeti & Ödeme",
   "settings.plan_step4_sub": "Ödeme yönteminizi seçin ve güvenli ödeme ile üyeliğinizi hemen başlatın.",
   "settings.plan_skip_coupon": "Kuponum Yok, Bu Adımı Atla",
+  "settings.plan_apply_coupon": "Uygula",
+  "settings.plan_continue_with_discount": "İndirimle Devam Et →",
   "settings.plan_continue_summary": "Özete Devam Et",
   "settings.plan_pay_submit": "Güvenli Ödeme Yap",
   "settings.plan_back": "Geri",

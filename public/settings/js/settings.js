@@ -51,14 +51,38 @@ wwLog.log('🔧 settings.js yükleniyor...');
   wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
-// ============================================================
-// ⭐ i18n GÜVENLİ ERİŞİM WRAPPER'I
-// ============================================================
-function t(key, params) {
-  if (window.i18n && typeof window.i18n.t === 'function') {
-    return window.i18n.t(key, params);
+function t(key, arg2, arg3) {
+  var fallback = '';
+  var params = {};
+
+  if (typeof arg2 === 'string') {
+    fallback = arg2;
+    params = (typeof arg3 === 'object' && arg3 !== null) ? arg3 : {};
+  } else if (typeof arg2 === 'object' && arg2 !== null) {
+    params = arg2;
+    fallback = typeof arg3 === 'string' ? arg3 : '';
+  } else if (typeof arg3 === 'string') {
+    fallback = arg3;
   }
-  return key;
+
+  var text = '';
+  if (window.i18n && typeof window.i18n.t === 'function') {
+    try {
+      text = window.i18n.t(key, params);
+    } catch(e) {}
+  }
+
+  if (!text || text === key) {
+    text = fallback || key;
+  }
+
+  if (typeof text === 'string' && params && typeof params === 'object') {
+    for (var k in params) {
+      text = text.replace(new RegExp('\\{+' + k + '\\}+', 'g'), params[k]);
+    }
+  }
+
+  return (typeof text === 'string' && text !== '[object Object]') ? text : (fallback || key);
 }
 
 var THEME_FALLBACKS = {
@@ -1373,10 +1397,12 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (couponStatus) {
       couponStatus.style.display = 'block';
       couponStatus.className = 'coupon-status-box success';
-      couponStatus.innerHTML = '🎉 <strong>' + sanitizeHTML(appliedReferralCode) + '</strong> ' + t('settings.plan_referral_discount_applied', { discount: appliedDiscount }, '%' + appliedDiscount + ' indirim başarıyla uygulandı!');
+      var discountMsg = t('settings.plan_referral_discount_applied', { discount: appliedDiscount }, '%' + appliedDiscount + ' indirim başarıyla uygulandı!')
+        .replace(/\{+discount\}+/gi, appliedDiscount);
+      couponStatus.innerHTML = '<strong>' + sanitizeHTML(appliedReferralCode) + '</strong> ' + discountMsg;
     }
     if (btnTo4) btnTo4.style.display = 'inline-flex';
-    if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', {}, 'İndirimle Devam Et →');
+    if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', 'İndirimle Devam Et →');
   }
 
   if (btnBackTo2) {
@@ -1447,17 +1473,19 @@ function setupPlanWizard(wizardRoot, isExtending) {
           if (couponStatus) {
             couponStatus.style.display = 'block';
             couponStatus.className = 'coupon-status-box success';
-            couponStatus.innerHTML = '🎉 <strong>' + sanitizeHTML(code) + '</strong> ' + t('settings.plan_referral_discount_applied', { discount: appliedDiscount }, '%' + appliedDiscount + ' indirim başarıyla uygulandı!');
+            var discountMsg = t('settings.plan_referral_discount_applied', { discount: appliedDiscount }, '%' + appliedDiscount + ' indirim başarıyla uygulandı!')
+              .replace(/\{+discount\}+/gi, appliedDiscount);
+            couponStatus.innerHTML = '<strong>' + sanitizeHTML(code) + '</strong> ' + discountMsg;
           }
           if (btnTo4) btnTo4.style.display = 'inline-flex';
-          if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', {}, 'İndirimle Devam Et →');
+          if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', 'İndirimle Devam Et →');
         } else {
-          var errMsg = t('settings.plan_referral_invalid', {}, 'Geçersiz kupon veya promosyon kodu.');
+          var errMsg = t('settings.plan_referral_invalid', 'Geçersiz kupon veya promosyon kodu.');
           if (data && data.error) {
-            if (data.error === 'expired_code') errMsg = t('settings.plan_referral_expired', {}, 'Bu kodun süresi dolmuş.');
-            else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit', {}, 'Bu kodun kullanım limiti dolmuş.');
-            else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive', {}, 'Bu kod aktif değil.');
-            else if (data.error === 'self_referral_not_allowed') errMsg = t('settings.plan_referral_self', {}, 'Kendi referans kodunuzu kullanamazsınız.');
+            if (data.error === 'expired_code') errMsg = t('settings.plan_referral_expired', 'Bu kodun süresi dolmuş.');
+            else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit', 'Bu kodun kullanım limiti dolmuş.');
+            else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive', 'Bu kod aktif değil.');
+            else if (data.error === 'self_referral_not_allowed') errMsg = t('settings.plan_referral_self', 'Kendi referans kodunuzu kullanamazsınız.');
           }
           throw new Error(errMsg);
         }
@@ -1467,7 +1495,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
         saveWizardState();
         var errStr = (err && err.message) ? err.message : (typeof err === 'string' ? err : '');
         if (!errStr || errStr === '[object Object]') {
-          errStr = t('settings.plan_referral_error', {}, 'Kod doğrulanamadı.');
+          errStr = t('settings.plan_referral_error', 'Kod doğrulanamadı.');
         }
         if (couponStatus) {
           couponStatus.style.display = 'block';
@@ -1475,10 +1503,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
           couponStatus.textContent = errStr;
         }
         if (btnTo4) btnTo4.style.display = 'none';
-        if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_skip_coupon', {}, 'Kuponum Yok, Bu Adımı Atla →');
+        if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_skip_coupon', 'Kuponum Yok, Bu Adımı Atla →');
       } finally {
         btnApplyCoupon.disabled = false;
-        btnApplyCoupon.textContent = t('settings.plan_apply_coupon', {}, 'Uygula');
+        btnApplyCoupon.textContent = t('settings.plan_apply_coupon', 'Uygula');
       }
     });
 

@@ -890,6 +890,8 @@ export default {
   "settings.plan_step4_title": "Order Summary & Payment",
   "settings.plan_step4_sub": "Select your payment currency and complete your checkout securely.",
   "settings.plan_skip_coupon": "I don't have a coupon, skip",
+  "settings.plan_apply_coupon": "Apply",
+  "settings.plan_continue_with_discount": "Continue with Discount →",
   "settings.plan_continue_summary": "Continue to Summary",
   "settings.plan_pay_submit": "Complete Secure Payment",
   "settings.plan_back": "Back",

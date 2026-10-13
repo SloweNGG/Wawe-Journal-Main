@@ -858,6 +858,8 @@ export default {
   "settings.plan_step4_title": "Bestellübersicht & Bezahlung",
   "settings.plan_step4_sub": "Wählen Sie Ihre Kryptowährung und schließen Sie die Zahlung sicher ab.",
   "settings.plan_skip_coupon": "Kein Gutschein, überspringen",
+  "settings.plan_apply_coupon": "Anwenden",
+  "settings.plan_continue_with_discount": "Mit Rabatt fortfahren →",
   "settings.plan_continue_summary": "Zur Übersicht",
   "settings.plan_pay_submit": "Sicher bezahlen",
   "settings.plan_back": "Zurück",

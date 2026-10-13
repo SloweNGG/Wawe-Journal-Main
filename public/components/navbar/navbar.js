@@ -958,6 +958,14 @@ window.closeMobileMenuAndNavigate = function(e, url) {
 };
 
 function t(key, fallback, params) {
+  if (typeof fallback === 'object' && fallback !== null && typeof params === 'string') {
+    var temp = fallback;
+    fallback = params;
+    params = temp;
+  } else if (typeof fallback === 'object' && fallback !== null) {
+    params = fallback;
+    fallback = '';
+  }
   var val = fallback || key || '';
   if (typeof i18n !== 'undefined' && i18n.t && key) {
     var translated = i18n.t(key, params);
@@ -968,7 +976,8 @@ function t(key, fallback, params) {
       val = val.replace(new RegExp('\\{+' + k + '\\}+', 'g'), params[k]);
     }
   }
-  return typeof val === 'string' ? val : String(val || '');
+  var res = typeof val === 'string' ? val : String(val || '');
+  return res === '[object Object]' ? (fallback || key) : res;
 }
 
 wwLog.log('🧭 Navbar yükleniyor (CLIENT-SIDE RENDER)...');

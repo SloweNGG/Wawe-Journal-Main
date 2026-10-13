@@ -194,9 +194,7 @@
       var keys = Object.keys(params);
       for (var i = 0; i < keys.length; i++) {
         var p = keys[i];
-        text = text.replace(new RegExp('{{' + p + '}}', 'g'), params[p]);
-        // Support both {param} and {{param}}
-        text = text.replace(new RegExp('\\{\\{?' + p + '\\}?\\}', 'g'), params[p]);
+        text = text.replace(new RegExp('\\{+' + p + '\\}+', 'g'), params[p]);
       }
     }
     return text;
