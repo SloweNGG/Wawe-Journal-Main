@@ -2156,10 +2156,10 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-node.completed .step-circle {
-  border-color: #10b981;
-  background: #10b981;
+  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: #fff;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.4);
 }
 
 .step-check {
@@ -2192,7 +2192,8 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-connector.active {
-  background: linear-gradient(90deg, #10b981, var(--accent));
+  background: linear-gradient(90deg, #7c3aed, #8b5cf6);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
 @media (max-width: 640px) {
@@ -3115,7 +3116,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .nav-btn-submit-pay {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -3126,13 +3127,13 @@ body.light-theme .panel-glow.overtrade-glow {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  box-shadow: 0 4px 22px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 22px rgba(139, 92, 246, 0.4);
   transition: all 0.25s ease;
 }
 
 .nav-btn-submit-pay:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.55);
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.6);
   filter: brightness(1.08);
 }
 
