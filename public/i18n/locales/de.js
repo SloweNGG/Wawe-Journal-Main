@@ -862,6 +862,7 @@ export default {
   "settings.plan_continue_with_discount": "Mit Rabatt fortfahren →",
   "settings.plan_continue_summary": "Zur Übersicht",
   "settings.plan_pay_submit": "Sicher bezahlen",
+  "settings.plan_pay_submit_simple": "Jetzt bezahlen",
   "settings.plan_back": "Zurück",
   "settings.plan_continue": "Weiter",
   "settings.plan_select_premium": "Premium wählen & Laufzeit festlegen",

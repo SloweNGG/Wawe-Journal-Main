@@ -1618,7 +1618,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
     if (netTotalEl) netTotalEl.textContent = netTotal.toFixed(2);
     if (btnPayLabel) {
-      btnPayLabel.textContent = t('settings.plan_pay_securely_btn', { amount: netTotal.toFixed(2) }, 'Güvenli Ödeme Yap ($' + netTotal.toFixed(2) + ')');
+      btnPayLabel.textContent = t('settings.plan_pay_submit_simple', {}, 'Ödeme Yap');
     }
   }
 
@@ -1664,7 +1664,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
       btnSubmitPayment.disabled = true;
       var origContent = btnSubmitPayment.innerHTML;
-      btnSubmitPayment.innerHTML = '<span class="spinner-icon">⏳</span> <span>' + t('settings.plan_preparing_payment', {}, 'Ödeme Sayfası Hazırlanıyor...') + '</span>';
+      btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_preparing_payment', {}, 'Ödeme Sayfası Hazırlanıyor...') + '</span>';
 
       try {
         if (window.upgradeToPremium) {

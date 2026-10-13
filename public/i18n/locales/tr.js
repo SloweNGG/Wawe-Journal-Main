@@ -839,6 +839,7 @@ export default {
   "settings.plan_continue_with_discount": "İndirimle Devam Et →",
   "settings.plan_continue_summary": "Özete Devam Et",
   "settings.plan_pay_submit": "Güvenli Ödeme Yap",
+  "settings.plan_pay_submit_simple": "Ödeme Yap",
   "settings.plan_back": "Geri",
   "settings.plan_continue": "Devam Et",
   "settings.plan_select_premium": "Premium Planı Seç & Süreyi Belirle",

@@ -894,6 +894,7 @@ export default {
   "settings.plan_continue_with_discount": "Continue with Discount →",
   "settings.plan_continue_summary": "Continue to Summary",
   "settings.plan_pay_submit": "Complete Secure Payment",
+  "settings.plan_pay_submit_simple": "Pay Now",
   "settings.plan_back": "Back",
   "settings.plan_continue": "Continue",
   "settings.plan_select_premium": "Select Premium & Choose Duration",
