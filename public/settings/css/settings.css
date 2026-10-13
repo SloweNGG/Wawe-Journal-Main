@@ -2127,6 +2127,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-circle {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   width: clamp(26px, 3.5vw, 32px);
   height: clamp(26px, 3.5vw, 32px);
   border-radius: 50%;
@@ -2169,7 +2170,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-text {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(11.5px, 1vw, 13.5px);
   font-weight: 600;
   color: var(--text);
@@ -2229,7 +2230,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-main-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.2rem, 1.8vw, 1.45rem);
   font-weight: 700;
   color: var(--text);
@@ -2329,7 +2330,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .tier-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
@@ -2563,6 +2564,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-badge {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2597,10 +2599,11 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.15rem;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
+  letter-spacing: -0.01em;
   margin-bottom: 0.4rem;
 }
 
@@ -2647,6 +2650,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-desc {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.78rem;
   color: var(--muted);
   margin: auto 0 0 0;
@@ -2736,7 +2740,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .coupon-top-visual h4 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
@@ -2859,7 +2863,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .box-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
