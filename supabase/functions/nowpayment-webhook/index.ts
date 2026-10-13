@@ -63,6 +63,8 @@ const PAYMENT_STATUS = {
 // ⭐ Get plan duration in days
 function getPlanDuration(planType: string): number {
   if (planType === 'yearly' || planType === 'year') return 365;
+  if (planType === '6months' || planType === '6_months') return 180;
+  if (planType === '3months' || planType === '3_months') return 90;
   if (planType === 'monthly' || planType === 'month') return 30;
   return 30;
 }
@@ -402,7 +404,9 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
 
   // ⭐ Kullanıcıya sistem bildirimi ekle
   try {
-    const planLabel = (planType === 'yearly' || planType === 'year') ? '1 yıllık' : '1 aylık';
+    const planLabel = (planType === 'yearly' || planType === 'year') ? '1 yıllık' :
+      (planType === '6months' || planType === '6_months') ? '6 aylık' :
+      (planType === '3months' || planType === '3_months') ? '3 aylık' : '1 aylık';
     const amt = payload.actually_paid || payload.pay_amount || payload.price_amount || 0;
     const cur = payload.pay_currency || payload.price_currency || 'USD';
     await supabase.from('notifications').insert([{

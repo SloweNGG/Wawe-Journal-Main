@@ -110,9 +110,9 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 }
 
 // ⭐ Plan validasyonu
-const VALID_PLANS = ['monthly', 'yearly', 'premium'];
+const VALID_PLANS = ['monthly', 'yearly', 'premium', '3months', '6months'];
 const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'TRY'];
-const VALID_PAY_CURRENCIES = ['BTC', 'LTC', 'ETH', 'XRP', 'BCH', 'DOGE'];
+const VALID_PAY_CURRENCIES = ['BTC', 'LTC', 'ETH', 'XRP', 'BCH', 'DOGE', 'USDT', 'USDTTRC20'];
 
 function validatePlanType(planType: string): boolean {
   return VALID_PLANS.includes(planType);
@@ -137,9 +137,15 @@ function resolvePrice(prices: any, planType: string, currency: string): number {
   let basePrice = 0;
 
   if (planType === 'monthly' || planType === 'premium') {
-    basePrice = Number(prices.monthly) || 9;
+    basePrice = Number(prices.monthly) || 12;
+  } else if (planType === '3months') {
+    const m = Number(prices.monthly) || 12;
+    basePrice = Math.round(m * 3 * 0.86);
+  } else if (planType === '6months') {
+    const m = Number(prices.monthly) || 12;
+    basePrice = Math.round(m * 6 * 0.80);
   } else if (planType === 'yearly') {
-    basePrice = Number(prices.yearly) || 79;
+    basePrice = Number(prices.yearly) || 99;
   } else {
     return getFallbackPlanPrice(planType, currency);
   }
@@ -368,19 +374,17 @@ serve(async (req: Request) => {
         const { data: psData } = await adminClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
         if (psData?.value) paymentSettings = { ...paymentSettings, ...psData.value };
 
-        const { data: prData } = await adminClient.from('system_settings').select('value').eq('key', 'prices').single();
-        if (prData?.value) {
-          if (planType === 'monthly' || planType === 'premium') {
-            baseAmount = Number(prData.value.monthly) || Number(paymentSettings.monthly_price_usd) || 12;
-          } else if (planType === 'yearly') {
-            baseAmount = Number(prData.value.yearly) || Number(paymentSettings.yearly_price_usd) || 99;
-          }
-        } else if (psData?.value) {
-          if (planType === 'monthly' || planType === 'premium') {
-            baseAmount = Number(paymentSettings.monthly_price_usd) || 12;
-          } else if (planType === 'yearly') {
-            baseAmount = Number(paymentSettings.yearly_price_usd) || 99;
-          }
+        const mPrice = Number(prData?.value?.monthly) || Number(paymentSettings.monthly_price_usd) || 12;
+        const yPrice = Number(prData?.value?.yearly) || Number(paymentSettings.yearly_price_usd) || 99;
+
+        if (planType === 'monthly' || planType === 'premium') {
+          baseAmount = mPrice;
+        } else if (planType === '3months') {
+          baseAmount = Math.round(mPrice * 3 * 0.86);
+        } else if (planType === '6months') {
+          baseAmount = Math.round(mPrice * 6 * 0.80);
+        } else if (planType === 'yearly') {
+          baseAmount = yPrice;
         }
       } catch (e) {
         console.warn('⚠️ Error fetching price settings:', e);

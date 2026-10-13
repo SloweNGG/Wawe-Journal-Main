@@ -936,7 +936,11 @@ function showConfirmModal(title, message, warning, onConfirm, onCancel) {
   if (warningEl && warning) {
     warningEl.style.display = 'flex';
     var span = warningEl.querySelector('span');
-    if (span) span.textContent = sanitizeHTML(warning);
+    if (span) {
+      span.style.whiteSpace = 'pre-line';
+      var cleanWarning = String(warning).replace(/\\n/g, '\n');
+      span.textContent = cleanWarning;
+    }
   } else if (warningEl) {
     warningEl.style.display = 'none';
   }
@@ -1024,19 +1028,6 @@ async function renderPlan() {
     } catch(err) { console.error('Plan prices fetch err:', err); }
 
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
-
-    window.SETTINGS_STATE.isPremium = isPremium;
-
-    if (isPremium && expiresAt && new Date() > expiresAt) {
-      window.SETTINGS_STATE.isPremium = false;
-      renderPlan();
-      return;
-    }
-
-    var monthly = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
-    var yearly = window.getYearlyPrice ? window.getYearlyPrice() : 99;
-    var methods = window.getPaymentMethods ? window.getPaymentMethods() : ['BTC', 'LTC'];
-
     var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
     var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
 
@@ -1050,17 +1041,21 @@ async function renderPlan() {
     var clone = tpl.content.cloneNode(true);
 
     if (isPremium) {
+      // ⭐ PREMİUM AKTİF GÖRÜNÜMÜ
       var daysLeft = expiresAt ? Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)) : 0;
-      var pct = Math.max(0, Math.min(100, ((30 - daysLeft) / 30) * 100));
-
       var daysEl = clone.querySelector('[data-bind="days-left"]');
-      if (daysEl) daysEl.textContent = daysLeft + ' ' + t('settings.plan_days');
-
-      var progEl = clone.querySelector('[data-bind="progress"]');
-      if (progEl) progEl.style.width = pct + '%';
+      if (daysEl) daysEl.textContent = Math.max(0, daysLeft) + ' ' + t('settings.plan_days', {}, 'gün');
 
       var expEl = clone.querySelector('[data-bind="expiry-date"]');
-      if (expEl && expiresAt) expEl.textContent = expiresAt.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+      if (expEl && expiresAt) {
+        expEl.textContent = expiresAt.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+      }
+
+      var progEl = clone.querySelector('[data-bind="progress"]');
+      if (progEl) {
+        var pct = Math.max(0, Math.min(100, ((30 - Math.min(30, daysLeft)) / 30) * 100));
+        progEl.style.width = pct + '%';
+      }
 
       var perksGrid = clone.querySelector('#plan-perks-grid');
       if (perksGrid) {
@@ -1078,236 +1073,81 @@ async function renderPlan() {
           perksGrid.appendChild(item);
         });
       }
-    } else {
-      var methodsContainer = clone.querySelector('#plan-payment-methods');
-      if (methodsContainer) {
-        methods.forEach(function(m, idx) {
-          var btn = document.createElement('button');
-          btn.className = 'pay-method-btn' + (idx === 0 ? ' active' : '');
-          btn.setAttribute('data-method', m);
-          btn.textContent = m;
-          methodsContainer.appendChild(btn);
-        });
-        if (methods.length > 0) window.SETTINGS_STATE.payMethod = methods[0];
-      }
 
-      var monthlyBtnSpan = clone.querySelector('#upgrade-monthly [data-i18n="settings.plan_monthly_btn"]');
-      if (monthlyBtnSpan) monthlyBtnSpan.setAttribute('data-i18n-params', JSON.stringify({ price: String(monthly) }));
+      container.innerHTML = '';
+      container.appendChild(clone);
 
-      var yearlyBtnSpan = clone.querySelector('#upgrade-yearly [data-i18n="settings.plan_yearly_btn"]');
-      if (yearlyBtnSpan) yearlyBtnSpan.setAttribute('data-i18n-params', JSON.stringify({ price: String(yearly) }));
-
-      var secureSpan = clone.querySelector('[data-i18n="settings.plan_secure_payment"]');
-      if (secureSpan) secureSpan.setAttribute('data-i18n-params', JSON.stringify({ methods: methods.join(' / ') }));
-    }
-
-
-    
-    
-    // REFERANS KODU MANTIĞI & TEMİZLİK (Cache ve önceki indirim kalıntılarını sıfırla)
-    window.SETTINGS_STATE.appliedReferralCode = null;
-    window.SETTINGS_STATE.appliedDiscount = 0;
-
-    var refBtn = clone.querySelector('#apply-referral-btn');
-    var refInput = clone.querySelector('#referral-input');
-    var refMsg = clone.querySelector('#referral-msg');
-    if (refInput) refInput.value = '';
-    if (refMsg) { refMsg.textContent = ''; refMsg.style.color = ''; }
-    
-    var monthlyBtnSpan = clone.querySelector('#upgrade-monthly span[data-i18n]');
-    var yearlyBtnSpan = clone.querySelector('#upgrade-yearly span[data-i18n]');
-    var monthlyBtn = clone.querySelector('#upgrade-monthly');
-    var yearlyBtn = clone.querySelector('#upgrade-yearly');
-
-    function updatePriceDisplay(discount = 0) {
-      var isBtc = window.SETTINGS_STATE.payMethod === 'BTC';
-      
-      var baseMonthly = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
-      var baseYearly = window.getYearlyPrice ? window.getYearlyPrice() : 99;
-      
-      var finalMonthly = baseMonthly;
-      var finalYearly = baseYearly;
-      
-      if (isBtc) {
-        if (discount > 0 && refMsg) {
-           refMsg.textContent = t('settings.plan_referral_btc_warning');
-           refMsg.style.color = 'var(--red)';
-        }
-      } else {
-        if (discount > 0) {
-           finalMonthly = baseMonthly - (baseMonthly * (discount / 100));
-           finalYearly = baseYearly - (baseYearly * (discount / 100));
-           if (refMsg) {
-             refMsg.textContent = t('settings.plan_referral_discount_applied', { discount: discount });
-             refMsg.style.color = 'var(--green)';
-           }
-        }
-      }
-
-      var monthlyLabel = t('settings.plan_monthly_label');
-      if (!monthlyLabel || monthlyLabel === 'settings.plan_monthly_label') monthlyLabel = 'Aylık';
-      var yearlyLabel = t('settings.plan_yearly_label');
-      if (!yearlyLabel || yearlyLabel === 'settings.plan_yearly_label') yearlyLabel = 'Yıllık';
-
-      if (monthlyBtn) {
-         if (discount > 0 && !isBtc) {
-            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + monthlyLabel + ': <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseMonthly + '</span> $' + finalMonthly.toFixed(2);
-         } else {
-            monthlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + monthlyLabel + ': $' + baseMonthly;
-         }
-         if(window.lucide) window.lucide.createIcons();
-      }
-
-      if (yearlyBtn) {
-         if (discount > 0 && !isBtc) {
-            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + yearlyLabel + ': <span style="text-decoration:line-through; font-size:12px; margin-right:4px;">$' + baseYearly + '</span> $' + finalYearly.toFixed(2);
-         } else {
-            yearlyBtn.innerHTML = '<span data-icon="credit-card"></span> ' + yearlyLabel + ': $' + baseYearly;
-         }
-         if(window.lucide) window.lucide.createIcons();
-      }
-    }
-
-    if (refBtn && refInput) {
-      refBtn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        var code = refInput.value.trim().toUpperCase();
-        if (!code) return;
-        
-        refBtn.textContent = '...';
-        refBtn.disabled = true;
-        
-        try {
-          var sb = window.sb || window.supabase;
-          var { data, error } = await sb.rpc('validate_referral_code', { p_code: code });
-          
-          if (error) throw error;
-          
-          if (data && data.valid) {
-            window.SETTINGS_STATE.appliedReferralCode = code;
-            window.SETTINGS_STATE.appliedDiscount = data.discount_percent;
-            
-            if (refMsg) {
-              refMsg.textContent = t('settings.plan_referral_discount_applied', { discount: data.discount_percent });
-              refMsg.style.color = 'var(--green)';
+      // İptal Butonu
+      var cancelBtn = container.querySelector('#cancel-premium-btn');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', async function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (window.cancelPremium) {
+            var success = await window.cancelPremium();
+            if (success) {
+              showMsg(t('settings.cancel_subscription_success', {}, 'Abonelik iptal edildi.'), 'success');
+              await renderPlan();
+              if (typeof window.updateNavbarBadge === 'function') await window.updateNavbarBadge();
+              if (typeof window.updateBadge === 'function') await window.updateBadge();
             }
-            updatePriceDisplay(data.discount_percent);
+          }
+        });
+      }
+
+      // Uzat / Yenile Butonu & Açılır Sihirbaz
+      var extendBtn = container.querySelector('#extend-premium-btn');
+      var extendWrapper = container.querySelector('#extend-wizard-wrapper');
+      var closeExtendBtn = container.querySelector('#btn-close-extend-wizard');
+      var extendContainer = container.querySelector('#extend-wizard-container');
+
+      if (extendBtn && extendWrapper) {
+        extendBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (extendWrapper.style.display === 'none' || !extendWrapper.style.display) {
+            extendWrapper.style.display = 'block';
+            if (extendContainer && !extendContainer.hasChildNodes()) {
+              var freeTpl = document.getElementById('tpl-plan-free');
+              if (freeTpl) {
+                var freeClone = freeTpl.content.cloneNode(true);
+                extendContainer.appendChild(freeClone);
+                setupPlanWizard(extendContainer.querySelector('#plan-wizard'), true);
+                if (window.lucide) window.lucide.createIcons();
+                if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
+              }
+            }
+            extendWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           } else {
-            var errMsg = t('settings.plan_referral_invalid');
-            if (data && data.error) {
-              if (data.error === 'expired_code') errMsg = t('settings.plan_referral_expired');
-              else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit');
-              else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive');
-              else if (data.error === 'self_referral_not_allowed') errMsg = t('settings.plan_referral_self', {}, 'Kendi referans kodunuzu kullanamazsınız.');
-              else if (data.error === 'invalid_code') errMsg = t('settings.plan_referral_invalid');
-            }
-            throw new Error(errMsg);
+            extendWrapper.style.display = 'none';
           }
-        } catch (err) {
-          window.SETTINGS_STATE.appliedReferralCode = null;
-          window.SETTINGS_STATE.appliedDiscount = 0;
-          if (refMsg) {
-            refMsg.textContent = err.message || t('settings.plan_referral_error');
-            refMsg.style.color = 'var(--red)';
-          }
-          updatePriceDisplay(0);
-        } finally {
-          refBtn.textContent = t('settings.plan_referral_apply');
-          if (!refBtn.textContent || refBtn.textContent === 'settings.plan_referral_apply') {
-            refBtn.textContent = 'Uygula';
-          }
-          refBtn.disabled = false;
-        }
-      });
+        });
+      }
+
+      if (closeExtendBtn && extendWrapper) {
+        closeExtendBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          extendWrapper.style.display = 'none';
+        });
+      }
+
+      if (expiresAt) startTimer(expiresAt);
+
+    } else {
+      // ⭐ FREE KULLANICI — ADIM ADIM ÖDEME SİHİRBAZI
+      container.innerHTML = '';
+      container.appendChild(clone);
+
+      var wizardEl = container.querySelector('#plan-wizard');
+      if (wizardEl) {
+        setupPlanWizard(wizardEl, false);
+      }
     }
 
-    // Bind payment method changes to re-calc price
-    setTimeout(function() {
-      var inputs = document.querySelectorAll('input[name="payment_method"]');
-      inputs.forEach(function(r) {
-        r.addEventListener('change', function() {
-           window.SETTINGS_STATE.payMethod = this.value;
-           updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
-        });
-      });
-      // Initial render - sifir indirim ile temiz baslat
-      updatePriceDisplay(0);
-    }, 100);
-
-    clone.querySelectorAll('[data-icon]').forEach(function(el) {
-      el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
-    });
-
-    container.innerHTML = '';
-    container.appendChild(clone);
-
+    // Lucide ikonları & i18n
+    if (window.lucide) window.lucide.createIcons();
     if (window.i18n && typeof window.i18n.apply === 'function') {
       try { window.i18n.apply(); } catch(e) {}
     }
-
-    var monthlyBtn = container.querySelector('#upgrade-monthly');
-    if (monthlyBtn) {
-      monthlyBtn.addEventListener('click', async function() {
-        var payMethod = window.SETTINGS_STATE.payMethod || 'BTC';
-        var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
-        var refCode = window.SETTINGS_STATE.appliedReferralCode || null;
-        if (window.upgradeToPremium) {
-          await window.upgradeToPremium('monthly', price, 'USD', payMethod, refCode);
-        } else {
-          showMsg(t('payment.link_failed'), 'error');
-        }
-      });
-    }
-
-    var yearlyBtn = container.querySelector('#upgrade-yearly');
-    if (yearlyBtn) {
-      yearlyBtn.addEventListener('click', async function() {
-        var payMethod = window.SETTINGS_STATE.payMethod || 'BTC';
-        var price = window.getYearlyPrice ? window.getYearlyPrice() : 99;
-        var refCode = window.SETTINGS_STATE.appliedReferralCode || null;
-        if (window.upgradeToPremium) {
-          await window.upgradeToPremium('yearly', price, 'USD', payMethod, refCode);
-        } else {
-          showMsg(t('payment.link_failed'), 'error');
-        }
-      });
-    }
-
-    var cancelBtn = container.querySelector('#cancel-premium-btn');
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (window.cancelPremium) {
-          var success = await window.cancelPremium();
-          if (success) {
-            showMsg(t('settings.cancel_subscription_success'), 'success');
-            await renderPlan();
-            // ⭐ FIX v6: Navbar badge'ini ANINDA güncelle
-            if (typeof window.updateNavbarBadge === 'function') {
-              await window.updateNavbarBadge();
-            }
-            if (typeof window.updateBadge === 'function') {
-              await window.updateBadge();
-            }
-          }
-        }
-      });
-    }
-
-    container.querySelectorAll('.pay-method-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        container.querySelectorAll('.pay-method-btn').forEach(function(b) { b.classList.remove('active'); });
-        this.classList.add('active');
-        window.SETTINGS_STATE.payMethod = this.getAttribute('data-method');
-        if (window.selectPayMethod) window.selectPayMethod(this.getAttribute('data-method'));
-        if (typeof updatePriceDisplay === 'function') {
-          updatePriceDisplay(window.SETTINGS_STATE.appliedDiscount || 0);
-        }
-      });
-    });
-
-    if (isPremium && expiresAt) startTimer(expiresAt);
 
   } catch (e) {
     console.error('Plan hatası:', e);
@@ -1315,43 +1155,364 @@ async function renderPlan() {
   }
 }
 
+// ============================================================
+// ⭐ ADIM ADIM ÖDEME SİHİRBAZI MANTIĞI (CHECKOUT WIZARD)
+// ============================================================
+function setupPlanWizard(wizardRoot, isExtending) {
+  if (!wizardRoot) return;
+
+  var currentStep = isExtending ? 2 : 1;
+  var selectedPeriod = 'yearly';
+  var selectedPayMethod = 'LTC';
+  var appliedReferralCode = null;
+  var appliedDiscount = 0;
+
+  function getPlanPrices() {
+    var m = (window.getMonthlyPrice ? window.getMonthlyPrice() : 12) || 12;
+    var y = (window.getYearlyPrice ? window.getYearlyPrice() : 99) || 99;
+    return {
+      monthly: { base: m, monthlyRate: m.toFixed(2), days: 30, name: '1 Aylık' },
+      '3months': { base: Math.round(m * 3 * 0.86), monthlyRate: (Math.round(m * 3 * 0.86) / 3).toFixed(2), days: 90, name: '3 Aylık' },
+      '6months': { base: Math.round(m * 6 * 0.80), monthlyRate: (Math.round(m * 6 * 0.80) / 6).toFixed(2), days: 180, name: '6 Aylık' },
+      yearly: { base: y, monthlyRate: (y / 12).toFixed(2), days: 365, name: '1 Yıllık' }
+    };
+  }
+
+  function updatePeriodCardsUI() {
+    var prices = getPlanPrices();
+    var periods = ['monthly', '3months', '6months', 'yearly'];
+    periods.forEach(function(p) {
+      var card = wizardRoot.querySelector('.duration-option-card[data-period="' + p + '"]');
+      if (!card) return;
+      var rateEl = card.querySelector('#period-rate-' + p);
+      var totalEl = card.querySelector('#period-total-' + p);
+      if (rateEl) rateEl.textContent = prices[p].monthlyRate;
+      if (totalEl) totalEl.textContent = '$' + prices[p].base.toFixed(2);
+    });
+
+    var minPriceEl = wizardRoot.querySelector('#step1-min-price');
+    if (minPriceEl) minPriceEl.textContent = prices.yearly.monthlyRate;
+  }
+  updatePeriodCardsUI();
+
+  function goToStep(step) {
+    currentStep = step;
+
+    var panels = wizardRoot.querySelectorAll('.wizard-step-panel');
+    panels.forEach(function(panel) {
+      panel.classList.remove('active');
+      panel.style.display = 'none';
+    });
+    var targetPanel = wizardRoot.querySelector('#wizard-step-' + step);
+    if (targetPanel) {
+      targetPanel.classList.add('active');
+      targetPanel.style.display = 'block';
+    }
+
+    var stepNodes = wizardRoot.querySelectorAll('.step-node');
+    stepNodes.forEach(function(node) {
+      var s = parseInt(node.getAttribute('data-step'), 10);
+      node.classList.remove('active', 'completed');
+      if (s === step) {
+        node.classList.add('active');
+      } else if (s < step) {
+        node.classList.add('completed');
+      }
+    });
+
+    for (var c = 1; c <= 3; c++) {
+      var conn = wizardRoot.querySelector('#step-conn-' + c);
+      if (conn) {
+        if (c < step) {
+          conn.classList.add('active');
+        } else {
+          conn.classList.remove('active');
+        }
+      }
+    }
+
+    if (step === 4) {
+      renderSummary();
+    }
+
+    try {
+      wizardRoot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch(e) {}
+  }
+
+  // --- ADIM 1 ETKİNLİKLERİ ---
+  var btnSelectPremium1 = wizardRoot.querySelector('#btn-select-premium-step1');
+  if (btnSelectPremium1) {
+    btnSelectPremium1.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(2);
+    });
+  }
+
+  var premiumTierCard1 = wizardRoot.querySelector('.plan-tier-card.premium-tier');
+  if (premiumTierCard1) {
+    premiumTierCard1.addEventListener('click', function(e) {
+      if (e.target.closest('#btn-select-premium-step1')) return;
+      goToStep(2);
+    });
+  }
+
+  // --- ADIM 2 ETKİNLİKLERİ (SÜRE / DÖNEM) ---
+  var durationCards = wizardRoot.querySelectorAll('.duration-option-card');
+  durationCards.forEach(function(card) {
+    card.addEventListener('click', function() {
+      durationCards.forEach(function(c) { c.classList.remove('selected'); });
+      this.classList.add('selected');
+      selectedPeriod = this.getAttribute('data-period') || 'yearly';
+    });
+  });
+
+  var btnBackTo1 = wizardRoot.querySelector('#btn-back-to-step1');
+  if (btnBackTo1) {
+    btnBackTo1.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(1);
+    });
+  }
+
+  var btnTo3 = wizardRoot.querySelector('#btn-to-step3');
+  if (btnTo3) {
+    btnTo3.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(3);
+    });
+  }
+
+  // --- ADIM 3 ETKİNLİKLERİ (İNDİRİM KUPONU / REFERANS) ---
+  var couponInput = wizardRoot.querySelector('#wizard-coupon-input');
+  var btnApplyCoupon = wizardRoot.querySelector('#btn-wizard-apply-coupon');
+  var couponStatus = wizardRoot.querySelector('#wizard-coupon-status');
+  var btnSkipCoupon = wizardRoot.querySelector('#btn-skip-coupon');
+  var btnTo4 = wizardRoot.querySelector('#btn-to-step4');
+  var btnBackTo2 = wizardRoot.querySelector('#btn-back-to-step2');
+
+  if (btnBackTo2) {
+    btnBackTo2.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(2);
+    });
+  }
+
+  if (btnSkipCoupon) {
+    btnSkipCoupon.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(4);
+    });
+  }
+
+  if (btnTo4) {
+    btnTo4.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(4);
+    });
+  }
+
+  if (btnApplyCoupon && couponInput) {
+    btnApplyCoupon.addEventListener('click', async function(e) {
+      e.preventDefault();
+      var code = (couponInput.value || '').trim().toUpperCase();
+      if (!code) {
+        if (couponStatus) {
+          couponStatus.style.display = 'block';
+          couponStatus.className = 'coupon-status-box error';
+          couponStatus.textContent = t('settings.plan_referral_enter_code', {}, 'Lütfen bir kupon kodu girin.');
+        }
+        return;
+      }
+
+      btnApplyCoupon.disabled = true;
+      btnApplyCoupon.textContent = '...';
+
+      try {
+        var sb = window.sb || window.supabase;
+        if (!sb) throw new Error(t('common.db_connection_error', {}, 'Veritabanı bağlantı hatası'));
+        var { data, error } = await sb.rpc('validate_referral_code', { p_code: code });
+        if (error) throw error;
+
+        if (data && data.valid) {
+          appliedReferralCode = code;
+          appliedDiscount = Number(data.discount_percent) || 0;
+          if (couponStatus) {
+            couponStatus.style.display = 'block';
+            couponStatus.className = 'coupon-status-box success';
+            couponStatus.innerHTML = '🎉 <strong>' + escapeHtml(code) + '</strong> ' + t('settings.plan_referral_discount_applied', { discount: appliedDiscount }, '%' + appliedDiscount + ' indirim başarıyla uygulandı!');
+          }
+          if (btnTo4) btnTo4.style.display = 'inline-flex';
+          if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', {}, 'İndirimle Devam Et →');
+        } else {
+          var errMsg = t('settings.plan_referral_invalid', {}, 'Geçersiz kupon veya promosyon kodu.');
+          if (data && data.error) {
+            if (data.error === 'expired_code') errMsg = t('settings.plan_referral_expired', {}, 'Bu kodun süresi dolmuş.');
+            else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit', {}, 'Bu kodun kullanım limiti dolmuş.');
+            else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive', {}, 'Bu kod aktif değil.');
+            else if (data.error === 'self_referral_not_allowed') errMsg = t('settings.plan_referral_self', {}, 'Kendi referans kodunuzu kullanamazsınız.');
+          }
+          throw new Error(errMsg);
+        }
+      } catch (err) {
+        appliedReferralCode = null;
+        appliedDiscount = 0;
+        if (couponStatus) {
+          couponStatus.style.display = 'block';
+          couponStatus.className = 'coupon-status-box error';
+          couponStatus.textContent = err.message || t('settings.plan_referral_error', {}, 'Kod doğrulanamadı.');
+        }
+        if (btnTo4) btnTo4.style.display = 'none';
+        if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_skip_coupon', {}, 'Kuponum Yok, Bu Adımı Atla →');
+      } finally {
+        btnApplyCoupon.disabled = false;
+        btnApplyCoupon.textContent = t('settings.plan_apply_coupon', {}, 'Uygula');
+      }
+    });
+
+    couponInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        btnApplyCoupon.click();
+      }
+    });
+  }
+
+  // --- ADIM 4 ETKİNLİKLERİ & ÖZET (FATURA VE ÖDEME) ---
+  function renderSummary() {
+    var prices = getPlanPrices();
+    var planInfo = prices[selectedPeriod] || prices.yearly;
+    var basePrice = planInfo.base;
+    var discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
+    var netTotal = Math.max(0, basePrice - discountAmount);
+
+    var periodNameEl = wizardRoot.querySelector('#summary-period-name');
+    var baseAmountEl = wizardRoot.querySelector('#summary-base-amount');
+    var discountRow = wizardRoot.querySelector('#summary-discount-row');
+    var discountAmountEl = wizardRoot.querySelector('#summary-discount-amount');
+    var netTotalEl = wizardRoot.querySelector('#summary-net-total');
+    var btnPayLabel = wizardRoot.querySelector('#btn-pay-label');
+
+    if (periodNameEl) periodNameEl.textContent = planInfo.name + ' (' + planInfo.days + ' Gün)';
+    if (baseAmountEl) baseAmountEl.textContent = '$' + basePrice.toFixed(2);
+
+    if (appliedDiscount > 0) {
+      if (discountRow) discountRow.style.display = 'flex';
+      if (discountAmountEl) discountAmountEl.textContent = '-$' + discountAmount.toFixed(2) + ' (‑%' + appliedDiscount + ')';
+    } else {
+      if (discountRow) discountRow.style.display = 'none';
+    }
+
+    if (netTotalEl) netTotalEl.textContent = netTotal.toFixed(2);
+    if (btnPayLabel) {
+      btnPayLabel.textContent = t('settings.plan_pay_securely_btn', { amount: netTotal.toFixed(2) }, 'Güvenli Ödeme Yap ($' + netTotal.toFixed(2) + ')');
+    }
+  }
+
+  var cryptoChips = wizardRoot.querySelectorAll('.crypto-chip');
+  cryptoChips.forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      cryptoChips.forEach(function(c) { c.classList.remove('active'); });
+      this.classList.add('active');
+      selectedPayMethod = this.getAttribute('data-method') || 'LTC';
+      if (window.selectPayMethod) window.selectPayMethod(selectedPayMethod);
+    });
+  });
+
+  var btnBackTo3 = wizardRoot.querySelector('#btn-back-to-step3');
+  if (btnBackTo3) {
+    btnBackTo3.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(3);
+    });
+  }
+
+  // Ödeme Tamamlama Butonu
+  var btnSubmitPayment = wizardRoot.querySelector('#btn-submit-payment');
+  if (btnSubmitPayment) {
+    btnSubmitPayment.addEventListener('click', async function(e) {
+      e.preventDefault();
+      var prices = getPlanPrices();
+      var planInfo = prices[selectedPeriod] || prices.yearly;
+      var basePrice = planInfo.base;
+      var discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
+      var netTotal = Math.max(0, basePrice - discountAmount);
+
+      btnSubmitPayment.disabled = true;
+      var origContent = btnSubmitPayment.innerHTML;
+      btnSubmitPayment.innerHTML = '<span class="spinner-icon">⏳</span> <span>' + t('settings.plan_preparing_payment', {}, 'Ödeme Sayfası Hazırlanıyor...') + '</span>';
+
+      try {
+        if (window.upgradeToPremium) {
+          await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, appliedReferralCode);
+        } else {
+          showMsg(t('payment.link_failed', {}, 'Ödeme servisi başlatılamadı.'), 'error');
+          btnSubmitPayment.disabled = false;
+          btnSubmitPayment.innerHTML = origContent;
+        }
+      } catch (err) {
+        showMsg(err.message, 'error');
+        btnSubmitPayment.disabled = false;
+        btnSubmitPayment.innerHTML = origContent;
+      }
+    });
+  }
+
+  goToStep(currentStep);
+}
+
 window.renderPlan = renderPlan;
 
 // ============================================================
-// ⭐ SÜRE SAYACI
+// ⭐ SÜRE SAYACI & CANLI GERİ SAYIM
 // ============================================================
 function startTimer(expiresAt) {
   if (window.SETTINGS_STATE.timerInterval) {
     clearInterval(window.SETTINGS_STATE.timerInterval);
   }
 
-  window.SETTINGS_STATE.timerInterval = setInterval(function() {
+  function update() {
     try {
       var now = new Date();
       var diff = expiresAt - now;
 
+      var daysEl = document.querySelector('[data-bind="days-left"]');
+      var timerEl = document.getElementById('timer-days');
+      var progEl = document.querySelector('[data-bind="progress"]');
+
       if (diff <= 0) {
         clearInterval(window.SETTINGS_STATE.timerInterval);
-        var timerEl = document.getElementById('timer-days');
-        if (timerEl) timerEl.textContent = t('settings.plan_expired');
+        var expiredText = t('settings.plan_expired', {}, 'Süresi Doldu');
+        if (daysEl) daysEl.textContent = expiredText;
+        if (timerEl) timerEl.textContent = expiredText;
+        if (progEl) progEl.style.width = '100%';
         return;
       }
 
       var days = Math.floor(diff / (1000 * 60 * 60 * 24));
       var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      var timerEl = document.getElementById('timer-days');
-      if (timerEl) {
-        if (days > 0) {
-          timerEl.textContent = days + ' ' + t('settings.plan_days') + ' ' + hours + ' ' + t('settings.plan_hours');
-        } else if (hours > 0) {
-          timerEl.textContent = hours + ' ' + t('settings.plan_hours');
-        } else {
-          timerEl.textContent = t('settings.plan_less_than_hour');
-        }
+      var timeText = '';
+      if (days > 0) {
+        timeText = days + ' ' + t('settings.plan_days', {}, 'gün') + ' ' + hours + ' ' + t('settings.plan_hours', {}, 'saat');
+      } else if (hours > 0) {
+        timeText = hours + ' ' + t('settings.plan_hours', {}, 'saat') + ' ' + mins + ' dk';
+      } else {
+        timeText = mins + ' dk';
       }
+
+      if (daysEl) daysEl.textContent = timeText;
+      if (timerEl) timerEl.textContent = timeText;
+
+      var totalDays = Math.max(30, days + 1);
+      var pct = Math.max(0, Math.min(100, ((totalDays - days) / totalDays) * 100));
+      if (progEl) progEl.style.width = pct + '%';
     } catch (e) {}
-  }, 10000);
+  }
+
+  update();
+  window.SETTINGS_STATE.timerInterval = setInterval(update, 10000);
 }
 
 // ============================================================

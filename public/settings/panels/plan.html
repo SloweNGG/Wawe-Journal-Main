@@ -1,110 +1,473 @@
 <div class="s-card">
   <div class="s-card-header">
     <div class="s-card-header-icon">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
       </svg>
     </div>
     <div>
-      <h2 data-i18n="settings.plan_header_title">Plan</h2>
-      <p data-i18n="settings.plan_header_desc">Abonelik durumunuz ve premium özellikler</p>
+      <h2 data-i18n="settings.plan_header_title">Plan & Abonelik</h2>
+      <p data-i18n="settings.plan_header_desc">Abonelik durumunuz, faturalandırma ve adım adım ödeme</p>
     </div>
   </div>
   <div class="s-card-body" id="plan-container"></div>
 </div>
 
+<!-- ============================================================
+     ⭐ TPL: FREE / CHECKOUT WIZARD (ADIM ADIM ÖDEME SİHİRBAZI)
+     ============================================================ -->
 <template id="tpl-plan-free">
-  <div class="plan-card">
-    <div class="plan-header">
-      <div class="plan-name" data-i18n="settings.plan_free_name">Ücretsiz</div>
-      <span class="plan-status inactive">
-        <span class="dot gray"></span>
-        <span data-i18n="settings.plan_active_label">Aktif</span>
-      </span>
-    </div>
-    <div class="plan-desc" data-i18n="settings.plan_free_desc">Premium'a geçerek tüm özelliklerin kilidini aç.</div>
-    <ul class="plan-features">
-      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f1">Sınırsız Trade</span></li>
-      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f2">Sınırsız Strateji</span></li>
-      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f3">Takvim Görünümü</span></li>
-      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f4">Aylık Hedef</span></li>
-      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f5">CSV İçe/Dışa Aktarım</span></li>
-      <li class="included"><span class="indicator" data-icon="check"></span><span data-i18n="settings.plan_free_f6">PDF Rapor</span></li>
-      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f1">Premium Dashboard</span></li>
-      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f2">Tema Özelleştirme</span></li>
-      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f3">Over Trade Uyarısı</span></li>
-      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f4">Gelişmiş Grafikler</span></li>
-      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
-      <li class="excluded"><span class="indicator">–</span><span data-i18n="settings.plan_premium_f6">Reklamsız</span></li>
-    </ul>
+  <div class="checkout-wizard-card" id="plan-wizard">
     
-    <div class="plan-referral-block" style="margin-top:1.5rem; background: var(--surface2); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-      <label style="display:block; font-size:13px; color:var(--muted); margin-bottom:0.5rem;" data-i18n="settings.plan_referral_code">Referans Kodu (Opsiyonel)</label>
-      <div style="display:flex; gap:0.5rem;">
-        <input type="text" id="referral-input" placeholder="Kodu Girin" data-i18n-placeholder="settings.plan_referral_placeholder" style="flex:1; text-transform:uppercase; padding:0.5rem; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
-        <button id="apply-referral-btn" class="btn btn-secondary btn-sm" data-i18n="settings.plan_referral_apply">Uygula</button>
+    <!-- 1. STEPPER PROGRESS BAR -->
+    <div class="wizard-stepper">
+      <div class="step-node active" data-step="1">
+        <div class="step-circle">
+          <span class="step-num">1</span>
+          <svg class="step-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-text" data-i18n="settings.plan_wizard_step1">Plan Seçimi</div>
       </div>
-      <div id="referral-msg" style="font-size:12px; margin-top:0.5rem;"></div>
+      
+      <div class="step-connector" id="step-conn-1"></div>
+      
+      <div class="step-node" data-step="2">
+        <div class="step-circle">
+          <span class="step-num">2</span>
+          <svg class="step-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-text" data-i18n="settings.plan_wizard_step2">Süre & Dönem</div>
+      </div>
+      
+      <div class="step-connector" id="step-conn-2"></div>
+      
+      <div class="step-node" data-step="3">
+        <div class="step-circle">
+          <span class="step-num">3</span>
+          <svg class="step-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-text" data-i18n="settings.plan_wizard_step3">İndirim Kuponu</div>
+      </div>
+      
+      <div class="step-connector" id="step-conn-3"></div>
+      
+      <div class="step-node" data-step="4">
+        <div class="step-circle">
+          <span class="step-num">4</span>
+          <svg class="step-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-text" data-i18n="settings.plan_wizard_step4">Özet & Ödeme</div>
+      </div>
     </div>
 
-    <div class="plan-payment-method-block">
-      <label class="plan-payment-method-label">
-        <span data-icon="credit-card"></span>
-        <span data-i18n="settings.plan_payment_method">Ödeme Metodu</span>
-      </label>
-      <div class="plan-payment-methods" id="plan-payment-methods"></div>
-    </div>
-    <div class="plan-actions">
-      <button class="btn-premium" id="upgrade-monthly">
-        <span data-icon="credit-card"></span>
-        <span data-i18n="settings.plan_monthly_btn" data-i18n-params='{"price":"—"}'>Aylık</span>
-      </button>
-      <button class="btn-premium secondary" id="upgrade-yearly">
-        <span data-icon="credit-card"></span>
-        <span data-i18n="settings.plan_yearly_btn" data-i18n-params='{"price":"—"}'>Yıllık</span>
-      </button>
-    </div>
-    
-    <div id="plan-video-container" style="display:none; margin-top:1.5rem; border-radius:var(--radius-sm); overflow:hidden;">
-      <iframe id="plan-video-frame" width="100%" height="200" frameborder="0" allowfullscreen></iframe>
-    </div>
+    <!-- 2. WIZARD STEP PANELS -->
+    <div class="wizard-panels-viewport">
+      
+      <!-- ==========================================
+           ADIM 1: PLANLARI İNCELE & SEÇ
+           ========================================== -->
+      <div class="wizard-step-panel active" id="wizard-step-1">
+        <div class="step-headline">
+          <h3 class="step-main-title" data-i18n="settings.plan_step1_title">İhtiyacınıza Uygun Planı İnceleyin</h3>
+          <p class="step-main-sub" data-i18n="settings.plan_step1_sub">İster temel araçlarla başlayın, ister tüm profesyonel analitik araçlarının kilidini açın.</p>
+        </div>
 
-    <div class="plan-payment-note">
-      <span data-icon="lock"></span>
-      <span data-i18n="settings.plan_secure_payment" data-i18n-params='{"methods":"BTC / LTC"}'>Güvenli ödeme</span>
+        <div class="plans-tier-grid">
+          <!-- Free Plan -->
+          <div class="plan-tier-card free-tier">
+            <div class="plan-top-badge" data-i18n="settings.plan_current_plan">Mevcut Planınız</div>
+            <div class="tier-head">
+              <h4 class="tier-title" data-i18n="settings.plan_free_name">Ücretsiz (Free)</h4>
+              <div class="tier-price-box">
+                <span class="tier-price-currency">$</span><span class="tier-price-amount">0</span>
+                <span class="tier-price-sub">/ sonsuza kadar</span>
+              </div>
+              <p class="tier-desc" data-i18n="settings.plan_free_desc">Günlük trade kaydı ve temel istatistik takibi için harika başlangıç.</p>
+            </div>
+            
+            <ul class="tier-features-list">
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f1">Sınırsız Trade</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f2">Sınırsız Strateji</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f3">Takvim Görünümü</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f4">Aylık Hedef</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f5">CSV İçe/Dışa Aktarım</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f6">PDF Rapor</span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f1">Premium Dashboard</span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f2">Tema Özelleştirme</span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f3">Over Trade Uyarısı</span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f4">Gelişmiş Grafikler</span></li>
+            </ul>
+
+            <div class="tier-footer">
+              <button class="tier-btn free-btn" disabled>
+                <span data-i18n="settings.plan_active_label">Aktif</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Premium Plan (Featured) -->
+          <div class="plan-tier-card premium-tier selected">
+            <div class="plan-top-badge premium-badge-glow">🔥 EN POPÜLER — TÜM ÖZELLİKLER AÇIK</div>
+            <div class="tier-head">
+              <div class="tier-title-wrap">
+                <h4 class="tier-title">Wawe Premium</h4>
+                <span class="vip-tag">PRO</span>
+              </div>
+              <div class="tier-price-box">
+                <span class="tier-price-from">başlangıç</span>
+                <span class="tier-price-currency">$</span><span class="tier-price-amount" id="step1-min-price">8.25</span>
+                <span class="tier-price-sub">/ ay</span>
+              </div>
+              <p class="tier-desc">Tüm gelişmiş analitik, risk, otomasyon ve özel tema araçlarına sınırsız erişim.</p>
+            </div>
+
+            <ul class="tier-features-list">
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Özelleştirilebilir Drag & Drop Dashboard</strong></span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Gelişmiş Grafikler & Derin Metrikler</strong></span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>cTrader & Broker Otomatik Senkronizasyon</strong></span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Detaylı Profesyonel PDF & Excel Raporları</strong></span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Gerçek Zamanlı Over-Trade & Risk Uyarısı</strong></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f2">Tema ve Renk Özelleştirme</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f6">Reklamsız ve Hızlı Deneyim</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span>Öncelikli 7/24 VIP Destek</span></li>
+            </ul>
+
+            <div class="tier-footer">
+              <button class="tier-btn premium-btn-cta" id="btn-select-premium-step1">
+                <span data-i18n="settings.plan_select_premium">Premium Planı Seç & Süreyi Belirle</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADIM 2: SÜRE / DÖNEM SEÇİMİ
+           ========================================== -->
+      <div class="wizard-step-panel" id="wizard-step-2">
+        <div class="step-headline">
+          <h3 class="step-main-title" data-i18n="settings.plan_step2_title">Abonelik Sürenizi Seçin</h3>
+          <p class="step-main-sub" data-i18n="settings.plan_step2_sub">Kaç aylık veya yıllık almak istediğinizi belirleyin. Uzun dönemli planlarda anında tasarruf edin.</p>
+        </div>
+
+        <div class="durations-grid">
+          <!-- 1 Month -->
+          <div class="duration-option-card" data-period="monthly">
+            <div class="card-radio-circle"><div class="inner-dot"></div></div>
+            <div class="period-badge standard">Aylık Plan</div>
+            <div class="period-title">1 Aylık</div>
+            <div class="period-monthly-rate">
+              <span class="rate-curr">$</span><span class="rate-val" id="period-rate-monthly">12.00</span>
+              <span class="rate-unit">/ ay</span>
+            </div>
+            <div class="period-total-cost">Toplam: <strong id="period-total-monthly">$12.00</strong></div>
+            <p class="period-desc">Kısa dönem esnek kullanım, istediğin an yenile.</p>
+          </div>
+
+          <!-- 3 Months -->
+          <div class="duration-option-card" data-period="3months">
+            <div class="card-radio-circle"><div class="inner-dot"></div></div>
+            <div class="period-badge saving">%15 Tasarruf</div>
+            <div class="period-title">3 Aylık</div>
+            <div class="period-monthly-rate">
+              <span class="rate-curr">$</span><span class="rate-val" id="period-rate-3months">10.33</span>
+              <span class="rate-unit">/ ay</span>
+            </div>
+            <div class="period-total-cost">Toplam: <strong id="period-total-3months">$31.00</strong> <span class="old-strikethrough" id="period-old-3months">$36.00</span></div>
+            <p class="period-desc">Dengeli periyot, çeyreklik gelişim ve disiplin.</p>
+          </div>
+
+          <!-- 6 Months -->
+          <div class="duration-option-card" data-period="6months">
+            <div class="card-radio-circle"><div class="inner-dot"></div></div>
+            <div class="period-badge popular">%20 Tasarruf</div>
+            <div class="period-title">6 Aylık</div>
+            <div class="period-monthly-rate">
+              <span class="rate-curr">$</span><span class="rate-val" id="period-rate-6months">9.66</span>
+              <span class="rate-unit">/ ay</span>
+            </div>
+            <div class="period-total-cost">Toplam: <strong id="period-total-6months">$58.00</strong> <span class="old-strikethrough" id="period-old-6months">$72.00</span></div>
+            <p class="period-desc">Yarıyıl odaklı profesyonel trading performansı.</p>
+          </div>
+
+          <!-- 1 Year (Featured) -->
+          <div class="duration-option-card selected featured" data-period="yearly">
+            <div class="card-radio-circle"><div class="inner-dot"></div></div>
+            <div class="period-badge best-val">⭐ %31 Büyük Tasarruf</div>
+            <div class="period-title">1 Yıllık</div>
+            <div class="period-monthly-rate">
+              <span class="rate-curr">$</span><span class="rate-val" id="period-rate-yearly">8.25</span>
+              <span class="rate-unit">/ ay</span>
+            </div>
+            <div class="period-total-cost">Toplam: <strong id="period-total-yearly">$99.00</strong> <span class="old-strikethrough" id="period-old-yearly">$144.00</span></div>
+            <p class="period-desc">En karlı ve popüler seçim. 365 gün kesintisiz erişim.</p>
+          </div>
+        </div>
+
+        <div class="wizard-nav-bar">
+          <button class="nav-btn-back" id="btn-back-to-step1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span data-i18n="settings.plan_back">Geri</span>
+          </button>
+          <button class="nav-btn-next" id="btn-to-step3">
+            <span>Devam Et: İndirim Kuponu</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADIM 3: İNDİRİM KUPONU VEYA REFERANS KODU
+           ========================================== -->
+      <div class="wizard-step-panel" id="wizard-step-3">
+        <div class="step-headline">
+          <h3 class="step-main-title" data-i18n="settings.plan_step3_title">İndirim Kuponu veya Referans Kodu</h3>
+          <p class="step-main-sub" data-i18n="settings.plan_step3_sub">Özel bir promosyon kodunuz varsa aşağıya girin. Kuponunuz yoksa doğrudan atlayabilirsiniz.</p>
+        </div>
+
+        <div class="coupon-interactive-card">
+          <div class="coupon-top-visual">
+            <div class="coupon-badge-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+              </svg>
+            </div>
+            <h4>Promosyon veya Influencer Kodu</h4>
+            <p>Geçerli bir kodunuz varsa girerek anında ekstra indirim kazanın.</p>
+          </div>
+
+          <div class="coupon-field-row">
+            <input 
+              type="text" 
+              id="wizard-coupon-input" 
+              placeholder="KUPON VEYA REFERANS KODU" 
+              autocomplete="off" 
+              spellcheck="false"
+            />
+            <button class="coupon-submit-btn" id="btn-wizard-apply-coupon" data-i18n="settings.plan_apply_coupon">
+              Uygula
+            </button>
+          </div>
+
+          <div class="coupon-status-box" id="wizard-coupon-status" style="display:none;"></div>
+        </div>
+
+        <div class="wizard-nav-bar">
+          <button class="nav-btn-back" id="btn-back-to-step2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span data-i18n="settings.plan_back">Geri</span>
+          </button>
+          
+          <div class="nav-right-actions">
+            <button class="nav-btn-skip" id="btn-skip-coupon" data-i18n="settings.plan_skip_coupon">
+              Kuponum Yok, Bu Adımı Atla →
+            </button>
+            <button class="nav-btn-next" id="btn-to-step4" style="display:none;" data-i18n="settings.plan_continue_summary">
+              Özete Devam Et →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADIM 4: SİPARİŞ ÖZETİ & ÖDEME
+           ========================================== -->
+      <div class="wizard-step-panel" id="wizard-step-4">
+        <div class="step-headline">
+          <h3 class="step-main-title" data-i18n="settings.plan_step4_title">Sipariş Özeti & Ödeme</h3>
+          <p class="step-main-sub" data-i18n="settings.plan_step4_sub">Ödeme yönteminizi seçin ve güvenli ödeme ile üyeliğinizi hemen başlatın.</p>
+        </div>
+
+        <div class="checkout-split-layout">
+          <!-- Sol Kart: Fatura / Sipariş Özeti -->
+          <div class="checkout-summary-card">
+            <h4 class="box-title" data-i18n="settings.plan_order_summary">Sipariş Özeti</h4>
+            
+            <div class="receipt-rows">
+              <div class="receipt-row">
+                <span class="rc-label">Plan</span>
+                <span class="rc-val vip-text">💎 Wawe Premium</span>
+              </div>
+              <div class="receipt-row">
+                <span class="rc-label">Faturalandırma</span>
+                <span class="rc-val" id="summary-period-name">1 Yıllık (365 Gün)</span>
+              </div>
+              <div class="receipt-row">
+                <span class="rc-label">Standart Tutar</span>
+                <span class="rc-val" id="summary-base-amount">$99.00</span>
+              </div>
+              <div class="receipt-row discount-applied-row" id="summary-discount-row" style="display:none;">
+                <span class="rc-label">Kupon İndirimi</span>
+                <span class="rc-val discount-green" id="summary-discount-amount">-$0.00</span>
+              </div>
+              
+              <div class="receipt-hr"></div>
+
+              <div class="receipt-row total-highlight-row">
+                <span class="rc-label">Ödenecek Toplam:</span>
+                <div class="rc-val-total">
+                  <span class="total-curr">$</span><span class="total-number" id="summary-net-total">99.00</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="activation-guarantee">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Ödeme blockchain üzerinde onaylandığı an üyeliğiniz anında otomatik olarak aktive edilir.</span>
+            </div>
+          </div>
+
+          <!-- Sağ Kart: Kripto Para Seçimi -->
+          <div class="checkout-method-card">
+            <h4 class="box-title" data-i18n="settings.plan_payment_method">Ödeme Yöntemi</h4>
+            <p class="box-subtitle">Ödemeyi gerçekleştirmek istediğiniz kripto para birimini seçin:</p>
+
+            <div class="crypto-methods-grid" id="wizard-payment-methods">
+              <!-- LTC -->
+              <div class="crypto-chip active" data-method="LTC">
+                <div class="crypto-badge-icon ltc">Ł</div>
+                <div class="crypto-details">
+                  <span class="crypto-symbol">Litecoin (LTC)</span>
+                  <span class="crypto-hint">⚡ Düşük Ağ Masrafı • Hızlı</span>
+                </div>
+                <div class="crypto-check-circle">✓</div>
+              </div>
+
+              <!-- BTC -->
+              <div class="crypto-chip" data-method="BTC">
+                <div class="crypto-badge-icon btc">₿</div>
+                <div class="crypto-details">
+                  <span class="crypto-symbol">Bitcoin (BTC)</span>
+                  <span class="crypto-hint">Orijinal Blockchain</span>
+                </div>
+                <div class="crypto-check-circle">✓</div>
+              </div>
+
+              <!-- ETH -->
+              <div class="crypto-chip" data-method="ETH">
+                <div class="crypto-badge-icon eth">Ξ</div>
+                <div class="crypto-details">
+                  <span class="crypto-symbol">Ethereum (ETH)</span>
+                  <span class="crypto-hint">ERC-20 Ağı</span>
+                </div>
+                <div class="crypto-check-circle">✓</div>
+              </div>
+
+              <!-- USDT -->
+              <div class="crypto-chip" data-method="USDT">
+                <div class="crypto-badge-icon usdt">₮</div>
+                <div class="crypto-details">
+                  <span class="crypto-symbol">Tether (USDT)</span>
+                  <span class="crypto-hint">Sabit Kripto Para</span>
+                </div>
+                <div class="crypto-check-circle">✓</div>
+              </div>
+            </div>
+
+            <div class="ssl-guarantee-note">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>256-Bit SSL NOWPayments Resmi Ağ Altyapısı</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-nav-bar final-bar">
+          <button class="nav-btn-back" id="btn-back-to-step3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span data-i18n="settings.plan_back">Geri</span>
+          </button>
+          
+          <button class="nav-btn-submit-pay" id="btn-submit-payment">
+            <span class="pay-icon-lock">🔒</span>
+            <span class="pay-btn-text" id="btn-pay-label">Güvenli Ödeme Yap ($99.00)</span>
+            <svg class="arrow-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
 
+<!-- ============================================================
+     ⭐ TPL: PREMIUM AKTİF PANELİ (SAYAÇ, UZATMA, İPTAL & AVANTAJLAR)
+     ============================================================ -->
 <template id="tpl-plan-premium">
-  <div class="plan-card premium">
-    <div class="plan-header">
-      <div class="plan-name">
-        Premium
-        <span class="premium-badge" data-i18n="settings.plan_premium_badge">AKTİF</span>
+  <div class="plan-card premium active-premium-card">
+    
+    <!-- Üst Başlık & Rozet -->
+    <div class="plan-header premium-header-flex">
+      <div class="premium-hero-info">
+        <div class="premium-gem-circle">💎</div>
+        <div>
+          <div class="plan-name">
+            Wawe Journal Premium
+            <span class="premium-badge-pill" data-i18n="settings.plan_premium_badge">AKTİF</span>
+          </div>
+          <div class="plan-desc" data-i18n="settings.plan_premium_desc">Tüm profesyonel analitik, risk ve otomasyon araçlarınız aktif durumdadır.</div>
+        </div>
       </div>
+      
       <span class="plan-status active">
         <span class="dot green"></span>
-        <span data-i18n="settings.plan_active_label">Aktif</span>
+        <span data-i18n="settings.plan_active_membership">Aktif Üyelik</span>
       </span>
     </div>
-    <div class="plan-desc" data-i18n="settings.plan_premium_desc">Tüm premium özelliklere erişiminiz var.</div>
-    <div class="subscription-timer">
-      <div class="timer-header">
-        <span class="timer-label" data-i18n="settings.plan_time_remaining">Kalan Süre</span>
-        <span class="timer-value" data-bind="days-left">—</span>
+
+    <!-- Görsel Sayaç & Kalan Süre Kartı -->
+    <div class="premium-countdown-card">
+      <div class="countdown-main-stats">
+        <div class="stat-countdown-block">
+          <span class="stat-sub-label" data-i18n="settings.plan_time_remaining">Kalan Süre</span>
+          <div class="stat-highlight-value" data-bind="days-left">—</div>
+        </div>
+
+        <div class="stat-countdown-block right-align">
+          <span class="stat-sub-label" data-i18n="settings.plan_expiry_until">Son Geçerlilik Tarihi</span>
+          <div class="stat-expiry-text" data-bind="expiry-date">—</div>
+        </div>
       </div>
-      <div class="timer-progress-wrap">
-        <div class="timer-progress" data-bind="progress" style="width:0%;"></div>
+
+      <div class="countdown-bar-track">
+        <div class="countdown-bar-fill" data-bind="progress" style="width:0%;"></div>
       </div>
-      <div class="timer-expiry" data-bind="expiry-date"></div>
     </div>
-    <div class="plan-actions">
-      <button class="btn-premium-outline" id="cancel-premium-btn" data-i18n="settings.plan_cancel_subscription">Aboneliği İptal Et</button>
+
+    <!-- Ana Aksiyon Butonları (Aboneliği Uzat & İptal Et) -->
+    <div class="premium-action-buttons-row">
+      <button class="btn-action-extend" id="extend-premium-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span data-i18n="settings.plan_extend_subscription">Aboneliği Uzat / Yenile</span>
+      </button>
+
+      <button class="btn-action-cancel" id="cancel-premium-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span data-i18n="settings.plan_cancel_subscription">Aboneliği İptal Et</span>
+      </button>
     </div>
+
+    <!-- Gizli Açılır Uzatma Sihirbazı Konteyneri -->
+    <div class="extend-wizard-wrapper" id="extend-wizard-wrapper" style="display:none;">
+      <div class="extend-wizard-header">
+        <div class="extend-wizard-title">
+          <span>⚡ Abonelik Sürenizi Uzatın</span>
+          <p>Mevcut üyeliğinizin bitiş tarihine eklenir.</p>
+        </div>
+        <button class="btn-close-extend-wizard" id="btn-close-extend-wizard" data-i18n="settings.plan_extend_close">
+          ✕ Vazgeç / Kapat
+        </button>
+      </div>
+      <div id="extend-wizard-container"></div>
+    </div>
+
+    <!-- Aktif Premium Ayrıcalıkları Grid'i -->
     <div class="plan-perks-box">
-      <div class="perks-title" data-i18n="settings.plan_premium_features">Premium Özellikler</div>
+      <div class="perks-title" data-i18n="settings.plan_premium_features">Premium Özellikler & Ayrıcalıklar</div>
       <div class="perks-grid" id="plan-perks-grid"></div>
     </div>
+
   </div>
 </template>
