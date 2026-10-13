@@ -128,11 +128,15 @@ export async function upgradeToPremium(planType, amount, currency, payMethod, re
       referralCode
     );
     
-    if (result && result.invoiceUrl) {
+    if (result && result.payAddress) {
+      // ⭐ Doğrudan Ödeme (Direct Payment): Sitede QR ve adres gösterilecek, yönlendirme yok!
+      return result;
+    } else if (result && result.invoiceUrl) {
+      // ⭐ Fatura (Fallback): NowPayments sayfasına yönlendir
       window.location.href = result.invoiceUrl;
       return result;
     } else {
-      showToast(t('payment.link_failed', {}, 'Ödeme linki oluşturulamadı. Lütfen tekrar deneyin.'), 'error');
+      showToast(t('payment.link_failed', {}, 'Ödeme oluşturulamadı. Lütfen tekrar deneyin.'), 'error');
       return null;
     }
   } catch (error) {

@@ -1277,11 +1277,32 @@ function setupPlanWizard(wizardRoot, isExtending) {
       step1YearlyHint.textContent = t('settings.plan_or_yearly_price', { yearly: prices.yearly.base.toFixed(0), monthlyRate: prices.yearly.monthlyRate }, 'veya Yıllık $' + prices.yearly.base.toFixed(0) + ' (aylık $' + prices.yearly.monthlyRate + ')');
     }
   }
-  updatePeriodCardsUI();
+  var currentPaymentData = null;
+  var directPayTimerInterval = null;
+  var directPayPollInterval = null;
+
+  function stopDirectPaymentWatch() {
+    if (directPayTimerInterval) { clearInterval(directPayTimerInterval); directPayTimerInterval = null; }
+    if (directPayPollInterval) { clearInterval(directPayPollInterval); directPayPollInterval = null; }
+  }
 
   function goToStep(step, isInitial) {
     currentStep = step;
-    saveWizardState();
+    if (step <= 4) {
+      saveWizardState();
+      stopDirectPaymentWatch();
+    }
+
+    var stepNode5 = wizardRoot.querySelector('#step-node-5');
+    var stepConn4 = wizardRoot.querySelector('#step-conn-4');
+
+    if (step === 5) {
+      if (stepNode5) stepNode5.style.display = 'flex';
+      if (stepConn4) stepConn4.style.display = 'block';
+    } else {
+      if (stepNode5) stepNode5.style.display = 'none';
+      if (stepConn4) stepConn4.style.display = 'none';
+    }
 
     var panels = wizardRoot.querySelectorAll('.wizard-step-panel');
     panels.forEach(function(panel) {
@@ -1305,7 +1326,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
       }
     });
 
-    for (var c = 1; c <= 3; c++) {
+    for (var c = 1; c <= 4; c++) {
       var conn = wizardRoot.querySelector('#step-conn-' + c);
       if (conn) {
         if (c < step) {
@@ -1318,6 +1339,8 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
     if (step === 4) {
       renderSummary();
+    } else if (step === 5) {
+      renderDirectPaymentUI();
     }
 
     if (!isInitial) {
@@ -1532,11 +1555,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var btcChip = wizardRoot.querySelector('.crypto-chip[data-method="BTC"]');
     var ltcChip = wizardRoot.querySelector('.crypto-chip[data-method="LTC"]');
     var btcNotice = wizardRoot.querySelector('#crypto-btc-notice');
-    var isMonthly = (selectedPeriod === 'monthly');
+    var isYearly = (selectedPeriod === 'yearly');
 
-    // 🔒 1. BTC yalnızca Yıllık abonelikte gösterilir, Aylık abonelikte gizlenir
+    // 🔒 1. BTC yalnızca Yıllık abonelikte gösterilir, diğer dönemlerde gizlenir
     if (btcChip) {
-      if (isMonthly) {
+      if (!isYearly) {
         btcChip.style.display = 'none';
         if (selectedPayMethod === 'BTC') {
           selectedPayMethod = 'LTC';
@@ -1668,7 +1691,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
       try {
         if (window.upgradeToPremium) {
-          await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
+          var result = await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
+          if (result && result.payAddress) {
+            // ⭐ DOĞRUDAN ÖDEME (Direct Payment): Site içi ekrana geç!
+            currentPaymentData = result;
+            goToStep(5);
+            btnSubmitPayment.disabled = false;
+            btnSubmitPayment.innerHTML = origContent;
+          }
         } else {
           showMsg(t('payment.link_failed', {}, 'Ödeme servisi başlatılamadı.'), 'error');
           btnSubmitPayment.disabled = false;
@@ -1679,6 +1709,208 @@ function setupPlanWizard(wizardRoot, isExtending) {
         btnSubmitPayment.disabled = false;
         btnSubmitPayment.innerHTML = origContent;
       }
+    });
+  }
+
+  // ============================================================
+  // ⭐ ADIM 5: DOĞRUDAN SİTE İÇİ ÖDEME MANTIĞI
+  // ============================================================
+  function renderDirectPaymentUI() {
+    if (!currentPaymentData) return;
+
+    var qrImg = wizardRoot.querySelector('#direct-pay-qr-img');
+    var amountVal = wizardRoot.querySelector('#direct-pay-amount-val');
+    var amountFiat = wizardRoot.querySelector('#direct-pay-amount-fiat');
+    var currBadge = wizardRoot.querySelector('#direct-pay-curr-badge');
+    var addressVal = wizardRoot.querySelector('#direct-pay-address-val');
+    var networkTag = wizardRoot.querySelector('#direct-pay-network-tag');
+    var timerEl = wizardRoot.querySelector('#direct-pay-countdown');
+    var successBox = wizardRoot.querySelector('#direct-pay-success-box');
+    var directCard = wizardRoot.querySelector('.direct-pay-card');
+
+    if (successBox) successBox.style.display = 'none';
+    if (directCard) directCard.style.display = 'grid';
+
+    var payCur = (currentPaymentData.payCurrency || 'LTC').toUpperCase();
+    var payAddr = currentPaymentData.payAddress || '';
+    var payAmt = currentPaymentData.payAmount || '';
+    var fiatAmt = Number(currentPaymentData.amount || 0).toFixed(2);
+
+    if (amountVal) amountVal.textContent = payAmt;
+    if (amountFiat) amountFiat.textContent = '($' + fiatAmt + ' USD)';
+    if (currBadge) currBadge.textContent = payCur;
+    if (addressVal) addressVal.textContent = payAddr;
+    if (networkTag) networkTag.textContent = (payCur === 'LTC' ? 'Litecoin (LTC) Ağı' : (payCur === 'BTC' ? 'Bitcoin Ağı' : payCur + ' Ağı'));
+
+    // QR Kod URI (Kripto cüzdanları için standart URI)
+    var uri = payAddr;
+    if (payCur === 'LTC') {
+      uri = 'litecoin:' + payAddr + (payAmt ? '?amount=' + payAmt : '');
+    } else if (payCur === 'BTC') {
+      uri = 'bitcoin:' + payAddr + (payAmt ? '?amount=' + payAmt : '');
+    }
+    if (qrImg) {
+      qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(uri);
+    }
+
+    // 20 Dakika Geri Sayım
+    var remainingSeconds = 20 * 60;
+    if (directPayTimerInterval) clearInterval(directPayTimerInterval);
+    directPayTimerInterval = setInterval(function() {
+      remainingSeconds--;
+      if (remainingSeconds <= 0) {
+        clearInterval(directPayTimerInterval);
+        if (timerEl) timerEl.textContent = '00:00 (Süre Doldu)';
+        return;
+      }
+      var m = Math.floor(remainingSeconds / 60);
+      var s = remainingSeconds % 60;
+      if (timerEl) {
+        timerEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      }
+    }, 1000);
+
+    // Canlı Durum Polling
+    startDirectPaymentWatch();
+  }
+
+  function startDirectPaymentWatch() {
+    if (directPayPollInterval) clearInterval(directPayPollInterval);
+
+    var attempts = 0;
+    directPayPollInterval = setInterval(async function() {
+      attempts++;
+      if (attempts > 120) {
+        clearInterval(directPayPollInterval);
+        return;
+      }
+
+      try {
+        var sb = window.sb || window.supabase;
+        if (!sb) return;
+
+        var user = window.SETTINGS_STATE.currentUser;
+        if (!user && typeof getCurrentUser === 'function') {
+          try { user = await getCurrentUser(); } catch(e) {}
+        }
+        if (!user) return;
+
+        var { data: profile } = await sb
+          .from('user_profiles')
+          .select('plan, plan_expires_at')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && profile.plan === 'premium') {
+          handleDirectPaymentSuccess();
+        }
+      } catch(e) {}
+    }, 5000);
+  }
+
+  function handleDirectPaymentSuccess() {
+    stopDirectPaymentWatch();
+
+    var successBox = wizardRoot.querySelector('#direct-pay-success-box');
+    var directCard = wizardRoot.querySelector('.direct-pay-card');
+    var statusText = wizardRoot.querySelector('#direct-pay-status-text');
+
+    if (statusText) statusText.textContent = 'Ödeme onaylandı! Premium aktif.';
+    if (directCard) directCard.style.display = 'none';
+    if (successBox) successBox.style.display = 'block';
+
+    showMsg(t('settings.plan_upgraded_success', {}, '💎 Tebrikler! Premium üyeliğiniz başarıyla aktif edildi.'), 'success');
+
+    try {
+      sessionStorage.setItem('ww_user_plan', 'premium');
+      localStorage.setItem('ww_user_plan', 'premium');
+      sessionStorage.removeItem('ww_pending_payment');
+      localStorage.removeItem('ww_pending_payment');
+      localStorage.removeItem(STORAGE_KEY);
+    } catch(e) {}
+
+    setTimeout(function() {
+      window.location.href = '/dashboard.html?payment=success';
+    }, 3500);
+  }
+
+  // Kopyalama Butonları Dinleyicileri
+  var btnCopyAmt = wizardRoot.querySelector('#btn-copy-pay-amount');
+  if (btnCopyAmt) {
+    btnCopyAmt.addEventListener('click', function() {
+      if (!currentPaymentData || !currentPaymentData.payAmount) return;
+      navigator.clipboard.writeText(String(currentPaymentData.payAmount)).then(function() {
+        var textEl = btnCopyAmt.querySelector('.copy-text');
+        if (textEl) textEl.textContent = 'Kopyalandı! ✓';
+        btnCopyAmt.classList.add('copied');
+        setTimeout(function() {
+          if (textEl) textEl.textContent = 'Kopyala';
+          btnCopyAmt.classList.remove('copied');
+        }, 2000);
+      });
+    });
+  }
+
+  var btnCopyAddr = wizardRoot.querySelector('#btn-copy-pay-address');
+  if (btnCopyAddr) {
+    btnCopyAddr.addEventListener('click', function() {
+      if (!currentPaymentData || !currentPaymentData.payAddress) return;
+      navigator.clipboard.writeText(String(currentPaymentData.payAddress)).then(function() {
+        var textEl = btnCopyAddr.querySelector('.copy-text');
+        if (textEl) textEl.textContent = 'Kopyalandı! ✓';
+        btnCopyAddr.classList.add('copied');
+        setTimeout(function() {
+          if (textEl) textEl.textContent = 'Kopyala';
+          btnCopyAddr.classList.remove('copied');
+        }, 2000);
+      });
+    });
+  }
+
+  // Geri Dön Butonu (Adım 5 -> Adım 4)
+  var btnBackFromDirect = wizardRoot.querySelector('#btn-back-to-step4-from-direct');
+  if (btnBackFromDirect) {
+    btnBackFromDirect.addEventListener('click', function(e) {
+      e.preventDefault();
+      goToStep(4);
+    });
+  }
+
+  // Manuel Durum Kontrol Butonu
+  var btnManualCheck = wizardRoot.querySelector('#btn-manual-check-status');
+  if (btnManualCheck) {
+    btnManualCheck.addEventListener('click', async function(e) {
+      e.preventDefault();
+      btnManualCheck.disabled = true;
+      var origBtn = btnManualCheck.innerHTML;
+      btnManualCheck.innerHTML = '<span>⏳ Kontrol ediliyor...</span>';
+      try {
+        var sb = window.sb || window.supabase;
+        var user = window.SETTINGS_STATE.currentUser;
+        if (!user && typeof getCurrentUser === 'function') {
+          try { user = await getCurrentUser(); } catch(err) {}
+        }
+        if (user && sb) {
+          var { data: prof } = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
+          if (prof && prof.plan === 'premium') {
+            handleDirectPaymentSuccess();
+            return;
+          }
+        }
+        showMsg('İşlem henüz ağda onaylanmadı. Lütfen transferi yaptıktan sonra biraz bekleyin.', 'info');
+      } catch(err) {
+        showMsg('Kontrol edilirken bir hata oluştu.', 'error');
+      } finally {
+        btnManualCheck.disabled = false;
+        btnManualCheck.innerHTML = origBtn;
+      }
+    });
+  }
+
+  var btnGoDash = wizardRoot.querySelector('#btn-go-dashboard-after-pay');
+  if (btnGoDash) {
+    btnGoDash.addEventListener('click', function() {
+      window.location.href = '/dashboard.html?payment=success';
     });
   }
 

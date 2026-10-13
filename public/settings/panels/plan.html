@@ -58,6 +58,16 @@
         </div>
         <div class="step-text" data-i18n="settings.plan_wizard_step4">Özet & Ödeme</div>
       </div>
+
+      <div class="step-connector" id="step-conn-4" style="display:none;"></div>
+      
+      <div class="step-node" id="step-node-5" data-step="5" style="display:none;">
+        <div class="step-circle">
+          <span class="step-num">5</span>
+          <svg class="step-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-text" data-i18n="settings.plan_wizard_step5">Kripto Transferi</div>
+      </div>
     </div>
 
     <!-- 2. WIZARD STEP PANELS -->
@@ -362,6 +372,103 @@
           <button class="nav-btn-submit-pay" id="btn-submit-payment">
             <span class="pay-btn-text" id="btn-pay-label" data-i18n="settings.plan_pay_submit_simple">Ödeme Yap</span>
             <svg class="arrow-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           ADIM 5: DOĞRUDAN ÖDEME (SİTE İÇİ QR & CÜZDAN)
+           ========================================== -->
+      <div class="wizard-step-panel" id="wizard-step-5">
+        <div class="step-headline">
+          <h3 class="step-main-title" data-i18n="settings.plan_step5_title">Kripto Transferi ile Ödeme</h3>
+          <p class="step-main-sub" data-i18n="settings.plan_step5_sub">Aşağıdaki adrese belirtilen tam tutarı transfer edin. Ağda tespit edildiği an üyeliğiniz otomatik aktive edilir.</p>
+        </div>
+
+        <div class="direct-pay-card">
+          <!-- Sol Sütun: QR Kod & Canlı Durum -->
+          <div class="direct-pay-qr-side">
+            <div class="direct-qr-frame">
+              <img id="direct-pay-qr-img" src="" alt="Payment QR Code" width="200" height="200" />
+              <div class="qr-glow-overlay"></div>
+            </div>
+            <p class="direct-qr-hint">Telefon kameranız veya borsa/cüzdan uygulamanızla okutun</p>
+            
+            <div class="direct-pay-live-pill" id="direct-pay-status-pill">
+              <span class="pill-dot"></span>
+              <span class="pill-text" id="direct-pay-status-text">Ödeme Ağı Dinleniyor...</span>
+            </div>
+            
+            <div class="direct-pay-timer-box">
+              <span>Kalan Süre:</span>
+              <strong id="direct-pay-countdown">20:00</strong>
+            </div>
+          </div>
+
+          <!-- Sağ Sütun: Tutar, Adres & Kopyalama -->
+          <div class="direct-pay-info-side">
+            <!-- Tutar Kutusu -->
+            <div class="direct-copy-field">
+              <div class="dcf-header">
+                <span class="dcf-label">Gönderilecek Tam Tutar</span>
+                <span class="dcf-curr-badge" id="direct-pay-curr-badge">LTC</span>
+              </div>
+              <div class="dcf-input-wrap">
+                <div class="dcf-value-display">
+                  <span class="dcf-val-big" id="direct-pay-amount-val">0.00000000</span>
+                  <span class="dcf-val-sub" id="direct-pay-amount-fiat">($10.80 USD)</span>
+                </div>
+                <button class="dcf-copy-btn" id="btn-copy-pay-amount" type="button" title="Kopyala">
+                  <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span class="copy-text">Kopyala</span>
+                </button>
+              </div>
+              <div class="dcf-warning-note">⚠️ Lütfen borsadan gönderirken ağ çekim ücretini (fee) hesaba katarak tam bu tutarın ulaşmasını sağlayın.</div>
+            </div>
+
+            <!-- Adres Kutusu -->
+            <div class="direct-copy-field">
+              <div class="dcf-header">
+                <span class="dcf-label">Alıcı Cüzdan Adresi</span>
+                <span class="dcf-network-tag" id="direct-pay-network-tag">Litecoin Ağı</span>
+              </div>
+              <div class="dcf-input-wrap">
+                <div class="dcf-address-code" id="direct-pay-address-val">ltc1q...</div>
+                <button class="dcf-copy-btn" id="btn-copy-pay-address" type="button" title="Kopyala">
+                  <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span class="copy-text">Kopyala</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Güvenlik & Otomasyon Bilgisi -->
+            <div class="direct-security-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <div>
+                <strong>Otomatik Blokzincir Aktivasyonu</strong>
+                <p>Transfer ağda 1 onay aldığında sistem üyeliğinizi anında otomatik aktif edecektir.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Başarı Durumu (Tebrikler Ekranı) -->
+        <div class="direct-pay-success-card" id="direct-pay-success-box" style="display:none;">
+          <div class="success-icon-sparkle">💎</div>
+          <h3>Ödemeniz Başarıyla Onaylandı!</h3>
+          <p>Wawe Premium üyeliğiniz aktive edildi. Sınırsız özelliklerin keyfini çıkarın!</p>
+          <button class="btn-success-dashboard" id="btn-go-dashboard-after-pay">Panele Git →</button>
+        </div>
+
+        <div class="wizard-nav-bar direct-pay-nav">
+          <button class="nav-btn-back" id="btn-back-to-step4-from-direct">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Farklı Yöntem Seç / Geri Dön</span>
+          </button>
+          
+          <button class="nav-btn-check-status" id="btn-manual-check-status" type="button">
+            <span class="check-icon">🔄</span>
+            <span>Durumu Kontrol Et</span>
           </button>
         </div>
       </div>

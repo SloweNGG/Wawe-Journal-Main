@@ -487,6 +487,9 @@ serve(async (req: Request) => {
     if (!isNaN(clientAmount) && clientAmount > 0) {
       if (Math.abs(clientAmount - finalAmount) <= 0.15) {
         finalAmount = Number(clientAmount.toFixed(2));
+      } else if (isLtc && cleanRefCode && clientAmount >= (baseAmount * 0.5) && clientAmount <= baseAmount) {
+        finalAmount = Number(clientAmount.toFixed(2));
+        console.log(`✅ Synced with client discounted amount: ${finalAmount}`);
       }
     }
 
@@ -524,62 +527,107 @@ serve(async (req: Request) => {
     // ⭐ 9. ORDER ID
     const orderId = `${userId}_${planType}_${Date.now()}`;
 
-    // ⭐ 10. NOWPAYMENTS API CALL
-    const payload = {
-      price_amount: finalAmount,
-      price_currency: priceCurrency,
-      pay_currency: payCurrencyFinal,
-      ipn_callback_url: webhookUrl,
-      success_url: successUrl || 'https://wawejournal.com/dashboard.html',
-      cancel_url: cancelUrl || 'https://wawejournal.com/settings.html',
-      order_id: orderId,
-      order_description: orderDesc
-    };
+    // ⭐ 10. NOWPAYMENTS API CALL (Önce Direct Payment /payment dene, olmazsa /invoice fallback)
+    let paymentData: any = null;
+    let paymentType = 'invoice';
 
-    console.log(`📤 Sending to NowPayments: ${JSON.stringify(payload)}`);
+    // 10A. DIRECT PAYMENT CALL (/v1/payment - Site içi QR & Cüzdan)
+    try {
+      const directPayload = {
+        price_amount: finalAmount,
+        price_currency: priceCurrency.toLowerCase(),
+        pay_currency: payCurrencyFinal.toLowerCase(),
+        ipn_callback_url: webhookUrl,
+        order_id: orderId,
+        order_description: orderDesc
+      };
 
-    const response = await fetchWithTimeout(
-      API_URL + '/invoice',
-      {
-        method: 'POST',
-        headers: {
-          'x-api-key': NOWPAYMENTS_API_KEY,
-          'Content-Type': 'application/json'
+      console.log(`📤 Attempting Direct Payment: ${JSON.stringify(directPayload)}`);
+      const directRes = await fetchWithTimeout(
+        API_URL + '/payment',
+        {
+          method: 'POST',
+          headers: {
+            'x-api-key': NOWPAYMENTS_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(directPayload)
         },
-        body: JSON.stringify(payload)
-      },
-      15000
-    );
+        12000
+      );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('❌ NowPayments API error:', data);
-      return new Response(JSON.stringify({
-        error: data.message || 'Payment creation failed',
-        code: data.code || response.status,
-        details: data.details || null
-      }), {
-        status: response.status,
-        headers: { ...headers, 'Content-Type': 'application/json' }
-      });
+      const directJson = await directRes.json();
+      if (directRes.ok && directJson && directJson.pay_address) {
+        paymentData = directJson;
+        paymentType = 'direct';
+        console.log(`✅ Direct Payment created: Address ${directJson.pay_address}, Amount ${directJson.pay_amount} ${directJson.pay_currency}`);
+      } else {
+        console.warn('⚠️ Direct Payment not available, falling back to invoice:', directJson);
+      }
+    } catch (e) {
+      console.warn('⚠️ Direct Payment call error, falling back to invoice:', e);
     }
 
-    console.log(`✅ Invoice created: ${data.invoice_id}`);
+    // 10B. INVOICE FALLBACK (/v1/invoice)
+    if (!paymentData) {
+      const invoicePayload = {
+        price_amount: finalAmount,
+        price_currency: priceCurrency,
+        pay_currency: payCurrencyFinal,
+        ipn_callback_url: webhookUrl,
+        success_url: successUrl || 'https://wawejournal.com/dashboard.html',
+        cancel_url: cancelUrl || 'https://wawejournal.com/settings.html',
+        order_id: orderId,
+        order_description: orderDesc
+      };
+
+      console.log(`📤 Sending to NowPayments Invoice: ${JSON.stringify(invoicePayload)}`);
+      const invoiceRes = await fetchWithTimeout(
+        API_URL + '/invoice',
+        {
+          method: 'POST',
+          headers: {
+            'x-api-key': NOWPAYMENTS_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(invoicePayload)
+        },
+        15000
+      );
+
+      const invoiceJson = await invoiceRes.json();
+      if (!invoiceRes.ok) {
+        console.error('❌ NowPayments API error:', invoiceJson);
+        return new Response(JSON.stringify({
+          error: invoiceJson.message || 'Payment creation failed',
+          code: invoiceJson.code || invoiceRes.status,
+          details: invoiceJson.details || null
+        }), {
+          status: invoiceRes.status,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+
+      paymentData = invoiceJson;
+      paymentType = 'invoice';
+    }
+
+    console.log(`✅ Payment created (${paymentType}): ${paymentData.payment_id || paymentData.invoice_id}`);
 
     // ⭐ 11. PAYMENT LOG
     const writerClient = supabaseAdminClient || supabaseClient;
     try {
+      const recordInvoiceId = paymentData.payment_id ? String(paymentData.payment_id) : (paymentData.invoice_id ? String(paymentData.invoice_id) : orderId);
       await writerClient
         .from('payments')
         .insert([{
           user_id: userId,
-          invoice_id: data.invoice_id,
+          invoice_id: recordInvoiceId,
           order_id: orderId,
           amount: finalAmount,
           currency: priceCurrency,
           plan_type: planType,
-          payment_status: 'pending',
+          payment_status: paymentData.payment_status || 'waiting',
           pay_currency: payCurrencyFinal,
           referral_code: appliedReferralCode,
           created_at: new Date().toISOString(),
@@ -599,12 +647,16 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify({
       success: true,
-      invoiceId: data.invoice_id,
-      invoiceUrl: data.invoice_url,
-      orderId: data.order_id || orderId,
-      payCurrency: payCurrencyFinal,
+      paymentType: paymentType,
+      paymentId: paymentData.payment_id ? String(paymentData.payment_id) : (paymentData.invoice_id ? String(paymentData.invoice_id) : null),
+      payAddress: paymentData.pay_address || null,
+      payAmount: paymentData.pay_amount || null,
+      payCurrency: (paymentData.pay_currency || payCurrencyFinal).toUpperCase(),
+      invoiceId: paymentData.invoice_id || null,
+      invoiceUrl: paymentData.invoice_url || null,
+      orderId: paymentData.order_id || orderId,
       amount: finalAmount,
-      expiresAt: data.expiration_date || null
+      expiresAt: paymentData.expiration_date || null
     }), {
       status: 200,
       headers: {
