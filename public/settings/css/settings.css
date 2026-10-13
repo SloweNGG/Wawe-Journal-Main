@@ -2307,9 +2307,9 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .plan-top-badge.premium-badge-glow {
-  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
-  box-shadow: 0 0 16px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.4);
 }
 
 .tier-title-wrap {
@@ -2591,9 +2591,9 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-badge.best-val {
-  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
-  box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
 }
 
 .period-title {
