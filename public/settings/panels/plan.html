@@ -128,15 +128,15 @@
                 <span class="tier-price-sub" data-i18n="settings.plan_per_month">/ ay</span>
               </div>
               <div class="tier-price-alt-note" id="step1-yearly-hint" data-i18n="settings.plan_or_yearly_price">veya Yıllık $99 (aylık $8.25)</div>
-              <p class="tier-desc">Tüm gelişmiş analitik, risk, otomasyon ve özel tema araçlarına sınırsız erişim.</p>
+              <p class="tier-desc" data-i18n="settings.plan_premium_tier_desc">Tüm gelişmiş analitik, risk, otomasyon ve özel tema araçlarına sınırsız erişim.</p>
             </div>
 
             <ul class="tier-features-list">
-              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Özelleştirilebilir Drag & Drop Dashboard</strong></span></li>
-              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Gelişmiş Grafikler & Derin Metrikler</strong></span></li>
-              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>cTrader & Broker Otomatik Senkronizasyon</strong></span></li>
-              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Detaylı Profesyonel PDF & Excel Raporları</strong></span></li>
-              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Gerçek Zamanlı Over-Trade & Risk Uyarısı</strong></span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_drag_drop">Özelleştirilebilir Drag & Drop Dashboard</span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_adv_charts">Gelişmiş Grafikler & Derin Metrikler</span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_auto_sync">cTrader & Broker Otomatik Senkronizasyon</span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_reports">Detaylı Profesyonel PDF & Excel Raporları</span></li>
+              <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_overtrade">Gerçek Zamanlı Over-Trade & Risk Uyarısı</span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f2">Tema ve Renk Özelleştirme</span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f6">Reklamsız Deneyim (Ad-Free)</span></li>
@@ -172,7 +172,7 @@
               <span class="rate-curr">$</span><span class="rate-val" id="period-rate-monthly">12.00</span>
               <span class="rate-unit" data-i18n="settings.plan_per_month">/ ay</span>
             </div>
-            <div class="period-total-cost">Toplam: <strong id="period-total-monthly">$12.00</strong></div>
+            <div class="period-total-cost"><span data-i18n="settings.plan_total_prefix">Toplam:</span> <strong id="period-total-monthly">$12.00</strong></div>
             <p class="period-desc" data-i18n="settings.plan_monthly_desc_sub">Kısa dönem esnek kullanım, istediğin an yenile.</p>
           </div>
 
@@ -185,7 +185,7 @@
               <span class="rate-curr">$</span><span class="rate-val" id="period-rate-yearly">8.25</span>
               <span class="rate-unit" data-i18n="settings.plan_per_month">/ ay</span>
             </div>
-            <div class="period-total-cost">Toplam: <strong id="period-total-yearly">$99.00</strong> <span class="old-strikethrough" id="period-old-yearly">$144.00</span></div>
+            <div class="period-total-cost"><span data-i18n="settings.plan_total_prefix">Toplam:</span> <strong id="period-total-yearly">$99.00</strong> <span class="old-strikethrough" id="period-old-yearly">$144.00</span></div>
             <p class="period-desc" data-i18n="settings.plan_yearly_desc_sub">En popüler ve karlı seçim. 365 gün kesintisiz erişim.</p>
           </div>
         </div>
@@ -196,7 +196,7 @@
             <span data-i18n="settings.plan_back">Geri</span>
           </button>
           <button class="nav-btn-next" id="btn-to-step3">
-            <span>Devam Et: İndirim Kuponu</span>
+            <span data-i18n="settings.plan_btn_to_step3">Devam Et: İndirim Kuponu</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
@@ -219,8 +219,8 @@
                 <line x1="7" y1="7" x2="7.01" y2="7"/>
               </svg>
             </div>
-            <h4>Promosyon veya Influencer Kodu</h4>
-            <p>Geçerli bir kodunuz varsa girerek anında ekstra indirim kazanın.</p>
+            <h4 data-i18n="settings.plan_coupon_heading">Promosyon veya Influencer Kodu</h4>
+            <p data-i18n="settings.plan_coupon_sub">Geçerli bir kodunuz varsa girerek anında ekstra indirim kazanın.</p>
           </div>
 
           <div class="coupon-field-row">
@@ -228,6 +228,7 @@
               type="text" 
               id="wizard-coupon-input" 
               placeholder="KUPON VEYA REFERANS KODU" 
+              data-i18n-placeholder="settings.plan_coupon_placeholder"
               autocomplete="off" 
               spellcheck="false"
             />
@@ -272,7 +273,7 @@
             
             <div class="receipt-rows">
               <div class="receipt-row">
-                <span class="rc-label">Plan</span>
+                <span class="rc-label" data-i18n="settings.plan_summary_label_plan">Plan</span>
                 <span class="rc-val vip-text">
                   <svg class="vip-diamond-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M6 3h12l4 6-10 13L2 9Z"/>
@@ -283,22 +284,22 @@
                 </span>
               </div>
               <div class="receipt-row">
-                <span class="rc-label">Faturalandırma</span>
+                <span class="rc-label" data-i18n="settings.plan_summary_label_billing">Faturalandırma</span>
                 <span class="rc-val" id="summary-period-name">1 Yıllık (365 Gün)</span>
               </div>
               <div class="receipt-row">
-                <span class="rc-label">Standart Tutar</span>
+                <span class="rc-label" data-i18n="settings.plan_summary_label_base">Standart Tutar</span>
                 <span class="rc-val" id="summary-base-amount">$99.00</span>
               </div>
               <div class="receipt-row discount-applied-row" id="summary-discount-row" style="display:none;">
-                <span class="rc-label">Kupon İndirimi</span>
+                <span class="rc-label" data-i18n="settings.plan_summary_label_discount">Kupon İndirimi</span>
                 <span class="rc-val discount-green" id="summary-discount-amount">-$0.00</span>
               </div>
               
               <div class="receipt-hr"></div>
 
               <div class="receipt-row total-highlight-row">
-                <span class="rc-label">Ödenecek Toplam:</span>
+                <span class="rc-label" data-i18n="settings.plan_summary_label_total">Ödenecek Toplam:</span>
                 <div class="rc-val-total">
                   <span class="total-curr">$</span><span class="total-number" id="summary-net-total">99.00</span>
                 </div>
@@ -307,14 +308,14 @@
 
             <div class="activation-guarantee">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Ödeme blockchain üzerinde onaylandığı an üyeliğiniz anında otomatik olarak aktive edilir.</span>
+              <span data-i18n="settings.plan_activation_guarantee">Ödeme blockchain üzerinde onaylandığı an üyeliğiniz anında otomatik olarak aktive edilir.</span>
             </div>
           </div>
 
           <!-- Sağ Kart: Kripto Para Seçimi -->
           <div class="checkout-method-card">
             <h4 class="box-title" data-i18n="settings.plan_payment_method">Ödeme Yöntemi</h4>
-            <p class="box-subtitle">Ödemeyi gerçekleştirmek istediğiniz kripto para birimini seçin:</p>
+            <p class="box-subtitle" data-i18n="settings.plan_select_crypto_subtitle">Ödemeyi gerçekleştirmek istediğiniz kripto para birimini seçin:</p>
 
             <div class="crypto-methods-grid" id="wizard-payment-methods">
               <!-- LTC -->
@@ -338,12 +339,12 @@
 
             <div class="crypto-discount-notice" id="crypto-btc-notice" style="display:none;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span id="crypto-btc-notice-text">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.</span>
+              <span id="crypto-btc-notice-text" data-i18n="settings.plan_btc_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.</span>
             </div>
 
             <div class="ssl-guarantee-note">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span>256-Bit SSL NOWPayments Resmi Ağ Altyapısı</span>
+              <span data-i18n="settings.plan_ssl_note">256-Bit SSL NOWPayments Resmi Ağ Altyapısı</span>
             </div>
           </div>
         </div>
@@ -373,23 +374,23 @@
         <div class="direct-pay-card">
           <!-- Sol Sütun: QR Kod & Canlı Durum -->
           <div class="direct-pay-qr-side">
-            <div class="direct-qr-frame" id="direct-qr-frame" role="button" tabindex="0" title="Büyütmek için tıklayın">
+            <div class="direct-qr-frame" id="direct-qr-frame" role="button" tabindex="0" title="Büyütmek için tıklayın" data-i18n-title="settings.plan_click_to_zoom">
               <img id="direct-pay-qr-img" src="" alt="Payment QR Code" width="200" height="200" />
               <div class="qr-zoom-badge">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                <span>Büyüt</span>
+                <span data-i18n="settings.plan_zoom_badge">Büyüt</span>
               </div>
               <div class="qr-glow-overlay"></div>
             </div>
-            <p class="direct-qr-hint">Telefon kameranız veya borsa/cüzdan uygulamanızla okutun (Büyütmek için QR'a tıklayın)</p>
+            <p class="direct-qr-hint" data-i18n="settings.plan_qr_scan_hint">Telefon kameranız veya borsa/cüzdan uygulamanızla okutun (Büyütmek için QR'a tıklayın)</p>
             
             <div class="direct-pay-live-pill" id="direct-pay-status-pill">
               <span class="pill-dot"></span>
-              <span class="pill-text" id="direct-pay-status-text">Ödeme Ağı Dinleniyor...</span>
+              <span class="pill-text" id="direct-pay-status-text" data-i18n="settings.plan_network_listening">Ödeme Ağı Dinleniyor...</span>
             </div>
             
             <div class="direct-pay-timer-box">
-              <span>Kalan Süre:</span>
+              <span data-i18n="settings.plan_time_left">Kalan Süre:</span>
               <strong id="direct-pay-countdown">20:00</strong>
             </div>
           </div>
@@ -399,7 +400,7 @@
             <!-- Tutar Kutusu -->
             <div class="direct-copy-field">
               <div class="dcf-header">
-                <span class="dcf-label">Gönderilecek Tam Tutar</span>
+                <span class="dcf-label" data-i18n="settings.plan_exact_amount_to_send">Gönderilecek Tam Tutar</span>
                 <span class="dcf-curr-badge" id="direct-pay-curr-badge">LTC</span>
               </div>
               <div class="dcf-input-wrap">
@@ -407,25 +408,25 @@
                   <span class="dcf-val-big" id="direct-pay-amount-val">0.00000000</span>
                   <span class="dcf-val-sub" id="direct-pay-amount-fiat">($10.80 USD)</span>
                 </div>
-                <button class="dcf-copy-btn" id="btn-copy-pay-amount" type="button" title="Kopyala">
+                <button class="dcf-copy-btn" id="btn-copy-pay-amount" type="button" title="Kopyala" data-i18n-title="settings.plan_copy">
                   <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  <span class="copy-text">Kopyala</span>
+                  <span class="copy-text" data-i18n="settings.plan_copy">Kopyala</span>
                 </button>
               </div>
-              <div class="dcf-warning-note">⚠️ Lütfen borsadan gönderirken ağ çekim ücretini (fee) hesaba katarak tam bu tutarın ulaşmasını sağlayın.</div>
+              <div class="dcf-warning-note" data-i18n="settings.plan_fee_warning">⚠️ Lütfen borsadan gönderirken ağ çekim ücretini (fee) hesaba katarak tam bu tutarın ulaşmasını sağlayın.</div>
             </div>
 
             <!-- Adres Kutusu -->
             <div class="direct-copy-field">
               <div class="dcf-header">
-                <span class="dcf-label">Alıcı Cüzdan Adresi</span>
+                <span class="dcf-label" data-i18n="settings.plan_recipient_address">Alıcı Cüzdan Adresi</span>
                 <span class="dcf-network-tag" id="direct-pay-network-tag">Litecoin Ağı</span>
               </div>
               <div class="dcf-input-wrap">
                 <div class="dcf-address-code" id="direct-pay-address-val">ltc1q...</div>
-                <button class="dcf-copy-btn" id="btn-copy-pay-address" type="button" title="Kopyala">
+                <button class="dcf-copy-btn" id="btn-copy-pay-address" type="button" title="Kopyala" data-i18n-title="settings.plan_copy">
                   <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  <span class="copy-text">Kopyala</span>
+                  <span class="copy-text" data-i18n="settings.plan_copy">Kopyala</span>
                 </button>
               </div>
             </div>
@@ -434,8 +435,8 @@
             <div class="direct-security-box">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               <div>
-                <strong>Otomatik Blokzincir Aktivasyonu</strong>
-                <p>Transfer ağda 1 onay aldığında sistem üyeliğinizi anında otomatik aktif edecektir.</p>
+                <strong data-i18n="settings.plan_auto_activation_title">Otomatik Blokzincir Aktivasyonu</strong>
+                <p data-i18n="settings.plan_auto_activation_desc">Transfer ağda 1 onay aldığında sistem üyeliğinizi anında otomatik aktif edecektir.</p>
               </div>
             </div>
           </div>
@@ -450,38 +451,38 @@
               <path d="M2 9h20"/>
             </svg>
           </div>
-          <h3>Ödemeniz Başarıyla Onaylandı!</h3>
-          <p>Wawe Premium üyeliğiniz aktive edildi. Sınırsız özelliklerin keyfini çıkarın!</p>
-          <button class="btn-success-dashboard" id="btn-go-dashboard-after-pay">Panele Git →</button>
+          <h3 data-i18n="settings.plan_payment_confirmed">Ödemeniz Başarıyla Onaylandı!</h3>
+          <p data-i18n="settings.plan_premium_activated_sub">Wawe Premium üyeliğiniz aktive edildi. Sınırsız özelliklerin keyfini çıkarın!</p>
+          <button class="btn-success-dashboard" id="btn-go-dashboard-after-pay" data-i18n="settings.plan_go_to_dashboard">Panele Git →</button>
         </div>
 
         <div class="wizard-nav-bar direct-pay-nav">
           <button class="nav-btn-back" id="btn-back-to-step4-from-direct">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            <span>Farklı Yöntem Seç / Geri Dön</span>
+            <span data-i18n="settings.plan_change_method_back">Farklı Yöntem Seç / Geri Dön</span>
           </button>
           
           <button class="nav-btn-check-status" id="btn-manual-check-status" type="button">
             <span class="check-icon">🔄</span>
-            <span>Durumu Kontrol Et</span>
+            <span data-i18n="settings.plan_check_status_btn">Durumu Kontrol Et</span>
           </button>
         </div>
 
         <!-- QR Kod Büyütme Modalı (Lightbox) -->
         <div class="qr-zoom-modal-backdrop" id="qr-zoom-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-zoom-title">
           <div class="qr-zoom-modal-card">
-            <button class="qr-zoom-close-btn" id="btn-close-qr-zoom" type="button" aria-label="Kapat">
+            <button class="qr-zoom-close-btn" id="btn-close-qr-zoom" type="button" aria-label="Kapat" data-i18n-title="common.close">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
             <div class="qr-zoom-header">
-              <h4 id="qr-zoom-title">Ödeme QR Kodu</h4>
-              <p id="qr-zoom-subtitle">Cüzdan veya borsa uygulamanız ile okutun</p>
+              <h4 id="qr-zoom-title" data-i18n="settings.plan_qr_zoom_title">Ödeme QR Kodu</h4>
+              <p id="qr-zoom-subtitle" data-i18n="settings.plan_qr_zoom_subtitle">Cüzdan veya borsa uygulamanız ile okutun</p>
             </div>
             <div class="qr-zoom-big-frame">
               <img id="qr-zoom-big-img" src="" alt="Büyütülmüş QR Kod" width="320" height="320" />
             </div>
             <div class="qr-zoom-footer-hint">
-              <span>Kapatmak için dışarıya tıklayın veya ESC tuşuna basın</span>
+              <span data-i18n="settings.plan_qr_zoom_close_hint">Kapatmak için dışarıya tıklayın veya ESC tuşuna basın</span>
             </div>
           </div>
         </div>
@@ -558,8 +559,8 @@
     <div class="extend-wizard-wrapper" id="extend-wizard-wrapper" style="display:none;">
       <div class="extend-wizard-header">
         <div class="extend-wizard-title">
-          <span>⚡ Abonelik Sürenizi Uzatın</span>
-          <p>Mevcut üyeliğinizin bitiş tarihine eklenir.</p>
+          <span data-i18n="settings.plan_extend_title">⚡ Abonelik Sürenizi Uzatın</span>
+          <p data-i18n="settings.plan_extend_desc">Mevcut üyeliğinizin bitiş tarihine eklenir.</p>
         </div>
         <button class="btn-close-extend-wizard" id="btn-close-extend-wizard" data-i18n="settings.plan_extend_close">
           ✕ Vazgeç / Kapat

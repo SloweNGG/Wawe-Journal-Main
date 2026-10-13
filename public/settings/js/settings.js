@@ -1255,8 +1255,8 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var m = (window.getMonthlyPrice ? window.getMonthlyPrice() : 12) || 12;
     var y = (window.getYearlyPrice ? window.getYearlyPrice() : 99) || 99;
     return {
-      monthly: { base: m, monthlyRate: m.toFixed(2), days: 30, name: '1 Aylık' },
-      yearly: { base: y, monthlyRate: (y / 12).toFixed(2), days: 365, name: '1 Yıllık' }
+      monthly: { base: m, monthlyRate: m.toFixed(2), days: 30, name: t('settings.plan_period_1m', {}, '1 Aylık') },
+      yearly: { base: y, monthlyRate: (y / 12).toFixed(2), days: 365, name: t('settings.plan_period_1y', {}, '1 Yıllık') }
     };
   }
 
@@ -1585,13 +1585,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (ltcChip) {
       var existingTag = ltcChip.querySelector('.chip-discount-tag');
       if (appliedDiscount > 0) {
+        var discountTagText = '%' + appliedDiscount + ' ' + t('settings.plan_discount_tag', {}, 'İndirim');
         if (!existingTag) {
           var tag = document.createElement('span');
           tag.className = 'chip-discount-tag';
-          tag.textContent = '%' + appliedDiscount + ' İndirim';
+          tag.textContent = discountTagText;
           ltcChip.appendChild(tag);
         } else {
-          existingTag.textContent = '%' + appliedDiscount + ' İndirim';
+          existingTag.textContent = discountTagText;
         }
       } else if (existingTag) {
         existingTag.remove();
@@ -1640,7 +1641,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var netTotalEl = wizardRoot.querySelector('#summary-net-total');
     var btnPayLabel = wizardRoot.querySelector('#btn-pay-label');
 
-    if (periodNameEl) periodNameEl.textContent = planInfo.name + ' (' + planInfo.days + ' Gün)';
+    if (periodNameEl) periodNameEl.textContent = planInfo.name + ' (' + planInfo.days + ' ' + t('settings.plan_days', {}, 'Gün') + ')';
     if (baseAmountEl) baseAmountEl.textContent = '$' + basePrice.toFixed(2);
 
     if (appliedDiscount > 0 && isLtc) {
@@ -1751,7 +1752,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (amountFiat) amountFiat.textContent = '($' + fiatAmt + ' USD)';
     if (currBadge) currBadge.textContent = payCur;
     if (addressVal) addressVal.textContent = payAddr;
-    if (networkTag) networkTag.textContent = (payCur === 'LTC' ? 'Litecoin (LTC) Ağı' : (payCur === 'BTC' ? 'Bitcoin Ağı' : payCur + ' Ağı'));
+    if (networkTag) {
+      var netText = (payCur === 'LTC' ? t('settings.plan_network_ltc', {}, 'Litecoin (LTC) Ağı') : (payCur === 'BTC' ? t('settings.plan_network_btc', {}, 'Bitcoin Ağı') : payCur + ' Network'));
+      networkTag.textContent = netText;
+    }
 
     // QR Kod URI (Kripto cüzdanları için standart URI)
     var uri = payAddr;
@@ -1775,7 +1779,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
       remainingSeconds--;
       if (remainingSeconds <= 0) {
         clearInterval(directPayTimerInterval);
-        if (timerEl) timerEl.textContent = '00:00 (Süre Doldu)';
+        if (timerEl) timerEl.textContent = '00:00 ' + t('settings.plan_expired_time', {}, '(Süre Doldu)');
         return;
       }
       var m = Math.floor(remainingSeconds / 60);
@@ -1830,7 +1834,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var directCard = wizardRoot.querySelector('.direct-pay-card');
     var statusText = wizardRoot.querySelector('#direct-pay-status-text');
 
-    if (statusText) statusText.textContent = 'Ödeme onaylandı! Premium aktif.';
+    if (statusText) statusText.textContent = t('settings.plan_status_confirmed', {}, 'Ödeme onaylandı! Premium aktif.');
     if (directCard) directCard.style.display = 'none';
     if (successBox) successBox.style.display = 'block';
 
@@ -1856,10 +1860,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
       if (!currentPaymentData || !currentPaymentData.payAmount) return;
       navigator.clipboard.writeText(String(currentPaymentData.payAmount)).then(function() {
         var textEl = btnCopyAmt.querySelector('.copy-text');
-        if (textEl) textEl.textContent = 'Kopyalandı! ✓';
+        if (textEl) textEl.textContent = t('settings.plan_copied', {}, 'Kopyalandı! ✓');
         btnCopyAmt.classList.add('copied');
         setTimeout(function() {
-          if (textEl) textEl.textContent = 'Kopyala';
+          if (textEl) textEl.textContent = t('settings.plan_copy', {}, 'Kopyala');
           btnCopyAmt.classList.remove('copied');
         }, 2000);
       });
@@ -1872,10 +1876,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
       if (!currentPaymentData || !currentPaymentData.payAddress) return;
       navigator.clipboard.writeText(String(currentPaymentData.payAddress)).then(function() {
         var textEl = btnCopyAddr.querySelector('.copy-text');
-        if (textEl) textEl.textContent = 'Kopyalandı! ✓';
+        if (textEl) textEl.textContent = t('settings.plan_copied', {}, 'Kopyalandı! ✓');
         btnCopyAddr.classList.add('copied');
         setTimeout(function() {
-          if (textEl) textEl.textContent = 'Kopyala';
+          if (textEl) textEl.textContent = t('settings.plan_copy', {}, 'Kopyala');
           btnCopyAddr.classList.remove('copied');
         }, 2000);
       });
@@ -1898,7 +1902,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
       e.preventDefault();
       btnManualCheck.disabled = true;
       var origBtn = btnManualCheck.innerHTML;
-      btnManualCheck.innerHTML = '<span>⏳ Kontrol ediliyor...</span>';
+      btnManualCheck.innerHTML = '<span>' + t('settings.plan_checking_status', {}, '⏳ Kontrol ediliyor...') + '</span>';
       try {
         var sb = window.sb || window.supabase;
         var user = window.SETTINGS_STATE.currentUser;
@@ -1912,9 +1916,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
             return;
           }
         }
-        showMsg('İşlem henüz ağda onaylanmadı. Lütfen transferi yaptıktan sonra biraz bekleyin.', 'info');
+        showMsg(t('settings.plan_not_confirmed_yet', {}, 'İşlem henüz ağda onaylanmadı. Lütfen transferi yaptıktan sonra biraz bekleyin.'), 'info');
       } catch(err) {
-        showMsg('Kontrol edilirken bir hata oluştu.', 'error');
+        showMsg(t('settings.plan_check_error', {}, 'Kontrol edilirken bir hata oluştu.'), 'error');
       } finally {
         btnManualCheck.disabled = false;
         btnManualCheck.innerHTML = origBtn;
@@ -1975,6 +1979,13 @@ function setupPlanWizard(wizardRoot, isExtending) {
       closeQrModal();
     }
   });
+
+  if (window.i18n && typeof window.i18n.onChange === 'function') {
+    window.i18n.onChange(function() {
+      updatePeriodCardsUI();
+      renderSummary();
+    });
+  }
 
   goToStep(currentStep, true);
 }
