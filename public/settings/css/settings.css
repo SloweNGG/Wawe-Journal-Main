@@ -2340,7 +2340,7 @@ body.light-theme .panel-glow.overtrade-glow {
   display: flex;
   align-items: baseline;
   gap: 3px;
-  margin: 0.65rem 0 0.45rem 0;
+  margin: 0.65rem 0 0.2rem 0;
 }
 
 .tier-price-from {
@@ -2353,20 +2353,32 @@ body.light-theme .panel-glow.overtrade-glow {
 .tier-price-currency {
   font-size: 1.3rem;
   font-weight: 700;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
 }
 
 .tier-price-amount {
   font-size: clamp(2rem, 3vw, 2.5rem);
   font-weight: 800;
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
   line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .tier-price-sub {
   font-size: 0.85rem;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--muted);
+}
+
+.tier-price-alt-note {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin-top: 0.15rem;
+  margin-bottom: 0.85rem;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .tier-desc {
@@ -2476,14 +2488,21 @@ body.light-theme .panel-glow.overtrade-glow {
   margin-bottom: 2rem;
 }
 
+.durations-grid.two-cards-grid {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 660px;
+  margin: 0 auto 2rem auto;
+}
+
 @media (max-width: 900px) {
   .durations-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 520px) {
-  .durations-grid {
+@media (max-width: 580px) {
+  .durations-grid,
+  .durations-grid.two-cards-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -2595,23 +2614,27 @@ body.light-theme .panel-glow.overtrade-glow {
 .rate-curr {
   font-size: 1rem;
   font-weight: 700;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
 }
 
 .rate-val {
   font-size: 1.7rem;
   font-weight: 800;
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .rate-unit {
   font-size: 0.8rem;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--muted);
 }
 
 .period-total-cost {
   font-size: 0.85rem;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
   margin-bottom: 0.6rem;
 }
@@ -2908,15 +2931,17 @@ body.light-theme .panel-glow.overtrade-glow {
 .total-curr {
   font-size: 1.1rem;
   font-weight: 700;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--accent);
 }
 
 .total-number {
   font-size: 1.8rem;
   font-weight: 800;
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--accent);
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .activation-guarantee {
@@ -3161,7 +3186,7 @@ body.light-theme .panel-glow.overtrade-glow {
 .stat-highlight-value {
   font-size: clamp(1.4rem, 2.4vw, 1.9rem);
   font-weight: 800;
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--accent);
   letter-spacing: -0.02em;
 }

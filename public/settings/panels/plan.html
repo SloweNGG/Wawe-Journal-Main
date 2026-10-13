@@ -80,8 +80,9 @@
               <h4 class="tier-title" data-i18n="settings.plan_free_name">Ücretsiz (Free)</h4>
               <div class="tier-price-box">
                 <span class="tier-price-currency">$</span><span class="tier-price-amount">0</span>
-                <span class="tier-price-sub">/ sonsuza kadar</span>
+                <span class="tier-price-sub" data-i18n="settings.plan_forever">/ sonsuza kadar</span>
               </div>
+              <div class="tier-price-alt-note" data-i18n="settings.plan_free_always">Her zaman ücretsiz</div>
               <p class="tier-desc" data-i18n="settings.plan_free_desc">Günlük trade kaydı ve temel istatistik takibi için harika başlangıç.</p>
             </div>
             
@@ -92,6 +93,7 @@
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f4">Aylık Hedef</span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f5">CSV İçe/Dışa Aktarım</span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f6">PDF Rapor</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f6">Reklamsız Deneyim (Ad-Free)</span></li>
               <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f1">Premium Dashboard</span></li>
               <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f2">Tema Özelleştirme</span></li>
               <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_premium_f3">Over Trade Uyarısı</span></li>
@@ -107,17 +109,15 @@
 
           <!-- Premium Plan (Featured) -->
           <div class="plan-tier-card premium-tier selected">
-            <div class="plan-top-badge premium-badge-glow">🔥 EN POPÜLER — TÜM ÖZELLİKLER AÇIK</div>
             <div class="tier-head">
               <div class="tier-title-wrap">
                 <h4 class="tier-title">Wawe Premium</h4>
-                <span class="vip-tag">PRO</span>
               </div>
               <div class="tier-price-box">
-                <span class="tier-price-from">başlangıç</span>
-                <span class="tier-price-currency">$</span><span class="tier-price-amount" id="step1-min-price">8.25</span>
-                <span class="tier-price-sub">/ ay</span>
+                <span class="tier-price-currency">$</span><span class="tier-price-amount" id="step1-monthly-val">12</span>
+                <span class="tier-price-sub" data-i18n="settings.plan_per_month">/ ay</span>
               </div>
+              <div class="tier-price-alt-note" id="step1-yearly-hint" data-i18n="settings.plan_or_yearly_price">veya Yıllık $99 (aylık $8.25)</div>
               <p class="tier-desc">Tüm gelişmiş analitik, risk, otomasyon ve özel tema araçlarına sınırsız erişim.</p>
             </div>
 
@@ -129,8 +129,8 @@
               <li class="feat-inc premium-feat"><span class="feat-icon spark">✦</span><span><strong>Gerçek Zamanlı Over-Trade & Risk Uyarısı</strong></span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f2">Tema ve Renk Özelleştirme</span></li>
               <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f5">Çoklu Para Birimi</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f6">Reklamsız ve Hızlı Deneyim</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span>Öncelikli 7/24 VIP Destek</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_premium_f6">Reklamsız Deneyim (Ad-Free)</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_priority_support">Öncelikli Destek</span></li>
             </ul>
 
             <div class="tier-footer">
@@ -144,65 +144,39 @@
       </div>
 
       <!-- ==========================================
-           ADIM 2: SÜRE / DÖNEM SEÇİMİ
+           ADIM 2: SÜRE / DÖNEM SEÇİMİ (1 AYLIK & YILLIK)
            ========================================== -->
       <div class="wizard-step-panel" id="wizard-step-2">
         <div class="step-headline">
           <h3 class="step-main-title" data-i18n="settings.plan_step2_title">Abonelik Sürenizi Seçin</h3>
-          <p class="step-main-sub" data-i18n="settings.plan_step2_sub">Kaç aylık veya yıllık almak istediğinizi belirleyin. Uzun dönemli planlarda anında tasarruf edin.</p>
+          <p class="step-main-sub" data-i18n="settings.plan_step2_sub">Aylık veya yıllık dönemi seçin. Yıllık planda 2 ay hediye ile büyük tasarruf edin.</p>
         </div>
 
-        <div class="durations-grid">
+        <div class="durations-grid two-cards-grid">
           <!-- 1 Month -->
           <div class="duration-option-card" data-period="monthly">
             <div class="card-radio-circle"><div class="inner-dot"></div></div>
-            <div class="period-badge standard">Aylık Plan</div>
-            <div class="period-title">1 Aylık</div>
+            <div class="period-badge standard" data-i18n="settings.plan_monthly_plan_badge">Aylık Plan</div>
+            <div class="period-title" data-i18n="settings.plan_period_1m">1 Aylık</div>
             <div class="period-monthly-rate">
               <span class="rate-curr">$</span><span class="rate-val" id="period-rate-monthly">12.00</span>
-              <span class="rate-unit">/ ay</span>
+              <span class="rate-unit" data-i18n="settings.plan_per_month">/ ay</span>
             </div>
             <div class="period-total-cost">Toplam: <strong id="period-total-monthly">$12.00</strong></div>
-            <p class="period-desc">Kısa dönem esnek kullanım, istediğin an yenile.</p>
-          </div>
-
-          <!-- 3 Months -->
-          <div class="duration-option-card" data-period="3months">
-            <div class="card-radio-circle"><div class="inner-dot"></div></div>
-            <div class="period-badge saving">%15 Tasarruf</div>
-            <div class="period-title">3 Aylık</div>
-            <div class="period-monthly-rate">
-              <span class="rate-curr">$</span><span class="rate-val" id="period-rate-3months">10.33</span>
-              <span class="rate-unit">/ ay</span>
-            </div>
-            <div class="period-total-cost">Toplam: <strong id="period-total-3months">$31.00</strong> <span class="old-strikethrough" id="period-old-3months">$36.00</span></div>
-            <p class="period-desc">Dengeli periyot, çeyreklik gelişim ve disiplin.</p>
-          </div>
-
-          <!-- 6 Months -->
-          <div class="duration-option-card" data-period="6months">
-            <div class="card-radio-circle"><div class="inner-dot"></div></div>
-            <div class="period-badge popular">%20 Tasarruf</div>
-            <div class="period-title">6 Aylık</div>
-            <div class="period-monthly-rate">
-              <span class="rate-curr">$</span><span class="rate-val" id="period-rate-6months">9.66</span>
-              <span class="rate-unit">/ ay</span>
-            </div>
-            <div class="period-total-cost">Toplam: <strong id="period-total-6months">$58.00</strong> <span class="old-strikethrough" id="period-old-6months">$72.00</span></div>
-            <p class="period-desc">Yarıyıl odaklı profesyonel trading performansı.</p>
+            <p class="period-desc" data-i18n="settings.plan_monthly_desc_sub">Kısa dönem esnek kullanım, istediğin an yenile.</p>
           </div>
 
           <!-- 1 Year (Featured) -->
           <div class="duration-option-card selected featured" data-period="yearly">
             <div class="card-radio-circle"><div class="inner-dot"></div></div>
-            <div class="period-badge best-val">⭐ %31 Büyük Tasarruf</div>
-            <div class="period-title">1 Yıllık</div>
+            <div class="period-badge best-val" data-i18n="settings.plan_yearly_discount_badge">⭐ %31 Büyük Tasarruf</div>
+            <div class="period-title" data-i18n="settings.plan_period_1y">1 Yıllık</div>
             <div class="period-monthly-rate">
               <span class="rate-curr">$</span><span class="rate-val" id="period-rate-yearly">8.25</span>
-              <span class="rate-unit">/ ay</span>
+              <span class="rate-unit" data-i18n="settings.plan_per_month">/ ay</span>
             </div>
             <div class="period-total-cost">Toplam: <strong id="period-total-yearly">$99.00</strong> <span class="old-strikethrough" id="period-old-yearly">$144.00</span></div>
-            <p class="period-desc">En karlı ve popüler seçim. 365 gün kesintisiz erişim.</p>
+            <p class="period-desc" data-i18n="settings.plan_yearly_desc_sub">En popüler ve karlı seçim. 365 gün kesintisiz erişim.</p>
           </div>
         </div>
 

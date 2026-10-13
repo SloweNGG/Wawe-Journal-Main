@@ -1172,15 +1172,13 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var y = (window.getYearlyPrice ? window.getYearlyPrice() : 99) || 99;
     return {
       monthly: { base: m, monthlyRate: m.toFixed(2), days: 30, name: '1 Aylık' },
-      '3months': { base: Math.round(m * 3 * 0.86), monthlyRate: (Math.round(m * 3 * 0.86) / 3).toFixed(2), days: 90, name: '3 Aylık' },
-      '6months': { base: Math.round(m * 6 * 0.80), monthlyRate: (Math.round(m * 6 * 0.80) / 6).toFixed(2), days: 180, name: '6 Aylık' },
       yearly: { base: y, monthlyRate: (y / 12).toFixed(2), days: 365, name: '1 Yıllık' }
     };
   }
 
   function updatePeriodCardsUI() {
     var prices = getPlanPrices();
-    var periods = ['monthly', '3months', '6months', 'yearly'];
+    var periods = ['monthly', 'yearly'];
     periods.forEach(function(p) {
       var card = wizardRoot.querySelector('.duration-option-card[data-period="' + p + '"]');
       if (!card) return;
@@ -1190,8 +1188,12 @@ function setupPlanWizard(wizardRoot, isExtending) {
       if (totalEl) totalEl.textContent = '$' + prices[p].base.toFixed(2);
     });
 
-    var minPriceEl = wizardRoot.querySelector('#step1-min-price');
-    if (minPriceEl) minPriceEl.textContent = prices.yearly.monthlyRate;
+    var step1MonthlyEl = wizardRoot.querySelector('#step1-monthly-val');
+    if (step1MonthlyEl) step1MonthlyEl.textContent = prices.monthly.base.toFixed(0);
+    var step1YearlyHint = wizardRoot.querySelector('#step1-yearly-hint');
+    if (step1YearlyHint) {
+      step1YearlyHint.textContent = t('settings.plan_or_yearly_price', { yearly: prices.yearly.base.toFixed(0), monthlyRate: prices.yearly.monthlyRate }, 'veya Yıllık $' + prices.yearly.base.toFixed(0) + ' (aylık $' + prices.yearly.monthlyRate + ')');
+    }
   }
   updatePeriodCardsUI();
 

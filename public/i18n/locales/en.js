@@ -898,6 +898,16 @@ export default {
   "settings.plan_current_plan": "Your Current Plan",
   "settings.plan_active_membership": "Active Membership",
   "settings.plan_expiry_until": "Expiry Date",
+  "settings.plan_priority_support": "Priority Support",
+  "settings.plan_or_yearly_price": "or $99/yr ($8.25/mo)",
+  "settings.plan_free_always": "Free forever",
+  "settings.plan_period_1m": "1 Month",
+  "settings.plan_period_1y": "1 Year",
+  "settings.plan_monthly_plan_badge": "Monthly Plan",
+  "settings.plan_yearly_discount_badge": "⭐ Save 31%",
+  "settings.plan_monthly_desc_sub": "Flexible monthly plan, cancel anytime.",
+  "settings.plan_yearly_desc_sub": "Most popular choice. 365 days of uninterrupted access.",
+  "settings.plan_per_month": "/ mo",
 
   // ⭐ Payment
   "payment.session_expired": "Your session has expired, please log in again.",
