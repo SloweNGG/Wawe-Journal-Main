@@ -15,7 +15,7 @@ function t(key, params, fallback) {
   return fallback || key;
 }
 
-let selectedPayMethod = safeLocalStorageGet('ww_pay_method', 'BTC');
+let selectedPayMethod = safeLocalStorageGet('ww_pay_method', 'LTC');
 
 export function getSystemSettings() {
   try {
@@ -28,7 +28,7 @@ export function getSystemSettings() {
     currency: 'USD',
     language: 'en',
     theme: 'dark',
-    payMethod: 'BTC'
+    payMethod: 'LTC'
   };
 }
 
@@ -52,7 +52,7 @@ export function selectPayMethod(method) {
 
 export async function createNowPaymentInvoice(userId, planType, amount, currency, payCurrency, referralCode = null) {
   currency = currency || 'USD';
-  payCurrency = payCurrency || 'BTC';
+  payCurrency = payCurrency || 'LTC';
   
   try {
     const { data: { session } } = await sb.auth.getSession();
@@ -116,7 +116,7 @@ export async function upgradeToPremium(planType, amount, currency, payMethod, re
       return null;
     }
     
-    const method = payMethod || selectedPayMethod || 'BTC';
+    const method = payMethod || selectedPayMethod || 'LTC';
     showToast(t('settings.redirecting_to_payment', { method: method }, method + ' ile ödeme sayfasına yönlendiriliyorsunuz...'), 'info');
     
     const result = await createNowPaymentInvoice(

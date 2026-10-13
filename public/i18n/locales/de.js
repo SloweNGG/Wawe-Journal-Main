@@ -876,8 +876,9 @@ export default {
   "settings.plan_monthly_plan_badge": "Monatlicher Plan",
   "settings.plan_yearly_discount_badge": "⭐ 31% sparen",
   "settings.plan_monthly_desc_sub": "Flexible monatliche Nutzung, jederzeit kündbar.",
-  "settings.plan_yearly_desc_sub": "Beliebteste und beste Wahl. 365 Tage voller Zugang.",
   "settings.plan_per_month": "/ Monat",
+  "settings.plan_crypto_btc_hint": "Original Blockchain • Nur Jährlich",
+  "settings.plan_btc_no_discount_notice": "Gutscheinrabatt gilt nur für Litecoin (LTC). Für Bitcoin (BTC) gilt der Standardpreis.",
 
   "payment.session_expired": "Ihre Sitzung ist abgelaufen, bitte melden Sie sich erneut an.",
   "payment.login_required": "Bitte zuerst anmelden.",

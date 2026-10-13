@@ -1244,6 +1244,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
   }
 
+  // 🔒 Aylık abonelikte BTC ödeme yöntemi kullanılamaz - LTC'ye normalize et
+  if (selectedPeriod === 'monthly' && selectedPayMethod === 'BTC') {
+    selectedPayMethod = 'LTC';
+  }
+
   function getPlanPrices() {
     var m = (window.getMonthlyPrice ? window.getMonthlyPrice() : 12) || 12;
     var y = (window.getYearlyPrice ? window.getYearlyPrice() : 99) || 99;
@@ -1363,6 +1368,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
       durationCards.forEach(function(c) { c.classList.remove('selected'); });
       this.classList.add('selected');
       selectedPeriod = this.getAttribute('data-period') || 'yearly';
+      // 🔒 Aylık seçildiyse BTC geçersiz olacağı için LTC'ye geç
+      if (selectedPeriod === 'monthly' && selectedPayMethod === 'BTC') {
+        selectedPayMethod = 'LTC';
+      }
       saveWizardState();
     });
   });
@@ -1519,12 +1528,76 @@ function setupPlanWizard(wizardRoot, isExtending) {
   }
 
   // --- ADIM 4 ETKİNLİKLERİ & ÖZET (FATURA VE ÖDEME) ---
+  function updateCryptoMethodsUI() {
+    var btcChip = wizardRoot.querySelector('.crypto-chip[data-method="BTC"]');
+    var ltcChip = wizardRoot.querySelector('.crypto-chip[data-method="LTC"]');
+    var btcNotice = wizardRoot.querySelector('#crypto-btc-notice');
+    var isMonthly = (selectedPeriod === 'monthly');
+
+    // 🔒 1. BTC yalnızca Yıllık abonelikte gösterilir, Aylık abonelikte gizlenir
+    if (btcChip) {
+      if (isMonthly) {
+        btcChip.style.display = 'none';
+        if (selectedPayMethod === 'BTC') {
+          selectedPayMethod = 'LTC';
+          saveWizardState();
+        }
+      } else {
+        btcChip.style.display = 'flex';
+      }
+    }
+
+    // 🔒 2. İndirim kuponu rozeti yalnızca LTC üzerinde gösterilir
+    if (ltcChip) {
+      var existingTag = ltcChip.querySelector('.chip-discount-tag');
+      if (appliedDiscount > 0) {
+        if (!existingTag) {
+          var tag = document.createElement('span');
+          tag.className = 'chip-discount-tag';
+          tag.textContent = '%' + appliedDiscount + ' İndirim';
+          ltcChip.appendChild(tag);
+        } else {
+          existingTag.textContent = '%' + appliedDiscount + ' İndirim';
+        }
+      } else if (existingTag) {
+        existingTag.remove();
+      }
+    }
+
+    // 🔒 3. Chip active durumlarını güncelle
+    var chips = wizardRoot.querySelectorAll('.crypto-chip');
+    chips.forEach(function(chip) {
+      var m = chip.getAttribute('data-method');
+      if (m === selectedPayMethod) {
+        chip.classList.add('active');
+      } else {
+        chip.classList.remove('active');
+      }
+    });
+
+    // 🔒 4. BTC seçildiğinde ve indirim kuponu varsa "İndirim sadece LTC'de geçerli" uyarısı göster
+    if (btcNotice) {
+      if (selectedPayMethod === 'BTC' && appliedDiscount > 0) {
+        btcNotice.style.display = 'flex';
+      } else {
+        btcNotice.style.display = 'none';
+      }
+    }
+  }
+
   function renderSummary() {
+    updateCryptoMethodsUI();
+
     var prices = getPlanPrices();
     var planInfo = prices[selectedPeriod] || prices.yearly;
     var basePrice = planInfo.base;
-    var discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
+    var isLtc = (selectedPayMethod === 'LTC');
+
+    // 🔒 İndirim YALNIZCA LTC ödemelerinde uygulanır! BTC veya diğerlerinde indirim 0'dır
+    var discountAmount = (isLtc && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
     var netTotal = Math.max(0, basePrice - discountAmount);
+    // 2 ondalık basamağa yuvarla
+    netTotal = Number(netTotal.toFixed(2));
 
     var periodNameEl = wizardRoot.querySelector('#summary-period-name');
     var baseAmountEl = wizardRoot.querySelector('#summary-base-amount');
@@ -1536,7 +1609,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (periodNameEl) periodNameEl.textContent = planInfo.name + ' (' + planInfo.days + ' Gün)';
     if (baseAmountEl) baseAmountEl.textContent = '$' + basePrice.toFixed(2);
 
-    if (appliedDiscount > 0) {
+    if (appliedDiscount > 0 && isLtc) {
       if (discountRow) discountRow.style.display = 'flex';
       if (discountAmountEl) discountAmountEl.textContent = '-$' + discountAmount.toFixed(2) + ' (‑%' + appliedDiscount + ')';
     } else {
@@ -1551,18 +1624,16 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
   var cryptoChips = wizardRoot.querySelectorAll('.crypto-chip');
   cryptoChips.forEach(function(chip) {
-    var m = chip.getAttribute('data-method');
-    if (m === selectedPayMethod) {
-      chip.classList.add('active');
-    } else {
-      chip.classList.remove('active');
-    }
     chip.addEventListener('click', function() {
-      cryptoChips.forEach(function(c) { c.classList.remove('active'); });
-      this.classList.add('active');
-      selectedPayMethod = this.getAttribute('data-method') || 'LTC';
+      var m = this.getAttribute('data-method') || 'LTC';
+      // Aylık planda BTC seçilemez
+      if (m === 'BTC' && selectedPeriod === 'monthly') {
+        return;
+      }
+      selectedPayMethod = m;
       saveWizardState();
       if (window.selectPayMethod) window.selectPayMethod(selectedPayMethod);
+      renderSummary(); // Fiyatı, rozetleri ve BTC uyarısını ANINDA güncelle!
     });
   });
 
@@ -1582,8 +1653,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
       var prices = getPlanPrices();
       var planInfo = prices[selectedPeriod] || prices.yearly;
       var basePrice = planInfo.base;
-      var discountAmount = appliedDiscount > 0 ? (basePrice * (appliedDiscount / 100)) : 0;
-      var netTotal = Math.max(0, basePrice - discountAmount);
+      var isLtc = (selectedPayMethod === 'LTC');
+
+      // En son ekranda yazan net tutar
+      var discountAmount = (isLtc && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
+      var netTotal = Number(Math.max(0, basePrice - discountAmount).toFixed(2));
+
+      // Kupon kodu SADECE LTC ödemesinde geçerli ve backend'e gönderilir
+      var codeToSend = (isLtc && appliedDiscount > 0) ? appliedReferralCode : null;
 
       btnSubmitPayment.disabled = true;
       var origContent = btnSubmitPayment.innerHTML;
@@ -1591,7 +1668,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
       try {
         if (window.upgradeToPremium) {
-          await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, appliedReferralCode);
+          await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
         } else {
           showMsg(t('payment.link_failed', {}, 'Ödeme servisi başlatılamadı.'), 'error');
           btnSubmitPayment.disabled = false;

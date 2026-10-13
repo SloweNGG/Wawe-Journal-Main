@@ -908,8 +908,9 @@ export default {
   "settings.plan_monthly_plan_badge": "Monthly Plan",
   "settings.plan_yearly_discount_badge": "⭐ Save 31%",
   "settings.plan_monthly_desc_sub": "Flexible monthly plan, cancel anytime.",
-  "settings.plan_yearly_desc_sub": "Most popular choice. 365 days of uninterrupted access.",
   "settings.plan_per_month": "/ mo",
+  "settings.plan_crypto_btc_hint": "Original Blockchain • Yearly Only",
+  "settings.plan_btc_no_discount_notice": "Coupon discount is only valid for Litecoin (LTC). Standard price applies for Bitcoin (BTC).",
 
   // ⭐ Payment
   "payment.session_expired": "Your session has expired, please log in again.",

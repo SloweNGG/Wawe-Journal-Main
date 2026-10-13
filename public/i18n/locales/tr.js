@@ -853,8 +853,9 @@ export default {
   "settings.plan_monthly_plan_badge": "Aylık Plan",
   "settings.plan_yearly_discount_badge": "⭐ %31 Büyük Tasarruf",
   "settings.plan_monthly_desc_sub": "Kısa dönem esnek kullanım, istediğin an yenile.",
-  "settings.plan_yearly_desc_sub": "En popüler ve karlı seçim. 365 gün kesintisiz erişim.",
   "settings.plan_per_month": "/ ay",
+  "settings.plan_crypto_btc_hint": "Orijinal Blockchain • Sadece Yıllık",
+  "settings.plan_btc_no_discount_notice": "Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.",
 
   "payment.session_expired": "Oturumunuz sona ermiş, lütfen tekrar giriş yapın.",
   "payment.login_required": "Lütfen önce giriş yapın.",

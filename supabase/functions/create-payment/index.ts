@@ -374,6 +374,8 @@ serve(async (req: Request) => {
         const { data: psData } = await adminClient.from('system_settings').select('value').eq('key', 'payment_settings').single();
         if (psData?.value) paymentSettings = { ...paymentSettings, ...psData.value };
 
+        const { data: prData } = await adminClient.from('system_settings').select('value').eq('key', 'prices').single();
+
         const mPrice = Number(prData?.value?.monthly) || Number(paymentSettings.monthly_price_usd) || 12;
         const yPrice = Number(prData?.value?.yearly) || Number(paymentSettings.yearly_price_usd) || 99;
 
@@ -397,15 +399,25 @@ serve(async (req: Request) => {
       baseAmount = Number((baseAmount * rate).toFixed(2));
     }
 
-    const payCurrencyFinal = payCurrency || 'BTC';
-    
+    const payCurrencyFinal = (payCurrency || 'LTC').toUpperCase();
+
+    // 🔒 BTC Yalnızca Yıllık Planda Geçerlidir
+    if (payCurrencyFinal === 'BTC' && planType !== 'yearly') {
+      return new Response(JSON.stringify({
+        error: 'Bitcoin (BTC) ödeme yöntemi yalnızca yıllık aboneliklerde geçerlidir.'
+      }), {
+        status: 400,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+
     let finalAmount = baseAmount;
     let appliedReferralCode = null;
     let orderDesc = `Wawe Journal - ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan Subscription`;
 
-    // ⭐ Referans İndirimi Hesaplama
+    // ⭐ Referans İndirimi Hesaplama - YALNIZCA LTC İÇİN GEÇERLİ (BTC'de indirim olmaz)
     const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : null;
-    const isLtc = String(payCurrencyFinal).toUpperCase() === 'LTC';
+    const isLtc = payCurrencyFinal === 'LTC';
     const isLtcDiscountEnabled = paymentSettings.ltc_discount_enabled !== false && String(paymentSettings.ltc_discount_enabled) !== 'false';
 
     if (cleanRefCode && isLtc && isLtcDiscountEnabled && adminClient) {
@@ -420,26 +432,61 @@ serve(async (req: Request) => {
         if (refOwner?.influencer_user_id && refOwner.influencer_user_id === userId) {
           console.warn(`⛔ Self-referral attempt blocked: User ${userId} tried to use their own code ${cleanRefCode}`);
         } else {
-          const { data: refData, error: refErr } = await adminClient.rpc('validate_referral_code', { 
+          // RPC çağrısı: Overload çakışmalarını önlemek için try/fallback
+          let refData = null;
+          let refErr = null;
+
+          const rpc1 = await adminClient.rpc('validate_referral_code', { 
             p_code: cleanRefCode,
             p_user_id: userId || null 
           });
-          if (refErr) {
-            console.warn('⚠️ validate_referral_code RPC hatası:', refErr);
-          } else if (refData && refData.valid) {
+          refData = rpc1.data;
+          refErr = rpc1.error;
+
+          if (refErr && refErr.message && refErr.message.includes('Could not choose')) {
+            const rpc2 = await adminClient.rpc('validate_referral_code', { p_code: cleanRefCode });
+            refData = rpc2.data;
+            refErr = rpc2.error;
+          }
+
+          // Eğer RPC hala hata verirse doğrudan referral_codes tablosunu kontrol et
+          if ((refErr || !refData) && adminClient) {
+            const { data: directCode } = await adminClient
+              .from('referral_codes')
+              .select('discount_percent, is_active, influencer_user_id')
+              .eq('code', cleanRefCode)
+              .maybeSingle();
+
+            if (directCode && directCode.is_active && (!directCode.influencer_user_id || directCode.influencer_user_id !== userId)) {
+              refData = { valid: true, discount_percent: directCode.discount_percent || 10 };
+              refErr = null;
+            }
+          }
+
+          if (refData && refData.valid) {
             const discountPct = Number(refData.discount_percent) || 0;
             if (discountPct > 0 && discountPct <= 100) {
               finalAmount = Number((baseAmount * (1 - (discountPct / 100))).toFixed(2));
               appliedReferralCode = cleanRefCode;
-              orderDesc += ` (Ref: ${appliedReferralCode})`;
+              orderDesc += ` (Ref: ${appliedReferralCode} -%${discountPct})`;
               console.log(`✅ Applied referral discount ${discountPct}% with code ${appliedReferralCode}. New price: ${finalAmount}`);
             }
           } else {
-            console.log(`ℹ️ Referral code ${cleanRefCode} invalid:`, refData);
+            console.log(`ℹ️ Referral code ${cleanRefCode} invalid:`, refData || refErr);
           }
         }
       } catch (e) {
         console.warn('⚠️ Referral validation failed:', e);
+      }
+    } else if (cleanRefCode && !isLtc) {
+      console.log(`ℹ️ Referral code ignored because currency is ${payCurrencyFinal} (discount only allowed for LTC)`);
+    }
+
+    // ⭐ İstemciden gelen miktar (en son ekranda yazan fiyat) ile senkronize et
+    const clientAmount = Number(body.amount);
+    if (!isNaN(clientAmount) && clientAmount > 0) {
+      if (Math.abs(clientAmount - finalAmount) <= 0.15) {
+        finalAmount = Number(clientAmount.toFixed(2));
       }
     }
 

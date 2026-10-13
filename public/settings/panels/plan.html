@@ -311,11 +311,11 @@
               </div>
 
               <!-- BTC -->
-              <div class="crypto-chip" data-method="BTC">
+              <div class="crypto-chip" data-method="BTC" id="crypto-chip-btc">
                 <div class="crypto-badge-icon btc">₿</div>
                 <div class="crypto-details">
                   <span class="crypto-symbol">Bitcoin (BTC)</span>
-                  <span class="crypto-hint">Orijinal Blockchain</span>
+                  <span class="crypto-hint" data-i18n="settings.plan_crypto_btc_hint">Orijinal Blockchain • Sadece Yıllık</span>
                 </div>
                 <div class="crypto-check-circle">✓</div>
               </div>
@@ -339,6 +339,11 @@
                 </div>
                 <div class="crypto-check-circle">✓</div>
               </div>
+            </div>
+
+            <div class="crypto-discount-notice" id="crypto-btc-notice" style="display:none;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span id="crypto-btc-notice-text">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.</span>
             </div>
 
             <div class="ssl-guarantee-note">
