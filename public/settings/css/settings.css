@@ -3197,34 +3197,6 @@ body.light-theme .panel-glow.overtrade-glow {
   image-rendering: pixelated;
 }
 
-.qr-zoom-badge {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(15, 15, 26, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #fff;
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  opacity: 0.92;
-  transition: all 0.2s ease;
-  pointer-events: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-}
-
-.direct-qr-frame:hover .qr-zoom-badge {
-  background: rgba(124, 58, 237, 0.95);
-  border-color: #a78bfa;
-  transform: translateY(-1px);
-}
-
 .direct-qr-hint {
   font-size: 0.76rem;
   color: var(--muted);

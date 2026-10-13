@@ -1220,6 +1220,43 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
   }
 
+  var DIRECT_PAY_STORAGE_KEY = isExtending ? 'ww_active_crypto_payment_ext' : 'ww_active_crypto_payment';
+
+  function saveActiveDirectPayment(data) {
+    try {
+      if (!data || !data.payAddress) {
+        localStorage.removeItem(DIRECT_PAY_STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(DIRECT_PAY_STORAGE_KEY, JSON.stringify(data));
+    } catch(e) {}
+  }
+
+  function clearActiveDirectPayment() {
+    try {
+      localStorage.removeItem(DIRECT_PAY_STORAGE_KEY);
+    } catch(e) {}
+  }
+
+  function getActiveDirectPayment() {
+    try {
+      var raw = localStorage.getItem(DIRECT_PAY_STORAGE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.payAddress || !parsed.expiresAt) {
+        clearActiveDirectPayment();
+        return null;
+      }
+      if (Date.now() >= parsed.expiresAt) {
+        clearActiveDirectPayment();
+        return null;
+      }
+      return parsed;
+    } catch(e) {
+      return null;
+    }
+  }
+
   var savedState = loadWizardState();
   var minStep = isExtending ? 2 : 1;
   var currentStep = minStep;
@@ -1243,6 +1280,19 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
       appliedReferralCode = savedState.code;
       appliedDiscount = savedState.discount;
+    }
+  }
+
+  // 🔒 Aktif ve süresi bitmemiş bir kripto ödeme oturumu varsa doğrudan Adım 5'e geç
+  var activePay = getActiveDirectPayment();
+  if (activePay) {
+    currentPaymentData = activePay;
+    currentStep = 5;
+    if (activePay.period === 'monthly' || activePay.period === 'yearly') {
+      selectedPeriod = activePay.period;
+    }
+    if (activePay.payCurrency) {
+      selectedPayMethod = activePay.payCurrency.toUpperCase();
     }
   }
 
@@ -1367,6 +1417,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     node.addEventListener('click', function() {
       var targetS = parseInt(this.getAttribute('data-step'), 10);
       if (targetS && targetS < currentStep && targetS >= minStep) {
+        if (currentStep === 5) {
+          clearActiveDirectPayment();
+          currentPaymentData = null;
+        }
         goToStep(targetS);
       }
     });
@@ -1706,7 +1760,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
           var result = await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
           if (result && result.payAddress) {
             // ⭐ DOĞRUDAN ÖDEME (Direct Payment): Site içi ekrana geç!
+            result.expiresAt = Date.now() + (20 * 60 * 1000);
+            result.period = selectedPeriod;
+            result.payCurrency = selectedPayMethod;
             currentPaymentData = result;
+            saveActiveDirectPayment(result);
             goToStep(5);
             btnSubmitPayment.disabled = false;
             btnSubmitPayment.innerHTML = origContent;
@@ -1772,22 +1830,39 @@ function setupPlanWizard(wizardRoot, isExtending) {
       qrBigImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=' + encodeURIComponent(uri);
     }
 
-    // 20 Dakika Geri Sayım
-    var remainingSeconds = 20 * 60;
+    // 20 Dakika Geri Sayım (Bitiş zamanına göre gerçek zamanlı hesap)
+    if (!currentPaymentData.expiresAt) {
+      currentPaymentData.expiresAt = Date.now() + (20 * 60 * 1000);
+    }
+    currentPaymentData.period = selectedPeriod;
+    currentPaymentData.payCurrency = payCur;
+    saveActiveDirectPayment(currentPaymentData);
+
     if (directPayTimerInterval) clearInterval(directPayTimerInterval);
-    directPayTimerInterval = setInterval(function() {
-      remainingSeconds--;
-      if (remainingSeconds <= 0) {
+
+    function updateCountdown() {
+      if (!document.body.contains(wizardRoot)) {
         clearInterval(directPayTimerInterval);
+        directPayTimerInterval = null;
+        return;
+      }
+      var rem = Math.max(0, Math.floor((currentPaymentData.expiresAt - Date.now()) / 1000));
+      if (rem <= 0) {
+        clearInterval(directPayTimerInterval);
+        directPayTimerInterval = null;
+        clearActiveDirectPayment();
         if (timerEl) timerEl.textContent = '00:00 ' + t('settings.plan_expired_time', {}, '(Süre Doldu)');
         return;
       }
-      var m = Math.floor(remainingSeconds / 60);
-      var s = remainingSeconds % 60;
+      var m = Math.floor(rem / 60);
+      var s = rem % 60;
       if (timerEl) {
         timerEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
       }
-    }, 1000);
+    }
+
+    updateCountdown();
+    directPayTimerInterval = setInterval(updateCountdown, 1000);
 
     // Canlı Durum Polling
     startDirectPaymentWatch();
@@ -1798,9 +1873,15 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
     var attempts = 0;
     directPayPollInterval = setInterval(async function() {
-      attempts++;
-      if (attempts > 120) {
+      if (!document.body.contains(wizardRoot)) {
         clearInterval(directPayPollInterval);
+        directPayPollInterval = null;
+        return;
+      }
+      attempts++;
+      if (attempts > 240) {
+        clearInterval(directPayPollInterval);
+        directPayPollInterval = null;
         return;
       }
 
@@ -1829,6 +1910,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
   function handleDirectPaymentSuccess() {
     stopDirectPaymentWatch();
+    clearActiveDirectPayment();
 
     var successBox = wizardRoot.querySelector('#direct-pay-success-box');
     var directCard = wizardRoot.querySelector('.direct-pay-card');
@@ -1891,6 +1973,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
   if (btnBackFromDirect) {
     btnBackFromDirect.addEventListener('click', function(e) {
       e.preventDefault();
+      clearActiveDirectPayment();
+      currentPaymentData = null;
+      stopDirectPaymentWatch();
       goToStep(4);
     });
   }
