@@ -2969,15 +2969,9 @@ body.light-theme .panel-glow.overtrade-glow {
 
 .crypto-methods-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.25rem;
-}
-
-@media (max-width: 480px) {
-  .crypto-methods-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .crypto-chip {

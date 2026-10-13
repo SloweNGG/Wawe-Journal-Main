@@ -1235,8 +1235,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (savedState.period === 'monthly' || savedState.period === 'yearly') {
       selectedPeriod = savedState.period;
     }
-    if (savedState.payMethod) {
+    if (savedState.payMethod === 'BTC' || savedState.payMethod === 'LTC') {
       selectedPayMethod = savedState.payMethod;
+    } else {
+      selectedPayMethod = 'LTC';
     }
     if (savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
       appliedReferralCode = savedState.code;
@@ -1244,8 +1246,8 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
   }
 
-  // 🔒 Aylık abonelikte BTC ödeme yöntemi kullanılamaz - LTC'ye normalize et
-  if (selectedPeriod === 'monthly' && selectedPayMethod === 'BTC') {
+  // 🔒 Yıllık olmayan abonelikte BTC ödeme yöntemi kullanılamaz - LTC'ye normalize et
+  if (selectedPeriod !== 'yearly' && selectedPayMethod === 'BTC') {
     selectedPayMethod = 'LTC';
   }
 
@@ -1400,8 +1402,8 @@ function setupPlanWizard(wizardRoot, isExtending) {
       durationCards.forEach(function(c) { c.classList.remove('selected'); });
       this.classList.add('selected');
       selectedPeriod = this.getAttribute('data-period') || 'yearly';
-      // 🔒 Aylık seçildiyse BTC geçersiz olacağı için LTC'ye geç
-      if (selectedPeriod === 'monthly' && selectedPayMethod === 'BTC') {
+      // 🔒 Yıllık seçilmediyse BTC geçersiz olacağı için LTC'ye geç
+      if (selectedPeriod !== 'yearly' && selectedPayMethod === 'BTC') {
         selectedPayMethod = 'LTC';
       }
       saveWizardState();
