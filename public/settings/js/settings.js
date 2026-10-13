@@ -1281,9 +1281,18 @@ function setupPlanWizard(wizardRoot, isExtending) {
   var directPayTimerInterval = null;
   var directPayPollInterval = null;
 
+  function closeQrModal() {
+    var qrModal = wizardRoot.querySelector('#qr-zoom-modal');
+    if (qrModal) {
+      qrModal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
   function stopDirectPaymentWatch() {
     if (directPayTimerInterval) { clearInterval(directPayTimerInterval); directPayTimerInterval = null; }
     if (directPayPollInterval) { clearInterval(directPayPollInterval); directPayPollInterval = null; }
+    closeQrModal();
   }
 
   function goToStep(step, isInitial) {
@@ -1752,6 +1761,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (qrImg) {
       qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(uri);
     }
+    var qrBigImg = wizardRoot.querySelector('#qr-zoom-big-img');
+    if (qrBigImg) {
+      qrBigImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=' + encodeURIComponent(uri);
+    }
 
     // 20 Dakika Geri Sayım
     var remainingSeconds = 20 * 60;
@@ -1913,6 +1926,53 @@ function setupPlanWizard(wizardRoot, isExtending) {
       window.location.href = '/dashboard.html?payment=success';
     });
   }
+
+  // ⭐ QR Kod Büyütme Modalı Olayları
+  var qrFrame = wizardRoot.querySelector('#direct-qr-frame');
+  var qrModal = wizardRoot.querySelector('#qr-zoom-modal');
+  var btnCloseQrZoom = wizardRoot.querySelector('#btn-close-qr-zoom');
+
+  function openQrModal() {
+    if (qrModal) {
+      qrModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  if (qrFrame) {
+    qrFrame.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openQrModal();
+    });
+    qrFrame.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openQrModal();
+      }
+    });
+  }
+
+  if (btnCloseQrZoom) {
+    btnCloseQrZoom.addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeQrModal();
+    });
+  }
+
+  if (qrModal) {
+    qrModal.addEventListener('click', function(e) {
+      // Sadece arka plana veya modal dışına tıklandığında kapat (karta tıklandığında değil)
+      if (e.target === qrModal) {
+        closeQrModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && qrModal && qrModal.style.display !== 'none') {
+      closeQrModal();
+    }
+  });
 
   goToStep(currentStep, true);
 }

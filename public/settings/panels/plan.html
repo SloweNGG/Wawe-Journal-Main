@@ -388,11 +388,15 @@
         <div class="direct-pay-card">
           <!-- Sol Sütun: QR Kod & Canlı Durum -->
           <div class="direct-pay-qr-side">
-            <div class="direct-qr-frame">
+            <div class="direct-qr-frame" id="direct-qr-frame" role="button" tabindex="0" title="Büyütmek için tıklayın">
               <img id="direct-pay-qr-img" src="" alt="Payment QR Code" width="200" height="200" />
+              <div class="qr-zoom-badge">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                <span>Büyüt</span>
+              </div>
               <div class="qr-glow-overlay"></div>
             </div>
-            <p class="direct-qr-hint">Telefon kameranız veya borsa/cüzdan uygulamanızla okutun</p>
+            <p class="direct-qr-hint">Telefon kameranız veya borsa/cüzdan uygulamanızla okutun (Büyütmek için QR'a tıklayın)</p>
             
             <div class="direct-pay-live-pill" id="direct-pay-status-pill">
               <span class="pill-dot"></span>
@@ -470,6 +474,25 @@
             <span class="check-icon">🔄</span>
             <span>Durumu Kontrol Et</span>
           </button>
+        </div>
+
+        <!-- QR Kod Büyütme Modalı (Lightbox) -->
+        <div class="qr-zoom-modal-backdrop" id="qr-zoom-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-zoom-title">
+          <div class="qr-zoom-modal-card">
+            <button class="qr-zoom-close-btn" id="btn-close-qr-zoom" type="button" aria-label="Kapat">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="qr-zoom-header">
+              <h4 id="qr-zoom-title">Ödeme QR Kodu</h4>
+              <p id="qr-zoom-subtitle">Cüzdan veya borsa uygulamanız ile okutun</p>
+            </div>
+            <div class="qr-zoom-big-frame">
+              <img id="qr-zoom-big-img" src="" alt="Büyütülmüş QR Kod" width="320" height="320" />
+            </div>
+            <div class="qr-zoom-footer-hint">
+              <span>Kapatmak için dışarıya tıklayın veya ESC tuşuna basın</span>
+            </div>
+          </div>
         </div>
       </div>
 
