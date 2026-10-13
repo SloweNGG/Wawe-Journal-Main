@@ -1188,6 +1188,10 @@ async function renderPlan() {
 function setupPlanWizard(wizardRoot, isExtending) {
   if (!wizardRoot) return;
 
+  var currentPaymentData = null;
+  var directPayTimerInterval = null;
+  var directPayPollInterval = null;
+
   var STORAGE_KEY = isExtending ? 'ww_plan_extend_state' : 'ww_plan_checkout_state';
 
   function saveWizardState() {
@@ -1329,9 +1333,6 @@ function setupPlanWizard(wizardRoot, isExtending) {
       step1YearlyHint.textContent = t('settings.plan_or_yearly_price', { yearly: prices.yearly.base.toFixed(0), monthlyRate: prices.yearly.monthlyRate }, 'veya Yıllık $' + prices.yearly.base.toFixed(0) + ' (aylık $' + prices.yearly.monthlyRate + ')');
     }
   }
-  var currentPaymentData = null;
-  var directPayTimerInterval = null;
-  var directPayPollInterval = null;
 
   function closeQrModal() {
     var qrModal = wizardRoot.querySelector('#qr-zoom-modal');
@@ -1824,10 +1825,18 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
     if (qrImg) {
       qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(uri);
+      qrImg.onerror = function() {
+        this.onerror = null;
+        this.src = 'https://chart.googleapis.com/chart?chs=220x220&cht=qr&chl=' + encodeURIComponent(uri);
+      };
     }
     var qrBigImg = wizardRoot.querySelector('#qr-zoom-big-img');
     if (qrBigImg) {
       qrBigImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=' + encodeURIComponent(uri);
+      qrBigImg.onerror = function() {
+        this.onerror = null;
+        this.src = 'https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=' + encodeURIComponent(uri);
+      };
     }
 
     // 20 Dakika Geri Sayım (Bitiş zamanına göre gerçek zamanlı hesap)
