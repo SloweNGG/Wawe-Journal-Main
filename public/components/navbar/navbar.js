@@ -2031,11 +2031,17 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
       // ⭐ Canlı Yeşil veya Neon Mor Işık Ekle
       if (activeCtrader) {
         var dotClass = activeCtrader.is_live ? 'live' : 'demo';
-        var dotTitle = 'cTrader ' + (activeCtrader.is_live ? 'Live' : 'Demo') + ' (' + (activeCtrader.broker_name || 'Hesap') + ')';
+        var dotTitle = 'cTrader ' + (activeCtrader.is_live ? 'Live' : 'Demo') + ' (' + (activeCtrader.broker_name || 'Hesap') + ') – Senkronlamak için tıklayın';
         var dotEl = document.createElement('span');
         dotEl.className = 'ctrader-status-dot ' + dotClass;
         dotEl.id = 'nav-ctrader-dot';
         dotEl.title = dotTitle;
+        dotEl.style.cursor = 'pointer';
+        dotEl.onclick = function(e) {
+          if (window.wwSyncCtrader) {
+            window.wwSyncCtrader(e, activeCtrader.ctid_trader_account_id, activeJ.id, dotEl);
+          }
+        };
         swName.parentNode.insertBefore(dotEl, swName);
       }
 
@@ -2088,7 +2094,9 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
     html += '<div class="journal-menu-list">';
     journals.forEach(function(j) {
       var isActive = (j.id === activeJ.id) ? 'active' : '';
-      var tradesTxt = (j.trade_count || 0) + ' ' + ((window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t('nav.trades') : 'işlem') || 'işlem');
+      var tradesLabel = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('journal.trades_label') : 'işlem';
+      if (!tradesLabel || tradesLabel === 'journal.trades_label') tradesLabel = 'işlem';
+      var tradesTxt = '<span class="journal-count-num">' + (j.trade_count || 0) + '</span> <span class="journal-count-label">' + tradesLabel + '</span>';
       var itemColor = j.color || '#7c6dfa';
       var pa = propMap[j.id];
       var propItemBadge = getPropBadgeHtml(pa);
@@ -2411,12 +2419,15 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
     var token = sessionRes?.data?.session?.access_token;
     if (!token) throw new Error('Oturum bulunamadı.');
 
-    var res = await fetch((window.SUPABASE_URL || '') + '/functions/v1/ctrader-sync', {
+    var supabaseUrl = window.SUPABASE_URL || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || 'https://odasapyhtdopbnlfhwde.supabase.co';
+    var supabaseAnonKey = window.SUPABASE_ANON_KEY || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+
+    var res = await fetch(supabaseUrl + '/functions/v1/ctrader-sync', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token,
-        'apikey': window.SUPABASE_ANON_KEY || ''
+        'apikey': supabaseAnonKey
       },
       body: JSON.stringify({
         ctidTraderAccountId: Number(ctid),
@@ -2434,8 +2445,19 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
       throw new Error(data.error || 'Senkronizasyon başarısız.');
     }
 
-    var successMsg = data.message || (data.inserted + ' yeni işlem başarıyla yüklendi!');
-    toastFn(successMsg, 'success');
+    if (data.inserted > 0) {
+      toastFn('✅ ' + data.inserted + ' yeni cTrader işlemi aktarıldı!', 'success');
+    } else {
+      toastFn('cTrader hesabınız güncel, yeni kapanmış işlem bulunamadı.', 'info');
+    }
+
+    // ⚡ Önbellekleri temizle ve canlı güncelle
+    if (window.wwCache) {
+      window.wwCache.invalidate('trades');
+      window.wwCache.invalidate('trades_dashboard');
+    }
+    window.dispatchEvent(new CustomEvent('trade-saved'));
+    window.dispatchEvent(new CustomEvent('journal-changed', { detail: { id: journalId } }));
 
     // Sayfadaki işlem listesini yenile
     setTimeout(function() {
@@ -2444,7 +2466,7 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
       } else {
         window.location.reload();
       }
-    }, 1000);
+    }, 600);
 
   } catch(err) {
     console.error('Sync error:', err);

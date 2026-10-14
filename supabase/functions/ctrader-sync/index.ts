@@ -21,6 +21,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:4173',
+  'http://localhost:*',
+  'http://127.0.0.1:*',
 ];
 
 const MULTIPLIER_MAP: Record<string, number> = {
@@ -61,7 +63,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : (ALLOWED_ORIGINS[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
     'X-Content-Type-Options': 'nosniff',
@@ -320,27 +322,86 @@ serve(async (req: Request) => {
       // Önceki senkrondan 2 gün geriye git (çakışan pencere)
       fromTimestamp = Math.max(0, Number(accountRow.last_deal_timestamp) - (2 * 24 * 60 * 60 * 1000));
     } else {
-      // İlk senkron: trader.registrationTimestamp al
+      // İlk senkron: trader.registrationTimestamp al, en fazla 90 gün geriye git
       try {
         const traderRes = await wsClient.sendRequest(2121, { ctidTraderAccountId });
         const trader = traderRes.payload?.trader;
         moneyDigits = trader?.moneyDigits ?? 2;
         const regTime = trader?.registrationTimestamp ? Number(trader.registrationTimestamp) : 0;
-        fromTimestamp = regTime > 0 ? regTime : (Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        fromTimestamp = regTime > ninetyDaysAgo ? regTime : ninetyDaysAgo;
       } catch (_) {
         fromTimestamp = Date.now() - 30 * 24 * 60 * 60 * 1000;
       }
     }
 
+    // 1) Tüm sembollerin gerçek isimlerini 2114 (ProtoOASymbolsListReq) ile çek
+    const symbolCache = new Map<number, { symbolName: string; lotSize: number; digits: number }>();
+    const KNOWN_CTRADER_SYMBOLS: Record<number, string> = {
+      1: 'EURUSD',
+      2: 'GBPUSD',
+      3: 'EURJPY',
+      4: 'USDJPY',
+      5: 'AUDUSD',
+      6: 'USDCHF',
+      7: 'GBPJPY',
+      8: 'USDCAD',
+      9: 'EURGBP',
+      10: 'EURCHF',
+      11: 'AUDJPY',
+      12: 'NZDUSD',
+      13: 'NZDJPY',
+      14: 'CADJPY',
+      15: 'AUDCAD',
+      16: 'AUDNZD',
+      17: 'CADCHF',
+      18: 'CHFJPY',
+      19: 'EURAUD',
+      20: 'EURCAD',
+      21: 'EURNZD',
+      22: 'GBPAUD',
+      23: 'GBPCAD',
+      24: 'GBPCHF',
+      25: 'GBPNZD',
+      26: 'NZDCAD',
+      27: 'NZDCHF',
+      41: 'XAUUSD',
+      42: 'XAGUSD',
+      22395: 'BTCUSD',
+      22396: 'ETHUSD',
+    };
+
+    try {
+      await sleep(200);
+      const symListRes = await wsClient.sendRequest(2114, {
+        ctidTraderAccountId,
+        includeArchivedSymbols: true,
+      });
+      const syms = symListRes.payload?.symbol || [];
+      const archived = symListRes.payload?.archivedSymbol || [];
+      for (const s of [...syms, ...archived]) {
+        if (s.symbolId != null) {
+          const rawName = String(s.symbolName || '').replace(/[\/\s_-]/g, '').toUpperCase();
+          symbolCache.set(Number(s.symbolId), {
+            symbolName: rawName || KNOWN_CTRADER_SYMBOLS[Number(s.symbolId)] || `SYM_${s.symbolId}`,
+            lotSize: 10000000,
+            digits: s.digits ?? 5,
+          });
+        }
+      }
+      console.log(`✅ ${symbolCache.size} sembol bilgisi cTrader'dan alındı.`);
+    } catch (symListErr) {
+      console.warn('⚠️ 2114 SymbolsListReq uyarısı:', symListErr);
+    }
+
     const now = Date.now();
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    const CHUNK_WINDOW = 6 * 24 * 60 * 60 * 1000; // 6 günlük pencereler (cTrader 7 gün sınırına takılmamak için güvenli marj)
     const MAX_RUN_TIME = 90 * 1000; // Edge function 90 saniye güvenlik süresi
 
     let currFrom = fromTimestamp;
-    const symbolCache = new Map<number, { symbolName: string; lotSize: number; digits: number }>();
     const pendingTradesToInsert: any[] = [];
 
-    // Zaman pencereleri döngüsü (7 günlük bloklar)
+    // Zaman pencereleri döngüsü (6 günlük bloklar)
     while (currFrom < now) {
       // Zaman aşımı kontrolü (Edge function timeout olmasın diye)
       if (Date.now() - startTime > MAX_RUN_TIME) {
@@ -349,7 +410,7 @@ serve(async (req: Request) => {
         break;
       }
 
-      const currTo = Math.min(currFrom + SEVEN_DAYS, now);
+      const currTo = Math.min(currFrom + CHUNK_WINDOW, now);
       let hasMore = true;
       let dealFrom = currFrom;
 
@@ -374,40 +435,63 @@ serve(async (req: Request) => {
         // Kapanmış işlemleri filtrele: closePositionDetail dolu ve FILLED/PARTIALLY_FILLED (2 veya 3)
         const closedDeals = deals.filter((d) => (d.dealStatus === 2 || d.dealStatus === 3) && d.closePositionDetail != null);
 
-        // Bilinmeyen sembolleri 2116 ile çek
-        const missingSymIds = [...new Set(closedDeals.map((d) => d.symbolId).filter((id) => !symbolCache.has(id)))];
-        if (missingSymIds.length > 0) {
+        // Lot büyüklüğü detayları için 2116 ile çek
+        const symIdsToInspect = [...new Set(closedDeals.map((d) => Number(d.symbolId)))];
+        if (symIdsToInspect.length > 0) {
           await sleep(250);
           try {
             const symRes = await wsClient.sendRequest(2116, {
               ctidTraderAccountId,
-              symbolId: missingSymIds,
+              symbolId: symIdsToInspect,
             });
             for (const s of (symRes.payload?.symbol || [])) {
-              symbolCache.set(s.symbolId, {
-                symbolName: s.symbolName || `SYM_${s.symbolId}`,
-                lotSize: s.lotSize ? Number(s.lotSize) : 10000000,
-                digits: s.digits ?? 5,
+              const sid = Number(s.symbolId);
+              const existing = symbolCache.get(sid);
+              const resolvedName = existing?.symbolName || KNOWN_CTRADER_SYMBOLS[sid] || `SYM_${sid}`;
+              symbolCache.set(sid, {
+                symbolName: resolvedName,
+                lotSize: s.lotSize ? Number(s.lotSize) : (existing?.lotSize || 10000000),
+                digits: s.digits ?? (existing?.digits || 5),
               });
             }
           } catch (symErr) {
-            console.error('Sembol çekme hatası:', symErr);
+            console.error('Sembol 2116 detay çekme uyarısı:', symErr);
           }
         }
 
         // Deal'leri trades satırına dönüştür
         for (const deal of closedDeals) {
           const cpd = deal.closePositionDetail;
-          const symInfo = symbolCache.get(deal.symbolId) || { symbolName: `SYM_${deal.symbolId}`, lotSize: 10000000, digits: 5 };
+          const sid = Number(deal.symbolId);
+          const symInfo = symbolCache.get(sid);
+
+          let symbolName = symInfo?.symbolName || KNOWN_CTRADER_SYMBOLS[sid] || `SYM_${sid}`;
+          if (symbolName.startsWith('SYM_') && KNOWN_CTRADER_SYMBOLS[sid]) {
+            symbolName = KNOWN_CTRADER_SYMBOLS[sid];
+          }
+          symbolName = symbolName.replace(/[\/\s_-]/g, '').toUpperCase();
+
+          const lotSize = symInfo?.lotSize || 10000000;
           const divisor = Math.pow(10, cpd.moneyDigits ?? moneyDigits);
 
-          const direction = deal.tradeSide === 2 ? 'LONG' : 'SHORT';
-          const lot = Number(cpd.closedVolume) / symInfo.lotSize;
-          const grossPnl = Number(cpd.grossProfit) / divisor;
-          const commission = Math.abs(Number(cpd.commission)) / divisor;
-          const swap = Number(cpd.swap) / divisor;
+          // cTrader'da kapanış işlemi SELL (2) ise asıl pozisyon LONG; BUY (1) ise SHORT'tur.
+          const isClosingSell = deal.tradeSide === 2 || deal.tradeSide === 'SELL' || String(deal.tradeSide).toLowerCase() === 'sell';
+          const direction = isClosingSell ? 'LONG' : 'SHORT';
+          const rawVolume = Number(cpd.closedVolume ?? deal.filledVolume ?? deal.volume ?? 0);
+          const rawLot = (rawVolume > 0 && lotSize > 0) ? (rawVolume / lotSize) : 0.01;
+          const lot = (!isNaN(rawLot) && rawLot > 0) ? Number(rawLot.toFixed(4)) : 0.01;
+
+          const grossProfitNum = Number(cpd.grossProfit ?? 0);
+          const grossPnl = isNaN(grossProfitNum) ? 0 : (grossProfitNum / divisor);
+
+          const commissionNum = Number(cpd.commission ?? deal.commission ?? 0);
+          const commission = isNaN(commissionNum) ? 0 : (Math.abs(commissionNum) / divisor);
+
+          const swapNum = Number(cpd.swap ?? 0);
+          const swap = isNaN(swapNum) ? 0 : (swapNum / divisor);
+
           const netPnl = grossPnl - commission + swap;
-          const instrument = guessInstrument(symInfo.symbolName);
+          const instrument = guessInstrument(symbolName);
           const multiplier = MULTIPLIER_MAP[instrument] || 1;
           const execTime = Number(deal.executionTimestamp);
 
@@ -415,21 +499,28 @@ serve(async (req: Request) => {
             latestDealTimestamp = execTime;
           }
 
+          const entryPrice = Number(cpd.entryPrice) || Number(deal.executionPrice) || 0;
+          const exitPrice = Number(deal.executionPrice) || entryPrice;
+
           pendingTradesToInsert.push({
             user_id: user.id,
             journal_id: targetJournalId,
-            symbol: symInfo.symbolName,
+            symbol: symbolName,
             direction,
             instrument,
-            lot: Number(lot.toFixed(4)),
-            entry_price: Number(cpd.entryPrice),
-            exit_price: Number(deal.executionPrice),
+            lot,
+            entry_price: entryPrice,
+            exit_price: exitPrice,
             gross_pnl: Number(grossPnl.toFixed(2)),
             commission: Number(commission.toFixed(2)),
             swap: Number(swap.toFixed(2)),
             pnl: Number(netPnl.toFixed(2)),
             trade_date: new Date(execTime).toISOString(),
+            exit_date: new Date(execTime).toISOString(),
             multiplier,
+            platform_source: 'ctrader',
+            position_id: deal.positionId ? String(deal.positionId) : null,
+            last_deal_id: deal.dealId ? Number(deal.dealId) : null,
             import_hash: `ctrader:${ctidTraderAccountId}:${deal.dealId}`,
             created_at: new Date().toISOString(),
           });
@@ -443,22 +534,26 @@ serve(async (req: Request) => {
             ignoreDuplicates: true,
           }).select('id');
 
-          if (!upErr) {
-            insertedCount += upsertData?.length || 0;
-            skippedCount += (chunk.length - (upsertData?.length || 0));
+          if (upErr) {
+            console.error('❌ Trades chunk upsert error:', upErr);
+            throw new Error('İşlemler veritabanına kaydedilirken hata oluştu: ' + (upErr.message || ''));
           }
+
+          insertedCount += upsertData?.length || 0;
+          skippedCount += (chunk.length - (upsertData?.length || 0));
         }
 
         if (hasMore && deals.length > 0) {
           const lastExec = Number(deals[deals.length - 1].executionTimestamp);
-          dealFrom = lastExec > dealFrom ? lastExec + 1 : currTo;
+          dealFrom = lastExec > dealFrom ? lastExec + 1 : dealFrom + 1;
+          if (dealFrom >= currTo) break;
         } else {
           break;
         }
       }
 
       if (!isDone) break;
-      currFrom = currTo;
+      currFrom = currTo + 1;
     }
 
     // Kalan son kayıtları upsert et
@@ -468,16 +563,19 @@ serve(async (req: Request) => {
         ignoreDuplicates: true,
       }).select('id');
 
-      if (!upErr) {
-        insertedCount += upsertData?.length || 0;
-        skippedCount += (pendingTradesToInsert.length - (upsertData?.length || 0));
+      if (upErr) {
+        console.error('❌ Trades final upsert error:', upErr);
+        throw new Error('İşlemler veritabanına kaydedilirken hata oluştu: ' + (upErr.message || ''));
       }
+
+      insertedCount += upsertData?.length || 0;
+      skippedCount += (pendingTradesToInsert.length - (upsertData?.length || 0));
     }
 
     // Senkron durumunu güncelle
     await admin.from('ctrader_accounts').update({
       last_sync_at: new Date().toISOString(),
-      last_deal_timestamp: latestDealTimestamp > 0 ? latestDealTimestamp : accountRow.last_deal_timestamp,
+      last_deal_timestamp: latestDealTimestamp > 0 ? latestDealTimestamp : (accountRow.last_deal_timestamp || now),
       syncing_since: null,
       last_error: null,
       updated_at: new Date().toISOString(),

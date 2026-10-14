@@ -548,7 +548,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   function calcTrend(current, previous) {
     if (previous === 0) return null;
     var percent = ((current - previous) / Math.abs(previous)) * 100;
-    return { percent: Math.abs(percent).toFixed(1), isPositive: percent >= 0 };
+    // isUp is the direction of the change, isPositive is whether it is good news (they differ for losses)
+    return { percent: Math.abs(percent).toFixed(1), isPositive: percent >= 0, isUp: percent >= 0 };
   }
 
   function updateTrend(elementId, trend) {
@@ -563,9 +564,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     el.style.display = 'flex';
-    var arrow = trend.isPositive ? '↑' : '↓';
+    var up = (typeof trend.isUp === 'boolean') ? trend.isUp : trend.isPositive;
+    var arrow = up ? '↑' : '↓';
     var prevText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('dashboard.trend_previous') : 'önceki döneme göre';
-    el.innerHTML = arrow + ' ' + trend.percent + '% ' + prevText;
+    el.innerHTML = '<b class="stat-trend-pct">' + arrow + ' ' + trend.percent + '%</b><span class="stat-trend-label">' + prevText + '</span>';
     el.className = 'stat-trend ' + (trend.isPositive ? 'positive' : 'negative');
   }
 
@@ -1196,6 +1198,12 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // ⭐ LIGHTWEIGHT CHARTS - RENDER FUNCTIONS
   // ============================================================
 
+  /* Cumulative P&L chart.
+     - one point per closed trade, in time order
+     - green above zero, red below zero (baseline series)
+     - hover card with date, running total and that trade
+     - optional target / stop lines for prop accounts, placed relative to the
+       latest point (set from dashboard.astro through window.wwSetCumulativeLevels) */
   function renderCumulativeLwc(trades, container, customHeight) {
     if (typeof window.LightweightCharts === 'undefined') {
       wwLog.warn('LightweightCharts kütüphanesi yüklenemedi.');
@@ -1209,70 +1217,58 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       return null;
     }
 
-    var sorted = closedTrades.slice().sort(function (a, b) {
-      var dA = (a.trade_date || '').replace(' ', 'T');
-      var dB = (b.trade_date || '').replace(' ', 'T');
-      return new Date(dA).getTime() - new Date(dB).getTime();
-    });
-
-    var dayCumMap = {};
-    var cum = 0;
-    sorted.forEach(function (t) {
-      cum += calcTradePnL(t);
-      var d = (t.trade_date || '').split('T')[0];
-      if (!d || d.length < 10) {
-        try {
-          d = new Date(t.created_at || Date.now()).toISOString().split('T')[0];
-        } catch (e) {
-          d = '2026-01-01';
-        }
+    // wall-clock time of a trade as a pseudo-UTC timestamp (keeps axis labels on the user's dates)
+    function tradeTs(t) {
+      var raw = String(t.trade_date || '');
+      var m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+      if (m) {
+        return Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 12, m[5] ? +m[5] : 0, m[6] ? +m[6] : 0) / 1000);
       }
-      dayCumMap[d] = parseFloat(cum.toFixed(2));
+      var ms;
+      try { ms = new Date(t.created_at || Date.now()).getTime(); } catch (e) { ms = Date.now(); }
+      if (isNaN(ms)) ms = Date.now();
+      return Math.floor(ms / 1000);
+    }
+
+    var items = closedTrades.map(function (t, i) { return { t: t, i: i, ts: tradeTs(t) }; });
+    items.sort(function (a, b) { return (a.ts - b.ts) || (a.i - b.i); });
+
+    var span = items[items.length - 1].ts - items[0].ts;
+    var startTs = items[0].ts - Math.max(1800, Math.round(span * 0.04));
+    var seriesData = [{ time: startTs, value: 0 }];
+    var info = {};
+    info[startTs] = { start: true, cum: 0, pnl: 0 };
+
+    var cum = 0, lastTs = startTs;
+    items.forEach(function (it, idx) {
+      var ts = it.ts <= lastTs ? lastTs + 1 : it.ts;   // times must be strictly increasing
+      lastTs = ts;
+      var pnl = calcTradePnL(it.t);
+      cum = parseFloat((cum + pnl).toFixed(2));
+      seriesData.push({ time: ts, value: cum });
+      info[ts] = { cum: cum, pnl: pnl, symbol: it.t.symbol || '', n: idx + 1 };
     });
-
-    var sortedDates = Object.keys(dayCumMap).sort();
-    var seriesData = [];
-
-    if (sortedDates.length > 0) {
-      // 0 baseline starting point 1 day before first trade
-      var firstD = new Date(sortedDates[0]);
-      firstD.setDate(firstD.getDate() - 1);
-      var firstDStr = firstD.toISOString().split('T')[0];
-      seriesData.push({ time: firstDStr, value: 0 });
-
-      sortedDates.forEach(function (d) {
-        seriesData.push({ time: d, value: dayCumMap[d] });
-      });
-    }
-
-    var firstPnL = seriesData[0] ? seriesData[0].value : 0;
-    var lastPnL = seriesData[seriesData.length - 1] ? seriesData[seriesData.length - 1].value : 0;
-    var changePercent = 0;
-    if (Math.abs(firstPnL) > 0.01) {
-      changePercent = ((lastPnL - firstPnL) / Math.abs(firstPnL)) * 100;
-      if (!isFinite(changePercent)) changePercent = 0;
-    } else if (Math.abs(lastPnL) > 0.01) {
-      changePercent = lastPnL >= 0 ? 100 : -100;
-    }
+    var lastPnL = cum;
 
     var changeEl = safeEl('cumulative-change');
     if (changeEl) {
-      changeEl.textContent = (lastPnL >= 0 ? '↑' : '↓') + ' ' + Math.abs(changePercent).toFixed(1) + '%';
+      changeEl.textContent = (lastPnL >= 0 ? '↑ ' : '↓ ') + formatCurrency(lastPnL);
       changeEl.className = 'chart-badge ' + (lastPnL >= 0 ? '' : 'negative');
     }
 
     var colors = getApexColors();
     var isLight = document.body.classList.contains('light-theme');
-    var isPositive = lastPnL >= 0;
-    var strokeColor = isPositive ? colors.green : colors.red;
-    var topColor = isPositive ? (isLight ? 'rgba(16, 185, 129, 0.28)' : 'rgba(34, 197, 94, 0.35)') : (isLight ? 'rgba(220, 38, 38, 0.28)' : 'rgba(239, 68, 68, 0.35)');
-    var bottomColor = isPositive ? 'rgba(34, 197, 94, 0.01)' : 'rgba(239, 68, 68, 0.01)';
+    var greenRgb = isLight ? '16,185,129' : '34,197,94';
+    var redRgb = isLight ? '220,38,38' : '239,68,68';
 
     var isMobile = window.innerWidth < 768;
     var width = container.clientWidth || (isMobile ? 320 : 600);
     var height = customHeight || (isMobile ? 180 : 250);
 
     container.innerHTML = '';
+    if (window.getComputedStyle(container).position === 'static') container.style.position = 'relative';
+
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
     var chart = window.LightweightCharts.createChart(container, {
       width: width,
@@ -1284,90 +1280,205 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         fontSize: 11
       },
       grid: {
-        vertLines: { color: colors.gridColor },
-        horzLines: { color: colors.gridColor }
+        vertLines: { visible: false },
+        horzLines: { visible: false }
       },
       crosshair: {
-        vertLine: {
-          color: colors.mutedColor,
-          width: 1,
-          style: 3,
-          labelBackgroundColor: isLight ? '#1e293b' : colors.surface
-        },
-        horzLine: {
-          color: colors.mutedColor,
-          width: 1,
-          style: 3,
-          labelBackgroundColor: isLight ? '#1e293b' : colors.surface
-        }
+        vertLine: { color: colors.mutedColor, width: 1, style: 3, labelBackgroundColor: isLight ? '#1e293b' : colors.surface },
+        horzLine: { visible: false, labelVisible: false }
       },
+      // the value axis is hidden on purpose: the hover card, the badge and the level chips carry the numbers
       rightPriceScale: {
-        borderColor: colors.gridColor,
-        scaleMargins: { top: 0.18, bottom: 0.18 },
-        alignLabels: true,
+        visible: false,
+        borderVisible: false,
+        scaleMargins: { top: 0.05, bottom: 0.03 },
         autoScale: true
       },
+      leftPriceScale: { visible: false },
       timeScale: {
-        borderColor: colors.gridColor,
+        borderVisible: false,
+        timeVisible: true,
+        secondsVisible: false,
         fixLeftEdge: false,
         fixRightEdge: false,
         rightOffset: 0,
         minBarSpacing: 0.001,
         shiftVisibleRangeOnNewBar: false,
         lockVisibleTimeRangeOnResize: false,
-        tickMarkFormatter: formatChartTickMark
+        tickMarkFormatter: function (time, type) {
+          if (type >= 3 && typeof time === 'number') {
+            var d = new Date(time * 1000);
+            return pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
+          }
+          return formatChartTickMark(time, type);
+        }
       },
-      handleScroll: true,
-      handleScale: true,
+      // the wheel stays with the page; drag and pinch still work
+      handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
       localization: {
         locale: getChartLocale(),
         dateFormat: 'dd MMM yyyy',
         timeFormatter: formatChartTime,
-        priceFormatter: function (price) {
-          return formatCurrency(price);
-        }
+        priceFormatter: function (price) { return formatCurrency(price); }
       }
     });
 
-    var areaSeries = chart.addAreaSeries({
-      topColor: topColor,
-      bottomColor: bottomColor,
-      lineColor: strokeColor,
-      lineWidth: 2.5,
-      priceFormat: {
-        type: 'custom',
-        formatter: function (price) {
-          return formatCurrency(price);
-        }
+    var fillRgb = lastPnL >= 0 ? greenRgb : redRgb;
+    var fillSeries = chart.addAreaSeries({
+      lineVisible: false,
+      topColor: 'rgba(' + fillRgb + ',' + (isLight ? '0.20' : '0.16') + ')',
+      bottomColor: 'rgba(' + fillRgb + ',0.01)',
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false
+    });
+    fillSeries.setData(seriesData);
+
+    var series = chart.addBaselineSeries({
+      baseValue: { type: 'price', price: -0.005 },   // half a cent below zero: a value of exactly 0 counts as positive, not red
+      topLineColor: colors.green,
+      topFillColor1: 'rgba(' + greenRgb + ',0)',
+      topFillColor2: 'rgba(' + greenRgb + ',0)',
+      bottomLineColor: colors.red,
+      bottomFillColor1: 'rgba(' + redRgb + ',0)',
+      bottomFillColor2: 'rgba(' + redRgb + ',0)',
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      priceFormat: { type: 'custom', formatter: function (price) { return formatCurrency(price); } },
+      // keep zero and the prop lines inside the visible price range
+      autoscaleInfoProvider: function (original) {
+        var r = original();
+        if (!r || !r.priceRange) return r;
+        var min = Math.min(r.priceRange.minValue, 0);
+        var max = Math.max(r.priceRange.maxValue, 0);
+        var lv = series && series._lv;
+        // a level only widens the scale when it is reasonably close; a far stop must not flatten the curve
+        var reach = Math.max(max - min, 1) * 1.5;
+        if (lv && typeof lv.target === 'number' && lv.target - max <= reach) max = Math.max(max, lv.target);
+        if (lv && typeof lv.stop === 'number' && min - lv.stop <= reach) min = Math.min(min, lv.stop);
+        // explicit headroom: the curve never touches the top or the date axis
+        var pad = Math.max(max - min, 1);
+        return { priceRange: { minValue: min - pad * 0.08, maxValue: max + pad * 0.08 } };
       }
     });
+    series.setData(seriesData);
 
-    areaSeries.setData(seriesData);
+    // zero line
+    series.createPriceLine({ price: 0, color: isLight ? 'rgba(100,116,139,0.35)' : 'rgba(168,168,192,0.28)', lineWidth: 1, lineStyle: 3, axisLabelVisible: false });
+
+    // target / stop lines, positioned relative to the latest point
+    series._last = lastPnL;
+    series._lines = [];
+    var chips = [];
+    function positionChips() {
+      chips.forEach(function (c) {
+        var y = series.priceToCoordinate(c.price);
+        if (y === null || y < 4 || y > height - 24) { c.el.style.display = 'none'; return; }
+        c.el.style.display = 'block';
+        c.el.style.top = y + 'px';
+      });
+    }
+    function addChip(price, label, cls) {
+      var el = document.createElement('div');
+      el.className = 'cum-chip ' + cls;
+      el.innerHTML = '<span>' + escapeChartText(label || '') + '</span><b>' + formatCurrency(price) + '</b>';
+      container.appendChild(el);
+      chips.push({ price: price, el: el });
+    }
+    chart._applyLevels = function (lv) {
+      (series._lines || []).forEach(function (l) { try { series.removePriceLine(l); } catch (e) { } });
+      series._lines = [];
+      series._lv = null;
+      chips.forEach(function (c) { if (c.el.parentNode) c.el.parentNode.removeChild(c.el); });
+      chips = [];
+      if (!lv) { chart.priceScale('right').applyOptions({ autoScale: true }); return; }
+      var conv = {};
+      // draw a level only when it is near the curve; a far one would flatten the chart
+      var dMin = 0, dMax = 0;
+      seriesData.forEach(function (pt) { if (pt.value < dMin) dMin = pt.value; if (pt.value > dMax) dMax = pt.value; });
+      var reach = Math.max(dMax - dMin, 1) * 1.5;
+      if (typeof lv.targetAhead === 'number' && lv.targetAhead > 0 && (series._last + lv.targetAhead) - dMax <= reach) {
+        conv.target = series._last + lv.targetAhead;
+        series._lines.push(series.createPriceLine({ price: conv.target, color: '#8b5cf6', lineWidth: 1, lineStyle: 2, axisLabelVisible: false }));
+        addChip(conv.target, lv.targetLabel, 'target');
+      }
+      if (typeof lv.stopBehind === 'number' && lv.stopBehind >= 0 && dMin - (series._last - lv.stopBehind) <= reach) {
+        conv.stop = series._last - lv.stopBehind;
+        series._lines.push(series.createPriceLine({ price: conv.stop, color: colors.red, lineWidth: 1, lineStyle: 2, axisLabelVisible: false }));
+        addChip(conv.stop, lv.stopLabel, 'stop');
+      }
+      series._lv = conv;
+      chart.priceScale('right').applyOptions({ autoScale: true });
+      requestAnimationFrame(positionChips);
+    };
+    var showLevels = (typeof currentRange === 'undefined') || currentRange === 'all';
+    chart._applyLevels(showLevels ? (window._wwCumLevels || null) : null);
+
+    // hover card
+    var tip = document.createElement('div');
+    tip.className = 'cum-tip';
+    tip.style.display = 'none';
+    container.appendChild(tip);
+    chart.subscribeCrosshairMove(function (p) {
+      if (!p || !p.point || !p.time || p.point.x < 0 || p.point.y < 0) { tip.style.display = 'none'; return; }
+      var inf = info[p.time];
+      if (!inf) { tip.style.display = 'none'; return; }
+      var d = new Date(p.time * 1000);
+      var when = formatChartTime(p.time) + (inf.start ? '' : ' ' + pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()));
+      var html = '<div class="cum-tip-date">' + when + '</div>' +
+        '<div class="cum-tip-total ' + (inf.cum >= 0 ? 'up' : 'down') + '">' + formatCurrency(inf.cum) + '</div>';
+      if (!inf.start) {
+        html += '<div class="cum-tip-trade"><span>#' + inf.n + (inf.symbol ? ' ' + escapeChartText(inf.symbol) : '') + '</span>' +
+          '<b class="' + (inf.pnl >= 0 ? 'up' : 'down') + '">' + formatCurrency(inf.pnl) + '</b></div>';
+      }
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+      var tw = tip.offsetWidth || 130;
+      var left = p.point.x + 16;
+      if (left + tw > container.clientWidth - 8) left = p.point.x - tw - 16;
+      tip.style.left = Math.max(4, left) + 'px';
+      tip.style.top = '8px';
+    });
 
     function fitCumulative() {
       if (!chart || !chart.timeScale) return;
       if (seriesData.length >= 2) {
-        chart.timeScale().setVisibleLogicalRange({
-          from: 0.5,
-          to: seriesData.length - 0.5
-        });
+        // a little room on the right so the line does not touch the card edge
+        chart.timeScale().setVisibleLogicalRange({ from: 0, to: seriesData.length - 1 + Math.max(0.35, seriesData.length * 0.03) });
       } else {
         chart.timeScale().fitContent();
       }
     }
 
+    chart.timeScale().subscribeVisibleLogicalRangeChange(function () { requestAnimationFrame(positionChips); });
     fitCumulative();
     chart._fitCumulative = fitCumulative;
+    chart._positionChips = positionChips;
+    chart._series = series;
 
-    requestAnimationFrame(function () {
-      fitCumulative();
-    });
-    setTimeout(function () {
-      fitCumulative();
-    }, 120);
+    requestAnimationFrame(function () { fitCumulative(); positionChips(); });
+    setTimeout(function () { fitCumulative(); positionChips(); }, 120);
 
     return chart;
   }
+
+  function escapeChartText(str) {
+    return String(str).replace(/[&<>"']/g, function (m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
+  }
+
+  // prop pages push their target / stop distance here; null clears the lines
+  window.wwSetCumulativeLevels = function (lv) {
+    window._wwCumLevels = lv || null;
+    var ch = lwcCharts && lwcCharts['chart-cumulative'];
+    if (ch && typeof ch._applyLevels === 'function') {
+      var showLevels = (typeof currentRange === 'undefined') || currentRange === 'all';
+      ch._applyLevels(showLevels ? window._wwCumLevels : null);
+    }
+  };
 
   function renderDailyLwc(trades, container, customHeight) {
     if (typeof window.LightweightCharts === 'undefined') return null;
@@ -2350,7 +2461,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var filtered = filterByDate(allTrades, currentRange);
     var isMobile = window.innerWidth < 768;
-    var modalHeight = isMobile ? 260 : 380;
+    // the modal fills most of the screen; keep this in step with #chart-expand-container in dashboard.css
+    var modalHeight = isMobile ? 260 : Math.round(Math.min(720, Math.max(340, window.innerHeight * 0.52)));
 
     if (type === 'cumulative') {
       expandedLwcChart = renderCumulativeLwc(filtered, container, modalHeight);

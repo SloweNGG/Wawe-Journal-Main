@@ -1,0 +1,683 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="en" showNavbar={false}>
+<Fragment slot="head">
+  <title>Wawe Journal - Professional Trading Journal for Traders</title>
+  <meta name="description" content="Every great trader has a story. Wawe Journal helps you write yours. Track trades, analyze metrics, and build discipline." />
+  <meta name="keywords" content="wawe journal, wawejournal, trading journal, crypto trading journal, forex journal, stock trading log, trading analytics" />
+  <meta name="robots" content="noindex, nofollow" />
+    <meta property="og:title" content="Wawe Journal - Professional Trading Journal" />
+  <meta property="og:description" content="Track your trades, analyze your performance, and build discipline." />
+  <meta property="og:url" content="https://wawejournal.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://wawejournal.com/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Wawe Journal" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Wawe Journal - Professional Trading Journal" />
+  <meta name="twitter:description" content="Track your trades, analyze your performance, and build discipline." />
+  <meta name="twitter:image" content="https://wawejournal.com/og-image.jpg" />
+  <meta name="twitter:site" content="@wawejournal" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Wawe Journal" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="/vendor/devices.css" />
+  <link rel="stylesheet" href="/landing-preview.css?v=4" />
+
+  <!-- Google Site Name, Brand Entity & WebSite Schema -->
+  <script type="application/ld+json" is:inline>
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://wawejournal.com/#website",
+        "url": "https://wawejournal.com/",
+        "name": "Wawe Journal",
+        "alternateName": ["WaweJournal", "Wawe Journal Trading"],
+        "publisher": { "@id": "https://wawejournal.com/#organization" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://wawejournal.com/#organization",
+        "name": "Wawe Journal",
+        "alternateName": ["WaweJournal"],
+        "url": "https://wawejournal.com/",
+        "logo": "https://wawejournal.com/og-image.jpg",
+        "sameAs": [
+          "https://x.com/wawejournal",
+          "https://twitter.com/wawejournal",
+          "https://www.instagram.com/wawejournal/",
+          "https://youtube.com/@wawedev"
+        ]
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://wawejournal.com/#app",
+        "name": "Wawe Journal",
+        "alternateName": ["WaweJournal"],
+        "description": "Wawe Journal is an advanced crypto, forex, and stock trading journal and performance analytics platform for disciplined traders.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "url": "https://wawejournal.com/",
+        "author": { "@id": "https://wawejournal.com/#organization" },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style is:global>
+    * { box-sizing: border-box; }
+    html {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      scroll-behavior: smooth;
+    }
+    body {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      min-height: 100vh !important;
+      max-width: 100%;
+    }
+    #navbar-container { display: none !important; }
+    /* landing page: app-scroll-container normal flow (scroll on html/body, not container) */
+    #app-scroll-container {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 100vh !important;
+      display: block !important;
+      width: 100% !important;
+    }
+  </style>
+
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
+  <script src="/config.js?v=8" is:inline defer></script>
+  <script src="/index-i18n.js?v=8" is:inline defer></script>
+  <script type="module" src="/src/bundle.js?v=8" is:inline defer></script>
+</Fragment>
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a href="index.html" class="nav-logo" aria-label="Wawe Journal">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><polyline points="2,16 7,9 12,13 19,4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Wawe <span class="logo-accent">Journal</span></span>
+      </a>
+      <span class="nav-spacer"></span>
+      <a href="#pricing" class="nav-link" data-i18n="nav.pricing">Pricing</a>
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-line" data-i18n="nav.login">Login</a>
+        <a href="register.html" class="btn btn-solid" data-i18n="nav.register">Sign Up →</a>
+      </div>
+      <div class="lang-selector" id="lang-selector">
+        <div class="lang-current" id="lang-current" role="button" tabindex="0" aria-label="Language"><span class="lang-current-flag">EN</span><span class="lang-current-arrow">▼</span></div>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <div class="lang-option" data-lang="tr" data-flag="TR"><span>Türkçe</span><span class="lang-option-check"></span></div>
+          <div class="lang-option active" data-lang="en" data-flag="EN"><span>English</span><span class="lang-option-check">✓</span></div>
+          <div class="lang-option" data-lang="de" data-flag="DE"><span>Deutsch</span><span class="lang-option-check"></span></div>
+        </div>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#pricing" data-i18n="nav.pricing">Pricing</a>
+    <a href="login.html" data-i18n="nav.login">Login</a>
+    <a href="register.html" class="btn btn-accent" data-i18n="nav.register">Sign Up →</a>
+  </div>
+  <div class="menu-overlay" id="menu-overlay"></div>
+
+  <main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="hero.beta">BETA</b></span>
+      <h1><span class="l1" data-i18n="hero.title">Stop guessing which trades work.</span></h1>
+      <p class="hero-sub anim" style="--d:1.15s" data-i18n="hero.subtitle">Log every trade, see your real edge, and drop the strategies that only feel right. Your data, your discipline.</p>
+      <div class="hero-actions anim" style="--d:1.3s">
+        <a href="register.html" class="btn btn-accent btn-lg" data-i18n="hero.start_free">Start Free →</a>
+        <a href="login.html" class="btn btn-line btn-lg" data-i18n="hero.login">Login</a>
+      </div>
+      <div class="hero-shot">
+        <div class="mbp-wrap" id="mbp-wrap" role="img" aria-label="Wawe Journal dashboard on a laptop">
+          <div class="device device-macbook-pro-2018 device-spacegray mbp">
+            <div class="device-frame">
+              <div class="device-screen"><video src="https://odasapyhtdopbnlfhwde.supabase.co/storage/v1/object/public/landing-assets/dashboardlong.mp4" autoplay loop muted playsinline preload="auto"></video></div>
+            </div>
+            <div class="device-power"></div>
+          </div>
+        </div>
+        <div class="stats reveal">
+          <div class="stat"><div class="stat-val" id="stat-total-users">—</div><div class="stat-label" data-i18n="stats.total_users">Total Users</div></div>
+          <div class="stat"><div class="stat-val" id="stat-total-trades">—</div><div class="stat-label" data-i18n="stats.total_trades">Trades Logged</div></div>
+          <div class="stat"><div class="stat-val" id="stat-today-users">—</div><div class="stat-label" data-i18n="stats.today_users">New Today</div></div>
+          <div class="stat"><div class="stat-val" id="stat-today-trades">—</div><div class="stat-label" data-i18n="stats.today_trades">Trades Today</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="strip reveal">
+    <div class="wrap">
+      <div class="strip-label" data-i18n="platforms.label">SUPPORTED PLATFORMS & BROKERS</div>
+      <div class="strip-marquee">
+        <div class="strip-track">
+          <div class="strip-set">
+        <span class="strip-item"><img src="/images/platforms/mt5.png" alt="" width="20" height="20" loading="lazy" />MetaTrader 5</span>
+        <span class="strip-item"><img src="/images/platforms/mt4.png" alt="" width="20" height="20" loading="lazy" />MetaTrader 4</span>
+        <span class="strip-item"><img src="/images/platforms/ctrader_icon.png" alt="" width="20" height="20" loading="lazy" />cTrader</span>
+        <span class="strip-item"><img src="/images/platforms/tradingview.svg" alt="" width="20" height="20" loading="lazy" />TradingView</span>
+        <span class="strip-item"><img src="/images/platforms/binance.svg" alt="" width="20" height="20" loading="lazy" />Binance</span>
+        <span class="strip-item"><img src="/images/platforms/bybit_icon.png" alt="" width="20" height="20" loading="lazy" />Bybit</span>
+        <span class="strip-item"><img src="/images/platforms/ibkr_icon.png" alt="" width="20" height="20" loading="lazy" />Interactive Brokers</span>
+        <span class="strip-item"><img src="/images/platforms/xtb_icon.png" alt="" width="20" height="20" loading="lazy" />XTB</span>
+        <span class="strip-item"><img src="/images/platforms/oanda_icon.png" alt="" width="20" height="20" loading="lazy" />OANDA</span>
+        <span class="strip-item"><img src="/images/platforms/excel.svg" alt="" width="20" height="20" loading="lazy" />CSV & Excel</span>
+          </div>
+          <div class="strip-set" aria-hidden="true">
+        <span class="strip-item"><img src="/images/platforms/mt5.png" alt="" width="20" height="20" loading="lazy" />MetaTrader 5</span>
+        <span class="strip-item"><img src="/images/platforms/mt4.png" alt="" width="20" height="20" loading="lazy" />MetaTrader 4</span>
+        <span class="strip-item"><img src="/images/platforms/ctrader_icon.png" alt="" width="20" height="20" loading="lazy" />cTrader</span>
+        <span class="strip-item"><img src="/images/platforms/tradingview.svg" alt="" width="20" height="20" loading="lazy" />TradingView</span>
+        <span class="strip-item"><img src="/images/platforms/binance.svg" alt="" width="20" height="20" loading="lazy" />Binance</span>
+        <span class="strip-item"><img src="/images/platforms/bybit_icon.png" alt="" width="20" height="20" loading="lazy" />Bybit</span>
+        <span class="strip-item"><img src="/images/platforms/ibkr_icon.png" alt="" width="20" height="20" loading="lazy" />Interactive Brokers</span>
+        <span class="strip-item"><img src="/images/platforms/xtb_icon.png" alt="" width="20" height="20" loading="lazy" />XTB</span>
+        <span class="strip-item"><img src="/images/platforms/oanda_icon.png" alt="" width="20" height="20" loading="lazy" />OANDA</span>
+        <span class="strip-item"><img src="/images/platforms/excel.svg" alt="" width="20" height="20" loading="lazy" />CSV & Excel</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="features-detail">
+    <div class="wrap">
+      <div class="bento">
+        <article class="card wide reveal">
+          <div class="card-media"><img src="/images/premium-dashboard-preview.png" alt="Performance analytics dashboard" width="1024" height="446" loading="lazy" /></div>
+          <div class="card-body"><h3 class="card-title" data-i18n="dash.title">Your complete performance edge on one clean screen.</h3><p class="card-desc" data-i18n="dash.desc">Cumulative P&L curve, win rate, profit factor, daily breakdown, and best/worst trade analytics — all tracked in real time.</p></div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-media"><img src="/images/features/strategy-panel.png" alt="Strategy panel" width="1024" height="475" loading="lazy" /></div>
+          <div class="card-body"><h3 class="card-title" data-i18n="strategy.title">See which strategy is actually making money.</h3><p class="card-desc" data-i18n="strategy.desc">Tag every trade with setups like ICT, SMT or Breakout. Compare win rate, P&L curves, and volume side by side.</p></div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-media"><img src="/images/features/calendar-preview.png" alt="Calendar and consistency view" width="1024" height="502" loading="lazy" /></div>
+          <div class="card-body"><h3 class="card-title" data-i18n="cal.title">Discipline shows up as a pattern, not a mood.</h3><p class="card-desc" data-i18n="cal.desc">A month at a glance — win days, loss days, net P&L, and trading consistency.</p></div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-media crop"><img src="/images/features/overtrade-notifications.png" alt="Over-trade risk notifications" width="472" height="565" loading="lazy" style="max-width:472px;margin:0 auto" /></div>
+          <div class="card-body"><h3 class="card-title" data-i18n="ot.title">Stop emotional trading. Protect your capital.</h3><p class="card-desc" data-i18n="ot.desc">Instant visual alerts and limit counters trigger the moment you exceed your daily trade quota or maximum loss threshold.</p></div>
+        </article>
+
+        <article class="card list reveal">
+          <div class="feat"><h3 class="feat-title" data-i18n="features.f_csv_title">Akıllı CSV & Broker Ekleme</h3><p class="feat-desc" data-i18n="features.f_csv_desc">MetaTrader 4/5, cTrader, TradingView, Bybit, Binance veya Excel dosyanızı sürükleyin; semboller, yön ve komisyonlar saniyeler içinde otomatik algılansın.</p></div>
+          <div class="feat"><h3 class="feat-title" data-i18n="features.f_prop_title">Prop Firm Simülasyonu</h3><p class="feat-desc" data-i18n="features.f_prop_desc">FTMO, FundedNext, Topstep gibi fon şirketlerinin günlük zarar ve maksimum drawdown kurallarını canlı simüle edin; ihlal riski olmadan fon kazanın.</p></div>
+          <div class="feat"><h3 class="feat-title" data-i18n="features.f_chart_title">Gelişmiş Grafikler</h3><p class="feat-desc" data-i18n="features.f_chart_desc">Kümülatif K/Z eğrileri, Sharpe oranı, kâr faktörü, gün ve seans bazlı derin matematiksel analizlerle gerçek performansınızı görün.</p></div>
+          <div class="feat"><h3 class="feat-title" data-i18n="features.f_design_title">Sezgisel Tasarım ve Özelleştirme</h3><p class="feat-desc" data-i18n="features.f_design_desc">Karanlık ve aydınlık tema seçenekleri, esnek panel görünümleri ve dikkatinizi dağıtmayan akıcı kullanıcı deneyimiyle tam kontrol sizde.</p></div>
+          <div class="feat"><h3 class="feat-title" data-i18n="features.f_privacy_title">Gizlilik Odaklı</h3><p class="feat-desc" data-i18n="features.f_privacy_desc">İşlem stratejileriniz ve verileriniz tamamen size özeldir. Üçüncü taraflarla asla paylaşılmaz; şifrelenmiş güvenli altyapı.</p></div>
+        </article>
+      </div>
+
+      <div class="props-label" data-i18n="features.orbit_badge">Desteklenen Prop Firmaları & Broker Ekosistemi</div>
+      <div class="strip-marquee props-marquee">
+        <div class="strip-track">
+          <div class="strip-set">
+        <div class="props-cell"><img src="/images/props/real-ftmo.png" alt="" width="28" height="28" loading="lazy" />FTMO</div>
+        <div class="props-cell"><img src="/images/props/real-fundednext.png" alt="" width="28" height="28" loading="lazy" />FundedNext</div>
+        <div class="props-cell"><img src="/images/props/real-topstep.png" alt="" width="28" height="28" loading="lazy" />Topstep</div>
+        <div class="props-cell"><img src="/images/props/real-fundingpips.png" alt="" width="28" height="28" loading="lazy" />Funding Pips</div>
+        <div class="props-cell"><img src="/images/props/real-the5ers.png" alt="" width="28" height="28" loading="lazy" />The 5%ers</div>
+        <div class="props-cell"><img src="/images/props/real-e8.png" alt="" width="28" height="28" loading="lazy" />E8 Markets</div>
+        <div class="props-cell"><img src="/images/props/real-apex.png" alt="" width="28" height="28" loading="lazy" />Apex Trader</div>
+        <div class="props-cell"><img src="/images/props/real-alpha.png" alt="" width="28" height="28" loading="lazy" />Alpha Capital</div>
+          </div>
+          <div class="strip-set" aria-hidden="true">
+        <div class="props-cell"><img src="/images/props/real-ftmo.png" alt="" width="28" height="28" loading="lazy" />FTMO</div>
+        <div class="props-cell"><img src="/images/props/real-fundednext.png" alt="" width="28" height="28" loading="lazy" />FundedNext</div>
+        <div class="props-cell"><img src="/images/props/real-topstep.png" alt="" width="28" height="28" loading="lazy" />Topstep</div>
+        <div class="props-cell"><img src="/images/props/real-fundingpips.png" alt="" width="28" height="28" loading="lazy" />Funding Pips</div>
+        <div class="props-cell"><img src="/images/props/real-the5ers.png" alt="" width="28" height="28" loading="lazy" />The 5%ers</div>
+        <div class="props-cell"><img src="/images/props/real-e8.png" alt="" width="28" height="28" loading="lazy" />E8 Markets</div>
+        <div class="props-cell"><img src="/images/props/real-apex.png" alt="" width="28" height="28" loading="lazy" />Apex Trader</div>
+        <div class="props-cell"><img src="/images/props/real-alpha.png" alt="" width="28" height="28" loading="lazy" />Alpha Capital</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section plans-section" id="pricing">
+    <div class="wrap">
+      <div class="sec-head center reveal">
+        <h2 class="sec-title" data-i18n-html="plans.title">A Plan for <em>Everyone</em></h2>
+        <p class="sec-desc" data-i18n="plans.desc">Choose the plan that fits you.</p>
+      </div>
+      <div class="plans reveal">
+        <div class="plan">
+          <div class="plan-tag" data-i18n="plans.free_tag">free</div>
+          <div class="plan-name" data-i18n="plans.free_name">Starter</div>
+          <div class="plan-price">$0<span data-i18n="plans.free_period"> / mo</span></div>
+          <p class="plan-desc" data-i18n="plans.free_desc">Start with the essentials.</p>
+          <ul class="plan-feats"><li data-i18n="plans.free_f1">Trade logging</li><li data-i18n="plans.free_f2">Calendar view</li><li data-i18n="plans.free_f3">CSV / PDF import</li><li data-i18n="plans.free_f4">Basic charts</li></ul>
+          <a href="register.html" class="btn btn-line" data-i18n="plans.free_btn">Start free</a>
+        </div>
+        <div class="plan featured">
+          <div class="plan-tag" data-i18n="plans.monthly_tag">most used</div>
+          <div class="plan-name" data-i18n="plans.monthly_name">Premium monthly</div>
+          <div class="plan-price">$<span id="monthly-price-value">12</span><span data-i18n="plans.monthly_period"> / mo</span></div>
+          <p class="plan-desc" data-i18n="plans.monthly_desc">Unlock everything.</p>
+          <ul class="plan-feats"><li data-i18n="plans.monthly_f1">All features</li><li data-i18n="plans.monthly_f2">Advanced customizable charts</li><li data-i18n="plans.monthly_f3">Theme settings</li><li data-i18n="plans.monthly_f4">Over trade notifications</li><li data-i18n="plans.monthly_f5">Advanced strategy analytics</li><li data-i18n="plans.monthly_f7">Customize Wawe journal</li><li data-i18n="plans.monthly_f8">Movable charts</li></ul>
+          <a href="#" class="btn btn-accent" id="upgrade-monthly-home"><span data-i18n="plans.monthly_btn">Go premium</span></a>
+        </div>
+        <div class="plan">
+          <div class="plan-tag" data-i18n="plans.yearly_tag">best value</div>
+          <div class="plan-name" data-i18n="plans.yearly_name">Premium yearly</div>
+          <div class="plan-price">$<span id="yearly-price-value">99</span><span data-i18n="plans.yearly_period"> / yr</span></div>
+          <p class="plan-desc" data-i18n="plans.yearly_desc">Save 31% annually.</p>
+          <ul class="plan-feats"><li data-i18n="plans.yearly_f1">All premium features</li><li data-i18n="plans.yearly_f2">2 months free</li></ul>
+          <a href="#" class="btn btn-line" id="upgrade-yearly-home"><span data-i18n="plans.yearly_btn">Buy yearly</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head center reveal">
+        <h2 class="sec-title" data-i18n-html="refs.title">Names We <em>Trust</em></h2>
+        <p class="sec-desc" data-i18n="refs.desc">Experienced traders and content creators we work with.</p>
+      </div>
+      <div class="references-grid reveal" id="references-grid"><div class="loading-spinner"><div class="spinner"></div></div></div>
+
+      <div class="cta reveal">
+        <h2 data-i18n="cta.title">READY?</h2>
+        <p data-i18n="cta.desc">Keeping a trading journal is a common habit of profitable traders. Start today and feel the difference.</p>
+        <a href="register.html" class="btn btn-accent btn-lg" data-i18n="cta.button">Create Free Account →</a>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-top">
+        <div class="footer-col">
+          <div class="footer-logo"><svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true"><polyline points="2,16 7,9 12,13 19,4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Wawe Journal</span></div>
+          <p class="footer-desc" data-i18n="footer.desc">A modern trading journal built for professional traders.</p>
+        </div>
+        <div class="footer-col"><h4 data-i18n="footer.links">Links</h4><ul>
+          <li><a href="index.html" data-i18n="nav.home">Home</a></li><li><a href="strategies.html" data-i18n="nav.strategies">Strategies</a></li><li><a href="login.html" data-i18n="nav.login">Login</a></li><li><a href="register.html" data-i18n="nav.register">Sign Up</a></li></ul></div>
+        <div class="footer-col"><h4 data-i18n="footer.corporate">Corporate</h4><ul>
+          <li><a href="about.html" data-i18n="footer.about">About</a></li><li><a href="privacy.html" data-i18n="footer.privacy">Privacy</a></li><li><a href="terms.html" data-i18n="footer.terms">Terms</a></li><li><a href="contact.html" data-i18n="footer.contact">Contact</a></li></ul></div>
+        <div class="footer-col"><h4 data-i18n="footer.contact">Contact</h4><ul>
+          <li><a href="mailto:destek@wawedev.com">destek@wawedev.com</a></li><li><span>EU Finland</span></li><li><span>WaweDev Inc</span></li></ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 <span data-i18n-html="footer.credit">WaweJournal is a part of <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a> brand.</span> <span data-i18n="footer.rights">All rights reserved.</span></p>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Instagram"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>
+          <a href="https://youtube.com/@wawedev" target="_blank" rel="noopener" aria-label="YouTube"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>
+          <a href="#" id="discord-link" aria-label="Discord"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.317 4.37a19.6 19.6 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0c-.164-.386-.398-.875-.608-1.25a.077.077 0 0 0-.079-.037A19.6 19.6 0 0 0 3.68 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03c.028.006.056-.009.071-.033a13.9 13.9 0 0 0 1.216-1.99.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.838-.875c-.037-.02-.04-.071-.008-.098"/></svg></a>
+          <a href="mailto:destek@wawedev.com" aria-label="Email"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>
+        </div>
+      </div>
+
+      <div class="disclosures">
+        <p class="legal-lead"><strong>Risk Bildirimi:</strong> Forex, vadeli işlemler, hisse senetleri, kripto varlıklar ve diğer finansal araçlarda işlem yapmak önemli ölçüde finansal risk içerir ve herkes için uygun olmayabilir. İşlemler sonucunda yatırdığınız sermayenin bir kısmını veya tamamını kaybedebilirsiniz. Geçmiş performans, gelecekteki sonuçların göstergesi değildir.</p>
+        <details class="legal">
+          <summary>Risk Bildirimi ve Sorumluluk Reddi (tamamı)</summary>
+          <p><strong>Son Güncelleme: 14 Ekim 2026</strong></p>
+          <h4>1. Risk Bildirimi</h4>
+          <p>Forex, vadeli işlemler, hisse senetleri, kripto varlıklar ve diğer finansal araçlarda işlem yapmak önemli ölçüde finansal risk içerir ve herkes için uygun olmayabilir. İşlemler sonucunda yatırdığınız sermayenin bir kısmını veya tamamını kaybedebilirsiniz.</p>
+          <p>Yalnızca kaybetmeniz durumunda finansal güvenliğinizi veya yaşam standartlarınızı tehlikeye atmayacak tutarlarla işlem yapmalısınız. Finansal durumunuzu değerlendirmek ve işlem yapmanın sizin için uygun olup olmadığına karar vermek tamamen sizin sorumluluğunuzdadır.</p>
+          <p>Geçmiş performans, gelecekteki sonuçların göstergesi değildir. Hiçbir işlem stratejisi, işlem sistemi, geçmiş performans göstergesi veya analiz aracı gelecekte kâr elde edileceğini ya da zarar yaşanmayacağını garanti edemez.</p>
+          <h4>2. Wawe Journal Hakkında</h4>
+          <p>Wawe Journal, kullanıcıların işlem faaliyetlerini kaydetmelerine, düzenlemelerine, senkronize etmelerine ve analiz etmelerine yardımcı olmak amacıyla geliştirilmiş bir işlem günlüğü ve performans analizi platformudur.</p>
+          <p>Kullanıcıya sunulan özelliklere bağlı olarak platform şu işlevleri içerebilir:</p>
+          <ul><li>Manuel işlem kaydı ve işlem geçmişinin yönetimi.</li><li>Desteklenen aracı kurum hesaplarındaki mevcut işlemlerin senkronizasyonu.</li><li>İşlem istatistikleri, kâr-zarar hesaplamaları, kazanma oranı (win rate), risk/getiri oranları ve performans analizleri.</li><li>İşlem stratejileri oluşturma, belgeleme ve analiz etme.</li><li>Prop firm değerlendirme süreçleri ve işlem kurallarına yönelik simülasyonlar.</li><li>Kullanıma sunulduğunda yapay zekâ destekli işlem analizleri ve değerlendirmeleri.</li><li>Kullanıma sunulduğunda backtest ve varsayımsal strateji değerlendirmeleri.</li></ul>
+          <p>Wawe Journal, işlem kayıtlarının tutulması ve analiz edilmesi amacıyla tasarlanmıştır. Özelliklerin kullanılabilirliği; kullanıcının aboneliğine, hesap yapılandırmasına ve platformda yayımlanmış özelliklere bağlı olabilir.</p>
+          <h4>3. Finansal veya Yatırım Danışmanlığı Verilmemesi</h4>
+          <p>Wawe Journal kişiye özel yatırım danışmanlığı, finansal planlama veya herhangi bir finansal aracın alınması, satılması ya da elde tutulması yönünde tavsiye sunmaz.</p>
+          <p>Platform tarafından oluşturulan bilgiler, istatistikler, raporlar, grafikler, strateji değerlendirmeleri, simülasyonlar ve diğer çıktılar yalnızca bilgilendirme ve eğitim amacıyla sunulur.</p>
+          <p>Platformdaki hiçbir içerik kârlılık garantisi, işlem yapma tavsiyesi veya bağımsız finansal değerlendirmelerin yerine geçecek bir yönlendirme olarak yorumlanmamalıdır.</p>
+          <p>Kullanıcılar, işlem kararlarından ve bu kararlar sonucunda ortaya çıkabilecek tüm kâr ve zararlardan kendileri sorumludur.</p>
+          <h4>4. İşlem Günlüğü ve Performans Analizleri</h4>
+          <p>Wawe Journal, kullanıcıların işlem faaliyetlerini kaydetmeleri, düzenlemeleri, takip etmeleri ve analiz etmeleri için araçlar sunar.</p>
+          <p>Performans göstergeleri; işlem geçmişini, kâr-zarar sonuçlarını, kazanma oranını, ortalama kâr ve zararları, risk/getiri oranlarını, düşüş (drawdown) ölçümlerini ve diğer istatistiksel göstergeleri içerebilir.</p>
+          <p>Bu göstergelerin doğruluğu, temel alınan verilerin eksiksizliğine ve doğruluğuna, kullanılan hesaplama yöntemlerine ve ilgili bilgilerin kullanılabilirliğine bağlıdır.</p>
+          <p>Güvenilir hesaplamalar ve analiz araçları sunmak için makul özen gösterilmekle birlikte, her sonucun eksiksiz, doğru, kesintisiz veya hatasız olacağı garanti edilmez.</p>
+          <p>Kullanıcılar, önemli finansal hesaplamaları bağımsız olarak kontrol etmeli ve gerektiğinde senkronize edilmiş işlem kayıtlarını aracı kurumlarının resmî hesap ekstreleriyle karşılaştırmalıdır.</p>
+          <h4>5. Aracı Kurum Bağlantıları ve Salt Okunur Erişim</h4>
+          <p>Wawe Journal, kullanıcıların desteklenen aracı kurum hesaplarını API veya desteklenen diğer kimlik doğrulama ve yetkilendirme yöntemleri aracılığıyla bağlamalarına olanak sağlayabilir.</p>
+          <p>Bu bağlantılar, mevcut işlem kayıtlarının işlem günlüğü, raporlama ve analiz amacıyla alınması ve senkronize edilmesi için kullanılır.</p>
+          <p><strong>Wawe Journal, aracı kurum verilerine salt okunur erişim sağlamak üzere tasarlanmıştır. Platform kullanıcı adına işlem gerçekleştirmez, pozisyon açmaz veya kapatmaz, emir vermez veya değiştirmez, para çekmez ve kullanıcıların aracı kurum hesaplarını yönetmez.</strong></p>
+          <p>Platformun erişimi, desteklenen bağlantı yöntemi üzerinden kullanıma sunulan veri ve izinlerle sınırlıdır.</p>
+          <p>Kullanıcılar, hesaplarını bağlarken talep edilen izinleri incelemelidir. Gerçek erişim izinleri, ilgili aracı kuruma ve kullanılan kimlik doğrulama veya yetkilendirme yöntemine bağlıdır.</p>
+          <p>Aracı kurumların API'leri ve üçüncü taraf hizmetleri değişebilir, kullanılamaz hâle gelebilir veya eksik ya da gecikmeli bilgi sağlayabilir. Senkronizasyon hataları, veri uyuşmazlıkları, eksik kayıtlar ve diğer teknik sorunlar meydana gelebilir.</p>
+          <p>Kullanıcılar, senkronize edilen işlem kayıtlarını kontrol etmekten ve önemli bilgilerin doğruluğunu aracı kurumlarının resmî hesap ekstreleriyle karşılaştırarak teyit etmekten sorumludur.</p>
+          <p>Bir aracı kurum hesabının bağlanması, hesabın mülkiyetinin veya kontrolünün Wawe Journal'a devredildiği anlamına gelmez.</p>
+          <h4>6. Verilerin Toplanması, İşlenmesi ve Saklanması</h4>
+          <p>Wawe Journal, işlem günlüğü ve analiz özelliklerini sunabilmek için kullanıcı hesapları ve işlem faaliyetleriyle ilişkili bilgileri toplayabilir, işleyebilir, aktarabilir ve saklayabilir.</p>
+          <p>Kullanılan özelliklere bağlı olarak işlem verileri şunları içerebilir:</p>
+          <ul><li>İşlem geçmişi.</li><li>Finansal araç sembolleri.</li><li>Alış ve satış yönü, uzun (long) ve kısa (short) pozisyon bilgileri dâhil.</li><li>Giriş ve çıkış fiyatları.</li><li>Pozisyon büyüklüğü veya lot miktarı.</li><li>İşlem zaman damgaları ve ilgili zaman bilgileri.</li><li>İşlem kayıtlarından türetilen performans göstergeleri ve analiz verileri.</li></ul>
+          <p>Bilgiler kullanıcılar tarafından manuel olarak girilebilir veya desteklenen aracı kurum entegrasyonları aracılığıyla alınabilir.</p>
+          <p>Senkronize edilen işlem kayıtları, platform özelliklerinin sunulabilmesi amacıyla Wawe Journal altyapısına aktarılır ve saklanır.</p>
+          <p>Wawe Journal; uygulamanın çalışmasını, veri saklama işlemlerini, kimlik doğrulama ile ilgili işlevleri, güvenlik kontrollerini ve performansı desteklemek amacıyla Cloudflare ve Supabase tarafından sağlanan altyapı ve hizmetlerden yararlanır.</p>
+          <p>Verilerin tam olarak hangi konumda işlendiği; kullanılan altyapıya, hizmet yapılandırmasına ve bu sağlayıcıların mimarisine bağlı olabilir. Wawe Journal, tüm verilerin tek bir fiziksel konumda saklandığını veya verilerin mutlaka belirli bir ülkenin sınırları içinde kaldığını ileri sürmez.</p>
+          <p>Veriler, ilgili hizmet yapılandırmasına ve sağlayıcıların uygulamalarına bağlı olarak birden fazla konuma dağıtılmış altyapılarda işlenebilir.</p>
+          <p>Kişisel verilerin işlenmesi, hizmet sağlayıcılar ve geçerli gizlilik hakları hakkında daha ayrıntılı bilgiler Wawe Journal Gizlilik Politikası'nda sunulmalıdır.</p>
+          <h4>7. Veri Saklama Süresi ve Hesap Silme</h4>
+          <p>Wawe Journal, kullanıcıların saklanan işlem kayıtlarını ve bunlarla ilişkili hesap verilerini, kullanıcı silme talebinde bulunana veya mevcut hesap özellikleri aracılığıyla ilgili bilgileri silene kadar saklar.</p>
+          <p>Silme talebinin ardından ilgili veriler, geçerli silme prosedürlerine uygun olarak aktif sistemlerden silinir.</p>
+          <p>Gerekli olduğu durumlarda bazı bilgiler yedeklerde, güvenlik kayıtlarında veya diğer sistemlerde geçici olarak tutulabilir. Bu tür veriler yalnızca meşru operasyonel, güvenlik veya hukuki amaçlar için ve yürürlükteki mevzuat ile ilgili saklama politikalarının izin verdiği ölçüde muhafaza edilir.</p>
+          <p>Uygulanabilir olduğu durumlarda kullanıcılar, hesaplarının veya verilerinin silinmesi konusunda yardım almak için Wawe Journal ile iletişime geçebilir.</p>
+          <p>Silme işleminin ayrıntıları ve olası istisnalar, platformun Gizlilik Politikası'nda ve geçerli kullanım koşullarında açıklanmalıdır.</p>
+          <h4>8. Veri Güvenliği</h4>
+          <p>Wawe Journal, sistemlerinin ve saklanan bilgilerin korunmasını desteklemek amacıyla Cloudflare ve Supabase tarafından sağlanan altyapı ve güvenlik özelliklerinden yararlanır.</p>
+          <p>Kullanılan hizmetlere ve yapılandırmaya bağlı olarak bu önlemler; kimlik doğrulama ve yetkilendirme kontrollerini, ağ korumalarını, erişim kısıtlamalarını ve diğer güvenlik mekanizmalarını içerebilir.</p>
+          <p>Wawe Journal, hesaplara ve verilere yalnızca yetkili kullanıcıların ve hizmetlerin erişmesini amaçlayan bir kimlik doğrulama ve yetkilendirme yaklaşımı uygular. Kimlik doğrulama sistemine ilişkin ek teknik bilgiler, platformun teknik dokümantasyonunda veya güvenlik rehberinde sunulabilir.</p>
+          <p>Hiçbir internet sitesi, uygulama, veri tabanı, ağ veya bulut altyapısının tamamen güvenli olduğu garanti edilemez.</p>
+          <p>Makul güvenlik önlemleri alınmasına rağmen yetkisiz erişim, veri kaybı, hizmet kesintisi, güvenlik açıkları ve diğer güvenlik olayları meydana gelebilir.</p>
+          <p>Wawe Journal mutlak güvenlik veya kesintisiz erişilebilirlik garantisi vermez. Kullanıcılar hesap bilgilerini güvenli şekilde korumalı ve şüpheli yetkisiz erişim durumlarını gecikmeden bildirmelidir.</p>
+          <h4>9. Hizmet Sürekliliği ve Üçüncü Taraf Sağlayıcılar</h4>
+          <p>Wawe Journal, platformun çalışmasını desteklemek için Cloudflare ve Supabase dâhil olmak üzere üçüncü taraf altyapı ve hizmet sağlayıcılarına dayanır.</p>
+          <p>Platformun kullanılabilirliği ve performansı bu sağlayıcılara, ağ bağlantısına, yazılım sistemlerine, bakım çalışmalarına ve diğer teknik faktörlere bağlı olabilir.</p>
+          <p>Dağıtık altyapı ve güvenlik mekanizmaları hizmet dayanıklılığını ve erişilebilirliğini artırmak amacıyla kullanılabilse de kesintisiz hizmet garanti edilemez.</p>
+          <p>Kesintiler, bakım çalışmaları, API değişiklikleri, sağlayıcı kaynaklı olaylar, ağ arızaları veya diğer koşullar platforma erişimi ya da senkronize edilen bilgilerin doğruluğunu ve güncelliğini geçici olarak etkileyebilir.</p>
+          <p>Yürürlükteki mevzuatın izin verdiği ölçüde Wawe Journal, üçüncü taraf hizmetlerinden kaynaklanan aksaklıklardan sorumlu tutulamaz.</p>
+          <h4>10. Yapay Zekâ Destekli Analizler</h4>
+          <p>Kullanıma sunulduğunda Wawe Journal, işlem kayıtlarını analiz eden, olası örüntüleri belirleyen, performansı özetleyen veya stratejiler hakkında değerlendirmeler sunan yapay zekâ özellikleri sağlayabilir.</p>
+          <p>Yapay zekâ tarafından oluşturulan sonuçlar eksik, hatalı, yanıltıcı veya belirli bir işlem durumu için uygun olmayan bilgiler içerebilir.</p>
+          <p>Bu çıktılar yalnızca bilgilendirme ve eğitim amacıyla sunulur. Kişiye özel yatırım danışmanlığı niteliğinde değildir ve işlem veya finansal kararlar alınırken tek başına esas alınmamalıdır.</p>
+          <p>Yapay zekâ analizleri daha iyi işlem performansı, daha az zarar veya gelecekte kârlılık garantisi vermez.</p>
+          <p>Kullanıcılar, yapay zekâ tarafından oluşturulan sonuçları bağımsız olarak değerlendirmeli ve bu sonuçlara dayanarak hareket etmeden önce önemli bilgileri doğrulamalıdır.</p>
+          <h4>11. Backtest ve Varsayımsal Performans</h4>
+          <p>Kullanıma sunulduğunda backtest ve varsayımsal performans özellikleri; geçmiş verileri, kullanıcı tarafından belirlenen parametreleri veya simüle edilmiş piyasa koşullarını kullanarak işlem stratejilerini değerlendirebilir.</p>
+          <p>Varsayımsal sonuçlar doğaları gereği çeşitli sınırlamalara sahiptir ve gerçek işlem performansını temsil etmez.</p>
+          <p>Geçmiş veya simüle edilmiş sonuçlar aşağıdaki faktörleri tamamen hesaba katmayabilir:</p>
+          <ul><li>Fiyat kayması (slippage) ve emir gerçekleştirme gecikmeleri.</li><li>Spread, komisyon ve diğer işlem maliyetleri.</li><li>Likidite kısıtlamaları.</li><li>Piyasa oynaklığı ve değişen piyasa koşulları.</li><li>Emir gerçekleştirme sınırlamaları.</li><li>Psikolojik faktörler ve gerçek işlem davranışları.</li><li>Geçmiş verilerdeki hatalar, boşluklar veya sınırlamalar.</li></ul>
+          <p>Backtest sonuçları, geçmişte gerçekleşmiş olayların bilinmesi avantajından etkilenebilir. Ayrıca aşırı uyum (overfitting), veri seçimi veya gerçek piyasalarda geçerli olmayan varsayımlar nedeniyle yanıltıcı olabilir.</p>
+          <p>Gerçek sonuçlar, simüle edilmiş veya geçmiş verilere dayalı sonuçlardan önemli ölçüde farklılaşabilir. Bir stratejinin backtest sonuçlarına benzer sonuçlar elde edeceğine ilişkin herhangi bir garanti verilmez.</p>
+          <h4>12. Prop Firm Simülasyonları</h4>
+          <p>Wawe Journal, kullanıcıların işlem faaliyetlerini belirli özel işlem şirketlerinin (prop firm) kuralları veya varsayımsal değerlendirme koşulları çerçevesinde incelemelerine yardımcı olan simülasyon araçları sunabilir.</p>
+          <p>Bu araçlar kâr hedeflerini, drawdown sınırlarını, günlük zarar limitlerini, hesap kurallarını ve diğer değerlendirme parametrelerini simüle edebilir.</p>
+          <p>Prop firm simülasyonları yalnızca pratik, planlama ve eğitim amacıyla sunulur.</p>
+          <p>Bir simülasyon, ilgili prop firm tarafından gerçekleştirilen resmî bir değerlendirme değildir. Gerçek fonlanmış bir hesap, sertifikasyon veya kullanıcının değerlendirmeyi geçeceğine ya da fonlama alacağına ilişkin garanti anlamına gelmez.</p>
+          <p>Simülasyon sonuçları, ilgili şirketlerin gerçek kurallarından, hesaplama yöntemlerinden, izleme sistemlerinden ve kararlarından farklılık gösterebilir. Kurallar zaman içinde değişebilir ve yorumlanmaları şirketten şirkete farklılık gösterebilir.</p>
+          <p>Kullanıcılar, geçerli kuralları doğrudan ilgili prop firm üzerinden doğrulamalıdır.</p>
+          <p>Wawe Journal, kullanıcıların herhangi bir değerlendirmeyi geçeceğini, fonlama alacağını veya belirli bir işlem sonucuna ulaşacağını garanti etmez.</p>
+          <h4>13. İşlem Stratejileri ve Strateji Analizi</h4>
+          <p>Wawe Journal, kullanıcıların işlem stratejileri oluşturmasına, belgelemesine, düzenlemesine ve analiz etmesine olanak sağlayabilir.</p>
+          <p>Strateji analizleri, platformda mevcut olan bilgi ve parametrelere dayanır ve ilgili tüm piyasa koşullarını veya riskleri yansıtmayabilir.</p>
+          <p>Analiz sonuçları, bir stratejinin uygulanması yönünde tavsiye veya stratejinin gelecekte kârlı olacağının kanıtı olarak yorumlanmamalıdır.</p>
+          <p>Kullanıcılar, stratejilerini değerlendirmekten ve bunları kullanıp kullanmayacaklarına karar vermekten tamamen kendileri sorumludur.</p>
+          <h4>14. Üçüncü Taraf Hizmetleri ve Harici Veriler</h4>
+          <p>Platformun bazı özellikleri üçüncü taraf hizmetlerine, aracı kurum API'lerine, bulut altyapısına veya harici veri kaynaklarına bağlıdır.</p>
+          <p>Wawe Journal bu hizmetlerin tüm yönlerini kontrol etmez ve bunların sürekli kullanılabilirliğini, doğruluğunu veya uyumluluğunu garanti edemez.</p>
+          <p>Üçüncü taraf sistemlerdeki değişiklikler senkronizasyonu, veri kullanılabilirliğini, analizleri veya platformun diğer işlevlerini etkileyebilir.</p>
+          <p>Uygun olduğu durumlarda kullanıcılar, kritik bilgileri doğrudan orijinal sağlayıcı üzerinden doğrulamalıdır.</p>
+          <h4>15. Sorumluluğun Sınırlandırılması</h4>
+          <p>Yürürlükteki mevzuatın izin verdiği azami ölçüde Wawe Journal; platformun kullanımından, kullanılamamasından veya platformdaki bilgilere güvenilmesinden, analizlerden, senkronize edilen verilerden, yapay zekâ çıktılarından, backtest araçlarından, strateji analizlerinden veya prop firm simülasyonlarından kaynaklanan dolaylı, arızi, özel veya sonuçsal zararlar bakımından sorumlu tutulamaz.</p>
+          <p>Bu kapsam, mevzuatın izin verdiği ölçüde hatalı veya eksik verilerden, senkronizasyon hatalarından, üçüncü taraf hizmet kesintilerinden, analiz hatalarından veya kullanıcıların işlem kararlarından kaynaklanan zararları da içerebilir.</p>
+          <p>Bu bölümdeki hiçbir hüküm, yürürlükteki mevzuat uyarınca hukuken hariç tutulması veya sınırlandırılması mümkün olmayan sorumlulukları ortadan kaldırmaz ya da sınırlandırmaz.</p>
+          <p>Sorumluluk sınırlamalarının kapsamı ve uygulanabilirliği, ilgili mevzuata ve platformun geçerli kullanım koşullarına tabidir.</p>
+          <h4>16. Kullanıcının Sorumlulukları</h4>
+          <p>Kullanıcılar, Wawe Journal'ı kullanarak aşağıdaki hususları kabul etmiş sayılır:</p>
+          <ul><li>İşlem yapmak önemli finansal risk içerir.</li><li>Geçmiş performans, gelecekteki sonuçları garanti etmez.</li><li>Platform analizleri ve simülasyonları hatalar veya sınırlamalar içerebilir.</li><li>Aracı kurum senkronizasyonu üçüncü taraf sistemlerine ve desteklenen bağlantıların izinlerine bağlıdır.</li><li>Kullanıcılar işlem kayıtlarını kontrol etmekten ve önemli bilgileri doğrulamaktan sorumludur.</li><li>Kullanıma sunulduğunda yapay zekâ çıktıları bağımsız değerlendirmenin yerine geçmez.</li><li>Prop firm simülasyonları değerlendirmeyi geçme veya fonlama alma garantisi vermez.</li><li>Kullanıcılar işlem kararlarından ve bu kararların doğurabileceği finansal sonuçlardan kendileri sorumludur.</li></ul>
+          <h4>17. Bu Metindeki Değişiklikler</h4>
+          <p>Wawe Journal; platformda, özelliklerde, yürürlükteki yasal gerekliliklerde veya operasyonel uygulamalarda meydana gelen değişiklikleri yansıtmak amacıyla bu Risk Bildirimi ve Sorumluluk Reddi metnini zaman zaman güncelleyebilir.</p>
+          <p>Güncellenen metin, uygun olduğu durumlarda yeni güncelleme tarihiyle birlikte ilgili internet sayfasında yayımlanır.</p>
+          <p>Kullanıcıların bu sayfayı belirli aralıklarla incelemeleri önerilir.</p>
+          <h4>18. İletişim</h4>
+          <p>Bu Risk Bildirimi ve Sorumluluk Reddi hakkında sorularınız varsa Wawe Journal'ın resmî internet sitesinde belirtilen iletişim kanalları üzerinden bizimle iletişime geçebilirsiniz.</p>
+        </details>
+      </div>
+    </div>
+  </footer>
+
+  <script is:inline>
+    function waitForDeps(cb, maxMs) {
+      maxMs = maxMs || 8000;
+      var t0 = Date.now();
+      (function check() {
+        if (window.sb && typeof window.loadPlatformStats === 'function') {
+          try { cb(); } catch (e) { window.wwLog && wwLog.warn('[index] cb error:', e); }
+          return;
+        }
+        if (Date.now() - t0 > maxMs) return;
+        setTimeout(check, 50);
+      })();
+    }
+
+    // MAINTENANCE
+    (function() {
+      var p = window.location.pathname;
+      if (p.includes('admin.html') || p.includes('login.html') || p.includes('maintenance.html')) return;
+      waitForDeps(function() {
+        (async function() {
+          try {
+            var s = window.getSystemSettings ? window.getSystemSettings() : {};
+            if (s.maintenance_mode) {
+              var { data: { session } } = await window.sb.auth.getSession();
+              if (session && session.user?.app_metadata?.role === 'admin') return;
+              window.location.href = 'maintenance.html';
+            }
+          } catch(e) {}
+        })();
+      });
+    })();
+
+    // LOGGED-IN REDIRECT
+    (function() {
+      var done = false;
+      waitForDeps(function() {
+        (async function() {
+          try {
+            var { data: { session } } = await window.sb.auth.getSession();
+            if (session && !done) { done = true; window.location.href = 'dashboard.html'; }
+          } catch(e) {}
+        })();
+      });
+    })();
+
+    // DISCORD TOAST
+    var discordLink = document.getElementById('discord-link');
+    if (discordLink) discordLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (typeof window.showToast === 'function') window.showToast('Discord server coming soon! 🚀', 'success');
+    });
+
+    // MOBILE MENU
+    var hamburger = document.getElementById('hamburger');
+    var mobileMenu = document.getElementById('mobile-menu');
+    var overlay = document.getElementById('menu-overlay');
+    function toggleMenu() {
+      hamburger.classList.toggle('active');
+      mobileMenu.classList.toggle('active');
+      overlay.classList.toggle('active');
+      document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+    }
+    if (hamburger) hamburger.addEventListener('click', toggleMenu);
+    if (overlay) overlay.addEventListener('click', toggleMenu);
+    document.querySelectorAll('.mobile-menu a').forEach(l => l.addEventListener('click', toggleMenu));
+
+    // REVEAL
+    var obs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+    // LAPTOP SCALE: the device is drawn at 740x444px, fit it to its column
+    (function() {
+      var wrap = document.getElementById('mbp-wrap');
+      var dev = wrap && wrap.querySelector('.device');
+      if (!dev) return;
+      function fit() {
+        var k = wrap.clientWidth / 740;
+        dev.style.transform = 'scale(' + k + ')';
+        wrap.style.height = (444 * k) + 'px';
+      }
+      fit();
+      if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
+    })();
+
+    // LAPTOP OPEN ANIMATION
+    (function() {
+      var mbp = document.querySelector('.mbp');
+      if (!mbp) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      mbp.classList.add('pre');
+      var lo = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { setTimeout(function() { mbp.classList.add('open'); }, 250); lo.disconnect(); } });
+      }, { threshold: 0.25 });
+      lo.observe(mbp);
+    })();
+
+    // STATS
+    async function loadStats() { try { await window.loadPlatformStats(); } catch (e) { console.error('[index] loadStats:', e); } }
+    waitForDeps(function() { loadStats(); });
+
+    // REFERENCES
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m] || m; });
+    }
+    async function loadReferences() {
+      var container = document.getElementById('references-grid');
+      if (!container) return;
+      try {
+        var sbClient = window.sb || window.supabase;
+        if (!sbClient) throw new Error('sb not ready');
+        var { data, error } = await sbClient.from('references').select('*').eq('is_active', true).order('display_order', { ascending: true });
+        if (error || !data || !data.length) {
+          container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="refs.empty">No references added yet.</p>';
+          i18n.apply();
+          return;
+        }
+        container.innerHTML = data.map(function(ref) {
+          return '<div class="reference-card">' +
+            '<div class="ref-image"><img src="' + (ref.image_url || 'https://placehold.co/100x100?text=Profile') + '" alt="' + esc(ref.name) + '"></div>' +
+            '<div class="ref-info"><h3>' + esc(ref.name) + '</h3>' +
+            '<p class="ref-title">' + esc(ref.title || '') + '</p>' +
+            '<p class="ref-desc">' + esc(ref.description || '') + '</p>' +
+            '<div class="ref-social">' +
+              (ref.instagram ? '<a href="' + ref.instagram + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>' : '') +
+              (ref.twitter ? '<a href="' + ref.twitter + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></a>' : '') +
+              (ref.youtube ? '<a href="' + ref.youtube + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></a>' : '') +
+              (ref.linkedin ? '<a href="' + ref.linkedin + '" target="_blank" class="ref-social-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>' : '') +
+            '</div></div></div>';
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<p style="color:var(--muted);text-align:center;grid-column:1/-1;padding:2rem;" data-i18n="refs.error">Failed to load references.</p>';
+        i18n.apply();
+      }
+    }
+    waitForDeps(function() { loadReferences(); });
+
+    // PRICES
+    var priceTimeout = null;
+    function updateHomePrices() {
+      if (priceTimeout) cancelAnimationFrame(priceTimeout);
+      priceTimeout = requestAnimationFrame(function() {
+        try {
+          var mp = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
+          var yp = window.getYearlyPrice ? window.getYearlyPrice() : 99;
+          var mEl = document.getElementById('monthly-price-value');
+          if (mEl) mEl.textContent = mp % 1 === 0 ? mp.toFixed(0) : mp.toFixed(2);
+          var yEl = document.getElementById('yearly-price-value');
+          if (yEl) yEl.textContent = yp % 1 === 0 ? yp.toFixed(0) : yp.toFixed(2);
+        } catch (e) {}
+      });
+    }
+    window.addEventListener('storage', function(e) {
+      if (e.key && e.key.startsWith('ww_')) updateHomePrices();
+    });
+    document.addEventListener('DOMContentLoaded', updateHomePrices);
+    if (typeof i18n !== 'undefined' && i18n.onChange) i18n.onChange(updateHomePrices);
+
+    // PLAN BUTTONS
+    var upM = document.getElementById('upgrade-monthly-home');
+    if (upM) upM.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      (async function() {
+        try {
+          var sb = window.sb || window.supabase;
+          if (!sb) { window.location.href = 'register.html?plan=monthly'; return; }
+          var { data: { session } } = await sb.auth.getSession();
+          if (!session) { window.location.href = 'register.html?plan=monthly'; return; }
+          var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
+          if (window.upgradeToPremium) await window.upgradeToPremium('monthly', price, 'USD', 'BTC');
+          else window.showToast && window.showToast('System preparing.', 'error');
+        } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
+      })();
+    });
+    var upY = document.getElementById('upgrade-yearly-home');
+    if (upY) upY.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      (async function() {
+        try {
+          var sb = window.sb || window.supabase;
+          if (!sb) { window.location.href = 'register.html?plan=yearly'; return; }
+          var { data: { session } } = await sb.auth.getSession();
+          if (!session) { window.location.href = 'register.html?plan=yearly'; return; }
+          var price = window.getYearlyPrice ? window.getYearlyPrice() : 99;
+          if (window.upgradeToPremium) await window.upgradeToPremium('yearly', price, 'USD', 'BTC');
+          else window.showToast && window.showToast('System preparing.', 'error');
+        } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
+      })();
+    });
+
+    // LANGUAGE SELECTOR
+    var langCurrent = document.getElementById('lang-current');
+    var langDropdown = document.getElementById('lang-dropdown');
+    var langOptions = document.querySelectorAll('.lang-option');
+    var langFlag = document.querySelector('.lang-current-flag');
+
+    function updateLanguageUI(lang) {
+      var sel = document.querySelector('.lang-option[data-lang="' + lang + '"]');
+      if (!sel) return;
+      if (langFlag) langFlag.textContent = sel.dataset.flag;
+      langOptions.forEach(function(opt) {
+        var c = opt.querySelector('.lang-option-check');
+        if (opt.dataset.lang === lang) { opt.classList.add('active'); if (c) c.textContent = '✓'; }
+        else { opt.classList.remove('active'); if (c) c.textContent = ''; }
+      });
+    }
+    function toggleDD() { langDropdown && langDropdown.classList.toggle('show'); }
+    function closeDD() { langDropdown && langDropdown.classList.remove('show'); }
+    if (langCurrent) langCurrent.addEventListener('click', function(e) { e.stopPropagation(); toggleDD(); });
+    langOptions.forEach(function(o) {
+      o.addEventListener('click', function(e) {
+        e.stopPropagation();
+        i18n.setLanguage(o.dataset.lang);
+        updateLanguageUI(o.dataset.lang);
+        closeDD();
+      });
+    });
+    document.addEventListener('click', function(e) {
+      if (langCurrent && langDropdown && !langCurrent.contains(e.target) && !langDropdown.contains(e.target)) closeDD();
+    });
+    updateLanguageUI(i18n.getCurrentLanguage());
+    i18n.onChange(function(l) { updateLanguageUI(l); });
+  </script>
+</Layout>

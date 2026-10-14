@@ -986,7 +986,7 @@
       while (hasMore) {
         var query = sb
           .from('trades')
-          .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+          .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,gross_pnl,commission,swap,platform_source,rr_ratio,notes,strategy_id,instrument,multiplier')
           .eq('user_id', userId);
 
         if (jid) {
@@ -1025,7 +1025,7 @@
           while (uHasMore) {
             var { data: unassignedData } = await sb
               .from('trades')
-              .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+              .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,gross_pnl,commission,swap,platform_source,rr_ratio,notes,strategy_id,instrument,multiplier')
               .eq('user_id', userId)
               .is('journal_id', null)
               .order('trade_date', { ascending: false })
@@ -1482,6 +1482,22 @@
     
     initTrades();
   }
+
+  window.loadTrades = async function() {
+    if (window.wwCache) {
+      window.wwCache.invalidate('trades');
+    }
+    await initTrades();
+  };
+
+  window.addEventListener('trade-saved', function() {
+    if (window.wwCache) {
+      window.wwCache.invalidate('trades');
+    }
+    if (typeof window.loadTrades === 'function') {
+      window.loadTrades();
+    }
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startTrades);

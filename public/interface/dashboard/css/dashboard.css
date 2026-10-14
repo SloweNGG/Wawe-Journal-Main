@@ -217,21 +217,23 @@
 }
 
 .chart-card h3 {
-  font-size: clamp(8px, 0.8vw, 10px);
+  /* one size for every chart title, matching the Win / Loss card */
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
   margin: 0;
   font-family: 'DM Sans', sans-serif;
 }
 
 .chart-header h3 {
-  font-size: clamp(8px, 0.8vw, 10px);
+  /* one size for every chart title, matching the Win / Loss card */
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
   margin: 0;
   font-family: 'DM Sans', sans-serif;
 }
@@ -1426,12 +1428,12 @@ body.light-theme .mini-cal-day.loss:hover {
 
 .stat-card .stat-value.positive {
   color: var(--green);
-  text-shadow: 0 0 8px var(--green-glow);
+  text-shadow: none;
 }
 
 .stat-card .stat-value.negative {
   color: var(--red);
-  text-shadow: 0 0 8px var(--red-glow);
+  text-shadow: none;
 }
 
 .stat-card .stat-trend {
@@ -2431,6 +2433,7 @@ body.light-theme .expand-summary-empty {
   margin: 0;
   font-size: 0.82rem;
   font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
   color: var(--text);
   transition: opacity 0.2s ease;
 }
@@ -3013,4 +3016,172 @@ body.light-theme .expand-summary-empty {
 .dashboard-prop-warning-pill svg {
   width: 13px;
   height: 13px;
+}
+/* cumulative P&L chart: hover card */
+.cum-tip {
+  position: absolute;
+  z-index: 6;
+  top: 8px;
+  min-width: 124px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  pointer-events: none;
+  background: rgba(13, 14, 24, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.6);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--text);
+}
+body.light-theme .cum-tip,
+.light-theme .cum-tip {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 10px 28px -8px rgba(15, 23, 42, 0.2);
+}
+.cum-tip-date { color: var(--muted); margin-bottom: 3px; }
+.cum-tip-total {
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cum-tip-trade {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+.light-theme .cum-tip-trade { border-top-color: rgba(15, 23, 42, 0.08); }
+.cum-tip-trade b { font-family: 'JetBrains Mono', 'DM Mono', monospace; font-weight: 700; }
+.cum-tip .up { color: #22c55e; }
+.cum-tip .down { color: #ef4444; }
+.light-theme .cum-tip .up { color: #16a34a; }
+.light-theme .cum-tip .down { color: #dc2626; }
+
+/* cumulative chart: target / stop chips on the right edge (the value axis is hidden) */
+.cum-chip {
+  position: absolute;
+  right: 6px;
+  z-index: 5;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  white-space: nowrap;
+  background: rgba(13, 14, 24, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.55);
+  color: #c4b5fd;
+}
+.cum-chip b { font-family: 'JetBrains Mono', 'DM Mono', monospace; font-weight: 700; color: var(--text); }
+.cum-chip.stop { border-color: rgba(239, 68, 68, 0.6); color: #fca5a5; }
+.light-theme .cum-chip { background: rgba(255, 255, 255, 0.95); color: #6d28d9; }
+.light-theme .cum-chip.stop { color: #b91c1c; }
+
+/* KPI cards: the change line is a readable pill plus a quiet label */
+.stat-card .stat-trend {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 0.5rem;
+  font-size: clamp(10px, 0.82vw, 12px);
+}
+.stat-trend .stat-trend-pct {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 1.05em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.stat-trend.positive .stat-trend-pct { color: #4ade80; background: rgba(34, 197, 94, 0.14); }
+.stat-trend.negative .stat-trend-pct { color: #f87171; background: rgba(239, 68, 68, 0.14); }
+.stat-trend .stat-trend-label { color: var(--muted); font-weight: 500; }
+.light-theme .stat-trend.positive .stat-trend-pct { color: #15803d; background: rgba(34, 197, 94, 0.16); }
+.light-theme .stat-trend.negative .stat-trend-pct { color: #b91c1c; background: rgba(239, 68, 68, 0.14); }
+
+/* ============================================================
+   CHART EXPAND MODAL: follows the user's theme and fills the screen
+   Colors come from the theme variables (--bg, --surface, --surface2,
+   --border, --accent, --accent2, --text, --muted), so dark, light and
+   custom accent themes all apply. The light-theme blocks above still win
+   in light mode, and they now agree with these variables.
+   ============================================================ */
+.chart-expand-overlay {
+  background: color-mix(in srgb, var(--bg, #07070c) 82%, transparent);
+  padding: 1rem;
+}
+
+.chart-expand-box {
+  width: min(100%, 1560px);
+  max-width: none;
+  max-height: calc(100vh - 2rem);
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -10%, color-mix(in srgb, var(--accent, #8b5cf6) 16%, transparent), transparent 70%),
+    var(--surface, #0c0b14);
+  border: 1px solid var(--border2, var(--border));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5),
+              0 0 40px -10px color-mix(in srgb, var(--accent, #8b5cf6) 24%, transparent),
+              inset 0 1px 0 color-mix(in srgb, var(--accent, #8b5cf6) 26%, transparent);
+}
+
+.chart-expand-header {
+  padding: 1.1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #8b5cf6) 9%, transparent) 0%, transparent 100%);
+}
+.chart-expand-header h3 { color: var(--text); font-size: 16px; }
+
+.chart-expand-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.chart-expand-close:hover {
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent, #8b5cf6) 28%, transparent);
+}
+
+.chart-expand-body { padding: 1.5rem 2rem 2rem; }
+#chart-expand-container { height: clamp(340px, 52vh, 720px); }
+
+.chart-expand-summary { border-top: 1px solid var(--border); }
+.expand-summary-col {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.expand-summary-title,
+.expand-summary-empty { color: var(--muted); }
+.expand-summary-item {
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 6%, transparent);
+  border: 1px solid var(--border);
+}
+.expand-summary-item:hover {
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 12%, transparent);
+  border-color: var(--accent);
+}
+.expand-summary-item .item-sym { color: var(--text); }
+.expand-summary-item .item-sub-count {
+  color: var(--accent2, #c084fc);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 14%, transparent);
+}
+
+@media (max-width: 767px) {
+  .chart-expand-overlay { padding: 0.5rem; }
+  .chart-expand-box { max-height: calc(100vh - 1rem); }
+  .chart-expand-header { padding: 0.85rem 1rem; }
+  .chart-expand-body { padding: 0.85rem 1rem 1rem; }
 }

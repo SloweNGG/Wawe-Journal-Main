@@ -5,7 +5,8 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
 
-  <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css?v=1790432900" />
+  <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css?v=1790432906" />
+  <link rel="stylesheet" href="/interface/dashboard/css/prop-card-v2.css?v=3" />
   <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css?v=1790433100" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
@@ -285,7 +286,7 @@ import Layout from '../layouts/Layout.astro';
     <!-- RECENT TRADES - SKELETON -->
     <div class="chart-card" style="padding: 1rem;" id="recent-trades-skeleton">
       <div class="chart-header" style="margin-bottom: 0.75rem;">
-        <h3 data-i18n="dashboard.recent_trades">SON İŞLEMLER</h3>
+        <h3 data-i18n="dashboard.recent_trades">Son İşlemler</h3>
         <a href="/trades.html" style="color: var(--accent); font-size: 10px; text-decoration: none;" data-i18n="dashboard.recent_trades.view_all">Tümünü Gör →</a>
       </div>
       <div class="skeleton-table">
@@ -300,7 +301,7 @@ import Layout from '../layouts/Layout.astro';
     <!-- RECENT TRADES - GERÇEK -->
     <div class="chart-card" style="padding: 1rem; display:none;" id="recent-trades-container-wrap">
       <div class="chart-header" style="margin-bottom: 0.75rem;">
-        <h3 data-i18n="dashboard.recent_trades">SON İŞLEMLER</h3>
+        <h3 data-i18n="dashboard.recent_trades">Son İşlemler</h3>
         <a href="/trades.html" style="color: var(--accent); font-size: 10px; text-decoration: none;" data-i18n="dashboard.recent_trades.view_all">Tümünü Gör →</a>
       </div>
       <div id="recent-trades-container"></div>
@@ -469,7 +470,8 @@ import Layout from '../layouts/Layout.astro';
     <script src="/interface/quick-add/js/quick-modal-i18n.js?v=1791383000" is:inline defer></script>
     <script src="/interface/quick-add/js/quick-add.js?v=1791383000" is:inline defer></script>
 
-    <script src="/interface/dashboard/js/dashboard.js?v=1791460010" is:inline defer></script>
+    <script src="/interface/dashboard/js/prop-card-v2.js?v=3" is:inline defer></script>
+    <script src="/interface/dashboard/js/dashboard.js?v=1791460016" is:inline defer></script>
   </Fragment>
 
   <script is:inline>
@@ -667,7 +669,7 @@ import Layout from '../layouts/Layout.astro';
 
         // Render into dashboard-prop-card
         if (propCardEl) {
-          propCardEl.innerHTML = `
+          var legacyHtml = `
             <div class="prop-card-header">
               <div class="prop-card-firm-title">
                 <span class="prop-card-firm-name">${escapeHtml(firmName)}</span>
@@ -770,6 +772,40 @@ import Layout from '../layouts/Layout.astro';
             </div>
           `;
 
+          var cardCtx = {
+            t: function (k, p) { return t(k, p); },
+            esc: escapeHtml,
+            fmtPlain: fmtPlain, fmtDelta: fmtDelta, fmtPct: fmtPct,
+            localeStr: localeStr, curLang: curLang,
+            firmName: firmName, phaseName: phaseName,
+            phaseIndex: currentPhaseIdx,
+            phaseCount: (tmpl && tmpl.phases) ? tmpl.phases.length : 1,
+            warningsCount: warningsList.length,
+            noticesTitle: t('prop.notices_count_title', { n: warningsList.length }),
+            showAdvance: Boolean(hasNextPhase && st === 'passed'),
+            advanceLabel: t('prop.next_phase'),
+            st: st, statusIcon: phaseStatusIcon, statusText: phaseStatusText,
+            targetAmount: targetAmount, targetRem: targetRem, targetPct: targetPct,
+            startBal: Number((status.account && status.account.starting_balance) || account.starting_balance || 0),
+            balNow: Number(status.current_balance || (status.account && status.account.starting_balance) || 0),
+            maxStop: maxStop, maxDist: maxDist,
+            dailyLimit: dailyLimit, dailyRem: dailyRem, dailyToday: dailyToday,
+            dayCount: dayCount, dayMin: dayMin,
+            totalPnl: totalPnl, totalTrades: totalTrades, wrPct: wrPct,
+            tradesLabel: t('journal.trades_label')
+          };
+          propCardEl.innerHTML = window.WWPropCardV2 ? window.WWPropCardV2.render(cardCtx) : legacyHtml;
+
+          // chart: target and stop lines, anchored to the latest point of the curve
+          if (window.wwSetCumulativeLevels) {
+            window.wwSetCumulativeLevels({
+              targetAhead: (st !== 'passed' && targetRem > 0) ? targetRem : null,
+              stopBehind: maxStop > 0 ? Math.max(0, maxDist) : null,
+              targetLabel: t('dashboard.chart.target_line'),
+              stopLabel: t('prop.stop_level')
+            });
+          }
+
           // Bind advance button in card if present
           var cardAdvBtn = document.getElementById('prop-card-advance-btn');
           if (cardAdvBtn) {
@@ -802,6 +838,7 @@ import Layout from '../layouts/Layout.astro';
 
     function renderStandardAccountCard(propCardEl) {
       if (!propCardEl) return;
+      if (window.wwSetCumulativeLevels) window.wwSetCumulativeLevels(null);
       var t = function (key, params) {
         return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
       };
@@ -931,7 +968,7 @@ import Layout from '../layouts/Layout.astro';
         payoffText = '0.00x';
       }
 
-      propCardEl.innerHTML = `
+      var legacyStdHtml = `
         <div class="prop-card-header">
           <div class="prop-card-firm-title">
             <span class="prop-card-firm-name">${t('dashboard.card.performance_edge') || 'Performans & Edge'}</span>
@@ -1005,6 +1042,24 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
       `;
+
+      var avgSub = (avgWin > 0 && avgLoss > 0) ? (fmtTarget(avgWin) + ' / ' + fmtTarget(avgLoss)) : payoffSub;
+      var stdCtx = {
+        esc: escapeHtml,
+        title: t('dashboard.card.performance_edge') || 'Performans & Edge',
+        goalBtnLabel: t('dashboard.card.set_goal') || 'Hedef Belirle',
+        goalBtnTitle: t('dashboard.goal.title') || 'Aylık Hedef Belirle',
+        goalLabel: t('dashboard.card.monthly_target') || 'Aylık Hedef',
+        pnlText: fmtPnl(totalPnL),
+        targetText: fmtTarget(monthlyTarget),
+        goalPct: rawGoalPct,
+        goalPctText: goalPctText,
+        best:   { label: t('dashboard.card.best_trade') || 'En İyi İşlem', text: bestText, cls: (bestTrade && bestTrade.pnl > 0) ? 'up' : '', sub: bestSub },
+        worst:  { label: t('dashboard.card.worst_trade') || 'En Kötü İşlem', text: worstText, cls: (worstTrade && worstTrade.pnl < 0) ? 'down' : '', sub: worstSub },
+        exp:    { label: t('dashboard.card.expectancy') || 'Beklenti (Exp.)', text: expText, cls: expVal === null ? '' : (expVal >= 0 ? 'up' : 'down'), sub: t('dashboard.card.expectancy_sub') || 'İşlem Başı Ort. K/Z' },
+        payoff: { label: t('dashboard.card.payoff_ratio') || 'Payoff Ratio', text: payoffText, cls: 'info', sub: avgSub }
+      };
+      propCardEl.innerHTML = window.WWPropCardV2 ? window.WWPropCardV2.renderStandard(stdCtx) : legacyStdHtml;
 
       var editBtn = document.getElementById('standard-edit-goal-btn');
       if (editBtn) {

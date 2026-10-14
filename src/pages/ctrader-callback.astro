@@ -8,9 +8,9 @@ import Layout from '../layouts/Layout.astro';
   <Fragment slot="head">
     <title>cTrader Bağlantısı – Wawe Journal</title>
     <link rel="stylesheet" href="/settings/css/settings.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline defer></script>
-    <script src="/config.js" is:inline defer></script>
-    <script src="/i18n.js" is:inline defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" is:inline></script>
+    <script src="/config.js" is:inline></script>
+    <script src="/i18n.js" is:inline></script>
 
     <style>
       .callback-container {
@@ -208,16 +208,20 @@ import Layout from '../layouts/Layout.astro';
       descEl.textContent = 'cTrader ile hesap bilgileri alınıyor...';
 
       try {
-        var redirectUri = window.location.origin + window.location.pathname;
+        var supabaseUrl = window.SUPABASE_URL || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || 'https://odasapyhtdopbnlfhwde.supabase.co';
+        var supabaseAnonKey = window.SUPABASE_ANON_KEY || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+        var redirectUri = (window.CTRADER_CONFIG && typeof window.CTRADER_CONFIG.getRedirectUri === 'function')
+          ? window.CTRADER_CONFIG.getRedirectUri()
+          : (window.location.origin + window.location.pathname);
         var token = session.access_token;
 
         // Edge Function çağrısı: ctrader-connect
-        var response = await fetch((window.SUPABASE_URL || '') + '/functions/v1/ctrader-connect', {
+        var response = await fetch(supabaseUrl + '/functions/v1/ctrader-connect', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + token,
-            'apikey': window.SUPABASE_ANON_KEY || ''
+            'apikey': supabaseAnonKey
           },
           body: JSON.stringify({
             code: code,
@@ -228,7 +232,11 @@ import Layout from '../layouts/Layout.astro';
         var result = await response.json();
 
         if (!response.ok || !result.success) {
-          showError(result.error || 'cTrader hesabı bağlanırken bir hata oluştu.');
+          var errMsg = result.error || 'cTrader hesabı bağlanırken bir hata oluştu.';
+          if (/yetkilendirme kodu|invalid_grant|expired|grant_type/i.test(errMsg)) {
+            errMsg += ' (cTrader güvenlik kodları tek kullanımlıktır. Lütfen Hesaplar sayfasından yeniden bağlanmayı deneyin.)';
+          }
+          showError(errMsg);
           return;
         }
 
@@ -246,13 +254,15 @@ import Layout from '../layouts/Layout.astro';
               p_journal_id: targetJournalId
             });
 
+            localStorage.setItem('ww_active_journal_id', targetJournalId);
+
             // İlk senkronu otomatik başlat
-            await fetch((window.SUPABASE_URL || '') + '/functions/v1/ctrader-sync', {
+            await fetch(supabaseUrl + '/functions/v1/ctrader-sync', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token,
-                'apikey': window.SUPABASE_ANON_KEY || ''
+                'apikey': supabaseAnonKey
               },
               body: JSON.stringify({
                 ctidTraderAccountId: selectedAcc.ctid_trader_account_id,

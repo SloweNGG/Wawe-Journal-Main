@@ -1,0 +1,309 @@
+/* ============================================================
+   WAWE JOURNAL — shared button style (all pages)
+   Action buttons are black with a purple outline.
+   Size, padding, radius and font stay with each page's own CSS.
+   Not touched on purpose: danger / sell / delete, amber warning badges,
+   Google sign-in and icon-only buttons (close, arrows, edit).
+   Loaded from src/components/BaseHead.astro, after the page base CSS.
+   ============================================================ */
+
+.btn-primary,
+.btn-ghost,
+.btn-save,
+.btn-save-ot,
+.btn-modal-confirm,
+.btn-modal-cancel,
+.btn-export,
+.export-btn,
+.btn-new-journal,
+.journal-btn-save,
+.journal-btn-cancel,
+.goal-btn-save,
+.goal-btn-cancel,
+.goal-preset-chip,
+.custom-range-apply,
+.prop-card-btn-advance,
+.ww-up-btn-primary,
+.ww-up-btn-secondary,
+.create-strategy-btn,
+.bug-submit-btn,
+.partner-cta-btn,
+.callback-btn,
+.save-btn,
+.btn-plan,
+.btn-solid,
+.btn-line,
+.btn-accent,
+#standard-edit-goal-btn,
+#cancel-advance-modal,
+#confirm-advance-modal {
+  background: #000 !important;
+  background-image: none !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #7c3aed !important;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover,
+.btn-ghost:hover,
+.btn-save:hover,
+.btn-save-ot:hover,
+.btn-modal-confirm:hover,
+.btn-modal-cancel:hover,
+.btn-export:hover,
+.export-btn:hover,
+.btn-new-journal:hover,
+.journal-btn-save:hover,
+.journal-btn-cancel:hover,
+.goal-btn-save:hover,
+.goal-btn-cancel:hover,
+.goal-preset-chip:hover,
+.custom-range-apply:hover,
+.prop-card-btn-advance:hover,
+.ww-up-btn-primary:hover,
+.ww-up-btn-secondary:hover,
+.create-strategy-btn:hover,
+.bug-submit-btn:hover,
+.partner-cta-btn:hover,
+.callback-btn:hover,
+.save-btn:hover,
+.btn-plan:hover,
+.btn-solid:hover,
+.btn-line:hover,
+.btn-accent:hover,
+#standard-edit-goal-btn:hover,
+#cancel-advance-modal:hover,
+#confirm-advance-modal:hover {
+  background: #0d0618 !important;
+  border-color: #a78bfa !important;
+  color: #fff !important;
+}
+
+.btn-primary:disabled,
+.btn-save:disabled,
+.btn-modal-confirm:disabled,
+.journal-btn-save:disabled,
+.goal-btn-save:disabled,
+.bug-submit-btn:disabled,
+.save-btn:disabled {
+  border-color: rgba(124, 58, 237, 0.4) !important;
+  color: #8d8d96 !important;
+}
+
+/* selected states */
+.goal-preset-chip.active {
+  background: #0d0618 !important;
+  border-color: #a78bfa !important;
+  color: #c4b5fd !important;
+}
+.date-filter-option.active {
+  background: #000 !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px #7c3aed;
+}
+
+/* ------------------------------------------------------------
+   Light theme: white fill, purple outline, dark text.
+   The theme class sits on <html> (see BaseHead), so these win by
+   specificity over the dark rules above.
+   ------------------------------------------------------------ */
+.light-theme .btn-primary,
+.light-theme .btn-ghost,
+.light-theme .btn-save,
+.light-theme .btn-save-ot,
+.light-theme .btn-modal-confirm,
+.light-theme .btn-modal-cancel,
+.light-theme .btn-export,
+.light-theme .export-btn,
+.light-theme .btn-new-journal,
+.light-theme .journal-btn-save,
+.light-theme .journal-btn-cancel,
+.light-theme .goal-btn-save,
+.light-theme .goal-btn-cancel,
+.light-theme .goal-preset-chip,
+.light-theme .custom-range-apply,
+.light-theme .prop-card-btn-advance,
+.light-theme .ww-up-btn-primary,
+.light-theme .ww-up-btn-secondary,
+.light-theme .create-strategy-btn,
+.light-theme .bug-submit-btn,
+.light-theme .partner-cta-btn,
+.light-theme .callback-btn,
+.light-theme .save-btn,
+.light-theme .btn-plan,
+.light-theme .btn-solid,
+.light-theme .btn-line,
+.light-theme .btn-accent,
+.light-theme #standard-edit-goal-btn,
+.light-theme #cancel-advance-modal,
+.light-theme #confirm-advance-modal {
+  background: #fff !important;
+  background-image: none !important;
+  color: #1a1033 !important;
+  border: 1px solid #7c3aed !important;
+  box-shadow: none !important;
+}
+
+.light-theme .btn-primary:hover,
+.light-theme .btn-ghost:hover,
+.light-theme .btn-save:hover,
+.light-theme .btn-save-ot:hover,
+.light-theme .btn-modal-confirm:hover,
+.light-theme .btn-modal-cancel:hover,
+.light-theme .btn-export:hover,
+.light-theme .export-btn:hover,
+.light-theme .btn-new-journal:hover,
+.light-theme .journal-btn-save:hover,
+.light-theme .journal-btn-cancel:hover,
+.light-theme .goal-btn-save:hover,
+.light-theme .goal-btn-cancel:hover,
+.light-theme .goal-preset-chip:hover,
+.light-theme .custom-range-apply:hover,
+.light-theme .prop-card-btn-advance:hover,
+.light-theme .ww-up-btn-primary:hover,
+.light-theme .ww-up-btn-secondary:hover,
+.light-theme .create-strategy-btn:hover,
+.light-theme .bug-submit-btn:hover,
+.light-theme .partner-cta-btn:hover,
+.light-theme .callback-btn:hover,
+.light-theme .save-btn:hover,
+.light-theme .btn-plan:hover,
+.light-theme .btn-solid:hover,
+.light-theme .btn-line:hover,
+.light-theme .btn-accent:hover,
+.light-theme #standard-edit-goal-btn:hover,
+.light-theme #cancel-advance-modal:hover,
+.light-theme #confirm-advance-modal:hover {
+  background: #f5f0ff !important;
+  border-color: #6d28d9 !important;
+  color: #4c1d95 !important;
+}
+
+.light-theme .btn-primary:disabled,
+.light-theme .btn-save:disabled,
+.light-theme .btn-modal-confirm:disabled,
+.light-theme .journal-btn-save:disabled,
+.light-theme .goal-btn-save:disabled,
+.light-theme .bug-submit-btn:disabled,
+.light-theme .save-btn:disabled {
+  border-color: rgba(124, 58, 237, 0.35) !important;
+  color: #9ca3af !important;
+}
+
+.light-theme .goal-preset-chip.active {
+  background: #f5f0ff !important;
+  border-color: #6d28d9 !important;
+  color: #5b21b6 !important;
+}
+.light-theme .date-filter-option.active {
+  background: #fff !important;
+  color: #1a1033 !important;
+  box-shadow: inset 0 0 0 1px #7c3aed;
+}
+
+/* account card sync button (journals page) */
+.btn-card-sync { background: #000 !important; color: #f4f4f5 !important; border: 1px solid #7c3aed !important; box-shadow: none !important; }
+.btn-card-sync:hover { background: #0d0618 !important; border-color: #a78bfa !important; color: #fff !important; }
+.light-theme .btn-card-sync { background: #fff !important; color: #1a1033 !important; border-color: #7c3aed !important; }
+.light-theme .btn-card-sync:hover { background: #f5f0ff !important; border-color: #6d28d9 !important; color: #4c1d95 !important; }
+
+
+/* ------------------------------------------------------------
+   One shape for every action button: a pill.
+   Colors above, shape here, so a page can no longer drift to 8px corners.
+   ------------------------------------------------------------ */
+#cancel-advance-modal,
+#confirm-advance-modal,
+#standard-edit-goal-btn,
+.btn-accent,
+.btn-add-strategy,
+.btn-export,
+.btn-ghost,
+.btn-line,
+.btn-modal-cancel,
+.btn-modal-confirm,
+.btn-new-journal,
+.btn-plan,
+.btn-primary,
+.btn-save,
+.btn-save-ot,
+.btn-solid,
+.bug-submit-btn,
+.callback-btn,
+.create-strategy-btn,
+.custom-range-apply,
+.export-btn,
+.goal-btn-cancel,
+.goal-btn-save,
+.goal-preset-chip,
+.journal-btn-cancel,
+.journal-btn-save,
+.partner-cta-btn,
+.prop-card-btn-advance,
+.prop-header-btn.advance,
+.qa-comm-btn-save,
+.save-btn,
+.wj-btn-primary,
+.ww-up-btn-primary,
+.ww-up-btn-secondary {
+  border-radius: 999px !important;
+}
+
+/* strategies, onboarding, prop header and quick-add save join the shared style */
+.btn-add-strategy,
+.wj-btn-primary,
+.prop-header-btn.advance,
+.qa-comm-btn-save {
+  background: #000 !important;
+  background-image: none !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #7c3aed !important;
+  box-shadow: none !important;
+  transform: none;
+}
+.btn-add-strategy:hover,
+.wj-btn-primary:hover,
+.prop-header-btn.advance:hover,
+.qa-comm-btn-save:hover {
+  background: #0d0618 !important;
+  border-color: #a78bfa !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  transform: none;
+}
+.light-theme .btn-add-strategy,
+.light-theme .wj-btn-primary,
+.light-theme .prop-header-btn.advance,
+.light-theme .qa-comm-btn-save {
+  background: #fff !important;
+  color: #1a1033 !important;
+  border-color: #7c3aed !important;
+}
+.light-theme .btn-add-strategy:hover,
+.light-theme .wj-btn-primary:hover,
+.light-theme .prop-header-btn.advance:hover,
+.light-theme .qa-comm-btn-save:hover {
+  background: #f5f0ff !important;
+  border-color: #6d28d9 !important;
+  color: #4c1d95 !important;
+}
+
+/* selected tab / filter / page: black fill with a purple ring, never a gradient */
+.time-filter-btn.active,
+.page-btn.active,
+.cal-nav-btn.active,
+.admin-tab-btn.active {
+  background: #000 !important;
+  background-image: none !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px #7c3aed !important;
+  border-radius: 999px !important;
+}
+.light-theme .time-filter-btn.active,
+.light-theme .page-btn.active,
+.light-theme .cal-nav-btn.active,
+.light-theme .admin-tab-btn.active {
+  background: #fff !important;
+  color: #1a1033 !important;
+  box-shadow: inset 0 0 0 1px #7c3aed !important;
+}

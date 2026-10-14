@@ -349,30 +349,41 @@ import Layout from '../layouts/Layout.astro';
       var wrap = document.getElementById('trades-ctrader-sync-wrap');
       var btn = document.getElementById('btn-trades-ctrader-sync');
       var text = document.getElementById('trades-ctrader-sync-text');
-      if (!wrap || !btn || !window.sb || typeof window.sb.rpc !== 'function') return;
+      if (!wrap || !btn) return;
 
-      try {
-        var activeJournalId = window.journal?.getActiveJournalId?.() || localStorage.getItem('ww_active_journal');
-        if (!activeJournalId) return;
-
-        var res = await window.sb.rpc('get_ctrader_status');
-        var accounts = res?.data?.accounts || [];
-        var matched = accounts.find(function(a) { return a.journal_id === activeJournalId; });
-
-        if (matched) {
-          wrap.style.display = 'block';
-          if (text) {
-            text.textContent = 'cTrader Senkronla (' + (matched.is_live ? 'Live' : 'Demo') + ')';
+      async function updateTradesCtraderButton() {
+        if (!window.sb || typeof window.sb.rpc !== 'function') return;
+        try {
+          var activeJournalId = window.journal?.getActiveJournalId?.() || localStorage.getItem('ww_active_journal_id');
+          if (!activeJournalId) {
+            wrap.style.display = 'none';
+            return;
           }
-          btn.onclick = function(e) {
-            if (window.wwSyncCtrader) {
-              window.wwSyncCtrader(e, matched.ctid_trader_account_id, activeJournalId, btn);
+
+          var res = await window.sb.rpc('get_ctrader_status');
+          var accounts = res?.data?.accounts || [];
+          var matched = accounts.find(function(a) { return a.journal_id === activeJournalId; });
+
+          if (matched) {
+            wrap.style.display = 'block';
+            if (text) {
+              text.textContent = 'cTrader Senkronla (' + (matched.is_live ? 'Live' : 'Demo') + ')';
             }
-          };
+            btn.onclick = function(e) {
+              if (window.wwSyncCtrader) {
+                window.wwSyncCtrader(e, matched.ctid_trader_account_id, activeJournalId, btn);
+              }
+            };
+          } else {
+            wrap.style.display = 'none';
+          }
+        } catch (e) {
+          console.warn('Trades cTrader button check error:', e);
         }
-      } catch (e) {
-        console.warn('Trades cTrader button check error:', e);
       }
+
+      updateTradesCtraderButton();
+      document.addEventListener('journal-changed', updateTradesCtraderButton);
     });
   </script>
   

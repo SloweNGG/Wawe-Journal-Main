@@ -3138,3 +3138,180 @@ body.light-theme .noti-stat-chip.limit-danger {
 .ctrader-nav-sync-btn.spinning svg {
   animation: ctrader-dot-spin 0.8s linear infinite;
 }
+
+/* ============================================================
+   ACCOUNTS DROPDOWN v2
+   Roomier rows, clear active state, quiet scrollbar, tidy footer.
+   Rendered by navbar.js (#journal-dropdown). Overrides the rules above.
+   ============================================================ */
+.journal-dropdown {
+  min-width: 320px;
+  max-height: 470px;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(12, 12, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 28px 70px -14px rgba(0, 0, 0, 0.8),
+              0 0 0 1px rgba(124, 58, 237, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.light-theme .journal-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 28px 70px -16px rgba(15, 23, 42, 0.22),
+              0 0 0 1px rgba(124, 58, 237, 0.12);
+}
+
+.journal-dropdown .journal-menu-header {
+  padding: 10px 12px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.light-theme .journal-dropdown .journal-menu-header { border-bottom-color: rgba(15, 23, 42, 0.07); }
+
+.journal-dropdown .journal-menu-title {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.journal-dropdown .journal-menu-count {
+  min-width: 22px;
+  padding: 2px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.16);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+}
+.light-theme .journal-dropdown .journal-menu-count {
+  color: #5b21b6;
+  background: #f5f0ff;
+  border-color: rgba(124, 58, 237, 0.35);
+}
+
+.journal-dropdown .journal-menu-list {
+  max-height: 300px;
+  gap: 4px;
+  padding: 4px 4px 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 58, 237, 0.45) transparent;
+}
+.journal-dropdown .journal-menu-list::-webkit-scrollbar { width: 6px; }
+.journal-dropdown .journal-menu-list::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.4);
+  border-radius: 99px;
+}
+.journal-dropdown .journal-menu-list::-webkit-scrollbar-thumb:hover { background: rgba(124, 58, 237, 0.7); }
+
+.journal-dropdown .journal-item {
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+}
+.journal-dropdown .journal-item:hover { background: rgba(255, 255, 255, 0.06); }
+.light-theme .journal-dropdown .journal-item:hover { background: rgba(15, 23, 42, 0.045); }
+
+.journal-dropdown .journal-item.active {
+  background: rgba(124, 58, 237, 0.14);
+  border-color: rgba(124, 58, 237, 0.55);
+}
+.light-theme .journal-dropdown .journal-item.active {
+  background: #f5f0ff;
+  border-color: rgba(124, 58, 237, 0.5);
+}
+
+.journal-dropdown .journal-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+.journal-dropdown .journal-icon-wrap svg { width: 17px; height: 17px; }
+.journal-dropdown .nav-dropdown-prop-icon { width: 20px; height: 20px; }
+
+.journal-dropdown .journal-info { gap: 3px; }
+.journal-dropdown .journal-info .journal-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 6px;
+  max-width: none;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.journal-dropdown .journal-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+.journal-dropdown .journal-count-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.journal-dropdown .journal-count-label { font-size: 11.5px; }
+
+/* check mark becomes a small filled purple badge */
+.journal-dropdown .journal-check {
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: #fff;
+  stroke-width: 3;
+}
+
+.journal-dropdown .journal-menu-footer {
+  margin-top: 6px;
+  padding: 8px 4px 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.light-theme .journal-dropdown .journal-menu-footer { border-top-color: rgba(15, 23, 42, 0.07); }
+
+/* footer link reads as a quiet outlined button, same language as the shared buttons */
+.journal-dropdown .journal-manage-link {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 58, 237, 0.55);
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.journal-dropdown .journal-manage-link:hover {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: #a78bfa;
+  color: #fff;
+}
+.light-theme .journal-dropdown .journal-manage-link:hover {
+  background: #f5f0ff;
+  border-color: #6d28d9;
+  color: #4c1d95;
+}
+
+/* ============================================================
+   NAVBAR DROPDOWNS: one shared size
+   Premium menu, avatar menu and accounts menu use the same width,
+   radius and padding. The notification panel (bell) stays wider on
+   purpose because of its tab row.
+   ============================================================ */
+.nav-dropdown-menu.premium-menu-glass,
+.dropdown-menu,
+.journal-dropdown {
+  box-sizing: border-box;
+  width: 252px;
+  min-width: 252px;
+  max-width: calc(100vw - 20px);
+  padding: 8px;
+  border-radius: 20px;
+}

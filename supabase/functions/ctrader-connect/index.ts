@@ -21,6 +21,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:4173',
+  'http://localhost:*',
+  'http://127.0.0.1:*',
 ];
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
@@ -36,7 +38,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : (ALLOWED_ORIGINS[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
     'X-Content-Type-Options': 'nosniff',

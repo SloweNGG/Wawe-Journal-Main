@@ -4,7 +4,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" bodyClass="journals-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/journals/css/journals.css?v=1791381600" />
+  <link rel="stylesheet" href="/interface/journals/css/journals.css?v=1791381603" />
   <title data-i18n="journal.title">Hesaplarım – Wawe Journal</title>
     
 
@@ -361,8 +361,8 @@ import Layout from '../layouts/Layout.astro';
           <div class="broker-choice-grid">
             <!-- Seçenek A: Manuel / Bağlama -->
             <div class="broker-choice-card active" id="choice-none" onclick="selectBrokerChoice('none')">
-              <div class="broker-choice-icon" style="background:rgba(255,255,255,0.05);color:var(--muted);">
-                <i data-lucide="file-text"></i>
+              <div class="broker-choice-icon">
+                <img class="broker-logo" src="/images/platforms/excel.svg" alt="CSV / Excel" width="28" height="28" />
               </div>
               <div class="broker-choice-info">
                 <div class="broker-choice-title">Şimdilik Broker Bağlama</div>
@@ -373,13 +373,13 @@ import Layout from '../layouts/Layout.astro';
 
             <!-- Seçenek B: cTrader -->
             <div class="broker-choice-card" id="choice-ctrader" onclick="selectBrokerChoice('ctrader')">
-              <div class="broker-choice-icon" style="background:linear-gradient(135deg,#8B5CF6,#06B6D4);color:#fff;">
-                cT
+              <div class="broker-choice-icon">
+                <img class="broker-logo" src="/images/platforms/ctrader_icon.png" alt="cTrader" width="28" height="28" />
               </div>
               <div class="broker-choice-info">
                 <div class="broker-choice-title" style="display:flex;align-items:center;gap:6px;">
                   <span>cTrader</span>
-                  <span style="font-size:0.7rem;padding:2px 6px;border-radius:10px;background:rgba(34,197,94,0.15);color:#4ade80;font-weight:600;">Otomatik Senkron</span>
+                  <span class="broker-choice-tag">Otomatik Senkron</span>
                 </div>
                 <div class="broker-choice-desc">Geçmiş kapanmış işlemlerinizi tek tıkla hesabınıza senkronize edin.</div>
               </div>
@@ -388,14 +388,15 @@ import Layout from '../layouts/Layout.astro';
 
             <!-- Seçenek C: MetaTrader (Yakında) -->
             <div class="broker-choice-card disabled" id="choice-mt">
-              <div class="broker-choice-icon" style="background:rgba(255,255,255,0.03);color:var(--muted);">
-                MT
+              <div class="broker-choice-icon pair">
+                <img class="broker-logo" src="/images/platforms/mt5.png" alt="MetaTrader 5" width="24" height="24" />
+                <img class="broker-logo" src="/images/platforms/mt4.png" alt="MetaTrader 4" width="24" height="24" />
               </div>
               <div class="broker-choice-info">
                 <div class="broker-choice-title" style="color:var(--muted);">MetaTrader 4 / 5</div>
                 <div class="broker-choice-desc">Çok yakında desteklenecek.</div>
               </div>
-              <span style="font-size:0.7rem;color:var(--muted);font-weight:600;">Yakında</span>
+              <span class="broker-choice-soon">Yakında</span>
             </div>
           </div>
 
@@ -1032,17 +1033,30 @@ import Layout from '../layouts/Layout.astro';
 
   function populateWizardCtraderAccounts(journalId) {
     var accounts = window._allCtraderAccounts || [];
-    var unlinked = accounts.filter(function(a) { return !a.journal_id || a.journal_id === journalId; });
+    var journals = window._allJournalsList || [];
     var select = document.getElementById('wizard-existing-ctrader-select');
     var wrap = document.getElementById('wizard-existing-accounts-wrap');
     if (!select || !wrap) return;
 
     select.innerHTML = '';
-    if (unlinked.length > 0) {
-      unlinked.forEach(function(a) {
+    if (accounts.length > 0) {
+      accounts.forEach(function(a) {
         var opt = document.createElement('option');
         opt.value = a.id;
-        opt.textContent = (a.is_live ? '[LIVE] ' : '[DEMO] ') + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+        var tag = a.is_live ? '[LIVE] ' : '[DEMO] ';
+        var label = tag + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+        if (a.journal_id) {
+          if (a.journal_id === journalId) {
+            label += ' (Bu deftere bağlı)';
+            opt.selected = true;
+          } else {
+            var jMatch = journals.find(function(x) { return x.id === a.journal_id; });
+            label += ' (' + (jMatch?.name || 'Başka defter') + ' defterine bağlı)';
+          }
+        } else {
+          label += ' (Boşta)';
+        }
+        opt.textContent = label;
         select.appendChild(opt);
       });
       var newOpt = document.createElement('option');
@@ -1491,14 +1505,14 @@ import Layout from '../layouts/Layout.astro';
         var typeTxt = ctAcc.is_live ? 'Live' : 'Demo';
         var loginTxt = ctAcc.trader_login || ctAcc.ctid_trader_account_id;
         ctBarHtml = `
-          <div class="journal-card-ctrader-bar" style="margin-top:0.75rem;padding:0.45rem 0.65rem;border-radius:10px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.18);display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:6px;font-size:0.76rem;">
-              <span class="ctrader-status-dot ${dotCls}"></span>
-              <span style="font-weight:600;color:var(--text);">cTrader ${typeTxt}</span>
-              <span style="color:var(--muted);font-size:0.7rem;">(#${loginTxt})</span>
+          <div class="journal-card-ctrader-bar">
+            <img class="ct-logo" src="/images/platforms/ctrader_icon.png" alt="cTrader" width="22" height="22" />
+            <div class="ct-info">
+              <span class="ct-name">cTrader <em class="ct-env ${dotCls}">${typeTxt}</em></span>
+              <span class="ct-login">#${loginTxt}</span>
             </div>
-            <button class="btn-card-sync" type="button" style="background:transparent;border:none;color:#06B6D4;font-weight:600;cursor:pointer;font-size:0.72rem;display:flex;align-items:center;gap:4px;" onclick="window.wwSyncCtrader(event, '${ctAcc.ctid_trader_account_id}', '${j.id}', this)" title="Son senkron: ${ctAcc.last_sync_at ? new Date(ctAcc.last_sync_at).toLocaleTimeString() : 'Henüz yapılmadı'}">
-              <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+            <button class="btn-card-sync" type="button" onclick="window.wwSyncCtrader(event, '${ctAcc.ctid_trader_account_id}', '${j.id}', this)" title="Son senkron: ${ctAcc.last_sync_at ? new Date(ctAcc.last_sync_at).toLocaleTimeString() : 'Henüz yapılmadı'}">
+              <i data-lucide="refresh-cw"></i>
               <span>Senkronla</span>
             </button>
           </div>
@@ -1534,7 +1548,7 @@ import Layout from '../layouts/Layout.astro';
         ${propBadge}
         
         <div class="journal-card-stats" style="margin-top:auto;padding-top:0.75rem;">
-          <span>${escapeHtml(tradesTxt)}</span>
+          <span class="journal-card-count">${escapeHtml(tradesTxt).replace(/\d+/, function (m) { return '<b>' + m + '</b>'; })}</span>
           <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
         </div>
 
@@ -1740,6 +1754,7 @@ import Layout from '../layouts/Layout.astro';
         });
       }
       window._allCtraderAccounts = allCtraderAccounts;
+      window._allJournalsList = journalsData;
 
       // Izgarayı taze verilerle güncelle
       drawJournalsGrid(journalsData, propAccountsMap, ctraderAccountsMap, isPremium, profile);
@@ -2036,14 +2051,27 @@ import Layout from '../layouts/Layout.astro';
       var existingWrap = document.getElementById('existing-ctrader-wrap');
       var existingSelect = document.getElementById('existing-ctrader-select');
       var accounts = window._allCtraderAccounts || [];
-      var unlinkedAccounts = accounts.filter(function(a) { return !a.journal_id || a.journal_id === journalId; });
+      var journals = window._allJournalsList || [];
 
-      if (unlinkedAccounts.length > 0 && existingSelect && existingWrap) {
+      if (accounts.length > 0 && existingSelect && existingWrap) {
         existingSelect.innerHTML = '';
-        unlinkedAccounts.forEach(function(a) {
+        accounts.forEach(function(a) {
           var opt = document.createElement('option');
           opt.value = a.id;
-          opt.textContent = (a.is_live ? '[LIVE] ' : '[DEMO] ') + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+          var tag = a.is_live ? '[LIVE] ' : '[DEMO] ';
+          var label = tag + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+          if (a.journal_id) {
+            if (a.journal_id === journalId) {
+              label += ' (Bu deftere bağlı)';
+              opt.selected = true;
+            } else {
+              var jMatch = journals.find(function(x) { return x.id === a.journal_id; });
+              label += ' (' + (jMatch?.name || 'Başka defter') + ' defterine bağlı)';
+            }
+          } else {
+            label += ' (Boşta)';
+          }
+          opt.textContent = label;
           existingSelect.appendChild(opt);
         });
         existingWrap.style.display = 'block';

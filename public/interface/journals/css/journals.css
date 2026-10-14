@@ -1525,3 +1525,222 @@ body.light-theme .journal-prop-inactive-tip {
   border-radius: 50%;
   background: #fff;
 }
+/* ============================================================
+   ACCOUNT CARDS v2, BROKER STEP, PURPLE STEPPER
+   Appended last so it refines the rules above without touching them.
+   ============================================================ */
+
+/* ---- cards ---- */
+.journals-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.1rem; }
+
+.journal-card {
+  padding: 1.25rem;
+  border-radius: 18px;
+  min-height: 190px;
+  gap: 0;
+}
+.journal-card::before { display: none; }          /* the thick colored edge is gone */
+.journal-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 14px 34px -14px color-mix(in srgb, var(--accent, #8b5cf6) 45%, transparent);
+}
+
+/* the icon tile carries the account color instead */
+.journal-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--journal-color, var(--accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--journal-color, var(--accent)) 32%, transparent);
+}
+.journal-icon-wrap svg, .journal-icon-wrap i { width: 21px; height: 21px; }
+.journal-icon-wrap.has-prop-logo { width: 44px !important; height: 44px !important; border-radius: 13px !important; }
+
+.journal-card-top { margin-bottom: 1rem; }
+.journal-card-name {
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.3rem;
+}
+.journal-card-desc { font-size: 0.8rem; margin-bottom: 0.6rem; min-height: 0; }
+
+.journal-card-badge {
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #8b5cf6) 38%, transparent);
+}
+
+.journal-card-prop-badge { margin-top: 0.15rem; margin-bottom: 0.25rem; box-shadow: none; }
+
+.journal-card-stats {
+  margin-top: auto;
+  padding-top: 0.85rem !important;
+  align-items: baseline;
+}
+.journal-card-count { font-size: 0.8rem; color: var(--muted); }
+.journal-card-count b {
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-right: 2px;
+}
+.journal-card-pnl {
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- cTrader row on the card ---- */
+.journal-card-ctrader-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.6rem 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 7%, transparent);
+  border: 1px solid var(--border);
+}
+.journal-card-ctrader-bar .ct-logo { width: 22px; height: 22px; border-radius: 6px; object-fit: contain; flex-shrink: 0; }
+.journal-card-ctrader-bar .ct-info { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.25; }
+.journal-card-ctrader-bar .ct-name { font-size: 0.8rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.journal-card-ctrader-bar .ct-env {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: var(--accent2, #c084fc);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 14%, transparent);
+}
+.journal-card-ctrader-bar .ct-env.live { color: #4ade80; background: rgba(34, 197, 94, 0.14); }
+.journal-card-ctrader-bar .ct-login {
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* sync button: a real button, with feedback while it runs */
+.btn-card-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+.btn-card-sync svg, .btn-card-sync i { width: 13px; height: 13px; }
+.btn-card-sync.spinning { opacity: 0.8; pointer-events: none; }
+.btn-card-sync.spinning svg, .btn-card-sync.spinning i { animation: card-sync-spin 0.9s linear infinite; }
+@keyframes card-sync-spin { to { transform: rotate(360deg); } }
+
+/* ---- broker step ---- */
+.broker-choice-card { padding: 1rem 1.15rem; border-radius: 14px; }
+.broker-choice-card.active {
+  border-color: var(--accent, #8b5cf6);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 9%, transparent);
+  box-shadow: 0 0 0 1px var(--accent, #8b5cf6), 0 6px 20px -8px color-mix(in srgb, var(--accent, #8b5cf6) 50%, transparent);
+}
+.broker-choice-card.disabled { opacity: 0.6; }
+.broker-choice-card.disabled .broker-logo { filter: grayscale(1); opacity: 0.7; }
+
+.broker-choice-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  gap: 0;
+}
+.broker-choice-icon .broker-logo { width: 28px; height: 28px; object-fit: contain; display: block; }
+.broker-choice-icon.pair .broker-logo { width: 22px; height: 22px; }
+.broker-choice-icon.pair .broker-logo + .broker-logo { margin-left: -6px; }
+
+.broker-choice-tag {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.14);
+}
+.broker-choice-soon { font-size: 0.7rem; font-weight: 600; color: var(--muted); }
+.broker-choice-radio { border-color: var(--border2, var(--border)); }
+.broker-choice-card.active .broker-choice-radio { border-color: var(--accent, #8b5cf6); background: var(--accent, #8b5cf6); }
+
+/* ---- stepper: purple end to end ---- */
+.wizard-step-item .step-num {
+  background: transparent;
+  border: 1.5px solid var(--border2, var(--border));
+  color: var(--muted);
+}
+.wizard-step-item.active .step-num {
+  background: var(--accent, #8b5cf6);
+  border-color: var(--accent, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #8b5cf6) 28%, transparent);
+}
+.wizard-step-item.completed .step-num {
+  background: var(--accent, #8b5cf6);
+  border-color: var(--accent, #8b5cf6);
+  color: #fff;
+  font-size: 0;                      /* the number gives way to a check mark */
+}
+.wizard-step-item.completed .step-num::before { content: '\2713'; font-size: 0.8rem; font-weight: 800; }
+.wizard-step-item.completed { opacity: 1; }
+.wizard-step-line { height: 2px; border-radius: 2px; }
+.wizard-step-line.active { background: var(--accent, #8b5cf6); }
+
+/* ---- light theme fixes ---- */
+.light-theme .journal-wizard-steps { background: var(--surface2); }
+.light-theme .journal-card-prop-badge {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.light-theme .journal-card-prop-badge .prop-badge-phase { color: var(--muted); }
+.light-theme .journal-card-prop-badge .prop-badge-sep { color: var(--border2, var(--border)); }
+
+/* ---- modal footer: same pill buttons as the rest of the app ---- */
+.journal-modal-footer .journal-btn-cancel,
+.journal-modal-footer .journal-btn-save,
+.journal-modal-footer .btn-new-journal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transform: none;
+}
+.journal-modal-footer .journal-btn-cancel svg,
+.journal-modal-footer .journal-btn-cancel i,
+.journal-modal-footer .btn-new-journal svg,
+.journal-modal-footer .btn-new-journal i { margin: 0 !important; width: 15px !important; height: 15px !important; }
+.journal-modal-footer .journal-btn-save:hover,
+.journal-modal-footer .btn-new-journal:hover:not(:disabled) { transform: none; box-shadow: none; }
+.journal-modal-footer .journal-btn-save:disabled,
+.journal-modal-footer .btn-new-journal:disabled { opacity: 0.5; cursor: not-allowed; }
