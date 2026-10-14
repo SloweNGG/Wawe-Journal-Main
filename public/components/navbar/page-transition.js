@@ -148,6 +148,16 @@
     });
   }
 
+  // Bulunduğumuz sayfa SPA router'ı yüklediyse (Layout spa={true}) ve hedef de
+  // SPA sayfasıysa, geçiş sayfa yenilenmeden yapılır (bkz. SpaRouter.astro)
+  function canSpaNavigate(url) {
+    try {
+      return !!(window.wwSpa && window.wwSpa.canHandle(url));
+    } catch (e) {
+      return false;
+    }
+  }
+
   function prefetchUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return;
 
@@ -162,6 +172,12 @@
     if (/\.[a-z0-9]+$/i.test(pathOf(url))) return;
     // Bulunduğumuz sayfayı hazırlamaya gerek yok
     if (pathOf(url) === window.location.pathname) return;
+
+    // SPA ile açılacaksa sadece HTML'i önceden çek (prerender burada işe yaramaz)
+    if (canSpaNavigate(url)) {
+      window.wwSpa.prefetch(url);
+      return;
+    }
 
     if (canPrerender(url)) {
       startPrerender(url);
@@ -268,13 +284,22 @@
         });
       } catch (e) {}
 
+      var targetUrl = normalizeUrl(targetHref);
+
+      // Sayfa yenilemeden geçiş: router önceki geçişi kendisi iptal eder,
+      // bu yüzden hızlı ardışık tıklamalarda kilitlemeye gerek yok
+      if (canSpaNavigate(targetUrl)) {
+        this.isTransitioning = false;
+        window.wwSpa.navigate(targetUrl);
+        return;
+      }
+
       var main = this.getMainElement();
       if (main) {
         main.classList.remove('page-enter');
         main.classList.add('page-exit');
       }
 
-      var targetUrl = normalizeUrl(targetHref);
       discardStalePrerender(targetUrl.split('#')[0]);
 
       setTimeout(function() {
@@ -559,9 +584,18 @@
 
         var href = a.getAttribute('href');
         var targetUrl = new URL(a.href, window.location.href);
+        var samePath = pathOf(normalizeUrl(href)) === pathOf(normalizeUrl(window.location.pathname));
+
+        // SPA geçişi sürerken bulunduğumuz sayfanın linkine tıklandıysa kullanıcı
+        // geçişten vazgeçmiştir: router'a gönder, bekleyen geçişi iptal etsin
+        if (samePath && spaNavTarget !== null && !targetUrl.hash && canSpaNavigate(href)) {
+          e.preventDefault();
+          PageTransition.exit(href);
+          return;
+        }
 
         // Zaten aynı sayfadaysak (veya sadece anchor ise) tarayıcıya bırak veya iptal et
-        if (targetUrl.pathname === window.location.pathname && (!targetUrl.search || targetUrl.search === window.location.search)) {
+        if (samePath && (!targetUrl.search || targetUrl.search === window.location.search)) {
           if (targetUrl.hash && targetUrl.hash.startsWith('#panel-')) {
             e.preventDefault();
             var pId = targetUrl.hash.replace('#', '');
@@ -590,6 +624,20 @@
   } else {
     PageTransition.init();
   }
+
+  // SPA geçişi takibi: en son istenen sayfa. Hızlı ardışık tıklamalarda atlanan
+  // ara geçişler de swap yapabildiği için ancak son hedefe varılınca bitmiş sayılır.
+  var spaNavTarget = null;
+  document.addEventListener('astro:before-preparation', function(e) {
+    spaNavTarget = e.to ? e.to.pathname : null;
+  });
+
+  // SPA geçişi: View Transitions API olmayan tarayıcılarda içerik giriş animasyonu
+  document.addEventListener('astro:after-swap', function() {
+    if (spaNavTarget === window.location.pathname) spaNavTarget = null;
+    PageTransition.isTransitioning = false;
+    if (!document.startViewTransition) PageTransition.enter();
+  });
 
   // Tarayıcı İleri/Geri (bfcache) desteği
   var fingerprintAtHide = null;

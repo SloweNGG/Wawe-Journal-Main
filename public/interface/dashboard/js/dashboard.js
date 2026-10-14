@@ -49,11 +49,18 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 (function () {
   'use strict';
 
+  // SPA: başka sayfaya geçilince PAGE.alive false olur, PAGE.on ile eklenen
+  // dinleyiciler kaldırılır ve PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro)
+  var PAGE = window.wwPage.current();
+
   // ============================================================
   // GÜVENLİ ELEMENT ALICI
   // ============================================================
 
   function safeEl(id) {
+    // Sayfadan çıkıldıysa geç gelen async işler yeni sayfanın DOM'una yazmasın
+    // (trades sayfasında da aynı id'ler var: stat-grid vb.)
+    if (!PAGE.alive) return null;
     var el = document.getElementById(id);
     if (!el) {
       wwLog.warn('⚠️ Element bulunamadı:', id);
@@ -370,7 +377,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
 
   // ⭐ storage event - başka sekmede tema değişirse
-  window.addEventListener('storage', function (e) {
+  PAGE.on(window, 'storage', function (e) {
     if (e.key === 'ww_theme') {
       wwLog.log('🔄 [Dashboard] Tema değişikliği algılandı (storage):', e.newValue);
       var isLight = e.newValue === 'light';
@@ -397,7 +404,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   });
 
   // ⭐ themeChanged event - settings.js bu event'i dispatch ediyor
-  document.addEventListener('themeChanged', function (e) {
+  PAGE.on(document, 'themeChanged', function (e) {
     wwLog.log('🔄 [Dashboard] themeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
@@ -415,7 +422,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   });
 
   // ⭐ chartsReset event - eski uyumluluk için
-  document.addEventListener('chartsReset', function (e) {
+  PAGE.on(document, 'chartsReset', function (e) {
     wwLog.log('🔄 chartsReset event alındı, grafikler yeniden render ediliyor...');
     resetChartsForTheme();
   });
@@ -2425,9 +2432,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       });
     }
 
-    if (!window._chartExpandEscBound) {
-      window._chartExpandEscBound = true;
-      document.addEventListener('keydown', function (e) {
+    if (!chartExpandEscBound) {
+      chartExpandEscBound = true;
+      PAGE.on(document, 'keydown', function (e) {
         if (e.key === 'Escape') closeChartExpansion();
       });
     }
@@ -2435,6 +2442,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   var currentExpandedType = null;
   var currentExpandedTitle = null;
+  var chartExpandEscBound = false;
 
   function openChartExpansion(type, title) {
     currentExpandedType = type;
@@ -3376,9 +3384,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           }
         });
         themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        PAGE.onLeave(function () { themeObserver.disconnect(); });
       } catch (e) { }
 
-      document.addEventListener('visibilitychange', function () {
+      PAGE.on(document, 'visibilitychange', function () {
         isPageVisible = !document.hidden;
         if (isPageVisible && allTrades.length > 0 && chartsInitialized) {
           var topGrid = safeEl('charts-top-grid');
@@ -3477,7 +3486,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       setupDonutCarousel();
 
       if (typeof i18n !== 'undefined' && i18n.onChange) {
-        i18n.onChange(function () {
+        PAGE.onI18nChange(function () {
           // ⭐ DEĞİŞTİ: i18n.apply() tamamlandıktan sonra refresh et
           requestAnimationFrame(function () {
             renderMiniCalendar();
@@ -3488,7 +3497,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       await refresh(true);
 
-      window.addEventListener('resize', function () {
+      PAGE.on(window, 'resize', function () {
         clearTimeout(window._chartExpandResizeTimer);
         window._chartExpandResizeTimer = setTimeout(function () {
           setupChartExpansion();
@@ -3519,7 +3528,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   var dashboardCheckAttempts = 0;
   var MAX_DASHBOARD_CHECK_ATTEMPTS = 160; // 160 * 50ms = 8 saniye max
 
+  // Sayfadan çıkarken grafikleri (ve kendi resize dinleyicilerini) yok et
+  PAGE.onLeave(function () {
+    clearTimeout(window._chartExpandResizeTimer);
+    destroyAllCharts();
+  });
+
   function startDashboard() {
+    if (!PAGE.alive) return;
     var isApexReady = typeof window.ApexCharts !== 'undefined';
     var isLwcReady = typeof window.LightweightCharts !== 'undefined';
     var isSbReady = typeof window.sb !== 'undefined';
@@ -3569,7 +3585,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
 
 })();
-document.addEventListener('journal-changed', (e) => {
+window.wwPage.current().on(document, 'journal-changed', (e) => {
   if (window.__wj_journal_transitioning) return;
   var newId = e && e.detail && e.detail.id;
   var currentId = localStorage.getItem('ww_active_journal_id');

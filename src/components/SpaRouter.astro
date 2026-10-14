@@ -1,0 +1,431 @@
+---
+// ============================================================
+// SPA ROUTER — Uygulama sayfaları arasında sayfa yenilemeden geçiş
+// ============================================================
+// Astro'nun router çekirdeğini (navigate, geçmiş, View Transitions animasyonu)
+// kullanır; ama Astro'nun <ViewTransitions /> bileşenini KULLANMAZ, çünkü o
+// sayfadaki tüm link tıklamalarını ve form submit'lerini otomatik yakalıyor.
+// Link tıklamalarını page-transition.js yönetir ve buraya (window.wwSpa) yollar.
+//
+// Astro'nun varsayılan swap'ı tüm <body>'yi değiştirir; bu sitedeki script'ler
+// body'ye toast, modal, FAB, onboarding gibi elemanlar ekleyip onlara bağlı
+// kaldığı için burada özel swap kullanılır:
+//   - Sadece #app-scroll-container içindeki sayfa içeriği değişir (navbar kalır)
+//   - <html>/<body> üzerindeki runtime sınıflar (tema, premium vs.) korunur
+//   - <head>'de sadece sunucudan gelen (data-ssr) elemanlar karşılaştırılır
+//   - Yeni sayfanın script'leri gerçek sayfa yüklemesindeki sırayla çalışır
+//     (parser-blocking → defer → DOMContentLoaded → load)
+//   - Çıkılan sayfanın kodu wwPage ile kapatılır (bkz. BaseHead.astro)
+// ============================================================
+---
+<meta name="astro-view-transitions-enabled" content="true" />
+<meta name="astro-view-transitions-fallback" content="swap" />
+<style is:inline>
+  .astro-route-announcer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+    width: 1px;
+    height: 1px;
+  }
+  /* Navbar geçiş animasyonuna girmesin, yerinde sabit dursun */
+  #navbar-container {
+    view-transition-name: ww-navbar;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 160ms;
+  }
+</style>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+
+  type Phase = 'loading' | 'interactive';
+  type QueuedListener = { target: EventTarget; type: string; fn: EventListenerOrEventListenerObject };
+
+  // Bir sayfa bu listeye, kendi script'leri SPA geçişine uyarlandıktan sonra
+  // eklenir (wwPage ile çıkışta temizlik + data-page-script ile yeniden başlatma)
+  // ve Layout'ta spa={true} verilir. Listede olmayan sayfalara tam yükleme yapılır.
+  const SPA_PATHS = ['/dashboard', '/trades'];
+  const HTML_CACHE_TTL_MS = 5 * 60 * 1000;
+
+  const w = window as any;
+
+  if (!w.wwSpa) {
+    const htmlCache = new Map<string, { at: number; html: Promise<string | null> }>();
+    const executedSrcs = new Set<string>();
+    for (const s of Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]'))) {
+      executedSrcs.add(s.src);
+    }
+
+    let pendingScripts: HTMLScriptElement[] | null = null;
+    let abortRun: (() => void) | null = null;
+
+    // ── Yardımcılar ────────────────────────────────────────────
+    function toUrl(href: string): URL | null {
+      try {
+        return new URL(href, location.href);
+      } catch {
+        return null;
+      }
+    }
+
+    function pathKey(url: URL): string {
+      return url.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '');
+    }
+
+    function cacheKey(url: URL): string {
+      return pathKey(url) + url.search;
+    }
+
+    // Onboarding sihirbazı/turu açıkken sayfa içeriğini değiştirmeyelim:
+    // tur, sayfadaki elemanları hedefliyor
+    function onboardingActive(): boolean {
+      return !!document.querySelector('#wj-onboarding-modal.active, #wj-tour-backdrop.active');
+    }
+
+    function canHandle(href: string): boolean {
+      const url = toUrl(href);
+      return !!url && url.origin === location.origin && SPA_PATHS.includes(pathKey(url)) && !onboardingActive();
+    }
+
+    function fetchHtml(url: string): Promise<string | null> {
+      return fetch(url, { credentials: 'same-origin' })
+        .then((res) => {
+          const type = (res.headers.get('content-type') || '').split(';')[0].trim();
+          return res.ok && type === 'text/html' ? res.text() : null;
+        })
+        .catch(() => null);
+    }
+
+    // Link üzerine gelince sayfanın HTML'ini önceden çek (HTML statik, kullanıcı verisi içermez)
+    function prefetch(href: string) {
+      const url = toUrl(href);
+      if (!url || !canHandle(href)) return;
+      const key = cacheKey(url);
+      const hit = htmlCache.get(key);
+      if (hit && Date.now() - hit.at < HTML_CACHE_TTL_MS) return;
+      const entry = { at: Date.now(), html: fetchHtml(key) };
+      htmlCache.set(key, entry);
+      entry.html.then((html) => {
+        if (!html && htmlCache.get(key) === entry) htmlCache.delete(key);
+      });
+    }
+
+    function preloadStyles(doc: Document): Promise<unknown> {
+      const pending: Promise<void>[] = [];
+      for (const el of Array.from(doc.querySelectorAll('head link[rel=stylesheet]'))) {
+        const href = el.getAttribute('href');
+        if (!href || document.querySelector(`link[rel=stylesheet][href="${CSS.escape(href)}"]`)) continue;
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'style';
+        link.href = href;
+        pending.push(
+          new Promise<void>((resolve) => {
+            link.onload = link.onerror = () => {
+              link.remove();
+              resolve();
+            };
+            document.head.append(link);
+          })
+        );
+      }
+      return Promise.all(pending);
+    }
+
+    // ── Head ───────────────────────────────────────────────────
+    function headKey(el: Element): string | null {
+      switch (el.localName) {
+        case 'title':
+          return null; // her zaman yenisiyle değiştir
+        case 'link':
+          return 'link|' + el.getAttribute('rel') + '|' + el.getAttribute('href');
+        case 'script':
+          return 'script|' + (el.getAttribute('src') || el.textContent);
+        case 'style':
+          return 'style|' + el.textContent;
+        case 'meta':
+          return (
+            'meta|' +
+            (el.getAttribute('name') || el.getAttribute('property') || el.getAttribute('http-equiv') || el.getAttribute('charset')) +
+            '|' +
+            el.getAttribute('content')
+          );
+        default:
+          return el.outerHTML;
+      }
+    }
+
+    // Sadece sunucudan gelen (data-ssr) elemanları karşılaştırır; tema stili,
+    // prefetch linki gibi runtime'da eklenenlere dokunmaz
+    function swapHead(newDoc: Document, newScripts: HTMLScriptElement[]) {
+      const oldSsr = Array.from(document.head.querySelectorAll(':scope > [data-ssr]'));
+      const oldByKey = new Map<string, Element[]>();
+      for (const el of oldSsr) {
+        const key = headKey(el);
+        if (key === null) continue;
+        const list = oldByKey.get(key) || [];
+        list.push(el);
+        oldByKey.set(key, list);
+      }
+
+      const kept = new Set<Element>();
+      const toInsert: Element[] = [];
+      for (const el of Array.from(newDoc.head.children)) {
+        const key = headKey(el);
+        const match = key === null ? undefined : (oldByKey.get(key) || []).find((o) => !kept.has(o));
+        if (match) {
+          kept.add(match);
+        } else {
+          toInsert.push(el);
+        }
+      }
+
+      for (const el of oldSsr) {
+        if (!kept.has(el)) el.remove();
+      }
+
+      // Yeni elemanları sunucu elemanlarının sonuna, runtime eklenenlerden önceye koy
+      const remaining = document.head.querySelectorAll(':scope > [data-ssr]');
+      let anchor: Element | null = remaining[remaining.length - 1] || null;
+      for (const el of toInsert) {
+        el.setAttribute('data-ssr', '');
+        if (anchor) anchor.after(el);
+        else document.head.prepend(el);
+        anchor = el;
+        if (el instanceof HTMLScriptElement) newScripts.push(el);
+      }
+    }
+
+    // ── Body ───────────────────────────────────────────────────
+    function swapBodyClasses(newDoc: Document) {
+      const body = document.body;
+      const oldClasses = (body.getAttribute('data-page-class') || '').split(/\s+/).filter(Boolean);
+      const newClasses = (newDoc.body.getAttribute('data-page-class') || '').split(/\s+/).filter(Boolean);
+      for (const c of oldClasses) body.classList.remove(c);
+      for (const c of newClasses) body.classList.add(c);
+      body.setAttribute('data-page-class', newClasses.join(' '));
+    }
+
+    function swapPage(newDoc: Document, oldContainer: HTMLElement, newContainer: HTMLElement) {
+      // Çıkılan sayfanın kodunu kapat (dinleyiciler, grafikler, global fonksiyonlar)
+      abortRun?.();
+      try {
+        w.wwPage?._next();
+      } catch (e) {
+        console.error('[spa] wwPage geçişi başarısız:', e);
+      }
+
+      // Önceden çalışmış veya runtime'da eklenmiş script'ler bir daha çalışmasın
+      for (const s of Array.from(document.scripts)) s.dataset.astroExec = '';
+
+      const newScripts: HTMLScriptElement[] = [];
+      swapHead(newDoc, newScripts);
+      swapBodyClasses(newDoc);
+
+      for (const child of Array.from(oldContainer.children)) {
+        if (child.id !== 'navbar-container') child.remove();
+      }
+      for (const child of Array.from(newContainer.children)) {
+        if (child.id === 'navbar-container') continue;
+        oldContainer.append(child);
+        if (child instanceof HTMLScriptElement) newScripts.push(child);
+        else newScripts.push(...Array.from(child.querySelectorAll('script')));
+      }
+      oldContainer.scrollTop = 0;
+
+      // Astro'nun kendi script çalıştırıcısı bunlara dokunmasın; sırayla biz çalıştıracağız
+      for (const s of newScripts) s.dataset.astroExec = '';
+      pendingScripts = newScripts;
+
+      document.querySelectorAll('.astro-route-announcer').forEach((el) => el.remove());
+
+      // İlk karede çevrilmiş metin ve ikonlar görünsün
+      try {
+        w.i18n?.apply?.();
+      } catch {}
+      try {
+        w.lucide?.createIcons?.();
+      } catch {}
+    }
+
+    // ── Script çalıştırma ──────────────────────────────────────
+    function shouldRun(s: HTMLScriptElement): boolean {
+      const type = s.getAttribute('type');
+      if (type && type !== 'module' && type !== 'text/javascript') return false;
+      // Ortak kütüphaneler (supabase, i18n, quick-add...) sadece bir kez çalışır;
+      // sayfa script'leri (data-page-script) sayfaya her girişte baştan çalışır
+      if (s.src) return s.hasAttribute('data-page-script') || !executedSrcs.has(s.src);
+      return true;
+    }
+
+    function execute(old: HTMLScriptElement): Promise<void> {
+      const s = document.createElement('script');
+      for (const attr of Array.from(old.attributes)) s.setAttribute(attr.name, attr.value);
+      s.textContent = old.textContent;
+      s.dataset.astroExec = '';
+      let done: Promise<void> = Promise.resolve();
+      if (s.src) {
+        executedSrcs.add(s.src);
+        s.async = false;
+        done = new Promise<void>((resolve) => {
+          s.onload = s.onerror = () => resolve();
+        });
+      }
+      old.replaceWith(s);
+      return done;
+    }
+
+    async function runPageScripts(scripts: HTMLScriptElement[]) {
+      const toRun = scripts.filter(shouldRun);
+      const isDeferred = (s: HTMLScriptElement) => s.type === 'module' || (!!s.src && s.defer);
+      const isAsync = (s: HTMLScriptElement) => !!s.src && s.async && s.type !== 'module';
+      const blocking = toRun.filter((s) => !isDeferred(s) && !isAsync(s));
+      const deferred = toRun.filter((s) => isDeferred(s) && !isAsync(s));
+      toRun.filter(isAsync).forEach(execute);
+
+      // Gerçek sayfa yüklemesini taklit et: script'lerin eklediği DOMContentLoaded/load
+      // dinleyicileri biriktirilir ve tüm script'ler bitince sırayla tetiklenir
+      const queued: QueuedListener[] = [];
+      const doc = document as any;
+      const win = window as any;
+      const realAdd = EventTarget.prototype.addEventListener;
+      const capture = (target: EventTarget) =>
+        function (this: EventTarget, type: string, fn: any, opts?: any) {
+          if (fn && (type === 'DOMContentLoaded' || (type === 'load' && target === window))) {
+            queued.push({ target, type, fn });
+            return;
+          }
+          return realAdd.call(this, type, fn, opts);
+        };
+      const setPhase = (phase: Phase) =>
+        Object.defineProperty(document, 'readyState', { configurable: true, get: () => phase });
+
+      // Yamalar senkron geri alınmalı: kullanıcı hızlıca başka sayfaya geçerse
+      // yeni sayfanın çalıştırıcısı başlamadan önce temizlenmiş olmalılar
+      let restored = false;
+      const restore = () => {
+        if (restored) return;
+        restored = true;
+        delete doc.readyState;
+        delete doc.addEventListener;
+        delete win.addEventListener;
+      };
+
+      let aborted = false;
+      let wake: () => void = () => {};
+      const abortSignal = new Promise<void>((resolve) => (wake = resolve));
+      abortRun = () => {
+        aborted = true;
+        restore();
+        wake();
+      };
+
+      const fire = (type: string) => {
+        for (const q of queued.filter((x) => x.type === type)) {
+          if (aborted) return;
+          try {
+            const ev = new Event(type);
+            if (typeof q.fn === 'function') q.fn.call(q.target, ev);
+            else q.fn.handleEvent(ev);
+          } catch (e) {
+            console.error('[spa] ' + type + ' dinleyicisi hata verdi:', e);
+          }
+        }
+      };
+
+      doc.addEventListener = capture(document);
+      win.addEventListener = capture(window);
+      try {
+        setPhase('loading');
+        for (const s of blocking) {
+          if (aborted) return;
+          await Promise.race([execute(s), abortSignal]);
+        }
+        setPhase('interactive');
+        for (const s of deferred) {
+          if (aborted) return;
+          await Promise.race([execute(s), abortSignal]);
+        }
+        fire('DOMContentLoaded');
+      } finally {
+        restore();
+      }
+      if (aborted) return;
+      fire('load');
+      abortRun = null;
+
+      try {
+        w.i18n?.apply?.();
+      } catch {}
+      try {
+        w.lucide?.createIcons?.();
+      } catch {}
+      document.dispatchEvent(new Event('ww:page-load'));
+    }
+
+    // ── Astro router olayları ──────────────────────────────────
+    document.addEventListener('astro:before-preparation', (ev: any) => {
+      const defaultLoader = ev.loader;
+      ev.loader = async () => {
+        if (!canHandle(ev.to.href)) {
+          ev.preventDefault(); // tam sayfa yüklemesi
+          return;
+        }
+        const hit = htmlCache.get(cacheKey(ev.to));
+        const html = hit && Date.now() - hit.at < HTML_CACHE_TTL_MS ? await hit.html : null;
+        if (!html) return defaultLoader();
+        const newDoc = new DOMParser().parseFromString(html, 'text/html');
+        newDoc.querySelectorAll('noscript').forEach((el) => el.remove());
+        if (!newDoc.querySelector('[name="astro-view-transitions-enabled"]')) {
+          ev.preventDefault();
+          return;
+        }
+        ev.newDocument = newDoc;
+        await preloadStyles(newDoc);
+      };
+    });
+
+    // Hızlı ardışık geçişlerde Astro önceki animasyonu atlıyor (skipTransition); tarayıcının
+    // reddettiği `ready` promise'ini Astro yakalamadığı için konsola hata düşüyordu. Zararsız.
+    window.addEventListener('unhandledrejection', (ev) => {
+      const r = ev.reason;
+      if (r && r.name === 'AbortError' && /skipTransition|Transition was skipped/.test(String(r.message))) {
+        ev.preventDefault();
+      }
+    });
+
+    document.addEventListener('astro:before-swap', (ev: any) => {
+      const oldContainer = document.getElementById('app-scroll-container');
+      const newContainer = ev.newDocument.getElementById('app-scroll-container');
+      if (!oldContainer || !newContainer) {
+        // Beklenmeyen sayfa yapısı: güvenli tarafta kal, tam yükle
+        ev.swap = () => location.assign(ev.to.href);
+        return;
+      }
+      ev.swap = () => swapPage(ev.newDocument, oldContainer, newContainer);
+    });
+
+    // Navbar kendi durumunu (aktif link, açık menüler) astro:after-swap ile günceller
+    document.addEventListener('astro:after-swap', () => {
+      const scripts = pendingScripts;
+      pendingScripts = null;
+      if (scripts) runPageScripts(scripts);
+    });
+
+    w.wwSpa = {
+      canHandle,
+      prefetch,
+      navigate: (href: string) => {
+        const url = toUrl(href);
+        if (url) navigate(pathKey(url) + url.search + url.hash);
+      },
+    };
+  }
+</script>

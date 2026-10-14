@@ -44,6 +44,66 @@ const {
 })();
 </script>
 
+<!-- ⭐ SAYFA YAŞAM DÖNGÜSÜ (wwPage) — SPA geçişlerinde sayfa script'lerinin temizliği -->
+<!-- Sayfa script'i başta `var PAGE = wwPage.current();` alır ve global dinleyicilerini -->
+<!-- PAGE.on(window|document, ...) ile ekler. SPA ile başka sayfaya geçilince PAGE.alive -->
+<!-- false olur, dinleyiciler kaldırılır ve PAGE.onLeave(fn) ile kaydedilenler çalışır. -->
+<!-- Normal (tam) sayfa yüklemesinde sayfa zaten tamamen yenilendiği için hiçbir etkisi yok. -->
+<script is:inline>
+(function() {
+  function PageScope() {
+    this.alive = true;
+    this._cleanups = [];
+  }
+  PageScope.prototype.onLeave = function(fn) {
+    if (this.alive) {
+      this._cleanups.push(fn);
+    } else {
+      try { fn(); } catch (e) {}
+    }
+  };
+  PageScope.prototype.on = function(target, type, fn, opts) {
+    if (!this.alive) return;
+    target.addEventListener(type, fn, opts);
+    this.onLeave(function() { target.removeEventListener(type, fn, opts); });
+  };
+  PageScope.prototype.onI18nChange = function(fn) {
+    var self = this;
+    var i18n = window.i18n;
+    if (!this.alive || !i18n || typeof i18n.onChange !== 'function') return;
+    var guarded = function() {
+      if (self.alive) return fn.apply(this, arguments);
+    };
+    i18n.onChange(guarded);
+    this.onLeave(function() {
+      var list = i18n.listeners;
+      var idx = list ? list.indexOf(guarded) : -1;
+      if (idx !== -1) list.splice(idx, 1);
+    });
+  };
+  PageScope.prototype._leave = function() {
+    if (!this.alive) return;
+    this.alive = false;
+    var cleanups = this._cleanups;
+    this._cleanups = [];
+    for (var i = cleanups.length - 1; i >= 0; i--) {
+      try { cleanups[i](); } catch (e) { console.error('[wwPage] cleanup hatası:', e); }
+    }
+  };
+
+  var current = new PageScope();
+  window.wwPage = {
+    current: function() { return current; },
+    // Sadece SPA router çağırır: mevcut sayfayı kapatır, yenisini başlatır
+    _next: function() {
+      current._leave();
+      current = new PageScope();
+      return current;
+    }
+  };
+})();
+</script>
+
 <!-- CHARSET & VIEWPORT -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />

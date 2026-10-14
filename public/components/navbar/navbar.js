@@ -1933,6 +1933,13 @@ function initNavbarBoot() {
     setActiveNavLink();
   });
 
+  // SPA geçişi (SpaRouter.astro): navbar sayfalar arasında kalıcı; tam yüklemedeki
+  // gibi açık menüler (mobil menü, bildirimler, avatar...) yeni sayfada kapalı gelsin
+  document.addEventListener('astro:after-swap', function() {
+    closeAllNavDropdowns();
+    setActiveNavLink();
+  });
+
   window.addEventListener('load', function() {
     loadLucideIcons();
   });

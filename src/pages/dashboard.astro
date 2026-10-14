@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr" showQuickAdd={true}>
+<Layout lang="tr" showQuickAdd={true} spa={true}>
 <Fragment slot="head">
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
 
@@ -471,10 +471,13 @@ import Layout from '../layouts/Layout.astro';
     <script src="/interface/quick-add/js/quick-add.js?v=1791383000" is:inline defer></script>
 
     <script src="/interface/dashboard/js/prop-card-v2.js?v=3" is:inline defer></script>
-    <script src="/interface/dashboard/js/dashboard.js?v=1791460016" is:inline defer></script>
+    <script src="/interface/dashboard/js/dashboard.js?v=1791460016" is:inline defer data-page-script></script>
   </Fragment>
 
   <script is:inline>
+    // SPA: bu script'in global dinleyicileri sayfadan çıkınca kaldırılır (BaseHead.astro → wwPage)
+    var DASH_PAGE = window.wwPage.current();
+
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -488,6 +491,7 @@ import Layout from '../layouts/Layout.astro';
     var _currentPropSync = null;
 
     async function refreshDashboardPropBanner() {
+      if (!DASH_PAGE.alive) return;
       var propCardEl = document.getElementById('dashboard-prop-card');
       var badgeEl = document.getElementById('dashboard-prop-badge');
       var bannerEl = document.getElementById('dashboard-prop-banner');
@@ -1395,20 +1399,20 @@ import Layout from '../layouts/Layout.astro';
       refreshDashboardPropBanner();
     });
 
-    window.addEventListener('journal-changed', function() {
+    DASH_PAGE.on(window, 'journal-changed', function() {
       refreshDashboardPropBanner();
     });
-    window.addEventListener('trade-saved', function() {
+    DASH_PAGE.on(window, 'trade-saved', function() {
       refreshDashboardPropBanner();
     });
-    window.addEventListener('trade-deleted', function() {
+    DASH_PAGE.on(window, 'trade-deleted', function() {
       refreshDashboardPropBanner();
     });
-    window.addEventListener('dashboard-refreshed', function() {
+    DASH_PAGE.on(window, 'dashboard-refreshed', function() {
       refreshDashboardPropBanner();
     });
     if (window.i18n && typeof window.i18n.onChange === 'function') {
-      window.i18n.onChange(function() {
+      DASH_PAGE.onI18nChange(function() {
         refreshDashboardPropBanner();
         if (typeof window._updateDonutSlider === 'function') {
           window._updateDonutSlider(0);

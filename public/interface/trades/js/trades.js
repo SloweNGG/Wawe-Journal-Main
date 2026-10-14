@@ -22,6 +22,10 @@
 (function() {
   'use strict';
 
+  // SPA: başka sayfaya geçilince PAGE.alive false olur, PAGE.on ile eklenen
+  // dinleyiciler kaldırılır ve PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro)
+  var PAGE = window.wwPage.current();
+
   // ============================================================
   // ⭐ i18n GÜVENLİ ERİŞİM WRAPPER'I
   // ============================================================
@@ -95,7 +99,7 @@
   (function listenThemeChanges() {
     wwLog.log('🎨 [Trades] Tema izleyici başlatıldı...');
     
-    window.addEventListener('storage', function(e) {
+    PAGE.on(window, 'storage', function(e) {
       if (e.key === 'ww_theme') {
         wwLog.log('🔄 [Trades] Tema değişikliği algılandı:', e.newValue);
         var isLight = e.newValue === 'light';
@@ -123,7 +127,7 @@
       }
     });
     
-    document.addEventListener('themeChanged', function(e) {
+    PAGE.on(document, 'themeChanged', function(e) {
       wwLog.log('🔄 [Trades] ThemeChanged event yakalandı');
       if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
         var settings = e.detail.settings;
@@ -151,6 +155,9 @@
   // ============================================================
   
   function safeEl(id) {
+    // Sayfadan çıkıldıysa geç gelen async işler yeni sayfanın DOM'una yazmasın
+    // (dashboard'da da aynı id'ler var: stat-grid vb.)
+    if (!PAGE.alive) return null;
     var el = document.getElementById(id);
     if (!el) {
       wwLog.warn('⚠️ Element bulunamadı:', id);
@@ -1148,7 +1155,7 @@
       if (el) el.addEventListener('change', syncChipLabels);
     });
 
-    document.addEventListener('keydown', function(e) {
+    PAGE.on(document, 'keydown', function(e) {
       if (e.key === 'Escape' && sheet.classList.contains('active')) {
         closeSheet();
       }
@@ -1164,7 +1171,7 @@
       });
     }
 
-    window.addEventListener('resize', function() {
+    PAGE.on(window, 'resize', function() {
       if (window.innerWidth > 768 && sheet.classList.contains('active')) {
         closeSheet();
       }
@@ -1304,7 +1311,7 @@
         });
       }
       
-      document.addEventListener('keydown', function(e) { 
+      PAGE.on(document, 'keydown', function(e) { 
         if (e.key === 'Escape') { 
           closeModal(); 
           closeBulkModal(); 
@@ -1454,7 +1461,7 @@
   // ============================================================
   (function listenBreakpointChanges() {
     var resizeTimer;
-    window.addEventListener('resize', function() {
+    PAGE.on(window, 'resize', function() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function() {
         var nowMobile = window.innerWidth <= 768;
@@ -1483,14 +1490,18 @@
     initTrades();
   }
 
-  window.loadTrades = async function() {
+  var loadTradesExport = async function() {
     if (window.wwCache) {
       window.wwCache.invalidate('trades');
     }
     await initTrades();
   };
+  window.loadTrades = loadTradesExport;
+  PAGE.onLeave(function() {
+    if (window.loadTrades === loadTradesExport) delete window.loadTrades;
+  });
 
-  window.addEventListener('trade-saved', function() {
+  PAGE.on(window, 'trade-saved', function() {
     if (window.wwCache) {
       window.wwCache.invalidate('trades');
     }
@@ -1508,7 +1519,7 @@
 })();
 
 wwLog.log('✅ trades.js yüklendi! (DEĞİŞİKLİK 1+2+3 + tam i18n + PnL fix uygulandı)');
-document.addEventListener('journal-changed', () => {
+window.wwPage.current().on(document, 'journal-changed', () => {
   if (window.__wj_journal_transitioning) return;
   window.location.reload();
 });
