@@ -1,37 +1,31 @@
-# Cloudflare Pages cache kontrolü - SW ile birlikte çalışacak
-/*
-  Cache-Control: no-cache, no-store, must-revalidate
-  Pragma: no-cache
-  Expires: 0
+# ============================================================
+# Cloudflare Pages cache kontrolü
+# ============================================================
+# ⚠️ Cloudflare, bir dosyaya uyan TÜM kuralların başlıklarını virgülle
+# birleştirir. Bu yüzden "/*" gibi her şeye uyan bir Cache-Control kuralı
+# EKLEMEYİN: diğer kurallarla birleşip "no-store" hepsini ezer ve tarayıcı
+# her sayfa geçişinde tüm JS/CSS'i baştan indirir.
+# Ayrıca "*.js" gibi uzantı kalıpları burada çalışmaz; yol bazlı yazın.
+#
+# Kural tanımlanmayan her şey (HTML sayfaları, JS, CSS) Cloudflare
+# varsayılanını alır:
+#   Cache-Control: public, max-age=0, must-revalidate   (+ ETag)
+# Yani tarayıcı dosyayı saklar ve her açılışta "değişti mi?" diye sorar.
+# Değişmediyse 304 döner, dosya tekrar indirilmez. Deploy sonrası herkes
+# yeni sürümü anında alır.
+# ============================================================
 
-# HTML - KESİNLİKLE CACHE YOK
-*.html
-  Cache-Control: no-cache, no-store, must-revalidate
-
-# CSS/JS - Kısa süreli cache (SW yönetir)
-*.css
-  Cache-Control: public, max-age=3600
-*.js
-  Cache-Control: public, max-age=3600
-
-# Görseller
-*.svg
-  Cache-Control: public, max-age=86400
-*.png
-  Cache-Control: public, max-age=86400
-*.jpg
-  Cache-Control: public, max-age=86400
-*.jpeg
-  Cache-Control: public, max-age=86400
-*.ico
-  Cache-Control: public, max-age=86400
-
-# Astro derlenmiş ve hash'lenmiş statik varlıklar (Asla değişmez)
+# Astro derlenmiş ve hash'lenmiş statik varlıklar (asla değişmez)
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Web Fonts
-*.woff2
-  Cache-Control: public, max-age=31536000, immutable
-*.woff
-  Cache-Control: public, max-age=31536000, immutable
+# Görseller
+/images/*
+  Cache-Control: public, max-age=86400
+
+/resim.svg
+  Cache-Control: public, max-age=86400
+
+# Üçüncü parti CSS
+/vendor/*
+  Cache-Control: public, max-age=86400

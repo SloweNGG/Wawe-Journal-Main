@@ -953,7 +953,12 @@ window.closeMobileMenuAndNavigate = function(e, url) {
         return;
       }
     }
-    window.location.href = url;
+    // page-transition.js: .html yönlendirmesini atlar, önceden hazırlanmış sayfayı kullanır
+    if (window.PageTransition && typeof window.PageTransition.exit === 'function') {
+      window.PageTransition.exit(url);
+    } else {
+      window.location.href = url;
+    }
   }
 };
 

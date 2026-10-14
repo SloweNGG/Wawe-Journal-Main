@@ -4,27 +4,176 @@
 // ============================================================
 
 (function() {
-  var prefetchedUrls = new Set();
+  // ── URL NORMALİZASYONU ──────────────────────────────────────
+  // Cloudflare Pages "/dashboard.html" isteğini 308 ile "/dashboard"a
+  // yönlendiriyor. Her geçişte bu fazladan ağ turu atılmasın diye
+  // iç linklere doğrudan temiz URL ile gidiyoruz.
+  function normalizeUrl(href) {
+    try {
+      var u = new URL(href, window.location.href);
+      if (u.origin !== window.location.origin) return href;
+      var path = u.pathname;
+      if (/\/index\.html$/.test(path)) {
+        path = path.slice(0, -'index.html'.length);
+      } else if (/\.html$/.test(path)) {
+        path = path.slice(0, -'.html'.length);
+      }
+      return path + u.search + u.hash;
+    } catch (e) {
+      return href;
+    }
+  }
 
-  function prefetchUrl(url) {
-    if (!url || typeof url !== 'string') return;
-    if (prefetchedUrls.has(url)) return;
+  // ── DURUM PARMAK İZİ ────────────────────────────────────────
+  // Önceden hazırlanmış (prerender) veya geri tuşuyla geri gelen (bfcache)
+  // bir sayfa, hazırlandığı andaki veriyi/ayarları gösterir. Arada işlem
+  // eklenmiş, dil/tema/defter değişmişse bunu storage içeriğinden anlarız.
+  // Sürekli değişen ama ekranı etkilemeyen anahtarlar (auth token yenileme,
+  // zaman damgaları) hariç tutulur.
+  var VOLATILE_KEY = /^sb-|_time$|^ww_last_active_push$/;
+
+  function stateFingerprint() {
+    var parts = [];
+    try {
+      [localStorage, sessionStorage].forEach(function(store, s) {
+        for (var i = 0; i < store.length; i++) {
+          var k = store.key(i);
+          if (!k || VOLATILE_KEY.test(k)) continue;
+          parts.push(s + ':' + k + '=' + store.getItem(k));
+        }
+      });
+    } catch (e) {
+      // Storage okunamıyorsa her seferinde "değişti" say (güvenli taraf)
+      return String(Math.random());
+    }
+    return parts.sort().join('\n');
+  }
+
+  function hasSession() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && /^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)) return true;
+      }
+    } catch (e) {
+      return true; // emin değilsek kullanıcıyı atmayalım
+    }
+    return false;
+  }
+
+  // ── PREFETCH / PRERENDER ────────────────────────────────────
+  // Uygulama sayfaları, link üzerine gelindiğinde (Chrome/Edge'de) arka
+  // planda JS ve veri dahil TAMAMEN hazırlanır; tıklayınca anında açılır.
+  // Desteklemeyen tarayıcılarda sadece HTML önceden indirilir.
+  var APP_PATHS = ['/dashboard', '/trades', '/calendar', '/strategies', '/journals',
+    '/premium-dashboard', '/my-earnings', '/settings', '/backtest', '/add-trade', '/report-bug'];
+  var PRERENDER_MAX_AGE_MS = 60 * 1000;
+  var MAX_PRERENDERS = 2;
+  var HOVER_INTENT_MS = 80;
+
+  var supportsPrerender = false;
+  try {
+    supportsPrerender = !!(HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules'));
+  } catch (e) {}
+
+  // Bayat bulunup iptal edilen bir URL bu süre boyunca yeniden hazırlanmaz.
+  // Chrome, aynı URL'nin kuralı kaldırılıp hemen geri eklenirse bunu değişiklik
+  // saymıyor ve eski (bayat) sayfayı açmaya devam ediyor.
+  var RESTART_COOLDOWN_MS = 1000;
+
+  var prefetchedUrls = new Set();
+  var prerenders = []; // { url, script, startedAt, fingerprint }
+  var cancelledAt = {}; // url -> zaman
+
+  function pathOf(url) {
+    return url.split('#')[0].split('?')[0];
+  }
+
+  function isAppPath(url) {
+    return APP_PATHS.indexOf(pathOf(url)) !== -1;
+  }
+
+  function canPrerender(url) {
+    if (!supportsPrerender || !isAppPath(url)) return false;
+    // Premium olmayan kullanıcı premium-dashboard'a tıklayınca upgrade modalı açılıyor
+    if (pathOf(url) === '/premium-dashboard') {
+      try {
+        var plan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_user_plan');
+        if (plan !== 'premium') return false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function cancelPrerender(entry) {
+    try { entry.script.remove(); } catch (e) {}
+    prerenders = prerenders.filter(function(p) { return p !== entry; });
+  }
+
+  function isPrerenderFresh(entry) {
+    return (Date.now() - entry.startedAt) < PRERENDER_MAX_AGE_MS &&
+      entry.fingerprint === stateFingerprint();
+  }
+
+  function discardIfStale(entry) {
+    if (isPrerenderFresh(entry)) return false;
+    cancelPrerender(entry);
+    cancelledAt[entry.url] = Date.now();
+    return true;
+  }
+
+  function startPrerender(url) {
+    var existing = prerenders.filter(function(p) { return p.url === url; })[0];
+    if (existing && !discardIfStale(existing)) return;
+    if (Date.now() - (cancelledAt[url] || 0) < RESTART_COOLDOWN_MS) return;
+    while (prerenders.length >= MAX_PRERENDERS) cancelPrerender(prerenders[0]);
+
+    try {
+      var script = document.createElement('script');
+      script.type = 'speculationrules';
+      script.textContent = JSON.stringify({
+        prerender: [{ source: 'list', urls: [url], eagerness: 'immediate' }]
+      });
+      document.head.appendChild(script);
+      prerenders.push({ url: url, script: script, startedAt: Date.now(), fingerprint: stateFingerprint() });
+    } catch (e) {}
+  }
+
+  // Tıklamadan hemen önce: hazırlanan sayfa bayatsa iptal et, normal yüklensin
+  function discardStalePrerender(url) {
+    prerenders.slice().forEach(function(entry) {
+      if (entry.url === url) discardIfStale(entry);
+    });
+  }
+
+  function prefetchUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return;
 
     // Harici linkleri, anchor ve protokolleri es geç
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//') || 
-        url.startsWith('#') || url.startsWith('javascript:') || url.startsWith('mailto:')) {
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('//') ||
+        rawUrl.startsWith('#') || rawUrl.startsWith('javascript:') || rawUrl.startsWith('mailto:')) {
       return;
     }
 
-    var clean = url.split('#')[0].split('?')[0];
-    if (!clean.endsWith('.html') && !clean.endsWith('/') && clean !== '') return;
+    var url = normalizeUrl(rawUrl).split('#')[0];
+    // .pdf, .csv gibi dosya linklerini es geç
+    if (/\.[a-z0-9]+$/i.test(pathOf(url))) return;
+    // Bulunduğumuz sayfayı hazırlamaya gerek yok
+    if (pathOf(url) === window.location.pathname) return;
 
+    if (canPrerender(url)) {
+      startPrerender(url);
+      return;
+    }
+
+    if (prefetchedUrls.has(url)) return;
     prefetchedUrls.add(url);
     try {
       var link = document.createElement('link');
       link.rel = 'prefetch';
       link.href = url;
-      link.as = 'document';
       document.head.appendChild(link);
     } catch (e) {}
   }
@@ -125,8 +274,11 @@
         main.classList.add('page-exit');
       }
 
+      var targetUrl = normalizeUrl(targetHref);
+      discardStalePrerender(targetUrl.split('#')[0]);
+
       setTimeout(function() {
-        window.location.href = targetHref;
+        window.location.href = targetUrl;
       }, 40);
     },
 
@@ -369,20 +521,33 @@
       this.checkJournalTransitArrival();
       this.enter();
 
-      // Fare link üzerine geldiğinde veya dokunulduğunda akıllı prefetch yap
+      // Fare link üzerinde kısa bir süre durursa (menü üzerinden geçerken her
+      // linki boşuna hazırlamamak için) veya dokunulduğunda/basıldığında hazırla
+      var hoverTimer = null;
+      var hoverLink = null;
+
+      function internalLinkFrom(target) {
+        var a = target && target.closest ? target.closest('a[href]') : null;
+        return (a && PageTransition.isInternalNavLink(a)) ? a : null;
+      }
+
       document.addEventListener('mouseover', function(e) {
-        var a = e.target.closest('a[href]');
-        if (a && PageTransition.isInternalNavLink(a)) {
+        var a = internalLinkFrom(e.target);
+        if (a === hoverLink) return;
+        hoverLink = a;
+        clearTimeout(hoverTimer);
+        if (!a) return;
+        hoverTimer = setTimeout(function() {
           prefetchUrl(a.getAttribute('href'));
-        }
+        }, HOVER_INTENT_MS);
       }, { passive: true });
 
-      document.addEventListener('touchstart', function(e) {
-        var a = e.target.closest('a[href]');
-        if (a && PageTransition.isInternalNavLink(a)) {
-          prefetchUrl(a.getAttribute('href'));
-        }
-      }, { passive: true });
+      function prefetchNow(e) {
+        var a = internalLinkFrom(e.target);
+        if (a) prefetchUrl(a.getAttribute('href'));
+      }
+      document.addEventListener('touchstart', prefetchNow, { passive: true });
+      document.addEventListener('mousedown', prefetchNow, { passive: true });
 
       // Link tıklamalarında pürüzsüz micro-exit animasyonu
       document.addEventListener('click', function(e) {
@@ -427,7 +592,28 @@
   }
 
   // Tarayıcı İleri/Geri (bfcache) desteği
+  var fingerprintAtHide = null;
+  window.addEventListener('pagehide', function(e) {
+    if (e.persisted) fingerprintAtHide = stateFingerprint();
+  });
+
   window.addEventListener('pageshow', function(e) {
+    // Geri tuşuyla hafızadan geri gelen sayfa: çıkış yapıldıysa gösterme,
+    // arada veri/ayar değiştiyse güncel haliyle yeniden yükle
+    if (e.persisted && isAppPath(window.location.pathname)) {
+      if (!hasSession()) {
+        window.location.replace('/login');
+        return;
+      }
+      if (fingerprintAtHide !== null && fingerprintAtHide !== stateFingerprint()) {
+        window.location.reload();
+        return;
+      }
+    }
+
+    // Sayfadan ayrılmadan hazırlanan sayfalar artık geçersiz
+    prerenders.slice().forEach(cancelPrerender);
+
     PageTransition.isTransitioning = false;
     var main = PageTransition.getMainElement();
     if (main) {
