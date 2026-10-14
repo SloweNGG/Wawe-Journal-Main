@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr">
+<Layout lang="tr" spa={true}>
 <Fragment slot="head">
   <title data-i18n="earnings.title">Kazançlarım & Para Çekme - Wawe Journal</title>
   
@@ -1262,7 +1262,18 @@ import Layout from '../layouts/Layout.astro';
       return null;
     }
 
+    // SPA: sayfadan çıkıldıktan sonra devam eden yükleme, artık olmayan elemanlara
+    // yazmaya çalışıp hata atmasın (yeni sayfada bu id'ler yok)
     async function loadEarningsData() {
+      var scope = window.wwPage.current();
+      try {
+        return await loadEarningsDataInner();
+      } catch (e) {
+        if (scope.alive) throw e;
+      }
+    }
+
+    async function loadEarningsDataInner() {
       var client = await getSb();
       if (!client) {
         document.getElementById('loading-state').style.display = 'none';
@@ -1487,7 +1498,8 @@ import Layout from '../layouts/Layout.astro';
       if (refreshBtn) refreshBtn.addEventListener('click', loadEarningsData);
 
       if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.onChange === 'function') {
-        window.i18n.onChange(function() {
+        // SPA: sayfadan çıkınca kaldırılır (BaseHead.astro → wwPage)
+        window.wwPage.current().onI18nChange(function() {
           if (window.i18n.apply) window.i18n.apply();
           loadEarningsData();
         });

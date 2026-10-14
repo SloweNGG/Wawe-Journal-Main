@@ -1,9 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en" bodyStyle="display:flex;flex-direction:column;min-height:100vh;">
+<Layout lang="en" bodyClass="add-trade-page" spa={true}>
 <Fragment slot="head">
   <title data-i18n="addtrade.title">İşlem Ekle – Wawe Journal</title>
+  <!-- Eskiden body style'ıydı; SPA'da body stili değişmediği için sayfa sınıfına taşındı -->
+  <style is:inline>
+    body.add-trade-page { display: flex; flex-direction: column; min-height: 100vh; }
+  </style>
   
 <script is:inline>
   (function() {
@@ -1639,14 +1643,18 @@ import Layout from '../layouts/Layout.astro';
     // ============================================================
     // DECIMAL FIX
     // ============================================================
-    applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
+    // applyDecimalFix bundle.js'ten (defer modül) gelir; bu inline script ondan önce
+    // çalıştığı için DOMContentLoaded'ı bekle (önceden "applyDecimalFix is not defined")
+    document.addEventListener('DOMContentLoaded', function() {
+      applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
+    });
 
   </script>
+  <script is:inline>
+  // SPA: sayfadan çıkınca kaldırılır (BaseHead.astro → wwPage)
+  window.wwPage.current().on(document, 'journal-changed', () => {
+    if (window.__wj_journal_transitioning) return;
+    window.location.reload();
+  });
+  </script>
 </Layout>
-
-<script is:inline>
-document.addEventListener('journal-changed', () => {
-  if (window.__wj_journal_transitioning) return;
-  window.location.reload();
-});
-</script>

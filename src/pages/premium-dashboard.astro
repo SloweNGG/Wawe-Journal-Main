@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en" showQuickAdd={true}>
+<Layout lang="en" showQuickAdd={true} spa={true}>
 <Fragment slot="head">
   <title data-i18n="premium_dash.title">Premium Dashboard</title>
   
@@ -235,6 +235,9 @@ import Layout from '../layouts/Layout.astro';
   </script>
   <!-- 10. ⭐ PREMIUM PROP FIRM BANNER LOGIC -->
   <script is:inline>
+    // SPA: bu script'in global dinleyicileri sayfadan çıkınca kaldırılır (BaseHead.astro → wwPage)
+    var PREMIUM_BANNER_PAGE = window.wwPage.current();
+
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -248,6 +251,7 @@ import Layout from '../layouts/Layout.astro';
     var _currentPremiumPropSync = null;
 
     async function refreshPremiumPropBanner() {
+      if (!PREMIUM_BANNER_PAGE.alive) return;
       if (!window.PropService || !window.journal) return;
       var bannerEl = document.getElementById('premium-prop-banner');
       var badgeEl = document.getElementById('premium-prop-badge');
@@ -896,17 +900,17 @@ import Layout from '../layouts/Layout.astro';
       setTimeout(refreshPremiumPropBanner, 700);
     });
 
-    window.addEventListener('journal-changed', function() {
+    PREMIUM_BANNER_PAGE.on(window, 'journal-changed', function() {
       setTimeout(refreshPremiumPropBanner, 300);
     });
-    window.addEventListener('trade-saved', function() {
+    PREMIUM_BANNER_PAGE.on(window, 'trade-saved', function() {
       setTimeout(refreshPremiumPropBanner, 300);
     });
-    window.addEventListener('trade-deleted', function() {
+    PREMIUM_BANNER_PAGE.on(window, 'trade-deleted', function() {
       setTimeout(refreshPremiumPropBanner, 300);
     });
     if (window.i18n && typeof window.i18n.onChange === 'function') {
-      window.i18n.onChange(function() {
+      PREMIUM_BANNER_PAGE.onI18nChange(function() {
         refreshPremiumPropBanner();
       });
     }

@@ -188,6 +188,15 @@ export function initDragDrop() {
   }
 }
 
+// SPA: sayfadan çıkarken sürükle-bırak örneğini kaldır (document'a eklediği dinleyiciler dahil)
+export function destroyDragDrop() {
+  if (sortableInstance) {
+    try { sortableInstance.destroy(); } catch(e) {}
+    sortableInstance = null;
+  }
+  isDragging = false;
+}
+
 // ⭐ FORCE RESIZE
 export function forceResizeAllCharts() {
   if (isResizing) return;

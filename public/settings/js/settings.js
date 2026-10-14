@@ -14,6 +14,12 @@
 
 wwLog.log('🔧 settings.js yükleniyor...');
 
+// SPA: başka sayfaya geçilince SETTINGS_PAGE.on ile eklenen dinleyiciler kaldırılır,
+// SETTINGS_PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro → wwPage).
+// "Bir kez bağla" bayrakları da window yerine bu sayfa ziyaretine ait: sayfaya tekrar
+// girildiğinde dinleyiciler yeniden bağlanabilsin.
+var SETTINGS_PAGE = window.wwPage.current();
+
 // ============================================================
 // ⭐ TEMA KONTROLÜ - EN BAŞTA ÇALIŞIR
 // ============================================================
@@ -111,10 +117,10 @@ function themeDesc(isLight) {
 // ============================================================
 
 (function() {
-  if (window._themeListenersBound) return;
-  window._themeListenersBound = true;
+  if (SETTINGS_PAGE._themeListenersBound) return;
+  SETTINGS_PAGE._themeListenersBound = true;
 
-  window.addEventListener('storage', function(e) {
+  SETTINGS_PAGE.on(window, 'storage', function(e) {
     if (e.key === 'ww_theme') {
       var isLight = e.newValue === 'light';
       document.body.classList.toggle('light-theme', isLight);
@@ -154,7 +160,7 @@ function themeDesc(isLight) {
     }
   });
 
-  document.addEventListener('themeChanged', function(e) {
+  SETTINGS_PAGE.on(document, 'themeChanged', function(e) {
     if (e.detail && e.detail.settings) {
       var isLight = document.body.classList.contains('light-theme');
       if (!isLight) {
@@ -324,12 +330,12 @@ if (!window.SETTINGS_STATE) {
   };
 }
 
-if (typeof window._langOnChangeBound === 'undefined') window._langOnChangeBound = false;
+// (_langOnChangeBound artık SETTINGS_PAGE üzerinde tutuluyor)
 
 // ============================================================
 // PREMIUM FEATURES
 // ============================================================
-const PREMIUM_FEATURES = [
+var PREMIUM_FEATURES = [
   { iconName: 'bar-chart-3', key: 'premium_features.dashboard' },
   { iconName: 'refresh-cw', key: 'premium_features.drag_drop' },
   { iconName: 'trending-up', key: 'premium_features.advanced_charts' },
@@ -543,9 +549,9 @@ window.switchPanel = function(panelId) {
 // ============================================================
 // HASH DEĞİŞİKLİĞİNİ İZLE
 // ============================================================
-if (!window._hashChangeBound) {
-  window._hashChangeBound = true;
-  window.addEventListener('hashchange', function() {
+if (!SETTINGS_PAGE._hashChangeBound) {
+  SETTINGS_PAGE._hashChangeBound = true;
+  SETTINGS_PAGE.on(window, 'hashchange', function() {
     var hash = window.location.hash.replace('#', '');
     if (hash && hash.indexOf('panel-') === 0) {
       wwLog.log('📍 Hash değişti: ' + hash);
@@ -2068,14 +2074,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
     });
   }
 
-  document.addEventListener('keydown', function(e) {
+  SETTINGS_PAGE.on(document, 'keydown', function(e) {
     if (e.key === 'Escape' && qrModal && qrModal.style.display !== 'none') {
       closeQrModal();
     }
   });
 
   if (window.i18n && typeof window.i18n.onChange === 'function') {
-    window.i18n.onChange(function() {
+    SETTINGS_PAGE.onI18nChange(function() {
       updatePeriodCardsUI();
       renderSummary();
     });
@@ -2789,9 +2795,9 @@ function initLanguageSelector() {
     });
   }
 
-  if (window.i18n && typeof window.i18n.onChange === 'function' && !window._langOnChangeBound) {
-    window._langOnChangeBound = true;
-    window.i18n.onChange(function(newLang) {
+  if (window.i18n && typeof window.i18n.onChange === 'function' && !SETTINGS_PAGE._langOnChangeBound) {
+    SETTINGS_PAGE._langOnChangeBound = true;
+    SETTINGS_PAGE.onI18nChange(function(newLang) {
       updateButtonStates(newLang);
       wwLog.log('🔄 Buton state güncellendi (onChange): ' + newLang);
     });
@@ -3168,7 +3174,7 @@ function initConfirmModal() {
     modal.addEventListener('click', function(e) {
       if (e.target === this) this.classList.remove('active');
     });
-    document.addEventListener('keydown', function(e) {
+    SETTINGS_PAGE.on(document, 'keydown', function(e) {
       if (e.key === 'Escape' && modal.classList.contains('active')) {
         modal.classList.remove('active');
       }
@@ -3436,9 +3442,16 @@ if (document.readyState === 'loading') {
   bootSettings();
 }
 
-document.addEventListener('astro:page-load', function() {
-  wwLog.log('🔄 astro:page-load tetiklendi');
-  bootSettings();
+// Not: Eskiden burada astro:page-load dinleniyordu. SPA router bu olayı HER sayfa
+// geçişinde tetiklediği için Settings dışındaki sayfalarda da bootSettings çalışırdı.
+// Sayfaya SPA ile girildiğinde bu script zaten yeniden çalışıyor (data-page-script).
+
+// Sayfadan çıkarken plan geri sayımını durdur
+SETTINGS_PAGE.onLeave(function() {
+  if (window.SETTINGS_STATE && window.SETTINGS_STATE.timerInterval) {
+    clearInterval(window.SETTINGS_STATE.timerInterval);
+    window.SETTINGS_STATE.timerInterval = null;
+  }
 });
 
 wwLog.log('✅ settings.js GÜNCELLENDİ ve yüklendi! (i18n v5 - ASTRO SPA + tüm guard)');

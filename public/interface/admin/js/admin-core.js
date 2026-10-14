@@ -10,6 +10,10 @@
 
 var wwLog = window.wwLog || console;
 
+// SPA: başka sayfaya geçilince ADMIN_PAGE.on ile eklenen dinleyiciler kaldırılır,
+// ADMIN_PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro → wwPage)
+var ADMIN_PAGE = window.wwPage.current();
+
 (function initAdminTheme() {
   try {
     var savedTheme = localStorage.getItem('ww_theme');
@@ -83,7 +87,7 @@ var wwLog = window.wwLog || console;
     }
   }
 
-  window.addEventListener('storage', function(e) {
+  ADMIN_PAGE.on(window, 'storage', function(e) {
     if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
       wwLog.log('🔄 [Admin] Tema değişikliği algılandı (storage):', e.key);
       applyThemeFromStorage();
@@ -91,7 +95,7 @@ var wwLog = window.wwLog || console;
     }
   });
 
-  document.addEventListener('themeChanged', function(e) {
+  ADMIN_PAGE.on(document, 'themeChanged', function(e) {
     wwLog.log('🔄 [Admin] themeChanged event yakalandı');
     if (e.detail && e.detail.settings) {
       var settings = e.detail.settings;
@@ -508,7 +512,7 @@ async function initAdmin() {
     setTimeout(updatePlanBadge, 500);
     
     if (typeof i18n !== 'undefined' && i18n.onChange) {
-      i18n.onChange(function() {
+      ADMIN_PAGE.onI18nChange(function() {
         updatePlanBadge();
       });
     }

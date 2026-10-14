@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr">
+<Layout lang="tr" spa={true}>
 <Fragment slot="head">
 <meta charset="UTF-8">
 <title>Backtest — Wawe Journal</title>
@@ -316,6 +316,16 @@ import Layout from '../layouts/Layout.astro';
   
   
   <script is:inline>
+  // Sayfa kodu bir fonksiyon kapsamında: SPA ile sayfaya tekrar girildiğinde üst seviye
+  // const/let'ler "already declared" hatası vermesin. DOMContentLoaded'ı bekler, çünkü
+  // LightweightCharts head'de defer ile yükleniyor (önceden bu script ondan önce çalışıp
+  // "LightweightCharts is not defined" hatası veriyordu).
+  (function () {
+  var BT_PAGE = window.wwPage.current();
+
+  function startBacktest() {
+  if (!BT_PAGE.alive) return;
+
   /* ============================================================
      1) SUPABASE AYARLARI - WW_CONFIG üzerinden
      ============================================================ */
@@ -328,12 +338,16 @@ import Layout from '../layouts/Layout.astro';
     };
   }
 
-  let supabaseClient = null;
+  // Uygulamanın ortak istemcisini kullan: her girişte yeni istemci oluşturmak hem
+  // dinleyici biriktiriyor hem de iki istemcinin oturum yenilemesi çakışabiliyor
+  let supabaseClient = window.sb || null;
   try {
-    supabaseClient = window.supabase.createClient(
-      WW_CONFIG.SUPABASE_URL,
-      WW_CONFIG.SUPABASE_ANON_KEY
-    );
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(
+        WW_CONFIG.SUPABASE_URL,
+        WW_CONFIG.SUPABASE_ANON_KEY
+      );
+    }
   } catch (e) {
     wwLog.warn('Supabase başlatılamadı', e);
   }
@@ -409,8 +423,13 @@ import Layout from '../layouts/Layout.astro';
     borderUpColor: '#22c55e', borderDownColor: '#ef4444',
     wickUpColor: '#22c55e', wickDownColor: '#ef4444'
   });
-  window.addEventListener('resize', function () {
+  BT_PAGE.on(window, 'resize', function () {
     btChart.applyOptions({ width: btChartContainer.clientWidth });
+  });
+  // Sayfadan çıkarken oynatmayı durdur ve grafiği kaldır
+  BT_PAGE.onLeave(function () {
+    pause();
+    try { btChart.remove(); } catch (e) {}
   });
 
   /* ============================================================
@@ -646,5 +665,13 @@ import Layout from '../layouts/Layout.astro';
   closeBtn.addEventListener('click', function () { if (btPosition) closePosition(currentBar().close, 'Manuel'); });
 
   render();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startBacktest);
+  } else {
+    startBacktest();
+  }
+  })();
   </script>
 </Layout>

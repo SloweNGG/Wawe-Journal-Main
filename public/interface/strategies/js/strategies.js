@@ -12,6 +12,10 @@
 
 wwLog.log('📊 strategies.js yükleniyor...');
 
+// SPA: başka sayfaya geçilince STRAT_PAGE.on ile eklenen dinleyiciler kaldırılır,
+// STRAT_PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro → wwPage)
+var STRAT_PAGE = window.wwPage.current();
+
 // ============================================================
 // ⭐ TEMA KONTROLÜ
 // ============================================================
@@ -83,7 +87,7 @@ wwLog.log('📊 strategies.js yükleniyor...');
     }
   }
 
-  window.addEventListener('storage', function(e) {
+  STRAT_PAGE.on(window, 'storage', function(e) {
     if (e.key === 'ww_theme') {
       wwLog.log('🔄 [Strategies] Tema değişikliği algılandı:', e.newValue);
       applyThemeFromStorage();
@@ -91,7 +95,7 @@ wwLog.log('📊 strategies.js yükleniyor...');
     }
   });
 
-  document.addEventListener('themeChanged', function(e) {
+  STRAT_PAGE.on(document, 'themeChanged', function(e) {
     wwLog.log('🔄 [Strategies] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
@@ -108,7 +112,7 @@ wwLog.log('📊 strategies.js yükleniyor...');
     // ⭐ Grafikler yeniden render EDİLMEZ
   });
 
-  document.addEventListener('visibilitychange', function() {
+  STRAT_PAGE.on(document, 'visibilitychange', function() {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
       var isLight = savedTheme === 'light';
@@ -1766,11 +1770,11 @@ async function initStrategies() {
     var userAvatar = document.getElementById('user-avatar');
     var dropdownMenu = document.getElementById('dropdown-menu');
     if (userAvatar && dropdownMenu) {
-      userAvatar.addEventListener('click', function(e) {
+      STRAT_PAGE.on(userAvatar, 'click', function(e) {
         e.stopPropagation();
         dropdownMenu.classList.toggle('show');
       });
-      document.addEventListener('click', function(e) {
+      STRAT_PAGE.on(document, 'click', function(e) {
         if (!e.target.closest('#user-avatar') && !e.target.closest('#dropdown-menu')) {
           dropdownMenu.classList.remove('show');
         }
@@ -1779,7 +1783,7 @@ async function initStrategies() {
 
     var logoutDropdownBtn = document.getElementById('logout-dropdown-btn');
     if (logoutDropdownBtn) {
-      logoutDropdownBtn.addEventListener('click', async function() {
+      STRAT_PAGE.on(logoutDropdownBtn, 'click', async function() {
         try { localStorage.removeItem('ww_last_active_push'); } catch(e) {}
         await sb.auth.signOut();
         window.location.href = 'index.html';
@@ -1824,10 +1828,10 @@ async function initStrategies() {
     }
 
     // İşlem ekleme / silme olaylarını dinle (başka yerden işlem eklenirse strateji verilerini tazele)
-    window.addEventListener('trade-saved', function() {
+    STRAT_PAGE.on(window, 'trade-saved', function() {
       if (currentUser) loadAllData();
     });
-    window.addEventListener('trade-deleted', function() {
+    STRAT_PAGE.on(window, 'trade-deleted', function() {
       if (currentUser) loadAllData();
     });
 
@@ -1838,7 +1842,7 @@ async function initStrategies() {
 
     // Dil değişimini dinle
     if (typeof i18n !== 'undefined' && i18n.onChange) {
-      i18n.onChange(function() {
+      STRAT_PAGE.onI18nChange(function() {
         renderStrategiesGrid();
         renderComparisonCharts();
         if (typeof i18n.apply === 'function') i18n.apply();
@@ -1869,6 +1873,7 @@ var strategiesCheckAttempts = 0;
 var MAX_STRATEGIES_CHECK_ATTEMPTS = 160;
 
 function startStrategies() {
+  if (!STRAT_PAGE.alive) return;
   var isSbReady = typeof window.sb !== 'undefined';
   var isAuthReady = typeof window.requireAuth === 'function';
   var isJournalReady = typeof window.journal !== 'undefined';
@@ -1900,6 +1905,22 @@ function startStrategies() {
   initStrategies();
 }
 
+// Sayfadan çıkarken zamanlayıcı ve grafikleri temizle
+STRAT_PAGE.onLeave(function() {
+  if (_apexReadyPoller) { clearInterval(_apexReadyPoller); _apexReadyPoller = null; }
+  _apexReadyCallbacks = [];
+  Object.keys(sparkCharts).forEach(function(id) {
+    try { sparkCharts[id].destroy(); } catch(e) {}
+  });
+  sparkCharts = {};
+  [window.winrateChart, window.pnlChart, equityChartInstance].forEach(function(chart) {
+    if (chart) { try { chart.destroy(); } catch(e) {} }
+  });
+  window.winrateChart = null;
+  window.pnlChart = null;
+  equityChartInstance = null;
+});
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startStrategies);
 } else {
@@ -1919,7 +1940,7 @@ window.exportStrategyPDF = exportStrategyPDF;
 window.openAddStrategyModal = openAddStrategyModal;
 
 wwLog.log('✅ strategies.js yüklendi!');
-document.addEventListener('journal-changed', () => {
+STRAT_PAGE.on(document, 'journal-changed', () => {
   if (window.__wj_journal_transitioning) return;
   window.location.reload();
 });

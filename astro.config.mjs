@@ -93,6 +93,13 @@ export default defineConfig({
   site: 'https://wawejournal.com',
   outDir: 'dist',
   integrations: [react(), bundleAppScript(), minifyDistAssets()],
+  vite: {
+    define: {
+      // Her derlemeye özel kimlik: SPA router, açık sekmede deploy sonrası eski ve yeni
+      // sürüm script'lerinin karışmaması için sürüm değişince tam sayfa yüklemesi yapar
+      __WW_BUILD_ID__: JSON.stringify(String(Date.now())),
+    },
+  },
   build: {
     // Orijinal siteyle birebir aynı URL yapısını (dashboard.html, trades.html, ...)
     // korumak için 'file' formatını kullanıyoruz. Böylece navbar.js, script.js

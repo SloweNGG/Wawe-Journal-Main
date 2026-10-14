@@ -8,6 +8,21 @@
 var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
 if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
+// SPA: başka sayfaya geçilince ADMIN_PAGE.on ile eklenen dinleyiciler kaldırılır,
+// ADMIN_PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro → wwPage)
+var ADMIN_PAGE = window.wwPage.current();
+
+// Sayfadan çıkarken grafikleri yok et
+ADMIN_PAGE.onLeave(function() {
+  var charts = (window.adminState && window.adminState.charts) || (typeof adminState !== 'undefined' && adminState.charts) || {};
+  Object.keys(charts).forEach(function(key) {
+    if (charts[key] && typeof charts[key].destroy === 'function') {
+      try { charts[key].destroy(); } catch (e) {}
+    }
+    charts[key] = null;
+  });
+});
+
 function getSbClient() {
   return (typeof window !== 'undefined' && window.sb) ? window.sb : (typeof sb !== 'undefined' ? sb : null);
 }
@@ -3137,9 +3152,9 @@ async function confirmBugReject() {
 window.confirmBugReject = confirmBugReject;
 
 // Global Event Delegation & Backdrop Click Listeners
-if (typeof document !== 'undefined' && !window.__bugReportsListenersAttached) {
-  window.__bugReportsListenersAttached = true;
-  document.addEventListener('click', function(e) {
+if (typeof document !== 'undefined' && !ADMIN_PAGE.__bugReportsListenersAttached) {
+  ADMIN_PAGE.__bugReportsListenersAttached = true;
+  ADMIN_PAGE.on(document, 'click', function(e) {
     // 1. Any Bug Action Button (Reply, Reject, Ban)
     var btn = e.target.closest('.btn-bug-action, [data-action="reply-bug"], [data-action="reject-bug"], [data-action="ban-bug-user"]');
     if (btn) {

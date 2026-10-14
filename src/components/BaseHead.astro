@@ -67,6 +67,14 @@ const {
     target.addEventListener(type, fn, opts);
     this.onLeave(function() { target.removeEventListener(type, fn, opts); });
   };
+  // window'a fonksiyon açar; sayfadan çıkınca (başkası üzerine yazmadıysa) kaldırır.
+  // Örn. quick-add kayıttan sonra window.loadTrades / window.refresh'i çağırıyor.
+  PageScope.prototype.expose = function(name, value) {
+    window[name] = value;
+    this.onLeave(function() {
+      if (window[name] === value) delete window[name];
+    });
+  };
   PageScope.prototype.onI18nChange = function(fn) {
     var self = this;
     var i18n = window.i18n;

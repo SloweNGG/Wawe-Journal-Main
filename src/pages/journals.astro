@@ -2,7 +2,7 @@
 // src/pages/journals.astro
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="en" bodyClass="journals-page">
+<Layout lang="en" bodyClass="journals-page" spa={true}>
 <Fragment slot="head">
   <link rel="stylesheet" href="/interface/journals/css/journals.css?v=1791381603" />
   <title data-i18n="journal.title">Hesaplarım – Wawe Journal</title>
@@ -510,6 +510,9 @@ import Layout from '../layouts/Layout.astro';
 
 
 <script is:inline>
+  // SPA: bu script'in global dinleyicileri sayfadan çıkınca kaldırılır (BaseHead.astro → wwPage)
+  var JOURNALS_PAGE = window.wwPage.current();
+
   var i18n = window.i18n || {
     t: function(k, params) {
       if (window.i18n && typeof window.i18n.t === 'function') {
@@ -1784,7 +1787,7 @@ import Layout from '../layouts/Layout.astro';
   function bootJournals() {
     initModals();
 
-    document.addEventListener('click', function(e) {
+    JOURNALS_PAGE.on(document, 'click', function(e) {
       if (!e.target.closest('.journal-menu-dropdown')) {
         document.querySelectorAll('.journal-menu-dropdown.open').forEach(function(el) {
           el.classList.remove('open');
@@ -2148,7 +2151,7 @@ import Layout from '../layouts/Layout.astro';
     bootJournals();
   }
   
-  document.addEventListener('journal-changed', renderJournals);
+  JOURNALS_PAGE.on(document, 'journal-changed', renderJournals);
   
 </script>
 

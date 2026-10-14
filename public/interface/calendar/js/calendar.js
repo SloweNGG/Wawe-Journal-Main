@@ -4,6 +4,10 @@
 
 wwLog.log('📅 calendar.js yükleniyor...');
 
+// SPA: başka sayfaya geçilince CAL_PAGE.on ile eklenen dinleyiciler kaldırılır,
+// CAL_PAGE.expose ile açılan global fonksiyonlar silinir (BaseHead.astro → wwPage)
+var CAL_PAGE = window.wwPage.current();
+
 // ============================================================
 // ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN
 // ============================================================
@@ -50,7 +54,7 @@ wwLog.log('📅 calendar.js yükleniyor...');
 (function listenThemeChanges() {
   wwLog.log('🎨 [Calendar] Tema izleyici başlatıldı...');
 
-  window.addEventListener('storage', function (e) {
+  CAL_PAGE.on(window, 'storage', function (e) {
     if (e.key === 'ww_theme') {
       wwLog.log('🔄 [Calendar] Tema değişikliği algılandı:', e.newValue);
       var isLight = e.newValue === 'light';
@@ -78,7 +82,7 @@ wwLog.log('📅 calendar.js yükleniyor...');
     }
   });
 
-  document.addEventListener('themeChanged', function (e) {
+  CAL_PAGE.on(document, 'themeChanged', function (e) {
     wwLog.log('🔄 [Calendar] ThemeChanged event yakalandı');
     if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
       var settings = e.detail.settings;
@@ -98,7 +102,7 @@ wwLog.log('📅 calendar.js yükleniyor...');
     }
   });
 
-  document.addEventListener('visibilitychange', function () {
+  CAL_PAGE.on(document, 'visibilitychange', function () {
     if (!document.hidden) {
       var savedTheme = localStorage.getItem('ww_theme');
       var isLight = savedTheme === 'light';
@@ -1041,7 +1045,7 @@ async function initCalendar() {
     if (dayCsvBtn) dayCsvBtn.addEventListener('click', function () { exportDayCSV(); });
     if (dayPdfBtn) dayPdfBtn.addEventListener('click', function () { exportDayPDF(); });
 
-    document.addEventListener('keydown', function (e) {
+    CAL_PAGE.on(document, 'keydown', function (e) {
       if (e.key === 'Escape') closeDayModal();
     });
 
@@ -1113,7 +1117,7 @@ async function initCalendar() {
         if (popover.classList.contains('open')) closePopover(); else openPopover();
       });
 
-      document.addEventListener('click', function (e) {
+      CAL_PAGE.on(document, 'click', function (e) {
         if (!e.target.closest('#cal-jump-popover') && !e.target.closest('#cal-title-btn')) closePopover();
       });
       popover.addEventListener('click', function (e) { e.stopPropagation(); });
@@ -1174,7 +1178,7 @@ async function initCalendar() {
 
     // i18n değişimlerini dinle
     if (typeof i18n !== 'undefined' && i18n.onChange) {
-      i18n.onChange(function () {
+      CAL_PAGE.onI18nChange(function () {
         renderCalendar();
         if (typeof i18n.apply === 'function') i18n.apply();
       });
@@ -1195,6 +1199,7 @@ var calendarCheckAttempts = 0;
 var MAX_CALENDAR_CHECK_ATTEMPTS = 160; // 160 * 50ms = 8 saniye max
 
 function startCalendar() {
+  if (!CAL_PAGE.alive) return;
   var isSbReady = typeof window.sb !== 'undefined';
   var isAuthReady = typeof window.requireAuth === 'function';
   var isJournalReady = typeof window.journal !== 'undefined';
@@ -1239,11 +1244,11 @@ window.renderCalendar = renderCalendar;
 window.calcTradePnL = calcTradePnL;
 window.formatCurrency = formatCurrency;
 window.formatShortPnL = formatShortPnL;
-window.loadTrades = initCalendar;
-window.refresh = initCalendar;
+CAL_PAGE.expose('loadTrades', initCalendar);
+CAL_PAGE.expose('refresh', initCalendar);
 
 wwLog.log('✅ calendar.js yüklendi! (OPTİMİZE EDİLDİ)');
-document.addEventListener('journal-changed', () => {
+CAL_PAGE.on(document, 'journal-changed', () => {
   if (window.__wj_journal_transitioning) return;
   window.location.reload();
 });

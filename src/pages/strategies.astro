@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr" showQuickAdd={true}>
+<Layout lang="tr" showQuickAdd={true} spa={true}>
 <Fragment slot="head">
   <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
 
@@ -12,9 +12,9 @@ import Layout from '../layouts/Layout.astro';
   <link rel="stylesheet" href="/interface/strategies/css/strategies.css?v=1791542000001" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" as="script" />
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2" is:inline defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
 
@@ -29,7 +29,7 @@ import Layout from '../layouts/Layout.astro';
 
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
-  <script src="/interface/strategies/js/strategies.js?v=1791541000000" is:inline defer></script>
+  <script src="/interface/strategies/js/strategies.js?v=1791541000000" is:inline defer data-page-script></script>
 </Fragment>
   <!-- NAVBAR CONTAINER -->
 

@@ -72,6 +72,24 @@ var _usersRealtimeSub = null;
 var _paymentsRealtimeSub = null;
 var _usersPollInterval = null;
 
+// SPA: başka sayfaya geçilince ADMIN_PAGE.on ile eklenen dinleyiciler kaldırılır,
+// ADMIN_PAGE.onLeave ile kaydedilenler çalışır (BaseHead.astro → wwPage)
+var ADMIN_PAGE = window.wwPage.current();
+
+// Sayfadan çıkarken canlı kanalları ve yedek yenilemeyi kapat; yoksa her girişte
+// aynı isimli yeni kanal açılır ve eski interval çalışmaya devam eder
+ADMIN_PAGE.onLeave(function() {
+  var client = getSbClient();
+  [_usersRealtimeSub, _paymentsRealtimeSub].forEach(function(channel) {
+    if (channel && client && typeof client.removeChannel === 'function') {
+      try { client.removeChannel(channel); } catch (e) {}
+    }
+  });
+  _usersRealtimeSub = null;
+  _paymentsRealtimeSub = null;
+  if (_usersPollInterval) { clearInterval(_usersPollInterval); _usersPollInterval = null; }
+});
+
 function updateAdminConnectionStatus(isOnline) {
   var online = isOnline !== undefined ? isOnline : (typeof navigator !== 'undefined' ? navigator.onLine : true);
   var badges = document.querySelectorAll('.live-connection-badge');
@@ -89,8 +107,8 @@ window.updateAdminConnectionStatus = updateAdminConnectionStatus;
 
 // İnternet kopma ve geri gelme dinleyicileri
 if (typeof window !== 'undefined') {
-  window.addEventListener('online', function() { updateAdminConnectionStatus(true); });
-  window.addEventListener('offline', function() { updateAdminConnectionStatus(false); });
+  ADMIN_PAGE.on(window, 'online', function() { updateAdminConnectionStatus(true); });
+  ADMIN_PAGE.on(window, 'offline', function() { updateAdminConnectionStatus(false); });
 }
 
 function initUsersRealtime() {

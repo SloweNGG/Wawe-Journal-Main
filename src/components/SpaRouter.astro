@@ -17,8 +17,10 @@
 //     (parser-blocking → defer → DOMContentLoaded → load)
 //   - Çıkılan sayfanın kodu wwPage ile kapatılır (bkz. BaseHead.astro)
 // ============================================================
+const buildId = __WW_BUILD_ID__;
 ---
 <meta name="astro-view-transitions-enabled" content="true" />
+<meta name="ww-build" content={buildId} />
 <meta name="astro-view-transitions-fallback" content="swap" />
 <style is:inline>
   .astro-route-announcer {
@@ -36,6 +38,10 @@
   #navbar-container {
     view-transition-name: ww-navbar;
   }
+  /* Quick-add butonu body'de kalıcı; kullanmayan sayfaya SPA ile geçilince gizle */
+  body:not([data-quick-add]) #quick-add-fab {
+    display: none !important;
+  }
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 160ms;
@@ -43,7 +49,9 @@
 </style>
 
 <script>
-  import { navigate } from 'astro:transitions/client';
+  // Not: Astro bu script'i Layout'u kullanan TÜM sayfalara ekliyor (bileşen koşullu
+  // render edilse bile). Astro'nun router'ı import edildiği anda popstate vb. dinlemeye
+  // başladığı için onu sadece SPA sayfalarında (meta etiketi varsa) dinamik yüklüyoruz.
 
   type Phase = 'loading' | 'interactive';
   type QueuedListener = { target: EventTarget; type: string; fn: EventListenerOrEventListenerObject };
@@ -51,16 +59,84 @@
   // Bir sayfa bu listeye, kendi script'leri SPA geçişine uyarlandıktan sonra
   // eklenir (wwPage ile çıkışta temizlik + data-page-script ile yeniden başlatma)
   // ve Layout'ta spa={true} verilir. Listede olmayan sayfalara tam yükleme yapılır.
-  const SPA_PATHS = ['/dashboard', '/trades'];
+  const SPA_PATHS = [
+    '/dashboard',
+    '/trades',
+    '/calendar',
+    '/strategies',
+    '/journals',
+    '/premium-dashboard',
+    '/my-earnings',
+    '/settings',
+    '/backtest',
+    '/add-trade',
+    '/report-bug',
+    '/admin',
+  ];
   const HTML_CACHE_TTL_MS = 5 * 60 * 1000;
 
   const w = window as any;
 
-  if (!w.wwSpa) {
+  const spaEnabled = !!document.querySelector('meta[name="astro-view-transitions-enabled"]');
+
+  if (spaEnabled && !w.wwSpa) {
+    const routerReady = import('astro:transitions/client').then((m) => m.navigate);
+
     const htmlCache = new Map<string, { at: number; html: Promise<string | null> }>();
-    const executedSrcs = new Set<string>();
+
+    // Bir script'in kimliği ve sürümü:
+    //  - Yerel dosya: kimlik = yol; ?v= sadece önbellek kırıcı, aynı dosya sayılır
+    //    (tekrar çalıştırmak üst seviye const/let'lerde "already declared" hatası verir)
+    //  - CDN kütüphanesi: kimlik = paket adı, sürüm = tam adres. apexcharts@3 ve @8 aynı
+    //    global'i yazar; sayfa farklı bir sürüm isterse o sürüm yeniden çalıştırılır.
+    function scriptIdentity(src: string): { id: string; version: string } {
+      try {
+        const url = new URL(src, location.href);
+        const npm = url.hostname === 'cdn.jsdelivr.net' && url.pathname.match(/^\/npm\/((?:@[^/]+\/)?[^/@]+)/);
+        if (npm) return { id: 'npm:' + npm[1], version: url.origin + url.pathname };
+        return { id: url.origin + url.pathname, version: url.origin + url.pathname };
+      } catch {
+        return { id: src, version: src };
+      }
+    }
+    // kimlik → şu an yüklü sürüm
+    const activeScripts = new Map<string, string>();
+    function markActive(src: string) {
+      const { id, version } = scriptIdentity(src);
+      activeScripts.set(id, version);
+    }
+    function isActive(src: string): boolean {
+      const { id, version } = scriptIdentity(src);
+      return activeScripts.get(id) === version;
+    }
     for (const s of Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]'))) {
-      executedSrcs.add(s.src);
+      markActive(s.src);
+    }
+
+    // Aynı CDN kütüphanesinin iki farklı sürümü aynı dokümanda güvenle çalışmıyor
+    // (örn. apexcharts 3 ve 8 ortak SVG.js durumunu bozuyor). Yeni sayfa, yüklü olandan
+    // farklı bir sürüm istiyorsa o geçiş tam sayfa yüklemesine döner.
+    // Açık sekmede yeni bir sürüm deploy edildiyse ortak script'ler (navbar, quick-add...)
+    // eski sürümde kalırdı; yeni sayfa farklı derlemeden geliyorsa bir kez tam yükle
+    const currentBuild = document.querySelector('meta[name="ww-build"]')?.getAttribute('content') || '';
+    function isNewDeploy(doc: Document): boolean {
+      const build = doc.querySelector('meta[name="ww-build"]')?.getAttribute('content') || '';
+      return !!build && !!currentBuild && build !== currentBuild;
+    }
+
+    function hasLibraryConflict(doc: Document): boolean {
+      if (isNewDeploy(doc)) return true;
+      for (const s of Array.from(doc.querySelectorAll<HTMLScriptElement>('script[src]'))) {
+        const src = s.getAttribute('src');
+        if (!src) continue;
+        const { id, version } = scriptIdentity(src);
+        const active = activeScripts.get(id);
+        if (id.startsWith('npm:') && active && active !== version) {
+          console.warn('[spa] ' + id + ' sürüm çakışması (' + active + ' ↔ ' + version + '), tam yükleme yapılıyor');
+          return true;
+        }
+      }
+      return false;
     }
 
     let pendingScripts: HTMLScriptElement[] | null = null;
@@ -147,6 +223,9 @@
         case 'link':
           return 'link|' + el.getAttribute('rel') + '|' + el.getAttribute('href');
         case 'script':
+          // Sayfa script'leri her girişte yeniden çalışmalı: aynı sayfaya tekrar
+          // geçilse bile eskisiyle eşleştirilmez, yenisi eklenir
+          if (el.hasAttribute('data-page-script')) return null;
           return 'script|' + (el.getAttribute('src') || el.textContent);
         case 'style':
           return 'style|' + el.textContent;
@@ -211,6 +290,8 @@
       for (const c of oldClasses) body.classList.remove(c);
       for (const c of newClasses) body.classList.add(c);
       body.setAttribute('data-page-class', newClasses.join(' '));
+      // Quick-add butonu kalıcı (body'de); sadece onu kullanan sayfalarda görünsün
+      body.toggleAttribute('data-quick-add', newDoc.body.hasAttribute('data-quick-add'));
     }
 
     function swapPage(newDoc: Document, oldContainer: HTMLElement, newContainer: HTMLElement) {
@@ -259,9 +340,11 @@
     function shouldRun(s: HTMLScriptElement): boolean {
       const type = s.getAttribute('type');
       if (type && type !== 'module' && type !== 'text/javascript') return false;
-      // Ortak kütüphaneler (supabase, i18n, quick-add...) sadece bir kez çalışır;
-      // sayfa script'leri (data-page-script) sayfaya her girişte baştan çalışır
-      if (s.src) return s.hasAttribute('data-page-script') || !executedSrcs.has(s.src);
+      // Ortak kütüphaneler (supabase, i18n, quick-add...) sadece bir kez çalışır (farklı
+      // bir sürümü istenmedikçe); sayfa script'leri (data-page-script) her girişte çalışır.
+      // Not: type="module" sayfa script'lerini tarayıcı doküman başına bir kez çalıştırır;
+      // onlar yeniden girişi kendileri ww:page-load ile yakalar (bkz. premium-dashboard.js).
+      if (s.src) return s.hasAttribute('data-page-script') || !isActive(s.src);
       return true;
     }
 
@@ -272,7 +355,7 @@
       s.dataset.astroExec = '';
       let done: Promise<void> = Promise.resolve();
       if (s.src) {
-        executedSrcs.add(s.src);
+        markActive(s.src);
         s.async = false;
         done = new Promise<void>((resolve) => {
           s.onload = s.onerror = () => resolve();
@@ -380,10 +463,16 @@
         }
         const hit = htmlCache.get(cacheKey(ev.to));
         const html = hit && Date.now() - hit.at < HTML_CACHE_TTL_MS ? await hit.html : null;
-        if (!html) return defaultLoader();
+        if (!html) {
+          await defaultLoader();
+          if (!ev.defaultPrevented && ev.newDocument !== document && hasLibraryConflict(ev.newDocument)) {
+            ev.preventDefault();
+          }
+          return;
+        }
         const newDoc = new DOMParser().parseFromString(html, 'text/html');
         newDoc.querySelectorAll('noscript').forEach((el) => el.remove());
-        if (!newDoc.querySelector('[name="astro-view-transitions-enabled"]')) {
+        if (!newDoc.querySelector('[name="astro-view-transitions-enabled"]') || hasLibraryConflict(newDoc)) {
           ev.preventDefault();
           return;
         }
@@ -424,7 +513,9 @@
       prefetch,
       navigate: (href: string) => {
         const url = toUrl(href);
-        if (url) navigate(pathKey(url) + url.search + url.hash);
+        if (!url) return;
+        const target = pathKey(url) + url.search + url.hash;
+        routerReady.then((navigate) => navigate(target)).catch(() => location.assign(target));
       },
     };
   }

@@ -1610,6 +1610,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       chart.timeScale().fitContent();
     }
 
+    // Çağıran lwcCharts'a kaydediyor; dönmezse grafik hiç kaldırılmıyor ve her yeniden
+    // çizimde (filtre, tema, sayfa geçişi) document dinleyicileriyle birlikte sızıyordu
+    return chart;
   }
 
   // ============================================================
@@ -3531,6 +3534,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // Sayfadan çıkarken grafikleri (ve kendi resize dinleyicilerini) yok et
   PAGE.onLeave(function () {
     clearTimeout(window._chartExpandResizeTimer);
+    closeChartExpansion(); // açık genişletilmiş grafik varsa onu da yok eder
     destroyAllCharts();
   });
 

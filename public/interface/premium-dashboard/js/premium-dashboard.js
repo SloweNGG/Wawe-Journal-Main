@@ -36,6 +36,7 @@ import {
   loadLayoutOrder,
   resetLayout,
   initDragDrop,
+  destroyDragDrop,
   forceResizeAllCharts,
   renderPremiumStats,
   renderKpiBar,
@@ -59,7 +60,15 @@ function _t(key, fallback) {
   return fallback !== undefined ? fallback : key;
 }
 
-// GLOBAL STATE
+// ============================================================
+// SPA YAŞAM DÖNGÜSÜ
+// Bu bir ES modülü: tarayıcı onu doküman başına yalnızca BİR KEZ çalıştırır. SPA ile
+// sayfaya her girişte mount(), çıkışta da PAGE.onLeave temizliği çalışır
+// (bkz. en alttaki mountIfOnPage ve BaseHead.astro → wwPage).
+// ============================================================
+var PAGE = null;
+
+// GLOBAL STATE (mount() her ziyarette sıfırlar)
 var currentUser = null;
 var allTrades = [];
 var currentFilteredTrades = [];
@@ -69,7 +78,7 @@ var customRangeEnd = null;
 var isPageVisible = true;
 var chartRafId = null;
 
-// TEMA OBSERVER
+// TEMA OBSERVER (mount'ta bağlanır, çıkışta ayrılır)
 var themeObserver = new MutationObserver(function(mutations) {
   mutations.forEach(function(mutation) {
     if (mutation.attributeName === 'class') {
@@ -80,20 +89,19 @@ var themeObserver = new MutationObserver(function(mutations) {
     }
   });
 });
-themeObserver.observe(document.body, { attributes: true });
 
 // WINDOW RESIZE - SADECE RESIZE
 var resizeTimer = null;
-window.addEventListener('resize', function() {
+function onWindowResize() {
   if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
   resizeTimer = setTimeout(function() {
     forceResizeAllCharts();
     resizeTimer = null;
   }, 300);
-});
+}
 
 // VISIBILITY CHANGE
-document.addEventListener('visibilitychange', function() {
+function onVisibilityChange() {
   isPageVisible = !document.hidden;
   if (isPageVisible && currentFilteredTrades && currentFilteredTrades.length > 0) {
     var hasCharts = document.querySelector('.chart-wrap .apexcharts-canvas, .chart-wrap .lwc-chart');
@@ -104,7 +112,7 @@ document.addEventListener('visibilitychange', function() {
       });
     }
   }
-});
+}
 
 // MENU FONKSİYONLARI
 export function openMenu() {
@@ -239,7 +247,7 @@ function renderDashboardDOM() {
   hideSkeletons();
 }
 
-async function fetchFreshTrades(userId, jid, renderImmediate) {
+async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
   var allTradesData = [];
   var pageSize = 1000;
   var from = 0;
@@ -278,6 +286,9 @@ async function fetchFreshTrades(userId, jid, renderImmediate) {
       window.wwCache.set('trades', userId, jid, allTradesData);
     }
 
+    // Bu arada başka sayfaya geçildiyse yeni sayfanın DOM'una yazma
+    if (scope && !scope.alive) return;
+
     if (renderImmediate) {
       allTrades = allTradesData;
       currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
@@ -304,7 +315,7 @@ async function fetchFreshTrades(userId, jid, renderImmediate) {
 }
 
 // LOAD PREMIUM DATA
-async function loadPremiumData() {
+async function loadPremiumData(scope) {
   wwLog.log('[Premium Dashboard] loadPremiumData başlatıldı...');
 
   // Hızlı auth hazır kontrolü (1 saniye uyumak yerine 20ms aralıklarla kontrol)
@@ -325,7 +336,7 @@ async function loadPremiumData() {
 
   try {
     var user = await requireAuth();
-    if (!user) return;
+    if (!user || !scope.alive) return;
     currentUser = user;
 
     // Aktif defter kimliği — önce localStorage veya journal state'ten hemen al
@@ -344,10 +355,13 @@ async function loadPremiumData() {
       window.journal.ensureActiveJournal(user.id).catch(function() {});
     }
 
+    if (!scope.alive) return;
+
     // Plan kontrolü (sessionStorage veya profil önbelleğinden 0ms kontrol)
     var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
     if (!cachedPlan || cachedPlan !== 'premium') {
       var planData = await getUserPlan();
+      if (!scope.alive) return;
       if (planData.plan !== 'premium') {
         if (typeof window.openUpgradeModal === 'function') {
           window.openUpgradeModal({ feature: 'premium_dashboard' });
@@ -398,13 +412,13 @@ async function loadPremiumData() {
       currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
       renderDashboardDOM();
       // Arka planda sessizce taze verileri çek (SWR revalidation)
-      fetchFreshTrades(user.id, jid, false);
+      fetchFreshTrades(user.id, jid, false, scope);
       return;
     }
 
     // Önbellek yoksa skeleton'u göster ve veriyi çek
     showSkeletons();
-    await fetchFreshTrades(user.id, jid, true);
+    await fetchFreshTrades(user.id, jid, true, scope);
 
   } catch(e) {
     console.error('[Premium Dashboard] Hata:', e);
@@ -412,22 +426,50 @@ async function loadPremiumData() {
   }
 }
 
-// DOM READY
-document.addEventListener('DOMContentLoaded', function() {
+// MOUNT — sayfaya her girişte (ilk yükleme ve SPA ile her geri dönüş).
+// Navbar SPA'da kalıcı: ona ve document'a bağlanan dinleyiciler scope.on ile eklenir,
+// sayfadan çıkınca kaldırılır.
+function mount(scope) {
   wwLog.log('[Premium Dashboard] DOM yüklendi, Premium Dashboard başlatılıyor...');
+
+  PAGE = scope;
+  currentUser = null;
+  allTrades = [];
+  currentFilteredTrades = [];
+  currentRange = 'all';
+  customRangeStart = null;
+  customRangeEnd = null;
+  isPageVisible = true;
+  isDashboardDomRendered = false;
+
+  themeObserver.observe(document.body, { attributes: true });
+  scope.on(window, 'resize', onWindowResize);
+  scope.on(document, 'visibilitychange', onVisibilityChange);
+  scope.on(document, 'journal-changed', function() {
+    if (window.__wj_journal_transitioning) return;
+    window.location.reload();
+  });
+  scope.onLeave(function() {
+    themeObserver.disconnect();
+    if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
+    if (chartRafId) { cancelAnimationFrame(chartRafId); chartRafId = null; }
+    clearAllApexCharts();
+    clearLightweightChart();
+    destroyDragDrop();
+  });
 
   // Avatar dropdown
   var ua = document.getElementById('user-avatar');
   var dm = document.getElementById('dropdown-menu');
   if (ua && dm) {
-    ua.addEventListener('click', function(e) { e.stopPropagation(); dm.classList.toggle('show'); });
-    document.addEventListener('click', function() { dm.classList.remove('show'); });
+    scope.on(ua, 'click', function(e) { e.stopPropagation(); dm.classList.toggle('show'); });
+    scope.on(document, 'click', function() { dm.classList.remove('show'); });
   }
 
   // Logout
   var logoutBtn = document.getElementById('logout-dropdown-btn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', async function() {
+    scope.on(logoutBtn, 'click', async function() {
       localStorage.removeItem('ww_last_active_push');
       await sb.auth.signOut();
       window.location.href = 'index.html';
@@ -439,14 +481,14 @@ document.addEventListener('DOMContentLoaded', function() {
   var nm = document.getElementById('nav-menu');
   var nb = document.getElementById('nav-backdrop');
 
-  if (nt) nt.addEventListener('click', function() {
+  if (nt) scope.on(nt, 'click', function() {
     nm.classList.contains('open') ? closeMenu() : openMenu();
   });
-  if (nb) nb.addEventListener('click', closeMenu);
+  if (nb) scope.on(nb, 'click', closeMenu);
 
   var logoutMobile = document.getElementById('logout-btn-mobile');
   if (logoutMobile) {
-    logoutMobile.addEventListener('click', function() {
+    scope.on(logoutMobile, 'click', function() {
       closeMenu();
       var btn = document.getElementById('logout-dropdown-btn');
       if (btn) btn.click();
@@ -460,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fabToggle.addEventListener('click', function() {
       fabActions.classList.toggle('open');
     });
-    document.addEventListener('click', function(e) {
+    scope.on(document, 'click', function(e) {
       if (!e.target.closest('#fab-toggle') && !e.target.closest('#fab-actions')) {
         fabActions.classList.remove('open');
       }
@@ -471,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var bellBtn = document.getElementById('overtrade-bell-btn');
   var bellPanel = document.getElementById('bell-panel');
   if (bellBtn && bellPanel) {
-    bellBtn.addEventListener('click', function(e) {
+    scope.on(bellBtn, 'click', function(e) {
       e.stopPropagation();
       bellPanel.classList.toggle('open');
       if (bellPanel.classList.contains('open')) {
@@ -480,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     });
-    document.addEventListener('click', function(e) {
+    scope.on(document, 'click', function(e) {
       if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
         bellPanel.classList.remove('open');
       }
@@ -490,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Bell mark read
   var markReadBtn = document.getElementById('bell-mark-read-btn');
   if (markReadBtn) {
-    markReadBtn.addEventListener('click', function(e) {
+    scope.on(markReadBtn, 'click', function(e) {
       e.stopPropagation();
       if (typeof window.markOvertradeAsRead === 'function') {
         window.markOvertradeAsRead();
@@ -500,8 +542,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Inject skeleton and load immediately (0ms gecikme)
   injectSkeletonMarkup();
-  loadPremiumData();
-});
+  loadPremiumData(scope);
+}
+
+var mountedScope = null;
+function mountIfOnPage() {
+  if (!document.querySelector('main.premium-main')) return;
+  var scope = window.wwPage.current();
+  if (!scope.alive || scope === mountedScope) return;
+  mountedScope = scope;
+  mount(scope);
+}
+
+// İlk yükleme: DOMContentLoaded'da başlat (eskisi gibi)
+if (document.readyState === 'complete') {
+  mountIfOnPage();
+} else {
+  document.addEventListener('DOMContentLoaded', mountIfOnPage);
+}
+// SPA ile sayfaya tekrar girildiğinde (modül ikinci kez çalışmaz)
+document.addEventListener('ww:page-load', mountIfOnPage);
 
 // GLOBAL EXPORT (window üzerinden)
 window.markOvertradeAsRead = markOvertradeAsRead;
@@ -509,8 +569,4 @@ window.openMenu = openMenu;
 window.closeMenu = closeMenu;
 window.exportCSV = function() { exportCSV(currentFilteredTrades); };
 window.exportPDF = function() { exportPDF(currentFilteredTrades); };
-document.addEventListener('journal-changed', () => {
-  if (window.__wj_journal_transitioning) return;
-  window.location.reload();
-});
 

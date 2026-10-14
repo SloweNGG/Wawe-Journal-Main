@@ -16,6 +16,8 @@ export interface Props {
   isAppPage?: boolean;
   /** Sayfa yenilemeden geçiş (bkz. SpaRouter.astro — sayfa SPA_PATHS'e de eklenmeli) */
   spa?: boolean;
+  /** Sayfa quick-add (FAB) kullanıyor mu — SPA'da buton buna göre gösterilir */
+  showQuickAdd?: boolean;
 }
 
 const {
@@ -29,6 +31,7 @@ const {
   showNavbar = true,
   isAppPage = showNavbar,
   spa = false,
+  showQuickAdd = false,
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -44,7 +47,7 @@ const {
   )}
   {spa && <SpaRouter />}
 </head>
-<body class={bodyClass} style={bodyStyle} data-page-class={bodyClass}>
+<body class={bodyClass} style={bodyStyle} data-page-class={bodyClass} data-quick-add={showQuickAdd ? '' : undefined}>
   {/* SPA: sunucudan gelen head elemanlarını işaretle (runtime'da eklenenlerden ayırmak için).
       Body'nin başında çalışır; Astro'nun head sonuna eklediği CSS/script'ler de dahil olsun. */}
   {spa && <script is:inline>for(var c=document.head.children,i=0;i<c.length;i++)c[i].setAttribute('data-ssr','')</script>}

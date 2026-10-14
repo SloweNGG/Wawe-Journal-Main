@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr" showQuickAdd={true}>
+<Layout lang="tr" showQuickAdd={true} spa={true}>
 <Fragment slot="head">
   <title data-i18n="calendar.title">Takvim - Wawe Journal</title>
   
@@ -27,7 +27,7 @@ import Layout from '../layouts/Layout.astro';
   <script type="module" src="/src/bundle.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
-  <script src="/interface/calendar/js/calendar.js?v=1790428600000" is:inline defer></script>
+  <script src="/interface/calendar/js/calendar.js?v=1790428600000" is:inline defer data-page-script></script>
 </Fragment>
   <!-- NAVBAR -->
 
