@@ -135,8 +135,17 @@ export function formatCurrencyShort(value) {
 // ⭐ TARİH FORMATLAMA - MEVCUT + APEXCHARTS
 // ============================================================
 
+// Tarih biçimleri Ayarlar > Görünüm > Saat ve Gün'deki saat dilimine göre yazılır (WwTime) ve 'YYYY-MM-DD'
+// gibi sadece-tarih değerleri KAYDIRMAZ. (Eskiden `new Date('2026-01-05')` UTC gece yarısı olarak okunup
+// yerel saatle yazılıyordu: UTC- bölgelerde bir gün önce görünüyordu.) WwTime yoksa eski davranış.
+function _wwTime() {
+  return (typeof window !== 'undefined' && window.WwTime) ? window.WwTime : null;
+}
+
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
+  const WT = _wwTime();
+  if (WT) return WT.formatDate(dateStr, 'tr', { day: '2-digit', month: 'short', year: 'numeric' }) || '—';
   return new Date(dateStr).toLocaleDateString('tr-TR', {
     day: '2-digit', month: 'short', year: 'numeric'
   });
@@ -145,6 +154,12 @@ export function formatDate(dateStr) {
 // ⭐ APEXCHARTS İÇİN KISA TARİH FORMATI
 export function formatDateShort(dateStr) {
   if (!dateStr) return '';
+  const WT = _wwTime();
+  if (WT) {
+    const key = WT.dateKey(dateStr);
+    const p = key ? key.split('-') : null;
+    if (p && p.length === 3) return parseInt(p[2], 10) + '/' + parseInt(p[1], 10) + '/' + p[0].slice(2);
+  }
   const d = new Date(dateStr);
   const day = d.getDate();
   const month = d.getMonth() + 1;
@@ -155,6 +170,8 @@ export function formatDateShort(dateStr) {
 // ⭐ APEXCHARTS İÇİN TAM TARİH FORMATI (Tooltip)
 export function formatDateFull(dateStr) {
   if (!dateStr) return '';
+  const WT = _wwTime();
+  if (WT) return WT.formatDate(dateStr, 'tr', { day: '2-digit', month: 'long', year: 'numeric' }) || '';
   return new Date(dateStr).toLocaleDateString('tr-TR', {
     day: '2-digit', month: 'long', year: 'numeric'
   });

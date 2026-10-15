@@ -33,20 +33,21 @@ const MULTIPLIER_MAP: Record<string, number> = {
   other: 1,
 };
 
+const FIAT_CODES = 'EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH|CZK|HUF|DKK|THB|ILS|RUB|CNY';
+const FOREX_PAIR_RE = new RegExp('^(' + FIAT_CODES + ')(' + FIAT_CODES + ')(?![A-Z]{4,})');
+const CRYPTO_BASE_RE = /^(XBT|BTC|ETH|SOL|ADA|XRP|DOGE|BNB|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/;
+const CRYPTO_QUOTE_RE = /(USDT|USDC|BUSD)$/;
+
+// Forex ÖNCE (USDCAD/USDTRY gibi çiftler kripto "USDC"/"USDT" alt-dizisiyle karışmasın),
+// kripto başa/sona sabitlenmiş eşleşmeyle kontrol edilir. broker-dictionary.js ile aynı mantık.
 function guessInstrument(symbol: string): string {
   const s = String(symbol || '').toUpperCase().trim();
-  if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(s)) return 'crypto';
+  const letters = s.replace(/[^A-Z]/g, '');
   if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+  if (FOREX_PAIR_RE.test(letters)) return 'forex';
+  if (CRYPTO_BASE_RE.test(letters) || CRYPTO_QUOTE_RE.test(letters)) return 'crypto';
   if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
-  const clean = s.replace(/[^A-Z]/g, '');
-  if (clean.length === 6) return 'forex';
-  if (clean.length >= 6) {
-    const prefix = clean.slice(0, 6);
-    const forexCurrencies = /(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH)/;
-    if (forexCurrencies.test(prefix.slice(0, 3)) && forexCurrencies.test(prefix.slice(3, 6))) {
-      return 'forex';
-    }
-  }
+  if (letters.length === 6) return 'forex';
   return 'other';
 }
 
@@ -224,12 +225,15 @@ serve(async (req: Request) => {
     return jsonRes({ error: 'Hedef defter bulunamadı veya pasif.' }, 404, cors);
   }
 
-  // Defter eşleşmesini güncelle
+  // Defter eşleşmesini güncelle. Defter değişince senkron imleci SIFIRLANIR: eskiden imleç korunuyor ve yeni defter
+  // yalnızca son 2 günün işlemlerini alıyordu (import_hash defter başına tekil olduğu için tekrar riski yok).
   if (accountRow.journal_id !== targetJournalId) {
     await admin.from('ctrader_accounts').update({
       journal_id: targetJournalId,
+      last_deal_timestamp: null,
       updated_at: new Date().toISOString(),
     }).eq('id', accountRow.id);
+    accountRow.last_deal_timestamp = null;
   }
 
   // 4) Çift Tıklama / Concurrency Kontrolü
@@ -314,25 +318,60 @@ serve(async (req: Request) => {
     // 2102 Account Auth
     await wsClient.sendRequest(2102, { ctidTraderAccountId, accessToken });
 
-    // Para hassasiyeti ve başlangıç zamanı için 2121 TraderReq
+    // Para hassasiyeti (moneyDigits) ve başlangıç zamanı için 2121 TraderReq.
+    // moneyDigits HER senkronda okunur (eskiden yalnızca ilk senkronda; sonraki senkronlarda varsayılan 2 kalıyor ve
+    // closePositionDetail.moneyDigits alanı yoksa 8 haneli hesaplarda PnL 10^6 kat yanlış çıkıyordu).
     let moneyDigits = 2;
-    let fromTimestamp: number;
+    let registrationTs = 0;
+    let traderInfoOk = false;
+    // Hesap bakiyesi (yalnızca kapanmış işlemleri içerir; açık pozisyonun anlık kâr/zararı dahil değildir) ve para birimi.
+    // Kartta "Bakiye" olarak gösterilir. Alınamazsa (null) eski değer korunur.
+    let accountBalance: number | null = null;
+    let balanceCurrency: string | null = null;
+    let balanceAsOf = new Date().toISOString();           // bakiyenin geçerli olduğu an
+    let balanceSource: 'trader' | 'last_deal' | null = null;
+    // YEDEK kaynak: 2121 bakiye vermezse, son kapanış işleminin "işlem sonrası bakiyesi" (closePositionDetail.balance)
+    let fallbackBalance: number | null = null;
+    let fallbackBalanceTs = 0;
+    let traderDiag = 'istek yapılmadı';   // bakiye alınamazsa log'a yazılır (cevapta hangi alanlar vardı?)
+    try {
+      const traderRes = await wsClient.sendRequest(2121, { ctidTraderAccountId });
+      const trader = traderRes.payload?.trader;
+      traderDiag = 'payload alanları: [' + Object.keys(traderRes.payload || {}).join(',') + '], trader alanları: [' +
+        Object.keys(trader || {}).join(',') + '], balance=' + String(trader?.balance) + ', moneyDigits=' + String(trader?.moneyDigits);
+      if (trader?.moneyDigits != null && isFinite(Number(trader.moneyDigits))) moneyDigits = Number(trader.moneyDigits);
+      registrationTs = trader?.registrationTimestamp ? Number(trader.registrationTimestamp) : 0;
+      traderInfoOk = true;
 
+      // trader.balance, 10^moneyDigits ile çarpılmış tam sayıdır (ör. 1234567 & moneyDigits=2 -> 12345.67)
+      if (trader?.balance != null && isFinite(Number(trader.balance))) {
+        const balDigits = Math.min(8, Math.max(2, moneyDigits));
+        accountBalance = Number((Number(trader.balance) / Math.pow(10, moneyDigits)).toFixed(balDigits));
+        balanceSource = 'trader';
+      }
+      // Para birimi: depositAssetId -> varlık listesinden ad (USD, EUR...). Alınamazsa yalnızca para birimi boş kalır.
+      if (accountBalance !== null && trader?.depositAssetId != null) {
+        try {
+          const assetRes = await wsClient.sendRequest(2112, { ctidTraderAccountId }, 8000);
+          const assets: any[] = assetRes.payload?.asset || [];
+          const dep = assets.find((a) => String(a.assetId) === String(trader.depositAssetId));
+          if (dep?.name) balanceCurrency = String(dep.name).toUpperCase().slice(0, 12);
+        } catch (_) {}
+      }
+    } catch (e: any) {
+      traderDiag = 'hata: ' + (e?.description || e?.message || JSON.stringify(e));
+    }
+
+    let fromTimestamp: number;
     if (accountRow.last_deal_timestamp) {
       // Önceki senkrondan 2 gün geriye git (çakışan pencere)
       fromTimestamp = Math.max(0, Number(accountRow.last_deal_timestamp) - (2 * 24 * 60 * 60 * 1000));
-    } else {
+    } else if (traderInfoOk) {
       // İlk senkron: trader.registrationTimestamp al, en fazla 90 gün geriye git
-      try {
-        const traderRes = await wsClient.sendRequest(2121, { ctidTraderAccountId });
-        const trader = traderRes.payload?.trader;
-        moneyDigits = trader?.moneyDigits ?? 2;
-        const regTime = trader?.registrationTimestamp ? Number(trader.registrationTimestamp) : 0;
-        const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
-        fromTimestamp = regTime > ninetyDaysAgo ? regTime : ninetyDaysAgo;
-      } catch (_) {
-        fromTimestamp = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      }
+      const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+      fromTimestamp = registrationTs > ninetyDaysAgo ? registrationTs : ninetyDaysAgo;
+    } else {
+      fromTimestamp = Date.now() - 30 * 24 * 60 * 60 * 1000;
     }
 
     // 1) Tüm sembollerin gerçek isimlerini 2114 (ProtoOASymbolsListReq) ile çek
@@ -401,6 +440,18 @@ serve(async (req: Request) => {
     let currFrom = fromTimestamp;
     const pendingTradesToInsert: any[] = [];
 
+    // Doğruluk izleme
+    // processedUntil: bu zamana kadarki (dahil) tüm deal'ler işlendi. Zaman aşımında imleç buraya konur
+    //   (eskiden hiç kapanış görülmemişse imleç "şimdi"ye atlıyor ve çekilmemiş geçmiş sonsuza dek kayboluyordu).
+    // confirmedLot: lotSize'ı 2116 ile DOĞRULANMIŞ semboller. Doğrulanmamış sembolün deal'i uydurma lotla yazılmaz.
+    // minSkippedTs: lot bilgisi alınamayıp atlanan en eski deal; imleç bunun gerisinde tutulur ki sonraki senkron yeniden denesin.
+    let processedUntil = fromTimestamp;
+    const confirmedLot = new Set<number>();
+    let skippedUnknownLot = 0;
+    let skippedInvalidVolume = 0;
+    let minSkippedTs = Number.POSITIVE_INFINITY;
+    const positionClosings = new Map<string, { swap: number; commission: number }[]>();
+
     // Zaman pencereleri döngüsü (6 günlük bloklar)
     while (currFrom < now) {
       // Zaman aşımı kontrolü (Edge function timeout olmasın diye)
@@ -435,24 +486,26 @@ serve(async (req: Request) => {
         // Kapanmış işlemleri filtrele: closePositionDetail dolu ve FILLED/PARTIALLY_FILLED (2 veya 3)
         const closedDeals = deals.filter((d) => (d.dealStatus === 2 || d.dealStatus === 3) && d.closePositionDetail != null);
 
-        // Lot büyüklüğü detayları için 2116 ile çek
-        const symIdsToInspect = [...new Set(closedDeals.map((d) => Number(d.symbolId)))];
-        if (symIdsToInspect.length > 0) {
-          await sleep(250);
+        // Lot büyüklüğü detayları için 2116 ile çek (yalnızca henüz doğrulanmamış semboller; bir deneme başarısız olursa 1 kez daha)
+        const symIdsToInspect = [...new Set(closedDeals.map((d) => Number(d.symbolId)))].filter((id) => !confirmedLot.has(id));
+        for (let attempt = 0; attempt < 2 && symIdsToInspect.some((id) => !confirmedLot.has(id)); attempt++) {
+          await sleep(attempt === 0 ? 250 : 1000);
           try {
             const symRes = await wsClient.sendRequest(2116, {
               ctidTraderAccountId,
-              symbolId: symIdsToInspect,
+              symbolId: symIdsToInspect.filter((id) => !confirmedLot.has(id)),
             });
             for (const s of (symRes.payload?.symbol || [])) {
               const sid = Number(s.symbolId);
               const existing = symbolCache.get(sid);
               const resolvedName = existing?.symbolName || KNOWN_CTRADER_SYMBOLS[sid] || `SYM_${sid}`;
+              const lotFromApi = s.lotSize ? Number(s.lotSize) : 0;
               symbolCache.set(sid, {
                 symbolName: resolvedName,
-                lotSize: s.lotSize ? Number(s.lotSize) : (existing?.lotSize || 10000000),
+                lotSize: lotFromApi > 0 ? lotFromApi : (existing?.lotSize || 10000000),
                 digits: s.digits ?? (existing?.digits || 5),
               });
+              if (lotFromApi > 0) confirmedLot.add(sid);
             }
           } catch (symErr) {
             console.error('Sembol 2116 detay çekme uyarısı:', symErr);
@@ -462,6 +515,17 @@ serve(async (req: Request) => {
         // Deal'leri trades satırına dönüştür
         for (const deal of closedDeals) {
           const cpd = deal.closePositionDetail;
+
+          // Yedek bakiye: en son kapanan işlemin sonrasındaki hesap bakiyesi
+          if (cpd.balance != null && isFinite(Number(cpd.balance))) {
+            const tsBal = Number(deal.executionTimestamp);
+            if (tsBal >= fallbackBalanceTs) {
+              const mdBal = Number(cpd.moneyDigits ?? moneyDigits);
+              fallbackBalance = Number((Number(cpd.balance) / Math.pow(10, mdBal)).toFixed(Math.min(8, Math.max(2, mdBal))));
+              fallbackBalanceTs = tsBal;
+            }
+          }
+
           const sid = Number(deal.symbolId);
           const symInfo = symbolCache.get(sid);
 
@@ -471,15 +535,31 @@ serve(async (req: Request) => {
           }
           symbolName = symbolName.replace(/[\/\s_-]/g, '').toUpperCase();
 
-          const lotSize = symInfo?.lotSize || 10000000;
-          const divisor = Math.pow(10, cpd.moneyDigits ?? moneyDigits);
+          const execTimeEarly = Number(deal.executionTimestamp);
+
+          // Lot büyüklüğü doğrulanmadıysa (2116 başarısız) varsayılan 10.000.000 ile ÇARPIM/BÖLÜM yapılmaz:
+          // altın/kripto/indekslerde lot 1000 kat ve üzeri yanlış çıkıyordu. Deal atlanır, imleç gerisinde tutulur,
+          // sonraki senkron yeniden dener.
+          if (!confirmedLot.has(sid)) {
+            skippedUnknownLot++;
+            if (execTimeEarly < minSkippedTs) minSkippedTs = execTimeEarly;
+            continue;
+          }
+          const lotSize = symInfo!.lotSize;
+          const moneyDigitsForDeal = Number(cpd.moneyDigits ?? moneyDigits);
+          const divisor = Math.pow(10, moneyDigitsForDeal);
+          const dec = Math.min(8, Math.max(2, moneyDigitsForDeal));   // 8 haneli (BTC) hesaplarda 2 haneye yuvarlanıp sıfırlanmasın
 
           // cTrader'da kapanış işlemi SELL (2) ise asıl pozisyon LONG; BUY (1) ise SHORT'tur.
           const isClosingSell = deal.tradeSide === 2 || deal.tradeSide === 'SELL' || String(deal.tradeSide).toLowerCase() === 'sell';
           const direction = isClosingSell ? 'LONG' : 'SHORT';
           const rawVolume = Number(cpd.closedVolume ?? deal.filledVolume ?? deal.volume ?? 0);
-          const rawLot = (rawVolume > 0 && lotSize > 0) ? (rawVolume / lotSize) : 0.01;
-          const lot = (!isNaN(rawLot) && rawLot > 0) ? Number(rawLot.toFixed(4)) : 0.01;
+          // Hacim 0/geçersizse lot UYDURULMAZ (eskiden 0.01 yazılıyordu): deal atlanır
+          if (!(rawVolume > 0) || !(lotSize > 0)) {
+            skippedInvalidVolume++;
+            continue;
+          }
+          const lot = Number((rawVolume / lotSize).toFixed(4));
 
           const grossProfitNum = Number(cpd.grossProfit ?? 0);
           const grossPnl = isNaN(grossProfitNum) ? 0 : (grossProfitNum / divisor);
@@ -499,6 +579,14 @@ serve(async (req: Request) => {
             latestDealTimestamp = execTime;
           }
 
+          // Teşhis: aynı pozisyonun birden fazla kapanışında swap/komisyon "pozisyon toplamı" mı yoksa "deal başına" mı?
+          if (deal.positionId) {
+            const pk = String(deal.positionId);
+            const list = positionClosings.get(pk) || [];
+            list.push({ swap: Number(cpd.swap ?? 0), commission: Number(cpd.commission ?? deal.commission ?? 0) });
+            positionClosings.set(pk, list);
+          }
+
           const entryPrice = Number(cpd.entryPrice) || Number(deal.executionPrice) || 0;
           const exitPrice = Number(deal.executionPrice) || entryPrice;
 
@@ -511,10 +599,10 @@ serve(async (req: Request) => {
             lot,
             entry_price: entryPrice,
             exit_price: exitPrice,
-            gross_pnl: Number(grossPnl.toFixed(2)),
-            commission: Number(commission.toFixed(2)),
-            swap: Number(swap.toFixed(2)),
-            pnl: Number(netPnl.toFixed(2)),
+            gross_pnl: Number(grossPnl.toFixed(dec)),
+            commission: Number(commission.toFixed(dec)),
+            swap: Number(swap.toFixed(dec)),
+            pnl: Number(netPnl.toFixed(dec)),
             trade_date: new Date(execTime).toISOString(),
             exit_date: new Date(execTime).toISOString(),
             multiplier,
@@ -545,14 +633,20 @@ serve(async (req: Request) => {
 
         if (hasMore && deals.length > 0) {
           const lastExec = Number(deals[deals.length - 1].executionTimestamp);
-          dealFrom = lastExec > dealFrom ? lastExec + 1 : dealFrom + 1;
+          // Bir sonraki sayfa SON deal'in zamanından BAŞLAR (eskiden +1 idi: aynı milisaniyedeki, sayfa sınırına
+          // düşen deal'ler hiç çekilmiyordu). Tekrar gelenler import_hash ile atlanır. Sayfa tamamen aynı
+          // milisaniyedeyse takılmamak için +1.
+          processedUntil = Math.max(processedUntil, lastExec - 1);
+          dealFrom = lastExec > dealFrom ? lastExec : dealFrom + 1;
           if (dealFrom >= currTo) break;
         } else {
+          processedUntil = Math.max(processedUntil, currTo);
           break;
         }
       }
 
       if (!isDone) break;
+      processedUntil = Math.max(processedUntil, currTo);
       currFrom = currTo + 1;
     }
 
@@ -572,22 +666,85 @@ serve(async (req: Request) => {
       skippedCount += (pendingTradesToInsert.length - (upsertData?.length || 0));
     }
 
+    // Teşhis: aynı pozisyonun birden çok kapanışında aynı (sıfır olmayan) swap/komisyon tekrar ediyorsa bu değerler
+    // büyük olasılıkla "pozisyon toplamı"dır ve her kısmi kapanış satırına tekrar yazılmış olabilir.
+    const warnings: string[] = [];
+    let repeatedCumulative = 0;
+    for (const [, list] of positionClosings) {
+      if (list.length < 2) continue;
+      const sameSwap = list.every((x) => x.swap !== 0 && x.swap === list[0].swap);
+      const sameComm = list.every((x) => x.commission !== 0 && x.commission === list[0].commission);
+      if (sameSwap || sameComm) repeatedCumulative++;
+    }
+    if (repeatedCumulative > 0) {
+      const w = `${repeatedCumulative} pozisyonda kısmi kapanış satırlarında aynı swap/komisyon değeri tekrar ediyor; cTrader bu alanları pozisyon toplamı olarak veriyor olabilir. Gerçek bir kısmi kapanışla toplam net PnL'i cTrader bakiyesiyle karşılaştırın.`;
+      console.warn('⚠️', w);
+      warnings.push(w);
+    }
+    if (skippedUnknownLot > 0) {
+      warnings.push(`${skippedUnknownLot} işlem lot bilgisi alınamadığı için atlandı; bir sonraki senkronda yeniden denenecek.`);
+    }
+    if (skippedInvalidVolume > 0) {
+      warnings.push(`${skippedInvalidVolume} işlem geçersiz hacim nedeniyle atlandı.`);
+    }
+
+    // Senkron imleci:
+    //  - Tamamlandıysa: son kapanış zamanı (kapanış yoksa önceki imleç, o da yoksa şimdi)
+    //  - Zaman aşımında: işlenen son noktaya kadar (eskiden "şimdi"ye atlıyor, çekilmemiş geçmişi kaybettiriyordu)
+    //  - Lot bilgisi alınamayıp atlanan deal varsa imleç onun gerisinde tutulur (sonraki senkron yeniden dener)
+    const prevCursor = accountRow.last_deal_timestamp ? Number(accountRow.last_deal_timestamp) : 0;
+    let nextCursor = isDone
+      ? (latestDealTimestamp > 0 ? latestDealTimestamp : (prevCursor || now))
+      : Math.max(prevCursor, processedUntil);
+    if (minSkippedTs !== Number.POSITIVE_INFINITY) {
+      nextCursor = Math.min(nextCursor, Math.max(0, minSkippedTs - 1));
+    }
+
     // Senkron durumunu güncelle
     await admin.from('ctrader_accounts').update({
       last_sync_at: new Date().toISOString(),
-      last_deal_timestamp: latestDealTimestamp > 0 ? latestDealTimestamp : (accountRow.last_deal_timestamp || now),
+      last_deal_timestamp: nextCursor,
       syncing_since: null,
       last_error: null,
       updated_at: new Date().toISOString(),
     }).eq('id', accountRow.id);
 
+    // Bakiye ayrı güncellenir: migration henüz çalıştırılmadıysa (sütun yok) senkron imleci/durumu etkilenmesin.
+    if (accountBalance === null && fallbackBalance !== null && fallbackBalanceTs > 0) {
+      accountBalance = fallbackBalance;
+      balanceSource = 'last_deal';
+      balanceAsOf = new Date(fallbackBalanceTs).toISOString();
+      console.log('Bakiye 2121 cevabında yoktu; son kapanış işleminin bakiyesi kullanıldı:', accountBalance, balanceAsOf);
+    }
+    if (accountBalance !== null) {
+      const { error: balErr } = await admin.from('ctrader_accounts').update({
+        balance: accountBalance,
+        balance_currency: balanceCurrency,
+        balance_updated_at: balanceAsOf,
+      }).eq('id', accountRow.id);
+      if (balErr) {
+        console.warn('Bakiye kaydedilemedi (202610150005 migration çalıştırıldı mı?):', balErr.message);
+        warnings.push('Bakiye kaydedilemedi: veritabanı güncellemesi (202610150005) eksik olabilir.');
+      }
+    } else {
+      // 2121 cevabında bakiye yoktu ya da istek başarısız oldu
+      console.warn('cTrader bakiye bilgisi alınamadı (traderInfoOk=' + traderInfoOk + ') — ' + traderDiag);
+      warnings.push('cTrader bakiye bilgisini döndürmedi; bakiye güncellenemedi.');
+    }
+
     return jsonRes({
       success: true,
       done: isDone,
+      balance: accountBalance,
+      balance_currency: balanceCurrency,
+      balance_source: balanceSource,
+      balance_debug: accountBalance === null ? traderDiag : undefined,   // yalnızca bakiye alınamadıysa: nedenini göstermek için
       inserted: insertedCount,
       skipped: skippedCount,
       fetched: totalFetched,
-      message: `${insertedCount} yeni işlem eklendi, ${skippedCount} mükerrer işlem atlandı.`,
+      warnings,
+      message: `${insertedCount} yeni işlem eklendi, ${skippedCount} mükerrer işlem atlandı.` +
+        (skippedUnknownLot > 0 ? ` ${skippedUnknownLot} işlem lot bilgisi alınamadığı için atlandı (sonraki senkronda yeniden denenecek).` : ''),
     }, 200, cors);
 
   } catch (err: any) {

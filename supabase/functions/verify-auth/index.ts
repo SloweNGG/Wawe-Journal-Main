@@ -22,8 +22,13 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4173',
 ];
 
-const LOGIN_WINDOW_MIN = 15;     // 🛡️ Production: 15 dakika içinde maks 10 başarısız deneme
-const LOGIN_MAX_FAILED = 10;
+const LOGIN_WINDOW_MIN = 15;     // 🛡️ Production: 15 dakika penceresi
+const LOGIN_MAX_FAILED = 10;     // aynı IP'den (tüm e-postalar toplamı) maks 10 başarısız deneme
+// Aynı e-postaya TÜM IP'lerden gelen başarısız denemeler (dağıtık kaba kuvvet). IP başına limit zaten 10 olduğu için
+// bu değer daha yüksektir: tek bir kötü niyetli kişi kurbanın hesabını kilitleyemesin (hesap kilitleme DoS'u).
+const LOGIN_MAX_FAILED_PER_EMAIL = 30;
+const MAX_EMAIL_LENGTH = 254;    // RFC 5321
+const MAX_PASSWORD_LENGTH = 128; // aşırı büyük gövdelerle bcrypt/CPU yükü bindirmeyi engeller
 const REGISTER_WINDOW_MIN = 60;  // 🛡️ Production: 1 saat içinde maks 5 kayıt denemesi
 const REGISTER_MAX_ATTEMPTS = 5;
 
@@ -125,6 +130,9 @@ serve(async (req: Request) => {
   if (!email || !password) {
     return jsonRes({ error: 'Missing email or password' }, 400, cors);
   }
+  if (email.length > MAX_EMAIL_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    return jsonRes({ error: 'Invalid email or password' }, 400, cors);
+  }
   if (action === 'register') {
     if (!username) return jsonRes({ error: 'Missing username' }, 400, cors);
     if (username.length < 3 || username.length > 30) {
@@ -163,7 +171,9 @@ serve(async (req: Request) => {
       );
     }
     const [emailCheck, ipCheck] = await Promise.all(checks);
-    if ((emailCheck?.count || 0) >= LOGIN_MAX_FAILED || (ipCheck?.count || 0) >= LOGIN_MAX_FAILED) {
+    // IP biliniyorsa e-posta başına eşik yüksektir (dağıtık saldırı); IP bilinmiyorsa eski sıkı eşik korunur
+    const emailLimit = isRealIp ? LOGIN_MAX_FAILED_PER_EMAIL : LOGIN_MAX_FAILED;
+    if ((emailCheck?.count || 0) >= emailLimit || (ipCheck?.count || 0) >= LOGIN_MAX_FAILED) {
       return jsonRes({ error: 'Too many attempts. Please try again in 15 minutes.' }, 429, cors);
     }
   } else {
@@ -183,8 +193,11 @@ serve(async (req: Request) => {
   // ── TURNSTILE ───────────────────────────────────────────
   const turnstileOk = await verifyTurnstile(turnstileToken, ip);
   if (!turnstileOk) {
+    // E-posta KAYDEDİLMEZ: Turnstile'ı geçemeyen biri başkasının e-postasıyla istek atarak o kişinin
+    // "başarısız giriş" sayacını doldurup hesabını 15 dk kilitleyebiliyordu. IP başına sayaç (e-postasız)
+    // yine tutulur, böylece doğrulama atlatma denemeleri IP limitine takılır.
     await admin.from('login_attempts').insert({
-      ip_address: ip, email, action, success: false,
+      ip_address: ip, email: null, action, success: false,
     });
     return jsonRes({ error: 'Verification failed. Please try again.' }, 400, cors);
   }

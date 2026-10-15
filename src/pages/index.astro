@@ -1392,7 +1392,7 @@ import Layout from '../layouts/Layout.astro';
           var { data: { session } } = await sb.auth.getSession();
           if (!session) { window.location.href = 'register.html?plan=monthly'; return; }
           var price = window.getMonthlyPrice ? window.getMonthlyPrice() : 12;
-          if (window.upgradeToPremium) await window.upgradeToPremium('monthly', price, 'USD', 'BTC');
+          if (window.upgradeToPremium) await window.upgradeToPremium('monthly', price, 'USD', 'LTC'); // BTC yalnızca yıllık planda geçerli (sunucu aylıkta reddeder)
           else window.showToast && window.showToast('System preparing.', 'error');
         } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
       })();

@@ -69,7 +69,7 @@ const isActive = (page: string) => {
 
     <div class="nav-journal-switcher" id="nav-journal-switcher">
       <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleJournal && window.wwToggleJournal(event, this)">
-        <i data-lucide="folder" class="journal-icon"></i>
+        <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
         <span class="journal-name">Ana Hesap</span>
         <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
@@ -309,7 +309,7 @@ const isActive = (page: string) => {
     </div>
 
     <a href="/journals.html" class="menu-journal-link" id="menu-journal-link">
-      <i data-lucide="folder" class="menu-journal-icon"></i>
+      <span class="menu-journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
       <span class="menu-journal-info">
         <span class="menu-journal-label" data-i18n="nav.current_account">Aktif Hesap</span>
         <span class="menu-journal-name" id="menu-journal-name">Ana Hesap</span>

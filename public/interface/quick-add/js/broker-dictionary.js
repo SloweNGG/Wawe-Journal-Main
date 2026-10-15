@@ -89,12 +89,18 @@
   // ---------------------------------------------------------------------
   // Number parsing
   // ---------------------------------------------------------------------
-  function parseNumber(raw) {
+  // opts.decimal: ',' | '.' | undefined. A dosya düzeyinde ondalık ayracı biliniyorsa
+  // (bkz. detectDecimalSeparator) hücre tek başına tahmin edilmez:
+  //   ','  -> "1.234,56" / "1,08521" / "0,001"  (nokta = binlik ayracı)
+  //   '.'  -> "1,234.56" / "1.08521"            (virgül = binlik ayracı)
+  // İpucu yoksa tek hücreden tahmin edilir; belirsiz "1,234" (tam 3 hane) binlik sayılır.
+  function parseNumber(raw, opts) {
     if (raw === null || raw === undefined) return null;
     if (typeof raw === 'number') return isFinite(raw) ? raw : null;
     var s = String(raw).trim();
     if (s === '') return null;
 
+    var decimalHint = opts && opts.decimal;
     var negative = false;
     if (/^\(.*\)$/.test(s)) { negative = true; s = s.slice(1, -1); }
 
@@ -105,7 +111,11 @@
     var hasComma = s.indexOf(',') >= 0;
     var hasDot = s.indexOf('.') >= 0;
 
-    if (hasComma && hasDot) {
+    if (decimalHint === ',') {
+      s = s.replace(/\./g, '').replace(/,/g, '.');
+    } else if (decimalHint === '.') {
+      s = s.replace(/,/g, '');
+    } else if (hasComma && hasDot) {
       var lastComma = s.lastIndexOf(',');
       var lastDot = s.lastIndexOf('.');
       if (lastComma > lastDot) {
@@ -115,8 +125,11 @@
       }
     } else if (hasComma && !hasDot) {
       var parts = s.split(',');
-      if (parts.length === 2 && parts[1].length <= 2) {
-        s = parts[0].replace(/,/g, '') + '.' + parts[1];
+      // Tek virgül: tam 3 haneli ve tamsayı kısmı 0 olmayan değer ("1,234") belirsizdir
+      // ve binlik sayılır. Diğer tüm tek-virgül biçimleri ondalıktır
+      // ("1,5", "1,08521", "0,001", "0,125").
+      if (parts.length === 2 && (parts[1].length !== 3 || /^0+$/.test(parts[0]))) {
+        s = parts[0] + '.' + parts[1];
       } else {
         s = s.replace(/,/g, '');
       }
@@ -125,6 +138,43 @@
     var n = parseFloat(s);
     if (isNaN(n)) return null;
     return negative ? -n : n;
+  }
+
+  // Dosyadaki sayısal hücrelere bakıp ondalık ayracını (',' veya '.') bulur.
+  // Yalnızca KESİN kanıt oy sayılır; yetersiz/çelişkili kanıtta undefined döner.
+  function detectDecimalSeparator(rows) {
+    var commaVotes = 0, dotVotes = 0;
+    var reCommaDec = /^-?\d+,(\d+)$/;
+    var reDotDec = /^-?\d+\.(\d+)$/;
+    var reCommaDecWithThousands = /^-?\d{1,3}(\.\d{3})+,\d+$/;
+    var reDotDecWithThousands = /^-?\d{1,3}(,\d{3})+\.\d+$/;
+    var reMultiComma = /^-?\d{1,3}(,\d{3}){2,}$/;
+    var reMultiDot = /^-?\d{1,3}(\.\d{3}){2,}$/;
+
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      if (!row) continue;
+      for (var c = 0; c < row.length; c++) {
+        var v = row[c];
+        if (typeof v !== 'string') continue;
+        var t = v.trim().replace(/[€$£₺¥\s]/g, '').replace(/^\+/, '').replace(/^\((.*)\)$/, '-$1');
+        if (t === '' || t.length > 20) continue;
+        var m;
+        if (reCommaDecWithThousands.test(t) || reMultiDot.test(t)) { commaVotes++; continue; }
+        if (reDotDecWithThousands.test(t) || reMultiComma.test(t)) { dotVotes++; continue; }
+        if ((m = reCommaDec.exec(t))) {
+          // "1,234" belirsiz; "0,5" ve "1,5" gibi 3 hane olmayanlar ya da 0,xxx kesin
+          if (m[1].length !== 3 || /^-?0\d*,/.test(t)) commaVotes++;
+          continue;
+        }
+        if ((m = reDotDec.exec(t))) {
+          if (m[1].length !== 3 || /^-?0\./.test(t)) dotVotes++;
+        }
+      }
+    }
+    if (commaVotes > dotVotes) return ',';
+    if (dotVotes > commaVotes) return '.';
+    return undefined;
   }
 
   // ---------------------------------------------------------------------
@@ -137,12 +187,39 @@
     return new Date(ms);
   }
 
+  // Saat dilimi bilgisi OLMAYAN duvar saatini, Ayarlar > Görünüm > Saat ve Gün'deki "içe aktarılan dosyalardaki
+  // saatler" saat dilimine göre gerçek bir ana (Date) çevirir. (Eskiden tarayıcının yerel saati varsayılıyordu;
+  // broker saati GMT+2/+3 olan dosyalarda tüm işlem saatleri kayıyordu.) WwTime yoksa yerel saat.
+  function wallDate(y, mo, d, H, Mi, S) {
+    if (global.WwTime && typeof global.WwTime.importWallTimeToIso === 'function') {
+      return new Date(global.WwTime.importWallTimeToIso(y, mo, d, H, Mi, S || 0));
+    }
+    return new Date(y, mo - 1, d, H, Mi, S || 0);
+  }
+
+  // "7:24:01 PM" gibi 12 saatlik değerlerde AM/PM'i saate uygular (eskiden PM yok sayılıyordu: 19:24 yerine 07:24)
+  function applyMeridiem(hour, trailing) {
+    var mm = /\b(AM|PM)\b/i.exec(trailing || '');
+    if (!mm) return hour;
+    var isPm = mm[1].toUpperCase() === 'PM';
+    if (isPm && hour < 12) return hour + 12;
+    if (!isPm && hour === 12) return 0;
+    return hour;
+  }
+
+  // Excel seri tarihi: tam gün ise sadece-tarih (UTC gece yarısı), saat kısmı varsa duvar saati
+  function excelSerialToWallDate(serial) {
+    var d = excelSerialToDate(serial);
+    if (Math.abs(serial - Math.round(serial)) < 1e-9) return d;
+    return wallDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+  }
+
   function parseDate(raw) {
     if (raw === null || raw === undefined || raw === '') return null;
 
     // Excel serial date
     if (typeof raw === 'number') {
-      if (raw > 20000 && raw < 80000) return excelSerialToDate(raw);
+      if (raw > 20000 && raw < 80000) return excelSerialToWallDate(raw);
       return null;
     }
 
@@ -157,7 +234,7 @@
     // Pure numeric string that looks like an excel serial
     if (/^\d{4,6}(\.\d+)?$/.test(s)) {
       var num = parseFloat(s);
-      if (num > 20000 && num < 80000) return excelSerialToDate(num);
+      if (num > 20000 && num < 80000) return excelSerialToWallDate(num);
     }
 
     // 1. Explicit offset check: has 'Z' or [+-]\d{2}(?::?\d{2})? at end
@@ -171,8 +248,8 @@
         var parsedNative = new Date(s);
         if (!isNaN(parsedNative.getTime())) return parsedNative;
       }
-      // Saat dilimi yoksa kullanıcının yerel saati olarak yorumla (new Date(Y, M-1, D, H, m, s) yerel saatle oluşturur)
-      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+      // Saat dilimi yoksa: dosyadaki saatlerin saat dilimi ayarına göre yorumla (WwTime importTz)
+      return wallDate(+m[1], +m[2], +m[3], applyMeridiem(+m[4], m[7]), +m[5], +(m[6] || 0));
     }
 
     // Date only ISO-ish: 2026-06-17 / 2026.06.17
@@ -192,8 +269,8 @@
         var parsedOffset = new Date(isoStr);
         if (!isNaN(parsedOffset.getTime())) return parsedOffset;
       }
-      // Yerel saat olarak oluştur
-      return new Date(+m[3], mo1 - 1, d1, +m[4], +m[5], +(m[6] || 0));
+      // Saat dilimi yok: içe aktarma saat dilimi ayarına göre yorumla
+      return wallDate(+m[3], mo1, d1, applyMeridiem(+m[4], m[7]), +m[5], +(m[6] || 0));
     }
 
     // ⭐ DD/MM/YYYY or DD.MM.YYYY with time but WITHOUT seconds:
@@ -208,8 +285,8 @@
         var parsedOffset2 = new Date(isoStr2);
         if (!isNaN(parsedOffset2.getTime())) return parsedOffset2;
       }
-      // Yerel saat olarak oluştur
-      return new Date(+m[3], mo2 - 1, d2, +m[4], +m[5]);
+      // Saat dilimi yok: içe aktarma saat dilimi ayarına göre yorumla
+      return wallDate(+m[3], mo2, d2, applyMeridiem(+m[4], m[6]), +m[5], 0);
     }
 
     // ⭐ DD/MM/YYYY or DD.MM.YYYY (date only)
@@ -222,7 +299,15 @@
 
     // Last resort: let the JS engine try
     var native = new Date(s);
-    if (!isNaN(native.getTime())) return native;
+    if (!isNaN(native.getTime())) {
+      // Saat dilimi belirtilmemiş metinlerde tarayıcının yerel saatine güvenme: bileşenleri duvar saati say
+      var hasZone = /(?:Z|UTC|GMT|[+-]\d{2}:?\d{2})\s*$/i.test(s);
+      if (!hasZone) {
+        if (s.indexOf(':') < 0) return new Date(Date.UTC(native.getFullYear(), native.getMonth(), native.getDate()));
+        return wallDate(native.getFullYear(), native.getMonth() + 1, native.getDate(), native.getHours(), native.getMinutes(), native.getSeconds());
+      }
+      return native;
+    }
 
     return null;
   }
@@ -334,21 +419,22 @@
 
   var INSTRUMENT_MULTIPLIERS = { forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 };
 
+  var FIAT_CODES = 'EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH|CZK|HUF|DKK|THB|ILS|RUB|CNY';
+  var FOREX_PAIR_RE = new RegExp('^(' + FIAT_CODES + ')(' + FIAT_CODES + ')(?![A-Z]{4,})');
+  var CRYPTO_BASE_RE = /^(XBT|BTC|ETH|SOL|ADA|XRP|DOGE|BNB|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/;
+  var CRYPTO_QUOTE_RE = /(USDT|USDC|BUSD)$/;
+
+  // Sıra önemli: forex çifti (USDCAD, USDTRY...) kripto "USDC"/"USDT" alt-dizisiyle
+  // karışmasın diye forex ÖNCE, kripto ise başa/sona sabitlenmiş eşleşmeyle kontrol edilir.
   function guessInstrument(symbol) {
     if (!symbol) return 'other';
     var s = String(symbol).toUpperCase().trim();
-    if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(s)) return 'crypto';
+    var letters = s.replace(/[^A-Z]/g, '');
     if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+    if (FOREX_PAIR_RE.test(letters)) return 'forex';
+    if (CRYPTO_BASE_RE.test(letters) || CRYPTO_QUOTE_RE.test(letters)) return 'crypto';
     if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
-    var clean = s.replace(/[^A-Z]/g, '');
-    if (clean.length === 6) return 'forex';
-    if (clean.length >= 6) {
-      var prefix = clean.slice(0, 6);
-      var forexCurrencies = /(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH)/;
-      if (forexCurrencies.test(prefix.slice(0, 3)) && forexCurrencies.test(prefix.slice(3, 6))) {
-        return 'forex';
-      }
-    }
+    if (letters.length === 6) return 'forex';
     return 'other';
   }
 
@@ -362,6 +448,7 @@
     normalizeValue: normalizeValue,
     levenshtein: levenshtein,
     parseNumber: parseNumber,
+    detectDecimalSeparator: detectDecimalSeparator,
     parseDate: parseDate,
     normalizeDirection: normalizeDirection,
     guessInstrument: guessInstrument,

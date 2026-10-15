@@ -323,7 +323,9 @@ export async function checkAndSyncPaymentStatus() {
       .eq('id', user.id)
       .single();
 
-    if (!error && profile && profile.plan === 'premium') {
+    // Süresi dolmuş premium "aktif edildi" sayılmaz (plan sütunu bitişte 'free'ye çekilmiyor)
+    const isLiveActive = function (p) { return p && p.plan === 'premium' && (!p.plan_expires_at || Date.parse(p.plan_expires_at) > Date.now()); };
+    if (!error && isLiveActive(profile)) {
       applyLivePremium(profile, true);
       return;
     }
@@ -349,7 +351,7 @@ export async function checkAndSyncPaymentStatus() {
           .eq('id', user.id)
           .single();
 
-        if (liveProfile && liveProfile.plan === 'premium') {
+        if (isLiveActive(liveProfile)) {
           clearInterval(pollInterval);
           applyLivePremium(liveProfile, true);
         }

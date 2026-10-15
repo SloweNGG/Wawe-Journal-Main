@@ -641,12 +641,15 @@ import Layout from '../layouts/Layout.astro';
         var dayCount = status.trading_days ? (status.trading_days.count || 0) : 0;
         var dayMin = status.trading_days ? (status.trading_days.min_required || 0) : 0;
 
-        var tradeList = (syncRes.trades && Array.isArray(syncRes.trades)) ? syncRes.trades : [];
-        var totalTrades = tradeList.length;
-        var totalPnl = tradeList.reduce((acc, tr) => acc + (Number(tr.pnl) || 0), 0);
-        var wins = tradeList.filter(tr => (Number(tr.pnl) || 0) > 0).length;
-        var losses = tradeList.filter(tr => (Number(tr.pnl) || 0) < 0).length;
-        var wrPct = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
+        // Kart istatistikleri FAZ İÇİ özetten gelir (status.stats): start_date öncesi işlemler ve açık
+        // işlemler hariç, bakiye/total_pnl ile aynı kümeden. (Eskiden syncRes.trades hiç dönmediği için
+        // Win rate ve İşlem sayısı hep 0 görünüyordu; liste dönse bile tüm journal'ı sayacaktı.)
+        var phaseStats = status.stats || { trades_count: 0, wins: 0, losses: 0, win_rate_pct: 0 };
+        var totalTrades = phaseStats.trades_count;
+        var totalPnl = Number(status.total_pnl) || 0;
+        var wins = phaseStats.wins;
+        var losses = phaseStats.losses;
+        var wrPct = Math.round(Number(phaseStats.win_rate_pct) || 0);
         var pnlValColor = totalPnl >= 0 ? 'var(--green,#22c55e)' : 'var(--red,#ef4444)';
 
         // Status description text for phase (Lucide SVG icon instead of emojis)
@@ -793,6 +796,9 @@ import Layout from '../layouts/Layout.astro';
             startBal: Number((status.account && status.account.starting_balance) || account.starting_balance || 0),
             balNow: Number(status.current_balance || (status.account && status.account.starting_balance) || 0),
             maxStop: maxStop, maxDist: maxDist,
+            maxAllowed: (status.max_loss && Number(status.max_loss.limit_pct) > 0)
+              ? Number((status.account && status.account.starting_balance) || account.starting_balance || 0) * Number(status.max_loss.limit_pct) / 100
+              : 0,
             dailyLimit: dailyLimit, dailyRem: dailyRem, dailyToday: dailyToday,
             dayCount: dayCount, dayMin: dayMin,
             totalPnl: totalPnl, totalTrades: totalTrades, wrPct: wrPct,
@@ -865,9 +871,8 @@ import Layout from '../layouts/Layout.astro';
         ? window._currentDashboardTrades
         : ((window._allDashboardTrades && Array.isArray(window._allDashboardTrades)) ? window._allDashboardTrades : []);
 
-      var closed = trades.filter(function (tr) {
-        return tr && (tr.exit_price || (tr.pnl !== null && tr.pnl !== undefined && !isNaN(parseFloat(tr.pnl))));
-      });
+      // 'Açık işlem' kavramı yok: yalnızca çıkış fiyatı olan (kapanmış) işlemler
+      var closed = (window.WwMetrics ? window.WwMetrics.closedTrades(trades) : trades.filter(function (tr) { return tr && tr.exit_price; }));
 
       var calcPnl = function (tr) {
         if (typeof window.calcTradePnL === 'function') return window.calcTradePnL(tr);
@@ -901,22 +906,20 @@ import Layout from '../layouts/Layout.astro';
         }
       });
 
-      // Fallback PnL from DOM stat-pnl if closed is empty but DOM has value
-      if (closed.length === 0) {
-        var pnlDom = document.getElementById('stat-pnl');
-        if (pnlDom && pnlDom.textContent && pnlDom.textContent !== '—') {
-          var cleaned = pnlDom.textContent.replace(/[^0-9.-]/g, '');
-          var parsed = parseFloat(cleaned);
-          if (!isNaN(parsed)) totalPnL = parsed;
-        }
-      }
-
       // Target calculations
       var jid = window.journal ? window.journal.getActiveJournalId() : '';
       var savedTarget = localStorage.getItem('ww_monthly_target_' + jid);
       var monthlyTarget = (savedTarget && !isNaN(parseFloat(savedTarget))) ? parseFloat(savedTarget) : 5000;
 
-      var rawGoalPct = monthlyTarget > 0 ? ((totalPnL / monthlyTarget) * 100) : 0;
+      // Aylık hedef ilerlemesi: bu takvim ayının kapanmış işlem PnL'i (seçili tarih filtresinden bağımsız)
+      var goalNow = new Date();
+      var goalMonthPrefix = goalNow.getFullYear() + '-' + String(goalNow.getMonth() + 1).padStart(2, '0');
+      var goalMonthPnL = 0;
+      var goalSource = (window._allDashboardTrades && Array.isArray(window._allDashboardTrades)) ? window._allDashboardTrades : trades;
+      (window.WwMetrics ? window.WwMetrics.closedTrades(goalSource) : []).forEach(function (tr) {
+        if (window.WwMetrics.dateKey(tr).indexOf(goalMonthPrefix) === 0) goalMonthPnL += calcPnl(tr);
+      });
+      var rawGoalPct = monthlyTarget > 0 ? ((goalMonthPnL / monthlyTarget) * 100) : 0;
       var goalPctText = rawGoalPct > 100 ? '>100%' : (rawGoalPct < -100 ? '<-100%' : rawGoalPct.toFixed(1) + '%');
       var goalFillWidth = Math.min(100, Math.max(0, rawGoalPct));
       var goalGradient = rawGoalPct >= 100
@@ -1164,7 +1167,7 @@ import Layout from '../layouts/Layout.astro';
         tradesList = _currentPropSync.trades;
       } else if (window.wwCache && window.currentUser) {
         var jid = window.journal ? window.journal.getActiveJournalId() : null;
-        tradesList = window.wwCache.get('trades_dashboard', window.currentUser.id, jid) || [];
+        tradesList = window.wwCache.get('trades_dashboard', window.currentUser.id, jid, ['trade_date']) || [];
       }
 
       var count = 0;
@@ -1174,9 +1177,8 @@ import Layout from '../layouts/Layout.astro';
       }
 
       if (count > 0) {
-        var d = new Date(dateVal + 'T00:00:00');
-        d.setDate(d.getDate() + 1);
-        var tomorrowStr = d.toISOString().slice(0, 10);
+        // Ertesi gün: takvim günü aritmetiği (eskiden yerel gece yarısı UTC'ye çevrilince UTC+ bölgelerde aynı gün çıkıyordu)
+        var tomorrowStr = window.WwTime.addDays(dateVal, 1);
         var tFn = function(k, p) { return (window.i18n && window.i18n.t) ? window.i18n.t(k, p) : k; };
         warnText.textContent = tFn('prop.advance_trades_on_date_warn', { n: count, tomorrow: tomorrowStr }) || ('Bu tarihte ' + count + ' işlem var, yeni faza dahil edilecek. Başlangıç tarihini ertesi güne (' + tomorrowStr + ') almak ister misin?');
         if (bumpBtn) {
@@ -1201,7 +1203,10 @@ import Layout from '../layouts/Layout.astro';
       var customChoice = document.getElementById('advance-custom-rules-choice');
       if (!modal || !dateInput || !balInput) return;
 
-      var todayStr = new Date().toISOString().slice(0, 10);
+      // Başlangıç tarihi varsayılanı: prop hesabının sıfırlama saat dilimindeki bugün
+      var todayStr;
+      try { todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: account.reset_tz || window.WwTime.getTz() }).format(new Date()); }
+      catch (e) { todayStr = window.WwTime.todayKey(); }
       dateInput.value = todayStr;
       balInput.value = account.starting_balance || 100000;
 

@@ -185,9 +185,15 @@
       template_version: accountData.template_version || '2026.1',
       rules: accountData.rules || {},
       starting_balance: Math.max(0, Number(accountData.starting_balance) || 100000),
-      start_date: accountData.start_date || new Date().toISOString().slice(0, 10),
+      // Varsayılan başlangıç: sıfırlama saat dilimindeki bugün (eskiden UTC günü: Amerika'da akşam "yarın" çıkıyordu)
+      start_date: accountData.start_date || (function () {
+        var tzForDate = accountData.reset_tz || (typeof window !== 'undefined' && window.WwTime ? window.WwTime.getTz() : 'UTC');
+        try { return new Intl.DateTimeFormat('en-CA', { timeZone: tzForDate }).format(new Date()); }
+        catch (e) { return new Date().toISOString().slice(0, 10); }
+      })(),
       phase_index: accountData.phase_index !== undefined ? Number(accountData.phase_index) : 0,
-      reset_tz: accountData.reset_tz || 'UTC',
+      // Verilmezse kullanıcının Ayarlar'daki saat dilimi (eskiden sessizce UTC: FTMO gibi firmaların Prag sıfırlaması kayıyordu)
+      reset_tz: accountData.reset_tz || (typeof window !== 'undefined' && window.WwTime ? window.WwTime.getTz() : 'UTC'),
       time_shift_hours: (function() {
         var p = parseFloat(accountData.time_shift_hours);
         return isNaN(p) ? 0 : Math.min(14, Math.max(-14, p));
@@ -465,25 +471,45 @@
       var uId = (window.currentUser && window.currentUser.id) ||
                 (window.__wwUserProfile && window.__wwUserProfile.id) || null;
       if (uId) {
-        trades = window.wwCache.get('trades_dashboard', uId, journalId) ||
-                 window.wwCache.get('trades', uId, journalId);
+        trades = window.wwCache.get('trades_dashboard', uId, journalId, ['id', 'trade_date', 'pnl', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier']) ||
+                 window.wwCache.get('trades', uId, journalId, ['id', 'trade_date', 'pnl', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier']);
       }
     }
 
     if (!trades || !Array.isArray(trades)) {
       var sb = getSbClient();
-      var tradesRes = await sb
-        .from('trades')
-        .select('id, trade_date, pnl, entry_price, exit_price, lot, direction, instrument, multiplier')
-        .eq('journal_id', journalId)
-        .order('trade_date', { ascending: true })
-        .limit(5000);
+      // Sayfalı çekim: tek istekte `.limit(5000)` sunucu 1000 satırda keserse EN YENİ işlemler sessizce
+      // düşüyor ve bakiye/drawdown eksik hesaplanıyordu (diğer yükleyiciler de 1000'lik sayfalar kullanır).
+      trades = [];
+      var pageSize = 1000;
+      var from = 0;
+      var hasMore = true;
+      while (hasMore) {
+        var tradesRes = await sb
+          .from('trades')
+          .select('id, trade_date, pnl, entry_price, exit_price, lot, direction, instrument, multiplier')
+          .eq('journal_id', journalId)
+          .order('trade_date', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1);
 
-      if (tradesRes.error) {
-        handlePropError(tradesRes.error);
+        if (tradesRes.error) {
+          handlePropError(tradesRes.error);
+        }
+        var page = tradesRes.data || [];
+        trades = trades.concat(page);
+        if (page.length < pageSize) hasMore = false;
+        else from += pageSize;
       }
-      trades = tradesRes.data || [];
     }
+
+    // 'Açık işlem' kavramı yok: yalnızca kapanmış işlemler hesaba girer. exit_price kolonu hiç
+    // verilmemişse (yalnızca {id, trade_date, pnl} geçen çağıranlar) kayıtlı pnl'i olan satır kapanmış sayılır.
+    trades = trades.filter(function (t) {
+      if (!t) return false;
+      if ('exit_price' in t) return t.exit_price !== null && t.exit_price !== undefined && t.exit_price !== '';
+      return t.pnl !== null && t.pnl !== undefined && !isNaN(Number(t.pnl));
+    });
 
     var calcPnLFn = (typeof window !== 'undefined' && window.calcPnL) ? window.calcPnL : null;
 
@@ -523,7 +549,10 @@
 
     return {
       account: propAccount,
-      status: status
+      status: status,
+      // Kart ve "bu tarihte işlem var" uyarısı bu listeyi okur (eskiden hiç dönmüyordu: kartta
+      // Win rate/İşlem sayısı hep 0 görünüyordu). Faz içi özet: status.stats
+      trades: computedTrades
     };
   }
 
@@ -628,7 +657,8 @@
     }
 
     // 3. Maximum Loss Breach
-    var isMaxViolated = Boolean(status.max_loss && (status.max_loss.is_violated || status.max_loss.distance_to_stop <= 0));
+    // Takvim/hesaplayıcı yalnızca stop'un ALTINA düşmeyi ihlal sayar; tam stop seviyesinde (<= 0) bildirim göndermek tutarsızdı
+    var isMaxViolated = Boolean(status.max_loss && status.max_loss.is_violated);
     if (isMaxViolated) {
       var notifKeyMaxBreach = 'ww_prop_notif_' + accId + '_max_breach';
       if (!safeSessionGet(notifKeyMaxBreach)) {

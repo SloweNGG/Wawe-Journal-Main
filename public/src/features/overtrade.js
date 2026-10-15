@@ -5,7 +5,6 @@
 import { sb } from '../core/supabase.js';
 import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from '../core/storage.js';
 import { OT_STORAGE_KEY, OT_DISMISSED_KEY } from '../core/config.js';
-import { calcPnL } from '../utils/helpers.js';
 import { getUserPlanSilent } from '../services/user.js';
 import { showToast } from '../utils/ui.js';
 
@@ -134,30 +133,23 @@ export function checkOvertrade(trades) {
       return [];
     }
     
-    const today = new Date().toISOString().split('T')[0];
-    
-    const todayTrades = trades.filter(function(t) { 
-      return t.trade_date && t.trade_date === today; 
-    });
+    // Ortak metrik modülü (interface/shared/trade-metrics.js): kapanmış işlem tanımı, net PnL ve
+    // kullanıcının YEREL gün anahtarı. (Eskiden UTC günü ve `===` karşılaştırması kullanılıyordu;
+    // zaman damgalı trade_date'lerde günlük sayaç hiç tetiklenmiyordu, PnL de komisyon/swap'sız brüttü.)
+    const WM = window.WwMetrics;
+    const closedTrades = WM.closedTrades(trades);
+    // "Bugün" ve hafta penceresi Ayarlar > Görünüm > Saat ve Gün'deki saat dilimi/gün başlangıcına göre
+    const today = window.WwTime.todayKey();
+    const weekStartKey = window.WwTime.addDays(today, -6); // bugün dahil son 7 gün
+
+    const todayTrades = closedTrades.filter(function(t) { return WM.dateKey(t) === today; });
     const todayCount = todayTrades.length;
-    
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekTrades = trades.filter(function(t) { 
-      return t.trade_date && new Date(t.trade_date) >= weekAgo; 
-    });
+
+    const weekTrades = closedTrades.filter(function(t) { return WM.dateKey(t) >= weekStartKey; });
     const weekCount = weekTrades.length;
-    
+
     let todayPnL = 0;
-    todayTrades.forEach(function(t) {
-      if (t.exit_price && t.entry_price && t.lot) {
-        const multiplier = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
-        const pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', multiplier);
-        if (!isNaN(pnl)) {
-          todayPnL += pnl;
-        }
-      }
-    });
+    todayTrades.forEach(function(t) { todayPnL += WM.tradePnL(t); });
     todayPnL = Math.round(todayPnL * 100) / 100;
     
     const warnings = [];
@@ -394,7 +386,7 @@ export async function checkAndRenderOvertrade(containerId) {
 
     const { data: trades, error } = await sb
       .from('trades')
-      .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
+      .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl')
       .eq('user_id', session.user.id)
       .gte('trade_date', weekAgoStr)
       .order('trade_date', { ascending: false });
@@ -486,9 +478,10 @@ export async function loadOvertradeSettingsUI(containerId) {
       saveBtn.addEventListener('click', function() {
         const newSettings = {
           enabled: enabledCheckbox ? enabledCheckbox.checked : true,
-          dailyLimit: parseInt(dailyLimitInput?.value) || 5,
-          weeklyLimit: parseInt(weeklyLimitInput?.value) || 20,
-          dailyLossLimit: parseFloat(lossLimitInput?.value) || 1000,
+          // Limitler pozitif olmalı: negatif/0 değer her gün sürekli uyarı üretiyordu
+          dailyLimit: Math.max(1, parseInt(dailyLimitInput?.value) || 5),
+          weeklyLimit: Math.max(1, parseInt(weeklyLimitInput?.value) || 20),
+          dailyLossLimit: Math.abs(parseFloat(lossLimitInput?.value)) || 1000,
           warningLevel: warningLevelSelect?.value || 'warning'
         };
         saveOvertradeSettings(newSettings);
@@ -574,7 +567,7 @@ export async function updateOvertradeBell(force = false) {
 
         const { data: trades, error } = await sbClient
           .from('trades')
-          .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
+          .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl')
           .eq('user_id', session.user.id)
           .gte('trade_date', weekAgoStr)
           .order('trade_date', { ascending: false });

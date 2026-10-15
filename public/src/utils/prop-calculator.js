@@ -221,7 +221,12 @@
     var dailyLossAmountBase = rules.daily_loss_amount_base || 'initial_balance';
     var maxLossType = rules.max_loss_type || 'static';
     var trailLock = rules.max_loss_trail_lock || rules.trail_lock || 'none';
-    var maxTradingDays = rules.max_trading_days !== undefined && rules.max_trading_days !== null ? Number(rules.max_trading_days) : null;
+    // Boş string/NaN "limit yok" demektir (Number('') === 0 olduğu için eskiden ilk işlemde MAX_TRADING_DAYS_EXCEEDED çıkıyordu)
+    var maxTradingDays = null;
+    if (rules.max_trading_days !== undefined && rules.max_trading_days !== null && rules.max_trading_days !== '') {
+      var parsedMaxDays = Number(rules.max_trading_days);
+      maxTradingDays = isNaN(parsedMaxDays) ? null : parsedMaxDays;
+    }
 
     // 1. Trade Filtering: ONLY trades where propDate >= account.start_date
     var validTrades = [];
@@ -276,6 +281,7 @@
     
     var worstDailyLoss = 0; // Negative or 0
     var worstDailyLossDay = null;
+    var worstDailyLossPct = 0; // limitin dayanağına (başlangıç/gün başı bakiye) göre en kötü gün %
     var closedDailyBreach = false;
     var closedBalanceBreach = false;
     var intradayOrderUnknown = false;
@@ -304,6 +310,7 @@
       }
       var dayLimitAmount = Math.round(dayLimitBase * (dailyLossLimitPct / 100) * 100) / 100;
       var dayLossFloor = Math.round((startOfDayBalance - dayLimitAmount) * 100) / 100;
+      var dayDailyBreach = false; // bu günde günlük kayıp limiti (gün içi dahil) aşıldı mı
 
       // INTRADAY SEQUENTIAL EVALUATION (Günün içi sıralı değerlendirme)
       if (!hasAnyDateOnly) {
@@ -324,6 +331,7 @@
           // Daily loss breach at this exact trade moment:
           if (runningIntradayPnl < -dayLimitAmount - 0.0001) {
             closedDailyBreach = true;
+            dayDailyBreach = true;
           }
           // Max loss breach at this exact trade moment:
           if (runningIntradayBalance < stopLevel - 0.0001) {
@@ -335,24 +343,33 @@
           worstDailyLoss = dayWorstIntradayPnl;
           worstDailyLossDay = day;
         }
+        if (dayLimitBase > 0) {
+          worstDailyLossPct = Math.max(worstDailyLossPct, Math.abs(dayWorstIntradayPnl) / dayLimitBase * 100);
+        }
       } else {
         // Date-only trades: sequence is unknown, evaluate only net EOD result
         if (dayPnl < -dayLimitAmount - 0.0001) {
           closedDailyBreach = true;
+          dayDailyBreach = true;
         }
         if (dayPnl < worstDailyLoss) {
           worstDailyLoss = dayPnl;
           worstDailyLossDay = day;
         }
+        if (dayLimitBase > 0 && dayPnl < 0) {
+          worstDailyLossPct = Math.max(worstDailyLossPct, Math.abs(dayPnl) / dayLimitBase * 100);
+        }
       }
 
       runningBalance = Math.round((runningBalance + dayPnl) * 100) / 100;
 
+      // Zirve bakiye her max-loss tipinde izlenir (current_drawdown için); yalnızca trailing'de stop'u etkiler
+      if (runningBalance > peakEodBalance) {
+        peakEodBalance = runningBalance;
+      }
+
       // Max loss EOD check and stop level update for next day
       if (maxLossType === 'eod_trailing' || maxLossType === 'trailing_eod') {
-        if (runningBalance > peakEodBalance) {
-          peakEodBalance = runningBalance;
-        }
         var trailDistance = Math.round(startingBalance * (maxLossLimitPct / 100) * 100) / 100;
         var candidateStop = Math.round((peakEodBalance - trailDistance) * 100) / 100;
 
@@ -384,8 +401,10 @@
         daily_loss_floor: dayLossFloor,
         margin_eod: dayMarginEod,
         stop_level_eod: stopLevel,
-        daily_loss_pct: Math.round((Math.abs(Math.min(0, dayPnl)) / startingBalance) * 10000) / 100,
-        is_violation: dayPnl < -dayLimitAmount - 0.0001
+        // Yüzde, limitin hesaplandığı dayanağa (başlangıç veya gün başı bakiye) göre verilir
+        daily_loss_pct: dayLimitBase > 0 ? Math.round((Math.abs(Math.min(0, dayPnl)) / dayLimitBase) * 10000) / 100 : 0,
+        // Gün içinde limit aşılıp günü toparlasa bile ihlaldir (daily_loss.is_violated ile tutarlı)
+        is_violation: dayDailyBreach || dayPnl < -dayLimitAmount - 0.0001
       });
     }
 
@@ -524,12 +543,24 @@
     if (failReasons.length > 0) {
       overallStatus = 'failed';
     } else if (
+      // Kâr hedefi olmayan faz (ör. Funded) "geçildi" sayılmaz: geçilecek bir hedef yok, hesap devam eder.
+      // (Eskiden hedef yokken is_reached=true olduğu için 0 işlemle bile 'passed' dönüyor ve
+      // her funded hesapta "Hedefe ulaşıldı" bildirimi çıkıyordu.)
+      profitTargetPct !== null &&
       profitTargetReached &&
       minTradingDaysReached &&
       (!consistencyRule.enabled || !consistencyRuleExceeded)
     ) {
       overallStatus = 'passed';
     }
+
+    // Faz içi işlem özeti (yalnızca start_date'ten sonraki, bu faza ait işlemler)
+    var statWins = 0, statLosses = 0, statBreakeven = 0;
+    for (var q = 0; q < validTrades.length; q++) {
+      var qp = validTrades[q]._pnl;
+      if (qp > 0) statWins++; else if (qp < 0) statLosses++; else statBreakeven++;
+    }
+    var statTotal = validTrades.length;
 
     var distanceToStop = Math.round((currentBalance - stopLevel) * 100) / 100;
     var distanceToStopPct = Math.round((distanceToStop / startingBalance) * 10000) / 100;
@@ -563,7 +594,7 @@
         is_violated: closedDailyBreach || todayDailyLossViolated,
         today_violated: todayDailyLossViolated,
         worst_daily_loss: worstDailyLoss,
-        worst_daily_loss_pct: Math.round((Math.abs(worstDailyLoss) / startingBalance) * 10000) / 100,
+        worst_daily_loss_pct: Math.round(worstDailyLossPct * 100) / 100,
         worst_daily_loss_day: worstDailyLossDay
       },
       max_loss: {
@@ -593,6 +624,13 @@
         best_day_profit_pct: bestDayProfitPct,
         is_met: !consistencyRuleExceeded,
         required_additional_profit: requiredAdditionalProfit
+      },
+      stats: {
+        trades_count: statTotal,
+        wins: statWins,
+        losses: statLosses,
+        breakeven: statBreakeven,
+        win_rate_pct: statTotal > 0 ? Math.round((statWins / statTotal) * 10000) / 100 : 0
       },
       overall_status: overallStatus,
       fail_reasons: failReasons,

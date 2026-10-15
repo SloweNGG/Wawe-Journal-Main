@@ -66,6 +66,16 @@ function _qaDetectDelim(line) {
 function _qaDate(raw) {
   if (!raw) return new Date().toISOString();
   raw = String(raw).trim();
+
+  // Tercih edilen yol: BrokerDictionary.parseDate (içe aktarma saat dilimi ayarı, AM/PM, MM/DD-DD/MM takası).
+  // Tam gün (UTC gece yarısı) sonuçlar sadece-tarih olarak ('YYYY-MM-DD') döner.
+  if (typeof BrokerDictionary !== 'undefined' && typeof BrokerDictionary.parseDate === 'function') {
+    var pd = BrokerDictionary.parseDate(raw);
+    if (pd && !isNaN(pd.getTime())) {
+      return (pd.getTime() % 86400000 === 0) ? pd.toISOString().slice(0, 10) : pd.toISOString();
+    }
+  }
+
   var hasOffset = /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(raw);
 
   var mIsoTime = raw.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
@@ -111,6 +121,18 @@ function _qaDir(raw) {
   if (v === 'BUY' || v === 'LONG' || v === 'B' || v === 'L' || v === 'AL' || v === 'ALIŞ' || v === 'ALIS' || v === 'ALIM') return 'LONG';
   if (v === 'SELL' || v === 'SHORT' || v === 'S' || v === 'SH' || v === 'SAT' || v === 'SATIŞ' || v === 'SATIS' || v === 'SATIM') return 'SHORT';
   return 'LONG';
+}
+
+// Sıkı yön eşlemesi: tanınmayan değer (ör. "XYZ") LONG/SHORT'a SESSİZCE düşmez, null döner.
+function _qaStrictDir(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+  if (typeof BrokerDictionary !== 'undefined' && typeof BrokerDictionary.normalizeDirection === 'function') {
+    return BrokerDictionary.normalizeDirection(raw);
+  }
+  var v = String(raw).toUpperCase().trim();
+  if (['BUY', 'LONG', 'B', 'L', 'AL', 'ALIŞ', 'ALIS', 'ALIM'].indexOf(v) >= 0) return 'LONG';
+  if (['SELL', 'SHORT', 'S', 'SH', 'SAT', 'SATIŞ', 'SATIS', 'SATIM'].indexOf(v) >= 0) return 'SHORT';
+  return null;
 }
 
 function _qaSym(raw) {
@@ -473,18 +495,14 @@ async function fileToCsvText(file) {
       return BrokerDictionary.guessInstrument(symbol);
     }
     const s = String(symbol || '').toUpperCase().trim();
-    if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(s)) return 'crypto';
+    const letters = s.replace(/[^A-Z]/g, '');
+    const FIAT = 'EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH|CZK|HUF|DKK|THB|ILS|RUB|CNY';
+    // BrokerDictionary.guessInstrument ile aynı mantık: forex önce, kripto sabitlenmiş eşleşme
     if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+    if (new RegExp('^(' + FIAT + ')(' + FIAT + ')(?![A-Z]{4,})').test(letters)) return 'forex';
+    if (/^(XBT|BTC|ETH|SOL|ADA|XRP|DOGE|BNB|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(letters) || /(USDT|USDC|BUSD)$/.test(letters)) return 'crypto';
     if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
-    const clean = s.replace(/[^A-Z]/g, '');
-    if (clean.length === 6) return 'forex';
-    if (clean.length >= 6) {
-      const prefix = clean.slice(0, 6);
-      const forexCurrencies = /(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH)/;
-      if (forexCurrencies.test(prefix.slice(0, 3)) && forexCurrencies.test(prefix.slice(3, 6))) {
-        return 'forex';
-      }
-    }
+    if (letters.length === 6) return 'forex';
     return 'other';
   }
 
@@ -605,6 +623,12 @@ async function fileToCsvText(file) {
     return y + '-' + m + '-' + day;
   }
 
+  // "Bugün" (varsayılan işlem tarihi): Ayarlar > Görünüm > Saat ve Gün'deki saat dilimi ve gün başlangıcına
+  // göre. (Eskiden cihaz saati veya UTC günü kullanılıyordu: UTC+3'te 00:00-03:00 arası dünün tarihi çıkıyordu.)
+  function todayIso() {
+    return (window.WwTime && typeof window.WwTime.todayKey === 'function') ? window.WwTime.todayKey() : isoDate(new Date());
+  }
+
   function getLocale(lang) {
     return lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US';
   }
@@ -697,7 +721,7 @@ async function fileToCsvText(file) {
 
     let iso = input.getAttribute('data-iso') || '';
     if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-      iso = isoDate(new Date());
+      iso = todayIso();
     }
 
     let baseDate;
@@ -774,7 +798,7 @@ async function fileToCsvText(file) {
   // ============================================================
 
   function getModalHTML() {
-    const today = isoDate(new Date());
+    const today = todayIso();
     const todayDisplay = formatDateDisplay(today);
 
     return `
@@ -1495,8 +1519,9 @@ async function fileToCsvText(file) {
           const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
           const isEurAccount = (curr === '€' || curr === 'EUR');
           
-          // cTrader EUR hesabı EURUSD dönüşümü (Pip kazancı USD / çıkış fiyatı = EUR)
-          if (isEurAccount && symbol.endsWith('USD') && parseFloat(exit) > 0) {
+          // EUR hesabı: USD cinsinden kazanç yalnızca EURUSD için çıkış fiyatına bölünerek EUR'a çevrilir.
+          // Diğer çiftlerde (GBPUSD, XAUUSD...) doğru kur bilinmediği için dönüşüm YAPILMAZ.
+          if (isEurAccount && /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, '')) && parseFloat(exit) > 0) {
             gross = rawPnl / parseFloat(exit);
           }
 
@@ -1608,7 +1633,7 @@ async function fileToCsvText(file) {
   }
 
   function resetForm() {
-    const today = isoDate(new Date());
+    const today = todayIso();
     const todayDisplay = formatDateDisplay(today);
 
     const ids = ['price-symbol', 'price-entry', 'price-exit', 'price-sl', 'price-tp', 'price-custom-multiplier', 'price-notes'];
@@ -1929,7 +1954,9 @@ async function fileToCsvText(file) {
           return;
         }
 
-        showBrokerPreview(parsed.rows, detected, parsed.errors);
+        // Parser uyarıları (ör. tarihi okunamayan satırlar) hata listesinin sonunda gösterilir
+        const previewNotes = (parsed.errors || []).concat(parsed.warnings || []);
+        showBrokerPreview(parsed.rows, detected, previewNotes);
         if (badgeEl) badgeEl.innerHTML = badgeIcon('success');
 
         csvPreviewData = {
@@ -2239,7 +2266,7 @@ async function fileToCsvText(file) {
     const logEl = el('quick-bulk-log');
     const errors = [];
     const trades = [];
-    const defaultDate = new Date().toISOString().split('T')[0];
+    const defaultDate = todayIso();
 
     isSubmitting = true;
     if (progressEl) progressEl.style.display = 'block';
@@ -2255,33 +2282,43 @@ async function fileToCsvText(file) {
       }
 
       const symbol = parts[0].toUpperCase();
-      const direction = parts[1].toUpperCase();
+      const finalDir = _qaStrictDir(parts[1]);
       const lot = parseFloat(parts[2]);
       const entry = parseFloat(parts[3]);
-      const exit = parts[4] ? parseFloat(parts[4]) : null;
+      const exit = parseFloat(parts[4]); // yalnızca kapanmış işlemler: çıkış fiyatı zorunlu
       const date = parts[5] ? _qaDate(parts[5]) : defaultDate;
       const notes = parts[6] || 'Bulk import - ' + new Date().toLocaleString();
 
-      if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
+      if (!symbol || !finalDir || isNaN(lot) || lot <= 0 || isNaN(entry) || isNaN(exit)) {
         errors.push('<div>' + logTag('error') + ' — #' + (lineIdx + 1) + '</div>');
         continue;
       }
 
-      let finalDir = 'SHORT';
-      if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
+      // Enstrüman ve çarpan sembolden türetilir (eskiden hepsi 'forex'/100000 yazılıyordu;
+      // XAUUSD, BTCUSD gibi sembollerde PnL 10^2-10^5 kat şişiyordu). PnL de burada hesaplanıp saklanır.
+      const instrument = guessInstrument(symbol);
+      const mult = MULTIPLIER_MAP[instrument] || 1;
+      const rawPnl = (finalDir === 'LONG' ? 1 : -1) * (exit - entry) * lot * mult;
+      const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+      const isEurUsdPair = /^EURUSD/.test(symbol.replace(/[^A-Z]/g, ''));
+      const grossPnl = parseFloat((((curr === '€' || curr === 'EUR') && isEurUsdPair && exit > 0) ? rawPnl / exit : rawPnl).toFixed(2));
 
       trades.push({
         user_id: user.id,
         journal_id: journalId,
         symbol: symbol,
         direction: finalDir,
-        instrument: 'forex',
+        instrument: instrument,
         lot: lot,
         entry_price: entry,
         exit_price: exit,
         trade_date: date,
         notes: notes || null,
-        multiplier: 100000
+        multiplier: mult,
+        gross_pnl: grossPnl,
+        commission: 0,
+        swap: 0,
+        pnl: grossPnl
       });
     }
 
@@ -2403,7 +2440,7 @@ async function fileToCsvText(file) {
     const instrument = currentInstrument || 'forex';
 
     const dateInput = el('price-date');
-    const date = (dateInput && dateInput.getAttribute('data-iso')) || isoDate(new Date());
+    const date = (dateInput && dateInput.getAttribute('data-iso')) || todayIso();
 
     let mult = currentMultiplier;
     if (instrument === 'other' && !isNaN(customMult) && customMult > 0) {
@@ -2412,6 +2449,8 @@ async function fileToCsvText(file) {
 
     if (!symbol) { showError(t('quickmodal.error_symbol_required')); el('price-symbol')?.focus(); return; }
     if (isNaN(entry) || !entry || entry === 0) { showError(t('quickmodal.error_entry_invalid')); el('price-entry')?.focus(); return; }
+    // 'Açık işlem' kavramı yok: çıkış fiyatı zorunlu
+    if (!exit || isNaN(exit)) { showError(t('quickmodal.error_exit_invalid')); el('price-exit')?.focus(); return; }
     if (isNaN(lot) || !lot || lot === 0) { showError(t('quickmodal.error_lot_invalid')); el('price-lot')?.focus(); return; }
     if (instrument === 'other' && (isNaN(mult) || mult === 0)) { showError(t('quickmodal.error_multiplier_required')); el('price-custom-multiplier')?.focus(); return; }
 
@@ -2437,7 +2476,7 @@ async function fileToCsvText(file) {
       
       const curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
       const isEurAccount = (curr === '€' || curr === 'EUR');
-      if (isEurAccount && symbol.endsWith('USD') && exit > 0) {
+      if (isEurAccount && /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, '')) && exit > 0) {
         calculatedGross = parseFloat((rawPnl / exit).toFixed(2));
       } else {
         calculatedGross = parseFloat(rawPnl.toFixed(2));
@@ -2620,7 +2659,7 @@ async function fileToCsvText(file) {
     if (dpToday) {
       dpToday.addEventListener('click', function(e) {
         e.stopPropagation();
-        selectDate(isoDate(new Date()));
+        selectDate(todayIso());
       });
     }
 

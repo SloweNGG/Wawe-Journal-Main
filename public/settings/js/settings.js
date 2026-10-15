@@ -57,6 +57,15 @@ var SETTINGS_PAGE = window.wwPage.current();
   wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
+// Aktif premium: plan 'premium' VE süresi dolmamış (bitiş tarihi boş = süresiz/manuel). DB'de süresi dolan
+// kullanıcının plan sütunu 'free'ye çekilmediği için yalnızca plan'a bakmak süresi dolanı premium gösteriyordu.
+function isActivePremium(profile) {
+  if (!profile || profile.plan !== 'premium') return false;
+  if (!profile.plan_expires_at) return true;
+  var ms = Date.parse(profile.plan_expires_at);
+  return isFinite(ms) && ms > Date.now();
+}
+
 function t(key, arg2, arg3) {
   var fallback = '';
   var params = {};
@@ -513,7 +522,8 @@ window.switchPanel = function(panelId) {
       'panel-appearance': 'appearance-glow',
       'panel-danger': 'danger-glow',
       'panel-plan': 'plan-glow',
-      'panel-overtrade': 'overtrade-glow'
+      'panel-overtrade': 'overtrade-glow',
+      'panel-advanced': 'overtrade-glow'
     };
     if (map[panelId]) glow.classList.add(map[panelId]);
   }
@@ -532,6 +542,7 @@ window.switchPanel = function(panelId) {
       'panel-password': '/settings/panels/password-change.html',
       'panel-appearance': '/settings/panels/appearance.html',
       'panel-overtrade': '/settings/panels/overtrade.html',
+      'panel-advanced': '/settings/panels/advanced.html',
       'panel-danger': '/settings/panels/danger-area.html'
     };
     var url = map2[panelId];
@@ -573,6 +584,7 @@ function initPanel(panelId) {
   if (panelId === 'panel-danger') initDanger();
   if (panelId === 'panel-appearance') initAppearance();
   if (panelId === 'panel-overtrade') initOvertrade();
+  if (panelId === 'panel-advanced') initAdvanced();
 }
 
 // ============================================================
@@ -1022,7 +1034,7 @@ async function renderPlan() {
     var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
     var data = result.data;
 
-    var isPremium = data && data.plan === 'premium';
+    var isPremium = isActivePremium(data);
 
     // Fiyatlari DB'den canli cek
     try {
@@ -1248,6 +1260,31 @@ function setupPlanWizard(wizardRoot, isExtending) {
     } catch(e) {}
   }
 
+  // --- Ödeme onayı: "plan === premium" TEK BAŞINA yeterli değildir ---
+  // Süre uzatan (zaten premium) kullanıcıda ilk yoklamada "ödeme onaylandı" çıkıyor, QR/adres siliniyor ve
+  // kullanıcı ödeme yapmadan panele yönlendiriliyordu. Ödeme başlatılırken premium bitiş tarihi
+  // (baselineExpiryMs) kaydedilir; onay ancak bitiş tarihi bunun ÜSTÜNE çıkınca verilir.
+  function planActiveExpiryMs(prof) {
+    if (!prof || prof.plan !== 'premium' || !prof.plan_expires_at) return 0;
+    var ms = Date.parse(prof.plan_expires_at);
+    return (isFinite(ms) && ms > Date.now()) ? ms : 0;
+  }
+
+  function isPaymentConfirmed(prof) {
+    var cur = planActiveExpiryMs(prof);
+    var base = (currentPaymentData && typeof currentPaymentData.baselineExpiryMs === 'number')
+      ? currentPaymentData.baselineExpiryMs : null;
+    if (base === null) {
+      // Referans kaydı olmayan (eski) ödeme: ilk okumayı referans al, bundan sonraki artışı onay say
+      if (currentPaymentData) {
+        currentPaymentData.baselineExpiryMs = cur;
+        saveActiveDirectPayment(currentPaymentData);
+      }
+      return false;
+    }
+    return cur > 0 && cur > base;
+  }
+
   function getActiveDirectPayment() {
     try {
       var raw = localStorage.getItem(DIRECT_PAY_STORAGE_KEY);
@@ -1279,7 +1316,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (savedState.step && savedState.step >= minStep && savedState.step <= 4) {
       currentStep = savedState.step;
     }
-    if (savedState.period === 'monthly' || savedState.period === 'yearly') {
+    if (savedState.period === 'monthly' || savedState.period === 'yearly' || savedState.period === 'test') {
       selectedPeriod = savedState.period;
     }
     if (savedState.payMethod === 'BTC' || savedState.payMethod === 'LTC') {
@@ -1298,7 +1335,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
   if (activePay) {
     currentPaymentData = activePay;
     currentStep = 5;
-    if (activePay.period === 'monthly' || activePay.period === 'yearly') {
+    if (activePay.period === 'monthly' || activePay.period === 'yearly' || activePay.period === 'test') {
       selectedPeriod = activePay.period;
     }
     if (activePay.payCurrency) {
@@ -1316,7 +1353,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var y = (window.getYearlyPrice ? window.getYearlyPrice() : 99) || 99;
     return {
       monthly: { base: m, monthlyRate: m.toFixed(2), days: 30, name: t('settings.plan_period_1m', {}, '1 Aylık') },
-      yearly: { base: y, monthlyRate: (y / 12).toFixed(2), days: 365, name: t('settings.plan_period_1y', {}, '1 Yıllık') }
+      yearly: { base: y, monthlyRate: (y / 12).toFixed(2), days: 365, name: t('settings.plan_period_1y', {}, '1 Yıllık') },
+      // Geliştirici test planı: sunucuda sabit 1 USD / 1 gün (yalnızca test modunda satın alınabilir)
+      test: { base: 1, monthlyRate: '1.00', days: 1, name: t('settings.plan_test_title', {}, '1 Günlük Test') }
     };
   }
 
@@ -1687,7 +1726,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var prices = getPlanPrices();
     var planInfo = prices[selectedPeriod] || prices.yearly;
     var basePrice = planInfo.base;
-    var isLtc = (selectedPayMethod === 'LTC');
+    var isLtc = (selectedPayMethod === 'LTC') && selectedPeriod !== 'test';   // test planında indirim yok
 
     // 🔒 İndirim YALNIZCA LTC ödemelerinde uygulanır! BTC veya diğerlerinde indirim 0'dır
     var discountAmount = (isLtc && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
@@ -1749,7 +1788,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
       var prices = getPlanPrices();
       var planInfo = prices[selectedPeriod] || prices.yearly;
       var basePrice = planInfo.base;
-      var isLtc = (selectedPayMethod === 'LTC');
+      var isLtc = (selectedPayMethod === 'LTC') && selectedPeriod !== 'test';   // test planında indirim/kupon yok
 
       // En son ekranda yazan net tutar
       var discountAmount = (isLtc && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
@@ -1764,9 +1803,22 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
       try {
         if (window.upgradeToPremium) {
+          // Ödeme onayı için referans: ödeme başlamadan önceki premium bitiş zamanı (aktif premium yoksa 0)
+          var baselineExpiryMs = 0;
+          try {
+            var sbBase = window.sb || window.supabase;
+            var userBase = window.SETTINGS_STATE.currentUser;
+            if (!userBase && typeof getCurrentUser === 'function') userBase = await getCurrentUser();
+            if (sbBase && userBase) {
+              var { data: profBase } = await sbBase.from('user_profiles').select('plan, plan_expires_at').eq('id', userBase.id).single();
+              baselineExpiryMs = planActiveExpiryMs(profBase);
+            }
+          } catch (baseErr) {}
+
           var result = await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
           if (result && result.payAddress) {
             // ⭐ DOĞRUDAN ÖDEME (Direct Payment): Site içi ekrana geç!
+            result.baselineExpiryMs = baselineExpiryMs;
             result.expiresAt = Date.now() + (20 * 60 * 1000);
             result.period = selectedPeriod;
             result.payCurrency = selectedPayMethod;
@@ -1916,7 +1968,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
           .eq('id', user.id)
           .single();
 
-        if (profile && profile.plan === 'premium') {
+        if (isPaymentConfirmed(profile)) {
           handleDirectPaymentSuccess();
         }
       } catch(e) {}
@@ -2010,8 +2062,8 @@ function setupPlanWizard(wizardRoot, isExtending) {
           try { user = await getCurrentUser(); } catch(err) {}
         }
         if (user && sb) {
-          var { data: prof } = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
-          if (prof && prof.plan === 'premium') {
+          var { data: prof } = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
+          if (isPaymentConfirmed(prof)) {
             handleDirectPaymentSuccess();
             return;
           }
@@ -2086,6 +2138,19 @@ function setupPlanWizard(wizardRoot, isExtending) {
       renderSummary();
     });
   }
+
+  // Geliştirici test modu: erişim varsa 1 $'lık test planı kartı görünür (sunucu her ödemede yeniden doğrular)
+  fetchDevTestStatus().then(function(st) {
+    var testCard = wizardRoot.querySelector('.duration-option-card[data-period="test"]');
+    if (testCard) testCard.style.display = (st && st.active) ? '' : 'none';
+    // Erişim yokken test seçili kalmasın
+    if (!(st && st.active) && selectedPeriod === 'test') {
+      selectedPeriod = 'yearly';
+      var yc = wizardRoot.querySelector('.duration-option-card[data-period="yearly"]');
+      wizardRoot.querySelectorAll('.duration-option-card').forEach(function(c) { c.classList.remove('selected'); });
+      if (yc) yc.classList.add('selected');
+    }
+  });
 
   goToStep(currentStep, true);
 }
@@ -2413,6 +2478,7 @@ function initAppearance() {
   wwLog.log('🎨 Görünüm paneli başlatılıyor...');
   initLanguageSelector();
   initCurrencySelector();
+  initTimeSettings();
   initAmbientSelector();
   if (typeof window.updateThemeModeCards === 'function') {
     window.updateThemeModeCards();
@@ -2924,6 +2990,310 @@ function initCurrencySelector() {
 }
 
 // ============================================================
+// ⭐ SAAT VE GÜN AYARLARI (Görünüm paneli)
+// Mantık: /interface/shared/time-settings.js (window.WwTime)
+// ============================================================
+var TIME_POPULAR_TZ = [
+  ['Europe/Istanbul', 'İstanbul'], ['UTC', 'UTC'], ['Europe/London', 'London'],
+  ['Europe/Berlin', 'Berlin / Frankfurt'], ['Europe/Moscow', 'Moscow'], ['Asia/Dubai', 'Dubai'],
+  ['Asia/Kolkata', 'Mumbai / Delhi'], ['Asia/Singapore', 'Singapore'], ['Asia/Hong_Kong', 'Hong Kong'],
+  ['Asia/Tokyo', 'Tokyo'], ['Australia/Sydney', 'Sydney'], ['Pacific/Auckland', 'Auckland'],
+  ['America/New_York', 'New York'], ['America/Chicago', 'Chicago'], ['America/Denver', 'Denver'],
+  ['America/Los_Angeles', 'Los Angeles'], ['America/Sao_Paulo', 'São Paulo'], ['Africa/Johannesburg', 'Johannesburg']
+];
+// Broker/dosya saatleri için sabit farklar (dakika): tam saatler + yaygın yarım/çeyrek saatler
+var TIME_IMPORT_OFFSETS = (function () {
+  var list = [];
+  for (var h = -12; h <= 14; h++) list.push(h * 60);
+  [-570, -210, 210, 270, 330, 345, 570, 630].forEach(function (m) { list.push(m); });
+  return list.sort(function (a, b) { return a - b; });
+})();
+var _timeI18nBound = false;
+
+function initTimeSettings() {
+  var WT = window.WwTime;
+  var tzSel = safeEl('time-tz');
+  var dsSel = safeEl('time-day-start');
+  var impSel = safeEl('time-import-tz');
+  var fmtWrap = safeEl('time-format-selector');
+  if (!WT || !tzSel || !dsSel || !impSel || !fmtWrap) {
+    wwLog.warn('⚠️ Saat ayarları başlatılamadı (WwTime veya elemanlar yok)');
+    return;
+  }
+
+  function addOption(parent, value, label) {
+    var o = document.createElement('option');
+    o.value = value;
+    o.textContent = label;
+    parent.appendChild(o);
+    return o;
+  }
+  function addGroup(select, label) {
+    var g = document.createElement('optgroup');
+    g.label = label;
+    select.appendChild(g);
+    return g;
+  }
+  function offsetText(minutes) {
+    var sign = minutes < 0 ? '-' : '+';
+    var abs = Math.abs(minutes);
+    var h = Math.floor(abs / 60), m = abs % 60;
+    return 'GMT' + sign + h + (m ? ':' + (m < 10 ? '0' + m : m) : '');
+  }
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+  function lang() { return (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr'; }
+
+  function buildTzOptions() {
+    tzSel.innerHTML = '';
+    addOption(tzSel, 'auto', t('settings.time_tz_auto', { tz: WT.deviceTz().replace(/_/g, ' ') }));
+    var popular = addGroup(tzSel, t('settings.time_tz_popular'));
+    var seen = {};
+    TIME_POPULAR_TZ.forEach(function (z) {
+      seen[z[0]] = true;
+      addOption(popular, z[0], z[1] + ' (' + WT.offsetLabel(z[0]) + ')');
+    });
+    var all = [];
+    try { if (typeof Intl.supportedValuesOf === 'function') all = Intl.supportedValuesOf('timeZone'); } catch (e) {}
+    var current = WT.getSettings().tz;
+    if (current !== 'auto' && !seen[current] && all.indexOf(current) < 0) all.push(current);
+    if (all.length) {
+      var allGroup = addGroup(tzSel, t('settings.time_tz_all'));
+      all.forEach(function (z) {
+        if (seen[z]) return;
+        addOption(allGroup, z, z.replace(/_/g, ' ') + ' (' + WT.offsetLabel(z) + ')');
+      });
+    }
+  }
+
+  function buildDayStartOptions() {
+    dsSel.innerHTML = '';
+    for (var h = 0; h < 24; h++) {
+      addOption(dsSel, String(h), h === 0 ? t('settings.time_daystart_midnight') : pad2(h) + ':00');
+    }
+  }
+
+  function buildImportOptions() {
+    impSel.innerHTML = '';
+    addOption(impSel, 'same', t('settings.time_import_same'));
+    addOption(impSel, 'utc', t('settings.time_import_utc'));
+    var g = addGroup(impSel, t('settings.time_import_offset'));
+    TIME_IMPORT_OFFSETS.forEach(function (m) { addOption(g, 'offset:' + m, offsetText(m)); });
+  }
+
+  // New York 17:00'nin kullanıcının saat dilimindeki karşılığı (forex günü başlangıcı)
+  function forexDayStart() {
+    var now = Date.now();
+    var ny = WT.partsInTz(now, 'America/New_York');
+    var ms = WT.zonedToUtcMs(ny.y, ny.m, ny.d, 17, 0, 0, 'America/New_York');
+    var p = WT.partsInTz(ms, WT.getTz());
+    return { hour: p.H, minute: p.Mi };
+  }
+
+  function syncControls() {
+    var s = WT.getSettings();
+    var tzValue = s.tz;
+    if (!tzSel.querySelector('option[value="' + tzValue + '"]')) tzValue = 'auto';
+    tzSel.value = tzValue;
+    dsSel.value = String(s.dayStart);
+    impSel.value = s.importTz;
+    fmtWrap.querySelectorAll('[data-hour12]').forEach(function (b) {
+      b.classList.toggle('active', (b.dataset.hour12 === '1') === !!s.hour12);
+    });
+  }
+
+  function renderPreview() {
+    var nowEl = safeEl('time-preview-now');
+    var dayEl = safeEl('time-preview-day');
+    var exEl = safeEl('time-preview-example');
+    var hintEl = safeEl('time-day-forex-hint');
+    var L = lang();
+    var tz = WT.getTz();
+    try {
+      var nowIso = new Date().toISOString();
+      if (nowEl) {
+        nowEl.textContent = WT.formatDateTime(nowIso, L, { weekday: 'short', second: '2-digit' }) +
+          ' · ' + WT.offsetLabel(tz) + ' (' + tz.replace(/_/g, ' ') + ')';
+      }
+      var today = WT.todayKey();
+      if (dayEl) dayEl.textContent = WT.formatDate(today, L, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      if (exEl) {
+        var utcDay = nowIso.slice(0, 10);
+        var sampleIso = utcDay + 'T21:30:00Z';
+        exEl.textContent = t('settings.time_preview_example_text', {
+          utc: '21:30',
+          local: WT.formatDateTime(sampleIso, L, { weekday: 'short', day: 'numeric', month: 'short', year: undefined }),
+          day: WT.formatDate(WT.dateKey(sampleIso), L, { weekday: 'short', day: 'numeric', month: 'long', year: undefined })
+        });
+      }
+      if (hintEl) {
+        var fx = forexDayStart();
+        hintEl.textContent = t('settings.time_daystart_forex_hint', { time: pad2(fx.hour) + ':' + pad2(fx.minute) });
+      }
+    } catch (e) { wwLog.warn('Saat önizlemesi hesaplanamadı:', e); }
+  }
+
+  function buildAll() {
+    buildTzOptions();
+    buildDayStartOptions();
+    buildImportOptions();
+    syncControls();
+    renderPreview();
+  }
+
+  function saved() {
+    syncControls();
+    renderPreview();
+    showMsg(t('settings.time_saved'), 'success');
+  }
+
+  buildAll();
+
+  if (!tzSel._timeBound) {
+    tzSel._timeBound = true;
+    tzSel.addEventListener('change', function () { WT.setSettings({ tz: this.value }); buildTzOptions(); saved(); });
+  }
+  if (!dsSel._timeBound) {
+    dsSel._timeBound = true;
+    dsSel.addEventListener('change', function () { WT.setSettings({ dayStart: parseInt(this.value, 10) }); saved(); });
+  }
+  if (!impSel._timeBound) {
+    impSel._timeBound = true;
+    impSel.addEventListener('change', function () { WT.setSettings({ importTz: this.value }); saved(); });
+  }
+  if (!fmtWrap._timeBound) {
+    fmtWrap._timeBound = true;
+    fmtWrap.querySelectorAll('[data-hour12]').forEach(function (b) {
+      b.addEventListener('click', function () { WT.setSettings({ hour12: this.dataset.hour12 === '1' }); saved(); });
+    });
+  }
+  var forexBtn = safeEl('time-day-forex-btn');
+  if (forexBtn && !forexBtn._timeBound) {
+    forexBtn._timeBound = true;
+    forexBtn.addEventListener('click', function () {
+      WT.setSettings({ dayStart: forexDayStart().hour });
+      saved();
+    });
+  }
+  var resetBtn = safeEl('time-reset-btn');
+  if (resetBtn && !resetBtn._timeBound) {
+    resetBtn._timeBound = true;
+    resetBtn.addEventListener('click', function () {
+      WT.resetSettings();
+      buildAll();
+      showMsg(t('settings.time_reset_done'), 'info');
+    });
+  }
+
+  // Önizleme canlı kalsın (saniye göstergesi) ve dil değişince etiketler yenilensin
+  if (window._wwTimePreviewTimer) clearInterval(window._wwTimePreviewTimer);
+  window._wwTimePreviewTimer = setInterval(function () {
+    if (!document.getElementById('time-preview-now')) { clearInterval(window._wwTimePreviewTimer); window._wwTimePreviewTimer = null; return; }
+    renderPreview();
+  }, 1000);
+  if (!_timeI18nBound && window.i18n && typeof window.i18n.onChange === 'function') {
+    _timeI18nBound = true;
+    window.i18n.onChange(function () {
+      if (document.getElementById('time-tz')) buildAll();
+    });
+  }
+
+  wwLog.log('✅ Saat ve gün ayarları başlatıldı!');
+}
+
+// ============================================================
+// ⭐ GELİŞTİRİCİ TEST MODU (Ayarlar > Gelişmiş)
+// Kod admin panelinden belirlenir ve sunucuda hash olarak saklanır. Doğrulama redeem_dev_test_code RPC'sinde
+// yapılır (hız sınırlı); erişim 24 saat sürer. Test planı satın alınırken create-payment erişimi yeniden doğrular.
+// ============================================================
+async function fetchDevTestStatus() {
+  try {
+    var sbc = getSb();
+    if (!sbc) return { active: false };
+    var res = await sbc.rpc('get_dev_test_status');
+    if (res.error || !res.data) return { active: false };
+    return res.data;
+  } catch (e) {
+    return { active: false };
+  }
+}
+window.fetchDevTestStatus = fetchDevTestStatus;
+
+function initAdvanced() {
+  var stateText = safeEl('dev-test-state-text');
+  var dot = safeEl('dev-test-dot');
+  var enterRow = safeEl('dev-test-enter-row');
+  var activeRow = safeEl('dev-test-active-row');
+  var input = safeEl('dev-test-code-input');
+  var activateBtn = safeEl('dev-test-activate-btn');
+  var exitBtn = safeEl('dev-test-exit-btn');
+  var gotoPlanBtn = safeEl('dev-test-goto-plan-btn');
+  if (!stateText || !enterRow || !activeRow) return;
+
+  async function refresh() {
+    var st = await fetchDevTestStatus();
+    var active = !!(st && st.active);
+    enterRow.style.display = active ? 'none' : '';
+    activeRow.style.display = active ? '' : 'none';
+    if (dot) dot.className = 'dev-test-dot' + (active ? ' on' : '');
+    if (active) {
+      var ms = Date.parse(st.expires_at) - Date.now();
+      var hours = Math.max(0, Math.floor(ms / 3600000));
+      var mins = Math.max(0, Math.floor((ms % 3600000) / 60000));
+      stateText.textContent = t('settings.devtest_state_on', { time: hours + ' sa ' + mins + ' dk' }, 'Test modu AÇIK (kalan süre: ' + hours + ' sa ' + mins + ' dk)');
+    } else {
+      stateText.textContent = t('settings.devtest_state_off', {}, 'Test modu kapalı');
+    }
+  }
+
+  if (activateBtn && !activateBtn._devBound) {
+    activateBtn._devBound = true;
+    activateBtn.addEventListener('click', async function() {
+      var code = input ? input.value : '';
+      if (!code) {
+        showMsg(t('settings.devtest_code_required', {}, 'Lütfen kodu girin.'), 'error');
+        return;
+      }
+      activateBtn.disabled = true;
+      try {
+        var res = await getSb().rpc('redeem_dev_test_code', { p_code: code });
+        if (res.error) throw res.error;
+        if (!res.data || res.data.success === false) {
+          showMsg((res.data && res.data.error) || t('settings.devtest_invalid', {}, 'Geçersiz kod.'), 'error');
+        } else {
+          if (input) input.value = '';
+          showMsg(t('settings.devtest_enabled', {}, 'Test modu etkinleştirildi.'), 'success');
+        }
+      } catch (e) {
+        showMsg((e && e.message) || t('settings.devtest_error', {}, 'İşlem başarısız.'), 'error');
+      } finally {
+        activateBtn.disabled = false;
+        refresh();
+      }
+    });
+    if (input) {
+      input.addEventListener('keydown', function(ev) { if (ev.key === 'Enter') activateBtn.click(); });
+    }
+  }
+  if (exitBtn && !exitBtn._devBound) {
+    exitBtn._devBound = true;
+    exitBtn.addEventListener('click', async function() {
+      exitBtn.disabled = true;
+      try { await getSb().rpc('exit_dev_test_mode'); } catch (e) {}
+      exitBtn.disabled = false;
+      showMsg(t('settings.devtest_exited', {}, 'Test modundan çıkıldı.'), 'info');
+      refresh();
+    });
+  }
+  if (gotoPlanBtn && !gotoPlanBtn._devBound) {
+    gotoPlanBtn._devBound = true;
+    gotoPlanBtn.addEventListener('click', function() { window.switchPanel('panel-plan'); });
+  }
+
+  refresh();
+}
+
+
+// ============================================================
 // ⭐ DİNAMİK ARKA PLAN AMBİYANSI SEÇİCİ
 // ============================================================
 function initAmbientSelector() {
@@ -3070,8 +3440,8 @@ async function updateBadge() {
     if (!user) return;
     var sb = getSb();
     if (!sb) return;
-    var result = await sb.from('user_profiles').select('plan').eq('id', user.id).single();
-    var isPremium = result.data && result.data.plan === 'premium';
+    var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
+    var isPremium = isActivePremium(result.data);
     window.SETTINGS_STATE.isPremium = isPremium;
 
     if (isPremium) {
@@ -3210,7 +3580,7 @@ async function checkAndActivatePremium() {
     if (result.error) throw result.error;
 
     var data = result.data;
-    var isPremium = data && data.plan === 'premium';
+    var isPremium = isActivePremium(data);
 
     // Fiyatlari DB'den canli cek
     try {
@@ -3379,7 +3749,8 @@ async function bootSettings() {
           'panel-appearance': 'appearance-glow',
           'panel-danger': 'danger-glow',
           'panel-plan': 'plan-glow',
-          'panel-overtrade': 'overtrade-glow'
+          'panel-overtrade': 'overtrade-glow',
+      'panel-advanced': 'overtrade-glow'
         };
         if (map[targetPanelId]) glow.classList.add(map[targetPanelId]);
       }
@@ -3390,6 +3761,7 @@ async function bootSettings() {
         'panel-password': '/settings/panels/password-change.html',
         'panel-appearance': '/settings/panels/appearance.html',
         'panel-overtrade': '/settings/panels/overtrade.html',
+      'panel-advanced': '/settings/panels/advanced.html',
         'panel-danger': '/settings/panels/danger-area.html'
       };
       var url = map2[targetPanelId];

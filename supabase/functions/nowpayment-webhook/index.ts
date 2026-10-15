@@ -66,6 +66,7 @@ function getPlanDuration(planType: string): number {
   if (planType === '6months' || planType === '6_months') return 180;
   if (planType === '3months' || planType === '3_months') return 90;
   if (planType === 'monthly' || planType === 'month') return 30;
+  if (planType === 'test') return 1;   // geliştirici test planı: 1 gün
   return 30;
 }
 
@@ -204,15 +205,60 @@ function isInvoiceProcessed(invoiceId: string, status: string): boolean {
   const now = Date.now();
   const record = processedInvoices.get(invoiceId);
 
-  if (record && (now - record.timestamp) < 5 * 60 * 1000) {
-    if (record.status === status) {
-      console.warn(`⏳ Invoice ${invoiceId} already processed with status ${status} (within 5 min)`);
-      return true;
-    }
+  if (record && (now - record.timestamp) < 5 * 60 * 1000 && record.status === status) {
+    console.warn(`⏳ Invoice ${invoiceId} already processed with status ${status} (within 5 min)`);
+    return true;
+  }
+  return false;
+}
+
+// Yalnızca işlem BAŞARIYLA bittikten sonra çağrılır. Eskiden kayıt işlemeden önce
+// yazılıyordu; işleme hata verirse NOWPayments'ın yeniden denemesi "Already processed"
+// ile boşa çıkıyordu.
+function markInvoiceProcessed(invoiceId: string, status: string): void {
+  processedInvoices.set(invoiceId, { timestamp: Date.now(), status });
+}
+
+// Yeniden denemenin anlamsız olduğu kalıcı ret (ör. tutar uyuşmazlığı).
+class PaymentRejectedError extends Error {}
+
+// 🔒 Ödenen tutar/para birimi, create-payment'ın kaydettiği beklenen değerle eşleşmeli.
+// Eşleşmezse (ör. istemci fiyatı kurcaladıysa) premium AKTİFLEŞTİRİLMEZ.
+async function verifyExpectedAmount(orderId: string | undefined, payload: any): Promise<{ referral_code: string | null }> {
+  if (!orderId) {
+    throw new PaymentRejectedError('Missing order_id, cannot verify expected amount');
   }
 
-  processedInvoices.set(invoiceId, { timestamp: now, status });
-  return false;
+  const { data: initial, error } = await supabase
+    .from('payments')
+    .select('amount, currency, referral_code')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    // Geçici DB hatası: 5xx dönülsün ki NOWPayments tekrar denesin
+    throw new Error(`Could not load expected amount: ${error.message}`);
+  }
+  if (!initial) {
+    // Kayıt henüz yazılmamış olabilir: tekrar denensin
+    throw new Error(`No initial payment record for order ${orderId}`);
+  }
+
+  const expectedAmount = Number(initial.amount);
+  const paidPrice = Number(payload.price_amount);
+  const expectedCurrency = String(initial.currency || '').toLowerCase();
+  const paidCurrency = String(payload.price_currency || '').toLowerCase();
+
+  if (!Number.isFinite(paidPrice) || Math.abs(paidPrice - expectedAmount) > 0.01) {
+    throw new PaymentRejectedError(`Amount mismatch for order ${orderId}: expected ${expectedAmount}, got ${payload.price_amount}`);
+  }
+  if (expectedCurrency !== paidCurrency) {
+    throw new PaymentRejectedError(`Currency mismatch for order ${orderId}: expected ${expectedCurrency}, got ${paidCurrency}`);
+  }
+
+  return { referral_code: initial.referral_code ? String(initial.referral_code) : null };
 }
 
 // ⭐ Telegram bildirimi gönder
@@ -265,146 +311,54 @@ async function sendTelegramNotification(userId: string, email: string, planType:
 }
 
 // ⭐ Process payment
+// Plan uzatma + ödeme kaydı + referral sayacı TEK TRANSACTION'da (process_payment_finished RPC) yapılır.
+// Eskiden "kontrol et sonra uygula" idi: aynı 'finished' bildirimi iki kez gelirse (yeniden deneme ya da
+// aynı anda iki istek) plan iki kez uzuyor ve influencer komisyonu iki kez yazılıyordu.
 async function processPayment(userId: string, planType: string, invoiceId: string, payload: any) {
-  // ⭐ Kalıcı idempotency kontrolü — bu invoice_id daha önce 'finished' olarak
-  // işlenmiş mi diye DB'den bak. In-memory Map sadece 5 dakikalık ve instance
-  // restart'ta sıfırlanıyor; NOWPayments aynı 'finished' bildirimini birden
-  // fazla kez gönderebildiği için asıl garanti burası.
-  const { data: existingPayment } = await supabase
-    .from('payments')
-    .select('id')
-    .eq('invoice_id', invoiceId)
-    .eq('payment_status', 'finished')
-    .maybeSingle();
+  // 🔒 Ödenen tutar/para birimi, ödeme başlatılırken kaydedilen beklenen değerle eşleşmeli (yan etkisiz kontrol)
+  const initial = await verifyExpectedAmount(payload.order_id, payload);
 
-  if (existingPayment) {
-    console.warn(`⏳ Invoice ${invoiceId} zaten 'finished' olarak işlenmiş, plan tekrar uzatılmıyor.`);
-    const { data: currentProfile } = await supabase
-      .from('user_profiles')
-      .select('plan_expires_at')
-      .eq('id', userId)
-      .single();
-    return { success: true, expiresAt: new Date(currentProfile?.plan_expires_at ?? Date.now()), alreadyProcessed: true };
+  // Referral kodu: sunucunun doğrulayıp ilk ödeme kaydına yazdığı değer esastır (site içi/QR ödemelerde de çalışır).
+  // Yedek: açıklama metnindeki "(Ref: KOD -%10)" (eski regex "-%10" ekini yakalayamıyordu).
+  let appliedReferral: string | null = initial.referral_code ? initial.referral_code.toUpperCase() : null;
+  if (!appliedReferral && payload.order_description) {
+    const refMatch = String(payload.order_description).match(/\(Ref:\s*([A-Z0-9_-]+)(?:\s+-%[\d.]+)?\s*\)/i);
+    if (refMatch && refMatch[1]) appliedReferral = refMatch[1].toUpperCase();
   }
 
-  // ⭐ user_profiles tablosunu kullan
-  const { data: profile, error: fetchError } = await supabase
-    .from('user_profiles')
-    .select('plan, plan_expires_at, email')
-    .eq('id', userId)
-    .single();
-
-  if (fetchError) {
-    throw new Error(`User not found: ${fetchError.message}`);
-  }
-
-  // ⭐ Zaten premium mu kontrol et
-  const isCurrentlyPremium = profile.plan === 'premium' &&
-    profile.plan_expires_at &&
-    new Date(profile.plan_expires_at) > new Date();
-
-  let expiresAt: Date;
   const durationDays = getPlanDuration(planType);
 
-  if (isCurrentlyPremium) {
-    expiresAt = new Date(profile.plan_expires_at);
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
-  } else {
-    expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
+  const { data: result, error: rpcError } = await supabase.rpc('process_payment_finished', {
+    p_user_id: userId,
+    p_plan_type: planType,
+    p_invoice_id: invoiceId,
+    p_order_id: payload.order_id || null,
+    p_amount: Number(payload.price_amount ?? payload.pay_amount ?? 0),
+    p_currency: String(payload.price_currency || payload.pay_currency || 'USD'),
+    p_paid_amount: Number(payload.actually_paid ?? payload.pay_amount ?? 0),
+    p_paid_currency: String(payload.pay_currency || 'USD'),
+    p_pay_address: payload.pay_address || null,
+    p_referral_code: appliedReferral,
+    p_duration_days: durationDays
+  });
+
+  if (rpcError) {
+    // Geçici hata (ya da migration uygulanmamış): 5xx dönülür, NOWPayments yeniden dener
+    throw new Error(`process_payment_finished failed: ${rpcError.message}`);
   }
 
-  console.log(`💎 Upgrading user ${userId}: ${isCurrentlyPremium ? 'EXTENDING' : 'NEW'} until ${expiresAt.toISOString()}`);
-
-  // ⭐ Update user's plan
-  const { error: updateError } = await supabase
-    .from('user_profiles')
-    .update({
-      plan: 'premium',
-      plan_expires_at: expiresAt.toISOString()
-    })
-    .eq('id', userId);
-
-  if (updateError) {
-    throw new Error(`Failed to update user plan: ${updateError.message}`);
+  if (result?.already_processed) {
+    console.warn(`⏳ Invoice ${invoiceId} zaten işlenmiş, plan tekrar uzatılmadı.`);
+    return { success: true, expiresAt: new Date(result.expires_at ?? Date.now()), alreadyProcessed: true };
   }
 
-  // ⭐ Log the payment
+  const expiresAt = new Date(result.expires_at);
+  console.log(`💎 Upgraded user ${userId} until ${expiresAt.toISOString()}${appliedReferral ? ` (ref: ${appliedReferral})` : ''}`);
 
-  // Referans kodu ayıklama (önce order_description regex, yoksa payments tablosundan fallback)
-  let appliedReferral: string | null = null;
-  if (payload.order_description) {
-    const refMatch = payload.order_description.match(/\(Ref:\s*([A-Z0-9]+)\)/i);
-    if (refMatch && refMatch[1]) {
-      appliedReferral = refMatch[1].toUpperCase();
-    }
-  }
-
-  if (!appliedReferral && invoiceId && invoiceId !== 'unknown') {
-    try {
-      const { data: initialPayment } = await supabase
-        .from('payments')
-        .select('referral_code')
-        .eq('invoice_id', invoiceId)
-        .not('referral_code', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (initialPayment?.referral_code) {
-        appliedReferral = initialPayment.referral_code.toUpperCase();
-        console.log(`ℹ️ Referral code recovered from initial payment record: ${appliedReferral}`);
-      }
-    } catch (e) {
-      console.warn('⚠️ Could not check fallback referral from payments table:', e);
-    }
-  }
-
-  // Payment kaydı at
-  await supabase
-    .from('payments')
-    .insert([{
-      user_id: userId,
-      invoice_id: invoiceId,
-      amount: payload.price_amount || payload.pay_amount || 0,
-      currency: payload.price_currency || payload.pay_currency || 'USD',
-      plan_type: planType,
-      payment_status: payload.payment_status,
-      paid_amount: payload.actually_paid || payload.pay_amount || 0,
-      paid_currency: payload.pay_currency || 'USD',
-      pay_address: payload.pay_address || null,
-      referral_code: appliedReferral,
-      created_at: new Date().toISOString()
-    }]);
-
-  // Referans kodu geçerliyse kullanımı artır (Aylık/Yıllık ayrımı ile)
-  if (appliedReferral) {
-    try {
-      // 🛡️ SELF-REFERRAL BLOCK: Kodun sahibi ile ödeyen kişi aynıysa komisyon işletme!
-      const { data: refOwner } = await supabase
-        .from('referral_codes')
-        .select('influencer_user_id')
-        .eq('code', appliedReferral)
-        .maybeSingle();
-
-      if (refOwner?.influencer_user_id && refOwner.influencer_user_id === userId) {
-        console.warn(`⛔ Webhook blocked self-referral commission: User ${userId} paid using their own code ${appliedReferral}`);
-      } else {
-        await supabase.rpc('increment_referral_usage', { 
-          p_code: appliedReferral,
-          p_plan_type: planType || 'monthly'
-        });
-        console.log(`✅ Incremented referral usage: ${appliedReferral} (plan: ${planType})`);
-      }
-    } catch (e) {
-      console.warn(`⚠️ Could not increment referral ${appliedReferral}:`, e);
-    }
-  }
-
-
-  // ⭐ Kullanıcıya sistem bildirimi ekle
+  // ⭐ Kullanıcıya sistem bildirimi ekle (başarısızlığı ödemeyi etkilemez)
   try {
-    const planLabel = (planType === 'yearly' || planType === 'year') ? '1 yıllık' :
+    const planLabel = (planType === 'test') ? '1 günlük test' :
+      (planType === 'yearly' || planType === 'year') ? '1 yıllık' :
       (planType === '6months' || planType === '6_months') ? '6 aylık' :
       (planType === '3months' || planType === '3_months') ? '3 aylık' : '1 aylık';
     const amt = payload.actually_paid || payload.pay_amount || payload.price_amount || 0;
@@ -418,14 +372,12 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
       is_read: false,
       created_at: new Date().toISOString()
     }]);
-    console.log(`✅ Inserted payment notification for user ${userId}`);
   } catch (notifErr) {
     console.warn('⚠️ Could not insert payment notification into notifications table:', notifErr);
   }
 
   // ⭐ Telegram bildirimi gönder
-  const email = profile.email || 'Bilinmiyor';
-  await sendTelegramNotification(userId, email, planType, expiresAt);
+  await sendTelegramNotification(userId, result.email || 'Bilinmiyor', planType, expiresAt);
 
   return { success: true, expiresAt };
 }
@@ -630,6 +582,7 @@ serve(async (req: Request) => {
           console.log(`✅ User ${userId} upgraded successfully! Expires: ${result.expiresAt.toISOString()}`);
         }
 
+        markInvoiceProcessed(invoiceId, status);
         return new Response(JSON.stringify({
           success: true,
           message: `User ${userId} upgraded to premium`,
@@ -641,11 +594,25 @@ serve(async (req: Request) => {
 
       } catch (error) {
         console.error('❌ Error processing payment:', error);
+
+        // Kalıcı ret (tutar/para birimi uyuşmazlığı): tekrar denemenin faydası yok, 200 dön.
+        if (error instanceof PaymentRejectedError) {
+          markInvoiceProcessed(invoiceId, status);
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Payment rejected'
+          }), {
+            status: 200,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Geçici hata: 5xx dön ki NOWPayments bildirimi yeniden göndersin.
         return new Response(JSON.stringify({
           success: false,
-          error: error instanceof Error ? error.message : 'Processing failed'
+          error: 'Processing failed, will retry'
         }), {
-          status: 200,
+          status: 500,
           headers: { ...headers, 'Content-Type': 'application/json' }
         });
       }
@@ -667,6 +634,7 @@ serve(async (req: Request) => {
           pay_address: pay_address || null,
           created_at: new Date().toISOString()
         }]);
+      markInvoiceProcessed(invoiceId, status);
 
       return new Response(JSON.stringify({
         success: false,
@@ -679,6 +647,7 @@ serve(async (req: Request) => {
 
     // ⭐ 14. CONFIRMING/CONFIRMED
     console.log(`⏳ Payment ${invoiceId} is ${status}, waiting for finalization...`);
+    markInvoiceProcessed(invoiceId, status);
     return new Response(JSON.stringify({
       success: true,
       message: `Payment ${status}, waiting for finalization`

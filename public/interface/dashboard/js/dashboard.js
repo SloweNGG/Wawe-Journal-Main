@@ -79,6 +79,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     return y + '-' + m + '-' + d;
   }
 
+  // "Bugün": Ayarlar > Görünüm > Saat ve Gün'deki saat dilimi ve gün başlangıcına göre (cihaz saati değil)
+  function todayDate() {
+    return window.WwTime.dateFromKey(window.WwTime.todayKey());
+  }
+
   // ============================================================
   // SKELETON GÖSTER/GİZLE
   // ============================================================
@@ -135,25 +140,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // UTILITY FUNCTIONS
   // ============================================================
 
+  // Tek doğruluk kaynağı: interface/shared/trade-metrics.js (kapanmamış işlem = 0, kayıtlı net pnl öncelikli)
   function calcTradePnL(t) {
-    try {
-      if (!t || !t.exit_price) return 0;
-
-      var storedPnl = parseFloat(t.pnl);
-      if (t.pnl !== null && t.pnl !== undefined && !isNaN(storedPnl)) {
-        return storedPnl;
-      }
-
-      if (!t.entry_price || !t.lot) return 0;
-      if (typeof window.calcPnL === 'function') {
-        return window.calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
-      }
-      var mult = t.multiplier || 100000;
-      var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
-      return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
-    } catch (e) {
-      return 0;
-    }
+    return window.WwMetrics.tradePnL(t);
   }
   window.calcTradePnL = calcTradePnL;
 
@@ -509,46 +498,33 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // FILTER FUNCTIONS
   // ============================================================
 
+  // Tarih filtreleri GÜN ANAHTARI ('YYYY-MM-DD') üzerinden çalışır (WwTime): kullanıcının saat dilimi ve gün
+  // başlangıcı uygulanır; sadece-tarih işlemler kaymaz; hafta bugün dahil 7 gün; ay sonu taşmaz.
   function filterByDate(trades, range) {
     if (range === 'all') return trades;
-    if (range === 'custom' && window._customRangeStart && window._customRangeEnd) {
-      var cStart = new Date(window._customRangeStart);
-      cStart.setHours(0, 0, 0, 0);
-      var cEnd = new Date(window._customRangeEnd);
-      cEnd.setHours(23, 59, 59, 999);
-      return trades.filter(function (t) {
-        var d = t.trade_date ? new Date(t.trade_date) : null;
-        return d && d >= cStart && d <= cEnd;
-      });
+    var WT = window.WwTime, WM = window.WwMetrics;
+    var startKey, endKey = null;
+    if (range === 'custom') {
+      if (!window._customRangeStart || !window._customRangeEnd) return trades;
+      startKey = String(window._customRangeStart).slice(0, 10);
+      endKey = String(window._customRangeEnd).slice(0, 10);
+    } else {
+      startKey = WT.rangeStartKey(range);
     }
-    var now = new Date();
-    var start = new Date();
-    if (range === 'week') start.setDate(now.getDate() - 7);
-    if (range === 'month') start.setMonth(now.getMonth() - 1);
-    if (range === 'year') start.setMonth(0, 1);
-    start.setHours(0, 0, 0, 0);
-    return trades.filter(function (t) { return t.trade_date && new Date(t.trade_date) >= start; });
+    if (!startKey) return trades;
+    return trades.filter(function (t) {
+      var k = WM.dateKey(t);
+      return k && k >= startKey && (!endKey || k <= endKey);
+    });
   }
 
   function getPreviousPeriodTrades(trades, range) {
-    var now = new Date();
-    var currentStart = new Date();
-    if (range === 'week') currentStart.setDate(now.getDate() - 7);
-    if (range === 'month') currentStart.setMonth(now.getMonth() - 1);
-    if (range === 'year') currentStart.setMonth(0, 1);
-    currentStart.setHours(0, 0, 0, 0);
-
-    var prevEnd = new Date(currentStart);
-    var prevStart = new Date(currentStart);
-    if (range === 'week') prevStart.setDate(prevStart.getDate() - 7);
-    if (range === 'month') prevStart.setMonth(prevStart.getMonth() - 1);
-    if (range === 'year') {
-      prevStart.setFullYear(prevStart.getFullYear() - 1, 0, 1);
-    }
-    prevStart.setHours(0, 0, 0, 0);
-
+    var r = window.WwTime.previousRangeKeys(range);
+    if (!r) return [];
+    var WM = window.WwMetrics;
     return trades.filter(function (t) {
-      return t.trade_date && new Date(t.trade_date) >= prevStart && new Date(t.trade_date) < prevEnd;
+      var k = WM.dateKey(t);
+      return k && k >= r.start && k < r.end;
     });
   }
 
@@ -774,8 +750,22 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // RENDER FUNCTIONS
   // ============================================================
 
+  // Bu ayın (takvim ayı) net PnL'i: yalnızca kapanmış işlemler, seçili tarih filtresinden BAĞIMSIZ.
+  function currentMonthPnL(allTrades) {
+    var prefix = window.WwTime.todayKey().slice(0, 7);
+    var sum = 0;
+    window.WwMetrics.closedTrades(allTrades).forEach(function (t) {
+      if (window.WwMetrics.dateKey(t).indexOf(prefix) === 0) sum += calcTradePnL(t);
+    });
+    return sum;
+  }
+
   function renderStats(trades, previousTrades, animate) {
-    previousTrades = previousTrades || null;
+    // 'Açık işlem' kavramı yok: tüm istatistikler yalnızca KAPANMIŞ işlemlerden hesaplanır
+    // (eskiden açık işlemler Toplam İşlem ve Win Rate paydasına giriyordu; trend karşılaştırmasında
+    // önceki dönem kapalı, güncel dönem açık+kapalı idi).
+    trades = window.WwMetrics.closedTrades(trades);
+    previousTrades = previousTrades ? window.WwMetrics.closedTrades(previousTrades) : null;
     animate = (animate !== undefined) ? animate : true;
 
     var total = trades.length;
@@ -799,7 +789,10 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var wr = total ? (wins / total) * 100 : 0;
     var avgWin = winPnLs.length ? winPnLs.reduce(function (a, b) { return a + b; }, 0) / winPnLs.length : 0;
     var avgLoss = lossPnLs.length ? -(Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0) / lossPnLs.length)) : 0;
-    var profitFactor = avgLoss !== 0 ? (winPnLs.reduce(function (a, b) { return a + b; }, 0) / Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0))) : 0;
+    // Kayıp yokken kazanç varsa profit factor sonsuzdur (null → "∞"); işlem yoksa 0
+    var grossWinSum = winPnLs.reduce(function (a, b) { return a + b; }, 0);
+    var grossLossSum = Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0));
+    var profitFactor = grossLossSum > 0 ? (grossWinSum / grossLossSum) : (grossWinSum > 0 ? null : 0);
 
     var cumulative = 0, maxCumulative = 0, maxDrawdown = 0;
     trades.forEach(function (t) {
@@ -812,11 +805,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var totalRR = 0, rrCount = 0;
     trades.forEach(function (t) {
-      if (t.rr_ratio) { totalRR += parseFloat(t.rr_ratio); rrCount++; }
+      var rr = parseFloat(t.rr_ratio);
+      if (rr > 0 && isFinite(rr)) { totalRR += rr; rrCount++; }
     });
     var avgRR = rrCount ? totalRR / rrCount : 0;
 
-    var rawProgress = (totalPnL / monthlyTarget) * 100;
+    // Aylık hedef: bu takvim ayının kapanmış işlem PnL'i (seçili filtreden bağımsız); hedef 0/boşsa %0
+    var monthPnL = currentMonthPnL(window._allDashboardTrades || trades);
+    var rawProgress = monthlyTarget > 0 ? (monthPnL / monthlyTarget) * 100 : 0;
     var progressPercent = Math.min(100, Math.max(-100, rawProgress));
 
     var isDesktop = window.innerWidth >= 960;
@@ -839,7 +835,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       avgLossEl.title = formatCurrency(avgLoss);
     }
     var pfEl = safeEl('kpi-pf');
-    if (pfEl) pfEl.textContent = profitFactor.toFixed(2);
+    if (pfEl) pfEl.textContent = window.WwMetrics.formatProfitFactor(profitFactor);
     var ddEl = safeEl('kpi-dd');
     if (ddEl) {
       ddEl.textContent = formatCompactCurrency(maxDrawdown);
@@ -1020,9 +1016,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     recent.forEach(function (t) {
       var pnl = calcTradePnL(t);
       var isLong = t.direction === 'LONG' || t.direction === 'BUY';
-      var tradeDate = new Date(t.trade_date);
-      var monthShort = getMonthNamesShort(i18n.getCurrentLanguage())[tradeDate.getMonth()] || '';
-      var formattedDate = tradeDate.getDate() + ' ' + monthShort;
+      // İşlem günü (saat dilimi + gün başlangıcı ayarına göre), ay adı seçili dilde
+      var tradeDayKey = window.WwMetrics.dateKey(t);
+      var tradeDayParts = tradeDayKey ? tradeDayKey.split('-') : null;
+      var monthShort = tradeDayParts ? (getMonthNamesShort(i18n.getCurrentLanguage())[parseInt(tradeDayParts[1], 10) - 1] || '') : '';
+      var formattedDate = tradeDayParts ? (parseInt(tradeDayParts[2], 10) + ' ' + monthShort) : '—';
       var strategyName = t.strategy_id ? (strategiesMap[t.strategy_id] || '—') : '—';
       var hasNote = t.notes && t.notes.trim().length > 0;
       var fullNote = hasNote ? t.notes : '';
@@ -1068,7 +1066,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
     var dayNames = getDayNames(lang);
 
-    var today = new Date();
+    var today = todayDate();
     var currentDay = today.getDay();
     var startOffset = currentDay === 0 ? 6 : currentDay - 1;
 
@@ -1112,7 +1110,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var todayStr = localDateStr(today);
       var isToday = dateStr === todayStr;
 
-      var dayTrades = miniCalendarTrades.filter(function (t) { return t.trade_date === dateStr; });
+      var dayTrades = miniCalendarTrades.filter(function (t) { return window.WwMetrics.dateKey(t) === dateStr; });
       var hasTrade = dayTrades.length > 0;
 
       var dayPnl = 0;
@@ -1150,7 +1148,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var todayInfo = safeEl('mini-cal-today-info');
     if (todayInfo) {
       var todayStr2 = localDateStr(today);
-      var todayTrades = miniCalendarTrades.filter(function (t) { return t.trade_date === todayStr2; });
+      var todayTrades = miniCalendarTrades.filter(function (t) { return window.WwMetrics.dateKey(t) === todayStr2; });
       var todayPnl = 0;
       todayTrades.forEach(function (t) {
         if (t.exit_price) todayPnl += calcTradePnL(t);
@@ -1166,7 +1164,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
 
   function loadMiniCalendar(trades) {
-    miniCalendarTrades = trades || [];
+    // Gün eşleşmesi zaman damgalı trade_date'lerde de çalışsın diye dateKey kullanılır; yalnızca kapanmış işlemler
+    miniCalendarTrades = window.WwMetrics.closedTrades(trades);
     renderMiniCalendar();
   }
 
@@ -1226,11 +1225,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     // wall-clock time of a trade as a pseudo-UTC timestamp (keeps axis labels on the user's dates)
     function tradeTs(t) {
-      var raw = String(t.trade_date || '');
-      var m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
-      if (m) {
-        return Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 12, m[5] ? +m[5] : 0, m[6] ? +m[6] : 0) / 1000);
-      }
+      // Duvar saati kullanıcının saat dilimine göre (eskiden ham UTC rakamları okunuyordu)
+      var wall = window.WwTime.pseudoUtcSeconds(t.trade_date);
+      if (wall !== null) return wall;
       var ms;
       try { ms = new Date(t.created_at || Date.now()).getTime(); } catch (e) { ms = Date.now(); }
       if (isNaN(ms)) ms = Date.now();
@@ -1494,23 +1491,17 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var colors = getApexColors();
     var isLight = document.body.classList.contains('light-theme');
     var days = {};
-    var now = new Date();
+    // Son 30 gün penceresi bugünün anahtarından (kullanıcının saat dilimi) kurulur
+    var windowToday = window.WwTime.todayKey();
     for (var i = 29; i >= 0; i--) {
-      var d = new Date(now);
-      d.setDate(d.getDate() - i);
-      days[localDateStr(d)] = 0;
+      days[window.WwTime.addDays(windowToday, -i)] = 0;
     }
     (trades || []).forEach(function (t) {
-      var dStr = (t.trade_date || '').split('T')[0].split(' ')[0];
-      if (!dStr && t.created_at) {
-        try { dStr = new Date(t.created_at).toISOString().split('T')[0]; } catch(e) {}
-      }
-      var pnl = calcTradePnL(t);
-      if (dStr && (t.exit_price || t.pnl !== null && t.pnl !== undefined)) {
-        if (days[dStr] === undefined) {
-          days[dStr] = 0;
-        }
-        days[dStr] += pnl;
+      if (!window.WwMetrics.isClosed(t)) return;
+      var dStr = window.WwMetrics.dateKey(t);
+      // Grafik "son 30 gün": pencere dışındaki işlemler çubuk üretmez (eskiden sona eklenip sırayı bozuyordu)
+      if (dStr && days[dStr] !== undefined) {
+        days[dStr] += calcTradePnL(t);
       }
     });
 
@@ -1772,20 +1763,23 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   function renderWinLossChart(trades) {
     var colors = getApexColors();
-    var wins = 0, losses = 0;
+    // Break-even (pnl == 0) kayıp sayılmaz; ayrı nötr dilim. Payda = tüm kapanmış işlemler.
+    var wins = 0, losses = 0, breakeven = 0;
     var closedTrades = trades.filter(function (t) { return t.exit_price; });
     closedTrades.forEach(function (t) {
-      if (calcTradePnL(t) > 0) wins++;
-      else losses++;
+      var p = calcTradePnL(t);
+      if (p > 0) wins++;
+      else if (p < 0) losses++;
+      else breakeven++;
     });
 
-    var total = wins + losses;
+    var total = wins + losses + breakeven;
     if (total === 0) return null;
 
     var isMobile = window.innerWidth < 768;
 
     var options = {
-      series: [wins, losses],
+      series: breakeven > 0 ? [wins, losses, breakeven] : [wins, losses],
       chart: {
         type: 'donut',
         height: '100%',
@@ -1797,11 +1791,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         },
         background: 'transparent'
       },
-      colors: ['#22c55e', '#ef4444'],
+      colors: breakeven > 0 ? ['#22c55e', '#ef4444', '#94a3b8'] : ['#22c55e', '#ef4444'],
       labels: [
         (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.stats.winners') || 'Kazanan') : 'Kazanan',
         (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.stats.losers') || 'Kaybeden') : 'Kaybeden'
-      ],
+      ].concat(breakeven > 0 ? [(typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.stats.breakeven') || 'Break-even') : 'Break-even'] : []),
       legend: {
         position: 'bottom',
         labels: {
@@ -2857,7 +2851,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         var pnl = calcTradePnL(t);
         var isEven = idx % 2 === 0;
         var stratName = t.strategy_id ? (strategyNamesCache[t.strategy_id] || '—') : '—';
-        var dateStr = t.trade_date ? new Date(t.trade_date).toLocaleDateString(isTurkish ? 'tr-TR' : (isGerman ? 'de-DE' : 'en-US')) : '—';
+        var dateStr = t.trade_date ? window.WwTime.formatDate(t.trade_date, isTurkish ? 'tr' : (isGerman ? 'de' : 'en'), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 
         doc.setFillColor(isEven ? 17 : 10, isEven ? 17 : 10, isEven ? 24 : 15);
         doc.rect(startX, yPos, totalW, rowH, 'F');
@@ -3271,7 +3265,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
     if (typeof window !== 'undefined' && window.wwCache) {
-      var cachedTrades = window.wwCache.get('trades_dashboard', userId, jid);
+      var cachedTrades = window.wwCache.get('trades_dashboard', userId, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']);
       if (cachedTrades && cachedTrades.length > 0) {
         return cachedTrades;
       }

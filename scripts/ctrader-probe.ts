@@ -70,20 +70,21 @@ const PROTO = {
 };
 
 // Basit sembol -> instrument tespiti (quick-add.js ile uyumlu)
+const FIAT_CODES = 'EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH|CZK|HUF|DKK|THB|ILS|RUB|CNY';
+const FOREX_PAIR_RE = new RegExp('^(' + FIAT_CODES + ')(' + FIAT_CODES + ')(?![A-Z]{4,})');
+const CRYPTO_BASE_RE = /^(XBT|BTC|ETH|SOL|ADA|XRP|DOGE|BNB|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/;
+const CRYPTO_QUOTE_RE = /(USDT|USDC|BUSD)$/;
+
+// Forex ÖNCE (USDCAD/USDTRY gibi çiftler kripto "USDC"/"USDT" alt-dizisiyle karışmasın),
+// kripto başa/sona sabitlenmiş eşleşmeyle kontrol edilir. broker-dictionary.js ile aynı mantık.
 function guessInstrument(symbol: string): string {
   const s = String(symbol || '').toUpperCase().trim();
-  if (/(BTC|ETH|SOL|ADA|XRP|DOGE|BNB|USDT|USDC|LTC|TRX|MATIC|AVAX|DOT|LINK|SHIB|NEAR|FTM)/.test(s)) return 'crypto';
+  const letters = s.replace(/[^A-Z]/g, '');
   if (/(XAU|GOLD|XAG|SILVER|XPT|PLATINUM|XPD)/.test(s)) return 'gold';
+  if (FOREX_PAIR_RE.test(letters)) return 'forex';
+  if (CRYPTO_BASE_RE.test(letters) || CRYPTO_QUOTE_RE.test(letters)) return 'crypto';
   if (/(US30|NAS|NAS100|SPX|SP500|DAX|UK100|JP225|USTEC|GER40|GER30|FRA40|DE40|DE30|DJ30|WS30|US100|US500|NIKKEI|FTSE)/.test(s)) return 'index';
-  const clean = s.replace(/[^A-Z]/g, '');
-  if (clean.length === 6) return 'forex';
-  if (clean.length >= 6) {
-    const prefix = clean.slice(0, 6);
-    const forexCurrencies = /(EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|TRY|ZAR|MXN|SEK|NOK|PLN|SGD|HKD|CNH)/;
-    if (forexCurrencies.test(prefix.slice(0, 3)) && forexCurrencies.test(prefix.slice(3, 6))) {
-      return 'forex';
-    }
-  }
+  if (letters.length === 6) return 'forex';
   return 'other';
 }
 

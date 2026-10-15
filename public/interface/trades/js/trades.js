@@ -274,32 +274,13 @@
     }
   }
 
+  // Tarih/saat Ayarlar > Görünüm > Saat ve Gün'e göre gösterilir (saat dilimi, 12/24 saat).
+  // Saati olmayan (sadece-tarih) işlemlerde yalnızca tarih yazılır ve gün kaymaz.
   function formatDateTime(dateStr) {
     if (!dateStr) return '—';
     try {
-      var str = String(dateStr).trim();
-      var hasTime = /T\d{1,2}:\d{2}|\s\d{1,2}:\d{2}/.test(str);
-      
-      var date = new Date(str);
-      if (isNaN(date.getTime())) return str;
-
-      var lang = _lang();
-      var monthNames = {
-        tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
-        en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-      };
-      var month = monthNames[lang] ? monthNames[lang][date.getMonth()] : 'Jan';
-      var datePart = date.getDate() + ' ' + month + ' ' + date.getFullYear();
-
-      // Eğer orijinal veride saat bilgisi yoksa sadece tarihi göster
-      if (!hasTime) {
-        return datePart;
-      }
-
-      var hours = date.getHours().toString().padStart(2, '0');
-      var minutes = date.getMinutes().toString().padStart(2, '0');
-      return datePart + ' ' + hours + ':' + minutes;
+      var out = window.WwTime.formatDateTime(dateStr, _lang(), { day: 'numeric' });
+      return out || String(dateStr);
     } catch(e) {
       return '—';
     }
@@ -611,15 +592,15 @@
       switch (sort) {
         case 'date_desc': 
           trades.sort(function(a,b) { 
-            var da = a.trade_date ? new Date(a.trade_date).getTime() : 0;
-            var db = b.trade_date ? new Date(b.trade_date).getTime() : 0;
+            var da = a.trade_date ? (window.WwTime.parseMs(a.trade_date) || 0) : 0;
+            var db = b.trade_date ? (window.WwTime.parseMs(b.trade_date) || 0) : 0;
             return db - da; 
           }); 
           break;
         case 'date_asc': 
           trades.sort(function(a,b) { 
-            var da = a.trade_date ? new Date(a.trade_date).getTime() : 0;
-            var db = b.trade_date ? new Date(b.trade_date).getTime() : 0;
+            var da = a.trade_date ? (window.WwTime.parseMs(a.trade_date) || 0) : 0;
+            var db = b.trade_date ? (window.WwTime.parseMs(b.trade_date) || 0) : 0;
             return da - db; 
           }); 
           break;
@@ -931,7 +912,14 @@
     if (tpEl) tpEl.value = t.take_profit ?? '';
     if (commEl) commEl.value = t.commission ?? '';
     if (swapEl) swapEl.value = t.swap ?? '';
-    if (dateEl) dateEl.value = t.trade_date || '';
+    if (dateEl) {
+      // Tarih alanı YYYY-MM-DD ister: zaman damgalı işlemlerde işlem günü gösterilir. Kullanıcı tarihi
+      // DEĞİŞTİRMEZSE kayıtta orijinal zaman damgası (saat dahil) korunur (eskiden alan boş kalıyordu).
+      var shownKey = window.WwMetrics.dateKey(t);
+      dateEl.value = shownKey || '';
+      dateEl.dataset.shownKey = shownKey || '';
+      dateEl.dataset.originalDate = t.trade_date || '';
+    }
     if (notesEl) notesEl.value = t.notes || '';
     if (multiplierEl) multiplierEl.value = t.multiplier ?? '';
     if (strategyEl) strategyEl.value = t.strategy_id || '';
@@ -977,7 +965,7 @@
 
     // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
     if (typeof window !== 'undefined' && window.wwCache) {
-      var cachedTrades = window.wwCache.get('trades', userId, jid);
+      var cachedTrades = window.wwCache.get('trades', userId, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'gross_pnl', 'commission', 'swap', 'platform_source', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']);
       if (cachedTrades && cachedTrades.length > 0) {
         // Arka planda sessizce tazelemek üzere arka plan sorgusu tetiklenebilir
         return cachedTrades;
@@ -1244,209 +1232,222 @@
       totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
       currentPage = 1;
       
-      var sortSelect = safeEl('sort-select');
-      if (sortSelect) {
-        sortSelect.addEventListener('change', function() {
-          currentPage = 1;
-          applyFiltersAndSort();
+      // ⚠️ Arayüz dinleyicileri YALNIZCA BİR KEZ bağlanır. 'trade-saved' olayı initTrades()'i yeniden
+      // çalıştırıyor; eskiden her çalıştırmada kaydet/toplu-sil/filtre/Escape/i18n dinleyicileri tekrar
+      // ekleniyordu ve N. düzenlemede N kez güncelleme, toast ve yeniden yükleme oluyordu.
+      // İşaret, sayfaya özel statik bir elemanın üzerinde tutulur (SPA ile DOM yenilenince sıfırlanır).
+      var uiMarker = safeEl('modal-save');
+      var uiAlreadyBound = !!(uiMarker && uiMarker.__wwTradesUiBound);
+      if (!uiAlreadyBound) {
+        if (uiMarker) uiMarker.__wwTradesUiBound = true;
+        var sortSelect = safeEl('sort-select');
+        if (sortSelect) {
+          sortSelect.addEventListener('change', function() {
+            currentPage = 1;
+            applyFiltersAndSort();
+          });
+        }
+      
+        var dirFilter = safeEl('dir-filter');
+        if (dirFilter) {
+          dirFilter.addEventListener('change', function() {
+            currentPage = 1;
+            applyFiltersAndSort();
+          });
+        }
+      
+        var resultFilter = safeEl('result-filter');
+        if (resultFilter) {
+          resultFilter.addEventListener('change', function() {
+            currentPage = 1;
+            applyFiltersAndSort();
+          });
+        }
+      
+        var editInstrument = safeEl('edit-instrument');
+        if (editInstrument) {
+          editInstrument.addEventListener('change', function() {
+            var customWrap = safeEl('edit-custom-wrap');
+            if (customWrap) customWrap.style.display = this.value === 'other' ? 'flex' : 'none';
+          });
+        }
+      
+        var cancelBtn = safeEl('modal-cancel');
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+      
+        var bulkCancel = safeEl('bulk-cancel');
+        if (bulkCancel) bulkCancel.addEventListener('click', closeBulkModal);
+      
+        var bulkDeleteBtn = safeEl('bulk-delete-btn');
+        if (bulkDeleteBtn) bulkDeleteBtn.addEventListener('click', bulkDelete);
+      
+        var bulkConfirm = safeEl('bulk-confirm');
+        if (bulkConfirm) bulkConfirm.addEventListener('click', confirmBulkDelete);
+      
+        var selClear = safeEl('sel-clear-btn');
+        if (selClear) {
+          selClear.addEventListener('click', function() {
+            selectedTrades.clear();
+            document.querySelectorAll('.trade-checkbox').forEach(function(cb) { cb.checked = false; });
+            updateSelBar();
+          });
+        }
+      
+        var editModal = safeEl('edit-modal');
+        if (editModal) {
+          editModal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+          });
+        }
+      
+        var bulkModal = safeEl('bulk-modal');
+        if (bulkModal) {
+          bulkModal.addEventListener('click', function(e) {
+            if (e.target === this) closeBulkModal();
+          });
+        }
+      
+        PAGE.on(document, 'keydown', function(e) { 
+          if (e.key === 'Escape') { 
+            closeModal(); 
+            closeBulkModal(); 
+          } 
         });
-      }
       
-      var dirFilter = safeEl('dir-filter');
-      if (dirFilter) {
-        dirFilter.addEventListener('change', function() {
-          currentPage = 1;
-          applyFiltersAndSort();
-        });
-      }
-      
-      var resultFilter = safeEl('result-filter');
-      if (resultFilter) {
-        resultFilter.addEventListener('change', function() {
-          currentPage = 1;
-          applyFiltersAndSort();
-        });
-      }
-      
-      var editInstrument = safeEl('edit-instrument');
-      if (editInstrument) {
-        editInstrument.addEventListener('change', function() {
-          var customWrap = safeEl('edit-custom-wrap');
-          if (customWrap) customWrap.style.display = this.value === 'other' ? 'flex' : 'none';
-        });
-      }
-      
-      var cancelBtn = safeEl('modal-cancel');
-      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-      
-      var bulkCancel = safeEl('bulk-cancel');
-      if (bulkCancel) bulkCancel.addEventListener('click', closeBulkModal);
-      
-      var bulkDeleteBtn = safeEl('bulk-delete-btn');
-      if (bulkDeleteBtn) bulkDeleteBtn.addEventListener('click', bulkDelete);
-      
-      var bulkConfirm = safeEl('bulk-confirm');
-      if (bulkConfirm) bulkConfirm.addEventListener('click', confirmBulkDelete);
-      
-      var selClear = safeEl('sel-clear-btn');
-      if (selClear) {
-        selClear.addEventListener('click', function() {
-          selectedTrades.clear();
-          document.querySelectorAll('.trade-checkbox').forEach(function(cb) { cb.checked = false; });
-          updateSelBar();
-        });
-      }
-      
-      var editModal = safeEl('edit-modal');
-      if (editModal) {
-        editModal.addEventListener('click', function(e) {
-          if (e.target === this) closeModal();
-        });
-      }
-      
-      var bulkModal = safeEl('bulk-modal');
-      if (bulkModal) {
-        bulkModal.addEventListener('click', function(e) {
-          if (e.target === this) closeBulkModal();
-        });
-      }
-      
-      PAGE.on(document, 'keydown', function(e) { 
-        if (e.key === 'Escape') { 
-          closeModal(); 
-          closeBulkModal(); 
-        } 
-      });
-      
-      var saveBtn = safeEl('modal-save');
-      if (saveBtn) {
-        saveBtn.addEventListener('click', async function() {
-          var id = safeEl('edit-id')?.value;
-          var instrument = safeEl('edit-instrument')?.value;
-          var symbol = safeEl('edit-symbol')?.value.trim().toUpperCase();
-          var direction = safeEl('edit-direction')?.value;
-          var lot = parseFloat(safeEl('edit-lot')?.value);
-          var entry = parseFloat(safeEl('edit-entry')?.value);
-          var exit = parseFloat(safeEl('edit-exit')?.value) || null;
-          var sl = parseFloat(safeEl('edit-sl')?.value) || null;
-          var tp = parseFloat(safeEl('edit-tp')?.value) || null;
-          var commission = parseFloat(safeEl('edit-commission')?.value) || 0;
-          var swap = parseFloat(safeEl('edit-swap')?.value) || 0;
-          var tradeDate = safeEl('edit-date')?.value;
-          var notes = safeEl('edit-notes')?.value.trim();
-          var strategyId = safeEl('edit-strategy')?.value || null;
-          var errEl = safeEl('edit-err');
-          if (errEl) errEl.style.display = 'none';
+        var saveBtn = safeEl('modal-save');
+        if (saveBtn) {
+          saveBtn.addEventListener('click', async function() {
+            var id = safeEl('edit-id')?.value;
+            var instrument = safeEl('edit-instrument')?.value;
+            var symbol = safeEl('edit-symbol')?.value.trim().toUpperCase();
+            var direction = safeEl('edit-direction')?.value;
+            var lot = parseFloat(safeEl('edit-lot')?.value);
+            var entry = parseFloat(safeEl('edit-entry')?.value);
+            var exit = parseFloat(safeEl('edit-exit')?.value) || null;
+            var sl = parseFloat(safeEl('edit-sl')?.value) || null;
+            var tp = parseFloat(safeEl('edit-tp')?.value) || null;
+            var commission = parseFloat(safeEl('edit-commission')?.value) || 0;
+            var swap = parseFloat(safeEl('edit-swap')?.value) || 0;
+            var tradeDate = safeEl('edit-date')?.value;
+            var editDateEl = safeEl('edit-date');
+            if (editDateEl && tradeDate && tradeDate === editDateEl.dataset.shownKey && editDateEl.dataset.originalDate) {
+              tradeDate = editDateEl.dataset.originalDate;   // tarih değişmedi: saati koru
+            }
+            var notes = safeEl('edit-notes')?.value.trim();
+            var strategyId = safeEl('edit-strategy')?.value || null;
+            var errEl = safeEl('edit-err');
+            if (errEl) errEl.style.display = 'none';
           
-          var mult = 100000;
-          if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined' && INSTRUMENT_MULTIPLIERS[instrument]) {
-            mult = INSTRUMENT_MULTIPLIERS[instrument];
-          }
-          if (instrument === 'other') {
-            mult = parseFloat(safeEl('edit-multiplier')?.value);
-            if (!mult || isNaN(mult)) { 
+            var mult = 100000;
+            if (typeof INSTRUMENT_MULTIPLIERS !== 'undefined' && INSTRUMENT_MULTIPLIERS[instrument]) {
+              mult = INSTRUMENT_MULTIPLIERS[instrument];
+            }
+            if (instrument === 'other') {
+              mult = parseFloat(safeEl('edit-multiplier')?.value);
+              if (!mult || isNaN(mult)) { 
+                if (errEl) {
+                  errEl.textContent = _t('trades.custom_multiplier_required');
+                  errEl.style.display = 'block';
+                }
+                return; 
+              }
+            }
+            if (!symbol || !direction || !lot || !entry || !tradeDate) {
               if (errEl) {
-                errEl.textContent = _t('trades.custom_multiplier_required');
+                errEl.textContent = _t('trades.required_fields');
                 errEl.style.display = 'block';
               }
               return; 
             }
-          }
-          if (!symbol || !direction || !lot || !entry || !tradeDate) {
-            if (errEl) {
-              errEl.textContent = _t('trades.required_fields');
-              errEl.style.display = 'block';
-            }
-            return; 
-          }
           
-          // ── PnL koruma mantığı ──────────────────────────────
-          var originalTrade = allTrades.find(function(x) { return x.id === id; });
-          var storedPnl = originalTrade ? parseFloat(originalTrade.pnl) : NaN;
-          var pnl;
-          var gross_pnl = originalTrade ? originalTrade.gross_pnl : null;
+            // ── PnL koruma mantığı ──────────────────────────────
+            var originalTrade = allTrades.find(function(x) { return x.id === id; });
+            var storedPnl = originalTrade ? parseFloat(originalTrade.pnl) : NaN;
+            var pnl;
+            var gross_pnl = originalTrade ? originalTrade.gross_pnl : null;
 
-          var entryUnchanged  = originalTrade && (parseFloat(originalTrade.entry_price) === entry);
-          var exitUnchanged   = originalTrade && ((originalTrade.exit_price === null && exit === null) ||
-                                                   (parseFloat(originalTrade.exit_price) === exit));
-          var lotUnchanged    = originalTrade && (parseFloat(originalTrade.lot) === lot);
-          var dirUnchanged    = originalTrade && (originalTrade.direction === direction);
-          var commUnchanged   = originalTrade && ((parseFloat(originalTrade.commission) || 0) === commission);
-          var swapUnchanged   = originalTrade && ((parseFloat(originalTrade.swap) || 0) === swap);
+            var entryUnchanged  = originalTrade && (parseFloat(originalTrade.entry_price) === entry);
+            var exitUnchanged   = originalTrade && ((originalTrade.exit_price === null && exit === null) ||
+                                                     (parseFloat(originalTrade.exit_price) === exit));
+            var lotUnchanged    = originalTrade && (parseFloat(originalTrade.lot) === lot);
+            var dirUnchanged    = originalTrade && (originalTrade.direction === direction);
+            var commUnchanged   = originalTrade && ((parseFloat(originalTrade.commission) || 0) === commission);
+            var swapUnchanged   = originalTrade && ((parseFloat(originalTrade.swap) || 0) === swap);
 
-          if (originalTrade && originalTrade.pnl !== null && originalTrade.pnl !== undefined &&
-              !isNaN(storedPnl) && entryUnchanged && exitUnchanged && lotUnchanged && dirUnchanged && commUnchanged && swapUnchanged) {
-            pnl = storedPnl;
-          } else if (exit) {
-            var raw = window.calcPnL(entry, exit, lot, direction, 'other', mult);
-            var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
-            var gross = ((curr === '€' || curr === 'EUR') && symbol.endsWith('USD') && exit > 0) ? (raw / exit) : raw;
-            gross_pnl = parseFloat(gross.toFixed(2));
-            pnl = parseFloat((gross_pnl - commission + swap).toFixed(2));
-          } else {
-            pnl = null;
-            gross_pnl = null;
-          }
-          // ─────────────────────────────────────────────────────
-          
-          var rr = (sl && tp) ? parseFloat(window.calcRR(entry, sl, tp, direction)) : null;
-          
-          try {
-            if (typeof sb === 'undefined') {
-              showToast(_t('common.db_connection_error'), 'error');
-              return;
+            if (originalTrade && originalTrade.pnl !== null && originalTrade.pnl !== undefined &&
+                !isNaN(storedPnl) && entryUnchanged && exitUnchanged && lotUnchanged && dirUnchanged && commUnchanged && swapUnchanged) {
+              pnl = storedPnl;
+            } else if (exit) {
+              var raw = window.calcPnL(entry, exit, lot, direction, 'other', mult);
+              var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+              var gross = ((curr === '€' || curr === 'EUR') && /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, '')) && exit > 0) ? (raw / exit) : raw;
+              gross_pnl = parseFloat(gross.toFixed(2));
+              pnl = parseFloat((gross_pnl - commission + swap).toFixed(2));
+            } else {
+              pnl = null;
+              gross_pnl = null;
             }
-            var { error } = await sb.from('trades').update({
-              instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
-              entry_price: entry, exit_price: exit,
-              stop_loss: sl, take_profit: tp,
-              gross_pnl: gross_pnl, commission: commission, swap: swap,
-              trade_date: tradeDate, notes: notes || null,
-              pnl: pnl, rr_ratio: rr, multiplier: mult, strategy_id: strategyId
-            }).eq('id', id);
-            
-            if (error) {
-              if (errEl) {
-                errEl.textContent = _t('trades.update_error') + error.message;
-                errEl.style.display = 'block';
+            // ─────────────────────────────────────────────────────
+          
+            var rr = (sl && tp) ? parseFloat(window.calcRR(entry, sl, tp, direction)) : null;
+          
+            try {
+              if (typeof sb === 'undefined') {
+                showToast(_t('common.db_connection_error'), 'error');
+                return;
               }
-              return;
-            }
-            
-            var idx = allTrades.findIndex(function(x) { return x.id === id; });
-            if (idx > -1) {
-              allTrades[idx] = { 
-                id: id, instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
-                entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp, 
+              var { error } = await sb.from('trades').update({
+                instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
+                entry_price: entry, exit_price: exit,
+                stop_loss: sl, take_profit: tp,
                 gross_pnl: gross_pnl, commission: commission, swap: swap,
-                trade_date: tradeDate, notes: notes, pnl: pnl, rr_ratio: rr, 
-                multiplier: mult, strategy_id: strategyId 
-              };
-            }
+                trade_date: tradeDate, notes: notes || null,
+                pnl: pnl, rr_ratio: rr, multiplier: mult, strategy_id: strategyId
+              }).eq('id', id);
             
-            showToast(_t('trades.updated'));
-            closeModal();
-            applyFiltersAndSort();
-            try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
-          } catch (e) {
-            console.error('Save hatası:', e);
-            showToast(_t('common.unexpected_error'), 'error');
-          }
-        });
-      }
+              if (error) {
+                if (errEl) {
+                  errEl.textContent = _t('trades.update_error') + error.message;
+                  errEl.style.display = 'block';
+                }
+                return;
+              }
+            
+              var idx = allTrades.findIndex(function(x) { return x.id === id; });
+              if (idx > -1) {
+                allTrades[idx] = { 
+                  id: id, instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
+                  entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp, 
+                  gross_pnl: gross_pnl, commission: commission, swap: swap,
+                  trade_date: tradeDate, notes: notes, pnl: pnl, rr_ratio: rr, 
+                  multiplier: mult, strategy_id: strategyId 
+                };
+              }
+            
+              showToast(_t('trades.updated'));
+              closeModal();
+              applyFiltersAndSort();
+              try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch(e) {}
+            } catch (e) {
+              console.error('Save hatası:', e);
+              showToast(_t('common.unexpected_error'), 'error');
+            }
+          });
+        }
       
-      if (typeof i18n !== 'undefined' && i18n.onChange) {
-        i18n.onChange(function() {
-          updateSelBar();
-          renderPagination();
-        });
-      }
+        if (typeof i18n !== 'undefined' && i18n.onChange) {
+          i18n.onChange(function() {
+            updateSelBar();
+            renderPagination();
+          });
+        }
       
-      if (typeof applyDecimalFix === 'function') {
-        applyDecimalFix(['edit-lot','edit-entry','edit-exit','edit-sl','edit-tp','edit-multiplier']);
-      }
+        if (typeof applyDecimalFix === 'function') {
+          applyDecimalFix(['edit-lot','edit-entry','edit-exit','edit-sl','edit-tp','edit-multiplier']);
+        }
 
-      initMobileFilterSheets();
+        initMobileFilterSheets();
+      }
       
       applyFiltersAndSort();
       

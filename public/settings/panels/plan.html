@@ -188,6 +188,18 @@
             <div class="period-total-cost"><span data-i18n="settings.plan_total_prefix">Toplam:</span> <strong id="period-total-yearly">$99.00</strong> <span class="old-strikethrough" id="period-old-yearly">$144.00</span></div>
             <p class="period-desc" data-i18n="settings.plan_yearly_desc_sub">En popüler ve karlı seçim. 365 gün kesintisiz erişim.</p>
           </div>
+          <!-- Geliştirici test planı: yalnızca Ayarlar > Gelişmiş'te test modu etkinse görünür -->
+          <div class="duration-option-card" data-period="test" id="duration-card-test" style="display:none;grid-column:1 / -1;">
+            <div class="card-radio-circle"><div class="inner-dot"></div></div>
+            <div class="period-badge standard" data-i18n="settings.plan_test_badge">🧪 Test Planı</div>
+            <div class="period-title" data-i18n="settings.plan_test_title">1 Günlük Test</div>
+            <div class="period-monthly-rate">
+              <span class="rate-curr">$</span><span class="rate-val">1.00</span>
+              <span class="rate-unit" data-i18n="settings.plan_test_unit">/ 1 gün</span>
+            </div>
+            <div class="period-total-cost"><span data-i18n="settings.plan_total_prefix">Toplam:</span> <strong>$1.00</strong></div>
+            <p class="period-desc" data-i18n="settings.plan_test_desc">Yalnızca geliştirici test modunda görünür. Gerçek bir ödemedir; ödeme akışını denemek içindir.</p>
+          </div>
         </div>
 
         <div class="wizard-nav-bar">

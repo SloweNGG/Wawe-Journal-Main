@@ -208,6 +208,111 @@
       </div>
     </div>
 
+    <!-- 2b. SAAT VE GÜN AYARLARI -->
+    <div class="appearance-section" id="time-settings-section">
+      <div class="appearance-section-header">
+        <span class="appearance-section-title" data-i18n="settings.time_title">Saat ve Gün</span>
+        <span class="appearance-section-subtitle" data-i18n="settings.time_subtitle">İşlemlerinizin hangi gün ve saate yazılacağını belirleyin</span>
+      </div>
+
+      <div class="settings-group-card">
+
+        <!-- CANLI ÖNİZLEME -->
+        <div class="time-preview" id="time-preview" aria-live="polite">
+          <div class="time-preview-row">
+            <span class="time-preview-label" data-i18n="settings.time_preview_now">Şu an</span>
+            <span class="time-preview-value" id="time-preview-now">—</span>
+          </div>
+          <div class="time-preview-row">
+            <span class="time-preview-label" data-i18n="settings.time_preview_day">Bugünün işlem günü</span>
+            <span class="time-preview-value" id="time-preview-day">—</span>
+          </div>
+          <div class="time-preview-row">
+            <span class="time-preview-label" data-i18n="settings.time_preview_example">Örnek</span>
+            <span class="time-preview-value time-preview-example" id="time-preview-example">—</span>
+          </div>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <!-- SAAT DİLİMİ -->
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div class="pref-title" data-i18n="settings.time_tz_title">Saat diliminiz</div>
+              <div class="pref-desc" data-i18n="settings.time_tz_desc">İşlem saatleri ve günler bu saat dilimine göre gösterilir</div>
+            </div>
+          </div>
+          <select id="time-tz" class="time-select" aria-label="Saat dilimi"></select>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <!-- GÜN BAŞLANGICI -->
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/></svg>
+            </div>
+            <div>
+              <div class="pref-title" data-i18n="settings.time_daystart_title">Yeni gün saat kaçta başlasın?</div>
+              <div class="pref-desc" data-i18n="settings.time_daystart_desc">Çoğu kişi için 00:00. Gece geç işlem yapıyorsanız ileri alın: bu saatten önceki işlemler bir önceki güne yazılır.</div>
+            </div>
+          </div>
+          <div class="time-control-stack">
+            <select id="time-day-start" class="time-select" aria-label="Gün başlangıç saati"></select>
+            <button type="button" id="time-day-forex-btn" class="time-mini-btn" data-i18n="settings.time_daystart_forex_btn">Forex gününe ayarla</button>
+          </div>
+        </div>
+        <div class="time-hint" id="time-day-forex-hint"></div>
+
+        <div class="pref-divider"></div>
+
+        <!-- İÇE AKTARILAN DOSYALARDAKİ SAATLER -->
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div>
+              <div class="pref-title" data-i18n="settings.time_import_title">İçe aktarılan dosyalardaki saatler</div>
+              <div class="pref-desc" data-i18n="settings.time_import_desc">CSV/Excel'deki saatler hangi saat diliminde? Çoğu MT4/MT5 brokeri GMT+2 veya GMT+3 kullanır. Emin değilseniz değiştirmeyin.</div>
+            </div>
+          </div>
+          <select id="time-import-tz" class="time-select" aria-label="İçe aktarma saat dilimi"></select>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <!-- SAAT BİÇİMİ -->
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <div class="pref-title" data-i18n="settings.time_format_title">Saat biçimi</div>
+              <div class="pref-desc" data-i18n="settings.time_format_desc">İşlem saatlerinin gösterimi</div>
+            </div>
+          </div>
+          <div class="lang-selector-compact" id="time-format-selector">
+            <button type="button" class="lang-compact-btn" data-hour12="0" data-i18n="settings.time_format_24">24 saat</button>
+            <button type="button" class="lang-compact-btn" data-hour12="1" data-i18n="settings.time_format_12">12 saat (AM/PM)</button>
+          </div>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <div class="time-footer">
+          <span class="time-footer-note" data-i18n="settings.time_prop_note">Prop hesaplarının gün sıfırlama saati her hesapta ayrıca ayarlanır; bu ayarlar onları değiştirmez.</span>
+          <button type="button" id="time-reset-btn" class="time-mini-btn ghost" data-i18n="settings.time_reset">Varsayılana dön</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 3. TEMA ÖZELLEŞTİRME (PREMIUM STÜDYO) -->
     <div class="appearance-section theme-customization-section" id="theme-customization-section">
       <div class="appearance-section-header">

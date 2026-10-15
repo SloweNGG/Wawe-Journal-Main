@@ -230,7 +230,9 @@ describe('PropService API & Methods', () => {
             select: () => ({
               eq: () => ({
                 order: () => ({
-                  limit: async () => ({ data: mockTrades, error: null })
+                  order: () => ({
+                    range: async () => ({ data: mockTrades, error: null })
+                  })
                 })
               })
             })
@@ -243,11 +245,70 @@ describe('PropService API & Methods', () => {
     assert.ok(res);
     assert.ok(res.account);
     assert.ok(res.status);
+    // Kart ve "bu tarihte işlem var" uyarısı için işlem listesi dönmelidir (eskiden dönmüyordu)
+    assert.equal(res.trades.length, 2);
+    assert.equal(res.status.stats.trades_count, 2);
+    assert.equal(res.status.stats.wins, 2);
+    assert.equal(res.status.stats.win_rate_pct, 100);
     assert.equal(res.status.current_balance, 107000);
     assert.equal(res.status.total_pnl, 7000);
     assert.equal(res.status.profit_target.remaining_amount, 3000); // 10K - 7K
     assert.equal(res.status.daily_loss.limit_amount, 5000);
     assert.equal(res.status.max_loss.hard_stop_level, 90000);
+  });
+
+  it('syncPropAccountStatus: 1000 satırdan fazla işlemi sayfalayarak çekmeli (en yeni işlemler düşmemeli)', async () => {
+    const account = {
+      id: 'prop-acc-big', journal_id: 'j-big', template_key: 'ftmo-2step', starting_balance: 100000,
+      start_date: '2026-01-01', reset_tz: 'Europe/Prague', phase_index: 0, is_active: true,
+      rules: PropTemplates.getDefaultRules('ftmo-2step', 0)
+    };
+    // 1200 işlem: ilk sayfa 1000, ikinci sayfa 200 (+1 pnl). Hepsi çekilirse toplam 1200 olmalı.
+    const all = [];
+    for (let i = 0; i < 1200; i++) {
+      all.push({ id: 't-' + i, trade_date: '2026-02-01 10:00:00', pnl: 1, exit_price: 1.1 });
+    }
+    const requestedRanges = [];
+    browserWindow.sb = {
+      from: (table) => {
+        if (table === 'prop_accounts') {
+          return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: account, error: null }) }) }) }) };
+        }
+        return {
+          select: () => ({ eq: () => ({ order: () => ({ order: () => ({
+            range: async (from, to) => { requestedRanges.push([from, to]); return { data: all.slice(from, to + 1), error: null }; }
+          }) }) }) })
+        };
+      }
+    };
+    const res = await PropService.syncPropAccountStatus('j-big');
+    assert.deepEqual(requestedRanges, [[0, 999], [1000, 1999]]);
+    assert.equal(res.trades.length, 1200);
+    assert.equal(res.status.stats.trades_count, 1200);
+    assert.equal(res.status.total_pnl, 1200);
+  });
+
+  it('syncPropAccountStatus: çıkış fiyatı olmayan (açık) işlemler prop hesabına girmemeli', async () => {
+    const account = {
+      id: 'prop-acc-open', journal_id: 'j-open', template_key: 'ftmo-2step', starting_balance: 100000,
+      start_date: '2026-01-01', reset_tz: 'Europe/Prague', phase_index: 0, is_active: true,
+      rules: PropTemplates.getDefaultRules('ftmo-2step', 0)
+    };
+    const rows = [
+      { id: 'c1', trade_date: '2026-02-01 10:00:00', pnl: 500, exit_price: 1.1 },
+      { id: 'o1', trade_date: '2026-02-02 10:00:00', pnl: -9999, exit_price: null }
+    ];
+    browserWindow.sb = {
+      from: (table) => {
+        if (table === 'prop_accounts') {
+          return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: account, error: null }) }) }) }) };
+        }
+        return { select: () => ({ eq: () => ({ order: () => ({ order: () => ({ range: async () => ({ data: rows, error: null }) }) }) }) }) };
+      }
+    };
+    const res = await PropService.syncPropAccountStatus('j-open');
+    assert.equal(res.trades.length, 1);
+    assert.equal(res.status.total_pnl, 500);
   });
 
   it('Veritabanı hataları (PROP_LIMIT_EXCEEDED, INVALID_TZ) anlaşılır kodlarla yakalanmalıdır', async () => {

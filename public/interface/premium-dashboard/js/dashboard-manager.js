@@ -258,7 +258,7 @@ export function renderPremiumStats(trades) {
     var wr = total ? (wins/total)*100 : 0;
     var totalWin = pnls.filter(function(v) { return v > 0; }).reduce(function(s, v) { return s + v; }, 0);
     var totalLoss = Math.abs(pnls.filter(function(v) { return v < 0; }).reduce(function(s, v) { return s + v; }, 0));
-    var pf = totalLoss > 0 ? totalWin/totalLoss : 0;
+    var pf = totalLoss > 0 ? totalWin/totalLoss : (totalWin > 0 ? null : 0); // null => ∞
     var avgPnL = total ? totalPnL/total : 0;
     var stdDev = total > 1 ? Math.sqrt(pnls.reduce(function(s, v) { return s + Math.pow(v-avgPnL, 2); }, 0)/total) : 0;
     var sharpe = stdDev > 0 ? avgPnL/stdDev : 0;
@@ -272,7 +272,7 @@ export function renderPremiumStats(trades) {
     if (elTotal) elTotal.textContent = total;
     if (elPnl) { elPnl.textContent = formatCurrency(totalPnL); elPnl.className = 'pstat-value ' + (totalPnL >= 0 ? 'positive' : 'negative'); }
     if (elWr) elWr.textContent = wr.toFixed(1) + '%';
-    if (elPf) elPf.textContent = pf.toFixed(2);
+    if (elPf) elPf.textContent = window.WwMetrics.formatProfitFactor(pf);
     if (elSharpe) elSharpe.textContent = sharpe.toFixed(2);
   } catch(e) {}
 }
@@ -288,7 +288,7 @@ export function renderKpiBar(trades) {
     var avgLoss = losses.length ? Math.abs(losses.reduce(function(s, v) { return s + v; }, 0) / losses.length) : 0;
     var totalWin = wins.reduce(function(s, v) { return s + v; }, 0);
     var totalLoss = Math.abs(losses.reduce(function(s, v) { return s + v; }, 0));
-    var pf = totalLoss > 0 ? totalWin / totalLoss : 0;
+    var pf = totalLoss > 0 ? totalWin / totalLoss : (totalWin > 0 ? null : 0); // null => ∞
 
     var cumulative = 0, maxCumulative = 0, maxDrawdown = 0;
     closed.forEach(function(t) {
@@ -299,7 +299,7 @@ export function renderKpiBar(trades) {
     });
 
     var totalRR = 0, rrCount = 0;
-    trades.forEach(function(t) { if (t.rr_ratio) { totalRR += parseFloat(t.rr_ratio); rrCount++; } });
+    closed.forEach(function(t) { var rr = parseFloat(t.rr_ratio); if (rr > 0 && isFinite(rr)) { totalRR += rr; rrCount++; } });
     var avgRR = rrCount ? totalRR / rrCount : 0;
 
     var elAvgWin = document.getElementById('kpi-avg-win');
@@ -309,9 +309,10 @@ export function renderKpiBar(trades) {
     var elRr = document.getElementById('kpi-rr');
 
     if (elAvgWin) elAvgWin.textContent = formatCurrency(avgWin);
-    if (elAvgLoss) elAvgLoss.textContent = formatCurrency(avgLoss);
-    if (elPf) elPf.textContent = pf.toFixed(2);
-    if (elDd) elDd.textContent = formatCurrency(Math.abs(maxDrawdown));
+    // Ortalama kayıp ve drawdown negatif gösterilir (eskiden "+$X" çıkıyordu)
+    if (elAvgLoss) elAvgLoss.textContent = formatCurrency(-avgLoss);
+    if (elPf) elPf.textContent = window.WwMetrics.formatProfitFactor(pf);
+    if (elDd) elDd.textContent = formatCurrency(-Math.abs(maxDrawdown));
     if (elRr) elRr.textContent = avgRR.toFixed(2);
   } catch(e) {}
 }
@@ -436,7 +437,7 @@ function getSimpleStrategyPerf(strategyId, trades) {
   var totalPnL = 0, wins = 0;
   closed.forEach(function(t) { var p = calcTradePnL(t); totalPnL += p; if (p > 0) wins++; });
   var winRate = closed.length ? Math.round((wins / closed.length) * 1000) / 10 : 0;
-  return { totalTrades: strategyTrades.length, closedCount: closed.length, winRate: winRate, totalPnL: totalPnL };
+  return { totalTrades: closed.length, closedCount: closed.length, winRate: winRate, totalPnL: totalPnL };
 }
 
 function renderStrategyCardsDOM(strategiesList, trades, section) {
@@ -685,14 +686,15 @@ export async function exportPDF(trades) {
     var totalPnL = pnls.reduce(function(s, v){ return s + v; }, 0);
     var wins = pnls.filter(function(v){ return v > 0; }).length;
     var total = closed.length;
-    var wr = total ? Math.round((wins/total)*100) : 0;
+    var lossCount = pnls.filter(function(v){ return v < 0; }).length; // break-even kayıp sayılmaz
+    var wr = total ? ((wins/total)*100).toFixed(1) : '0.0';
 
     var stats = [
       [_t('dashboard.stats.total_trades', 'Toplam İşlem'), total.toString()],
       [_t('dashboard.stats.total_pnl', 'Toplam K/Z'), formatCurrencyPDF(totalPnL)],
       [_t('dashboard.stats.win_rate', 'Win Rate'), wr + '%'],
       [_t('dashboard.stats.winners', 'Kazanan'), wins.toString()],
-      [_t('dashboard.stats.losers', 'Kaybeden'), (total - wins).toString()]
+      [_t('dashboard.stats.losers', 'Kaybeden'), lossCount.toString()]
     ];
 
     var yPos = 28;
@@ -785,7 +787,7 @@ export async function exportPDF(trades) {
         doc.text('—', cx2, yPos + 3.5);
       }
       cx2 += colDefs[5].w;
-      var dateStr = t.trade_date ? new Date(t.trade_date).toLocaleDateString(locale) : '—';
+      var dateStr = t.trade_date ? window.WwTime.formatDate(t.trade_date, lang, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
       doc.text(dateStr, cx2, yPos + 3.5);
 
       yPos += rowH;

@@ -562,7 +562,8 @@ window.loadNotifications = async function() {
           // ⚡ Eğer sayfada işlemler zaten önbelleğe alındıysa Supabase'e ek istek atma
           if (typeof window.wwCache !== 'undefined') {
             var activeJid = (typeof window.getActiveJournalId === 'function') ? window.getActiveJournalId() : localStorage.getItem('ww_active_journal_id');
-            var cached = window.wwCache.get('trades', user.id, activeJid) || window.wwCache.get('trades', user.id, 'all');
+            var otCols = ['trade_date', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier', 'pnl'];
+            var cached = window.wwCache.get('trades', user.id, activeJid, otCols) || window.wwCache.get('trades', user.id, 'all', otCols);
             if (cached && Array.isArray(cached) && cached.length > 0) {
               trades = cached.filter(function(t) { return t.trade_date && t.trade_date >= weekAgoStr; });
             }
@@ -571,7 +572,7 @@ window.loadNotifications = async function() {
           if (!trades) {
             var { data: fetchedTrades } = await sb
               .from('trades')
-              .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
+              .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl')
               .eq('user_id', user.id)
               .gte('trade_date', weekAgoStr)
               .order('trade_date', { ascending: false });
@@ -1091,7 +1092,7 @@ function getNavbarHTML(translations) {
 
         <div class="nav-journal-switcher" id="nav-journal-switcher">
           <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="wwToggleJournal(event, this)">
-            <i data-lucide="folder" class="journal-icon"></i>
+            <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
             <span class="journal-name">Ana Hesap</span>
             <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
@@ -1235,7 +1236,7 @@ function getNavbarHTML(translations) {
         </div>
 
         <a href="/journals.html" class="menu-journal-link" id="menu-journal-link" onclick="closeMobileMenuAndNavigate(event, '/journals.html')">
-          <i data-lucide="folder" class="menu-journal-icon"></i>
+          <span class="menu-journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
           <span class="menu-journal-info">
             <span class="menu-journal-label" data-i18n="nav.current_account">${tt('nav.current_account', 'Aktif Hesap')}</span>
             <span class="menu-journal-name" id="menu-journal-name">Ana Hesap</span>
@@ -1998,6 +1999,18 @@ function safeEscape(str) {
     .replace(/'/g, '&#39;');
 }
 
+// Hesabın küçük işareti: renk noktası (prop firma/broker bağlıysa yanıp söner). WwJournalMark yüklenmediyse boş döner.
+function journalMarkHtml(j, propAcc, hasBroker, dotSize) {
+  var M = window.WwJournalMark;
+  if (!M) return '';
+  return M.html({
+    color: j && j.color,
+    prop: M.propInfoOf(propAcc),
+    broker: !!hasBroker,
+    dotSize: dotSize
+  });
+}
+
 function getPropBadgeHtml(propAcc) {
   if (!propAcc) return '';
   var firm = (propAcc.rules && propAcc.rules.firm) ||
@@ -2021,8 +2034,6 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
   ctraderMap = ctraderMap || {};
 
   var activeProp = propMap[activeJ.id];
-  var aResolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
-  var aInfo = (activeProp && typeof aResolver === 'function') ? aResolver((activeProp.rules && activeProp.rules.firm) || activeProp.template_key) : null;
   var activeCtrader = ctraderMap[activeJ.id];
 
   var swName = document.querySelector('.nav-journal-switcher .journal-name');
@@ -2068,13 +2079,9 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
     }
   }
 
+  // Hesap işareti: renk noktası; prop firma / broker bağlıysa yanıp söner (bkz. interface/shared/journal-mark.js)
   if (swIcon) {
-    if (aInfo) {
-      swIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;" alt="" />';
-    } else {
-      swIcon.innerHTML = '';
-      swIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
-    }
+    swIcon.innerHTML = journalMarkHtml(activeJ, activeProp, !!activeCtrader, 9);
   }
 
   // Mobil menü göstergesi
@@ -2085,13 +2092,7 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
   
   var menuJournalIcon = document.querySelector('.menu-journal-icon');
   if (menuJournalIcon) {
-    if (aInfo) {
-      menuJournalIcon.innerHTML = '<img src="' + (aInfo.symbolLogo || aInfo.logo) + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;" alt="" />';
-    } else {
-      menuJournalIcon.innerHTML = '';
-      menuJournalIcon.setAttribute('data-lucide', activeJ.icon || 'folder');
-      menuJournalIcon.style.color = activeJ.color || 'var(--accent)';
-    }
+    menuJournalIcon.innerHTML = journalMarkHtml(activeJ, activeProp, !!activeCtrader, 10);
   }
 
   // Dropdown listesini doldur
@@ -2114,25 +2115,24 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
       var propItemBadge = getPropBadgeHtml(pa);
       var resolver = window.getPropFirmInfo || (window.PropTemplates && window.PropTemplates.getPropFirmInfo);
       var pInfo = (pa && typeof resolver === 'function') ? resolver((pa.rules && pa.rules.firm) || pa.template_key) : null;
-      
-      var iconWrapClass = 'journal-icon-wrap';
-      var iconWrapStyle = '';
-      var iconInner = '';
-
-      if (pInfo) {
-        iconWrapClass += ' has-prop-logo ' + (pInfo.badgeClass || '');
-        iconInner = '<img src="' + (pInfo.symbolLogo || pInfo.logo) + '" class="nav-dropdown-prop-icon" alt="" />';
-      } else {
-        iconWrapStyle = 'background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;';
-        iconInner = '<i data-lucide="' + (j.icon || 'folder') + '"></i>';
-      }
-
       var ctAcc = ctraderMap[j.id];
+
+      // Hesap işareti: hesabın renginde nokta; prop firma / broker bağlıysa yanıp söner
+      var iconWrapClass = 'journal-icon-wrap';
+      var iconWrapStyle = 'background:' + itemColor + '22; color:' + itemColor + '; border-color:' + itemColor + '40;';
+      var iconInner = journalMarkHtml(j, pa, !!ctAcc, 12);
+
       var ctBadgeHtml = '';
       var ctSyncBtnHtml = '';
       if (ctAcc) {
         ctBadgeHtml = '<span class="ctrader-nav-tag ' + (ctAcc.is_live ? 'live' : 'demo') + '">' + (ctAcc.is_live ? 'LIVE' : 'DEMO') + '</span>';
-        ctSyncBtnHtml = '<button class="ctrader-nav-sync-btn" type="button" title="cTrader ile Senkronla" onclick="window.wwSyncCtrader && window.wwSyncCtrader(event, \'' + ctAcc.ctid_trader_account_id + '\', \'' + j.id + '\', this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg></button>';
+        // NOT: kart bir <button>; içine ikinci bir <button> koymak geçersiz HTML'dir (innerHTML ayrıştırıcısı dıştaki
+        // butonu kapatıp bunu kartın DIŞINA atıyordu). Bu yüzden <span role="button"> kullanılır.
+        ctSyncBtnHtml = '<span class="ctrader-nav-sync-btn" role="button" tabindex="0" title="cTrader ile Senkronla" aria-label="cTrader ile Senkronla" ' +
+          'onclick="window.wwSyncCtrader && window.wwSyncCtrader(event, \'' + ctAcc.ctid_trader_account_id + '\', \'' + j.id + '\', this)" ' +
+          'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){window.wwSyncCtrader && window.wwSyncCtrader(event, \'' + ctAcc.ctid_trader_account_id + '\', \'' + j.id + '\', this)}">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>' +
+        '</span>';
       }
 
       html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
@@ -2434,34 +2434,84 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
     var supabaseUrl = window.SUPABASE_URL || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || 'https://odasapyhtdopbnlfhwde.supabase.co';
     var supabaseAnonKey = window.SUPABASE_ANON_KEY || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
 
-    var res = await fetch(supabaseUrl + '/functions/v1/ctrader-sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token,
-        'apikey': supabaseAnonKey
-      },
-      body: JSON.stringify({
-        ctidTraderAccountId: Number(ctid),
-        journalId: journalId
-      })
-    });
+    // Sunucu tek çağrıda en fazla ~90 sn çalışır; uzun geçmişte `done:false` döner ve kaldığı yerden devam
+    // edilmesi gerekir. (Eskiden bu bayrak yok sayılıyor, "güncel" deniyor ve geçmişin kalanı alınmıyordu.)
+    var totalInserted = 0;
+    var allWarnings = [];
+    var rounds = 0;
+    var data;
+    do {
+      rounds++;
+      var res = await fetch(supabaseUrl + '/functions/v1/ctrader-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+          'apikey': supabaseAnonKey
+        },
+        body: JSON.stringify({
+          ctidTraderAccountId: Number(ctid),
+          journalId: journalId
+        })
+      });
 
-    var data = await res.json();
-    if (!res.ok || data.error) {
-      if (data.needs_reconnect) {
-        toastFn('cTrader yetkilendirme süresi dolmuş. Lütfen hesabı yeniden bağlayın.', 'warning');
-        setTimeout(function() { window.location.href = '/journals.html'; }, 1500);
-        return;
+      data = await res.json();
+      if (!res.ok || data.error) {
+        if (data.needs_reconnect) {
+          toastFn('cTrader yetkilendirme süresi dolmuş. Lütfen hesabı yeniden bağlayın.', 'warning');
+          setTimeout(function() { window.location.href = '/journals.html'; }, 1500);
+          return;
+        }
+        throw new Error(data.error || 'Senkronizasyon başarısız.');
       }
-      throw new Error(data.error || 'Senkronizasyon başarısız.');
-    }
 
-    if (data.inserted > 0) {
-      toastFn('✅ ' + data.inserted + ' yeni cTrader işlemi aktarıldı!', 'success');
+      totalInserted += data.inserted || 0;
+      if (Array.isArray(data.warnings)) allWarnings = allWarnings.concat(data.warnings);
+      if (data.done === false && rounds < 10) {
+        toastFn('Geçmiş işlemler alınıyor... (' + rounds + ')', 'info');
+      }
+    } while (data.done === false && rounds < 10);
+
+    // ── Sonuç bildirimleri ──
+    // NOT: showToast aynı anda TEK bildirim gösterir (yenisi eskisini siler). Art arda çağırmak yalnızca SONUNCUYU
+    // gösterirdi (bakiye/uyarılar hiç görünmüyordu). Bu yüzden özet tek bildirimde, uyarılar ise sırayla gösterilir.
+    var summary = totalInserted > 0
+      ? ('✅ ' + totalInserted + ' yeni cTrader işlemi aktarıldı')
+      : 'cTrader hesabınız güncel, yeni kapanmış işlem bulunamadı';
+    var notes = [];            // [mesaj, tür] — özetten sonra sırayla gösterilir
+    var balanceNote = false;
+
+    // Bakiye: yeni sunucu sürümü cevapta HER ZAMAN `balance` anahtarını döndürür (sayı ya da null).
+    // Anahtar hiç yoksa sunucudaki ctrader-sync eski sürümdür (deploy edilmemiş).
+    if (typeof data.balance === 'number') {
+      summary += ' · Bakiye: ' + data.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+        (data.balance_currency ? ' ' + data.balance_currency : '') +
+        (data.balance_source === 'last_deal' ? ' (son kapanış işlemine göre)' : '');
+    } else if ('balance' in data) {
+      // Güncel sunucu sürümü ama cTrader bakiye döndürmedi: nedenini göster
+      balanceNote = true;
+      if (data.balance_debug) console.warn('[ctrader-sync] Bakiye alınamadı:', data.balance_debug);
+      notes.push(['Bakiye alınamadı' + (data.balance_debug ? '. Ayrıntı: ' + String(data.balance_debug).slice(0, 220) : '.'), 'warning']);
     } else {
-      toastFn('cTrader hesabınız güncel, yeni kapanmış işlem bulunamadı.', 'info');
+      balanceNote = true;
+      console.warn('[ctrader-sync] Yanıtta `balance` yok: sunucudaki fonksiyon güncel sürüm değil (deploy edilmemiş olabilir).', data);
+      notes.push(['Bakiye alınamadı: sunucudaki senkron fonksiyonu güncel değil (ctrader-sync yeniden deploy edilmeli).', 'warning']);
     }
+    if (data.done === false) {
+      notes.push(['Geçmişin tamamı henüz alınamadı. Kalanını almak için tekrar senkronlayın.', 'warning']);
+    }
+    // Sunucu uyarıları (lot bilgisi alınamayan işlemler vb.); tekrar edenler tekilleştirilir, bakiye notuyla aynı olan elenir
+    allWarnings
+      .filter(function(w, i) { return allWarnings.indexOf(w) === i; })
+      .filter(function(w) { return !(balanceNote && w.indexOf('bakiye bilgisini döndürmedi') !== -1); })
+      .slice(0, 2)
+      .forEach(function(w) { notes.push([w, 'warning']); });
+
+    var toastQueue = [[summary, totalInserted > 0 ? 'success' : 'info']].concat(notes);
+    toastFn(toastQueue[0][0], toastQueue[0][1]);
+    toastQueue.slice(1).forEach(function(item, i) {
+      setTimeout(function() { toastFn(item[0], item[1]); }, 3400 * (i + 1));
+    });
 
     // ⚡ Önbellekleri temizle ve canlı güncelle
     if (window.wwCache) {
@@ -2476,6 +2526,9 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
       if (typeof window.loadTrades === 'function') {
         window.loadTrades();
       } else {
+        // Sayfa yenilenecek (bu sayfanın yerinde yenilemesi yok): bildirimler yenilemeden sonra yeniden gösterilsin,
+        // yoksa bakiye/uyarılar yarım saniyede kaybolurdu.
+        try { sessionStorage.setItem('ww_pending_toasts', JSON.stringify({ ts: Date.now(), items: toastQueue })); } catch (e) {}
         window.location.reload();
       }
     }, 600);
@@ -2490,3 +2543,20 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
     }
   }
 };
+
+// Senkron sonrası sayfa yenilendiyse (bkz. wwSyncCtrader) bekleyen bildirimleri sırayla göster.
+(function showPendingSyncToasts() {
+  try {
+    var raw = sessionStorage.getItem('ww_pending_toasts');
+    if (!raw) return;
+    sessionStorage.removeItem('ww_pending_toasts');
+    var pending = JSON.parse(raw);
+    if (!pending || !Array.isArray(pending.items) || Date.now() - Number(pending.ts) > 30000) return;
+    pending.items.slice(0, 4).forEach(function(item, i) {
+      setTimeout(function() {
+        var fn = window.showToast || window.showMsg;
+        if (typeof fn === 'function') fn(item[0], item[1]);
+      }, 900 + 3400 * i);
+    });
+  } catch (e) {}
+})();

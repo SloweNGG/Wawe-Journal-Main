@@ -9,6 +9,31 @@ function getSbClient() {
   return (typeof window !== 'undefined' && window.sb) ? window.sb : (typeof sb !== 'undefined' ? sb : null);
 }
 
+// Tüm satırları 1000'lik sayfalarla çeker. PostgREST tek istekte en fazla 1000 satır döndürdüğü için
+// 1000'den fazla kullanıcı/ödeme olunca toplam kullanıcı, premium sayısı, dönüşüm oranı ve gelir sessizce
+// eksik hesaplanıyordu (ödemeler yeni→eski sıralı olduğundan EN ESKİ ödemeler düşüyordu).
+async function adminFetchAll(table, columns, orderColumn, ascending) {
+  var client = getSbClient();
+  if (!client) return { data: [], error: null };
+  var all = [];
+  var from = 0;
+  var pageSize = 1000;
+  while (true) {
+    var { data, error } = await client
+      .from(table)
+      .select(columns || '*')
+      .order(orderColumn || 'created_at', { ascending: !!ascending })
+      .range(from, from + pageSize - 1);
+    if (error) return { data: null, error: error };
+    var page = data || [];
+    all = all.concat(page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: all, error: null };
+}
+window.adminFetchAll = adminFetchAll;
+
 async function loadUsers() {
   try {
     var client = getSbClient();
@@ -16,10 +41,7 @@ async function loadUsers() {
       adminState.users = [];
       return;
     }
-    var { data: profiles, error } = await client
-      .from('user_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    var { data: profiles, error } = await adminFetchAll('user_profiles', '*', 'created_at', false);
     
     if (error) throw error;
     
@@ -49,10 +71,7 @@ async function loadPayments() {
       adminState.payments = [];
       return;
     }
-    var { data: paymentRows, error } = await client
-      .from('payments')
-      .select('*')
-      .order('created_at', { ascending: false });
+    var { data: paymentRows, error } = await adminFetchAll('payments', '*', 'created_at', false);
     
     if (error) {
       console.warn('⚠️ Payments yüklenemedi:', error);
@@ -269,23 +288,8 @@ async function renderUsersTable() {
   var countEl = document.getElementById('user-count');
   if (countEl) countEl.textContent = filtered.length;
 
-  var tradeCounts = {};
-  try {
-    var nowMs = Date.now();
-    if (adminState._tradeCountsCache && (nowMs - (adminState._tradeCountsCacheTime || 0) < 60000)) {
-      tradeCounts = adminState._tradeCountsCache;
-    } else {
-      var client = getSbClient();
-      if (client) {
-        var { data: trades } = await client.from('trades').select('user_id');
-        (trades || []).forEach(function(t) {
-          tradeCounts[t.user_id] = (tradeCounts[t.user_id] || 0) + 1;
-        });
-        adminState._tradeCountsCache = tradeCounts;
-        adminState._tradeCountsCacheTime = nowMs;
-      }
-    }
-  } catch(e) {}
+  // (Eskiden burada her çizimde TÜM işlemlerin user_id'si çekilip kullanıcı başına sayılıyordu; sonuç hiçbir yerde
+  // gösterilmediği halde ağır bir sorguydu ve 1000 satırda kesiliyordu. Kaldırıldı.)
 
   var now = new Date();
   var AW = 10 * 60 * 1000;
@@ -293,7 +297,6 @@ async function renderUsersTable() {
   var rows = filtered.map(function(u) {
     var online = u.last_active && (now - new Date(u.last_active)) < AW;
     var role = (u.user_metadata && u.user_metadata.role) || 'user';
-    var tc = tradeCounts[u.id] || 0;
     var isPremium = u.plan === 'premium';
     var expiresAt = u.plan_expires_at ? new Date(u.plan_expires_at) : null;
     var isExpired = isPremium && expiresAt && new Date() > expiresAt;
@@ -805,22 +808,26 @@ async function processPayoutRequest(id, status, adminNote) {
     if (!client) throw new Error('Veritabanı bağlantısı kurulamadı');
 
     var rpcSuccess = false;
-    try {
-      var { data, error } = await client.rpc('admin_process_payout', {
-        p_id: id,
-        p_status: status,
-        p_admin_note: adminNote || ''
-      });
-      if (!error && (!data || data.success !== false)) {
-        rpcSuccess = true;
-      } else {
-        console.warn('admin_process_payout RPC warning:', error || data);
-      }
-    } catch(rpcErr) {
-      console.warn('admin_process_payout RPC exception:', rpcErr);
+    var rpcMissing = false;
+    var { data, error } = await client.rpc('admin_process_payout', {
+      p_id: id,
+      p_status: status,
+      p_admin_note: adminNote || ''
+    });
+    if (!error && data && data.success === false) {
+      // İş kuralı reddi (ör. talep zaten işlenmiş): doğrudan tabloya yazarak ATLATILMAZ, admin'e gösterilir
+      throw new Error(data.error || 'İşlem reddedildi.');
+    }
+    if (!error) {
+      rpcSuccess = true;
+    } else {
+      // Yalnızca RPC hiç yoksa (eski veritabanı) doğrudan güncellemeye düşülür
+      rpcMissing = error.code === 'PGRST202' || error.code === '42883';
+      if (!rpcMissing) throw error;
+      console.warn('admin_process_payout RPC bulunamadı, doğrudan güncelleme yapılacak:', error);
     }
 
-    if (!rpcSuccess) {
+    if (!rpcSuccess && rpcMissing) {
       var updatePayload = {
         status: status,
         admin_note: adminNote || null,
@@ -848,8 +855,10 @@ async function processPayoutRequest(id, status, adminNote) {
         await client.from('notifications').insert([{
           user_id: targetUserId,
           type: notifType,
-          title: notifTitle,
-          message: notifMsg,
+          // notifications tablosu title_key/message_key kolonlarını kullanır (title/message kolonu yok); çeviri
+          // anahtarı bulunamayınca navbar anahtarın kendisini (yani bu düz metni) gösterir.
+          title_key: notifTitle,
+          message_key: notifMsg,
           meta_data: { payout_id: id, status: status, note: adminNote || '' },
           is_read: false,
           created_at: new Date().toISOString()
@@ -871,6 +880,8 @@ async function processPayoutRequest(id, status, adminNote) {
     if (typeof showToast === 'function') {
       showToast('İşlem tamamlanamadı: ' + (e.message || e), 'error');
     }
+    // Eski/bayat ekran yüzünden reddedildiyse admin gerçek durumu görsün
+    try { await loadPayoutRequests(); if (typeof renderPayoutsTable === 'function') renderPayoutsTable(); } catch (refreshErr) {}
     return false;
   }
 }
@@ -923,36 +934,55 @@ async function loadPartnerApplications() {
   }
 }
 
+// Sayı alanı: geçerli sayıysa (0 DAHİL) kullanılır, aksi halde varsayılan. Eskiden `parseFloat(x) || 10` gibi
+// ifadeler bilinçli girilen 0'ı (ör. promosyon kodu için %0 komisyon) varsayılana (%10 / $4 / $25) çeviriyordu.
+function adminNumOr(value, fallback, min, max) {
+  var n = parseFloat(value);
+  if (!isFinite(n)) return fallback;
+  if (min !== undefined && n < min) return fallback;
+  if (max !== undefined && n > max) return fallback;
+  return n;
+}
+window.adminNumOr = adminNumOr;
+
 async function reviewPartnerApplication(appId, status, adminNote, code, discount, commission, commissionYearly) {
   try {
     var client = getSbClient();
     if (!client) throw new Error('Veritabanı bağlantısı yok');
 
-    var commMonthly = commission ? parseFloat(commission) : 4;
-    var commYearly = commissionYearly ? parseFloat(commissionYearly) : 25;
+    var discountPct = adminNumOr(discount, 10, 0, 100);
+    var commMonthly = adminNumOr(commission, 4, 0);
+    var commYearly = adminNumOr(commissionYearly, 25, 0);
 
+    // Yıllık komisyonu da alan güncel RPC: review_partner_application (parametre adı p_app_id).
+    // (Eskiden olmayan "admin_review_partner_application(p_application_id, ..., p_commission_yearly)" çağrılıyordu;
+    // imza eşleşmediği için her onay, hataları yutan atomik OLMAYAN yedek yola düşüyordu.)
     var rpcOk = false;
-    try {
-      var { data: rpcData, error: rpcErr } = await client.rpc('admin_review_partner_application', {
-        p_application_id: appId,
-        p_status: status,
-        p_admin_note: adminNote || '',
-        p_code: code || null,
-        p_discount: discount ? parseFloat(discount) : 10,
-        p_commission: commMonthly,
-        p_commission_yearly: commYearly
-      });
-      if (!rpcErr && rpcData && rpcData.success) {
-        rpcOk = true;
-      } else {
-        var errMsg = (rpcErr && rpcErr.message) || (rpcData && rpcData.error);
-        console.warn('admin_review_partner_application RPC failed, fallback to direct update. Sebep:', errMsg);
-      }
-    } catch (rpcEx) {
-      console.warn('admin_review_partner_application exception, fallback to direct update:', rpcEx);
+    var rpcData = null;
+    var rpcMissing = false;
+    var { data: rpcRes, error: rpcErr } = await client.rpc('review_partner_application', {
+      p_app_id: appId,
+      p_status: status,
+      p_admin_note: adminNote || '',
+      p_code: code || null,
+      p_discount: discountPct,
+      p_commission: commMonthly,
+      p_commission_yearly: commYearly
+    });
+    rpcData = rpcRes;
+    if (!rpcErr && rpcRes && rpcRes.success === false) {
+      // İş kuralı reddi (başvuru bulunamadı, kod eksik...): yedek yolla atlatılmaz, admin'e gösterilir
+      throw new Error(rpcRes.error || 'Başvuru işlenemedi.');
+    }
+    if (!rpcErr && rpcRes && rpcRes.success) {
+      rpcOk = true;
+    } else if (rpcErr) {
+      rpcMissing = rpcErr.code === 'PGRST202' || rpcErr.code === '42883';
+      if (!rpcMissing) throw rpcErr;
+      console.warn('review_partner_application RPC bulunamadı, doğrudan güncelleme yapılacak:', rpcErr);
     }
 
-    if (!rpcOk) {
+    if (!rpcOk && rpcMissing) {
       var { data: updatedRows, error: updateErr } = await client
         .from('partner_applications')
         .update({
@@ -975,14 +1005,16 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
       if (status === 'approved' && code) {
         var app = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
         if (app && app.user_id) {
-          await client.from('referral_codes').insert([{
+          // Kod zaten varsa güncelle (eskiden unique ihlali sessizce yutuluyor, kod influencer'a bağlanmıyordu)
+          var { error: codeErr } = await client.from('referral_codes').upsert([{
             code: code.toUpperCase().trim(),
             influencer_user_id: app.user_id,
-            discount_percent: discount ? parseFloat(discount) : 10,
+            discount_percent: discountPct,
             commission_rate: commMonthly,
             commission_rate_yearly: commYearly,
             is_active: true
-          }]);
+          }], { onConflict: 'code' });
+          if (codeErr) throw codeErr;
         }
       }
     }
@@ -1337,8 +1369,9 @@ async function replyBugReport(reportId, replyText, newStatus) {
         await client.from('notifications').insert([{
           user_id: rTarget.user_id,
           type: notifType,
-          title: notifTitle,
-          message: replyText.slice(0, 180) + (replyText.length > 180 ? '...' : ''),
+          // notifications tablosu title_key/message_key kullanır (title/message kolonu yok)
+          title_key: notifTitle,
+          message_key: replyText.slice(0, 180) + (replyText.length > 180 ? '...' : ''),
           meta_data: { bug_report_id: reportId, status: status, subject: rTarget.subject || '' },
           is_read: false,
           created_at: now

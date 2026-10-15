@@ -53,7 +53,7 @@ async function loadAnalyticsData() {
     for (var i = 6; i >= 0; i--) {
       var d = new Date();
       d.setDate(d.getDate() - i);
-      last7.push(d.toISOString().split('T')[0]);
+      last7.push(adminDayKey(d));
     }
 
     var client = getSbClient();
@@ -61,11 +61,12 @@ async function loadAnalyticsData() {
       wwLog.warn('Supabase client not ready for analytics');
       return;
     }
-    var { data: profiles } = await client.from('user_profiles').select('*');
+    var { data: profiles } = await adminFetchAll('user_profiles', '*', 'created_at', false);
     var profileList = profiles || [];
 
     var premiumUsers = profileList.filter(function(p) {
-      return p.plan === 'premium' && p.plan_expires_at && new Date(p.plan_expires_at) > new Date();
+      // Bitiş tarihi boş premium (manuel verilen) de aktiftir; kullanıcı tablosu/erişimle tutarlı
+      return p.plan === 'premium' && (!p.plan_expires_at || new Date(p.plan_expires_at) > new Date());
     });
     var totalPremium = premiumUsers.length;
     
@@ -79,66 +80,34 @@ async function loadAnalyticsData() {
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
     var paymentsList = (adminState.payments || []).filter(function(p) {
-      return p.payment_status === 'finished' || p.payment_status === 'confirmed';
+      // Geliştirici test planı (plan_type 'test') gelir/satış istatistiklerine dahil edilmez
+      return (p.payment_status === 'finished' || p.payment_status === 'confirmed') && p.plan_type !== 'test';
     });
 
-    var countedPaymentIds = {};
-
-    // 1. Aktif premium kullanıcıların aboneliklerini hesapla
-    profileList.forEach(function(p) {
-      var sub = getSubscriptionDetails(p);
-      if (sub) {
-        totalRevenue += sub.price;
-        if (sub.paymentId) countedPaymentIds[sub.paymentId] = true;
-
-        var dayKey = sub.startDate.toISOString().split('T')[0];
-        if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
-        revenueByDay[dayKey] += sub.price;
-
-        if (sub.startDate >= sevenDaysAgo) {
-          revenue7Days += sub.price;
-        }
-
-        recentPremiumUsers.push({
-          username: p.username || p.email || 'Kullanıcı',
-          email: p.email || '—',
-          plan: sub.isYearly ? 'Yıllık' : 'Aylık',
-          amount: sub.price,
-          date: sub.startDate,
-          referralCode: sub.referralCode,
-          avatar_url: p.avatar_url || null
-        });
-      }
-    });
-
-    // 2. Aktif abonelikle eşleşmemiş tamamlanmış diğer ödemeleri de ekle
+    // Gelir ve "son satışlar" yalnızca gerçek ödemelerden hesaplanır
     paymentsList.forEach(function(p) {
-      if (!countedPaymentIds[p.id]) {
-        var pAmount = Number(p.amount) || 0;
-        totalRevenue += pAmount;
+      var sub = paymentToSubscription(p);
+      if (sub.price <= 0) return;
+      totalRevenue += sub.price;
 
-        var pDate = p.created_at ? new Date(p.created_at) : new Date();
-        var dayKey = pDate.toISOString().split('T')[0];
-        if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
-        revenueByDay[dayKey] += pAmount;
+      var dayKey = adminDayKey(sub.startDate);
+      if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
+      revenueByDay[dayKey] += sub.price;
 
-        if (pDate >= sevenDaysAgo) {
-          revenue7Days += pAmount;
-        }
-
-        var matchedUser = profileList.find(function(prof) { return prof.id === p.user_id; });
-        var isYearly = p.plan_type === 'yearly' || p.plan_type === 'year' || pAmount > 30;
-
-        recentPremiumUsers.push({
-          username: (matchedUser && matchedUser.username) || (matchedUser && matchedUser.email) || 'Kullanıcı',
-          email: (matchedUser && matchedUser.email) || '—',
-          plan: isYearly ? 'Yıllık' : 'Aylık',
-          amount: pAmount,
-          date: pDate,
-          referralCode: p.referral_code || null,
-          avatar_url: (matchedUser && matchedUser.avatar_url) || null
-        });
+      if (sub.startDate >= sevenDaysAgo) {
+        revenue7Days += sub.price;
       }
+
+      var matchedUser = profileList.find(function(prof) { return prof.id === p.user_id; });
+      recentPremiumUsers.push({
+        username: (matchedUser && matchedUser.username) || (matchedUser && matchedUser.email) || 'Kullanıcı',
+        email: (matchedUser && matchedUser.email) || '—',
+        plan: sub.planLabel,
+        amount: sub.price,
+        date: sub.startDate,
+        referralCode: sub.referralCode,
+        avatar_url: (matchedUser && matchedUser.avatar_url) || null
+      });
     });
 
     recentPremiumUsers.sort(function(a, b) {
@@ -147,9 +116,14 @@ async function loadAnalyticsData() {
 
     var revenueData = last7.map(function(d) { return revenueByDay[d] || 0; });
     var uCounts = last7.map(function(d) {
-      return profileList.filter(function(p) { return p.created_at && p.created_at.split('T')[0] === d; }).length;
+      return profileList.filter(function(p) {
+        if (!p.created_at) return false;
+        var cd = new Date(p.created_at);
+        return !isNaN(cd.getTime()) && adminDayKey(cd) === d;
+      }).length;
     });
-    var premium7Days = recentPremiumUsers.length;
+    // "Son 7 Gün Premium": yalnızca son 7 günde gerçekleşen satışlar (eskiden tüm zamanların sayısıydı)
+    var premium7Days = recentPremiumUsers.filter(function(r) { return new Date(r.date) >= sevenDaysAgo; }).length;
 
     var statsEls = {
       'stat-total-users': profileList.length,
@@ -610,7 +584,7 @@ window.editReferralCode = function(id) {
   var maxEl = document.getElementById('rc-max-usage');
   if (maxEl) maxEl.value = item.max_usage || '';
   var expEl = document.getElementById('rc-expires');
-  if (expEl) expEl.value = item.expires_at ? item.expires_at.split('T')[0] : '';
+  if (expEl) expEl.value = item.expires_at ? adminDayKey(new Date(item.expires_at)) : '';
   var actEl = document.getElementById('rc-active');
   if (actEl) actEl.value = item.is_active ? 'true' : 'false';
 
@@ -725,8 +699,10 @@ function initReferralModal() {
         influencer_user_id: influencerUserId,
         commission_rate: isNaN(commissionRate) ? 0 : commissionRate,
         commission_rate_yearly: isNaN(commissionRateYearly) ? 0 : commissionRateYearly,
-        max_usage: maxUsageVal ? parseInt(maxUsageVal, 10) : null,
-        expires_at: expiresVal ? new Date(expiresVal).toISOString() : null,
+        // 0 / boş / geçersiz = limitsiz (tablo ∞ gösterir). Eskiden 0 kaydedilip sunucuda her kullanımı reddediyordu.
+        max_usage: (parseInt(maxUsageVal, 10) > 0) ? parseInt(maxUsageVal, 10) : null,
+        // Son geçerlilik GÜNÜN SONUNA kadar geçerlidir (eskiden 00:00 UTC: seçilen gün başlar başlamaz süresi doluyordu)
+        expires_at: expiresVal ? new Date(expiresVal + 'T23:59:59').toISOString() : null,
         is_active: document.getElementById('rc-active').value === 'true'
       };
 
@@ -859,6 +835,27 @@ async function renderPaymentSettingsUI() {
               <input type="text" id="ps-video-url" value="' + escapeHtml(videoUrlVal) + '" placeholder="https://www.youtube.com/embed/..." />\
             </div>\
             <p class="field-hint">Format: <code>https://www.youtube.com/embed/VIDEO_ID</code></p>\
+          </div>\
+        </div>\
+\
+        <!-- Bölüm 4: Geliştirici Test Modu -->\
+        <div class="pricing-form-section">\
+          <h4 class="section-title">\
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>\
+            Geliştirici Test Modu\
+          </h4>\
+          <p class="field-hint" style="margin-bottom:0.75rem;">Sandbox çalışmadığında gerçek ödeme akışını denemek için. Kodu bilen kullanıcı Ayarlar &gt; Gelişmiş sekmesinde girince Plan ekranında <strong>1 $ / 1 günlük</strong> bir test planı görür. Kod sunucuda yalnızca hash olarak saklanır, sonradan görüntülenemez. Test ödemeleri gelir istatistiklerine dahil edilmez.</p>\
+          <div class="pricing-calc-info" id="dev-test-status" style="margin-bottom:0.75rem;">\
+            <span>Durum yükleniyor...</span>\
+          </div>\
+          <div class="field">\
+            <label>Geliştirici kodu (en az 8 karakter)</label>\
+            <input type="password" id="dev-test-code" autocomplete="new-password" placeholder="Yeni kod belirleyin" maxlength="128" />\
+            <p class="field-hint">Yeni kod kaydetmek, eski kodla alınmış tüm test erişimlerini iptal eder.</p>\
+          </div>\
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:0.5rem;">\
+            <button class="btn btn-primary" id="dev-test-save-btn" type="button">Kodu Kaydet ve Aç</button>\
+            <button class="btn btn-ghost" id="dev-test-toggle-btn" type="button" disabled>Test Modunu Kapat</button>\
           </div>\
         </div>\
 \
@@ -1014,6 +1011,72 @@ async function renderPaymentSettingsUI() {
   // Initial calculation
   updateLivePricingPreview();
 
+  // ---- Geliştirici Test Modu (kod sunucuda hash olarak saklanır; admin_set_dev_test_code RPC) ----
+  var devState = { configured: false, enabled: false };
+  async function refreshDevTestStatus() {
+    var statusEl = document.getElementById('dev-test-status');
+    var toggleBtn = document.getElementById('dev-test-toggle-btn');
+    var client = getSbClient();
+    if (!statusEl || !client) return;
+    try {
+      var { data, error } = await client.rpc('admin_get_dev_test_status');
+      if (error || !data || data.success === false) throw new Error((error && error.message) || (data && data.error) || 'Durum alınamadı');
+      devState.configured = !!data.configured;
+      devState.enabled = !!data.enabled;
+      var text;
+      if (!data.configured) text = 'Henüz kod belirlenmemiş. Test modu kapalı.';
+      else if (data.enabled) text = '🟢 Test modu AÇIK. Şu an test erişimi olan kullanıcı sayısı: <strong>' + (data.active_users || 0) + '</strong>';
+      else text = '⚪ Test modu KAPALI (kod kayıtlı, kimse test planını göremez).';
+      statusEl.innerHTML = '<span>' + text + '</span>';
+      if (toggleBtn) {
+        toggleBtn.disabled = !data.configured;
+        toggleBtn.textContent = data.enabled ? 'Test Modunu Kapat' : 'Test Modunu Aç';
+      }
+    } catch (e) {
+      statusEl.innerHTML = '<span>Durum alınamadı: ' + escapeHtml(e.message || String(e)) + ' (migration 202610150004 uygulandı mı?)</span>';
+    }
+  }
+
+  var devSaveBtn = document.getElementById('dev-test-save-btn');
+  if (devSaveBtn) {
+    devSaveBtn.addEventListener('click', async function() {
+      var input = document.getElementById('dev-test-code');
+      var code = input ? input.value.trim() : '';
+      if (code.length < 8) {
+        if (typeof showToast === 'function') showToast('Kod en az 8 karakter olmalıdır.', 'error');
+        return;
+      }
+      devSaveBtn.disabled = true;
+      try {
+        var { data, error } = await getSbClient().rpc('admin_set_dev_test_code', { p_code: code, p_enabled: true });
+        if (error || !data || data.success === false) throw new Error((error && error.message) || (data && data.error) || 'Kod kaydedilemedi');
+        if (input) input.value = '';
+        if (typeof showToast === 'function') showToast('Geliştirici kodu kaydedildi, test modu açıldı.', 'success');
+      } catch (e) {
+        if (typeof showToast === 'function') showToast('Kaydedilemedi: ' + (e.message || e), 'error');
+      } finally {
+        devSaveBtn.disabled = false;
+        refreshDevTestStatus();
+      }
+    });
+  }
+  var devToggleBtn = document.getElementById('dev-test-toggle-btn');
+  if (devToggleBtn) {
+    devToggleBtn.addEventListener('click', async function() {
+      devToggleBtn.disabled = true;
+      try {
+        var { data, error } = await getSbClient().rpc('admin_set_dev_test_code', { p_code: null, p_enabled: !devState.enabled });
+        if (error || !data || data.success === false) throw new Error((error && error.message) || (data && data.error) || 'İşlem başarısız');
+        if (typeof showToast === 'function') showToast(data.enabled ? 'Test modu açıldı.' : 'Test modu kapatıldı.', 'success');
+      } catch (e) {
+        if (typeof showToast === 'function') showToast('İşlem başarısız: ' + (e.message || e), 'error');
+      } finally {
+        refreshDevTestStatus();
+      }
+    });
+  }
+  refreshDevTestStatus();
+
   // Save button action
   var saveBtn = document.getElementById('save-ps-btn');
   if (saveBtn) {
@@ -1102,62 +1165,54 @@ window.changeOverviewPeriod = function(period) {
   }
 };
 
-function getSubscriptionDetails(user) {
-  if (user.plan !== 'premium' || !user.plan_expires_at) {
-    return null;
-  }
-  var expiresAt = new Date(user.plan_expires_at);
-  if (isNaN(expiresAt.getTime())) return null;
+// ============================================================
+// GELİR = yalnızca GERÇEK ödemeler (payments: finished/confirmed)
+// ============================================================
+// Eskiden gelir, kullanıcının "kalan gün sayısına" bakılarak tahmin ediliyordu (65 günden fazla = yıllık):
+// yıllık aboneliğin son 65 gününde "aylık" sanılıp uydurma 12 $'lık satış ekleniyor, art arda aylık
+// yenilemeler "yıllık" sanılıp 99 $ ekleniyor, admin'in verdiği premium da gelir sayılıyordu.
+// Artık yalnızca payments tablosundaki tamamlanmış ödemeler toplanır.
 
-  var now = Date.now();
-  var remainingDays = Math.ceil((expiresAt.getTime() - now) / (1000 * 60 * 60 * 24));
-  var isYearlyByDuration = remainingDays > 65;
-  var durationDays = isYearlyByDuration ? 365 : 30;
+// Fiyat para birimi dışındaki ödemeler USD'ye çevrilir (create-payment ile aynı sabit kurlar)
+var ADMIN_FX_TO_USD = { USD: 1, EUR: 1 / 0.92, GBP: 1 / 0.79, TRY: 1 / 33.5 };
 
-  // 1. Gerçek payments tablosunda bu kullanıcıya ait başarılı bir ödeme var mı?
-  var userPayments = (adminState.payments || []).filter(function(p) {
-    return p.user_id === user.id && (p.payment_status === 'finished' || p.payment_status === 'confirmed');
-  });
+function paymentAmountUsd(p) {
+  var amount = Number(p.amount);
+  if (!isFinite(amount) || amount <= 0) return 0;
+  var cur = String(p.currency || 'USD').toUpperCase();
+  var rate = ADMIN_FX_TO_USD[cur];
+  return amount * (rate === undefined ? 1 : rate);
+}
 
-  // Ödeme kaydının plan_type'ı (veya tutarı) mevcut abonelik süresiyle (aylık mı yıllık mı) örtüşmeli
-  var matchingPayment = userPayments.find(function(p) {
-    var isPayYearly = p.plan_type === 'yearly' || p.plan_type === 'year' || Number(p.amount) > 30;
-    return isPayYearly === isYearlyByDuration;
-  });
+function paymentPlanLabel(p) {
+  var t = String(p.plan_type || '').toLowerCase();
+  if (t === 'yearly' || t === 'year') return 'Yıllık';
+  if (t === '6months' || t === '6_months') return '6 Aylık';
+  if (t === '3months' || t === '3_months') return '3 Aylık';
+  if (!t && paymentAmountUsd(p) > 30) return 'Yıllık';
+  return 'Aylık';
+}
 
-  if (matchingPayment) {
-    var payAmount = Number(matchingPayment.amount);
-    if (isNaN(payAmount) || payAmount <= 0) {
-      payAmount = isYearlyByDuration ? 99 : 12;
-    }
-    var payStartDate = matchingPayment.created_at 
-      ? new Date(matchingPayment.created_at) 
-      : new Date(expiresAt.getTime() - durationDays * 86400000);
-
-    return {
-      isYearly: isYearlyByDuration,
-      price: payAmount,
-      startDate: payStartDate,
-      expiresAt: expiresAt,
-      referralCode: matchingPayment.referral_code || null,
-      isRealPayment: true,
-      paymentId: matchingPayment.id || null
-    };
-  }
-
-  // 2. Fallback (Manuel veritabanı testi / ödeme kaydı olmayan durumlar):
-  // Süreye göre net sabit fiyat: 1 ay (<=65 gün) -> 12, 1 yıl (>65 gün) -> 99
-  var startDate = new Date(expiresAt.getTime() - durationDays * 86400000);
-
+function paymentToSubscription(p) {
+  var plan = paymentPlanLabel(p);
+  var start = p.created_at ? new Date(p.created_at) : new Date();
   return {
-    isYearly: isYearlyByDuration,
-    price: isYearlyByDuration ? 99 : 12,
-    startDate: startDate,
-    expiresAt: expiresAt,
-    referralCode: null,
-    isRealPayment: false,
-    paymentId: null
+    isYearly: plan === 'Yıllık',
+    planLabel: plan,
+    price: paymentAmountUsd(p),
+    startDate: isNaN(start.getTime()) ? new Date() : start,
+    referralCode: p.referral_code || null,
+    isRealPayment: true,
+    paymentId: p.id || null
   };
+}
+
+// Yerel takvim günü anahtarı (YYYY-MM-DD): "İstatistikler" ve "Genel" panelleri aynı günlük kovayı kullanır
+function adminDayKey(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
 }
 
 function renderOverviewContent(period) {
@@ -1177,7 +1232,7 @@ function renderOverviewContent(period) {
   // Active Premium & Free counts
   var now = new Date();
   var activePremiumUsers = usersList.filter(function(u) {
-    return u.plan === 'premium' && u.plan_expires_at && new Date(u.plan_expires_at) > now;
+    return u.plan === 'premium' && (!u.plan_expires_at || new Date(u.plan_expires_at) > now);
   });
   var premiumCount = activePremiumUsers.length;
   var freeCount = Math.max(0, totalUsers - premiumCount);
@@ -1194,32 +1249,22 @@ function renderOverviewContent(period) {
 
   // Payments List (Gerçekleşen Ödemeler)
   var paymentsList = (adminState.payments || []).filter(function(p) {
-    return p.payment_status === 'finished' || p.payment_status === 'confirmed';
+    // Geliştirici test planı (plan_type 'test') gelir/satış istatistiklerine dahil edilmez
+    return (p.payment_status === 'finished' || p.payment_status === 'confirmed') && p.plan_type !== 'test';
   });
 
-  // Subscriptions & Total Revenue calculation (Tüm aktif abonelikler + ekstra ödemeler)
+  // Gelir: yalnızca gerçek (tamamlanmış) ödemeler. Admin'in verdiği ya da ödemesi olmayan premium gelir sayılmaz.
   var subscriptions = [];
   var totalRevenue = 0;
   var countedPaymentIds = {};
 
-  // 1. Tüm aktif abonelikleri hesapla
-  usersList.forEach(function(u) {
-    var sub = getSubscriptionDetails(u);
-    if (sub) {
-      subscriptions.push({
-        user: u,
-        sub: sub
-      });
-      totalRevenue += sub.price;
-      if (sub.paymentId) countedPaymentIds[sub.paymentId] = true;
-    }
-  });
-
-  // 2. Halihazırda aktif abonelikte sayılmamış diğer tamamlanmış payments kayıtlarını da ekle
   paymentsList.forEach(function(p) {
-    if (!countedPaymentIds[p.id]) {
-      totalRevenue += (Number(p.amount) || 0);
-    }
+    var sub = paymentToSubscription(p);
+    if (sub.price <= 0) return;
+    var matchedUser = usersList.find(function(u) { return u.id === p.user_id; }) || null;
+    subscriptions.push({ user: matchedUser, sub: sub });
+    totalRevenue += sub.price;
+    if (p.id) countedPaymentIds[p.id] = true;
   });
 
   // Period Buckets & Labels
@@ -1984,10 +2029,11 @@ async function confirmPartnerAppAction() {
 
   if (actionType === 'approve') {
     code = document.getElementById('pa-code-input').value.trim().toUpperCase();
-    discount = parseFloat(document.getElementById('pa-discount-input').value) || 10;
-    commission = parseFloat(document.getElementById('pa-commission-input').value) || 4;
+    // 0 geçerli bir değerdir (ör. komisyonsuz promosyon kodu); yalnızca boş/geçersizse varsayılan kullanılır
+    discount = window.adminNumOr(document.getElementById('pa-discount-input').value, 10, 0, 100);
+    commission = window.adminNumOr(document.getElementById('pa-commission-input').value, 4, 0);
     var paCommYr = document.getElementById('pa-commission-yearly-input');
-    var commissionYearly = paCommYr ? (parseFloat(paCommYr.value) || 25) : 25;
+    var commissionYearly = paCommYr ? window.adminNumOr(paCommYr.value, 25, 0) : 25;
 
     if (!code) {
       if (typeof showToast === 'function') showToast('Lütfen referans kodu girin.', 'error');

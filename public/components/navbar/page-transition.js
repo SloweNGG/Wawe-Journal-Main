@@ -372,7 +372,7 @@
 
       hud.innerHTML =
         '<div class="wj-journal-transit-icon" style="color:' + c + '; background:' + c + '16; border-color:' + c + '35;">' +
-          '<i data-lucide="' + (opts.icon || 'folder') + '"></i>' +
+          (window.WwJournalMark ? window.WwJournalMark.forJournal({ id: opts.id, color: c }, { dotSize: 9 }) : '') +
         '</div>' +
         '<div class="wj-journal-transit-text">' +
           '<span class="wj-journal-transit-name">' + (opts.name || defaultAccountText) + '</span>' +
@@ -420,15 +420,14 @@
         var oldBadge = sw.querySelector('.nav-prop-tag');
         if (oldBadge) oldBadge.remove();
         if (swName) swName.textContent = targetJournal.name || defaultAccountText;
-        if (swIcon) swIcon.setAttribute('data-lucide', targetJournal.icon || 'folder');
-        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        if (swIcon && window.WwJournalMark) swIcon.innerHTML = window.WwJournalMark.forJournal(targetJournal, { dotSize: 9 });
       }
 
       var color = targetJournal.color || '#7c6dfa';
       var icon = targetJournal.icon || 'folder';
       var name = targetJournal.name || defaultAccountText;
 
-      this.showTransitHUD({ name: name, icon: icon, color: color, state: 'switching' });
+      this.showTransitHUD({ id: targetJournal.id, name: name, icon: icon, color: color, state: 'switching' });
 
       var main = this.getMainElement();
       if (main) {
@@ -454,15 +453,18 @@
                 var logoSrc = pInfo.symbolLogo || pInfo.logo;
                 var badgeHtml = '<span class="nav-prop-tag nav-prop-firm-tag ' + (pInfo.badgeClass || '') + '"><img src="' + logoSrc + '" class="nav-prop-mini-icon" alt="" />' + pInfo.name + '</span>';
                 localStorage.setItem('ww_active_prop_badge_html', badgeHtml);
-                localStorage.setItem('ww_active_journal_icon_html', '<img src="' + logoSrc + '" class="nav-dropdown-prop-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:2px;" alt="" />');
               } else {
                 localStorage.setItem('ww_active_prop_badge_html', '<span class="nav-prop-tag">PROP</span>');
               }
             } else {
               localStorage.removeItem('ww_active_prop_badge_html');
-              localStorage.removeItem('ww_active_journal_icon_html');
             }
           } catch(pe) {}
+        }
+
+        // Hedef hesabın işareti (renk noktası; bağlıysa yanıp söner): sayfa açılırken anında basılsın
+        if (window.WwJournalMark) {
+          localStorage.setItem('ww_active_journal_icon_html', window.WwJournalMark.forJournal(targetJournal, { dotSize: 9 }));
         }
 
         var rawCt = localStorage.getItem('ww_cached_ctrader_map');
@@ -518,6 +520,7 @@
         }
 
         this.showTransitHUD({
+          id: data.id,
           name: data.name,
           icon: data.icon,
           color: data.color,

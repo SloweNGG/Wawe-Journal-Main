@@ -546,6 +546,19 @@
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Renk seçicinin altındaki açıklama (nokta örneği + metin) */
+.journal-color-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.journal-color-hint .ww-mark { margin: 0 3px; }
+
 /* İkon seçici */
 .journal-icon-picker {
   display: grid;
@@ -1572,6 +1585,9 @@ body.light-theme .journal-prop-inactive-tip {
 
 .journal-card-prop-badge { margin-top: 0.15rem; margin-bottom: 0.25rem; box-shadow: none; }
 
+/* Alt blok kartın en altına yaslanır; içinde cTrader çubuğu (varsa) ve işlem sayısı + kâr/zarar sırayla durur */
+.journal-card-bottom { margin-top: auto; }
+.journal-card-bottom .journal-card-ctrader-bar { margin-bottom: 0.85rem; }
 .journal-card-stats {
   margin-top: auto;
   padding-top: 0.85rem !important;
@@ -1596,6 +1612,7 @@ body.light-theme .journal-prop-inactive-tip {
 /* ---- cTrader row on the card ---- */
 .journal-card-ctrader-bar {
   display: flex;
+  flex-wrap: wrap;               /* üst satır: logo/hesap/Senkronla; alt satır (.ct-meta): bakiye + son senkron */
   align-items: center;
   gap: 10px;
   margin-top: 0.85rem;
@@ -1627,6 +1644,35 @@ body.light-theme .journal-prop-inactive-tip {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* bakiye + son senkron satırı */
+.journal-card-ctrader-bar .ct-meta {
+  flex: 0 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+  margin-top: -2px;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.journal-card-ctrader-bar .ct-balance b {
+  margin-left: 4px;
+  font-family: 'JetBrains Mono', 'DM Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.journal-card-ctrader-bar .ct-balance.muted b { color: var(--muted); font-weight: 500; }
+.journal-card-ctrader-bar .ct-sync-state { text-align: right; min-width: 0; margin-left: auto; }
+.journal-card-ctrader-bar .ct-sync-state b { font-weight: 600; color: var(--text); }
+.journal-card-ctrader-bar .ct-sync-state.error { color: #f59e0b; }
+.journal-card-ctrader-bar .ct-sync-state.syncing { color: #06B6D4; }
 
 /* sync button: a real button, with feedback while it runs */
 .btn-card-sync {

@@ -30,10 +30,6 @@ const rateLimitStore = new Map<string, { count: number, resetTime: number }>();
 const RATE_LIMIT_WINDOW = parseInt(Deno.env.get('RATE_LIMIT_WINDOW') || '60000');
 const RATE_LIMIT_MAX = parseInt(Deno.env.get('RATE_LIMIT_MAX') || '10');
 
-// ⭐ Fiyat Cache (60 saniye)
-let pricesCache: { data: any, timestamp: number } | null = null;
-const PRICES_CACHE_TTL = 60000;
-
 // ⭐ JWT'den kullanıcı kimliğini çıkarır
 function getUserIdFromToken(req: Request): string | null {
   const auth = req.headers.get('authorization');
@@ -110,118 +106,27 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 }
 
 // ⭐ Plan validasyonu
-const VALID_PLANS = ['monthly', 'yearly', 'premium', '3months', '6months'];
-const VALID_CURRENCIES = ['USD', 'EUR', 'GBP', 'TRY'];
+// 'test': yalnızca admin panelinden açılan geliştirici test modunda (dev_test_access_active) satın alınabilir.
+const VALID_PLANS = ['monthly', 'yearly', 'premium', '3months', '6months', 'test'];
+const TEST_PLAN_PRICE_USD = 1;   // sunucuda sabit: istemciden gelen tutar asla fiyatı belirlemez
+// Satış yalnızca USD ile yapılır. (Eskiden EUR/GBP/TRY de kabul ediliyor ve elle yazılmış, güncel olmayan
+// sabit kurla çevriliyordu: arayüz hep USD gönderse de, API'yi doğrudan çağıran biri kuru lehine olan
+// para birimini seçip indirimle satın alabiliyordu.)
+const VALID_CURRENCIES = ['USD'];
 const VALID_PAY_CURRENCIES = ['BTC', 'LTC', 'ETH', 'XRP', 'BCH', 'DOGE', 'USDT', 'USDTTRC20'];
 
 function validatePlanType(planType: string): boolean {
   return VALID_PLANS.includes(planType);
 }
 
+// Fiyat para birimi yalnızca fiat olabilir. Kripto ticker'ları (DOGE, LTC...) sadece
+// ödeme (pay) para birimi olarak geçerli; aksi halde 12 USD yerine 12 DOGE faturalanır.
 function validateCurrency(currency: string): boolean {
-  return VALID_CURRENCIES.includes(currency) || VALID_PAY_CURRENCIES.includes(currency);
+  return VALID_CURRENCIES.includes(currency);
 }
 
-// ⭐ Sabit fallback fiyatlar (DB erişimi başarısız olursa)
-function getFallbackPlanPrice(planType: string, currency: string): number {
-  const prices: Record<string, Record<string, number>> = {
-    monthly: { USD: 9, EUR: 8, GBP: 7, TRY: 250 },
-    yearly: { USD: 79, EUR: 70, GBP: 62, TRY: 2200 },
-    premium: { USD: 9, EUR: 8, GBP: 7, TRY: 250 }
-  };
-  return prices[planType]?.[currency] || prices[planType]?.USD || 0;
-}
-
-// ⭐ Fiyat nesnesinden plan/currency bazlı fiyat çöz
-function resolvePrice(prices: any, planType: string, currency: string): number {
-  let basePrice = 0;
-
-  if (planType === 'monthly' || planType === 'premium') {
-    basePrice = Number(prices.monthly) || 12;
-  } else if (planType === '3months') {
-    const m = Number(prices.monthly) || 12;
-    basePrice = Math.round(m * 3 * 0.86);
-  } else if (planType === '6months') {
-    const m = Number(prices.monthly) || 12;
-    basePrice = Math.round(m * 6 * 0.80);
-  } else if (planType === 'yearly') {
-    basePrice = Number(prices.yearly) || 99;
-  } else {
-    return getFallbackPlanPrice(planType, currency);
-  }
-
-  // USD ise direkt dön
-  if (currency === 'USD') {
-    return basePrice;
-  }
-
-  // USD dışı currency — basit dönüşüm
-  const conversionRates: Record<string, number> = {
-    'USD': 1,
-    'EUR': 0.92,
-    'GBP': 0.79,
-    'TRY': 34.5
-  };
-  const rate = conversionRates[currency] || 1;
-  return Math.round(basePrice * rate * 100) / 100;
-}
-
-// ⭐ Supabase client
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-let supabaseClient: any = null;
-let supabaseAdminClient: any = null;
-
-try {
-  if (supabaseUrl && supabaseAnonKey) {
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-    if (supabaseServiceKey) {
-      supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey);
-    }
-  }
-} catch (e) {
-  console.warn('⚠️ Supabase client initialization failed:', e);
-}
-
-// ⭐ DB'den güncel fiyatı al (cache'li)
-async function getPlanPriceFromDB(planType: string, currency: string): Promise<number> {
-  const now = Date.now();
-
-  // Cache kontrolü
-  if (pricesCache && (now - pricesCache.timestamp) < PRICES_CACHE_TTL) {
-    return resolvePrice(pricesCache.data, planType, currency);
-  }
-
-  // DB'den oku — önce service role client, yoksa RPC dene
-  try {
-    const client = supabaseAdminClient || supabaseClient;
-    if (client) {
-      // system_settings tablosundan 'prices' key'ini oku
-      const { data, error } = await client
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'prices')
-        .single();
-
-      if (!error && data?.value) {
-        pricesCache = { data: data.value, timestamp: now };
-        console.log('💰 Prices loaded from DB:', JSON.stringify(data.value));
-        return resolvePrice(data.value, planType, currency);
-      }
-
-      if (error) {
-        console.warn('⚠️ system_settings query error:', error.message);
-      }
-    }
-  } catch (e) {
-    console.warn('⚠️ Failed to fetch prices from DB:', e);
-  }
-
-  // Fallback
-  console.warn('⚠️ Using fallback hardcoded prices');
-  return getFallbackPlanPrice(planType, currency);
-}
+// (Eskiden burada kullanılmayan, USD dışı sabit kurlar içeren fiyat yardımcıları vardı; kaldırıldı. Fiyat
+// ana handler'da system_settings'ten USD olarak okunur.)
 
 // ⭐ Fetch with timeout
 async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response> {
@@ -350,7 +255,7 @@ serve(async (req: Request) => {
     const priceCurrency = currency || 'USD';
     if (!validateCurrency(priceCurrency)) {
       return new Response(JSON.stringify({
-        error: 'Invalid currency. Allowed: USD, EUR, GBP, TRY'
+        error: 'Invalid currency. Allowed: USD'
       }), {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -368,6 +273,21 @@ serve(async (req: Request) => {
     };
     
     let baseAmount = (planType === 'yearly') ? 99 : 12;
+
+    // 🧪 Test planı: yalnızca test modu erişimi olan kullanıcılar (sunucu tarafı doğrulama; arayüze güvenilmez)
+    if (planType === 'test') {
+      let testAllowed = false;
+      if (adminClient) {
+        const { data: accessOk, error: accessErr } = await adminClient.rpc('dev_test_access_active', { p_user_id: userId });
+        testAllowed = !accessErr && accessOk === true;
+      }
+      if (!testAllowed) {
+        return new Response(JSON.stringify({ error: 'Test planı şu anda kullanılamıyor.' }), {
+          status: 403,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
+      }
+    }
 
     if (adminClient) {
       try {
@@ -393,11 +313,8 @@ serve(async (req: Request) => {
       }
     }
 
-    if (priceCurrency !== 'USD') {
-      const conversionRates: Record<string, number> = { 'USD': 1, 'EUR': 0.92, 'GBP': 0.79, 'TRY': 33.50 };
-      const rate = conversionRates[priceCurrency] || 1;
-      baseAmount = Number((baseAmount * rate).toFixed(2));
-    }
+    // Fiyat zaten USD cinsinden (priceCurrency yalnızca 'USD' olabilir); kur çevirimi yoktur.
+    if (planType === 'test') baseAmount = TEST_PLAN_PRICE_USD;
 
     const payCurrencyFinal = (payCurrency || 'LTC').toUpperCase();
 
@@ -416,7 +333,8 @@ serve(async (req: Request) => {
     let orderDesc = `Wawe Journal - ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan Subscription`;
 
     // ⭐ Referans İndirimi Hesaplama - YALNIZCA LTC İÇİN GEÇERLİ (BTC'de indirim olmaz)
-    const cleanRefCode = referralCode ? String(referralCode).trim().toUpperCase() : null;
+    // Test planında referral/indirim uygulanmaz (komisyon ve fiyat akışı karışmasın)
+    const cleanRefCode = (referralCode && planType !== 'test') ? String(referralCode).trim().toUpperCase() : null;
     const isLtc = payCurrencyFinal === 'LTC';
     const isLtcDiscountEnabled = paymentSettings.ltc_discount_enabled !== false && String(paymentSettings.ltc_discount_enabled) !== 'false';
 
@@ -482,15 +400,14 @@ serve(async (req: Request) => {
       console.log(`ℹ️ Referral code ignored because currency is ${payCurrencyFinal} (discount only allowed for LTC)`);
     }
 
-    // ⭐ İstemciden gelen miktar (en son ekranda yazan fiyat) ile senkronize et
-    const clientAmount = Number(body.amount);
-    if (!isNaN(clientAmount) && clientAmount > 0) {
-      if (Math.abs(clientAmount - finalAmount) <= 0.15) {
-        finalAmount = Number(clientAmount.toFixed(2));
-      } else if (isLtc && cleanRefCode && clientAmount >= (baseAmount * 0.5) && clientAmount <= baseAmount) {
-        finalAmount = Number(clientAmount.toFixed(2));
-        console.log(`✅ Synced with client discounted amount: ${finalAmount}`);
-      }
+    // 🔒 Fiyat YALNIZCA sunucuda hesaplanır. İstemciden gelen `amount` asla fiyatı
+    // belirlemez (eskiden %50'ye kadar indirim yaptırabiliyordu); gerçek tutar
+    // yanıttaki `amount` alanıyla istemciye geri döner.
+    if (!(finalAmount > 0)) {
+      return new Response(JSON.stringify({ error: 'Price could not be determined' }), {
+        status: 500,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
     }
 
 
@@ -616,9 +533,11 @@ serve(async (req: Request) => {
 
     // ⭐ 11. PAYMENT LOG
     const writerClient = supabaseAdminClient || supabaseClient;
+    // Bu kayıt webhook'un beklenen tutarı/para birimini doğrulaması için gereklidir;
+    // yazılamazsa kullanıcıya ödeme adresi verilmez (ödeme alınıp işlenemezdi).
     try {
       const recordInvoiceId = paymentData.payment_id ? String(paymentData.payment_id) : (paymentData.invoice_id ? String(paymentData.invoice_id) : orderId);
-      await writerClient
+      const { error: logError } = await writerClient
         .from('payments')
         .insert([{
           user_id: userId,
@@ -633,9 +552,14 @@ serve(async (req: Request) => {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }]);
+      if (logError) throw logError;
       console.log('📝 Payment log created');
     } catch (e) {
-      console.warn('⚠️ Failed to log payment:', e);
+      console.error('❌ Failed to log payment, aborting before handing out pay address:', e);
+      return new Response(JSON.stringify({ error: 'Payment could not be recorded. Please try again.' }), {
+        status: 500,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
     }
 
     // ⭐ 12. RESPONSE

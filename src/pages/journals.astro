@@ -66,7 +66,7 @@ import Layout from '../layouts/Layout.astro';
                 var trades = (j.trade_count || 0) + ' işlem';
                 return '<div class="journal-card" data-id="' + j.id + '" style="--journal-color:' + (j.color || '#7c6dfa') + '">' +
                   '<div class="journal-card-top">' +
-                    '<div class="journal-icon-wrap"><i data-lucide="' + (j.icon || 'folder') + '"></i></div>' +
+                    '<div class="journal-icon-wrap">' + (window.WwJournalMark ? window.WwJournalMark.forJournal(j, { dotSize: 14 }) : '') + '</div>' +
                     '<div class="journal-card-actions">' + defaultBadge + '</div>' +
                   '</div>' +
                   '<div class="journal-card-name" title="' + safeName + '">' + safeName + '</div>' +
@@ -133,19 +133,14 @@ import Layout from '../layouts/Layout.astro';
           <textarea id="journal-desc" rows="2" maxlength="200" placeholder="Bu hesabın stratejisi veya hedefleri..."></textarea>
         </div>
         
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="journal.color_label">Renk</label>
-            <div class="journal-color-picker" id="color-grid">
-              <!-- JS fills -->
-            </div>
+        <div class="journal-field" style="margin-bottom:0;">
+          <label data-i18n="journal.color_label">Renk</label>
+          <div class="journal-color-picker" id="color-grid">
+            <!-- JS fills -->
           </div>
-          
-          <div class="journal-field" style="margin-bottom:0;">
-            <label data-i18n="journal.icon_label">İkon</label>
-            <div class="journal-icon-picker" id="icon-grid">
-              <!-- JS fills -->
-            </div>
+          <div class="journal-color-hint" id="color-hint">
+            <span class="ww-mark ww-mark--dot" id="color-hint-dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span>
+            <span>Hesabın listelerde görünen noktası. Prop firma veya broker bağlı hesapların noktası yanıp söner.</span>
           </div>
         </div>
       </div>
@@ -522,7 +517,50 @@ import Layout from '../layouts/Layout.astro';
     }
   };
   var COLORS = ['#7c6dfa','#22c55e','#ef4444','#f59e0b','#3b82f6','#ec4899','#14b8a6','#f97316'];
-  var ICONS = ['folder', 'chart-bar', 'trending-up', 'target', 'rocket', 'gem', 'flame', 'zap', 'waves', 'crown', 'star', 'palette'];
+
+  // ---- cTrader kartı: bakiye + son senkron gösterimi ----
+  var CT_CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', TRY: '₺', JPY: '¥', AUD: 'A$', CAD: 'C$', CHF: 'CHF ', PLN: 'zł ', RUB: '₽' };
+
+  // Bakiye, hesabın KENDİ para biriminde gösterilir (PnL gibi tr-TR biçimi: 12.337,79). Birim bilinmiyorsa uygulama sembolü.
+  function formatAccountBalance(value, code) {
+    var num = Number(value);
+    if (!isFinite(num)) return '—';
+    var c = String(code || '').toUpperCase();
+    var crypto = (c === 'BTC' || c === 'ETH');
+    var txt = Math.abs(num).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: crypto ? 8 : 2 });
+    var sign = num < 0 ? '-' : '';
+    if (!c) {
+      var sym = '$';
+      try { sym = localStorage.getItem('ww_currency') || '$'; } catch (e) {}
+      return sign + sym + txt;
+    }
+    if (CT_CURRENCY_SYMBOLS[c]) return sign + CT_CURRENCY_SYMBOLS[c] + txt;
+    return sign + txt + ' ' + c;
+  }
+
+  function relativeTimeTr(iso) {
+    var t = new Date(iso).getTime();
+    if (!isFinite(t)) return '';
+    var sec = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (sec < 60) return 'az önce';
+    var min = Math.floor(sec / 60);
+    if (min < 60) return min + ' dk önce';
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return hr + ' sa önce';
+    return Math.floor(hr / 24) + ' gün önce';
+  }
+
+  // Mutlak zaman (kullanıcının Ayarlar > Görünüm saat dilimine göre)
+  function absoluteTime(iso) {
+    try {
+      if (window.WwTime && typeof window.WwTime.formatDateTime === 'function') {
+        var out = window.WwTime.formatDateTime(iso);
+        if (out) return out;
+      }
+    } catch (e) {}
+    var d = new Date(iso);
+    return isFinite(d.getTime()) ? d.toLocaleString() : '';
+  }
   
   var journalsData = [];
   var isPremium = false;
@@ -697,7 +735,7 @@ import Layout from '../layouts/Layout.astro';
     if (jId && window.wwCache) {
       var uId = (window.currentUser && window.currentUser.id) || (window.__wwUserProfile && window.__wwUserProfile.id);
       if (uId) {
-        var cached = window.wwCache.get('trades_dashboard', uId, jId) || window.wwCache.get('trades', uId, jId);
+        var cached = window.wwCache.get('trades_dashboard', uId, jId, ['trade_date', 'pnl']) || window.wwCache.get('trades', uId, jId, ['trade_date', 'pnl']);
         if (cached && Array.isArray(cached) && cached.length > 0) {
           trades = cached.slice(-3);
         }
@@ -771,23 +809,11 @@ import Layout from '../layouts/Layout.astro';
       btn.onclick = function() {
         document.querySelectorAll('.journal-color-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        syncColorHintDot();
       };
       cGrid.appendChild(btn);
     });
     
-    var iGrid = document.getElementById('icon-grid');
-    ICONS.forEach(function(icon) {
-      var btn = document.createElement('button');
-      btn.className = 'journal-icon-btn';
-      btn.dataset.icon = icon;
-      btn.innerHTML = '<i data-lucide="' + icon + '" style="width:20px;height:20px;"></i>';
-      btn.onclick = function() {
-        document.querySelectorAll('.journal-icon-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      };
-      iGrid.appendChild(btn);
-    });
-
     // Prop template setup
     populatePropTemplates();
 
@@ -880,9 +906,21 @@ import Layout from '../layouts/Layout.astro';
     return active ? active.dataset.color : COLORS[0];
   }
 
+  // İkon seçimi kaldırıldı (hesabı artık renk noktası / bağlı logo temsil ediyor). `icon` sütunu geriye uyumluluk için
+  // korunur: düzenlemede mevcut değeri, yeni hesapta 'folder' gönderilir.
   function getSelectedIcon() {
-    var active = document.querySelector('.journal-icon-btn.active');
-    return active ? active.dataset.icon : ICONS[0];
+    var id = document.getElementById('journal-id')?.value;
+    var cur = id ? journalsData.find(function(x) { return x.id === id; }) : null;
+    return (cur && cur.icon) || 'folder';
+  }
+
+  // Renk seçiciyle açıklamadaki örnek nokta aynı renkte kalsın
+  function syncColorHintDot() {
+    var dot = document.getElementById('color-hint-dot');
+    if (!dot) return;
+    var c = getSelectedColor();
+    dot.style.setProperty('--mk', c);
+    dot.style.setProperty('--mk-ring', c + '40');
   }
 
   var currentWizardStep = 1;
@@ -920,7 +958,7 @@ import Layout from '../layouts/Layout.astro';
             if (window.showToast) window.showToast('Lütfen başlangıç tarihi seçiniz.', 'warning');
             return;
           }
-          var todayStr = new Date().toISOString().slice(0, 10);
+          var todayStr = (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().slice(0, 10));
           if (sDate > todayStr) {
             if (window.showToast) window.showToast('Başlangıç tarihi bugünden ileri bir tarih olamaz.', 'warning');
             return;
@@ -1128,7 +1166,7 @@ import Layout from '../layouts/Layout.astro';
     var propPhaseSel = document.getElementById('prop-phase-select');
     var propTzSel = document.getElementById('prop-reset-tz-select');
 
-    document.querySelectorAll('.journal-color-btn, .journal-icon-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.journal-color-btn').forEach(b => b.classList.remove('active'));
     if (propQuotaWarn) propQuotaWarn.style.display = 'none';
     if (propCustomBal) propCustomBal.style.display = 'none';
     if (propAccountIdEl) propAccountIdEl.value = '';
@@ -1143,7 +1181,7 @@ import Layout from '../layouts/Layout.astro';
       nameEl.value = '';
       descEl.value = '';
       document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]')?.classList.add('active');
-      document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]')?.classList.add('active');
+      syncColorHintDot();
 
       if (propToggle) {
         propToggle.checked = false;
@@ -1152,8 +1190,8 @@ import Layout from '../layouts/Layout.astro';
       if (propSection) propSection.classList.remove('active');
       if (inactiveCard) inactiveCard.style.display = 'block';
       if (propStartDate) {
-        propStartDate.value = new Date().toISOString().slice(0, 10);
-        propStartDate.max = new Date().toISOString().slice(0, 10);
+        propStartDate.value = (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().slice(0, 10));
+        propStartDate.max = (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().slice(0, 10));
       }
       if (propBalSel) propBalSel.value = '100000';
       
@@ -1208,9 +1246,7 @@ import Layout from '../layouts/Layout.astro';
         if (cBtn) cBtn.classList.add('active');
         else document.querySelector('.journal-color-btn[data-color="' + COLORS[0] + '"]')?.classList.add('active');
         
-        var iBtn = document.querySelector('.journal-icon-btn[data-icon="' + (j.icon || ICONS[0]) + '"]');
-        if (iBtn) iBtn.classList.add('active');
-        else document.querySelector('.journal-icon-btn[data-icon="' + ICONS[0] + '"]')?.classList.add('active');
+        syncColorHintDot();
 
         // Prop hesabı durumu
         if (propToggle) propToggle.disabled = false;
@@ -1232,7 +1268,7 @@ import Layout from '../layouts/Layout.astro';
               }
               if (propStartDate && propAcc.start_date) {
                 propStartDate.value = String(propAcc.start_date).slice(0, 10);
-                propStartDate.max = new Date().toISOString().slice(0, 10);
+                propStartDate.max = (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().slice(0, 10));
               }
               if (propTzSel && propAcc.reset_tz) {
                 propTzSel.value = propAcc.reset_tz;
@@ -1425,7 +1461,6 @@ import Layout from '../layouts/Layout.astro';
       var pnl = Number(j.total_pnl || 0);
       var pnlClass = pnl > 0 ? 'positive' : (pnl < 0 ? 'negative' : 'neutral');
       var pnlText = pnl === 0 ? '0.00' : formatCurrencyFn(pnl);
-      var iconStr = j.icon || 'folder';
       
       var defaultBadge = j.is_default ? `<div class="journal-card-badge"><i data-lucide="star" style="width:12px;height:12px;fill:currentColor;"></i> ${i18n.t('journal.default_badge')}</div>` : '';
       var tradesTxt = (i18n && typeof i18n.t === 'function') ? i18n.t('journal.trades_count').replace('{count}', j.trade_count || 0) : ((j.trade_count || 0) + ' işlem');
@@ -1484,22 +1519,14 @@ import Layout from '../layouts/Layout.astro';
       var safeName = escapeHtml(j.name);
       var safeDesc = escapeHtml(j.description || '');
 
-      var topIconHtml = '';
-      if (propAcc && propInfo) {
-        topIconHtml = `
-          <div class="journal-icon-wrap has-prop-logo ${propInfo.badgeClass}" title="${escapeHtml(propInfo.name || 'Prop')}">
-            <img src="${propInfo.logo}" alt="${escapeHtml(propInfo.name || 'Prop')}" class="prop-card-logo-img" />
-          </div>
-        `;
-      } else {
-        topIconHtml = `
-          <div class="journal-icon-wrap">
-            <i data-lucide="${escapeHtml(iconStr)}"></i>
-          </div>
-        `;
-      }
-
+      // Hesap işareti: hesabın renginde nokta; prop firma veya broker bağlıysa yanıp söner
       var ctAcc = ctraderAccountsMap ? ctraderAccountsMap.get(j.id) : null;
+      var topIconHtml = `
+        <div class="journal-icon-wrap">
+          ${window.WwJournalMark ? window.WwJournalMark.html({ color: j.color, prop: (propAcc && propInfo) ? propInfo : null, broker: !!ctAcc, dotSize: 14 }) : ''}
+        </div>
+      `;
+
       var ctBarHtml = '';
       var ctMenuHtml = '';
 
@@ -1507,6 +1534,27 @@ import Layout from '../layouts/Layout.astro';
         var dotCls = ctAcc.is_live ? 'live' : 'demo';
         var typeTxt = ctAcc.is_live ? 'Live' : 'Demo';
         var loginTxt = ctAcc.trader_login || ctAcc.ctid_trader_account_id;
+
+        // Son senkron durumu: senkronlanıyor / hata / zaman / hiç yapılmadı
+        var syncStateHtml;
+        if (ctAcc.is_syncing) {
+          syncStateHtml = '<span class="ct-sync-state syncing">Senkronlanıyor…</span>';
+        } else if (ctAcc.last_error) {
+          // last_sync_at yalnızca BAŞARILI senkronda güncellenir; yani gösterilen zaman son başarılı olandır
+          var lastOk = ctAcc.last_sync_at ? ' · ' + relativeTimeTr(ctAcc.last_sync_at) : '';
+          syncStateHtml = '<span class="ct-sync-state error" title="' + escapeHtml('Son senkron başarısız: ' + ctAcc.last_error + (ctAcc.last_sync_at ? ' (son başarılı: ' + absoluteTime(ctAcc.last_sync_at) + ')' : '')) + '">⚠ Senkron başarısız' + escapeHtml(lastOk) + '</span>';
+        } else if (ctAcc.last_sync_at) {
+          syncStateHtml = '<span class="ct-sync-state" title="' + escapeHtml(absoluteTime(ctAcc.last_sync_at)) + '">Son senkron · <b>' + escapeHtml(relativeTimeTr(ctAcc.last_sync_at)) + '</b></span>';
+        } else {
+          syncStateHtml = '<span class="ct-sync-state">Henüz senkronlanmadı</span>';
+        }
+
+        // Bakiye: senkron sırasında cTrader'dan alınır; henüz yoksa ipucu göster
+        var hasBalance = ctAcc.balance !== null && ctAcc.balance !== undefined && isFinite(Number(ctAcc.balance));
+        var balanceHtml = hasBalance
+          ? '<span class="ct-balance" title="' + escapeHtml(ctAcc.balance_updated_at ? 'Bakiye ' + absoluteTime(ctAcc.balance_updated_at) + ' itibarıyla (açık pozisyon K/Z dahil değil)' : 'Açık pozisyon K/Z dahil değil') + '">Bakiye <b>' + escapeHtml(formatAccountBalance(ctAcc.balance, ctAcc.balance_currency)) + '</b></span>'
+          : '<span class="ct-balance muted" title="' + (ctAcc.last_sync_at ? 'Bakiye henüz alınamadı. Senkronla\'ya bastığında sunucu yeni sürümdeyse güncellenir.' : 'Bakiye ilk senkronda alınır') + '">Bakiye <b>—</b></span>';
+
         ctBarHtml = `
           <div class="journal-card-ctrader-bar">
             <img class="ct-logo" src="/images/platforms/ctrader_icon.png" alt="cTrader" width="22" height="22" />
@@ -1518,6 +1566,10 @@ import Layout from '../layouts/Layout.astro';
               <i data-lucide="refresh-cw"></i>
               <span>Senkronla</span>
             </button>
+            <div class="ct-meta">
+              ${balanceHtml}
+              ${syncStateHtml}
+            </div>
           </div>
         `;
         ctMenuHtml = `<button class="journal-menu-item danger btn-unlink-ctrader" data-acid="${ctAcc.id}"><i data-lucide="unlink"></i> cTrader Bağlantısını Kes</button>`;
@@ -1549,13 +1601,15 @@ import Layout from '../layouts/Layout.astro';
         <div class="journal-card-desc">${safeDesc}</div>
 
         ${propBadge}
-        
-        <div class="journal-card-stats" style="margin-top:auto;padding-top:0.75rem;">
-          <span class="journal-card-count">${escapeHtml(tradesTxt).replace(/\d+/, function (m) { return '<b>' + m + '</b>'; })}</span>
-          <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
-        </div>
 
-        ${ctBarHtml}
+        <!-- Alt blok: cTrader çubuğu (varsa) üstte, işlem sayısı + kâr/zarar HER ZAMAN en altta -->
+        <div class="journal-card-bottom">
+          ${ctBarHtml}
+          <div class="journal-card-stats">
+            <span class="journal-card-count">${escapeHtml(tradesTxt).replace(/\d+/, function (m) { return '<b>' + m + '</b>'; })}</span>
+            <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
+          </div>
+        </div>
       `;
       
       grid.appendChild(card);
@@ -1647,6 +1701,33 @@ import Layout from '../layouts/Layout.astro';
     } catch(e) {}
   }
 
+  // Önceki bilinen cTrader hesapları: bu oturumda çekilen liste, yoksa localStorage önbelleği
+  function previousCtraderAccounts() {
+    if (Array.isArray(window._allCtraderAccounts) && window._allCtraderAccounts.length) return window._allCtraderAccounts;
+    try {
+      var m = JSON.parse(localStorage.getItem('ww_cached_ctrader_map') || 'null');
+      if (m && typeof m === 'object') return Object.keys(m).map(function(k) { return m[k]; });
+    } catch (e) {}
+    return [];
+  }
+
+  // cTrader durumunu çeker. Zaman aşımı / RPC hatası / bozuk cevapta BOŞ liste dönmez (eskiden dönüyordu: kartlardan
+  // cTrader çubuğu ve bakiye kayboluyor, boş liste önbelleğe de yazılıyordu); önceki bilinen hesaplar korunur.
+  async function fetchCtraderStatusSafe(timeoutMs) {
+    var fallback = { data: { accounts: previousCtraderAccounts() }, stale: true };
+    if (!window.sb || typeof window.sb.rpc !== 'function') return fallback;
+    try {
+      var res = await Promise.race([
+        window.sb.rpc('get_ctrader_status'),
+        new Promise(function(resolve) { setTimeout(function() { resolve(null); }, timeoutMs); })
+      ]);
+      if (!res || res.error || !res.data || !Array.isArray(res.data.accounts)) return fallback;
+      return res;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
   async function renderJournals() {
     // ⚡ 0ms SWR ÖNBELLEK: Önce RAM/localStorage'daki veriyi hemen bas
     tryRenderCachedJournals();
@@ -1697,17 +1778,7 @@ import Layout from '../layouts/Layout.astro';
         }
       })();
 
-      var ctraderPromise = (async function() {
-        if (!window.sb || typeof window.sb.rpc !== 'function') return { data: { accounts: [] } };
-        try {
-          return await Promise.race([
-            window.sb.rpc('get_ctrader_status'),
-            new Promise(function(resolve) { setTimeout(function() { resolve({ data: { accounts: [] } }); }, 1500); })
-          ]);
-        } catch (e) {
-          return { data: { accounts: [] } };
-        }
-      })();
+      var ctraderPromise = fetchCtraderStatusSafe(1500);
 
       var [profRes, jListData, activeProps, ctRes] = await Promise.all([
         profilePromise,
@@ -1833,7 +1904,7 @@ import Layout from '../layouts/Layout.astro';
           goToWizardStep(2);
           return;
         }
-        var todayStr = new Date().toISOString().slice(0, 10);
+        var todayStr = (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().slice(0, 10));
         if (propStartDate > todayStr) {
           if (window.showToast) window.showToast(i18n.t('prop.err_future_start_date'), 'error');
           goToWizardStep(2);
@@ -2152,6 +2223,11 @@ import Layout from '../layouts/Layout.astro';
   }
   
   JOURNALS_PAGE.on(document, 'journal-changed', renderJournals);
+
+  // cTrader senkronu (navbar.js wwSyncCtrader) bittiğinde window.loadTrades() varsa onu çağırır, yoksa SAYFAYI YENİLER.
+  // Yenileme bildirimleri (bakiye, uyarılar) yarım saniyede yok ediyordu; bu sayfada kartları yerinde tazeliyoruz.
+  // (Takvim sayfası da aynı kalıbı kullanıyor: CAL_PAGE.expose('loadTrades', ...))
+  JOURNALS_PAGE.expose('loadTrades', renderJournals);
   
 </script>
 

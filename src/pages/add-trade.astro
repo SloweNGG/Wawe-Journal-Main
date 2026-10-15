@@ -501,6 +501,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
 </Fragment>
   <!-- ============================================================
        NAVBAR CONTAINER
@@ -762,6 +763,35 @@ import Layout from '../layouts/Layout.astro';
     var strategiesList = [];
 
     // ============================================================
+    // TOPLU / CSV İÇE AKTARMA YARDIMCILARI
+    // ============================================================
+    // Yön: tanınmayan değer SHORT'a SESSİZCE düşmez, null döner (satır atlanır).
+    function importDirection(raw) {
+      if (typeof BrokerDictionary !== 'undefined' && BrokerDictionary.normalizeDirection) {
+        return BrokerDictionary.normalizeDirection(raw);
+      }
+      var v = String(raw || '').toUpperCase().trim();
+      if (v === 'BUY' || v === 'LONG') return 'LONG';
+      if (v === 'SELL' || v === 'SHORT') return 'SHORT';
+      return null;
+    }
+
+    // Enstrüman + çarpan sembolden türetilir ve PnL burada hesaplanıp saklanır.
+    // (Eskiden her satır 'forex'/100000 ve pnl=null yazılıyor, XAUUSD/BTC gibi sembollerde
+    // PnL 10^2-10^5 kat şişiyordu.) Yalnızca kapanmış işlemler: exit zorunlu.
+    function importTradeFields(symbol, finalDir, entry, exit, lot) {
+      var instrument = (typeof BrokerDictionary !== 'undefined' && BrokerDictionary.guessInstrument)
+        ? BrokerDictionary.guessInstrument(symbol) : 'forex';
+      var multiplier = ({ forex: 100000, gold: 100, index: 10, crypto: 1, other: 1 })[instrument] || 1;
+      var raw = (finalDir === 'LONG' ? 1 : -1) * (exit - entry) * lot * multiplier;
+      var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+      var isEurUsdPair = /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, ''));
+      var gross = ((curr === '€' || curr === 'EUR') && isEurUsdPair && exit > 0) ? raw / exit : raw;
+      gross = parseFloat(gross.toFixed(2));
+      return { instrument: instrument, multiplier: multiplier, gross_pnl: gross, commission: 0, swap: 0, pnl: gross };
+    }
+
+    // ============================================================
     // STRATEJİ KUTUCUKLARI
     // ============================================================
     async function loadStrategyGrid() {
@@ -913,8 +943,9 @@ import Layout from '../layouts/Layout.astro';
             var direction = (dir && (dir.toUpperCase() === 'LONG' || dir.toUpperCase() === 'BUY')) ? 1 : -1;
             var raw = direction * (parseFloat(exit) - parseFloat(entry)) * parseFloat(lot) * mult;
             var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
+            var symEl = document.getElementById('symbol');
             var sym = (symEl ? symEl.value : '').trim().toUpperCase();
-            if ((curr === '€' || curr === 'EUR') && sym.endsWith('USD') && parseFloat(exit) > 0) {
+            if ((curr === '€' || curr === 'EUR') && /^EURUSD/.test(String(sym).toUpperCase().replace(/[^A-Z]/g, '')) && parseFloat(exit) > 0) {
               gross = raw / parseFloat(exit);
             } else {
               gross = raw;
@@ -1137,7 +1168,7 @@ import Layout from '../layouts/Layout.astro';
           var direction = (row.yon || row.direction || '').toUpperCase();
           var lot = parseFloat(row.lot || 0);
           var entry = parseFloat(row.entry || row.giris || row.entry_price || 0);
-          var exit = parseFloat(row.exit || row.cikis || row.exit_price) || null;
+          var exit = parseFloat(row.exit || row.cikis || row.exit_price);
           var rawDate = row.tarih || row.date || '';
           var tradeDate = validateAndFormatDate(rawDate, i);
 
@@ -1145,11 +1176,16 @@ import Layout from '../layouts/Layout.astro';
             importLogs.push('❌ Satır ' + i + ': Zorunlu alan eksik, atlandı.');
             failed++; continue;
           }
+          if (!exit || isNaN(exit)) {
+            importLogs.push('❌ Satır ' + i + ': Çıkış fiyatı yok (yalnızca kapanmış işlemler eklenir), atlandı.');
+            failed++; continue;
+          }
 
-          var finalDir = 'SHORT';
-          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
-          else if (direction === 'SELL' || direction === 'SHORT') finalDir = 'SHORT';
-          else importLogs.push('⚠️ Satır ' + i + ': Bilinmeyen yön "' + direction + '", SHORT olarak kaydedildi.');
+          var finalDir = importDirection(direction);
+          if (!finalDir) {
+            importLogs.push('❌ Satır ' + i + ': Yön anlaşılamadı ("' + direction + '"), atlandı.');
+            failed++; continue;
+          }
 
           // Duplicate kontrolü
           var sig = symbol + '|' + finalDir + '|' +
@@ -1175,10 +1211,12 @@ import Layout from '../layouts/Layout.astro';
           var ticket = row.ticket || row.order_id || row.id || occ;
           var importHash = baseHash + '|' + ticket;
 
+          var calc = importTradeFields(symbol, finalDir, entry, exit, lot);
           tradesToInsert.push({
             user_id: currentUser.id, journal_id: activeJournalId, symbol: symbol, direction: finalDir,
-            instrument: 'forex', lot: lot, entry_price: entry,
+            instrument: calc.instrument, multiplier: calc.multiplier, lot: lot, entry_price: entry,
             exit_price: exit, trade_date: tradeDate,
+            gross_pnl: calc.gross_pnl, commission: calc.commission, swap: calc.swap, pnl: calc.pnl,
             notes: 'CSV Import - ' + new Date().toLocaleString('tr-TR'),
             import_hash: importHash
           });
@@ -1291,7 +1329,7 @@ import Layout from '../layouts/Layout.astro';
         var trades = [];
         var errors = [];
         var skippedDuplicates = 0;
-        var defaultDate = new Date().toISOString().split('T')[0];
+        var defaultDate = window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().split('T')[0];
         var activeJournalId = window.journal ? window.journal.getActiveJournalId() : null;
 
         // Duplicate kontrolü için mevcut işlemleri sayfalı al
@@ -1350,17 +1388,20 @@ import Layout from '../layouts/Layout.astro';
           var direction = parts[1].toUpperCase();
           var lot = parseFloat(parts[2]);
           var entry = parseFloat(parts[3]);
-          var exit = parts[4] ? parseFloat(parts[4]) : null;
+          var exit = parseFloat(parts[4]);
           var date = parts[5] ? validateAndFormatDate(parts[5], lineIdx+1) : defaultDate;
           var notes = parts[6] || 'Toplu ekleme - ' + new Date().toLocaleString('tr-TR');
 
-          if (!symbol || !direction || isNaN(lot) || isNaN(entry)) {
-            errors.push('Satır ' + (lineIdx+1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş)');
+          if (!symbol || !direction || isNaN(lot) || lot <= 0 || isNaN(entry) || isNaN(exit)) {
+            errors.push('Satır ' + (lineIdx+1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş, çıkış). Yalnızca kapanmış işlemler eklenir.');
             continue;
           }
 
-          var finalDir = 'SHORT';
-          if (direction === 'BUY' || direction === 'LONG') finalDir = 'LONG';
+          var finalDir = importDirection(direction);
+          if (!finalDir) {
+            errors.push('Satır ' + (lineIdx+1) + ': Yön anlaşılamadı ("' + direction + '")');
+            continue;
+          }
 
           // Duplicate kontrolü
           var sig = symbol + '|' + finalDir + '|' +
@@ -1384,18 +1425,23 @@ import Layout from '../layouts/Layout.astro';
           sigOccurrences.set(baseHash, occ);
           var importHash = baseHash + '|' + occ;
 
+          var calc = importTradeFields(symbol, finalDir, entry, exit, lot);
           trades.push({
             user_id: currentUser.id,
             journal_id: activeJournalId,
             symbol: symbol,
             direction: finalDir,
-            instrument: 'forex',
+            instrument: calc.instrument,
             lot: lot,
             entry_price: entry,
             exit_price: exit,
             trade_date: date,
             notes: notes || null,
-            multiplier: 100000,
+            multiplier: calc.multiplier,
+            gross_pnl: calc.gross_pnl,
+            commission: calc.commission,
+            swap: calc.swap,
+            pnl: calc.pnl,
             import_hash: importHash
           });
         }
@@ -1539,6 +1585,14 @@ import Layout from '../layouts/Layout.astro';
           }
           return;
         }
+        // 'Açık işlem' kavramı yok: çıkış fiyatı zorunlu
+        if (!exit || isNaN(exit)) {
+          if (errEl) {
+            errEl.textContent = i18n.t('addtrade.exit_required');
+            errEl.style.display = 'block';
+          }
+          return;
+        }
         if (instrument === 'other' && !mult) {
           if (errEl) {
             errEl.textContent = i18n.t('addtrade.custom_multiplier_required');
@@ -1568,7 +1622,7 @@ import Layout from '../layouts/Layout.astro';
         var swp = parseFloat(document.getElementById('swap')?.value) || 0;
         var gross = pnl;
         var curr = (typeof window.getCurrencySymbol === 'function' ? window.getCurrencySymbol() : '') || localStorage.getItem('ww_currency') || '$';
-        if (gross !== null && (curr === '€' || curr === 'EUR') && symbol.endsWith('USD') && exit > 0) {
+        if (gross !== null && (curr === '€' || curr === 'EUR') && /^EURUSD/.test(String(symbol).toUpperCase().replace(/[^A-Z]/g, '')) && exit > 0) {
           gross = parseFloat((gross / exit).toFixed(2));
         } else if (gross !== null) {
           gross = parseFloat(gross.toFixed(2));
@@ -1627,7 +1681,7 @@ import Layout from '../layouts/Layout.astro';
   await window.journal.ensureActiveJournal(currentUser.id);
         
         var dateEl = document.getElementById('trade-date');
-        if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+        if (dateEl) dateEl.value = window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().split('T')[0];
 
         if (typeof isAdmin === 'function' && isAdmin(currentUser)) {
           var adminLink = document.getElementById('admin-link');

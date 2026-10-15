@@ -206,25 +206,38 @@ export function renderWinLossChart(trades) {
   var container = document.getElementById(containerId);
   if (!container) return;
 
-  var wins = 0, losses = 0;
+  // Break-even (pnl == 0) artık kayıp sayılmaz; ayrı nötr dilim olarak gösterilir.
+  // Win rate paydası tüm kapanmış işlemlerdir (diğer sayfalarla aynı tanım).
+  var wins = 0, losses = 0, breakeven = 0;
   trades.forEach(function(t) {
     if (!t.exit_price) return;
-    if (calcTradePnL(t) > 0) wins++;
-    else losses++;
+    var p = calcTradePnL(t);
+    if (p > 0) wins++;
+    else if (p < 0) losses++;
+    else breakeven++;
   });
 
-  var total = wins + losses;
+  var total = wins + losses + breakeven;
   if (total === 0) {
     showEmptyChart(containerId, 'empty.no_closed');
     clearApexChart('winloss');
     return;
   }
 
+  var wlSeries = [wins, losses];
+  var wlLabels = [_t('dashboard.stats.winners', 'Kazanan'), _t('dashboard.stats.losers', 'Kaybeden')];
+  var wlColors = [CHART_THEME.green, CHART_THEME.red];
+  if (breakeven > 0) {
+    wlSeries.push(breakeven);
+    wlLabels.push(_t('dashboard.stats.breakeven', 'Break-even'));
+    wlColors.push(CHART_THEME.gray);
+  }
+
   renderOrUpdateApex('winloss', containerId, {
     chart: { type: 'donut' },
-    series: [wins, losses],
-    labels: [_t('dashboard.stats.winners', 'Kazanan'), _t('dashboard.stats.losers', 'Kaybeden')],
-    colors: [CHART_THEME.green, CHART_THEME.red],
+    series: wlSeries,
+    labels: wlLabels,
+    colors: wlColors,
     plotOptions: {
       pie: {
         donut: {
@@ -363,24 +376,20 @@ export function renderDailyChart(trades) {
   var container = document.getElementById(containerId);
   if (!container) return;
 
+  // Son 30 gün penceresi bugünün anahtarından (kullanıcının saat dilimi) kurulur; kronolojik sıralı.
+  // Pencere dışındaki işlemler çubuk üretmez (eskiden sona eklenip sırayı bozuyordu, UTC günü kullanılıyordu).
   var days = {};
-  var now = new Date();
+  var windowToday = window.WwTime.todayKey();
   for (var i = 29; i >= 0; i--) {
-    var d = new Date(now);
-    d.setDate(d.getDate() - i);
-    days[d.toISOString().split('T')[0]] = 0;
+    days[window.WwTime.addDays(windowToday, -i)] = 0;
   }
 
   var hasData = false;
   trades.forEach(function(t) {
-    var dStr = (t.trade_date || '').split('T')[0].split(' ')[0];
-    if (!dStr && t.created_at) {
-      try { dStr = new Date(t.created_at).toISOString().split('T')[0]; } catch(e) {}
-    }
-    var pnl = calcTradePnL(t);
-    if (dStr && (t.exit_price || t.pnl !== null && t.pnl !== undefined)) {
-      if (days[dStr] === undefined) days[dStr] = 0;
-      days[dStr] += pnl;
+    if (!window.WwMetrics.isClosed(t)) return;
+    var dStr = window.WwMetrics.dateKey(t);
+    if (dStr && days[dStr] !== undefined) {
+      days[dStr] += calcTradePnL(t);
       hasData = true;
     }
   });
@@ -392,8 +401,8 @@ export function renderDailyChart(trades) {
   }
 
   var dailyLabels = Object.keys(days).map(function(d) {
-    var dt = new Date(d);
-    return dt.getDate() + '/' + (dt.getMonth() + 1);
+    var parts = d.split('-');
+    return parseInt(parts[2], 10) + '/' + parseInt(parts[1], 10);
   });
   var dailyData = Object.values(days);
   
@@ -533,7 +542,10 @@ export function renderHourlyChart(trades) {
 
   trades.forEach(function(t) {
     if (t.exit_price) {
-      var hour = new Date(t.trade_date).getHours();
+      // Saat, Ayarlar'daki saat dilimine göre. Saati bilinmeyen (sadece-tarih) işlemler bu grafiğe girmez
+      // (eskiden hepsi cihaz saat farkı kadar sahte bir saat dilimine yığılıyordu).
+      var hour = window.WwTime.hourOf(t.trade_date);
+      if (hour === null) return;
       var idx = Math.floor(hour / BUCKET_SIZE);
       buckets[idx] += calcTradePnL(t);
       hasData = true;
@@ -541,7 +553,8 @@ export function renderHourlyChart(trades) {
   });
 
   if (!hasData) {
-    showEmptyChart(containerId, 'empty.no_trades');
+    // İşlem var ama saatleri bilinmiyorsa (sadece-tarih girilmiş) 'henüz işlem yok' demek yanıltıcı olur
+    showEmptyChart(containerId, 'empty.not_enough');
     clearApexChart('hourly');
     return;
   }
@@ -623,7 +636,9 @@ export function renderDowChart(trades) {
   var hasData = false;
   trades.forEach(function(t) {
     if (t.exit_price) {
-      var dow = new Date(t.trade_date).getDay();
+      // Haftanın günü işlem gününden (saat dilimi + gün başlangıcı) hesaplanır; sadece-tarih değerler kaymaz
+      var dow = window.WwTime.dowOf(t.trade_date);
+      if (dow === null) return;
       dowMap[dow] = (dowMap[dow] || 0) + calcTradePnL(t);
       hasData = true;
     }
@@ -833,7 +848,14 @@ export function renderCumulativeChart(trades) {
 
   var cum = 0;
   var points = [];
-  trades.forEach(function(t) {
+  // Kümülatif eğri KRONOLOJİK (eskiden yeniye) sırayla biriktirilmeli. Taze çekilen liste
+  // trade_date DESC geldiği için eskiden eğri ters çıkıyordu (toplamdan başlayıp son işlemde bitiyordu).
+  // Yalnızca kapanmış işlemler eğriye girer.
+  var chronological = trades.filter(function(t) { return window.WwMetrics.isClosed(t); }).sort(function(a, b) {
+    var da = String(a.trade_date || ''), db = String(b.trade_date || '');
+    return da < db ? -1 : (da > db ? 1 : 0);
+  });
+  chronological.forEach(function(t) {
     var pnl = calcTradePnL(t);
     cum += pnl;
     var time = toLwcTime(t.trade_date);
@@ -857,10 +879,10 @@ export function renderCumulativeChart(trades) {
 
   var firstVal = points[0].value;
   var lastVal = points[points.length - 1].value;
-  var changePercent = firstVal !== 0 ? ((lastVal - firstVal) / Math.abs(firstVal) * 100).toFixed(1) : 0;
+  // Baz çizgisi 0'dan başladığı için yüzde anlamsızdı (hep 0%); mutlak değişim gösterilir.
   var changeEl = document.getElementById('cumulative-change');
   if (changeEl) {
-    changeEl.textContent = (lastVal >= firstVal ? '↑' : '↓') + ' ' + Math.abs(changePercent) + '%';
+    changeEl.textContent = (lastVal >= firstVal ? '↑ ' : '↓ ') + formatCurrency(lastVal - firstVal).replace(/^[+-]/, '');
     changeEl.className = 'chart-badge ' + (lastVal >= firstVal ? '' : 'negative');
   }
 

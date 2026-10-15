@@ -274,9 +274,10 @@ import Layout from '../layouts/Layout.astro';
                   (window.__wwUserProfile && window.__wwUserProfile.id) || null;
         var cachedTrades = null;
         if (window.wwCache && uId && activeId) {
-          cachedTrades = window.wwCache.get('trades_dashboard', uId, activeId) ||
-                         window.wwCache.get('trades_premium', uId, activeId) ||
-                         window.wwCache.get('trades', uId, activeId);
+          var propCols = ['id', 'trade_date', 'pnl', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier'];
+          cachedTrades = window.wwCache.get('trades_dashboard', uId, activeId, propCols) ||
+                         window.wwCache.get('trades_premium', uId, activeId, propCols) ||
+                         window.wwCache.get('trades', uId, activeId, propCols);
         }
 
         var syncRes = await window.PropService.syncPropAccountStatus(activeId, cachedTrades);
@@ -757,8 +758,8 @@ import Layout from '../layouts/Layout.astro';
         tradesList = _currentPremiumPropSync.trades;
       } else if (window.wwCache && window.currentUser) {
         var jid = window.journal ? window.journal.getActiveJournalId() : null;
-        tradesList = window.wwCache.get('trades_dashboard', window.currentUser.id, jid) ||
-                     window.wwCache.get('trades_premium', window.currentUser.id, jid) || [];
+        tradesList = window.wwCache.get('trades_dashboard', window.currentUser.id, jid, ['trade_date']) ||
+                     window.wwCache.get('trades_premium', window.currentUser.id, jid, ['trade_date']) || [];
       }
 
       var count = 0;
@@ -768,9 +769,8 @@ import Layout from '../layouts/Layout.astro';
       }
 
       if (count > 0) {
-        var d = new Date(dateVal + 'T00:00:00');
-        d.setDate(d.getDate() + 1);
-        var tomorrowStr = d.toISOString().slice(0, 10);
+        // Ertesi gün: takvim günü aritmetiği (eskiden yerel gece yarısı UTC'ye çevrilince UTC+ bölgelerde aynı gün çıkıyordu)
+        var tomorrowStr = window.WwTime.addDays(dateVal, 1);
         var tFn = function(k, p) { return (window.i18n && window.i18n.t) ? window.i18n.t(k, p) : k; };
         warnText.textContent = tFn('prop.advance_trades_on_date_warn', { n: count, tomorrow: tomorrowStr }) || ('Bu tarihte ' + count + ' işlem var, yeni faza dahil edilecek. Başlangıç tarihini ertesi güne (' + tomorrowStr + ') almak ister misin?');
         if (bumpBtn) {
@@ -795,7 +795,10 @@ import Layout from '../layouts/Layout.astro';
       var customChoice = document.getElementById('premium-advance-custom-rules-choice');
       if (!modal || !dateInput || !balInput) return;
 
-      var todayStr = new Date().toISOString().slice(0, 10);
+      // Başlangıç tarihi varsayılanı: prop hesabının sıfırlama saat dilimindeki bugün
+      var todayStr;
+      try { todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: account.reset_tz || window.WwTime.getTz() }).format(new Date()); }
+      catch (e) { todayStr = window.WwTime.todayKey(); }
       dateInput.value = todayStr;
       balInput.value = account.starting_balance || 100000;
 

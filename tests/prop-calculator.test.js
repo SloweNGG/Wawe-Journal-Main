@@ -731,3 +731,105 @@ describe('11. Girdi Doğrulama & Bozuk Rules Güvenliği (Aşama 4 Madde 4 & 1)'
   });
 });
 
+
+describe('11. Adım 5 düzeltmeleri: funded durumu, zirve drawdown, gün içi ihlal, yüzde dayanağı, faz istatistikleri', () => {
+  const fundedAccount = {
+    starting_balance: 100000,
+    start_date: '2026-05-01',
+    reset_tz: 'Europe/Prague',
+    rules: { daily_loss_limit_pct: 5, max_loss_limit_pct: 10, profit_target_pct: null, min_trading_days: 0 }
+  };
+
+  it('Kâr hedefi olmayan (funded) faz: 0 işlemle bile passed OLMAMALI', () => {
+    const res = calculatePropStatus({ account: fundedAccount, trades: [], currentDate: '2026-05-10' });
+    assert.equal(res.overall_status, 'in_progress');
+  });
+
+  it('Kâr hedefi olmayan (funded) faz: kârda da kayıpta da (ihlal yoksa) in_progress kalmalı', () => {
+    const win = calculatePropStatus({ account: fundedAccount, trades: [{ trade_date: '2026-05-02 10:00:00', pnl: 3000 }], currentDate: '2026-05-10' });
+    const loss = calculatePropStatus({ account: fundedAccount, trades: [{ trade_date: '2026-05-02 10:00:00', pnl: -100 }], currentDate: '2026-05-10' });
+    assert.equal(win.overall_status, 'in_progress');
+    assert.equal(loss.overall_status, 'in_progress');
+  });
+
+  it('Hedefli faz hedefe ulaşınca hâlâ passed olmalı (regresyon)', () => {
+    const acc = { ...fundedAccount, rules: { ...fundedAccount.rules, profit_target_pct: 8, min_trading_days: 0 } };
+    const res = calculatePropStatus({ account: acc, trades: [{ trade_date: '2026-05-02 10:00:00', pnl: 8000 }], currentDate: '2026-05-10' });
+    assert.equal(res.overall_status, 'passed');
+  });
+
+  it('Static max loss hesabında current_drawdown zirveden hesaplanmalı (+5000 sonra -2000 => 2000)', () => {
+    const acc = { ...fundedAccount, rules: { ...fundedAccount.rules, max_loss_type: 'static' } };
+    const res = calculatePropStatus({
+      account: acc,
+      trades: [
+        { trade_date: '2026-05-02 10:00:00', pnl: 5000 },
+        { trade_date: '2026-05-03 10:00:00', pnl: -2000 }
+      ],
+      currentDate: '2026-05-10'
+    });
+    assert.equal(res.current_balance, 103000);
+    assert.equal(res.max_loss.current_drawdown, 2000);
+  });
+
+  it('Gün içi limit aşılıp gün toparlansa bile daily_history.is_violation true olmalı', () => {
+    const res = calculatePropStatus({
+      account: fundedAccount,
+      trades: [
+        { trade_date: '2026-05-02 09:00:00', pnl: -6000 },
+        { trade_date: '2026-05-02 15:00:00', pnl: 6000 }
+      ],
+      currentDate: '2026-05-10'
+    });
+    assert.equal(res.daily_loss.is_violated, true);
+    assert.equal(res.overall_status, 'failed');
+    assert.equal(res.daily_history[0].pnl, 0);
+    assert.equal(res.daily_history[0].is_violation, true);
+  });
+
+  it('daily_loss_pct limitin dayanağına göre verilmeli (day_start_balance: 110K başlangıçta -4000 => %3.64)', () => {
+    const acc = {
+      starting_balance: 100000,
+      start_date: '2026-05-01',
+      reset_tz: 'Europe/Prague',
+      rules: { daily_loss_limit_pct: 5, daily_loss_amount_base: 'day_start_balance', max_loss_limit_pct: 20 }
+    };
+    const res = calculatePropStatus({
+      account: acc,
+      trades: [
+        { trade_date: '2026-05-02 10:00:00', pnl: 10000 },
+        { trade_date: '2026-05-03 10:00:00', pnl: -4000 }
+      ],
+      currentDate: '2026-05-10'
+    });
+    const day2 = res.daily_history.find(d => d.date === '2026-05-03');
+    assert.equal(day2.balance_start, 110000);
+    assert.equal(day2.daily_loss_pct, 3.64);
+    assert.equal(res.daily_loss.worst_daily_loss_pct, 3.64);
+  });
+
+  it("max_trading_days boş string ('') 'limit yok' demek: işlem MAX_TRADING_DAYS_EXCEEDED üretmemeli", () => {
+    const acc = { ...fundedAccount, rules: { ...fundedAccount.rules, max_trading_days: '' } };
+    const res = calculatePropStatus({ account: acc, trades: [{ trade_date: '2026-05-02 10:00:00', pnl: 100 }], currentDate: '2026-05-10' });
+    assert.equal(res.fail_reasons.includes('MAX_TRADING_DAYS_EXCEEDED'), false);
+  });
+
+  it('stats: yalnızca faz içi (start_date sonrası) işlemleri sayar; break-even ayrı', () => {
+    const res = calculatePropStatus({
+      account: fundedAccount,
+      trades: [
+        { trade_date: '2026-04-20 10:00:00', pnl: 9999 },   // faz öncesi: sayılmaz
+        { trade_date: '2026-05-02 10:00:00', pnl: 100 },
+        { trade_date: '2026-05-03 10:00:00', pnl: -50 },
+        { trade_date: '2026-05-04 10:00:00', pnl: 0 }
+      ],
+      currentDate: '2026-05-10'
+    });
+    // (vm bağlamından gelen nesne olduğu için alan alan karşılaştırılır)
+    assert.equal(res.stats.trades_count, 3);
+    assert.equal(res.stats.wins, 1);
+    assert.equal(res.stats.losses, 1);
+    assert.equal(res.stats.breakeven, 1);
+    assert.equal(res.stats.win_rate_pct, 33.33);
+  });
+});

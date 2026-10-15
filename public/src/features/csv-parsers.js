@@ -45,8 +45,8 @@ if (typeof window !== 'undefined') {
           exit_price: r.exit,
           stop_loss: r.sl,
           take_profit: r.tp,
-          // ⭐ Fallback: tarih parse edilemezse bugünü kullan (DB NOT NULL için)
-          trade_date: formatDateISO(r.date) || new Date().toISOString().split('T')[0],
+          // Tarih yoksa/okunamazsa bugünün tarihi (DB NOT NULL için); kullanıcıya uyarı verilir (aşağıda)
+          trade_date: formatDateISO(r.date) || (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().split('T')[0]),
           notes: note,
           pnl: r.pnl,
           gross_pnl: r.gross_pnl != null ? r.gross_pnl : null,
@@ -56,7 +56,15 @@ if (typeof window !== 'undefined') {
         };
       }),
       errors: result.errors || [],
-      warnings: result.warnings || [],
+      warnings: (function () {
+        var w = (result.warnings || []).slice();
+        // Tarihsiz/okunamayan satırlar sessizce "bugün" olmasın: kullanıcı bilsin
+        var missing = (result.rows || []).filter(function (r) { return !formatDateISO(r.date); }).length;
+        if (missing > 0) {
+          w.push(missing + ' satırda tarih bulunamadı veya okunamadı; bu satırlar bugünün tarihiyle eklenecek. Dosyanızın tarih sütununu kontrol edin.');
+        }
+        return w;
+      })(),
       detected: result.detected || 'generic',
       confidence: result.confidence || 0,
       needsManualMapping: result.needsManualMapping || false,
@@ -71,9 +79,12 @@ if (typeof window !== 'undefined') {
     return window.BrokerDetector.detect(headers).broker;
   };
 
-  // ⭐ Sağlam tarih formatlayıcı — Saat varsa ISO UTC, saat yoksa YYYY-MM-DD döner
+  // ⭐ Sağlam tarih formatlayıcı — Saat varsa ISO UTC, saat yoksa YYYY-MM-DD döner.
+  // Okunamayan/boş girdi için null döner (eskiden sessizce "şimdi" yazılıyordu ve içe aktarma hash'i
+  // her denemede değiştiği için DB mükerrer kontrolü de işlemiyordu).
+  // Saat dilimi bilgisi olmayan duvar saatleri Ayarlar > Görünüm > Saat ve Gün'deki içe aktarma saat dilimine göre çevrilir.
   function formatDateISO(date) {
-    if (!date) return new Date().toISOString();
+    if (!date) return null;
 
     // 1. String
     if (typeof date === 'string') {
@@ -85,23 +96,21 @@ if (typeof window !== 'undefined') {
           var parsedOffset = new Date(s);
           if (!isNaN(parsedOffset.getTime())) return parsedOffset.toISOString();
         }
+        if (window.WwTime) {
+          return window.WwTime.importWallTimeToIso(+mIsoTime[1], +mIsoTime[2], +mIsoTime[3], +mIsoTime[4], +mIsoTime[5], +(mIsoTime[6] || 0));
+        }
         var localDate = new Date(+mIsoTime[1], +mIsoTime[2] - 1, +mIsoTime[3], +mIsoTime[4], +mIsoTime[5], +(mIsoTime[6] || 0));
         if (!isNaN(localDate.getTime())) return localDate.toISOString();
       }
       if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
       var parsed = new Date(s);
       if (!isNaN(parsed.getTime())) return parsed.toISOString();
-      return new Date().toISOString();
+      return null;
     }
 
-    // 2. Date objesi
+    // 2. Date objesi (ParserV2/BrokerDictionary.parseDate zaten saat dilimi ayarını uygulamıştır)
     if (date instanceof Date) {
-      if (!isNaN(date.getTime())) {
-        // Eğer UTC saat 00:00:00 ise sadece tarih mi yoksa saat de var mı?
-        // Date objesi ISO string formatında güvenle döner
-        return date.toISOString();
-      }
-      return new Date().toISOString();
+      return isNaN(date.getTime()) ? null : date.toISOString();
     }
 
     // 3. Number (Excel serial vs.)
@@ -113,7 +122,7 @@ if (typeof window !== 'undefined') {
       }
     }
 
-    return new Date().toISOString();
+    return null;
   }
 
   console.log('✅ csv-parsers.js (wrapper) yüklendi — ParserV2 aktif');

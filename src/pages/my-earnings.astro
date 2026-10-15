@@ -1005,22 +1005,12 @@ import Layout from '../layouts/Layout.astro';
           p_address: address
         });
 
-        if (rpcErr || (rpcRes && !rpcRes.success)) {
-          // Direct fallback if RPC is not available yet
-          var { error: insertErr } = await client.from('payout_requests').insert([{
-            user_id: session.user.id,
-            amount: amount,
-            currency: crypto,
-            payout_address: address,
-            status: 'pending'
-          }]);
-
-          if (insertErr) throw (rpcErr || insertErr);
-
-          if (saveAddr) {
-            var updatePayload = crypto === 'LTC' ? { ltc_payout_address: address } : { btc_payout_address: address };
-            await client.from('user_profiles').update(updatePayload).eq('id', session.user.id);
-          }
+        // Sunucu reddederse (yetersiz bakiye, minimum tutar vb.) gerçek sebep kullanıcıya gösterilir.
+        // Eskiden iş kuralı reddi RPC hatası sanılıp doğrudan tabloya insert deneniyordu; o insert RLS'e takılınca
+        // kullanıcı "yetersiz bakiye" yerine alakasız bir RLS hatası görüyordu (ve bakiye kontrolü atlanmaya çalışılıyordu).
+        if (rpcErr) throw rpcErr;
+        if (rpcRes && rpcRes.success === false) {
+          throw new Error(rpcRes.error || t('earnings.toast_payout_failed', 'Çekim talebi oluşturulamadı.'));
         }
 
         if (saveAddr) {
@@ -1360,7 +1350,8 @@ import Layout from '../layouts/Layout.astro';
           }
         }
 
-        var availableBalance = Math.max(0, totalEarnings - pendingPayout - paidPayout);
+        // Kuruşa yuvarla: kayan nokta farkı (ör. 50.3-30.3 = 19.999999999999996) tam 20 $'lık bakiyeyi "minimum 20" altında gösteriyordu
+        var availableBalance = Math.max(0, Math.round((totalEarnings - pendingPayout - paidPayout) * 100) / 100);
 
         EARNINGS_STATE.totalEarnings = totalEarnings;
         EARNINGS_STATE.availableBalance = availableBalance;

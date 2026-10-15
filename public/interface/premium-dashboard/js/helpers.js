@@ -49,22 +49,9 @@ export function getMultiplier(t) {
   return mult;
 }
 
+// Tek doğruluk kaynağı: interface/shared/trade-metrics.js
 export function calcTradePnL(t) {
-  try {
-    if (!t.exit_price) return 0;
-
-    var storedPnl = parseFloat(t.pnl);
-    if (t.pnl !== null && t.pnl !== undefined && !isNaN(storedPnl)) {
-      return storedPnl;
-    }
-
-    if (!t.entry_price || !t.lot) return 0;
-    var mult = getMultiplier(t);
-    var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
-    return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
-  } catch(e) {
-    return 0;
-  }
+  return window.WwMetrics.tradePnL(t);
 }
 
 export function formatCurrency(value) {
@@ -92,12 +79,8 @@ export function formatCurrencyPDF(value) {
 
 export function toLwcTime(dateStr) {
   if (!dateStr) return null;
-  try {
-    var d = new Date(dateStr);
-    return Math.floor(d.getTime() / 1000);
-  } catch(e) {
-    return null;
-  }
+  // Eksen etiketleri kullanıcının günlerini göstersin diye saat dilimimizdeki duvar saati (sahte UTC) kullanılır
+  return window.WwTime.pseudoUtcSeconds(dateStr);
 }
 
 export function dedupeByTime(points) {
@@ -150,37 +133,25 @@ function _t(key, params) {
 // Hem yeni 'empty.*' type API'sini hem de eski Türkçe mesaj string'ini
 // algılar. Böylece chart-renderers.js'i değiştirmek zorunda kalmayız.
 
+// Tarih filtresi GÜN ANAHTARI ('YYYY-MM-DD') üzerinden çalışır (Ayarlar > Görünüm > Saat ve Gün):
+// kullanıcının saat dilimi/gün başlangıcı uygulanır, sadece-tarih işlemler kaymaz, hafta bugün dahil
+// 7 gün, ay sonu taşmaz. (Eskiden UTC gece yarısı ile yerel gece yarısı karşılaştırılıyordu.)
 export function filterTradesByDate(trades, range, customStart, customEnd) {
   if (!trades || !Array.isArray(trades)) return [];
   if (!range || range === 'all') return trades;
 
+  var startKey, endKey = null;
   if (range === 'custom' && customStart && customEnd) {
-    var cStart = new Date(customStart);
-    cStart.setHours(0, 0, 0, 0);
-    var cEnd = new Date(customEnd);
-    cEnd.setHours(23, 59, 59, 999);
-    return trades.filter(function(t) {
-      if (!t.trade_date) return false;
-      var d = new Date(t.trade_date);
-      return d >= cStart && d <= cEnd;
-    });
+    startKey = String(customStart).slice(0, 10);
+    endKey = String(customEnd).slice(0, 10);
+  } else {
+    startKey = window.WwTime.rangeStartKey(range);
   }
-
-  var now = new Date();
-  var start = new Date();
-  if (range === 'week') {
-    start.setDate(now.getDate() - 7);
-  } else if (range === 'month') {
-    start.setMonth(now.getMonth() - 1);
-  } else if (range === 'year') {
-    start.setMonth(0, 1);
-  }
-  start.setHours(0, 0, 0, 0);
+  if (!startKey) return trades;
 
   return trades.filter(function(t) {
-    if (!t.trade_date) return false;
-    var d = new Date(t.trade_date);
-    return d >= start;
+    var k = window.WwMetrics.dateKey(t);
+    return k && k >= startKey && (!endKey || k <= endKey);
   });
 }
 

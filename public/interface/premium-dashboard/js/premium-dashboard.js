@@ -282,8 +282,8 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
 
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
+      // Yalnızca kendi anahtarına yaz (ortak 'trades' anahtarı cache.js çapraz beslemesiyle yönetilir)
       window.wwCache.set('trades_premium', userId, jid, allTradesData);
-      window.wwCache.set('trades', userId, jid, allTradesData);
     }
 
     // Bu arada başka sayfaya geçildiyse yeni sayfanın DOM'una yazma
@@ -402,9 +402,9 @@ async function loadPremiumData(scope) {
 
     // ⚡ SWR Önbellek Kontrolü: trades_premium, trades veya trades_dashboard varsa 0ms beklemeden hemen göster
     var cachedTrades = (typeof window !== 'undefined' && window.wwCache)
-      ? (window.wwCache.get('trades_premium', user.id, jid) ||
-         window.wwCache.get('trades', user.id, jid) ||
-         window.wwCache.get('trades_dashboard', user.id, jid))
+      ? (window.wwCache.get('trades_premium', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']) ||
+         window.wwCache.get('trades', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']) ||
+         window.wwCache.get('trades_dashboard', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']))
       : null;
 
     if (cachedTrades && cachedTrades.length > 0) {

@@ -303,6 +303,9 @@
       var idx = mapping[field];
       return idx == null || idx < 0 ? undefined : row[idx];
     };
+    // Dosya düzeyinde ondalık ayracı ("1,08521" vs "1.08521"): hücre başına tahmin yerine
+    var numOpts = { decimal: Dict.detectDecimalSeparator(dataRows) };
+    var parseNum = function (v) { return Dict.parseNumber(v, numOpts); };
 
     dataRows.forEach(function (row, i) {
       var lineNo = i + 2; // +1 for header row, +1 for 1-based display
@@ -318,16 +321,16 @@
         rowWarnings.push('yön tespit edilemedi ("' + directionRaw + '"), varsayılan LONG kullanıldı — kontrol edin');
       }
 
-      var entry = Dict.parseNumber(get(row, 'entry'));
-      var exit = Dict.parseNumber(get(row, 'exit'));
-      var lot = Dict.parseNumber(get(row, 'lot'));
-      var pnl = Dict.parseNumber(get(row, 'pnl'));
-      var gross_pnl = Dict.parseNumber(get(row, 'gross_pnl'));
-      var sl = Dict.parseNumber(get(row, 'sl'));
-      var tp = Dict.parseNumber(get(row, 'tp'));
-      var fee = Dict.parseNumber(get(row, 'fee'));
-      var commission = Dict.parseNumber(get(row, 'commission'));
-      var swap = Dict.parseNumber(get(row, 'swap'));
+      var entry = parseNum(get(row, 'entry'));
+      var exit = parseNum(get(row, 'exit'));
+      var lot = parseNum(get(row, 'lot'));
+      var pnl = parseNum(get(row, 'pnl'));
+      var gross_pnl = parseNum(get(row, 'gross_pnl'));
+      var sl = parseNum(get(row, 'sl'));
+      var tp = parseNum(get(row, 'tp'));
+      var fee = parseNum(get(row, 'fee'));
+      var commission = parseNum(get(row, 'commission'));
+      var swap = parseNum(get(row, 'swap'));
       var comment = get(row, 'comment');
       var ticket = get(row, 'ticket');
       var date = Dict.parseDate(get(row, 'date'));
@@ -371,6 +374,8 @@
       var idx = mapping[field];
       return idx == null || idx < 0 ? undefined : row[idx];
     };
+    var numOpts = { decimal: Dict.detectDecimalSeparator(dataRows) };
+    var parseNum = function (v) { return Dict.parseNumber(v, numOpts); };
 
     dataRows.forEach(function (row, i) {
       var lineNo = i + 2;
@@ -378,10 +383,10 @@
       symbol = symbol == null ? null : String(symbol).trim();
       if (!symbol) symbol = options.defaultSymbol || null;
 
-      var price = Dict.parseNumber(get(row, 'entry'));
-      var qty = Dict.parseNumber(get(row, 'lot'));
+      var price = parseNum(get(row, 'entry'));
+      var qty = parseNum(get(row, 'lot'));
       var date = Dict.parseDate(get(row, 'date'));
-      var fee = Dict.parseNumber(get(row, 'fee')) || 0;
+      var fee = parseNum(get(row, 'fee')) || 0;
 
       var directionRaw = get(row, 'direction');
       var side = brokerKey === 'tradingview'

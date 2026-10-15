@@ -70,10 +70,17 @@
         t('prop.today') + ': ' + c.fmtDelta(c.dailyToday) + '  |  ' + t('prop.v2_left') + ': ' + c.fmtPlain(Math.min(dailyLimit, Math.max(0, dailyRem))));
     }
     var maxStop = Number(c.maxStop) || 0;
-    if (maxStop > 0 && startBal > maxStop) {
-      var allowed = startBal - maxStop;
-      meters += meter(t('prop.v2_max_loss'), Math.min(allowed, Math.max(0, startBal - balNow)), allowed,
-        t('prop.stop_level') + ': ' + c.fmtPlain(maxStop) + '  |  ' + t('prop.v2_to_stop') + ': ' + c.fmtPlain(Math.max(0, c.maxDist)));
+    /* Max loss göstergesi: kullanılan = izin verilen - stop'a kalan mesafe.
+       Statik hesapta start - balance ile aynıdır; trailing drawdown'da stop zirveyle birlikte yükseldiği için
+       mesafe esas alınır (eskiden başlangıç bakiyesinden ölçülüyor, 104k bakiyede %0 gösteriyor ve stop
+       başlangıcın üstüne çıkınca gösterge tamamen kayboluyordu). */
+    var allowed = Number(c.maxAllowed) || 0;
+    if (!(allowed > 0) && maxStop > 0 && startBal > maxStop) allowed = startBal - maxStop; // eski çağıranlar için
+    if (allowed > 0) {
+      var dist = Number(c.maxDist);
+      var used = isFinite(dist) ? Math.min(allowed, Math.max(0, allowed - dist)) : 0;
+      meters += meter(t('prop.v2_max_loss'), used, allowed,
+        t('prop.stop_level') + ': ' + c.fmtPlain(maxStop) + '  |  ' + t('prop.v2_to_stop') + ': ' + c.fmtPlain(Math.max(0, dist || 0)));
     }
 
     /* footer: three small facts */

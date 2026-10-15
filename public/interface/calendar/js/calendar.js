@@ -119,19 +119,9 @@ var CAL_PAGE = window.wwPage.current();
 // PnL & FORMAT YARDIMCILARI
 // ============================================================
 
+// Tek doğruluk kaynağı: interface/shared/trade-metrics.js
 function calcTradePnL(t) {
-  try {
-    if (t.pnl !== undefined && t.pnl !== null) return parseFloat(t.pnl);
-    if (!t.entry_price || !t.exit_price || !t.lot) return 0;
-    if (typeof window.calcPnL === 'function') {
-      return window.calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, t.instrument, t.multiplier);
-    }
-    var mult = t.multiplier || window.INSTRUMENT_MULTIPLIERS?.[t.instrument] || 100000;
-    var dir = (t.direction === 'LONG' || t.direction === 'BUY') ? 1 : -1;
-    return dir * (parseFloat(t.exit_price) - parseFloat(t.entry_price)) * parseFloat(t.lot) * mult;
-  } catch (e) {
-    return 0;
-  }
+  return window.WwMetrics.tradePnL(t);
 }
 
 function formatCurrency(value) {
@@ -178,9 +168,10 @@ function formatLocalDate(year, month, day) {
   return year + '-' + m + '-' + d;
 }
 
+// Gün anahtarı tek yerden gelir (WwMetrics.dateKey): sadece-tarih değerler olduğu gibi,
+// zaman damgalı değerler kullanıcının yerel gününe çevrilir (eskiden UTC günü alınıyordu).
 function getTradeDateKey(rawDate) {
-  if (!rawDate) return '';
-  return String(rawDate).split('T')[0].split(' ')[0];
+  return window.WwMetrics.dateKey(rawDate);
 }
 
 function formatDayLabel(dateStr, lang) {
@@ -272,9 +263,14 @@ function hideCalendarSkeleton() {
 // TAKVİM STATE & RENDER
 // ============================================================
 
+// "Bugün": Ayarlar > Görünüm > Saat ve Gün'deki saat dilimi ve gün başlangıcına göre (cihaz saati değil)
+function calToday() {
+  return window.WwTime.dateFromKey(window.WwTime.todayKey());
+}
+
 var calendarTrades = [];
-var currentMonth = new Date().getMonth();
-var currentYear = new Date().getFullYear();
+var currentMonth = calToday().getMonth();
+var currentYear = calToday().getFullYear();
 var jumpPopoverYear = currentYear;
 var lastNavDirection = null;
 var tradesByDate = {};
@@ -312,7 +308,7 @@ function renderCalendar() {
     var worstDay = { date: '', pnl: Infinity };
     var anyTradedDay = false;
 
-    var now = new Date();
+    var now = calToday();
     var todayStr = formatLocalDate(now.getFullYear(), now.getMonth(), now.getDate());
 
     for (var i = 0; i < startOffset; i++) {
@@ -331,16 +327,13 @@ function renderCalendar() {
 
       var dayPnl = 0;
       for (var j = 0; j < dayTrades.length; j++) {
-        var t = dayTrades[j];
-        if (t.exit_price || t.pnl !== undefined) {
-          var pnl = calcTradePnL(t);
-          dayPnl += pnl;
-        }
+        var pnl = calcTradePnL(dayTrades[j]);
+        dayPnl += pnl;
+        if (pnl > 0) wins++; // kazanan İŞLEM sayısı (eskiden kazanan GÜN sayısı işlem sayısına bölünüyordu)
       }
 
       totalTrades += dayTrades.length;
       totalPnl += dayPnl;
-      if (dayPnl > 0) wins++;
       if (hasTrade) {
         anyTradedDay = true;
         if (dayPnl > bestDay.pnl) bestDay = { date: dateStr, pnl: dayPnl };
@@ -604,7 +597,7 @@ function openDayModal(dateStr) {
             </div>
             <div class="detail-metric-box">
               <div class="detail-metric-lbl">${tLblDD}</div>
-              <div class="detail-metric-val ${perf.maxDrawdown > 0 ? 'neg' : ''}">${perf.maxDrawdown > 0 ? '-' : ''}${formatCurrency(perf.maxDrawdown)}</div>
+              <div class="detail-metric-val ${perf.maxDrawdown > 0 ? 'neg' : ''}">${formatCurrency(perf.maxDrawdown > 0 ? -perf.maxDrawdown : 0)}</div>
             </div>
             <div class="detail-metric-box">
               <div class="detail-metric-lbl">${tLblWR}</div>
@@ -811,7 +804,7 @@ async function exportDayPDF(dateStr) {
     var summaryRows = [
       ['Toplam İşlem', String(perf.totalTrades), 'Win Rate', perf.winRate + '%'],
       ['Toplam K/Z', formatCurrency(perf.totalPnL), 'Profit Factor', String(pfDisplay)],
-      ['Maks. Drawdown', formatCurrency(perf.maxDrawdown), 'Maks. Win/Loss Seri', perf.maxWinStreak + ' / ' + perf.maxLossStreak]
+      ['Maks. Drawdown', formatCurrency(perf.maxDrawdown > 0 ? -perf.maxDrawdown : 0), 'Maks. Win/Loss Seri', perf.maxWinStreak + ' / ' + perf.maxLossStreak]
     ];
 
     if (doc.autoTable) {
@@ -877,8 +870,9 @@ function goToMonth(month, year, direction) {
   renderCalendar();
 }
 
+// Takvim yalnızca KAPANMIŞ işlemleri gösterir ('açık işlem' kavramı yok)
 function loadCalendarTrades(trades) {
-  calendarTrades = trades || [];
+  calendarTrades = window.WwMetrics.closedTrades(trades);
   tradesByDate = {};
   calendarTrades.forEach(function (t) {
     var dKey = getTradeDateKey(t.trade_date || t.date);
@@ -906,9 +900,10 @@ async function loadCalendarTradesFromDB(userId) {
 
   // ⚡ SWR Önbellek Kontrolü: trades_calendar, trades veya trades_dashboard varsa 0ms beklemeden dön
   if (typeof window !== 'undefined' && window.wwCache) {
-    var cachedTrades = window.wwCache.get('trades_calendar', userId, jid) ||
-                       window.wwCache.get('trades', userId, jid) ||
-                       window.wwCache.get('trades_dashboard', userId, jid);
+    var calCols = ['id', 'trade_date', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'lot', 'direction', 'instrument', 'multiplier', 'symbol', 'pnl'];
+    var cachedTrades = window.wwCache.get('trades_calendar', userId, jid, calCols) ||
+                       window.wwCache.get('trades', userId, jid, calCols) ||
+                       window.wwCache.get('trades_dashboard', userId, jid, calCols);
     if (cachedTrades && cachedTrades.length > 0) {
       // Arka planda sessizce taze verileri kontrol et (SWR revalidate)
       fetchFreshCalendarTrades(userId, jid);
@@ -917,6 +912,13 @@ async function loadCalendarTradesFromDB(userId) {
   }
 
   return await fetchFreshCalendarTrades(userId, jid, true);
+}
+
+function tradesSignature(list) {
+  var sum = 0;
+  (list || []).forEach(function (t) { sum += window.WwMetrics.tradePnL(t); });
+  var n = (list || []).length;
+  return n + '|' + sum.toFixed(2) + '|' + (n ? list[0].id + '|' + list[n - 1].id : '');
 }
 
 async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
@@ -955,15 +957,15 @@ async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
 
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
+      // Yalnızca kendi anahtarına yaz; ortak 'trades' anahtarına eksik kolonlu liste yazılmaz
+      // (çapraz besleme cache.js içinde kolon farkındalığıyla yapılır).
       window.wwCache.set('trades_calendar', userId, jid, allTrades);
-      window.wwCache.set('trades', userId, jid, allTrades);
     }
 
-    if (!isInitialLoad && trades) {
-      // SWR Revalidation: Veri değiştiyse takvimi güncelle
-      var isCountChanged = trades.length !== allTrades.length;
-      var isFirstItemChanged = trades.length > 0 && allTrades.length > 0 && trades[0].id !== allTrades[0].id;
-      if (isCountChanged || isFirstItemChanged) {
+    if (!isInitialLoad && calendarTrades) {
+      // SWR Revalidation: veri (sayı, id'ler veya PnL'ler) değiştiyse takvimi güncelle.
+      // (Eskiden tanımsız `trades` değişkeni yüzünden ReferenceError ile hiç çalışmıyordu.)
+      if (tradesSignature(calendarTrades) !== tradesSignature(window.WwMetrics.closedTrades(allTrades))) {
         loadCalendarTrades(allTrades);
       }
     }
@@ -1020,7 +1022,7 @@ async function initCalendar() {
 
     if (todayBtn) {
       todayBtn.addEventListener('click', function () {
-        var now = new Date();
+        var now = calToday();
         var m = now.getMonth();
         var y = now.getFullYear();
         var dir = (y > currentYear || (y === currentYear && m > currentMonth)) ? 'left' : (y < currentYear || (y === currentYear && m < currentMonth)) ? 'right' : null;

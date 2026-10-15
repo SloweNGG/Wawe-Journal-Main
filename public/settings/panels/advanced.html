@@ -1,0 +1,66 @@
+<div class="s-card">
+  <div class="s-card-header">
+    <div class="s-card-header-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+      </svg>
+    </div>
+    <div>
+      <h2 data-i18n="settings.advanced_title">Gelişmiş Seçenekler</h2>
+      <p data-i18n="settings.advanced_desc">Geliştirici ve test araçları</p>
+    </div>
+  </div>
+
+  <div class="s-card-body">
+    <div class="appearance-section" id="dev-test-section">
+      <div class="appearance-section-header">
+        <span class="appearance-section-title" data-i18n="settings.devtest_title">Geliştirici Test Modu</span>
+        <span class="appearance-section-subtitle" data-i18n="settings.devtest_subtitle">Gerçek ödeme akışını 1 $'lık bir test planıyla denemek için</span>
+      </div>
+
+      <div class="settings-group-card">
+        <!-- DURUM -->
+        <div class="dev-test-status" id="dev-test-state" aria-live="polite">
+          <span class="dev-test-dot" id="dev-test-dot"></span>
+          <span id="dev-test-state-text" data-i18n="settings.devtest_loading">Durum yükleniyor...</span>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <!-- KOD GİRİŞİ (test modu kapalıyken) -->
+        <div class="pref-row" id="dev-test-enter-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+              <div class="pref-title" data-i18n="settings.devtest_code_title">Geliştirici kodu</div>
+              <div class="pref-desc" data-i18n="settings.devtest_code_desc">Yönetici tarafından belirlenen kodu girin. Kod doğrulanınca 24 saat geçerli olur.</div>
+            </div>
+          </div>
+          <div class="time-control-stack">
+            <input type="password" id="dev-test-code-input" class="time-select" autocomplete="off" maxlength="128" placeholder="••••••••" />
+            <button type="button" id="dev-test-activate-btn" class="time-mini-btn" data-i18n="settings.devtest_activate">Etkinleştir</button>
+          </div>
+        </div>
+
+        <!-- AKTİFKEN -->
+        <div class="pref-row" id="dev-test-active-row" style="display:none;">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div>
+              <div class="pref-title" data-i18n="settings.devtest_active_title">Test planı kullanılabilir</div>
+              <div class="pref-desc" data-i18n="settings.devtest_active_desc">Plan sekmesinde 1 $'lık, 1 günlük test planı görünür. Bu gerçek bir ödemedir.</div>
+            </div>
+          </div>
+          <div class="time-control-stack">
+            <button type="button" id="dev-test-goto-plan-btn" class="time-mini-btn" data-i18n="settings.devtest_goto_plan">Plan sekmesine git</button>
+            <button type="button" id="dev-test-exit-btn" class="time-mini-btn ghost" data-i18n="settings.devtest_exit">Test modundan çık</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

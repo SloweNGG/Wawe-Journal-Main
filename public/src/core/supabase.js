@@ -56,7 +56,11 @@ export async function getUserProfileCached(userId, force = false) {
         try {
           sessionStorage.setItem('ww_cached_profile', JSON.stringify(data));
           sessionStorage.setItem('ww_cached_profile_time', String(Date.now()));
-          sessionStorage.setItem('ww_user_plan', data.plan || 'free');
+          // Süresi dolmuş premium önbelleğe 'premium' olarak yazılmaz; bitiş tarihi de saklanır ki önbellek
+          // süresi dolmadan abonelik biterse okuyanlar bunu fark edebilsin.
+          const planExpired = data.plan === 'premium' && data.plan_expires_at && !(Date.parse(data.plan_expires_at) > Date.now());
+          sessionStorage.setItem('ww_user_plan', planExpired ? 'free' : (data.plan || 'free'));
+          sessionStorage.setItem('ww_user_plan_exp', data.plan_expires_at || '');
           sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
           sessionStorage.setItem('ww_avatar_url', data.avatar_url || 'none');
           sessionStorage.setItem('ww_avatar_time', String(Date.now()));
