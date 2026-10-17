@@ -3,12 +3,12 @@
 
 User-agent: *
 Allow: /
-Disallow: /admin.html
+Disallow: /admin
 Disallow: /settings/
-Disallow: /login.html
-Disallow: /register.html
-Disallow: /forgot-password.html
-Disallow: /update-password.html
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /update-password
 Disallow: /api/
 
 Sitemap: https://wawejournal.com/sitemap.xml

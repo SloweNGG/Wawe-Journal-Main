@@ -5,11 +5,15 @@ export interface Props {
   title: string;
   lang?: string;
   description?: string;
+  noIndex?: boolean;
 }
 
-const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal' } = Astro.props;
+const { title, lang = 'en', description = 'Wawe Journal - Professional Trading Journal', noIndex = false } = Astro.props;
+// Cloudflare "/about.html" adresini "/about"a yönlendirdiği için canonical temiz adres olmalı
+const cleanPath = Astro.url.pathname.replace(/(^|\/)index\.html$/, '/').replace(/\.html$/, '');
+const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
 ---
-<Layout lang={lang} showNavbar={false} title={title} description={description}>
+<Layout lang={lang} showNavbar={false} title={title} description={description} canonical={canonical} noIndex={noIndex}>
 <Fragment slot="head">
   <link rel="stylesheet" href="/index.css" />
   <link rel="stylesheet" href="/pages.css" />
