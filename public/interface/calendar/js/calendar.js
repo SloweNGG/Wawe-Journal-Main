@@ -8,6 +8,19 @@ wwLog.log('📅 calendar.js yükleniyor...');
 // CAL_PAGE.expose ile açılan global fonksiyonlar silinir (BaseHead.astro → wwPage)
 var CAL_PAGE = window.wwPage.current();
 
+// Çeviri: anahtar bulunamazsa (sözlük henüz yüklenmemiş / eksik) yedek metin döner.
+// Not: i18n.t'nin 2. parametresi yedek metin DEĞİL, yer tutucu nesnesidir; eskiden
+// i18n.t('anahtar', 'yedek') çağrıları sözlük yüklenmeden çizilince ham anahtarı gösteriyordu.
+function calT(key, fallback, params) {
+  try {
+    if (typeof i18n !== 'undefined' && i18n && typeof i18n.t === 'function') {
+      var v = i18n.t(key, params);
+      if (v && v !== key) return v;
+    }
+  } catch (e) {}
+  return fallback !== undefined ? fallback : key;
+}
+
 // ============================================================
 // ⭐ TEMA KONTROLÜ - SAYFA YÜKLENİRKEN
 // ============================================================
@@ -365,7 +378,7 @@ function renderCalendar() {
       var pnlClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
       var barClass = dayPnl > 0 ? 'positive' : (dayPnl < 0 ? 'negative' : '');
 
-      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + (typeof i18n !== 'undefined' && i18n.t ? i18n.t('trades.stats.trade_count', 'işlem') : 'işlem')) : '';
+      var tradeCountText = hasTrade ? (dayTrades.length + ' ' + calT('dashboard.trades_count_suffix', 'işlem')) : '';
       var ariaLabel = d + ' ' + monthName + (hasTrade ? ', ' + dayTrades.length + ' işlem, ' + pnlDisplay : ', işlem yok');
 
       html += '<div class="cal-day ' + colorClass + ' ' + todayClass + ' ' + weekendClass2 + '" data-date="' + dateStr + '" role="button" tabindex="0" aria-label="' + ariaLabel + '" onclick="openDayModal(\'' + dateStr + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openDayModal(\'' + dateStr + '\');}">' +
@@ -427,49 +440,15 @@ var currentModalDateStr = null;
 function getDayPerformance(dateStr) {
   var trades = tradesByDate[dateStr] || [];
   var totalTrades = trades.length;
-  var closedTrades = trades.filter(function (t) { return t.exit_price != null || t.pnl != null; });
-
-  var winTrades = 0;
-  var lossTrades = 0;
-  var grossWin = 0;
-  var grossLoss = 0;
-  var totalPnL = 0;
-  var runningPnL = 0;
-  var peakPnL = 0;
-  var maxDD = 0;
-
-  var currentWinStreak = 0;
-  var maxWinStreak = 0;
-  var currentLossStreak = 0;
-  var maxLossStreak = 0;
+  // Metrikler ortak modülden (interface/shared/trade-metrics.js — testli; sıraya bağlı olanlar
+  // kendi içinde eskiden yeniye sıralar). Liste görünümü mevcut sırasını korur.
+  var m = window.WwMetrics.summarize(trades);
+  var closedTrades = window.WwMetrics.closedTrades(trades);
 
   var instrumentMap = {};
 
   var processedTrades = closedTrades.map(function (t) {
     var pnl = calcTradePnL(t);
-    totalPnL += pnl;
-
-    runningPnL += pnl;
-    if (runningPnL > peakPnL) peakPnL = runningPnL;
-    var dd = peakPnL - runningPnL;
-    if (dd > maxDD) maxDD = dd;
-
-    if (pnl > 0) {
-      winTrades++;
-      grossWin += pnl;
-      currentWinStreak++;
-      if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
-      currentLossStreak = 0;
-    } else if (pnl < 0) {
-      lossTrades++;
-      grossLoss += Math.abs(pnl);
-      currentLossStreak++;
-      if (currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
-      currentWinStreak = 0;
-    } else {
-      currentWinStreak = 0;
-      currentLossStreak = 0;
-    }
 
     var instKey = (t.instrument || 'forex') + ' ' + (t.symbol || 'UNKNOWN');
     if (!instrumentMap[instKey]) {
@@ -491,25 +470,7 @@ function getDayPerformance(dateStr) {
     };
   });
 
-  var winRate = closedTrades.length > 0 ? Math.round((winTrades / closedTrades.length) * 100) : 0;
-  var avgWin = winTrades > 0 ? (grossWin / winTrades) : 0;
-  var avgLoss = lossTrades > 0 ? -(grossLoss / lossTrades) : 0;
-
-  var profitFactor = null;
-  if (grossLoss > 0) {
-    profitFactor = parseFloat((grossWin / grossLoss).toFixed(2));
-  } else if (grossWin > 0) {
-    profitFactor = null; // infinity
-  } else {
-    profitFactor = 0;
-  }
-
-  var avgRR = 0;
-  if (Math.abs(avgLoss) > 0) {
-    avgRR = parseFloat((avgWin / Math.abs(avgLoss)).toFixed(2));
-  } else if (avgWin > 0) {
-    avgRR = '∞';
-  }
+  var round2 = function (v) { return v === null ? null : parseFloat(v.toFixed(2)); };
 
   var instrumentBreakdown = Object.values(instrumentMap).map(function (item) {
     return {
@@ -523,18 +484,20 @@ function getDayPerformance(dateStr) {
 
   return {
     totalTrades: totalTrades,
-    closedTradesCount: closedTrades.length,
-    winTrades: winTrades,
-    lossTrades: lossTrades,
-    winRate: winRate,
-    profitFactor: profitFactor,
-    avgRR: avgRR,
-    maxDrawdown: maxDD,
-    maxWinStreak: maxWinStreak,
-    maxLossStreak: maxLossStreak,
-    avgWin: avgWin,
-    avgLoss: avgLoss,
-    totalPnL: totalPnL,
+    closedTradesCount: m.total,
+    winTrades: m.wins,
+    lossTrades: m.losses,
+    winRate: Math.round(m.winRate),
+    profitFactor: round2(m.profitFactor),   // null → ∞
+    // Ortalama kazanç / ortalama kayıp. Eskiden "Ort. R:R" etiketiyle gösteriliyordu; dashboard'lardaki
+    // "Ort. R:R" ise girilen R:R ortalaması — aynı etiket iki farklı sayı gösteriyordu.
+    payoff: round2(m.payoff),               // null → ∞
+    maxDrawdown: m.maxDrawdown,             // pozitif büyüklük
+    maxWinStreak: m.maxWinStreak,
+    maxLossStreak: m.maxLossStreak,
+    avgWin: m.avgWin,
+    avgLoss: -m.avgLoss,                    // eksi işaretli (gösterim için)
+    totalPnL: m.totalPnL,
     instrumentBreakdown: instrumentBreakdown,
     tradesDetail: processedTrades
   };
@@ -570,20 +533,20 @@ function openDayModal(dateStr) {
 
     if (body) {
       if (perf.totalTrades === 0) {
-        var noTradesText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('calendar.no_trades', 'Bu güne ait işlem yok.') : 'Bu güne ait işlem yok.';
+        var noTradesText = calT('calendar.no_trades', 'Bu güne ait işlem yok.');
         body.innerHTML = '<div class="detail-empty-note">' + noTradesText + '</div>';
       } else {
         var pfDisplay = (perf.profitFactor === null) ? '∞' : perf.profitFactor;
-        var rrDisplay = (perf.avgRR === null) ? '∞' : perf.avgRR;
+        var rrDisplay = window.WwMetrics.formatProfitFactor(perf.payoff);
 
-        var tLblPF = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.profit_factor', 'PROFIT FACTOR') : 'PROFIT FACTOR';
-        var tLblRR = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.avg_rr', 'AVG R:R') : 'AVG R:R';
-        var tLblDD = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.max_drawdown', 'MAX DRAWDOWN') : 'MAX DRAWDOWN';
-        var tLblWR = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.win_rate', 'WIN RATE') : 'WIN RATE';
-        var tLblMWS = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.max_win_streak', 'MAX WIN STREAK') : 'MAX WIN STREAK';
-        var tLblMLS = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.max_loss_streak', 'MAX LOSS STREAK') : 'MAX LOSS STREAK';
-        var tLblAW = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.avg_win', 'AVG WIN') : 'AVG WIN';
-        var tLblAL = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.avg_loss', 'AVG LOSS') : 'AVG LOSS';
+        var tLblPF = calT('strategies.detail.profit_factor', 'PROFIT FACTOR');
+        var tLblRR = calT('premium_dash.kpi.payoff', 'Kazanç/Kayıp Oranı');
+        var tLblDD = calT('strategies.detail.max_drawdown', 'MAX DRAWDOWN');
+        var tLblWR = calT('strategies.detail.win_rate', 'WIN RATE');
+        var tLblMWS = calT('strategies.detail.max_win_streak', 'MAX WIN STREAK');
+        var tLblMLS = calT('strategies.detail.max_loss_streak', 'MAX LOSS STREAK');
+        var tLblAW = calT('strategies.detail.avg_win', 'AVG WIN');
+        var tLblAL = calT('strategies.detail.avg_loss', 'AVG LOSS');
 
         var metricsHtml = `
           <div class="detail-metrics-grid">
@@ -622,20 +585,20 @@ function openDayModal(dateStr) {
           </div>
         `;
 
-        var tBreakdown = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.instrument_breakdown', 'Enstrüman Kırılımı') : 'Enstrüman Kırılımı';
-        var tTradeList = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.trade_list', 'İşlem Listesi') : 'İşlem Listesi';
-        var tInstrument = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.instrument', 'Enstrüman · Sembol') : 'Enstrüman · Sembol';
-        var tTrades = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.trades', 'İşlem') : 'İşlem';
-        var tWinRate = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.win_rate', 'Win Rate') : 'Win Rate';
-        var tPnL = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.pnl', 'K/Z') : 'K/Z';
-        var tDate = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.date', 'Tarih') : 'Tarih';
-        var tSymbol = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.symbol', 'Sembol') : 'Sembol';
-        var tDirection = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.direction', 'Yön') : 'Yön';
-        var tEntry = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.entry', 'Giriş') : 'Giriş';
-        var tExit = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.exit', 'Çıkış') : 'Çıkış';
-        var tLot = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.lot', 'Lot') : 'Lot';
-        var tNoData = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.no_data', 'Veri yok') : 'Veri yok';
-        var tNoTradesInList = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('strategies.detail.no_trades_in_list', 'İşlem yok') : 'İşlem yok';
+        var tBreakdown = calT('strategies.detail.instrument_breakdown', 'Enstrüman Kırılımı');
+        var tTradeList = calT('strategies.detail.trade_list', 'İşlem Listesi');
+        var tInstrument = calT('strategies.detail.instrument', 'Enstrüman · Sembol');
+        var tTrades = calT('strategies.detail.trades', 'İşlem');
+        var tWinRate = calT('strategies.detail.win_rate', 'Win Rate');
+        var tPnL = calT('strategies.detail.pnl', 'K/Z');
+        var tDate = calT('strategies.detail.date', 'Tarih');
+        var tSymbol = calT('strategies.detail.symbol', 'Sembol');
+        var tDirection = calT('strategies.detail.direction', 'Yön');
+        var tEntry = calT('strategies.detail.entry', 'Giriş');
+        var tExit = calT('strategies.detail.exit', 'Çıkış');
+        var tLot = calT('strategies.detail.lot', 'Lot');
+        var tNoData = calT('strategies.detail.no_data', 'Veri yok');
+        var tNoTradesInList = calT('strategies.detail.no_trades_in_list', 'İşlem yok');
 
         var instrumentRows = perf.instrumentBreakdown.map(function (ib) {
           var displayName = sanitizeHTML((ib.instrument || '') + ' ' + (ib.symbol || ''));
@@ -760,11 +723,11 @@ function exportDayCSV(dateStr) {
     rows.push(['Win Rate', perf.winRate + '%']);
     rows.push(['Toplam K/Z', perf.totalPnL.toFixed(2)]);
     rows.push(['Profit Factor', pfDisplay]);
-    rows.push(['Maks. Drawdown', perf.maxDrawdown.toFixed(2)]);
+    rows.push(['Maks. Drawdown', (perf.maxDrawdown > 0 ? -perf.maxDrawdown : 0).toFixed(2)]);
 
     var csvContent = rows.map(function (r) { return r.map(csvEscape).join(','); }).join('\r\n');
     downloadBlob('\uFEFF' + csvContent, targetDate + '_islemler.csv', 'text/csv;charset=utf-8;');
-    if (typeof showToast === 'function') showToast(typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.csv_exported', 'CSV indirildi!') : 'CSV indirildi!');
+    if (typeof showToast === 'function') showToast(calT('toast.csv_exported', 'CSV indirildi!'));
   } catch (e) {
     if (typeof showToast === 'function') showToast('CSV export error', 'error');
   }
@@ -844,7 +807,7 @@ async function exportDayPDF(dateStr) {
     }
 
     doc.save(targetDate + '_rapor.pdf');
-    if (typeof showToast === 'function') showToast(typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.pdf_exported', 'PDF indirildi!') : 'PDF indirildi!');
+    if (typeof showToast === 'function') showToast(calT('toast.pdf_exported', 'PDF indirildi!'));
   } catch (e) {
     console.error('PDF export error:', e);
     window.print();
@@ -940,7 +903,7 @@ async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
 
       if (error) {
         if (isInitialLoad && typeof showToast === 'function') {
-          var errMsg = typeof i18n !== 'undefined' && i18n.t ? i18n.t('toast.load_error', 'Veri yüklenemedi: ') : 'Veri yüklenemedi: ';
+          var errMsg = calT('toast.load_error', 'Veri yüklenemedi: ');
           showToast(errMsg + error.message, 'error');
         }
         return [];
@@ -1177,6 +1140,11 @@ async function initCalendar() {
     // Verileri çek ve takvimi çiz
     var tradesData = await loadCalendarTradesFromDB(user.id);
     loadCalendarTrades(tradesData || []);
+
+    // Sözlük ilk yüklemede dinleyicileri tetiklemez; takvim ondan önce çizildiyse metinler yedekte kalırdı
+    if (window.i18nReady && typeof window.i18nReady.then === 'function') {
+      window.i18nReady.then(function () { if (CAL_PAGE.alive) renderCalendar(); });
+    }
 
     // i18n değişimlerini dinle
     if (typeof i18n !== 'undefined' && i18n.onChange) {

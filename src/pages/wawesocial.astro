@@ -2,41 +2,14 @@
 import PageLayout from '../layouts/PageLayout.astro';
 ---
 <PageLayout title="Wawe Social – Trader için Sosyal Medya" noIndex={true}>
-  <style>
-    .coming-soon {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 50vh;
-      text-align: center;
-      padding: clamp(24px, 4vh, 48px) 1rem;
-    }
-    .coming-soon h1 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(28px, 4vw, 44px);
-      font-weight: 800;
-      margin-bottom: 1rem;
-      background: linear-gradient(135deg, var(--text), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .coming-soon p {
-      color: var(--muted);
-      font-size: clamp(14px, 1.2vw, 17px);
-      max-width: 520px;
-      line-height: 1.7;
-    }
-    .coming-soon .btn-back { margin-top: 2rem; }
-  </style>
-  <div class="page-card">
-    <div class="coming-soon">
-      <h1 data-i18n="social.title">🌊 Wawe Social</h1>
-      <p data-i18n="social.desc">Trader'lar için özel sosyal medya platformu. Çok yakında…</p>
-      <div class="btn-back">
-        <a href="/" class="btn btn-primary" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+  <section class="page-hero solo">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="hero.beta">BETA</b></span>
+      <h1 class="anim" style="--d:.15s" data-i18n="social.title">🌊 Wawe Social</h1>
+      <p class="page-lead anim" style="--d:.3s" data-i18n="social.desc">Trader'lar için özel sosyal medya platformu. Çok yakında…</p>
+      <div class="page-actions anim" style="--d:.45s">
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
       </div>
     </div>
-  </div>
+  </section>
 </PageLayout>

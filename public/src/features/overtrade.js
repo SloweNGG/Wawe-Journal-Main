@@ -485,7 +485,7 @@ export async function loadOvertradeSettingsUI(containerId) {
           warningLevel: warningLevelSelect?.value || 'warning'
         };
         saveOvertradeSettings(newSettings);
-        showToast('✅ ' + t('overtrade.settings_saved'), 'success');
+        showToast(t('overtrade.settings_saved'), 'success');
         const otContainer = document.getElementById('overtrade-container');
         if (otContainer) checkAndRenderOvertrade('overtrade-container');
       });
@@ -494,7 +494,7 @@ export async function loadOvertradeSettingsUI(containerId) {
     if (clearBtn) {
       clearBtn.addEventListener('click', function() {
         clearDismissedOvertradeWarnings();
-        showToast('🗑️ ' + t('overtrade.dismissed_cleared'), 'success');
+        showToast(t('overtrade.dismissed_cleared'), 'success');
         const otContainer = document.getElementById('overtrade-container');
         if (otContainer) checkAndRenderOvertrade('overtrade-container');
       });
@@ -504,7 +504,7 @@ export async function loadOvertradeSettingsUI(containerId) {
       resetBtn.addEventListener('click', function() {
         const defaultSettings = { dailyLimit: 5, weeklyLimit: 20, dailyLossLimit: 1000, warningLevel: 'warning', enabled: true };
         saveOvertradeSettings(defaultSettings);
-        showToast('↺ ' + t('overtrade.reset_success'), 'success');
+        showToast(t('overtrade.reset_success'), 'success');
         loadOvertradeSettingsUI(containerId);
         const otContainer = document.getElementById('overtrade-container');
         if (otContainer) checkAndRenderOvertrade('overtrade-container');

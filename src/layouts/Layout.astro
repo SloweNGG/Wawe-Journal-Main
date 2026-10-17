@@ -51,7 +51,8 @@ const {
 <body class={bodyClass} style={bodyStyle} data-page-class={bodyClass} data-quick-add={showQuickAdd ? '' : undefined}>
   {/* SPA: sunucudan gelen head elemanlarını işaretle (runtime'da eklenenlerden ayırmak için).
       Body'nin başında çalışır; Astro'nun head sonuna eklediği CSS/script'ler de dahil olsun. */}
-  {spa && <script is:inline>for(var c=document.head.children,i=0;i<c.length;i++)c[i].setAttribute('data-ssr','')</script>}
+  {/* data-runtime: head okunurken script'in eklediği eleman (ör. hesap işareti stili) — sunucudan gelmez, işaretlenmez */}
+  {spa && <script is:inline>for(var c=document.head.children,i=0;i<c.length;i++)if(!c[i].hasAttribute('data-runtime'))c[i].setAttribute('data-ssr','')</script>}
   <div class="wj-ambient-backdrop" id="wj-ambient-backdrop" aria-hidden="true">
     <div class="wj-ambient-mesh"></div>
     <div class="wj-ambient-orb wj-ambient-orb-1"></div>
@@ -72,7 +73,7 @@ const {
     <script src="/interface/dashboard/js/onboarding.js?v=1791381400" is:inline defer></script>
   )}
   {showNavbar && (
-    <script src="/components/navbar/navbar.js?v=1791480101" is:inline defer></script>
+    <script src="/components/navbar/navbar.js?v=1791750400" is:inline defer></script>
     <script src="/components/navbar/page-transition.js?v=1791480041" is:inline defer></script>
   )}
 </body>

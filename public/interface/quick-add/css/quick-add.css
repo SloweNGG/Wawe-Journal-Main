@@ -32,9 +32,10 @@
   --qa-accent-light: #9b8bfa;
   --qa-accent-tint: rgba(124, 109, 250, 0.08);
   --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
-  --qa-surface: #111118;
-  --qa-surface2: #161622;
-  --qa-surface3: #1c1c2b;
+  /* Panel siyah (diğer kart ve menülerle aynı); alanlar siyah zeminde seçilebilen koyu ton */
+  --qa-surface: #000000;
+  --qa-surface2: #0d0d14;
+  --qa-surface3: #16161f;
   --qa-border: rgba(232, 232, 240, 0.08);
   --qa-border-strong: rgba(232, 232, 240, 0.16);
   --qa-text: #e8e8f0;

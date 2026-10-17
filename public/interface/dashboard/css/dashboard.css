@@ -3185,3 +3185,24 @@ body.light-theme .cum-tip,
   .chart-expand-header { padding: 0.85rem 1rem; }
   .chart-expand-body { padding: 0.85rem 1rem 1rem; }
 }
+
+/* ============================================================
+   GRAFİK VE KPI KARTLARI — koyu temada saf siyah
+   Özel tema --surface rengi ya da ortam ışığı kartların içine yansımaz.
+   Açık tema kendi --surface rengini korur.
+   ============================================================ */
+:root:not(.light-theme) body:not(.light-theme) .chart-card,
+:root:not(.light-theme) body:not(.light-theme) .prop-dashboard-card,
+:root:not(.light-theme) body:not(.light-theme) .stat-card,
+:root:not(.light-theme) body:not(.light-theme) .kpi-bar,
+:root:not(.light-theme) body:not(.light-theme) .mini-calendar-card,
+:root:not(.light-theme) body:not(.light-theme) .strategy-tags-card,
+:root:not(.light-theme) body:not(.light-theme) .trade-row,
+:root:not(.light-theme) body:not(.light-theme) .strategy-pill,
+:root:not(.light-theme) body:not(.light-theme) .mini-cal-day:not(.win):not(.loss) {
+  background: #000;
+}
+/* Yukarıdaki kural daha özgül olduğu için üzerine gelme vurgusu burada tekrar verilir */
+:root:not(.light-theme) body:not(.light-theme) .trade-row:hover {
+  background: rgba(139, 92, 246, 0.06);
+}

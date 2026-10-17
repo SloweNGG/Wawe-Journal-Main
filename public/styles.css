@@ -1588,43 +1588,138 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
    TOAST - SAFE AREA DESTEKLİ
    ============================================================ */
 
-.ww-toast {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  bottom: clamp(0.5rem, 2vh, 1.5rem);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  color: var(--text);
-  font-size: clamp(11px, 0.9vw, 13px);
-  font-weight: 500;
-  opacity: 0;
-  padding: clamp(0.5rem, 0.8vw, 0.75rem) clamp(0.75rem, 1.2vw, 1.25rem);
+/* ============================================================
+   TOAST SYSTEM (Lucide Icons + Glassmorphism)
+   ============================================================ */
+.ww-toast-container {
   position: fixed;
-  right: clamp(0.5rem, 1vw, 1rem);
-  left: clamp(0.5rem, 1vw, 1rem);
-  transform: translateY(8px);
-  z-index: var(--z-toast);
-  max-width: min(400px, calc(100vw - 1rem));
-  font-family: 'DM Sans', sans-serif;
+  bottom: clamp(0.75rem, 2vh, 1.5rem);
+  right: clamp(0.75rem, 1.5vw, 1.5rem);
+  left: clamp(0.75rem, 1.5vw, 1.5rem);
+  z-index: var(--z-toast, 9999);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  max-width: min(440px, calc(100vw - 1.5rem));
   margin: 0 auto;
-  padding-bottom: max(clamp(0.5rem, 0.8vw, 0.75rem), env(safe-area-inset-bottom, 0.5rem));
 }
-@media (min-width: 600px) {
-  .ww-toast {
+
+@media (min-width: 640px) {
+  .ww-toast-container {
     left: auto;
-    right: 1rem;
-    max-width: calc(100vw - 2rem);
-    padding-bottom: clamp(0.5rem, 0.8vw, 0.75rem);
+    right: 1.5rem;
+    margin: 0;
   }
 }
-.ww-toast--visible { opacity: 1; transform: translateY(0); }
-.ww-toast--success {
-  border-left: 3px solid var(--green);
-  box-shadow: 0 0 20px rgba(34,197,94,0.15);
+
+.ww-toast {
+  pointer-events: all;
+  background: var(--surface2, #14141e);
+  border: 1px solid var(--border2, #262638);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 1px rgba(255, 255, 255, 0.1);
+  color: var(--text, #f0f0f8);
+  font-size: clamp(12px, 0.9vw, 13.5px);
+  font-weight: 500;
+  line-height: 1.45;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
+
+.ww-toast--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.ww-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.ww-toast-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.ww-toast-message {
+  flex: 1;
+  word-break: break-word;
+}
+
+.ww-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--muted, #8b8b9e);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ww-toast-close:hover {
+  color: var(--text, #fff);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Modifiers */
+.ww-toast--success {
+  border-left: 3px solid var(--green, #22c55e);
+}
+.ww-toast--success .ww-toast-icon {
+  color: var(--green, #22c55e);
+}
+
 .ww-toast--error {
-  border-left: 3px solid var(--red);
-  box-shadow: 0 0 20px rgba(239,68,68,0.15);
+  border-left: 3px solid var(--red, #ef4444);
+}
+.ww-toast--error .ww-toast-icon {
+  color: var(--red, #ef4444);
+}
+
+.ww-toast--warning {
+  border-left: 3px solid #f59e0b;
+}
+.ww-toast--warning .ww-toast-icon {
+  color: #f59e0b;
+}
+
+.ww-toast--info {
+  border-left: 3px solid var(--accent, #7c6dfa);
+}
+.ww-toast--info .ww-toast-icon {
+  color: var(--accent, #7c6dfa);
+}
+
+/* Light mode support */
+:root.light-theme .ww-toast,
+body.light-theme .ww-toast {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #1a1a24;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+:root.light-theme .ww-toast-close:hover,
+body.light-theme .ww-toast-close:hover {
+  color: #000;
+  background: rgba(0, 0, 0, 0.06);
 }
 
 /* ============================================================
@@ -1760,7 +1855,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: rgba(139,92,246,0.05);
 }
 .confirm-modal-footer .btn-modal-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: #dc2626;
   border: none;
   border-radius: 40px;
   color: #fff;
@@ -1769,14 +1864,13 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-weight: 600;
   padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.6rem);
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(239,68,68,0.25);
+  box-shadow: none;
   min-height: 36px;
+  transition: background 0.15s ease;
 }
 .confirm-modal-footer .btn-modal-danger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(239,68,68,0.4);
+  background: #b91c1c;
 }
-.confirm-modal-footer .btn-modal-danger:active { transform: scale(0.96); }
 
 
 /* ============================================================
@@ -2699,4 +2793,84 @@ html.light-theme .wj-ambient-backdrop {
   .wj-ambient-orb-2 {
     animation: none !important;
   }
+}
+
+/* ============================================================
+   KARTLAR — koyu temada saf siyah (tüm uygulama sayfaları)
+   Özel tema --surface rengi ya da ortam ışığı kartların içine yansımaz.
+   Yalnızca ana kart/panel yüzeyleri; durum renkleri (kâr/zarar günleri,
+   seçili kartlar, rozetler), modallar, menüler ve form alanları hariç.
+   Açık tema kendi --surface rengini korur. Ana dashboard kartları
+   interface/dashboard/css/dashboard.css sonundaki kuralda.
+   ============================================================ */
+:root:not(.light-theme) body:not(.light-theme) :is(
+  /* ortak (genel .card yok: ana sayfa/tanıtım kartları da bu sınıfı kullanıyor) */
+  .stat-card, .kpi-bar, .calendar-main-card, .summary-mini-card, .streak-card,
+  .trades-table-card,
+  /* işlemler */
+  .trade-card, .sel-bar,
+  /* stratejiler */
+  .strategy-card, .strategy-card-add, .empty-strategies, .comparison-card, .sc-stat,
+  /* takvim (renkli günler ayrı .day-bg katmanında, hücre siyah kalabilir) */
+  .cal-day:not(.empty),
+  /* defterler */
+  .journal-card, .broker-choice-card:not(.active),
+  /* premium dashboard */
+  .grid-item, .pstat-card, .sc-head, .ins-item, .goal-form, .prop-cockpit-hud,
+  .cal-cell:not(.pos):not(.neg):not(.be):not(.cal-blank),
+  /* ayarlar */
+  .settings-sidebar, .s-card, .plan-card, .plan-perks-box, .perk-item, .settings-group-card,
+  .checkout-wizard-card, .plan-tier-card, .duration-option-card:not(.selected),
+  .coupon-interactive-card, .checkout-method-card, .premium-countdown-card,
+  .direct-pay-card, .extend-wizard-wrapper,
+  /* işlem ekle */
+  .form-card, .import-banner,
+  /* kazançlarım */
+  .earnings-table-wrap, .earnings-empty, .partner-hero-card, .partner-step-card,
+  /* hata bildir */
+  .bug-card, .ticket-card, .tickets-empty,
+  /* backtest */
+  .bt-chart-card, .bt-trade-panel
+) {
+  background: #000;
+}
+
+/* ============================================================
+   UYGULAMA GENELİ KAYDIRMA ÇUBUĞU — ince, oksuz, temaya uygun
+   ------------------------------------------------------------
+   Chrome / Edge / Safari: ::-webkit-scrollbar ile çizilir.
+   Firefox: yalnızca standart scrollbar-width / scrollbar-color anlar.
+   ⚠️ Chrome 121+: bir elemanda scrollbar-width veya scrollbar-color tanımlıysa
+   ::-webkit-scrollbar YOK SAYILIR ve Windows'un oklu varsayılan çubuğu çıkar.
+   Bu yüzden Chrome'da bu özellikleri kullanmayın; Firefox ayarı aşağıdaki
+   @supports bloğunda. (scrollbar-width: none ile gizleme bundan etkilenmez.)
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-thumb {
+  background: var(--border2, rgba(139, 92, 246, 0.35));
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.6); }
+
+/* Chromium/Safari: eski scrollbar-width: thin / scrollbar-color tanımları özel çubuğu ezmesin */
+@supports selector(::-webkit-scrollbar) {
+  html,
+  .wwd-body,
+  .rt-list,
+  .grid-item[data-widget="strategies"] .chart-wrap,
+  .journal-menu-list,
+  .journal-dropdown .journal-menu-list,
+  .quick-add-modal,
+  .ww-up-modal {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+  }
+}
+
+/* Firefox: ince çubuk, aynı renk */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--border2, rgba(139, 92, 246, 0.35)) transparent; }
 }

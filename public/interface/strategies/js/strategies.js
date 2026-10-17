@@ -256,9 +256,12 @@ function getTradePnL(t) {
 // ============================================================
 // i18n HELPER
 // ============================================================
+// Çeviri: anahtar bulunamazsa (sözlük henüz yüklenmemiş / eksik) yedek metin döner.
+// i18n.t'nin 2. parametresi yedek metin değil, yer tutucu nesnesidir.
 function _t(key, fallback) {
   if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
-    return i18n.t(key, fallback);
+    var v = i18n.t(key);
+    if (v && v !== key) return v;
   }
   return fallback || key;
 }
@@ -311,50 +314,26 @@ function getStrategyPerformance(strategyId) {
   try {
     var strategyTrades = tradesByStrategy[strategyId] || [];
     var filteredTrades = filterTradesByRange(strategyTrades, currentTimeRange);
-    var closedTrades = filteredTrades.filter(function(t) { return t.exit_price; });
-    var totalPnL = 0, wins = 0, losses = 0, openTrades = 0;
+    // K/Z, win rate, profit factor, drawdown ve seriler ortak modülden (interface/shared/trade-metrics.js — testli)
+    var m = window.WwMetrics.summarize(filteredTrades);
+    var openTrades = filteredTrades.length - window.WwMetrics.closedTrades(filteredTrades).length;
     var longCount = 0, shortCount = 0;
-
     filteredTrades.forEach(function(t) {
       var dir = (t.direction || '').toLowerCase();
       if (dir === 'long' || dir === 'buy') longCount++; else shortCount++;
-      if (!t.exit_price) { openTrades++; return; }
-      var pnl = getTradePnL(t);
-      totalPnL += pnl;
-      if (pnl > 0) wins++; else if (pnl < 0) losses++;
     });
 
-    var total = closedTrades.length;
-    var winRate = total > 0 ? parseFloat(((wins / total) * 100).toFixed(1)) : 0;
+    var total = m.total;
+    var winRate = parseFloat(m.winRate.toFixed(1));
 
-    var sorted = closedTrades.slice().sort(function(a, b) { return (window.WwTime.parseMs(a.trade_date) || 0) - (window.WwTime.parseMs(b.trade_date) || 0); });
-
-    var cumulative = 0, peak = 0, maxDrawdown = 0;
-    var grossProfit = 0, grossLoss = 0, winAmounts = [], lossAmounts = [];
-    var curWinStreak = 0, curLossStreak = 0, maxWinStreak = 0, maxLossStreak = 0;
     var pnlSeries = [];
     var tradesDetail = [];
     var instrumentMap = {};
 
-    sorted.forEach(function(t) {
-      var pnl = getTradePnL(t);
-      cumulative += pnl;
-      pnlSeries.push(cumulative);
-      if (cumulative > peak) peak = cumulative;
-      var dd = peak - cumulative;
-      if (dd > maxDrawdown) maxDrawdown = dd;
-
-      if (pnl > 0) {
-        grossProfit += pnl; winAmounts.push(pnl);
-        curWinStreak++; curLossStreak = 0;
-        if (curWinStreak > maxWinStreak) maxWinStreak = curWinStreak;
-      } else if (pnl < 0) {
-        grossLoss += Math.abs(pnl); lossAmounts.push(Math.abs(pnl));
-        curLossStreak++; curWinStreak = 0;
-        if (curLossStreak > maxLossStreak) maxLossStreak = curLossStreak;
-      } else {
-        curWinStreak = 0; curLossStreak = 0;
-      }
+    window.WwMetrics.equityCurve(filteredTrades).forEach(function(point) {
+      var t = point.trade;
+      var pnl = point.pnl;
+      pnlSeries.push(point.equity);
 
       var instrumentKey = (t.instrument || 'Diğer');
       var symbolKey = (t.symbol || '—');
@@ -401,30 +380,29 @@ function getStrategyPerformance(strategyId) {
     var bestInstrument = instrumentBreakdown.length ? instrumentBreakdown[0] : null;
     var worstInstrument = instrumentBreakdown.length ? instrumentBreakdown[instrumentBreakdown.length - 1] : null;
 
-    var profitFactor = grossLoss > 0 ? parseFloat((grossProfit / grossLoss).toFixed(2)) : (grossProfit > 0 ? null : 0);
-    var avgWin = winAmounts.length ? grossProfit / winAmounts.length : 0;
-    var avgLoss = lossAmounts.length ? grossLoss / lossAmounts.length : 0;
-    var avgRR = avgLoss > 0 ? parseFloat((avgWin / avgLoss).toFixed(2)) : (avgWin > 0 ? null : 0);
+    var round2 = function(v) { return v === null ? null : parseFloat(v.toFixed(2)); };
 
     var result = {
       totalTrades: total,
       // 'Açık işlem' kavramı yok: gösterilen işlem sayısı yalnızca kapanmış işlemlerdir (win rate ile aynı payda)
       totalTradesWithOpen: total,
-      wins: wins,
-      losses: losses,
+      wins: m.wins,
+      losses: m.losses,
       openTrades: openTrades,
-      totalPnL: totalPnL,
+      totalPnL: m.totalPnL,
       winRate: winRate,
       pnlSeries: pnlSeries,
       longCount: longCount,
       shortCount: shortCount,
-      profitFactor: profitFactor,
-      avgWin: avgWin,
-      avgLoss: avgLoss,
-      avgRR: avgRR,
-      maxWinStreak: maxWinStreak,
-      maxLossStreak: maxLossStreak,
-      maxDrawdown: maxDrawdown,
+      profitFactor: round2(m.profitFactor),
+      avgWin: m.avgWin,
+      avgLoss: m.avgLoss,       // pozitif büyüklük — gösterirken eksiyle yazılır
+      // Ortalama kazanç / ortalama kayıp. Eskiden "Ort. R:R" diye etiketleniyordu; dashboard'lardaki
+      // "Ort. R:R" ise girilen R:R ortalaması — aynı etiket iki farklı sayı gösteriyordu.
+      payoff: round2(m.payoff),
+      maxWinStreak: m.maxWinStreak,
+      maxLossStreak: m.maxLossStreak,
+      maxDrawdown: m.maxDrawdown, // pozitif büyüklük
       instrumentBreakdown: instrumentBreakdown,
       bestInstrument: bestInstrument,
       worstInstrument: worstInstrument,
@@ -438,7 +416,7 @@ function getStrategyPerformance(strategyId) {
   } catch(e) {
     return {
       totalTrades: 0, totalTradesWithOpen: 0, wins: 0, losses: 0, openTrades: 0, totalPnL: 0, winRate: 0,
-      pnlSeries: [], longCount: 0, shortCount: 0, profitFactor: 0, avgWin: 0, avgLoss: 0, avgRR: 0,
+      pnlSeries: [], longCount: 0, shortCount: 0, profitFactor: 0, avgWin: 0, avgLoss: 0, payoff: 0,
       maxWinStreak: 0, maxLossStreak: 0, maxDrawdown: 0, instrumentBreakdown: [], bestInstrument: null,
       worstInstrument: null, tradesDetail: []
     };
@@ -1062,9 +1040,13 @@ function openDetailModal(strategyId) {
     }
 
     var pfDisplay = (perf.profitFactor === null) ? '∞' : perf.profitFactor;
-    var rrDisplay = (perf.avgRR === null) ? '∞' : perf.avgRR;
+    var payoffDisplay = window.WwMetrics.formatProfitFactor(perf.payoff);
+    var zeroMoney = formatCurrencySafe(0).replace(/^\+/, '');
+    var ddDisplay = perf.maxDrawdown > 0 ? formatCurrencySafe(-perf.maxDrawdown) : zeroMoney;
+    var avgWinDisplay = perf.wins ? formatCurrencySafe(perf.avgWin) : '—';
+    var avgLossDisplay = perf.losses ? formatCurrencySafe(-perf.avgLoss) : '—';
 
-    var metricsHtml = '\n      <div class="detail-metrics-grid">\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.profit_factor">Profit Factor</div><div class="detail-metric-val ' + (perf.profitFactor !== null && perf.profitFactor >= 1 ? 'pos' : (perf.profitFactor !== null ? 'neg' : 'pos')) + '">' + pfDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_rr">Ort. R:R</div><div class="detail-metric-val">' + rrDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_drawdown">Maks. Drawdown</div><div class="detail-metric-val neg">' + formatCurrencySafe(perf.maxDrawdown) + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.win_rate">Win Rate</div><div class="detail-metric-val ' + (perf.winRate >= 50 ? 'pos' : 'neg') + '">' + perf.winRate + '%</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_win_streak">Maks. Kazanma Serisi</div><div class="detail-metric-val pos">' + perf.maxWinStreak + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_loss_streak">Maks. Kaybetme Serisi</div><div class="detail-metric-val neg">' + perf.maxLossStreak + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_win">Ort. Kazanç</div><div class="detail-metric-val pos">' + formatCurrencySafe(perf.avgWin) + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_loss">Ort. Kayıp</div><div class="detail-metric-val neg">' + formatCurrencySafe(perf.avgLoss) + '</div></div>\n      </div>';
+    var metricsHtml = '\n      <div class="detail-metrics-grid">\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.profit_factor">Profit Factor</div><div class="detail-metric-val ' + (perf.profitFactor !== null && perf.profitFactor >= 1 ? 'pos' : (perf.profitFactor !== null ? 'neg' : 'pos')) + '">' + pfDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="premium_dash.kpi.payoff">' + _t('premium_dash.kpi.payoff', 'Kazanç/Kayıp Oranı') + '</div><div class="detail-metric-val">' + payoffDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_drawdown">Maks. Drawdown</div><div class="detail-metric-val' + (perf.maxDrawdown > 0 ? ' neg' : '') + '">' + ddDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.win_rate">Win Rate</div><div class="detail-metric-val ' + (perf.winRate >= 50 ? 'pos' : 'neg') + '">' + perf.winRate + '%</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_win_streak">Maks. Kazanma Serisi</div><div class="detail-metric-val pos">' + perf.maxWinStreak + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_loss_streak">Maks. Kaybetme Serisi</div><div class="detail-metric-val neg">' + perf.maxLossStreak + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_win">Ort. Kazanç</div><div class="detail-metric-val' + (perf.wins ? ' pos' : '') + '">' + avgWinDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_loss">Ort. Kayıp</div><div class="detail-metric-val' + (perf.losses ? ' neg' : '') + '">' + avgLossDisplay + '</div></div>\n      </div>';
 
     var instrumentRows = perf.instrumentBreakdown.map(function(ib) {
       var displayName = sanitizeHTML(ib.instrument + ' ' + ib.symbol);
@@ -1319,7 +1301,7 @@ function exportStrategyCSV(strategyId) {
     rows.push([i18n.t('strategies.detail.win_rate'), perf.winRate + '%']);
     rows.push([i18n.t('strategies.detail.pnl'), perf.totalPnL.toFixed(2)]);
     rows.push([i18n.t('strategies.detail.profit_factor'), pfDisplay]);
-    rows.push([i18n.t('strategies.detail.max_drawdown'), perf.maxDrawdown.toFixed(2)]);
+    rows.push([i18n.t('strategies.detail.max_drawdown'), (perf.maxDrawdown > 0 ? -perf.maxDrawdown : 0).toFixed(2)]);
 
     var csvContent = rows.map(function(r) { return r.map(csvEscape).join(','); }).join('\r\n');
     downloadBlob('\uFEFF' + csvContent, (s ? sanitizeHTML(s.name) : 'strateji') + '_islemler.csv', 'text/csv;charset=utf-8;');
@@ -1332,7 +1314,7 @@ function exportAllStrategiesCSV() {
     var rows = [[
       i18n.t('trades.th_strategy'), i18n.t('strategies.summary.total_trades'),
       i18n.t('strategies.detail.win_rate'), i18n.t('strategies.summary.total_pnl'),
-      i18n.t('strategies.detail.profit_factor'), i18n.t('strategies.detail.avg_rr'),
+      i18n.t('strategies.detail.profit_factor'), i18n.t('premium_dash.kpi.payoff'),
       i18n.t('strategies.detail.max_drawdown'), i18n.t('strategies.detail.instrument_breakdown')
     ]];
     strategiesList.forEach(function(s) {
@@ -1344,8 +1326,8 @@ function exportAllStrategiesCSV() {
         perf.winRate + '%',
         perf.totalPnL.toFixed(2),
         perf.profitFactor === null ? '∞' : perf.profitFactor,
-        perf.avgRR === null ? '∞' : perf.avgRR,
-        perf.maxDrawdown.toFixed(2),
+        perf.payoff === null ? '∞' : perf.payoff,
+        (perf.maxDrawdown > 0 ? -perf.maxDrawdown : 0).toFixed(2),
         sanitizeHTML(bestInst)
       ]);
     });

@@ -154,17 +154,53 @@ if (!adminState.charts) {
 window.adminState = adminState;
 
 function showToast(msg, type) {
-  type = type || 'success';
+  type = type ? String(type).toLowerCase() : 'success';
+  var icons = {
+    success: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>',
+    error: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+    warning: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
+    info: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>'
+  };
+
   try {
     var tc = document.getElementById('toast-container');
-    if (!tc) return;
+    if (!tc) {
+      tc = document.createElement('div');
+      tc.id = 'toast-container';
+      tc.className = 'toast-container';
+      document.body.appendChild(tc);
+    }
+
+    var raw = '';
+    if (msg === null || msg === undefined) raw = '';
+    else if (typeof msg === 'object') {
+      raw = msg.message || msg.error || JSON.stringify(msg);
+    } else {
+      raw = String(msg);
+    }
+    // Strip emojis
+    var clean = raw.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E0}-\u{1F1FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{200D}\u{FE0F}]/gu, '').trim();
+    if (!clean) clean = type === 'error' ? 'Hata oluştu' : 'İşlem tamamlandı';
+
     var el = document.createElement('div');
     el.className = 'toast ' + type;
-    el.textContent = msg;
+    el.innerHTML = `
+      <span class="toast-icon">${icons[type] || icons.info}</span>
+      <span class="toast-msg"></span>
+      <button type="button" class="toast-close" aria-label="Kapat">&times;</button>
+    `;
+    el.querySelector('.toast-msg').textContent = clean;
+
+    var dismiss = function() {
+      el.classList.add('hide');
+      setTimeout(function() { if (el && el.parentNode) el.remove(); }, 250);
+    };
+
+    var closeBtn = el.querySelector('.toast-close');
+    if (closeBtn) closeBtn.onclick = dismiss;
+
     tc.appendChild(el);
-    setTimeout(function() {
-      if (el && el.parentNode) el.remove();
-    }, 3500);
+    setTimeout(dismiss, 3500);
   } catch (e) {}
 }
 

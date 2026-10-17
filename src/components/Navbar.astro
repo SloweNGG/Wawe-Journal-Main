@@ -24,92 +24,59 @@ const isActive = (page: string) => {
       </svg>
     </div>
   </a>
-  
+
+  <div class="nav-journal-switcher" id="nav-journal-switcher">
+    <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleJournal && window.wwToggleJournal(event, this)">
+      <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
+      <span class="journal-name">Ana Hesap</span>
+      <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="journal-dropdown" id="journal-dropdown"></div>
+    <script is:inline>
+      // ⚡ 0ms INSTANT PRE-HYDRATION: Sayfa parse edildiği an FTMO/Prop firm rozetini ve hesap adını gecikmesiz bas
+      (function() {
+        try {
+          var jName = localStorage.getItem('ww_active_journal_name');
+          var pBadge = localStorage.getItem('ww_active_prop_badge_html');
+          var ctDot = localStorage.getItem('ww_active_ctrader_dot_html');
+          var jIcon = localStorage.getItem('ww_active_journal_icon_html');
+          var sw = document.getElementById('nav-journal-switcher');
+          if (!sw) return;
+          var nameEl = sw.querySelector('.journal-name');
+          var iconEl = sw.querySelector('.journal-icon');
+          if (nameEl && jName) {
+            nameEl.textContent = jName;
+            nameEl.title = jName;
+          }
+          if (nameEl && nameEl.parentNode) {
+            if (ctDot && !sw.querySelector('.ctrader-status-dot')) {
+              var dWrap = document.createElement('span');
+              dWrap.innerHTML = ctDot;
+              if (dWrap.firstElementChild) nameEl.parentNode.insertBefore(dWrap.firstElementChild, nameEl);
+            }
+            if (pBadge && !sw.querySelector('.nav-prop-tag')) {
+              var bWrap = document.createElement('span');
+              bWrap.innerHTML = pBadge;
+              if (bWrap.firstElementChild) nameEl.parentNode.insertBefore(bWrap.firstElementChild, nameEl.nextSibling);
+            }
+          }
+          if (iconEl && jIcon) {
+            iconEl.innerHTML = jIcon;
+          }
+        } catch(e) {}
+      })();
+    </script>
+  </div>
+
   <div class="nav-links">
     <a href="/dashboard.html" data-page="dashboard" class={`loaded ${isActive('dashboard') ? 'active' : ''}`}><span data-i18n="nav.dashboard">Dashboard</span></a>
     <a href="/trades.html" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`}><span data-i18n="nav.trades">İşlemler</span></a>
     <a href="/strategies.html" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
     <a href="/calendar.html" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
+    <a href="/premium-dashboard.html" data-page="premium" data-premium-link class={`loaded ${isActive('premium-dashboard') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span><span class="nav-pro-tag">PRO</span></a>
   </div>
-  
+
   <div class="nav-right">
-    <div class="nav-dropdown">
-      <button class="nav-dropdown-btn" id="premium-dropdown-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwTogglePremium && window.wwTogglePremium(event, this)">
-        <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
-        <span data-i18n="nav.premium">Premium</span>
-        <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
-      </button>
-      <div class="nav-dropdown-menu premium-menu-glass" id="premium-dropdown-menu" role="menu">
-        <div class="premium-menu-header">
-          <span class="premium-menu-title" data-i18n="nav.premium_features">Premium Özellikler</span>
-        </div>
-        <div class="premium-menu-items">
-          <a href="/premium-dashboard.html" class="dropdown-item" role="menuitem">
-            <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.premium_dashboard">Premium Dashboard</span>
-          </a>
-          <a href="/settings.html#panel-appearance" class="dropdown-item" role="menuitem">
-            <i data-lucide="palette" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
-          </a>
-          <a href="/settings.html#panel-overtrade" class="dropdown-item" role="menuitem">
-            <i data-lucide="shield-alert" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
-          </a>
-        </div>
-        <div class="premium-menu-footer nav-upgrade-wrapper" id="premium-menu-footer">
-          <div class="dropdown-divider"></div>
-          <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" role="menuitem" style="color:var(--accent2);">
-            <i data-lucide="crown" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="nav-journal-switcher" id="nav-journal-switcher">
-      <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleJournal && window.wwToggleJournal(event, this)">
-        <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
-        <span class="journal-name">Ana Hesap</span>
-        <svg class="journal-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="journal-dropdown" id="journal-dropdown"></div>
-      <script is:inline>
-        // ⚡ 0ms INSTANT PRE-HYDRATION: Sayfa parse edildiği an FTMO/Prop firm rozetini ve hesap adını gecikmesiz bas
-        (function() {
-          try {
-            var jName = localStorage.getItem('ww_active_journal_name');
-            var pBadge = localStorage.getItem('ww_active_prop_badge_html');
-            var ctDot = localStorage.getItem('ww_active_ctrader_dot_html');
-            var jIcon = localStorage.getItem('ww_active_journal_icon_html');
-            var sw = document.getElementById('nav-journal-switcher');
-            if (!sw) return;
-            var nameEl = sw.querySelector('.journal-name');
-            var iconEl = sw.querySelector('.journal-icon');
-            if (nameEl && jName) {
-              nameEl.textContent = jName;
-              nameEl.title = jName;
-            }
-            if (nameEl && nameEl.parentNode) {
-              if (ctDot && !sw.querySelector('.ctrader-status-dot')) {
-                var dWrap = document.createElement('span');
-                dWrap.innerHTML = ctDot;
-                if (dWrap.firstElementChild) nameEl.parentNode.insertBefore(dWrap.firstElementChild, nameEl);
-              }
-              if (pBadge && !sw.querySelector('.nav-prop-tag')) {
-                var bWrap = document.createElement('span');
-                bWrap.innerHTML = pBadge;
-                if (bWrap.firstElementChild) nameEl.parentNode.insertBefore(bWrap.firstElementChild, nameEl.nextSibling);
-              }
-            }
-            if (iconEl && jIcon) {
-              iconEl.innerHTML = jIcon;
-            }
-          } catch(e) {}
-        })();
-      </script>
-    </div>
-
     <div class="nav-bell-wrapper" id="nav-bell-wrapper">
       <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="window.wwToggleBell && window.wwToggleBell(event, this)">
         <i data-lucide="bell" class="nav-bell-icon"></i>
@@ -168,27 +135,28 @@ const isActive = (page: string) => {
         </div>
       </div>
     </div>
-    
-    <div class="nav-bug-wrapper" id="nav-bug-wrapper">
-      <a href="/report-bug.html" class={`nav-bug-btn ${isActive('report-bug') ? 'active' : ''}`} id="nav-bug-btn" aria-label="Hata Bildir" title="Hata Bildir">
-        <i data-lucide="bug" class="nav-bug-icon"></i>
-      </a>
-    </div>
-    
-    <div class="plan-badge" id="plan-badge" role="button" tabindex="0" aria-label="Abonelik Planı">
+
+    <a href="/settings.html#panel-plan" class="plan-badge" id="plan-badge" aria-label="Abonelik planı">
       <span class="plan-dot"></span>
       <span class="plan-text" id="plan-text">Ücretsiz</span>
-      <div class="plan-badge-tooltip" id="plan-badge-tooltip" role="tooltip">
-        <div class="plan-tooltip-title" id="plan-tooltip-title">Ücretsiz Plan</div>
-        <div class="plan-tooltip-sub" id="plan-tooltip-sub">Sınırsız Süre</div>
-      </div>
-    </div>
-    
+    </a>
     <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleAvatar && window.wwToggleAvatar(event, this)">
       <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
     </div>
-    
+
     <div class="dropdown-menu" id="dropdown-menu">
+      <div class="nav-dd-head">
+        <div class="nav-dd-id">
+          <div class="nav-dd-name" id="nav-dd-name">&nbsp;</div>
+          <div class="nav-dd-email" id="nav-dd-email"></div>
+        </div>
+      </div>
+      <div class="nav-dd-plan" aria-live="polite">
+        <span id="plan-tooltip-title">Ücretsiz Plan</span>
+        <span class="nav-dd-plan-sep">·</span>
+        <span id="plan-tooltip-sub">Sınırsız Süre</span>
+      </div>
+      <div class="dropdown-divider"></div>
       <a href="/settings.html#panel-profile" class="dropdown-item">
         <i data-lucide="user" style="width:16px;height:16px;"></i>
         <span data-i18n="nav.profile">Profil</span>
@@ -222,7 +190,7 @@ const isActive = (page: string) => {
         <span data-i18n="nav.logout">Çıkış Yap</span>
       </button>
     </div>
-    
+
     <button class="nav-toggle" id="nav-toggle" aria-label="Menüyü aç">
       <span class="bar"></span><span class="bar"></span><span class="bar"></span>
     </button>
@@ -237,8 +205,8 @@ const isActive = (page: string) => {
     var lang = localStorage.getItem('ww_language') || document.documentElement.getAttribute('data-lang') || 'en';
     if (lang === 'en' || lang === 'de') {
       var dict = {
-        en: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategies', 'nav.calendar': 'Calendar', 'nav.premium': 'Premium' },
-        de: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategien', 'nav.calendar': 'Kalender', 'nav.premium': 'Premium' }
+        en: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategies', 'nav.calendar': 'Calendar', 'nav.premium': 'Premium', 'nav.analysis': 'Analytics', 'nav.add_trade': 'Add Trade' },
+        de: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategien', 'nav.calendar': 'Kalender', 'nav.premium': 'Premium', 'nav.analysis': 'Analyse', 'nav.add_trade': 'Trade hinzufügen' }
       }[lang];
       if (dict) {
         document.querySelectorAll('.nav-links a span[data-i18n]').forEach(function(sp) {
@@ -278,6 +246,11 @@ const isActive = (page: string) => {
     // 4. Avatar senkronizasyonu
     var avUrl = localStorage.getItem('ww_avatar_url') || sessionStorage.getItem('ww_avatar_url');
     var dName = localStorage.getItem('ww_user_display_name') || sessionStorage.getItem('ww_user_display_name');
+    var ddName = document.getElementById('nav-dd-name');
+    if (ddName && dName) ddName.textContent = dName.indexOf('@') > 0 ? dName.split('@')[0] : dName;
+    var ddEmail = document.getElementById('nav-dd-email');
+    var uEmail = sessionStorage.getItem('ww_user_email');
+    if (ddEmail) { ddEmail.textContent = uEmail && uEmail !== dName ? uEmail : ''; ddEmail.style.display = ddEmail.textContent ? '' : 'none'; }
     var avEl = document.getElementById('user-avatar');
     var avTxt = document.getElementById('nav-avatar-text');
     if (avEl) {
@@ -294,7 +267,7 @@ const isActive = (page: string) => {
 <div class="nav-backdrop" id="nav-backdrop"></div>
 <div class="nav-menu" id="nav-menu">
   <div class="nav-menu-inner">
-    
+
     <div class="user-card" id="menu-user-card">
       <div class="user-card-avatar" id="menu-user-avatar">
         <span id="menu-avatar-text">?</span>

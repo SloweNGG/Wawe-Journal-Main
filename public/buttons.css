@@ -307,3 +307,87 @@
   color: #1a1033 !important;
   box-shadow: inset 0 0 0 1px #7c3aed !important;
 }
+
+/* ------------------------------------------------------------
+   Settings > Plan panel joins the shared style.
+   Primary steps (extend, continue, pay, apply) and secondary steps
+   (back, skip, close) use the same black fill + purple outline pill.
+   Cancel subscription stays red (danger) and only takes the pill shape.
+   ------------------------------------------------------------ */
+.btn-action-extend,
+.premium-btn-cta,
+.plan-card .plan-actions .btn-premium,
+.nav-btn-next,
+.nav-btn-submit-pay,
+.coupon-submit-btn,
+.btn-success-dashboard,
+.nav-btn-check-status,
+.nav-btn-back,
+.nav-btn-skip,
+.btn-close-extend-wizard {
+  background: #000 !important;
+  background-image: none !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #7c3aed !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-radius: 999px !important;
+}
+.btn-action-extend:hover,
+.premium-btn-cta:hover,
+.plan-card .plan-actions .btn-premium:hover,
+.nav-btn-next:hover,
+.nav-btn-submit-pay:hover,
+.coupon-submit-btn:hover,
+.btn-success-dashboard:hover,
+.nav-btn-check-status:hover,
+.nav-btn-back:hover,
+.nav-btn-skip:hover,
+.btn-close-extend-wizard:hover {
+  background: #0d0618 !important;
+  border-color: #a78bfa !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.nav-btn-next:disabled,
+.nav-btn-submit-pay:disabled,
+.coupon-submit-btn:disabled {
+  border-color: rgba(124, 58, 237, 0.4) !important;
+  color: #8d8d96 !important;
+}
+.btn-action-cancel {
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.light-theme .btn-action-extend,
+.light-theme .premium-btn-cta,
+.light-theme .plan-card .plan-actions .btn-premium,
+.light-theme .nav-btn-next,
+.light-theme .nav-btn-submit-pay,
+.light-theme .coupon-submit-btn,
+.light-theme .btn-success-dashboard,
+.light-theme .nav-btn-check-status,
+.light-theme .nav-btn-back,
+.light-theme .nav-btn-skip,
+.light-theme .btn-close-extend-wizard {
+  background: #fff !important;
+  color: #1a1033 !important;
+  border-color: #7c3aed !important;
+}
+.light-theme .btn-action-extend:hover,
+.light-theme .premium-btn-cta:hover,
+.light-theme .plan-card .plan-actions .btn-premium:hover,
+.light-theme .nav-btn-next:hover,
+.light-theme .nav-btn-submit-pay:hover,
+.light-theme .coupon-submit-btn:hover,
+.light-theme .btn-success-dashboard:hover,
+.light-theme .nav-btn-check-status:hover,
+.light-theme .nav-btn-back:hover,
+.light-theme .nav-btn-skip:hover,
+.light-theme .btn-close-extend-wizard:hover {
+  background: #f5f0ff !important;
+  border-color: #6d28d9 !important;
+  color: #4c1d95 !important;
+}

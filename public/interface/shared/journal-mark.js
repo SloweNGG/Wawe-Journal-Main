@@ -29,12 +29,14 @@
       '50%{opacity:.3;box-shadow:0 0 0 6px transparent,0 0 2px transparent}}' +
     '@media (prefers-reduced-motion:reduce){.ww-mark--live .ww-mark-dot{animation:none}}';
 
-  var styleInjected = false;
+  // Stil <head> okunurken eklenir. data-runtime: SPA router bunu "sunucudan gelen" sanıp
+  // sayfa geçişinde silmesin (bkz. Layout.astro). Yine de silinirse bir sonraki çağrıda geri eklenir;
+  // eskiden tek seferlik bayrak yüzünden geçişten sonra tüm hesap noktaları görünmez oluyordu.
   function injectStyle() {
-    if (styleInjected || typeof document === 'undefined') return;
-    styleInjected = true;
+    if (typeof document === 'undefined' || document.getElementById('ww-journal-mark-style')) return;
     var st = document.createElement('style');
     st.id = 'ww-journal-mark-style';
+    st.setAttribute('data-runtime', '');
     st.textContent = CSS;
     (document.head || document.documentElement).appendChild(st);
   }

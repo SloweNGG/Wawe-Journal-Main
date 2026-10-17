@@ -1,3 +1,20 @@
+// Yeni işlem: bu sayfada hızlı ekleme penceresi varsa onu açar, yoksa işlem ekleme sayfasına gider
+function wwOpenAddTrade() {
+  if (typeof window.quickAddOpen === 'function' && document.getElementById('quick-add-overlay')) {
+    window.quickAddOpen();
+    return;
+  }
+  if (window.PageTransition && typeof window.PageTransition.exit === 'function') window.PageTransition.exit('/add-trade.html');
+  else window.location.href = '/add-trade.html';
+}
+window.wwOpenAddTrade = wwOpenAddTrade;
+
+function wwIsPremiumCached() {
+  var plan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
+  return plan === 'premium' || (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium') ||
+    (window.SETTINGS_STATE && window.SETTINGS_STATE.isPremium === true);
+}
+
 function closeAllNavDropdowns(except) {
   // 1. Premium dropdown
   if (except !== 'premium') {
@@ -70,6 +87,29 @@ window.wwToggleJournal = function(e, btn) {
   }
 };
 
+// Görülen okunmamış bildirimler: panel açılınca kaydedilir, rozetin yanıp sönmesi durur.
+// Yeni (görülmemiş) bir okunmamış bildirim gelince yeniden başlar. Tarayıcıda saklanır,
+// böylece her sayfa açılışında baştan yanıp sönmez.
+var BELL_SEEN_KEY = 'ww_bell_seen_ids';
+function wwBellSeenSet() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(BELL_SEEN_KEY) || '[]');
+    var set = {};
+    (Array.isArray(arr) ? arr : []).forEach(function(id) { set[id] = true; });
+    return set;
+  } catch (e) { return {}; }
+}
+function wwMarkBellSeen() {
+  var unread = (window._allNotifications || []).filter(function(n) { return !n.is_read && n.id != null; });
+  try {
+    var ids = Object.keys(wwBellSeenSet()).concat(unread.map(function(n) { return String(n.id); }));
+    var uniq = ids.filter(function(id, i) { return ids.indexOf(id) === i; }).slice(-300);
+    localStorage.setItem(BELL_SEEN_KEY, JSON.stringify(uniq));
+  } catch (e) {}
+  var badge = document.getElementById('bell-badge');
+  if (badge) badge.classList.remove('is-live');
+}
+
 window.wwToggleBell = function(e, btn) {
   if (e) {
     e.preventDefault();
@@ -82,6 +122,7 @@ window.wwToggleBell = function(e, btn) {
   if (p) {
     p.classList.toggle('open', willOpen);
     if (b) b.classList.toggle('active', willOpen);
+    if (willOpen) wwMarkBellSeen();
     if (willOpen && typeof window.loadNotifications === 'function') {
       window.loadNotifications();
     }
@@ -344,10 +385,36 @@ window.renderNotifications = function() {
 
   // Rozet ve sayaç güncelle
   var totalUnread = unreadList.length;
+  // Sayı arttıysa rozet bir kez belirir, zil bir kez sallanır (sürekli animasyon yok).
+  // Yalnızca sunucudan gerçekten yüklenmiş iki liste karşılaştırılır: veri gelmeden yapılan
+  // çizimler (ör. dil güncellemesi, boş liste) sayılmaz; yoksa her sayfa açılışında zil sallanırdı.
+  var notifsLoaded = !!window._wwNotifsLoaded;
+  var prevUnread = window._wwLastUnreadLoaded;
+  if (notifsLoaded) window._wwLastUnreadLoaded = totalUnread;
+  var unreadIncreased = notifsLoaded && typeof prevUnread === 'number' && totalUnread > prevUnread;
+  if (bellBtn) {
+    var bellLabel = t('nav.notifications', 'Bildirimler');
+    bellBtn.setAttribute('aria-label', totalUnread > 0 ? bellLabel + ', ' + totalUnread + ' ' + t('noti.unread_suffix', 'okunmamış') : bellLabel);
+  }
   if (totalUnread > 0) {
     if (badge) {
-      badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+      badge.textContent = totalUnread > 9 ? '9+' : totalUnread;
+      badge.classList.toggle('is-wide', totalUnread > 9);
       badge.style.display = 'flex';
+      // Görülmemiş okunmamış bildirim varsa rozetin etrafında yumuşak bir halka yanıp söner
+      var seenSet = wwBellSeenSet();
+      var panelOpen = !!(document.getElementById('bell-panel') && document.getElementById('bell-panel').classList.contains('open'));
+      badge.classList.toggle('is-live', !panelOpen && unreadList.some(function(n) { return !seenSet[String(n.id)]; }));
+      if (unreadIncreased) {
+        badge.classList.remove('bump');
+        void badge.offsetWidth;
+        badge.classList.add('bump');
+        if (bellBtn) {
+          bellBtn.classList.remove('ring');
+          void bellBtn.offsetWidth;
+          bellBtn.classList.add('ring');
+        }
+      }
     }
     if (dot) dot.style.display = 'none';
     if (bellBtn) bellBtn.classList.add('has-alert');
@@ -864,6 +931,7 @@ window.loadNotifications = async function() {
     });
 
     window._allNotifications = combined;
+    window._wwNotifsLoaded = true;
     window.renderNotifications();
   } catch (err) {
     console.error('Load notifications error:', err);
@@ -1048,48 +1116,6 @@ function getNavbarHTML(translations) {
         </div>
       </a>
       
-      <div class="nav-links">
-        <a href="/dashboard.html" data-page="dashboard"><span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span></a>
-        <a href="/trades.html" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
-        <a href="/strategies.html" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
-        <a href="/calendar.html" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
-      </div>
-      
-      <div class="nav-right">
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn" id="premium-dropdown-btn" aria-haspopup="true" aria-expanded="false" onclick="wwTogglePremium(event, this)">
-            <i data-lucide="crown" class="nav-icon" style="width:16px;height:16px;"></i>
-            <span data-i18n="nav.premium">${tt('nav.premium', 'Premium')}</span>
-            <i data-lucide="chevron-down" class="dropdown-arrow" style="width:12px;height:12px;"></i>
-          </button>
-          <div class="nav-dropdown-menu premium-menu-glass" id="premium-dropdown-menu" role="menu">
-            <div class="premium-menu-header">
-              <span class="premium-menu-title" data-i18n="nav.premium_features">${tt('nav.premium_features', 'Premium Özellikler')}</span>
-            </div>
-            <div class="premium-menu-items">
-              <a href="/premium-dashboard.html" class="dropdown-item" role="menuitem">
-                <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i>
-                <span data-i18n="nav.premium_dashboard">${tt('nav.premium_dashboard', 'Premium Dashboard')}</span>
-              </a>
-              <a href="/settings.html#panel-appearance" class="dropdown-item" role="menuitem">
-                <i data-lucide="palette" style="width:16px;height:16px;"></i>
-                <span data-i18n="nav.theme_customization">${tt('nav.theme_customization', 'Tema Özelleştirme')}</span>
-              </a>
-              <a href="/settings.html#panel-overtrade" class="dropdown-item" role="menuitem">
-                <i data-lucide="shield-alert" style="width:16px;height:16px;"></i>
-                <span data-i18n="nav.overtrade_alert">${tt('nav.overtrade_alert', 'Over Trade Uyarısı')}</span>
-              </a>
-            </div>
-            <div class="premium-menu-footer nav-upgrade-wrapper" id="premium-menu-footer">
-              <div class="dropdown-divider"></div>
-              <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" role="menuitem" style="color:var(--accent2);">
-                <i data-lucide="crown" style="width:16px;height:16px;"></i>
-                <span data-i18n="nav.upgrade_premium">${tt('nav.upgrade_premium', "Premium'a Geç →")}</span>
-              </a>
-            </div>
-          </div>
-        </div>
-
         <div class="nav-journal-switcher" id="nav-journal-switcher">
           <button class="journal-switch-btn" aria-haspopup="true" aria-expanded="false" onclick="wwToggleJournal(event, this)">
             <span class="journal-icon ww-mark-host"><span class="ww-mark ww-mark--dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span></span>
@@ -1098,7 +1124,14 @@ function getNavbarHTML(translations) {
           </button>
           <div class="journal-dropdown" id="journal-dropdown"></div>
         </div>
-
+      <div class="nav-links">
+        <a href="/dashboard.html" data-page="dashboard"><span data-i18n="nav.dashboard">${tt('nav.dashboard', 'Dashboard')}</span></a>
+        <a href="/trades.html" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
+        <a href="/strategies.html" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
+        <a href="/calendar.html" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
+        <a href="/premium-dashboard.html" data-page="premium" data-premium-link><span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span><span class="nav-pro-tag">PRO</span></a>
+      </div>
+      <div class="nav-right">
         <div class="nav-bell-wrapper" id="nav-bell-wrapper">
           <button class="nav-bell-btn" id="overtrade-bell-btn" aria-label="Bildirimler" title="Bildirimler" onclick="wwToggleBell(event, this)">
             <i data-lucide="bell" class="nav-bell-icon"></i>
@@ -1158,26 +1191,27 @@ function getNavbarHTML(translations) {
           </div>
         </div>
         
-        <div class="nav-bug-wrapper" id="nav-bug-wrapper">
-          <a href="/report-bug.html" class="nav-bug-btn" id="nav-bug-btn" aria-label="Hata Bildir" title="${tt('nav.report_bug', 'Hata Bildir')}">
-            <i data-lucide="bug" class="nav-bug-icon"></i>
-          </a>
-        </div>
-        
-        <div class="plan-badge" id="plan-badge" role="button" tabindex="0" aria-label="Abonelik Planı">
+        <a href="/settings.html#panel-plan" class="plan-badge" id="plan-badge" aria-label="${tt('nav.plan', 'Abonelik planı')}">
           <span class="plan-dot"></span>
           <span class="plan-text" id="plan-text">${tt('nav.free_badge', 'Ücretsiz')}</span>
-          <div class="plan-badge-tooltip" id="plan-badge-tooltip" role="tooltip">
-            <div class="plan-tooltip-title" id="plan-tooltip-title">${tt('nav.plan_tooltip_free', 'Ücretsiz Plan')}</div>
-            <div class="plan-tooltip-sub" id="plan-tooltip-sub">${tt('nav.plan_tooltip_free_desc', 'Sınırsız Süre')}</div>
-          </div>
-        </div>
-        
+        </a>
         <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" onclick="window.wwToggleAvatar(event, this)">
           <span id="nav-avatar-text" style="font-size:13px;font-weight:600;">?</span>
         </div>
         
         <div class="dropdown-menu" id="dropdown-menu">
+          <div class="nav-dd-head">
+            <div class="nav-dd-id">
+              <div class="nav-dd-name" id="nav-dd-name">&nbsp;</div>
+              <div class="nav-dd-email" id="nav-dd-email"></div>
+            </div>
+          </div>
+          <div class="nav-dd-plan" aria-live="polite">
+            <span id="plan-tooltip-title">${tt('nav.plan_tooltip_free', 'Ücretsiz Plan')}</span>
+            <span class="nav-dd-plan-sep">·</span>
+            <span id="plan-tooltip-sub">${tt('nav.plan_tooltip_free_desc', 'Sınırsız Süre')}</span>
+          </div>
+          <div class="dropdown-divider"></div>
           <a href="/settings.html#panel-profile" class="dropdown-item">
             <i data-lucide="user" style="width:16px;height:16px;"></i>
             <span data-i18n="nav.profile">${tt('nav.profile', 'Profil')}</span>
@@ -1416,6 +1450,19 @@ function applyAvatarToNav(url) {
     if (displayName && displayName.includes('@')) displayName = displayName.split('@')[0];
     menuName.textContent = displayName || 'Kullanıcı';
   }
+
+  // Avatar menüsü başlığı: kim olduğun (ad + e-posta)
+  var ddName = document.getElementById('nav-dd-name');
+  var ddEmail = document.getElementById('nav-dd-email');
+  var email = (user && user.email) || (window.__wwUserProfile && window.__wwUserProfile.email) || sessionStorage.getItem('ww_user_email') || '';
+  if (ddName) {
+    var shortName = fullName && fullName.includes('@') ? fullName.split('@')[0] : fullName;
+    ddName.textContent = shortName || 'Kullanıcı';
+  }
+  if (ddEmail) {
+    ddEmail.textContent = email && email !== fullName ? email : '';
+    ddEmail.style.display = ddEmail.textContent ? '' : 'none';
+  }
 }
 
 async function loadNavbarAvatar() {
@@ -1462,6 +1509,7 @@ async function loadNavbarAvatar() {
     if (!window.SETTINGS_STATE) window.SETTINGS_STATE = {};
     window.SETTINGS_STATE.currentUser = user;
     if (user.id) sessionStorage.setItem('ww_user_id', user.id);
+    if (user.email) { try { sessionStorage.setItem('ww_user_email', user.email); } catch (e) {} }
     
     var isAdminUser = (user?.app_metadata?.role === 'admin');
     sessionStorage.setItem('ww_user_is_admin', isAdminUser ? 'true' : 'false');
@@ -1757,6 +1805,35 @@ function initNavEvents() {
       if (e.key === 'Escape') {
         closeAllNavDropdowns();
       }
+    });
+
+    // 4. "+ İşlem Ekle": sayfada hızlı ekleme varsa pencereyi açar, yoksa işlem ekleme sayfasına gider
+    document.addEventListener('click', function(e) {
+      if (!e.target || !e.target.closest) return;
+      if (e.target.closest('#nav-add-trade')) {
+        e.preventDefault();
+        closeAllNavDropdowns();
+        wwOpenAddTrade();
+        return;
+      }
+      // Analiz (Premium Dashboard): Premium değilse sayfaya gitmek yerine yükseltme penceresi
+      var pl = e.target.closest('a[data-premium-link]');
+      if (pl && !wwIsPremiumCached() && typeof window.openUpgradeModal === 'function') {
+        e.preventDefault();
+        window.openUpgradeModal({ feature: 'premium_dashboard' });
+      }
+    });
+
+    // 5. "N" kısayolu: yazı alanında değilken yeni işlem
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'n' && e.key !== 'N') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      var t = e.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (document.querySelector('.quick-add-overlay.active, [role="dialog"][aria-modal="true"]:not([hidden])')) return;
+      if (typeof window.quickAddOpen !== 'function' || !document.getElementById('quick-add-overlay')) return;
+      e.preventDefault();
+      wwOpenAddTrade();
     });
   }
 
@@ -2135,7 +2212,7 @@ function renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap) {
         '</span>';
       }
 
-      html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button">' +
+      html += '<button class="journal-item ' + isActive + '" data-id="' + j.id + '" type="button" title="' + safeEscape(j.name) + '">' +
         '<div class="' + iconWrapClass + '" style="' + iconWrapStyle + '">' +
           iconInner +
         '</div>' +
@@ -2394,7 +2471,7 @@ window.testAmbientState = function(state) {
     dot.className = 'ambient-indicator-dot ' + state;
   }
 
-  var msg = state === 'profit' ? '🟢 Kâr Ambiyansı (Yeşil)' : (state === 'loss' ? '🔴 Zarar Ambiyansı (Kırmızı)' : '🟣 Nötr Ambiyans (Mor)');
+  var msg = state === 'profit' ? 'Kâr Ambiyansı (Yeşil)' : (state === 'loss' ? 'Zarar Ambiyansı (Kırmızı)' : 'Nötr Ambiyans (Mor)');
   if (typeof showMsg === 'function') showMsg(msg, 'success');
   else if (typeof showToast === 'function') showToast(msg, 'success');
 };

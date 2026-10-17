@@ -768,16 +768,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     previousTrades = previousTrades ? window.WwMetrics.closedTrades(previousTrades) : null;
     animate = (animate !== undefined) ? animate : true;
 
-    var total = trades.length;
-    var totalPnL = 0, wins = 0, losses = 0;
-    var winPnLs = [], lossPnLs = [];
-
-    trades.forEach(function (t) {
-      var pnl = calcTradePnL(t);
-      totalPnL += pnl;
-      if (pnl > 0) { wins++; winPnLs.push(pnl); }
-      else if (pnl < 0) { losses++; lossPnLs.push(pnl); }
-    });
+    // Tüm metrikler ortak modülden (interface/shared/trade-metrics.js — testli)
+    var m = window.WwMetrics.summarize(trades);
+    var total = m.total;
+    var totalPnL = m.totalPnL;
+    var wins = m.wins, losses = m.losses;
 
     try {
       localStorage.setItem('ww_cached_pnl', String(totalPnL));
@@ -786,29 +781,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       }
     } catch(e) {}
 
-    var wr = total ? (wins / total) * 100 : 0;
-    var avgWin = winPnLs.length ? winPnLs.reduce(function (a, b) { return a + b; }, 0) / winPnLs.length : 0;
-    var avgLoss = lossPnLs.length ? -(Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0) / lossPnLs.length)) : 0;
-    // Kayıp yokken kazanç varsa profit factor sonsuzdur (null → "∞"); işlem yoksa 0
-    var grossWinSum = winPnLs.reduce(function (a, b) { return a + b; }, 0);
-    var grossLossSum = Math.abs(lossPnLs.reduce(function (a, b) { return a + b; }, 0));
-    var profitFactor = grossLossSum > 0 ? (grossWinSum / grossLossSum) : (grossWinSum > 0 ? null : 0);
-
-    var cumulative = 0, maxCumulative = 0, maxDrawdown = 0;
-    trades.forEach(function (t) {
-      if (t.exit_price) {
-        cumulative += calcTradePnL(t);
-        maxCumulative = Math.max(maxCumulative, cumulative);
-        maxDrawdown = Math.min(maxDrawdown, cumulative - maxCumulative);
-      }
-    });
-
-    var totalRR = 0, rrCount = 0;
-    trades.forEach(function (t) {
-      var rr = parseFloat(t.rr_ratio);
-      if (rr > 0 && isFinite(rr)) { totalRR += rr; rrCount++; }
-    });
-    var avgRR = rrCount ? totalRR / rrCount : 0;
+    var wr = m.winRate;
+    var profitFactor = m.profitFactor; // null → "∞"
 
     // Aylık hedef: bu takvim ayının kapanmış işlem PnL'i (seçili filtreden bağımsız); hedef 0/boşsa %0
     var monthPnL = currentMonthPnL(window._allDashboardTrades || trades);
@@ -824,25 +798,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     animateNumber('stat-losses', losses, false, false, 450, useAnimation);
     animateNumber('stat-winrate', wr, false, true, 600, useAnimation);
 
-    var avgWinEl = safeEl('kpi-avg-win');
-    if (avgWinEl) {
-      avgWinEl.textContent = formatCurrency(avgWin);
-      avgWinEl.title = formatCurrency(avgWin);
-    }
-    var avgLossEl = safeEl('kpi-avg-loss');
-    if (avgLossEl) {
-      avgLossEl.textContent = formatCurrency(avgLoss);
-      avgLossEl.title = formatCurrency(avgLoss);
-    }
+    // Kazanç/kayıp yoksa "—"; drawdown yoksa nötr "$0" (eskiden kırmızı "+$0,00"); R:R girilmemişse "—"
+    setKpiValue('kpi-avg-win', m.wins ? formatCurrency(m.avgWin) : '—', m.wins ? 'positive' : '');
+    setKpiValue('kpi-avg-loss', m.losses ? formatCurrency(-m.avgLoss) : '—', m.losses ? 'negative' : '');
     var pfEl = safeEl('kpi-pf');
     if (pfEl) pfEl.textContent = window.WwMetrics.formatProfitFactor(profitFactor);
-    var ddEl = safeEl('kpi-dd');
-    if (ddEl) {
-      ddEl.textContent = formatCompactCurrency(maxDrawdown);
-      ddEl.title = formatCurrency(maxDrawdown);
-    }
+    var ddEl = setKpiValue('kpi-dd', m.maxDrawdown > 0 ? formatCompactCurrency(-m.maxDrawdown) : formatCompactCurrency(0).replace(/^\+/, ''),
+      m.maxDrawdown > 0 ? 'negative' : '');
+    if (ddEl) ddEl.title = m.maxDrawdown > 0 ? formatCurrency(-m.maxDrawdown) : '';
     var rrEl = safeEl('kpi-rr');
-    if (rrEl) rrEl.textContent = avgRR.toFixed(2);
+    if (rrEl) rrEl.textContent = m.avgRR === null ? '—' : m.avgRR.toFixed(2);
 
     var goalPercentEl = safeEl('goal-percent');
     if (goalPercentEl) {
@@ -887,15 +852,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
 
     if (previousTrades && previousTrades.length > 0) {
-      var prevTotal = previousTrades.length;
-      var prevTotalPnL = 0, prevWins = 0, prevLosses = 0;
-      previousTrades.forEach(function (t) {
-        var pnl = calcTradePnL(t);
-        prevTotalPnL += pnl;
-        if (pnl > 0) prevWins++;
-        else if (pnl < 0) prevLosses++;
-      });
-      var prevWr = prevTotal ? (prevWins / prevTotal) * 100 : 0;
+      var pm = window.WwMetrics.summarize(previousTrades);
+      var prevTotal = pm.total, prevTotalPnL = pm.totalPnL, prevWins = pm.wins, prevLosses = pm.losses;
+      var prevWr = pm.winRate;
 
       updateTrend('trend-total', calcTrend(total, prevTotal));
       updateTrend('trend-pnl', calcTrend(totalPnL, prevTotalPnL));
@@ -920,7 +879,18 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     var wrEl = safeEl('stat-winrate');
     if (wrEl) wrEl.style.color = wr >= 50 ? 'var(--green)' : 'var(--red)';
 
-    return { total: total, totalPnL: totalPnL, wins: wins, losses: losses, wr: wr, profitFactor: profitFactor, avgRR: avgRR, maxDrawdown: Math.abs(maxDrawdown) };
+    return m;
+  }
+
+  // KPI değeri + renk sınıfı (sınıf HTML'de sabit olduğu için değere göre ayarlanır)
+  function setKpiValue(id, text, tone) {
+    var el = safeEl(id);
+    if (!el) return null;
+    el.textContent = text;
+    el.title = text;
+    el.classList.toggle('positive', tone === 'positive');
+    el.classList.toggle('negative', tone === 'negative');
+    return el;
   }
 
   async function renderStrategyTags(trades) {

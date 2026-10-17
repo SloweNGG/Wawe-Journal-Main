@@ -3345,3 +3345,376 @@ body.light-theme .noti-stat-chip.limit-danger {
 @media (prefers-reduced-motion: reduce) {
   .nav .ww-mark--live .ww-mark-dot { animation: none !important; }
 }
+
+/* ============================================================
+   NAVBAR v2 — sade öncelik sırası
+   Sol: logo · hesap seçici · sayfalar (Analiz PRO dahil)
+   Sağ: + İşlem Ekle · bildirimler · avatar (plan bilgisi avatar menüsünde)
+   Yukarıdaki eski kuralları ezer; değişiklikler bu bölümde toplu durur.
+   ============================================================ */
+
+/* ── Hesap seçici: logonun yanında, buton gibi görünen hap ── */
+.nav .nav-journal-switcher { margin-left: 0.9rem; flex-shrink: 0; }
+.nav .journal-switch-btn {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px 0 9px;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.nav .journal-switch-btn:hover,
+.nav .nav-journal-switcher.open .journal-switch-btn {
+  color: var(--text);
+  border-color: rgba(124, 58, 237, 0.6);
+  background: rgba(124, 58, 237, 0.06);
+}
+.nav .journal-switch-btn .journal-name { font-size: 12.5px; font-weight: 600; max-width: 180px; }
+.nav .journal-switch-btn .journal-arrow { color: var(--muted); }
+/* Menü artık soldan açılır */
+.nav .nav-journal-switcher .journal-dropdown {
+  left: 0;
+  right: auto;
+  top: 42px;
+  transform-origin: top left;
+}
+
+/* ── Sayfa bağlantıları: düz aktif durum (gradyan/parlama yok) ── */
+.nav .nav-links { margin-left: 1rem; gap: 0.1rem; }
+.nav .nav-links a {
+  min-width: 0;
+  padding: 0.45rem 0.75rem;
+  gap: 6px;
+}
+.nav .nav-links a::after {
+  bottom: 3px;
+  height: 2px;
+  background: var(--accent2);
+  box-shadow: none;
+}
+.nav .nav-links a:hover::after { width: 0; box-shadow: none; }
+.nav .nav-links a.active {
+  color: var(--text);
+  background: rgba(139, 92, 246, 0.1);
+}
+.nav .nav-links a.active::after {
+  width: 18px !important;
+  box-shadow: none !important;
+}
+body.light-theme .nav .nav-links a.active { color: #1e1b2e; }
+
+/* PRO etiketi (Analiz) */
+.nav-pro-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 5px;
+  border: 1px solid rgba(124, 58, 237, 0.5);
+  color: #c4b5fd;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+}
+body.light-theme .nav-pro-tag { color: #6d28d9; border-color: rgba(109, 40, 217, 0.45); }
+
+/* ── + İşlem Ekle: ortak buton stili (siyah zemin, mor çerçeve, hap) ── */
+.nav-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px 0 10px;
+  border-radius: 999px;
+  border: 1px solid #7c3aed;
+  background: #000;
+  color: #f4f4f5;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.nav-add-btn:hover { background: #0d0618; border-color: #a78bfa; color: #fff; }
+.nav-add-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+.light-theme .nav-add-btn { background: #fff; color: #1e1b2e; border-color: #7c3aed; }
+.light-theme .nav-add-btn:hover { background: #f5f0ff; }
+.nav .nav-right { gap: 0.55rem; }
+
+
+/* ── Avatar menüsü: kim olduğun + plan ── */
+.nav .dropdown-menu { min-width: 260px; }
+.nav-dd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.7rem 0.3rem;
+}
+.nav-dd-id { min-width: 0; }
+.nav-dd-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.nav-dd-email {
+  margin-top: 1px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.nav-dd-plan {
+  padding: 0 0.7rem 0.55rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+.nav-dd-plan-sep { margin: 0 3px; opacity: 0.6; }
+.nav .dropdown-menu .plan-badge {
+  flex-shrink: 0;
+  height: 24px;
+  text-decoration: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.nav .dropdown-menu .plan-badge:hover,
+.nav .dropdown-menu .plan-badge.premium:hover { transform: none; box-shadow: none; }
+.nav .dropdown-menu .plan-badge .plan-dot,
+.nav .dropdown-menu .plan-badge.premium .plan-dot { animation: none; box-shadow: none; }
+
+/* ── Dar ekranlar ── */
+@media (max-width: 1180px) {
+  .nav-add-btn span { display: none; }
+  .nav-add-btn { width: 32px; padding: 0; justify-content: center; }
+  .nav .journal-switch-btn .journal-name { max-width: 120px; }
+}
+@media (min-width: 768px) and (max-width: 980px) {
+  .nav { padding: 0 1rem; }
+  .nav .nav-links { margin-left: 0.6rem; }
+  .nav .nav-links a { padding: 0.4rem 0.5rem; font-size: 0.78rem; }
+  .nav .journal-switch-btn .journal-name { max-width: 90px; }
+}
+@media (max-width: 767px) {
+  /* Mobil: logo · hesap seçici · (boşluk) · bildirim · menü. Yeni işlem: yüzen + butonu */
+  .nav .nav-journal-switcher { display: flex; margin-left: 0.6rem; min-width: 0; flex: 0 1 auto; }
+  .nav .journal-switch-btn { height: 30px; min-height: 30px; font-size: 12px; }
+  .nav .journal-switch-btn .journal-name { max-width: 34vw; font-size: 12px; }
+  .nav .nav-journal-switcher .journal-dropdown {
+    position: fixed;
+    top: 52px;
+    left: 12px;
+    right: 12px;
+    min-width: 0;
+    max-width: none;
+  }
+  .nav .nav-right { margin-left: auto; }
+  body[data-quick-add] .nav-add-btn { display: none; }
+}
+
+/* ============================================================
+   KOMPAKT AÇILIR MENÜLER — hesaplar + avatar
+   Daha dar, daha alçak satırlar; içerik aynı. (Bildirim paneli sekmeleri
+   nedeniyle bilerek geniş kalır.)
+   ============================================================ */
+.nav .dropdown-menu,
+.nav .journal-dropdown {
+  width: 232px;
+  min-width: 232px;
+  padding: 5px;
+  border-radius: 14px;
+}
+.nav .dropdown-menu .dropdown-item {
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.nav .dropdown-menu .dropdown-item svg,
+.nav .dropdown-menu .dropdown-item i { width: 15px !important; height: 15px !important; }
+.nav .dropdown-menu .dropdown-divider { margin: 4px 4px; }
+
+/* Avatar menüsü başlığı */
+.nav .nav-dd-head { gap: 0.5rem; padding: 0.4rem 0.5rem 0.15rem; }
+.nav .nav-dd-name { font-size: 13px; max-width: 128px; }
+.nav .nav-dd-email { font-size: 11px; max-width: 128px; }
+.nav .nav-dd-plan { padding: 0 0.5rem 0.4rem; font-size: 10.5px; }
+.nav .dropdown-menu .plan-badge { height: 22px; padding: 0 0.55rem 0 0.45rem; }
+
+/* Hesaplar menüsü */
+.nav .journal-dropdown .journal-menu-header { padding: 6px 8px 7px; margin-bottom: 3px; }
+.nav .journal-dropdown .journal-menu-title { font-size: 10px; }
+.nav .journal-dropdown .journal-menu-count { min-width: 18px; padding: 1px 6px; font-size: 10px; }
+.nav .journal-dropdown .journal-menu-list { max-height: 264px; gap: 2px; padding: 2px 2px 2px 0; }
+.nav .journal-dropdown .journal-item { gap: 9px; padding: 6px 8px; border-radius: 9px; }
+.nav .journal-dropdown .journal-icon-wrap { width: 28px; height: 28px; border-radius: 8px; }
+.nav .journal-dropdown .journal-icon-wrap svg { width: 14px; height: 14px; }
+.nav .journal-dropdown .nav-dropdown-prop-icon { width: 16px; height: 16px; }
+.nav .journal-dropdown .journal-info { gap: 1px; min-width: 0; }
+.nav .journal-dropdown .journal-info .journal-name { font-size: 12.5px; line-height: 1.25; }
+.nav .journal-dropdown .journal-count,
+.nav .journal-dropdown .journal-count-num { font-size: 11px; }
+.nav .journal-dropdown .journal-count-label { font-size: 10.5px; }
+.nav .journal-dropdown .journal-check { width: 16px; height: 16px; padding: 3px; flex-shrink: 0; }
+.nav .journal-dropdown .journal-menu-footer { margin-top: 4px; padding: 5px 2px 1px; }
+.nav .journal-dropdown .journal-manage-link { height: 32px; padding: 0 10px; border-radius: 9px; font-size: 12px; }
+/* Uzun hesap adı tek satırda kısalır (tam adı: üzerine gelince) */
+.nav .journal-dropdown .journal-info .journal-name {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   SİYAH AÇILIR PANELLER (koyu tema) — avatar, hesaplar, bildirimler
+   Cam efekti (yarı saydam + bulanıklık) kaldırıldı: arkadaki sayfa
+   içerikleri panelin içinden görünüyordu. Kartlarla aynı dil: #000 + ince çerçeve.
+   ============================================================ */
+:root:not(.light-theme) body:not(.light-theme) .nav .dropdown-menu,
+:root:not(.light-theme) body:not(.light-theme) .nav .journal-dropdown,
+:root:not(.light-theme) body:not(.light-theme) .nav .bell-panel {
+  background: #000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.9);
+}
+:root:not(.light-theme) body:not(.light-theme) .nav .bell-panel-header,
+:root:not(.light-theme) body:not(.light-theme) .nav .bell-filter-tabs,
+:root:not(.light-theme) body:not(.light-theme) .nav .bell-panel-footer {
+  background: #000;
+}
+:root:not(.light-theme) body:not(.light-theme) .nav .noti-item {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.09);
+}
+:root:not(.light-theme) body:not(.light-theme) .nav .noti-item:hover {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+:root:not(.light-theme) body:not(.light-theme) .nav .noti-item.unread {
+  background: #000;
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+/* ============================================================
+   BİLDİRİM SAYACI — sade rozet
+   Zil kırmızıya dönmez/parlamaz; okunmamış varken yalnızca ikon belirginleşir.
+   Rozet: düz kırmızı, beyaz rakam, navbar renginde boşluk halkası; 9+ üstü "9+".
+   Sayı artınca rozet bir kez belirir, zil bir kez sallanır (.bump / .ring, JS).
+   ============================================================ */
+.nav .nav-bell-btn.has-alert {
+  color: var(--text);
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: none;
+}
+.nav .nav-bell-btn.has-alert:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+}
+body.light-theme .nav .nav-bell-btn.has-alert {
+  color: #1e1b2e;
+  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+}
+.nav .bell-badge {
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 99px;
+  background: #ef4444;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  box-shadow: 0 0 0 2px #07070c;
+}
+.nav .bell-badge.is-wide { padding: 0 4px; }
+.nav .bell-badge::after { content: none; }
+body.light-theme .nav .bell-badge { box-shadow: 0 0 0 2px #fff; }
+
+/* Tek seferlik geri bildirim (navbar genelindeki "animation: none" kuralına istisna) */
+.nav .bell-badge.bump { animation: wwBadgePop 0.32s cubic-bezier(0.22, 1, 0.36, 1) 1 !important; }
+.nav .nav-bell-btn.ring svg,
+.nav .nav-bell-btn.ring i { animation: wwBellOnce 0.7s ease-out 1 !important; transform-origin: top center; }
+@keyframes wwBadgePop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes wwBellOnce {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  45% { transform: rotate(-10deg); }
+  70% { transform: rotate(5deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav .bell-badge.bump,
+  .nav .nav-bell-btn.ring svg,
+  .nav .nav-bell-btn.ring i { animation: none !important; }
+}
+
+/* Yanıp sönen halka (SaaS tarzı "ping"): görülmemiş okunmamış bildirim varken rozetin
+   etrafından yumuşak bir halka dışa yayılıp söner. Rozetin kendisi sabit ve okunaklı kalır.
+   Panel açılınca durur (.is-live JS'te kalkar). */
+.nav .bell-badge.is-live::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #ef4444;
+  z-index: -1;
+  animation: wwBadgePing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite !important;
+}
+@keyframes wwBadgePing {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  75%, 100% { transform: scale(2.1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav .bell-badge.is-live::before { animation: none !important; content: none; }
+}
+
+/* ============================================================
+   PLAN ROZETİ (Free / Premium) — navbar'da, avatarın yanında
+   Yeni işlem: sağ alttaki yüzen + butonu (navbar'daki buton kaldırıldı)
+   ============================================================ */
+.nav .nav-right > .plan-badge {
+  height: 26px;
+  padding: 0 0.7rem 0 0.55rem;
+  text-decoration: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.nav .nav-right > .plan-badge .plan-text { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+.nav .nav-right > .plan-badge:hover,
+.nav .nav-right > .plan-badge.premium:hover { transform: none; box-shadow: none; }
+.nav .nav-right > .plan-badge .plan-dot,
+.nav .nav-right > .plan-badge.premium .plan-dot { box-shadow: none; }
+/* Avatar menüsü başlığı artık yalnızca ad + e-posta (rozet navbar'da) */
+.nav .nav-dd-name,
+.nav .nav-dd-email { max-width: 200px; }
+@media (max-width: 767px) {
+  .nav .nav-right > .plan-badge { display: none; }
+}

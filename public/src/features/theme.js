@@ -59,7 +59,7 @@ export function saveThemeSettings(settings) {
       safeLocalStorageSet('ww_custom_theme', JSON.stringify(fontOnly));
       applyThemeSettings(fontOnly);
       if (typeof showToast === 'function') {
-        showToast('✅ Font boyutu güncellendi!', 'success');
+        showToast('Font boyutu güncellendi!', 'success');
       }
       // ⭐ ApexCharts için tema değişikliğini bildir
       triggerChartThemeUpdate();
@@ -403,7 +403,7 @@ function initThemeFormEvents() {
       if (isLight) {
         const fontOnly = { fontSize: parseInt(fontSize.value) };
         saveThemeSettings(fontOnly);
-        showToast('✅ ' + _t('settings.font_updated_light'), 'success');
+        showToast(_t('settings.font_updated_light'), 'success');
         return;
       }
       const settings = {
@@ -414,7 +414,7 @@ function initThemeFormEvents() {
         fontSize: parseInt(fontSize.value)
       };
       saveThemeSettings(settings);
-      showToast('✅ ' + _t('settings.theme_saved'), 'success');
+      showToast(_t('settings.theme_saved'), 'success');
     });
   }
   
@@ -439,7 +439,7 @@ function initThemeFormEvents() {
       root.style.removeProperty('--border');
       root.style.removeProperty('--text');
       document.body.style.fontSize = '';
-      showToast('↺ ' + _t('settings.theme_reset_done'), 'success');
+      showToast(_t('settings.theme_reset_done'), 'success');
     });
   }
   

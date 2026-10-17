@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // WAWE JOURNAL - USER SERVICE
 // ============================================================
 
@@ -146,7 +146,7 @@ export async function requirePremium() {
     
     const { plan } = await getUserPlan();
     if (plan !== 'premium') {
-      showToast('💎 Bu özellik sadece Premium üyelere özeldir!', 'error');
+      showToast('Bu özellik sadece Premium üyelere özeldir!', 'error');
       window.location.href = 'settings.html#panel-plan';
       return null;
     }

@@ -1018,7 +1018,7 @@ import Layout from '../layouts/Layout.astro';
           else EARNINGS_STATE.btcAddress = address;
         }
 
-        var successMsg = t('earnings.toast_payout_success', '🎉 Para çekme talebiniz başarıyla oluşturuldu! Admin onayından sonra cüzdanınıza transfer edilecektir.');
+        var successMsg = t('earnings.toast_payout_success', 'Para çekme talebiniz başarıyla oluşturuldu! Admin onayından sonra cüzdanınıza transfer edilecektir.');
         if (typeof window.showToast === 'function') {
           window.showToast(successMsg, 'success');
         } else {

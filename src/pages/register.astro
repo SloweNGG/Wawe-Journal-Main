@@ -678,11 +678,12 @@ import Layout from '../layouts/Layout.astro';
         iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
       }
 
+      var cleanMsg = String(msg || '').replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E0}-\u{1F1FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{200D}\u{FE0F}]/gu, '').trim();
       var el = document.createElement('div');
       el.className = 'toast ' + type;
       el.innerHTML = `
         <span class="toast-icon">${iconSvg}</span>
-        <span class="toast-message">${escapeHtml(msg)}</span>
+        <span class="toast-message">${escapeHtml(cleanMsg)}</span>
         <button type="button" class="toast-close" aria-label="Close">&times;</button>
       `;
 
@@ -917,7 +918,7 @@ import Layout from '../layouts/Layout.astro';
             });
           }
           btn.textContent = 'Account Created! ✓';
-          toast('Account created successfully! Redirecting to dashboard... 🎉', 'success');
+          toast('Account created successfully! Redirecting to dashboard...', 'success');
           setTimeout(() => { window.location.href = 'dashboard.html'; }, 180);
           return;
         }

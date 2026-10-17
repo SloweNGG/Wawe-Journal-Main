@@ -2,69 +2,78 @@
 import PageLayout from '../layouts/PageLayout.astro';
 ---
 <PageLayout title="İletişim – Wawe Journal">
-  <div class="page-card">
-    <h1 data-i18n="contact.title">İletişim</h1>
+  <section class="page-hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="contact.get_in_touch">Bize Ulaşın</b></span>
+      <h1 class="anim" style="--d:.15s" data-i18n="contact.title">İletişim</h1>
+      <p class="page-lead anim" style="--d:.3s" data-i18n="contact.support_desc">Teknik destek, hesap sorunları veya önerileriniz için bize e-posta gönderebilirsiniz. En kısa sürede dönüş yapacağız.</p>
+    </div>
+  </section>
 
-    <div class="contact-grid">
-      <div class="contact-info">
-        <h2 data-i18n="contact.get_in_touch">Bize Ulaşın</h2>
-
-        <div class="contact-item">
-          <span class="contact-icon">📧</span>
-          <div>
-            <strong data-i18n="contact.email_label">E-posta</strong><br />
-            <a href="mailto:destek@wawedev.com">destek@wawedev.com</a>
+  <section class="page-body">
+    <div class="wrap">
+      <div class="bento">
+        <article class="card reveal">
+          <div class="card-body">
+            <div class="card-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <span data-i18n="contact.email_label">E-posta</span>
+            </div>
+            <p class="card-value"><a href="mailto:destek@wawedev.com" class="text-link">destek@wawedev.com</a></p>
           </div>
-        </div>
+        </article>
 
-        <div class="contact-item">
-          <span class="contact-icon">📍</span>
-          <div>
-            <strong data-i18n="contact.address_label">Adres</strong><br />
-            <span>EU Finland</span>
+        <article class="card reveal">
+          <div class="card-body">
+            <div class="card-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span data-i18n="contact.address_label">Adres</span>
+            </div>
+            <p class="card-value">EU Finland</p>
+            <p class="card-desc">WaweDev Inc</p>
           </div>
-        </div>
+        </article>
 
-        <div class="contact-item">
-          <span class="contact-icon">🕒</span>
-          <div>
-            <strong data-i18n="contact.hours_label">Çalışma Saatleri</strong><br />
-            <span data-i18n="contact.hours_weekdays">Hafta içi: 09:00 - 18:00</span><br />
-            <span data-i18n="contact.hours_weekend">Hafta sonu: Kapalı</span>
+        <article class="card reveal">
+          <div class="card-body">
+            <div class="card-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span data-i18n="contact.hours_label">Çalışma Saatleri</span>
+            </div>
+            <p class="card-value" data-i18n="contact.hours_weekdays">Hafta içi: 09:00 - 18:00</p>
+            <p class="card-desc" data-i18n="contact.hours_weekend">Hafta sonu: Kapalı</p>
           </div>
-        </div>
+        </article>
 
-        <div class="contact-social">
-          <h3 data-i18n="contact.social_media">Sosyal Medya</h3>
-          <div class="social-links">
-            <a href="https://www.instagram.com/wawejournal/" target="_blank" class="social-btn">📷 Instagram</a>
-            <a href="https://youtube.com/@wawedev" target="_blank" class="social-btn">🎥 YouTube</a>
+        <article class="card reveal">
+          <div class="card-body">
+            <div class="card-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <span data-i18n="contact.social_media">Sosyal Medya</span>
+            </div>
+            <div class="card-actions">
+              <a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" class="btn btn-line">Instagram</a>
+              <a href="https://youtube.com/@wawedev" target="_blank" rel="noopener" class="btn btn-line">YouTube</a>
+            </div>
           </div>
-        </div>
+        </article>
+
+        <article class="card wide featured reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="contact.support_title">Destek Talepleri</h2>
+            <div>
+              <p class="card-desc"><strong data-i18n="contact.support_reply">Ortalama yanıt süresi: 24 saat (hafta içi)</strong></p>
+              <div class="card-actions">
+                <a href="mailto:destek@wawedev.com" class="btn btn-accent">destek@wawedev.com →</a>
+              </div>
+            </div>
+          </div>
+        </article>
       </div>
 
-      <div class="contact-map">
-        <h2 data-i18n="contact.location_title">Konum</h2>
-        <div class="map-placeholder">
-          <svg width="100%" height="200" viewBox="0 0 400 200" style="background:var(--bg);border-radius:12px;">
-            <rect width="400" height="200" fill="var(--surface)" stroke="var(--border)" stroke-width="1"/>
-            <circle cx="200" cy="100" r="8" fill="var(--accent)"/>
-            <text x="200" y="130" text-anchor="middle" fill="var(--muted)" font-size="11">EU Finland</text>
-            <path d="M200,100 L200,80 M200,100 L220,100" stroke="var(--accent)" stroke-width="2"/>
-          </svg>
-          <p class="map-note">📍 EU Finland</p>
-        </div>
+      <div class="page-actions">
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
       </div>
     </div>
-
-    <div class="support-note">
-      <h3 data-i18n="contact.support_title">Destek Talepleri</h3>
-      <p data-i18n="contact.support_desc">Teknik destek, hesap sorunları veya önerileriniz için bize e-posta gönderebilirsiniz. En kısa sürede dönüş yapacağız.</p>
-      <p><strong data-i18n="contact.support_reply">Ortalama yanıt süresi: 24 saat (hafta içi)</strong></p>
-    </div>
-
-    <div class="back-link">
-      <a href="/" class="btn btn-ghost" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
-    </div>
-  </div>
+  </section>
 </PageLayout>

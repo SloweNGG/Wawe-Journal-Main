@@ -1992,8 +1992,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
     try {
       sessionStorage.setItem('ww_user_plan', 'premium');
       localStorage.setItem('ww_user_plan', 'premium');
+      sessionStorage.setItem('ww_premium_welcomed', 'true');
       sessionStorage.removeItem('ww_pending_payment');
+      sessionStorage.removeItem('ww_pending_payment_time');
       localStorage.removeItem('ww_pending_payment');
+      localStorage.removeItem('ww_pending_payment_time');
       localStorage.removeItem(STORAGE_KEY);
     } catch(e) {}
 
@@ -3359,7 +3362,7 @@ window.testAmbientState = function(state) {
     dot.className = 'ambient-indicator-dot ' + state;
   }
 
-  var msg = state === 'profit' ? '🟢 Kâr Ambiyansı Aktif (Yeşil)' : (state === 'loss' ? '🔴 Zarar Ambiyansı Aktif (Kırmızı)' : '🟣 Nötr Ambiyans Aktif (Mor)');
+  var msg = state === 'profit' ? 'Kâr Ambiyansı Aktif (Yeşil)' : (state === 'loss' ? 'Zarar Ambiyansı Aktif (Kırmızı)' : 'Nötr Ambiyans Aktif (Mor)');
   if (typeof showMsg === 'function') showMsg(msg, 'success');
   else if (typeof showToast === 'function') showToast(msg, 'success');
 };

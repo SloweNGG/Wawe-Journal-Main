@@ -2,44 +2,53 @@
 import PageLayout from '../layouts/PageLayout.astro';
 ---
 <PageLayout title="Gizlilik Politikası – Wawe Journal">
-  <div class="page-card">
-    <h1 data-i18n="privacy.title">Gizlilik Politikası</h1>
-    <p class="last-updated" data-i18n="privacy.last_updated">Son güncelleme: 15 Mayıs 2026</p>
-
-    <h2 data-i18n="privacy.sec1_title">1. Toplanan Veriler</h2>
-    <p data-i18n="privacy.sec1_desc">Wawe Journal olarak, yalnızca hizmetlerimizi sunmak için gerekli olan verileri toplarız:</p>
-    <ul>
-      <li data-i18n="privacy.sec1_item1">E-posta adresiniz (hesap oluşturma için)</li>
-      <li data-i18n="privacy.sec1_item2">İşlem verileriniz (sembol, lot, fiyatlar, tarih, notlar)</li>
-      <li data-i18n="privacy.sec1_item3">Son aktif olma zamanınız (kullanıcı durumu için)</li>
-    </ul>
-
-    <h2 data-i18n="privacy.sec2_title">2. Verilerin Kullanımı</h2>
-    <p data-i18n="privacy.sec2_desc">Topladığımız veriler yalnızca aşağıdaki amaçlar için kullanılır:</p>
-    <ul>
-      <li data-i18n="privacy.sec2_item1">Hesabınızı yönetmek ve kimlik doğrulaması sağlamak</li>
-      <li data-i18n="privacy.sec2_item2">İşlemlerinizi kaydetmek ve analiz etmek</li>
-      <li data-i18n="privacy.sec2_item3">Dashboard ve grafiklerinizi oluşturmak</li>
-      <li data-i18n="privacy.sec2_item4">Teknik destek sağlamak</li>
-    </ul>
-
-    <h2 data-i18n="privacy.sec3_title">3. Veri Güvenliği</h2>
-    <p data-i18n="privacy.sec3_desc">Verileriniz Supabase altyapısında şifrelenmiş olarak saklanır. Row Level Security (RLS) politikaları sayesinde hiçbir kullanıcı başka bir kullanıcının verilerini göremez.</p>
-
-    <h2 data-i18n="privacy.sec4_title">4. Üçüncü Taraflar</h2>
-    <p data-i18n="privacy.sec4_desc">Verileriniz asla üçüncü taraflarla paylaşılmaz veya satılmaz. Sadece Supabase (veritabanı) ve Cloudflare (barındırma) altyapıları kullanılır.</p>
-
-    <h2 data-i18n="privacy.sec5_title">5. Verilerinizi Silme</h2>
-    <p data-i18n="privacy.sec5_desc">Hesabınızı silmek isterseniz, lütfen iletişim sayfamız üzerinden bize ulaşın. Hesabınız ve tüm verileriniz kalıcı olarak silinecektir.</p>
-
-    <h2 data-i18n="privacy.sec6_title">6. Çerezler (Cookies)</h2>
-    <p data-i18n="privacy.sec6_desc">Wawe Journal, yalnızca oturum yönetimi için gerekli olan teknik çerezleri kullanır.</p>
-
-    <h2 data-i18n="privacy.sec7_title">7. İletişim</h2>
-    <p><span data-i18n="privacy.sec7_desc">Gizlilik politikamızla ilgili sorularınız için:</span> <a href="mailto:destek@wawedev.com">destek@wawedev.com</a></p>
-
-    <div class="back-link">
-      <a href="/" class="btn btn-ghost" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+  <section class="page-hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="footer.privacy">Privacy</b></span>
+      <h1 class="anim" style="--d:.15s" data-i18n="privacy.title">Gizlilik Politikası</h1>
+      <p class="page-meta anim" style="--d:.3s" data-i18n="privacy.last_updated">Son güncelleme: 15 Mayıs 2026</p>
     </div>
-  </div>
+  </section>
+
+  <section class="page-body">
+    <div class="wrap">
+      <article class="prose reveal">
+        <h2 data-i18n="privacy.sec1_title">1. Toplanan Veriler</h2>
+        <p data-i18n="privacy.sec1_desc">Wawe Journal olarak, yalnızca hizmetlerimizi sunmak için gerekli olan verileri toplarız:</p>
+        <ul>
+          <li data-i18n="privacy.sec1_item1">E-posta adresiniz (hesap oluşturma için)</li>
+          <li data-i18n="privacy.sec1_item2">İşlem verileriniz (sembol, lot, fiyatlar, tarih, notlar)</li>
+          <li data-i18n="privacy.sec1_item3">Son aktif olma zamanınız (kullanıcı durumu için)</li>
+        </ul>
+
+        <h2 data-i18n="privacy.sec2_title">2. Verilerin Kullanımı</h2>
+        <p data-i18n="privacy.sec2_desc">Topladığımız veriler yalnızca aşağıdaki amaçlar için kullanılır:</p>
+        <ul>
+          <li data-i18n="privacy.sec2_item1">Hesabınızı yönetmek ve kimlik doğrulaması sağlamak</li>
+          <li data-i18n="privacy.sec2_item2">İşlemlerinizi kaydetmek ve analiz etmek</li>
+          <li data-i18n="privacy.sec2_item3">Dashboard ve grafiklerinizi oluşturmak</li>
+          <li data-i18n="privacy.sec2_item4">Teknik destek sağlamak</li>
+        </ul>
+
+        <h2 data-i18n="privacy.sec3_title">3. Veri Güvenliği</h2>
+        <p data-i18n="privacy.sec3_desc">Verileriniz Supabase altyapısında şifrelenmiş olarak saklanır. Row Level Security (RLS) politikaları sayesinde hiçbir kullanıcı başka bir kullanıcının verilerini göremez.</p>
+
+        <h2 data-i18n="privacy.sec4_title">4. Üçüncü Taraflar</h2>
+        <p data-i18n="privacy.sec4_desc">Verileriniz asla üçüncü taraflarla paylaşılmaz veya satılmaz. Sadece Supabase (veritabanı) ve Cloudflare (barındırma) altyapıları kullanılır.</p>
+
+        <h2 data-i18n="privacy.sec5_title">5. Verilerinizi Silme</h2>
+        <p data-i18n="privacy.sec5_desc">Hesabınızı silmek isterseniz, lütfen iletişim sayfamız üzerinden bize ulaşın. Hesabınız ve tüm verileriniz kalıcı olarak silinecektir.</p>
+
+        <h2 data-i18n="privacy.sec6_title">6. Çerezler (Cookies)</h2>
+        <p data-i18n="privacy.sec6_desc">Wawe Journal, yalnızca oturum yönetimi için gerekli olan teknik çerezleri kullanır.</p>
+
+        <h2 data-i18n="privacy.sec7_title">7. İletişim</h2>
+        <p><span data-i18n="privacy.sec7_desc">Gizlilik politikamızla ilgili sorularınız için:</span> <a href="mailto:destek@wawedev.com">destek@wawedev.com</a></p>
+      </article>
+
+      <div class="page-actions">
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+      </div>
+    </div>
+  </section>
 </PageLayout>

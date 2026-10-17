@@ -2,36 +2,45 @@
 import PageLayout from '../layouts/PageLayout.astro';
 ---
 <PageLayout title="Kullanım Şartları – Wawe Journal">
-  <div class="page-card">
-    <h1 data-i18n="terms.title">Kullanım Şartları</h1>
-    <p class="last-updated" data-i18n="terms.last_updated">Son güncelleme: 15 Mayıs 2026</p>
-
-    <h2 data-i18n="terms.sec1_title">1. Hizmet Kullanımı</h2>
-    <p data-i18n="terms.sec1_desc">Wawe Journal, bireysel trader'lar için kişisel kullanım amacıyla geliştirilmiş bir trading journal platformudur. Hizmetlerimizi kullanarak aşağıdaki şartları kabul etmiş sayılırsınız.</p>
-
-    <h2 data-i18n="terms.sec2_title">2. Hesap Güvenliği</h2>
-    <p data-i18n="terms.sec2_desc">Hesap bilgilerinizin güvenliğinden siz sorumlusunuz. Şifrenizi kimseyle paylaşmayın. Hesabınızın yetkisiz kullanımı durumunda derhal bize bildirim yapmalısınız.</p>
-
-    <h2 data-i18n="terms.sec3_title">3. Yasaklı Aktiviteler</h2>
-    <p data-i18n="terms.sec3_desc">Aşağıdaki aktiviteler kesinlikle yasaktır:</p>
-    <ul>
-      <li data-i18n="terms.sec3_item1">Başka kullanıcıların verilerine izinsiz erişmeye çalışmak</li>
-      <li data-i18n="terms.sec3_item2">Platformu otomatik botlar veya scriptler ile taramak</li>
-      <li data-i18n="terms.sec3_item3">Yasadışı faaliyetler için platformu kullanmak</li>
-      <li data-i18n="terms.sec3_item4">Sistemi aşırı yükleyecek talepler göndermek</li>
-    </ul>
-
-    <h2 data-i18n="terms.sec4_title">4. Sorumluluk Reddi (Önemli)</h2>
-    <p data-i18n="terms.sec4_desc">Uyarı: Wawe Journal bir yatırım danışmanlığı veya broker hizmeti değildir. Platformda kaydedilen işlemlerden doğan kâr veya zarardan WaweDev sorumlu tutulamaz. Tüm finansal kararlar tamamen kullanıcıya aittir.</p>
-
-    <h2 data-i18n="terms.sec5_title">5. Hizmet Değişiklikleri</h2>
-    <p data-i18n="terms.sec5_desc">WaweDev, hizmetleri önceden bildirimde bulunmaksızın güncelleme, değiştirme veya durdurma hakkını saklı tutar.</p>
-
-    <h2 data-i18n="terms.sec6_title">6. Hesap Kapatma</h2>
-    <p data-i18n="terms.sec6_desc">Kullanım şartlarını ihlal eden hesaplar askıya alınabilir. Hesabınızı kapatmak için iletişim sayfası üzerinden bize ulaşabilirsiniz.</p>
-
-    <div class="back-link">
-      <a href="/" class="btn btn-ghost" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+  <section class="page-hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="footer.terms">Terms</b></span>
+      <h1 class="anim" style="--d:.15s" data-i18n="terms.title">Kullanım Şartları</h1>
+      <p class="page-meta anim" style="--d:.3s" data-i18n="terms.last_updated">Son güncelleme: 15 Mayıs 2026</p>
     </div>
-  </div>
+  </section>
+
+  <section class="page-body">
+    <div class="wrap">
+      <article class="prose reveal">
+        <h2 data-i18n="terms.sec1_title">1. Hizmet Kullanımı</h2>
+        <p data-i18n="terms.sec1_desc">Wawe Journal, bireysel trader'lar için kişisel kullanım amacıyla geliştirilmiş bir trading journal platformudur. Hizmetlerimizi kullanarak aşağıdaki şartları kabul etmiş sayılırsınız.</p>
+
+        <h2 data-i18n="terms.sec2_title">2. Hesap Güvenliği</h2>
+        <p data-i18n="terms.sec2_desc">Hesap bilgilerinizin güvenliğinden siz sorumlusunuz. Şifrenizi kimseyle paylaşmayın. Hesabınızın yetkisiz kullanımı durumunda derhal bize bildirim yapmalısınız.</p>
+
+        <h2 data-i18n="terms.sec3_title">3. Yasaklı Aktiviteler</h2>
+        <p data-i18n="terms.sec3_desc">Aşağıdaki aktiviteler kesinlikle yasaktır:</p>
+        <ul>
+          <li data-i18n="terms.sec3_item1">Başka kullanıcıların verilerine izinsiz erişmeye çalışmak</li>
+          <li data-i18n="terms.sec3_item2">Platformu otomatik botlar veya scriptler ile taramak</li>
+          <li data-i18n="terms.sec3_item3">Yasadışı faaliyetler için platformu kullanmak</li>
+          <li data-i18n="terms.sec3_item4">Sistemi aşırı yükleyecek talepler göndermek</li>
+        </ul>
+
+        <h2 data-i18n="terms.sec4_title">4. Sorumluluk Reddi (Önemli)</h2>
+        <p class="callout" data-i18n="terms.sec4_desc">Uyarı: Wawe Journal bir yatırım danışmanlığı veya broker hizmeti değildir. Platformda kaydedilen işlemlerden doğan kâr veya zarardan WaweDev sorumlu tutulamaz. Tüm finansal kararlar tamamen kullanıcıya aittir.</p>
+
+        <h2 data-i18n="terms.sec5_title">5. Hizmet Değişiklikleri</h2>
+        <p data-i18n="terms.sec5_desc">WaweDev, hizmetleri önceden bildirimde bulunmaksızın güncelleme, değiştirme veya durdurma hakkını saklı tutar.</p>
+
+        <h2 data-i18n="terms.sec6_title">6. Hesap Kapatma</h2>
+        <p data-i18n="terms.sec6_desc">Kullanım şartlarını ihlal eden hesaplar askıya alınabilir. Hesabınızı kapatmak için iletişim sayfası üzerinden bize ulaşabilirsiniz.</p>
+      </article>
+
+      <div class="page-actions">
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+      </div>
+    </div>
+  </section>
 </PageLayout>

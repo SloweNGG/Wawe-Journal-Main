@@ -124,7 +124,7 @@ export function adminUpdatePrices(monthly, yearly) {
     }
   }
   updateHomePrices();
-  showToast('✅ Fiyatlar güncellendi!', 'success');
+  showToast('Fiyatlar güncellendi!', 'success');
 }
 
 export function resetPrices() {
@@ -137,7 +137,7 @@ export function resetPrices() {
   safeLocalStorageSet('ww_monthly_price', defM.toString());
   safeLocalStorageSet('ww_yearly_price', defY.toString());
   updateHomePrices();
-  showToast('↺ Fiyatlar varsayılana döndürüldü!', 'success');
+  showToast('Fiyatlar varsayılana döndürüldü!', 'success');
 }
 
 window.addEventListener('storage', function(e) {

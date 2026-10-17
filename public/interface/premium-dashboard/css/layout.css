@@ -29,11 +29,16 @@
 /* ============================================================
    DASHBOARD GRID
    ============================================================ */
+/* --row-h: tek satırlık widget yüksekliği. "Uzun" widget'lar 2 satır kaplar
+   (sabit yükseklik = 2 satır + boşluk; auto satırlar buna göre bölünür).
+   Satırlar auto kalır ki strateji kartı içeriği kadar yer kaplasın. */
 .dashboard-grid {
+  --row-h: 220px;
+  --grid-gap: 0.75rem;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-auto-rows: auto;
-  gap: 0.75rem;
+  gap: var(--grid-gap);
   margin-bottom: 0.75rem;
 }
 
@@ -42,14 +47,25 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.85rem 1rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: grab;
   position: relative;
-  height: 220px;
-  min-height: 220px;
+  height: var(--row-h);
+  min-height: var(--row-h);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+/* ⭐ KULLANICI BOYUTLARI (⚙ menüsü) */
+.grid-item.size-sm   { grid-column: span 1; }
+.grid-item.size-md   { grid-column: span 2; }
+.grid-item.size-lg   { grid-column: span 3; }
+.grid-item.size-full { grid-column: span 4; }
+.grid-item.h-tall {
+  grid-row: span 2;
+  height: calc(var(--row-h) * 2 + var(--grid-gap));
+  min-height: calc(var(--row-h) * 2 + var(--grid-gap));
 }
 .grid-item:hover {
   border-color: rgba(139,92,246,0.35);
@@ -59,10 +75,54 @@
   cursor: grabbing;
 }
 
-.grid-item .drag-handle {
+/* Sağ üst köşe araçları: ⚙ ayarlar + ⠿ sürükleme tutamağı */
+.grid-item .widget-tools {
   position: absolute;
   top: 6px;
   right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 2;
+}
+
+.grid-item .widget-settings-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.grid-item:hover .widget-settings-btn,
+.grid-item:focus-within .widget-settings-btn,
+.grid-item.menu-open .widget-settings-btn {
+  opacity: 0.7;
+}
+.grid-item .widget-settings-btn:hover,
+.grid-item .widget-settings-btn:focus-visible,
+.grid-item.menu-open .widget-settings-btn {
+  opacity: 1;
+  color: var(--accent);
+  background: rgba(139,92,246,0.1);
+  outline: none;
+}
+/* Dokunmatik cihazlarda hover yok: ⚙ her zaman görünsün */
+@media (hover: none) {
+  .grid-item .widget-settings-btn { opacity: 0.6; }
+}
+.grid-item.menu-open {
+  border-color: rgba(139,92,246,0.5);
+}
+
+.grid-item .drag-handle {
   width: 22px;
   height: 22px;
   display: flex;
@@ -88,7 +148,7 @@
   justify-content: space-between;
   margin-bottom: 0.5rem;
   flex-shrink: 0;
-  padding-right: 20px;
+  padding-right: 48px;
 }
 .grid-item .grid-header h3 {
   font-size: 10.5px;
@@ -158,21 +218,12 @@
   height: 100%;
 }
 
-.grid-item.wide {
-  grid-column: span 2;
-}
-
-.grid-item.full,
-.grid-item[data-widget="strategies"] {
-  grid-column: span 4;
-  height: auto;
-  min-height: auto;
-}
-
+/* Strateji tablosu da normal bir kutu: içerik sığmazsa kutunun içinde kayar.
+   container-type ile tablo sütunları ekran yerine kutu genişliğine göre gizlenir. */
 .grid-item[data-widget="strategies"] .chart-wrap {
-  flex: 0 0 auto;
-  min-height: auto;
-  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  container-type: inline-size;
 }
 
 /* ============================================================
@@ -185,28 +236,25 @@
   .dashboard-skeleton .generic-skeleton-block.wide {
     grid-column: span 1;
   }
-  .dashboard-skeleton .generic-skeleton-block.full {
+  .dashboard-skeleton .generic-skeleton-block.full,
+  .dashboard-skeleton .generic-skeleton-block.size-lg,
+  .dashboard-skeleton .generic-skeleton-block.size-full {
     grid-column: span 2;
   }
-  .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .grid-item {
-    height: 210px;
-    min-height: 210px;
-  }
-  .grid-item.wide {
+  .dashboard-skeleton .generic-skeleton-block.size-md {
     grid-column: span 1;
   }
-  .grid-item.full,
-  .grid-item[data-widget="strategies"] {
-    grid-column: span 2;
-    height: auto;
-    min-height: auto;
+  .dashboard-grid {
+    --row-h: 210px;
+    grid-template-columns: repeat(2, 1fr);
   }
-  .strategy-minimal-grid,
-  .strategy-premium-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* 2 sütunda: 1/4 ve 2/4 → yarım, 3/4 ve tam → tam genişlik */
+  .grid-item.size-md {
+    grid-column: span 1;
+  }
+  .grid-item.size-lg,
+  .grid-item.size-full {
+    grid-column: span 2;
   }
 }
 
@@ -214,47 +262,26 @@
   .dashboard-skeleton {
     grid-template-columns: 1fr;
   }
-  .dashboard-skeleton .generic-skeleton-block.full {
+  .dashboard-skeleton .generic-skeleton-block.full,
+  .dashboard-skeleton .generic-skeleton-block[class*="size-"] {
     grid-column: span 1;
   }
   .dashboard-grid {
+    --row-h: 190px;
     grid-template-columns: 1fr;
   }
-  .grid-item {
-    height: 190px;
-    min-height: 190px;
-  }
-  .grid-item.wide {
+  /* Tek sütunda genişlik seçimi etkisiz; yükseklik seçimi korunur */
+  .grid-item.size-md,
+  .grid-item.size-lg,
+  .grid-item.size-full {
     grid-column: span 1;
-  }
-  .grid-item.full,
-  .grid-item[data-widget="strategies"] {
-    grid-column: span 1;
-    height: auto;
-    min-height: auto;
   }
   .premium-main {
     padding: 0.9rem 1rem 5rem;
   }
-  .strategy-minimal-grid,
-  .strategy-premium-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  }
   .page-header {
     flex-direction: column;
-  }
-  .kpi-bar {
-    flex-direction: column;
     align-items: flex-start;
-  }
-  .kpi-item {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.4rem;
-    width: 100%;
-  }
-  .kpi-item:last-child {
-    border-bottom: none;
   }
   .fab-container {
     bottom: 1rem;
@@ -272,30 +299,16 @@
 }
 
 @media (max-width: 480px) {
-  .grid-item {
-    height: 180px;
-    min-height: 180px;
-  }
-  .grid-item.full,
-  .grid-item[data-widget="strategies"] {
-    grid-column: span 1;
-    height: auto;
-    min-height: auto;
-  }
-  .strategy-minimal-grid,
-  .strategy-premium-grid {
-    grid-template-columns: 1fr;
+  .dashboard-grid {
+    --row-h: 180px;
   }
   .page-header h1 {
     font-size: 1.2rem;
-  }
-  .premium-stats-grid {
-    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 374px) {
   .dashboard-grid {
-    grid-auto-rows: 160px;   /* ⭐ FIX: çok küçük ekran */
+    --row-h: 160px;   /* ⭐ FIX: çok küçük ekran */
   }
 }

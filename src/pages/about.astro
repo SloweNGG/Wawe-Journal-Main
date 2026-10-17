@@ -2,34 +2,67 @@
 import PageLayout from '../layouts/PageLayout.astro';
 ---
 <PageLayout title="Biz Kimiz – Wawe Journal">
-  <div class="page-card">
-    <h1 data-i18n="about.title">Biz Kimiz?</h1>
-
-    <h2 data-i18n="about.founder_title">WaweDev</h2>
-    <p data-i18n="about.founder_desc">WaweDev, Bir teknoloji meraklısı tarafından kuruldu.</p>
-
-    <h2 data-i18n="about.mission_title">Misyonumuz</h2>
-    <p data-i18n="about.mission_desc">Trader'ların işlemlerini daha bilinçli bir şekilde takip etmelerini sağlamak, karar alma süreçlerini veriyle desteklemek ve finansal okuryazarlığı artırmak.</p>
-
-    <h2 data-i18n="about.vision_title">Vizyonumuz</h2>
-    <p data-i18n="about.vision_desc">Dünyanın en güvenilir ve kullanışlı trading journal platformu olmak, trader'ların gelişimine katkıda bulunmak.</p>
-
-    <h2 data-i18n="about.values_title">Değerlerimiz</h2>
-    <ul>
-      <li><strong data-i18n="about.val_sec_title">Güvenlik:</strong> <span data-i18n="about.val_sec_desc">Kullanıcı verilerinin gizliliği ve güvenliği en öncelikli konumuzdur.</span></li>
-      <li><strong data-i18n="about.val_trans_title">Şeffaflık:</strong> <span data-i18n="about.val_trans_desc">Verilerinizin nasıl kullanıldığını her zaman açıkça belirtiriz.</span></li>
-      <li><strong data-i18n="about.val_sim_title">Sadelik:</strong> <span data-i18n="about.val_sim_desc">Karmaşık özellikler yerine işe yarayan, sade arayüzler tasarlarız.</span></li>
-      <li><strong data-i18n="about.val_inno_title">Yenilikçilik:</strong> <span data-i18n="about.val_inno_desc">Teknolojinin en güncel araçlarını kullanarak sürekli gelişiriz.</span></li>
-    </ul>
-
-    <h2 data-i18n="about.team_title">Ekibimiz</h2>
-    <p data-i18n="about.team_desc">Samimi olmak gerekirse bir ekibim yok tek kişi kurdum bu projeyi. Belki bu projede de öyle sonuçlanacak ama asla denemekten sıkılmam.</p>
-
-    <h2 data-i18n="about.why_title">Neden "Wawe"?</h2>
-    <p data-i18n="about.why_desc">"Wawe", İngilizce "wave" (dalga) kelimesinin özel bir yazımıdır. Piyasalardaki dalgalanmaları, trader'ların iniş çıkışlarını ve sürekli hareket halindeki finans dünyasını temsil eder. Her dalga yeni bir fırsattır.</p>
-
-    <div class="back-link">
-      <a href="/" class="btn btn-ghost" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+  <section class="page-hero">
+    <div class="wrap">
+      <span class="pill anim" style="--d:.05s"><b data-i18n="footer.about">About</b></span>
+      <h1 class="anim" style="--d:.15s" data-i18n="about.title">Biz Kimiz?</h1>
     </div>
-  </div>
+  </section>
+
+  <section class="page-body">
+    <div class="wrap">
+      <div class="bento">
+        <article class="card wide featured reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="about.founder_title">WaweDev</h2>
+            <p class="card-desc" data-i18n="about.founder_desc">WaweDev, Bir teknoloji meraklısı tarafından kuruldu.</p>
+          </div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="about.mission_title">Misyonumuz</h2>
+            <p class="card-desc" data-i18n="about.mission_desc">Trader'ların işlemlerini daha bilinçli bir şekilde takip etmelerini sağlamak, karar alma süreçlerini veriyle desteklemek ve finansal okuryazarlığı artırmak.</p>
+          </div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="about.vision_title">Vizyonumuz</h2>
+            <p class="card-desc" data-i18n="about.vision_desc">Dünyanın en güvenilir ve kullanışlı trading journal platformu olmak, trader'ların gelişimine katkıda bulunmak.</p>
+          </div>
+        </article>
+
+        <article class="card wide reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="about.values_title">Değerlerimiz</h2>
+            <ul class="prose-list">
+              <li><strong data-i18n="about.val_sec_title">Güvenlik:</strong> <span data-i18n="about.val_sec_desc">Kullanıcı verilerinin gizliliği ve güvenliği en öncelikli konumuzdur.</span></li>
+              <li><strong data-i18n="about.val_trans_title">Şeffaflık:</strong> <span data-i18n="about.val_trans_desc">Verilerinizin nasıl kullanıldığını her zaman açıkça belirtiriz.</span></li>
+              <li><strong data-i18n="about.val_sim_title">Sadelik:</strong> <span data-i18n="about.val_sim_desc">Karmaşık özellikler yerine işe yarayan, sade arayüzler tasarlarız.</span></li>
+              <li><strong data-i18n="about.val_inno_title">Yenilikçilik:</strong> <span data-i18n="about.val_inno_desc">Teknolojinin en güncel araçlarını kullanarak sürekli gelişiriz.</span></li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="about.team_title">Ekibimiz</h2>
+            <p class="card-desc" data-i18n="about.team_desc">Samimi olmak gerekirse bir ekibim yok tek kişi kurdum bu projeyi. Belki bu projede de öyle sonuçlanacak ama asla denemekten sıkılmam.</p>
+          </div>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-body">
+            <h2 class="card-title" data-i18n="about.why_title">Neden "Wawe"?</h2>
+            <p class="card-desc" data-i18n="about.why_desc">"Wawe", İngilizce "wave" (dalga) kelimesinin özel bir yazımıdır. Piyasalardaki dalgalanmaları, trader'ların iniş çıkışlarını ve sürekli hareket halindeki finans dünyasını temsil eder. Her dalga yeni bir fırsattır.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="page-actions">
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+      </div>
+    </div>
+  </section>
 </PageLayout>

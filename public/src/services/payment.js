@@ -274,13 +274,51 @@ export async function cancelPremium() {
 // ============================================================
 let _planSyncStarted = false;
 
+function isLiveActivePremium(p) {
+  return !!(p && p.plan === 'premium' && (!p.plan_expires_at || Date.parse(p.plan_expires_at) > Date.now()));
+}
+
+function checkWasAlreadyPremium() {
+  try {
+    const cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_user_plan');
+    const cachedExp = sessionStorage.getItem('ww_user_plan_expires_at') || localStorage.getItem('ww_user_plan_expires_at');
+    if (cachedPlan === 'premium') {
+      if (!cachedExp || Date.parse(cachedExp) > Date.now()) {
+        return true;
+      }
+    }
+    if (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium') {
+      const exp = window.__wwUserProfile.plan_expires_at;
+      if (!exp || Date.parse(exp) > Date.now()) {
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
 export async function checkAndSyncPaymentStatus() {
   if (typeof window === 'undefined') return;
 
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const hasPaymentSuccess = urlParams.has('payment') && urlParams.get('payment') === 'success';
-    const hasPendingFlag = sessionStorage.getItem('ww_pending_payment') === 'true' || localStorage.getItem('ww_pending_payment') === 'true';
+
+    // Bekleyen ödeme bayrağı 30 dakikadan eskiyse bayattır, dikkate alma ve temizle
+    const pendingTimeStr = sessionStorage.getItem('ww_pending_payment_time') || localStorage.getItem('ww_pending_payment_time');
+    const pendingTime = pendingTimeStr ? parseInt(pendingTimeStr, 10) : 0;
+    const isPendingFresh = pendingTime > 0 && (Date.now() - pendingTime) < 30 * 60 * 1000;
+    const hasPendingFlag = (sessionStorage.getItem('ww_pending_payment') === 'true' || localStorage.getItem('ww_pending_payment') === 'true') && isPendingFresh;
+
+    // Bayat pending bayraklarını temizle
+    if (!isPendingFresh && (sessionStorage.getItem('ww_pending_payment') || localStorage.getItem('ww_pending_payment'))) {
+      sessionStorage.removeItem('ww_pending_payment');
+      sessionStorage.removeItem('ww_pending_payment_time');
+      try {
+        localStorage.removeItem('ww_pending_payment');
+        localStorage.removeItem('ww_pending_payment_time');
+      } catch(e) {}
+    }
 
     const { data: { session } } = await sb.auth.getSession();
     const user = session?.user;
@@ -298,9 +336,16 @@ export async function checkAndSyncPaymentStatus() {
             table: 'user_profiles',
             filter: 'id=eq.' + user.id
           }, (payload) => {
-            if (payload && payload.new && payload.new.plan === 'premium') {
-              applyLivePremium(payload.new);
-            }
+            if (!payload || !payload.new) return;
+            const newIsPrem = isLiveActivePremium(payload.new);
+            if (!newIsPrem) return;
+
+            // Kullanıcı zaten premium muydu?
+            const oldPlanWasPrem = (payload.old && payload.old.plan === 'premium') || checkWasAlreadyPremium();
+
+            // Eğer kullanıcı zaten premium ise sadece UI/cache sessizce güncellenir, ASLA tebrik toast'ı gösterilmez!
+            const shouldNotify = !oldPlanWasPrem;
+            applyLivePremium(payload.new, shouldNotify);
           })
           .subscribe();
       } catch(chanErr) {
@@ -309,6 +354,10 @@ export async function checkAndSyncPaymentStatus() {
     }
 
     if (!hasPaymentSuccess && !hasPendingFlag) return;
+
+    // Kullanıcı zaten önceden aktif premium muydu?
+    const wasAlreadyPrem = checkWasAlreadyPremium();
+    const alreadyWelcomed = sessionStorage.getItem('ww_premium_welcomed') === 'true';
 
     // 1. Bayat önbellekleri sil ve veritabanını zorla sorgula
     sessionStorage.removeItem('ww_user_plan');
@@ -324,15 +373,16 @@ export async function checkAndSyncPaymentStatus() {
       .single();
 
     // Süresi dolmuş premium "aktif edildi" sayılmaz (plan sütunu bitişte 'free'ye çekilmiyor)
-    const isLiveActive = function (p) { return p && p.plan === 'premium' && (!p.plan_expires_at || Date.parse(p.plan_expires_at) > Date.now()); };
-    if (!error && isLiveActive(profile)) {
-      applyLivePremium(profile, true);
+    if (!error && isLiveActivePremium(profile)) {
+      // SADECE kullanıcı gerçekten önceden premium DEĞİLKEN veya az önce yeni ödeme tamamlayıp henüz tebrik edilmemişse tebrik et
+      const shouldNotify = (hasPaymentSuccess || hasPendingFlag) && !alreadyWelcomed && !wasAlreadyPrem;
+      applyLivePremium(profile, shouldNotify);
       return;
     }
 
     // Henüz onay gelmediyse kullanıcıya bilgi ver ve akıllı polling başlat
     if (hasPaymentSuccess) {
-      showToast(t('settings.plan_confirming', {}, '⏳ Ödemeniz işleniyor, blokzincir onayı bekleniyor. Sayfada kalın, otomatik güncellenecektir...'), 'info');
+      showToast(t('settings.plan_confirming', {}, 'Ödemeniz işleniyor, blokzincir onayı bekleniyor. Sayfada kalın, otomatik güncellenecektir...'), 'info');
     }
 
     let pollAttempts = 0;
@@ -351,9 +401,9 @@ export async function checkAndSyncPaymentStatus() {
           .eq('id', user.id)
           .single();
 
-        if (isLiveActive(liveProfile)) {
+        if (isLiveActivePremium(liveProfile)) {
           clearInterval(pollInterval);
-          applyLivePremium(liveProfile, true);
+          applyLivePremium(liveProfile, !sessionStorage.getItem('ww_premium_welcomed'));
         }
       } catch(e) {}
     }, 4000);
@@ -363,7 +413,7 @@ export async function checkAndSyncPaymentStatus() {
   }
 }
 
-function applyLivePremium(profile, isExplicitSync = false) {
+function applyLivePremium(profile, shouldNotify = false) {
   try {
     sessionStorage.setItem('ww_user_plan', 'premium');
     try { localStorage.setItem('ww_user_plan', 'premium'); } catch(e) {}
@@ -373,7 +423,11 @@ function applyLivePremium(profile, isExplicitSync = false) {
     }
     sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
     sessionStorage.removeItem('ww_pending_payment');
-    try { localStorage.removeItem('ww_pending_payment'); } catch(e) {}
+    sessionStorage.removeItem('ww_pending_payment_time');
+    try {
+      localStorage.removeItem('ww_pending_payment');
+      localStorage.removeItem('ww_pending_payment_time');
+    } catch(e) {}
 
     // URL'deki ?payment=success parametresini temizle
     if (window.location.search.includes('payment=success')) {
@@ -395,8 +449,11 @@ function applyLivePremium(profile, isExplicitSync = false) {
       window.updateNavbarBadge();
     }
 
-    // Kutlama bildirimi
-    showToast(t('settings.plan_upgraded_success', {}, '🎉 Tebrikler! Premium hesabınız başarıyla aktifleştirildi.'), 'success');
+    // Kutlama bildirimi - SADECE shouldNotify true ise ve daha önce karşılanmadıysa
+    if (shouldNotify && sessionStorage.getItem('ww_premium_welcomed') !== 'true') {
+      sessionStorage.setItem('ww_premium_welcomed', 'true');
+      showToast(t('settings.plan_upgraded_success', {}, 'Tebrikler! Premium hesabınız başarıyla aktifleştirildi.'), 'success');
+    }
 
     // Eğer ayarlar plan panelindeyse orayı yenile
     if (typeof window.renderPlan === 'function') {

@@ -25,16 +25,17 @@ import {
   renderCharts,
   getCharts,
   clearAllApexCharts,
-  clearLightweightChart
+  clearLightweightChart,
+  setAllTrades,
+  renderChartFor,
+  resetChartAnimations
 } from './chart-renderers.js';
 
 import {
   showSkeletons,
   hideSkeletons,
-  injectSkeletonMarkup,
   saveLayoutOrder,
   loadLayoutOrder,
-  resetLayout,
   initDragDrop,
   destroyDragDrop,
   forceResizeAllCharts,
@@ -48,6 +49,10 @@ import {
   exportCSV,
   exportPDF
 } from './dashboard-manager.js';
+
+import { initCustomizer } from './widget-customizer.js';
+import { isPropActive, renderPropHeader, setHeaderMetaHtml, renderPropWidgets } from './prop-widgets.js';
+import { setPlan, isPro, isPlanPreview, applyKpiDensity } from './widget-prefs.js';
 
 // i18n Safe Helper
 function _t(key, fallback) {
@@ -79,15 +84,17 @@ var isPageVisible = true;
 var chartRafId = null;
 
 // TEMA OBSERVER (mount'ta bağlanır, çıkışta ayrılır)
-var themeObserver = new MutationObserver(function(mutations) {
-  mutations.forEach(function(mutation) {
-    if (mutation.attributeName === 'class') {
-      updateChartTheme();
-      if (currentFilteredTrades && currentFilteredTrades.length > 0) {
-        renderCharts(currentFilteredTrades);
-      }
-    }
-  });
+// body'ye açılışta ortam ışığı, navbar, plan gibi birçok sınıf eklenir; eskiden her biri tüm
+// grafikleri baştan çiziyordu. Artık yalnızca açık/koyu tema gerçekten değişince çizilir.
+var lastLightTheme = null;
+var themeObserver = new MutationObserver(function() {
+  var isLight = document.body.classList.contains('light-theme');
+  if (isLight === lastLightTheme) return;
+  lastLightTheme = isLight;
+  updateChartTheme();
+  if (isDataReady && currentFilteredTrades && currentFilteredTrades.length > 0) {
+    renderCharts(currentFilteredTrades);
+  }
 });
 
 // WINDOW RESIZE - SADECE RESIZE
@@ -100,17 +107,30 @@ function onWindowResize() {
   }, 300);
 }
 
+// ⭐ GRAFİK ZAMANLAYICI — tüm çizim istekleri buradan geçer.
+// Eskiden iskeleti kaldıran çağrı tek bir zamanlayıcının içindeydi; o zamanlayıcı başka bir
+// güncellemeyle (taze veri, prop durumu, plan, filtre) iptal edilince iskelet ekranda kalıyordu.
+// Artık her çizimden sonra (hata olsa bile) veri hazırsa iskelet kaldırılır.
+function scheduleCharts() {
+  if (chartRafId) cancelAnimationFrame(chartRafId);
+  chartRafId = requestAnimationFrame(function() {
+    chartRafId = null;
+    try {
+      renderCharts(currentFilteredTrades);
+    } catch (e) {
+      console.error('[Premium Dashboard] Grafik çizim hatası:', e);
+    } finally {
+      if (isDataReady) hideSkeletons();
+    }
+  });
+}
+
 // VISIBILITY CHANGE
 function onVisibilityChange() {
   isPageVisible = !document.hidden;
   if (isPageVisible && currentFilteredTrades && currentFilteredTrades.length > 0) {
     var hasCharts = document.querySelector('.chart-wrap .apexcharts-canvas, .chart-wrap .lwc-chart');
-    if (!hasCharts) {
-      if (chartRafId) cancelAnimationFrame(chartRafId);
-      chartRafId = requestAnimationFrame(function() {
-        renderCharts(currentFilteredTrades);
-      });
-    }
+    if (!hasCharts) scheduleCharts();
   }
 }
 
@@ -144,6 +164,7 @@ function applyFilter(range, start, end) {
   currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
 
   var options = document.querySelectorAll('#premium-date-filter-group .date-filter-option');
+  var dataReadyForFilter = isDataReady;
   options.forEach(function(opt) {
     if (opt.dataset.range === currentRange) {
       opt.classList.add('active');
@@ -161,37 +182,306 @@ function applyFilter(range, start, end) {
     }
   }
 
-  renderPremiumStats(currentFilteredTrades);
-  renderKpiBar(currentFilteredTrades);
+  if (!dataReadyForFilter) return;
+  renderHeaderStats();
   renderCharts(currentFilteredTrades);
   loadStrategySection(currentFilteredTrades, currentUser);
 }
 
-var isDashboardDomRendered = false;
+// ============================================================
+// HEADER — başlık, dinamik bilgi satırı, araç çubuğu ve KPI kartları
+// ============================================================
+var HEADER_ICONS = {
+  crown: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h20"/><path d="m2 7 5 5 5-8 5 8 5-5-2 11H4z"/></svg>',
+  download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  chevron: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  csv: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>',
+  pdf: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+  sliders: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>'
+};
 
-function renderDashboardDOM() {
-  if (isDashboardDomRendered) {
-    renderPremiumStats(currentFilteredTrades);
-    renderKpiBar(currentFilteredTrades);
-    if (chartRafId) cancelAnimationFrame(chartRafId);
-    chartRafId = requestAnimationFrame(function() {
-      renderCharts(currentFilteredTrades);
-    });
-    loadStrategySection(currentFilteredTrades, currentUser);
-    hideSkeletons();
-    return;
+function i18nSpan(key, fallback) {
+  return '<span data-i18n="' + key + '">' + _t(key, fallback) + '</span>';
+}
+
+function statCardHtml(id, labelKey, labelFallback, extraHtml) {
+  return '<div class="pstat-card">' +
+    '<div class="pstat-top">' +
+      '<span class="pstat-label" data-i18n="' + labelKey + '">' + _t(labelKey, labelFallback) + '</span>' +
+      '<span class="pstat-delta" id="' + id + '-delta"></span>' +
+    '</div>' +
+    '<div class="pstat-value" id="' + id + '">—</div>' +
+    (extraHtml || '<div class="pstat-sub" id="' + id + '-sub"></div>') +
+  '</div>';
+}
+
+function kpiItemHtml(id, labelKey, labelFallback, cls) {
+  return '<div class="kpi-item">' +
+    '<span class="kpi-label" data-i18n="' + labelKey + '">' + _t(labelKey, labelFallback) + '</span>' +
+    '<span class="kpi-value' + (cls ? ' ' + cls : '') + '" id="' + id + '">—</span>' +
+  '</div>';
+}
+
+function headerHtml() {
+  var filters = [
+    ['all', 'dashboard.filter.all', 'Tümü'],
+    ['week', 'dashboard.filter.week', 'Bu Hafta'],
+    ['month', 'dashboard.filter.month', 'Bu Ay'],
+    ['year', 'dashboard.filter.year', 'Bu Yıl'],
+    ['custom', 'dashboard.filter.custom', 'Özel']
+  ].map(function(f) {
+    return '<button type="button" class="date-filter-option' + (f[0] === 'all' ? ' active' : '') + '" data-range="' + f[0] + '"' +
+      (f[0] === 'custom' ? ' id="premium-custom-range-btn"' : '') + ' data-i18n="' + f[1] + '">' + _t(f[1], f[2]) + '</button>';
+  }).join('');
+
+  return '' +
+    (isPlanPreview()
+      ? '<div class="plan-preview-bar" role="status">' +
+          '<span class="plan-preview-dot"></span>' +
+          '<span><strong>' + _t('premium_dash.preview.title', 'Ücretsiz plan önizlemesi') + '</strong> — ' +
+          _t('premium_dash.preview.text', 'Ücretsiz kullanıcıların göreceği dashboard. Buradaki değişiklikler kendi düzenini etkilemez.') + '</span>' +
+          '<a href="' + window.location.pathname + '" class="plan-preview-exit">' + _t('premium_dash.preview.exit', 'Önizlemeden çık') + '</a>' +
+        '</div>'
+      : '') +
+    '<div class="page-header">' +
+      '<div class="ph-title">' +
+        '<div class="ph-eyebrow" id="ph-eyebrow">' + HEADER_ICONS.crown + i18nSpan('premium_dash.eyebrow', 'Premium Analitik') + '</div>' +
+        '<div class="page-header-title-row">' +
+          '<h1 data-i18n="premium_dash.heading">' + _t('premium_dash.heading', 'Performans Analizi') + '</h1>' +
+          '<div id="premium-prop-badge"></div>' +
+        '</div>' +
+        '<div class="ph-meta" id="premium-header-meta"></div>' +
+      '</div>' +
+      '<div class="header-actions">' +
+        '<div class="ph-prop-actions" id="ph-prop-actions"></div>' +
+        '<div class="date-filter-group" id="premium-date-filter-group">' + filters + '</div>' +
+        '<div class="custom-range-panel" id="premium-custom-range-panel">' +
+          '<input type="date" id="premium-range-start" class="custom-range-input" />' +
+          '<span class="custom-range-sep">–</span>' +
+          '<input type="date" id="premium-range-end" class="custom-range-input" />' +
+          '<button type="button" class="custom-range-apply" id="premium-range-apply" data-i18n="dashboard.filter.apply">' + _t('dashboard.filter.apply', 'Uygula') + '</button>' +
+        '</div>' +
+        '<div class="ph-export">' +
+          '<button type="button" class="ph-btn" id="export-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu">' +
+            HEADER_ICONS.download + i18nSpan('premium_dash.export', 'Dışa aktar') + HEADER_ICONS.chevron +
+          '</button>' +
+          '<div class="ph-menu" id="export-menu" role="menu">' +
+            '<button type="button" role="menuitem" class="ph-menu-item" id="export-csv-btn">' + HEADER_ICONS.csv +
+              '<span><strong data-i18n="premium_dash.export_csv">' + _t('premium_dash.export_csv', 'CSV') + '</strong>' +
+              '<small data-i18n="premium_dash.export_csv_desc">' + _t('premium_dash.export_csv_desc', 'Excel için işlem listesi') + '</small></span>' +
+            '</button>' +
+            '<button type="button" role="menuitem" class="ph-menu-item" id="export-pdf-btn">' + HEADER_ICONS.pdf +
+              '<span><strong data-i18n="premium_dash.export_pdf">' + _t('premium_dash.export_pdf', 'PDF raporu') + '</strong>' +
+              '<small data-i18n="premium_dash.export_pdf_desc">' + _t('premium_dash.export_pdf_desc', 'Özet ve işlem tablosu') + '</small></span>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="ph-btn ph-btn--accent" id="customize-btn" aria-haspopup="dialog" aria-expanded="false">' +
+          HEADER_ICONS.sliders + i18nSpan('premium_dash.customize', 'Özelleştir') +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="premium-stats-grid" id="premium-stats-grid">' +
+      statCardHtml('pstat-total', 'dashboard.stats.total_trades', 'Toplam İşlem') +
+      statCardHtml('pstat-pnl', 'dashboard.stats.total_pnl', 'Toplam K/Z') +
+      statCardHtml('pstat-wr', 'dashboard.stats.win_rate', 'Win Rate', '<div class="pstat-bar"><span id="pstat-wr-bar"></span></div>') +
+      statCardHtml('pstat-pf', 'dashboard.kpi.profit_factor', 'Profit Factor') +
+      statCardHtml('pstat-sharpe', 'premium_dash.sharpe_ratio', 'Sharpe Ratio') +
+    '</div>' +
+
+    '<div class="kpi-bar">' +
+      kpiItemHtml('kpi-avg-win', 'dashboard.kpi.avg_win', 'Ort. Kazanç', 'positive') +
+      kpiItemHtml('kpi-avg-loss', 'dashboard.kpi.avg_loss', 'Ort. Kayıp', 'negative') +
+      kpiItemHtml('kpi-payoff', 'premium_dash.kpi.payoff', 'Kazanç/Kayıp Oranı') +
+      kpiItemHtml('kpi-dd', 'dashboard.kpi.max_drawdown', 'Maks. Drawdown', 'negative') +
+      kpiItemHtml('kpi-rr', 'dashboard.kpi.avg_rr', 'Ort. R:R') +
+    '</div>' +
+
+    '<div class="dashboard-grid" id="dashboard-grid"></div>';
+}
+
+// Hafta/ay/yıl filtresinde bir önceki eşdeğer dönemin işlemleri (değişim rozetleri için)
+function getPreviousPeriodTrades() {
+  if (currentRange === 'all' || currentRange === 'custom') return null;
+  var prev = window.WwTime.previousRangeKeys(currentRange);
+  if (!prev) return null;
+  return allTrades.filter(function(t) {
+    var k = window.WwMetrics.dateKey(t);
+    return k && k >= prev.start && k < prev.end;
+  });
+}
+
+// Bilgi satırı: defter · dönem · işlem sayısı · son işlem tarihi
+function updateHeaderMeta() {
+  var el = document.getElementById('premium-header-meta');
+  if (!el) return;
+  var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+  var parts = [];
+
+  // Defter adı: navbar'daki ilk metin düğümü (yanındaki rozet metinleri alınmaz)
+  var journalEl = document.querySelector('.nav-journal-switcher .journal-name');
+  var journal = journalEl && journalEl.firstChild ? String(journalEl.firstChild.textContent || '').trim() : '';
+  if (journal) parts.push({ text: journal, cls: 'ph-meta-journal' });
+
+  var rangeText;
+  if (currentRange === 'custom' && customRangeStart && customRangeEnd) {
+    var fmt = { day: 'numeric', month: 'short' };
+    rangeText = window.WwTime.formatDate(customRangeStart, lang, fmt) + ' – ' + window.WwTime.formatDate(customRangeEnd, lang, fmt);
+  } else {
+    var active = document.querySelector('#premium-date-filter-group .date-filter-option[data-range="' + currentRange + '"]');
+    rangeText = active ? active.textContent.trim() : '';
+  }
+  if (rangeText) parts.push({ text: rangeText });
+
+  var closed = currentFilteredTrades.filter(function(t) { return window.WwMetrics.isClosed(t); });
+  parts.push({ text: _t('premium_dash.meta.trades', '{n} kapanmış işlem').replace('{n}', closed.length) });
+
+  var last = '';
+  currentFilteredTrades.forEach(function(t) {
+    var d = String(t.trade_date || '');
+    if (d > last) last = d;
+  });
+  if (last) {
+    parts.push({ text: _t('premium_dash.meta.last_trade', 'Son işlem {date}')
+      .replace('{date}', window.WwTime.formatDate(last, lang, { day: 'numeric', month: 'short', year: 'numeric' })) });
   }
 
+  el.innerHTML = parts.map(function(p) {
+    return '<span class="ph-meta-item' + (p.cls ? ' ' + p.cls : '') + '">' + sanitizeHTML(p.text) + '</span>';
+  }).join('<span class="ph-meta-sep" aria-hidden="true">·</span>');
+  // Prop defterinde aynı satır "Prop Hesap Durumu" kartında da gösterilir
+  setHeaderMetaHtml(el.innerHTML);
+}
+
+function renderHeaderStats() {
+  setAllTrades(allTrades);
+  renderPremiumStats(currentFilteredTrades, getPreviousPeriodTrades());
+  renderKpiBar(currentFilteredTrades);
+  updateHeaderMeta();
+}
+
+// Dışa aktar menüsü: aç/kapa, dışarı tıklayınca ve Esc ile kapanır
+function initExportMenu(scope) {
+  var btn = document.getElementById('export-menu-btn');
+  var menu = document.getElementById('export-menu');
+  if (!btn || !menu) return;
+  function setOpen(open) {
+    menu.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    setOpen(!menu.classList.contains('open'));
+  });
+  menu.addEventListener('click', function(e) {
+    if (e.target.closest('.ph-menu-item')) setOpen(false);
+  });
+  scope.on(document, 'click', function(e) {
+    if (!e.target.closest('.ph-export')) setOpen(false);
+  });
+  scope.on(document, 'keydown', function(e) {
+    if (e.key === 'Escape' && menu.classList.contains('open')) { setOpen(false); btn.focus(); }
+  });
+}
+
+var isDashboardDomRendered = false;
+var isDataReady = false;
+var lastPropActive = false;
+
+function onPropState() {
+  renderPropHeader();
+  if (!isDashboardDomRendered) return;
+  var active = isPropActive();
+  if (active !== lastPropActive) {
+    lastPropActive = active;
+    rerenderWidgetGrid();
+    return;
+  }
+  // Prop kartları işlem verisine bağlı değil: yükleme sürerken de hemen güncellenir
+  renderPropWidgets();
+  if (isDataReady) {
+    renderChartFor('cumulative', currentFilteredTrades);
+    renderChartFor('insights', currentFilteredTrades);   // prop temposu / limit içgörüleri
+  }
+}
+
+// Hesap planını kart görünümüne uygular. Sayfa premium'a özel; ?plan=free ücretsiz plan önizlemesini açar.
+function applyAccountPlan(accountPlan) {
+  var wasPro = isPro();
+  var previewFree = new URLSearchParams(window.location.search).get('plan') === 'free';
+  if (accountPlan === 'premium') {
+    if (previewFree) setPlan('free', { preview: true });
+    else setPlan('pro');
+  } else {
+    setPlan('free');
+  }
+  if (isDashboardDomRendered && wasPro !== isPro()) rerenderWidgetGrid();
+}
+
+// Hızlı ekleme / silme sonrası taze veriyi çek (art arda olaylar tek isteğe indirgenir)
+var tradeRefreshTimer = null;
+function onTradesChanged() {
+  if (tradeRefreshTimer) clearTimeout(tradeRefreshTimer);
+  tradeRefreshTimer = setTimeout(function() {
+    tradeRefreshTimer = null;
+    var jid = window.journal && typeof window.journal.getActiveJournalId === 'function' ? window.journal.getActiveJournalId() : null;
+    if (currentUser && jid && PAGE && PAGE.alive) fetchFreshTrades(currentUser.id, jid, !isDataReady, PAGE);
+  }, 300);
+}
+
+// Veri değişti mi? Adet, ilk kayıt, toplam K/Z ve son tarih birlikte karşılaştırılır
+// (düzenlenen bir işlem adedi değiştirmez; eskiden bu durumda ekran güncellenmiyordu)
+function tradesSignature(list) {
+  var sum = 0, last = '';
+  list.forEach(function(t) {
+    sum += Number(t.pnl) || 0;
+    var d = String(t.trade_date || '');
+    if (d > last) last = d;
+  });
+  return list.length + '|' + (list[0] ? list[0].id : '') + '|' + sum.toFixed(2) + '|' + last;
+}
+
+// Widget gösterildiğinde/gizlendiğinde ya da düzen sıfırlandığında grid'i baştan kurar
+function rerenderWidgetGrid() {
+  clearAllApexCharts();
+  clearLightweightChart();
+  renderWidgets();
+  renderPropHeader();
+  if (!isDataReady) {   // yükleniyorsa yalnızca kart düzeni (ve veriden bağımsız prop kartları) kurulur
+    renderPropWidgets();
+    return;
+  }
+  scheduleCharts();
+  loadStrategySection(currentFilteredTrades, currentUser);
+}
+
+// Veri gelince: istatistikler, grafikler ve stratejiler doldurulur (düzen zaten kurulu)
+function renderDashboardDOM() {
+  if (!isDashboardDomRendered) buildDashboardShell();
+  isDataReady = true;
+  try {
+    renderHeaderStats();
+  } catch (e) {
+    console.error('[Premium Dashboard] İstatistik hatası:', e);
+  }
+  scheduleCharts();
+  loadStrategySection(currentFilteredTrades, currentUser);
+}
+
+// Sayfa düzeni: başlık, KPI'lar ve kart kutuları veri gelmeden kurulur (yüklenirken parıltıyla bekler).
+// Veri gelince yalnızca içerik dolar — ayrı bir iskelet HTML'i değiştirilmediği için düzen kaymaz.
+function buildDashboardShell() {
   var main2 = document.getElementById('main-content');
   if (!main2) return;
 
-  main2.innerHTML = '\n      <div class="page-header">\n        <div>\n          <div class="page-header-title-row"><h1 data-i18n="premium_dash.title">' + _t('premium_dash.title', 'Premium Dashboard') + '</h1><span class="premium-crown-badge">Premium</span><div id="premium-prop-badge"></div></div>\n          <p class="subtitle" data-i18n="premium_dash.subtitle">' + _t('premium_dash.subtitle', 'Gelişmiş analiz ve strateji takibi') + '</p>\n        </div>\n        <div class="header-actions">\n          <div class="date-filter-group" id="premium-date-filter-group">\n            <button type="button" class="date-filter-option active" data-range="all" data-i18n="dashboard.filter.all">' + _t('dashboard.filter.all', 'Tümü') + '</button>\n            <button type="button" class="date-filter-option" data-range="week" data-i18n="dashboard.filter.week">' + _t('dashboard.filter.week', 'Bu Hafta') + '</button>\n            <button type="button" class="date-filter-option" data-range="month" data-i18n="dashboard.filter.month">' + _t('dashboard.filter.month', 'Bu Ay') + '</button>\n            <button type="button" class="date-filter-option" data-range="year" data-i18n="dashboard.filter.year">' + _t('dashboard.filter.year', 'Bu Yıl') + '</button>\n            <button type="button" class="date-filter-option" data-range="custom" id="premium-custom-range-btn" data-i18n="dashboard.filter.custom">' + _t('dashboard.filter.custom', 'Özel') + '</button>\n          </div>\n          <div class="custom-range-panel" id="premium-custom-range-panel">\n            <input type="date" id="premium-range-start" class="custom-range-input" />\n            <span class="custom-range-sep">–</span>\n            <input type="date" id="premium-range-end" class="custom-range-input" />\n            <button type="button" class="custom-range-apply" id="premium-range-apply" data-i18n="dashboard.filter.apply">' + _t('dashboard.filter.apply', 'Uygula') + '</button>\n          </div>\n          <button class="btn-export" id="export-csv-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span data-i18n="dashboard.export_csv">' + _t('dashboard.export_csv', 'CSV İndir') + '</span></button>\n          <button class="btn-export" id="export-pdf-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span data-i18n="dashboard.export_pdf">' + _t('dashboard.export_pdf', 'PDF İndir') + '</span></button>\n          <button class="layout-reset-btn" id="layout-reset-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> <span data-i18n="premium_dash.reset_layout">' + _t('premium_dash.reset_layout', 'Düzeni Sıfırla') + '</span></button>\n        </div>\n      </div>\n\n      <div class="premium-stats-grid" id="premium-stats-grid">\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.stats.total_trades">' + _t('dashboard.stats.total_trades', 'Toplam İşlem') + '</div><div class="pstat-value" id="pstat-total">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label" data-i18n="dashboard.stats.total_pnl">' + _t('dashboard.stats.total_pnl', 'Toplam K/Z') + '</div><div class="pstat-value" id="pstat-pnl">—</div></div>\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.stats.win_rate">' + _t('dashboard.stats.win_rate', 'Win Rate') + '</div><div class="pstat-value" id="pstat-wr">—</div></div>\n        <div class="pstat-card"><div class="pstat-label" data-i18n="dashboard.kpi.profit_factor">' + _t('dashboard.kpi.profit_factor', 'Profit Factor') + '</div><div class="pstat-value" id="pstat-pf">—</div></div>\n        <div class="pstat-card" data-critical="true"><div class="pstat-label" data-i18n="premium_dash.sharpe_ratio">' + _t('premium_dash.sharpe_ratio', 'Sharpe Ratio') + '</div><div class="pstat-value" id="pstat-sharpe">—</div></div>\n      </div>\n\n      <div class="kpi-bar">\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_win">' + _t('dashboard.kpi.avg_win', 'Ort. Kazanç') + '</span><span class="kpi-value positive" id="kpi-avg-win">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_loss">' + _t('dashboard.kpi.avg_loss', 'Ort. Kayıp') + '</span><span class="kpi-value negative" id="kpi-avg-loss">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.profit_factor">' + _t('dashboard.kpi.profit_factor', 'Profit Factor') + '</span><span class="kpi-value" id="kpi-pf">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.max_drawdown">' + _t('dashboard.kpi.max_drawdown', 'Maks. Drawdown') + '</span><span class="kpi-value negative" id="kpi-dd">—</span></div>\n        <div class="kpi-item"><span class="kpi-label" data-i18n="dashboard.kpi.avg_rr">' + _t('dashboard.kpi.avg_rr', 'Ort. R:R') + '</span><span class="kpi-value" id="kpi-rr">—</span></div>\n      </div>\n\n      <div class="dashboard-grid" id="dashboard-grid"></div>\n    ';
+  main2.innerHTML = headerHtml();
+  applyKpiDensity();
 
   if (typeof window !== 'undefined' && window.i18n && window.i18n.apply) window.i18n.apply();
 
   renderWidgets();
-  renderPremiumStats(currentFilteredTrades);
-  renderKpiBar(currentFilteredTrades);
+  renderHeaderStats();
 
   // Filter toolbar click handlers
   var filterGroup = document.getElementById('premium-date-filter-group');
@@ -234,17 +524,26 @@ function renderDashboardDOM() {
   if (fabCsv) fabCsv.addEventListener('click', function() { exportCSV(currentFilteredTrades); });
   if (fabPdf) fabPdf.addEventListener('click', function() { exportPDF(currentFilteredTrades); });
 
-  var layoutResetBtn = document.getElementById('layout-reset-btn');
-  if (layoutResetBtn) layoutResetBtn.addEventListener('click', resetLayout);
+  initExportMenu(PAGE);
+  lastPropActive = isPropActive();
+  renderPropHeader();
+  renderPropWidgets();
 
-  if (chartRafId) cancelAnimationFrame(chartRafId);
-  chartRafId = requestAnimationFrame(function() {
-    renderCharts(currentFilteredTrades);
+  // Navbar defter adını sonradan yükleyebilir; bilgi satırı güncel kalsın
+  var journalNameEl = document.querySelector('.nav-journal-switcher .journal-name');
+  if (journalNameEl && typeof MutationObserver !== 'undefined') {
+    var journalObserver = new MutationObserver(updateHeaderMeta);
+    journalObserver.observe(journalNameEl, { childList: true, characterData: true, subtree: true });
+    PAGE.onLeave(function() { journalObserver.disconnect(); });
+  }
+
+  initCustomizer(PAGE, {
+    getTrades: function() { return currentFilteredTrades; },
+    rerenderAll: rerenderWidgetGrid,
+    onLayoutChange: renderPropHeader
   });
 
-  loadStrategySection(currentFilteredTrades, currentUser);
   isDashboardDomRendered = true;
-  hideSkeletons();
 }
 
 async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
@@ -265,8 +564,9 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
         .range(from, from + pageSize - 1);
 
       if (error) {
-        if (renderImmediate && typeof showToast === 'function') {
-          showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
+        if (renderImmediate) {
+          if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
+          revealWithoutData(scope);
         }
         return;
       }
@@ -280,10 +580,37 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
       }
     }
 
+    // Defter sorgusu boşsa deftersiz (journal_id IS NULL) eski işlemleri kurtar
+    if (!allTradesData.length) {
+      try {
+        var uFrom = 0, uHasMore = true;
+        while (uHasMore) {
+          var unassigned = await sb
+            .from('trades')
+            .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
+            .eq('user_id', userId)
+            .is('journal_id', null)
+            .order('trade_date', { ascending: false })
+            .order('id', { ascending: true })
+            .range(uFrom, uFrom + pageSize - 1);
+          var uData = unassigned && unassigned.data;
+          if (uData && uData.length) {
+            allTradesData = allTradesData.concat(uData);
+            if (uData.length < pageSize) uHasMore = false;
+            else uFrom += pageSize;
+          } else {
+            uHasMore = false;
+          }
+        }
+      } catch (unErr) {}
+    }
+
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
       // Yalnızca kendi anahtarına yaz (ortak 'trades' anahtarı cache.js çapraz beslemesiyle yönetilir)
       window.wwCache.set('trades_premium', userId, jid, allTradesData);
+      // Prop betiği işlemleri ayrıca çekmesin diye haber verilir
+      window.dispatchEvent(new CustomEvent('ww:premium-trades'));
     }
 
     // Bu arada başka sayfaya geçildiyse yeni sayfanın DOM'una yazma
@@ -295,23 +622,27 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
       renderDashboardDOM();
     } else {
       // SWR Revalidation: Veri değiştiyse UI güncelle
-      var isCountChanged = allTrades.length !== allTradesData.length;
-      var isFirstItemChanged = allTrades.length > 0 && allTradesData.length > 0 && allTrades[0].id !== allTradesData[0].id;
-      if (isCountChanged || isFirstItemChanged) {
+      if (tradesSignature(allTrades) !== tradesSignature(allTradesData)) {
         allTrades = allTradesData;
         currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
-        renderPremiumStats(currentFilteredTrades);
-        renderKpiBar(currentFilteredTrades);
-        if (chartRafId) cancelAnimationFrame(chartRafId);
-        chartRafId = requestAnimationFrame(function() {
-          renderCharts(currentFilteredTrades);
-        });
+        renderHeaderStats();
+        scheduleCharts();
         loadStrategySection(currentFilteredTrades, currentUser);
       }
     }
   } catch(e) {
     console.error('[Premium Dashboard] fetchFreshTrades hatası:', e);
+    if (renderImmediate) revealWithoutData(scope);
   }
+}
+
+// Veri alınamadığında (hata, defter yok) iskelette kalmak yerine boş pano gösterilir
+function revealWithoutData(scope) {
+  if (scope && !scope.alive) return;
+  if (isDataReady) return;
+  allTrades = allTrades || [];
+  currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
+  renderDashboardDOM();
 }
 
 // LOAD PREMIUM DATA
@@ -329,6 +660,7 @@ async function loadPremiumData(scope) {
     console.error('[Premium Dashboard] requireAuth hala yüklenmedi!');
     var main = document.getElementById('main-content');
     if (main) {
+      main.classList.remove('is-loading');
       main.innerHTML = '\n          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem;padding:2rem;">\n            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>\n            <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="premium_dash.load_error_title">' + _t('premium_dash.load_error_title', 'Yükleme Hatası') + '</h2>\n            <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.load_error_desc">' + _t('premium_dash.load_error_desc', 'Gerekli modüller yüklenemedi. Lütfen sayfayı yenileyin.') + '</p>\n            <button onclick="location.reload()" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;" data-i18n="premium_dash.reload">' + _t('premium_dash.reload', 'Sayfayı Yenile') + '</button>\n          </div>\n        ';
     }
     return;
@@ -367,6 +699,7 @@ async function loadPremiumData(scope) {
           window.openUpgradeModal({ feature: 'premium_dashboard' });
         }
         var main = document.getElementById('main-content');
+        main.classList.remove('is-loading');
         main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="premium_dash.premium_only_title">' + _t('premium_dash.premium_only_title', 'Premium\'a Özel') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.premium_only_desc">' + _t('premium_dash.premium_only_desc', 'Bu sayfa sadece Premium üyelere özeldir.') + '</p>\n          <button onclick="if(window.openUpgradeModal)window.openUpgradeModal({feature:\'premium_dashboard\'});else location.href=\'settings.html#panel-plan\';" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;" data-i18n="nav.upgrade_premium">' + _t('nav.upgrade_premium', 'Premium\'a Geç →') + '</button>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.back_standard">' + _t('premium_dash.back_standard', '← Standart Dashboard\'a Dön') + '</a>\n        </div>\n      ';
         return;
       }
@@ -380,6 +713,8 @@ async function loadPremiumData(scope) {
         }).catch(function() {});
       }
     }
+    // Buraya yalnızca premium hesap ulaşır (?plan=free ise ücretsiz plan önizlemesi açılır)
+    applyAccountPlan('premium');
 
     // Bloklamayan yardımcı fonksiyonlar (arka planda çalışsın)
     if (typeof window.updateOvertradeBell === 'function') {
@@ -397,6 +732,7 @@ async function loadPremiumData(scope) {
 
     if (!jid) {
       if (typeof wwLog !== 'undefined') wwLog.warn('[Premium Dashboard] Aktif journal yok, veri yüklenmiyor');
+      revealWithoutData(scope);
       return;
     }
 
@@ -423,6 +759,7 @@ async function loadPremiumData(scope) {
   } catch(e) {
     console.error('[Premium Dashboard] Hata:', e);
     if (typeof showToast === 'function') showToast(_t('premium_dash.loading_error', 'Premium Dashboard yüklenirken hata oluştu'), 'error');
+    if (document.querySelector('#main-content.is-loading')) revealWithoutData(scope);
   }
 }
 
@@ -433,6 +770,7 @@ function mount(scope) {
   wwLog.log('[Premium Dashboard] DOM yüklendi, Premium Dashboard başlatılıyor...');
 
   PAGE = scope;
+  applyAccountPlan(sessionStorage.getItem('ww_user_plan'));
   currentUser = null;
   allTrades = [];
   currentFilteredTrades = [];
@@ -441,10 +779,19 @@ function mount(scope) {
   customRangeEnd = null;
   isPageVisible = true;
   isDashboardDomRendered = false;
+  isDataReady = false;
+  lastLightTheme = document.body.classList.contains('light-theme');
+  resetChartAnimations();
 
   themeObserver.observe(document.body, { attributes: true });
   scope.on(window, 'resize', onWindowResize);
   scope.on(document, 'visibilitychange', onVisibilityChange);
+  scope.on(window, 'ww:prop-state', onPropState);
+  scope.on(window, 'trade-saved', onTradesChanged);
+  scope.on(window, 'trade-deleted', onTradesChanged);
+  scope.onLeave(function() {
+    if (tradeRefreshTimer) { clearTimeout(tradeRefreshTimer); tradeRefreshTimer = null; }
+  });
   scope.on(document, 'journal-changed', function() {
     if (window.__wj_journal_transitioning) return;
     window.location.reload();
@@ -458,42 +805,9 @@ function mount(scope) {
     destroyDragDrop();
   });
 
-  // Avatar dropdown
-  var ua = document.getElementById('user-avatar');
-  var dm = document.getElementById('dropdown-menu');
-  if (ua && dm) {
-    scope.on(ua, 'click', function(e) { e.stopPropagation(); dm.classList.toggle('show'); });
-    scope.on(document, 'click', function() { dm.classList.remove('show'); });
-  }
-
-  // Logout
-  var logoutBtn = document.getElementById('logout-dropdown-btn');
-  if (logoutBtn) {
-    scope.on(logoutBtn, 'click', async function() {
-      localStorage.removeItem('ww_last_active_push');
-      await sb.auth.signOut();
-      window.location.href = 'index.html';
-    });
-  }
-
-  // Mobile menu
-  var nt = document.getElementById('nav-toggle');
-  var nm = document.getElementById('nav-menu');
-  var nb = document.getElementById('nav-backdrop');
-
-  if (nt) scope.on(nt, 'click', function() {
-    nm.classList.contains('open') ? closeMenu() : openMenu();
-  });
-  if (nb) scope.on(nb, 'click', closeMenu);
-
-  var logoutMobile = document.getElementById('logout-btn-mobile');
-  if (logoutMobile) {
-    scope.on(logoutMobile, 'click', function() {
-      closeMenu();
-      var btn = document.getElementById('logout-dropdown-btn');
-      if (btn) btn.click();
-    });
-  }
+  // Navbar (avatar, zil, hamburger menü, çıkış) navbar.js tarafından yönetilir. Eskiden burada da
+  // aynı butonlara dinleyici ekleniyordu: tek tıklama menüyü iki kez açıp kapattığı için
+  // premium dashboard'da navbar açılır menüleri çalışmıyordu.
 
   // FAB Toggle
   var fabToggle = document.getElementById('fab-toggle');
@@ -509,39 +823,9 @@ function mount(scope) {
     });
   }
 
-  // Bell Panel
-  var bellBtn = document.getElementById('overtrade-bell-btn');
-  var bellPanel = document.getElementById('bell-panel');
-  if (bellBtn && bellPanel) {
-    scope.on(bellBtn, 'click', function(e) {
-      e.stopPropagation();
-      bellPanel.classList.toggle('open');
-      if (bellPanel.classList.contains('open')) {
-        if (typeof window.markOvertradeAsRead === 'function') {
-          window.markOvertradeAsRead();
-        }
-      }
-    });
-    scope.on(document, 'click', function(e) {
-      if (!e.target.closest('#bell-panel') && !e.target.closest('#overtrade-bell-btn')) {
-        bellPanel.classList.remove('open');
-      }
-    });
-  }
-
-  // Bell mark read
-  var markReadBtn = document.getElementById('bell-mark-read-btn');
-  if (markReadBtn) {
-    scope.on(markReadBtn, 'click', function(e) {
-      e.stopPropagation();
-      if (typeof window.markOvertradeAsRead === 'function') {
-        window.markOvertradeAsRead();
-      }
-    });
-  }
-
-  // Inject skeleton and load immediately (0ms gecikme)
-  injectSkeletonMarkup();
+  // Düzeni hemen kur (yükleniyor durumunda), veriyi yükle
+  buildDashboardShell();
+  showSkeletons();
   loadPremiumData(scope);
 }
 
@@ -554,8 +838,10 @@ function mountIfOnPage() {
   mount(scope);
 }
 
-// İlk yükleme: DOMContentLoaded'da başlat (eskisi gibi)
-if (document.readyState === 'complete') {
+// İlk yükleme: DOM hazırsa hemen, değilse DOMContentLoaded'da başlat.
+// (Eskiden yalnızca 'complete' kontrol ediliyordu; modül DOMContentLoaded'dan sonra ama sayfa
+// tamamen yüklenmeden çalışırsa — 'interactive' — hiç başlamıyordu.)
+if (document.readyState !== 'loading') {
   mountIfOnPage();
 } else {
   document.addEventListener('DOMContentLoaded', mountIfOnPage);
