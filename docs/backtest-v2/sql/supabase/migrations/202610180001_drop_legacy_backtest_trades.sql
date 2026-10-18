@@ -20,9 +20,10 @@
 -- Prerequisites:
 --   * A FULL database backup taken IMMEDIATELY before this file (R48 / D11) and its location
 --     reported to the owner. This is the first write of Backtest v2 to the live database.
---   * The Stage 2 client is deployed: src/pages/backtest.astro no longer inserts into
---     backtest_trades (today backtest.astro:516 and 525-535) and the settings.js fallback no longer
---     deletes from it (public/settings/js/settings.js:2359-2362).
+--   * The Phase A client is deployed: src/pages/backtest.astro no longer inserts into backtest_trades.
+--     (The settings.js fallback at public/settings/js/settings.js:2359-2363 still calls
+--     sb.from('backtest_trades').delete(); supabase-js returns { error } instead of throwing and the result is
+--     discarded, so it is harmless after the DROP until Phase B step 4 updates it.)
 -- How to run: Supabase Dashboard -> SQL Editor, paste the WHOLE file, Run. It is one transaction.
 --   Do not use `supabase db push` (supabase_migrations.schema_migrations is empty on the live project,
 --   so every file would be treated as pending).
