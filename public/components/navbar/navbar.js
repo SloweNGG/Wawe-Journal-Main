@@ -1129,6 +1129,7 @@ function getNavbarHTML(translations) {
         <a href="/trades.html" data-page="trades"><span data-i18n="nav.trades">${tt('nav.trades', 'İşlemler')}</span></a>
         <a href="/strategies.html" data-page="strategies"><span data-i18n="nav.strategies">${tt('nav.strategies', 'Stratejiler')}</span></a>
         <a href="/calendar.html" data-page="calendar"><span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span></a>
+        <a href="/backtest.html" data-page="backtest" id="nav-backtest-link" style="display:none;"><span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span></a>
         <a href="/premium-dashboard.html" data-page="premium" data-premium-link><span data-i18n="nav.analysis">${tt('nav.analysis', 'Analiz')}</span><span class="nav-pro-tag">PRO</span></a>
       </div>
       <div class="nav-right">
@@ -1295,6 +1296,9 @@ function getNavbarHTML(translations) {
           <a href="/calendar.html" onclick="closeMobileMenuAndNavigate(event, '/calendar.html')">
             <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">${tt('nav.calendar', 'Takvim')}</span>
           </a>
+          <a href="/backtest.html" id="nav-backtest-link-mobile" style="display:none;" onclick="closeMobileMenuAndNavigate(event, '/backtest.html')">
+            <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">${tt('nav.backtest', 'Backtest')}</span>
+          </a>
         </div>
 
         <div class="menu-section">
@@ -1405,6 +1409,14 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// Backtest v2 (Faz A): link yalnızca adminlere gösterilir (görünürlük, güvenlik sınırı değil; sayfa kendi kapısını da uygular)
+function showBacktestLink() {
+  var l = document.getElementById('nav-backtest-link');
+  var lm = document.getElementById('nav-backtest-link-mobile');
+  if (l) l.style.display = '';
+  if (lm) lm.style.display = '';
+}
+
 function applyAvatarToNav(url) {
   var navAvatar = document.getElementById('user-avatar');
   var menuAvatar = document.getElementById('menu-user-avatar');
@@ -1498,6 +1510,7 @@ async function loadNavbarAvatar() {
         var alm = document.getElementById('admin-link-mobile');
         if (al) al.style.display = 'inline';
         if (alm) alm.style.display = 'block';
+        showBacktestLink();
       }
       return;
     }
@@ -1518,6 +1531,7 @@ async function loadNavbarAvatar() {
       var alm = document.getElementById('admin-link-mobile');
       if (al) al.style.display = 'inline';
       if (alm) alm.style.display = 'block';
+      showBacktestLink();
     }
 
     var displayName = user?.user_metadata?.username || user?.email || 'Kullanıcı';
@@ -1723,6 +1737,7 @@ function setActiveNavLink() {
     if (currentPath.includes('/trades') && href === '/trades.html') return true;
     if (currentPath.includes('/strategies') && href === '/strategies.html') return true;
     if (currentPath.includes('/calendar') && href === '/calendar.html') return true;
+    if (currentPath.includes('/backtest') && href === '/backtest.html') return true;
     if (currentPath.includes('/journals') && href === '/journals.html') return true;
     if (currentPath.includes('/settings') && href === '/settings.html') return true;
     if (currentPath.includes('/premium-dashboard') && href === '/premium-dashboard.html') return true;
@@ -1940,7 +1955,7 @@ function loadNavbar(containerId) {
   var translations = {};
   if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
     var navbarKeys = [
-      'nav.dashboard', 'nav.trades', 'nav.strategies', 'nav.calendar', 'nav.admin', 'nav.journals',
+      'nav.dashboard', 'nav.trades', 'nav.strategies', 'nav.calendar', 'nav.backtest', 'nav.admin', 'nav.journals',
       'nav.premium', 'nav.premium_dashboard', 'nav.theme_customization', 'nav.overtrade_alert',
       'nav.upgrade_premium', 'nav.notifications', 'nav.mark_read', 'nav.no_notifications',
       'nav.profile', 'nav.settings', 'nav.logout', 'nav.home', 'nav.premium_badge',

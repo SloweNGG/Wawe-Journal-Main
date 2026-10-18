@@ -6,6 +6,7 @@ const isActive = (page: string) => {
   if (page === 'trades' && (pathname.includes('/trades') || pathname.includes('/add-trade'))) return true;
   if (page === 'strategies' && pathname.includes('/strategies')) return true;
   if (page === 'calendar' && pathname.includes('/calendar')) return true;
+  if (page === 'backtest' && pathname.includes('/backtest')) return true;
   if (page === 'journals' && pathname.includes('/journals')) return true;
   if (page === 'settings' && pathname.includes('/settings')) return true;
   if (page === 'report-bug' && pathname.includes('/report-bug')) return true;
@@ -73,6 +74,7 @@ const isActive = (page: string) => {
     <a href="/trades.html" data-page="trades" class={`loaded ${isActive('trades') ? 'active' : ''}`}><span data-i18n="nav.trades">İşlemler</span></a>
     <a href="/strategies.html" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
     <a href="/calendar.html" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
+    <a href="/backtest.html" data-page="backtest" id="nav-backtest-link" style="display:none;" class={`loaded ${isActive('backtest') ? 'active' : ''}`}><span data-i18n="nav.backtest">Backtest</span></a>
     <a href="/premium-dashboard.html" data-page="premium" data-premium-link class={`loaded ${isActive('premium-dashboard') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span><span class="nav-pro-tag">PRO</span></a>
   </div>
 
@@ -306,6 +308,9 @@ const isActive = (page: string) => {
       </a>
       <a href="/calendar.html" class={isActive('calendar') ? 'active' : ''}>
         <i data-lucide="calendar" style="width:16px;height:16px;"></i> <span data-i18n="nav.calendar">Takvim</span>
+      </a>
+      <a href="/backtest.html" id="nav-backtest-link-mobile" style="display:none;" class={isActive('backtest') ? 'active' : ''}>
+        <i data-lucide="history" style="width:16px;height:16px;"></i> <span data-i18n="nav.backtest">Backtest</span>
       </a>
     </div>
 

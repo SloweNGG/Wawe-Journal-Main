@@ -1,6 +1,6 @@
 # Backtest v2: adım listesi
 
-Son güncelleme: 2026-10-19. Branch `backtest-v2`.
+Son güncelleme: 2026-10-19 (gece). Branch `backtest-v2`.
 
 Simgeler: ✅ bitti · 🔄 devam ediyor · ⬜ bekliyor · 🔐 sahip onayı gerekir
 
@@ -18,7 +18,7 @@ Ayrıntılar: `PLAN.md` (plan), `DEVAM.md` (kaldığımız yer), `KURALLAR.md` (
 | 0.5 | Migration 02 güncellemesi (D13): `initial_*`, kilitler, geri gitme yasağı | ✅ |
 | 0.6 | Admin kapısı, tarihe git kuralı ve arşiv planı yazıldı (`stage4-ek.md`, `ARSIV.md`) | ✅ |
 | 0.7 | Planın sahibe sunulması | ✅ |
-| 0.8 | `PLAN.md` sonundaki 9 karar: 2026-10-19 gece onaylandı (ayrıntı: `SABAH-RAPORU.md`). Canlıya yazma/silme içeren kararlar (Migration 06 silme, Binance toleransı hariç değil: yalnızca yedek yeri onaylandı) sabaha bırakıldı | ✅ |
+| 0.8 | `PLAN.md` kararları: sahip onayladı (2026-10-19 gece). Canlıya yazma/silme içerenler sabaha bırakıldı, ayrıntı `SABAH-RAPORU.md` | ✅ |
 | 0.9 | Migration'ların canlı fonksiyon gövdeleriyle satır satır bağımsız incelemesi (önceki inceleme ajanları limite takılmıştı, bu adım yapılmadı) | ⬜ |
 
 ## Güvenlik açığı
@@ -40,22 +40,22 @@ Not: Repo herkese açılacaksa `docs/backtest-v2/` içindeki açık tarifi önce
 
 ## Faz A: Arayüz (yalnızca admin, veritabanı yok)
 
-Onay (0.8) gelmeden başlanmaz.
+Gece oturumunda A.11'e kadar yapıldı, A.12 sahibin onayını bekliyor.
 
 | # | Adım | Durum |
 |---|---|---|
-| A.1 | Eski sayfa ön yüzünü kaldır: `backtest.astro` sıfırdan, `styles.css` bt seçicileri, `get-candles` repodan silinir, `sw.js` sürümü artar | ⬜ |
-| A.2 | `bt-symbols` + testleri | ⬜ |
-| A.3 | `bt-candles` + testleri | ⬜ |
-| A.4 | `bt-engine` + testleri (sayılar prototiple doğrulanır) | ⬜ |
-| A.5 | `bt-synthetic` + testleri | ⬜ |
-| A.6 | `bt-data.js`: SyntheticSource, "Sentetik veri · test" etiketi | ⬜ |
-| A.7 | `bt-store.js`: LocalStore (Migration 02 ile aynı satır biçimi ve kurallar) | ⬜ |
-| A.8 | Sayfa: hesap listesi, oluştur/düzenle/sil/sıfırla | ⬜ |
-| A.9 | Sayfa: replay, işlem motoru, grafik | ⬜ |
-| A.10 | i18n, admin kapısı, navbar linki (yalnızca admin) | ⬜ |
-| A.11 | Testler (`node --test tests/*.test.js`, önceki temel 156) ve admin / admin olmayan hesapla elle deneme | ⬜ |
-| A.12 | 🔐 Faz A sonu: sahibin ekran onayı ve commit | ⬜ |
+| A.1 | Eski sayfa kaldırıldı: `backtest.astro` sıfırdan, `styles.css` bt seçicileri, `get-candles` repodan silindi, `sw.js` v12. (`settings.js` ve Migration 01 Faz B'de) | ✅ |
+| A.2 | `bt-symbols` + testleri (15) | ✅ |
+| A.3 | `bt-candles` + testleri (15) | ✅ |
+| A.4 | `bt-engine` + testleri (25, 20.000'lik fuzz dahil) | ✅ |
+| A.5 | `bt-synthetic` + testleri | ✅ |
+| A.6 | `bt-data.js`: SyntheticSource, "Sentetik veri · test" etiketi | ✅ |
+| A.7 | `bt-store.js`: LocalStore + admin kapısı + testleri | ✅ |
+| A.8 | Sayfa: hesap listesi, oluştur/düzenle/sil/sıfırla | ✅ |
+| A.9 | Sayfa: replay, işlem motoru, grafik | ✅ |
+| A.10 | i18n (tr/en/de, 153 anahtar), admin kapısı, navbar linki (yalnızca admin) | ✅ |
+| A.11 | `node --test tests/*.test.js`: 240 geçti / 0 kaldı. Headless Chrome duman testi (admin ve admin olmayan) geçti. Gerçek giriş ve elle deneme sahipte | ✅ |
+| A.12 | 🔐 Faz A sonu: sahibin ekran onayı | ⬜ |
 
 ## Faz B: Veritabanı (canlıya ilk yazma)
 
