@@ -158,3 +158,19 @@ CREATE TABLE public.backtest_trades (
 CREATE INDEX idx_backtest_trades_user_id ON public.backtest_trades USING btree (user_id);
 CREATE INDEX idx_backtest_trades_created_at ON public.backtest_trades USING btree (created_at DESC);
 CREATE INDEX idx_backtest_trades_user_time ON public.backtest_trades USING btree (user_id, entry_time DESC);
+
+
+-- Storage (just what Migrations 03 and 07 touch): buckets, objects with RLS, as Supabase grants them
+CREATE SCHEMA storage;
+GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
+CREATE TABLE storage.buckets (
+  id text PRIMARY KEY, name text NOT NULL, public boolean DEFAULT false,
+  file_size_limit bigint, allowed_mime_types text[], created_at timestamptz DEFAULT now()
+);
+CREATE TABLE storage.objects (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), bucket_id text REFERENCES storage.buckets(id),
+  name text, owner uuid, metadata jsonb, created_at timestamptz DEFAULT now()
+);
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON storage.objects TO anon, authenticated, service_role;
+GRANT SELECT ON storage.buckets TO anon, authenticated, service_role;

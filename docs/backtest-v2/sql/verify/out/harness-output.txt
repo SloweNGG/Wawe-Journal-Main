@@ -121,6 +121,36 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
   ok   00.down: catalog identical to before 00
   ok   00.down re-opens the hole as documented
 
+[N03] 03 and 07: candles bucket, policies, guards, rollbacks (own database)
+  ok   03 refuses an existing PUBLIC bucket -> ABORT: bucket "candles" already exists and is PUBLIC. Nothing was changed; inspect it first.
+  ok   03 refuses an existing bucket with other limits -> ABORT: bucket "candles" already exists with other limits (file_size_limit 1000, mime types <NULL>). Nothing was changed; inspect it first.
+  ok   03 refuses a SELECT policy that is not tied to a bucket -> LEAK: storage.objects policy/policies everything_readable are not restricted to a bucket and would expose the candles bucket. Nothing was changed.
+  ok   nothing created by the refused runs
+  ok   07 before 03: ORDER -> ORDER: run 202610180003_candles_bucket_admin_only.sql first (private bucket "candles" not found).
+  ok   03: private bucket with the limits
+  ok   03: exactly one candles policy (admin)
+  ok   03: admin reads the candle objects
+  ok   03: a normal member reads none
+  ok   03: an anonymous sign-in reads none
+  ok   03: anon reads none
+  ok   03 re-run with objects present is a no-op
+  ok   07 refuses without the confirmation line -> CONFIRM: opening the candle archive to all members needs the owner's licence decision. Uncomment the confirmation line at the top of this file once it
+  ok   07 confirmation line found
+  ok   07: exactly one candles policy (members)
+  ok   07: a normal member reads the objects
+  ok   07: admin still reads
+  ok   07: an anonymous sign-in still reads none
+  ok   07: anon reads none
+  ok   03.down refuses while 07 is applied -> ORDER: migration 202610180007 is still applied (policy candles_select_members exists). Roll it back first.
+  ok   07.down: admin-only policy restored
+  ok   07.down: members read none again, admin still reads
+  ok   03.down refuses to delete a bucket with objects -> DATA LOSS: bucket "candles" holds 2 object(s). Empty it through the Storage API first, or uncomment the confirmation line at the top of this file.
+  ok   bucket still there
+  ok   03.down confirmation line found
+  ok   03.down: bucket gone
+  ok   03.down: no candles policy left
+  ok   03.down leaves the other bucket and its policy alone
+
 [M0] mock of the live schema
   ok   mock has backtest_trades
 
@@ -329,4 +359,4 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
       acls + {"fn":"list_journals()","execs":"{authenticated,postgres,service_role}"}
   ok   restored backtest_trades RLS: U2 cannot see U1 rows
 
-RESULT: 233 passed, 0 failed
+RESULT: 261 passed, 0 failed

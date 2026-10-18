@@ -190,12 +190,16 @@ const outputs = [
   ['01.down.sql', 'supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql'],
   ['02.sql', 'supabase/migrations/202610180002_backtest_accounts.sql'],
   ['02.down.sql', 'supabase/rollbacks/202610180002_backtest_accounts.down.sql'],
+  ['03.sql', 'supabase/migrations/202610180003_candles_bucket_admin_only.sql'],
+  ['03.down.sql', 'supabase/rollbacks/202610180003_candles_bucket_admin_only.down.sql'],
   ['04.sql', 'supabase/migrations/202610180004_backtest_journal_link_cleanup.sql'],
   ['04.down.sql', 'supabase/rollbacks/202610180004_backtest_journal_link_cleanup.down.sql'],
   ['05.sql', 'supabase/migrations/202610180005_exclude_backtest_from_stats.sql'],
   ['05.down.sql', 'supabase/rollbacks/202610180005_exclude_backtest_from_stats.down.sql'],
   ['06.sql', 'supabase/migrations/202610180006_drop_unused_trade_functions.sql'],
   ['06.down.sql', 'supabase/rollbacks/202610180006_drop_unused_trade_functions.down.sql'],
+  ['07.sql', 'supabase/migrations/202610180007_candles_open_to_members.sql'],
+  ['07.down.sql', 'supabase/rollbacks/202610180007_candles_open_to_members.down.sql'],
   ['verify.sql', 'supabase/tests/backtest_v2_verify.sql'],
 ];
 

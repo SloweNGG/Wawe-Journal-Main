@@ -14,6 +14,10 @@ const { PGlite } = await import(pathToFileURL(pgliteIndex).href);
 
 const read = (p) => fs.readFileSync(p, 'utf8');
 const MIG = {
+  m03: read(path.join(planDir, 'supabase/migrations/202610180003_candles_bucket_admin_only.sql')),
+  d03: read(path.join(planDir, 'supabase/rollbacks/202610180003_candles_bucket_admin_only.down.sql')),
+  m07: read(path.join(planDir, 'supabase/migrations/202610180007_candles_open_to_members.sql')),
+  d07: read(path.join(planDir, 'supabase/rollbacks/202610180007_candles_open_to_members.down.sql')),
   m00: read(path.join(planDir, 'supabase/migrations/202610180000_secure_evaluate_prop_firm_rules.sql')),
   d00: read(path.join(planDir, 'supabase/rollbacks/202610180000_secure_evaluate_prop_firm_rules.down.sql')),
   m01: read(path.join(planDir, 'supabase/migrations/202610180001_drop_legacy_backtest_trades.sql')),
@@ -391,6 +395,80 @@ log('\n[N0] 00: evaluate_prop_firm_rules ownership check + no anon (own database
   ok(d2.length === 0, `00.down: catalog identical to before 00${d2.length ? '\n      ' + d2.join('\n      ') : ''}`);
   ok((await as(db, null, `select public.evaluate_prop_firm_rules($1) as r`, [J1a], { role: 'anon' })).rows[0].r.status === 'active', '00.down re-opens the hole as documented');
   await db.close();
+}
+
+// ---------------------------------------------------------------- storage migrations (03, 07)
+log('\n[N03] 03 and 07: candles bucket, policies, guards, rollbacks (own database)');
+{
+  const asClaims = async (claims, sql, role = 'authenticated') => {
+    await sdb.exec('BEGIN');
+    try {
+      await sdb.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify(claims)]);
+      await sdb.exec(`SET LOCAL ROLE ${role}`);
+      const r = await sdb.query(sql); await sdb.exec('COMMIT'); return r;
+    } catch (e) { await sdb.exec('ROLLBACK'); throw e; }
+  };
+  const COUNT = `select count(*)::int as n from storage.objects where bucket_id = 'candles'`;
+  const seeCount = async (claims, role) => (await asClaims(claims, COUNT, role)).rows[0].n;
+  const ADMC = { sub: ADM, role: 'authenticated', app_metadata: { role: 'admin' } };
+  const USRC = { sub: U1, role: 'authenticated', app_metadata: {} };
+  const ANOC = { sub: U2, role: 'authenticated', is_anonymous: true, app_metadata: {} };
+  const policiesOf = async () => (await all(sdb, `select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects' and qual ilike '%candles%' order by 1`)).map((r) => r.policyname).join(',');
+  const sdb = await newDb(); await seed(sdb);
+
+  // guards before the first run
+  await sdb.exec(`INSERT INTO storage.buckets (id, name, public, file_size_limit) VALUES ('candles', 'candles', true, 26214400)`);
+  await expectErr(() => runFile(sdb, MIG.m03), /ABORT: bucket "candles" already exists and is PUBLIC/, '03 refuses an existing PUBLIC bucket');
+  await sdb.exec(`UPDATE storage.buckets SET public = false, file_size_limit = 1000 WHERE id = 'candles'`);
+  await expectErr(() => runFile(sdb, MIG.m03), /ABORT: bucket "candles" already exists with other limits/, '03 refuses an existing bucket with other limits');
+  await sdb.exec(`DELETE FROM storage.buckets WHERE id = 'candles'`);
+  await sdb.exec(`CREATE POLICY "everything_readable" ON storage.objects FOR SELECT TO authenticated USING (true)`);
+  await expectErr(() => runFile(sdb, MIG.m03), /LEAK: storage\.objects policy\/policies everything_readable/, '03 refuses a SELECT policy that is not tied to a bucket');
+  ok((await one(sdb, `select count(*)::int as n from storage.buckets`)).n === 0, 'nothing created by the refused runs');
+  await sdb.exec(`DROP POLICY "everything_readable" ON storage.objects`);
+  await sdb.exec(`CREATE POLICY "avatars_read" ON storage.objects FOR SELECT TO public USING (bucket_id = 'avatars')`);
+
+  // 07 before 03
+  await expectErr(() => runFile(sdb, MIG.m07.replace("-- SET LOCAL wawe.confirm_open_candles_to_members = 'yes';", "SET LOCAL wawe.confirm_open_candles_to_members = 'yes';")), /ORDER: run 202610180003/, '07 before 03: ORDER');
+
+  await runFile(sdb, MIG.m03); await runFile(sdb, MIG.m03);
+  const bk = await one(sdb, `select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'candles'`);
+  ok(bk.public === false && Number(bk.file_size_limit) === 26214400 && bk.allowed_mime_types.join() === 'application/gzip,application/json', `03: private bucket with the limits`);
+  ok(await policiesOf() === 'candles_select_admin', '03: exactly one candles policy (admin)');
+  await sdb.exec(`INSERT INTO storage.buckets (id, name) VALUES ('avatars', 'avatars')`);
+  await sdb.exec(`INSERT INTO storage.objects (bucket_id, name) VALUES ('candles', 'BTCUSDT/2026-09.json.gz'), ('candles', 'BTCUSDT/index.json'), ('avatars', 'a.png')`);
+  ok(await seeCount(ADMC) === 2, '03: admin reads the candle objects');
+  ok(await seeCount(USRC) === 0, '03: a normal member reads none');
+  ok(await seeCount(ANOC) === 0, '03: an anonymous sign-in reads none');
+  ok(await seeCount({ role: 'anon' }, 'anon') === 0, '03: anon reads none');
+  await runFile(sdb, MIG.m03);   // re-run with objects present: same configuration, no-op
+  ok(await seeCount(ADMC) === 2, '03 re-run with objects present is a no-op');
+
+  // 07: licence gate, swap, rollback
+  await expectErr(() => runFile(sdb, MIG.m07), /CONFIRM: opening the candle archive/, '07 refuses without the confirmation line');
+  const m07c = MIG.m07.replace("-- SET LOCAL wawe.confirm_open_candles_to_members = 'yes';", "SET LOCAL wawe.confirm_open_candles_to_members = 'yes';");
+  ok(m07c !== MIG.m07, '07 confirmation line found');
+  await runFile(sdb, m07c); await runFile(sdb, m07c);
+  ok(await policiesOf() === 'candles_select_members', '07: exactly one candles policy (members)');
+  ok(await seeCount(USRC) === 2, '07: a normal member reads the objects');
+  ok(await seeCount(ADMC) === 2, '07: admin still reads');
+  ok(await seeCount(ANOC) === 0, '07: an anonymous sign-in still reads none');
+  ok(await seeCount({ role: 'anon' }, 'anon') === 0, '07: anon reads none');
+  await expectErr(() => runFile(sdb, MIG.d03), /ORDER: migration 202610180007 is still applied/, '03.down refuses while 07 is applied');
+  await runFile(sdb, MIG.d07); await runFile(sdb, MIG.d07);
+  ok(await policiesOf() === 'candles_select_admin', '07.down: admin-only policy restored');
+  ok(await seeCount(USRC) === 0 && await seeCount(ADMC) === 2, '07.down: members read none again, admin still reads');
+
+  // 03.down: data-loss guard, then confirmed
+  await expectErr(() => runFile(sdb, MIG.d03), /DATA LOSS: bucket "candles" holds 2 object/, '03.down refuses to delete a bucket with objects');
+  ok((await one(sdb, `select count(*)::int as n from storage.buckets where id = 'candles'`)).n === 1, 'bucket still there');
+  const d03c = MIG.d03.replace("-- SET LOCAL wawe.confirm_delete_candles_bucket = 'yes';", "SET LOCAL wawe.confirm_delete_candles_bucket = 'yes';");
+  ok(d03c !== MIG.d03, '03.down confirmation line found');
+  await runFile(sdb, d03c); await runFile(sdb, MIG.d03);
+  ok((await one(sdb, `select count(*)::int as n from storage.buckets where id = 'candles'`)).n === 0, '03.down: bucket gone');
+  ok(await policiesOf() === '', '03.down: no candles policy left');
+  ok((await one(sdb, `select count(*)::int as n from storage.objects where bucket_id = 'avatars'`)).n === 1 && (await one(sdb, `select count(*)::int as n from pg_policies where policyname = 'avatars_read'`)).n === 1, '03.down leaves the other bucket and its policy alone');
+  await sdb.close();
 }
 
 // ---------------------------------------------------------------- main flow

@@ -43,3 +43,15 @@ Ekranı açmak için: admin hesabıyla `/backtest` (navbar'da yalnızca adminde 
 - Açık tema görünümü ve telefon genişliği (yalnızca karanlık tema, masaüstü genişliğinde ekran görüntüsüne baktım).
 - Lucide ikonları (duman testinde yüklü değildi).
 - Gece boyu uzun oynatma (bellek, çok aylık geçiş) elle denenmedi; yalnızca bir ay içi ve D1 geçmiş yüklemesi denendi.
+
+## Adım 3: migration incelemesi (0.9)
+
+Sonuç `sql/INCELEME.md`'de. Özet: ciddi bir SQL hatası bulunmadı; bir doküman hatası düzeltildi (01'in ön koşulu `settings.js`'in güncellendiğini söylüyordu, oysa o Faz B'de; eski yedek yolu zararsız). **Canlıya yeniden bağlanmadım**: `supabase db query --linked` geçici giriş rolü oluşturuyor ve kurallar bunun önceden haber verilmesini istiyor. Karşılaştırma 18 Ekim anlık görüntüsüyle yapıldı; asıl koruma her migration'daki DRIFT (md5) bloğu.
+
+## Adım 4: Migration 03 ve 07
+
+- **03** `candles` bucket'ı (özel, 25 MiB, gzip/json) + yalnızca admin okuma politikası. Var olan bucket public ya da farklı limitliyse, ya da `storage.objects` üzerinde bucket'a bağlı olmayan bir SELECT politikası varsa **durur**.
+- **Karar:** mevcut bucket tam olarak bizim ayarımızdaysa yeniden çalıştırma serbest (nesneler olsa bile), çünkü içe aktarıcı yükledikten sonra dosyayı tekrar çalıştırmak gerekebilir. Planın "nesne varsa dur" cümlesini, "ayar farklıysa dur" olarak yorumladım.
+- **07** üyelere açma (anonim girişler hariç). **Lisans onay satırı yorumda**: açılmadan çalışmaz. Böylece yanlışlıkla çalıştırılamaz.
+- Rollback'ler: 07.down admin politikasını geri getirir; 03.down bucket nesne içeriyorsa durur (onay satırıyla geçilir), politikayı ve bucket'ı siler.
+- Testler: PGlite harness'e sahte `storage` şeması eklendi, 261 geçti / 0 kaldı. **Gerçek Storage'ın `protect_delete` tetikleyicisi PGlite'ta yok**: 03.down `storage.allow_delete_query` ayarını kendi işleminde açıyor ama bu gerçek Supabase'te denenmedi.

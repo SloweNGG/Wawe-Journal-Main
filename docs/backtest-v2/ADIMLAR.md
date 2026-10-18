@@ -19,7 +19,7 @@ Ayrıntılar: `PLAN.md` (plan), `DEVAM.md` (kaldığımız yer), `KURALLAR.md` (
 | 0.6 | Admin kapısı, tarihe git kuralı ve arşiv planı yazıldı (`stage4-ek.md`, `ARSIV.md`) | ✅ |
 | 0.7 | Planın sahibe sunulması | ✅ |
 | 0.8 | `PLAN.md` kararları: sahip onayladı (2026-10-19 gece). Canlıya yazma/silme içerenler sabaha bırakıldı, ayrıntı `SABAH-RAPORU.md` | ✅ |
-| 0.9 | Migration'ların canlı fonksiyon gövdeleriyle satır satır bağımsız incelemesi (önceki inceleme ajanları limite takılmıştı, bu adım yapılmadı) | ⬜ |
+| 0.9 | Migration'ların canlı gövdelerle (2026-10-18 anlık görüntüsü) incelenmesi: `sql/INCELEME.md`. Canlıya bu gece yeniden bağlanılmadı (KURALLAR §1); DRIFT korumaları çalışma anında denetler | ✅ |
 
 ## Güvenlik açığı
 
@@ -92,11 +92,11 @@ Gece oturumunda A.11'e kadar yapıldı, A.12 sahibin onayını bekliyor.
 | # | Adım | Durum |
 |---|---|---|
 | E.1 | 🔐 Lisans kararı: Binance (CC BY-NC-SA), forex ve altın. cTrader trendbar sorusu dar kapsamda araştırılır | ⬜ |
-| E.2 | Migration 03 (admin-only bucket) yazılır | ⬜ |
+| E.2 | Migration 03 (admin-only bucket) ve Migration 07 (üyelere açma, lisans onay satırı kapalı) + rollback'leri yazıldı, PGlite testi geçti (261/0). Canlıda çalıştırılmadı | ✅ |
 | E.3 | İçe aktarıcı D13'e uyarlanır (sembol başına index, gün defteri, kilit) ve testleri yazılır | ⬜ |
 | E.4 | 🔐 Bucket oluşturma, ilk veri yükleme (canlı Storage yazması) | ⬜ |
 | E.5 | Gece GitHub Actions işi ve ArchiveSource | ⬜ |
-| E.6 | 🔐 Migration 07 yazılır ve çalıştırılır: sayfa tüm üyelere açılır, navbar herkese | ⬜ |
+| E.6 | 🔐 Migration 07 çalıştırılır (lisans onay satırı açılır): sayfa tüm üyelere açılır, navbar herkese | ⬜ |
 
 ## Backtest dışı bekleyenler (bilgi için)
 
