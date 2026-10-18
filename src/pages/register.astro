@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="en" showNavbar={false} noIndex={true}>
 <Fragment slot="head">
   <title>Sign Up – Wawe Journal</title>
+  <meta name="theme-color" content="#000000" />
 
   <!-- Preconnect & Prefetch for Speed -->
   <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
@@ -31,8 +32,8 @@ import Layout from '../layouts/Layout.astro';
        WAWE JOURNAL — TANITIM SAYFASI RENK PALETİ (index.css)
        ═══════════════════════════════════════════════════════════════ */
     :root {
-      --bg: #07070c;
-      --bg2: #0d0d14;
+      --bg: #000000;
+      --bg2: #08080c;
       --surface: #0e0e16;
       --surface2: #161622;
       --border: rgba(139, 92, 246, 0.15);
@@ -89,36 +90,10 @@ import Layout from '../layouts/Layout.astro';
       position: relative !important;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(139, 92, 246, 0.12), transparent 60%),
-        radial-gradient(ellipse 70% 50% at 80% 20%, rgba(192, 132, 252, 0.08), transparent 50%),
-        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(139, 92, 246, 0.04), transparent 50%),
-        var(--bg);
-      animation: breath 8s ease-in-out infinite alternate;
-    }
-    @keyframes breath {
-      0% { opacity: 0.7; transform: scale(1); }
-      100% { opacity: 1; transform: scale(1.03); }
-    }
+    .wj-ambient-backdrop,
+    body::before,
     body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background:
-        radial-gradient(ellipse 40% 30% at 30% 30%, rgba(139, 92, 246, 0.06), transparent 50%),
-        radial-gradient(ellipse 40% 30% at 70% 70%, rgba(192, 132, 252, 0.04), transparent 50%);
-      pointer-events: none;
-      animation: pulseGlow 12s ease-in-out infinite alternate;
-    }
-    @keyframes pulseGlow {
-      0% { opacity: 0.4; }
-      100% { opacity: 1; }
+      display: none !important;
     }
 
     .brand-logo {
