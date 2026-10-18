@@ -1,0 +1,180 @@
+{
+  "verdict": "sound-with-fixes",
+  "confirmed": [
+    "Dukascopy 1m record layout: 24 bytes, big-endian [offsetSec, open, close, low, high, float32 volume]. A day file has 1,440 records at 60-second steps. EURUSD integer / 1e5 gives 1.14011-1.14603. Re-checked on both decoded 2019 day files: all 1,440 records are OHLC-consistent when read as O,C,L,H, and open == previous close 689 and 682 times, against 93 and 101 with the fields reversed.",
+    "Dukascopy closed periods are zero-volume flats. In the January 2019 hourly file every weekend is a 48-hour run starting Friday 22:00Z, and 2019-01-01 is a 22-hour run that ends at 22:00Z (17:00 EST). This matches the symbols track's holiday model: the holiday trading day is closed from 17:00 NY to 17:00 NY.",
+    "Binance timestamp units: milliseconds (13 digits) in ETHUSDT 2020-06 and BTCUSDT 2024-12-31; microseconds (16 digits) in BTCUSDT 2026-10-17 and in all 44,640 rows of the BTCUSDT 2025-01 monthly zip (downloaded by the binance-review track, new evidence). Taking the first 10 digits as epoch seconds works for both.",
+    "ETHUSDT 2020-06 has 42,990 rows and exactly one gap: 2020-06-28 from 02:00Z, 210 minutes. No price in the three Binance samples has more than 2 decimals.",
+    "The Binance Vision Dataset Terms quoted by the binance track (§3.1, §3.4, §4.1, §4.3, §4.4, §4.5, §8.3) match the local copy line for line (TERMS_AND_CONDITIONS.md:31-49 and 83). The two independently downloaded copies (storage and binance-review tracks) are byte-identical.",
+    "storage.allow_any_operation removes the 'storage.' prefix on both sides (supabase/storage tenant migration 0058-operation-ergonomics.sql). So array['object.get_authenticated'] matches GET_AUTH_OBJECT = 'storage.object.get_authenticated' (src/http/routes/operations.ts:22). Both GET /object/authenticated/:bucket/* and GET /object/:bucket/* use that operation (getObject.ts:105 and :127). List and sign run under other operation names and are denied.",
+    "supabase-js 2.117.3 download(path, {cacheNonce}, fetchInit) sends GET {url}/object/{bucket}/{path}?cacheNonce=... For GET requests it spreads fetchInit (signal, cache) into fetch(). Errors carry the body's statusCode. Checked in the UMD bundle.",
+    "The restrictive guard policies are justified. Tenant migration 0046 grants ALL on storage.buckets and storage.objects to anon, authenticated and service_role, so RLS is the only barrier. protect_delete() (tenant migration 0055) blocks DELETE on both tables unless storage.allow_delete_query = 'true', so the rollback order (API purge first, then SQL) is right.",
+    "The bucket SQL is valid: syntax (as restrictive / for / to / using / with check), the to_regprocedure guard, the begin/commit wrapper and drop-if-exists idempotency. It matches the repo's migration style (supabase/migrations/202608190001_security_baseline.sql:5 and 169-189).",
+    "The market-hours prototype passed 16 independent edge cases: DST on 2026-03-08 and 2026-11-01, Christmas 2026 and New Year 2027 falling on Fridays, the gold daily break and Sunday 18:00 open, and the crypto UTC anchor. The per-UTC-hour offset cache is exact over 2026 for America/New_York, Europe/London and Australia/Sydney.",
+    "The engine math prototype reproduces EURUSD $41.44, USDJPY $163.59, the XAUUSD 100 oz value and BTC 0.01-lot rounding (-1.235 -> -1.24). It also reproduces rr 11/8 -> 1.38, $7 round-turn commission on 0.37 lot -> $2.59, SHORT triggers on the ask, SL fill at a gapped open, and SL-first with the ambiguous flag on a same-bar hit. D1/H4 buckets stay correct across the DST end.",
+    "spreadPoints = Math.round(pips x pointsPerPip) gives the exact half-away-from-zero result for every 2-decimal spread from 0.00 to 1000.00 with pointsPerPip 10. No decimal workaround is needed.",
+    "trg_calc_pnl keeps a supplied pnl, never touches gross_pnl, commission or swap, and sets rr = ROUND(|tp-entry|/|entry-sl|, 2) only when risk > 0 (scratchpad db/fn_calc_trade_pnl.sql:10-24 and 59-70). The trades price columns are unconstrained numeric, so 5-digit prices are not truncated. Commission is stored positive and net = gross - commission + swap (supabase/migrations/202610070002_add_commission_swap_gross_pnl.sql:27; supabase/functions/ctrader-sync/index.ts:573).",
+    "get-candles and Twelve Data are used in code only by src/pages/backtest.astro:358-406 (which also holds the live api.binance.com call at :365 and the ms conversion at :371) and by supabase/functions/get-candles/index.ts itself (TWELVE_DATA_API_KEY at :5, ALLOWED_ORIGINS env at :8). Docs mention them at PROJECT_OVERVIEW.md:168 and :290, plus the repomix-output.xml snapshot. Every other Edge Function hard-codes its own ALLOWED_ORIGINS array (e.g. supabase/functions/verify-auth/index.ts:14), both in the repo and in the deployed snapshot. So deleting the ALLOWED_ORIGINS secret affects only get-candles.",
+    "public/sw.js:13-20 deletes every cache except 'wawe-v11' when the service worker activates; :45 and :48 skip cross-origin and Supabase requests. Node's gzip header OS byte is 0x0a on this Windows machine, so detecting changes by the SHA-256 of the raw JSON is correct. The pako 2.1.0 pako_inflate.min.js SRI hash matches the cdnjs metadata copy.",
+    "SpaRouter runs library scripts once per document, identified by path (src/components/SpaRouter.astro:87-100 and 340-348). The bt-* library files must therefore not carry data-page-script. The globalThis footer is required because package.json sets type: module."
+  ],
+  "refuted": [
+    {
+      "claim": "Storage format: Binance microsecond timestamps must be normalised, and 'the t % 60 check catches mistakes'.",
+      "evidence": "1792195200000000 µs / 1000 = 1792195200000. That value is still 0 mod 60, so read as seconds it passes the t % 60 check (it is year 58762). Only the monthStart <= t < nextMonthStart check rejects it. Script: agents3/design-review-scripts/checks1.mjs."
+    },
+    {
+      "claim": "Storage browser loading, failure UX: '401 / InvalidJWT -> sb.auth.refreshSession() and one retry' handles an expired session.",
+      "evidence": "download() calls GET /object/{bucket}/{path} (supabase-js 2.117.3 bundle). That route has allowInvalidJwt: true (supabase/storage src/http/routes/object/getObject.ts:113-134). For a private bucket, unauthenticated requests get NoSuchBucket (:47-62), and an anon-key fallback is denied by RLS (NoSuchKey). Both come back as statusCode '404', never 401."
+    },
+    {
+      "claim": "Storage caching: deleting IndexedDB 'ww-candles' in the navbar logout handler (public/components/navbar/navbar.js:1855-1869) keeps licensed data from staying in the browser after sign-out.",
+      "evidence": "There are other sign-out paths that would skip it: public/interface/strategies/js/strategies.js:1823, public/settings/js/settings.js:2451, public/src/core/supabase.js:126, :174 and :247."
+    },
+    {
+      "claim": "Decision record D7: the persistent month cache may be 'Cache Storage or IndexedDB'.",
+      "evidence": "public/sw.js:13-20 deletes every cache whose name is not CACHE_VERSION ('wawe-v11') on each activation, so a Cache Storage candle cache is wiped at every SW bump."
+    },
+    {
+      "claim": "Storage browser loading: higher-timeframe bucket = floor((t - offset)/tf)*tf + offset, with the offset taken from the market-hours config.",
+      "evidence": "The FX/gold D1 and H4 anchor moves with DST. dayAnchor gives 2026-10-29T21:00Z for Fri 2026-10-30 and 2026-11-01T22:00Z for Mon 2026-11-02 (checks-hours.cjs, checks-engine.cjs). A constant offset is wrong for half of every year."
+    },
+    {
+      "claim": "Storage manifest: a 3-day grace 'keeps the month just ended partial until late data lands, e.g. Binance monthly zips appear a few days after month end'.",
+      "evidence": "The binance track measured monthly files landing on the first Monday after month end: up to 6.5 days late since 2025-06, and 14.5-18 days late in 2023-2024. A time-based grace also ignores Dukascopy day files that failed to download."
+    },
+    {
+      "claim": "Dukascopy weekend behaviour: '2019-12-25 has about 5% of normal volume'.",
+      "evidence": "In the decoded 2019 daily file, Dec 25 volume is 4,887, which is 1.7% of the median 2019 day. A Sunday open (Dec 29) is 1.1%. This fits trading only 22:00-24:00Z and so supports the holiday model."
+    }
+  ],
+  "issues": [
+    {
+      "severity": "critical",
+      "issue": "Licensing blocks both sources as the owner specified them. Binance Vision Dataset Terms v1.0 (2026-08-26) license the data under CC BY-NC-SA 4.0 (§3.1). Commercial use needs a separate written enterprise licence (§3.4). Hosting or commercially exploiting derived historical feeds is forbidden (§4.3), as is integrating them into commercial financial products (§4.4) or using the Binance name in consumer-facing software (§8.3) (https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md). Dukascopy's terms allow personal, non-commercial use only and say the site 'may not be used to construct a database of any kind'; these quotes come from search excerpts, not the live page. Wawe Journal is monetized (PROJECT_OVERVIEW.md:39, :302). The plan would host derived candles in Supabase Storage for every signed-in user, and registration is open with e-mails auto-confirmed (PROJECT_OVERVIEW.md:299).",
+      "fix": "The owner must decide before any production import (stage 3B). Either get written licences (a Binance enterprise data licence; a Dukascopy written agreement covering storage and display to app users) or switch to commercially licensed vendors. Meanwhile, build the importer behind a source-adapter interface tested only with synthetic fixtures, keep the bucket private, and offer no raw-data export. Make the D7 source label and attribution follow the licence text (CC BY attribution versus §8.3). If a licence requires gating to paying users, add an is_premium() check to the select policy."
+    },
+    {
+      "severity": "critical",
+      "issue": "There is no working automated path to Dukascopy today. The bi5 datafeed has been reported unresponsive since 2026-07-07 (https://github.com/Leo4815162342/dukascopy-node/issues/254). Since 2026-10-16 its JSON successor answers non-browser clients with an AWS WAF challenge: HTTP 202 with x-amzn-waf-action: challenge (https://github.com/Leo4815162342/dukascopy-node/issues/261). TLS to *.dukascopy.com was reset from this machine. R45's unattended daily GitHub Actions job would fail every day for EURUSD, GBPUSD, USDJPY and XAUUSD. An adapter that does not retry empty responses would quietly record 'no data'. These are the Dukascopy track's findings; this review was not allowed to probe the network again.",
+      "fix": "Do not try to solve or replay the WAF challenge. Block the forex/gold part of stage 3B until the owner has a sanctioned access method, such as a licensed feed. Adapter rules: treat 202 with x-amzn-waf-action, 0-byte bodies, 404 for an open day, timeouts and LZMA errors as source failures, never as 'empty'; stop the run at the first WAF challenge and report it. Ship crypto (if licensed), the file format and the browser loader independently of the FX source."
+    },
+    {
+      "severity": "high",
+      "issue": "The tracks disagree on XAUUSD precision. The storage format lists digits 3, and its sample file has \"digits\":3 (agents3/storage/XAUUSD-2026-09.A_decimal_abs.json). The Dukascopy adapter plan writes rows 'rounded to 5/5/3/3 decimals'. The symbol config uses digits 2 and pip 0.1. The loader rejects any file whose digits differ from the config, so every gold month would fail to load. Converting Dukascopy's 1e3 integers to 2 decimals with floats also rounds ties wrongly: Math.round(raw/1000*100) gets 23,640 of 360,000 ties between 1,400.000 and 5,000.000 wrong, and a toFixed path gets 172,800 wrong. Example: 2048.055 becomes 2048.05 instead of 2048.06 (xau-round.mjs).",
+      "fix": "Decide once in bt-symbols.js. Recommended: digits 2, pipSize 0.1 (10 points), the usual MT quoting. The importer must read digits and priceScale from the config and convert with integer arithmetic only: pts = floor((raw*10^digits*2 + priceScale) / (2*priceScale)) for positive raw (half-up). Add unit tests on ties (2048055 -> 204806). Regenerate the storage sample and size estimate with the chosen digits. Changing digits later means re-importing the symbol."
+    },
+    {
+      "severity": "high",
+      "issue": "The month-finality and resume logic can lock holes into the archive and contradicts R45.\n(a) Storage marks a month final by time (partial = month end > now - 3 days). Binance monthly zips arrive on the first Monday after month end (up to 6.5 days), and took 14.5-18 days in 2023-2024. Dukascopy day files can fail. Once partial is false, the todo list (entry missing, partial, version, size) never revisits the month.\n(b) status 'empty' is only re-checked with --recheck-empty, so a WAF, 0-byte or timeout response misread as 'no data' becomes permanent.\n(c) The storage pipeline re-imports the whole partial month from the source on every run. R45 and D7 require fetching only new days and merging them into the current month, and the local source cache does not survive between GitHub runner jobs.\n(d) R45's example schedule of 02:00 UTC is earlier than Binance's observed daily publication time (01:24-02:48 UTC), so yesterday's file is often missing.",
+      "fix": "Add a per-month source ledger to the manifest: for each UTC day, {status: ok|closed|missing|failed, source: binance-monthly|binance-daily|dukascopy, sha256}.\n- Final only when every day is ok or closed: for Binance, a verified monthly zip or every daily zip; for FX, every non-Saturday day decoded with a 34,560-byte header size.\n- Otherwise status 'incomplete': retried on every run and listed in the report.\n- 'empty' only when the source positively has no data for the instrument (e.g. before listing), never after a failed fetch.\n- Daily mode: download the existing month object with the service key, merge the new days' rows (dedupe by t), re-encode, upload, then rewrite the manifest. Request from the source only days not yet 'ok'.\n- When a Binance monthly zip later appears for a month built from daily files, compare rawSha256 and re-upload if it differs.\n- Schedule the workflow at 04:00 UTC or later. Treat an unpublished 'yesterday' as pending and fail only after 2 days (D7). Treat Dukascopy weekend maintenance errors the same way."
+    },
+    {
+      "severity": "high",
+      "issue": "Go-to-date breaks R23 ('future candles are never visible') and engine consistency. After a backward jump in an account with history, trades whose entry or exit is after the cursor remain. Their markers (Lightweight Charts snaps marker times to the nearest existing bar), history rows, realized P&L and balance reveal future prices. After a forward jump with open positions or pending orders, TP/SL processing is skipped for every 1m bar in between, possibly across months that were never loaded. D4 defines go-to-date only as nextOpen(t) followed by the first bar >= t', with no rule for either case.",
+      "fix": "Once an account has trades, make its replay_time monotonic. Allow backward jumps only on accounts with no trades, or as an explicit, confirmed 'reset account' that deletes its trades. Disable forward go-to-date while positions or pending orders are open, unless every intermediate month is loaded and processed in order. As a second layer, filter markers, price lines, history and P&L to time <= cursor. Add a test that no rendered element has a time after the cursor."
+    },
+    {
+      "severity": "medium",
+      "issue": "The storage track's higher-timeframe rule uses a constant offset from the config. The FX/gold H4 and D1 anchor (17:00 New York) moves between 21:00Z and 22:00Z at DST changes, so a constant offset misaligns D1 and H4 for half of every year and creates 1-hour stub candles at the Sunday open and Friday close. The symbols prototype already does this correctly with dayAnchor.",
+      "fix": "bt-candles.js must compute H4 and D1 buckets from WwBtSymbols.dayAnchor, as bt-math.js bucketStart does. M1 through H1 stay on the UTC grid. Add tests across 2026-03-08 and 2026-11-01: 5 D1 bars per week and 6 H4 bars per day, at 21:00Z or 22:00Z."
+    },
+    {
+      "severity": "medium",
+      "issue": "Nothing structurally enforces the in-progress candle rule. The storage track aggregates whole months per timeframe (0.4-5 ms per month). If the chart layer ever receives a whole-month higher-timeframe array, the current bucket's high, low and close include 1m bars after the cursor, which violates R23. Only the symbols track's partialAt convention prevents this.",
+      "fix": "bt-candles.js should expose only cursor-bounded functions: aggregateUpTo(cols, k, tf) and an incremental update(k). Precomputed higher-timeframe bars may be cached only for buckets that end at or before t_k. series.setData must never receive bars after the cursor. Property test: for random k, every bar passed to the chart starts at or before bucketStart(t_k), and the last bar equals the aggregate of 1m bars i0..k."
+    },
+    {
+      "severity": "medium",
+      "issue": "A failed session shows up as 'not found', not 401. download() goes to the route with allowInvalidJwt: true (supabase/storage src/http/routes/object/getObject.ts:113-134), which returns NoSuchBucket for unauthenticated requests to a private bucket (:47-62). When a token refresh fails, supabase-js falls back to the anon key and RLS denies the read. In both cases statusCode is '404', so the storage track's 401 refresh branch never runs and the user sees 'Veri dosyası bulunamadı' instead of being sent to login.",
+      "fix": "In bt-data.js, treat NoSuchBucket, and any '404' for index.json or for a month listed in the index, as a possible auth failure. Call sb.auth.getSession(); if there is no session, call requireAuth() to redirect. Otherwise call refreshSession() and retry once. Only then show the not-found banner."
+    },
+    {
+      "severity": "medium",
+      "issue": "Clearing the candle cache only on the navbar logout misses five other sign-out paths: strategies.js:1823, settings.js:2451 and src/core/supabase.js:126, :174 and :247 (deactivated or deleted accounts). Licensed candle data would stay in IndexedDB on a shared browser.",
+      "fix": "In public/config.js, which every app page loads, right after createClient register: sb.auth.onAuthStateChange(e => { if (e === 'SIGNED_OUT') try { indexedDB.deleteDatabase('ww-candles') } catch {} }). Also store the owner's user id in an IndexedDB meta record and wipe the database on a mismatch when /backtest opens."
+    },
+    {
+      "severity": "medium",
+      "issue": "The tracks disagree on where the manifest lives. Decision record D1/D7 puts one manifest.json at the bucket root. The storage track designs one candles/<SYMBOL>/index.json per symbol, and the client fetches only the selected symbol's index. The Dukascopy track also assumes a per-symbol manifest. R45 adds a scheduled writer next to manual local backfills, and the GitHub concurrency group does not cover local runs, so the storage track's optional lock is the only protection against lost manifest updates.",
+      "fix": "Choose per-symbol index.json (smaller downloads, no write contention between symbols) and update D1/D7. Alternatively keep a global manifest with a strict single writer. Either way, the importer and the loader must use the same schema version. Make the lock mandatory on every run: POST <SYMBOL>/lock.json without x-upsert, treated as stale after 2 hours."
+    },
+    {
+      "severity": "medium",
+      "issue": "The schema conflicts with the engine on SL/TP edits and spread changes.\n- D3 has a single stop_loss/take_profit pair, but D8 lets users edit TP/SL on open positions.\n- The engine needs the current levels, while rr_ratio and the D5 journal mapping ('initial levels') need the initial ones. These are lost after the first edit, and trg_calc_pnl recomputes rr from whatever is stored.\n- Changing the account spread while a position is open changes its closing fill and floating P&L.",
+      "fix": "- Add immutable initial_stop_loss and initial_take_profit columns and compute rr from them at open.\n- Keep stop_loss and take_profit as the current levels.\n- Map the initial values to trades.stop_loss and trades.take_profit, so the trigger's rr recompute changes nothing.\n- Store spread_points and commission_per_lot on each backtest trade row, or block spread and commission edits while positions are open."
+    },
+    {
+      "severity": "medium",
+      "issue": "The crypto spread is a fixed USDT amount (1 pip = 1 USDT; defaults BTC 10, ETH 1), but one account replays across years in which prices moved more than 10x. $1 on ETH is about 0.7% of price at early-2020 levels (~$130) and about 0.03% at $4,000. $10 on BTC is 0.14% at $7k and 0.012% at the ~$81.6k level of the 2026-10-17 sample. The real Binance spot spread is about one tick.",
+      "fix": "Make the crypto spread relative: in the config set spreadUnit 'bps' for crypto, with ask = bid x (1 + bps/10000) rounded to the point grid. Store the unit on the account and show the spread as a percentage in the UI. Keep pips for FX and gold."
+    },
+    {
+      "severity": "low",
+      "issue": "If pending orders ship, checking TP/SL only from the next bar ignores an SL touch inside the bar where the order filled. For a BUY LIMIT or SELL STOP filled on the bar's low with the SL below it, price usually runs through to the SL within the same minute. Ignoring that is optimistic and contradicts the SL-first worst-case rule.",
+      "fix": "After a pending order fills in bar j, check SL and TP on bar j for the price range still reachable after the fill. If the SL is reachable, close at SL and set exit_ambiguous. Alternatively keep pending orders out of v1; R24 lists only market orders."
+    },
+    {
+      "severity": "low",
+      "issue": "D4 defines the cursor as an index into the concatenated 1m array, but the loader prepends earlier months for warm-up and back-scrolling, which shifts every index.",
+      "fix": "Keep the cursor as a timestamp (t_k) and find indices by binary search within each month chunk, or store month chunk plus offset. Test prepending a month while playback is running."
+    },
+    {
+      "severity": "low",
+      "issue": "Stale-index race: if the browser read index.json just before a daily import, the month request (cacheNonce = old rev) returns the new object. The count/last check then fails, the retry only changes the nonce, and the error banner stays until the 10-minute in-memory index TTL expires.",
+      "fix": "On a stale mismatch, first refetch index.json with cache: 'no-cache', then fetch the month under the new rev. Optionally compare the crypto.subtle SHA-256 of the decompressed text with entry.rawSha256."
+    },
+    {
+      "severity": "low",
+      "issue": "Warm-up history differs between tracks. Storage uses 300 bars capped at 6 months (D1 about 130 bars); symbols uses about 200 bars, with D1 needing about 10 months. Ten months of 1m data is about 2.9 MB (FX) to 7.2 MB (BTC) per cold D1 session, which counts against the Free plan's 5 GB egress.",
+      "fix": "Write one historyMonths(tf, symbol) function in bt-data.js (for example: target 200 bars, cap 6 months) and use it in both the loader and the tests."
+    },
+    {
+      "severity": "low",
+      "issue": "D7 allows Cache Storage for past months, but public/sw.js:13-20 deletes every cache except 'wawe-v11' each time the service worker activates.",
+      "fix": "Use IndexedDB only, as in the storage track's design. If Cache Storage is ever used, whitelist its name in the sw.js activate filter."
+    },
+    {
+      "severity": "low",
+      "issue": "The up migration's 'on conflict (id) do update' silently takes over and reconfigures a pre-existing 'candles' bucket, and the rollback then deletes that bucket. That is not a true revert.",
+      "fix": "Abort the up migration if a 'candles' bucket already exists with objects, public = true or different limits, unless an explicit override is set. Note the previous settings in the migration header."
+    },
+    {
+      "severity": "low",
+      "issue": "anon and authenticated also hold table grants on storage.buckets (Storage tenant migration 0046), but the guards cover storage.objects only. A broad permissive policy on storage.buckets, created in the dashboard and absent from the repo, would let a user flip 'candles' to public through PUT /storage/v1/bucket/candles.",
+      "fix": "Add the read-only post-check: select policyname, cmd, roles, qual, with_check from pg_policies where schemaname = 'storage' and tablename = 'buckets'. If that table's policies can be managed from SQL like storage.objects, add restrictive update and delete guards for anon and authenticated using (id is distinct from 'candles')."
+    },
+    {
+      "severity": "low",
+      "issue": "'Signed-in' means role authenticated, which would also include Supabase anonymous sign-ins if they were ever switched on. The repo never calls signInAnonymously, but it is a dashboard toggle.",
+      "fix": "Add and coalesce((auth.jwt()->>'is_anonymous')::boolean, false) = false to candles_select_authenticated."
+    },
+    {
+      "severity": "low",
+      "issue": "If storage.allow_any_operation is missing, the documented fallback drops the operation check entirely, so signed-in users could list the bucket and create signed URLs.",
+      "fix": "First try a fallback on coalesce(storage.operation(), '') in ('storage.object.get_authenticated', 'object.get_authenticated'), guarded by to_regprocedure('storage.operation()'). If that is also unavailable, abort instead of quietly weakening the policy."
+    },
+    {
+      "severity": "low",
+      "issue": "R45/D7 store the service_role key in GitHub Actions secrets. That key bypasses all RLS, and Supabase's API-key guide recommends a separate secret key per backend component so a leak can be rotated on its own.",
+      "fix": "Create a dedicated sb_secret_ key for the importer (env SUPABASE_SECRET_KEY, sent only in the apikey header). In the workflow, set permissions: contents: read, pin actions by commit SHA, and use no pull_request or pull_request_target triggers with secrets."
+    },
+    {
+      "severity": "low",
+      "issue": "R43 asks for the pip value in the symbol config, but the prototype stores only pipSize and derives pipValueUsd().",
+      "fix": "Add an explicit, commented pipValue per symbol, e.g. { perLot: 10, ccy: 'USD' } (USDJPY: { perLot: 1000, ccy: 'JPY' }), and have validate() check that it equals pipSize x contractSize."
+    },
+    {
+      "severity": "low",
+      "issue": "The time-zone assumptions only hold for whole-hour zones.\n- The per-UTC-hour offset cache is wrong in zones that shift by half an hour (Australia/Lord_Howe: 2 mismatching points in 2026).\n- 'M1-H1 on the UTC grid equals session alignment' fails for :30 and :45 offsets (Asia/Kolkata, Asia/Kathmandu).\n- Computing D1 as anchor + floor((t - a)/1 day) creates stub candles if DST switches inside an open trading day.\nA symbol added later with such a schedule would be silently misaligned.",
+      "fix": "In validate(), require schedule time zones with whole-hour offsets whose DST changes fall while the market is closed (check the transitions over the data range). Otherwise compute buckets with local-time arithmetic."
+    },
+    {
+      "severity": "low",
+      "issue": "All timestamps must be UTC, and this machine runs in a UTC+3 zone. Any new Date(y, m, d) or getDate() used to build URLs (Dukascopy's 0-based month folders, Binance daily file names) would shift days.",
+      "fix": "Use only Date.UTC and getUTC* under scripts/candles. Run the importer tests under node --test with TZ=Asia/Istanbul and with TZ=America/New_York."
+    }
+  ],
+  "corrections": "- **Storage format**\n  - The month-range check, not t % 60, is what catches a microsecond timestamp divided only by 1000.\n  - JSON.stringify writes 1.1732, not \"1.17320\". Trailing zeros are never produced, which is harmless.\n  - The example index lastBar 1792187940 is Friday 2026-10-16 21:59Z. That is after the 21:00Z FX close under EDT; the last EURUSD bar would be 20:59Z (1792184340).\n  - The synthetic BTCUSDT sample says \"price\":\"bid\", but Binance rows are last-trade prices, so it should be \"trade\".\n  - The XAUUSD digits must follow the single config value. The symbols config has 2, while the storage and Dukascopy notes use 3.\n- **Storage browser loading**\n  - Expired or failed sessions come back as NoSuchBucket or NoSuchKey with statusCode '404', not 401.\n  - Clearing the cache only on the navbar logout is not enough (six signOut sites).\n  - Higher-timeframe anchors must use the DST-aware dayAnchor, not a constant offset.\n- **Storage manifest**\n  - A 3-day grace is shorter than the Binance monthly lag. Finality must depend on source completeness, not elapsed time.\n- **Decision record**\n  - D7's 'Cache Storage' option conflicts with public/sw.js:13-20.\n  - D1/D7's root manifest.json conflicts with the storage and Dukascopy tracks' per-symbol index.json.\n- **Dukascopy track**\n  - 2019-12-25 has 1.7% of the median 2019 daily volume, not about 5%. This fits trading only from 22:00Z (17:00 NY) and so supports the holiday model.\n  - The gold plausibility range should come from the config (500-20,000), not a hard-coded 1,500-5,000.\n- **Withdrawn hypothesis**\n  - My own suspicion that float spread rounding is wrong is refuted: Math.round(pips x 10) is exact for every 2-decimal spread from 0.00 to 1000.00.",
+  "report": "**Adversarial design review of the backtest data layer (2026-10-18)**\n\nThis was a read-only review: I made no downloads, did not touch production and changed no repo files. My own checks were run against files the earlier tracks had already downloaded, read only as data. The scripts are in C:\\Users\\kadir\\AppData\\Local\\Temp\\claude\\c--Users-kadir-OneDrive-Masa-st--Wawe-Journal-astro\\97ee93d7-3b56-4094-909f-8a419fcb57d4\\scratchpad\\agents3\\design-review-scripts\\:\n- checks1.mjs\n- checks-hours.cjs\n- checks-engine.cjs\n- duka-days.cjs\n- duka-layout.cjs\n- zip-units.mjs\n- zip-gaps.mjs\n- xau-round.mjs\n- peek-bundle.cjs\n\n**Verdict: technically sound with fixes, but blocked by two external issues.**\n- **Licensing:** both sources' terms conflict with a monetized app hosting a shared archive. The Binance Vision Dataset Terms v1.0 (CC BY-NC-SA 4.0; §3.4, §4.3, §4.4, §8.3) are verified on two identical local copies. The Dukascopy terms (personal, non-commercial, no database) come from search excerpts.\n- **Dukascopy access:** the bi5 datafeed has been reported dead since July 2026. Its JSON successor has been behind an AWS WAF since 2026-10-16. Here the TLS handshake was reset. The owner has to decide on both before stage 3B writes anything to production.\n\n**What holds up (re-checked independently)**\n- **Dukascopy files:** the record layout O,C,L,H, the 60-second steps and the EURUSD 1e5 scale.\n- **Dukascopy closed periods:** weekend flats run from Friday 22:00Z, and 2019-01-01 is closed until 22:00Z, which supports the symbols track's holiday model.\n- **Binance timestamps:** milliseconds up to 2024 and microseconds from 2025, including all 44,640 rows of the BTCUSDT 2025-01 monthly zip.\n- **Binance gap:** the ETH 2020-06 gap is 210 minutes.\n- **Bucket SQL:** the operation-aware policy works. allow_any_operation removes the 'storage.' prefix, both GET routes use GET_AUTH_OBJECT, and the restrictive guards and rollback order are correct.\n- **Browser download:** supabase-js download() with cacheNonce and fetchInit behaves as the storage track described.\n- **Market hours:** the prototype passed 16 edge cases across DST, Christmas and New Year 2026/27 on Fridays, and the gold daily break.\n- **Engine math and rr:** the prototype matches the expected results, and rr is identical to trg_calc_pnl (which keeps a supplied pnl and recomputes rr only when risk > 0).\n- **get-candles / Twelve Data:** only backtest.astro and the function itself use them; docs mention them at PROJECT_OVERVIEW.md:168 and :290. The ALLOWED_ORIGINS secret is read only by get-candles.\n\n**What breaks or must change**\n1. **XAUUSD digits conflict:** storage and Dukascopy use 3, the config uses 2, and the loader rejects mismatches. Float conversion also rounds up to 48% of ties wrongly.\n2. **Month finality:** it is time-based, and the 'empty' status is sticky. This can lock holes into the archive and contradicts R45's daily merge of only new days. A 02:00 UTC schedule is also earlier than Binance's 01:24-02:48 UTC daily publication.\n3. **Go-to-date:** jumping backward can reveal future trades through markers, history and balance. Jumping forward with open positions skips TP/SL processing.\n4. **Medium issues:**\n   - The constant-offset aggregation formula is wrong across DST.\n   - Nothing structurally stops whole-month higher-timeframe bars from reaching the chart.\n   - An expired session returns NoSuchBucket, not 401.\n   - The cache is cleared on only one of six signOut paths.\n   - The manifest location conflicts between D1/D7 and the tracks, and the lock must be mandatory.\n   - SL/TP edits destroy the initial levels that rr needs, and a spread change mid-position alters its P&L.\n   - A fixed-USDT crypto spread is unrealistic across years of replay.\n5. **Low-severity hardening:** the remaining items cover pending orders, cursor indexing, the stale-index race, history depth, Cache Storage, a pre-existing bucket, storage.buckets guards, anonymous sign-ins, the fallback policy, a dedicated importer key, an explicit pip value field, time-zone assumptions and UTC-only date code.\n\n**Not verified here**\n- Dukascopy's live behaviour and terms text (network access was out of scope).\n- GBPUSD, USDJPY and XAUUSD scales on real files.\n- Dukascopy's gold session hours.\n- Whether GitHub-hosted runners can reach data.binance.vision.\n- Whether storage.buckets policies can be managed from SQL."
+}

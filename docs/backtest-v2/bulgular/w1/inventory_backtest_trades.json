@@ -1,0 +1,233 @@
+{
+  "rowCount": 0,
+  "distinctUsers": 0,
+  "tradesWithBacktestMarkers": 0,
+  "liveSchema": "-- Reconstructed from live catalogs (2026-10-18). There is no CREATE TABLE for it in the repo or in git history (git log -S shows only inserts, policies and deletes).\nCREATE TABLE public.backtest_trades (\n  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),          -- backtest_trades_pkey\n  user_id     uuid NOT NULL REFERENCES auth.users(id),             -- backtest_trades_user_id_fkey, confdeltype='a' = ON DELETE NO ACTION (trades uses CASCADE)\n  symbol      text NOT NULL,\n  asset_class text,\n  \"interval\"  text,\n  side        text NOT NULL,\n  entry_price numeric NOT NULL,\n  exit_price  numeric NOT NULL,\n  entry_time  timestamptz NOT NULL,\n  exit_time   timestamptz NOT NULL,\n  tp_pct      numeric,\n  sl_pct      numeric,\n  pnl_pct     numeric NOT NULL,\n  exit_reason text NOT NULL,\n  created_at  timestamptz DEFAULT now()\n);\n-- Owner postgres. RLS enabled, not forced. No table comment.\n-- Policies (roles {public}, none uses is_admin()):\n--   \"users select own backtest trades\"  SELECT USING (auth.uid() = user_id)\n--   \"users insert own backtest trades\"  INSERT WITH CHECK (auth.uid() = user_id)\n--   \"users update own backtest trades\"  UPDATE USING (auth.uid() = user_id)   -- no WITH CHECK\n--   \"users delete own backtest trades\"  DELETE USING (auth.uid() = user_id)\n-- Indexes: backtest_trades_pkey (id); idx_backtest_trades_user_id (user_id); idx_backtest_trades_created_at (created_at DESC); idx_backtest_trades_user_time (user_id, entry_time DESC)\n-- Grants: anon, authenticated, service_role and postgres each hold SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER (Supabase defaults).\n-- Triggers: only the 2 internal FK triggers (RI_ConstraintTrigger_c_18554/18555). No user triggers, no publication membership, no rules or views, no FK points at it, no owned sequences.\n-- pg_depend dependents: only its own objects (2 column defaults, 3 indexes, toast, PK/FK, 4 policies, row type backtest_trades plus array type _backtest_trades).\n-- Functions in any schema whose body mentions 'backtest': only public.reset_user_data().\n-- Usage stats since 2026-05-07: n_tup_ins=28, n_tup_del=28, n_tup_upd=0, n_live_tup=0, seq_scan=74, idx_scan=11, size 73728 bytes.",
+  "migrationRefs": [
+    {
+      "path": "supabase/migrations/202608190001_security_baseline.sql",
+      "lines": "87-106 (array at 93)",
+      "what": "DO loop. For each listed table that exists it enables RLS and drops every existing policy. 'backtest_trades' is in the array. A re-run would drop the live 'users ... own backtest trades' policies."
+    },
+    {
+      "path": "supabase/migrations/202608190001_security_baseline.sql",
+      "lines": "142-151",
+      "what": "Four CREATE POLICY statements on public.backtest_trades: backtest_trades_select_own_or_admin, _insert_own, _update_own_or_admin, _delete_own_or_admin. They use TO authenticated and user_id = auth.uid() OR public.is_admin(). These are not the live policies. They have no to_regclass guard, so re-running the file after a drop fails with 42P01."
+    },
+    {
+      "path": "supabase/migrations/202609200001_performance_indexes.sql",
+      "lines": "5",
+      "what": "Header comment that mentions backtest queries."
+    },
+    {
+      "path": "supabase/migrations/202609200001_performance_indexes.sql",
+      "lines": "43-53",
+      "what": "DO block guarded by to_regclass (48) that creates idx_backtest_trades_user_time ON (user_id, entry_time DESC) (49-50). This index is live. After a drop the block is a no-op."
+    },
+    {
+      "path": "supabase/migrations/202610030001_reset_user_data_rpc.sql",
+      "lines": "3, 24",
+      "what": "Comments: the header says it resets trade, backtest, strategy and notification data. Line 24 is '-- 1. Trades & Backtest'."
+    },
+    {
+      "path": "supabase/migrations/202610030001_reset_user_data_rpc.sql",
+      "lines": "10-62 (27-29), 64-65",
+      "what": "First reset_user_data with the guarded DELETE FROM public.backtest_trades. It is superseded. Compared with live it lacks step 6 (cTrader cursor reset, 8 lines) and has trailing whitespace on file lines 26, 50 and 56. Do not use it as a base."
+    },
+    {
+      "path": "supabase/migrations/202610150003_ctrader_cursor_reset.sql",
+      "lines": "8, 14, 37",
+      "what": "Comments: reset_user_data used to leave the cTrader cursor in place. Line 37: 'mevcut gövde + cTrader imleç sıfırlama'."
+    },
+    {
+      "path": "supabase/migrations/202610150003_ctrader_cursor_reset.sql",
+      "lines": "38-98 (52, 55-57, 90-96), 100-101",
+      "what": "Current full CREATE OR REPLACE of reset_user_data. It carries the guarded backtest_trades DELETE forward (55-57) and adds the cTrader cursor reset (90-96). Its DECLARE..END body (44-97) is byte-identical to the live body."
+    },
+    {
+      "path": "supabase/migrations/README.md",
+      "lines": "7",
+      "what": "Lists backtest_trades(user_id) among the tables the baseline assumes. Lines 10-11 ('not been run against the hosted project') are stale."
+    },
+    {
+      "path": "supabase/tests/prop_accounts_verify.sql",
+      "what": "No reference to backtest, reset_user_data or delete_journal."
+    },
+    {
+      "path": "supabase/ADMIN_ROLE.md",
+      "what": "No reference."
+    }
+  ],
+  "codeRefs": [
+    {
+      "path": "src/pages/backtest.astro",
+      "lines": "519-537 (insert 525-535)",
+      "what": "saveTradeToSupabase() calls supabaseClient.from('backtest_trades').insert({user_id, symbol, side 'long'/'short', entry_price, exit_price, entry_time, exit_time, pnl_pct, exit_reason 'TP'/'SL'/'Manuel'}). This is the only writer. It never sets asset_class, interval, tp_pct or sl_pct. The returned {error} is not checked, so after a drop the save fails silently. Must be removed or replaced."
+    },
+    {
+      "path": "src/pages/backtest.astro",
+      "lines": "501-517 (516)",
+      "what": "closePosition() awaits saveTradeToSupabase(trade) after each closed position. Call sites are 542-546 (TP/SL) and 674 (Manuel)."
+    },
+    {
+      "path": "public/settings/js/settings.js",
+      "lines": "2342-2351",
+      "what": "sb.rpc('reset_user_data'): the RPC that deletes backtest_trades on the server."
+    },
+    {
+      "path": "public/settings/js/settings.js",
+      "lines": "2359-2362",
+      "what": "Fallback, used only when the RPC fails (2354): sb.from('backtest_trades').delete().eq('user_id', user.id) inside try/catch. supabase-js returns PostgREST errors and does not throw, so after a drop this is harmless dead code. Remove it, or replace it with deletes on the new tables."
+    },
+    {
+      "path": "public/i18n/locales/tr.js",
+      "lines": "806",
+      "what": "settings.delete_confirm_warning promises deletion of 'backtest verileri'. It also says strategies are kept, which is wrong."
+    },
+    {
+      "path": "public/i18n/locales/en.js",
+      "lines": "860",
+      "what": "Same key: '+ backtest data' will be deleted, and it wrongly says 'Strategies are preserved'."
+    },
+    {
+      "path": "public/i18n/locales/de.js",
+      "lines": "829",
+      "what": "Same key: 'Backtest-Daten'. Same wrong claim about strategies."
+    },
+    {
+      "path": "public/src/core/journal.js",
+      "lines": "148-155",
+      "what": "deleteJournal() calls sb.rpc('delete_journal'). This is the only client path that deletes a journal, and it matters for the v2 cleanup. No backtest reference."
+    },
+    {
+      "path": "src/components/SpaRouter.astro",
+      "lines": "71",
+      "what": "'/backtest' in the SPA route list. This is the page, not the table. No change needed for the drop."
+    },
+    {
+      "path": "public/components/navbar/page-transition.js",
+      "lines": "68-69",
+      "what": "'/backtest' in the APP_PATHS prerender list. Page only."
+    },
+    {
+      "path": "public/styles.css",
+      "lines": "2832-2833",
+      "what": "Black-surface rule for .bt-chart-card and .bt-trade-panel. Page styling only."
+    },
+    {
+      "path": "src/pages/index.astro",
+      "lines": "346, 403-409, 429",
+      "what": "Legal or marketing text about backtest features. No table."
+    },
+    {
+      "path": "supabase/functions/get-candles/index.ts",
+      "lines": "1-314",
+      "what": "Candle proxy called from backtest.astro:385. It has no DB access and no table reference."
+    },
+    {
+      "path": "PROJECT_OVERVIEW.md",
+      "lines": "29, 115, 168, 186, 206, 220, 249, 290",
+      "what": "Docs: core table list (186), backtest_trades description with 9 columns and 1 index (249), RLS-pattern claim (206), migration count (115), delete_journal-not-in-migrations note (220), and the page, get-candles and library rows (29, 168, 290)."
+    },
+    {
+      "path": "public/src/bundle.js, tests/*.test.js, scripts/ctrader-probe.ts, supabase/functions/*",
+      "what": "No 'backtest' occurrences. Hidden dirs (.agent, supabase/.temp) also checked: none."
+    }
+  ],
+  "dbObjectRefs": [
+    {
+      "name": "public.reset_user_data()",
+      "kind": "function (SECURITY DEFINER, ACL postgres/authenticated/service_role)",
+      "what": "Live lines 18-20: IF to_regclass('public.backtest_trades') IS NOT NULL THEN DELETE ... WHERE user_id = v_uid. This is the only function in any schema that mentions backtest. The block is guarded and plpgsql never prepares the skipped DELETE, so the function keeps working after the drop. Removing the block is cleanup, done in the sketch from the live body.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "users select/insert/update/delete own backtest trades",
+      "kind": "RLS policies (4, role public)",
+      "what": "Dropped automatically with the table.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "backtest_trades_pkey, idx_backtest_trades_user_id, idx_backtest_trades_created_at, idx_backtest_trades_user_time",
+      "kind": "indexes",
+      "what": "Dropped automatically. Only idx_backtest_trades_user_time is defined in a migration.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "backtest_trades_user_id_fkey",
+      "kind": "FK constraint (ON DELETE NO ACTION)",
+      "what": "Dropped automatically. While rows exist it would block deleting their auth user.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "RI_ConstraintTrigger_c_18554 / _18555",
+      "kind": "internal FK triggers",
+      "what": "Dropped automatically. There are no user triggers.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "backtest_trades / _backtest_trades",
+      "kind": "composite row type and array type",
+      "what": "Dropped automatically. The names become free afterwards.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "table grants (anon, authenticated, service_role, postgres: all 7 privileges)",
+      "kind": "privileges",
+      "what": "Dropped automatically.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "pgrst_drop_watch",
+      "kind": "event trigger (sql_drop)",
+      "what": "Reloads the PostgREST schema cache automatically after the DROP. NOTIFY pgrst is optional.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "supabase_realtime and other publications",
+      "kind": "publication",
+      "what": "The table is not a member. Nothing to do.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "views, matviews, rules, FKs referencing backtest_trades, owned sequences",
+      "kind": "dependents",
+      "what": "None exist (pg_depend checked). DROP ... RESTRICT will succeed.",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "public.delete_journal(uuid)",
+      "kind": "function (SECURITY DEFINER, not in any migration, anon also has EXECUTE)",
+      "what": "Has no reference to backtest_trades, so nothing changes for the drop. It must be extended for v2 backtest_accounts (see cleanup hooks).",
+      "mustChangeIfDropped": false
+    },
+    {
+      "name": "ensure_rls / public.rls_auto_enable()",
+      "kind": "event trigger (ddl_command_end)",
+      "what": "Automatically enables RLS on any new public table, which applies to the v2 tables. Policies must still be written.",
+      "mustChangeIfDropped": false
+    }
+  ],
+  "discrepancies": [
+    "Policies: 202608190001_security_baseline.sql:142-151 defines backtest_trades_*_own(_or_admin) TO authenticated with is_admin(). Live has 'users {select,insert,update,delete} own backtest trades' TO public, with no is_admin() and no WITH CHECK on UPDATE. Catalog OID order suggests the baseline's backtest_trades part never ran live (an inference): the live policies (OIDs 18556-18559) predate the baseline-named trades/strategies policies (19483-19490), and the loop at :92-105 would have dropped them.",
+    "The baseline's CREATE POLICY statements at :142-151 have no to_regclass guard (unlike :95). Re-running the file after a drop errors with 42P01.",
+    "Indexes: 202609200001_performance_indexes.sql:43-53 creates only idx_backtest_trades_user_time. Live also has idx_backtest_trades_user_id and idx_backtest_trades_created_at, which are in no repo file and were created together with the table.",
+    "reset_user_data: the live body equals 202610150003_ctrader_cursor_reset.sql:44-97 byte for byte. 202610030001_reset_user_data_rpc.sql:10-62 lacks step 6 (cTrader cursor reset) and has trailing whitespace. Rebuilding from the older file would silently drop the cursor reset. Header differences between live and the file are formatting only.",
+    "Columns asset_class, interval, tp_pct and sl_pct exist live, but the only writer (backtest.astro:525-535) never fills them. PROJECT_OVERVIEW.md:249 lists 9 columns and 1 index, while live has 15 columns and 4 indexes.",
+    "The FK backtest_trades_user_id_fkey is ON DELETE NO ACTION, unlike trades_user_id_fkey (CASCADE). With rows present it would block deleting the auth user.",
+    "PROJECT_OVERVIEW.md:206 says every table uses user_id = auth.uid() OR is_admin(). That is false for backtest_trades.",
+    "supabase/migrations/README.md:10-11 says the baseline was never run on the hosted project. That is stale: the baseline-named trades/strategies policies exist live. The live trades/strategies INSERT/UPDATE policies also carry a journal-ownership WITH CHECK that no migration file contains.",
+    "The table was used: pg_stat shows 28 inserts and 28 deletes since 2026-05-07. It is now empty.",
+    "The i18n key settings.delete_confirm_warning (tr.js:806, en.js:860, de.js:829) says strategies are preserved, but reset_user_data (live lines 22-25) and the settings.js fallback (2364-2367) delete them.",
+    "delete_journal is in no migration (PROJECT_OVERVIEW.md:220), and its live body has CRLF line endings. In its 'last active journal' branch (live 34-53) the journal is reset rather than deleted, so FK SET NULL/CASCADE never fire. In that branch ctrader_accounts keeps its cursor even though all of the journal's trades were deleted, the same gap 202610150003 fixed for reset_user_data.",
+    "Operational: supabase_migrations.schema_migrations is empty and two files share the version 202610050001. 'supabase db push' would treat all 35 files as pending, so apply new migrations manually in the SQL Editor."
+  ],
+  "dropMigrationSketch": "-- supabase/migrations/202610180001_drop_legacy_backtest_trades.sql  (next free version after 202610150005)\n-- Drops the v1 table public.backtest_trades. Audit 2026-10-18: 0 rows, 0 users, 0 trades rows with\n-- backtest markers, and no views, FKs, publications or user triggers depend on it.\n-- Apply MANUALLY in the SQL Editor: schema_migrations is empty, so `supabase db push` would re-run all 35 files.\n-- Deploy the client first without backtest_trades usage (src/pages/backtest.astro:516 and 519-537;\n-- public/settings/js/settings.js:2359-2362). Until then the v1 page keeps inserting rows.\n-- Recommended: run this in the same SQL Editor session/migration as the v2 CREATE TABLEs, so that\n-- reset_user_data/delete_journal are replaced only once (see cleanup hooks).\n\nBEGIN;\n\n-- 0. Guard: refuse to drop if rows appeared after the audit.\nDO $$\nDECLARE\n  v_rows bigint;\nBEGIN\n  IF to_regclass('public.backtest_trades') IS NOT NULL THEN\n    EXECUTE 'LOCK TABLE public.backtest_trades IN ACCESS EXCLUSIVE MODE';\n    EXECUTE 'SELECT count(*) FROM public.backtest_trades' INTO v_rows;\n    IF v_rows > 0 THEN\n      RAISE EXCEPTION 'public.backtest_trades has % row(s); archive or migrate them first', v_rows;\n    END IF;\n  END IF;\nEND\n$$;\n\n-- 1. reset_user_data: the LIVE body (pg_get_functiondef, byte-identical to 202610150003_ctrader_cursor_reset.sql:44-97)\n--    with only live lines 18-21 (the guarded backtest_trades DELETE) removed and the step-1 comment adjusted.\n--    Do NOT start from 202610030001_reset_user_data_rpc.sql: it lacks step 6 (cTrader cursor reset).\n--    This step is not needed for correctness, because the old block is guarded by to_regclass and keeps\n--    working after the DROP. It is cleanup.\nCREATE OR REPLACE FUNCTION public.reset_user_data()\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid UUID := auth.uid();\n  v_default_jid UUID;\nBEGIN\n  IF v_uid IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated';\n  END IF;\n\n  -- 1. Trades (journal-exported backtest rows, import_hash LIKE 'backtest:%', are deleted here as well)\n  DELETE FROM public.trades WHERE user_id = v_uid;\n\n  -- 2. Stratejiler\n  IF to_regclass('public.strategies') IS NOT NULL THEN\n    DELETE FROM public.strategies WHERE user_id = v_uid;\n  END IF;\n\n  -- 3. Bildirimler\n  IF to_regclass('public.notifications') IS NOT NULL THEN\n    DELETE FROM public.notifications WHERE user_id = v_uid;\n  END IF;\n\n  -- 4. User Onboarding\n  IF to_regclass('public.user_onboarding') IS NOT NULL THEN\n    DELETE FROM public.user_onboarding WHERE user_id = v_uid;\n  END IF;\n\n  -- 5. Defterler (Journals)\n  -- Özel defterleri sil, varsayılan defteri temizle/oluştur\n  IF to_regclass('public.journals') IS NOT NULL THEN\n    DELETE FROM public.journals WHERE user_id = v_uid AND is_default = false;\n\n    SELECT id INTO v_default_jid FROM public.journals WHERE user_id = v_uid AND is_default = true LIMIT 1;\n    IF v_default_jid IS NULL THEN\n      INSERT INTO public.journals (user_id, name, description, color, icon, is_default, is_active)\n      VALUES (v_uid, 'Ana Hesap', 'Varsayılan işlem günlüğü', '#7c6dfa', 'folder', true, true);\n    ELSE\n      UPDATE public.journals\n      SET name = 'Ana Hesap', description = 'Varsayılan işlem günlüğü', color = '#7c6dfa', icon = 'folder', is_active = true\n      WHERE id = v_default_jid;\n    END IF;\n  END IF;\n\n  -- 6. cTrader senkron imleci: işlemler silindiği için bir sonraki senkron tüm geçmişi (en fazla 90 gün) yeniden\n  --    getirsin (eskiden imleç korunuyor ve yalnızca son 2 gün geri geliyordu).\n  IF to_regclass('public.ctrader_accounts') IS NOT NULL THEN\n    UPDATE public.ctrader_accounts\n    SET last_deal_timestamp = NULL, last_error = NULL, updated_at = now()\n    WHERE user_id = v_uid;\n  END IF;\nEND;\n$function$;\n\n-- The live ACL is EXECUTE for postgres, authenticated and service_role (no anon, no PUBLIC). CREATE OR REPLACE keeps it; re-assert anyway:\nREVOKE ALL ON FUNCTION public.reset_user_data() FROM public;\nGRANT EXECUTE ON FUNCTION public.reset_user_data() TO authenticated;\n\n-- 2. Drop. Plain RESTRICT, so any unexpected dependent aborts the transaction. This also removes the 4 policies,\n--    4 indexes, PK and FK (NO ACTION), the internal RI triggers, the grants and the types backtest_trades/_backtest_trades.\n--    PostgREST reloads its cache through the pgrst_drop_watch event trigger.\nDROP TABLE IF EXISTS public.backtest_trades;\n\nCOMMIT;\n\n-- Post-checks (read-only):\n--   SELECT to_regclass('public.backtest_trades');                                   -- NULL\n--   SELECT proname FROM pg_proc WHERE prosrc ILIKE '%backtest_trades%';            -- 0 rows\n--   SELECT proacl FROM pg_proc WHERE oid = 'public.reset_user_data()'::regprocedure; -- unchanged\n-- Docs to update in the same change:\n--   supabase/migrations/README.md:7 (drop backtest_trades from the assumed-table list; note that baseline lines 93 and 142-151\n--     are historical and fail if re-run) and :10-11 (stale 'not run' claim).\n--   PROJECT_OVERVIEW.md:186 (core table list), :249 (replace with the v2 tables), :190-204 (relation diagram: add\n--     backtest_accounts -> journals ON DELETE SET NULL), :206 (RLS claim), :115 (migration count),\n--     :220 (if delete_journal enters a migration), :168/:290/:29 (page and get-candles rows if the page changes).\n-- Do NOT reuse the name backtest_trades for the v2 table. Baseline :93/:142-151 and performance_indexes :48-50\n-- target that name and would re-apply the old policies, or fail on the missing entry_time column, if re-run.",
+  "alternativeNamesIfKept": [
+    "backtest_account_trades",
+    "backtest_positions",
+    "backtest_executions"
+  ],
+  "cleanupHooksForNewTables": "WHAT THE LIVE BODIES DO TODAY\n- reset_user_data (db/fn_reset_user_data.sql): line 16 DELETE FROM public.trades WHERE user_id = v_uid removes every trades row of the user, which already covers journal-exported backtest rows (import_hash 'backtest:%'). Lines 18-20 hold the guarded backtest_trades delete. Line 40 deletes the non-default journals after trades and strategies are already gone. Lines 55-58 reset the cTrader cursors.\n- delete_journal (db/fn_delete_journal.sql): it first checks ownership (18-24). It then HARD-DELETES the journal's trades (line 26: DELETE FROM public.trades WHERE journal_id = p_journal_id, with no user or import_hash filter) and strategies (line 27). This happens before the branch, so it applies to both branches. Trades are deleted, never set to NULL, so trades.journal_id ON DELETE SET NULL never fires for them in this RPC.\n  - Branch A, the user has <= 1 active journal (29-34): the journal row is only reset (UPDATE 35-50) and the function returns (52). The journal is not deleted, so no FK action fires: prop_accounts CASCADE and the ctrader_accounts/strategies/trades SET NULL are all skipped.\n  - Branch B: another journal is promoted to default (55-65) and this journal is deleted (67). That fires prop_accounts CASCADE and ctrader_accounts SET NULL (the trigger resets the cursor). Strategies and trades SET NULL fire too, but no rows are left.\n- Other journal-deletion paths rely on the FKs: reset_user_data line 40, settings.js:2379 (fallback), and direct PostgREST deletes allowed by the policy journals_delete_own (owner, non-default). The only client path is public/src/core/journal.js:148-155, which calls the RPC.\n\nREQUIRED EXTENSIONS (names assume backtest_accounts plus backtest_account_trades)\n1. reset_user_data: replace live lines 18-20. Keep steps 2-6 unchanged, including step 6.\n   IF to_regclass('public.backtest_account_trades') IS NOT NULL THEN\n     DELETE FROM public.backtest_account_trades WHERE user_id = v_uid;   -- or omit and rely on account_id FK ON DELETE CASCADE\n   END IF;\n   IF to_regclass('public.backtest_accounts') IS NOT NULL THEN\n     DELETE FROM public.backtest_accounts WHERE user_id = v_uid;\n   END IF;\n   Keep this before step 5, which avoids SET NULL churn on rows about to be deleted. If the child table has no user_id, use account_id IN (SELECT id FROM public.backtest_accounts WHERE user_id = v_uid). No change is needed for 'backtest:%' trades. This extension is mandatory, because settings.delete_confirm_warning promises the deletion of 'backtest data'.\n2. delete_journal: insert after live line 27 so that both branches get it:\n   UPDATE public.backtest_accounts\n      SET journal_id = NULL, updated_at = now()   -- plus any export cursor or flags the design adds\n    WHERE journal_id = p_journal_id AND user_id = v_user_id;\n   This is needed because Branch A never deletes the journal, so backtest_accounts.journal_id ON DELETE SET NULL would not fire. Exported 'backtest:%' trades are already hard-deleted by line 26. Leave backtest_account_trades alone, because those rows belong to the account and not the journal. If the trades table stores a per-row link to the exported trades row, make it REFERENCES public.trades(id) ON DELETE SET NULL (cleared automatically by line 26), or clear it here before nulling journal_id. If delete_journal is replaced before backtest_accounts exists, wrap the UPDATE in IF to_regclass(...) IS NOT NULL: plpgsql fails at run time on a missing table. Rebuild from the live body (CRLF line endings; the ACL also grants anon EXECUTE, which is harmless).\n3. FKs: backtest_accounts.user_id and backtest_account_trades.user_id should reference auth.users ON DELETE CASCADE (the old table used NO ACTION). backtest_accounts.journal_id should reference journals ON DELETE SET NULL, as ctrader_accounts does. backtest_account_trades.account_id should reference backtest_accounts ON DELETE CASCADE.\n4. Optional, a product decision: deleting a backtest account does not remove its journal exports. If it should, add an RPC or an AFTER DELETE trigger on backtest_accounts that runs DELETE FROM public.trades WHERE user_id = OLD.user_id AND import_hash LIKE 'backtest:' || OLD.id || ':%'.\n5. Client fallback in settings.js (2353-2381): replace 2359-2362 with sb.from('backtest_accounts').delete().eq('user_id', user.id), whose child rows cascade. These try/catch blocks never see PostgREST errors, because supabase-js returns them instead of throwing.\n6. RLS: the ensure_rls event trigger enables RLS on new public tables automatically, but the policies still have to be written. Follow prop_accounts: TO authenticated, user_id = auth.uid() OR public.is_admin(), and in WITH CHECK the journal ownership test used by the live trades_insert_own (journal_id IN own journals; allow NULL for backtest_accounts).\n7. Constraints when exporting into trades: UNIQUE (user_id, journal_id, import_hash) is a non-partial constraint, so upsert onConflict works. The partial unique index trades_platform_unique (user_id, platform_source, position_id) means a given position_id with platform_source 'backtest' can only be exported to one journal per user. idx_trades_journal_position is UNIQUE (journal_id, position_id). trg_trades_default_journal fills a NULL journal_id with the default journal. trades_direction_check requires LONG/SHORT/BUY/SELL (v1 used 'long'/'short'). lot is NOT NULL. calc_trade_pnl keeps a pnl you provide. get_platform_stats, get_total_trades_count, get_today_trades_count, list_journals, get_journals_equity_data and evaluate_prop_firm_rules do not filter on import_hash, so exported rows count as real trades, including in prop-rule evaluation.",
+  "report": "# public.backtest_trades: audit for the drop decision (2026-10-18, read-only)\n\n**Verdict: the table can be dropped safely.** It has 0 rows and 0 users, and 0 `trades` rows carry `platform_source='backtest'` or an `import_hash LIKE 'backtest:%'`. Nothing in the database depends on it apart from its own objects. Its only writer is the v1 page, which is being rewritten. `reset_user_data` keeps working even without changes, because its backtest block is guarded by `to_regclass`.\n\n## Live facts (re-verified today)\n- **Row counts:** `count(*)=0`, `count(DISTINCT user_id)=0`. Trades rows with backtest markers: 0 (0 by `platform_source`, 0 by `import_hash`).\n- **Past use:** pg_stat since 2026-05-07 shows 28 inserts and 28 deletes. The table was used, then emptied.\n- **User FK:** `backtest_trades_user_id_fkey` has `confdeltype='a'`, which is **ON DELETE NO ACTION**. `trades` uses CASCADE. With rows present, this FK would block deleting the auth user.\n- **Grants:** anon, authenticated, service_role and postgres each hold all 7 privileges (the Supabase defaults). RLS does the restricting.\n- **Confirmed as given:** the 15 columns; RLS enabled and not forced; the 4 `users … own backtest trades` policies (role public, no `is_admin()`); the 4 indexes; no user triggers, views or publications.\n- **No external dependents:** pg_depend lists only the table's own objects. No FK points at it. Among all functions in all schemas, only `public.reset_user_data()` mentions \"backtest\".\n- **New-table name check:** `backtest_accounts`, `backtest_account_trades`, `backtest_positions`, `backtest_executions`, `backtest_session_trades`, `backtest_fills` and `backtest_trades_v2` all return NULL from `to_regclass`. No relation or type named like backtest exists besides the old table, its indexes and its row types.\n\n## References\n**SQL and docs:**\n- `202608190001_security_baseline.sql:87-106` (array at :93): a loop that drops every policy on each listed table.\n- `202608190001_security_baseline.sql:142-151`: four `backtest_trades_*` policies. These are not what is live, and they have no `to_regclass` guard.\n- `202609200001_performance_indexes.sql:5, 43-53`: creates `idx_backtest_trades_user_time` behind a guard.\n- `202610030001_reset_user_data_rpc.sql:3, 24, 27-29`: the old `reset_user_data`, superseded.\n- `202610150003_ctrader_cursor_reset.sql:38-98` (:52, :55-57): the current `reset_user_data`.\n- `supabase/migrations/README.md:7`: lists `backtest_trades(user_id)` as an assumed table.\n- `supabase/tests/*` and `ADMIN_ROLE.md`: no references.\n\n**Code:**\n- `src/pages/backtest.astro:525-535`: the only insert. It is called from `closePosition` at :516, and its `{error}` result is ignored.\n- `public/settings/js/settings.js:2359-2362`: a fallback delete. After a drop it is dead but harmless, because supabase-js returns errors instead of throwing.\n- `settings.js:2342`: calls the `reset_user_data` RPC.\n- i18n key `settings.delete_confirm_warning` (`tr.js:806`, `en.js:860`, `de.js:829`): promises that backtest data will be deleted.\n- Route and page only, no table: `SpaRouter.astro:71`, `page-transition.js:69`, `styles.css:2832`, `index.astro:346,403-409,429`, `get-candles` (no DB access).\n- No references in `bundle.js`, `tests/`, `scripts/` or `supabase/functions`.\n\n## Drift between files and live\n- **Policies:** the baseline's names, `TO authenticated` and `is_admin()` are not live. Catalog OID order suggests the baseline's backtest part never ran.\n- **Indexes:** live has 2 more indexes (`_user_id`, `_created_at`) than any migration defines.\n- **`reset_user_data` body:** the live body is byte-identical to the 202610150003 version. The 202610030001 version lacks step 6 (the cTrader cursor reset), so do not use it as a base.\n- **PROJECT_OVERVIEW.md:** :249 lists 9 of the 15 columns and 1 index. :206's claim that every table uses `OR is_admin()` is false for this table.\n- **README:** \"baseline not run\" is stale.\n\n## Dropping\nUse the migration sketch in `dropMigrationSketch`. It does four things:\n1. Checks the table is empty, under a lock.\n2. Runs `CREATE OR REPLACE reset_user_data` from the **live** body, minus live lines 18-21.\n3. Re-asserts the grants.\n4. Runs `DROP TABLE IF EXISTS` with RESTRICT. PostgREST reloads automatically through `pgrst_drop_watch`.\n\nOrder and cautions:\n- Deploy the client without the two code references first.\n- Apply the migration manually in the SQL Editor. `schema_migrations` is empty, so `db push` would treat all 35 files as pending.\n- Update the docs in the same change: README :7 and :10-11; PROJECT_OVERVIEW :186, :249, :190-204, :206, :115, :220.\n- Don't reuse the name `backtest_trades` for the new table, because old migrations target it.\n\n## If the table is kept\nName the per-account trades table `backtest_account_trades` (preferred), `backtest_positions` or `backtest_executions`. All three are verified absent. Avoid `idx_backtest_trades_*` index names.\n\n## Changes needed for v2\n- **What `delete_journal` does with a journal's trades:** it **hard-deletes** them (live line 26), and its strategies (27), before branching. It never sets them to NULL. If the journal is the user's last active one, the journal is only reset, not deleted, so no FK action fires.\n- **`delete_journal` change:** right after line 27, explicitly set `backtest_accounts.journal_id` to NULL for that journal. The account's own trades table is left alone.\n- **`reset_user_data` change:** in place of lines 18-20, delete `backtest_account_trades` and `backtest_accounts` for the user.\n- **`backtest:%` trades rows:** no change is needed. They are already removed by `reset_user_data` line 16 and `delete_journal` line 26.\n- **Full details** (FKs, RLS, the settings fallback, export constraints, functions that count exports as real trades) are in `cleanupHooksForNewTables`.\n\nScratch outputs, including the generated function bodies, are in `C:\\Users\\kadir\\AppData\\Local\\Temp\\claude\\c--Users-kadir-OneDrive-Masa-st--Wawe-Journal-astro\\97ee93d7-3b56-4094-909f-8a419fcb57d4\\scratchpad\\agents\\bt\\`."
+}

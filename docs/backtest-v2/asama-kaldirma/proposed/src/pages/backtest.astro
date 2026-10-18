@@ -1,0 +1,126 @@
+---
+// ============================================================
+// BACKTEST — geçiş sayfası (Backtest v2, Aşama 2)
+// ------------------------------------------------------------
+// Eski backtest (Binance + get-candles ile bar bar replay, backtest_trades
+// tablosuna kayıt) kaldırıldı. Yeni sistem (backtest hesapları, bar replay,
+// deftere bağlama) Aşama 4'te bu sayfayı dolduracak.
+// Route kaydı korunuyor, silmeyin:
+//   - src/components/SpaRouter.astro → SPA_PATHS '/backtest' (SPA geçişi)
+//   - public/components/navbar/page-transition.js → APP_PATHS '/backtest'
+//     (hover prefetch/prerender + geri tuşu (bfcache) oturum kontrolü)
+// ============================================================
+import Layout from '../layouts/Layout.astro';
+---
+<Layout lang="tr" spa={true} title="Backtest – Wawe Journal">
+<Fragment slot="head">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js?v=1792324800" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+
+  <style is:global>
+    /* Backtest v2 hazırlanırken gösterilen boş durum (Aşama 4'te kaldırılır) */
+    .bt-rebuild {
+      max-width: 560px;
+      margin: clamp(1.5rem, 8vh, 4.5rem) auto 2rem;
+      padding: clamp(2rem, 5vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg, 20px);
+    }
+    /* Koyu tema: saf siyah yüzey + nötr ince çizgi (morumsu --surface değil) */
+    :root:not(.light-theme) body:not(.light-theme) .bt-rebuild {
+      background: #000;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .bt-rebuild-icon {
+      width: 56px;
+      height: 56px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--accent3, #a78bfa);
+    }
+    .bt-rebuild-icon svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+    }
+    .bt-rebuild-badge {
+      padding: 3px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .light-theme .bt-rebuild-icon {
+      border-color: #e2e8f0;
+      color: var(--accent, #6c5ce7);
+    }
+    .light-theme .bt-rebuild-badge {
+      border-color: #e2e8f0;
+    }
+    .bt-rebuild-title {
+      font-size: clamp(1.15rem, 2.6vw, 1.4rem);
+      margin: 0.25rem 0 0;
+    }
+    .bt-rebuild-text {
+      max-width: 430px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+  </style>
+</Fragment>
+
+  <main class="dashboard-main">
+    <div class="page-header">
+      <div>
+        <h1 data-i18n="backtest.title">Backtest</h1>
+        <p class="subtitle" data-i18n="backtest.subtitle">Geçmiş veride bar bar strateji testi</p>
+      </div>
+    </div>
+
+    <section class="bt-rebuild" aria-labelledby="bt-rebuild-title">
+      <div class="bt-rebuild-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      </div>
+      <span class="bt-rebuild-badge" data-i18n="backtest.rebuild_badge">Yakında</span>
+      <h2 class="bt-rebuild-title" id="bt-rebuild-title" data-i18n="backtest.rebuild_title">Backtest yenileniyor</h2>
+      <p class="bt-rebuild-text" data-i18n="backtest.rebuild_text">Eski backtest aracını kaldırdık. Yeni sürüm hazır olduğunda burada açılacak: backtest hesapları, geçmiş grafikte bar bar oynatma ve işlemleri hesaplarınıza aktarma.</p>
+    </section>
+  </main>
+
+  <script is:inline>
+    // Giriş kontrolü (diğer uygulama sayfalarıyla aynı, bkz. PROJECT_OVERVIEW.md bölüm 6).
+    // Bu aşamada sayfa veri okumaz/yazmaz. Inline script olduğu için SPA'da her girişte çalışır.
+    (function () {
+      var PAGE = window.wwPage.current();
+      var timer = null;
+      var tries = 0;
+      PAGE.onLeave(function () { clearTimeout(timer); });
+      function start() {
+        if (!PAGE.alive) return;
+        if (typeof window.requireAuth !== 'function') {
+          if (++tries < 160) timer = setTimeout(start, 50);
+          return;
+        }
+        window.requireAuth();
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+      else start();
+    })();
+  </script>
+</Layout>
