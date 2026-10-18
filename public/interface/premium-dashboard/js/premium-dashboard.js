@@ -564,64 +564,32 @@ function buildDashboardShell() {
   isDashboardDomRendered = true;
 }
 
+// Canlı kapsam kolonları: platform_source listeyi kendini tanımlar kılar (önbellek savunması)
+var PREMIUM_TRADE_COLS = ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier', 'platform_source'];
+
 async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
   var allTradesData = [];
-  var pageSize = 1000;
-  var from = 0;
-  var hasMore = true;
 
   try {
-    while (hasMore) {
-      var { data, error } = await sb
-        .from('trades')
-        .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-        .eq('user_id', userId)
-        .eq('journal_id', jid)
-        .order('trade_date', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, from + pageSize - 1);
+    // Backtest işlemleri analizlere, içgörülere, PDF raporuna ve CSV'ye girmez (WwTrades, scope 'live').
+    // Sayfalama ve deftersiz eski işlemlere geri dönüş fetchAll içinde.
+    var res = await window.WwTrades.fetchAll({
+      userId: userId,
+      journalId: jid,
+      columns: PREMIUM_TRADE_COLS.join(','),
+      scope: 'live',
+      ascending: false,
+      unassignedFallback: true
+    });
 
-      if (error) {
-        if (renderImmediate) {
-          if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
-          revealWithoutData(scope);
-        }
-        return;
+    if (res.error) {
+      if (renderImmediate) {
+        if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + res.error.message, 'error');
+        revealWithoutData(scope);
       }
-
-      if (data && data.length > 0) {
-        allTradesData = allTradesData.concat(data);
-        if (data.length < pageSize) hasMore = false;
-        else from += pageSize;
-      } else {
-        hasMore = false;
-      }
+      return;
     }
-
-    // Defter sorgusu boşsa deftersiz (journal_id IS NULL) eski işlemleri kurtar
-    if (!allTradesData.length) {
-      try {
-        var uFrom = 0, uHasMore = true;
-        while (uHasMore) {
-          var unassigned = await sb
-            .from('trades')
-            .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-            .eq('user_id', userId)
-            .is('journal_id', null)
-            .order('trade_date', { ascending: false })
-            .order('id', { ascending: true })
-            .range(uFrom, uFrom + pageSize - 1);
-          var uData = unassigned && unassigned.data;
-          if (uData && uData.length) {
-            allTradesData = allTradesData.concat(uData);
-            if (uData.length < pageSize) uHasMore = false;
-            else uFrom += pageSize;
-          } else {
-            uHasMore = false;
-          }
-        }
-      } catch (unErr) {}
-    }
+    allTradesData = res.data;
 
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
@@ -756,10 +724,11 @@ async function loadPremiumData(scope) {
 
     // ⚡ SWR Önbellek Kontrolü: trades_premium, trades veya trades_dashboard varsa 0ms beklemeden hemen göster
     var cachedTrades = (typeof window !== 'undefined' && window.wwCache)
-      ? (window.wwCache.get('trades_premium', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']) ||
-         window.wwCache.get('trades', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']) ||
-         window.wwCache.get('trades_dashboard', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']))
+      ? (window.wwCache.get('trades_premium', user.id, jid, PREMIUM_TRADE_COLS) ||
+         window.wwCache.get('trades', user.id, jid, PREMIUM_TRADE_COLS) ||
+         window.wwCache.get('trades_dashboard', user.id, jid, PREMIUM_TRADE_COLS))
       : null;
+    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, 'live');   // savunma katmanı
 
     if (cachedTrades && cachedTrades.length > 0) {
       allTrades = cachedTrades;

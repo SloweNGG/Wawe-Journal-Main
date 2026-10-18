@@ -629,19 +629,21 @@ window.loadNotifications = async function() {
           // ⚡ Eğer sayfada işlemler zaten önbelleğe alındıysa Supabase'e ek istek atma
           if (typeof window.wwCache !== 'undefined') {
             var activeJid = (typeof window.getActiveJournalId === 'function') ? window.getActiveJournalId() : localStorage.getItem('ww_active_journal_id');
-            var otCols = ['trade_date', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier', 'pnl'];
+            var otCols = ['trade_date', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier', 'pnl', 'platform_source'];
             var cached = window.wwCache.get('trades', user.id, activeJid, otCols) || window.wwCache.get('trades', user.id, 'all', otCols);
             if (cached && Array.isArray(cached) && cached.length > 0) {
-              trades = cached.filter(function(t) { return t.trade_date && t.trade_date >= weekAgoStr; });
+              trades = window.WwTrades.filterScope(cached, 'live').filter(function(t) { return t.trade_date && t.trade_date >= weekAgoStr; });
             }
           }
 
           if (!trades) {
-            var { data: fetchedTrades } = await sb
+            // Canlı kapsam: replay'de son 7 güne düşen backtest işlemleri overtrade uyarısı üretmez
+            var otQuery = sb
               .from('trades')
-              .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl')
+              .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl,platform_source')
               .eq('user_id', user.id)
-              .gte('trade_date', weekAgoStr)
+              .gte('trade_date', weekAgoStr);
+            var { data: fetchedTrades } = await window.WwTrades.applyScope(otQuery, 'live')
               .order('trade_date', { ascending: false });
             trades = fetchedTrades;
           }

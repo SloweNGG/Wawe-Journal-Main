@@ -3073,90 +3073,40 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       } catch (e) { }
     }
 
+    // Canlı kapsam: backtest işlemleri dashboard'a ASLA girmez (WwTrades, trades-source.js)
+    var WT = window.WwTrades;
+    var DASH_COLS = ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier', 'platform_source'];
+
     // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
     if (typeof window !== 'undefined' && window.wwCache) {
-      var cachedTrades = window.wwCache.get('trades_dashboard', userId, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']);
+      var cachedTrades = window.wwCache.get('trades_dashboard', userId, jid, DASH_COLS);
       if (cachedTrades && cachedTrades.length > 0) {
-        return cachedTrades;
+        return WT.filterScope(cachedTrades, 'live');
       }
     }
 
     try {
-      var allTrades = [];
-      var pageSize = 1000;
-      var from = 0;
-      var hasMore = true;
+      // Sayfalı çekim (1000'lik) ve deftersiz eski işlemlere geri dönüş WwTrades.fetchAll içinde;
+      // geri dönüş yalnızca defterde HİÇBİR kapsamda satır yoksa çalışır.
+      var res = await WT.fetchAll({
+        userId: userId,
+        journalId: jid,
+        columns: DASH_COLS.join(','),
+        scope: 'live',
+        ascending: false,
+        unassignedFallback: !!jid
+      });
 
-      while (hasMore) {
-        var query = sb
-          .from('trades')
-          .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-          .eq('user_id', userId);
-
-        if (jid) {
-          query = query.eq('journal_id', jid);
+      if (res.error) {
+        if (typeof showToast === 'function') {
+          showToast((window.i18n && window.i18n.t ? window.i18n.t('common.load_error') : 'Hata: ') + res.error.message, 'error');
         }
-
-        query = query
-          .order('trade_date', { ascending: false })
-          .order('id', { ascending: true })
-          .range(from, from + pageSize - 1);
-        var { data, error } = await query;
-
-        if (error) {
-          if (typeof showToast === 'function') {
-            showToast((window.i18n && window.i18n.t ? window.i18n.t('common.load_error') : 'Hata: ') + error.message, 'error');
-          }
-          return [];
-        }
-
-        if (data && data.length > 0) {
-          allTrades = allTrades.concat(data);
-          if (data.length < pageSize) {
-            hasMore = false;
-          } else {
-            from += pageSize;
-          }
-        } else {
-          hasMore = false;
-        }
+        return [];
       }
 
-      var result = allTrades;
+      var finalResult = res.data.reverse();
 
-      // EĞER jid ile filtreledik ama 0 işlem döndüyse ve deftersiz (journal_id IS NULL) eski işlemler varsa kurtar
-      if (result.length === 0 && jid) {
-        try {
-          var unassignedTrades = [];
-          var uFrom = 0;
-          var uHasMore = true;
-          while (uHasMore) {
-            var { data: unassignedData } = await sb
-              .from('trades')
-              .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-              .eq('user_id', userId)
-              .is('journal_id', null)
-              .order('trade_date', { ascending: false })
-              .order('id', { ascending: true })
-              .range(uFrom, uFrom + pageSize - 1);
-
-            if (unassignedData && unassignedData.length > 0) {
-              unassignedTrades = unassignedTrades.concat(unassignedData);
-              if (unassignedData.length < pageSize) uHasMore = false;
-              else uFrom += pageSize;
-            } else {
-              uHasMore = false;
-            }
-          }
-          if (unassignedTrades.length > 0) {
-            result = unassignedTrades;
-          }
-        } catch (unErr) { }
-      }
-
-      var finalResult = result.reverse();
-
-      // ⚡ Sonucu önbelleğe kaydet
+      // ⚡ Sonucu önbelleğe kaydet ('trades_dashboard' = yalnızca canlı satırlar; cache.js sözleşmesi)
       if (typeof window !== 'undefined' && window.wwCache) {
         window.wwCache.set('trades_dashboard', userId, jid, finalResult);
       }

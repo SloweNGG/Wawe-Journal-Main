@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v12';
+const CACHE_VERSION = 'wawe-v13'; // Faz C+D (Backtest v2): bir önceki aşamadan +1
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

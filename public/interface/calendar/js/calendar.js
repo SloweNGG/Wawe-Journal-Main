@@ -863,14 +863,14 @@ async function loadCalendarTradesFromDB(userId) {
 
   // ⚡ SWR Önbellek Kontrolü: trades_calendar, trades veya trades_dashboard varsa 0ms beklemeden dön
   if (typeof window !== 'undefined' && window.wwCache) {
-    var calCols = ['id', 'trade_date', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'lot', 'direction', 'instrument', 'multiplier', 'symbol', 'pnl'];
+    var calCols = ['id', 'trade_date', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'lot', 'direction', 'instrument', 'multiplier', 'symbol', 'pnl', 'platform_source'];
     var cachedTrades = window.wwCache.get('trades_calendar', userId, jid, calCols) ||
                        window.wwCache.get('trades', userId, jid, calCols) ||
                        window.wwCache.get('trades_dashboard', userId, jid, calCols);
     if (cachedTrades && cachedTrades.length > 0) {
       // Arka planda sessizce taze verileri kontrol et (SWR revalidate)
       fetchFreshCalendarTrades(userId, jid);
-      return cachedTrades;
+      return window.WwTrades.filterScope(cachedTrades, 'live');   // savunma katmanı: backtest takvime girmez
     }
   }
 
@@ -886,37 +886,25 @@ function tradesSignature(list) {
 
 async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
   var allTrades = [];
-  var pageSize = 1000;
-  var from = 0;
-  var hasMore = true;
 
   try {
-    while (hasMore) {
-      var { data: pageData, error } = await sb
-        .from('trades')
-        .select('id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl')
-        .eq('user_id', userId)
-        .eq('journal_id', jid)
-        .order('trade_date', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, from + pageSize - 1);
+    // Canlı kapsam: backtest işlemleri takvime ve gün PDF/CSV'sine girmez (WwTrades); sayfalama fetchAll içinde
+    var res = await window.WwTrades.fetchAll({
+      userId: userId,
+      journalId: jid,
+      columns: 'id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl,platform_source',
+      scope: 'live',
+      ascending: false
+    });
 
-      if (error) {
-        if (isInitialLoad && typeof showToast === 'function') {
-          var errMsg = calT('toast.load_error', 'Veri yüklenemedi: ');
-          showToast(errMsg + error.message, 'error');
-        }
-        return [];
+    if (res.error) {
+      if (isInitialLoad && typeof showToast === 'function') {
+        var errMsg = calT('toast.load_error', 'Veri yüklenemedi: ');
+        showToast(errMsg + res.error.message, 'error');
       }
-
-      if (pageData && pageData.length > 0) {
-        allTrades = allTrades.concat(pageData);
-        if (pageData.length < pageSize) hasMore = false;
-        else from += pageSize;
-      } else {
-        hasMore = false;
-      }
+      return [];
     }
+    allTrades = res.data;
 
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {

@@ -167,14 +167,17 @@ const {
     <link rel="stylesheet" href="/styles.css?v=1792324800" />
     <link rel="stylesheet" href="/components/navbar/navbar.css?v=1791750400" />
 
-    <!-- CLIENT SWR CACHE -->
-    <script src="/cache.js" is:inline></script>
+    <!-- CLIENT SWR CACHE ('trades' / 'trades_<sayfa>' = yalnızca canlı satır; kapsamlı listeler 'trades@all') -->
+    <script src="/cache.js?v=1792500000" is:inline></script>
 
     <!-- SAAT & GÜN AYARLARI (saat dilimi, gün başlangıcı, import saati; Ayarlar > Görünüm) -->
     <script src="/interface/shared/time-settings.js" is:inline></script>
 
     <!-- ORTAK İŞLEM METRİKLERİ (PnL, win rate, kapalı işlem tanımı, gün anahtarı) -->
     <script src="/interface/shared/trade-metrics.js?v=1791642000" is:inline></script>
+
+    <!-- İŞLEM KAYNAĞI KAPSAMI (WwTrades: canlı / backtest / tümü; canlı istatistikler backtest'i ASLA içermez) -->
+    <script src="/interface/shared/trades-source.js?v=1792500000" is:inline></script>
 
     <!-- ORTAK GRAFİK GÖRÜNÜMÜ (font, eksen yazıları, ızgara, tooltip; tüm grafikler aynı) -->
     <link rel="stylesheet" href="/interface/shared/chart-theme.css?v=5" />

@@ -13,6 +13,11 @@
 // sıfırlanabiliyordu. Bu yüzden get() artık opsiyonel `needCols` alır ve
 // yalnızca bu kolonların TAMAMINI taşıyan veriyi döndürür; set() de eksik
 // kolonlu listeyi, daha fazla kolonu olan canlı bir listenin üzerine yazmaz.
+//
+// KAPSAM SÖZLEŞMESİ (Backtest v2): 'trades' ve 'trades_<sayfa>' anahtarları YALNIZCA
+// canlı satır taşır (platform_source IS DISTINCT FROM 'backtest'). Karışık ya da backtest
+// listeler WwTrades.cacheKey() ile 'trades@all' / 'trades@backtest' anahtarlarına yazılır;
+// bu anahtarlar çapraz beslenmez (isLiveTradePrefix), ama invalidate('trades') onları da siler.
 // ============================================================
 
 (function(global) {
@@ -23,6 +28,12 @@
 
   function getCacheKey(prefix, userId, journalId) {
     return (prefix || 'trades') + ':' + (userId || 'anon') + ':' + (journalId || 'all');
+  }
+
+  // Yalnızca canlı işlem listeleri ('trades', 'trades_dashboard', 'trades_calendar', ...) sayfalar arası paylaşılır.
+  // 'trades@all' / 'trades@backtest' gibi kapsamlı anahtarlar paylaşılmaz.
+  function isLiveTradePrefix(prefix) {
+    return typeof prefix === 'string' && /^trades(_[a-z]+)?$/.test(prefix);
   }
 
   // Liste, istenen kolonların hepsini taşıyor mu? (PostgREST aynı sorguda tüm satırlara
@@ -118,7 +129,7 @@
         // Dashboard, Trades, Calendar, Strategies ve Premium Dashboard aynı defterdeki
         // aynı işlem verisini paylaşır. Biri indirdiğinde diğerleri Supabase'e gitmeden anında faydalanır.
         // Yalnızca ihtiyaç duyulan kolonları taşıyan listeler paylaşılır (needCols).
-        var isTradePrefix = prefix && prefix.indexOf('trades') === 0;
+        var isTradePrefix = isLiveTradePrefix(prefix);
         if (isTradePrefix) {
           var mainKey = getCacheKey('trades', userId, journalId);
           var dashKey = getCacheKey('trades_dashboard', userId, journalId);
@@ -186,7 +197,7 @@
 
         // ⚡ Sayfalar arası çapraz besleme:
         // Dashboard verisi kaydedildiyse, diğer sayfalar için DESC listeyi de hazırla
-        var isTradePrefix = prefix && prefix.indexOf('trades') === 0;
+        var isTradePrefix = isLiveTradePrefix(prefix);
         if (isTradePrefix) {
           var mainKey = getCacheKey('trades', userId, journalId);
           var dashKey = getCacheKey('trades_dashboard', userId, journalId);

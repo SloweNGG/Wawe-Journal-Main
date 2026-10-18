@@ -1,3 +1,6 @@
+// İşlem kaynağı kapsamı (window.WwTrades). BaseHead de yükler; buradaki kopya, SW önbelleğinden eski bir
+// HTML gelse bile (BaseHead'de etiket yokken) sayfa script'lerinden ÖNCE WwTrades'in var olmasını sağlar.
+import '../interface/shared/trades-source.js';
 import './core/journal.js';
 ﻿// ============================================================
 // WAWE JOURNAL - ANA SCRIPT

@@ -39,11 +39,15 @@ function loadScriptInVm(filePath, windowMock = {}) {
 
 const templatesPath = path.resolve('public/src/core/prop-templates.js');
 const calculatorPath = path.resolve('public/src/utils/prop-calculator.js');
+const tradesSourcePath = path.resolve('public/interface/shared/trades-source.js');
 const servicePath = path.resolve('public/src/services/prop-service.js');
+
+const LIVE_OR = 'platform_source.is.null,platform_source.neq.backtest';
 
 const browserWindow = {};
 loadScriptInVm(templatesPath, browserWindow);
 loadScriptInVm(calculatorPath, browserWindow);
+loadScriptInVm(tradesSourcePath, browserWindow);
 loadScriptInVm(servicePath, browserWindow);
 
 const { PropTemplates, PropCalculator, PropService } = browserWindow;
@@ -229,9 +233,11 @@ describe('PropService API & Methods', () => {
           return {
             select: () => ({
               eq: () => ({
-                order: () => ({
+                or: () => ({
                   order: () => ({
-                    range: async () => ({ data: mockTrades, error: null })
+                    order: () => ({
+                      range: async () => ({ data: mockTrades, error: null })
+                    })
                   })
                 })
               })
@@ -275,9 +281,9 @@ describe('PropService API & Methods', () => {
           return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: account, error: null }) }) }) }) };
         }
         return {
-          select: () => ({ eq: () => ({ order: () => ({ order: () => ({
+          select: () => ({ eq: () => ({ or: () => ({ order: () => ({ order: () => ({
             range: async (from, to) => { requestedRanges.push([from, to]); return { data: all.slice(from, to + 1), error: null }; }
-          }) }) }) })
+          }) }) }) }) })
         };
       }
     };
@@ -303,12 +309,57 @@ describe('PropService API & Methods', () => {
         if (table === 'prop_accounts') {
           return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: account, error: null }) }) }) }) };
         }
-        return { select: () => ({ eq: () => ({ order: () => ({ order: () => ({ range: async () => ({ data: rows, error: null }) }) }) }) }) };
+        return { select: () => ({ eq: () => ({ or: () => ({ order: () => ({ order: () => ({ range: async () => ({ data: rows, error: null }) }) }) }) }) }) };
       }
     };
     const res = await PropService.syncPropAccountStatus('j-open');
     assert.equal(res.trades.length, 1);
     assert.equal(res.status.total_pnl, 500);
+  });
+
+  it('syncPropAccountStatus: DB sorgusu canlı kapsamı uygular (NULL-güvenli .or) ve platform_source seçer', async () => {
+    const account = {
+      id: 'prop-acc-scope', journal_id: 'j-scope', template_key: 'ftmo-2step', starting_balance: 100000,
+      start_date: '2026-01-01', reset_tz: 'Europe/Prague', phase_index: 0, is_active: true,
+      rules: PropTemplates.getDefaultRules('ftmo-2step', 0)
+    };
+    let selected = null;
+    let orArg = null;
+    browserWindow.sb = {
+      from: (table) => {
+        if (table === 'prop_accounts') {
+          return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: account, error: null }) }) }) }) };
+        }
+        return {
+          select: (cols) => { selected = cols; return { eq: () => ({ or: (arg) => { orArg = arg; return { order: () => ({ order: () => ({
+            range: async () => ({ data: [{ id: 'c1', trade_date: '2026-02-01 10:00:00', pnl: 100, exit_price: 1.1, platform_source: null }], error: null })
+          }) }) }; } }) }; }
+        };
+      }
+    };
+    const res = await PropService.syncPropAccountStatus('j-scope');
+    assert.equal(orArg, LIVE_OR);
+    assert.ok(/platform_source/.test(selected));
+    assert.equal(res.status.total_pnl, 100);
+  });
+
+  it('syncPropAccountStatus: verilen/önbellekteki listede backtest satırı varsa prop hesabına girmez', async () => {
+    const account = {
+      id: 'prop-acc-bt', journal_id: 'j-bt', template_key: 'ftmo-2step', starting_balance: 100000,
+      start_date: '2026-01-01', reset_tz: 'Europe/Prague', phase_index: 0, is_active: true,
+      rules: PropTemplates.getDefaultRules('ftmo-2step', 0)
+    };
+    browserWindow.sb = {
+      from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: account, error: null }) }) }) }) })
+    };
+    const cached = [
+      { id: 'l1', trade_date: '2026-02-01 10:00:00', pnl: 250, exit_price: 1.1, platform_source: null },
+      { id: 'c1', trade_date: '2026-02-01 11:00:00', pnl: 50, exit_price: 1.1, platform_source: 'ctrader' },
+      { id: 'b1', trade_date: '2026-02-01 12:00:00', pnl: -9000, exit_price: 1.1, platform_source: 'backtest' }
+    ];
+    const res = await PropService.syncPropAccountStatus('j-bt', cached);
+    assert.equal(res.trades.length, 2);
+    assert.equal(res.status.total_pnl, 300);
   });
 
   it('Veritabanı hataları (PROP_LIMIT_EXCEEDED, INVALID_TZ) anlaşılır kodlarla yakalanmalıdır', async () => {

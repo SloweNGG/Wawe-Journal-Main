@@ -1570,7 +1570,10 @@ async function loadAllData() {
 
     // ⚡ SWR Önbellek Kontrolü: Stratejiler ve işlemler önbellekte varsa 0ms'de render et!
     var cachedStrategies = (window.wwCache && window.wwCache.get) ? window.wwCache.get('strategies', currentUser.id, jid) : null;
-    var cachedTrades = (window.wwCache && window.wwCache.get) ? (window.wwCache.get('trades_strategies', currentUser.id, jid, ['id', 'symbol', 'direction', 'instrument', 'lot', 'entry_price', 'exit_price', 'trade_date', 'pnl', 'strategy_id', 'multiplier']) || window.wwCache.get('trades', currentUser.id, jid, ['id', 'symbol', 'direction', 'instrument', 'lot', 'entry_price', 'exit_price', 'trade_date', 'pnl', 'strategy_id', 'multiplier'])) : null;
+    // Canlı kapsam: backtest işlemleri strateji istatistiklerine girmez (WwTrades)
+    var STRAT_TRADE_COLS = ['id', 'symbol', 'direction', 'instrument', 'lot', 'entry_price', 'exit_price', 'trade_date', 'pnl', 'strategy_id', 'multiplier', 'platform_source'];
+    var cachedTrades = (window.wwCache && window.wwCache.get) ? (window.wwCache.get('trades_strategies', currentUser.id, jid, STRAT_TRADE_COLS) || window.wwCache.get('trades', currentUser.id, jid, STRAT_TRADE_COLS)) : null;
+    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, 'live');
 
     var renderedFromCache = false;
     if (cachedStrategies && Array.isArray(cachedStrategies)) {
@@ -1594,38 +1597,21 @@ async function loadAllData() {
     var fetchTradesPromise = (renderedFromCache && cachedTrades && cachedTrades.length > 0)
       ? Promise.resolve({ data: cachedTrades })
       : (async function() {
-          var allTrades = [];
-          var pageSize = 1000;
-          var from = 0;
-          var hasMore = true;
-
-          while (hasMore) {
-            var { data: tradesPage, error: tradesErr } = await sb
-              .from('trades')
-              .select('id, symbol, direction, instrument, lot, entry_price, exit_price, trade_date, pnl, strategy_id, multiplier')
-              .eq('user_id', currentUser.id)
-              .eq('journal_id', jid)
-              .order('trade_date', { ascending: false })
-              .order('id', { ascending: true })
-              .range(from, from + pageSize - 1);
-
-            if (tradesErr) {
-              console.error('Strateji işlemleri yüklenirken hata:', tradesErr);
-              if (typeof showToast === 'function' && !renderedFromCache) {
-                showToast('Strateji verileri yüklenemedi: ' + tradesErr.message, 'error');
-              }
-              break;
-            }
-
-            if (tradesPage && tradesPage.length > 0) {
-              allTrades = allTrades.concat(tradesPage);
-              if (tradesPage.length < pageSize) hasMore = false;
-              else from += pageSize;
-            } else {
-              hasMore = false;
+          // Sayfalama WwTrades.fetchAll içinde; hata olursa o ana kadarki satırlar döner (eski 'break' davranışı)
+          var res = await window.WwTrades.fetchAll({
+            userId: currentUser.id,
+            journalId: jid,
+            columns: STRAT_TRADE_COLS.join(','),
+            scope: 'live',
+            ascending: false
+          });
+          if (res.error) {
+            console.error('Strateji işlemleri yüklenirken hata:', res.error);
+            if (typeof showToast === 'function' && !renderedFromCache) {
+              showToast('Strateji verileri yüklenemedi: ' + res.error.message, 'error');
             }
           }
-          return { data: allTrades };
+          return { data: res.data };
         })();
 
     var [stratRes, tradesRes] = await Promise.all([fetchStrategiesPromise, fetchTradesPromise]);
