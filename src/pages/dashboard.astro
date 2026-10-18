@@ -5,8 +5,8 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
 
-  <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css?v=1790432909" />
-  <link rel="stylesheet" href="/interface/dashboard/css/prop-card-v2.css?v=3" />
+  <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css?v=1790432914" />
+  <link rel="stylesheet" href="/interface/dashboard/css/prop-card-v2.css?v=7" />
   <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css?v=1790433100" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
@@ -366,20 +366,6 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- CHART EXPAND MODAL -->
-  <div id="chart-expand-modal" class="chart-expand-overlay" style="display:none;">
-    <div class="chart-expand-box">
-      <div class="chart-expand-header">
-        <h3 id="chart-expand-title"></h3>
-        <button class="chart-expand-close" id="chart-expand-close">✕</button>
-      </div>
-      <div class="chart-expand-body">
-        <div id="chart-expand-container" style="width:100%;"></div>
-        <div id="chart-expand-summary" class="chart-expand-summary"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- PROP FIRM ADVANCE PHASE MODAL (OUTSIDE MAIN FOR PERFECT CENTERING) -->
   <div id="dashboard-advance-phase-modal" class="prop-modal-backdrop" style="display:none;">
     <div class="prop-modal-box">
@@ -470,8 +456,8 @@ import Layout from '../layouts/Layout.astro';
     <script src="/interface/quick-add/js/quick-modal-i18n.js?v=1791383000" is:inline defer></script>
     <script src="/interface/quick-add/js/quick-add.js?v=1791383000" is:inline defer></script>
 
-    <script src="/interface/dashboard/js/prop-card-v2.js?v=3" is:inline defer></script>
-    <script src="/interface/dashboard/js/dashboard.js?v=1791642000" is:inline defer data-page-script></script>
+    <script src="/interface/dashboard/js/prop-card-v2.js?v=6" is:inline defer></script>
+    <script src="/interface/dashboard/js/dashboard.js?v=1791642005" is:inline defer data-page-script></script>
   </Fragment>
 
   <script is:inline>
@@ -1064,7 +1050,13 @@ import Layout from '../layouts/Layout.astro';
         best:   { label: t('dashboard.card.best_trade') || 'En İyi İşlem', text: bestText, cls: (bestTrade && bestTrade.pnl > 0) ? 'up' : '', sub: bestSub },
         worst:  { label: t('dashboard.card.worst_trade') || 'En Kötü İşlem', text: worstText, cls: (worstTrade && worstTrade.pnl < 0) ? 'down' : '', sub: worstSub },
         exp:    { label: t('dashboard.card.expectancy') || 'Beklenti (Exp.)', text: expText, cls: expVal === null ? '' : (expVal >= 0 ? 'up' : 'down'), sub: t('dashboard.card.expectancy_sub') || 'İşlem Başı Ort. K/Z' },
-        payoff: { label: t('dashboard.card.payoff_ratio') || 'Payoff Ratio', text: payoffText, cls: 'info', sub: avgSub }
+        payoff: { label: t('dashboard.card.payoff_ratio') || 'Payoff Ratio', text: payoffText, cls: 'info', sub: avgSub },
+        spark: {
+          pnls: (window.WwMetrics ? window.WwMetrics.chronological(closed) : closed).map(calcPnl),
+          fmtMoney: fmtPnl,
+          fmtRatio: function (v) { return v.toFixed(2) + 'x'; },
+          tradeLabel: t('dashboard.card.trade') || 'İşlem'
+        }
       };
       propCardEl.innerHTML = window.WWPropCardV2 ? window.WWPropCardV2.renderStandard(stdCtx) : legacyStdHtml;
 

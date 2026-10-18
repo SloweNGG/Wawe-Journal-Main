@@ -136,6 +136,58 @@ function getStrategiesApexTheme() {
   };
 }
 
+// Ortak grafik görünümü (window.WwChart, shared/chart-theme.js): DM Sans, ortak boyut/renkte eksen yazıları,
+// sadece yatay soluk ızgara, siyah ipucu kartı. WwChart yoksa (eski önbellekli sayfa) aynı değerlere
+// yakın yerel bir görünüme düşer. Renkler çizim anında okunur (temayı izler).
+function getStrategiesChartLook() {
+  var theme = getStrategiesApexTheme();
+  if (window.WwChart) {
+    var c = WwChart.colors();
+    return { mode: theme.mode, muted: c.muted, grid: c.grid, up: c.up, down: c.down, axis: WwChart.axisLabels(), radius: WwChart.BAR.borderRadius };
+  }
+  return {
+    mode: theme.mode,
+    muted: theme.textColor,
+    grid: theme.gridColor,
+    up: '#22c55e',
+    down: '#ef4444',
+    axis: { colors: theme.textColor, fontSize: '11px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 },
+    radius: 4
+  };
+}
+
+// Ortak varsayılanlarla birleştir (grafiğin kendi ayarları kazanır)
+function strategiesApexOptions(opts) {
+  return window.WwChart ? WwChart.apex(opts) : opts;
+}
+
+// Çubuk kalınlığı: 2-3 strateji dev bloklar olmasın diye en fazla 44px
+function strategiesBarWidth(el, count) {
+  if (!window.WwChart) return '45%';
+  return WwChart.barSize(el ? el.clientWidth : 0, count);
+}
+
+// Eksen yazıları için kısa para formatı (kuruşsuz, 4K / 1.2M); ipucunda tam değer kalır
+function formatAxisCurrency(value) {
+  var symbol = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '$';
+  var num = parseFloat(value) || 0;
+  var abs = Math.abs(num);
+  var compact;
+  if (abs >= 1e9) {
+    compact = (abs / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  } else if (abs >= 1e6) {
+    compact = (abs / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  } else if (abs >= 1e3) {
+    compact = (abs / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  } else if (abs % 1 === 0) {
+    compact = String(abs);
+  } else {
+    // küçük aralıklarda (0.5 adımlı) yuvarlama aynı etiketi tekrarlamasın
+    compact = abs.toFixed(2).replace(/\.?0+$/, '');
+  }
+  return (num < 0 && compact !== '0' ? '-' : '') + symbol + compact;
+}
+
 // ============================================================
 // GÜVENLİK: HTML SANITIZE
 // ============================================================
@@ -335,9 +387,11 @@ function getStrategyPerformance(strategyId) {
       var pnl = point.pnl;
       pnlSeries.push(point.equity);
 
+      // Kırılım sembole göre: "forex EURUSD" yerine "EURUSD"; varlık sınıfı işlem listesinde kendi sütununda.
+      // Sembolü olmayan işlem varlık sınıfıyla gruplanır.
       var instrumentKey = (t.instrument || 'Diğer');
-      var symbolKey = (t.symbol || '—');
-      var key = instrumentKey + ':' + symbolKey;
+      var symbolKey = (t.symbol || t.instrument || '—');
+      var key = symbolKey;
 
       if (!instrumentMap[key]) {
         instrumentMap[key] = {
@@ -600,7 +654,7 @@ function renderStrategiesGrid() {
     var instrumentTagHtml = '';
     if (hasData && perf.bestInstrument) {
       var bi = perf.bestInstrument;
-      var displayName = sanitizeHTML(bi.instrument + ' ' + bi.symbol);
+      var displayName = sanitizeHTML(bi.symbol);
       instrumentTagHtml = '<div class="sc-instrument-tag" title="' + _t('strategies.card.best_instrument', 'En iyi enstrüman') + '">' +
         '<span style="display:flex;align-items:center;gap:5px;">' +
           '<svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>' +
@@ -719,24 +773,123 @@ function renderComparisonCharts() {
   });
 }
 
+// Karşılaştırma verisi (son çizimden): kart grafikleri ve büyütülmüş görünüm aynı ayarları kullanır
+var comparisonData = null;
+
+function collectComparisonData() {
+  var d = { labels: [], fullNames: [], wrData: [], pnlData: [], colors: [] };
+  for (var i = 0; i < strategiesList.length; i++) {
+    var s = strategiesList[i];
+    var perf = getStrategyPerformance(s.id);
+    if (perf && perf.totalTrades > 0) {
+      d.labels.push(s.name.length > 12 ? s.name.slice(0,10) + '..' : s.name);
+      d.fullNames.push(s.name);
+      d.wrData.push(perf.winRate);
+      d.pnlData.push(perf.totalPnL);
+      d.colors.push(s.color || '#8b5cf6');
+    }
+  }
+  return d.wrData.length ? d : null;
+}
+
+// kind: 'winrate' | 'pnl'. el: grafiğin kutusu (bar kalınlığı ondan hesaplanır).
+// height: kartta '100%', büyütülmüş görünümde kutunun piksel yüksekliği; full: orada tam ad gösterilir.
+function buildComparisonOptions(kind, el, height, full) {
+  var d = comparisonData;
+  var look = getStrategiesChartLook();
+  var isWr = kind === 'winrate';
+  var data = isWr ? d.wrData : d.pnlData;
+
+  // İpucu: strateji adı (kendi renginde nokta) + değer, ortak siyah kart
+  function comparisonTip(metricLabel, value, valueCls, i) {
+    return WwChart.tipHtml({
+      title: metricLabel,
+      value: value,
+      valueCls: valueCls,
+      rows: [{ label: d.fullNames[i], color: d.colors[i] }]
+    });
+  }
+
+  var options = strategiesApexOptions({
+    series: [{ name: isWr ? 'Win Rate' : 'K/Z', data: data }],
+    chart: {
+      type: 'bar',
+      height: height,
+      width: '100%',
+      toolbar: { show: false },
+      background: 'transparent',
+      fontFamily: "'DM Sans', sans-serif",
+      animations: { enabled: true, speed: 500 }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: look.radius,
+        borderRadiusApplication: 'end',
+        columnWidth: strategiesBarWidth(el, data.length),
+        distributed: true
+      }
+    },
+    colors: isWr ? d.colors : d.pnlData.map(function(v) { return v >= 0 ? '#22c55e' : '#ef4444'; }),
+    dataLabels: { enabled: false },
+    grid: {
+      borderColor: look.grid,
+      strokeDashArray: 0,
+      position: 'back',
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } }
+    },
+    xaxis: {
+      categories: full ? d.fullNames : d.labels,
+      labels: {
+        style: look.axis,
+        rotate: 0,
+        hideOverlappingLabels: true,
+        trim: true
+      },
+      axisBorder: { show: false },
+      axisTicks: { show: false }
+    },
+    yaxis: isWr ? {
+      max: 100,
+      labels: {
+        style: look.axis,
+        formatter: function(v) { return v.toFixed(0) + '%'; }
+      }
+    } : {
+      labels: {
+        style: look.axis,
+        // eksende kısa format (kuruşsuz), ipucunda tam değer
+        formatter: function(v) { return formatAxisCurrency(v); }
+      }
+    },
+    tooltip: {
+      theme: look.mode,
+      y: {
+        formatter: isWr ? function(v) { return v.toFixed(1) + '%'; } : function(v) { return formatCurrencySafe(v); }
+      },
+      style: {
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: '11px'
+      }
+    },
+    legend: { show: false }
+  });
+  if (window.WwChart) {
+    options.tooltip.custom = function(o) {
+      var v = Number(data[o.dataPointIndex]) || 0;
+      return isWr
+        ? comparisonTip(_t('strategies.card.win_rate', 'Win Rate'), v.toFixed(1) + '%', '', o.dataPointIndex)
+        : comparisonTip(_t('strategies.card.pnl', 'K/Z'), formatCurrencySafe(v), v >= 0 ? 'up' : 'down', o.dataPointIndex);
+    };
+  }
+  return options;
+}
+
 function _renderComparisonChartsActual() {
   try {
     if (!strategiesList.length) return;
-    var labels = [], wrData = [], pnlData = [], colors = [];
-
-    for (var sIdx2 = 0; sIdx2 < strategiesList.length; sIdx2++) {
-      var s = strategiesList[sIdx2];
-      var perf = getStrategyPerformance(s.id);
-      if (perf && perf.totalTrades > 0) {
-        labels.push(s.name.length > 12 ? s.name.slice(0,10) + '..' : s.name);
-        wrData.push(perf.winRate);
-        pnlData.push(perf.totalPnL);
-        colors.push(s.color || '#8b5cf6');
-      }
-    }
-    if (!wrData.length) return;
-
-    var theme = getStrategiesApexTheme();
+    comparisonData = collectComparisonData();
+    if (!comparisonData) return;
 
     // ⭐ WİN RATE KARŞILAŞTIRMASI (Bar)
     var winEl = document.getElementById('winrate-comparison-chart');
@@ -746,72 +899,7 @@ function _renderComparisonChartsActual() {
         window.winrateChart = null;
       }
       winEl.innerHTML = '';
-
-      var winOptions = {
-        series: [{ name: 'Win Rate', data: wrData }],
-        chart: {
-          type: 'bar',
-          height: '100%',
-          width: '100%',
-          toolbar: { show: false },
-          background: 'transparent',
-          fontFamily: "'DM Sans', sans-serif",
-          animations: { enabled: true, speed: 500 }
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: 5,
-            columnWidth: '60%',
-            distributed: true
-          }
-        },
-        colors: colors,
-        dataLabels: { enabled: false },
-        grid: {
-          borderColor: theme.gridColor,
-          strokeDashArray: 3,
-          position: 'back'
-        },
-        xaxis: {
-          categories: labels,
-          labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '9px'
-            },
-            rotate: 0,
-            hideOverlappingLabels: true,
-            trim: true
-          },
-          axisBorder: { show: false },
-          axisTicks: { show: false }
-        },
-        yaxis: {
-          max: 100,
-          labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '9px'
-            },
-            formatter: function(v) { return v.toFixed(0) + '%'; }
-          }
-        },
-        tooltip: {
-          theme: theme.mode,
-          y: {
-            formatter: function(v) { return v.toFixed(1) + '%'; }
-          },
-          style: {
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '12px'
-          }
-        },
-        legend: { show: false }
-      };
-
-      window.winrateChart = new ApexCharts(winEl, winOptions);
+      window.winrateChart = new ApexCharts(winEl, buildComparisonOptions('winrate', winEl, '100%', false));
       window.winrateChart.render();
     }
 
@@ -823,79 +911,42 @@ function _renderComparisonChartsActual() {
         window.pnlChart = null;
       }
       pnlEl.innerHTML = '';
-
-      var barColors = pnlData.map(function(v) { return v >= 0 ? '#22c55e' : '#ef4444'; });
-
-      var pnlOptions = {
-        series: [{ name: 'K/Z', data: pnlData }],
-        chart: {
-          type: 'bar',
-          height: '100%',
-          width: '100%',
-          toolbar: { show: false },
-          background: 'transparent',
-          fontFamily: "'DM Sans', sans-serif",
-          animations: { enabled: true, speed: 500 }
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: 5,
-            columnWidth: '60%',
-            distributed: true
-          }
-        },
-        colors: barColors,
-        dataLabels: { enabled: false },
-        grid: {
-          borderColor: theme.gridColor,
-          strokeDashArray: 3,
-          position: 'back'
-        },
-        xaxis: {
-          categories: labels,
-          labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '9px'
-            },
-            rotate: 0,
-            hideOverlappingLabels: true,
-            trim: true
-          },
-          axisBorder: { show: false },
-          axisTicks: { show: false }
-        },
-        yaxis: {
-          labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'DM Mono', monospace",
-              fontSize: '9px'
-            },
-            formatter: function(v) { return formatCurrencySafe(v); }
-          }
-        },
-        tooltip: {
-          theme: theme.mode,
-          y: {
-            formatter: function(v) { return formatCurrencySafe(v); }
-          },
-          style: {
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '12px'
-          }
-        },
-        legend: { show: false }
-      };
-
-      window.pnlChart = new ApexCharts(pnlEl, pnlOptions);
+      window.pnlChart = new ApexCharts(pnlEl, buildComparisonOptions('pnl', pnlEl, '100%', false));
       window.pnlChart.render();
     }
   } catch(e) {
     console.error('renderComparisonCharts hatası:', e);
   }
 }
+
+// ⭐ BÜYÜTME — karşılaştırma kartına tıklayınca ortak görüntüleyicide (shared/chart-viewer.js) açılır
+function openComparisonViewer(kind) {
+  if (!window.WwChartViewer || !comparisonData || typeof ApexCharts === 'undefined') return;
+  var items = [
+    { key: 'winrate', title: _t('strategies.comparison.win_rate', 'Win Rate Karşılaştırması') },
+    { key: 'pnl', title: _t('strategies.comparison.pnl', 'Toplam K/Z Karşılaştırması') }
+  ];
+  window.WwChartViewer.open({
+    items: items,
+    index: kind === 'pnl' ? 1 : 0,
+    render: function(el, item, size) {
+      if (!comparisonData) return null;
+      var chart = new ApexCharts(el, buildComparisonOptions(item.key, el, size.height, true));
+      chart.render();
+      return chart;
+    }
+  });
+}
+
+STRAT_PAGE.on(document, 'click', function(e) {
+  var card = e.target && e.target.closest && e.target.closest('#comparison-section .comparison-card');
+  if (!card) return;
+  var kind = card.querySelector('#pnl-comparison-chart') ? 'pnl' : 'winrate';
+  openComparisonViewer(kind);
+});
+STRAT_PAGE.onLeave(function() {
+  if (window.WwChartViewer) window.WwChartViewer.close();
+});
 
 // ============================================================
 // STRATEJİ EKLEME MODALI
@@ -1049,11 +1100,11 @@ function openDetailModal(strategyId) {
     var metricsHtml = '\n      <div class="detail-metrics-grid">\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.profit_factor">Profit Factor</div><div class="detail-metric-val ' + (perf.profitFactor !== null && perf.profitFactor >= 1 ? 'pos' : (perf.profitFactor !== null ? 'neg' : 'pos')) + '">' + pfDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="premium_dash.kpi.payoff">' + _t('premium_dash.kpi.payoff', 'Kazanç/Kayıp Oranı') + '</div><div class="detail-metric-val">' + payoffDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_drawdown">Maks. Drawdown</div><div class="detail-metric-val' + (perf.maxDrawdown > 0 ? ' neg' : '') + '">' + ddDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.win_rate">Win Rate</div><div class="detail-metric-val ' + (perf.winRate >= 50 ? 'pos' : 'neg') + '">' + perf.winRate + '%</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_win_streak">Maks. Kazanma Serisi</div><div class="detail-metric-val pos">' + perf.maxWinStreak + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.max_loss_streak">Maks. Kaybetme Serisi</div><div class="detail-metric-val neg">' + perf.maxLossStreak + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_win">Ort. Kazanç</div><div class="detail-metric-val' + (perf.wins ? ' pos' : '') + '">' + avgWinDisplay + '</div></div>\n        <div class="detail-metric-box"><div class="detail-metric-lbl" data-i18n="strategies.detail.avg_loss">Ort. Kayıp</div><div class="detail-metric-val' + (perf.losses ? ' neg' : '') + '">' + avgLossDisplay + '</div></div>\n      </div>';
 
     var instrumentRows = perf.instrumentBreakdown.map(function(ib) {
-      var displayName = sanitizeHTML(ib.instrument + ' ' + ib.symbol);
+      var displayName = sanitizeHTML(ib.symbol);
       return '<tr><td>' + displayName + '</td><td>' + ib.trades + '</td><td>' + ib.winRate + '%</td><td class="' + (ib.pnl >= 0 ? 'pos' : 'neg') + '">' + formatCurrencySafe(ib.pnl) + '</td></tr>';
     }).join('');
 
-    var instrumentHtml = '\n      <div class="detail-section-title" data-i18n="strategies.detail.instrument_breakdown">Enstrüman Kırılımı</div>\n      <div class="detail-table-wrap" style="max-height:160px;">\n        <table class="detail-table">\n          <thead><tr><th data-i18n="strategies.detail.instrument">Enstrüman · Sembol</th><th data-i18n="strategies.detail.trades">İşlem</th><th data-i18n="strategies.detail.win_rate">Win Rate</th><th data-i18n="strategies.detail.pnl">K/Z</th></tr></thead>\n          <tbody>' + (instrumentRows || '<tr><td colspan="4" style="text-align:center;color:var(--muted);">' + i18n.t('strategies.detail.no_data') + '</td></tr>') + '</tbody>\n        </table>\n      </div>';
+    var instrumentHtml = '\n      <div class="detail-section-title" data-i18n="strategies.detail.instrument_breakdown">Enstrüman Kırılımı</div>\n      <div class="detail-table-wrap" style="max-height:160px;">\n        <table class="detail-table">\n          <thead><tr><th data-i18n="strategies.detail.symbol">Sembol</th><th data-i18n="strategies.detail.trades">İşlem</th><th data-i18n="strategies.detail.win_rate">Win Rate</th><th data-i18n="strategies.detail.pnl">K/Z</th></tr></thead>\n          <tbody>' + (instrumentRows || '<tr><td colspan="4" style="text-align:center;color:var(--muted);">' + i18n.t('strategies.detail.no_data') + '</td></tr>') + '</tbody>\n        </table>\n      </div>';
 
     var tradeRows = perf.tradesDetail.slice().reverse().map(function(t) {
       return '<tr>' +
@@ -1107,12 +1158,12 @@ function openEquityModal(strategyId) {
       }
       equityEl.innerHTML = '';
 
-    var theme = getStrategiesApexTheme();
+    var look = getStrategiesChartLook();
     var labels = perf.tradesDetail.map(function(t, i) { return fmtDate(t.trade_date); });
     var isNeg = perf.pnlSeries[perf.pnlSeries.length - 1] < 0;
     var lineColor = isNeg ? '#ef4444' : (s.color || '#8b5cf6');
 
-    var equityOptions = {
+    var equityOptions = strategiesApexOptions({
       series: [{ name: 'Kümülatif K/Z', data: perf.pnlSeries }],
       chart: {
         type: 'area',
@@ -1148,19 +1199,17 @@ function openEquityModal(strategyId) {
         hover: { size: 6 }
       },
       grid: {
-        borderColor: theme.gridColor,
-        strokeDashArray: 3,
-        position: 'back'
+        borderColor: look.grid,
+        strokeDashArray: 0,
+        position: 'back',
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } }
       },
       xaxis: {
         categories: labels,
         tickAmount: 8,
         labels: {
-          style: {
-            colors: theme.textColor,
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '9px'
-          },
+          style: look.axis,
           rotate: 0,
           hideOverlappingLabels: true,
           trim: true
@@ -1170,26 +1219,34 @@ function openEquityModal(strategyId) {
       },
       yaxis: {
         labels: {
-          style: {
-            colors: theme.textColor,
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '9px'
-          },
-          formatter: function(v) { return formatCurrencySafe(v); }
+          style: look.axis,
+          // eksende kısa format (kuruşsuz), ipucunda tam değer
+          formatter: function(v) { return formatAxisCurrency(v); }
         }
       },
       tooltip: {
-        theme: theme.mode,
+        theme: look.mode,
         y: {
           formatter: function(v) { return formatCurrencySafe(v); }
         },
         style: {
           fontFamily: "'DM Sans', sans-serif",
-          fontSize: '12px'
+          fontSize: '11px'
         }
       },
       legend: { show: false }
-    };
+    });
+    if (window.WwChart) {
+      // İpucu: tarih + kümülatif K/Z, ortak siyah kart (pano kümülatif grafiğiyle aynı)
+      equityOptions.tooltip.custom = function(o) {
+        var v = Number(perf.pnlSeries[o.dataPointIndex]) || 0;
+        return WwChart.tipHtml({
+          title: labels[o.dataPointIndex] || '',
+          value: formatCurrencySafe(v),
+          valueCls: v >= 0 ? 'up' : 'down'
+        });
+      };
+    }
 
     equityChartInstance = new ApexCharts(equityEl, equityOptions);
     equityChartInstance.render();
@@ -1319,7 +1376,7 @@ function exportAllStrategiesCSV() {
     ]];
     strategiesList.forEach(function(s) {
       var perf = getStrategyPerformance(s.id);
-      var bestInst = perf.bestInstrument ? (perf.bestInstrument.instrument + ' ' + perf.bestInstrument.symbol) : '—';
+      var bestInst = perf.bestInstrument ? perf.bestInstrument.symbol : '—';
       rows.push([
         sanitizeHTML(s.name),
         perf.totalTradesWithOpen,

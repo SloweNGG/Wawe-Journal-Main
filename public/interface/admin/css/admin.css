@@ -3231,12 +3231,8 @@ body.light-theme .panel-glow.prices-glow {
 }
 
 
-/* ⭐ APEXCHARTS TYPOGRAPHY OVERRIDE */
-.apexcharts-canvas text,
-.apexcharts-tooltip,
-.apexcharts-legend-text {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-}
+/* ⭐ APEXCHARTS: font, ipucu kartı ve eksen etiketleri ortak temadan gelir
+   (shared/chart-theme.css). Burada .apexcharts-* yeniden stillenmez. */
 
 /* ============================================================
    PAYOUT MANAGEMENT STYLES

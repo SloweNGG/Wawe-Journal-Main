@@ -366,7 +366,7 @@
   color: var(--muted);
   opacity: 0;
   transition: opacity 0.15s;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', sans-serif;
   pointer-events: none;
 }
 .sc-spark.clickable:hover .sc-spark-hint { opacity: 0.7; }
@@ -656,15 +656,16 @@
   border-radius: var(--radius);
   overflow: hidden;
 }
+/* grafik başlığı: panodaki grafik başlıklarıyla aynı (DM Sans, 0.82rem, 600) */
 .comparison-card-header {
   padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--border);
-  font-family: 'Syne', sans-serif !important;
-  font-size: 11px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.82rem !important;
   font-weight: 600 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: normal !important;
+  text-transform: none;
+  color: var(--text);
 }
 .comparison-chart-inner {
   height: 200px;
@@ -1057,3 +1058,44 @@ table.detail-table td.neg { color: var(--red); font-weight: 600; }
 }
 .btn-add-strategy:hover { transform: none; box-shadow: none; }
 .btn-export:hover { transform: none; }
+
+/* ============================================================
+   MODALS (dark mode): plain black like the dashboard chart modal.
+   The theme's --surface/--surface2/--border lean purple, so the
+   modals set their own black and neutral line tones here.
+   ============================================================ */
+body:not(.light-theme) .modal-box {
+  --sm-line: rgba(255, 255, 255, 0.08);
+  background: #000;
+  border-color: var(--sm-line);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+body:not(.light-theme) .modal-header { border-bottom-color: var(--sm-line); }
+body:not(.light-theme) .detail-metric-box,
+body:not(.light-theme) .modal-field input[type="text"],
+body:not(.light-theme) .modal-field textarea,
+body:not(.light-theme) .modal-field input[type="color"] {
+  background: #000;
+  border-color: var(--sm-line);
+}
+body:not(.light-theme) .detail-table-wrap { border-color: var(--sm-line); }
+body:not(.light-theme) table.detail-table thead th {
+  background: #000;
+  border-bottom-color: var(--sm-line);
+}
+body:not(.light-theme) table.detail-table tbody td { border-bottom-color: var(--sm-line); }
+body:not(.light-theme) table.detail-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+body:not(.light-theme) .modal-box .btn-export,
+body:not(.light-theme) .modal-box .btn-modal-cancel {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+}
+body:not(.light-theme) .modal-box .btn-export:hover,
+body:not(.light-theme) .modal-box .btn-modal-cancel:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text);
+}
+
+/* Comparison charts open large on click (shared WwChartViewer) */
+#comparison-section .comparison-card { cursor: zoom-in; }

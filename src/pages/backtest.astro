@@ -409,15 +409,24 @@ import Layout from '../layouts/Layout.astro';
      3) GRAFİK
      ============================================================ */
   const btChartContainer = document.getElementById('bt-chart');
-  const btChart = LightweightCharts.createChart(btChartContainer, {
-    width: btChartContainer.clientWidth,
-    height: 380,
-    layout: { background: { color: 'transparent' }, textColor: '#8b8b9e' },
-    grid: { vertLines: { color: 'rgba(123,110,246,0.06)' }, horzLines: { color: 'rgba(123,110,246,0.06)' } },
-    rightPriceScale: { borderColor: 'rgba(123,110,246,0.12)' },
-    timeScale: { borderColor: 'rgba(123,110,246,0.12)' },
-    crosshair: { mode: 0 }
-  });
+  // Ortak grafik teması (chart-theme.js): DM Sans 11px, soluk yatay grid, siyah crosshair etiketi.
+  // Eski önbellekli sayfada WwChart yoksa önceki görünüme düşer.
+  const btChartOpts = window.WwChart
+    ? window.WwChart.lwc({
+        width: btChartContainer.clientWidth,
+        height: 380,
+        crosshair: { mode: 0 }
+      })
+    : {
+        width: btChartContainer.clientWidth,
+        height: 380,
+        layout: { background: { color: 'transparent' }, textColor: '#8b8b9e' },
+        grid: { vertLines: { color: 'rgba(123,110,246,0.06)' }, horzLines: { color: 'rgba(123,110,246,0.06)' } },
+        rightPriceScale: { borderColor: 'rgba(123,110,246,0.12)' },
+        timeScale: { borderColor: 'rgba(123,110,246,0.12)' },
+        crosshair: { mode: 0 }
+      };
+  const btChart = LightweightCharts.createChart(btChartContainer, btChartOpts);
   const btSeries = btChart.addCandlestickSeries({
     upColor: '#22c55e', downColor: '#ef4444',
     borderUpColor: '#22c55e', borderDownColor: '#ef4444',

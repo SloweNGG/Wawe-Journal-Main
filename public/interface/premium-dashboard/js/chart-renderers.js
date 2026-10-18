@@ -48,9 +48,13 @@ var charts = {
 };
 
 // ⭐ CHART THEME - mobil/desktop ayrımı
+// Font, etiket boyutu, ızgara ve ipucu kartı tüm sayfalarla ortak: window.WwChart (shared/chart-theme.js).
+// WwChart yoksa (eski önbellekli sayfa) aşağıdaki aynı değerler kullanılır.
 var CHART_THEME = {
   textColor: '#e8e8f0',
-  gridColor: 'rgba(255,255,255,0.06)',
+  mutedColor: '#a8a8c0',
+  gridColor: 'rgba(255,255,255,0.05)',
+  zeroColor: 'rgba(168,168,192,0.28)',
   green: '#22c55e',
   red: '#ef4444',
   purple: '#8b5cf6',
@@ -58,10 +62,14 @@ var CHART_THEME = {
   gray: '#64748b',
   fontFamily: "'DM Sans', sans-serif",
   fontSizeDesktop: '11px',
-  fontSizeMobile: '9px',
+  fontSizeMobile: '10px',
   legendSizeDesktop: '12px',
   legendSizeMobile: '10px',
 };
+
+function wwChart() {
+  return typeof window !== 'undefined' && window.WwChart ? window.WwChart : null;
+}
 
 export function getChartTheme() {
   return CHART_THEME;
@@ -69,12 +77,26 @@ export function getChartTheme() {
 
 export function updateChartTheme() {
   var isLight = document.body.classList.contains('light-theme');
-  if (isLight) {
+  var W = wwChart();
+  if (W) {
+    var c = W.colors();
+    CHART_THEME.textColor = c.text;
+    CHART_THEME.mutedColor = c.muted;
+    CHART_THEME.gridColor = c.grid;
+    CHART_THEME.zeroColor = c.zero;
+    CHART_THEME.fontFamily = W.FONT;
+    CHART_THEME.fontSizeDesktop = W.SIZE.axis;
+    CHART_THEME.legendSizeDesktop = W.SIZE.legend;
+  } else if (isLight) {
     CHART_THEME.textColor = '#1e293b';
-    CHART_THEME.gridColor = 'rgba(0,0,0,0.06)';
+    CHART_THEME.mutedColor = '#64748b';
+    CHART_THEME.gridColor = 'rgba(15,23,42,0.06)';
+    CHART_THEME.zeroColor = 'rgba(100,116,139,0.35)';
   } else {
     CHART_THEME.textColor = '#e8e8f0';
-    CHART_THEME.gridColor = 'rgba(255,255,255,0.06)';
+    CHART_THEME.mutedColor = '#a8a8c0';
+    CHART_THEME.gridColor = 'rgba(255,255,255,0.05)';
+    CHART_THEME.zeroColor = 'rgba(168,168,192,0.28)';
   }
   try {
     var accentVal = getComputedStyle(document.body).getPropertyValue('--accent').trim();
@@ -94,6 +116,29 @@ function getFontSize() {
 
 function getLegendSize() {
   return isMobile() ? CHART_THEME.legendSizeMobile : CHART_THEME.legendSizeDesktop;
+}
+
+// Eksen etiketleri: tüm sayfalardaki gibi soluk renk, DM Sans, 500 kalınlık (mobilde 10px)
+function axisStyle() {
+  var W = wwChart();
+  var style = W ? W.axisLabels() : { colors: CHART_THEME.mutedColor, fontFamily: CHART_THEME.fontFamily, fontWeight: 500 };
+  style.fontSize = getFontSize();
+  return style;
+}
+
+// Bar kalınlığı: az kategoride dev bloklar olmasın diye en fazla 44px (ortak WwChart.barSize).
+// Dikey barda kutunun genişliği, yatay barda yüksekliği kullanılır.
+function sizeBars(options, container) {
+  var bar = options.plotOptions && options.plotOptions.bar;
+  if (!bar) return;
+  var W = wwChart();
+  var cats = (options.xaxis && options.xaxis.categories) || (options.series && options.series[0] && options.series[0].data) || [];
+  var size = bar.horizontal ? container.clientHeight : container.clientWidth;
+  var thickness = W ? W.barSize(size, cats.length) : (bar.horizontal ? '55%' : '45%');
+  bar.borderRadius = W ? W.BAR.borderRadius : 4;
+  bar.borderRadiusApplication = 'end';
+  if (bar.horizontal) bar.barHeight = thickness;
+  else bar.columnWidth = thickness;
 }
 
 export function getCharts() {
@@ -156,34 +201,56 @@ export function renderOrUpdateApex(key, containerId, options) {
   var container = document.getElementById(containerId);
   if (!container) return;
 
-  var mergedOptions = deepMerge({
+  // Ortak görünüm (font, soluk yatay ızgara, eksen etiketleri, ipucu) WwChart'tan gelir
+  var W = wwChart();
+  var isLight = document.body.classList.contains('light-theme');
+  var shared = W ? W.apexBase() : {
     chart: {
-      height: '100%',
-      foreColor: CHART_THEME.textColor,
+      foreColor: CHART_THEME.mutedColor,
       fontFamily: CHART_THEME.fontFamily,
       toolbar: { show: false },
+      zoom: { enabled: false },
+      background: 'transparent',
+    },
+    theme: { mode: isLight ? 'light' : 'dark' },
+    grid: {
+      borderColor: CHART_THEME.gridColor,
+      strokeDashArray: 0,
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+    },
+    dataLabels: { enabled: false },
+    legend: {
+      fontFamily: CHART_THEME.fontFamily,
+      fontSize: CHART_THEME.legendSizeDesktop,
+      fontWeight: 500,
+      labels: { colors: CHART_THEME.mutedColor },
+    },
+    tooltip: {
+      theme: isLight ? 'light' : 'dark',
+      style: { fontSize: '11px', fontFamily: CHART_THEME.fontFamily },
+    },
+    xaxis: { axisBorder: { show: false }, axisTicks: { show: false } },
+  };
+
+  var mergedOptions = deepMerge(deepMerge(shared, {
+    chart: {
+      height: '100%',
       animations: {
         enabled: true,
         speed: 400,
         easing: 'easeinout',
         animateGradually: { enabled: true, delay: 100 }
       },
-      background: 'transparent',
     },
-    grid: {
-      borderColor: CHART_THEME.gridColor,
-      strokeDashArray: 3,
-    },
-    dataLabels: { enabled: false },
     stroke: { width: 1 },
     legend: {
       onItemClick: { toggleDataSeries: false },
       onItemHover: { highlightDataSeries: true },
     },
-    tooltip: {
-      theme: document.body.classList.contains('light-theme') ? 'light' : 'dark',
-    }
-  }, options);
+  }), options);
+
+  if (mergedOptions.chart.type === 'bar') sizeBars(mergedOptions, container);
 
   var firstRender = !animatedKeys[key];
   animatedKeys[key] = true;
@@ -274,13 +341,13 @@ function metricBarOptions(metric, labels, realData, displayData, opts) {
   var horizontal = !!(opts && opts.horizontal);
   var valueAxis = {
     labels: {
-      style: { fontSize: getFontSize(), colors: CHART_THEME.textColor },
+      style: axisStyle(),
       formatter: metricAxisFormatter(metric),
     }
   };
   var categoryAxis = {
     labels: {
-      style: { fontSize: getFontSize(), colors: CHART_THEME.textColor },
+      style: axisStyle(),
       rotate: 0,
     }
   };
@@ -293,9 +360,6 @@ function metricBarOptions(metric, labels, realData, displayData, opts) {
     plotOptions: {
       bar: {
         horizontal: horizontal,
-        borderRadius: 4,
-        columnWidth: isMobile() ? '50%' : '65%',
-        barHeight: isMobile() ? '50%' : '60%',
         colors: metricBarColors(metric),
       }
     },
@@ -337,20 +401,20 @@ function renderDistribution(key, containerId, cfg) {
         categories: cfg.labels,
         tickAmount: 4,
         labels: {
-          style: { fontSize: getFontSize(), colors: CHART_THEME.textColor },
+          style: axisStyle(),
           formatter: function(v) { return String(Math.round(v)); }
         },
       },
       yaxis: {
-        labels: { style: { fontSize: getFontSize(), colors: CHART_THEME.textColor } }
+        labels: { style: axisStyle() }
       },
       plotOptions: {
-        bar: { horizontal: true, distributed: true, borderRadius: 4, barHeight: '55%' }
+        bar: { horizontal: true, distributed: true }
       },
       legend: { show: false },
       dataLabels: {
         enabled: true,
-        style: { fontSize: getLegendSize(), fontFamily: CHART_THEME.fontFamily, fontWeight: 700 },
+        style: { fontSize: getLegendSize(), fontFamily: CHART_THEME.fontFamily, fontWeight: 600 },
         formatter: function(val) {
           var total = cfg.series.reduce(function(s, v) { return s + v; }, 0);
           return val + ' (' + (total ? Math.round((val / total) * 100) : 0) + '%)';
@@ -368,16 +432,16 @@ function renderDistribution(key, containerId, cfg) {
       labels: {
         show: true,
         name: {
-          fontSize: '10px',
-          fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 600,
-          color: CHART_THEME.gray,
+          fontSize: '11px',
+          fontFamily: CHART_THEME.fontFamily,
+          fontWeight: 500,
+          color: CHART_THEME.mutedColor,
           offsetY: -5
         },
         value: {
           fontSize: '18px',
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 800,
+          fontFamily: CHART_THEME.fontFamily,
+          fontWeight: 700,
           color: CHART_THEME.textColor,
           offsetY: 8,
           formatter: function(val) { return val; }
@@ -385,10 +449,10 @@ function renderDistribution(key, containerId, cfg) {
         total: {
           show: true,
           label: cfg.centerLabel,
-          fontSize: '10px',
-          fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 600,
-          color: CHART_THEME.gray,
+          fontSize: '11px',
+          fontFamily: CHART_THEME.fontFamily,
+          fontWeight: 500,
+          color: CHART_THEME.mutedColor,
           formatter: cfg.centerValue
         }
       }
@@ -405,8 +469,8 @@ function renderDistribution(key, containerId, cfg) {
     legend: {
       position: 'bottom',
       fontSize: getLegendSize(),
-      fontFamily: "'DM Sans', sans-serif",
-      labels: { colors: CHART_THEME.textColor },
+      fontFamily: CHART_THEME.fontFamily,
+      labels: { colors: CHART_THEME.mutedColor },
       itemMargin: { horizontal: 8, vertical: 4 },
       formatter: function(seriesName, opts) {
         var value = opts.w.globals.series[opts.seriesIndex];
@@ -522,7 +586,7 @@ export function renderDirectionChart(trades) {
   }
   options.dataLabels = {
     enabled: true,
-    style: { fontSize: getLegendSize(), fontFamily: CHART_THEME.fontFamily, fontWeight: 700 },
+    style: { fontSize: getLegendSize(), fontFamily: CHART_THEME.fontFamily, fontWeight: 600 },
     formatter: function(val, ctx) { return formatMetric(metric, data[ctx.dataPointIndex]); }
   };
   renderOrUpdateApex('direction', containerId, options);
@@ -577,12 +641,12 @@ export function renderDailyChart(trades) {
   };
   var xaxis = {
     categories: dailyLabels,
-    labels: { style: { fontSize: getFontSize(), colors: CHART_THEME.textColor }, rotate: 0, hideOverlappingLabels: true },
+    labels: { style: axisStyle(), rotate: 0, hideOverlappingLabels: true },
     tickAmount: isMobile() ? 6 : 10,
   };
   var yaxis = {
     labels: {
-      style: { fontSize: getFontSize(), colors: CHART_THEME.textColor },
+      style: axisStyle(),
       formatter: apexCurrencyFormatter,
     }
   };
@@ -604,13 +668,13 @@ export function renderDailyChart(trades) {
         ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] } }
         : { opacity: 1 },
       markers: { size: 0, hover: { size: 4 } },
-      annotations: { yaxis: [{ y: 0, borderColor: CHART_THEME.gray, strokeDashArray: 3 }] },
+      annotations: { yaxis: [{ y: 0, borderColor: CHART_THEME.zeroColor, strokeDashArray: 3 }] },
       xaxis: {
         type: 'datetime',
         labels: {
           datetimeUTC: true,
           format: 'd/M',
-          style: { fontSize: getFontSize(), colors: CHART_THEME.textColor },
+          style: axisStyle(),
         },
       },
       yaxis: yaxis,
@@ -632,8 +696,6 @@ export function renderDailyChart(trades) {
     yaxis: yaxis,
     plotOptions: {
       bar: {
-        borderRadius: 4,
-        columnWidth: isMobile() ? '50%' : '70%',
         colors: metricBarColors('pnl')
       }
     },
@@ -800,25 +862,16 @@ export function renderRRChart(trades) {
     xaxis: {
       categories: labels,
       labels: {
-        style: { 
-          fontSize: getFontSize(), 
-          colors: CHART_THEME.textColor 
-        },
+        style: axisStyle(),
       }
     },
     yaxis: {
       labels: {
-        style: { 
-          fontSize: getFontSize(), 
-          colors: CHART_THEME.textColor 
-        },
+        style: axisStyle(),
       }
     },
     plotOptions: {
-      bar: {
-        borderRadius: 4,
-        columnWidth: isMobile() ? '50%' : '70%',
-      }
+      bar: {}
     },
     tooltip: {
       y: { formatter: function(val) { return val + ' ' + _t('dashboard.trades_count_suffix', 'işlem'); } }
@@ -911,17 +964,19 @@ export function renderCumulativeChart(trades) {
     changeEl.className = 'chart-badge ' + (lastVal >= firstVal ? '' : 'negative');
   }
 
-  var fontSize = isMobile() ? 8 : 9;
+  // Eksen yazıları bu sayfadaki Apex grafikleriyle aynı: ortak eksen boyutu ve rengi (mobilde 10px), yalnız yatay ızgara
+  var fontSize = parseInt(getFontSize(), 10) || 11;
+  var W = wwChart();
 
-  var chart = LightweightCharts.createChart(container, {
+  var lwcOptions = {
     layout: {
       background: { color: 'transparent' },
-      textColor: CHART_THEME.textColor,
+      textColor: W ? W.axisLabels().colors : CHART_THEME.mutedColor,
       fontSize: fontSize,
       fontFamily: CHART_THEME.fontFamily,
     },
     grid: {
-      vertLines: { color: CHART_THEME.gridColor },
+      vertLines: { visible: false },
       horzLines: { color: CHART_THEME.gridColor },
     },
     rightPriceScale: {
@@ -953,7 +1008,8 @@ export function renderCumulativeChart(trades) {
     handleScale: false,
     width: container.clientWidth || 300,
     height: container.clientHeight || 180,
-  });
+  };
+  var chart = LightweightCharts.createChart(container, W ? W.lwc(lwcOptions) : lwcOptions);
 
   var priceFormat = {
     type: 'custom',
@@ -1032,22 +1088,9 @@ export function renderCumulativeChart(trades) {
     series: series,
   };
 
+  // İpucu: tüm sayfalardaki ortak kart (.ww-tip) — tarih, altında büyük K/Z değeri
   var tooltip = document.createElement('div');
-  tooltip.style.cssText = [
-    'position:absolute',
-    'display:none',
-    'background:var(--surface)',
-    'border:1px solid var(--border)',
-    'border-radius:8px',
-    'padding:6px 12px',
-    'font-size:11px',
-    'font-family:\'DM Sans\',sans-serif',
-    'color:var(--text)',
-    'pointer-events:none',
-    'z-index:10',
-    'box-shadow:0 4px 16px rgba(0,0,0,0.3)',
-    'backdrop-filter:blur(8px)',
-  ].join(';');
+  tooltip.style.cssText = 'position:absolute;display:none;pointer-events:none;z-index:10;';
   container.style.position = 'relative';
   container.appendChild(tooltip);
 
@@ -1069,15 +1112,23 @@ export function renderCumulativeChart(trades) {
       month: 'short',
       year: 'numeric',
     });
-    var pnlLabel = _t('common.pnl', 'K/Z');
-    tooltip.innerHTML = '<div><strong>' + dateStr + '</strong></div><div>' + pnlLabel + ': ' + formatCurrency(data.value) + '</div>';
+    var spec = { title: dateStr, value: formatCurrency(data.value), valueCls: data.value >= 0 ? 'up' : 'down' };
+    if (W) {
+      tooltip.innerHTML = W.tipHtml(spec);
+    } else {
+      tooltip.innerHTML = '<div class="ww-tip"><div class="ww-tip-title">' + sanitizeInsight(spec.title) + '</div>' +
+        '<div class="ww-tip-value ' + spec.valueCls + '">' + sanitizeInsight(spec.value) + '</div></div>';
+    }
     tooltip.style.display = 'block';
-    var x = param.point.x;
-    var y = param.point.y;
-    if (x + 160 > container.clientWidth) x = x - 160;
-    if (y + 60 > container.clientHeight) y = y - 60;
+    // İmlecin sağ üstüne yerleşir; kutudan taşacaksa diğer tarafa geçer
+    var tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+    var x = param.point.x + 12;
+    var y = param.point.y - th - 10;
+    if (x + tw > container.clientWidth) x = param.point.x - tw - 12;
+    if (y < 0) y = param.point.y + 12;
+    if (y + th > container.clientHeight) y = container.clientHeight - th;
     tooltip.style.left = Math.max(0, x) + 'px';
-    tooltip.style.top = Math.max(0, y - 10) + 'px';
+    tooltip.style.top = Math.max(0, y) + 'px';
   });
 }
 
@@ -1089,6 +1140,62 @@ function chronologicalClosed(trades) {
 function localeOf() {
   var lang = _getCurrentLang();
   return lang === 'en' ? 'en-US' : (lang === 'de' ? 'de-DE' : 'tr-TR');
+}
+
+// ⭐ HTML KARTLAR İÇİN İPUCU (takvim hücresi, seri noktası)
+// Tarayıcının title kutusu yerine diğer grafiklerle aynı .ww-tip kartı gösterilir.
+// Öğe data-tip-title / data-tip-value / data-tip-cls / data-tip-note taşır.
+// WwChart yoksa (eski önbellekli sayfa) eskisi gibi title kullanılır.
+function escAttr(str) {
+  return String(str === null || str === undefined ? '' : str).replace(/[&<>"']/g, function(m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+  });
+}
+
+function hoverTipAttrs(spec) {
+  var plain = [spec.title, spec.value, spec.note].filter(Boolean).join(' · ');
+  if (!wwChart()) return ' title="' + escAttr(plain) + '"';
+  return ' aria-label="' + escAttr(plain) + '"' +
+    ' data-tip-title="' + escAttr(spec.title || '') + '"' +
+    ' data-tip-value="' + escAttr(spec.value || '') + '"' +
+    ' data-tip-cls="' + escAttr(spec.cls || '') + '"' +
+    ' data-tip-note="' + escAttr(spec.note || '') + '"';
+}
+
+function bindHoverTips(container, selector) {
+  var W = wwChart();
+  if (!W) return;
+  var tip = document.createElement('div');
+  tip.style.cssText = 'position:absolute;display:none;pointer-events:none;z-index:20;';
+  if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+  container.appendChild(tip);
+
+  // Olaylar özellik ataması ile bağlanır: her çizimde yeniden atanır, dinleyici birikmez
+  container.onmouseover = function(e) {
+    var el = e.target.closest ? e.target.closest(selector) : null;
+    if (!el || !container.contains(el) || !el.hasAttribute('data-tip-value')) {
+      tip.style.display = 'none';
+      return;
+    }
+    var note = el.getAttribute('data-tip-note');
+    tip.innerHTML = W.tipHtml({
+      title: el.getAttribute('data-tip-title'),
+      value: el.getAttribute('data-tip-value'),
+      valueCls: el.getAttribute('data-tip-cls'),
+      rows: note ? [{ label: note }] : []
+    });
+    tip.style.display = 'block';
+    // Öğenin üstünde ortalanır; üstte yer yoksa altına geçer
+    var cr = container.getBoundingClientRect(), r = el.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var left = r.left - cr.left + r.width / 2 - tw / 2;
+    left = Math.max(0, Math.min(left, container.clientWidth - tw));
+    var top = r.top - cr.top - th - 6;
+    if (top < 0) top = r.bottom - cr.top + 6;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  };
+  container.onmouseleave = function() { tip.style.display = 'none'; };
 }
 
 // Takvim hücreleri için kısa para formatı: +$1.2K, -$85
@@ -1134,11 +1241,11 @@ export function renderDrawdownChart(trades) {
     markers: { size: 0, hover: { size: 4 } },
     xaxis: {
       type: 'datetime',
-      labels: { datetimeUTC: true, format: 'd/M', style: { fontSize: getFontSize(), colors: CHART_THEME.textColor } },
+      labels: { datetimeUTC: true, format: 'd/M', style: axisStyle() },
     },
     yaxis: {
       max: 0,
-      labels: { style: { fontSize: getFontSize(), colors: CHART_THEME.textColor }, formatter: apexCurrencyFormatter }
+      labels: { style: axisStyle(), formatter: apexCurrencyFormatter }
     },
     tooltip: {
       x: { format: 'dd/MM/yyyy HH:mm' },
@@ -1211,7 +1318,7 @@ export function renderStreaksWidget(trades) {
     var p = calcTradePnL(t);
     var cls = p > 0 ? 'win' : (p < 0 ? 'loss' : 'be');
     var when = t.trade_date ? window.WwTime.formatDate(t.trade_date, _getCurrentLang(), { day: '2-digit', month: '2-digit' }) : '';
-    return '<span class="stk-dot ' + cls + '" title="' + when + ' · ' + formatCurrency(p) + '"></span>';
+    return '<span class="stk-dot ' + cls + '"' + hoverTipAttrs({ title: when, value: formatCurrency(p), cls: p > 0 ? 'up' : (p < 0 ? 'down' : '') }) + '></span>';
   }).join('');
 
   container.innerHTML =
@@ -1227,6 +1334,7 @@ export function renderStreaksWidget(trades) {
         '<div class="stk-dots">' + dots + '</div>' +
       '</div>' +
     '</div>';
+  bindHoverTips(container, '.stk-dot');
 }
 
 // ⭐ 13. K/Z TAKVİMİ (HTML, Pazartesi başlangıçlı ay görünümü)
@@ -1274,7 +1382,12 @@ export function renderCalendarWidget(trades) {
       var alpha = maxAbs ? 0.18 + 0.67 * (Math.abs(info.pnl) / maxAbs) : 0.3;
       style = ' style="--a:' + alpha.toFixed(2) + '"';
       val = '<span class="cal-v">' + formatCompactCurrency(info.pnl) + '</span>';
-      title = ' title="' + formatCurrency(info.pnl) + ' · ' + info.n + ' ' + _t('dashboard.trades_count_suffix', 'işlem') + '"';
+      title = hoverTipAttrs({
+        title: window.WwTime.formatDate(key, _getCurrentLang(), { day: 'numeric', month: 'short' }),
+        value: formatCurrency(info.pnl),
+        cls: info.pnl > 0 ? 'up' : (info.pnl < 0 ? 'down' : ''),
+        note: info.n + ' ' + _t('dashboard.trades_count_suffix', 'işlem')
+      });
     }
     if (key === today) cls += ' today';
     cells += '<span class="' + cls + '"' + style + title + '><span class="cal-d">' + d + '</span>' + val + '</span>';
@@ -1288,6 +1401,7 @@ export function renderCalendarWidget(trades) {
         '<span class="cal-total ' + totalCls + '">' + (count ? formatCurrency(total) + ' · ' + count + ' ' + _t('dashboard.trades_count_suffix', 'işlem') : '—') + '</span></div>' +
       '<div class="cal-grid">' + dayNames + cells + '</div>' +
     '</div>';
+  bindHoverTips(container, '.cal-cell');
 }
 
 // ⭐ 14. İÇGÖRÜLER — verilerden basit kurallarla çıkarılan cümleler (yapay zekâ yok).
@@ -1793,6 +1907,7 @@ export function renderGoalWidget() {
 
 // ⭐ RENDER ALL CHARTS
 export function renderCharts(trades) {
+  updateChartTheme();   // renkler çizim anında temadan okunur (açık/koyu)
   if (!trades || !trades.length) {
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol',
                     'chart-direction', 'chart-hourly', 'chart-dow', 'chart-rr', 'chart-lot',
@@ -1851,6 +1966,7 @@ PROP_WIDGET_KEYS.forEach(function(k) { CHART_RENDERERS[k] = function() { renderP
 export function renderChartFor(key, trades) {
   var fn = CHART_RENDERERS[key];
   if (!fn) return;
+  updateChartTheme();
   if (key === 'cumulative') clearLightweightChart();
   else clearApexChart(key);
 
@@ -1864,4 +1980,59 @@ export function renderChartFor(key, trades) {
     return;
   }
   fn(trades || []);
+}
+// ⭐ BÜYÜTÜLMÜŞ GÖRÜNÜM — kartın grafiğini başka bir kutuya (büyütme modalı) çizer.
+// Çizim fonksiyonları kutuyu 'chart-<key>' id'siyle bulur ve örneği charts kaydına yazar; bu yüzden
+// çizim süresince id ve kayıt geçici olarak modal kutusuna devredilir, ardından karta geri verilir.
+// Kartın kendi grafiği yerinde kalır. Dönen nesnenin destroy() çağrısı modal grafiğini kaldırır.
+export var EXPANDABLE_CHARTS = ['cumulative', 'winloss', 'daily', 'symbol', 'direction', 'hourly', 'dow', 'rr', 'lot', 'drawdown', 'monthly'];
+
+export function renderChartInto(key, trades, target) {
+  var fn = CHART_RENDERERS[key];
+  if (!fn || !target || EXPANDABLE_CHARTS.indexOf(key) === -1) return null;
+  updateChartTheme();
+
+  var id = 'chart-' + key;
+  var inline = document.getElementById(id);
+  var isLwc = key === 'cumulative';
+  var saved = isLwc ? charts.lightweight.cumulative : charts.apex[key];
+  var wasAnimated = animatedKeys[key];
+  if (isLwc) delete charts.lightweight.cumulative; else delete charts.apex[key];
+  delete animatedKeys[key];   // modalda ilk çizim animasyonlu olsun
+
+  var expanded = null;
+  if (inline) inline.id = id + '--inline';
+  target.id = id;
+  target.innerHTML = '';
+  try {
+    if (!trades || !trades.length) showEmptyChart(id, 'empty.not_enough');
+    else fn(trades);
+  } finally {
+    target.removeAttribute('id');
+    if (inline) inline.id = id;
+    expanded = isLwc ? charts.lightweight.cumulative : charts.apex[key];
+    if (isLwc) {
+      if (saved) charts.lightweight.cumulative = saved; else delete charts.lightweight.cumulative;
+    } else {
+      if (saved) charts.apex[key] = saved; else delete charts.apex[key];
+    }
+    if (wasAnimated) animatedKeys[key] = true;
+  }
+
+  return {
+    resize: function(w, h) {
+      try {
+        if (isLwc && expanded && expanded.chart) expanded.chart.applyOptions({ width: w, height: h });
+        else if (expanded && typeof expanded.updateOptions === 'function') expanded.updateOptions({ chart: { height: h } }, false, false);
+      } catch (e) {}
+    },
+    destroy: function() {
+      try {
+        if (isLwc && expanded && expanded.chart) expanded.chart.remove();
+        else if (expanded && typeof expanded.destroy === 'function') expanded.destroy();
+      } catch (e) {}
+      expanded = null;
+      target.innerHTML = '';
+    }
+  };
 }

@@ -42,6 +42,49 @@ function getAdminApexTheme() {
   };
 }
 
+// Ortak grafik görünümü (window.WwChart, shared/chart-theme.js): DM Sans, soluk ızgara, siyah ipucu kartı.
+// WwChart yoksa (eski önbellekli sayfa) eski admin görünümüne düşer.
+var ADMIN_CHART_FALLBACK_FONT = "'Inter', sans-serif";
+
+function adminChartColors(theme) {
+  if (window.WwChart) return WwChart.colors();
+  return { text: theme.mode === 'dark' ? '#fff' : '#0f172a', muted: theme.textColor, grid: theme.gridColor };
+}
+
+function adminChartFont() {
+  return window.WwChart ? WwChart.FONT : ADMIN_CHART_FALLBACK_FONT;
+}
+
+function adminAxisLabels(theme) {
+  if (window.WwChart) return WwChart.axisLabels();
+  return { colors: theme.textColor, fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '11px' };
+}
+
+function adminBarRadius() {
+  return window.WwChart ? WwChart.BAR.borderRadius : 6;
+}
+
+// Bar kalınlığı: kap genişliği / kategori sayısı, en fazla 44px (2-3 bar dev blok olmasın)
+function adminBarWidth(el, count, fallback) {
+  if (!window.WwChart) return fallback;
+  return WwChart.barSize(el ? el.clientWidth : 0, count);
+}
+
+function adminApex(theme, opts) {
+  if (window.WwChart) return WwChart.apex(opts);
+  opts.chart = opts.chart || {};
+  opts.chart.fontFamily = ADMIN_CHART_FALLBACK_FONT;
+  opts.chart.background = 'transparent';
+  opts.chart.toolbar = { show: false };
+  opts.grid = opts.grid || {};
+  opts.grid.borderColor = theme.gridColor;
+  opts.grid.strokeDashArray = 4;
+  opts.tooltip = opts.tooltip || {};
+  opts.tooltip.theme = theme.mode;
+  opts.tooltip.style = { fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '12px' };
+  return opts;
+}
+
 // ============================================================
 // LOAD ANALYTICS DATA
 // ============================================================
@@ -189,20 +232,18 @@ async function loadAnalyticsData() {
     if (usersEl) {
       usersEl.innerHTML = '';
       
-      var usersOptions = {
+      var usersOptions = adminApex(theme, {
         series: [{ name: 'Kullanıcı', data: uCounts }],
         chart: {
           type: 'bar',
           height: '100%',
-          toolbar: { show: false },
-          background: 'transparent',
-          fontFamily: "'Inter', sans-serif",
           animations: { enabled: false }
         },
         plotOptions: {
           bar: {
-            borderRadius: 6,
-            columnWidth: '60%',
+            borderRadius: adminBarRadius(),
+            borderRadiusApplication: 'end',
+            columnWidth: adminBarWidth(usersEl, labels.length, '60%'),
             colors: {
               ranges: [
                 { from: 0, to: Number.MAX_VALUE, color: '#34d399' }
@@ -221,39 +262,22 @@ async function loadAnalyticsData() {
           colors: ['#34d399']
         },
         dataLabels: { enabled: false },
-        grid: {
-          borderColor: theme.gridColor,
-          strokeDashArray: 4,
-          position: 'back'
-        },
+        grid: { position: 'back' },
         xaxis: {
           categories: labels,
-          labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '11px'
-            }
-          },
+          labels: { style: adminAxisLabels(theme) },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
         yaxis: {
           labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '11px'
-            },
+            style: adminAxisLabels(theme),
             formatter: function(val) { return Math.floor(val); }
           }
         },
-        tooltip: {
-          theme: theme.mode,
-          style: { fontFamily: "'Inter', sans-serif", fontSize: '12px' }
-        },
+        tooltip: {},
         legend: { show: false }
-      };
+      });
       
       adminState.charts.userChart = new ApexCharts(usersEl, usersOptions);
       adminState.charts.userChart.render();
@@ -264,20 +288,18 @@ async function loadAnalyticsData() {
     if (premiumEl) {
       premiumEl.innerHTML = '';
       
-      var premiumOptions = {
+      var premiumOptions = adminApex(theme, {
         series: [{ name: 'Premium Gelir ($)', data: revenueData }],
         chart: {
           type: 'bar',
           height: '100%',
-          toolbar: { show: false },
-          background: 'transparent',
-          fontFamily: "'Inter', sans-serif",
           animations: { enabled: false }
         },
         plotOptions: {
           bar: {
-            borderRadius: 6,
-            columnWidth: '60%',
+            borderRadius: adminBarRadius(),
+            borderRadiusApplication: 'end',
+            columnWidth: adminBarWidth(premiumEl, labels.length, '60%'),
             colors: {
               ranges: [
                 { from: 0, to: Number.MAX_VALUE, color: '#7c6dfa' }
@@ -296,48 +318,28 @@ async function loadAnalyticsData() {
           colors: ['#7c6dfa']
         },
         dataLabels: { enabled: false },
-        grid: {
-          borderColor: theme.gridColor,
-          strokeDashArray: 4,
-          position: 'back'
-        },
+        grid: { position: 'back' },
         xaxis: {
           categories: labels,
-          labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '11px'
-            }
-          },
+          labels: { style: adminAxisLabels(theme) },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
         yaxis: {
           labels: {
-            style: {
-              colors: theme.textColor,
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '11px'
-            },
+            style: adminAxisLabels(theme),
             formatter: function(val) { return '$' + val; }
           }
         },
         tooltip: {
-          theme: theme.mode,
           y: {
             formatter: function(val) { return '$' + val.toFixed(2); }
-          },
-          style: { fontFamily: "'Inter', sans-serif", fontSize: '12px' }
+          }
         },
-        legend: {
-          show: true,
-          position: 'bottom',
-          labels: { colors: theme.textColor },
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '10px'
-        }
-      };
+        legend: window.WwChart
+          ? { show: true, position: 'bottom' }
+          : { show: true, position: 'bottom', labels: { colors: theme.textColor }, fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '10px' }
+      });
       
       adminState.charts.premiumChart = new ApexCharts(premiumEl, premiumOptions);
       adminState.charts.premiumChart.render();
@@ -1625,15 +1627,12 @@ function renderOverviewContent(period) {
     // 1. User Growth Area Chart
     var userChartEl = document.getElementById('overviewUserGrowthChart');
     if (userChartEl) {
-      var userChartOptions = {
+      var userChartOptions = adminApex(theme, {
         series: [{ name: 'Yeni Kullanıcı', data: userCounts }],
         chart: {
           type: 'area',
           height: 280,
-          toolbar: { show: false },
           zoom: { enabled: false },
-          background: 'transparent',
-          fontFamily: "'Inter', sans-serif",
           animations: { enabled: false }
         },
         colors: ['#7c6dfa'],
@@ -1651,25 +1650,20 @@ function renderOverviewContent(period) {
         xaxis: {
           categories: bucketLabels,
           tickAmount: period === 'month' ? 6 : undefined,
-          labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" }
-          },
+          labels: { style: adminAxisLabels(theme) },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
         yaxis: {
           labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" },
+            style: adminAxisLabels(theme),
             formatter: function(val) { return Math.round(val); }
           }
         },
-        grid: { borderColor: theme.gridColor, strokeDashArray: 4 },
         tooltip: {
-          theme: theme.mode,
-          style: { fontFamily: "'Inter', sans-serif" },
           y: { formatter: function(val) { return val + ' kullanıcı'; } }
         }
-      };
+      });
       adminState.charts.overviewUserChart = new ApexCharts(userChartEl, userChartOptions);
       adminState.charts.overviewUserChart.render();
     }
@@ -1677,20 +1671,19 @@ function renderOverviewContent(period) {
     // 2. Revenue Column Chart
     var revenueChartEl = document.getElementById('overviewRevenueChart');
     if (revenueChartEl) {
-      var revChartOptions = {
+      var revChartOptions = adminApex(theme, {
         series: [{ name: 'Gelir ($)', data: revenueAmounts }],
         chart: {
           type: 'bar',
           height: 280,
-          toolbar: { show: false },
-          background: 'transparent',
-          fontFamily: "'Inter', sans-serif",
           animations: { enabled: false }
         },
         plotOptions: {
           bar: {
-            borderRadius: period === 'month' ? 3 : 6,
-            columnWidth: period === 'month' ? '60%' : (period === 'year' ? '50%' : '38%'),
+            borderRadius: window.WwChart ? adminBarRadius() : (period === 'month' ? 3 : 6),
+            borderRadiusApplication: 'end',
+            columnWidth: adminBarWidth(revenueChartEl, bucketLabels.length,
+              period === 'month' ? '60%' : (period === 'year' ? '50%' : '38%')),
             distributed: false
           }
         },
@@ -1712,25 +1705,20 @@ function renderOverviewContent(period) {
         xaxis: {
           categories: bucketLabels,
           tickAmount: period === 'month' ? 6 : undefined,
-          labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" }
-          },
+          labels: { style: adminAxisLabels(theme) },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
         yaxis: {
           labels: {
-            style: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Inter', sans-serif" },
+            style: adminAxisLabels(theme),
             formatter: function(val) { return '$' + Math.round(val); }
           }
         },
-        grid: { borderColor: theme.gridColor, strokeDashArray: 4 },
         tooltip: {
-          theme: theme.mode,
-          style: { fontFamily: "'Inter', sans-serif" },
           y: { formatter: function(val) { return '$' + Number(val).toFixed(2); } }
         }
-      };
+      });
       adminState.charts.overviewRevenueChart = new ApexCharts(revenueChartEl, revChartOptions);
       adminState.charts.overviewRevenueChart.render();
     }
@@ -1738,14 +1726,14 @@ function renderOverviewContent(period) {
     // 3. Plan Donut Chart
     var donutChartEl = document.getElementById('overviewPlanDonutChart');
     if (donutChartEl) {
-      var donutOptions = {
+      var donutColors = adminChartColors(theme);
+      var donutFont = adminChartFont();
+      var donutOptions = adminApex(theme, {
         series: [freeCount, premiumCount],
         labels: ['Ücretsiz', 'Premium'],
         chart: {
           type: 'donut',
           height: 220,
-          background: 'transparent',
-          fontFamily: "'Inter', sans-serif",
           animations: { enabled: false }
         },
         colors: ['#475569', '#7c6dfa'],
@@ -1758,14 +1746,14 @@ function renderOverviewContent(period) {
               size: '72%',
               labels: {
                 show: true,
-                name: { show: true, fontSize: '12px', fontFamily: "'Inter', sans-serif", color: theme.textColor },
-                value: { show: true, fontSize: '20px', fontFamily: "'Inter', sans-serif", fontWeight: 700, color: theme.mode === 'dark' ? '#fff' : '#0f172a' },
+                name: { show: true, fontSize: '12px', fontFamily: donutFont, color: donutColors.muted },
+                value: { show: true, fontSize: '20px', fontFamily: donutFont, fontWeight: 700, color: donutColors.text },
                 total: {
                   show: true,
                   label: 'Toplam',
                   fontSize: '12px',
-                  fontFamily: "'Inter', sans-serif",
-                  color: theme.textColor,
+                  fontFamily: donutFont,
+                  color: donutColors.muted,
                   formatter: function() { return totalUsers; }
                 }
               }
@@ -1773,15 +1761,13 @@ function renderOverviewContent(period) {
           }
         },
         tooltip: {
-          theme: theme.mode,
-          style: { fontFamily: "'Inter', sans-serif" },
           y: {
             formatter: function(val) {
               return val + ' kullanıcı (%' + ((val / (totalUsers || 1)) * 100).toFixed(1) + ')';
             }
           }
         }
-      };
+      });
       adminState.charts.overviewPlanDonut = new ApexCharts(donutChartEl, donutOptions);
       adminState.charts.overviewPlanDonut.render();
     }

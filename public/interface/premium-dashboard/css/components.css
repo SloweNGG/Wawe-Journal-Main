@@ -271,12 +271,11 @@ body.light-theme .sc-head {
 }
 
 /* ============================================================
-   ⭐ APEXCHARTS & LIGHTWEIGHT CHARTS TEMA UYUMU (GENİŞLETİLDİ)
+   ⭐ APEXCHARTS & LIGHTWEIGHT CHARTS TEMA UYUMU
+   Font, eksen yazısı rengi, ızgara ve ipucu kartı tüm sayfalarla ortak:
+   /interface/shared/chart-theme.css + chart-theme.js (WwChart). Burada
+   onları ezen kural yok; yalnızca veri etiketlerinin rengi temaya uyar.
    ============================================================ */
-.apexcharts-canvas .apexcharts-text {
-  fill: var(--text) !important;
-}
-
 .apexcharts-canvas .apexcharts-datalabel {
   fill: var(--text) !important;
 }
@@ -287,46 +286,6 @@ body.light-theme .sc-head {
 
 .apexcharts-canvas .apexcharts-pie-label {
   fill: var(--text) !important;
-}
-
-.apexcharts-canvas .apexcharts-tooltip-text-y-value {
-  color: var(--text) !important;
-}
-
-.apexcharts-canvas .apexcharts-tooltip-text-y-label {
-  color: var(--text) !important;
-}
-
-.apexcharts-canvas .apexcharts-xaxis-label {
-  fill: var(--text) !important;
-}
-
-.apexcharts-canvas .apexcharts-yaxis-label {
-  fill: var(--text) !important;
-}
-
-.apexcharts-canvas .apexcharts-legend-text {
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
-}
-
-.apexcharts-canvas .apexcharts-grid line {
-  stroke: var(--border) !important;
-}
-
-.apexcharts-canvas .apexcharts-tooltip {
-  background: var(--surface) !important;
-  color: var(--text) !important;
-  border-color: var(--border) !important;
-}
-
-.apexcharts-canvas .apexcharts-tooltip-title {
-  background: var(--surface2) !important;
-  color: var(--text) !important;
-}
-
-.apexcharts-canvas .apexcharts-tooltip-series-group {
-  background: transparent !important;
 }
 
 .chart-wrap .lwc-chart {
@@ -1544,7 +1503,8 @@ body.light-theme .ww-drawer-backdrop { background: rgba(15, 23, 42, 0.25); }
   text-transform: capitalize;
 }
 .cal-total {
-  font-family: 'Inter', 'DM Sans', sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
@@ -1594,7 +1554,8 @@ body.light-theme .ww-drawer-backdrop { background: rgba(15, 23, 42, 0.25); }
 .cal-cell.pos .cal-d,
 .cal-cell.neg .cal-d { color: rgba(255, 255, 255, 0.8); }
 .cal-v {
-  font-family: 'Inter', 'DM Sans', sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  font-variant-numeric: tabular-nums;
   font-size: 10.5px;
   font-weight: 700;
   color: #fff;

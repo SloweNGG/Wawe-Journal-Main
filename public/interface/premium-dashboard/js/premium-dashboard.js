@@ -51,6 +51,8 @@ import {
 } from './dashboard-manager.js';
 
 import { initCustomizer } from './widget-customizer.js';
+import { initChartExpand } from './chart-expand.js';
+import { openExportDialog, closeExportDialog } from './export-dialog.js';
 import { isPropActive, renderPropHeader, setHeaderMetaHtml, renderPropWidgets } from './prop-widgets.js';
 import { setPlan, isPro, isPlanPreview, applyKpiDensity } from './widget-prefs.js';
 
@@ -95,6 +97,8 @@ var themeObserver = new MutationObserver(function() {
   if (isDataReady && currentFilteredTrades && currentFilteredTrades.length > 0) {
     renderCharts(currentFilteredTrades);
   }
+  // açık büyütülmüş grafik de yeni temayla çizilsin
+  if (window.WwChartViewer && window.WwChartViewer.isOpen()) window.WwChartViewer.rerender();
 });
 
 // WINDOW RESIZE - SADECE RESIZE
@@ -361,6 +365,17 @@ function renderHeaderStats() {
   updateHeaderMeta();
 }
 
+// PDF raporu: önce dönem penceresi (hazır aralıklar veya elle tarih); varsayılan sayfadaki filtre
+function openPdfDialog() {
+  var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || '';
+  openExportDialog({
+    getAllTrades: function() { return allTrades; },
+    pageRange: { range: currentRange, start: customRangeStart, end: customRangeEnd },
+    journalName: jName.trim(),
+    onExport: function(trades, meta) { return exportPDF(trades, meta); }
+  });
+}
+
 // Dışa aktar menüsü: aç/kapa, dışarı tıklayınca ve Esc ile kapanır
 function initExportMenu(scope) {
   var btn = document.getElementById('export-menu-btn');
@@ -517,12 +532,12 @@ function buildDashboardShell() {
   var exportCsvBtn = document.getElementById('export-csv-btn');
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', function() { exportCSV(currentFilteredTrades); });
   var exportPdfBtn = document.getElementById('export-pdf-btn');
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', function() { exportPDF(currentFilteredTrades); });
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', openPdfDialog);
 
   var fabCsv = document.getElementById('export-csv-fab');
   var fabPdf = document.getElementById('export-pdf-fab');
   if (fabCsv) fabCsv.addEventListener('click', function() { exportCSV(currentFilteredTrades); });
-  if (fabPdf) fabPdf.addEventListener('click', function() { exportPDF(currentFilteredTrades); });
+  if (fabPdf) fabPdf.addEventListener('click', openPdfDialog);
 
   initExportMenu(PAGE);
   lastPropActive = isPropActive();
@@ -536,6 +551,9 @@ function buildDashboardShell() {
     journalObserver.observe(journalNameEl, { childList: true, characterData: true, subtree: true });
     PAGE.onLeave(function() { journalObserver.disconnect(); });
   }
+
+  // Grafik kartına tıklayınca büyük görünüm (ana dashboard'daki gibi)
+  initChartExpand(PAGE, function() { return currentFilteredTrades; });
 
   initCustomizer(PAGE, {
     getTrades: function() { return currentFilteredTrades; },
@@ -803,6 +821,7 @@ function mount(scope) {
     clearAllApexCharts();
     clearLightweightChart();
     destroyDragDrop();
+    closeExportDialog();
   });
 
   // Navbar (avatar, zil, hamburger menü, çıkış) navbar.js tarafından yönetilir. Eskiden burada da
@@ -854,5 +873,5 @@ window.markOvertradeAsRead = markOvertradeAsRead;
 window.openMenu = openMenu;
 window.closeMenu = closeMenu;
 window.exportCSV = function() { exportCSV(currentFilteredTrades); };
-window.exportPDF = function() { exportPDF(currentFilteredTrades); };
+window.exportPDF = function() { openPdfDialog(); };
 
