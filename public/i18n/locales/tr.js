@@ -1816,5 +1816,20 @@ export default {
   "backtest.err.max_positions": "En fazla {n} açık pozisyon olabilir.",
   "backtest.err.no_equity": "Özsermaye tükendi, yeni işlem açılamaz.",
   "backtest.err.modify_long": "AL için SL piyasanın altında, TP üstünde olmalı.",
-  "backtest.err.modify_short": "SAT için SL piyasanın üstünde, TP altında olmalı."
+  "backtest.err.modify_short": "SAT için SL piyasanın üstünde, TP altında olmalı.",
+
+  // ⭐ BACKTEST V2 - SENKRON (Faz C)
+  "backtest.field.journal": "Bağlı hesap (isteğe bağlı)",
+  "backtest.field.journal_none": "Bağlantı yok",
+  "backtest.card.journal": "Bağlı hesap",
+  "backtest.confirm.title": "Onay",
+  "backtest.confirm.ok": "Devam",
+  "backtest.err.invalid_journal": "Seçilen hesap geçersiz.",
+  "backtest.sync.linked": "{count} işlem bağlı hesaba aktarıldı.",
+  "backtest.sync.unlinked": "Bağlantı kaldırıldı; aktarılan işlemler hesaptan silindi.",
+  "backtest.sync.error": "Backtest işlemleri bağlı hesaba aktarılamadı. Bu backtest hesabına tekrar girdiğinde yeniden denenecek.",
+  "backtest.sync.relink_confirm": "Backtest hesabı başka bir hesaba bağlanacak. Eski hesaba aktarılan {count} işlem (notları ve strateji atamalarıyla birlikte) oradan silinip yeni hesaba aktarılacak. Devam edilsin mi?",
+  "backtest.sync.unlink_confirm": "Bağlantı kaldırılsın mı? Bu backtest hesabından aktarılan {count} işlem (notları ve strateji atamalarıyla birlikte) bağlı hesaptan silinecek. Backtest hesabındaki işlemler korunur.",
+  "backtest.sync.delete_confirm_linked": "Backtest hesabı ve tüm işlemleri silinecek; bağlı hesaba aktarılan {count} işlem de silinecek. Bu işlem geri alınamaz.",
+  "backtest.sync.link_hint": "Bağlı hesaba yalnızca kapanan işlemler aktarılır; canlı istatistiklere girmezler."
 };

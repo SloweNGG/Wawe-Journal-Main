@@ -1869,5 +1869,20 @@ export default {
   "backtest.err.max_positions": "You can have at most {n} open positions.",
   "backtest.err.no_equity": "Equity is exhausted, no new trades can be opened.",
   "backtest.err.modify_long": "For BUY the SL must be below the market and the TP above it.",
-  "backtest.err.modify_short": "For SELL the SL must be above the market and the TP below it."
+  "backtest.err.modify_short": "For SELL the SL must be above the market and the TP below it.",
+
+  // ⭐ BACKTEST V2 - SENKRON (Faz C)
+  "backtest.field.journal": "Linked account (optional)",
+  "backtest.field.journal_none": "Not linked",
+  "backtest.card.journal": "Linked account",
+  "backtest.confirm.title": "Confirm",
+  "backtest.confirm.ok": "Continue",
+  "backtest.err.invalid_journal": "The selected account is not valid.",
+  "backtest.sync.linked": "{count} trades copied to the linked account.",
+  "backtest.sync.unlinked": "Unlinked; the copied trades were removed from the account.",
+  "backtest.sync.error": "Couldn't copy backtest trades to the linked account. It will retry the next time you open this backtest account.",
+  "backtest.sync.relink_confirm": "This backtest account will be linked to another account. The {count} trades copied to the old account (with their notes and strategy tags) will be removed there and copied to the new one. Continue?",
+  "backtest.sync.unlink_confirm": "Unlink? The {count} trades copied from this backtest account (with their notes and strategy tags) will be removed from the linked account. The trades in the backtest account are kept.",
+  "backtest.sync.delete_confirm_linked": "The backtest account and all its trades will be deleted, including the {count} trades copied to the linked account. This can't be undone.",
+  "backtest.sync.link_hint": "Only closed trades are copied to the linked account; they never count in live statistics."
 };

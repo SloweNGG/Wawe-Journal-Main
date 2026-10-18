@@ -215,8 +215,12 @@
     var lotDigits = sym.lotDigits != null ? sym.lotDigits : decimalsOf(sym.lot && sym.lot.step);
     var entry = priceStr(trade.entry_price, digits, 'entry_price');
     var exit = priceStr(trade.exit_price, digits, 'exit_price');
-    var sl = trade.stop_loss == null ? null : priceStr(trade.stop_loss, digits, 'stop_loss');
-    var tp = trade.take_profit == null ? null : priceStr(trade.take_profit, digits, 'take_profit');
+    // D13: the journal row carries the levels AT OPEN (initial_*), not the edited ones, so its rr_ratio is the one
+    // the backtest account computed at entry. Rows without the columns (before Migration 02 v13) fall back to the current levels.
+    var slRaw = ('initial_stop_loss' in trade) ? trade.initial_stop_loss : trade.stop_loss;
+    var tpRaw = ('initial_take_profit' in trade) ? trade.initial_take_profit : trade.take_profit;
+    var sl = slRaw == null ? null : priceStr(slRaw, digits, 'stop_loss');
+    var tp = tpRaw == null ? null : priceStr(tpRaw, digits, 'take_profit');
     var lot = canon(trade.lot);
     if (cmp(lot, '0') <= 0 || scaleOf(lot) > lotDigits) throw syncError('LOT_INVALID', String(trade.lot));
 

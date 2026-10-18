@@ -26,7 +26,8 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-engine.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-synthetic.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-data.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-store.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-store.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/backtest.js?v=1" is:inline defer data-page-script></script>
 </Fragment>
 
@@ -287,6 +288,9 @@ import Layout from '../layouts/Layout.astro';
         <div class="bt-field"><label for="bt-f-commission" data-i18n="backtest.field.commission">Komisyon (lot başına, açılış+kapanış, USD)</label>
           <input id="bt-f-commission" class="bt-input bt-num" type="text" inputmode="decimal" value="0.00" />
           <small id="bt-f-commission-hint" class="bt-hint" data-i18n="backtest.field.commission_hint">Pozisyon kapanınca bakiyeden düşülür.</small></div>
+        <div class="bt-field" id="bt-f-journal-wrap" hidden><label for="bt-f-journal" data-i18n="backtest.field.journal">Bağlı hesap (isteğe bağlı)</label>
+          <select id="bt-f-journal" class="bt-select"><option value="" data-i18n="backtest.field.journal_none">Bağlantı yok</option></select>
+          <small id="bt-f-journal-hint" class="bt-hint"></small></div>
         <p id="bt-account-error" class="bt-error" role="alert" hidden></p>
       </form>
       <div class="modal-footer">
@@ -307,10 +311,25 @@ import Layout from '../layouts/Layout.astro';
       </div>
       <div class="modal-body">
         <p id="bt-delete-text"></p>
+        <p id="bt-delete-note" class="bt-hint" hidden></p>
       </div>
       <div class="modal-footer">
         <button type="button" id="bt-delete-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
         <button type="button" id="bt-delete-confirm" class="bt-btn-danger"><span data-i18n="backtest.delete.confirm">Kalıcı olarak sil</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bt-confirm-modal" class="modal-overlay bt-modal" role="alertdialog" aria-modal="true" aria-labelledby="bt-confirm-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-confirm-title" data-i18n="backtest.confirm.title">Onay</h3>
+        <button type="button" id="bt-confirm-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body"><p id="bt-confirm-text"></p></div>
+      <div class="modal-footer">
+        <button type="button" id="bt-confirm-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-confirm-ok" class="bt-btn-danger" data-i18n="backtest.confirm.ok">Devam</button>
       </div>
     </div>
   </div>

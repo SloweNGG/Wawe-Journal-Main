@@ -457,3 +457,22 @@ describe('G/Ç akışları (sahte Supabase + Migration 04 öykünmesi)', () => {
     assert.equal(head.head, true);
   });
 });
+
+// ---- D13: the journal row carries the levels at open (initial_*), not the edited ones
+describe('mapTrade: initial levels (D13)', () => {
+  it('uses initial_stop_loss / initial_take_profit when the columns exist, rr_ratio follows them', () => {
+    const { S } = load();
+    const edited = { ...eurTrade, stop_loss: '1.08250', take_profit: null, initial_stop_loss: '1.08111', initial_take_profit: '1.08711' };
+    const row = S.mapTrade(account, edited);
+    assert.equal(row.stop_loss, '1.08111'); assert.equal(row.take_profit, '1.08711'); assert.equal(row.rr_ratio, '2.00');
+  });
+  it('a position opened without SL/TP stays without them even if levels were set later', () => {
+    const { S } = load();
+    const row = S.mapTrade(account, { ...eurTrade, stop_loss: '1.08250', take_profit: '1.08900', initial_stop_loss: null, initial_take_profit: null, rr_ratio: null });
+    assert.equal(row.stop_loss, null); assert.equal(row.take_profit, null); assert.equal(row.rr_ratio, null);
+  });
+  it('falls back to the current levels when the columns are absent', () => {
+    const { S } = load();
+    assert.deepEqual(plainJson(S.mapTrade(account, eurTrade)), EXPECTED_ROW);
+  });
+});

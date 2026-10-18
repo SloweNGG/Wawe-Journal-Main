@@ -1836,5 +1836,20 @@ export default {
   "backtest.err.max_positions": "Es sind höchstens {n} offene Positionen möglich.",
   "backtest.err.no_equity": "Eigenkapital aufgebraucht, keine neuen Trades möglich.",
   "backtest.err.modify_long": "Beim Kauf muss der SL unter und der TP über dem Markt liegen.",
-  "backtest.err.modify_short": "Beim Verkauf muss der SL über und der TP unter dem Markt liegen."
+  "backtest.err.modify_short": "Beim Verkauf muss der SL über und der TP unter dem Markt liegen.",
+
+  // ⭐ BACKTEST V2 - SENKRON (Faz C)
+  "backtest.field.journal": "Verknüpftes Konto (optional)",
+  "backtest.field.journal_none": "Keine Verknüpfung",
+  "backtest.card.journal": "Verknüpftes Konto",
+  "backtest.confirm.title": "Bestätigung",
+  "backtest.confirm.ok": "Fortfahren",
+  "backtest.err.invalid_journal": "Das gewählte Konto ist ungültig.",
+  "backtest.sync.linked": "{count} Trades in das verknüpfte Konto übernommen.",
+  "backtest.sync.unlinked": "Verknüpfung getrennt; die übernommenen Trades wurden aus dem Konto entfernt.",
+  "backtest.sync.error": "Backtest-Trades konnten nicht in das verknüpfte Konto übernommen werden. Beim nächsten Öffnen dieses Backtest-Kontos wird es erneut versucht.",
+  "backtest.sync.relink_confirm": "Dieses Backtest-Konto wird mit einem anderen Konto verknüpft. Die {count} in das alte Konto übernommenen Trades (inklusive Notizen und Strategie-Zuordnungen) werden dort entfernt und in das neue übernommen. Fortfahren?",
+  "backtest.sync.unlink_confirm": "Verknüpfung trennen? Die {count} aus diesem Backtest-Konto übernommenen Trades (inklusive Notizen und Strategie-Zuordnungen) werden aus dem verknüpften Konto entfernt. Die Trades im Backtest-Konto bleiben erhalten.",
+  "backtest.sync.delete_confirm_linked": "Das Backtest-Konto und alle seine Trades werden gelöscht, einschließlich der {count} in das verknüpfte Konto übernommenen Trades. Dies kann nicht rückgängig gemacht werden.",
+  "backtest.sync.link_hint": "Nur geschlossene Trades werden übernommen; sie zählen nie zu den Live-Statistiken."
 };

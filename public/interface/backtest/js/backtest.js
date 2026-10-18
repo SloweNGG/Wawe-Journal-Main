@@ -20,7 +20,13 @@
     de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
   };
 
-  var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {} };
+  // Backend: 'local' (Phase A, localStorage, no journal sync) or 'supabase' (Phase B: SupabaseStore + journal sync).
+  // Phase B flips this one line; window.WW_BT_BACKEND exists for the browser smoke tests only.
+  var BACKEND = window.WW_BT_BACKEND === 'supabase' ? 'supabase' : 'local';
+  var SYNC = null;                              // window.WwBtSync, only with the supabase backend
+  var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
+  var syncToastShown = false;
+  var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [] };
   var R = null;
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
@@ -107,13 +113,15 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart;
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart &&
+      (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
       bootTimer = setTimeout(start, BOOT_POLL_MS);
       return;
     }
     S = window.WwBtSymbols; C = window.WwBtCandles; E = window.WwBtEngine;
+    SYNC = BACKEND === 'supabase' ? window.WwBtSync : null;
     init();
   }
 
@@ -129,7 +137,10 @@
     try { var pl = await window.getUserPlanSilent(); L.plan = pl && pl.plan === 'premium' ? 'premium' : 'free'; } catch (e) { L.plan = 'free'; }
     if (!PAGE.alive) return;
     L.src = window.WwBtData.createSyntheticSource({ seed: 1 });
-    L.store = window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT; } });
+    L.store = BACKEND === 'supabase'
+      ? window.WwBtStore.createSupabaseStore({ sb: window.sb, userId: user.id })
+      : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT; } });
+    if (SYNC) { try { L.journals = (await window.journal.listJournals()) || []; } catch (e) { L.journals = []; } if (!PAGE.alive) return; }
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = await loadList();
     if (!PAGE.alive || !ok) return;
@@ -154,11 +165,40 @@
         L.summaries[L.accounts[i].id] = s;
       }
       if (!PAGE.alive) return false;
+      syncOnList();
       return true;
     } catch (e) {
+      wwLogWarn(e);
       show($('bt-list-error'), true); show($('bt-accounts'), false);
       return false;
     }
+  }
+  // List screen: heal stale mirrors (rarely) and retry accounts whose last sync failed
+  function syncOnList() {
+    if (!SYNC || !L.user) return;
+    var now = Date.now(), last = 0;
+    try { last = parseInt(sessionStorage.getItem(SWEEP_KEY) || '0', 10) || 0; } catch (e) { last = 0; }
+    if (now - last > SWEEP_EVERY_MS) {
+      try { sessionStorage.setItem(SWEEP_KEY, String(now)); } catch (e) { /* ignore */ }
+      SYNC.sweepOrphans(L.user.id).then(function (r) { syncResult(r); });
+    }
+    var dirty = SYNC.dirtyAccounts();
+    L.accounts.forEach(function (a) {
+      if (dirty.indexOf(a.id) >= 0 && a.journalId) SYNC.reconcileAccount(syncAcc(a)).then(syncResult);
+    });
+  }
+  function syncAcc(a) { return { id: a.id, user_id: a.userId || (L.user && L.user.id), journal_id: a.journalId || null, symbol: a.symbol }; }
+  // one toast per visit when a sync fails (the next entry or the list screen retries)
+  function syncResult(r) {
+    if (r && r.ok === false && r.code !== 'CANCELLED' && !syncToastShown && PAGE.alive) {
+      syncToastShown = true;
+      toast(_t('backtest.sync.error', 'Backtest işlemleri bağlı hesaba aktarılamadı. Bu backtest hesabına tekrar girdiğinde yeniden denenecek.'), 'error');
+    }
+    return r;
+  }
+  function journalName(id) {
+    for (var i = 0; i < L.journals.length; i++) if (L.journals[i].id === id) return L.journals[i].name;
+    return '';
   }
   function showList() {
     if (R) closeReplayState();
@@ -187,6 +227,7 @@
       row(_t('backtest.field.timeframe', 'Zaman dilimi'), C.TF_LABEL[a.tf] || a.tf);
       row(_t('backtest.card.trades', 'İşlemler'), sm.closed + ' / ' + sm.open);
       row(_t('backtest.card.replay_time', 'Replay zamanı'), a.replaySec ? fmtDateTime(a.replaySec) : '—');
+      if (SYNC) row(_t('backtest.card.journal', 'Bağlı hesap'), a.journalId ? (journalName(a.journalId) || '…') : '—');
       card.appendChild(dl);
       var act = el('div', 'bt-card-actions');
       var bOpen = el('button', 'btn btn-primary', _t('backtest.card.open', 'Aç')); bOpen.type = 'button'; bOpen.setAttribute('data-act', 'open');
@@ -224,7 +265,51 @@
     if (modalOpener && modalOpener.focus && document.contains(modalOpener)) { try { modalOpener.focus(); } catch (e) { /* ignore */ } }
   }
   function anyModalOpen() { return !!document.querySelector('.bt-modal.active'); }
-  function closeAllModals() { var m = document.querySelectorAll('.bt-modal.active'); for (var i = 0; i < m.length; i++) m[i].classList.remove('active'); }
+  function closeAllModals() {
+    var m = document.querySelectorAll('.bt-modal.active'); for (var i = 0; i < m.length; i++) m[i].classList.remove('active');
+    if (confirmResolve) finishConfirm(false);
+  }
+
+  // page-local confirm (no confirm-dialog.js: it injects unescaped HTML). Resolves true on confirm, false on cancel/close/Esc.
+  var confirmResolve = null;
+  function askConfirm(text, okLabel) {
+    return new Promise(function (resolve) {
+      if (confirmResolve) confirmResolve(false);
+      confirmResolve = resolve;
+      $('bt-confirm-text').textContent = text;
+      $('bt-confirm-ok').textContent = okLabel || _t('backtest.confirm.ok', 'Devam');
+      $('bt-confirm-modal').classList.add('active');
+    });
+  }
+  function finishConfirm(v) {
+    $('bt-confirm-modal').classList.remove('active');
+    var r = confirmResolve; confirmResolve = null; if (r) r(v);
+  }
+  function fillJournalSelect(selected) {
+    show($('bt-f-journal-wrap'), !!SYNC);
+    if (!SYNC) return;
+    var sel = $('bt-f-journal'); sel.textContent = '';
+    var none = document.createElement('option'); none.value = ''; none.textContent = _t('backtest.field.journal_none', 'Bağlantı yok'); sel.appendChild(none);
+    L.journals.forEach(function (j) { var o = document.createElement('option'); o.value = j.id; o.textContent = j.name; sel.appendChild(o); });
+    sel.value = selected || '';
+    $('bt-f-journal-hint').textContent = _t('backtest.sync.link_hint', 'Bağlı hesaba yalnızca kapanan işlemler aktarılır; canlı istatistiklere girmezler.');
+  }
+  // Change the linked journal (SYNC only). Confirms when mirrors would be removed. Returns { ok } | { aborted } | { error }.
+  async function changeJournal(acc, newJ) {
+    var oldJ = acc.journalId || null;
+    if (oldJ) {
+      var cnt = await SYNC.countMirrors(syncAcc(acc));
+      if (cnt.count > 0) {
+        var msg = newJ ? _t('backtest.sync.relink_confirm', 'Backtest hesabı başka bir hesaba bağlanacak. Eski hesaba aktarılan {count} işlem (notları ve strateji atamalarıyla birlikte) oradan silinip yeni hesaba aktarılacak. Devam edilsin mi?', { count: cnt.count })
+          : _t('backtest.sync.unlink_confirm', 'Bağlantı kaldırılsın mı? Bu backtest hesabından aktarılan {count} işlem (notları ve strateji atamalarıyla birlikte) bağlı hesaptan silinecek. Backtest hesabındaki işlemler korunur.', { count: cnt.count });
+        if (!(await askConfirm(msg))) return { aborted: true };
+      }
+    }
+    var r = await SYNC.linkAccount(syncAcc(acc), newJ);
+    if (!r.ok) return { error: r };
+    toast(newJ ? _t('backtest.sync.linked', '{count} işlem bağlı hesaba aktarıldı.', { count: r.inserted || 0 }) : _t('backtest.sync.unlinked', 'Bağlantı kaldırıldı; aktarılan işlemler hesaptan silindi.'), 'success');
+    return { ok: true };
+  }
 
   function fillSymbolSelect() {
     var sel = $('bt-f-symbol'); if (sel.options.length) return;
@@ -279,6 +364,7 @@
       $('bt-f-symbol').selectedIndex = 0;
       var s0 = S.get($('bt-f-symbol').value); $('bt-f-spread').value = E.hundredthsToStr(Math.round(s0.defaultSpreadPips * 100));
     }
+    fillJournalSelect(edit ? acc.journalId : '');
     $('bt-f-symbol').disabled = edit; $('bt-f-tf').disabled = edit;
     $('bt-f-balance').disabled = edit && hasTrades;
     $('bt-f-spread').disabled = edit && hasOpen; $('bt-f-commission').disabled = edit && hasOpen;
@@ -301,6 +387,7 @@
     var m = String((e && e.message) || '');
     if (m.indexOf('BACKTEST_LIMIT_EXCEEDED') >= 0) return L.plan === 'premium'
       ? _t('backtest.quota.premium_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PREMIUM_LIMIT }) : _t('backtest.quota.free_reached', 'Ücretsiz planda 1 backtest hesabı açabilirsin.');
+    if (m.indexOf('INVALID_JOURNAL') >= 0) return _t('backtest.err.invalid_journal', 'Seçilen hesap geçersiz.');
     if (m.indexOf('BACKTEST_OPEN_POSITIONS') >= 0) return _t('backtest.err.open_positions_settings', 'Açık pozisyon varken spread ve komisyon değiştirilemez.');
     if (m.indexOf('BACKTEST_REPLAY_BACKWARD') >= 0) return _t('backtest.err.goto_backward', 'İşlem yapılmış hesapta geri gidilemez; önce hesabı sıfırlayın.');
     if (e && e.code === '23514') return _t('backtest.err.invalid_value', 'Geçersiz değer.');
@@ -321,6 +408,14 @@
     btn.disabled = true;
     try {
       if (edit) {
+        if (SYNC) {
+          var newJ = $('bt-f-journal').value || null;
+          if (newJ !== (editing.journalId || null)) {
+            var cj = await changeJournal(editing, newJ);
+            if (cj.aborted) { btn.disabled = false; return; }
+            if (cj.error) { formError(mapStoreError(cj.error.error || {})); btn.disabled = false; return; }
+          }
+        }
         var f = { name: name };
         if (!$('bt-f-spread').disabled) { f.spreadH = sp.value; f.cplCents = cm.value; }
         var upd = await L.store.updateAccount(editing.id, E.accountPatch(f));
@@ -337,7 +432,7 @@
       if (startSec < cov.firstT || startSec > cov.lastT) return formError(_t('backtest.err.start_range', 'Başlangıç {from} ile {to} arasında olmalı.', { from: fmtShort(cov.firstT), to: fmtShort(cov.lastT) }));
       var no = S.nextOpen(startSec * 1000, sym.id);
       if (no === null || no / 1000 > cov.lastT) return formError(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'));
-      var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: null, name: name, symbol: sym.id, tf: $('bt-f-tf').value,
+      var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: SYNC ? ($('bt-f-journal').value || null) : null, name: name, symbol: sym.id, tf: $('bt-f-tf').value,
         startCents: bal.value, spreadH: sp.value, cplCents: cm.value, replaySec: no / 1000 + 60 });
       var created = await L.store.createAccount(row);
       closeModal('bt-account-modal');
@@ -355,12 +450,23 @@
     editing = acc;
     var s = L.summaries[acc.id] || { closed: 0, open: 0 };
     $('bt-delete-text').textContent = _t('backtest.delete.message', '"{name}" hesabı ve {n} işlemi kalıcı olarak silinecek.', { name: acc.name, n: s.closed + s.open });
+    show($('bt-delete-note'), false);
     openModal('bt-delete-modal', opener);
+    if (SYNC && acc.journalId) {
+      SYNC.countMirrors(syncAcc(acc)).then(function (c) {
+        if (!PAGE.alive || editing !== acc || !c.count) return;
+        $('bt-delete-note').textContent = _t('backtest.sync.delete_confirm_linked', 'Backtest hesabı ve tüm işlemleri silinecek; bağlı hesaba aktarılan {count} işlem de silinecek. Bu işlem geri alınamaz.', { count: c.count });
+        show($('bt-delete-note'), true);
+      });
+    }
   }
   async function confirmDelete() {
     var acc = editing; if (!acc) return;
     try {
-      await L.store.deleteAccount(acc.id);
+      if (SYNC && acc.journalId) {
+        var dr = await SYNC.deleteAccount(syncAcc(acc));
+        if (!dr.ok) throw (dr.error || new Error('delete failed'));
+      } else await L.store.deleteAccount(acc.id);
       closeModal('bt-delete-modal'); closeModal('bt-account-modal');
       if (R && R.acc.id === acc.id) { closeReplayState(); }
       await loadList(); showList();
@@ -372,6 +478,7 @@
     var acc = editing; if (!acc) return;
     try {
       await L.store.deleteTrades(acc.id);
+      if (SYNC && acc.journalId) syncResult(await SYNC.reconcileAccount(syncAcc(acc), { closedTrades: [] }));   // the mirrors of the deleted trades go too
       closeModal('bt-reset-modal'); closeModal('bt-account-modal');
       if (R && R.acc.id === acc.id) {
         R.eng.open = []; R.eng.closed = []; R.eng.realizedCents = 0;
@@ -419,9 +526,14 @@
       eng.closed.forEach(function (t) { replaySec = Math.max(replaySec, t.reason === 'manual' ? t.exitT : t.exitT + 60); });
       var g0 = opts.startAt ? 'goto' : 'resume';
       await placeCursor(opts.startAt || replaySec, g0);
+      if (SYNC && acc.journalId && R) {
+        var closedRows = rows.filter(function (r) { return r.exit_time; });
+        SYNC.reconcileAccount(syncAcc(acc), { closedTrades: closedRows }).then(syncResult);
+      }
       if (opts.startAt && R) saveReplayTime(true);
     } catch (e) {
       if (!PAGE.alive) return;
+      wwLogWarn(e);
       toast(_t('backtest.data.unavailable', 'Mum verisi şu an kullanılamıyor.'), 'error');
       closeReplayState(); showList();
     }
@@ -679,9 +791,16 @@
   }
   function ctx() { return { userId: L.user.id, accountId: R.acc.id }; }
   function persistClose(t) {
-    var patch = E.tradeClosePatch(R.eng, t, { extraColumns: EXTRA_COLUMNS }), id = t.id;
+    var patch = E.tradeClosePatch(R.eng, t, { extraColumns: EXTRA_COLUMNS }), id = t.id, acc = R.acc;
     persist('close', function () {
-      return L.store.updateTrade(id, patch, { onlyOpen: true }).then(function (rows) { if (!rows.length) wwLogWarn('close matched no open row'); });
+      return L.store.updateTrade(id, patch, { onlyOpen: true }).then(function (rows) {
+        if (!rows.length) return wwLogWarn('close matched no open row');
+        // linked account: copy the CLOSED trade (the saved DB row, not the engine object) into the journal
+        if (SYNC && acc.journalId) SYNC.syncClosedTrade(syncAcc(acc), rows[0]).then(function (r) {
+          syncResult(r);
+          if (r && r.account && PAGE.alive) L.store.getAccount(acc.id).then(function (fresh) { if (fresh && R && R.acc.id === acc.id) applyAccountChange(E.accountFromRow(fresh)); });
+        });
+      });
     }, function () { t.unsaved = true; renderTables(); });
   }
 
@@ -1086,6 +1205,10 @@
     $('bt-reset-close').addEventListener('click', function () { closeModal('bt-reset-modal'); });
     $('bt-reset-cancel').addEventListener('click', function () { closeModal('bt-reset-modal'); });
     $('bt-reset-confirm').addEventListener('click', confirmReset);
+    $('bt-confirm-ok').addEventListener('click', function () { finishConfirm(true); });
+    $('bt-confirm-cancel').addEventListener('click', function () { finishConfirm(false); });
+    $('bt-confirm-close').addEventListener('click', function () { finishConfirm(false); });
+    $('bt-confirm-modal').addEventListener('click', function (e) { if (e.target === $('bt-confirm-modal')) finishConfirm(false); });
     $('bt-pos-close').addEventListener('click', function () { closeModal('bt-pos-modal'); });
     $('bt-pos-cancel').addEventListener('click', function () { closeModal('bt-pos-modal'); });
     $('bt-pos-save').addEventListener('click', submitEditPos);
@@ -1152,6 +1275,8 @@
   function cleanup() {
     if (cleaned) return; cleaned = true;
     clearTimeout(bootTimer); clearTimeout(resizeTimer); clearTimeout(chipTimer);
+    if (SYNC) { try { SYNC.cancelPending(); } catch (e) { /* ignore */ } }
+    if (confirmResolve) { var cr = confirmResolve; confirmResolve = null; cr(false); }
     if (R) { try { pause(); saveReplayTime(true); R.abort.abort(); R.token++; } catch (e) { /* ignore */ } }
     if (themeObserver) themeObserver.disconnect();
     try { destroyChart(); } catch (e) { /* ignore */ }

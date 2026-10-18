@@ -158,3 +158,51 @@ describe('LocalStore: storage', () => {
     assert.equal((await st.listAccounts()).length, 0);
   });
 });
+
+// ---------------------------------------------------------------- SupabaseStore (Phase B backend, same interface)
+import { FakeDb } from './helpers/fake-supabase.js';
+
+describe('SupabaseStore', () => {
+  const sbStore = (db) => Store.createSupabaseStore({ sb: db.client, userId: U1 });
+  const fresh = () => new FakeDb({ userId: U1, journals: [] });
+  const accRow = (over = {}) => Object.assign({ id: 'a0000000-0000-4000-8000-000000000001', name: 'T', symbol: 'EURUSD', timeframe: '1h', starting_balance: '10000.00',
+    spread_pips: '0.20', commission_per_lot: '7.00', replay_time: '2026-09-01T00:01:00.000Z', is_active: true, journal_id: null,
+    created_at: '2026-10-19T00:00:00Z', updated_at: '2026-10-19T00:00:00Z' }, over);
+
+  it('every query is scoped to the user (admins can read all rows through RLS)', async () => {
+    const db = fresh(); const st = sbStore(db);
+    db.tables.backtest_accounts.push(accRow(), accRow({ id: 'a0000000-0000-4000-8000-000000000002', user_id: U2 }));
+    db.tables.backtest_accounts[0].user_id = U1; db.tables.backtest_accounts[1].user_id = U2;
+    assert.equal((await st.listAccounts()).length, 1);
+    assert.equal(await st.getAccount('a0000000-0000-4000-8000-000000000002'), null);
+    await st.listTrades('a0000000-0000-4000-8000-000000000001');
+    await st.updateAccount('a0000000-0000-4000-8000-000000000001', { name: 'N' });
+    await st.deleteTrades('a0000000-0000-4000-8000-000000000001');
+    await st.deleteAccount('a0000000-0000-4000-8000-000000000001');
+    for (const c of db.client.calls) assert.ok(c.filters.some((f) => f[0] === 'eq' && f[1] === 'user_id' && f[2] === U1), `${c.table} ${c.op} has the user_id filter`);
+  });
+  it('create/update/delete and the trade lifecycle', async () => {
+    const db = fresh(); const st = sbStore(db);
+    const a = await st.createAccount(accRow({ user_id: U2 }));                 // a foreign user_id in the row is overwritten
+    assert.equal(a.user_id, U1);
+    const t = await st.insertTrade({ id: 't0000000-0000-4000-8000-000000000001', backtest_account_id: a.id, symbol: 'EURUSD', direction: 'LONG', lot: '0.10',
+      entry_price: '1.08311', entry_time: '2026-09-01T00:01:00.000Z', commission: '0.70' });
+    assert.equal(t.user_id, U1);
+    assert.equal((await st.listTrades(a.id)).length, 1);
+    assert.deepEqual(plain(await st.updateTrade(t.id, { exit_price: '1.1' }, { onlyOpen: true })).map((r) => r.id), [t.id]);
+    db.tables.backtest_account_trades[0].exit_time = '2026-09-01T02:00:00.000Z';
+    assert.deepEqual(plain(await st.updateTrade(t.id, { exit_price: '1.2' }, { onlyOpen: true })), [], 'closed elsewhere matches nothing');
+    assert.equal((await st.updateAccount(a.id, { name: 'Renamed' })).name, 'Renamed');
+    await st.deleteTrades(a.id); assert.equal((await st.listTrades(a.id)).length, 0);
+    await st.deleteAccount(a.id); assert.equal((await st.listAccounts()).length, 0);
+  });
+  it('pages through 1000 rows and maps database errors to Error(message) with the code', async () => {
+    const db = fresh(); const st = sbStore(db);
+    for (let i = 0; i < 1500; i++) db.tables.backtest_account_trades.push({ id: 't' + String(i).padStart(7, '0'), user_id: U1, backtest_account_id: 'acc', entry_time: '2026-09-01T00:00:00Z' });
+    assert.equal((await st.listTrades('acc')).length, 1500);
+    assert.equal(db.client.calls.filter((c) => c.op === 'select').length, 2);
+    db.failNext.push({ table: 'backtest_accounts', op: 'insert', error: { code: 'P0001', message: 'BACKTEST_LIMIT_EXCEEDED:1' }, status: 400 });
+    await assert.rejects(() => st.createAccount(accRow()), (e) => e.message === 'BACKTEST_LIMIT_EXCEEDED:1' && e.code === 'P0001' && e.status === 400);
+    await assert.rejects(() => st.updateAccount('nope', { name: 'x' }), (e) => e.code === 'PGRST116');
+  });
+});

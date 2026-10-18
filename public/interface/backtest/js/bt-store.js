@@ -235,6 +235,71 @@
     return store;
   }
 
+  // ---------------------------------------------------------------- SupabaseStore (Phase B backend)
+  // Same interface as LocalStore, over window.sb. Every query carries an explicit user_id filter: RLS lets admins
+  // read EVERY user's rows (user_id = auth.uid() OR is_admin()), so without it an admin would see everyone's accounts.
+  // The database enforces the rules (quota, immutables, replay direction, CHECKs) and raises the same messages
+  // the LocalStore reproduces; they surface as Error(message) with .code (SQLSTATE) and .status.
+  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,created_at,updated_at';
+  var PAGE_SIZE = 1000;
+
+  function createSupabaseStore(opts) {
+    var sb = opts.sb, userId = opts.userId;
+    var store = { persistent: true, userId: userId, kind: 'supabase', ACC_COLS: ACC_COLS };
+    function unwrap(res) {
+      if (res && res.error) {
+        var e = new Error(res.error.message || 'request failed');
+        e.code = res.error.code; e.status = res.status; e.details = res.error.details;
+        throw e;
+      }
+      return res ? res.data : null;
+    }
+    store.listAccounts = function () {
+      return Promise.resolve(sb.from('backtest_accounts').select(ACC_COLS).eq('user_id', userId).eq('is_active', true)
+        .order('updated_at', { ascending: false })).then(unwrap).then(function (d) { return d || []; });
+    };
+    store.getAccount = function (id) {
+      return Promise.resolve(sb.from('backtest_accounts').select(ACC_COLS).eq('id', id).eq('user_id', userId)).then(unwrap)
+        .then(function (d) { return (d && d[0]) || null; });
+    };
+    store.createAccount = function (row) {
+      var r = Object.assign({}, row, { user_id: userId });
+      return Promise.resolve(sb.from('backtest_accounts').insert(r).select(ACC_COLS)).then(unwrap).then(function (d) { return d[0]; });
+    };
+    store.updateAccount = function (id, patch) {
+      return Promise.resolve(sb.from('backtest_accounts').update(patch).eq('id', id).eq('user_id', userId).select(ACC_COLS)).then(unwrap)
+        .then(function (d) { if (!d || !d[0]) { var e = new Error('account not found'); e.code = 'PGRST116'; throw e; } return d[0]; });
+    };
+    store.deleteAccount = function (id) {
+      return Promise.resolve(sb.from('backtest_accounts').delete().eq('id', id).eq('user_id', userId)).then(unwrap).then(function () { return true; });
+    };
+    store.listTrades = function (accountId) {
+      var out = [];
+      function page(from) {
+        return Promise.resolve(sb.from('backtest_account_trades').select('*').eq('user_id', userId).eq('backtest_account_id', accountId)
+          .order('entry_time', { ascending: true }).order('id', { ascending: true }).range(from, from + PAGE_SIZE - 1)).then(unwrap).then(function (d) {
+          d = d || []; out = out.concat(d);
+          return d.length < PAGE_SIZE ? out : page(from + PAGE_SIZE);
+        });
+      }
+      return page(0);
+    };
+    store.insertTrade = function (row) {
+      var r = Object.assign({}, row, { user_id: userId });
+      return Promise.resolve(sb.from('backtest_account_trades').insert(r).select('*')).then(unwrap).then(function (d) { return d[0]; });
+    };
+    // resolves with the updated rows, complete ([] when nothing matched); opts.onlyOpen = .is('exit_time', null)
+    store.updateTrade = function (id, patch, o) {
+      var q = sb.from('backtest_account_trades').update(patch).eq('id', id).eq('user_id', userId);
+      if (o && o.onlyOpen) q = q.is('exit_time', null);
+      return Promise.resolve(q.select('*')).then(unwrap).then(function (d) { return d || []; });
+    };
+    store.deleteTrades = function (accountId) {
+      return Promise.resolve(sb.from('backtest_account_trades').delete().eq('user_id', userId).eq('backtest_account_id', accountId)).then(unwrap).then(function () { return true; });
+    };
+    return store;
+  }
+
   global.WwBtGate = WwBtGate;
-  global.WwBtStore = { createLocalStore: createLocalStore, KEY_PREFIX: KEY_PREFIX, newId: newId };
+  global.WwBtStore = { createLocalStore: createLocalStore, createSupabaseStore: createSupabaseStore, KEY_PREFIX: KEY_PREFIX, newId: newId };
 })(typeof window !== 'undefined' ? window : globalThis);

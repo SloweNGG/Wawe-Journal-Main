@@ -167,6 +167,16 @@ export class FakeDb {
         }
         row.notes = row.notes ?? null; row.strategy_id = row.strategy_id ?? null;
       }
+      if (call.table === 'backtest_accounts') {            // column defaults of Migration 02
+        if (row.is_active === undefined) row.is_active = true;
+        row.created_at = row.created_at || new Date().toISOString(); row.updated_at = row.updated_at || row.created_at;
+        row.journal_id = row.journal_id ?? null;
+      }
+      if (call.table === 'backtest_account_trades') {      // defaults + trg_check_backtest_trade (initial levels = levels at open)
+        row.initial_stop_loss = row.stop_loss ?? null; row.initial_take_profit = row.take_profit ?? null;
+        for (const c of ['exit_price', 'exit_time', 'pnl', 'exit_reason', 'gross_pnl', 'stop_loss', 'take_profit', 'rr_ratio']) if (row[c] === undefined) row[c] = null;
+        row.exit_ambiguous = row.exit_ambiguous ?? false; row.created_at = row.created_at || new Date().toISOString();
+      }
       staged.push(row);
     }
     for (const row of staged) { row.id = row.id || this.nextId(); t.push(row); }

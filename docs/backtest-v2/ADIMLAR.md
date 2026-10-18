@@ -80,11 +80,13 @@ Gece oturumunda A.11'e kadar yapıldı, A.12 sahibin onayını bekliyor.
 
 ## Faz C: Senkron (D ile birlikte yayınlanır)
 
+> **MERGE KAPISI:** Faz C ve D kodu (`bt-sync.js`, okuyucu yamaları, `trades-source.js`, SupabaseStore) **Faz B migration'ları canlıda çalışmadan master'a merge edilemez.** Gerekli sıra: yedek, Migration 00 (güvenlik), 01, 02, 04, 05 canlıda ve doğrulanmış, sonra merge + `npm run build` (bundle.js) + deploy. Aksi halde sayfalar var olmayan tablolara/fonksiyonlara gider. Sayfa şu an `BACKEND = 'local'` ile çalışır (veritabanına dokunmaz); Faz B'de tek satır değişir.
+
 | # | Adım | Durum |
 |---|---|---|
-| C.1 | `stage5-6.md` güncelle: `mapTrade` `initial_*` göndersin, sıfırlamadan sonra `reconcileAccount` | ⬜ |
-| C.2 | 🔐 Migration 04 (bağlantı değişince kopyaları sil) | ⬜ |
-| C.3 | `bt-sync.js` repoya eklenir, testleri çalışır | ⬜ |
+| C.1 | `mapTrade` düzeltildi: günlüğe açılıştaki seviyeler (`initial_stop_loss`/`initial_take_profit`) gider (D13). Testleri eklendi | ✅ |
+| C.2 | 🔐 Migration 04 (bağlantı değişince kopyaları sil): yazıldı ve yerelde test edildi; **canlıda çalıştırılması** sahipte | ⬜ |
+| C.3 | `bt-sync.js` repoda, sayfaya bağlandı (kapanışta senkron, bağla/taşı/kaldır + onay, hesap silme, sıfırlama, giriş ve liste ekranında onarım, `wwCache` temizliği, `PAGE.onLeave` temizliği). SupabaseStore yazıldı. Tarayıcıda FakeDb ile uçtan uca denendi | ✅ |
 
 ## Faz D: İstatistikler (C ile birlikte yayınlanır)
 
