@@ -6,7 +6,12 @@ Yeni oturum için okuma sırası:
 3. `PLAN.md`
 4. `asama-arayuz/stage4-ek.md`
 
-## Durum
+## Durum (2026-10-19 gece sonu, ayrıntı: `ADIMLAR.md` ve `SABAH-RAPORU.md`)
+
+- Faz A (arayüz) **kodlandı ve test edildi**, sahibin ekran onayını (A.12) bekliyor. Güvenlik migration'ı 00, 03 ve 07 yazıldı, hiçbiri canlıda çalıştırılmadı. Yerel PG 17 kuruldu (`sql/verify/LOCAL-PG17.md`).
+- Aşağıdaki "Durum" bölümü gece öncesinden kalma, tarihi geçmiştir.
+
+## Durum (eski)
 
 - Plan hazır ve sahibe sunuldu. **Sahibin onayı bekleniyor.** Onay gelmeden Faz A'ya başlanmaz. `PLAN.md` sonundaki karar listesi sahibe sorulur ya da sahibin verdiği yanıtlar uygulanır.
 - Canlı veritabanına, Storage'a ve fonksiyonlara **hiçbir yazma yapılmadı**. Yedek de henüz alınmadı; ilk canlı yazmadan önce alınacak.

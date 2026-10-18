@@ -21,6 +21,15 @@ Ayrıntılar: `PLAN.md` (plan), `DEVAM.md` (kaldığımız yer), `KURALLAR.md` (
 | 0.8 | `PLAN.md` kararları: sahip onayladı (2026-10-19 gece). Canlıya yazma/silme içerenler sabaha bırakıldı, ayrıntı `SABAH-RAPORU.md` | ✅ |
 | 0.9 | Migration'ların canlı gövdelerle (2026-10-18 anlık görüntüsü) incelenmesi: `sql/INCELEME.md`. Canlıya bu gece yeniden bağlanılmadı (KURALLAR §1); DRIFT korumaları çalışma anında denetler | ✅ |
 
+## Yerel doğrulama (gerçek PostgreSQL 17)
+
+| # | Adım | Durum |
+|---|---|---|
+| L.1 | PostgreSQL 17.11 bu Mac'e kuruldu: `~/WaweJournal-pg17/` (sudo yok, sistem dışı, repo/iCloud/OneDrive dışı) | ✅ |
+| L.2 | 261 testlik harness gerçek PG 17'de de geçti (`out/harness-output-pg17.txt`) | ✅ |
+| L.3 | 00–06 + verify.sql baştan sona, geri alma, tekrar ileri: hepsi tamam (`out/local-run-pg17.txt`, `wawe_local` migrate halde duruyor). 07 harness'te ayrı denendi | ✅ |
+| L.4 | Gerçek `pg_dump` ile canlı şema karşılaştırması (canlıya salt okunur bağlantı gerekir) | ⬜ |
+
 ## Güvenlik açığı
 
 Açık: `evaluate_prop_firm_rules(uuid)` SECURITY DEFINER, `anon` çalıştırabiliyor, sahiplik kontrolü yok. Herhangi bir günlüğün prop firma durumunu değiştirebilir (IDOR). Aynı grupta 5 kullanılmayan fonksiyon daha var. **Canlıda hâlâ açık**, çünkü düzeltme (Migration 06) hazır ama çalıştırılmadı.

@@ -1,5 +1,27 @@
 # Sabah raporu (2026-10-19 gece oturumu)
 
+## Kısa özet
+
+**Bitti (hepsi `backtest-v2` branch'inde, push edildi; master'a dokunulmadı, canlıya hiçbir şey yazılmadı):**
+1. **Güvenlik migration'ı 00** + rollback: `evaluate_prop_firm_rules` anon erişimi kalkar, sahiplik kontrolü eklenir. Migration 06'nın kontrolü ve geri alması buna uyumlu hale getirildi.
+2. **Faz A (arayüz)**, A.11'e kadar: eski sayfa kaldırıldı; hesap listesi, oluştur/düzenle/sil/sıfırla, replay, işlem motoru (AL/SAT, SL/TP, düzenle, kapat), grafik, istatistikler, yalnızca admin kapısı, navbar linki (yalnızca admin), tr/en/de. 240 test geçti (84 yeni), build geçti, headless Chrome duman testi geçti.
+3. **0.9 inceleme**: ciddi SQL hatası yok (`sql/INCELEME.md`), bir doküman düzeltmesi.
+4. **Migration 03 ve 07** + rollback'ler (07'de lisans onay satırı kapalı).
+5. **Yerel PostgreSQL 17.11** kuruldu; tüm migration ve rollback'ler gerçek sunucuda baştan sona çalıştı, 261 test orada da geçti.
+
+**Takılan / yapılmayan:**
+- Hiçbir adımda takılma olmadı (şifre vb. istenmedi).
+- Canlıya salt okunur bile bağlanmadım (kural: önceden haber). Bu yüzden "canlı şema kopyası" 18 Ekim anlık görüntüsünden kuruldu ve gerçek `pg_dump` karşılaştırması yapılmadı.
+- Gerçek giriş, SPA geçişi, açık tema, telefon genişliği, Safari/Firefox elle denenmedi (aşağıda ayrıntı).
+- `PROJECT_OVERVIEW.md` güncellenmedi. Canlıdaki `get-candles` Edge Function silinmedi (yalnızca repodan kalktı).
+
+**Sizden beklenenler (sabah):**
+1. **Faz A'yı deneyin** (A.12): admin hesabıyla `/backtest`; hesap aç, oynat, işlem aç, SL/TP, sıfırla, tarihe git. Onay verirseniz Faz B'ye geçilir. Admin hesabınız free plandaysa 1 hesap sınırı var.
+2. **Güvenlik açığını canlıda kapatma** (birlikte): tam yedek (`~/WaweJournal-Backups/`), ardından Migration 00 (`202610180000_...sql`) SQL Editor'da. Sonra Migration 06 (6 kullanılmayan fonksiyonu silme) için kararınız.
+3. İsteğe bağlı: canlıya **salt okunur** bağlanıp P1–P6 sorgularını çalıştırmak ve gerçek şemayı yerel kopyayla karşılaştırmak (ADIMLAR L.4).
+4. Canlıdaki eski `get-candles` Edge Function'ını silmek (🔐) ve Faz B için onay.
+5. Hafızadaki "bekleyen backend deploy" işi (ctrader-sync, create-payment, verify-auth, webhook) bu gece **hiç ele alınmadı**.
+
 Bu dosya gece boyunca güncellenir. En altta kısa özet var.
 
 ## Kararlar ve gerekçeleri
@@ -55,3 +77,11 @@ Sonuç `sql/INCELEME.md`'de. Özet: ciddi bir SQL hatası bulunmadı; bir doküm
 - **07** üyelere açma (anonim girişler hariç). **Lisans onay satırı yorumda**: açılmadan çalışmaz. Böylece yanlışlıkla çalıştırılamaz.
 - Rollback'ler: 07.down admin politikasını geri getirir; 03.down bucket nesne içeriyorsa durur (onay satırıyla geçilir), politikayı ve bucket'ı siler.
 - Testler: PGlite harness'e sahte `storage` şeması eklendi, 261 geçti / 0 kaldı. **Gerçek Storage'ın `protect_delete` tetikleyicisi PGlite'ta yok**: 03.down `storage.allow_delete_query` ayarını kendi işleminde açıyor ama bu gerçek Supabase'te denenmedi.
+
+## Adım 5: yerel PostgreSQL 17
+
+- Kuruldu: `~/WaweJournal-pg17/` (Maven'daki zonky arm64 Postgres 17.11 ikilileri; Homebrew yok, `sudo` gerekmedi, şifre istenmedi). Ayrıntı ve komutlar: `sql/verify/LOCAL-PG17.md`. Sunucu şu an **kapalı** (`~/WaweJournal-pg17/start.sh` ile açılır). Pakette `psql` yok; SQL dosyalarını Node `pg` istemcisiyle çalıştırdım (`pg` repo dışında, scratchpad'de).
+- 261 testlik harness gerçek PG 17'de de **261 geçti / 0 kaldı** (PGlite'a özgü bir fark çıkmadı).
+- `local-run.mjs`: gerçek dosyalar sırayla 00, 01, 02, 03, 04, 05, 06, ardından `verify.sql` (19 PASS, 0 FAIL, SKIP yok), ardından 06→00 geri alma (katalog başlangıçla aynı; `delete_journal`/`list_journals` ACL sıkılaştırması rollback'lerde bilerek korunuyor), ardından tekrar ileri. Hepsi tamam. `wawe_local` veritabanı migrate edilmiş halde duruyor.
+- **"Canlı şemanın kopyası"**: canlıya bağlanmadığım için 18 Ekim salt okunur anlık görüntülerinden kuruldu (9 public tablo, 16 fonksiyon). Gerçek `pg_dump` karşılaştırması sizin onayınızla sabaha kaldı (ADIMLAR L.4).
+- Dikkat: 03.down'un `storage.allow_delete_query` ayarı ve 07'nin `auth.jwt()->>'is_anonymous'` koşulu gerçek Supabase Storage'da denenmedi (yerel kopyada Storage şeması sahte).

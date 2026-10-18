@@ -887,5 +887,5 @@ await db.close();
 
 log(`\nRESULT: ${pass} passed, ${fail} failed`);
 fs.mkdirSync(path.join(here, 'out'), { recursive: true });
-fs.writeFileSync(path.join(here, 'out', 'harness-output.txt'), out.join('\n') + '\n', 'utf8');
+fs.writeFileSync(path.join(here, 'out', process.env.HARNESS_OUT || 'harness-output.txt'), out.join('\n') + '\n', 'utf8');
 process.exit(fail ? 1 : 0);
