@@ -14,6 +14,8 @@ const { PGlite } = await import(pathToFileURL(pgliteIndex).href);
 
 const read = (p) => fs.readFileSync(p, 'utf8');
 const MIG = {
+  m00: read(path.join(planDir, 'supabase/migrations/202610180000_secure_evaluate_prop_firm_rules.sql')),
+  d00: read(path.join(planDir, 'supabase/rollbacks/202610180000_secure_evaluate_prop_firm_rules.down.sql')),
   m01: read(path.join(planDir, 'supabase/migrations/202610180001_drop_legacy_backtest_trades.sql')),
   m02: read(path.join(planDir, 'supabase/migrations/202610180002_backtest_accounts.sql')),
   m04: read(path.join(planDir, 'supabase/migrations/202610180004_backtest_journal_link_cleanup.sql')),
@@ -335,12 +337,73 @@ log('\n[V] supabase/tests/backtest_v2_verify.sql (owner-side test) on a Supabase
   await db.close();
 }
 
+// ---------------------------------------------------------------- security fix (00)
+log('\n[N0] 00: evaluate_prop_firm_rules ownership check + no anon (own database)');
+{
+  const db = await newDb(); await seed(db);
+  const EV = 'public.evaluate_prop_firm_rules(uuid)';
+  await db.exec(`UPDATE public.journals SET is_prop_firm = true, prop_firm_rules = '{"initial_balance": 1000}'::jsonb WHERE id = '${J1a}'`);
+  // before: the hole is real
+  const hole = (await as(db, null, `select public.evaluate_prop_firm_rules($1) as r`, [J1a], { role: 'anon' })).rows[0].r;
+  ok(hole && hole.status === 'active', 'BEFORE 00: anon can evaluate (and write to) any journal: the IDOR exists in the mock live');
+  // drift guard
+  await db.exec(`CREATE OR REPLACE FUNCTION public.evaluate_prop_firm_rules(p_journal_id uuid) RETURNS jsonb LANGUAGE sql AS $f$ SELECT '{}'::jsonb $f$`);
+  await expectErr(() => runFile(db, MIG.m00), /DRIFT: public\.evaluate_prop_firm_rules\(uuid\) changed/, '00 refuses a drifted function');
+  await db.close();
+}
+{
+  const db = await newDb(); await seed(db);
+  const EV = 'public.evaluate_prop_firm_rules(uuid)';
+  await db.exec(`UPDATE public.journals SET is_prop_firm = true, prop_firm_rules = '{"initial_balance": 1000}'::jsonb WHERE id = '${J1a}'`);
+  const before = await snap(db);
+  await runFile(db, MIG.m00);
+  await runFile(db, MIG.m00); // idempotent
+  ok(await fnMd5(db, EV) === MD5['evaluate_prop_firm_rules.s0'], '00: body == s0 md5');
+  ok((await execs(db, EV)) === '{authenticated,postgres,service_role}', `00: EXECUTE only for authenticated, postgres, service_role (${await execs(db, EV)})`);
+  const a = await snap(db);
+  const dd = diffSnap(before, a);
+  ok(dd.length === 4 && dd.every((x) => /evaluate_prop_firm_rules/.test(x)) && dd.some((x) => x.startsWith('functions')) && dd.some((x) => x.startsWith('acls')),
+    `00 changes only the body and the ACL of evaluate_prop_firm_rules${dd.length === 4 ? '' : '\n      ' + dd.join('\n      ')}`);
+  await expectErr(() => as(db, null, `select public.evaluate_prop_firm_rules($1)`, [J1a], { role: 'anon' }), /permission denied for function evaluate_prop_firm_rules/, 'anon: permission denied');
+  await expectErr(() => as(db, U2, `select public.evaluate_prop_firm_rules($1)`, [J1a]), /FORBIDDEN: journal not found or not owned/, 'authenticated non-owner: FORBIDDEN');
+  await expectErr(() => as(db, U1, `select public.evaluate_prop_firm_rules($1)`, ['99999999-9999-4999-8999-999999999999']), /FORBIDDEN/, 'authenticated, unknown journal: FORBIDDEN (same message, no existence leak)');
+  const own = (await as(db, U1, `select public.evaluate_prop_firm_rules($1) as r`, [J1a])).rows[0].r;
+  ok(own && own.status === 'active' && Number(own.initial_balance) === 1000, 'authenticated owner: works');
+  ok((await one(db, `select prop_firm_status as s from public.journals where id = $1`, [J1a])).s === 'active', 'owner call wrote prop_firm_status');
+  const svc = (await as(db, null, `select public.evaluate_prop_firm_rules($1) as r`, [J1a], { role: 'service_role' })).rows[0].r;
+  ok(svc && svc.status === 'active', 'service_role (no user id): works');
+  const sql = (await one(db, `select public.evaluate_prop_firm_rules($1) as r`, [J1a])).r;
+  ok(sql && sql.status === 'active', 'direct SQL session (no JWT): works');
+  // a non-prop journal of the caller is still answered {status: none}
+  ok((await as(db, U1, `select public.evaluate_prop_firm_rules($1) as r`, [J1b])).rows[0].r.status === 'none', 'owner, non-prop journal: status none');
+  // 06 after 00: accepted; 06.down: secure body and ACL stay
+  await runFile(db, MIG.m01);
+  await runFile(db, MIG.m06);
+  ok((await one(db, `select to_regprocedure('${EV}') is null as e`)).e, '06 after 00: drift guard accepts the 00 body, function dropped');
+  await runFile(db, MIG.d06);
+  ok(await fnMd5(db, EV) === MD5['evaluate_prop_firm_rules.s0'] && (await execs(db, EV)) === '{authenticated,postgres,service_role}', '06.down after 00: secure body and ACL restored (hole stays closed)');
+  await runFile(db, MIG.d01);
+  // 00.down re-opens, twice
+  await runFile(db, MIG.d00);
+  await runFile(db, MIG.d00);
+  const r = await snap(db);
+  const d2 = diffSnap(before, r);
+  ok(d2.length === 0, `00.down: catalog identical to before 00${d2.length ? '\n      ' + d2.join('\n      ') : ''}`);
+  ok((await as(db, null, `select public.evaluate_prop_firm_rules($1) as r`, [J1a], { role: 'anon' })).rows[0].r.status === 'active', '00.down re-opens the hole as documented');
+  await db.close();
+}
+
 // ---------------------------------------------------------------- main flow
 log('\n[M0] mock of the live schema');
 const db = await newDb();
 await seed(db);
 const baseline = await snap(db);
 ok(baseline.tables.some((t) => t.relname === 'backtest_trades'), 'mock has backtest_trades');
+
+log('\n[M0b] 00: security fix first, as in the real run order');
+await runFile(db, MIG.m00);
+await runFile(db, MIG.m00);
+ok(await fnMd5(db, 'public.evaluate_prop_firm_rules(uuid)') === MD5['evaluate_prop_firm_rules.s0'], 'evaluate_prop_firm_rules = 00 body');
 
 log('\n[M1] 01: apply twice');
 await runFile(db, MIG.m01);
@@ -680,12 +743,18 @@ await runFile(db, MIG.d06);
 {
   const s = await snap(db);
   const six = (r) => /^(evaluate_prop_firm_rules|sync_journal_trades|get_journals_equity_data|get_strategy_performance|get_today_trades_count|get_total_trades_count)\(/.test(r.fn);
-  const b = baseline.functions.filter(six).map((r) => JSON.stringify(r)).sort();
-  const a = s.functions.filter(six).map((r) => JSON.stringify(r)).sort();
-  ok(JSON.stringify(a) === JSON.stringify(b), 'six functions: body/lang/secdef/volatility/config/result/owner identical to the mock live');
-  const ba = baseline.acls.filter(six).map((r) => JSON.stringify(r)).sort();
-  const aa = s.acls.filter(six).map((r) => JSON.stringify(r)).sort();
-  ok(JSON.stringify(aa) === JSON.stringify(ba), `six functions: EXECUTE ACL identical to the mock live ${aa[0]}`);
+  // evaluate_prop_firm_rules comes back SECURE (00 body, no anon); the other five identical to the mock live
+  const isEv = (r) => r.fn === 'evaluate_prop_firm_rules(uuid)';
+  const b = baseline.functions.filter(six).filter((r) => !isEv(r)).map((r) => JSON.stringify(r)).sort();
+  const a = s.functions.filter(six).filter((r) => !isEv(r)).map((r) => JSON.stringify(r)).sort();
+  ok(JSON.stringify(a) === JSON.stringify(b), 'five functions: body/lang/secdef/volatility/config/result/owner identical to the mock live');
+  const ba = baseline.acls.filter(six).filter((r) => !isEv(r)).map((r) => JSON.stringify(r)).sort();
+  const aa = s.acls.filter(six).filter((r) => !isEv(r)).map((r) => JSON.stringify(r)).sort();
+  ok(JSON.stringify(aa) === JSON.stringify(ba), `five functions: EXECUTE ACL identical to the mock live ${aa[0]}`);
+  const ev = s.functions.find(isEv);
+  const evBase = baseline.functions.find(isEv);
+  ok(ev.body === MD5['evaluate_prop_firm_rules.s0'] && JSON.stringify({ ...ev, body: 0 }) === JSON.stringify({ ...evBase, body: 0 }), 'evaluate_prop_firm_rules: 00 body, attributes identical to the mock live');
+  ok(s.acls.find(isEv).execs === '{authenticated,postgres,service_role}', 'evaluate_prop_firm_rules: no PUBLIC/anon after 06.down');
 }
 
 log('\n[R5] 05.down twice');
@@ -720,6 +789,10 @@ await runFile(db, MIG.d02); // second run: tables gone, nothing to confirm
 log('\n[R1] 01.down twice');
 await runFile(db, MIG.d01);
 await runFile(db, MIG.d01);
+
+log('\n[R0] 00.down twice (last)');
+await runFile(db, MIG.d00);
+await runFile(db, MIG.d00);
 {
   const s = await snap(db);
   const d = diffSnap(baseline, s, {

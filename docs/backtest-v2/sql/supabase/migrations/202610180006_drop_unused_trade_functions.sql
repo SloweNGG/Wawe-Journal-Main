@@ -60,20 +60,21 @@ DECLARE
                                    'get_strategy_performance', 'get_today_trades_count', 'get_total_trades_count'];
   c_regex constant text := '(evaluate_prop_firm_rules|sync_journal_trades|get_journals_equity_data|get_strategy_performance|get_today_trades_count|get_total_trades_count)';
 BEGIN
-  -- 0a. Each function that still exists must be the 2026-10-18 body (a change means someone works on it).
+  -- 0a. Each function that still exists must be the 2026-10-18 body (a change means someone works on it);
+  --     evaluate_prop_firm_rules may also be the body of 202610180000 (security fix, run before this file).
   FOR r IN
     SELECT * FROM (VALUES
-      ('public.evaluate_prop_firm_rules(uuid)',   'ac50682480af983cae0ad64c8f787929'),
-      ('public.sync_journal_trades(uuid, jsonb)', 'ac82821c8455df5cc3743c70f572dada'),
-      ('public.get_journals_equity_data()',       'ba07a8d2cbb221313a1002929aa48222'),
-      ('public.get_strategy_performance(uuid)',   '6f198892f0c0b0e0eb95fd0a488fa586'),
-      ('public.get_today_trades_count()',         'f4d8256d30ef69f5cd51de5b4a82b668'),
-      ('public.get_total_trades_count()',         '41a1973e8f580f31a01a190f9337d0d9')
-    ) AS v(fn, expected_md5)
+      ('public.evaluate_prop_firm_rules(uuid)',   'ac50682480af983cae0ad64c8f787929', '9cfecfdb506b0ecfb82319cdc7d4dec1'), -- s0 = body of 202610180000 (security fix)
+      ('public.sync_journal_trades(uuid, jsonb)', 'ac82821c8455df5cc3743c70f572dada',      'ac82821c8455df5cc3743c70f572dada'),
+      ('public.get_journals_equity_data()',       'ba07a8d2cbb221313a1002929aa48222', 'ba07a8d2cbb221313a1002929aa48222'),
+      ('public.get_strategy_performance(uuid)',   '6f198892f0c0b0e0eb95fd0a488fa586', '6f198892f0c0b0e0eb95fd0a488fa586'),
+      ('public.get_today_trades_count()',         'f4d8256d30ef69f5cd51de5b4a82b668',   'f4d8256d30ef69f5cd51de5b4a82b668'),
+      ('public.get_total_trades_count()',         '41a1973e8f580f31a01a190f9337d0d9',   '41a1973e8f580f31a01a190f9337d0d9')
+    ) AS v(fn, expected_md5, alt_md5)
   LOOP
     SELECT md5(translate(p.prosrc, E' \t\r\n', '')) INTO v_md5
       FROM pg_proc p WHERE p.oid = to_regprocedure(r.fn);
-    IF v_md5 IS NOT NULL AND v_md5 <> r.expected_md5 THEN
+    IF v_md5 IS NOT NULL AND v_md5 NOT IN (r.expected_md5, r.alt_md5) THEN
       RAISE EXCEPTION 'DRIFT: % changed since the 2026-10-18 snapshot (normalised md5 %). Find out who changed it before dropping it.', r.fn, v_md5;
     END IF;
   END LOOP;

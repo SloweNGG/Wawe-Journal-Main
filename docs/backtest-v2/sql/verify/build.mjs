@@ -151,6 +151,31 @@ fns['get_platform_stats.v05'] = replaceOnce(
   'get_platform_stats.v05 today',
 );
 
+// ---- evaluate_prop_firm_rules.s0 (migration 00, security): ownership check, rest of the live body unchanged
+fns['evaluate_prop_firm_rules.s0'] = replaceOnce(
+    fns['evaluate_prop_firm_rules.live'],
+    `    v_running_equity numeric := 0;
+BEGIN
+`,
+    `    v_running_equity numeric := 0;
+    v_caller uuid;
+BEGIN
+    -- Security (202610180000): the caller must own the journal. A caller with a user id is checked
+    -- against journals.user_id; a caller without one is accepted only if its JWT role is not
+    -- anon/authenticated (service_role, or a direct SQL session such as the SQL Editor).
+    v_caller := auth.uid();
+    IF v_caller IS NOT NULL THEN
+        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller) THEN
+            RAISE EXCEPTION 'FORBIDDEN: journal not found or not owned by the caller' USING ERRCODE = '42501';
+        END IF;
+    ELSIF coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated') THEN
+        RAISE EXCEPTION 'FORBIDDEN: authentication required' USING ERRCODE = '42501';
+    END IF;
+
+`,
+    'evaluate_prop_firm_rules.s0 check',
+);
+
 const md5s = {};
 for (const [k, def] of Object.entries(fns)) md5s[k] = md5ws(prosrcOf(def));
 for (const [name, h] of Object.entries(rawMd5)) {
@@ -159,6 +184,8 @@ for (const [name, h] of Object.entries(rawMd5)) {
 
 // ---- render templates
 const outputs = [
+  ['00.sql', 'supabase/migrations/202610180000_secure_evaluate_prop_firm_rules.sql'],
+  ['00.down.sql', 'supabase/rollbacks/202610180000_secure_evaluate_prop_firm_rules.down.sql'],
   ['01.sql', 'supabase/migrations/202610180001_drop_legacy_backtest_trades.sql'],
   ['01.down.sql', 'supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql'],
   ['02.sql', 'supabase/migrations/202610180002_backtest_accounts.sql'],

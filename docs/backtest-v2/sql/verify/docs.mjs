@@ -13,6 +13,7 @@ const pairs = [
   ['reset_user_data.live', 'reset_user_data.v01', 'reset_user_data(): live -> 202610180001'],
   ['reset_user_data.v01', 'reset_user_data.v02', 'reset_user_data(): 202610180001 -> 202610180002'],
   ['delete_journal.live', 'delete_journal.v02', 'delete_journal(uuid): live -> 202610180002'],
+  ['evaluate_prop_firm_rules.live', 'evaluate_prop_firm_rules.s0', 'evaluate_prop_firm_rules(uuid): live -> 202610180000'],
   ['list_journals.live', 'list_journals.v05', 'list_journals(): live -> 202610180005'],
   ['get_platform_stats.live', 'get_platform_stats.v05', 'get_platform_stats(): live -> 202610180005'],
 ];

@@ -1,0 +1,103 @@
+# Backtest v2: adım listesi
+
+Son güncelleme: 2026-10-19. Branch `backtest-v2`.
+
+Simgeler: ✅ bitti · 🔄 devam ediyor · ⬜ bekliyor · 🔐 sahip onayı gerekir
+
+Kural: her adım bitince bu dosya güncellenir. Canlı sisteme yazan her adım 🔐 işaretlidir ve ayrıca onay ister (`KURALLAR.md` §1).
+Ayrıntılar: `PLAN.md` (plan), `DEVAM.md` (kaldığımız yer), `KURALLAR.md` (kalıcı kurallar).
+
+## Sıfır: Hazırlık (planlama ve SQL taslakları)
+
+| # | Adım | Durum |
+|---|---|---|
+| 0.1 | Gereksinimler (R1–R53), kararlar (D0–D13), envanter ve inceleme bulguları | ✅ |
+| 0.2 | Canlı şema ve fonksiyon gövdesi anlık görüntüsü (salt okunur, 2026-10-18) | ✅ |
+| 0.3 | Migration 01, 02, 04, 05, 06 ve rollback dosyaları yazıldı | ✅ |
+| 0.4 | PGlite testleri: 213 geçti, 0 kaldı (kurulum, geri alma, katalog karşılaştırması dahil) | ✅ |
+| 0.5 | Migration 02 güncellemesi (D13): `initial_*`, kilitler, geri gitme yasağı | ✅ |
+| 0.6 | Admin kapısı, tarihe git kuralı ve arşiv planı yazıldı (`stage4-ek.md`, `ARSIV.md`) | ✅ |
+| 0.7 | Planın sahibe sunulması | ✅ |
+| 0.8 | `PLAN.md` sonundaki 9 karar: 2026-10-19 gece onaylandı (ayrıntı: `SABAH-RAPORU.md`). Canlıya yazma/silme içeren kararlar (Migration 06 silme, Binance toleransı hariç değil: yalnızca yedek yeri onaylandı) sabaha bırakıldı | ✅ |
+| 0.9 | Migration'ların canlı fonksiyon gövdeleriyle satır satır bağımsız incelemesi (önceki inceleme ajanları limite takılmıştı, bu adım yapılmadı) | ⬜ |
+
+## Güvenlik açığı
+
+Açık: `evaluate_prop_firm_rules(uuid)` SECURITY DEFINER, `anon` çalıştırabiliyor, sahiplik kontrolü yok. Herhangi bir günlüğün prop firma durumunu değiştirebilir (IDOR). Aynı grupta 5 kullanılmayan fonksiyon daha var. **Canlıda hâlâ açık**, çünkü düzeltme (Migration 06) hazır ama çalıştırılmadı.
+
+| # | Adım | Durum |
+|---|---|---|
+| G.0 | Küçük güvenlik migration'ı `202610180000_secure_evaluate_prop_firm_rules` + rollback yazıldı, PGlite testi geçti (233/0). **Canlıda çalıştırılmadı** | ✅ |
+| G.1 | 🔐 Karar: 6 fonksiyonu silmek (önerilen) ya da yamalamak. G.0 açığı kapatır, 06 artık yalnızca temizliktir | ⬜ |
+| G.2 | Ön kontrol P1 (salt okunur): fonksiyonların mevcut yetkileri kaydedilir, pg_cron ve bağımlılık kontrolü | ⬜ |
+| G.3 | 🔐 Tam yedek alınır, yeri sahibe bildirilir (R48) | ⬜ |
+| G.4a | 🔐 **Sabah: Migration 00 çalıştırılır (canlı yazma, açığı kapatır)** | ⬜ |
+| G.4 | 🔐 Migration 06 çalıştırılır (canlı yazma), G.1 kararına bağlı | ⬜ |
+| G.5 | Doğrulama: fonksiyonlar yok, `anon` çağıramıyor, uygulama normal çalışıyor | ⬜ |
+
+Not: Plan 06'yı Faz C+D ile birlikte çalıştırıyor. Açık canlıda olduğu için G adımlarını Faz A'dan önce ya da yanında yapmak önerilir. Bu bir sıralama kararı, 🔐 onayına bağlı.
+Not: Repo herkese açılacaksa `docs/backtest-v2/` içindeki açık tarifi önce kaldırılmalı (`KURALLAR.md` §4).
+
+## Faz A: Arayüz (yalnızca admin, veritabanı yok)
+
+Onay (0.8) gelmeden başlanmaz.
+
+| # | Adım | Durum |
+|---|---|---|
+| A.1 | Eski sayfa ön yüzünü kaldır: `backtest.astro` sıfırdan, `styles.css` bt seçicileri, `get-candles` repodan silinir, `sw.js` sürümü artar | ⬜ |
+| A.2 | `bt-symbols` + testleri | ⬜ |
+| A.3 | `bt-candles` + testleri | ⬜ |
+| A.4 | `bt-engine` + testleri (sayılar prototiple doğrulanır) | ⬜ |
+| A.5 | `bt-synthetic` + testleri | ⬜ |
+| A.6 | `bt-data.js`: SyntheticSource, "Sentetik veri · test" etiketi | ⬜ |
+| A.7 | `bt-store.js`: LocalStore (Migration 02 ile aynı satır biçimi ve kurallar) | ⬜ |
+| A.8 | Sayfa: hesap listesi, oluştur/düzenle/sil/sıfırla | ⬜ |
+| A.9 | Sayfa: replay, işlem motoru, grafik | ⬜ |
+| A.10 | i18n, admin kapısı, navbar linki (yalnızca admin) | ⬜ |
+| A.11 | Testler (`node --test tests/*.test.js`, önceki temel 156) ve admin / admin olmayan hesapla elle deneme | ⬜ |
+| A.12 | 🔐 Faz A sonu: sahibin ekran onayı ve commit | ⬜ |
+
+## Faz B: Veritabanı (canlıya ilk yazma)
+
+| # | Adım | Durum |
+|---|---|---|
+| B.1 | 🔐 Tam yedek (şema, veri, roller), yeri bildirilir. G.3 yapıldıysa yeni yedek gerekir mi, sahip karar verir | ⬜ |
+| B.2 | 🔐 Migration 01: `backtest_trades` silinir | ⬜ |
+| B.3 | 🔐 Migration 02: iki tablo, RLS, tetikleyiciler | ⬜ |
+| B.4 | `settings.js` yedek silme yolu güncellenir | ⬜ |
+| B.5 | `bt-store.js` SupabaseStore'a geçer (localStorage test verisi silinir) | ⬜ |
+| B.6 | Doğrulama: `sql/supabase/tests/backtest_v2_verify.sql` canlıda, uygulama elle denemesi | ⬜ |
+| B.7 | 🔐 Faz B sonu onayı | ⬜ |
+
+## Faz C: Senkron (D ile birlikte yayınlanır)
+
+| # | Adım | Durum |
+|---|---|---|
+| C.1 | `stage5-6.md` güncelle: `mapTrade` `initial_*` göndersin, sıfırlamadan sonra `reconcileAccount` | ⬜ |
+| C.2 | 🔐 Migration 04 (bağlantı değişince kopyaları sil) | ⬜ |
+| C.3 | `bt-sync.js` repoya eklenir, testleri çalışır | ⬜ |
+
+## Faz D: İstatistikler (C ile birlikte yayınlanır)
+
+| # | Adım | Durum |
+|---|---|---|
+| D.1 | 🔐 Migration 05 (`list_journals`, `get_platform_stats` canlı filtre) | ⬜ |
+| D.2 | `trades-source.js` + okuyucu yaması: tüm okuyucularda canlı filtre | ⬜ |
+| D.3 | İşlemler sayfası: Tümü / Canlı / Backtest seçimi ve rozet | ⬜ |
+| D.4 | Doğrulama: backtest satırları canlı istatistiklere düşmüyor | ⬜ |
+| D.5 | 🔐 Faz C+D birlikte yayın onayı | ⬜ |
+
+## Faz E: Arşiv ve herkese açma (lisans kararına bağlı)
+
+| # | Adım | Durum |
+|---|---|---|
+| E.1 | 🔐 Lisans kararı: Binance (CC BY-NC-SA), forex ve altın. cTrader trendbar sorusu dar kapsamda araştırılır | ⬜ |
+| E.2 | Migration 03 (admin-only bucket) yazılır | ⬜ |
+| E.3 | İçe aktarıcı D13'e uyarlanır (sembol başına index, gün defteri, kilit) ve testleri yazılır | ⬜ |
+| E.4 | 🔐 Bucket oluşturma, ilk veri yükleme (canlı Storage yazması) | ⬜ |
+| E.5 | Gece GitHub Actions işi ve ArchiveSource | ⬜ |
+| E.6 | 🔐 Migration 07 yazılır ve çalıştırılır: sayfa tüm üyelere açılır, navbar herkese | ⬜ |
+
+## Backtest dışı bekleyenler (bilgi için)
+
+- Backend deploy bekliyor (`ctrader-sync`, `create-payment`, `verify-auth`, `nowpayment-webhook`). Migration 0003 ve 0004'ün çalışıp çalışmadığı bilinmiyor. Bu liste dışında, ayrı takip.

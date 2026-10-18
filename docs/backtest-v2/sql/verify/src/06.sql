@@ -60,20 +60,21 @@ DECLARE
                                    'get_strategy_performance', 'get_today_trades_count', 'get_total_trades_count'];
   c_regex constant text := '(evaluate_prop_firm_rules|sync_journal_trades|get_journals_equity_data|get_strategy_performance|get_today_trades_count|get_total_trades_count)';
 BEGIN
-  -- 0a. Each function that still exists must be the 2026-10-18 body (a change means someone works on it).
+  -- 0a. Each function that still exists must be the 2026-10-18 body (a change means someone works on it);
+  --     evaluate_prop_firm_rules may also be the body of 202610180000 (security fix, run before this file).
   FOR r IN
     SELECT * FROM (VALUES
-      ('public.evaluate_prop_firm_rules(uuid)',   '{{MD5:evaluate_prop_firm_rules.live}}'),
-      ('public.sync_journal_trades(uuid, jsonb)', '{{MD5:sync_journal_trades.live}}'),
-      ('public.get_journals_equity_data()',       '{{MD5:get_journals_equity_data.live}}'),
-      ('public.get_strategy_performance(uuid)',   '{{MD5:get_strategy_performance.live}}'),
-      ('public.get_today_trades_count()',         '{{MD5:get_today_trades_count.live}}'),
-      ('public.get_total_trades_count()',         '{{MD5:get_total_trades_count.live}}')
-    ) AS v(fn, expected_md5)
+      ('public.evaluate_prop_firm_rules(uuid)',   '{{MD5:evaluate_prop_firm_rules.live}}', '{{MD5:evaluate_prop_firm_rules.s0}}'), -- s0 = body of 202610180000 (security fix)
+      ('public.sync_journal_trades(uuid, jsonb)', '{{MD5:sync_journal_trades.live}}',      '{{MD5:sync_journal_trades.live}}'),
+      ('public.get_journals_equity_data()',       '{{MD5:get_journals_equity_data.live}}', '{{MD5:get_journals_equity_data.live}}'),
+      ('public.get_strategy_performance(uuid)',   '{{MD5:get_strategy_performance.live}}', '{{MD5:get_strategy_performance.live}}'),
+      ('public.get_today_trades_count()',         '{{MD5:get_today_trades_count.live}}',   '{{MD5:get_today_trades_count.live}}'),
+      ('public.get_total_trades_count()',         '{{MD5:get_total_trades_count.live}}',   '{{MD5:get_total_trades_count.live}}')
+    ) AS v(fn, expected_md5, alt_md5)
   LOOP
     SELECT md5(translate(p.prosrc, E' \t\r\n', '')) INTO v_md5
       FROM pg_proc p WHERE p.oid = to_regprocedure(r.fn);
-    IF v_md5 IS NOT NULL AND v_md5 <> r.expected_md5 THEN
+    IF v_md5 IS NOT NULL AND v_md5 NOT IN (r.expected_md5, r.alt_md5) THEN
       RAISE EXCEPTION 'DRIFT: % changed since the 2026-10-18 snapshot (normalised md5 %). Find out who changed it before dropping it.', r.fn, v_md5;
     END IF;
   END LOOP;

@@ -102,8 +102,30 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
   ok   verify left no backtest account behind
   ok   verify passes without the OPTIONAL columns too
 
+[N0] 00: evaluate_prop_firm_rules ownership check + no anon (own database)
+  ok   BEFORE 00: anon can evaluate (and write to) any journal: the IDOR exists in the mock live
+  ok   00 refuses a drifted function -> DRIFT: public.evaluate_prop_firm_rules(uuid) changed since the 2026-10-18 snapshot (normalised md5 f35b24eb728652285aa37c2255e57467). Review it before
+  ok   00: body == s0 md5
+  ok   00: EXECUTE only for authenticated, postgres, service_role ({authenticated,postgres,service_role})
+  ok   00 changes only the body and the ACL of evaluate_prop_firm_rules
+  ok   anon: permission denied -> permission denied for function evaluate_prop_firm_rules
+  ok   authenticated non-owner: FORBIDDEN -> FORBIDDEN: journal not found or not owned by the caller
+  ok   authenticated, unknown journal: FORBIDDEN (same message, no existence leak) -> FORBIDDEN: journal not found or not owned by the caller
+  ok   authenticated owner: works
+  ok   owner call wrote prop_firm_status
+  ok   service_role (no user id): works
+  ok   direct SQL session (no JWT): works
+  ok   owner, non-prop journal: status none
+  ok   06 after 00: drift guard accepts the 00 body, function dropped
+  ok   06.down after 00: secure body and ACL restored (hole stays closed)
+  ok   00.down: catalog identical to before 00
+  ok   00.down re-opens the hole as documented
+
 [M0] mock of the live schema
   ok   mock has backtest_trades
+
+[M0b] 00: security fix first, as in the real run order
+  ok   evaluate_prop_firm_rules = 00 body
 
 [M1] 01: apply twice
   ok   backtest_trades dropped
@@ -275,8 +297,10 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
   ok   01 refuses a re-run after 02 -> ALREADY SUPERSEDED: migration 202610180002 is applied (reset_user_data is its version). Do not re-run 202610180001; it would remove the Backtest v2 st
 
 [R6] 06.down twice
-  ok   six functions: body/lang/secdef/volatility/config/result/owner identical to the mock live
-  ok   six functions: EXECUTE ACL identical to the mock live {"fn":"evaluate_prop_firm_rules(uuid)","execs":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  ok   five functions: body/lang/secdef/volatility/config/result/owner identical to the mock live
+  ok   five functions: EXECUTE ACL identical to the mock live {"fn":"get_journals_equity_data()","execs":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  ok   evaluate_prop_firm_rules: 00 body, attributes identical to the mock live
+  ok   evaluate_prop_firm_rules: no PUBLIC/anon after 06.down
 
 [R5] 05.down twice
   ok   list_journals = live body
@@ -295,6 +319,8 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
   ok   touch_updated_at kept
 
 [R1] 01.down twice
+
+[R0] 00.down twice (last)
   ok   catalog after all rollbacks == mock live baseline (tables, columns, constraints, indexes, policies, triggers, function bodies/attributes, table grants)
   info expected ACL differences (hardening kept by the rollbacks):
       acls - {"fn":"delete_journal(uuid)","execs":"{PUBLIC,anon,authenticated,postgres,service_role}"}
@@ -303,4 +329,4 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
       acls + {"fn":"list_journals()","execs":"{authenticated,postgres,service_role}"}
   ok   restored backtest_trades RLS: U2 cannot see U1 rows
 
-RESULT: 213 passed, 0 failed
+RESULT: 233 passed, 0 failed
