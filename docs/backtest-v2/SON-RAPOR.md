@@ -1,6 +1,6 @@
 # Backtest v2: son rapor (2026-10-19, kesintisiz bitirme turu)
 
-Branch `backtest-v2`, son commit `5e8a53a` (push edildi). master'a dokunulmadı. **Canlıya hiçbir şey yazılmadı, canlı veritabanına bağlanılmadı.**
+Branch `backtest-v2`, commitler `5e8a53a` (kod) ve `9c8cf7d` (rapor), ikisi de push edildi. master'a dokunulmadı. **Canlıya hiçbir şey yazılmadı, canlı veritabanına bağlanılmadı.**
 
 ## 1. Kısa özet
 
@@ -116,7 +116,7 @@ Branch `backtest-v2`, son commit `5e8a53a` (push edildi). master'a dokunulmadı.
 
 ## 5. Yayın
 
-Merge yapılmadı, commit `5e8a53a` yalnızca `backtest-v2`'de. Canlı site kontrolü yok, revert gerekmedi. Cloudflare Pages dağıtımı yapılmadı.
+Merge yapılmadı, commitler `5e8a53a` ve `9c8cf7d` yalnızca `backtest-v2`'de. Canlı site kontrolü yok, revert gerekmedi. Cloudflare Pages dağıtımı yapılmadı.
 
 ## 6. Karşılaşılan sorunlar ve çözümleri
 
