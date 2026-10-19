@@ -151,3 +151,29 @@ Merge yapılmadı, commitler `5e8a53a` ve `9c8cf7d` yalnızca `backtest-v2`'de. 
 - **Bekleyen backend deploy** (`ctrader-sync`, `create-payment`, `verify-auth`, `nowpayment-webhook`; Migration 0003 ve 0004'ün durumu belirsiz): bu tur dışı.
 - **Repo herkese açılacaksa** `docs/backtest-v2/` içindeki Migration 06 açık tarifi kaldırılmalı (`KURALLAR.md` §4).
 - **Küçük:** ortak modal stillerini `styles.css`'e taşımak; pagecheck'i yeniden koşturmak (merge öncesi).
+
+
+---
+
+# Canlı tur (2026-10-19 gece)
+
+**Özet:** Bağlantı kuruldu, yedek alındı ve doğrulandı, **Migration 00 canlıda çalıştı ve doğrulandı (açık kapandı)**. Migration 01, `backtest_trades` içindeki 1 satır nedeniyle koruması tarafından durdu; bağımlı 02, 04, 05, `BACKEND` geçişi, merge ve yayın kuraldaki gibi atlandı. Pagecheck 6/6 PASS, birim testler 306/0. Devam için tek karar: o 1 satırın silinmesi.
+
+| Madde | Sonuç |
+|---|---|
+| 0 Bağlantı | ✅ PostgreSQL 17.6, rol `postgres`. Değer `~/.wawe-db.env` içinde (chmod 600), repoda hiçbir yerde yok (taranıp doğrulandı). psql/pg_dump 17.11 `~/WaweJournal-pg17/tools/pg` altına kuruldu (micromamba/conda-forge) |
+| 1 Taşıma | ✅ 8 migration `supabase/migrations/` altında (git mv), rollback ve test dosyaları docs'ta. Üretici ve test betikleri yeni yolu kullanıyor, harness 266/0. `db push` kullanılmadı |
+| 2 Canlı tanım, P1-P6, karşılaştırma | ✅ `evaluate_prop_firm_rules` canlı gövdesi anlık görüntüyle aynı; 10 fonksiyonun hepsi aynı (P3 = true x10). GRANT'ler: anon, authenticated, service_role, postgres (PUBLIC yok). P6: veritabanında başka çağıran yok (0 satır). Karşılaştırma: `live-compare.mjs`, çıktı `sql/verify/out/live-compare.txt`: fonksiyon gövdeleri 15/15 aynı; farklar yerel sahte kopyanın sadeleştirmesinden (sütun tip kısıtları, bildirim/prop tabloları, bazı indeks ve politikalar, `is_admin`/diğer fonksiyonların PUBLIC EXECUTE'u). Migration'ları etkileyen fark yok; kanıtı aşağıdaki prova |
+| Prova | ✅ Yedek yerel PG 17'ye geri yüklendi (gerçek canlı şema ve veri); 00, 01, 02, 04, 05 hepsi COMMIT, `backtest_v2_verify.sql` 19 PASS / 0 FAIL |
+| 3 Yedek | ✅ `~/WaweJournal-Backups/20261019T201011Z/`: `full.dump` (pg_dump -Fc, tüm şemalar, 650 KB), `schema.sql` (499 KB), `roles.sql` (parolasız, 5,6 KB), `preflight.txt`, `SHA256SUMS`; toplam 1,1 MB, klasör `chmod 700`. Okunabilirlik: `pg_restore -l` 1010 öğe (69 tablo verisi); yerel PG 17'ye geri yüklendi, karşılaştırılan 7 tablonun satır sayıları canlıyla aynı (auth.users 7, journals 11, trades 114, user_profiles 7, strategies 5, payments 107, backtest_trades 1). Tek geri yükleme hatası yerelde olmayan `supabase_vault` eklentisi |
+| 4 Migration 00 | ✅ Çalıştı (BEGIN…COMMIT). Doğrulama: anon `EXECUTE` yok, PUBLIC yok, gövde md5 = 00'ın gövdesi; anon çağrısı `permission denied for function` (HTTP 401, 42501, hem SQL'de hem REST'te); sahip çağrısı çalıştı; başka kullanıcı `FORBIDDEN`; admin başka defteri değerlendirebildi; service_role çalıştı |
+| 5 Migration 01, 02, 04, 05 | ❌ 01 **ABORT** (`backtest_trades has 1 row(s)`), hiçbir şey değişmedi (rollback gerekmedi). 02, 04, 05 ORDER koruması gereği 01'e bağlı: atlandı |
+| 6 `BACKEND`, canlı SQL doğrulamaları | ❌ atlandı (tablolar canlıda yok). Birim testler 306/0 çalıştırıldı. Arayüz testi sahibe kalır |
+| 7 Pagecheck | ✅ 6/6 PASS (dashboard, premium-dashboard, trades, calendar, strategies, journals), yeni JS hatası 0, sızıntı denetimi çalışıyor |
+| 8 Merge ve yayın | ❌ atlandı: merge koşulu "5-6. adımlardaki canlı SQL doğrulamaları başarılı" sağlanamadı. master'a dokunulmadı, Cloudflare Pages'e push yok, revert gerekmedi |
+
+**01'in durma nedeni ve karar:** `public.backtest_trades` içinde 1 satır var: 2026-10-18 16:17 UTC tarihli, BTCUSDT long, -%1 SL; bir kullanıcıya (premium) ait eski backtest sayfasından kalma bir deneme işlemi. Satır `legacy-backtest_trades.csv` dosyasına ve tam yedeğe alındı. Migration 01 bu tabloyu zaten silecek, yani satır her halükârda yok olacak; ama canlı kullanıcı verisinin silinmesi için sahibin açık onayı olmadığından (otomatik izin denetimi de bu silmeyi engelledi) silmedim ve kuralınız gereği durdum. Satırı silmek için: `delete from public.backtest_trades where id = 'cda92d7f-f4b4-400d-a7fb-c9d59eb9f994';` sonra 01, 02, 04, 05.
+
+**Sizin yapmanız gerekenler:** (1) Satırın silinmesine izin verin (ya da kendiniz silin); sonra oturum kaldığı yerden `DEVAM.md`'deki sırayla devam eder. (2) Admin hesabıyla arayüz denemesi (kullanıcı yapacak): yeni hesap, işlem aç/kapat, deftere bağla, "Backtest" rozeti, bağlantıyı kaldırınca silinme. (3) Yedek klasörünü güvenli yerde tutun: kullanıcı verisi içerir.
+
+**Not (güvenlik):** Bağlantı adresindeki parola sohbet metninde göründü; işiniz bitince Supabase panelinden veritabanı parolasını yenilemenizi öneririm.

@@ -20,7 +20,8 @@ const ROLES = ['anon', 'authenticated', 'service_role', 'supabase_auth_admin'];
 const FNS = ['is_admin', 'touch_updated_at', 'calc_trade_pnl', 'set_default_journal', 'ctrader_reset_cursor_on_journal_change', 'reset_user_data',
   'delete_journal', 'list_journals', 'get_platform_stats', 'evaluate_prop_firm_rules', 'sync_journal_trades', 'get_journals_equity_data',
   'get_strategy_performance', 'get_today_trades_count', 'get_total_trades_count'];
-const mig = (n) => fs.readdirSync(path.join(planDir, 'supabase/migrations')).filter((f) => f.startsWith(n))[0];
+const MIGDIR = path.resolve(planDir, '../../../supabase/migrations'); // forward migrations live in the project's supabase/migrations
+const mig = (n) => fs.readdirSync(MIGDIR).filter((f) => f.startsWith(n))[0];
 const rb = (n) => fs.readdirSync(path.join(planDir, 'supabase/rollbacks')).filter((f) => f.startsWith(n))[0];
 const M = (n) => read(path.join(planDir, 'supabase/migrations', mig(n)));
 const D = (n) => read(path.join(planDir, 'supabase/rollbacks', rb(n)));

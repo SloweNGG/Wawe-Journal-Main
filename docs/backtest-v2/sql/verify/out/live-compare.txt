@@ -1,0 +1,93 @@
+local copy: 9 tables, 15 functions; live public: 23 tables, 64 functions (compared: only objects present in the local copy)
+DIFF  tables (9 local, 8 live)
+  local only  tables: {"relname":"notifications","relrowsecurity":false}
+  local only  tables: {"relname":"user_onboarding","relrowsecurity":false}
+  live only   tables: {"relname":"notifications","relrowsecurity":true}
+DIFF  columns (124 local, 131 live)
+  local only  columns: {"rel":"ctrader_accounts","attname":"balance","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"journals","attname":"name","t":"character varying","attnotnull":true}
+  local only  columns: {"rel":"journals","attname":"color","t":"character varying","attnotnull":false}
+  local only  columns: {"rel":"journals","attname":"icon","t":"character varying","attnotnull":false}
+  local only  columns: {"rel":"journals","attname":"total_pnl","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"journals","attname":"win_rate","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"notifications","attname":"user_id","t":"uuid","attnotnull":true}
+  local only  columns: {"rel":"trades","attname":"lot","t":"numeric","attnotnull":true}
+  local only  columns: {"rel":"trades","attname":"multiplier","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"trades","attname":"entry_price","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"trades","attname":"exit_price","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"trades","attname":"stop_loss","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"trades","attname":"take_profit","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"trades","attname":"pnl","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"trades","attname":"rr_ratio","t":"numeric","attnotnull":false}
+  local only  columns: {"rel":"user_onboarding","attname":"user_id","t":"uuid","attnotnull":true}
+  live only   columns: {"rel":"ctrader_accounts","attname":"balance","t":"numeric(24,8)","attnotnull":false}
+  live only   columns: {"rel":"journals","attname":"name","t":"character varying(100)","attnotnull":true}
+  live only   columns: {"rel":"journals","attname":"color","t":"character varying(7)","attnotnull":false}
+  live only   columns: {"rel":"journals","attname":"icon","t":"character varying(50)","attnotnull":false}
+  live only   columns: {"rel":"journals","attname":"total_pnl","t":"numeric(15,2)","attnotnull":false}
+  live only   columns: {"rel":"journals","attname":"win_rate","t":"numeric(5,2)","attnotnull":false}
+  live only   columns: {"rel":"notifications","attname":"user_id","t":"uuid","attnotnull":false}
+  live only   columns: {"rel":"notifications","attname":"type","t":"text","attnotnull":true}
+  live only   columns: {"rel":"notifications","attname":"title_key","t":"text","attnotnull":true}
+  live only   columns: {"rel":"notifications","attname":"message_key","t":"text","attnotnull":true}
+  live only   columns: {"rel":"notifications","attname":"meta_data","t":"jsonb","attnotnull":false}
+  live only   columns: {"rel":"notifications","attname":"is_read","t":"boolean","attnotnull":false}
+  live only   columns: {"rel":"notifications","attname":"created_at","t":"timestamp with time zone","attnotnull":false}
+  live only   columns: {"rel":"strategies","attname":"description","t":"text","attnotnull":false}
+  live only   columns: {"rel":"strategies","attname":"created_at","t":"timestamp with time zone","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"lot","t":"numeric(10,2)","attnotnull":true}
+  live only   columns: {"rel":"trades","attname":"multiplier","t":"numeric(12,2)","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"entry_price","t":"numeric(18,5)","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"exit_price","t":"numeric(18,5)","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"stop_loss","t":"numeric(18,5)","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"take_profit","t":"numeric(18,5)","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"pnl","t":"numeric(18,2)","attnotnull":false}
+  live only   columns: {"rel":"trades","attname":"rr_ratio","t":"numeric(8,2)","attnotnull":false}
+DIFF  constraints (24 local, 26 live)
+  local only  constraints: {"rel":"journals","conname":"journals_user_id_fkey","d":"FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"}
+  local only  constraints: {"rel":"user_onboarding","conname":"user_onboarding_pkey","d":"PRIMARY KEY (user_id)"}
+  local only  constraints: {"rel":"user_onboarding","conname":"user_onboarding_user_id_fkey","d":"FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"}
+  live only   constraints: {"rel":"ctrader_accounts","conname":"uq_ctrader_user_account","d":"UNIQUE (user_id, ctid_trader_account_id)"}
+  live only   constraints: {"rel":"journals","conname":"journals_user_id_fkey","d":"FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"}
+  live only   constraints: {"rel":"prop_accounts","conname":"chk_prop_rules_size","d":"CHECK ((octet_length((rules)::text) < 20000))"}
+  live only   constraints: {"rel":"prop_accounts","conname":"prop_accounts_starting_balance_check","d":"CHECK ((starting_balance > (0)::numeric))"}
+  live only   constraints: {"rel":"prop_accounts","conname":"prop_accounts_time_shift_hours_check","d":"CHECK (((time_shift_hours >= ('-14'::integer)::numeric) AND (time_shift_hours <= (14)::numeric)))"}
+DIFF  indexes (20 local, 28 live)
+  local only  indexes: {"rel":"user_onboarding","indexname":"user_onboarding_pkey","indexdef":"CREATE UNIQUE INDEX user_onboarding_pkey ON public.user_onboarding USING btree (user_id)"}
+  live only   indexes: {"rel":"ctrader_accounts","indexname":"uq_ctrader_accounts_journal_id","indexdef":"CREATE UNIQUE INDEX uq_ctrader_accounts_journal_id ON public.ctrader_accounts USING btree (journal_id) WHERE (journal_id IS NOT NULL)"}
+  live only   indexes: {"rel":"ctrader_accounts","indexname":"uq_ctrader_user_account","indexdef":"CREATE UNIQUE INDEX uq_ctrader_user_account ON public.ctrader_accounts USING btree (user_id, ctid_trader_account_id)"}
+  live only   indexes: {"rel":"journals","indexname":"idx_journals_user_active","indexdef":"CREATE INDEX idx_journals_user_active ON public.journals USING btree (user_id, is_active)"}
+  live only   indexes: {"rel":"journals","indexname":"idx_journals_user_id","indexdef":"CREATE INDEX idx_journals_user_id ON public.journals USING btree (user_id)"}
+  live only   indexes: {"rel":"journals","indexname":"journals_one_default_per_user","indexdef":"CREATE UNIQUE INDEX journals_one_default_per_user ON public.journals USING btree (user_id) WHERE (is_default = true)"}
+  live only   indexes: {"rel":"prop_accounts","indexname":"idx_prop_accounts_user_active","indexdef":"CREATE INDEX idx_prop_accounts_user_active ON public.prop_accounts USING btree (user_id, is_active)"}
+  live only   indexes: {"rel":"prop_accounts","indexname":"uq_prop_accounts_active_journal","indexdef":"CREATE UNIQUE INDEX uq_prop_accounts_active_journal ON public.prop_accounts USING btree (journal_id) WHERE (is_active = true)"}
+  live only   indexes: {"rel":"strategies","indexname":"idx_strategies_journal_id","indexdef":"CREATE INDEX idx_strategies_journal_id ON public.strategies USING btree (journal_id)"}
+  live only   indexes: {"rel":"strategies","indexname":"idx_strategies_user_active","indexdef":"CREATE INDEX idx_strategies_user_active ON public.strategies USING btree (user_id, is_active)"}
+DIFF  policies (21 local, 27 live)
+  local only  policies: {"rel":"user_profiles","policyname":"user_profiles_select_own","cmd":"SELECT","roles":"{authenticated}","qual":"((id = auth.uid()) OR is_admin())","with_check":null}
+  live only   policies: {"rel":"notifications","policyname":"Admins can manage all notifications","cmd":"ALL","roles":"{public}","qual":"(((auth.jwt() ->> 'role'::text) = 'admin'::text) OR (((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text) = 'admin'::text))","with_check":null}
+  live only   policies: {"rel":"notifications","policyname":"Users can update their own notifications","cmd":"UPDATE","roles":"{public}","qual":"(auth.uid() = user_id)","with_check":"(auth.uid() = user_id)"}
+  live only   policies: {"rel":"notifications","policyname":"Users can view their own notifications","cmd":"SELECT","roles":"{public}","qual":"(auth.uid() = user_id)","with_check":null}
+  live only   policies: {"rel":"user_profiles","policyname":"admin_select_profiles","cmd":"SELECT","roles":"{public}","qual":"(((auth.jwt() -> 'user_metadata'::text) ->> 'role'::text) = 'admin'::text)","with_check":null}
+  live only   policies: {"rel":"user_profiles","policyname":"insert_own_profile","cmd":"INSERT","roles":"{public}","qual":null,"with_check":"(auth.uid() = id)"}
+  live only   policies: {"rel":"user_profiles","policyname":"select_own_profile","cmd":"SELECT","roles":"{public}","qual":"(auth.uid() = id)","with_check":null}
+  live only   policies: {"rel":"user_profiles","policyname":"update_own_profile","cmd":"UPDATE","roles":"{public}","qual":"(auth.uid() = id)","with_check":null}
+DIFF  triggers (4 local, 6 live)
+  live only   triggers: {"rel":"prop_accounts","tgname":"trg_check_prop_account_limit","d":"CREATE TRIGGER trg_check_prop_account_limit BEFORE INSERT OR UPDATE ON public.prop_accounts FOR EACH ROW EXECUTE FUNCTION check_prop_account_limit()"}
+  live only   triggers: {"rel":"strategies","tgname":"trg_strategies_default_journal","d":"CREATE TRIGGER trg_strategies_default_journal BEFORE INSERT ON public.strategies FOR EACH ROW EXECUTE FUNCTION set_default_journal()"}
+same  functions (15 local, 15 live)
+DIFF  acls (15 local, 15 live)
+  local only  acls: {"fn":"delete_journal(uuid)","e":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  local only  acls: {"fn":"evaluate_prop_firm_rules(uuid)","e":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  local only  acls: {"fn":"get_journals_equity_data()","e":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  local only  acls: {"fn":"is_admin()","e":"{anon,authenticated,postgres,service_role}"}
+  local only  acls: {"fn":"sync_journal_trades(uuid,jsonb)","e":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  live only   acls: {"fn":"delete_journal(uuid)","e":"{anon,authenticated,postgres,service_role}"}
+  live only   acls: {"fn":"evaluate_prop_firm_rules(uuid)","e":"{anon,authenticated,postgres,service_role}"}
+  live only   acls: {"fn":"get_journals_equity_data()","e":"{anon,authenticated,postgres,service_role}"}
+  live only   acls: {"fn":"is_admin()","e":"{PUBLIC,anon,authenticated,postgres,service_role}"}
+  live only   acls: {"fn":"sync_journal_trades(uuid,jsonb)","e":"{anon,authenticated,postgres,service_role}"}
+DIFF  tableacl (9 local, 8 live)
+  local only  tableacl: {"rel":"user_onboarding","acl":"{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"}
+
+TOTAL DIFFERENCES: 81

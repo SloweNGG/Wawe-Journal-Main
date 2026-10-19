@@ -13,6 +13,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 const [dbDir, srcDir, outRoot] = process.argv.slice(2);
+const MIGDIR = path.resolve(outRoot, '../../../supabase/migrations');
 if (!dbDir || !srcDir || !outRoot) throw new Error('usage: node build.mjs <dbDir> <srcDir> <outRoot>');
 
 const MARK = '$function$';
@@ -216,7 +217,8 @@ for (const [src, dst] of outputs) {
     return md5s[k];
   });
   if (/\{\{/.test(t)) throw new Error(`${src}: unresolved placeholder`);
-  const out = path.join(outRoot, dst);
+  // forward migrations live in the project's supabase/migrations (repo root), rollbacks and tests stay under the plan dir
+  const out = dst.startsWith('supabase/migrations/') ? path.join(MIGDIR, dst.slice('supabase/migrations/'.length)) : path.join(outRoot, dst);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, t, 'utf8');
   console.log('wrote', dst);

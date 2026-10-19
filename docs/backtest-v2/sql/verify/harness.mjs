@@ -13,18 +13,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const { PGlite } = await import(pathToFileURL(pgliteIndex).href);
 
 const read = (p) => fs.readFileSync(p, 'utf8');
+const MIGDIR = path.resolve(planDir, '../../../supabase/migrations'); // forward migrations live in the project's supabase/migrations
 const MIG = {
-  m03: read(path.join(planDir, 'supabase/migrations/202610180003_candles_bucket_admin_only.sql')),
+  m03: read(path.join(MIGDIR, '202610180003_candles_bucket_admin_only.sql')),
   d03: read(path.join(planDir, 'supabase/rollbacks/202610180003_candles_bucket_admin_only.down.sql')),
-  m07: read(path.join(planDir, 'supabase/migrations/202610180007_candles_open_to_members.sql')),
+  m07: read(path.join(MIGDIR, '202610180007_candles_open_to_members.sql')),
   d07: read(path.join(planDir, 'supabase/rollbacks/202610180007_candles_open_to_members.down.sql')),
-  m00: read(path.join(planDir, 'supabase/migrations/202610180000_secure_evaluate_prop_firm_rules.sql')),
+  m00: read(path.join(MIGDIR, '202610180000_secure_evaluate_prop_firm_rules.sql')),
   d00: read(path.join(planDir, 'supabase/rollbacks/202610180000_secure_evaluate_prop_firm_rules.down.sql')),
-  m01: read(path.join(planDir, 'supabase/migrations/202610180001_drop_legacy_backtest_trades.sql')),
-  m02: read(path.join(planDir, 'supabase/migrations/202610180002_backtest_accounts.sql')),
-  m04: read(path.join(planDir, 'supabase/migrations/202610180004_backtest_journal_link_cleanup.sql')),
-  m05: read(path.join(planDir, 'supabase/migrations/202610180005_exclude_backtest_from_stats.sql')),
-  m06: read(path.join(planDir, 'supabase/migrations/202610180006_drop_unused_trade_functions.sql')),
+  m01: read(path.join(MIGDIR, '202610180001_drop_legacy_backtest_trades.sql')),
+  m02: read(path.join(MIGDIR, '202610180002_backtest_accounts.sql')),
+  m04: read(path.join(MIGDIR, '202610180004_backtest_journal_link_cleanup.sql')),
+  m05: read(path.join(MIGDIR, '202610180005_exclude_backtest_from_stats.sql')),
+  m06: read(path.join(MIGDIR, '202610180006_drop_unused_trade_functions.sql')),
   d01: read(path.join(planDir, 'supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql')),
   d02: read(path.join(planDir, 'supabase/rollbacks/202610180002_backtest_accounts.down.sql')),
   d04: read(path.join(planDir, 'supabase/rollbacks/202610180004_backtest_journal_link_cleanup.down.sql')),

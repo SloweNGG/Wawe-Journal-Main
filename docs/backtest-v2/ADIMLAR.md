@@ -155,3 +155,19 @@ Sahip bu turda onay beklenmeden çalışılmasını istedi. **Canlıya (veritaba
 | 10-14 | Yedek, canlı migration'lar, BACKEND geçişi, canlı uçtan uca deneme | ❌ atlandı (canlı kimlik bilgisi yok) |
 | 15-16 | master'a merge, canlı site kontrolü | ❌ atlandı (merge koşulu 14. madde sağlanamadı) |
 | 17 | `PROJECT_OVERVIEW.md` yeni backtest sistemiyle güncellendi | ✅ |
+
+
+## Canlı tur (2026-10-19 gece)
+
+Sahip bu turda canlı adımların bitirilmesini istedi (bağlantı `~/.wawe-db.env`, değer hiçbir yere yazılmadı). Yedek: `~/WaweJournal-Backups/20261019T201011Z/`.
+
+| # | İş | Durum |
+|---|---|---|
+| T.1 | Bağlantı (PostgreSQL 17.6, rol `postgres`), psql/pg_dump 17.11 (`~/WaweJournal-pg17/tools/pg`) | ✅ |
+| T.2 | Migration dosyaları `supabase/migrations/` altına taşındı (rollback ve test dosyaları docs'ta); `build.mjs`, `harness.mjs`, `local-run.mjs` yeni yolu kullanıyor, 266/0 | ✅ |
+| T.3 | P1-P6 canlıda çalıştırıldı; 10 fonksiyon gövdesi anlık görüntüyle **aynı**; canlı/yerel karşılaştırma (`live-compare.mjs`, `out/live-compare.txt`); 02, 04, 05 ve 01 yedeğin yerel geri yüklemesinde (gerçek canlı şema ve veri) çalıştı, verify.sql 19 PASS | ✅ |
+| T.4 | Tam yedek (pg_dump -Fc, şema, roller), yerel PG 17'ye geri yüklenip satır sayıları canlıyla karşılaştırıldı: aynı | ✅ |
+| T.5 | **Migration 00 canlıda çalıştırıldı**; anon reddedildi (HTTP 401, 42501), sahip, admin ve service_role çalışıyor, başka kullanıcı FORBIDDEN | ✅ |
+| T.6 | Migration 01: **ABORT**, `backtest_trades` içinde 1 satır var (2026-10-18 tarihli BTCUSDT test işlemi). Dosya hiçbir şey değiştirmedi. Satırı silmek için sahibin onayı gerekiyor (aşağıda) | ❌ durdu |
+| T.7 | Migration 02, 04, 05 (01'e bağlı, ORDER koruması), canlı SQL doğrulamaları, `BACKEND = 'supabase'`, merge, yayın | ❌ atlandı (T.6'ya bağlı) |
+| T.8 | Pagecheck yeniden çalıştırıldı: **6/6 PASS** | ✅ |

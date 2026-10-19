@@ -1,8 +1,15 @@
-# Backtest v2: kaldığımız yer (2026-10-19 akşam, bitirme turu sonu)
+# Backtest v2: kaldığımız yer (2026-10-19 gece, canlı tur sonu)
 
 Yeni oturum için okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md`, `ADIMLAR.md` ("Bitirme turu" bölümü).
 
-## Durum
+## Canlı tur sonu (güncel durum, önce bunu oku)
+
+- Canlıda **Migration 00 çalıştı** (güvenlik açığı kapandı, doğrulandı). Yedek: `~/WaweJournal-Backups/20261019T201011Z/` (`full.dump`, `schema.sql`, `roles.sql`, `preflight.txt`, `legacy-backtest_trades.csv`, `SHA256SUMS`).
+- **Migration 01 durdu**: `public.backtest_trades` içinde 1 satır var (id `cda92d7f-f4b4-400d-a7fb-c9d59eb9f994`, BTCUSDT, 2026-10-18 tarihli test işlemi). Satır CSV'ye ve tam yedeğe alındı. Devam etmek için satırın silinmesi gerekiyor (canlı veri silme; otomatik izin denetimi bu turda engelledi, sahibin açık onayı bekleniyor): `delete from public.backtest_trades where id = 'cda92d7f-f4b4-400d-a7fb-c9d59eb9f994';`
+- Silindikten sonra sırayla: `supabase/migrations/202610180001_...`, `...02_...`, `...04_...`, `...05_...` (psql, `-v ON_ERROR_STOP=1`), her birinden sonra kontrol, ardından `docs/backtest-v2/sql/supabase/tests/backtest_v2_verify.sql` (19 PASS beklenir; kendi kendine geri alır), `BACKEND = 'supabase'`, test, build, pagecheck, merge ve yayın. 01 sonrası tüm adımlar gerçek canlı şema ve veriyle yerelde **prova edildi** (yedeğin geri yüklenmesi): 00, 01, 02, 04, 05 COMMIT, verify.sql 19 PASS.
+- Bağlantı: `set -a; source ~/.wawe-db.env; set +a` (yalnızca `source` değişkeni dışa aktarmaz). psql/pg_dump: `~/WaweJournal-pg17/tools/pg/bin`.
+
+## Durum (önceki tur)
 
 - **Bitti (branch `backtest-v2`):** arayüz düzeltmeleri (tam ekran replay, hesap ayarları penceresi, spread pip, eksen etiketi, devToolbar), Migration 00'a `is_admin()` istisnası (SQL testleri PGlite ve gerçek PG 17'de 266/0), `PROJECT_OVERVIEW.md` güncellemesi.
 - **Yapılmadı, tek engel canlı kimlik bilgisi:** makinede veritabanı parolası, Supabase erişim token'ı ve `gh` yok. Canlı adımlar (7, 10-16) atlandı. Hiçbir canlı sisteme yazılmadı.
