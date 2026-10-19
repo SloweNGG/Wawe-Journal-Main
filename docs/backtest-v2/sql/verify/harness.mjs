@@ -374,6 +374,17 @@ log('\n[N0] 00: evaluate_prop_firm_rules ownership check + no anon (own database
   const own = (await as(db, U1, `select public.evaluate_prop_firm_rules($1) as r`, [J1a])).rows[0].r;
   ok(own && own.status === 'active' && Number(own.initial_balance) === 1000, 'authenticated owner: works');
   ok((await one(db, `select prop_firm_status as s from public.journals where id = $1`, [J1a])).s === 'active', 'owner call wrote prop_firm_status');
+  // an admin (JWT app_metadata.role = admin, public.is_admin()) may evaluate any journal; a plain authenticated user may not
+  const adm = (await as(db, ADM, `select public.evaluate_prop_firm_rules($1) as r`, [J1a], { admin: true })).rows[0].r;
+  ok(adm && adm.status === 'active', 'authenticated ADMIN, journal of another user: works (is_admin exception)');
+  await expectErr(() => as(db, ADM, `select public.evaluate_prop_firm_rules($1)`, [J1a]), /FORBIDDEN: journal not found or not owned/, 'user with the admin id but no admin claim: FORBIDDEN');
+  await expectErr(() => as(db, null, `select public.evaluate_prop_firm_rules($1)`, [J1a], { role: 'anon' }), /permission denied for function evaluate_prop_firm_rules/, 'anon with no claims: permission denied');
+  // a SECURITY DEFINER caller (sync_journal_trades does this on live) keeps the end user's auth.uid(): own journal works, another user's does not
+  await db.exec(`CREATE OR REPLACE FUNCTION public.__sdcaller(p uuid) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path = public AS $f$ SELECT public.evaluate_prop_firm_rules(p) $f$`);
+  await db.exec(`GRANT EXECUTE ON FUNCTION public.__sdcaller(uuid) TO authenticated`);
+  ok((await as(db, U1, `select public.__sdcaller($1) as r`, [J1a])).rows[0].r.status === 'active', 'SECURITY DEFINER wrapper, owner: works');
+  await expectErr(() => as(db, U2, `select public.__sdcaller($1)`, [J1a]), /FORBIDDEN/, 'SECURITY DEFINER wrapper, other user: FORBIDDEN');
+  await db.exec(`DROP FUNCTION public.__sdcaller(uuid)`);
   const svc = (await as(db, null, `select public.evaluate_prop_firm_rules($1) as r`, [J1a], { role: 'service_role' })).rows[0].r;
   ok(svc && svc.status === 'active', 'service_role (no user id): works');
   const sql = (await one(db, `select public.evaluate_prop_firm_rules($1) as r`, [J1a])).r;

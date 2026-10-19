@@ -1,62 +1,33 @@
-# Backtest v2: kaldığımız yer (2026-10-19)
+# Backtest v2: kaldığımız yer (2026-10-19 akşam, bitirme turu sonu)
 
-Yeni oturum için okuma sırası:
-1. `KURALLAR.md`
-2. bu dosya
-3. `PLAN.md`
-4. `asama-arayuz/stage4-ek.md`
+Yeni oturum için okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md`, `ADIMLAR.md` ("Bitirme turu" bölümü).
 
-## Durum (2026-10-19 gece sonu, ayrıntı: `ADIMLAR.md` ve `SABAH-RAPORU.md`)
+## Durum
 
-- Faz A (arayüz) **kodlandı ve test edildi**, sahibin ekran onayını (A.12) bekliyor. Güvenlik migration'ı 00, 03 ve 07 yazıldı, hiçbiri canlıda çalıştırılmadı. Yerel PG 17 kuruldu (`sql/verify/LOCAL-PG17.md`).
-- Aşağıdaki "Durum" bölümü gece öncesinden kalma, tarihi geçmiştir.
+- **Bitti (branch `backtest-v2`):** arayüz düzeltmeleri (tam ekran replay, hesap ayarları penceresi, spread pip, eksen etiketi, devToolbar), Migration 00'a `is_admin()` istisnası (SQL testleri PGlite ve gerçek PG 17'de 266/0), `PROJECT_OVERVIEW.md` güncellemesi.
+- **Yapılmadı, tek engel canlı kimlik bilgisi:** makinede veritabanı parolası, Supabase erişim token'ı ve `gh` yok. Canlı adımlar (7, 10-16) atlandı. Hiçbir canlı sisteme yazılmadı.
+- `BACKEND` hâlâ `'local'` (`public/interface/backtest/js/backtest.js`, satır ~25). Migration'lar canlıda çalışmadan `'supabase'` yapılmaz ve master'a merge edilmez.
 
-## Durum (eski)
+## Kaldığın yerden devam: canlı adımlar (kimlik bilgisi verilince)
 
-- Plan hazır ve sahibe sunuldu. **Sahibin onayı bekleniyor.** Onay gelmeden Faz A'ya başlanmaz. `PLAN.md` sonundaki karar listesi sahibe sorulur ya da sahibin verdiği yanıtlar uygulanır.
-- Canlı veritabanına, Storage'a ve fonksiyonlara **hiçbir yazma yapılmadı**. Yedek de henüz alınmadı; ilk canlı yazmadan önce alınacak.
-- Branch `backtest-v2`. Uygulama kodunda henüz backtest değişikliği yok, yalnızca `docs/backtest-v2/` var.
+Sırayla, her adımda hata olursa o adımın rollback'i ve bağımlı adımların atlanması kuralı geçerli (sahibin tek seferlik prompt'undaki hata politikası):
 
-## Sıradaki iş: Faz A (onaydan sonra)
+1. Salt okunur bağlan; `evaluate_prop_firm_rules` tanımı ve GRANT'leri; 18 Ekim anlık görüntüsüyle (`sql/db-snapshot/`) karşılaştır; çağıranları kontrol et (repoda çağıran yok, tek DB içi çağıran `sync_journal_trades`, ayrıntı SON-RAPOR madde 8).
+2. Tam yedek: `~/WaweJournal-Backups/<UTC>/` (repo ve OneDrive dışı). Parola yalnızca o terminalde ortam değişkeni olarak, hiçbir dosyaya yazılmaz.
+3. Migration sırası: **00, 01, 02, 04, 05** (03 ve 07 Faz E; 06 sahip kararı bekliyor). Dosyalar: `sql/supabase/migrations/`, rollback'ler `sql/supabase/rollbacks/` (ters sırada). Her birinden sonra `sql/supabase/tests/backtest_v2_verify.sql` veya dosyanın kendi kontrol sorguları. `supabase db push` kullanılmaz (KURALLAR §2).
+4. `BACKEND = 'supabase'`, `npm run build`, `node --test tests/*.test.js`, pagecheck (`asama-senkron-istatistik/pagecheck/`, 6/6).
+5. Canlı veritabanıyla admin hesabıyla uçtan uca deneme (hesap, işlem, deftere bağlama, "Backtest" rozeti, istatistikler değişmiyor, bağlantıyı kaldırınca silinme, temizlik).
+6. Hepsi tamamsa PR ile master'a merge, Cloudflare Pages, canlı site kontrolü; sorun varsa merge commit'i revert.
 
-1. Eski sayfanın ön yüz kısmını kaldır. Kaynak: `asama-kaldirma/stage2.md` ve `stage2.diff`. Migration 01 ve `settings.js` değişikliği **Faz B'ye** kalır.
-2. Saf kütüphaneleri testleriyle birlikte yaz:
-   - `bt-symbols.js`: temeli `asama-arsiv/proto/public/interface/backtest/js/bt-symbols.js`.
-   - `bt-candles.js`
-   - `bt-engine.js`: sayılar `asama-arayuz/prototip/` ile doğrulanır.
-   - `bt-synthetic.js`: `asama-arsiv/proto/.../sources/synthetic.mjs` dosyasından taşınır.
-3. `bt-data.js` (SyntheticSource) ve `bt-store.js` (LocalStore) yaz. Kurallar `stage4-ek.md` §3'te.
-4. Sayfayı, admin kapısını, tarihe git kuralını, i18n'i ve navbar linkini yaz (yalnızca admin). Kaynaklar: `stage4.md` ve `stage4-ek.md`.
-5. Çalıştır: `node --test tests/*.test.js` (önceki temel: 156 test geçiyor). Sonra sayfayı admin ve admin olmayan hesapla dene.
+## Araçlar (bu turdan)
 
-## SQL araçları (laptopta kurulum)
-
-SQL dosyaları `sql/verify/src/` altındaki şablonlardan üretilir. Üretilen dosyaları doğrudan düzenleme. Şablonu düzenle, sonra build ve harness'i çalıştır.
-
-PGlite repoya konmaz. Repo dışında, geçici bir klasöre indirilir:
-
-```bash
-# repo dışında bir klasörde:
-npm pack @electric-sql/pglite@0.5.8 && tar -xzf electric-sql-pglite-0.5.8.tgz   # -> package/dist/index.js
-
-# repo kökünden, docs/backtest-v2 içinde:
-cd docs/backtest-v2
-node sql/verify/build.mjs sql/db-snapshot sql/verify/src sql
-node sql/verify/harness.mjs <pglite klasörü>/package/dist/index.js sql sql/db-snapshot
-(cd sql/verify && node docs.mjs "$PWD/..")     # RUN_ORDER.md'yi yeniden üretir
-```
-
-Son sonuç: **213 geçti, 0 kaldı** (`sql/verify/out/harness-output.txt`).
-
-`RUN_ORDER.md` içindeki eski `scratchpad` yolları önceki makineye aittir. Bu dosyadaki komutları kullan.
+- Ekran görüntüsü düzeneği (repo dışı, scratchpad): `puppeteer-core` + `smoke/make.py` varyantı; gerekirse `smoke/README.md`'deki komutlarla yeniden kurulur. Gerçek `dist/backtest.html` gövdesi ve tüm sayfa CSS'leri (`styles.css`, `navbar.css`, `buttons.css`) yüklenmeli, yoksa modal ve düzen farklı görünür.
+- SQL: `node sql/verify/build.mjs sql/db-snapshot sql/verify/src sql`, harness PGlite (`npm pack @electric-sql/pglite@0.5.8`) veya gerçek PG 17 (`sql/verify/LOCAL-PG17.md`; harness'ten önce `wawe_local` veritabanı silinmeli, yoksa `role "anon" cannot be dropped` hatası verir).
 
 ## Açık işler
 
-- Migration'lar bağımsız SQL incelemesinden geçmedi (önceki oturumun inceleme ajanları limite takıldı). Faz B'den önce canlı gövdelerle (`sql/db-snapshot/fn_*.sql`) satır satır incele.
-- Migration 03 ve 07 yazılmadı (Faz E, `asama-arsiv/ARSIV.md` §3).
-- İçe aktarıcıyı D13'e uyarla (sembol başına index, gün defteri, kilit) ve testlerini yaz (`ARSIV.md` §2).
-- `stage5-6.md` güncellenecek:
-  - `mapTrade`, `initial_stop_loss` / `initial_take_profit` göndermeli.
-  - Hesap sıfırlandıktan sonra `reconcileAccount` çağrılmalı.
-- Lisans: Binance (CC BY-NC-SA) ve forex/altın için karar sahipte. cTrader Open API trendbar sorusu, kararından önce dar kapsamlı olarak araştırılacak (`karar-kaydi/saglayici-ara-bulgular.md`).
-- Repoda backtest dışı, commit edilmiş bir değişiklik var: landing ve giriş sayfalarında saf siyah arka plan (ayrı commit).
+- Faz E: lisans kararı, Migration 03/07, içe aktarıcı, ArchiveSource, gerçek veri ve herkese açılış.
+- Migration 06 kararı (6 kullanılmayan fonksiyon; açığı 00 zaten kapatıyor, 06 yalnızca temizlik).
+- Premium dashboard dil karışıklığı (ön-var olan hata, `SABAH-RAPORU.md`).
+- `npm audit` incelemesi, canlıdaki eski `get-candles` Edge Function'ının silinmesi, backend deploy bekleyenler (`ctrader-sync`, `create-payment`, `verify-auth`, `nowpayment-webhook`).
+- `docs/backtest-v2/` içinde Migration 06 açığının tarifi var; repo herkese açılacaksa kaldırılmalı (KURALLAR §4).

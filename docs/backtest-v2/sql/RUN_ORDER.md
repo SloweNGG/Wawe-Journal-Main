@@ -328,18 +328,20 @@ Generated with `diff -u` from `verify/out/bodies` (the rollbacks restore the `.l
      WHERE user_id = v_user_id AND is_active = true;
 --- evaluate_prop_firm_rules.live (evaluate_prop_firm_rules(uuid))
 +++ evaluate_prop_firm_rules.s0
-@@ -38,7 +38,20 @@
+@@ -38,7 +38,22 @@
      v_trade_rec RECORD;
      v_running_pnl numeric := 0;
      v_running_equity numeric := 0;
 +    v_caller uuid;
  BEGIN
 +    -- Security (202610180000): the caller must own the journal. A caller with a user id is checked
-+    -- against journals.user_id; a caller without one is accepted only if its JWT role is not
-+    -- anon/authenticated (service_role, or a direct SQL session such as the SQL Editor).
++    -- against journals.user_id (an admin, public.is_admin(), may evaluate any journal); a caller without one
++    -- is accepted only if its JWT role is not anon/authenticated (service_role, or a direct SQL session such
++    -- as the SQL Editor).
 +    v_caller := auth.uid();
 +    IF v_caller IS NOT NULL THEN
-+        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller) THEN
++        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller)
++           AND NOT public.is_admin() THEN
 +            RAISE EXCEPTION 'FORBIDDEN: journal not found or not owned by the caller' USING ERRCODE = '42501';
 +        END IF;
 +    ELSIF coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated') THEN
@@ -386,7 +388,7 @@ journal-delete (both FK orders)/admin journal-delete/auth-user-delete (as a role
 `public`)/`delete_journal` (both branches)/`reset_user_data`, the stats changes, idempotent re-runs of
 every file, the OPTIONAL-column decline paths, the verify script, the pre-flight queries, and that after
 all rollbacks the catalog equals the original (only the intended ACL hardening differs).
-Result: **261 passed, 0 failed**. Re-run from Git Bash:
+Result: **266 passed, 0 failed**. Re-run from Git Bash:
 
 ```bash
 SP=/c/Users/kadir/AppData/Local/Temp/claude/c--Users-kadir-OneDrive-Masa-st--Wawe-Journal-astro/97ee93d7-3b56-4094-909f-8a419fcb57d4/scratchpad

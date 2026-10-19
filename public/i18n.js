@@ -123,7 +123,7 @@
     if (SUPPORTED_LANGS.indexOf(lang) === -1) return null;
 
     try {
-      var url = I18N_PATH + lang + '.js?v=1792500000';
+      var url = I18N_PATH + lang + '.js?v=1792600000';
       var mod = await import(/* @vite-ignore */ url);
       var dict = (mod && mod.default) ? mod.default : mod;
 

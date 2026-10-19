@@ -113,6 +113,11 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
   ok   authenticated, unknown journal: FORBIDDEN (same message, no existence leak) -> FORBIDDEN: journal not found or not owned by the caller
   ok   authenticated owner: works
   ok   owner call wrote prop_firm_status
+  ok   authenticated ADMIN, journal of another user: works (is_admin exception)
+  ok   user with the admin id but no admin claim: FORBIDDEN -> FORBIDDEN: journal not found or not owned by the caller
+  ok   anon with no claims: permission denied -> permission denied for function evaluate_prop_firm_rules
+  ok   SECURITY DEFINER wrapper, owner: works
+  ok   SECURITY DEFINER wrapper, other user: FORBIDDEN -> FORBIDDEN: journal not found or not owned by the caller
   ok   service_role (no user id): works
   ok   direct SQL session (no JWT): works
   ok   owner, non-prop journal: status none
@@ -359,4 +364,4 @@ PGlite: PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by
       acls + {"fn":"list_journals()","execs":"{authenticated,postgres,service_role}"}
   ok   restored backtest_trades RLS: U2 cannot see U1 rows
 
-RESULT: 261 passed, 0 failed
+RESULT: 266 passed, 0 failed

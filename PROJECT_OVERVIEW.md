@@ -102,6 +102,7 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 │  │  ├─ premium-dashboard/ ES modülleri: premium-dashboard, dashboard-manager, chart-renderers,
 │  │  │                     chart-expand, export-dialog, pdf-report, insights-engine, widget-*, prop-widgets, helpers
 │  │  ├─ trades/, calendar/, strategies/, journals/ (css)
+│  │  ├─ backtest/          Backtest v2: backtest.js (sayfa), bt-symbols/candles/engine/synthetic/data/store/sync + css (bkz. 5.7)
 │  │  ├─ admin/             admin-core, admin-data, admin-dashboard
 │  │  ├─ quick-add/         Hızlı işlem ekleme + broker CSV algılama/eşleştirme
 │  │  └─ shared/            Tüm sayfaların ortak modülleri (bkz. bölüm 7)
@@ -117,8 +118,10 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 │  ├─ tests/               prop_accounts_verify.sql
 │  └─ ADMIN_ROLE.md        Admin rolünün nasıl verileceği
 │
+├─ docs/backtest-v2/       Backtest v2 planı, kurallar, SQL migration'ları (sql/), testler ve raporlar (bkz. 5.7)
 └─ tests/                  node:test birim testleri (trade-metrics, time-settings, chart-theme,
-                           prop-calculator, prop-service, prop-card-v2, insights-engine)
+                           prop-calculator, prop-service, prop-card-v2, insights-engine,
+                           bt-symbols/candles/engine/synthetic/store/sync/i18n, trades-source, stats-audit)
 ```
 
 **Önemli:** Uygulama mantığının büyük kısmı Astro bileşenlerinde değil, `public/` altındaki düz tarayıcı JS dosyalarındadır. Astro sayfaları iskelet HTML'i ve script/CSS bağlantılarını sağlar.
@@ -165,7 +168,7 @@ Sayfalar `/ad.html` olarak üretilir; Cloudflare `/ad` adresini de sunar. Uygula
 | `/strategies` | `interface/strategies/js/strategies.js` | Strateji analizi ve karşılaştırma |
 | `/journals` | sayfa içi script | Defterler (hesaplar), prop hesapları, cTrader bağlantısı |
 | `/add-trade` | sayfa içi script | İşlem ekleme formu ve toplu içe aktarma |
-| `/backtest` | sayfa içi script | Backtest (mum verisi Edge Function'dan) |
+| `/backtest` | `interface/backtest/js/backtest.js` | Backtest v2: mum mum replay, sanal hesaplar (yalnızca admin; diğerleri "Backtest yakında" ekranı görür). Bkz. 5.7 |
 | `/my-earnings` | sayfa içi script | Referans/influencer kazançları ve ödeme talepleri |
 | `/settings` | `settings/js/settings.js` | Profil, plan, tema, dil, saat ayarları vb. |
 | `/report-bug` | sayfa içi script | Hata bildirimi ve destek talepleri |
@@ -183,7 +186,7 @@ Sayfalar `/ad.html` olarak üretilir; Cloudflare `/ad` adresini de sunar. Uygula
 
 ## 5. Veritabanı şeması (Supabase / Postgres)
 
-**Not:** Çekirdek tablolar (`user_profiles`, `journals`, `trades`, `strategies`, `backtest_trades`, `references`) Supabase panelinden oluşturulmuştur; repoda `CREATE TABLE` karşılıkları yoktur. Migration'lar bu tablolara sütun, indeks ve RLS ekler (bkz. `supabase/migrations/README.md`). Aşağıdaki sütun listeleri migration'lardan ve istemci kodundan derlenmiştir.
+**Not:** Çekirdek tablolar (`user_profiles`, `journals`, `trades`, `strategies`, `references`) Supabase panelinden oluşturulmuştur; repoda `CREATE TABLE` karşılıkları yoktur. Migration'lar bu tablolara sütun, indeks ve RLS ekler (bkz. `supabase/migrations/README.md`). Aşağıdaki sütun listeleri migration'lardan ve istemci kodundan derlenmiştir.
 
 ### 5.1 İlişki şeması
 
@@ -246,7 +249,7 @@ Her tabloda `user_id` sahiplik alanıdır ve RLS politikaları `user_id = auth.u
 
 **`strategies`** — `id`, `user_id`, `journal_id`, `name`, `description`, `color`, `is_active`, `created_at`. İndeks `(user_id, is_active)`. İşlemlere `trades.strategy_id` ile bağlanır.
 
-**`backtest_trades`** — `user_id`, `symbol`, `side`, `entry_price`, `exit_price`, `entry_time`, `exit_time`, `pnl_pct`, `exit_reason`. İndeks `(user_id, entry_time desc)`.
+**`backtest_trades`** (eski backtest tablosu) — Migration 01 ile silinir. Yerine `backtest_accounts` ve `backtest_account_trades` gelir (bkz. 5.7).
 
 ### 5.4 Prop firm ve cTrader (defterlere bağlı)
 
@@ -287,7 +290,40 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 | `nowpayment-webhook` | Ödeme tamamlanınca planı işler ve bildirim gönderir |
 | `ctrader-connect` | cTrader OAuth kod değişimi; token ve hesapları kaydeder |
 | `ctrader-sync` | cTrader işlemlerini `trades` tablosuna aktarır (`import_hash = ctrader:<hesap>:<dealId>`), bakiyeyi günceller |
-| `get-candles` | Backtest için mum verisi |
+| `get-candles` | Eski backtest için mum verisi. **Repodan silindi**; canlıdaki kopyası hâlâ duruyor, silinmesi ayrı bir adım (canlı yazma). |
+
+### 5.7 Backtest v2
+
+**Durum (2026-10-19):** Kod `backtest-v2` branch'inde hazır. Üretimde (master) henüz **yok**: veritabanı migration'ları canlıda çalıştırılmadı, sayfa `BACKEND = 'local'` ile çalışır (hesaplar tarayıcıda, veri sentetik). Yayın sırası ve kapılar `docs/backtest-v2/ADIMLAR.md` ve `SON-RAPOR.md` içindedir.
+
+**Sayfa ve kütüphaneler (`public/interface/backtest/`):**
+| Dosya | Görev |
+|---|---|
+| `js/backtest.js` | Sayfa denetleyicisi: hesap listesi, oluştur/düzenle/sil/sıfırla, replay, emir paneli, grafik (Lightweight Charts), istatistikler, tarihe git, tr/en/de |
+| `js/bt-symbols.js`, `bt-candles.js` | Sembol tablosu (pip, basamak, lot), mum birleştirme ve zaman dilimi |
+| `js/bt-engine.js` | Tamsayı tabanlı işlem motoru: spread, SL/TP, komisyon (gidiş-dönüş, kapanışta), aynı mumda SL ve TP birlikte vurursa SL öncelikli |
+| `js/bt-synthetic.js`, `bt-data.js` | Tarayıcıda deterministik sentetik mum üretimi ("Sentetik veri · test" etiketi) |
+| `js/bt-store.js` | `LocalStore` (localStorage) ve `SupabaseStore`; veritabanıyla aynı satır biçimi ve kurallar (kota, kilitler, geri gitme yasağı) |
+| `js/bt-sync.js` | Kapanan işlemleri bağlı deftere `platform_source = 'backtest'` olarak yazar; bağlantı değişince kopyaları siler |
+| `css/backtest.css` | Tam ekran düzen: grafik kalan alanı kaplar, sağda 320–360px yan panel (bakiye ve emir), altta kendi içinde kayan işlem tabloları; 1024px altında alt alta |
+
+**Erişim:** yalnızca admin (`app_metadata.role = 'admin'`); navbar linki de yalnızca adminde görünür. Diğer kullanıcılar "Backtest yakında" ekranını görür. Herkese açma (Migration 07 ve lisans kararı) Faz E'dedir.
+
+**Veritabanı (canlıda henüz yok):** `docs/backtest-v2/sql/supabase/migrations/` altında numaralı migration'lar, her birinin `rollbacks/` altında geri alma dosyası var. Elle, SQL Editor'da, sırayla çalıştırılır (`supabase db push` kullanılmaz):
+| No | Ne yapar |
+|---|---|
+| 00 | `evaluate_prop_firm_rules(uuid)` açığını kapatır: anon erişimi kalkar, sahiplik kontrolü gelir (admin ve service role geçer) |
+| 01 | Eski `backtest_trades` tablosunu siler (satır varsa durur), `reset_user_data()` eski bloğu çıkarır |
+| 02 | `backtest_accounts` ve `backtest_account_trades`, RLS, kota ve kilit tetikleyicileri |
+| 03 | `candles` Storage bucket'ı, yalnızca admin okur (Faz E) |
+| 04 | Hesap bağlantısı değişince/silinince defterdeki backtest kopyalarını temizler |
+| 05 | `list_journals()` ve `get_platform_stats()` backtest satırlarını saymaz |
+| 06 | Kullanılmayan 6 fonksiyonu siler (isteğe bağlı, bu turda çalıştırılmadı) |
+| 07 | Arşivi tüm üyelere açar; lisans onay satırı açılmadan çalışmaz (Faz E) |
+
+**İstatistiklerden yalıtım:** Backtest işlemleri günlüğe yalnızca `trades.platform_source = 'backtest'` ile gider. Tüm okuyucular (dashboard, premium dashboard, takvim, stratejiler, defterler) canlı kapsamı okur (`public/interface/shared/trades-source.js`); işlemler sayfasında Tümü / Canlı / Backtest seçici ve "Backtest" rozeti vardır. Karşılaştırma aracı: `docs/backtest-v2/asama-senkron-istatistik/pagecheck/` (6/6 sayfa eski ve yeni build ile aynı sayıları gösterir).
+
+**Test araçları:** `node --test tests/*.test.js` (306 test); SQL için `docs/backtest-v2/sql/verify/` (PGlite ve gerçek PostgreSQL 17 üzerinde 266 test); tarayıcı duman testi `docs/backtest-v2/asama-arayuz/smoke/`.
 
 ---
 
@@ -385,6 +421,7 @@ Böylece font, eksen yazısı, ızgara ve tooltip görünümü diğer sayfalarla
 
 - **Kurulum:** `npm install` → `npm run dev`. `bundle.js` dev ve build başında otomatik üretilir.
 - **Testler:** `node --test tests/*.test.js` (tarayıcı modülleri `vm` ile yüklenir).
+- **Astro geliştirme araç çubuğu kapalı** (`astro.config.mjs` → `devToolbar.enabled = false`): localhost'ta alt paneldeki tabloların üstünü kapatıyordu.
 - **Önbellek kırma:** Sayfa CSS/JS bağlantıları `?v=<sayı>` parametresi taşır. Bir dosyayı değiştirince ilgili `.astro` sayfasındaki sayıyı artır. Premium-dashboard alt modülleri sürüm parametresi almaz; tarayıcı eski sürümü tutabilir.
 - **Bilinen sorunlar ve tutarsızlıklar:**
   - `src/components/quick-add/QuickAddModal.tsx` (React, kullanılmıyor) işlemi `journal_id` olmadan ekler.

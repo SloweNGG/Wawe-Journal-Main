@@ -1,6 +1,6 @@
 # Backtest v2: adım listesi
 
-Son güncelleme: 2026-10-19 (gece). Branch `backtest-v2`.
+Son güncelleme: 2026-10-19 (akşam, kesintisiz bitirme turu). Branch `backtest-v2`.
 
 Simgeler: ✅ bitti · 🔄 devam ediyor · ⬜ bekliyor · 🔐 sahip onayı gerekir
 
@@ -135,3 +135,23 @@ Sonuç (19 Ekim sabahı, gece yarım kalan koşunun baştan sona yeniden çalı�
 2. Türkçe algılama kelime listesiyle genişletildi (ASCII Türkçe yedek metinler "Kazanan 59", "STRATEJI" önceki denetimden kaçıyordu), deneme sayısı 5'ten 8'e çıktı. `strategies` sayfasında bu denetim hep "Türkçe" diyor ama metin her koşuda birebir aynı (651 karakter); yani yanlış alarm, sonuca etkisi yok.
 
 **Sınırlar:** veri bellek içi sahte veritabanı, gerçek Supabase RPC'leri (Migration 05 dahil) burada çalışmaz; RPC canlı süzgeci `rpcLiveOnly` bayrağıyla taklit edilir. Gerçek canlı doğrulama D.1'den sonra. Eski build'in çalışma kopyası (geçici worktree) silindi; aracı yeniden koşturmak için `git worktree add <dir> 50f92a8`, orada `npm ci && npm run build` gerekir.
+
+
+## Bitirme turu (2026-10-19 akşam): tek seferlik iş listesi
+
+Sahip bu turda onay beklenmeden çalışılmasını istedi. **Canlıya (veritabanı, Edge Function, yayın) dokunulmadı**: makinede veritabanı parolası, Supabase erişim token'ı ve `gh` yok, sahibin talimatı gereği canlı adımlar atlandı. Ayrıntı: `SON-RAPOR.md`.
+
+| # | İş | Durum |
+|---|---|---|
+| 1 | Tam ekran replay düzeni (grafik kalan alanı kaplar, sağda 320-360px yan panel, altta kendi içinde kayan tablolar, telefon/tablet alt alta, hesap listesi 1920px) | ✅ |
+| 2 | Zaman ekseni ilk etiketi kesilmesi: kesilecek etiket boş bırakılıyor, kaydırmada yeniden denetleniyor | ✅ |
+| 3 | Hesap ayarları penceresi: ✕ sağ üstte, başlık hizası, Kaydet/İptal stili, başlangıç tarihi düzenlemede gizli + "Tarihe git" notu, zaman dilimi açıklaması, `[hidden]` hatası (Bağlı hesap yerelde gizli) | ✅ |
+| 4 | Spread yanında pip karşılığı (`0.00002 (0.2 pip)`) | ✅ |
+| 5 | Astro `devToolbar` kapalı | ✅ |
+| 6 | Test + headless Chrome ekran görüntüleri (koyu/açık × tr/en/de × 1440, 1920, 768, 390) | ✅ |
+| 7 | Canlıdan `evaluate_prop_firm_rules` tanımı/GRANT okuma | ❌ atlandı (canlı kimlik bilgisi yok) |
+| 8 | Çağıran listesi + Migration 00'da `is_admin()` istisnası | ✅ (repoda); canlıdaki çağıranlar doğrulanamadı |
+| 9 | Faz B/C/D migration sırası: 00, 01, 02, 04, 05 (03 ve 07 Faz E, 06 bu turda yok); canlı şema karşılaştırması | ⚠️ sıra belirlendi, canlı karşılaştırma atlandı |
+| 10-14 | Yedek, canlı migration'lar, BACKEND geçişi, canlı uçtan uca deneme | ❌ atlandı (canlı kimlik bilgisi yok) |
+| 15-16 | master'a merge, canlı site kontrolü | ❌ atlandı (merge koşulu 14. madde sağlanamadı) |
+| 17 | `PROJECT_OVERVIEW.md` yeni backtest sistemiyle güncellendi | ✅ |

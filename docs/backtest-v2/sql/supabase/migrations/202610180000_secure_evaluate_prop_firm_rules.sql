@@ -9,7 +9,8 @@
 --     1. EXECUTE is revoked from PUBLIC and anon; authenticated and service_role keep it
 --        (sync_journal_trades calls it as the journal owner).
 --     2. The body gets an ownership check: a caller with a user id (auth.uid()) must own the journal,
---        otherwise 42501. A caller without a user id is accepted only if its JWT role is neither
+--        otherwise 42501, except an admin (public.is_admin()), who may evaluate any journal.
+--        A caller without a user id is accepted only if its JWT role is neither
 --        'anon' nor 'authenticated' (service_role, or a direct SQL session such as the SQL Editor).
 --   Everything else in the body is the 2026-10-18 live body, unchanged (exact string edits, see build.mjs).
 --   Independent of Migration 06 and of the Backtest v2 migrations: it can run first, alone.
@@ -35,10 +36,14 @@ BEGIN
     RAISE EXCEPTION 'PRECONDITION: public.evaluate_prop_firm_rules(uuid) does not exist (already dropped by 06?). Nothing to secure.';
   END IF;
 
+  IF to_regprocedure('public.is_admin()') IS NULL THEN
+    RAISE EXCEPTION 'PRECONDITION: public.is_admin() does not exist (the ownership check lets admins through).';
+  END IF;
+
   -- DRIFT: the function must be the 2026-10-18 live body or this migration's body (re-run).
   SELECT md5(translate(p.prosrc, E' \t\r\n', '')) INTO v_md5
     FROM pg_proc p WHERE p.oid = 'public.evaluate_prop_firm_rules(uuid)'::regprocedure;
-  IF v_md5 NOT IN ('ac50682480af983cae0ad64c8f787929', '9cfecfdb506b0ecfb82319cdc7d4dec1') THEN
+  IF v_md5 NOT IN ('ac50682480af983cae0ad64c8f787929', '29f8b77b773e510216390b6ddebe604f') THEN
     RAISE EXCEPTION 'DRIFT: public.evaluate_prop_firm_rules(uuid) changed since the 2026-10-18 snapshot (normalised md5 %). Review it before replacing it.', v_md5;
   END IF;
 END $$;
@@ -87,11 +92,13 @@ DECLARE
     v_caller uuid;
 BEGIN
     -- Security (202610180000): the caller must own the journal. A caller with a user id is checked
-    -- against journals.user_id; a caller without one is accepted only if its JWT role is not
-    -- anon/authenticated (service_role, or a direct SQL session such as the SQL Editor).
+    -- against journals.user_id (an admin, public.is_admin(), may evaluate any journal); a caller without one
+    -- is accepted only if its JWT role is not anon/authenticated (service_role, or a direct SQL session such
+    -- as the SQL Editor).
     v_caller := auth.uid();
     IF v_caller IS NOT NULL THEN
-        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller) THEN
+        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller)
+           AND NOT public.is_admin() THEN
             RAISE EXCEPTION 'FORBIDDEN: journal not found or not owned by the caller' USING ERRCODE = '42501';
         END IF;
     ELSIF coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated') THEN
@@ -249,7 +256,7 @@ COMMIT;
 --           has_function_privilege('authenticated', 'public.evaluate_prop_firm_rules(uuid)', 'EXECUTE') AS authenticated_can_exec,
 --           (SELECT bool_or(a.grantee = 0) FROM pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
 --             WHERE p.oid = 'public.evaluate_prop_firm_rules(uuid)'::regprocedure AND a.privilege_type = 'EXECUTE') AS public_can_exec,
---           (SELECT md5(translate(prosrc, E' \t\r\n', '')) = '9cfecfdb506b0ecfb82319cdc7d4dec1'
+--           (SELECT md5(translate(prosrc, E' \t\r\n', '')) = '29f8b77b773e510216390b6ddebe604f'
 --              FROM pg_proc WHERE oid = 'public.evaluate_prop_firm_rules(uuid)'::regprocedure) AS same_body;
 -- 2) From a client with only the anon key, POST /rest/v1/rpc/evaluate_prop_firm_rules {"p_journal_id": "<any uuid>"}
 --    must answer 401/403 ("permission denied for function").

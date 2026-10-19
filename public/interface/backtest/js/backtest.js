@@ -351,6 +351,7 @@
     $('bt-account-submit-label').textContent = edit ? _t('common.save', 'Kaydet') : _t('backtest.modal.create', 'Hesabı oluştur');
     show($('bt-account-error'), false);
     show($('bt-f-start-wrap'), !edit);
+    show($('bt-f-start-note'), edit);
     var trades = edit ? await L.store.listTrades(acc.id) : [];
     if (!PAGE.alive) return;
     var hasTrades = trades.length > 0, hasOpen = trades.some(function (t) { return !t.exit_time; });
@@ -896,7 +897,37 @@
 
   // ---------------------------------------------------------------- chart
   function colors() { return window.WwChart.colors(); }
+  // The chart clips a label whose centre is closer to the left edge than half its width ("30 Jun" showed as "0 Jun").
+  // Such a tick is shown blank instead. The chart caches the formatted text per tick time, so the set of blanked ticks
+  // is re-checked whenever the visible range changes and the labels are re-formatted when that set changes.
+  function clipLimit(len) { return len * 3.8 + 4; }
   function tickLabel(time, type) {
+    var text = tickText(time, type);
+    if (!text || !R || !R.chart) return text;
+    if (!R.tickSeen) { R.tickSeen = {}; R.tickHide = {}; }
+    R.tickSeen[time] = text.length;
+    try {
+      var x = R.chart.timeScale().timeToCoordinate(time);
+      if (x !== null && x > -4 && x < clipLimit(text.length)) { R.tickHide[time] = true; return ''; }
+    } catch (e) { /* keep the label */ }
+    return R.tickHide[time] ? '' : text;
+  }
+  function refreshClippedTicks() {
+    if (!R || !R.chart || !R.tickSeen) return;
+    var ts = R.chart.timeScale(), seen = R.tickSeen, hide = {}, changed = false, k;
+    var keys = Object.keys(seen);
+    if (keys.length > 4000) { R.tickSeen = {}; R.tickHide = {}; return; }
+    keys.forEach(function (t) {
+      var x = ts.timeToCoordinate(+t);
+      if (x !== null && x > -4 && x < clipLimit(seen[t])) hide[t] = true;
+    });
+    for (k in hide) if (!R.tickHide[k]) changed = true;
+    for (k in R.tickHide) if (!hide[k]) changed = true;
+    if (!changed) return;
+    R.tickHide = hide;
+    ts.applyOptions({ tickMarkFormatter: tickLabel });
+  }
+  function tickText(time, type) {
     if (typeof time !== 'number' || !R) return null;
     var mo = MONTHS[lang()] || MONTHS.tr;
     if (R.tfMin >= 1440) {
@@ -927,6 +958,7 @@
       priceFormat: S.priceFormat(R.sym.id)
     });
     R.chart.subscribeCrosshairMove(renderLegend);
+    R.chart.timeScale().subscribeVisibleLogicalRangeChange(refreshClippedTicks);
     if (!R.chart.autoSizeActive || !R.chart.autoSizeActive()) installResizeFallback();
   }
   function destroyChart() {
@@ -1067,13 +1099,15 @@
     var chip = $('bt-market-chip'), open = S.isOpen(sec * 1000, R.sym.id);
     chip.hidden = open; chip.textContent = _t('backtest.market.closed', 'Piyasa kapalı');
   }
+  // spread in pips from the account's hundredths ("20" -> "0.2", "150" -> "1.5", "0" -> "0")
+  function pipsStr(h) { return E.hundredthsToStr(h).replace(/\.?0+$/, ''); }
   function renderLive(force) {
     if (!R || !R.win) return;
     var q = E.quote(R.eng), s = R.sym;
     renderClock();
     if (q) {
       setText('bt-bid', E.ptsToStr(q.bid, s.digits)); setText('bt-ask', E.ptsToStr(q.ask, s.digits));
-      setText('bt-spread', E.ptsToStr(R.eng.sp, s.digits));
+      setText('bt-spread', E.ptsToStr(R.eng.sp, s.digits) + ' (' + pipsStr(R.acc.spreadH) + ' pip)');
     }
     var sm = E.summary(R.eng);
     setText('bt-stat-balance', fmtUsd(sm.balanceCents)); setText('bt-stat-equity', fmtUsd(sm.equityCents));

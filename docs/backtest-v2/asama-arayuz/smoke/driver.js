@@ -32,6 +32,7 @@
     ok('chart canvas present', !!document.querySelector('#bt-chart canvas'));
     ok('clock shows a time', $('bt-clock-time').textContent.length > 4, $('bt-clock-time').textContent);
     ok('source label is the synthetic one', /Sentetik|Synthetic/.test($('bt-source-label').textContent), $('bt-source-label').textContent);
+    ok('spread shown with its pip value', /^\d+\.\d{5} \(0\.2 pip\)$/.test($('bt-spread').textContent), $('bt-spread').textContent);
     ok('bid/ask shown', /^\d+\.\d{5}$/.test($('bt-bid').textContent) && /^\d+\.\d{5}$/.test($('bt-ask').textContent), $('bt-bid').textContent + '/' + $('bt-ask').textContent);
     ok('balance 10000', /10[.,]?000/.test($('bt-stat-balance').textContent), $('bt-stat-balance').textContent);
     var key = Object.keys(localStorage).filter(function (k) { return k.indexOf('ww-bt:v1:') === 0; })[0];
@@ -107,6 +108,8 @@
     $('bt-acc-settings-btn').click(); await waitFor(function () { return $('bt-account-modal').classList.contains('active'); }, 5000, 'settings modal');
     ok('reset button visible with trades', vis('bt-account-reset'));
     ok('symbol locked, balance locked', $('bt-f-symbol').disabled && $('bt-f-balance').disabled);
+    ok('edit modal: start date hidden, note about "go to date" shown', !vis('bt-f-start-wrap') && vis('bt-f-start-note'), $('bt-f-start-note').textContent.slice(0, 60));
+    ok('edit modal: [hidden] wins over .bt-field (linked account hidden in local mode)', !vis('bt-f-journal-wrap'));
     $('bt-account-reset').click(); await sleep(100);
     $('bt-reset-confirm').click(); await sleep(400);
     ok('reset deleted the trades', JSON.parse(localStorage.getItem(key)).trades.length === 0 && $('bt-history-count').textContent === '0');

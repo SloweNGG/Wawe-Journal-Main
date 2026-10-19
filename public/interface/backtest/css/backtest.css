@@ -1,6 +1,7 @@
 /* Backtest v2 (Faz A). Tüm sınıflar bt- önekli. Karanlık modda yüzeyler saf siyah, sayılar DM Sans + tabular-nums. */
-.bt-main { max-width: 1400px; margin: 0 auto; padding: clamp(1rem, 2.5vw, 2rem); box-sizing: border-box; }
-.bt-view[hidden], .bt-main [hidden] { display: none !important; }
+.bt-main { width: 100%; max-width: 1920px; margin: 0 auto; padding: clamp(1rem, 2.5vw, 2rem); box-sizing: border-box; flex: 0 0 auto; }
+/* [hidden] her yerde geçerli olmalı: modallar .bt-main dışındadır ve .bt-field { display: flex } özniteliği eziyordu */
+.bt-view[hidden], .bt-main [hidden], .bt-modal [hidden] { display: none !important; }
 .bt-num { font-family: 'DM Sans', sans-serif; font-variant-numeric: tabular-nums; }
 .bt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .bt-up { color: var(--green); }
@@ -33,7 +34,7 @@
 /* liste */
 .bt-list-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .bt-quota { color: var(--muted); font-size: 13px; }
-.bt-accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+.bt-accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 16px; }
 .bt-account-card { padding: 18px; cursor: pointer; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s, transform 0.2s; }
 .bt-account-card:hover, .bt-account-card:focus-visible { border-color: var(--border2); transform: translateY(-2px); outline: none; }
 .bt-skeleton { min-height: 170px; opacity: 0.4; animation: bt-pulse 1.4s ease-in-out infinite; cursor: default; }
@@ -53,10 +54,10 @@
 #bt-root[data-state="fatal"] #bt-view-list > :not(#bt-fatal) { display: none !important; }
 
 /* replay */
-.bt-replay-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.bt-replay-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
 .bt-replay-title { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .bt-replay-title h2 { margin: 0; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bt-toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px;
+.bt-toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 8px 14px; margin-bottom: 10px;
   border: 1px solid var(--border); border-radius: var(--radius); }
 .bt-transport, .bt-goto { display: flex; align-items: center; gap: 8px; }
 .bt-clock { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13.5px; }
@@ -74,21 +75,21 @@
 :root:not(.light-theme) body:not(.light-theme) :is(.bt-icon-btn, .bt-toolbar) { background: #000; }
 :root:not(.light-theme) body:not(.light-theme) .bt-play[aria-pressed="true"] { background: var(--accent); }
 
-.bt-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
-.bt-chart-card { padding: 12px 14px 8px; min-width: 0; }
+.bt-layout { display: flex; flex-direction: column; gap: 12px; }
+.bt-chart-card { padding: 10px 14px 8px; min-width: 0; display: flex; flex-direction: column; }
 .bt-chart-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; min-height: 26px; }
 .bt-legend { display: flex; gap: 12px; font-size: 12.5px; }
 .bt-legend i { font-style: normal; color: var(--muted); margin-right: 2px; }
 .bt-source { font-size: 12px; color: var(--accent3); border: 1px dashed var(--border2); border-radius: 999px; padding: 2px 10px; }
-.bt-chart-wrap { position: relative; }
-.bt-chart { width: 100%; height: clamp(320px, 56vh, 620px); }
+.bt-chart-wrap { position: relative; flex: 1 1 auto; min-height: 0; height: clamp(300px, 55vh, 560px); }
+.bt-chart { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bt-chart-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px;
   background: rgba(0, 0, 0, 0.55); border-radius: 12px; color: #fff; z-index: 5; }
 .bt-chart-overlay.bt-soft { inset: auto 12px 12px auto; padding: 6px 12px; background: rgba(0, 0, 0, 0.7); font-size: 12.5px; }
 .bt-chart-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 6px; }
 .bt-attribution { margin: 0; font-size: 11px; color: var(--muted); }
 .bt-attribution a { color: var(--muted); text-decoration: underline; }
-.bt-side { display: flex; flex-direction: column; gap: 14px; }
+.bt-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .bt-card { padding: 14px 16px; }
 .bt-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .bt-stat { display: flex; flex-direction: column; gap: 2px; }
@@ -109,30 +110,48 @@
 .bt-field label { font-size: 12.5px; color: var(--muted); }
 .bt-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .bt-field .bt-hint { margin: 0; }
+.bt-modal .bt-block-hint { margin: -4px 0 12px; }
 
-.bt-tables { margin-top: 16px; }
-.bt-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin: -4px 0 12px; overflow-x: auto; }
+.bt-tables { margin-top: 12px; display: flex; flex-direction: column; min-height: 0; max-height: 360px; padding-top: 6px; padding-bottom: 10px; }
+.bt-tabs { display: flex; flex: none; gap: 6px; border-bottom: 1px solid var(--border); margin: 0 0 8px; overflow-x: auto; }
 .bt-tabs button { background: none; border: none; color: var(--muted); padding: 10px 14px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
   border-bottom: 2px solid transparent; white-space: nowrap; }
 .bt-tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
 .bt-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--surface2); font-size: 11px; text-align: center; }
-.bt-table-wrap { overflow-x: auto; }
+.bt-panel { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.bt-table-wrap { overflow: visible; }
 .bt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.bt-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11.5px; padding: 6px 10px; white-space: nowrap; }
+.bt-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11.5px; padding: 6px 10px; white-space: nowrap; position: sticky; top: 0; z-index: 1; background: var(--surface); }
 .bt-table td { padding: 8px 10px; border-top: 1px solid var(--border); white-space: nowrap; }
 .bt-table .bt-actions { text-align: right; }
 .bt-table .bt-actions .btn { padding: 4px 10px; font-size: 12px; }
+.bt-table .bt-actions .btn + .btn { margin-left: 6px; }
 .bt-stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin: 0; }
 .bt-stats-item dt { color: var(--muted); font-size: 11.5px; }
 .bt-stats-item dd { margin: 3px 0 0; font-size: 16px; font-weight: 700; }
-.bt-shortcuts { margin-top: 12px; }
+.bt-shortcuts { margin: auto 0 0; padding-top: 4px; }
 
-/* modallar */
+/* modallar: .modal-header / .modal-close / .modal-footer / .btn-modal-* sayfa CSS'lerinde (strategies.css gibi) tanımlı, burada yüklenmez; aynı görünüm için buraya alındı */
+.bt-modal .modal-box { border-color: var(--border2); animation: bt-modal-in 0.2s ease; }
+@keyframes bt-modal-in { from { opacity: 0; transform: scale(0.96) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 .bt-modal .modal-box-sm { max-width: 440px; }
-.bt-modal .modal-body { padding: 16px 20px; overflow-y: auto; }
-.bt-modal .modal-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.bt-btn-danger { background: var(--red); color: #fff; border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.bt-btn-danger-ghost { background: none; color: var(--red); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-sm); padding: 8px 14px;
+.bt-modal .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none;
+  padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--border); }
+.bt-modal .modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
+.bt-modal .modal-close { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 30px; height: 30px; padding: 0; margin: -4px -6px -4px 0;
+  background: none; border: none; border-radius: 8px; color: var(--muted); font-size: 1.05rem; line-height: 1; cursor: pointer; transition: color 0.2s, background 0.2s; }
+.bt-modal .modal-close:hover, .bt-modal .modal-close:focus-visible { color: var(--text); background: var(--surface2); outline: none; }
+.bt-modal .modal-body { padding: 1.25rem 1.35rem; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+.bt-modal .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; flex: none; padding: 0.9rem 1.35rem 1.25rem; }
+/* Eylem düğmelerinin görünümü /buttons.css'ten gelir (siyah, mor çerçeve): Kaydet birincil; İptal ikincil, nötr çerçeve */
+.bt-modal :is(.btn-modal-cancel, .btn-modal-confirm) { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.bt-modal .btn-modal-confirm { font-weight: 600; }
+.bt-modal .btn-modal-cancel { font-weight: 500; border-color: var(--border2) !important; color: var(--muted) !important; }
+.bt-modal .btn-modal-cancel:hover { border-color: var(--muted) !important; color: var(--text) !important; }
+.bt-modal :is(.btn-modal-cancel, .btn-modal-confirm, .bt-btn-danger, .bt-btn-danger-ghost):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:root:not(.light-theme) body:not(.light-theme) .bt-modal .modal-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
+.bt-btn-danger { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 0.55rem 1.15rem; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
+.bt-btn-danger-ghost { background: none; color: var(--red); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 0.5rem 0.9rem;
   font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px; }
 .bt-btn-danger-ghost:hover { background: var(--red-bg); }
 
@@ -140,10 +159,36 @@
 body.light-theme .bt-chart-overlay { background: rgba(255, 255, 255, 0.7); color: #0f172a; }
 body.light-theme .bt-chart-overlay.bt-soft { background: rgba(255, 255, 255, 0.9); }
 
-@media (max-width: 980px) { .bt-layout { grid-template-columns: minmax(0, 1fr); } .bt-clock { margin-left: 0; } }
+/* geniş ekran: tam ekran replay (navbar 64px). Chart kalan alanı doldurur, yan panel sabit genişlikte, tablolar grafiğin altında */
+@media (min-width: 1025px) {
+  #bt-root[data-state="replay"] { max-width: none; height: calc(100vh - 64px); height: calc(100dvh - 64px); min-height: 620px; padding: 10px 16px 12px;
+    display: flex; flex-direction: column; }
+  #bt-root[data-state="replay"] #bt-view-replay { flex: 1 1 auto; min-height: 0; display: grid; column-gap: 14px;
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 24vw, 360px);
+    grid-template-rows: auto auto auto minmax(0, 1fr) clamp(170px, 28vh, 300px); }
+  .bt-replay-head, .bt-toolbar, #bt-save-banner { grid-column: 1 / -1; }
+  .bt-replay-head { grid-row: 1; }
+  .bt-toolbar { grid-row: 2; }
+  #bt-save-banner { grid-row: 3; margin: 0 0 10px; }
+  .bt-layout { display: contents; }
+  .bt-chart-card { grid-column: 1; grid-row: 4; min-height: 0; }
+  .bt-chart-wrap { height: auto; }
+  .bt-side { grid-column: 2; grid-row: 4 / 6; overflow-y: auto; padding-right: 2px; }
+  .bt-tables { grid-column: 1; grid-row: 5; max-height: none; margin-top: 10px; }
+}
+
+/* açık tema (devam) */
+body.light-theme .bt-modal .modal-box { border-color: var(--border); }
+:root:not(.light-theme) body:not(.light-theme) .bt-table th { background: #000; }
+
+@media (max-width: 1024px) { .bt-clock { margin-left: 0; } }
 @media (max-width: 560px) {
   .bt-main { padding: 12px 16px; }
-  .bt-toolbar { padding: 10px; }
+  .bt-toolbar { padding: 10px; gap: 10px; }
+  .bt-goto { flex: 1 1 100%; }
+  .bt-goto .bt-input { flex: 1 1 auto; }
   .bt-field-row { grid-template-columns: 1fr; }
-  .bt-chart { height: 320px; }
+  .bt-chart-wrap { height: 320px; }
+  .bt-modal .modal-header, .bt-modal .modal-body { padding-left: 1rem; padding-right: 1rem; }
+  .bt-modal .modal-footer { padding: 0.8rem 1rem 1rem; }
 }

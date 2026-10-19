@@ -66,11 +66,13 @@ DECLARE
     v_caller uuid;
 BEGIN
     -- Security (202610180000): the caller must own the journal. A caller with a user id is checked
-    -- against journals.user_id; a caller without one is accepted only if its JWT role is not
-    -- anon/authenticated (service_role, or a direct SQL session such as the SQL Editor).
+    -- against journals.user_id (an admin, public.is_admin(), may evaluate any journal); a caller without one
+    -- is accepted only if its JWT role is not anon/authenticated (service_role, or a direct SQL session such
+    -- as the SQL Editor).
     v_caller := auth.uid();
     IF v_caller IS NOT NULL THEN
-        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller) THEN
+        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller)
+           AND NOT public.is_admin() THEN
             RAISE EXCEPTION 'FORBIDDEN: journal not found or not owned by the caller' USING ERRCODE = '42501';
         END IF;
     ELSIF coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated') THEN
@@ -483,7 +485,7 @@ COMMIT;
 -- ------------------------------------------------------------
 -- 1) Bodies identical to the 2026-10-18 snapshot (expect 6 rows, all true):
 --    SELECT v.fn, md5(translate(p.prosrc, E' \t\r\n', '')) = v.expected_md5 AS same_body
---      FROM (VALUES ('public.evaluate_prop_firm_rules(uuid)',   '9cfecfdb506b0ecfb82319cdc7d4dec1'),
+--      FROM (VALUES ('public.evaluate_prop_firm_rules(uuid)',   '29f8b77b773e510216390b6ddebe604f'),
 --                   ('public.sync_journal_trades(uuid, jsonb)', 'ac82821c8455df5cc3743c70f572dada'),
 --                   ('public.get_journals_equity_data()',       'ba07a8d2cbb221313a1002929aa48222'),
 --                   ('public.get_strategy_performance(uuid)',   '6f198892f0c0b0e0eb95fd0a488fa586'),

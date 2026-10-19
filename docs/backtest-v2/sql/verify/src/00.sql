@@ -9,7 +9,8 @@
 --     1. EXECUTE is revoked from PUBLIC and anon; authenticated and service_role keep it
 --        (sync_journal_trades calls it as the journal owner).
 --     2. The body gets an ownership check: a caller with a user id (auth.uid()) must own the journal,
---        otherwise 42501. A caller without a user id is accepted only if its JWT role is neither
+--        otherwise 42501, except an admin (public.is_admin()), who may evaluate any journal.
+--        A caller without a user id is accepted only if its JWT role is neither
 --        'anon' nor 'authenticated' (service_role, or a direct SQL session such as the SQL Editor).
 --   Everything else in the body is the 2026-10-18 live body, unchanged (exact string edits, see build.mjs).
 --   Independent of Migration 06 and of the Backtest v2 migrations: it can run first, alone.
@@ -33,6 +34,10 @@ DECLARE
 BEGIN
   IF to_regprocedure('public.evaluate_prop_firm_rules(uuid)') IS NULL THEN
     RAISE EXCEPTION 'PRECONDITION: public.evaluate_prop_firm_rules(uuid) does not exist (already dropped by 06?). Nothing to secure.';
+  END IF;
+
+  IF to_regprocedure('public.is_admin()') IS NULL THEN
+    RAISE EXCEPTION 'PRECONDITION: public.is_admin() does not exist (the ownership check lets admins through).';
   END IF;
 
   -- DRIFT: the function must be the 2026-10-18 live body or this migration's body (re-run).
