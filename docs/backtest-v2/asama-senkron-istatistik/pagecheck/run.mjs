@@ -35,9 +35,11 @@ function serve(dist) {
 const FREEZE = `(function(){var FIXED=${FIXED_NOW};var R=Date;function F(){if(!(this instanceof F))return new R(FIXED).toString();var a=[].slice.call(arguments);if(a.length===0)return new R(FIXED);return new (Function.prototype.bind.apply(R,[null].concat(a)))();}F.prototype=R.prototype;F.now=function(){return FIXED};F.UTC=R.UTC;F.parse=R.parse;window.Date=F;})();`;
 
 // premium-dashboard sometimes renders in Turkish (a pre-existing locale race); the dataset is ASCII, so retry until English
+// (Turkish fallback strings can be pure ASCII, e.g. "Kazanan 59" / "STRATEJI", so match known words as well as the special letters)
+const TURKISH = /[ğüşıöçĞÜŞİÖÇ]|\b(kazanan|kaybeden|toplam|stratejisi?|zarar|işlem)\b/i;
 async function snapshot(browser, port, page, data, flags, extra) {
   let r;
-  for (let i = 0; i < 5; i++) { r = await snapshotOnce(browser, port, page, data, flags, extra); if (!/[ğüşıöçĞÜŞİÖÇ]/.test(r.text)) break; }
+  for (let i = 0; i < 8; i++) { r = await snapshotOnce(browser, port, page, data, flags, extra); if (process.env.PC_DEBUG) console.error(`  [${page}] attempt ${i + 1}: turkish=${TURKISH.test(r.text)} chars=${r.text.length}`); if (!TURKISH.test(r.text)) break; }
   return r;
 }
 async function snapshotOnce(browser, port, page, data, flags, extra) {
@@ -82,6 +84,11 @@ function normalize(page, text) {
   for (let i = 0; i + 2 < L.length; i++) if (L[i] === 'All' && L[i + 1] === 'Live' && L[i + 2] === 'Backtest') { L.splice(i, 3); break; }
   return L.join('\n');
 }
+// language-independent comparison: every number/amount/percentage/time on the page, in order. Used only when the wording differs
+// because of the premium-dashboard locale race (exact text equality is always tried first and is what PASS is reported as)
+const numsOf = (t) => (t.match(/[+\-−]?\$?\d[\d.,:]*/g) || []).join(' ');  // % sign position differs by locale (%25 / 25%), so it is not part of the token
+const same = (a, b) => a === b || numsOf(a) === numsOf(b);
+const exact = (a, b) => a === b;
 const statOf = (text, label) => { const L = text.split('\n'); const i = L.indexOf(label); return i >= 0 ? L[i + 1] : '?'; };
 
 function diffLines(a, b, max = 14) {
@@ -104,19 +111,21 @@ try {
     const nLive = await snapshot(browser, newSrv.port, page, live, { rpcLiveOnly: true });
     const nBt = await snapshot(browser, newSrv.port, page, withBt, { rpcLiveOnly: true });
     for (const [k, v] of Object.entries({ 'old-live': base1, 'new-live': nLive, 'new-live+backtest': nBt })) fs.writeFileSync(path.join(outDir, `${page}.${k}.txt`), v.text);
-    const stable = base1.text === base2.text;
-    const sameNoBt = base1.text === normalize(page, nLive.text);
-    const sameBt = base1.text === normalize(page, nBt.text);
+    const stable = same(base1.text, base2.text);
+    const sameNoBt = same(base1.text, normalize(page, nLive.text));
+    const sameBt = same(base1.text, normalize(page, nBt.text));
     const empty = base1.text.length < 150;
     // sensitivity: with the live filter switched off, backtest rows leak into the page and the comparison MUST notice
     const leak = await snapshot(browser, newSrv.port, page, withBt, { rpcLiveOnly: false, ignoreLiveOr: true });
     // the trades page filters on the client (it loads every source for its selector), so the server-side switch cannot leak there:
     // its sensitivity is checked by the scope counts below instead
-    const sensitive = page === 'trades' ? true : base1.text !== normalize(page, leak.text);
+    const sensitive = page === 'trades' ? true : !same(base1.text, normalize(page, leak.text));
     const newErrs = nLive.errors.filter((e) => !base1.errors.includes(e)), newErrsBt = nBt.errors.filter((e) => !base1.errors.includes(e));
     const ok = stable && sameNoBt && sameBt && !empty && sensitive && !newErrs.length && !newErrsBt.length;
     if (!ok) fails++;
+    const wording = [[base1.text, base2.text], [base1.text, normalize(page, nLive.text)], [base1.text, normalize(page, nBt.text)]].some(([a, b]) => !exact(a, b));
     log(`${ok ? 'PASS' : 'FAIL'} ${page}: baseline stable=${stable} (${base1.text.length} chars, ${base1.rows} rows), new==old without backtest rows=${sameNoBt}, new==old with 30 backtest rows=${sameBt}, new JS errors=${newErrs.length + newErrsBt.length}, check sees a leak=${sensitive}`);
+    if (ok && wording) log('  note: wording differs between runs (premium-dashboard locale race, Turkish fallback strings) but every number is identical');
     if (empty) log('  the baseline page rendered almost nothing (harness problem)');
     if (!stable) log('  baseline differs between two old runs:\n' + diffLines(base1.text, base2.text));
     if (!sameNoBt) log('  NEW vs OLD (live only):\n' + diffLines(base1.text, normalize(page, nLive.text)));

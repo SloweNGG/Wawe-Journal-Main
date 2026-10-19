@@ -8,6 +8,8 @@
 3. **0.9 inceleme**: ciddi SQL hatası yok (`sql/INCELEME.md`), bir doküman düzeltmesi.
 4. **Migration 03 ve 07** + rollback'ler (07'de lisans onay satırı kapalı).
 5. **Yerel PostgreSQL 17.11** kuruldu; tüm migration ve rollback'ler gerçek sunucuda baştan sona çalıştı, 261 test orada da geçti.
+6. **Faz C (senkron) ve Faz D (istatistik) kodu**: `bt-sync.js`, SupabaseStore, `mapTrade` açılış seviyeleri, tüm `trades` okuyucularında canlı süzgeç, işlemler sayfasında Tümü / Canlı / Backtest seçici. Tüm okuyucular denetlendi ve testlendi. **Canlıya yayın için Migration 04 ve 05 ile Faz B migration'ları gerekiyor; merge kapısı ADIMLAR'da.**
+7. **Sayfa karşılaştırması (pagecheck)**: 6 gerçek sayfa, eski ve yeni build, backtest satırı olsun olmasın **sayılar birebir aynı** (6/6 PASS). Araç repoda. Ayrıntı aşağıda.
 
 **Takılan / yapılmayan:**
 - Hiçbir adımda takılma olmadı (şifre vb. istenmedi).
@@ -85,3 +87,35 @@ Sonuç `sql/INCELEME.md`'de. Özet: ciddi bir SQL hatası bulunmadı; bir doküm
 - `local-run.mjs`: gerçek dosyalar sırayla 00, 01, 02, 03, 04, 05, 06, ardından `verify.sql` (19 PASS, 0 FAIL, SKIP yok), ardından 06→00 geri alma (katalog başlangıçla aynı; `delete_journal`/`list_journals` ACL sıkılaştırması rollback'lerde bilerek korunuyor), ardından tekrar ileri. Hepsi tamam. `wawe_local` veritabanı migrate edilmiş halde duruyor.
 - **"Canlı şemanın kopyası"**: canlıya bağlanmadığım için 18 Ekim salt okunur anlık görüntülerinden kuruldu (9 public tablo, 16 fonksiyon). Gerçek `pg_dump` karşılaştırması sizin onayınızla sabaha kaldı (ADIMLAR L.4).
 - Dikkat: 03.down'un `storage.allow_delete_query` ayarı ve 07'nin `auth.jwt()->>'is_anonymous'` koşulu gerçek Supabase Storage'da denenmedi (yerel kopyada Storage şeması sahte).
+
+## Adım 6: Faz C ve D (kod tarafı)
+
+- `fef5100`: yalnızca canlı veriyi okuyan istatistik okuyucuları, `trades` kapsam süzgeci, `bt-sync` kütüphanesi.
+- `f44ad8d`: Faz C günlük senkronu sayfaya bağlandı (kapanışta senkron, bağla/taşı/kaldır, hesap silme, sıfırlama, onarım), SupabaseStore, `mapTrade` günlüğe açılıştaki SL/TP seviyelerini gönderiyor (D13).
+- `174773a`: her `trades` okuyucusunun denetimi ve "backtest satırı olmadan canlı kapsamın eşitliği" testleri.
+- **Hâlâ canlıda çalışmadı / sizde:** Migration 04 (C.2), 05 (D.1), Faz B migration'ları (01, 02). Faz C+D kodu bunlar çalışmadan master'a **merge edilmemeli** (ADIMLAR "MERGE KAPISI").
+
+## Adım 7: sayfa karşılaştırması (internet kesintisinden sonra yeniden)
+
+Gece 02:12'de internet koptuğu için koşu yarım kalmıştı. Sabah (19 Ekim) önce yarım kalanlar tamamlandı:
+- `174773a` zaten `origin/backtest-v2`'de değildi; commit edilmemiş pagecheck araçlarıyla birlikte `c8f36ac` olarak commit edilip **push edildi**. Araçta sonradan yapılan iyileştirmeler (aşağıda) sonraki bir commit'te.
+- Pagecheck baştan sona yeniden çalıştırıldı: **6/6 PASS** (dashboard, premium-dashboard, trades, calendar, strategies, journals). İşlemler sayfası kapsam sayıları: Canlı 107, Tümü 137, Backtest 30. Tablo ve sınırlar: ADIMLAR.md "Sayfa karşılaştırması (pagecheck) sonucu".
+- Premium dashboard'da koşu sırasında **Chrome oturumu üç kez düştü** ("Session with given id not found"; dil denemeleri sırasında, aynı sayfada tekrarlandı); sayfa sayfa ve dil denetimi sıkılaştırılmış hâliyle tek süreçte tamamlandı. Düşmenin kesin nedeni araştırılmadı.
+- Geçici worktree (`scratchpad/old`) `git worktree remove --force` ile kaldırıldı (içinde yalnızca üretilmiş `node_modules` ve `dist` vardı, izlenen değişiklik yoktu). 8765 portundaki `http.server` kapatıldı.
+- Eski build'in kopyası artık yok; aracı yeniden koşturmak için `50f92a8`'in worktree'si ve derlemesi gerekir.
+
+## Ayrı not: Premium dashboard dil karışıklığı (ön-var olan hata)
+
+**Belirti:** `/premium-dashboard`, dil `en` seçiliyken bile çoğu zaman **Türkçe** (ya da aynı cümlede iki dil karışık: "Thursday günleri zarar ediyorsun", "İşlem başı +$36,07") çiziliyor. Karşılaştırma aracının son tam koşusunda 35 denemenin 34'ünde Türkçe geldi; dil `en` kilitliyken bile.
+
+**Bu değişikliğin sebep olduğu bir şey değil:** eski build'de (`50f92a8`, Faz C/D öncesi) ve yeni build'de aynı. Eski build'in kendi taban çizgisi bile iki koşu arasında dil değiştirdi. Sayılar her iki dilde aynı; yalnızca metin değişiyor.
+
+**Olası neden (kodu okuyarak, tarayıcıda kanıtlanmadı):** `public/interface/premium-dashboard/js/*.js` içindeki her `_t(key, fallback)`, çeviri henüz yüklenmemişse (`window.i18n.t` anahtarı döndürürse) **Türkçe yazılmış varsayılan metne** düşüyor (ör. `chart-renderers.js:1442`: `'{day} günleri zarar ediyorsun'`). Kartlar çeviri dosyası gelmeden çizilirse Türkçe kalıyor, sonradan yeniden çizilmiyor gibi görünüyor. Gün adı ise `toLocaleDateString(localeOf())` ile doğru dilde geliyor, o yüzden karışık cümle oluşuyor. Aynı harness'te `dashboard`, `trades`, `calendar` ve `journals` sayfaları hep İngilizce geldi.
+
+**Neden önemli olabilir:** dili İngilizce veya Almanca olan bir kullanıcı premium panelde Türkçe metin görebilir. Gerçek tarayıcıda (önbellek sıcak, gerçek ağ) ne sıklıkta olduğu bilinmiyor; harness'te yerel ve çok hızlı yükleme var.
+
+**Önerilen (yapılmadı, sizin onayınızla):** (1) önce gerçek tarayıcıda `ww_language=en` ile birkaç kez açıp sıklığı doğrulamak, (2) çizimi çeviri yüklendikten sonra yapmak ya da dil yüklenince yeniden çizmek, (3) `_t` yedek metinlerini İngilizceye çevirmek. Bu iş Faz C/D kapsamı dışında, ayrı bir adım.
+
+## Güncel özet (sabah)
+
+Push edildi: `backtest-v2` HEAD'e kadar. Canlıya yazılan bir şey yok. Sırada: **güvenlik açığı / Migration 00'ı canlıda çalıştırmak**; bu adımda önce tam yedek ve sizin onayınız gerekiyor, onay gelmeden başlanmayacak.

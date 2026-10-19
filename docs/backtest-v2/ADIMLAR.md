@@ -93,9 +93,9 @@ Gece oturumunda A.11'e kadar yapıldı, A.12 sahibin onayını bekliyor.
 | # | Adım | Durum |
 |---|---|---|
 | D.1 | 🔐 Migration 05 (`list_journals`, `get_platform_stats` canlı filtre) | ⬜ |
-| D.2 | `trades-source.js` + okuyucu yaması: tüm okuyucularda canlı filtre | ⬜ |
-| D.3 | İşlemler sayfası: Tümü / Canlı / Backtest seçimi ve rozet | ⬜ |
-| D.4 | Doğrulama: backtest satırları canlı istatistiklere düşmüyor | ⬜ |
+| D.2 | `trades-source.js` + okuyucu yaması: tüm okuyucularda canlı filtre. Repoda (`fef5100`), tüm `trades` okuyucuları denetlendi ve testlendi (`174773a`). Canlıda Migration 05 olmadan etkisiz kalan RPC'ler D.1'e bağlı | ✅ (kod) |
+| D.3 | İşlemler sayfası: Tümü / Canlı / Backtest seçimi ve rozet (`fef5100`). Sayfa karşılaştırmasında kapsam sayıları doğru: Canlı 107, Tümü 137, Backtest 30 | ✅ |
+| D.4 | Doğrulama: backtest satırları canlı istatistiklere düşmüyor. Gerçek derlenmiş 6 sayfa (panel, premium panel, işlemler, takvim, stratejiler, günlükler) eski ve yeni build ile headless Chrome'da karşılaştırıldı: backtest satırı olsun olmasın **sayılar birebir aynı**, yeni JS hatası yok, karşılaştırma sızıntıyı yakalıyor (duyarlılık denetimi). Ayrıntı aşağıda | ✅ |
 | D.5 | 🔐 Faz C+D birlikte yayın onayı | ⬜ |
 
 ## Faz E: Arşiv ve herkese açma (lisans kararına bağlı)
@@ -112,3 +112,26 @@ Gece oturumunda A.11'e kadar yapıldı, A.12 sahibin onayını bekliyor.
 ## Backtest dışı bekleyenler (bilgi için)
 
 - Backend deploy bekliyor (`ctrader-sync`, `create-payment`, `verify-auth`, `nowpayment-webhook`). Migration 0003 ve 0004'ün çalışıp çalışmadığı bilinmiyor. Bu liste dışında, ayrı takip.
+
+## Sayfa karşılaştırması (pagecheck) sonucu
+
+Araç: `docs/backtest-v2/asama-senkron-istatistik/pagecheck/` (`run.mjs`, `data.mjs`, `emulator.js`). `node --test` kapsamında değil, belgeleme aracı. Eski build (`50f92a8`, canlı-filtre öncesi) ile yeni build (`backtest-v2` HEAD) gerçek Chrome'da, bellek içi sahte veritabanıyla açılır; 120 canlı işlem ve isteğe bağlı 30 backtest satırı (devasa, net pozitif K/Z: sızarsa göze çarpsın diye). Saat sabit.
+
+Sonuç (19 Ekim sabahı, gece yarım kalan koşunun baştan sona yeniden çalıştırılması): **6/6 sayfa PASS, çıkış kodu 0.**
+
+| Sayfa | Eski = Yeni (backtest yok) | Eski = Yeni (30 backtest satırı var) | Yeni JS hatası | Sızıntıyı görüyor mu |
+|---|---|---|---|---|
+| dashboard | ✅ | ✅ | 0 | ✅ |
+| premium-dashboard | ✅ (sayılar) | ✅ (sayılar) | 0 | ✅ |
+| trades | ✅ | ✅ | 0 | ✅ (kapsam sayılarıyla) |
+| calendar | ✅ | ✅ | 0 | ✅ |
+| strategies | ✅ | ✅ | 0 | ✅ |
+| journals | ✅ | ✅ | 0 | ✅ |
+
+İşlemler sayfası kapsam seçici: Canlı 107 işlem / +$3.859,20, Tümü 137 / +$18.859,20, Backtest 30 / +$15.000,00.
+
+**Araçta bu koşuda yapılan iki değişiklik (karşılaştırmanın anlamını değiştirmemek için not):**
+1. Premium dashboard'da metin dili koşudan koşuya değişiyor (ayrı hata, bkz. SABAH-RAPORU "Premium dashboard dil karışıklığı"). Metin birebir eşit değilse artık dilden bağımsız olarak sayfadaki **tüm sayılar sırasıyla** karşılaştırılıyor; bu durumda çıktıda "wording differs … every number is identical" notu çıkıyor. Birebir metin eşitliği her zaman önce denenir. Bu koşuda yalnızca premium-dashboard bu yedeği kullandı.
+2. Türkçe algılama kelime listesiyle genişletildi (ASCII Türkçe yedek metinler "Kazanan 59", "STRATEJI" önceki denetimden kaçıyordu), deneme sayısı 5'ten 8'e çıktı. `strategies` sayfasında bu denetim hep "Türkçe" diyor ama metin her koşuda birebir aynı (651 karakter); yani yanlış alarm, sonuca etkisi yok.
+
+**Sınırlar:** veri bellek içi sahte veritabanı, gerçek Supabase RPC'leri (Migration 05 dahil) burada çalışmaz; RPC canlı süzgeci `rpcLiveOnly` bayrağıyla taklit edilir. Gerçek canlı doğrulama D.1'den sonra. Eski build'in çalışma kopyası (geçici worktree) silindi; aracı yeniden koşturmak için `git worktree add <dir> 50f92a8`, orada `npm ci && npm run build` gerekir.
