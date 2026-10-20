@@ -21,8 +21,8 @@
   };
 
   // Backend: 'local' (Phase A, localStorage, no journal sync) or 'supabase' (Phase B: SupabaseStore + journal sync).
-  // Phase B flips this one line; window.WW_BT_BACKEND exists for the browser smoke tests only.
-  var BACKEND = window.WW_BT_BACKEND === 'supabase' ? 'supabase' : 'local';
+  // Live since migrations 00-05 ran on 2026-10-20; window.WW_BT_BACKEND = 'local' exists for the browser smoke tests only.
+  var BACKEND = window.WW_BT_BACKEND === 'local' ? 'local' : 'supabase';
   var SYNC = null;                              // window.WwBtSync, only with the supabase backend
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
   var syncToastShown = false;

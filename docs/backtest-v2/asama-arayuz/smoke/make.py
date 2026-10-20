@@ -12,7 +12,7 @@ page = '''<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name=
 (function(){var cur={alive:true,_c:[],onLeave:function(f){this._c.push(f)},on:function(t,e,f,o){t.addEventListener(e,f,o)},onI18nChange:function(){},expose:function(){}};
 window.wwPage={current:function(){return cur}};
 var qp=new URLSearchParams(location.search);var role=qp.get('role')||'admin';
-if(qp.get('backend')==='supabase')window.WW_BT_BACKEND='supabase';
+if(qp.get('backend')!=='supabase')window.WW_BT_BACKEND='local';
 window.__warns=[];console.warn=function(){window.__warns.push([].slice.call(arguments).map(function(x){return x&&x.stack||String(x)}).join(' '))};
 window.__cacheInv=[];window.wwCache={invalidate:function(p){window.__cacheInv.push(p)}};
 window.__events=[];window.addEventListener('trade-saved',function(e){window.__events.push(e.detail)});
