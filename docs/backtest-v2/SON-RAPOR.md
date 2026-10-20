@@ -177,3 +177,42 @@ Merge yapılmadı, commitler `5e8a53a` ve `9c8cf7d` yalnızca `backtest-v2`'de. 
 **Sizin yapmanız gerekenler:** (1) Satırın silinmesine izin verin (ya da kendiniz silin); sonra oturum kaldığı yerden `DEVAM.md`'deki sırayla devam eder. (2) Admin hesabıyla arayüz denemesi (kullanıcı yapacak): yeni hesap, işlem aç/kapat, deftere bağla, "Backtest" rozeti, bağlantıyı kaldırınca silinme. (3) Yedek klasörünü güvenli yerde tutun: kullanıcı verisi içerir.
 
 **Not (güvenlik):** Bağlantı adresindeki parola sohbet metninde göründü; işiniz bitince Supabase panelinden veritabanı parolasını yenilemenizi öneririm.
+
+
+---
+
+# Canlı tur 2 (2026-10-20): migration 01, 02, 04, 05, BACKEND geçişi, merge ve yayın
+
+**Özet:** Tablo boştu, ikinci yedek alındı, **01, 02, 04 ve 05 canlıda çalıştı ve hepsinin kontrolleri geçti**, canlı fonksiyonel doğrulama **19 PASS / 0 FAIL** (kendini geri aldı, kalıntı yok). `BACKEND = 'supabase'` yapıldı, testler 306/0, build tamam, pagecheck 6/6, duman testi 48/0 ve 4/0. `backtest-v2` master'a merge edildi (`0849802`), push edildi, Cloudflare Pages yeni dosyaları sunuyor. Hata yok, atlanan adım yok, revert gerekmedi. **Yapılmayan tek şey: gerçek hesapla canlı arayüz denemesi** (kimlik bilgisi yok, sahibe kalır).
+
+| Madde | Sonuç |
+|---|---|
+| 0 Salt okunur doğrulama | ✅ `backtest_trades` 0 satır (hem toplam hem `cda92d7f-...` kimliği 0). Bağlantı PG 17.6 |
+| 1 İkinci yedek | ✅ `~/WaweJournal-Backups/20261020T133907Z/` (chmod 700): `full.dump` (pg_dump -Fc, 1010 öğe, 652 KB), `schema.sql`, `roles.sql` (parolasız), `rowcounts.txt`, `SHA256SUMS`; `dump-err.txt` boş. Satır sayıları: auth.users 7, journals 11, trades 114, user_profiles 7, strategies 5, payments 117, backtest_trades 0 |
+| 2 Migration 01 | ✅ COMMIT. Kontroller: `to_regclass('public.backtest_trades')` NULL; gövdesinde adı geçen fonksiyon 0; `reset_user_data` md5 doğru; SECURITY DEFINER, `search_path=public`, ACL'de anon ve PUBLIC yok |
+| 3 Migration 02 | ✅ COMMIT. 2 tabloda RLS açık; 8 politika (hepsi `authenticated`); 7 + 12 CHECK, 2 pkey, 4 FK; 6 indeks (2 pkey + 4 `idx_*`); 3 trigger; `reset_user_data` ve `delete_journal` md5 doğru, anon ve PUBLIC EXECUTE yok; `check_*` fonksiyonlarında yalnızca postgres ve service_role; trigger fonksiyonu sahibi RLS'i atlıyor |
+| 4 Migration 04 | ✅ COMMIT. 2 trigger (relink'te WHEN koşulu var); `backtest_accounts_cleanup_trades()` SECURITY DEFINER, ACL postgres ve service_role; yetim ayna satır 0 |
+| 5 Migration 05 | ✅ COMMIT. `list_journals` ve `get_platform_stats` md5 doğru; ACL beklendiği gibi (`list_journals` anon'suz, `get_platform_stats` anon'lu); `get_platform_stats()` totalTrades 114 = doğrudan sayım (canlı 114, backtest 0) |
+| 6 `backtest_v2_verify.sql` (canlı) | ✅ **19 PASS / 0 FAIL**, işlem kendini geri aldı. Önce ve sonra sayılar aynı (auth.users 7, journals 11, trades 114, user_profiles 7, backtest_accounts 0, backtest_account_trades 0) |
+| 7 `BACKEND = 'supabase'` | ✅ `backtest.js` satır 25 artık `window.WW_BT_BACKEND === 'local' ? 'local' : 'supabase'`. Yerel mod yalnızca duman testi içindir; `smoke/make.py` varsayılan olarak `local` ayarlıyor, `?backend=supabase` ile yok |
+| 8 Testler | ✅ `node --test tests/*.test.js` **306/0**; `npm run build` 25 sayfa; duman testi admin **48 PASS / 0 FAIL**, admin olmayan **4 PASS / 0 FAIL** |
+| 9 Pagecheck | ✅ **6/6 PASS** (dashboard, premium-dashboard, trades, calendar, strategies, journals): eski build (`50f92a8`) = yeni build, backtest satırı olsa da olmasa da; yeni JS hatası 0; sızıntı denetimi çalışıyor. Premium dashboard'da bilinen dil karışıklığı notu yine çıktı, sayılar birebir aynı |
+| 10 Merge | ✅ Koşulların hepsi sağlandı. `origin/master` zaten `backtest-v2`'nin atasıydı (yerel master geride kalmıştı), çakışma yok. Yerel master `origin/master`'a (`a16e597`) fast-forward edildi, sonra `--no-ff` merge commit **`0849802`**; ağaç `backtest-v2` ile birebir aynı. Merge sonrası tekrar: testler 306/0, build tamam. `git push origin master`: `a16e597..0849802` |
+| 11 Cloudflare Pages ve canlı site | ✅ `https://wawejournal.com/interface/backtest/js/backtest.js` ve `backtest.css` canlıda yerel `dist` ile **aynı SHA-1** (yeni sürüm yayında; ilk denemede ~4 dk içinde). `/`, `/login`, `/dashboard`, `/premium-dashboard`, `/trades`, `/calendar`, `/strategies`, `/journals`, `/backtest`, `/settings`, `/pricing` hepsi HTTP 200 |
+| 12 Canlı API kontrolü | ✅ anon `evaluate_prop_firm_rules` HTTP 401 (`has_function_privilege` = false); anon `get_platform_stats` HTTP 200 ve sayılar doğru (7 kullanıcı, 114 işlem); anon `backtest_accounts` okuması boş liste (RLS) |
+
+**Başka bir sorun çıkmadı.** Atlanan adım yok, rollback çalıştırılmadı, revert gerekmedi.
+
+**Gözlemler:**
+- `payments` yedek arasında 107'den 117'ye çıktı: canlı kullanım, beklenen.
+- `backtest_accounts` ve `backtest_account_trades` tablolarında `anon` rolünde Supabase'in varsayılan tablo yetkileri duruyor (INSERT, UPDATE, DELETE, TRUNCATE dahil); korumayı RLS sağlıyor (anon için politika yok, 8 politikanın hepsi `authenticated`) ve REST'te boş liste dönüyor. Diğer tablolarla aynı durum. İsterseniz ayrı bir sertleştirme migration'ı olarak `REVOKE ... FROM anon` eklenebilir; bu turda canlıya izinsiz yazma olmaması için yapılmadı.
+- Canlıda hâlâ `get-candles` (eski) Edge Function'ı duruyor; silinmedi.
+
+**Sizin yapmanız gerekenler:**
+- [ ] **Admin hesabıyla gerçek canlı denemesi** (`https://wawejournal.com/backtest`): yeni hesap, işlem aç/kapat, deftere bağla, "Backtest" rozeti, istatistikler değişmiyor, bağlantıyı kaldırınca silinme, temizlik. Bu, gerçek oturumla yapılabilen tek kalan adım; hesap kotası veya RLS sorunu çıkarsa verify.sql zaten rollback'li geçtiği için büyük olasılıkla arayüz tarafıdır. Sorun olursa merge commit'i `git revert -m 1 0849802` ile geri alınabilir (veritabanı şeması geriye uyumlu kalır, eski sayfa tabloya bağımlı değildi).
+- [ ] Admin olmayan hesapla `/backtest`: "Backtest yakında".
+- [ ] Önceki turdaki gerçek tarayıcı kontrol listesi (bölüm 7) hâlâ geçerli; Safari ve Firefox hâlâ denenmedi.
+- [ ] Yedek klasörlerini güvenli yerde tutun (kullanıcı verisi içerir): `20261019T201011Z` ve `20261020T133907Z`.
+- [ ] **Veritabanı parolasını Supabase panelinden yenileyin** (önceki turda sohbette göründü); yenileyince `~/.wawe-db.env` dosyasını da güncelleyin.
+
+**Kalan işler:** Faz E (lisans, Migration 03/07, içe aktarıcı, ArchiveSource, gerçek veri, herkese açılış); Migration 06 kararı; premium dashboard dil hatası; `npm audit`; eski `get-candles` silinmesi; bekleyen backend deploy; repo herkese açılacaksa `docs/backtest-v2/` içindeki Migration 06 açık tarifinin kaldırılması (KURALLAR §4). Not: Migration 00 çalıştığı için açık canlıda kapalı, 06 yalnızca temizlik.

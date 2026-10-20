@@ -1,8 +1,15 @@
-# Backtest v2: kaldığımız yer (2026-10-19 gece, canlı tur sonu)
+# Backtest v2: kaldığımız yer (2026-10-20, canlı tur 2 sonu)
 
 Yeni oturum için okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md`, `ADIMLAR.md` ("Bitirme turu" bölümü).
 
-## Canlı tur sonu (güncel durum, önce bunu oku)
+## Canlı tur 2 sonu (2026-10-20, güncel durum, önce bunu oku)
+
+- **Migration 00, 01, 02, 04, 05 canlıda çalıştı ve doğrulandı**; canlı `backtest_v2_verify.sql` 19 PASS. `BACKEND = 'supabase'`. `backtest-v2` master'a merge edildi (`0849802`), push edildi, Cloudflare Pages canlıda yeni dosyaları sunuyor (SHA-1 eşleşti). Ayrıntı: `SON-RAPOR.md` "Canlı tur 2".
+- Yedekler: `~/WaweJournal-Backups/20261019T201011Z/` (00 öncesi) ve `20261020T133907Z/` (01 öncesi).
+- **Kalan tek adım:** admin hesabıyla gerçek canlı arayüz denemesi (sahip). Sorun olursa `git revert -m 1 0849802`.
+- Geri kalan açık işler aşağıdaki "Açık işler" bölümünde (Faz E, Migration 06, vb.). Aşağıdaki "Canlı tur sonu" ve "Kaldığın yerden devam" bölümleri tarihî kayıttır, tamamlandı.
+
+## Canlı tur 1 sonu (tarihî, tamamlandı)
 
 - Canlıda **Migration 00 çalıştı** (güvenlik açığı kapandı, doğrulandı). Yedek: `~/WaweJournal-Backups/20261019T201011Z/` (`full.dump`, `schema.sql`, `roles.sql`, `preflight.txt`, `legacy-backtest_trades.csv`, `SHA256SUMS`).
 - **Migration 01 durdu**: `public.backtest_trades` içinde 1 satır var (id `cda92d7f-f4b4-400d-a7fb-c9d59eb9f994`, BTCUSDT, 2026-10-18 tarihli test işlemi). Satır CSV'ye ve tam yedeğe alındı. Devam etmek için satırın silinmesi gerekiyor (canlı veri silme; otomatik izin denetimi bu turda engelledi, sahibin açık onayı bekleniyor): `delete from public.backtest_trades where id = 'cda92d7f-f4b4-400d-a7fb-c9d59eb9f994';`
