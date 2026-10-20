@@ -1,0 +1,18 @@
+{
+  "reset_user_data.live": "ffae73d9d6aeab7c8aa9504287ac4371",
+  "delete_journal.live": "84e56367a98105b0c0aadb7467c51285",
+  "list_journals.live": "f12fbef040de7b41cc2091c196e6e282",
+  "get_platform_stats.live": "23ea1c0b396c9a56081f0c57788af182",
+  "evaluate_prop_firm_rules.live": "ac50682480af983cae0ad64c8f787929",
+  "sync_journal_trades.live": "ac82821c8455df5cc3743c70f572dada",
+  "get_journals_equity_data.live": "ba07a8d2cbb221313a1002929aa48222",
+  "get_strategy_performance.live": "6f198892f0c0b0e0eb95fd0a488fa586",
+  "get_today_trades_count.live": "f4d8256d30ef69f5cd51de5b4a82b668",
+  "get_total_trades_count.live": "41a1973e8f580f31a01a190f9337d0d9",
+  "reset_user_data.v01": "5d0a2a09a51ff4e1479588a7e08c1fea",
+  "reset_user_data.v02": "053931abe8d9ac918922d85db0ff6aac",
+  "delete_journal.v02": "afdbbce70341eeeaadb7c2a75f134d2d",
+  "list_journals.v05": "d4f0bce277a530a47cff7d18c4420590",
+  "get_platform_stats.v05": "58059ba9418512361e746a2100713457",
+  "evaluate_prop_firm_rules.s0": "29f8b77b773e510216390b6ddebe604f"
+}

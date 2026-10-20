@@ -182,12 +182,14 @@ export class NotificationManager {
       weekAgo.setDate(weekAgo.getDate() - 7);
       const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-      const { data: trades, error } = await sb
-        .from('trades')
-        .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier')
-        .eq('user_id', session.user.id)
-        .gte('trade_date', weekAgoStr)
-        .order('trade_date', { ascending: false });
+      // Canlı kapsam: backtest işlemleri overtrade bildirimine girmez
+      const { data: trades, error } = await window.WwTrades.applyScope(
+        sb.from('trades')
+          .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,platform_source')
+          .eq('user_id', session.user.id)
+          .gte('trade_date', weekAgoStr),
+        'live'
+      ).order('trade_date', { ascending: false });
       
       if (error) return;
       

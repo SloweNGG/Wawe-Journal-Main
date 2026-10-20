@@ -12,13 +12,13 @@ import Layout from '../layouts/Layout.astro';
 <Fragment slot="head">
   <title data-i18n="trades.title">İşlemler – Wawe Journal</title>
   
-  <link rel="stylesheet" href="/interface/trades/css/trades.css?v=1790427300000" />
+  <link rel="stylesheet" href="/interface/trades/css/trades.css?v=1792300000" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1790432600" is:inline defer></script>
+  <script src="/i18n.js?v=1792300000" is:inline defer></script>
 
   <!-- ⭐ ParserV2 — bundle.js'ten ÖNCE yüklenmeli -->
 <script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
@@ -27,9 +27,9 @@ import Layout from '../layouts/Layout.astro';
 <script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
 
   <script type="module" src="/src/bundle.js" is:inline defer></script>
-  <script src="/interface/trades/js/trades.js?v=1790427300000" is:inline defer data-page-script></script>
+  <script src="/interface/trades/js/trades.js?v=1792300000" is:inline defer data-page-script></script>
   <script src="/interface/quick-add/js/quick-modal-i18n.js?v=1791383000" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-add.js?v=1791383000" is:inline defer></script>
+  <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
 </Fragment>
 
   <main class="main trades-main">
@@ -76,6 +76,12 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- TOOLBAR -->
     <div class="trades-toolbar">
+      <!-- KAYNAK KAPSAMI (Backtest v2): varsayılan Canlı; seçim trades.js'te localStorage'a yazılır -->
+      <select id="scope-filter" class="toolbar-select" aria-label="Kaynak" data-i18n-title="trades.scope_title" title="Kaynak">
+        <option value="all" data-i18n="trades.filter.scope_all">Tümü</option>
+        <option value="live" data-i18n="trades.filter.scope_live" selected>Canlı</option>
+        <option value="backtest" data-i18n="trades.filter.scope_backtest">Backtest</option>
+      </select>
       <select id="sort-select" class="toolbar-select">
         <option value="date_desc" data-i18n="trades.sort.date_desc">Tarih ↓</option>
         <option value="date_asc" data-i18n="trades.sort.date_asc">Tarih ↑</option>
@@ -98,6 +104,10 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- MOBİL FİLTRE ÇİPLERİ -->
     <div class="mobile-filter-chips" id="mobile-filter-chips">
+      <!-- data-i18n YOK: etiketi seçili seçenekten syncChipLabels yazar (i18n.apply sıfırlamasın) -->
+      <button type="button" class="mobile-filter-chip" data-filter="scope">
+        <span class="mobile-filter-chip-text">Canlı</span>
+      </button>
       <button type="button" class="mobile-filter-chip" data-filter="sort">
         <span class="mobile-filter-chip-text" data-i18n="trades.sort.date_desc">Tarih ↓</span>
       </button>
@@ -197,6 +207,7 @@ import Layout from '../layouts/Layout.astro';
   <div id="edit-modal" class="modal-overlay">
     <div class="card" style="max-width:520px;width:100%;position:relative;max-height:90vh;overflow-y:auto;">
       <h2 style="font-size:1.1rem;margin-bottom:1.25rem;" data-i18n="trades.edit_title">İşlemi Düzenle</h2>
+      <p class="edit-bt-note" id="edit-bt-note" style="display:none;" data-i18n="trades.backtest_edit_note">Backtest işlemi: yalnızca not ve strateji değiştirilebilir.</p>
       <input type="hidden" id="edit-id" />
 
       <div class="field">

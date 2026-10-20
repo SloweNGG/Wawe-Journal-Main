@@ -92,6 +92,8 @@ function bundleAppScript() {
 export default defineConfig({
   site: 'https://wawejournal.com',
   outDir: 'dist',
+  // Geliştirme araç çubuğu localhost'ta alt paneldeki tabloların üstünü kapatıyordu
+  devToolbar: { enabled: false },
   integrations: [react(), bundleAppScript(), minifyDistAssets()],
   vite: {
     define: {

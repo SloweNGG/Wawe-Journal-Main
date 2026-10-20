@@ -981,7 +981,8 @@
 
     try {
       var [tradesRes, stratRes] = await Promise.all([
-        window.sb.from('trades').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+        // "İlk işlemini ekle" görevi yalnızca canlı işlemle tamamlanır (backtest aynası saymaz)
+        window.WwTrades.applyScope(window.sb.from('trades').select('id', { count: 'exact', head: true }).eq('user_id', uid), 'live'),
         window.sb.from('strategies').select('id', { count: 'exact', head: true }).eq('user_id', uid)
       ]);
       state.tradesCount = (tradesRes && tradesRes.count) || 0;

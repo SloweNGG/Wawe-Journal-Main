@@ -1,7 +1,7 @@
 /* Wawe Journal — landing preview. Black canvas, bento cards, real product shots. */
 :root {
   --violet:#8247f5;
-  --bg: #050505;
+  --bg: #000000;
   --card: #0c0c0e;
   --card2: #111114;
   --ink: #f4f4f5;
@@ -42,7 +42,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .btn-lg{height:50px;padding:0 26px;font-size:15px}
 
 /* nav */
-.nav{position:sticky;top:0;z-index:50;background:rgba(5,5,5,.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .nav-inner{display:flex;align-items:center;height:62px;gap:24px}
 .nav-logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;letter-spacing:-.01em}
 .nav-logo svg{color:var(--accent)}

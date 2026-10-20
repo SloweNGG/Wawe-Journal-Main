@@ -2828,9 +2828,7 @@ html.light-theme .wj-ambient-backdrop {
   /* kazançlarım */
   .earnings-table-wrap, .earnings-empty, .partner-hero-card, .partner-step-card,
   /* hata bildir */
-  .bug-card, .ticket-card, .tickets-empty,
-  /* backtest */
-  .bt-chart-card, .bt-trade-panel
+  .bug-card, .ticket-card, .tickets-empty
 ) {
   background: #000;
 }

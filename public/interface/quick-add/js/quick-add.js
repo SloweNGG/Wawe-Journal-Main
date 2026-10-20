@@ -2017,10 +2017,13 @@ async function fileToCsvText(file) {
         let hasMore = true;
 
         while (hasMore) {
-          const { data: existingData, error: fetchErr } = await sb
-            .from('trades')
-            .select('symbol, direction, entry_price, exit_price, lot, trade_date')
-            .eq('journal_id', journalId)
+          // Mükerrer kontrolü yalnızca CANLI işlemlerle (backtest aynası gerçek işlemi "mükerrer" yapmasın)
+          const { data: existingData, error: fetchErr } = await window.WwTrades.applyScope(
+            sb.from('trades')
+              .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+              .eq('journal_id', journalId),
+            'live'
+          )
             .order('trade_date', { ascending: false })
             .order('id', { ascending: true })
             .range(from, from + pageSize - 1);

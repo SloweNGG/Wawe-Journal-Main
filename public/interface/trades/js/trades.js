@@ -191,6 +191,28 @@
   var _lastIsMobile = window.innerWidth <= 768;
 
   // ============================================================
+  // KAYNAK KAPSAMI (Canlı / Backtest / Tümü) — Backtest v2
+  // ============================================================
+  // Liste 'all' kapsamıyla çekilir (düzenleme her satırı bulabilsin); görünüm, sayfalama ve
+  // stat kartları seçili kapsama göre süzülür. Varsayılan 'live' (R20); seçim yalnızca bu oturumda
+  // hatırlanır (sessionStorage), her yeni oturum Canlı ile açılır.
+  var SCOPE_KEY = 'ww_trades_scope';
+  var scopeFilter = (function () {
+    try {
+      var s = sessionStorage.getItem(SCOPE_KEY);
+      return (s === 'live' || s === 'backtest' || s === 'all') ? s : 'live';
+    } catch (e) { return 'live'; }
+  })();
+  function saveScope(s) { try { sessionStorage.setItem(SCOPE_KEY, s); } catch (e) {} }
+  function isBacktestRow(t) { return window.WwTrades.isBacktest(t); }
+  function findTrade(id) { return allTrades.find(function (x) { return x.id === id; }); }
+  // _t() anahtar eksikse anahtarın kendisini döndürür: JS'te üretilen metinler için yedekli sürüm
+  function _tf(key, fallback, params) { var s = _t(key, params); return (s && s !== key) ? s : fallback; }
+  function escAttr(s) { return sanitizeHTML(String(s == null ? '' : s)).replace(/"/g, '&quot;'); }
+
+  var TRADES_COLS = 'id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,gross_pnl,commission,swap,platform_source,rr_ratio,notes,strategy_id,instrument,multiplier';
+
+  // ============================================================
   // SKELETON GÖSTER/GİZLE
   // ============================================================
   
@@ -582,7 +604,8 @@
       var dir = dirFilter ? dirFilter.value : 'all';
       var result = resultFilter ? resultFilter.value : 'all';
       
-      var trades = allTrades.slice();
+      // Kaynak kapsamı ÖNCE: toplamlar, sayfalama ve stat kartları seçili kapsama göre (D6)
+      var trades = window.WwTrades.filterScope(allTrades, scopeFilter);
       
       if (dir !== 'all') trades = trades.filter(function(t) { return t.direction === dir; });
       if (result === 'win') trades = trades.filter(function(t) { return t.exit_price && getTradePnL(t) > 0; });
@@ -666,8 +689,18 @@
       var showNoteTitle = _t('dashboard.show_note');
       var notesLabel = _t('trades.notes_label');
       var noNotesText = _t('trades.no_notes');
-      
-      rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          <td style="width:36px;" onclick="event.stopPropagation()">\n            <input type="checkbox" class="trade-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)">\n          </td>\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="' + editTitle + '">✏️</button>\n              <button class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="' + deleteTitle + '">🗑️</button>\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong>📝 ' + notesLabel + ':</strong><br>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>') + '\n          </td>\n        </tr>\n      ';
+
+      // Backtest aynası: rozet; seçim kutusu YOK (toplu silmeye girmez); silme düğmesi YOK
+      var isBt = isBacktestRow(t);
+      var selectCell = isBt
+        ? '<td style="width:36px;"></td>'
+        : '<td style="width:36px;" onclick="event.stopPropagation()">\n            <input type="checkbox" class="trade-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)">\n          </td>';
+      var btBadge = isBt
+        ? '<span class="badge-backtest" title="' + escAttr(_tf('trades.backtest_readonly_hint', 'Backtest hesabından aktarıldı. Yalnızca not ve strateji düzenlenebilir.')) + '" data-i18n="trades.badge_backtest">Backtest</span>'
+        : '';
+      var delBtn = isBt ? '' : '<button class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="' + deleteTitle + '">\uD83D\uDDD1\uFE0F</button>';
+
+      rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          ' + selectCell + '\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>' + btBadge + '\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="' + editTitle + '">✏️</button>\n              ' + delBtn + '\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong>📝 ' + notesLabel + ':</strong><br>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>') + '\n          </td>\n        </tr>\n      ';
     }
     return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>' + _t('trades.th_symbol') + '</th><th>' + _t('trades.th_direction') + '</th><th>' + _t('trades.th_lot') + '</th><th>' + _t('trades.th_entry') + '</th><th>' + _t('trades.th_exit') + '</th><th>' + _t('trades.th_sl') + '</th><th>' + _t('trades.th_tp') + '</th><th>' + _t('trades.th_pnl') + '</th><th>' + _t('trades.th_rr') + '</th><th>' + _t('trades.th_strategy') + '</th><th>' + _t('trades.th_date') + '</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
   }
@@ -708,12 +741,14 @@
       // ⭐ i18n: 'Not eklenmemiş' → _t('trades.no_notes')
       var noNotesText = _t('trades.no_notes');
       var notesDisplay = hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>';
+      var isBtCard = isBacktestRow(t);
 
       html += '<div class="trade-card" data-id="' + t.id + '">';
       html +=   '<div class="trade-card-header">';
-      html +=     '<input type="checkbox" class="trade-checkbox trade-card-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)" onclick="event.stopPropagation()">';
+      if (!isBtCard) html +=     '<input type="checkbox" class="trade-checkbox trade-card-checkbox" data-id="' + t.id + '" onchange="toggleSelect(\'' + t.id + '\', this.checked)" onclick="event.stopPropagation()">';
       html +=     '<span class="row-indicator ' + indClass + '"></span>';
       html +=     '<span class="symbol-text">' + safeSymbol + '</span>';
+      if (isBtCard) html += '<span class="badge-backtest" data-i18n="trades.badge_backtest">Backtest</span>';
       html +=     dirBadge;
       html +=     '<span class="trade-card-date">' + dateTimeStr + '</span>';
       html +=   '</div>';
@@ -738,7 +773,7 @@
       html +=       '</div>';
       html +=       '<div class="trade-card-actions">';
       html +=         '<button type="button" class="trade-card-btn edit" onclick="event.stopPropagation();openEdit(\'' + t.id + '\')">✏️ <span data-i18n="common.edit">Düzenle</span></button>';
-      html +=         '<button type="button" class="trade-card-btn del" onclick="event.stopPropagation();deleteTrade(\'' + t.id + '\')">🗑️ <span data-i18n="common.delete">Sil</span></button>';
+      if (!isBtCard) html +=         '<button type="button" class="trade-card-btn del" onclick="event.stopPropagation();deleteTrade(\'' + t.id + '\')">🗑️ <span data-i18n="common.delete">Sil</span></button>';
       html +=       '</div>';
       html +=     '</div>';
       html +=   '</div>';
@@ -762,6 +797,13 @@
     
     hideTableSkeleton();
     
+    if ((!trades || !trades.length) && scopeFilter === 'backtest') {
+      wrap.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;">' + sanitizeHTML(_tf('trades.no_backtest_trades', 'Bu hesapta backtest işlemi yok.')) +
+        ' <a href="/backtest.html" style="color:var(--accent);">' + sanitizeHTML(_tf('trades.go_backtest', 'Backtest sayfasına git →')) + '</a></p>';
+      renderPagination();
+      return;
+    }
+
     if (!trades || !trades.length) {
       var noText = _t('trades.no_trades') || 'Henüz işlem yok.';
       var addFirstText = _t('trades.add_first') || 'İlk işlemi ekle →';
@@ -787,6 +829,11 @@
   // ============================================================
   
   async function deleteTrade(id) {
+    var target = findTrade(id);
+    if (target && isBacktestRow(target)) {
+      showToast(_tf('trades.backtest_delete_blocked', 'Backtest işlemleri buradan silinemez; Backtest sayfasından yönetilir.'), 'warning');
+      return;
+    }
     var confirmText = _t('trades.delete_confirm') || 'Bu işlemi silmek istediğinize emin misiniz?';
     if (!confirm(confirmText)) return;
     
@@ -795,7 +842,8 @@
         showToast(_t('common.db_connection_error'), 'error');
         return;
       }
-      var { error } = await sb.from('trades').delete().eq('id', id);
+      // Savunma: canlı kapsam filtresiyle backtest satırı bu yoldan asla silinmez
+      var { error } = await window.WwTrades.applyScope(sb.from('trades').delete().eq('id', id), 'live');
       if (error) { 
         showToast(_t('trades.delete_error') + error.message, 'error'); 
         return; 
@@ -833,7 +881,11 @@
   }
 
   async function confirmBulkDelete() {
-    var ids = Array.from(selectedTrades).filter(function(id) { return id && typeof id === 'string' && id.trim() !== ''; });
+    var ids = Array.from(selectedTrades).filter(function(id) {
+      if (!id || typeof id !== 'string' || id.trim() === '') return false;
+      var row = findTrade(id);
+      return !(row && isBacktestRow(row));   // backtest aynaları toplu silinmez
+    });
     
     if (ids.length === 0) {
       showToast(_t('trades.no_valid_selection_error'), 'error');
@@ -847,7 +899,7 @@
         showToast(_t('common.db_connection_error'), 'error');
         return;
       }
-      var { error } = await sb.from('trades').delete().in('id', ids);
+      var { error } = await window.WwTrades.applyScope(sb.from('trades').delete().in('id', ids), 'live');
       
       if (error) { 
         showToast(_t('trades.delete_error') + error.message, 'error'); 
@@ -858,7 +910,8 @@
       
       showToast(_t('trades.bulk_deleted', { count: ids.length }));
       
-      allTrades = allTrades.filter(function(t) { return !selectedTrades.has(t.id); });
+      var deletedIds = new Set(ids);
+      allTrades = allTrades.filter(function(t) { return !deletedIds.has(t.id); });
       selectedTrades.clear();
       
       totalItems = allTrades.length;
@@ -926,10 +979,53 @@
     if (customWrap) customWrap.style.display = (t.instrument === 'other') ? 'flex' : 'none';
     if (errEl) errEl.style.display = 'none';
     
+    setEditLimited(isBacktestRow(t));
+
     var modal = safeEl('edit-modal');
     if (modal) modal.classList.add('active');
   }
   window.openEdit = openEdit;
+
+  // Backtest aynasında yalnızca not + strateji düzenlenir (para/fiyat alanları motorundur; trg_calc_pnl dokunmaz)
+  var EDIT_LOCKED_IDS = ['edit-instrument', 'edit-multiplier', 'edit-symbol', 'edit-direction', 'edit-lot', 'edit-entry', 'edit-exit', 'edit-sl', 'edit-tp', 'edit-commission', 'edit-swap', 'edit-date'];
+  function setEditLimited(limited) {
+    EDIT_LOCKED_IDS.forEach(function (id) { var el = safeEl(id); if (el) el.disabled = !!limited; });
+    var note = safeEl('edit-bt-note');
+    if (note) note.style.display = limited ? 'block' : 'none';
+    var modal = safeEl('edit-modal');
+    if (modal) modal.classList.toggle('is-backtest', !!limited);
+  }
+
+  async function saveBacktestMeta(id) {
+    var notes = ((safeEl('edit-notes') || {}).value || '').trim();
+    var strategyId = (safeEl('edit-strategy') || {}).value || null;
+    var errEl = safeEl('edit-err');
+    if (errEl) errEl.style.display = 'none';
+    try {
+      if (typeof sb === 'undefined') {
+        showToast(_t('common.db_connection_error'), 'error');
+        return;
+      }
+      var { error } = await sb.from('trades').update({ notes: notes || null, strategy_id: strategyId })
+        .eq('id', id).eq('platform_source', 'backtest');
+      if (error) {
+        if (errEl) {
+          errEl.textContent = _t('trades.update_error') + error.message;
+          errEl.style.display = 'block';
+        }
+        return;
+      }
+      var idx = allTrades.findIndex(function (x) { return x.id === id; });
+      if (idx > -1) allTrades[idx] = Object.assign({}, allTrades[idx], { notes: notes || null, strategy_id: strategyId });
+      showToast(_t('trades.updated'));
+      closeModal();
+      applyFiltersAndSort();
+      try { window.dispatchEvent(new CustomEvent('trade-saved')); } catch (e) {}
+    } catch (e) {
+      console.error('Save hatası:', e);
+      showToast(_t('common.unexpected_error'), 'error');
+    }
+  }
 
   function closeModal() { 
     var modal = safeEl('edit-modal');
@@ -963,86 +1059,38 @@
       } catch (e) { }
     }
 
+    // Bu sayfa TÜM kapsamları çeker (Canlı / Backtest / Tümü süzgeci + düzenleme). Karışık liste yalnızca
+    // 'trades@all' anahtarında tutulur (cache.js: çapraz beslenmez); 'trades' anahtarına canlı alt küme yazılır.
+    var WT = window.WwTrades;
+    var ALL_KEY = WT.cacheKey('trades', 'all');
+
     // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
     if (typeof window !== 'undefined' && window.wwCache) {
-      var cachedTrades = window.wwCache.get('trades', userId, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'gross_pnl', 'commission', 'swap', 'platform_source', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']);
+      var cachedTrades = window.wwCache.get(ALL_KEY, userId, jid, TRADES_COLS.split(','));
       if (cachedTrades && cachedTrades.length > 0) {
-        // Arka planda sessizce tazelemek üzere arka plan sorgusu tetiklenebilir
         return cachedTrades;
       }
     }
 
     try {
-      var allTrades = [];
-      var pageSize = 1000;
-      var from = 0;
-      var hasMore = true;
-
-      while (hasMore) {
-        var query = sb
-          .from('trades')
-          .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,gross_pnl,commission,swap,platform_source,rr_ratio,notes,strategy_id,instrument,multiplier')
-          .eq('user_id', userId);
-
-        if (jid) {
-          query = query.eq('journal_id', jid);
-        }
-
-        query = query
-          .order('trade_date', { ascending: false })
-          .order('id', { ascending: true })
-          .range(from, from + pageSize - 1);
-        var { data, error } = await query;
-
-        if (error) {
-          showToast(_t('common.load_error') + error.message, 'error');
-          return [];
-        }
-
-        if (data && data.length > 0) {
-          allTrades = allTrades.concat(data);
-          if (data.length < pageSize) {
-            hasMore = false;
-          } else {
-            from += pageSize;
-          }
-        } else {
-          hasMore = false;
-        }
+      var res = await WT.fetchAll({
+        userId: userId,
+        journalId: jid,
+        columns: TRADES_COLS,
+        scope: 'all',
+        ascending: false,
+        unassignedFallback: !!jid
+      });
+      if (res.error) {
+        showToast(_t('common.load_error') + res.error.message, 'error');
+        return [];
       }
-      
-      var result = allTrades;
-      if (result.length === 0 && jid) {
-        try {
-          var unassignedTrades = [];
-          var uFrom = 0;
-          var uHasMore = true;
-          while (uHasMore) {
-            var { data: unassignedData } = await sb
-              .from('trades')
-              .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,gross_pnl,commission,swap,platform_source,rr_ratio,notes,strategy_id,instrument,multiplier')
-              .eq('user_id', userId)
-              .is('journal_id', null)
-              .order('trade_date', { ascending: false })
-              .order('id', { ascending: true })
-              .range(uFrom, uFrom + pageSize - 1);
-            if (unassignedData && unassignedData.length > 0) {
-              unassignedTrades = unassignedTrades.concat(unassignedData);
-              if (unassignedData.length < pageSize) uHasMore = false;
-              else uFrom += pageSize;
-            } else {
-              uHasMore = false;
-            }
-          }
-          if (unassignedTrades.length > 0) {
-            result = unassignedTrades;
-          }
-        } catch (unErr) { }
-      }
+      var result = res.data;
 
       // ⚡ Sonucu önbelleğe kaydet
       if (typeof window !== 'undefined' && window.wwCache) {
-        window.wwCache.set('trades', userId, jid, result);
+        window.wwCache.set(ALL_KEY, userId, jid, result);                           // karışık: yalnızca bu sayfa
+        window.wwCache.set('trades', userId, jid, WT.filterScope(result, 'live'));  // canlı: diğer sayfalarla paylaşılır
       }
 
       return result;
@@ -1065,6 +1113,7 @@
     if (!overlay || !sheet || !optionsEl || !titleEl) return;
 
     var FILTER_MAP = {
+      scope: { selectId: 'scope-filter', titleKey: 'trades.scope_title', fallbackTitle: 'Kaynak' },
       sort: { selectId: 'sort-select', titleKey: 'trades.sort_title', fallbackTitle: 'Sıralama' },
       dir: { selectId: 'dir-filter', titleKey: 'trades.filter_title', fallbackTitle: 'Yön' },
       result: { selectId: 'result-filter', titleKey: 'trades.result_title', fallbackTitle: 'Sonuç' }
@@ -1138,7 +1187,7 @@
 
     overlay.addEventListener('click', closeSheet);
 
-    ['sort-select', 'dir-filter', 'result-filter'].forEach(function(id) {
+    ['scope-filter', 'sort-select', 'dir-filter', 'result-filter'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('change', syncChipLabels);
     });
@@ -1263,6 +1312,17 @@
             applyFiltersAndSort();
           });
         }
+
+        var scopeSelect = safeEl('scope-filter');
+        if (scopeSelect) {
+          scopeSelect.value = scopeFilter;
+          scopeSelect.addEventListener('change', function() {
+            scopeFilter = window.WwTrades.normScope(this.value);
+            saveScope(scopeFilter);
+            currentPage = 1;
+            applyFiltersAndSort();
+          });
+        }
       
         var editInstrument = safeEl('edit-instrument');
         if (editInstrument) {
@@ -1318,6 +1378,11 @@
         if (saveBtn) {
           saveBtn.addEventListener('click', async function() {
             var id = safeEl('edit-id')?.value;
+            var btOriginal = findTrade(id);
+            if (btOriginal && isBacktestRow(btOriginal)) {
+              await saveBacktestMeta(id);
+              return;
+            }
             var instrument = safeEl('edit-instrument')?.value;
             var symbol = safeEl('edit-symbol')?.value.trim().toUpperCase();
             var direction = safeEl('edit-direction')?.value;
@@ -1415,13 +1480,14 @@
             
               var idx = allTrades.findIndex(function(x) { return x.id === id; });
               if (idx > -1) {
-                allTrades[idx] = { 
-                  id: id, instrument: instrument, symbol: symbol, direction: direction, lot: lot, 
-                  entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp, 
+                // Object.assign: platform_source (ör. 'ctrader') ve diğer kolonlar korunur
+                allTrades[idx] = Object.assign({}, allTrades[idx], {
+                  id: id, instrument: instrument, symbol: symbol, direction: direction, lot: lot,
+                  entry_price: entry, exit_price: exit, stop_loss: sl, take_profit: tp,
                   gross_pnl: gross_pnl, commission: commission, swap: swap,
-                  trade_date: tradeDate, notes: notes, pnl: pnl, rr_ratio: rr, 
-                  multiplier: mult, strategy_id: strategyId 
-                };
+                  trade_date: tradeDate, notes: notes, pnl: pnl, rr_ratio: rr,
+                  multiplier: mult, strategy_id: strategyId
+                });
               }
             
               showToast(_t('trades.updated'));

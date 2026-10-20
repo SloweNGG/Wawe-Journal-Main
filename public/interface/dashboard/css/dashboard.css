@@ -18,6 +18,8 @@
    ⭐ FAZ 3.3: dotPulse kopyası SİLİNDİ (styles.css'te tek kaynak)
    ⭐ FAZ 3.4: .stat-card kopyası SİLİNDİ (styles.css'te tek kaynak)
    ⭐ FONT: DM Mono kullanılmıyor (JetBrains Mono ve Inter kullanılıyor)
+   ⭐ GRAFİKLER: font, eksen, ızgara ve ipucu kartı ortak temadan (shared/chart-theme.*);
+       bu dosya grafik metnine/ipucuna renk veya font yazmaz
    ⭐ FIX: Stat kartları container query ile boyutlandırıldı
    ⭐ FIX: Donut grafikleri boyut ve kompaktlık iyileştirildi
    ⭐ FIX: KPI bar container query kaldırıldı, clamp(vw) kullanıldı (SORUN 2)
@@ -60,82 +62,19 @@
   overflow: visible !important;
 }
 
-/* ⭐ APEXCHARTS TOOLTIP - position:fixed KALDIRILDI, overflow görünür */
+/* ⭐ APEXCHARTS TOOLTIP - yalnızca katman ve taşma ayarı.
+   Görünüm (siyah kart, DM Sans 11px), eksen/legend fontları ve ızgara renkleri
+   ortak temadan gelir: /interface/shared/chart-theme.css + chart-theme.js (WwChart).
+   Buraya tekrar renk/font yazılırsa sonra yüklendiği için ortak görünümü ezer. */
 .apexcharts-tooltip {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: 12px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
   z-index: var(--z-popover) !important;
   pointer-events: none !important;
   overflow: visible !important;
 }
 
-/* Tooltip içeriği */
-.apexcharts-tooltip-title {
-  background: var(--surface2) !important;
-  border-bottom: 1px solid var(--border) !important;
-  color: var(--text) !important;
-  font-weight: 600 !important;
-  padding: 6px 12px !important;
-}
-
-.apexcharts-tooltip-text-y-label,
-.apexcharts-tooltip-text-y-value {
-  color: var(--text) !important;
-}
-
-/* Tooltip seri listesi */
-.apexcharts-tooltip-series-group {
-  background: transparent !important;
-  border: none !important;
-  padding: 4px 12px !important;
-}
-
-.apexcharts-tooltip-series-group .apexcharts-tooltip-text {
-  color: var(--text) !important;
-}
-
-/* ApexCharts grid lines - tema uyumlu */
-.apexcharts-gridline {
-  stroke: var(--border) !important;
-}
-
-.apexcharts-grid-borders line {
-  stroke: var(--border) !important;
-}
-
-/* ⭐ ApexCharts x-axis labels - FONT BOYUTU BÜYÜTÜLDÜ */
-.apexcharts-xaxis-texts-g text,
-.apexcharts-yaxis-texts-g text {
-  fill: var(--muted) !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-}
-
-/* ⭐ ApexCharts legend - FONT BOYUTU BÜYÜTÜLDÜ */
-.apexcharts-legend-text {
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-}
-
-/* ApexCharts doughnut - center text */
-.apexcharts-datalabel-label,
-.apexcharts-datalabel-value {
-  color: var(--text) !important;
-  font-family: 'Inter', sans-serif !important;
-}
-
-/* ApexCharts doughnut - data label'leri */
+/* Sembol grafiğindeki bar içi değerler: yeşil/kırmızı bar üstünde beyaz */
 .apexcharts-datalabels-group text {
   fill: #fff !important;
-  font-family: 'Inter', sans-serif !important;
   font-weight: 600 !important;
 }
 
@@ -1730,13 +1669,13 @@ body.light-theme .mini-cal-day.loss:hover {
 
 .chart-card.expandable,
 .donut-mobile-slide.expandable {
-  cursor: pointer;
+  cursor: zoom-in;
   transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
 .chart-card.expandable:hover,
 .donut-mobile-slide.expandable:hover {
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
 }
 
 /* ============================================================
@@ -3017,50 +2956,13 @@ body.light-theme .expand-summary-empty {
   width: 13px;
   height: 13px;
 }
-/* cumulative P&L chart: hover card */
+/* cumulative P&L chart: hover card position only; the card itself is the shared .ww-tip (chart-theme.css) */
 .cum-tip {
   position: absolute;
   z-index: 6;
   top: 8px;
-  min-width: 124px;
-  padding: 8px 11px;
-  border-radius: 10px;
   pointer-events: none;
-  background: rgba(13, 14, 24, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.6);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  color: var(--text);
 }
-body.light-theme .cum-tip,
-.light-theme .cum-tip {
-  background: rgba(255, 255, 255, 0.97);
-  border-color: rgba(15, 23, 42, 0.1);
-  box-shadow: 0 10px 28px -8px rgba(15, 23, 42, 0.2);
-}
-.cum-tip-date { color: var(--muted); margin-bottom: 3px; }
-.cum-tip-total {
-  font-family: 'JetBrains Mono', 'DM Mono', monospace;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.cum-tip-trade {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--muted);
-}
-.light-theme .cum-tip-trade { border-top-color: rgba(15, 23, 42, 0.08); }
-.cum-tip-trade b { font-family: 'JetBrains Mono', 'DM Mono', monospace; font-weight: 700; }
-.cum-tip .up { color: #22c55e; }
-.cum-tip .down { color: #ef4444; }
-.light-theme .cum-tip .up { color: #16a34a; }
-.light-theme .cum-tip .down { color: #dc2626; }
 
 /* cumulative chart: target / stop chips on the right edge (the value axis is hidden) */
 .cum-chip {
@@ -3077,11 +2979,11 @@ body.light-theme .cum-tip,
   font-family: 'DM Sans', sans-serif;
   font-size: 10px;
   white-space: nowrap;
-  background: rgba(13, 14, 24, 0.9);
+  background: rgba(0, 0, 0, 0.9);
   border: 1px solid rgba(139, 92, 246, 0.55);
   color: #c4b5fd;
 }
-.cum-chip b { font-family: 'JetBrains Mono', 'DM Mono', monospace; font-weight: 700; color: var(--text); }
+.cum-chip b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
 .cum-chip.stop { border-color: rgba(239, 68, 68, 0.6); color: #fca5a5; }
 .light-theme .cum-chip { background: rgba(255, 255, 255, 0.95); color: #6d28d9; }
 .light-theme .cum-chip.stop { color: #b91c1c; }
@@ -3111,79 +3013,38 @@ body.light-theme .cum-tip,
 .light-theme .stat-trend.negative .stat-trend-pct { color: #b91c1c; background: rgba(239, 68, 68, 0.14); }
 
 /* ============================================================
-   CHART EXPAND MODAL: follows the user's theme and fills the screen
-   Colors come from the theme variables (--bg, --surface, --surface2,
-   --border, --accent, --accent2, --text, --muted), so dark, light and
-   custom accent themes all apply. The light-theme blocks above still win
-   in light mode, and they now agree with these variables.
+   EXPANDED CHART SUMMARY: the winners / losers strip under a chart in the
+   chart viewer (shared/chart-viewer.js). Dark mode is plain black;
+   the theme's own surfaces and borders lean purple, so it sets --ce-* tones.
+   The light-theme blocks above still win in light mode.
    ============================================================ */
-.chart-expand-overlay {
-  background: color-mix(in srgb, var(--bg, #07070c) 82%, transparent);
-  padding: 1rem;
+.chart-expand-summary {
+  --ce-surface: #000;
+  --ce-surface2: #000;
+  --ce-line: rgba(255, 255, 255, 0.07);
+  margin-top: 0;
 }
-
-.chart-expand-box {
-  width: min(100%, 1560px);
-  max-width: none;
-  max-height: calc(100vh - 2rem);
-  background:
-    radial-gradient(ellipse 90% 45% at 50% -10%, color-mix(in srgb, var(--accent, #8b5cf6) 16%, transparent), transparent 70%),
-    var(--surface, #0c0b14);
-  border: 1px solid var(--border2, var(--border));
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5),
-              0 0 40px -10px color-mix(in srgb, var(--accent, #8b5cf6) 24%, transparent),
-              inset 0 1px 0 color-mix(in srgb, var(--accent, #8b5cf6) 26%, transparent);
-}
-
-.chart-expand-header {
-  padding: 1.1rem 2rem;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #8b5cf6) 9%, transparent) 0%, transparent 100%);
-}
-.chart-expand-header h3 { color: var(--text); font-size: 16px; }
-
-.chart-expand-close {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.chart-expand-close:hover {
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 18%, transparent);
-  border-color: var(--accent);
-  color: var(--text);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--accent, #8b5cf6) 28%, transparent);
-}
-
-.chart-expand-body { padding: 1.5rem 2rem 2rem; }
-#chart-expand-container { height: clamp(340px, 52vh, 720px); }
-
-.chart-expand-summary { border-top: 1px solid var(--border); }
+.chart-expand-summary { border-top: 1px solid var(--ce-line); }
 .expand-summary-col {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: var(--ce-surface2);
+  border: 1px solid var(--ce-line);
+  box-shadow: none;
 }
 .expand-summary-title,
 .expand-summary-empty { color: var(--muted); }
 .expand-summary-item {
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 6%, transparent);
-  border: 1px solid var(--border);
+  background: var(--ce-surface);
+  border: 1px solid var(--ce-line);
 }
 .expand-summary-item:hover {
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 12%, transparent);
-  border-color: var(--accent);
+  background: var(--ce-surface);
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
 }
 .expand-summary-item .item-sym { color: var(--text); }
 .expand-summary-item .item-sub-count {
-  color: var(--accent2, #c084fc);
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 14%, transparent);
-}
-
-@media (max-width: 767px) {
-  .chart-expand-overlay { padding: 0.5rem; }
-  .chart-expand-box { max-height: calc(100vh - 1rem); }
-  .chart-expand-header { padding: 0.85rem 1rem; }
-  .chart-expand-body { padding: 0.85rem 1rem 1rem; }
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--ce-line);
 }
 
 /* ============================================================

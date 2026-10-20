@@ -42,11 +42,12 @@ export async function loadPlatformStats() {
       try {
         var [totalUsersResult, totalTradesResult, todayUsersResult, todayTradesResult] = await Promise.all([
           client.from('user_profiles').select('*', { count: 'exact', head: true }),
-          client.from('trades').select('*', { count: 'exact', head: true }),
+          // Backtest işlemleri platform sayaçlarına girmez (SQL: get_platform_stats, Migration 05)
+          window.WwTrades.applyScope(client.from('trades').select('*', { count: 'exact', head: true }), 'live'),
           client.from('user_profiles').select('*', { count: 'exact', head: true })
             .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString()),
-          client.from('trades').select('*', { count: 'exact', head: true })
-            .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
+          window.WwTrades.applyScope(client.from('trades').select('*', { count: 'exact', head: true })
+            .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString()), 'live')
         ]);
 
         var fallbackStats = {

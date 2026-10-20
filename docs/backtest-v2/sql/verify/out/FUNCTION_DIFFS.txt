@@ -1,0 +1,108 @@
+--- reset_user_data.live (reset_user_data())
++++ reset_user_data.v01
+@@ -12,13 +12,9 @@
+     RAISE EXCEPTION 'Not authenticated';
+   END IF;
+ 
+-  -- 1. Trades & Backtest
++  -- 1. Trades
+   DELETE FROM public.trades WHERE user_id = v_uid;
+ 
+-  IF to_regclass('public.backtest_trades') IS NOT NULL THEN
+-    DELETE FROM public.backtest_trades WHERE user_id = v_uid;
+-  END IF;
+-
+   -- 2. Stratejiler
+   IF to_regclass('public.strategies') IS NOT NULL THEN
+     DELETE FROM public.strategies WHERE user_id = v_uid;
+--- reset_user_data.v01 (reset_user_data())
++++ reset_user_data.v02
+@@ -12,9 +12,18 @@
+     RAISE EXCEPTION 'Not authenticated';
+   END IF;
+ 
+-  -- 1. Trades
++  -- 1. Trades (this also removes the journal mirrors of backtest trades, import_hash 'backtest:%')
+   DELETE FROM public.trades WHERE user_id = v_uid;
+ 
++  -- 1b. Backtest v2 (migration 202610180002): account trades, then the accounts themselves
++  IF to_regclass('public.backtest_account_trades') IS NOT NULL THEN
++    DELETE FROM public.backtest_account_trades WHERE user_id = v_uid;
++  END IF;
++
++  IF to_regclass('public.backtest_accounts') IS NOT NULL THEN
++    DELETE FROM public.backtest_accounts WHERE user_id = v_uid;
++  END IF;
++
+   -- 2. Stratejiler
+   IF to_regclass('public.strategies') IS NOT NULL THEN
+     DELETE FROM public.strategies WHERE user_id = v_uid;
+--- delete_journal.live (delete_journal(uuid))
++++ delete_journal.v02
+@@ -26,6 +26,17 @@
+     DELETE FROM public.trades WHERE journal_id = p_journal_id;
+     DELETE FROM public.strategies WHERE journal_id = p_journal_id;
+ 
++    -- Backtest v2 (migration 202610180002): detach the backtest accounts linked to this journal, in BOTH
++    -- branches. The "last journal" branch below only resets the journal row, so the FK
++    -- backtest_accounts.journal_id ON DELETE SET NULL would never fire there. The journal mirrors of their
++    -- trades were already removed by the trades DELETE above.
++    IF to_regclass('public.backtest_accounts') IS NOT NULL THEN
++        UPDATE public.backtest_accounts
++           SET journal_id = NULL
++         WHERE journal_id = p_journal_id
++           AND user_id = v_user_id;
++    END IF;
++
+     SELECT count(*) INTO v_total_count
+     FROM public.journals
+     WHERE user_id = v_user_id AND is_active = true;
+--- evaluate_prop_firm_rules.live (evaluate_prop_firm_rules(uuid))
++++ evaluate_prop_firm_rules.s0
+@@ -38,7 +38,22 @@
+     v_trade_rec RECORD;
+     v_running_pnl numeric := 0;
+     v_running_equity numeric := 0;
++    v_caller uuid;
+ BEGIN
++    -- Security (202610180000): the caller must own the journal. A caller with a user id is checked
++    -- against journals.user_id (an admin, public.is_admin(), may evaluate any journal); a caller without one
++    -- is accepted only if its JWT role is not anon/authenticated (service_role, or a direct SQL session such
++    -- as the SQL Editor).
++    v_caller := auth.uid();
++    IF v_caller IS NOT NULL THEN
++        IF NOT EXISTS (SELECT 1 FROM public.journals WHERE id = p_journal_id AND user_id = v_caller)
++           AND NOT public.is_admin() THEN
++            RAISE EXCEPTION 'FORBIDDEN: journal not found or not owned by the caller' USING ERRCODE = '42501';
++        END IF;
++    ELSIF coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated') THEN
++        RAISE EXCEPTION 'FORBIDDEN: authentication required' USING ERRCODE = '42501';
++    END IF;
++
+     SELECT is_prop_firm, prop_firm_rules, COALESCE(trading_day_offset, 'Europe/Prague')
+     INTO v_is_prop, v_rules, v_tz
+     FROM public.journals
+--- list_journals.live (list_journals())
++++ list_journals.v05
+@@ -58,7 +58,7 @@
+       SUM(pnl) AS t_pnl,
+       CASE WHEN COUNT(*) > 0 THEN (COUNT(*) FILTER (WHERE pnl > 0)::numeric / COUNT(*)) * 100 ELSE 0 END AS w_rate,
+       MAX(trade_date)::date AS l_trade_date
+-    FROM public.trades tr WHERE tr.journal_id = j.id
++    FROM public.trades tr WHERE tr.journal_id = j.id AND tr.platform_source IS DISTINCT FROM 'backtest'
+   ) t ON true
+   LEFT JOIN LATERAL (
+     SELECT COUNT(*) AS s_count
+--- get_platform_stats.live (get_platform_stats())
++++ get_platform_stats.v05
+@@ -6,8 +6,8 @@
+ AS $function$
+   select jsonb_build_object(
+     'totalUsers',   (select count(*) from public.user_profiles),
+-    'totalTrades',  (select count(*) from public.trades),
++    'totalTrades',  (select count(*) from public.trades where platform_source is distinct from 'backtest'),
+     'todayUsers',   (select count(*) from public.user_profiles where created_at >= current_date),
+-    'todayTrades',  (select count(*) from public.trades where created_at >= current_date)
++    'todayTrades',  (select count(*) from public.trades where created_at >= current_date and platform_source is distinct from 'backtest')
+   );
+ $function$;

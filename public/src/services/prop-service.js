@@ -459,11 +459,30 @@
    * @param {Array<Object>} [cachedTrades] Optional pre-loaded trades array
    * @returns {Promise<{account: Object, status: Object}|null>}
    */
+  // Backtest işlemleri prop kurallarına ASLA girmez (platform_source = 'backtest').
+  // WwTrades (trades-source.js) yoksa aynı NULL-güvenli filtre burada uygulanır.
+  var LIVE_OR_FALLBACK = 'platform_source.is.null,platform_source.neq.backtest';
+  function tradesScope() {
+    if (typeof window !== 'undefined' && window.WwTrades) return window.WwTrades;
+    if (typeof globalThis !== 'undefined' && globalThis.WwTrades) return globalThis.WwTrades;
+    return null;
+  }
+  function liveQuery(q) {
+    var ws = tradesScope();
+    return ws ? ws.applyScope(q, 'live') : q.or(LIVE_OR_FALLBACK);
+  }
+  function liveOnly(list) {
+    var ws = tradesScope();
+    if (ws) return ws.filterScope(list, 'live');
+    return (list || []).filter(function (t) { return !!t && t.platform_source !== 'backtest'; });
+  }
+
   async function syncPropAccountStatus(journalId, cachedTrades) {
     if (!journalId) return null;
     var propAccount = await getPropAccountByJournalId(journalId);
     if (!propAccount) return null;
 
+    var propCols = ['id', 'trade_date', 'pnl', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier', 'platform_source'];
     var trades = null;
     if (cachedTrades && Array.isArray(cachedTrades)) {
       trades = cachedTrades;
@@ -471,8 +490,8 @@
       var uId = (window.currentUser && window.currentUser.id) ||
                 (window.__wwUserProfile && window.__wwUserProfile.id) || null;
       if (uId) {
-        trades = window.wwCache.get('trades_dashboard', uId, journalId, ['id', 'trade_date', 'pnl', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier']) ||
-                 window.wwCache.get('trades', uId, journalId, ['id', 'trade_date', 'pnl', 'entry_price', 'exit_price', 'lot', 'direction', 'instrument', 'multiplier']);
+        trades = window.wwCache.get('trades_dashboard', uId, journalId, propCols) ||
+                 window.wwCache.get('trades', uId, journalId, propCols);
       }
     }
 
@@ -485,10 +504,11 @@
       var from = 0;
       var hasMore = true;
       while (hasMore) {
-        var tradesRes = await sb
+        var tradesQuery = sb
           .from('trades')
-          .select('id, trade_date, pnl, entry_price, exit_price, lot, direction, instrument, multiplier')
-          .eq('journal_id', journalId)
+          .select('id, trade_date, pnl, entry_price, exit_price, lot, direction, instrument, multiplier, platform_source')
+          .eq('journal_id', journalId);
+        var tradesRes = await liveQuery(tradesQuery)
           .order('trade_date', { ascending: true })
           .order('id', { ascending: true })
           .range(from, from + pageSize - 1);
@@ -502,6 +522,9 @@
         else from += pageSize;
       }
     }
+
+    // Savunma katmanı: önbellekten / çağırandan gelen listede backtest satırı olsa bile prop'a girmez.
+    trades = liveOnly(trades);
 
     // 'Açık işlem' kavramı yok: yalnızca kapanmış işlemler hesaba girer. exit_price kolonu hiç
     // verilmemişse (yalnızca {id, trade_date, pnl} geçen çağıranlar) kayıtlı pnl'i olan satır kapanmış sayılır.

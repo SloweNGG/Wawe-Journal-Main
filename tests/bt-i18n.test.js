@@ -1,0 +1,38 @@
+// Backtest v2: locale files stay valid and complete (a syntax error in a locale breaks i18n on every page)
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const LANGS = ['tr', 'en', 'de'];
+const loc = {};
+for (const l of LANGS) loc[l] = (await import(pathToFileURL(path.resolve(`public/i18n/locales/${l}.js`)).href)).default;
+const keysOf = (l) => Object.keys(loc[l]).filter((k) => k.startsWith('backtest.') || k === 'nav.backtest').sort();
+
+describe('bt-i18n', () => {
+  it('the three locales load and have the same backtest keys', () => {
+    assert.ok(keysOf('tr').length > 100);
+    assert.deepEqual(keysOf('en'), keysOf('tr')); assert.deepEqual(keysOf('de'), keysOf('tr'));
+  });
+  it('no empty values; the same {placeholders} in every language', () => {
+    const ph = (s) => (String(s).match(/\{[a-z0-9_]+\}/gi) || []).sort().join(',');
+    for (const k of keysOf('tr')) {
+      for (const l of LANGS) assert.ok(String(loc[l][k]).trim().length > 0, `${l} ${k} is empty`);
+      assert.equal(ph(loc.en[k]), ph(loc.tr[k]), `placeholders differ in en for ${k}`);
+      assert.equal(ph(loc.de[k]), ph(loc.tr[k]), `placeholders differ in de for ${k}`);
+    }
+  });
+  it('every key used by the page and the controller exists', () => {
+    const src = fs.readFileSync('src/pages/backtest.astro', 'utf8') + fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
+    const used = new Set();
+    for (const m of src.matchAll(/(?:data-i18n(?:-placeholder|-title)?="|_t\(')((?:backtest|nav|common)\.[a-z0-9_.]+)/g)) if (!m[1].endsWith('.')) used.add(m[1]);   // dynamic keys (backtest.group.<id>) are checked below
+    assert.ok(used.size > 100);
+    for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
+    for (const g of ['forex', 'gold', 'crypto']) for (const l of LANGS) assert.ok(`backtest.group.${g}` in loc[l]);
+  });
+  it('no lock icon anywhere in the page (owner preference)', () => {
+    const src = fs.readFileSync('src/pages/backtest.astro', 'utf8') + fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
+    assert.ok(!/data-lucide="(lock|shield-lock|key)"/.test(src));
+  });
+});

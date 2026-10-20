@@ -11,7 +11,7 @@ import Layout from '../layouts/Layout.astro';
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js" is:inline defer></script>
+  <script src="/i18n.js?v=1792300000" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 </Fragment>
 
@@ -735,19 +735,26 @@ import Layout from '../layouts/Layout.astro';
     if (jId && window.wwCache) {
       var uId = (window.currentUser && window.currentUser.id) || (window.__wwUserProfile && window.__wwUserProfile.id);
       if (uId) {
-        var cached = window.wwCache.get('trades_dashboard', uId, jId, ['trade_date', 'pnl']) || window.wwCache.get('trades', uId, jId, ['trade_date', 'pnl']);
+        var previewCols = ['trade_date', 'pnl', 'platform_source'];
+        var cached = window.wwCache.get('trades_dashboard', uId, jId, previewCols) || window.wwCache.get('trades', uId, jId, previewCols);
         if (cached && Array.isArray(cached) && cached.length > 0) {
-          trades = cached.slice(-3);
+          // Yalnızca canlı işlemler; önbellek listesi ASC ya da DESC olabilir -> tarihe göre en yeni 3
+          // (eskiden DESC 'trades' listesinde slice(-3) EN ESKİ 3 işlemi gösteriyordu)
+          trades = window.WwTrades.filterScope(cached, 'live').slice().sort(function (a, b) {
+            return (Date.parse(b.trade_date) || 0) - (Date.parse(a.trade_date) || 0);
+          }).slice(0, 3);
         }
       }
     }
 
     if (trades.length === 0 && jId && window.sb) {
       try {
-        var res = await window.sb
+        // Prop zaman kaydırma önizlemesi: yalnızca canlı işlemler
+        var previewQuery = window.sb
           .from('trades')
-          .select('trade_date, pnl')
-          .eq('journal_id', jId)
+          .select('trade_date, pnl, platform_source')
+          .eq('journal_id', jId);
+        var res = await window.WwTrades.applyScope(previewQuery, 'live')
           .order('trade_date', { ascending: false })
           .limit(3);
         if (res.data && res.data.length > 0) {
@@ -1667,9 +1674,21 @@ import Layout from '../layouts/Layout.astro';
         btnDel.onclick = function(e) {
           e.stopPropagation(); dropdown.classList.remove('open');
           deleteId = j.id;
-          var msg = i18n.t('journal.delete_message').replace('{tradeCount}', j.trade_count || 0).replace('{strategyCount}', '0');
-          document.getElementById('delete-modal-msg').textContent = msg;
+          // trade_count yalnızca CANLI işlemleri sayar (list_journals, Migration 05). delete_journal backtest
+          // aynalarını da siler; sayıları tıklama anında HEAD count ile okunur (satır indirilmez).
+          var msgEl = document.getElementById('delete-modal-msg');
+          var baseMsg = i18n.t('journal.delete_message').replace('{tradeCount}', j.trade_count || 0).replace('{strategyCount}', j.strategy_count || 0);
+          msgEl.textContent = baseMsg;
           document.getElementById('delete-modal').classList.add('active');
+          var askedFor = j.id;
+          if (window.WwTrades) {
+            window.WwTrades.count({ journalId: j.id, scope: 'backtest' }).then(function (r) {
+              if (deleteId !== askedFor || !r || r.error || !r.count) return;
+              var extra = i18n.t('journal.delete_message_backtest', { count: r.count });
+              if (!extra || extra === 'journal.delete_message_backtest') extra = 'Ayrıca ' + r.count + ' backtest işlemi silinecek.';
+              msgEl.textContent = baseMsg + ' ' + extra;
+            });
+          }
         };
       }
     });

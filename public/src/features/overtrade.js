@@ -384,12 +384,14 @@ export async function checkAndRenderOvertrade(containerId) {
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-    const { data: trades, error } = await sb
-      .from('trades')
-      .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl')
-      .eq('user_id', session.user.id)
-      .gte('trade_date', weekAgoStr)
-      .order('trade_date', { ascending: false });
+    // Canlı kapsam: backtest işlemleri overtrade hesabına girmez (window.WwTrades bundle.js ile yüklenir)
+    const { data: trades, error } = await window.WwTrades.applyScope(
+      sb.from('trades')
+        .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl,platform_source')
+        .eq('user_id', session.user.id)
+        .gte('trade_date', weekAgoStr),
+      'live'
+    ).order('trade_date', { ascending: false });
     
     if (error) {
       console.error('checkAndRenderOvertrade: işlemler alınamadı:', error);
@@ -565,12 +567,14 @@ export async function updateOvertradeBell(force = false) {
         weekAgo.setDate(weekAgo.getDate() - 7);
         const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-        const { data: trades, error } = await sbClient
-          .from('trades')
-          .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl')
-          .eq('user_id', session.user.id)
-          .gte('trade_date', weekAgoStr)
-          .order('trade_date', { ascending: false });
+        // Canlı kapsam: backtest işlemleri zil uyarısına girmez
+        const { data: trades, error } = await window.WwTrades.applyScope(
+          sbClient.from('trades')
+            .select('trade_date,entry_price,exit_price,lot,direction,instrument,multiplier,pnl,platform_source')
+            .eq('user_id', session.user.id)
+            .gte('trade_date', weekAgoStr),
+          'live'
+        ).order('trade_date', { ascending: false });
 
         if (error || !trades) {
           window._activeOvertradeWarnings = [];

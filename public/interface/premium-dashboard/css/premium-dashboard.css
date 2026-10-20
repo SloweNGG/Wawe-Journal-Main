@@ -4,7 +4,178 @@
    ============================================================ */
 
 /* ⭐ LAYOUT (Grid, Flex, Pozisyon, Responsive) */
-@import url("layout.css");
+@import url("layout.css?v=2");
 
 /* ⭐ COMPONENTS (Kartlar, Grafikler, Butonlar, Skeleton) */
-@import url("components.css");
+@import url("components.css?v=2");
+
+/* Chart cards open large on click (js/chart-expand.js → shared WwChartViewer) */
+.grid-item:is([data-widget="cumulative"], [data-widget="winloss"], [data-widget="daily"], [data-widget="symbol"],
+  [data-widget="direction"], [data-widget="hourly"], [data-widget="dow"], [data-widget="rr"], [data-widget="lot"],
+  [data-widget="drawdown"], [data-widget="monthly"]) .chart-wrap { cursor: zoom-in; }
+
+/* ============================================================
+   PDF REPORT PERIOD DIALOG (js/export-dialog.js)
+   Same look as the other modals: black in dark mode, white in light,
+   neutral hairlines; the selected range is a solid light chip.
+   ============================================================ */
+.pd-export-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-overlay, 9999);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--bg, #07070c) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-family: 'DM Sans', sans-serif;
+}
+.pd-export-box {
+  --pdx-bg: #000;
+  --pdx-line: rgba(255, 255, 255, 0.09);
+  --pdx-line-strong: rgba(255, 255, 255, 0.22);
+  --pdx-chip-on-bg: #f1f1f5;
+  --pdx-chip-on-text: #000;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--pdx-bg);
+  border: 1px solid var(--pdx-line);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  color: var(--text);
+  animation: pdxIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes pdxIn { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.pd-export-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1.15rem 1.35rem 1rem;
+  border-bottom: 1px solid var(--pdx-line);
+}
+.pd-export-head h3 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.pd-export-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.pd-export-x {
+  width: 30px; height: 30px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: transparent; border: 1px solid var(--pdx-line);
+  color: var(--muted); cursor: pointer;
+}
+.pd-export-x:hover { color: var(--text); border-color: var(--pdx-line-strong); }
+
+.pd-export-body { padding: 1.1rem 1.35rem 0.4rem; }
+.pd-export-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 0.55rem; }
+.pd-export-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 1.15rem;
+}
+.pd-export-chip {
+  height: 36px;
+  border-radius: 9px;
+  background: transparent;
+  border: 1px solid var(--pdx-line);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.pd-export-chip:hover { border-color: var(--pdx-line-strong); }
+.pd-export-chip.active {
+  background: var(--pdx-chip-on-bg);
+  border-color: var(--pdx-chip-on-bg);
+  color: var(--pdx-chip-on-text);
+  font-weight: 600;
+}
+.pd-export-chip:focus-visible, .pd-export-btn:focus-visible, .pd-export-dates input:focus-visible {
+  outline: 2px solid var(--muted); outline-offset: 2px;
+}
+
+.pd-export-dates { display: flex; align-items: flex-end; gap: 8px; }
+.pd-export-dates label { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pd-export-dates label span { font-size: 11px; color: var(--muted); }
+.pd-export-dates input {
+  height: 38px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: transparent;
+  border: 1px solid var(--pdx-line);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+.pd-export-dates input:hover { border-color: var(--pdx-line-strong); }
+.pd-export-dash { color: var(--muted); padding-bottom: 10px; }
+
+.pd-export-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--pdx-line);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pd-export-summary b { font-weight: 600; }
+.pd-export-summary span { font-weight: 600; }
+.pd-export-summary .up { color: #22c55e; }
+.pd-export-summary .down { color: #ef4444; }
+.pd-export-summary.warn { color: var(--muted); justify-content: flex-start; }
+
+.pd-export-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 1rem 1.35rem 1.25rem;
+}
+.pd-export-btn {
+  height: 38px;
+  padding: 0 1.1rem;
+  border-radius: 9px;
+  background: transparent;
+  border: 1px solid var(--pdx-line);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pd-export-btn:hover { border-color: var(--pdx-line-strong); }
+.pd-export-btn.primary { background: var(--pdx-chip-on-bg); border-color: var(--pdx-chip-on-bg); color: var(--pdx-chip-on-text); }
+.pd-export-btn.primary:hover { filter: brightness(0.92); }
+.pd-export-btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+body.light-theme .pd-export-overlay { background: rgba(15, 23, 42, 0.45); }
+body.light-theme .pd-export-box {
+  --pdx-bg: #fff;
+  --pdx-line: #e2e8f0;
+  --pdx-line-strong: #cbd5e1;
+  --pdx-chip-on-bg: #0f172a;
+  --pdx-chip-on-text: #fff;
+  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.16);
+}
+body.light-theme .pd-export-dates input { color-scheme: light; }
+body.light-theme .pd-export-summary .up { color: #16a34a; }
+body.light-theme .pd-export-summary .down { color: #dc2626; }
+
+@media (max-width: 480px) {
+  .pd-export-presets { grid-template-columns: repeat(2, 1fr); }
+  .pd-export-dates { flex-wrap: wrap; }
+  .pd-export-dash { display: none; }
+  .pd-export-dates label { flex-basis: 100%; }
+}

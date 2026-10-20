@@ -1,677 +1,375 @@
 ---
+// ============================================================
+// BACKTEST v2 (Faz A): yalnızca admin görür, veriler tarayıcıda üretilir (sentetik),
+// hesap durumu localStorage'dadır. Veritabanına dokunmaz (bkz. docs/backtest-v2/PLAN.md).
+// Route kaydı korunuyor, silmeyin:
+//   - src/components/SpaRouter.astro → SPA_PATHS '/backtest'
+//   - public/components/navbar/page-transition.js → APP_PATHS '/backtest'
+// Lightweight Charts adresi dashboard.astro ile birebir aynı olmalı (SpaRouter kimlik kontrolü).
+// ============================================================
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout lang="tr" spa={true}>
+<Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-<meta charset="UTF-8">
-<title>Backtest — Wawe Journal</title>
-<link rel="stylesheet" href="/styles.css">
-<style>
-  /* ============================================================
-     BACKTEST SAYFASI - EK STİLLER
-     styles.css içindeki değişkenleri ve bileşenleri kullanır
-     ============================================================ */
-
-  .bt-toolbar {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: end;
-    margin-bottom: 1rem;
-  }
-
-  .bt-chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .bt-chart-card:hover {
-    border-color: rgba(139,92,246,0.3);
-    box-shadow: 0 4px 16px rgba(139,92,246,0.08);
-  }
-  #bt-chart { width: 100%; height: 380px; }
-
-  .bt-controls-row {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  .bt-controls-row .bt-divider {
-    width: 1px;
-    height: 22px;
-    background: var(--border2);
-  }
-  .bt-speed {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--muted);
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .bt-speed input[type="range"] {
-    width: 100px;
-    accent-color: var(--accent);
-  }
-
-  .bt-trade-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: end;
-  }
-
-  .btn-buy, .btn-sell {
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 0.6rem 1.2rem;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 38px;
-    color: #fff;
-  }
-  .btn-buy:hover:not(:disabled), .btn-sell:hover:not(:disabled) {
-    transform: translateY(-1px);
-    opacity: 0.92;
-  }
-  .btn-buy:active:not(:disabled), .btn-sell:active:not(:disabled) { transform: scale(0.97); }
-  .btn-buy {
-    background: linear-gradient(135deg, var(--green), #16a34a);
-    box-shadow: 0 4px 12px var(--green-glow);
-  }
-  .btn-sell {
-    background: linear-gradient(135deg, var(--red), #dc2626);
-    box-shadow: 0 4px 12px var(--red-glow);
-  }
-  .btn-buy:disabled, .btn-sell:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .bt-field-inline {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .bt-field-inline label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
-  .bt-field-inline input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    padding: 0.55rem 0.7rem;
-    width: 72px;
-    outline: none;
-    transition: all 0.2s;
-  }
-  .bt-field-inline input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-  }
-
-  .bt-log-section h3 {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-    font-family: 'DM Mono', monospace;
-    background: none;
-    -webkit-text-fill-color: var(--muted);
-  }
-
-  .bt-empty-state {
-    text-align: center;
-    color: var(--muted);
-    font-size: 13px;
-    padding: 2rem 0;
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  .bt-status-banner {
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    margin-bottom: 1rem;
-    display: none;
-  }
-  .bt-status-banner.show { display: block; }
-  .bt-status-banner.error {
-    color: var(--red);
-    border-color: rgba(239,68,68,0.25);
-    background: rgba(239,68,68,0.06);
-  }
-
-  @media (max-width: 640px) {
-    .bt-trade-panel { flex-direction: column; align-items: stretch; }
-  }
-</style>
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=2" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
+  <script src="/config.js" is:inline defer></script>
+  <script src="/i18n.js?v=1792500000" is:inline defer></script>
+  <script type="module" src="/src/bundle.js" is:inline defer></script>
+
+  <script src="/interface/backtest/js/bt-symbols.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-candles.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-engine.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-synthetic.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-data.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-store.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=2" is:inline defer data-page-script></script>
 </Fragment>
-  <nav class="nav">
-    <a href="dashboard.html" class="nav-logo">
-      <span class="logo-icon">📈</span>
-      Wawe<span>Journal</span>
-    </a>
-    <div class="nav-links">
-      <a href="dashboard.html">Panel</a>
-      <a href="trades.html">İşlemler</a>
-      <a href="calendar.html">Takvim</a>
-      <a href="strategies.html">Stratejiler</a>
-      <a href="backtest.html" class="active">Backtest</a>
-    </div>
-    <div class="nav-right">
-      <div class="user-avatar">TR</div>
-    </div>
-  </nav>
 
-  <main class="dashboard-main">
+  <main class="bt-main" id="bt-root" data-state="boot">
 
-    <div class="page-header">
-      <div>
-        <h1>Backtest</h1>
-        <p class="subtitle">Geçmiş veri üzerinde bar-by-bar strateji testi</p>
+    <!-- ================= SOON (not an admin) ================= -->
+    <section id="bt-view-soon" class="bt-view" hidden>
+      <div class="bt-empty">
+        <i data-lucide="history" aria-hidden="true"></i>
+        <span class="bt-chip bt-chip-muted" data-i18n="backtest.gate.badge">Yakında</span>
+        <h1 data-i18n="backtest.gate.title">Backtest yakında</h1>
+        <p data-i18n="backtest.gate.soon">Geçmiş piyasa verisinde mum mum işlem pratiği yapabileceğin yeni backtest aracı hazırlanıyor.</p>
       </div>
-    </div>
+    </section>
 
-    <div id="btStatusBanner" class="bt-status-banner"></div>
+    <!-- ================= LIST VIEW ================= -->
+    <section id="bt-view-list" class="bt-view" aria-labelledby="bt-title" hidden>
+      <div class="page-header">
+        <div>
+          <h1 id="bt-title" data-i18n="backtest.title">Backtest</h1>
+          <p class="subtitle" data-i18n="backtest.subtitle">Geçmiş piyasa verisinde mum mum işlem pratiği yap.</p>
+        </div>
+        <div class="bt-list-actions">
+          <span id="bt-quota" class="bt-quota bt-num" aria-live="polite"></span>
+          <button type="button" id="bt-new-account-btn" class="btn btn-primary">
+            <i data-lucide="plus" aria-hidden="true"></i><span data-i18n="backtest.new_account">Yeni hesap</span>
+          </button>
+        </div>
+      </div>
+      <p class="bt-banner bt-banner-test" role="status">
+        <i data-lucide="flask-conical" aria-hidden="true"></i>
+        <span data-i18n="backtest.test_banner">Test sürümü: mumlar tarayıcıda üretilen sentetik veridir, hesaplar bu tarayıcıda saklanır.</span>
+      </p>
+      <p id="bt-storage-warning" class="bt-banner bt-banner-error" role="status" hidden data-i18n="backtest.storage_unavailable">Tarayıcı depolaması kullanılamıyor: hesaplar kaydedilmiyor, sayfa kapanınca kaybolur.</p>
+      <p id="bt-quota-note" class="bt-hint" data-i18n="backtest.quota.over_limit" hidden>Plan limitinin üzerindesiniz; mevcut hesaplar çalışmaya devam eder.</p>
 
-    <div class="bt-toolbar">
-      <div class="field" style="margin-bottom:0;">
-        <label>Varlık türü</label>
-        <select id="btAssetClass">
-          <option value="crypto">Kripto</option>
-          <option value="forex">Forex</option>
-          <option value="stock">Hisse</option>
-          <option value="index">Index</option>
+      <div id="bt-accounts" class="bt-accounts" aria-busy="true">
+        <div class="bt-account-card bt-skeleton"></div>
+        <div class="bt-account-card bt-skeleton"></div>
+        <div class="bt-account-card bt-skeleton"></div>
+      </div>
+
+      <div id="bt-accounts-empty" class="bt-empty" hidden>
+        <i data-lucide="history" aria-hidden="true"></i>
+        <h2 data-i18n="backtest.empty_title">Henüz backtest hesabın yok</h2>
+        <p data-i18n="backtest.empty_desc">Bir sembol ve başlangıç tarihi seç, geçmiş veride mum mum işlem yap.</p>
+        <button type="button" id="bt-empty-create-btn" class="btn btn-primary"><span data-i18n="backtest.new_account">Yeni hesap</span></button>
+      </div>
+
+      <div id="bt-list-error" class="bt-banner bt-banner-error" role="alert" hidden>
+        <span data-i18n="backtest.load_error">Hesaplar yüklenemedi.</span>
+        <button type="button" id="bt-list-retry-btn" class="btn btn-ghost"><span data-i18n="backtest.retry">Tekrar dene</span></button>
+      </div>
+      <p id="bt-demo" class="bt-banner" data-i18n="backtest.demo_mode" hidden>Demo modunda backtest kullanılamaz. Lütfen giriş yapın.</p>
+      <p id="bt-fatal" class="bt-banner bt-banner-error" role="alert" data-i18n="backtest.deps_error" hidden>Sayfa bileşenleri yüklenemedi. Lütfen sayfayı yenileyin.</p>
+    </section>
+
+    <!-- ================= REPLAY VIEW ================= -->
+    <section id="bt-view-replay" class="bt-view" data-replay="idle" hidden>
+      <header class="bt-replay-head">
+        <button type="button" id="bt-back-btn" class="btn btn-ghost bt-back">
+          <i data-lucide="arrow-left" aria-hidden="true"></i><span data-i18n="backtest.back">Hesaplar</span>
+        </button>
+        <div class="bt-replay-title">
+          <h2 id="bt-acc-name"></h2>
+          <span id="bt-acc-symbol" class="bt-chip"></span>
+        </div>
+        <button type="button" id="bt-acc-settings-btn" class="btn btn-ghost">
+          <i data-lucide="settings-2" aria-hidden="true"></i><span data-i18n="backtest.card.settings">Ayarlar</span>
+        </button>
+      </header>
+
+      <div class="bt-toolbar" role="toolbar">
+        <label class="bt-sr" for="bt-tf" data-i18n="backtest.field.timeframe">Zaman dilimi</label>
+        <select id="bt-tf" class="bt-select bt-num">
+          <option value="1m">M1</option><option value="5m">M5</option><option value="15m">M15</option>
+          <option value="30m">M30</option><option value="1h">H1</option><option value="4h">H4</option><option value="1d">D1</option>
         </select>
-      </div>
-      <div class="field" style="margin-bottom:0;">
-        <label>Sembol</label>
-        <input type="text" id="btSymbol" value="BTCUSDT" style="width:140px;">
-      </div>
-      <div class="field" style="margin-bottom:0;">
-        <label>Zaman dilimi</label>
-        <select id="btInterval">
-          <option value="15m">15 dakika</option>
-          <option value="1h">1 saat</option>
-          <option value="4h">4 saat</option>
-          <option value="1d" selected>1 gün</option>
-        </select>
-      </div>
-      <button class="btn btn-primary" id="btLoadBtn">Veriyi yükle</button>
-    </div>
 
-    <div class="bt-chart-card">
-      <div class="chart-header">
-        <h3>Fiyat grafiği</h3>
-        <span class="chart-badge" id="btDataBadge">Veri yüklenmedi</span>
-      </div>
-      <div id="bt-chart"></div>
-    </div>
+        <div class="bt-goto">
+          <label class="bt-sr" for="bt-goto-input" data-i18n="backtest.goto.label">Tarihe git</label>
+          <input id="bt-goto-input" class="bt-input bt-num" type="datetime-local" step="60" />
+          <button type="button" id="bt-goto-btn" class="btn btn-ghost"><span data-i18n="backtest.goto.button">Git</span></button>
+        </div>
 
-    <div class="bt-controls-row">
-      <button class="btn btn-ghost" id="btPlayBtn">▶ Oynat</button>
-      <button class="btn btn-ghost" id="btStepBtn">1 bar ilerle</button>
-      <button class="btn btn-ghost" id="btResetBtn">Sıfırla</button>
-      <div class="bt-divider"></div>
-      <div class="bt-speed">
-        Hız
-        <input type="range" id="btSpeed" min="100" max="1200" step="100" value="400">
-      </div>
-    </div>
+        <div class="bt-transport">
+          <button type="button" id="bt-play-btn" class="bt-icon-btn bt-play" aria-pressed="false" data-i18n-title="backtest.play" title="Oynat">
+            <i data-lucide="play" aria-hidden="true"></i><span id="bt-play-label" class="bt-sr" data-i18n="backtest.play">Oynat</span>
+          </button>
+          <button type="button" id="bt-step-btn" class="bt-icon-btn" data-i18n-title="backtest.step" title="Bir mum ilerle">
+            <i data-lucide="skip-forward" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.step">Bir mum ilerle</span>
+          </button>
+          <button type="button" id="bt-step1m-btn" class="bt-icon-btn bt-num" data-i18n-title="backtest.step_1m" title="1 dakika ilerle">+1m</button>
+          <label class="bt-sr" for="bt-speed" data-i18n="backtest.speed">Hız</label>
+          <select id="bt-speed" class="bt-select bt-num" data-i18n-title="backtest.speed_hint" title="Saniyede mum">
+            <option value="0.1">0.1×</option><option value="0.3">0.3×</option><option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option><option value="3">3×</option><option value="10">10×</option>
+          </select>
+        </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Pozisyon</div>
-        <div class="stat-value" id="btPosStatus" style="font-size:1.1rem;">Yok</div>
+        <div class="bt-clock">
+          <span class="bt-sr" data-i18n="backtest.card.replay_time">Replay zamanı</span>
+          <span id="bt-clock-time" class="bt-num">—</span>
+          <span id="bt-clock-tz" class="bt-clock-tz"></span>
+          <span id="bt-market-chip" class="bt-chip bt-chip-muted" hidden></span>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Anlık PnL</div>
-        <div class="stat-value" id="btOpenPnl">–</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Toplam PnL</div>
-        <div class="stat-value" id="btTotalPnl">%0.00</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Win rate</div>
-        <div class="stat-value" id="btWinRate">–</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">İşlem sayısı</div>
-        <div class="stat-value" id="btTradeCount">0</div>
-      </div>
-    </div>
 
-    <div class="bt-trade-panel">
-      <button class="btn-buy" id="btBuyBtn">↑ Al</button>
-      <button class="btn-sell" id="btSellBtn">↓ Sat</button>
-      <button class="btn btn-ghost" id="btCloseBtn">✕ Pozisyonu kapat</button>
-      <div class="bt-field-inline">
-        <label>TP %</label>
-        <input type="number" id="btTpPct" value="2" min="0.1" step="0.1">
-      </div>
-      <div class="bt-field-inline">
-        <label>SL %</label>
-        <input type="number" id="btSlPct" value="1" min="0.1" step="0.1">
-      </div>
-    </div>
+      <div class="bt-layout">
+        <div id="bt-chart-card" class="bt-chart-card">
+          <div class="bt-chart-top">
+            <div id="bt-legend" class="bt-legend bt-num" aria-hidden="true"></div>
+            <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri · test</span>
+          </div>
+          <div class="bt-chart-wrap">
+            <div id="bt-chart" class="bt-chart"></div>
+            <div id="bt-chart-overlay" class="bt-chart-overlay" hidden>
+              <span id="bt-overlay-text">Mum verisi yükleniyor…</span>
+            </div>
+          </div>
+          <div id="bt-data-banner" class="bt-banner" role="status" hidden>
+            <span id="bt-data-banner-text"></span>
+            <button type="button" id="bt-data-banner-btn" class="btn btn-ghost" hidden></button>
+          </div>
+          <footer class="bt-chart-foot">
+            <span id="bt-gap-note" class="bt-hint"></span>
+            <p class="bt-attribution">
+              <span data-i18n="backtest.attribution_prefix">Grafikler:</span>
+              <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView Lightweight Charts™</a>
+              <span>Copyright (c) 2023 TradingView, Inc.</span>
+            </p>
+          </footer>
+        </div>
 
-    <div class="bt-log-section">
-      <h3>İşlem geçmişi</h3>
-      <div class="card" style="padding:0; overflow-x:auto;">
-        <table class="ww-table">
-          <thead>
-            <tr>
-              <th>Yön</th><th>Giriş</th><th>Çıkış</th><th>Sebep</th><th>PnL</th>
-            </tr>
-          </thead>
-          <tbody id="btTradeLogBody"></tbody>
-        </table>
-        <div id="btEmptyState" class="bt-empty-state">Henüz işlem yok. Grafik üzerinde ilerleyip Al / Sat ile pozisyon aç.</div>
-      </div>
-    </div>
+        <aside class="bt-side">
+          <div id="bt-stats" class="bt-card bt-stats">
+            <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.balance">Bakiye</span><span id="bt-stat-balance" class="bt-num">—</span></div>
+            <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.equity">Özsermaye</span><span id="bt-stat-equity" class="bt-num">—</span></div>
+            <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.realized">Gerçekleşen K/Z</span><span id="bt-stat-realized" class="bt-num">—</span></div>
+            <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.floating">Açık K/Z</span><span id="bt-stat-floating" class="bt-num">—</span></div>
+          </div>
 
+          <form id="bt-order-form" class="bt-card bt-order" novalidate autocomplete="off">
+            <div class="bt-quote">
+              <button type="button" id="bt-sell-btn" class="bt-btn-sell" data-dir="-1">
+                <span data-i18n="backtest.order.sell">SAT</span><span id="bt-bid" class="bt-num">—</span>
+              </button>
+              <span id="bt-spread" class="bt-spread bt-num">—</span>
+              <button type="button" id="bt-buy-btn" class="bt-btn-buy" data-dir="1">
+                <span data-i18n="backtest.order.buy">AL</span><span id="bt-ask" class="bt-num">—</span>
+              </button>
+            </div>
+            <div class="bt-field">
+              <label for="bt-lot" data-i18n="backtest.order.lot">Lot</label>
+              <input id="bt-lot" class="bt-input bt-num" type="text" inputmode="decimal" value="0.10" />
+              <small id="bt-lot-hint" class="bt-hint bt-num"></small>
+            </div>
+            <div class="bt-field-row">
+              <div class="bt-field">
+                <label for="bt-sl" data-i18n="backtest.order.sl">Zarar durdur (SL)</label>
+                <input id="bt-sl" class="bt-input bt-num" type="text" inputmode="decimal" data-i18n-placeholder="backtest.order.price_ph" placeholder="Fiyat (isteğe bağlı)" />
+              </div>
+              <div class="bt-field">
+                <label for="bt-tp" data-i18n="backtest.order.tp">Kâr al (TP)</label>
+                <input id="bt-tp" class="bt-input bt-num" type="text" inputmode="decimal" data-i18n-placeholder="backtest.order.price_ph" placeholder="Fiyat (isteğe bağlı)" />
+              </div>
+            </div>
+            <p id="bt-order-risk" class="bt-hint bt-num"></p>
+            <p id="bt-order-error" class="bt-error" role="alert" hidden></p>
+          </form>
+          <p class="bt-hint bt-shortcuts" data-i18n="backtest.shortcuts">Kısayollar: Boşluk = oynat/duraklat, → = bir mum, Shift+→ = 1 dakika</p>
+        </aside>
+      </div>
+
+      <div id="bt-save-banner" class="bt-banner bt-banner-error" role="alert" hidden>
+        <span data-i18n="backtest.err.save_failed_final">Bazı değişiklikler kaydedilemedi.</span>
+        <button type="button" id="bt-save-retry-btn" class="btn btn-ghost"><span data-i18n="backtest.retry">Tekrar dene</span></button>
+      </div>
+
+      <section class="bt-card bt-tables">
+        <div class="bt-tabs" role="tablist">
+          <button type="button" role="tab" id="bt-tab-open" aria-controls="bt-panel-open" aria-selected="true">
+            <span data-i18n="backtest.pos.title">Açık pozisyonlar</span> <span id="bt-open-count" class="bt-count bt-num">0</span></button>
+          <button type="button" role="tab" id="bt-tab-history" aria-controls="bt-panel-history" aria-selected="false">
+            <span data-i18n="backtest.history.title">İşlem geçmişi</span> <span id="bt-history-count" class="bt-count bt-num">0</span></button>
+          <button type="button" role="tab" id="bt-tab-stats" aria-controls="bt-panel-stats" aria-selected="false">
+            <span data-i18n="backtest.stats.title">İstatistikler</span></button>
+        </div>
+
+        <div id="bt-panel-open" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-open">
+          <div class="bt-table-wrap"><table class="bt-table">
+            <thead><tr>
+              <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
+              <th data-i18n="backtest.col.entry_time">Giriş zamanı</th><th data-i18n="backtest.col.entry">Giriş</th>
+              <th>SL</th><th>TP</th><th data-i18n="backtest.col.price">Güncel fiyat</th>
+              <th data-i18n="backtest.col.pnl">K/Z</th><th><span class="bt-sr" data-i18n="backtest.col.actions">İşlemler</span></th>
+            </tr></thead>
+            <tbody id="bt-open-body"></tbody>
+          </table></div>
+          <p id="bt-open-empty" class="bt-hint" data-i18n="backtest.pos.empty">Açık pozisyon yok.</p>
+        </div>
+
+        <div id="bt-panel-history" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-history" hidden>
+          <div class="bt-table-wrap"><table class="bt-table">
+            <thead><tr>
+              <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
+              <th data-i18n="backtest.col.entry_time">Giriş zamanı</th><th data-i18n="backtest.col.entry">Giriş</th>
+              <th data-i18n="backtest.col.exit_time">Çıkış zamanı</th><th data-i18n="backtest.col.exit">Çıkış</th>
+              <th data-i18n="backtest.col.reason">Sebep</th><th data-i18n="backtest.col.commission">Komisyon</th>
+              <th data-i18n="backtest.col.net">Net K/Z</th><th data-i18n="backtest.col.rr">R:R</th>
+            </tr></thead>
+            <tbody id="bt-history-body"></tbody>
+          </table></div>
+          <p id="bt-history-empty" class="bt-hint" data-i18n="backtest.history.empty">Henüz kapanan işlem yok.</p>
+          <p id="bt-history-more" class="bt-hint" hidden></p>
+        </div>
+
+        <div id="bt-panel-stats" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-stats" hidden>
+          <dl id="bt-stats-grid" class="bt-stats-grid"></dl>
+          <p class="bt-hint" data-i18n="backtest.stat.currency_note">Tutarlar USD cinsindendir.</p>
+        </div>
+      </section>
+    </section>
   </main>
 
-  
-  
-  <script is:inline>
-  // Sayfa kodu bir fonksiyon kapsamında: SPA ile sayfaya tekrar girildiğinde üst seviye
-  // const/let'ler "already declared" hatası vermesin. DOMContentLoaded'ı bekler, çünkü
-  // LightweightCharts head'de defer ile yükleniyor (önceden bu script ondan önce çalışıp
-  // "LightweightCharts is not defined" hatası veriyordu).
-  (function () {
-  var BT_PAGE = window.wwPage.current();
+  <!-- ================= MODALS (page slot: SPA removes them with the page) ================= -->
+  <div id="bt-account-modal" class="modal-overlay bt-modal" role="dialog" aria-modal="true" aria-labelledby="bt-account-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="bt-account-modal-title" data-i18n="backtest.modal.create_title">Yeni backtest hesabı</h3>
+        <button type="button" id="bt-account-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <form id="bt-account-form" class="modal-body" novalidate autocomplete="off">
+        <div class="bt-field"><label for="bt-f-name" data-i18n="backtest.field.name">Hesap adı</label>
+          <input id="bt-f-name" class="bt-input" type="text" maxlength="60" data-i18n-placeholder="backtest.field.name_ph" placeholder="Örn. EURUSD Londra seansı" /></div>
+        <div class="bt-field-row">
+          <div class="bt-field"><label for="bt-f-symbol" data-i18n="backtest.field.symbol">Sembol</label>
+            <select id="bt-f-symbol" class="bt-select"></select></div>
+          <div class="bt-field"><label for="bt-f-tf" data-i18n="backtest.field.timeframe">Zaman dilimi</label>
+            <select id="bt-f-tf" class="bt-select bt-num">
+              <option value="1m">M1</option><option value="5m">M5</option><option value="15m">M15</option>
+              <option value="30m">M30</option><option value="1h" selected>H1</option><option value="4h">H4</option><option value="1d">D1</option>
+            </select></div>
+        </div>
+        <p id="bt-f-symbol-hint" class="bt-hint bt-block-hint" hidden></p>
+        <div class="bt-field" id="bt-f-start-wrap"><label for="bt-f-start" data-i18n="backtest.field.start">Başlangıç tarihi ve saati</label>
+          <input id="bt-f-start" class="bt-input bt-num" type="datetime-local" step="60" />
+          <small id="bt-f-start-hint" class="bt-hint"></small></div>
+        <p id="bt-f-start-note" class="bt-hint bt-block-hint" data-i18n="backtest.field.start_edit_note" hidden>Başlangıç tarihi hesap oluşturulurken seçilir. Replay zamanını değiştirmek için araç çubuğundaki «Tarihe git» alanını kullan.</p>
+        <div class="bt-field-row">
+          <div class="bt-field" id="bt-f-balance-wrap"><label for="bt-f-balance" data-i18n="backtest.field.balance">Başlangıç bakiyesi (USD)</label>
+            <input id="bt-f-balance" class="bt-input bt-num" type="text" inputmode="decimal" value="10000.00" />
+            <small id="bt-f-balance-hint" class="bt-hint" hidden></small></div>
+          <div class="bt-field"><label for="bt-f-spread" data-i18n="backtest.field.spread">Spread (pip)</label>
+            <input id="bt-f-spread" class="bt-input bt-num" type="text" inputmode="decimal" />
+            <small id="bt-f-spread-hint" class="bt-hint bt-num"></small></div>
+        </div>
+        <div class="bt-field"><label for="bt-f-commission" data-i18n="backtest.field.commission">Komisyon (lot başına, açılış+kapanış, USD)</label>
+          <input id="bt-f-commission" class="bt-input bt-num" type="text" inputmode="decimal" value="0.00" />
+          <small id="bt-f-commission-hint" class="bt-hint" data-i18n="backtest.field.commission_hint">Pozisyon kapanınca bakiyeden düşülür.</small></div>
+        <div class="bt-field" id="bt-f-journal-wrap" hidden><label for="bt-f-journal" data-i18n="backtest.field.journal">Bağlı hesap (isteğe bağlı)</label>
+          <select id="bt-f-journal" class="bt-select"><option value="" data-i18n="backtest.field.journal_none">Bağlantı yok</option></select>
+          <small id="bt-f-journal-hint" class="bt-hint"></small></div>
+        <p id="bt-account-error" class="bt-error" role="alert" hidden></p>
+      </form>
+      <div class="modal-footer">
+        <button type="button" id="bt-account-delete" class="bt-btn-danger-ghost" hidden><span data-i18n="backtest.modal.delete_account">Hesabı sil</span></button>
+        <button type="button" id="bt-account-reset" class="bt-btn-danger-ghost" hidden><span data-i18n="backtest.reset.button">Hesabı sıfırla</span></button>
+        <span class="bt-spacer"></span>
+        <button type="button" id="bt-account-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-account-submit" class="btn-modal-confirm"><span id="bt-account-submit-label" data-i18n="backtest.modal.create">Hesabı oluştur</span></button>
+      </div>
+    </div>
+  </div>
 
-  function startBacktest() {
-  if (!BT_PAGE.alive) return;
+  <div id="bt-delete-modal" class="modal-overlay bt-modal" role="alertdialog" aria-modal="true" aria-labelledby="bt-delete-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-delete-title" data-i18n="backtest.delete.title">Hesabı sil</h3>
+        <button type="button" id="bt-delete-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="bt-delete-text"></p>
+        <p id="bt-delete-note" class="bt-hint" hidden></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="bt-delete-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-delete-confirm" class="bt-btn-danger"><span data-i18n="backtest.delete.confirm">Kalıcı olarak sil</span></button>
+      </div>
+    </div>
+  </div>
 
-  /* ============================================================
-     1) SUPABASE AYARLARI - WW_CONFIG üzerinden
-     ============================================================ */
-  // WW_CONFIG config.js'den gelir
-  if (typeof WW_CONFIG === 'undefined') {
-    wwLog.warn('WW_CONFIG tanımlı değil, fallback kullanılıyor.');
-    window.WW_CONFIG = {
-      SUPABASE_URL: 'https://odasapyhtdopbnlfhwde.supabase.co',
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg'
-    };
-  }
+  <div id="bt-confirm-modal" class="modal-overlay bt-modal" role="alertdialog" aria-modal="true" aria-labelledby="bt-confirm-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-confirm-title" data-i18n="backtest.confirm.title">Onay</h3>
+        <button type="button" id="bt-confirm-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body"><p id="bt-confirm-text"></p></div>
+      <div class="modal-footer">
+        <button type="button" id="bt-confirm-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-confirm-ok" class="bt-btn-danger" data-i18n="backtest.confirm.ok">Devam</button>
+      </div>
+    </div>
+  </div>
 
-  // Uygulamanın ortak istemcisini kullan: her girişte yeni istemci oluşturmak hem
-  // dinleyici biriktiriyor hem de iki istemcinin oturum yenilemesi çakışabiliyor
-  let supabaseClient = window.sb || null;
-  try {
-    if (!supabaseClient) {
-      supabaseClient = window.supabase.createClient(
-        WW_CONFIG.SUPABASE_URL,
-        WW_CONFIG.SUPABASE_ANON_KEY
-      );
-    }
-  } catch (e) {
-    wwLog.warn('Supabase başlatılamadı', e);
-  }
+  <div id="bt-reset-modal" class="modal-overlay bt-modal" role="alertdialog" aria-modal="true" aria-labelledby="bt-reset-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-reset-title" data-i18n="backtest.reset.title">Hesabı sıfırla</h3>
+        <button type="button" id="bt-reset-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="bt-reset-text" data-i18n="backtest.reset.confirm">Tüm işlemler silinir, bakiye başlangıç bakiyesine döner. Sıfırlamadan sonra istediğin tarihe gidebilirsin.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="bt-reset-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-reset-confirm" class="bt-btn-danger"><span data-i18n="backtest.reset.confirm_button">Sıfırla</span></button>
+      </div>
+    </div>
+  </div>
 
-  /* ============================================================
-     2) VERİ ÇEKME
-     - Kripto: Binance public API, key gerekmiyor.
-     - Forex / Hisse / Index: Twelve Data, Supabase Edge Function
-       üzerinden ('get-candles') — API key'i Edge Function'da.
-     ============================================================ */
-  const BINANCE_INTERVAL_MAP = { '15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d' };
-
-  async function fetchBinance(symbol, interval) {
-    const iv = BINANCE_INTERVAL_MAP[interval] || '1d';
-    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${iv}&limit=300`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Binance isteği başarısız (' + res.status + ')');
-    const raw = await res.json();
-    return raw.map(function (k) {
-      return {
-        time: Math.floor(k[0] / 1000),
-        open: parseFloat(k[1]),
-        high: parseFloat(k[2]),
-        low: parseFloat(k[3]),
-        close: parseFloat(k[4])
-      };
-    });
-  }
-
-  async function fetchTwelveData(symbol, interval) {
-    if (!supabaseClient) {
-      throw new Error('Forex/hisse/index verisi için Supabase Edge Function bağlantısı gerekiyor.');
-    }
-    // ⭐ Edge Function üzerinden veri çek - API key server-side'da
-    const { data, error } = await supabaseClient.functions.invoke('get-candles', { 
-      body: { symbol: symbol, interval: interval } 
-    });
-    if (error) throw error;
-    if (!data || !data.values || data.values.length === 0) {
-      throw new Error('Veri bulunamadı: ' + symbol);
-    }
-    return data.values.reverse().map(function (v) {
-      return {
-        time: Math.floor(new Date(v.datetime).getTime() / 1000),
-        open: parseFloat(v.open),
-        high: parseFloat(v.high),
-        low: parseFloat(v.low),
-        close: parseFloat(v.close)
-      };
-    });
-  }
-
-  async function fetchCandles(assetClass, symbol, interval) {
-    if (assetClass === 'crypto') return fetchBinance(symbol, interval);
-    return fetchTwelveData(symbol, interval);
-  }
-
-  /* ============================================================
-     3) GRAFİK
-     ============================================================ */
-  const btChartContainer = document.getElementById('bt-chart');
-  const btChart = LightweightCharts.createChart(btChartContainer, {
-    width: btChartContainer.clientWidth,
-    height: 380,
-    layout: { background: { color: 'transparent' }, textColor: '#8b8b9e' },
-    grid: { vertLines: { color: 'rgba(123,110,246,0.06)' }, horzLines: { color: 'rgba(123,110,246,0.06)' } },
-    rightPriceScale: { borderColor: 'rgba(123,110,246,0.12)' },
-    timeScale: { borderColor: 'rgba(123,110,246,0.12)' },
-    crosshair: { mode: 0 }
-  });
-  const btSeries = btChart.addCandlestickSeries({
-    upColor: '#22c55e', downColor: '#ef4444',
-    borderUpColor: '#22c55e', borderDownColor: '#ef4444',
-    wickUpColor: '#22c55e', wickDownColor: '#ef4444'
-  });
-  BT_PAGE.on(window, 'resize', function () {
-    btChart.applyOptions({ width: btChartContainer.clientWidth });
-  });
-  // Sayfadan çıkarken oynatmayı durdur ve grafiği kaldır
-  BT_PAGE.onLeave(function () {
-    pause();
-    try { btChart.remove(); } catch (e) {}
-  });
-
-  /* ============================================================
-     4) REPLAY + POZİSYON MOTORU
-     ============================================================ */
-  let btFullData = [];
-  let btVisibleCount = 0;
-  let btPosition = null;
-  let btTrades = [];
-  let btPlayTimer = null;
-
-  const el = function (id) { return document.getElementById(id); };
-  const posStatusEl = el('btPosStatus');
-  const openPnlEl = el('btOpenPnl');
-  const totalPnlEl = el('btTotalPnl');
-  const winRateEl = el('btWinRate');
-  const tradeCountEl = el('btTradeCount');
-  const tradeLogBody = el('btTradeLogBody');
-  const emptyState = el('btEmptyState');
-  const buyBtn = el('btBuyBtn');
-  const sellBtn = el('btSellBtn');
-  const closeBtn = el('btCloseBtn');
-  const playBtn = el('btPlayBtn');
-  const statusBanner = el('btStatusBanner');
-  const dataBadge = el('btDataBadge');
-
-  function showStatus(msg, isError) {
-    statusBanner.textContent = msg;
-    statusBanner.className = 'bt-status-banner show' + (isError ? ' error' : '');
-  }
-  function hideStatus() { statusBanner.className = 'bt-status-banner'; }
-
-  function currentBar() { return btFullData[btVisibleCount - 1]; }
-
-  function openPosition(side) {
-    if (btPosition || btVisibleCount >= btFullData.length) return;
-    const entry = currentBar().close;
-    const tpPct = parseFloat(el('btTpPct').value) || 2;
-    const slPct = parseFloat(el('btSlPct').value) || 1;
-    let tp, sl;
-    if (side === 'long') {
-      tp = entry * (1 + tpPct / 100);
-      sl = entry * (1 - slPct / 100);
-    } else {
-      tp = entry * (1 - tpPct / 100);
-      sl = entry * (1 + slPct / 100);
-    }
-    btPosition = { side: side, entry: entry, tp: tp, sl: sl, entryIndex: btVisibleCount - 1 };
-    render();
-  }
-
-  function pnlPct(exitPrice) {
-    if (!btPosition) return 0;
-    const raw = btPosition.side === 'long'
-      ? (exitPrice - btPosition.entry) / btPosition.entry
-      : (btPosition.entry - exitPrice) / btPosition.entry;
-    return raw * 100;
-  }
-
-  async function closePosition(exitPrice, reason) {
-    if (!btPosition) return;
-    const pnl = pnlPct(exitPrice);
-    const trade = {
-      side: btPosition.side,
-      entry: btPosition.entry,
-      exit: exitPrice,
-      entryTime: btFullData[btPosition.entryIndex].time,
-      exitTime: currentBar().time,
-      pnl: pnl,
-      reason: reason
-    };
-    btTrades.push(trade);
-    btPosition = null;
-    render();
-    await saveTradeToSupabase(trade);
-  }
-
-  async function saveTradeToSupabase(trade) {
-    if (!supabaseClient) return;
-    try {
-      const { data: userData } = await supabaseClient.auth.getUser();
-      const userId = userData && userData.user ? userData.user.id : null;
-      if (!userId) return;
-      await supabaseClient.from('backtest_trades').insert({
-        user_id: userId,
-        symbol: el('btSymbol').value,
-        side: trade.side,
-        entry_price: trade.entry,
-        exit_price: trade.exit,
-        entry_time: new Date(trade.entryTime * 1000).toISOString(),
-        exit_time: new Date(trade.exitTime * 1000).toISOString(),
-        pnl_pct: trade.pnl,
-        exit_reason: trade.reason
-      });
-    } catch (e) { wwLog.warn('Trade Supabase\'e kaydedilemedi', e); }
-  }
-
-  function checkAutoExit(bar) {
-    if (!btPosition) return;
-    if (btPosition.side === 'long') {
-      if (bar.low <= btPosition.sl) { closePosition(btPosition.sl, 'SL'); return; }
-      if (bar.high >= btPosition.tp) { closePosition(btPosition.tp, 'TP'); return; }
-    } else {
-      if (bar.high >= btPosition.sl) { closePosition(btPosition.sl, 'SL'); return; }
-      if (bar.low <= btPosition.tp) { closePosition(btPosition.tp, 'TP'); return; }
-    }
-  }
-
-  function step() {
-    if (btVisibleCount >= btFullData.length) { pause(); return; }
-    const bar = btFullData[btVisibleCount];
-    btSeries.update(bar);
-    btVisibleCount++;
-    checkAutoExit(bar);
-    render();
-  }
-
-  function play() {
-    if (btPlayTimer || btFullData.length === 0) return;
-    playBtn.textContent = '⏸ Duraklat';
-    const speed = parseInt(el('btSpeed').value, 10);
-    btPlayTimer = setInterval(step, speed);
-  }
-  function pause() {
-    clearInterval(btPlayTimer);
-    btPlayTimer = null;
-    playBtn.textContent = '▶ Oynat';
-  }
-
-  function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
-
-  function render() {
-    if (btFullData.length === 0) {
-      posStatusEl.textContent = 'Yok';
-      buyBtn.disabled = true; sellBtn.disabled = true; closeBtn.disabled = true;
-      return;
-    }
-    const bar = currentBar();
-    if (btPosition) {
-      const live = pnlPct(bar.close);
-      posStatusEl.textContent = (btPosition.side === 'long' ? 'Long' : 'Short') + ' @ ' + btPosition.entry.toFixed(2);
-      openPnlEl.textContent = fmtPct(live);
-      openPnlEl.className = 'stat-value ' + (live >= 0 ? 'positive' : 'negative');
-      buyBtn.disabled = true; sellBtn.disabled = true; closeBtn.disabled = false;
-    } else {
-      posStatusEl.textContent = 'Yok';
-      openPnlEl.textContent = '–';
-      openPnlEl.className = 'stat-value';
-      buyBtn.disabled = btVisibleCount >= btFullData.length;
-      sellBtn.disabled = btVisibleCount >= btFullData.length;
-      closeBtn.disabled = true;
-    }
-
-    const totalPnl = btTrades.reduce(function (sum, t) { return sum + t.pnl; }, 0);
-    totalPnlEl.textContent = fmtPct(totalPnl);
-    totalPnlEl.className = 'stat-value ' + (totalPnl > 0 ? 'positive' : (totalPnl < 0 ? 'negative' : ''));
-
-    tradeCountEl.textContent = btTrades.length;
-
-    if (btTrades.length > 0) {
-      const wins = btTrades.filter(function (t) { return t.pnl > 0; }).length;
-      winRateEl.textContent = Math.round((wins / btTrades.length) * 100) + '%';
-    } else {
-      winRateEl.textContent = '–';
-    }
-
-    if (btTrades.length === 0) {
-      tradeLogBody.innerHTML = '';
-      emptyState.style.display = 'block';
-    } else {
-      emptyState.style.display = 'none';
-      tradeLogBody.innerHTML = btTrades.slice().reverse().map(function (t) {
-        const pnlClass = t.pnl >= 0 ? 'trade-pnl positive' : 'trade-pnl negative';
-        const badgeClass = t.side === 'long' ? 'badge badge-long' : 'badge badge-short';
-        const sideLabel = t.side === 'long' ? 'LONG' : 'SHORT';
-        return '<tr>' +
-          '<td><span class="' + badgeClass + '">' + sideLabel + '</span></td>' +
-          '<td>' + t.entry.toFixed(2) + '</td>' +
-          '<td>' + t.exit.toFixed(2) + '</td>' +
-          '<td>' + t.reason + '</td>' +
-          '<td class="' + pnlClass + '">' + fmtPct(t.pnl) + '</td>' +
-          '</tr>';
-      }).join('');
-    }
-  }
-
-  /* ============================================================
-     5) EVENT BAĞLANTILARI
-     ============================================================ */
-  el('btLoadBtn').addEventListener('click', async function () {
-    pause();
-    hideStatus();
-    const assetClass = el('btAssetClass').value;
-    const symbol = el('btSymbol').value.trim();
-    const interval = el('btInterval').value;
-    if (!symbol) { showStatus('Bir sembol gir.', true); return; }
-
-    this.disabled = true;
-    this.textContent = 'Yükleniyor…';
-    try {
-      const data = await fetchCandles(assetClass, symbol, interval);
-      if (!data || data.length < 30) throw new Error('Yeterli veri gelmedi.');
-      btFullData = data;
-      btVisibleCount = Math.min(60, btFullData.length - 1);
-      btPosition = null;
-      btTrades = [];
-      btSeries.setData(btFullData.slice(0, btVisibleCount));
-      render();
-      dataBadge.textContent = symbol + ' · ' + btFullData.length + ' bar';
-      showStatus(symbol + ' için ' + btFullData.length + ' bar yüklendi. Oynat veya adım adım ilerlet.');
-    } catch (err) {
-      showStatus(err.message || 'Veri çekilemedi.', true);
-    } finally {
-      this.disabled = false;
-      this.textContent = 'Veriyi yükle';
-    }
-  });
-
-  el('btStepBtn').addEventListener('click', step);
-  el('btResetBtn').addEventListener('click', function () {
-    pause();
-    if (btFullData.length === 0) return;
-    btVisibleCount = Math.min(60, btFullData.length - 1);
-    btPosition = null;
-    btTrades = [];
-    btSeries.setData(btFullData.slice(0, btVisibleCount));
-    render();
-  });
-  playBtn.addEventListener('click', function () { if (btPlayTimer) pause(); else play(); });
-  el('btSpeed').addEventListener('input', function () { if (btPlayTimer) { pause(); play(); } });
-  buyBtn.addEventListener('click', function () { openPosition('long'); });
-  sellBtn.addEventListener('click', function () { openPosition('short'); });
-  closeBtn.addEventListener('click', function () { if (btPosition) closePosition(currentBar().close, 'Manuel'); });
-
-  render();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startBacktest);
-  } else {
-    startBacktest();
-  }
-  })();
-  </script>
+  <div id="bt-pos-modal" class="modal-overlay bt-modal" role="dialog" aria-modal="true" aria-labelledby="bt-pos-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-pos-title" data-i18n="backtest.pos.modal_title">Pozisyonu düzenle</h3>
+        <button type="button" id="bt-pos-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <form id="bt-pos-form" class="modal-body" novalidate autocomplete="off">
+        <p id="bt-pos-info" class="bt-hint bt-num"></p>
+        <div class="bt-field-row">
+          <div class="bt-field"><label for="bt-pos-sl" data-i18n="backtest.order.sl">Zarar durdur (SL)</label>
+            <input id="bt-pos-sl" class="bt-input bt-num" type="text" inputmode="decimal" /></div>
+          <div class="bt-field"><label for="bt-pos-tp" data-i18n="backtest.order.tp">Kâr al (TP)</label>
+            <input id="bt-pos-tp" class="bt-input bt-num" type="text" inputmode="decimal" /></div>
+        </div>
+        <p id="bt-pos-error" class="bt-error" role="alert" hidden></p>
+      </form>
+      <div class="modal-footer">
+        <button type="button" id="bt-pos-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-pos-save" class="btn-modal-confirm"><span data-i18n="common.save">Kaydet</span></button>
+      </div>
+    </div>
+  </div>
 </Layout>

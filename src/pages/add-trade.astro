@@ -1111,10 +1111,13 @@ import Layout from '../layouts/Layout.astro';
           var hasMore = true;
 
           while (hasMore) {
-            var { data: existingData, error: fetchErr } = await sb
-              .from('trades')
-              .select('symbol, direction, entry_price, exit_price, lot, trade_date')
-              .eq('journal_id', activeJournalId)
+            // Mükerrer kontrolü yalnızca CANLI işlemlerle: bir backtest aynasıyla aynı imzalı gerçek işlem atlanmasın
+            var { data: existingData, error: fetchErr } = await window.WwTrades.applyScope(
+              sb.from('trades')
+                .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+                .eq('journal_id', activeJournalId),
+              'live'
+            )
               .order('trade_date', { ascending: false })
               .order('id', { ascending: true })
               .range(from, from + pageSize - 1);
@@ -1340,10 +1343,13 @@ import Layout from '../layouts/Layout.astro';
           var hasMore = true;
 
           while (hasMore) {
-            var { data: existingData, error: fetchErr } = await sb
-              .from('trades')
-              .select('symbol, direction, entry_price, exit_price, lot, trade_date')
-              .eq('journal_id', activeJournalId)
+            // Mükerrer kontrolü yalnızca CANLI işlemlerle: bir backtest aynasıyla aynı imzalı gerçek işlem atlanmasın
+            var { data: existingData, error: fetchErr } = await window.WwTrades.applyScope(
+              sb.from('trades')
+                .select('symbol, direction, entry_price, exit_price, lot, trade_date')
+                .eq('journal_id', activeJournalId),
+              'live'
+            )
               .order('trade_date', { ascending: false })
               .order('id', { ascending: true })
               .range(from, from + pageSize - 1);

@@ -51,6 +51,8 @@ import {
 } from './dashboard-manager.js';
 
 import { initCustomizer } from './widget-customizer.js';
+import { initChartExpand } from './chart-expand.js';
+import { openExportDialog, closeExportDialog } from './export-dialog.js';
 import { isPropActive, renderPropHeader, setHeaderMetaHtml, renderPropWidgets } from './prop-widgets.js';
 import { setPlan, isPro, isPlanPreview, applyKpiDensity } from './widget-prefs.js';
 
@@ -95,6 +97,8 @@ var themeObserver = new MutationObserver(function() {
   if (isDataReady && currentFilteredTrades && currentFilteredTrades.length > 0) {
     renderCharts(currentFilteredTrades);
   }
+  // açık büyütülmüş grafik de yeni temayla çizilsin
+  if (window.WwChartViewer && window.WwChartViewer.isOpen()) window.WwChartViewer.rerender();
 });
 
 // WINDOW RESIZE - SADECE RESIZE
@@ -361,6 +365,17 @@ function renderHeaderStats() {
   updateHeaderMeta();
 }
 
+// PDF raporu: önce dönem penceresi (hazır aralıklar veya elle tarih); varsayılan sayfadaki filtre
+function openPdfDialog() {
+  var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || '';
+  openExportDialog({
+    getAllTrades: function() { return allTrades; },
+    pageRange: { range: currentRange, start: customRangeStart, end: customRangeEnd },
+    journalName: jName.trim(),
+    onExport: function(trades, meta) { return exportPDF(trades, meta); }
+  });
+}
+
 // Dışa aktar menüsü: aç/kapa, dışarı tıklayınca ve Esc ile kapanır
 function initExportMenu(scope) {
   var btn = document.getElementById('export-menu-btn');
@@ -517,12 +532,12 @@ function buildDashboardShell() {
   var exportCsvBtn = document.getElementById('export-csv-btn');
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', function() { exportCSV(currentFilteredTrades); });
   var exportPdfBtn = document.getElementById('export-pdf-btn');
-  if (exportPdfBtn) exportPdfBtn.addEventListener('click', function() { exportPDF(currentFilteredTrades); });
+  if (exportPdfBtn) exportPdfBtn.addEventListener('click', openPdfDialog);
 
   var fabCsv = document.getElementById('export-csv-fab');
   var fabPdf = document.getElementById('export-pdf-fab');
   if (fabCsv) fabCsv.addEventListener('click', function() { exportCSV(currentFilteredTrades); });
-  if (fabPdf) fabPdf.addEventListener('click', function() { exportPDF(currentFilteredTrades); });
+  if (fabPdf) fabPdf.addEventListener('click', openPdfDialog);
 
   initExportMenu(PAGE);
   lastPropActive = isPropActive();
@@ -537,6 +552,9 @@ function buildDashboardShell() {
     PAGE.onLeave(function() { journalObserver.disconnect(); });
   }
 
+  // Grafik kartına tıklayınca büyük görünüm (ana dashboard'daki gibi)
+  initChartExpand(PAGE, function() { return currentFilteredTrades; });
+
   initCustomizer(PAGE, {
     getTrades: function() { return currentFilteredTrades; },
     rerenderAll: rerenderWidgetGrid,
@@ -546,64 +564,32 @@ function buildDashboardShell() {
   isDashboardDomRendered = true;
 }
 
+// Canlı kapsam kolonları: platform_source listeyi kendini tanımlar kılar (önbellek savunması)
+var PREMIUM_TRADE_COLS = ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier', 'platform_source'];
+
 async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
   var allTradesData = [];
-  var pageSize = 1000;
-  var from = 0;
-  var hasMore = true;
 
   try {
-    while (hasMore) {
-      var { data, error } = await sb
-        .from('trades')
-        .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-        .eq('user_id', userId)
-        .eq('journal_id', jid)
-        .order('trade_date', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, from + pageSize - 1);
+    // Backtest işlemleri analizlere, içgörülere, PDF raporuna ve CSV'ye girmez (WwTrades, scope 'live').
+    // Sayfalama ve deftersiz eski işlemlere geri dönüş fetchAll içinde.
+    var res = await window.WwTrades.fetchAll({
+      userId: userId,
+      journalId: jid,
+      columns: PREMIUM_TRADE_COLS.join(','),
+      scope: 'live',
+      ascending: false,
+      unassignedFallback: true
+    });
 
-      if (error) {
-        if (renderImmediate) {
-          if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + error.message, 'error');
-          revealWithoutData(scope);
-        }
-        return;
+    if (res.error) {
+      if (renderImmediate) {
+        if (typeof showToast === 'function') showToast(_t('common.load_error', 'Yükleme hatası: ') + res.error.message, 'error');
+        revealWithoutData(scope);
       }
-
-      if (data && data.length > 0) {
-        allTradesData = allTradesData.concat(data);
-        if (data.length < pageSize) hasMore = false;
-        else from += pageSize;
-      } else {
-        hasMore = false;
-      }
+      return;
     }
-
-    // Defter sorgusu boşsa deftersiz (journal_id IS NULL) eski işlemleri kurtar
-    if (!allTradesData.length) {
-      try {
-        var uFrom = 0, uHasMore = true;
-        while (uHasMore) {
-          var unassigned = await sb
-            .from('trades')
-            .select('id,symbol,direction,lot,entry_price,exit_price,stop_loss,take_profit,trade_date,pnl,rr_ratio,notes,strategy_id,instrument,multiplier')
-            .eq('user_id', userId)
-            .is('journal_id', null)
-            .order('trade_date', { ascending: false })
-            .order('id', { ascending: true })
-            .range(uFrom, uFrom + pageSize - 1);
-          var uData = unassigned && unassigned.data;
-          if (uData && uData.length) {
-            allTradesData = allTradesData.concat(uData);
-            if (uData.length < pageSize) uHasMore = false;
-            else uFrom += pageSize;
-          } else {
-            uHasMore = false;
-          }
-        }
-      } catch (unErr) {}
-    }
+    allTradesData = res.data;
 
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
@@ -738,10 +724,11 @@ async function loadPremiumData(scope) {
 
     // ⚡ SWR Önbellek Kontrolü: trades_premium, trades veya trades_dashboard varsa 0ms beklemeden hemen göster
     var cachedTrades = (typeof window !== 'undefined' && window.wwCache)
-      ? (window.wwCache.get('trades_premium', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']) ||
-         window.wwCache.get('trades', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']) ||
-         window.wwCache.get('trades_dashboard', user.id, jid, ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier']))
+      ? (window.wwCache.get('trades_premium', user.id, jid, PREMIUM_TRADE_COLS) ||
+         window.wwCache.get('trades', user.id, jid, PREMIUM_TRADE_COLS) ||
+         window.wwCache.get('trades_dashboard', user.id, jid, PREMIUM_TRADE_COLS))
       : null;
+    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, 'live');   // savunma katmanı
 
     if (cachedTrades && cachedTrades.length > 0) {
       allTrades = cachedTrades;
@@ -803,6 +790,7 @@ function mount(scope) {
     clearAllApexCharts();
     clearLightweightChart();
     destroyDragDrop();
+    closeExportDialog();
   });
 
   // Navbar (avatar, zil, hamburger menü, çıkış) navbar.js tarafından yönetilir. Eskiden burada da
@@ -854,5 +842,5 @@ window.markOvertradeAsRead = markOvertradeAsRead;
 window.openMenu = openMenu;
 window.closeMenu = closeMenu;
 window.exportCSV = function() { exportCSV(currentFilteredTrades); };
-window.exportPDF = function() { exportPDF(currentFilteredTrades); };
+window.exportPDF = function() { openPdfDialog(); };
 

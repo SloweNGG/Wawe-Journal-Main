@@ -1,0 +1,1664 @@
+diff --git a/PROJECT_OVERVIEW.md b/PROJECT_OVERVIEW.md
+index ad99562..e61a7cb 100644
+--- a/PROJECT_OVERVIEW.md
++++ b/PROJECT_OVERVIEW.md
+@@ -26,7 +26,7 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
+ |---|---|---|
+ | @supabase/supabase-js | 2.117.3 | Neredeyse tüm uygulama ve giriş sayfaları |
+ | ApexCharts | 8.2.0 | dashboard, premium-dashboard, strategies, admin |
+-| Lightweight Charts | 4.1.3 (standalone) | dashboard, premium-dashboard, backtest |
++| Lightweight Charts | 4.1.3 (standalone) | dashboard, premium-dashboard (Backtest v2 de aynı adresi kullanacak) |
+ | SortableJS | 1.15.0 | premium-dashboard (kart sürükle-bırak) |
+ | Lucide (ikonlar) | 0.441.0 | `BaseHead.astro` (navbar'da `lucide@latest` yedeği var) |
+ | jsPDF / jspdf-autotable | 2.5.1 / 3.8.2 | İhtiyaç anında yüklenir (`public/src/utils/helpers.js` → `loadJsPDF`) |
+@@ -112,7 +112,8 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
+ │  ├─ images/, vendor/
+ │
+ ├─ supabase/
+-│  ├─ migrations/          35 SQL migration (2026-08 → 2026-10) + README.md
++│  ├─ migrations/          36 SQL migration (2026-08 → 2026-10) + README.md (elle, SQL Editor'da çalıştırılır)
++│  ├─ rollbacks/           Migration geri alma dosyaları (<sürüm>_<ad>.down.sql, Backtest v2'den itibaren)
+ │  ├─ functions/           Edge Functions (bkz. bölüm 5.6)
+ │  ├─ tests/               prop_accounts_verify.sql
+ │  └─ ADMIN_ROLE.md        Admin rolünün nasıl verileceği
+@@ -165,7 +166,7 @@ Sayfalar `/ad.html` olarak üretilir; Cloudflare `/ad` adresini de sunar. Uygula
+ | `/strategies` | `interface/strategies/js/strategies.js` | Strateji analizi ve karşılaştırma |
+ | `/journals` | sayfa içi script | Defterler (hesaplar), prop hesapları, cTrader bağlantısı |
+ | `/add-trade` | sayfa içi script | İşlem ekleme formu ve toplu içe aktarma |
+-| `/backtest` | sayfa içi script | Backtest (mum verisi Edge Function'dan) |
++| `/backtest` | sayfa içi script (yalnızca giriş kontrolü) | Backtest v2 hazırlanıyor; şimdilik "Backtest yenileniyor" boş durumu. Eski sayfa (Binance + `get-candles` ile replay, `backtest_trades`) Ekim 2026'da kaldırıldı |
+ | `/my-earnings` | sayfa içi script | Referans/influencer kazançları ve ödeme talepleri |
+ | `/settings` | `settings/js/settings.js` | Profil, plan, tema, dil, saat ayarları vb. |
+ | `/report-bug` | sayfa içi script | Hata bildirimi ve destek talepleri |
+@@ -183,7 +184,7 @@ Sayfalar `/ad.html` olarak üretilir; Cloudflare `/ad` adresini de sunar. Uygula
+ 
+ ## 5. Veritabanı şeması (Supabase / Postgres)
+ 
+-**Not:** Çekirdek tablolar (`user_profiles`, `journals`, `trades`, `strategies`, `backtest_trades`, `references`) Supabase panelinden oluşturulmuştur; repoda `CREATE TABLE` karşılıkları yoktur. Migration'lar bu tablolara sütun, indeks ve RLS ekler (bkz. `supabase/migrations/README.md`). Aşağıdaki sütun listeleri migration'lardan ve istemci kodundan derlenmiştir.
++**Not:** Çekirdek tablolar (`user_profiles`, `journals`, `trades`, `strategies`, `references`) Supabase panelinden oluşturulmuştur; repoda `CREATE TABLE` karşılıkları yoktur. Migration'lar bu tablolara sütun, indeks ve RLS ekler (bkz. `supabase/migrations/README.md`). Aşağıdaki sütun listeleri migration'lardan ve istemci kodundan derlenmiştir. Panelden oluşturulan eski `backtest_trades` tablosu `202610180001_drop_legacy_backtest_trades.sql` ile kaldırıldı.
+ 
+ ### 5.1 İlişki şeması
+ 
+@@ -246,7 +247,7 @@ Her tabloda `user_id` sahiplik alanıdır ve RLS politikaları `user_id = auth.u
+ 
+ **`strategies`** — `id`, `user_id`, `journal_id`, `name`, `description`, `color`, `is_active`, `created_at`. İndeks `(user_id, is_active)`. İşlemlere `trades.strategy_id` ile bağlanır.
+ 
+-**`backtest_trades`** — `user_id`, `symbol`, `side`, `entry_price`, `exit_price`, `entry_time`, `exit_time`, `pnl_pct`, `exit_reason`. İndeks `(user_id, entry_time desc)`.
++**`backtest_trades`** (kaldırıldı) — Eski backtest sayfasının tablosuydu; Ekim 2026'da 0 satırken `202610180001_drop_legacy_backtest_trades.sql` ile silindi (geri alma: `supabase/rollbacks/`). Backtest v2 tabloları (`backtest_accounts`, `backtest_account_trades`) sonraki migration ile eklenecek. `backtest_trades` adı yeniden kullanılmamalı: eski migration'lar (`202608190001`, `202609200001`) bu adı hedefliyor.
+ 
+ ### 5.4 Prop firm ve cTrader (defterlere bağlı)
+ 
+@@ -287,7 +288,8 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
+ | `nowpayment-webhook` | Ödeme tamamlanınca planı işler ve bildirim gönderir |
+ | `ctrader-connect` | cTrader OAuth kod değişimi; token ve hesapları kaydeder |
+ | `ctrader-sync` | cTrader işlemlerini `trades` tablosuna aktarır (`import_hash = ctrader:<hesap>:<dealId>`), bakiyeyi günceller |
+-| `get-candles` | Backtest için mum verisi |
++
++`get-candles` (Twelve Data vekili; yalnızca eski backtest kullanıyordu) Ekim 2026'da repodan kaldırıldı. Canlı projedeki dağıtımı ve yalnızca onun okuduğu `ALLOWED_ORIGINS` sırrı, sahibin onayıyla Supabase panelinden ayrıca silinir. Backtest v2 mum verisini kendi arşivinden (Supabase Storage) okuyacak.
+ 
+ ---
+ 
+@@ -385,7 +387,7 @@ Böylece font, eksen yazısı, ızgara ve tooltip görünümü diğer sayfalarla
+ 
+ - **Kurulum:** `npm install` → `npm run dev`. `bundle.js` dev ve build başında otomatik üretilir.
+ - **Testler:** `node --test tests/*.test.js` (tarayıcı modülleri `vm` ile yüklenir).
+-- **Önbellek kırma:** Sayfa CSS/JS bağlantıları `?v=<sayı>` parametresi taşır. Bir dosyayı değiştirince ilgili `.astro` sayfasındaki sayıyı artır. Premium-dashboard alt modülleri sürüm parametresi almaz; tarayıcı eski sürümü tutabilir.
++- **Önbellek kırma:** Sayfa CSS/JS bağlantıları `?v=<sayı>` parametresi taşır. Bir dosyayı değiştirince ilgili `.astro` sayfasındaki sayıyı artır. Premium-dashboard alt modülleri sürüm parametresi almaz; tarayıcı eski sürümü tutabilir. Service worker (`public/sw.js`) kök dizindeki dosyaları (`/styles.css`, `/i18n.js`, `/i18n/locales/*.js`, `/cache.js`) ve temiz adresli HTML sayfalarını (`/backtest` gibi; yalnızca `.html` ile biten adresler atlanır) önce önbellekten sunar. Bunları değiştiren her deploy'da `sw.js` içindeki `CACHE_VERSION` değerini artır; dil dosyalarını değiştirince `public/i18n.js` içindeki `?v=` sayısını da artır.
+ - **Bilinen sorunlar ve tutarsızlıklar:**
+   - `src/components/quick-add/QuickAddModal.tsx` (React, kullanılmıyor) işlemi `journal_id` olmadan ekler.
+   - `quick-add-modal.astro`, var olmayan bir script'e bağlanıyor.
+diff --git a/public/i18n/locales/de.js b/public/i18n/locales/de.js
+index 0920377..7d3bc61 100644
+--- a/public/i18n/locales/de.js
++++ b/public/i18n/locales/de.js
+@@ -1669,6 +1669,13 @@ export default {
+   "earnings.toast_followers_required": "Bitte wählen Sie Ihre Follower-Anzahl.",
+   "earnings.toast_app_submitted": "Ihre Partnerbewerbung wurde erfolgreich eingereicht!",
+   "earnings.toast_wallets_saved": "Wallet-Adressen erfolgreich gespeichert!",
+-  "prop.account_short": "Konto"
++  "prop.account_short": "Konto",
++
++  // ⭐ BACKTEST - DEUTSCH (Leerzustand Phase 2; die Schlüssel backtest.rebuild_* entfallen in Phase 4)
++  "backtest.title": "Backtest",
++  "backtest.subtitle": "Bar-für-Bar-Strategietests mit historischen Daten",
++  "backtest.rebuild_badge": "Demnächst",
++  "backtest.rebuild_title": "Backtest wird neu aufgebaut",
++  "backtest.rebuild_text": "Wir haben das alte Backtest-Tool entfernt. Die neue Version erscheint hier, sobald sie fertig ist: Backtest-Konten, Bar-für-Bar-Replay auf historischen Charts und Übertragung der Trades in Ihre Konten."
+ };
+ 
+diff --git a/public/i18n/locales/en.js b/public/i18n/locales/en.js
+index e3f830e..140f4b6 100644
+--- a/public/i18n/locales/en.js
++++ b/public/i18n/locales/en.js
+@@ -1702,6 +1702,13 @@ export default {
+   "earnings.toast_followers_required": "Please select your follower count.",
+   "earnings.toast_app_submitted": "Your partner application has been received! Review status will appear on this page.",
+   "earnings.toast_wallets_saved": "Wallet addresses saved successfully!",
+-  "prop.account_short": "Account"
++  "prop.account_short": "Account",
++
++  // ⭐ BACKTEST - ENGLISH (stage 2 empty state; the backtest.rebuild_* keys are removed in stage 4)
++  "backtest.title": "Backtest",
++  "backtest.subtitle": "Bar-by-bar strategy testing on historical data",
++  "backtest.rebuild_badge": "Coming soon",
++  "backtest.rebuild_title": "Backtest is being rebuilt",
++  "backtest.rebuild_text": "We removed the old backtest tool. The new version will open here when it is ready: backtest accounts, bar-by-bar replay on historical charts, and sending trades to your accounts."
+ };
+ 
+diff --git a/public/i18n/locales/tr.js b/public/i18n/locales/tr.js
+index 0d0957e..efaca3c 100644
+--- a/public/i18n/locales/tr.js
++++ b/public/i18n/locales/tr.js
+@@ -1649,6 +1649,13 @@ export default {
+   "earnings.toast_followers_required": "Lütfen takipçi kitlenizi seçiniz.",
+   "earnings.toast_app_submitted": "Partner başvurunuz başarıyla alındı! Değerlendirme sonucu bu sayfada görünecektir.",
+   "earnings.toast_wallets_saved": "Cüzdan adresleri başarıyla kaydedildi!",
+-  "prop.account_short": "Hesap"
++  "prop.account_short": "Hesap",
++
++  // ⭐ BACKTEST - TÜRKÇE (Aşama 2 boş durumu; backtest.rebuild_* anahtarları Aşama 4'te kaldırılır)
++  "backtest.title": "Backtest",
++  "backtest.subtitle": "Geçmiş veride bar bar strateji testi",
++  "backtest.rebuild_badge": "Yakında",
++  "backtest.rebuild_title": "Backtest yenileniyor",
++  "backtest.rebuild_text": "Eski backtest aracını kaldırdık. Yeni sürüm hazır olduğunda burada açılacak: backtest hesapları, geçmiş grafikte bar bar oynatma ve işlemleri hesaplarınıza aktarma."
+ };
+ 
+diff --git a/public/i18n.js b/public/i18n.js
+index 53b1758..be109e2 100644
+--- a/public/i18n.js
++++ b/public/i18n.js
+@@ -123,7 +123,7 @@
+     if (SUPPORTED_LANGS.indexOf(lang) === -1) return null;
+ 
+     try {
+-      var url = I18N_PATH + lang + '.js?v=1791896800';
++      var url = I18N_PATH + lang + '.js?v=1792324800';
+       var mod = await import(/* @vite-ignore */ url);
+       var dict = (mod && mod.default) ? mod.default : mod;
+ 
+diff --git a/public/settings/js/settings.js b/public/settings/js/settings.js
+index 161c690..8561bed 100644
+--- a/public/settings/js/settings.js
++++ b/public/settings/js/settings.js
+@@ -2352,21 +2352,16 @@ async function deleteAllUserData() {
+ 
+     // 2. RPC yoksa veya hata verdiyse tablo bazlı kapsamlı temizlik yap
+     if (!rpcDone) {
+-      wwLog.log('🗑️ 1/5 Trade verileri siliniyor...');
++      wwLog.log('🗑️ 1/4 Trade verileri siliniyor...');
+       var tradesResult = await sb.from('trades').delete().eq('user_id', user.id);
+       if (tradesResult.error) throw tradesResult.error;
+ 
+-      wwLog.log('🗑️ 2/5 Backtest verileri siliniyor...');
+-      try {
+-        await sb.from('backtest_trades').delete().eq('user_id', user.id);
+-      } catch (e) { wwLog.warn('backtest_trades silinemedi:', e); }
+-
+-      wwLog.log('🗑️ 3/5 Stratejiler siliniyor...');
++      wwLog.log('🗑️ 2/4 Stratejiler siliniyor...');
+       try {
+         await sb.from('strategies').delete().eq('user_id', user.id);
+       } catch (e) { wwLog.warn('strategies silinemedi:', e); }
+ 
+-      wwLog.log('🗑️ 4/5 Bildirimler ve onboarding siliniyor...');
++      wwLog.log('🗑️ 3/4 Bildirimler ve onboarding siliniyor...');
+       try {
+         await sb.from('notifications').delete().eq('user_id', user.id);
+       } catch (e) { wwLog.warn('notifications silinemedi:', e); }
+@@ -2374,7 +2369,7 @@ async function deleteAllUserData() {
+         await sb.from('user_onboarding').delete().eq('user_id', user.id);
+       } catch (e) { wwLog.warn('user_onboarding silinemedi:', e); }
+ 
+-      wwLog.log('🗑️ 5/5 Defterler (özel günlükler) temizleniyor...');
++      wwLog.log('🗑️ 4/4 Defterler (özel günlükler) temizleniyor...');
+       try {
+         await sb.from('journals').delete().eq('user_id', user.id).eq('is_default', false);
+       } catch (e) { wwLog.warn('özel journals silinemedi:', e); }
+diff --git a/public/styles.css b/public/styles.css
+index bf1160a..6463dc4 100644
+--- a/public/styles.css
++++ b/public/styles.css
+@@ -2828,9 +2828,7 @@ html.light-theme .wj-ambient-backdrop {
+   /* kazançlarım */
+   .earnings-table-wrap, .earnings-empty, .partner-hero-card, .partner-step-card,
+   /* hata bildir */
+-  .bug-card, .ticket-card, .tickets-empty,
+-  /* backtest */
+-  .bt-chart-card, .bt-trade-panel
++  .bug-card, .ticket-card, .tickets-empty
+ ) {
+   background: #000;
+ }
+diff --git a/public/sw.js b/public/sw.js
+index d6b230f..7d5a6e0 100644
+--- a/public/sw.js
++++ b/public/sw.js
+@@ -1,4 +1,4 @@
+-const CACHE_VERSION = 'wawe-v11';
++const CACHE_VERSION = 'wawe-v12';
+ const PRECACHE_URLS = ['/'];
+ 
+ self.addEventListener('install', (event) => {
+diff --git a/src/components/BaseHead.astro b/src/components/BaseHead.astro
+index fc5653e..c6cd0f5 100644
+--- a/src/components/BaseHead.astro
++++ b/src/components/BaseHead.astro
+@@ -164,7 +164,7 @@ const {
+     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=block" />
+ 
+     <!-- CORE CSS FOR APP -->
+-    <link rel="stylesheet" href="/styles.css?v=1791686000" />
++    <link rel="stylesheet" href="/styles.css?v=1792324800" />
+     <link rel="stylesheet" href="/components/navbar/navbar.css?v=1791750400" />
+ 
+     <!-- CLIENT SWR CACHE -->
+diff --git a/src/pages/backtest.astro b/src/pages/backtest.astro
+index 27c7ee1..2c15abf 100644
+--- a/src/pages/backtest.astro
++++ b/src/pages/backtest.astro
+@@ -1,686 +1,126 @@
+ ---
++// ============================================================
++// BACKTEST — geçiş sayfası (Backtest v2, Aşama 2)
++// ------------------------------------------------------------
++// Eski backtest (Binance + get-candles ile bar bar replay, backtest_trades
++// tablosuna kayıt) kaldırıldı. Yeni sistem (backtest hesapları, bar replay,
++// deftere bağlama) Aşama 4'te bu sayfayı dolduracak.
++// Route kaydı korunuyor, silmeyin:
++//   - src/components/SpaRouter.astro → SPA_PATHS '/backtest' (SPA geçişi)
++//   - public/components/navbar/page-transition.js → APP_PATHS '/backtest'
++//     (hover prefetch/prerender + geri tuşu (bfcache) oturum kontrolü)
++// ============================================================
+ import Layout from '../layouts/Layout.astro';
+ ---
+-<Layout lang="tr" spa={true}>
++<Layout lang="tr" spa={true} title="Backtest – Wawe Journal">
+ <Fragment slot="head">
+-<meta charset="UTF-8">
+-<title>Backtest — Wawe Journal</title>
+-<link rel="stylesheet" href="/styles.css">
+-<style>
+-  /* ============================================================
+-     BACKTEST SAYFASI - EK STİLLER
+-     styles.css içindeki değişkenleri ve bileşenleri kullanır
+-     ============================================================ */
+-
+-  .bt-toolbar {
+-    display: flex;
+-    gap: 0.75rem;
+-    flex-wrap: wrap;
+-    align-items: end;
+-    margin-bottom: 1rem;
+-  }
+-
+-  .bt-chart-card {
+-    background: var(--surface);
+-    border: 1px solid var(--border);
+-    border-radius: var(--radius);
+-    padding: 1rem;
+-    margin-bottom: 1.5rem;
+-    transition: border-color 0.2s, box-shadow 0.2s;
+-  }
+-  .bt-chart-card:hover {
+-    border-color: rgba(139,92,246,0.3);
+-    box-shadow: 0 4px 16px rgba(139,92,246,0.08);
+-  }
+-  #bt-chart { width: 100%; height: 380px; }
+-
+-  .bt-controls-row {
+-    display: flex;
+-    gap: 0.6rem;
+-    flex-wrap: wrap;
+-    align-items: center;
+-    margin-bottom: 1.5rem;
+-  }
+-  .bt-controls-row .bt-divider {
+-    width: 1px;
+-    height: 22px;
+-    background: var(--border2);
+-  }
+-  .bt-speed {
+-    display: flex;
+-    align-items: center;
+-    gap: 8px;
+-    color: var(--muted);
+-    font-size: 11px;
+-    font-family: 'DM Mono', monospace;
+-    text-transform: uppercase;
+-    letter-spacing: 0.06em;
+-  }
+-  .bt-speed input[type="range"] {
+-    width: 100px;
+-    accent-color: var(--accent);
+-  }
+-
+-  .bt-trade-panel {
+-    background: var(--surface);
+-    border: 1px solid var(--border);
+-    border-radius: var(--radius);
+-    padding: 1rem 1.25rem;
+-    margin-bottom: 1.5rem;
+-    display: flex;
+-    gap: 0.75rem;
+-    flex-wrap: wrap;
+-    align-items: end;
+-  }
+-
+-  .btn-buy, .btn-sell {
+-    border: none;
+-    border-radius: 8px;
+-    cursor: pointer;
+-    font-family: 'DM Sans', sans-serif;
+-    font-size: 13px;
+-    font-weight: 600;
+-    padding: 0.6rem 1.2rem;
+-    transition: all 0.2s;
+-    display: inline-flex;
+-    align-items: center;
+-    gap: 6px;
+-    min-height: 38px;
+-    color: #fff;
+-  }
+-  .btn-buy:hover:not(:disabled), .btn-sell:hover:not(:disabled) {
+-    transform: translateY(-1px);
+-    opacity: 0.92;
+-  }
+-  .btn-buy:active:not(:disabled), .btn-sell:active:not(:disabled) { transform: scale(0.97); }
+-  .btn-buy {
+-    background: linear-gradient(135deg, var(--green), #16a34a);
+-    box-shadow: 0 4px 12px var(--green-glow);
+-  }
+-  .btn-sell {
+-    background: linear-gradient(135deg, var(--red), #dc2626);
+-    box-shadow: 0 4px 12px var(--red-glow);
+-  }
+-  .btn-buy:disabled, .btn-sell:disabled {
+-    opacity: 0.35;
+-    cursor: not-allowed;
+-    transform: none;
+-    box-shadow: none;
+-  }
+-
+-  .bt-field-inline {
+-    display: flex;
+-    flex-direction: column;
+-    gap: 6px;
+-  }
+-  .bt-field-inline label {
+-    font-size: 10px;
+-    font-weight: 600;
+-    letter-spacing: 0.06em;
+-    text-transform: uppercase;
+-    color: var(--muted);
+-    font-family: 'DM Mono', monospace;
+-  }
+-  .bt-field-inline input {
+-    background: var(--surface2);
+-    border: 1px solid var(--border);
+-    border-radius: 8px;
+-    color: var(--text);
+-    font-family: 'DM Mono', monospace;
+-    font-size: 13px;
+-    padding: 0.55rem 0.7rem;
+-    width: 72px;
+-    outline: none;
+-    transition: all 0.2s;
+-  }
+-  .bt-field-inline input:focus {
+-    border-color: var(--accent);
+-    box-shadow: 0 0 0 3px var(--accent-glow);
+-  }
+-
+-  .bt-log-section h3 {
+-    font-size: 10px;
+-    font-weight: 600;
+-    letter-spacing: 0.08em;
+-    text-transform: uppercase;
+-    color: var(--muted);
+-    margin-bottom: 0.75rem;
+-    font-family: 'DM Mono', monospace;
+-    background: none;
+-    -webkit-text-fill-color: var(--muted);
+-  }
+-
+-  .bt-empty-state {
+-    text-align: center;
+-    color: var(--muted);
+-    font-size: 13px;
+-    padding: 2rem 0;
+-    font-family: 'DM Sans', sans-serif;
+-  }
+-
+-  .bt-status-banner {
+-    font-size: 12px;
+-    font-family: 'DM Sans', sans-serif;
+-    padding: 0.6rem 1rem;
+-    border-radius: 8px;
+-    background: var(--surface2);
+-    border: 1px solid var(--border);
+-    color: var(--muted);
+-    margin-bottom: 1rem;
+-    display: none;
+-  }
+-  .bt-status-banner.show { display: block; }
+-  .bt-status-banner.error {
+-    color: var(--red);
+-    border-color: rgba(239,68,68,0.25);
+-    background: rgba(239,68,68,0.06);
+-  }
+-
+-  @media (max-width: 640px) {
+-    .bt-trade-panel { flex-direction: column; align-items: stretch; }
+-  }
+-</style>
+-
+-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
+   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
+-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
+-</Fragment>
+-  <nav class="nav">
+-    <a href="dashboard.html" class="nav-logo">
+-      <span class="logo-icon">📈</span>
+-      Wawe<span>Journal</span>
+-    </a>
+-    <div class="nav-links">
+-      <a href="dashboard.html">Panel</a>
+-      <a href="trades.html">İşlemler</a>
+-      <a href="calendar.html">Takvim</a>
+-      <a href="strategies.html">Stratejiler</a>
+-      <a href="backtest.html" class="active">Backtest</a>
+-    </div>
+-    <div class="nav-right">
+-      <div class="user-avatar">TR</div>
+-    </div>
+-  </nav>
+-
+-  <main class="dashboard-main">
+-
+-    <div class="page-header">
+-      <div>
+-        <h1>Backtest</h1>
+-        <p class="subtitle">Geçmiş veri üzerinde bar-by-bar strateji testi</p>
+-      </div>
+-    </div>
+-
+-    <div id="btStatusBanner" class="bt-status-banner"></div>
+-
+-    <div class="bt-toolbar">
+-      <div class="field" style="margin-bottom:0;">
+-        <label>Varlık türü</label>
+-        <select id="btAssetClass">
+-          <option value="crypto">Kripto</option>
+-          <option value="forex">Forex</option>
+-          <option value="stock">Hisse</option>
+-          <option value="index">Index</option>
+-        </select>
+-      </div>
+-      <div class="field" style="margin-bottom:0;">
+-        <label>Sembol</label>
+-        <input type="text" id="btSymbol" value="BTCUSDT" style="width:140px;">
+-      </div>
+-      <div class="field" style="margin-bottom:0;">
+-        <label>Zaman dilimi</label>
+-        <select id="btInterval">
+-          <option value="15m">15 dakika</option>
+-          <option value="1h">1 saat</option>
+-          <option value="4h">4 saat</option>
+-          <option value="1d" selected>1 gün</option>
+-        </select>
+-      </div>
+-      <button class="btn btn-primary" id="btLoadBtn">Veriyi yükle</button>
+-    </div>
+-
+-    <div class="bt-chart-card">
+-      <div class="chart-header">
+-        <h3>Fiyat grafiği</h3>
+-        <span class="chart-badge" id="btDataBadge">Veri yüklenmedi</span>
+-      </div>
+-      <div id="bt-chart"></div>
+-    </div>
+-
+-    <div class="bt-controls-row">
+-      <button class="btn btn-ghost" id="btPlayBtn">▶ Oynat</button>
+-      <button class="btn btn-ghost" id="btStepBtn">1 bar ilerle</button>
+-      <button class="btn btn-ghost" id="btResetBtn">Sıfırla</button>
+-      <div class="bt-divider"></div>
+-      <div class="bt-speed">
+-        Hız
+-        <input type="range" id="btSpeed" min="100" max="1200" step="100" value="400">
+-      </div>
+-    </div>
+-
+-    <div class="stats-grid">
+-      <div class="stat-card">
+-        <div class="stat-label">Pozisyon</div>
+-        <div class="stat-value" id="btPosStatus" style="font-size:1.1rem;">Yok</div>
+-      </div>
+-      <div class="stat-card">
+-        <div class="stat-label">Anlık PnL</div>
+-        <div class="stat-value" id="btOpenPnl">–</div>
+-      </div>
+-      <div class="stat-card">
+-        <div class="stat-label">Toplam PnL</div>
+-        <div class="stat-value" id="btTotalPnl">%0.00</div>
+-      </div>
+-      <div class="stat-card">
+-        <div class="stat-label">Win rate</div>
+-        <div class="stat-value" id="btWinRate">–</div>
+-      </div>
+-      <div class="stat-card">
+-        <div class="stat-label">İşlem sayısı</div>
+-        <div class="stat-value" id="btTradeCount">0</div>
+-      </div>
+-    </div>
+-
+-    <div class="bt-trade-panel">
+-      <button class="btn-buy" id="btBuyBtn">↑ Al</button>
+-      <button class="btn-sell" id="btSellBtn">↓ Sat</button>
+-      <button class="btn btn-ghost" id="btCloseBtn">✕ Pozisyonu kapat</button>
+-      <div class="bt-field-inline">
+-        <label>TP %</label>
+-        <input type="number" id="btTpPct" value="2" min="0.1" step="0.1">
+-      </div>
+-      <div class="bt-field-inline">
+-        <label>SL %</label>
+-        <input type="number" id="btSlPct" value="1" min="0.1" step="0.1">
+-      </div>
+-    </div>
+-
+-    <div class="bt-log-section">
+-      <h3>İşlem geçmişi</h3>
+-      <div class="card" style="padding:0; overflow-x:auto;">
+-        <table class="ww-table">
+-          <thead>
+-            <tr>
+-              <th>Yön</th><th>Giriş</th><th>Çıkış</th><th>Sebep</th><th>PnL</th>
+-            </tr>
+-          </thead>
+-          <tbody id="btTradeLogBody"></tbody>
+-        </table>
+-        <div id="btEmptyState" class="bt-empty-state">Henüz işlem yok. Grafik üzerinde ilerleyip Al / Sat ile pozisyon aç.</div>
+-      </div>
+-    </div>
+-
+-  </main>
+-
+-  
+-  
+-  <script is:inline>
+-  // Sayfa kodu bir fonksiyon kapsamında: SPA ile sayfaya tekrar girildiğinde üst seviye
+-  // const/let'ler "already declared" hatası vermesin. DOMContentLoaded'ı bekler, çünkü
+-  // LightweightCharts head'de defer ile yükleniyor (önceden bu script ondan önce çalışıp
+-  // "LightweightCharts is not defined" hatası veriyordu).
+-  (function () {
+-  var BT_PAGE = window.wwPage.current();
+-
+-  function startBacktest() {
+-  if (!BT_PAGE.alive) return;
+-
+-  /* ============================================================
+-     1) SUPABASE AYARLARI - WW_CONFIG üzerinden
+-     ============================================================ */
+-  // WW_CONFIG config.js'den gelir
+-  if (typeof WW_CONFIG === 'undefined') {
+-    wwLog.warn('WW_CONFIG tanımlı değil, fallback kullanılıyor.');
+-    window.WW_CONFIG = {
+-      SUPABASE_URL: 'https://odasapyhtdopbnlfhwde.supabase.co',
+-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg'
+-    };
+-  }
+-
+-  // Uygulamanın ortak istemcisini kullan: her girişte yeni istemci oluşturmak hem
+-  // dinleyici biriktiriyor hem de iki istemcinin oturum yenilemesi çakışabiliyor
+-  let supabaseClient = window.sb || null;
+-  try {
+-    if (!supabaseClient) {
+-      supabaseClient = window.supabase.createClient(
+-        WW_CONFIG.SUPABASE_URL,
+-        WW_CONFIG.SUPABASE_ANON_KEY
+-      );
+-    }
+-  } catch (e) {
+-    wwLog.warn('Supabase başlatılamadı', e);
+-  }
+-
+-  /* ============================================================
+-     2) VERİ ÇEKME
+-     - Kripto: Binance public API, key gerekmiyor.
+-     - Forex / Hisse / Index: Twelve Data, Supabase Edge Function
+-       üzerinden ('get-candles') — API key'i Edge Function'da.
+-     ============================================================ */
+-  const BINANCE_INTERVAL_MAP = { '15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d' };
+-
+-  async function fetchBinance(symbol, interval) {
+-    const iv = BINANCE_INTERVAL_MAP[interval] || '1d';
+-    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${iv}&limit=300`;
+-    const res = await fetch(url);
+-    if (!res.ok) throw new Error('Binance isteği başarısız (' + res.status + ')');
+-    const raw = await res.json();
+-    return raw.map(function (k) {
+-      return {
+-        time: Math.floor(k[0] / 1000),
+-        open: parseFloat(k[1]),
+-        high: parseFloat(k[2]),
+-        low: parseFloat(k[3]),
+-        close: parseFloat(k[4])
+-      };
+-    });
+-  }
+-
+-  async function fetchTwelveData(symbol, interval) {
+-    if (!supabaseClient) {
+-      throw new Error('Forex/hisse/index verisi için Supabase Edge Function bağlantısı gerekiyor.');
++  <script src="/config.js" is:inline defer></script>
++  <script src="/i18n.js?v=1792324800" is:inline defer></script>
++  <script type="module" src="/src/bundle.js" is:inline defer></script>
++
++  <style is:global>
++    /* Backtest v2 hazırlanırken gösterilen boş durum (Aşama 4'te kaldırılır) */
++    .bt-rebuild {
++      max-width: 560px;
++      margin: clamp(1.5rem, 8vh, 4.5rem) auto 2rem;
++      padding: clamp(2rem, 5vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
++      display: flex;
++      flex-direction: column;
++      align-items: center;
++      gap: 0.75rem;
++      text-align: center;
++      background: var(--surface);
++      border: 1px solid var(--border);
++      border-radius: var(--radius-lg, 20px);
+     }
+-    // ⭐ Edge Function üzerinden veri çek - API key server-side'da
+-    const { data, error } = await supabaseClient.functions.invoke('get-candles', { 
+-      body: { symbol: symbol, interval: interval } 
+-    });
+-    if (error) throw error;
+-    if (!data || !data.values || data.values.length === 0) {
+-      throw new Error('Veri bulunamadı: ' + symbol);
++    /* Koyu tema: saf siyah yüzey + nötr ince çizgi (morumsu --surface değil) */
++    :root:not(.light-theme) body:not(.light-theme) .bt-rebuild {
++      background: #000;
++      border-color: rgba(255, 255, 255, 0.08);
+     }
+-    return data.values.reverse().map(function (v) {
+-      return {
+-        time: Math.floor(new Date(v.datetime).getTime() / 1000),
+-        open: parseFloat(v.open),
+-        high: parseFloat(v.high),
+-        low: parseFloat(v.low),
+-        close: parseFloat(v.close)
+-      };
+-    });
+-  }
+-
+-  async function fetchCandles(assetClass, symbol, interval) {
+-    if (assetClass === 'crypto') return fetchBinance(symbol, interval);
+-    return fetchTwelveData(symbol, interval);
+-  }
+-
+-  /* ============================================================
+-     3) GRAFİK
+-     ============================================================ */
+-  const btChartContainer = document.getElementById('bt-chart');
+-  // Ortak grafik teması (chart-theme.js): DM Sans 11px, soluk yatay grid, siyah crosshair etiketi.
+-  // Eski önbellekli sayfada WwChart yoksa önceki görünüme düşer.
+-  const btChartOpts = window.WwChart
+-    ? window.WwChart.lwc({
+-        width: btChartContainer.clientWidth,
+-        height: 380,
+-        crosshair: { mode: 0 }
+-      })
+-    : {
+-        width: btChartContainer.clientWidth,
+-        height: 380,
+-        layout: { background: { color: 'transparent' }, textColor: '#8b8b9e' },
+-        grid: { vertLines: { color: 'rgba(123,110,246,0.06)' }, horzLines: { color: 'rgba(123,110,246,0.06)' } },
+-        rightPriceScale: { borderColor: 'rgba(123,110,246,0.12)' },
+-        timeScale: { borderColor: 'rgba(123,110,246,0.12)' },
+-        crosshair: { mode: 0 }
+-      };
+-  const btChart = LightweightCharts.createChart(btChartContainer, btChartOpts);
+-  const btSeries = btChart.addCandlestickSeries({
+-    upColor: '#22c55e', downColor: '#ef4444',
+-    borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+-    wickUpColor: '#22c55e', wickDownColor: '#ef4444'
+-  });
+-  BT_PAGE.on(window, 'resize', function () {
+-    btChart.applyOptions({ width: btChartContainer.clientWidth });
+-  });
+-  // Sayfadan çıkarken oynatmayı durdur ve grafiği kaldır
+-  BT_PAGE.onLeave(function () {
+-    pause();
+-    try { btChart.remove(); } catch (e) {}
+-  });
+-
+-  /* ============================================================
+-     4) REPLAY + POZİSYON MOTORU
+-     ============================================================ */
+-  let btFullData = [];
+-  let btVisibleCount = 0;
+-  let btPosition = null;
+-  let btTrades = [];
+-  let btPlayTimer = null;
+-
+-  const el = function (id) { return document.getElementById(id); };
+-  const posStatusEl = el('btPosStatus');
+-  const openPnlEl = el('btOpenPnl');
+-  const totalPnlEl = el('btTotalPnl');
+-  const winRateEl = el('btWinRate');
+-  const tradeCountEl = el('btTradeCount');
+-  const tradeLogBody = el('btTradeLogBody');
+-  const emptyState = el('btEmptyState');
+-  const buyBtn = el('btBuyBtn');
+-  const sellBtn = el('btSellBtn');
+-  const closeBtn = el('btCloseBtn');
+-  const playBtn = el('btPlayBtn');
+-  const statusBanner = el('btStatusBanner');
+-  const dataBadge = el('btDataBadge');
+-
+-  function showStatus(msg, isError) {
+-    statusBanner.textContent = msg;
+-    statusBanner.className = 'bt-status-banner show' + (isError ? ' error' : '');
+-  }
+-  function hideStatus() { statusBanner.className = 'bt-status-banner'; }
+-
+-  function currentBar() { return btFullData[btVisibleCount - 1]; }
+-
+-  function openPosition(side) {
+-    if (btPosition || btVisibleCount >= btFullData.length) return;
+-    const entry = currentBar().close;
+-    const tpPct = parseFloat(el('btTpPct').value) || 2;
+-    const slPct = parseFloat(el('btSlPct').value) || 1;
+-    let tp, sl;
+-    if (side === 'long') {
+-      tp = entry * (1 + tpPct / 100);
+-      sl = entry * (1 - slPct / 100);
+-    } else {
+-      tp = entry * (1 - tpPct / 100);
+-      sl = entry * (1 + slPct / 100);
++    .bt-rebuild-icon {
++      width: 56px;
++      height: 56px;
++      display: inline-flex;
++      align-items: center;
++      justify-content: center;
++      border-radius: 16px;
++      border: 1px solid rgba(255, 255, 255, 0.1);
++      color: var(--accent3, #a78bfa);
+     }
+-    btPosition = { side: side, entry: entry, tp: tp, sl: sl, entryIndex: btVisibleCount - 1 };
+-    render();
+-  }
+-
+-  function pnlPct(exitPrice) {
+-    if (!btPosition) return 0;
+-    const raw = btPosition.side === 'long'
+-      ? (exitPrice - btPosition.entry) / btPosition.entry
+-      : (btPosition.entry - exitPrice) / btPosition.entry;
+-    return raw * 100;
+-  }
+-
+-  async function closePosition(exitPrice, reason) {
+-    if (!btPosition) return;
+-    const pnl = pnlPct(exitPrice);
+-    const trade = {
+-      side: btPosition.side,
+-      entry: btPosition.entry,
+-      exit: exitPrice,
+-      entryTime: btFullData[btPosition.entryIndex].time,
+-      exitTime: currentBar().time,
+-      pnl: pnl,
+-      reason: reason
+-    };
+-    btTrades.push(trade);
+-    btPosition = null;
+-    render();
+-    await saveTradeToSupabase(trade);
+-  }
+-
+-  async function saveTradeToSupabase(trade) {
+-    if (!supabaseClient) return;
+-    try {
+-      const { data: userData } = await supabaseClient.auth.getUser();
+-      const userId = userData && userData.user ? userData.user.id : null;
+-      if (!userId) return;
+-      await supabaseClient.from('backtest_trades').insert({
+-        user_id: userId,
+-        symbol: el('btSymbol').value,
+-        side: trade.side,
+-        entry_price: trade.entry,
+-        exit_price: trade.exit,
+-        entry_time: new Date(trade.entryTime * 1000).toISOString(),
+-        exit_time: new Date(trade.exitTime * 1000).toISOString(),
+-        pnl_pct: trade.pnl,
+-        exit_reason: trade.reason
+-      });
+-    } catch (e) { wwLog.warn('Trade Supabase\'e kaydedilemedi', e); }
+-  }
+-
+-  function checkAutoExit(bar) {
+-    if (!btPosition) return;
+-    if (btPosition.side === 'long') {
+-      if (bar.low <= btPosition.sl) { closePosition(btPosition.sl, 'SL'); return; }
+-      if (bar.high >= btPosition.tp) { closePosition(btPosition.tp, 'TP'); return; }
+-    } else {
+-      if (bar.high >= btPosition.sl) { closePosition(btPosition.sl, 'SL'); return; }
+-      if (bar.low <= btPosition.tp) { closePosition(btPosition.tp, 'TP'); return; }
++    .bt-rebuild-icon svg {
++      width: 26px;
++      height: 26px;
++      display: block;
+     }
+-  }
+-
+-  function step() {
+-    if (btVisibleCount >= btFullData.length) { pause(); return; }
+-    const bar = btFullData[btVisibleCount];
+-    btSeries.update(bar);
+-    btVisibleCount++;
+-    checkAutoExit(bar);
+-    render();
+-  }
+-
+-  function play() {
+-    if (btPlayTimer || btFullData.length === 0) return;
+-    playBtn.textContent = '⏸ Duraklat';
+-    const speed = parseInt(el('btSpeed').value, 10);
+-    btPlayTimer = setInterval(step, speed);
+-  }
+-  function pause() {
+-    clearInterval(btPlayTimer);
+-    btPlayTimer = null;
+-    playBtn.textContent = '▶ Oynat';
+-  }
+-
+-  function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+-
+-  function render() {
+-    if (btFullData.length === 0) {
+-      posStatusEl.textContent = 'Yok';
+-      buyBtn.disabled = true; sellBtn.disabled = true; closeBtn.disabled = true;
+-      return;
++    .bt-rebuild-badge {
++      padding: 3px 11px;
++      border-radius: 999px;
++      border: 1px solid rgba(255, 255, 255, 0.1);
++      color: var(--muted);
++      font-size: 11.5px;
++      font-weight: 600;
++      letter-spacing: 0.02em;
+     }
+-    const bar = currentBar();
+-    if (btPosition) {
+-      const live = pnlPct(bar.close);
+-      posStatusEl.textContent = (btPosition.side === 'long' ? 'Long' : 'Short') + ' @ ' + btPosition.entry.toFixed(2);
+-      openPnlEl.textContent = fmtPct(live);
+-      openPnlEl.className = 'stat-value ' + (live >= 0 ? 'positive' : 'negative');
+-      buyBtn.disabled = true; sellBtn.disabled = true; closeBtn.disabled = false;
+-    } else {
+-      posStatusEl.textContent = 'Yok';
+-      openPnlEl.textContent = '–';
+-      openPnlEl.className = 'stat-value';
+-      buyBtn.disabled = btVisibleCount >= btFullData.length;
+-      sellBtn.disabled = btVisibleCount >= btFullData.length;
+-      closeBtn.disabled = true;
++    .light-theme .bt-rebuild-icon {
++      border-color: #e2e8f0;
++      color: var(--accent, #6c5ce7);
+     }
+-
+-    const totalPnl = btTrades.reduce(function (sum, t) { return sum + t.pnl; }, 0);
+-    totalPnlEl.textContent = fmtPct(totalPnl);
+-    totalPnlEl.className = 'stat-value ' + (totalPnl > 0 ? 'positive' : (totalPnl < 0 ? 'negative' : ''));
+-
+-    tradeCountEl.textContent = btTrades.length;
+-
+-    if (btTrades.length > 0) {
+-      const wins = btTrades.filter(function (t) { return t.pnl > 0; }).length;
+-      winRateEl.textContent = Math.round((wins / btTrades.length) * 100) + '%';
+-    } else {
+-      winRateEl.textContent = '–';
++    .light-theme .bt-rebuild-badge {
++      border-color: #e2e8f0;
+     }
+-
+-    if (btTrades.length === 0) {
+-      tradeLogBody.innerHTML = '';
+-      emptyState.style.display = 'block';
+-    } else {
+-      emptyState.style.display = 'none';
+-      tradeLogBody.innerHTML = btTrades.slice().reverse().map(function (t) {
+-        const pnlClass = t.pnl >= 0 ? 'trade-pnl positive' : 'trade-pnl negative';
+-        const badgeClass = t.side === 'long' ? 'badge badge-long' : 'badge badge-short';
+-        const sideLabel = t.side === 'long' ? 'LONG' : 'SHORT';
+-        return '<tr>' +
+-          '<td><span class="' + badgeClass + '">' + sideLabel + '</span></td>' +
+-          '<td>' + t.entry.toFixed(2) + '</td>' +
+-          '<td>' + t.exit.toFixed(2) + '</td>' +
+-          '<td>' + t.reason + '</td>' +
+-          '<td class="' + pnlClass + '">' + fmtPct(t.pnl) + '</td>' +
+-          '</tr>';
+-      }).join('');
++    .bt-rebuild-title {
++      font-size: clamp(1.15rem, 2.6vw, 1.4rem);
++      margin: 0.25rem 0 0;
+     }
+-  }
+-
+-  /* ============================================================
+-     5) EVENT BAĞLANTILARI
+-     ============================================================ */
+-  el('btLoadBtn').addEventListener('click', async function () {
+-    pause();
+-    hideStatus();
+-    const assetClass = el('btAssetClass').value;
+-    const symbol = el('btSymbol').value.trim();
+-    const interval = el('btInterval').value;
+-    if (!symbol) { showStatus('Bir sembol gir.', true); return; }
+-
+-    this.disabled = true;
+-    this.textContent = 'Yükleniyor…';
+-    try {
+-      const data = await fetchCandles(assetClass, symbol, interval);
+-      if (!data || data.length < 30) throw new Error('Yeterli veri gelmedi.');
+-      btFullData = data;
+-      btVisibleCount = Math.min(60, btFullData.length - 1);
+-      btPosition = null;
+-      btTrades = [];
+-      btSeries.setData(btFullData.slice(0, btVisibleCount));
+-      render();
+-      dataBadge.textContent = symbol + ' · ' + btFullData.length + ' bar';
+-      showStatus(symbol + ' için ' + btFullData.length + ' bar yüklendi. Oynat veya adım adım ilerlet.');
+-    } catch (err) {
+-      showStatus(err.message || 'Veri çekilemedi.', true);
+-    } finally {
+-      this.disabled = false;
+-      this.textContent = 'Veriyi yükle';
++    .bt-rebuild-text {
++      max-width: 430px;
++      margin: 0;
++      color: var(--muted);
++      font-size: 0.9rem;
++      line-height: 1.6;
+     }
+-  });
++  </style>
++</Fragment>
+ 
+-  el('btStepBtn').addEventListener('click', step);
+-  el('btResetBtn').addEventListener('click', function () {
+-    pause();
+-    if (btFullData.length === 0) return;
+-    btVisibleCount = Math.min(60, btFullData.length - 1);
+-    btPosition = null;
+-    btTrades = [];
+-    btSeries.setData(btFullData.slice(0, btVisibleCount));
+-    render();
+-  });
+-  playBtn.addEventListener('click', function () { if (btPlayTimer) pause(); else play(); });
+-  el('btSpeed').addEventListener('input', function () { if (btPlayTimer) { pause(); play(); } });
+-  buyBtn.addEventListener('click', function () { openPosition('long'); });
+-  sellBtn.addEventListener('click', function () { openPosition('short'); });
+-  closeBtn.addEventListener('click', function () { if (btPosition) closePosition(currentBar().close, 'Manuel'); });
++  <main class="dashboard-main">
++    <div class="page-header">
++      <div>
++        <h1 data-i18n="backtest.title">Backtest</h1>
++        <p class="subtitle" data-i18n="backtest.subtitle">Geçmiş veride bar bar strateji testi</p>
++      </div>
++    </div>
+ 
+-  render();
+-  }
++    <section class="bt-rebuild" aria-labelledby="bt-rebuild-title">
++      <div class="bt-rebuild-icon" aria-hidden="true">
++        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
++      </div>
++      <span class="bt-rebuild-badge" data-i18n="backtest.rebuild_badge">Yakında</span>
++      <h2 class="bt-rebuild-title" id="bt-rebuild-title" data-i18n="backtest.rebuild_title">Backtest yenileniyor</h2>
++      <p class="bt-rebuild-text" data-i18n="backtest.rebuild_text">Eski backtest aracını kaldırdık. Yeni sürüm hazır olduğunda burada açılacak: backtest hesapları, geçmiş grafikte bar bar oynatma ve işlemleri hesaplarınıza aktarma.</p>
++    </section>
++  </main>
+ 
+-  if (document.readyState === 'loading') {
+-    document.addEventListener('DOMContentLoaded', startBacktest);
+-  } else {
+-    startBacktest();
+-  }
+-  })();
++  <script is:inline>
++    // Giriş kontrolü (diğer uygulama sayfalarıyla aynı, bkz. PROJECT_OVERVIEW.md bölüm 6).
++    // Bu aşamada sayfa veri okumaz/yazmaz. Inline script olduğu için SPA'da her girişte çalışır.
++    (function () {
++      var PAGE = window.wwPage.current();
++      var timer = null;
++      var tries = 0;
++      PAGE.onLeave(function () { clearTimeout(timer); });
++      function start() {
++        if (!PAGE.alive) return;
++        if (typeof window.requireAuth !== 'function') {
++          if (++tries < 160) timer = setTimeout(start, 50);
++          return;
++        }
++        window.requireAuth();
++      }
++      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
++      else start();
++    })();
+   </script>
+ </Layout>
+diff --git a/src/pages/settings.astro b/src/pages/settings.astro
+index 92bc2f1..e46486c 100644
+--- a/src/pages/settings.astro
++++ b/src/pages/settings.astro
+@@ -1473,7 +1473,7 @@ import Layout from '../layouts/Layout.astro';
+   <script src="/config.js?v=9" is:inline defer></script>
+   <script src="/i18n.js?v=11" is:inline defer></script>
+   <script type="module" src="/src/bundle.js?v=11" is:inline defer></script>
+-  <script src="/settings/js/settings.js?v=22" is:inline defer data-page-script></script>
++  <script src="/settings/js/settings.js?v=23" is:inline defer data-page-script></script>
+ </Fragment>
+   <!-- ⭐ NAVBAR CONTAINER -->
+ 
+diff --git a/supabase/functions/get-candles/index.ts b/supabase/functions/get-candles/index.ts
+deleted file mode 100644
+index 7fb094c..0000000
+--- a/supabase/functions/get-candles/index.ts
++++ /dev/null
+@@ -1,315 +0,0 @@
+-// supabase/functions/get-candles/index.ts
+-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+-
+-// ⭐ Environment variables
+-const TWELVE_DATA_API_KEY = Deno.env.get('TWELVE_DATA_API_KEY') || '';
+-const RATE_LIMIT_WINDOW = parseInt(Deno.env.get('RATE_LIMIT_WINDOW') || '60000'); // 1 dakika
+-const RATE_LIMIT_MAX = parseInt(Deno.env.get('RATE_LIMIT_MAX') || '30'); // dakikada 30 istek
+-const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
+-  'https://your-domain.com',
+-  'https://wawejournal.com',
+-  'http://localhost:5173',
+-  'http://localhost:4321'
+-];
+-
+-// ⭐ Valid symbol patterns (güvenlik için)
+-const VALID_SYMBOL_PATTERN = /^[A-Z0-9\/\.\-]{1,20}$/;
+-const INSTRUMENT_TYPES = ['forex', 'crypto', 'stock', 'index', 'commodity'];
+-
+-// ⭐ Interval mapping
+-const INTERVAL_MAP: Record<string, string> = {
+-  '1min': '1min',
+-  '5min': '5min',
+-  '15min': '15min',
+-  '30min': '30min',
+-  '1h': '1h',
+-  '4h': '4h',
+-  '1d': '1day',
+-  '1w': '1week',
+-  '1m': '1month'
+-};
+-
+-// ⭐ Rate Limiting
+-const rateLimitStore = new Map<string, { count: number, resetTime: number }>();
+-
+-function getClientId(req: Request): string {
+-  // Gerçek client IP'sini al
+-  const cfIp = req.headers.get('cf-connecting-ip');
+-  const forwardedIp = req.headers.get('x-forwarded-for');
+-  const realIp = req.headers.get('x-real-ip');
+-  
+-  // Authorization header'dan user id (varsa)
+-  const auth = req.headers.get('authorization');
+-  let userId = 'anonymous';
+-  
+-  if (auth && auth.startsWith('Bearer ')) {
+-    try {
+-      // JWT'den user id çıkar (opsiyonel)
+-      const token = auth.substring(7);
+-      const parts = token.split('.');
+-      if (parts.length === 3) {
+-        const payload = JSON.parse(atob(parts[1]));
+-        if (payload.sub) userId = payload.sub;
+-      }
+-    } catch (e) {
+-      // Token geçersiz, anonymous olarak devam et
+-    }
+-  }
+-  
+-  const ip = cfIp || forwardedIp?.split(',')[0] || realIp || 'unknown';
+-  return `${userId}:${ip}`; // User + IP bazlı rate limiting
+-}
+-
+-function checkRateLimit(clientId: string): { allowed: boolean, remaining: number, resetIn: number } {
+-  const now = Date.now();
+-  const record = rateLimitStore.get(clientId);
+-  
+-  if (!record || now > record.resetTime) {
+-    // Yeni pencere
+-    const resetTime = now + RATE_LIMIT_WINDOW;
+-    rateLimitStore.set(clientId, { count: 1, resetTime });
+-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetIn: RATE_LIMIT_WINDOW };
+-  }
+-  
+-  if (record.count >= RATE_LIMIT_MAX) {
+-    const resetIn = record.resetTime - now;
+-    return { allowed: false, remaining: 0, resetIn };
+-  }
+-  
+-  record.count++;
+-  rateLimitStore.set(clientId, record);
+-  return { 
+-    allowed: true, 
+-    remaining: RATE_LIMIT_MAX - record.count, 
+-    resetIn: record.resetTime - now 
+-  };
+-}
+-
+-// ⭐ CORS headers
+-function getCorsHeaders(origin: string | null): Record<string, string> {
+-  const isAllowed = !!(origin && ALLOWED_ORIGINS.includes(origin));
+-  return {
+-    'Access-Control-Allow-Origin': (isAllowed && origin) ? origin : ALLOWED_ORIGINS[0],
+-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+-    'Access-Control-Max-Age': '86400',
+-    'X-Content-Type-Options': 'nosniff',
+-    'X-Frame-Options': 'DENY',
+-  };
+-}
+-
+-// ⭐ Symbol validasyonu
+-function validateSymbol(symbol: string): boolean {
+-  if (!symbol || typeof symbol !== 'string') return false;
+-  const upperSymbol = symbol.toUpperCase().trim();
+-  return VALID_SYMBOL_PATTERN.test(upperSymbol);
+-}
+-
+-// ⭐ Interval validasyonu
+-function validateInterval(interval: string): boolean {
+-  return interval in INTERVAL_MAP;
+-}
+-
+-// ⭐ Fetch with timeout
+-async function fetchWithTimeout(url: string, timeout: number = 10000): Promise<Response> {
+-  const controller = new AbortController();
+-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+-  
+-  try {
+-    const response = await fetch(url, { signal: controller.signal });
+-    clearTimeout(timeoutId);
+-    return response;
+-  } catch (error) {
+-    clearTimeout(timeoutId);
+-    throw error;
+-  }
+-}
+-
+-serve(async (req: Request) => {
+-  const origin = req.headers.get('origin') || '';
+-  const headers = getCorsHeaders(origin);
+-  
+-  // ⭐ CORS - OPTIONS
+-  if (req.method === 'OPTIONS') {
+-    return new Response(null, { 
+-      status: 204, 
+-      headers 
+-    });
+-  }
+-
+-  try {
+-    // ⭐ 1. METHOD KONTROLÜ
+-    if (req.method !== 'POST') {
+-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+-        status: 405,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    // ⭐ 2. API KEY KONTROLÜ
+-    if (!TWELVE_DATA_API_KEY) {
+-      console.error('❌ TWELVE_DATA_API_KEY not configured');
+-      return new Response(JSON.stringify({ error: 'Service not configured' }), {
+-        status: 503,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    // ⭐ 3. RATE LIMITING
+-    const clientId = getClientId(req);
+-    const rateLimit = checkRateLimit(clientId);
+-    
+-    if (!rateLimit.allowed) {
+-      console.warn(`⛔ Rate limit exceeded for ${clientId}`);
+-      return new Response(JSON.stringify({ 
+-        error: 'Rate limit exceeded',
+-        retry_after: Math.ceil(rateLimit.resetIn / 1000)
+-      }), {
+-        status: 429,
+-        headers: {
+-          ...headers,
+-          'Content-Type': 'application/json',
+-          'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
+-          'X-RateLimit-Remaining': '0',
+-          'X-RateLimit-Reset': String(rateLimit.resetIn)
+-        }
+-      });
+-    }
+-
+-    // ⭐ 4. REQUEST BODY PARSE
+-    let body;
+-    try {
+-      body = await req.json();
+-    } catch (e) {
+-      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+-        status: 400,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    const { symbol, interval, limit, outputsize } = body;
+-
+-    // ⭐ 5. SYMBOL VALIDASYONU
+-    if (!symbol) {
+-      return new Response(JSON.stringify({ error: 'Symbol is required' }), {
+-        status: 400,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    if (!validateSymbol(symbol)) {
+-      return new Response(JSON.stringify({ 
+-        error: 'Invalid symbol format. Use alphanumeric characters, /, ., -' 
+-      }), {
+-        status: 400,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    // ⭐ 6. INTERVAL VALIDASYONU
+-    const mappedInterval = INTERVAL_MAP[interval] || '1day';
+-    if (!validateInterval(interval) && interval) {
+-      console.warn(`⚠️ Unknown interval: ${interval}, using default: 1day`);
+-    }
+-
+-    // ⭐ 7. LIMIT VALIDASYONU
+-    let outputSize = outputsize || limit || 300;
+-    outputSize = Math.min(Math.max(parseInt(outputSize) || 300, 10), 500); // 10-500 arası
+-
+-    // ⭐ 8. API CALL
+-    const url = `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=${mappedInterval}&outputsize=${outputSize}&apikey=${TWELVE_DATA_API_KEY}`;
+-
+-    console.log(`📊 Fetching data: ${symbol} ${mappedInterval} (limit: ${outputSize})`);
+-
+-    const response = await fetchWithTimeout(url, 15000);
+-    
+-    if (!response.ok) {
+-      console.error(`❌ Twelve Data API error: ${response.status}`);
+-      return new Response(JSON.stringify({ 
+-        error: 'Data service unavailable',
+-        status: response.status
+-      }), {
+-        status: response.status,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    const data = await response.json();
+-
+-    // ⭐ 9. API RESPONSE KONTROLÜ
+-    if (data.status === 'error') {
+-      console.error('❌ Twelve Data API error:', data.message);
+-      
+-      // API key geçersiz veya kota dolmuş
+-      if (data.code === 401 || data.code === 403) {
+-        return new Response(JSON.stringify({ 
+-          error: 'Data service authentication failed',
+-          details: 'Please try again later'
+-        }), {
+-          status: 503,
+-          headers: { ...headers, 'Content-Type': 'application/json' }
+-        });
+-      }
+-      
+-      return new Response(JSON.stringify({ 
+-        error: data.message || 'Data fetch failed',
+-        code: data.code
+-      }), {
+-        status: 400,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    // ⭐ 10. RESPONSE FORMATLAMA
+-    const responseData = {
+-      symbol: data.meta?.symbol || symbol,
+-      interval: data.meta?.interval || mappedInterval,
+-      count: data.values?.length || 0,
+-      values: data.values || [],
+-      meta: {
+-        currency: data.meta?.currency || null,
+-        exchange: data.meta?.exchange || null,
+-        type: data.meta?.type || null
+-      }
+-    };
+-
+-    // ⭐ Rate limit header'ları
+-    const rateHeaders = {
+-      'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
+-      'X-RateLimit-Remaining': String(rateLimit.remaining),
+-      'X-RateLimit-Reset': String(Math.ceil(rateLimit.resetIn / 1000))
+-    };
+-
+-    return new Response(JSON.stringify(responseData), {
+-      status: 200,
+-      headers: {
+-        ...headers,
+-        ...rateHeaders,
+-        'Content-Type': 'application/json',
+-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300'
+-      }
+-    });
+-
+-  } catch (error) {
+-    console.error('❌ get-candles error:', error);
+-    
+-    // ⭐ Rate limiting store cleanup (hata durumunda)
+-    if (error.name === 'AbortError') {
+-      return new Response(JSON.stringify({ 
+-        error: 'Request timeout',
+-        details: 'The data service took too long to respond'
+-      }), {
+-        status: 504,
+-        headers: { ...headers, 'Content-Type': 'application/json' }
+-      });
+-    }
+-
+-    return new Response(JSON.stringify({ 
+-      error: 'Internal server error',
+-      details: error instanceof Error ? error.message : 'Unknown error'
+-    }), {
+-      status: 500,
+-      headers: { ...headers, 'Content-Type': 'application/json' }
+-    });
+-  }
+-});
+\ No newline at end of file
+diff --git a/supabase/migrations/202610180001_drop_legacy_backtest_trades.sql b/supabase/migrations/202610180001_drop_legacy_backtest_trades.sql
+new file mode 100644
+index 0000000..e79df40
+--- /dev/null
++++ b/supabase/migrations/202610180001_drop_legacy_backtest_trades.sql
+@@ -0,0 +1,123 @@
++-- ============================================================
++-- WAWE JOURNAL - Backtest v2 / Migration 01: eski backtest_trades tablosunu kaldır
++-- Migration: 202610180001_drop_legacy_backtest_trades.sql
++-- Geri alma: supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql
++--
++-- Sorun: Eski /backtest sayfası kaldırıldı (Aşama 2). Tablosu public.backtest_trades artık kullanılmıyor:
++--   2026-10-18 denetimi: 0 satır, 0 kullanıcı; hiçbir view, FK, publication veya kullanıcı trigger'ı ona bağlı değil.
++--   Veritabanında ona değinen tek nesne reset_user_data() (to_regclass korumalı DELETE).
++--
++-- Çözüm:
++--   0. Koruma: tabloda satır varsa hiçbir şey değiştirmeden durur (önbellekteki eski sayfa yazmış olabilir).
++--   1. reset_user_data(): CANLI gövde (pg_get_functiondef, 2026-10-18) birebir; yalnızca backtest_trades DELETE bloğu
++--      çıktı ve "1. Trades & Backtest" yorumu "1. Trades" oldu. Adım 2-6 aynen (6 = cTrader imleç sıfırlama).
++--      202610030001 sürümünden kurmayın: 6. adım onda yok.
++--   2. DROP TABLE (RESTRICT): 4 politika, 4 indeks, PK/FK, iç RI trigger'ları ve haklar tabloyla birlikte gider.
++--   Yeni tablolar (backtest_accounts, backtest_account_trades) Migration 02'de gelir. backtest_trades adı yeniden
++--   KULLANILMAZ: 202608190001 (satır 93, 142-151) ve 202609200001 (satır 43-53) bu adı hedefliyor.
++--
++-- Sıra: (1) Aşama 2 istemcisi yayında ve sw.js CACHE_VERSION artırılmış; (2) HEMEN ÖNCE tam veritabanı yedeği alındı
++--   ve yeri sahibe bildirildi; (3) bu dosya Supabase SQL Editor'da tek seferde çalıştırılır. "supabase db push"
++--   KULLANILMAZ (schema_migrations boş, tüm dosyaları bekleyen sayar). Tekrar çalıştırmak zararsızdır.
++-- ============================================================
++
++BEGIN;
++
++-- 0. Koruma
++DO $$
++DECLARE
++  v_rows bigint;
++BEGIN
++  IF to_regclass('public.backtest_trades') IS NOT NULL THEN
++    EXECUTE 'LOCK TABLE public.backtest_trades IN ACCESS EXCLUSIVE MODE';
++    EXECUTE 'SELECT count(*) FROM public.backtest_trades' INTO v_rows;
++    IF v_rows > 0 THEN
++      RAISE EXCEPTION 'M01 durduruldu: public.backtest_trades tablosunda % satır var. Hiçbir şey değişmedi; sahibe danışın.', v_rows;
++    END IF;
++  END IF;
++END
++$$;
++
++-- 1. reset_user_data: canlı gövde, backtest_trades bloğu olmadan
++CREATE OR REPLACE FUNCTION public.reset_user_data()
++ RETURNS void
++ LANGUAGE plpgsql
++ SECURITY DEFINER
++ SET search_path TO 'public'
++AS $function$
++DECLARE
++  v_uid UUID := auth.uid();
++  v_default_jid UUID;
++BEGIN
++  IF v_uid IS NULL THEN
++    RAISE EXCEPTION 'Not authenticated';
++  END IF;
++
++  -- 1. Trades
++  DELETE FROM public.trades WHERE user_id = v_uid;
++
++  -- 2. Stratejiler
++  IF to_regclass('public.strategies') IS NOT NULL THEN
++    DELETE FROM public.strategies WHERE user_id = v_uid;
++  END IF;
++
++  -- 3. Bildirimler
++  IF to_regclass('public.notifications') IS NOT NULL THEN
++    DELETE FROM public.notifications WHERE user_id = v_uid;
++  END IF;
++
++  -- 4. User Onboarding
++  IF to_regclass('public.user_onboarding') IS NOT NULL THEN
++    DELETE FROM public.user_onboarding WHERE user_id = v_uid;
++  END IF;
++
++  -- 5. Defterler (Journals)
++  -- Özel defterleri sil, varsayılan defteri temizle/oluştur
++  IF to_regclass('public.journals') IS NOT NULL THEN
++    DELETE FROM public.journals WHERE user_id = v_uid AND is_default = false;
++
++    SELECT id INTO v_default_jid FROM public.journals WHERE user_id = v_uid AND is_default = true LIMIT 1;
++    IF v_default_jid IS NULL THEN
++      INSERT INTO public.journals (user_id, name, description, color, icon, is_default, is_active)
++      VALUES (v_uid, 'Ana Hesap', 'Varsayılan işlem günlüğü', '#7c6dfa', 'folder', true, true);
++    ELSE
++      UPDATE public.journals
++      SET name = 'Ana Hesap', description = 'Varsayılan işlem günlüğü', color = '#7c6dfa', icon = 'folder', is_active = true
++      WHERE id = v_default_jid;
++    END IF;
++  END IF;
++
++  -- 6. cTrader senkron imleci: işlemler silindiği için bir sonraki senkron tüm geçmişi (en fazla 90 gün) yeniden
++  --    getirsin (eskiden imleç korunuyor ve yalnızca son 2 gün geri geliyordu).
++  IF to_regclass('public.ctrader_accounts') IS NOT NULL THEN
++    UPDATE public.ctrader_accounts
++    SET last_deal_timestamp = NULL, last_error = NULL, updated_at = now()
++    WHERE user_id = v_uid;
++  END IF;
++END;
++$function$;
++
++-- Canlı ACL: postgres, authenticated, service_role (anon ve PUBLIC yok). CREATE OR REPLACE mevcut ACL'yi korur;
++-- fonksiyon hiç yoksa (yalnızca repodan kurulmuş bir veritabanı) varsayılan haklar anon dahil verilir, aynı hale getir.
++REVOKE ALL ON FUNCTION public.reset_user_data() FROM PUBLIC;
++REVOKE ALL ON FUNCTION public.reset_user_data() FROM anon;
++GRANT EXECUTE ON FUNCTION public.reset_user_data() TO authenticated, service_role;
++
++-- 2. Eski tabloyu sil (RESTRICT: beklenmeyen bir bağımlı varsa tüm işlem geri alınır)
++DROP TABLE IF EXISTS public.backtest_trades;
++
++-- PostgREST şema önbelleği (pgrst_drop_watch event trigger'ı zaten yeniler; zararsız ek güvence)
++NOTIFY pgrst, 'reload schema';
++
++COMMIT;
++
++-- ============================================================
++-- KONTROL (salt okunur; COMMIT'ten sonra ayrı ayrı çalıştırın)
++-- ============================================================
++-- SELECT to_regclass('public.backtest_trades');                                               -- beklenen: NULL
++-- SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
++--  WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') AND p.prosrc ILIKE '%backtest_trades%';   -- beklenen: 0
++-- SELECT pg_get_functiondef('public.reset_user_data()'::regprocedure) ILIKE '%backtest%';       -- beklenen: false
++-- SELECT pg_get_functiondef('public.reset_user_data()'::regprocedure) ILIKE '%ctrader_accounts%'; -- beklenen: true (6. adım duruyor)
++-- SELECT p.prosecdef, p.proconfig, p.proacl FROM pg_proc p WHERE p.oid = 'public.reset_user_data()'::regprocedure;
++--   -- beklenen: true | {search_path=public} | postgres, authenticated, service_role için X (anon ve PUBLIC yok)
+diff --git a/supabase/migrations/README.md b/supabase/migrations/README.md
+index a3f886b..a768dda 100644
+--- a/supabase/migrations/README.md
++++ b/supabase/migrations/README.md
+@@ -4,17 +4,39 @@
+ the existing Wawe Journal schema. It assumes these existing tables and columns:
+ 
+ - `user_profiles(id, email, username, plan, plan_expires_at, role, is_active)`
+-- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)`
++- `trades(user_id)`, `strategies(user_id)`, `backtest_trades(user_id)` (dropped by
++  `202610180001_drop_legacy_backtest_trades.sql`; the baseline's `backtest_trades`
++  policies at lines 142-151 have no `to_regclass` guard, so re-running the baseline
++  now fails with 42P01)
+ - `references(is_active)`, `payments(user_id)`
+ 
+-It has intentionally not been run against the hosted project: no database
+-admin credential or Supabase CLI login is available in this workspace.
++This note is out of date: the hosted project has policies with the baseline's
++names on `trades` and `strategies`, so it was applied there (at least in part).
++Its `backtest_trades` policies never matched the live table.
+ 
+ The browser-side writes to `plan` and `plan_expires_at` have been removed from
+ the source. Apply the migration in the Supabase SQL Editor or with a linked
+ Supabase CLI project only after deploying that client change. Verify the first
+ registration and admin account immediately after applying it.
+ 
++## Applying migrations (rules since Backtest v2, 2026-10)
++
++- `supabase_migrations.schema_migrations` is empty on the hosted project and two
++  files share the version `202610050001`. Never run `supabase db push` here: it
++  would treat every file as pending. Apply files by hand in the Supabase SQL Editor.
++- One migration per file, numbered in execution order
++  (`YYYYMMDDNNNN_description.sql`, after the newest existing version).
++- Every migration has its own rollback file in `supabase/rollbacks/` with the same
++  name and a `.down.sql` suffix. Rollbacks live outside `migrations/` so no tool runs
++  them as forward migrations. Roll back in reverse order.
++- Each migration is one transaction (`BEGIN; ... COMMIT;`), is safe to re-run where
++  possible, guards its assumptions and ends with commented read-only checks.
++- Rebuild functions from the live definition (`pg_get_functiondef`), not from older
++  migration files: the repository and the hosted database have drifted.
++- Nothing is written to the live database without the owner's approval. Immediately
++  before the first live write (migrations included), take a full database backup and
++  tell the owner where it is stored.
++
+ 
+ -------------------------
+ 
+diff --git a/supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql b/supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql
+new file mode 100644
+index 0000000..09d87ef
+--- /dev/null
++++ b/supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql
+@@ -0,0 +1,135 @@
++-- ============================================================
++-- WAWE JOURNAL - GERİ ALMA: Backtest v2 / Migration 01
++-- Rollback for: supabase/migrations/202610180001_drop_legacy_backtest_trades.sql
++--
++-- public.backtest_trades tablosunu 2026-10-18 canlı katalogdaki haliyle (sütunlar, PK, FK ON DELETE NO ACTION, 4 indeks,
++-- RLS + 4 canlı politika, Supabase varsayılan hakları) yeniden kurar ve reset_user_data() fonksiyonunu M01 ÖNCESİ canlı
++-- gövdesine döndürür. Veri geri gelmez (M01 yalnızca tablo boşken çalışır; gerekirse yedekten alınır).
++--
++-- Yalnızca 202610180001 en son uygulanan migration ise çalıştırın. Sonraki migration'lar (02+) uygulandıysa önce
++-- onların geri alma dosyalarını TERS sırayla çalıştırın: Migration 02 reset_user_data'yı yeniden tanımlar ve bu dosya
++-- o tanımı ezer. Supabase SQL Editor'da tek seferde çalıştırın; tekrar çalıştırmak zararsızdır.
++-- ============================================================
++
++BEGIN;
++
++-- 1. Tablo (canlı tanım; ensure_rls event trigger'ı RLS'i zaten açar, aşağıda yine de açılıyor)
++CREATE TABLE IF NOT EXISTS public.backtest_trades (
++  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
++  user_id     uuid NOT NULL REFERENCES auth.users(id),
++  symbol      text NOT NULL,
++  asset_class text,
++  "interval"  text,
++  side        text NOT NULL,
++  entry_price numeric NOT NULL,
++  exit_price  numeric NOT NULL,
++  entry_time  timestamptz NOT NULL,
++  exit_time   timestamptz NOT NULL,
++  tp_pct      numeric,
++  sl_pct      numeric,
++  pnl_pct     numeric NOT NULL,
++  exit_reason text NOT NULL,
++  created_at  timestamptz DEFAULT now()
++);
++
++CREATE INDEX IF NOT EXISTS idx_backtest_trades_user_id    ON public.backtest_trades USING btree (user_id);
++CREATE INDEX IF NOT EXISTS idx_backtest_trades_created_at ON public.backtest_trades USING btree (created_at DESC);
++CREATE INDEX IF NOT EXISTS idx_backtest_trades_user_time  ON public.backtest_trades USING btree (user_id, entry_time DESC);
++
++ALTER TABLE public.backtest_trades ENABLE ROW LEVEL SECURITY;
++
++-- Canlı politikalar (rol: public, is_admin() yok, UPDATE'te WITH CHECK yok) - birebir
++DROP POLICY IF EXISTS "users select own backtest trades" ON public.backtest_trades;
++CREATE POLICY "users select own backtest trades" ON public.backtest_trades
++  FOR SELECT USING (auth.uid() = user_id);
++DROP POLICY IF EXISTS "users insert own backtest trades" ON public.backtest_trades;
++CREATE POLICY "users insert own backtest trades" ON public.backtest_trades
++  FOR INSERT WITH CHECK (auth.uid() = user_id);
++DROP POLICY IF EXISTS "users update own backtest trades" ON public.backtest_trades;
++CREATE POLICY "users update own backtest trades" ON public.backtest_trades
++  FOR UPDATE USING (auth.uid() = user_id);
++DROP POLICY IF EXISTS "users delete own backtest trades" ON public.backtest_trades;
++CREATE POLICY "users delete own backtest trades" ON public.backtest_trades
++  FOR DELETE USING (auth.uid() = user_id);
++
++-- Canlı haklar (Supabase varsayılanı: 7 yetki; PG17'nin MAINTAIN yetkisi canlıda yoktu)
++GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.backtest_trades TO anon, authenticated, service_role;
++
++-- 2. reset_user_data: M01 öncesi canlı gövde (birebir)
++CREATE OR REPLACE FUNCTION public.reset_user_data()
++ RETURNS void
++ LANGUAGE plpgsql
++ SECURITY DEFINER
++ SET search_path TO 'public'
++AS $function$
++DECLARE
++  v_uid UUID := auth.uid();
++  v_default_jid UUID;
++BEGIN
++  IF v_uid IS NULL THEN
++    RAISE EXCEPTION 'Not authenticated';
++  END IF;
++
++  -- 1. Trades & Backtest
++  DELETE FROM public.trades WHERE user_id = v_uid;
++
++  IF to_regclass('public.backtest_trades') IS NOT NULL THEN
++    DELETE FROM public.backtest_trades WHERE user_id = v_uid;
++  END IF;
++
++  -- 2. Stratejiler
++  IF to_regclass('public.strategies') IS NOT NULL THEN
++    DELETE FROM public.strategies WHERE user_id = v_uid;
++  END IF;
++
++  -- 3. Bildirimler
++  IF to_regclass('public.notifications') IS NOT NULL THEN
++    DELETE FROM public.notifications WHERE user_id = v_uid;
++  END IF;
++
++  -- 4. User Onboarding
++  IF to_regclass('public.user_onboarding') IS NOT NULL THEN
++    DELETE FROM public.user_onboarding WHERE user_id = v_uid;
++  END IF;
++
++  -- 5. Defterler (Journals)
++  -- Özel defterleri sil, varsayılan defteri temizle/oluştur
++  IF to_regclass('public.journals') IS NOT NULL THEN
++    DELETE FROM public.journals WHERE user_id = v_uid AND is_default = false;
++
++    SELECT id INTO v_default_jid FROM public.journals WHERE user_id = v_uid AND is_default = true LIMIT 1;
++    IF v_default_jid IS NULL THEN
++      INSERT INTO public.journals (user_id, name, description, color, icon, is_default, is_active)
++      VALUES (v_uid, 'Ana Hesap', 'Varsayılan işlem günlüğü', '#7c6dfa', 'folder', true, true);
++    ELSE
++      UPDATE public.journals
++      SET name = 'Ana Hesap', description = 'Varsayılan işlem günlüğü', color = '#7c6dfa', icon = 'folder', is_active = true
++      WHERE id = v_default_jid;
++    END IF;
++  END IF;
++
++  -- 6. cTrader senkron imleci: işlemler silindiği için bir sonraki senkron tüm geçmişi (en fazla 90 gün) yeniden
++  --    getirsin (eskiden imleç korunuyor ve yalnızca son 2 gün geri geliyordu).
++  IF to_regclass('public.ctrader_accounts') IS NOT NULL THEN
++    UPDATE public.ctrader_accounts
++    SET last_deal_timestamp = NULL, last_error = NULL, updated_at = now()
++    WHERE user_id = v_uid;
++  END IF;
++END;
++$function$;
++
++REVOKE ALL ON FUNCTION public.reset_user_data() FROM PUBLIC;
++REVOKE ALL ON FUNCTION public.reset_user_data() FROM anon;
++GRANT EXECUTE ON FUNCTION public.reset_user_data() TO authenticated, service_role;
++
++NOTIFY pgrst, 'reload schema';
++
++COMMIT;
++
++-- ============================================================
++-- KONTROL (salt okunur)
++-- ============================================================
++-- SELECT to_regclass('public.backtest_trades');                                         -- beklenen: public.backtest_trades
++-- SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'backtest_trades' ORDER BY 1;  -- 4 satır
++-- SELECT policyname, cmd FROM pg_policies WHERE schemaname = 'public' AND tablename = 'backtest_trades' ORDER BY 1;  -- 4 satır
++-- SELECT pg_get_functiondef('public.reset_user_data()'::regprocedure) ILIKE '%backtest_trades%';  -- beklenen: true
