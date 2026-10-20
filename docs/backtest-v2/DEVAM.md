@@ -41,6 +41,7 @@ Sırayla, her adımda hata olursa o adımın rollback'i ve bağımlı adımları
 ## Açık işler
 
 - Faz E: lisans kararı, Migration 03/07, içe aktarıcı, ArchiveSource, gerçek veri ve herkese açılış.
+- Faz E veri kaynağı (Sentetik / cTrader) planı ve trendbar ölçümü: `FAZ-E-VERI.md`. Ölçüm 2026-10-20'de yapıldı (Spotware demo): `accounts` kapsamı yetiyor, 2020'den bugüne eksiksiz M1, yanıt başına 14 000 bar tavanı.
 - Migration 06 kararı (6 kullanılmayan fonksiyon; açığı 00 zaten kapatıyor, 06 yalnızca temizlik).
 - Premium dashboard dil karışıklığı (ön-var olan hata, `SABAH-RAPORU.md`).
 - `npm audit` incelemesi, canlıdaki eski `get-candles` Edge Function'ının silinmesi, backend deploy bekleyenler (`ctrader-sync`, `create-payment`, `verify-auth`, `nowpayment-webhook`).
