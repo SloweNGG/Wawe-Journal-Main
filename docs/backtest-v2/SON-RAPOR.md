@@ -1,3 +1,23 @@
+# Düzeltme turu: "Bu hesapta bu sembol için mum verisi yok" (2026-10-21, `e313b8a`, yayında)
+
+**Belirti:** canlıda cTrader hesabı + EURUSD seçilince form "mum verisi yok" diyordu (broker sembolleri listelendi, yani bağlantı, AppAuth, AccountAuth ve `symbols` çalışıyordu); aynı Spotware demo sunucusunda ölçüm (probe) 2011'e kadar veri bulmuştu.
+
+**Yeniden üretim (dürüstçe):** gerçek cTrader'a karşı **yapılamadı**. `CTRADER_CLIENT_SECRET` yalnızca Supabase secret'larında; makinede yok. Aynı kodu Supabase içinde çalıştıracak geçici bir tanı fonksiyonu yayınlamayı denedim, izin sistemi reddetti (yeni uç nokta sahibin onayladığı kapsam dışı), bu yüzden denemedim. DB'den salt okunur (psql) bakıldı: token `active`, bitiş 2026-11-20, iki hesap da Spotware demo (`is_live=false`, doğru sunucu), `refreshing_since` boş. Kodda probe ile karşılaştırma yapıldı (aşağıda).
+
+**Karşılaştırma (probe ↔ `ctrader-candles`):** sunucu (demo/live) doğru; AppAuth/AccountAuth sırası aynı; M1 = period 1; zaman damgası ms; 9 günlük parça + `hasMore` sayfalama (14 000 tavanı) aynı; `low + delta` çözümü aynı; hata yanıtları "veri yok"a **dönüşmüyordu** (hata → AUTH/RATE/UPSTREAM). Tek fark: `coverage` içindeki ay-varlık sorgusu (`hasMinuteBars`) probe'da hiç denenmemiş bir biçimdeydi: `count: 1` ve bitiş = **ay sonu (gelecek)**. "Veri yok" yalnızca bu sorgu en son ay için boş dönerse çıkabiliyordu (tek `null` yolu).
+
+**Kök neden (en güçlü varsayım, canlıda kanıtlanmadı):** o sorgu gerçek sunucuda boş yanıt veriyor (gelecek bitiş ya da `count` yorumu); birim testlerin sahte sunucusu `count`'u "N bar" sayıp geleceği kabul ettiği için yakalamadı.
+
+**Düzeltme (`_shared/ctrader.ts`):** varlık sorgusu probe'daki biçime döndü (`count` yok, bitiş "şimdi"ye kısılır); en son ay boşsa bir önceki aya bakılır; W1 ipucu doğrulanır (ipucundan önceki ayda veri varsa 2000'den aranır); ilk bar taraması da şimdiye kısıldı. Testler: sahte sunucuya iki tuhaflık eklendi (gelecek bitişte boş, `count` = zaman yuvası); yeni testler eski kodda **başarısız**, yenide geçer (366/0). Fonksiyon logu artık işlem + sınıf + cTrader hata kodunu (enum, token yok) yazıyor.
+
+**Arayüz:** "veri yok" (NOT_FOUND / firstT yok), token-bağlantı hatası (AUTH, `needs_reconnect`: mesaj + "cTrader bağlantısını yenile" **linki** → `/journals`), sunucu hatası ("Sunucu hatası: …", UPSTREAM) ayrı mesajlar; tr/en/de.
+
+**Yayın:** `ctrader-candles` yeniden yayınlandı (`--no-verify-jwt`; OPTIONS 204, oturumsuz POST 401), master `e313b8a` push edildi, `sw.js` v17, canlı dosyalar yerel build ile SHA-1 eşleşti, canlı webcheck 3 senaryoda 24/0, duman testi cTrader senaryosu 0 FAIL. Revert gerekmedi.
+
+**Yapılamayan:** giriş yapılmış, gerçek cTrader'a giden canlı kontrol (JWT ve client secret yok). Sahibin kontrolü: /backtest → Yeni hesap → cTrader → EURUSD: "Bu hesapta bu sembolün verisi: …" satırı çıkmalı. Çıkmazsa Supabase → Functions → ctrader-candles → Logs'ta `ctrader-candles error: coverage <sınıf> <cTrader kodu>` satırı nedeni gösterir. Geri alma: `git revert e313b8a` ve `git show d99a5bb:supabase/functions/_shared/ctrader.ts` ile `ctrader-candles` yeniden yayını.
+
+---
+
 # Backtest v2, Faz 2: cTrader verisi (2026-10-21, son rapor, yayında)
 
 **Durum: yayında, tek eksik sizin gerçek cTrader denemeniz.** Yeni token ile `ctrader-candles` (v1) ve `ctrader-sync` (v7) birlikte yayınlandı, `backtest-v2` master'a `--no-ff` merge edildi (`7d864fd`) ve push edildi, Cloudflare canlıda. Migration 09 önceki turda canlıya girmişti. Canlıda `webcheck` 24/0 (user/free, user/premium, admin/premium). **Revert gerekmedi.**

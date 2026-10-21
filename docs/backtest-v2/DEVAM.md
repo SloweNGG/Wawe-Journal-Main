@@ -4,6 +4,8 @@ Okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md` (en üst bölüm, "Faz 2
 
 ## Faz 2 durumu (önce bunu oku)
 
+- **2026-10-21 düzeltme (`e313b8a`, yayında):** formda "mum verisi yok" hatası için `coverage` sorgusu probe biçimine döndürüldü (`SON-RAPOR.md` en üst bölüm). Gerçek cTrader'la canlı doğrulama hâlâ yok (client secret makinede yok); sahibin denemesi bekleniyor. Sorun sürerse fonksiyon logundaki `ctrader-candles error: coverage ...` satırına bak.
+
 - **Yayında (2026-10-21):** Migration 09 canlıda, `ctrader-candles` v1 ve `ctrader-sync` v7 yayınlandı (`--no-verify-jwt`), master `7d864fd` (merge) push edildi, canlı `webcheck` 24/0, dosya SHA-1'leri eşleşti.
 - **Yapılmadı:** kimlikli gerçek cTrader çağrısı (JWT yok) ve fonksiyon logu (token'da `analytics_logs_read` yok). Sıradaki: sahibin kendi hesabıyla denemesi (`SON-RAPOR.md` bölüm 5); sorun olursa Supabase panelinden fonksiyon logları.
 - İlk gerçek çağrıda `symbols`, `coverage` (özellikle W1 ipucu), `symbolInfo` alan adları ve `month` yanıt biçimini doğrula.
