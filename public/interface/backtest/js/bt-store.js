@@ -85,8 +85,12 @@
     function checkAccountValues(a) {
       if (!(charLen(a.name) >= 1 && charLen(a.name) <= 60)) throw fail('chk_backtest_accounts_name', '23514');
       if (!/^[A-Z0-9]{3,12}$/.test(a.symbol)) throw fail('chk_backtest_accounts_symbol', '23514');
-      if ((a.data_source || 'synthetic') !== 'synthetic') throw fail('chk_backtest_accounts_data_source', '23514');   // 'ctrader' opens in a later migration
-      if (a.journal_id) throw fail('chk_backtest_accounts_journal_needs_ctrader', '23514');          // synthetic accounts never link to a journal
+      var ds = a.data_source || 'synthetic';
+      if (ds !== 'synthetic' && ds !== 'ctrader') throw fail('chk_backtest_accounts_data_source', '23514');
+      var srcCols = [a.source_ctid_account, a.source_broker_name, a.source_is_live, a.source_symbol_id, a.source_symbol_name, a.source_digits];
+      if (ds === 'synthetic' && srcCols.some(function (v) { return v != null; })) throw fail('chk_backtest_accounts_source_fields', '23514');
+      if (ds === 'ctrader' && !(num(a.source_ctid_account) > 0 && num(a.source_symbol_id) > 0 && a.source_symbol_name && String(a.source_symbol_name).trim())) throw fail('chk_backtest_accounts_source_fields', '23514');
+      if (a.journal_id && ds !== 'ctrader') throw fail('chk_backtest_accounts_journal_needs_ctrader', '23514');   // synthetic accounts never link to a journal
       if (TFS.indexOf(a.timeframe) < 0) throw fail('chk_backtest_accounts_timeframe', '23514');
       var sb = num(a.starting_balance), sp = num(a.spread_pips), cm = num(a.commission_per_lot);
       if (!(sb > 0 && sb <= 100000000)) throw fail('chk_backtest_accounts_starting_balance', '23514');
@@ -132,6 +136,9 @@
           spread_pips: row.spread_pips == null ? '0.00' : row.spread_pips,
           commission_per_lot: row.commission_per_lot == null ? '0.00' : row.commission_per_lot,
           replay_time: row.replay_time, is_active: row.is_active !== false, data_source: row.data_source || 'synthetic',
+          source_ctid_account: row.source_ctid_account == null ? null : row.source_ctid_account, source_broker_name: row.source_broker_name == null ? null : row.source_broker_name,
+          source_is_live: row.source_is_live == null ? null : row.source_is_live, source_symbol_id: row.source_symbol_id == null ? null : row.source_symbol_id,
+          source_symbol_name: row.source_symbol_name == null ? null : row.source_symbol_name, source_digits: row.source_digits == null ? null : row.source_digits,
           created_at: nowIso(), updated_at: nowIso()
         };
         if (row.user_id && row.user_id !== userId) throw fail('BACKTEST_NOT_OWNER', '42501');
@@ -150,6 +157,9 @@
         if (!old) throw fail('account not found', 'PGRST116');
         var a = Object.assign({}, old, patch);
         ['user_id', 'id', 'symbol', 'data_source'].forEach(function (c) { if (a[c] !== old[c]) throw fail('BACKTEST_ACCOUNT_IMMUTABLE:' + c); });
+        ['source_ctid_account', 'source_broker_name', 'source_is_live', 'source_symbol_id', 'source_symbol_name', 'source_digits'].forEach(function (c) {
+          if ((a[c] == null ? null : a[c]) !== (old[c] == null ? null : old[c])) throw fail('BACKTEST_ACCOUNT_IMMUTABLE:source');
+        });
         var trades = accountTrades(id);
         var spreadChanged = a.spread_pips !== old.spread_pips && num(a.spread_pips) !== num(old.spread_pips);
         var commChanged = a.commission_per_lot !== old.commission_per_lot && num(a.commission_per_lot) !== num(old.commission_per_lot);
@@ -244,7 +254,7 @@
   // read EVERY user's rows (user_id = auth.uid() OR is_admin()), so without it an admin would see everyone's accounts.
   // The database enforces the rules (quota, immutables, replay direction, CHECKs) and raises the same messages
   // the LocalStore reproduces; they surface as Error(message) with .code (SQLSTATE) and .status.
-  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,data_source,created_at,updated_at';
+  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,data_source,source_ctid_account,source_broker_name,source_is_live,source_symbol_id,source_symbol_name,source_digits,created_at,updated_at';
   var PAGE_SIZE = 1000;
 
   function createSupabaseStore(opts) {

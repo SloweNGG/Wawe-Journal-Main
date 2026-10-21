@@ -17,7 +17,7 @@
     ok('list banner says synthetic, not the old browser-storage claim', /entetik|ynthetic|ynthetisch/.test(document.querySelector('.bt-banner-test').textContent) && !/tarayıcıda saklan|in this browser/i.test(document.querySelector('.bt-banner-test').textContent));
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal + default start');
-    ok('source choice: synthetic selected, cTrader visible but disabled (soon)', $('bt-f-source-synthetic').checked && !$('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && /Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent));
+    ok('source choice: synthetic selected, cTrader visible but disabled (no cTrader account connected: link shown, no "soon" chip)', $('bt-f-source-synthetic').checked && !$('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && vis('bt-f-source-connect') && !/Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent));
     ok('create modal open with default start', !!$('bt-f-start').value, $('bt-f-start').value);
     ok('spread default for EURUSD', $('bt-f-spread').value === '0.20', $('bt-f-spread').value);
     setv('bt-f-name', 'Smoke EURUSD'); setv('bt-f-tf', '1h'); setv('bt-f-commission', '7.00');

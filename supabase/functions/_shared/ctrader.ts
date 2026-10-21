@@ -53,7 +53,7 @@ export const MIN_INTERVAL_MS = 250;
 
 export class CTraderWsClient {
   private ws: WebSocket | null = null;
-  private pending = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void; timer: number }>();
+  private pending = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void; timer: ReturnType<typeof setTimeout> }>();
   private lastSentAt = 0;
   private minIntervalMs: number;
 

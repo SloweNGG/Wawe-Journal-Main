@@ -83,7 +83,7 @@ const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 class CTraderWsClient {
   private ws: WebSocket | null = null;
-  private pending = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void; timer: number }>();
+  private pending = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void; timer: ReturnType<typeof setTimeout> }>();
 
   async connect(host: string, port = 5036, timeoutMs = 8000): Promise<void> {
     const url = `wss://${host}:${port}`;

@@ -21,6 +21,31 @@ window.requireAuth=async function(){return {id:'u-'+role,app_metadata:{role:role
 window.__journals=[{id:'11111111-1111-4111-8111-111111111111',user_id:'u-'+role,name:'Ana Hesap',is_default:true},{id:'22222222-2222-4222-8222-222222222222',user_id:'u-'+role,name:'Ikinci Hesap',is_default:false}];
 window.journal={ensureActiveJournal:async function(){},listJournals:async function(){return window.__journals}};
 window.getUserPlanSilent=async function(){return {plan:qp.get('plan')||'premium'}};
+window.SUPABASE_URL='https://stub.local';window.SUPABASE_ANON_KEY='anon-stub';
+var ct=qp.get('ct')||'none';
+window.__ctFixture={token_status:ct==='none'?'none':(ct==='reconnect'?'needs_reconnect':'active'),accounts:ct==='none'?[]:[{id:'ca1',ctid_trader_account_id:4455667,is_live:false,trader_login:900123,broker_name:'Spotware',journal_id:null}]};
+window.__ctCalls=[];window.__ctFail=false;
+(function(){var _f=window.fetch.bind(window),gen=null;
+function res(st,j){return {ok:st<300,status:st,json:async function(){return j}}}
+window.fetch=async function(url,init){
+  if(String(url).indexOf('/functions/v1/ctrader-candles')<0)return _f(url,init);
+  var b=JSON.parse(init.body);window.__ctCalls.push(b);
+  if(!/^Bearer /.test((init.headers||{}).Authorization||''))return res(401,{ok:false,code:'UNAUTHORIZED'});
+  if(window.__ctFail&&(b.action==='month'||(window.__ctFail==='all'&&b.action==='coverage'&&b.backtestAccountId)))return res(401,{ok:false,code:'AUTH',error:'expired',needs_reconnect:true});
+  if(b.action==='symbols')return res(200,{ok:true,symbols:[[41,'GOLD'],[7,'EURGBP'],[2,'EURUSD.r'],[1,'EURUSD'],[8,'GBPUSD'],[40,'XAUUSD']]});
+  if(b.action==='symbolInfo')return res(200,{ok:true,symbolId:b.symbolId,digits:b.symbolId===40||b.symbolId===41?2:5,pipPosition:4,lotSize:10000000});
+  if(b.action==='coverage')return res(200,{ok:true,firstMonth:'2024-02',firstT:Date.UTC(2024,1,5)/1000,probes:9});
+  if(b.action==='month'){
+    var acc=(window.__db.tables.backtest_accounts||[]).filter(function(a){return a.id===b.backtestAccountId})[0];
+    if(!acc)return res(404,{ok:false,code:'NOT_FOUND'});
+    var S=window.WwBtSymbols,Y=window.WwBtSynthetic;gen=gen||Y.createGenerator({S:S,seed:7});
+    var sym=S.get(acc.symbol),rows=Y.generateMonth(gen,sym,b.month),base=Date.UTC(+b.month.slice(0,4),+b.month.slice(5,7)-1,1)/1000,end=Math.floor(Date.now()/86400000)*86400,k5=Math.pow(10,5-sym.digits);   // the generator rows are in points of the symbol digits; the server sends 1e-5 units
+    var o={ok:true,month:b.month,scale:100000,n:0,tm:[],o:[],h:[],l:[],c:[]};
+    rows.forEach(function(r){if(r[0]>=end||r[0]<Date.UTC(2024,1,5)/1000)return;o.tm.push((r[0]-base)/60);o.o.push(r[1]*k5);o.h.push(r[2]*k5);o.l.push(r[3]*k5);o.c.push(r[4]*k5)});
+    o.n=o.tm.length;return res(200,o);
+  }
+  return res(400,{ok:false,code:'BAD_REQUEST'});
+};})();
 window.__toasts=[];window.showToast=function(m,t){window.__toasts.push([t,m])};
 window.openUpgradeModal=function(){window.__upgrade=true};
 })();
@@ -34,6 +59,7 @@ window.openUpgradeModal=function(){window.__upgrade=true};
 <script src="/interface/backtest/js/bt-engine.js"></script>
 <script src="/interface/backtest/js/bt-synthetic.js"></script>
 <script src="/interface/backtest/js/bt-data.js"></script>
+<script src="/interface/backtest/js/bt-ctrader.js"></script>
 <script src="/interface/shared/trades-source.js"></script>
 <script src="/interface/backtest/js/bt-store.js"></script>
 <script src="/interface/backtest/js/bt-sync.js"></script>
@@ -41,7 +67,7 @@ window.openUpgradeModal=function(){window.__upgrade=true};
 <pre id="bt-smoke-result" style="display:none"></pre>
 <script type="module">
 var qp=new URLSearchParams(location.search);
-if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0'});window.sb=window.__db.client;}
+if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0',migration09:qp.get('m09')!=='0',ctrader:window.__ctFixture});window.sb=window.__db.client;window.sb.auth={getSession:async function(){return {data:{session:{access_token:'jwt-stub'}}}}};}
 var d=document.createElement('script');d.src=qp.get('driver')||'/__driver.js';document.body.appendChild(d);
 </script>
 </body></html>'''

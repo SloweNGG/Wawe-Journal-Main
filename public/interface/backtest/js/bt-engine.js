@@ -338,6 +338,10 @@
       id: r.id, userId: r.user_id, journalId: r.journal_id || null, name: r.name, symbol: r.symbol, tf: r.timeframe,
       startCents: toCents(r.starting_balance), spreadH: toHundredths(r.spread_pips), cplCents: toCents(r.commission_per_lot),
       replaySec: isoToSec(r.replay_time), isActive: r.is_active !== false, dataSource: r.data_source || 'synthetic',
+      source: r.data_source === 'ctrader' ? {
+        ctid: Number(r.source_ctid_account), brokerName: r.source_broker_name || '', isLive: r.source_is_live === true,
+        symbolId: Number(r.source_symbol_id), symbolName: r.source_symbol_name || '', digits: r.source_digits == null ? null : Number(r.source_digits)
+      } : null,
       createdAt: r.created_at, updatedAt: r.updated_at
     };
   }
@@ -348,6 +352,11 @@
       commission_per_lot: centsToStr(a.cplCents), replay_time: secToIso(a.replaySec), data_source: a.dataSource || 'synthetic'
     };
     if (a.id) row.id = a.id;
+    if (row.data_source === 'ctrader' && a.source) {         // where the candles come from; immutable after creation (migration 09)
+      row.source_ctid_account = a.source.ctid; row.source_broker_name = a.source.brokerName || null;
+      row.source_is_live = a.source.isLive === true; row.source_symbol_id = a.source.symbolId;
+      row.source_symbol_name = a.source.symbolName; row.source_digits = a.source.digits == null ? null : a.source.digits;
+    }
     return row;
   }
   function accountPatch(f) {

@@ -243,6 +243,18 @@ describe('bt-engine: DB mapping', () => {
     assert.equal(E.accountFromRow(Object.assign({ id: 'x' }, legacy)).dataSource, 'synthetic');
     assert.ok(!('data_source' in E.accountPatch({ name: 'n' })), 'the source is never part of an update patch');
   });
+  it('account mapping carries the cTrader source columns both ways; synthetic rows carry none', () => {
+    const a = { userId: 'u', journalId: null, name: 'A', symbol: 'XAUUSD', tf: '1h', startCents: 1000000, spreadH: 20, cplCents: 0, replaySec: T0,
+      dataSource: 'ctrader', source: { ctid: 4455667, brokerName: 'Spotware', isLive: false, symbolId: 41, symbolName: 'XAUUSD', digits: 2 } };
+    const row = E.accountInsertRow(a);
+    assert.equal(row.source_ctid_account, 4455667); assert.equal(row.source_broker_name, 'Spotware'); assert.equal(row.source_is_live, false);
+    assert.equal(row.source_symbol_id, 41); assert.equal(row.source_symbol_name, 'XAUUSD'); assert.equal(row.source_digits, 2);
+    assert.deepEqual(plain(E.accountFromRow(Object.assign({ id: 'x' }, row)).source), { ctid: 4455667, brokerName: 'Spotware', isLive: false, symbolId: 41, symbolName: 'XAUUSD', digits: 2 });
+    const syn = E.accountInsertRow(Object.assign({}, a, { dataSource: 'synthetic' }));
+    assert.ok(!Object.keys(syn).some((k) => k.startsWith('source_')), 'a synthetic row has no source columns');
+    assert.equal(E.accountFromRow(Object.assign({ id: 'x' }, syn)).source, null);
+    assert.ok(!Object.keys(E.accountPatch({ name: 'n', spreadH: 10 })).some((k) => k.startsWith('source_')), 'the source is never part of an update patch');
+  });
   it('metricsRow feeds WwMetrics', () => {
     const st = eurState();
     E.openPosition(st, { id: 'a', dir: 1, steps: 37, sl: 108111, tp: 108711 });

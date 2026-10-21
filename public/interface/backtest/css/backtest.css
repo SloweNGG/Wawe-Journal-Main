@@ -203,3 +203,8 @@ body.light-theme .bt-modal .modal-box { border-color: var(--border); }
   .bt-modal .modal-header, .bt-modal .modal-body { padding-left: 1rem; padding-right: 1rem; }
   .bt-modal .modal-footer { padding: 0.8rem 1rem 1rem; }
 }
+
+/* Phase 2: cTrader data source */
+.bt-link { color: var(--accent3); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+.bt-ct-wrap { margin: 0 0 4px; }
+.bt-ct-wrap .bt-block-hint.bt-error { background: none; border: 0; padding: 0; }

@@ -30,31 +30,53 @@ describe('gate (open to every signed-in user)', () => {
   });
 });
 
-describe('LocalStore: data source (Migration 08)', () => {
-  it('defaults to synthetic; ctrader and other values are refused', async () => {
+const ct = (over = {}) => Object.assign({ data_source: 'ctrader', source_ctid_account: 4455667, source_broker_name: 'Spotware', source_is_live: false,
+  source_symbol_id: 41, source_symbol_name: 'XAUUSD', source_digits: 2, symbol: 'XAUUSD' }, over);
+
+describe('LocalStore: data source (Migrations 08 and 09)', () => {
+  it('defaults to synthetic; unknown values are refused', async () => {
     const st = mk(memStorage());
     assert.equal((await st.createAccount(acc())).data_source, 'synthetic');
     assert.equal((await st.createAccount(acc({ data_source: 'synthetic' }))).data_source, 'synthetic');
-    for (const v of ['ctrader', 'binance', '']) {
-      if (v === '') continue;
-      await assert.rejects(() => st.createAccount(acc({ data_source: v })), (e) => msg(e) === 'chk_backtest_accounts_data_source' && e.code === '23514');
-    }
+    await assert.rejects(() => st.createAccount(acc({ data_source: 'binance' })), (e) => msg(e) === 'chk_backtest_accounts_data_source' && e.code === '23514');
   });
-  it('a synthetic account can never be linked to a journal', async () => {
+  it('ctrader needs the broker account, symbol id and symbol name; synthetic must not carry them', async () => {
+    const st = mk(memStorage());
+    const a = await st.createAccount(acc(ct()));
+    assert.equal(a.data_source, 'ctrader'); assert.equal(a.source_ctid_account, 4455667); assert.equal(a.source_symbol_name, 'XAUUSD');
+    for (const bad of [{ source_ctid_account: null }, { source_symbol_id: null }, { source_symbol_name: '  ' }, { source_ctid_account: 0 }]) {
+      await assert.rejects(() => st.createAccount(acc(ct(bad))), (e) => msg(e) === 'chk_backtest_accounts_source_fields' && e.code === '23514');
+    }
+    await assert.rejects(() => st.createAccount(acc({ source_ctid_account: 1 })), (e) => msg(e) === 'chk_backtest_accounts_source_fields');
+    await assert.rejects(() => st.createAccount(acc({ source_symbol_name: 'EURUSD' })), (e) => msg(e) === 'chk_backtest_accounts_source_fields');
+  });
+  it('a synthetic account can never be linked to a journal; a cTrader account can', async () => {
     const st = mk(memStorage());
     await assert.rejects(() => st.createAccount(acc({ journal_id: 'jjjjjjjj-0000-4000-8000-000000000001' })), (e) => msg(e) === 'chk_backtest_accounts_journal_needs_ctrader');
     const a = await st.createAccount(acc());
     await assert.rejects(() => st.updateAccount(a.id, { journal_id: 'jjjjjjjj-0000-4000-8000-000000000001' }), (e) => msg(e) === 'chk_backtest_accounts_journal_needs_ctrader');
     assert.equal((await st.updateAccount(a.id, { journal_id: null, name: 'ok' })).name, 'ok');
+    const c = await st.createAccount(acc(ct({ journal_id: 'jjjjjjjj-0000-4000-8000-000000000002' })));
+    assert.equal(c.journal_id, 'jjjjjjjj-0000-4000-8000-000000000002');
+    assert.equal((await st.updateAccount(c.id, { journal_id: null })).journal_id, null);
   });
-  it('data_source is immutable', async () => {
+  it('data_source and the source_* columns are immutable', async () => {
     const st = mk(memStorage());
     const a = await st.createAccount(acc());
     await assert.rejects(() => st.updateAccount(a.id, { data_source: 'ctrader' }), (e) => msg(e) === 'BACKTEST_ACCOUNT_IMMUTABLE:data_source');
     assert.equal((await st.updateAccount(a.id, { data_source: 'synthetic' })).data_source, 'synthetic');
+    const c = await st.createAccount(acc(ct()));
+    await assert.rejects(() => st.updateAccount(c.id, { data_source: 'synthetic' }), (e) => msg(e) === 'BACKTEST_ACCOUNT_IMMUTABLE:data_source');
+    for (const patch of [{ source_symbol_name: 'GOLD' }, { source_ctid_account: 1 }, { source_symbol_id: 7 }, { source_broker_name: 'x' }, { source_digits: 3 }, { source_is_live: true }]) {
+      await assert.rejects(() => st.updateAccount(c.id, patch), (e) => msg(e) === 'BACKTEST_ACCOUNT_IMMUTABLE:source');
+    }
+    assert.equal((await st.updateAccount(c.id, { name: 'renamed' })).name, 'renamed');
   });
-  it('the Supabase column list reads data_source', () => {
-    assert.match(Store.createSupabaseStore({ sb: {}, userId: U1 }).ACC_COLS, /(^|,)data_source(,|$)/);
+  it('the Supabase column list reads data_source and the source_* columns', () => {
+    const cols = Store.createSupabaseStore({ sb: {}, userId: U1 }).ACC_COLS;
+    for (const c of ['data_source', 'source_ctid_account', 'source_broker_name', 'source_is_live', 'source_symbol_id', 'source_symbol_name', 'source_digits']) {
+      assert.match(cols, new RegExp('(^|,)' + c + '(,|$)'));
+    }
   });
 });
 
