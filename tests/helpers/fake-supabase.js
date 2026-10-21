@@ -93,8 +93,11 @@ function toWire(row, columns) {
 }
 
 export class FakeDb {
-  constructor({ userId, journals }) {
+  // migration08: emulate Migration 08 (backtest_accounts.data_source: synthetic only, no journal link, immutable).
+  // Off by default so the sync-library tests can keep linking accounts, which stays valid for 'ctrader' accounts.
+  constructor({ userId, journals, migration08 = false }) {
     this.userId = userId;
+    this.migration08 = migration08;
     this.journals = journals.map((j) => ({ ...j }));   // [{id, user_id, is_default}]
     this.tables = { trades: [], backtest_accounts: [], backtest_account_trades: [] };
     this.seq = 0;
@@ -171,6 +174,11 @@ export class FakeDb {
         if (row.is_active === undefined) row.is_active = true;
         row.created_at = row.created_at || new Date().toISOString(); row.updated_at = row.updated_at || row.created_at;
         row.journal_id = row.journal_id ?? null;
+        if (this.migration08) {
+          row.data_source = row.data_source ?? 'synthetic';
+          const bad = this.migration08Violation(row);
+          if (bad) return { data: null, error: { code: '23514', message: 'new row for relation "backtest_accounts" violates check constraint "' + bad + '"' }, status: 400 };
+        }
       }
       if (call.table === 'backtest_account_trades') {      // defaults + trg_check_backtest_trade (initial levels = levels at open)
         row.initial_stop_loss = row.stop_loss ?? null; row.initial_take_profit = row.take_profit ?? null;
@@ -182,10 +190,23 @@ export class FakeDb {
     for (const row of staged) { row.id = row.id || this.nextId(); t.push(row); }
     return { data: call.returning ? staged.map((r) => toWire(r, call.columns)) : null, error: null, status: 201 };
   }
+  migration08Violation(row) {
+    if (row.data_source !== 'synthetic') return 'chk_backtest_accounts_data_source';
+    if (row.journal_id) return 'chk_backtest_accounts_journal_needs_ctrader';
+    return null;
+  }
   update(call) {
     const t = this.tables[call.table];
     const hits = t.filter((r) => this.match(r, call));
     const out = [];
+    if (call.table === 'backtest_accounts' && this.migration08) {
+      for (const r of hits) {
+        const next = { ...r, ...call.payload };
+        if (next.data_source !== r.data_source) return { data: null, error: { code: 'P0001', message: 'BACKTEST_ACCOUNT_IMMUTABLE:data_source' }, status: 400 };
+        const bad = this.migration08Violation(next);
+        if (bad) return { data: null, error: { code: '23514', message: 'new row for relation "backtest_accounts" violates check constraint "' + bad + '"' }, status: 400 };
+      }
+    }
     for (const r of hits) {
       const old = { ...r };
       Object.assign(r, call.payload);

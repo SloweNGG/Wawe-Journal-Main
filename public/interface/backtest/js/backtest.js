@@ -1,5 +1,5 @@
-// Backtest v2, Phase A: page controller. Admin only, synthetic candles generated in the browser,
-// accounts and trades in localStorage (WwBtStore). No database access.
+// Backtest v2: page controller. Open to every signed-in user (practice mode), synthetic candles generated in the browser,
+// accounts and trades in the user's account (WwBtStore, Supabase backend). data_source is 'synthetic' for now ('ctrader' is a later round).
 // Re-runs on every SPA visit (data-page-script): top-level state lives in this IIFE and is torn down in PAGE.onLeave.
 // Spec: docs/backtest-v2/asama-arayuz/stage4.md + stage4-ek.md.
 (function () {
@@ -97,7 +97,6 @@
   // ---------------------------------------------------------------- page state
   function setPageState(state) {
     var root = $('bt-root'); if (root) root.setAttribute('data-state', state);
-    show($('bt-view-soon'), state === 'soon');
     show($('bt-view-list'), state === 'list' || state === 'demo' || state === 'fatal');
     show($('bt-view-replay'), state === 'replay');
     show($('bt-demo'), state === 'demo');
@@ -129,8 +128,8 @@
     var user = await window.requireAuth();
     if (!PAGE.alive || !user) return;
     var gate = window.WwBtGate.decide(user);
-    if (gate === 'demo') return setPageState('demo');
-    if (gate !== 'admin') return setPageState('soon');       // nothing is generated, loaded or stored for non-admins
+    if (gate === 'demo') return setPageState('demo');         // nothing is generated, loaded or stored for the ?test=1 fake user
+    if (gate !== 'member') return;
     L.user = user;
     try { await window.journal.ensureActiveJournal(user.id); } catch (e) { /* navbar consistency only */ }
     if (!PAGE.alive) return;
@@ -140,7 +139,7 @@
     L.store = BACKEND === 'supabase'
       ? window.WwBtStore.createSupabaseStore({ sb: window.sb, userId: user.id })
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT; } });
-    if (SYNC) { try { L.journals = (await window.journal.listJournals()) || []; } catch (e) { L.journals = []; } if (!PAGE.alive) return; }
+    // Journals are only needed to link cTrader-data accounts; synthetic accounts cannot be linked (database CHECK), so skip the request.
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = await loadList();
     if (!PAGE.alive || !ok) return;
@@ -227,8 +226,9 @@
       row(_t('backtest.field.timeframe', 'Zaman dilimi'), C.TF_LABEL[a.tf] || a.tf);
       row(_t('backtest.card.trades', 'İşlemler'), sm.closed + ' / ' + sm.open);
       row(_t('backtest.card.replay_time', 'Replay zamanı'), a.replaySec ? fmtDateTime(a.replaySec) : '—');
-      if (SYNC) row(_t('backtest.card.journal', 'Bağlı hesap'), a.journalId ? (journalName(a.journalId) || '…') : '—');
+      if (SYNC && a.dataSource === 'ctrader') row(_t('backtest.card.journal', 'Bağlı hesap'), a.journalId ? (journalName(a.journalId) || '…') : '—');
       card.appendChild(dl);
+      card.appendChild(sourceBadge(a));
       var act = el('div', 'bt-card-actions');
       var bOpen = el('button', 'btn btn-primary', _t('backtest.card.open', 'Aç')); bOpen.type = 'button'; bOpen.setAttribute('data-act', 'open');
       var bSet = el('button', 'btn btn-ghost', _t('backtest.card.settings', 'Ayarlar')); bSet.type = 'button'; bSet.setAttribute('data-act', 'settings');
@@ -236,6 +236,12 @@
       act.appendChild(bOpen); act.appendChild(bSet); act.appendChild(bDel); card.appendChild(act);
       box.appendChild(card);
     });
+  }
+  // "Synthetic data, not real market data" label of the card (the chart has the same text in backtest.astro)
+  function sourceBadge(a) {
+    var b = el('p', 'bt-source', a.dataSource === 'ctrader' ? _t('backtest.source.ctrader', 'cTrader verisi') : _t('backtest.source.synthetic', 'Sentetik veri, gerçek piyasa verisi değildir'));
+    b.setAttribute('data-source', a.dataSource || 'synthetic');
+    return b;
   }
   function onAccountsClick(e) {
     var card = e.target.closest('.bt-account-card'); if (!card || card.classList.contains('bt-skeleton')) return;
@@ -285,9 +291,11 @@
     $('bt-confirm-modal').classList.remove('active');
     var r = confirmResolve; confirmResolve = null; if (r) r(v);
   }
-  function fillJournalSelect(selected) {
-    show($('bt-f-journal-wrap'), !!SYNC);
-    if (!SYNC) return;
+  // Journal link: only for accounts whose data comes from the user's broker (cTrader). Synthetic accounts never show it.
+  function fillJournalSelect(selected, source) {
+    var linkable = !!SYNC && source === 'ctrader';
+    show($('bt-f-journal-wrap'), linkable);
+    if (!linkable) return;
     var sel = $('bt-f-journal'); sel.textContent = '';
     var none = document.createElement('option'); none.value = ''; none.textContent = _t('backtest.field.journal_none', 'Bağlantı yok'); sel.appendChild(none);
     L.journals.forEach(function (j) { var o = document.createElement('option'); o.value = j.id; o.textContent = j.name; sel.appendChild(o); });
@@ -365,7 +373,9 @@
       $('bt-f-symbol').selectedIndex = 0;
       var s0 = S.get($('bt-f-symbol').value); $('bt-f-spread').value = E.hundredthsToStr(Math.round(s0.defaultSpreadPips * 100));
     }
-    fillJournalSelect(edit ? acc.journalId : '');
+    var source = edit ? acc.dataSource : 'synthetic';
+    fillSourceField(source, edit);
+    fillJournalSelect(edit ? acc.journalId : '', source);
     $('bt-f-symbol').disabled = edit; $('bt-f-tf').disabled = edit;
     $('bt-f-balance').disabled = edit && hasTrades;
     $('bt-f-spread').disabled = edit && hasOpen; $('bt-f-commission').disabled = edit && hasOpen;
@@ -383,6 +393,15 @@
     $('bt-f-name').focus();
   }
 
+  // Data source choice: "synthetic" is the only enabled option; "cTrader" is shown as "coming soon". Fixed once the account exists.
+  function fillSourceField(source, locked) {
+    $('bt-f-source-synthetic').checked = source !== 'ctrader';
+    $('bt-f-source-ctrader').checked = source === 'ctrader';
+    $('bt-f-source-synthetic').disabled = !!locked;
+    $('bt-f-source-ctrader').disabled = true;
+    show($('bt-f-source-note'), !!locked);
+  }
+  function selectedSource() { return $('bt-f-source-ctrader').checked ? 'ctrader' : 'synthetic'; }
   function formError(msg) { var e = $('bt-account-error'); e.textContent = msg; e.hidden = false; }
   function mapStoreError(e) {
     var m = String((e && e.message) || '');
@@ -409,7 +428,7 @@
     btn.disabled = true;
     try {
       if (edit) {
-        if (SYNC) {
+        if (SYNC && editing.dataSource === 'ctrader') {
           var newJ = $('bt-f-journal').value || null;
           if (newJ !== (editing.journalId || null)) {
             var cj = await changeJournal(editing, newJ);
@@ -433,7 +452,8 @@
       if (startSec < cov.firstT || startSec > cov.lastT) return formError(_t('backtest.err.start_range', 'Başlangıç {from} ile {to} arasında olmalı.', { from: fmtShort(cov.firstT), to: fmtShort(cov.lastT) }));
       var no = S.nextOpen(startSec * 1000, sym.id);
       if (no === null || no / 1000 > cov.lastT) return formError(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'));
-      var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: SYNC ? ($('bt-f-journal').value || null) : null, name: name, symbol: sym.id, tf: $('bt-f-tf').value,
+      var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: SYNC && selectedSource() === 'ctrader' ? ($('bt-f-journal').value || null) : null, dataSource: selectedSource(),
+        name: name, symbol: sym.id, tf: $('bt-f-tf').value,
         startCents: bal.value, spreadH: sp.value, cplCents: cm.value, replaySec: no / 1000 + 60 });
       var created = await L.store.createAccount(row);
       closeModal('bt-account-modal');

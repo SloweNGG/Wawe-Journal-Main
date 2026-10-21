@@ -26,6 +26,8 @@ const MIG = {
   m04: read(path.join(MIGDIR, '202610180004_backtest_journal_link_cleanup.sql')),
   m05: read(path.join(MIGDIR, '202610180005_exclude_backtest_from_stats.sql')),
   m06: read(path.join(MIGDIR, '202610180006_drop_unused_trade_functions.sql')),
+  m08: read(path.join(MIGDIR, '202610180008_backtest_data_source.sql')),
+  d08: read(path.join(planDir, 'supabase/rollbacks/202610180008_backtest_data_source.down.sql')),
   d01: read(path.join(planDir, 'supabase/rollbacks/202610180001_drop_legacy_backtest_trades.down.sql')),
   d02: read(path.join(planDir, 'supabase/rollbacks/202610180002_backtest_accounts.down.sql')),
   d04: read(path.join(planDir, 'supabase/rollbacks/202610180004_backtest_journal_link_cleanup.down.sql')),
@@ -332,7 +334,13 @@ log('\n[V] supabase/tests/backtest_v2_verify.sql (owner-side test) on a Supabase
   await runFile(db, MIG.m05);
   msg = await runVerify();
   log('      ' + msg.split('\n').filter((l) => /\[|SUMMARY/.test(l)).join('\n      '));
-  ok(/SUMMARY: \d+ PASS, 0 FAIL/.test(msg) && !/\[SKIP\]/.test(msg), 'after 04 + 05: all PASS, nothing skipped');
+  ok(/SUMMARY: \d+ PASS, 0 FAIL/.test(msg) && !/\[SKIP\] S1[0-7]|\[SKIP\] S1[^8]/.test(msg) && /\[SKIP\] S18/.test(msg), 'after 04 + 05: all PASS, only S18 (migration 08) skipped');
+  await runFile(db, MIG.m08);
+  msg = await runVerify();
+  log('      ' + msg.split('\n').filter((l) => /\[|SUMMARY/.test(l)).join('\n      '));
+  ok(/SUMMARY: \d+ PASS, 0 FAIL/.test(msg) && !/\[SKIP\]/.test(msg) && /\[PASS\] S18a/.test(msg) && /\[PASS\] S18d/.test(msg), 'after 04 + 05 + 08: all PASS, nothing skipped (S18 data source included)');
+  ok((await one(db, `select count(*)::int as n from pg_constraint where conname = 'chk_backtest_accounts_journal_needs_ctrader'`)).n === 1, 'verify rolled back its own CHECK drop (the constraint is still there)');
+  await runFile(db, MIG.d08);
   ok((await one(db, `select count(*)::int as n from auth.users`)).n === usersBefore, 'verify left no test user behind');
   ok((await one(db, `select count(*)::int as n from public.backtest_accounts`)).n === 0, 'verify left no backtest account behind');
   // with the OPTIONAL columns declined
@@ -822,10 +830,69 @@ await runFile(db, MIG.m06);
 await runFile(db, MIG.m06);
 ok((await one(db, `select count(*)::int as n from pg_proc where proname in ('evaluate_prop_firm_rules','sync_journal_trades','get_journals_equity_data','get_strategy_performance','get_today_trades_count','get_total_trades_count')`)).n === 0, 'six functions dropped');
 
+log('\n[M8] 08: data_source (synthetic only), no journal link for synthetic accounts, immutable; precondition on linked accounts');
+{
+  const linked = (await all(db, `select id, user_id, journal_id from public.backtest_accounts where journal_id is not null`));
+  ok(linked.length > 0, `there are linked accounts before 08 (${linked.length})`);
+  const mirrorsBefore = (await one(db, `select count(*)::int as n from public.trades where import_hash like 'backtest:%'`)).n;
+  ok(mirrorsBefore > 0, `there are journal mirrors before 08 (${mirrorsBefore})`);
+  await expectErr(() => runFile(db, MIG.m08), /PRECONDITION: \d+ backtest account\(s\) are still linked to a journal/, '08 refuses while a backtest account is linked to a journal');
+  ok((await one(db, `select count(*)::int as n from information_schema.columns where table_schema = 'public' and table_name = 'backtest_accounts' and column_name = 'data_source'`)).n === 0, 'the refused 08 changed nothing (no column)');
+  // the pre-step the owner runs: unlink; trigger 04 removes the mirrors of exactly those accounts
+  await db.query(`update public.backtest_accounts set journal_id = null where journal_id is not null`);
+  ok((await one(db, `select count(*)::int as n from public.trades where import_hash like 'backtest:%'`)).n === 0, 'unlinking removed every journal mirror (trigger 04)');
+  ok((await one(db, `select count(*)::int as n from public.trades where import_hash not like 'backtest:%' or import_hash is null`)).n > 0, 'real (non-backtest) trades were not touched');
+  const accBefore = (await one(db, `select count(*)::int as n from public.backtest_accounts`)).n;
+  await runFile(db, MIG.m08);
+  await runFile(db, MIG.m08); // idempotent
+  ok((await one(db, `select count(*)::int as n from public.backtest_accounts`)).n === accBefore, '08 keeps every account');
+  ok((await one(db, `select count(*)::int as n from public.backtest_accounts where data_source = 'synthetic'`)).n === accBefore, 'every existing account is synthetic');
+  const col = await one(db, `select data_type, is_nullable, column_default from information_schema.columns where table_schema = 'public' and table_name = 'backtest_accounts' and column_name = 'data_source'`);
+  ok(col.data_type === 'text' && col.is_nullable === 'NO' && /synthetic/.test(col.column_default), 'column: text NOT NULL DEFAULT synthetic');
+
+  // creation: default and explicit synthetic work; ctrader and junk are refused
+  const N1 = (await insAcc(U3, { name: 'n1', is_active: false })).rows[0];
+  ok(N1.data_source === 'synthetic', 'a new account defaults to synthetic');
+  const N2 = (await insAcc(U3, { name: 'n2', data_source: 'synthetic', is_active: false })).rows[0];
+  ok(N2.data_source === 'synthetic', 'explicit synthetic accepted');
+  await expectErr(() => insAcc(U3, { name: 'n3', data_source: 'ctrader', is_active: false }), /chk_backtest_accounts_data_source/, "'ctrader' is not accepted yet");
+  await expectErr(() => insAcc(U3, { name: 'n4', data_source: 'binance', is_active: false }), /chk_backtest_accounts_data_source/, 'other values refused');
+  await expectErr(() => insAcc(U3, { name: 'n5', data_source: null, is_active: false }), /null value|not-null/, 'NULL refused');
+
+  // a synthetic account cannot be linked to a journal, at INSERT or UPDATE, even by postgres / admin
+  const J8 = (await one(db, `select id from public.journals where user_id = $1 and is_active = true limit 1`, [U1])).id;
+  const A8 = (await one(db, `select id from public.backtest_accounts where user_id = $1 and is_active = true limit 1`, [U1])).id;
+  await expectErr(() => insAcc(U1, { name: 'lk', journal_id: J8, is_active: false }), /chk_backtest_accounts_journal_needs_ctrader/, 'INSERT of a synthetic account with a journal refused');
+  await expectErr(() => as(db, U1, `update public.backtest_accounts set journal_id = $2 where id = $1`, [A8, J8]), /chk_backtest_accounts_journal_needs_ctrader/, 'UPDATE linking a synthetic account refused (owner)');
+  await expectErr(() => db.query(`update public.backtest_accounts set journal_id = $2 where id = $1`, [A8, J8]), /chk_backtest_accounts_journal_needs_ctrader/, 'UPDATE linking a synthetic account refused (postgres)');
+  ok((await as(db, U1, `update public.backtest_accounts set journal_id = null, name = 'renamed' where id = $1 returning name`, [A8])).rows[0].name === 'renamed', 'unlinked synthetic accounts can still be edited');
+
+  // immutable: trigger runs before the CHECK, so the message is the trigger's
+  await expectErr(() => as(db, U1, `update public.backtest_accounts set data_source = 'ctrader' where id = $1`, [A8]), /BACKTEST_ACCOUNT_IMMUTABLE:data_source/, 'data_source cannot change (owner)');
+  await expectErr(() => db.query(`update public.backtest_accounts set data_source = 'ctrader' where id = $1`, [A8]), /BACKTEST_ACCOUNT_IMMUTABLE:data_source/, 'data_source cannot change (postgres)');
+  ok((await as(db, U1, `update public.backtest_accounts set data_source = 'synthetic' where id = $1 returning id`, [A8])).rows.length === 1, 'writing the same value is a no-op, not an error');
+
+  // nothing else moved: quota, RLS and the guard function grants
+  await expectErr(() => insAcc(U1, { name: 'second-active' }), /BACKTEST_LIMIT_EXCEEDED:1/, 'quota unchanged (free 1)');
+  ok((await as(db, U1, `select count(*)::int as n from public.backtest_accounts where user_id <> $1`, [U1])).rows[0].n === 0, 'RLS unchanged: U1 sees only its own accounts');
+  ok((await execs(db, 'public.backtest_accounts_data_source_guard()')) === '{postgres}' || /^\{.*\}$/.test(await execs(db, 'public.backtest_accounts_data_source_guard()')), 'guard function ACL readable');
+  ok(!/PUBLIC|anon|authenticated/.test(await execs(db, 'public.backtest_accounts_data_source_guard()')), 'guard function not executable by PUBLIC/anon/authenticated');
+}
+
 log('\n[R] rollback order guards');
 await expectErr(() => runFile(db, MIG.d01), /ORDER: migration 202610180002 is still applied/, '01.down refuses while 02 is applied');
 await expectErr(() => runFile(db, MIG.d02), /ORDER: migration 202610180004 is still applied/, '02.down refuses while 04 is applied');
 await expectErr(() => runFile(db, MIG.m01), /ALREADY SUPERSEDED/, '01 refuses a re-run after 02');
+
+log('\n[R8] 08.down twice (first of the rollbacks)');
+await runFile(db, MIG.d08);
+await runFile(db, MIG.d08);
+ok((await one(db, `select count(*)::int as n from information_schema.columns where table_schema = 'public' and table_name = 'backtest_accounts' and column_name = 'data_source'`)).n === 0, 'data_source column gone');
+ok((await one(db, `select count(*)::int as n from pg_constraint where conname in ('chk_backtest_accounts_data_source', 'chk_backtest_accounts_journal_needs_ctrader')`)).n === 0, 'both CHECKs gone');
+ok((await one(db, `select to_regprocedure('public.backtest_accounts_data_source_guard()') is null as e`)).e && (await one(db, `select count(*)::int as n from pg_trigger where tgname = 'trg_backtest_accounts_data_source_guard'`)).n === 0, 'guard trigger and function gone');
+await runFile(db, MIG.m08);
+ok((await one(db, `select count(*)::int as n from public.backtest_accounts where data_source = 'synthetic'`)).n > 0, '08 can be applied again after its rollback');
+await runFile(db, MIG.d08);
 
 log('\n[R6] 06.down twice');
 await runFile(db, MIG.d06);

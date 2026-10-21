@@ -2,7 +2,7 @@
 -- WAWE JOURNAL - BACKTEST V2 VERIFICATION TEST (rolls itself back)
 -- File: supabase/tests/backtest_v2_verify.sql
 --
--- WHEN: after 202610180002 (and again after 202610180004 / 202610180005; the scenarios of a migration
+-- WHEN: after 202610180002 (and again after 202610180004 / 202610180005 / 202610180008; the scenarios of a migration
 --   that is not applied yet are reported as SKIP).
 -- HOW: Supabase Dashboard -> SQL Editor, paste the whole file, Run (as postgres).
 -- RESULT: the script ALWAYS ends with RAISE EXCEPTION 'BACKTEST V2 TEST SUMMARY ...'. The error box
@@ -32,6 +32,7 @@ DECLARE
   v_fail     int := 0;
   v_log      text := '';
   v_has_04   boolean := to_regprocedure('public.backtest_accounts_cleanup_trades()') IS NOT NULL;
+  v_has_08   boolean := to_regprocedure('public.backtest_accounts_data_source_guard()') IS NOT NULL;
   v_has_05   boolean := (SELECT md5(translate(prosrc, E' \t\r\n', '')) = '{{MD5:list_journals.v05}}'
                            FROM pg_proc WHERE oid = to_regprocedure('public.list_journals()'));
 BEGIN
@@ -62,6 +63,49 @@ BEGIN
   INSERT INTO public.journals (user_id, name, is_active, is_default) VALUES (v_free, 'BT Test 2', true, false)  RETURNING id INTO v_j_free2;
   INSERT INTO public.journals (user_id, name, is_active, is_default) VALUES (v_free, 'BT Archived', false, false) RETURNING id INTO v_j_inact;
   INSERT INTO public.journals (user_id, name, is_active, is_default) VALUES (v_other, 'BT Other', true, false) RETURNING id INTO v_j_other;
+
+  -- ---------------------------------------------------------- S18 data source (migration 08)
+  -- Scenarios S18a-d run first, on inactive scratch accounts (no quota). Then, for the rest of this transaction
+  -- only (the final exception rolls everything back), the "no journal link" CHECK is dropped: S1-S15 exercise the
+  -- journal-link machinery (ownership, cleanup triggers, delete_journal) that is used again once 'ctrader' accounts exist.
+  IF NOT v_has_08 THEN
+    v_log := v_log || E'\n[SKIP] S18 data source: 202610180008 not applied yet';
+  ELSE
+    BEGIN
+      INSERT INTO public.backtest_accounts (user_id, name, symbol, starting_balance, replay_time, is_active)
+      VALUES (v_other, 'BT src', 'EURUSD', 1000, now(), false) RETURNING id INTO v_acc_oth;
+      IF (SELECT data_source FROM public.backtest_accounts WHERE id = v_acc_oth) = 'synthetic' THEN
+        v_pass := v_pass + 1; v_log := v_log || E'\n[PASS] S18a a new account defaults to data_source synthetic';
+      ELSE v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18a default data_source is not synthetic'; END IF;
+    EXCEPTION WHEN OTHERS THEN
+      v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18a: ' || SQLERRM;
+    END;
+    BEGIN
+      INSERT INTO public.backtest_accounts (user_id, journal_id, name, symbol, starting_balance, replay_time, is_active)
+      VALUES (v_free, v_j_free1, 'BT src linked', 'EURUSD', 1000, now(), false);
+      v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18b a synthetic account linked to a journal was accepted';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM LIKE '%chk_backtest_accounts_journal_needs_ctrader%' THEN v_pass := v_pass + 1; v_log := v_log || E'\n[PASS] S18b a synthetic account cannot be linked to a journal';
+      ELSE v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18b unexpected: ' || SQLERRM; END IF;
+    END;
+    BEGIN
+      INSERT INTO public.backtest_accounts (user_id, name, symbol, starting_balance, replay_time, is_active, data_source)
+      VALUES (v_other, 'BT src ctrader', 'EURUSD', 1000, now(), false, 'ctrader');
+      v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18c data_source ctrader was accepted';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM LIKE '%chk_backtest_accounts_data_source%' THEN v_pass := v_pass + 1; v_log := v_log || E'\n[PASS] S18c data_source ctrader is not accepted yet';
+      ELSE v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18c unexpected: ' || SQLERRM; END IF;
+    END;
+    BEGIN
+      UPDATE public.backtest_accounts SET data_source = 'ctrader' WHERE id = v_acc_oth;
+      v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18d data_source was changed';
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM LIKE 'BACKTEST_ACCOUNT_IMMUTABLE:data_source%' THEN v_pass := v_pass + 1; v_log := v_log || E'\n[PASS] S18d data_source is immutable';
+      ELSE v_fail := v_fail + 1; v_log := v_log || E'\n[FAIL] S18d unexpected: ' || SQLERRM; END IF;
+    END;
+    DELETE FROM public.backtest_accounts WHERE id = v_acc_oth;
+    ALTER TABLE public.backtest_accounts DROP CONSTRAINT chk_backtest_accounts_journal_needs_ctrader;
+  END IF;
 
   -- ---------------------------------------------------------- S1 free user: first active account
   BEGIN

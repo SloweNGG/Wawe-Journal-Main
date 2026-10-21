@@ -1,4 +1,4 @@
-// Backtest v2, Phase A: LocalStore rules (same as the Migration 02 triggers) and the admin gate
+// Backtest v2, Phase A: LocalStore rules (same as the Migration 02 and 08 triggers/CHECKs) and the page gate
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBt, plain } from './helpers/bt-env.js';
@@ -18,15 +18,43 @@ const trade = (accountId, over = {}) => Object.assign({ id: 'aaaaaaaa-0000-4000-
 const mk = (storage, over = {}) => Store.createLocalStore(Object.assign({ userId: U1, storage, limit: 10, now: () => Date.parse('2026-10-19T00:00:00Z') }, over));
 const msg = (e) => String(e && e.message);
 
-describe('gate (admin only)', () => {
+describe('gate (open to every signed-in user)', () => {
   it('decides from the user object', () => {
     assert.equal(Gate.decide(null), 'anon');
     assert.equal(Gate.decide({ id: 'demo-user-id', app_metadata: { role: 'admin' } }), 'demo');
-    assert.equal(Gate.decide({ id: 'u', app_metadata: { role: 'admin' } }), 'admin');
-    assert.equal(Gate.decide({ id: 'u', app_metadata: { role: 'user' } }), 'soon');
-    assert.equal(Gate.decide({ id: 'u', app_metadata: {} }), 'soon');
-    assert.equal(Gate.decide({ id: 'u' }), 'soon');
+    assert.equal(Gate.decide({ id: 'u', app_metadata: { role: 'admin' } }), 'member');
+    assert.equal(Gate.decide({ id: 'u', app_metadata: { role: 'user' } }), 'member');
+    assert.equal(Gate.decide({ id: 'u', app_metadata: {} }), 'member');
+    assert.equal(Gate.decide({ id: 'u' }), 'member');
     assert.equal(Gate.isAdmin({ app_metadata: { role: 'Admin' } }), false, 'exact match only');
+  });
+});
+
+describe('LocalStore: data source (Migration 08)', () => {
+  it('defaults to synthetic; ctrader and other values are refused', async () => {
+    const st = mk(memStorage());
+    assert.equal((await st.createAccount(acc())).data_source, 'synthetic');
+    assert.equal((await st.createAccount(acc({ data_source: 'synthetic' }))).data_source, 'synthetic');
+    for (const v of ['ctrader', 'binance', '']) {
+      if (v === '') continue;
+      await assert.rejects(() => st.createAccount(acc({ data_source: v })), (e) => msg(e) === 'chk_backtest_accounts_data_source' && e.code === '23514');
+    }
+  });
+  it('a synthetic account can never be linked to a journal', async () => {
+    const st = mk(memStorage());
+    await assert.rejects(() => st.createAccount(acc({ journal_id: 'jjjjjjjj-0000-4000-8000-000000000001' })), (e) => msg(e) === 'chk_backtest_accounts_journal_needs_ctrader');
+    const a = await st.createAccount(acc());
+    await assert.rejects(() => st.updateAccount(a.id, { journal_id: 'jjjjjjjj-0000-4000-8000-000000000001' }), (e) => msg(e) === 'chk_backtest_accounts_journal_needs_ctrader');
+    assert.equal((await st.updateAccount(a.id, { journal_id: null, name: 'ok' })).name, 'ok');
+  });
+  it('data_source is immutable', async () => {
+    const st = mk(memStorage());
+    const a = await st.createAccount(acc());
+    await assert.rejects(() => st.updateAccount(a.id, { data_source: 'ctrader' }), (e) => msg(e) === 'BACKTEST_ACCOUNT_IMMUTABLE:data_source');
+    assert.equal((await st.updateAccount(a.id, { data_source: 'synthetic' })).data_source, 'synthetic');
+  });
+  it('the Supabase column list reads data_source', () => {
+    assert.match(Store.createSupabaseStore({ sb: {}, userId: U1 }).ACC_COLS, /(^|,)data_source(,|$)/);
   });
 });
 
@@ -93,7 +121,7 @@ describe('LocalStore: accounts', () => {
   it('journal ownership hook', async () => {
     const st = mk(memStorage(), { journalOwned: (id) => id === 'j1' });
     await assert.rejects(() => st.createAccount(acc({ journal_id: 'j2' })), (e) => msg(e) === 'INVALID_JOURNAL');
-    assert.equal((await st.createAccount(acc({ journal_id: 'j1' }))).journal_id, 'j1');
+    await assert.rejects(() => st.createAccount(acc({ journal_id: 'j1' })), (e) => msg(e) === 'chk_backtest_accounts_journal_needs_ctrader', 'an owned journal still cannot be linked to a synthetic account');
   });
 });
 

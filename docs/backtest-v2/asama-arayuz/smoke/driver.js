@@ -9,20 +9,15 @@
   function toasts() { return window.__toasts.map(function (x) { return x[1]; }).join(' | '); }
   window.addEventListener('error', function (e) { out.push('JSERROR ' + e.message + ' @' + e.filename + ':' + e.lineno); });
   try {
-    if (role !== 'admin') {
-      await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'soon'; }, 8000, 'soon state');
-      ok('non-admin sees the soon screen', vis('bt-view-soon'));
-      ok('non-admin: list hidden', !vis('bt-view-list'));
-      ok('non-admin: nothing stored', Object.keys(localStorage).filter(function (k) { return k.indexOf('ww-bt') === 0; }).length === 0);
-      ok('non-admin: no chart created', !document.querySelector('#bt-chart canvas'));
-      return;
-    }
+    // practice mode: the same flow for every signed-in user (role=admin and role=user), the page is no longer admin-only
     await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'list'; }, 10000, 'list state');
-    ok('admin sees the list', vis('bt-view-list'));
+    ok(role + ' sees the list', vis('bt-view-list') && !document.getElementById('bt-view-soon'));
     ok('empty state shown', vis('bt-accounts-empty'));
     ok('quota label', /1\/|0\/|Hesap/.test($('bt-quota').textContent), $('bt-quota').textContent);
+    ok('list banner says synthetic, not the old browser-storage claim', /entetik|ynthetic|ynthetisch/.test(document.querySelector('.bt-banner-test').textContent) && !/tarayıcıda saklan|in this browser/i.test(document.querySelector('.bt-banner-test').textContent));
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal + default start');
+    ok('source choice: synthetic selected, cTrader visible but disabled (soon)', $('bt-f-source-synthetic').checked && !$('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && /Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent));
     ok('create modal open with default start', !!$('bt-f-start').value, $('bt-f-start').value);
     ok('spread default for EURUSD', $('bt-f-spread').value === '0.20', $('bt-f-spread').value);
     setv('bt-f-name', 'Smoke EURUSD'); setv('bt-f-tf', '1h'); setv('bt-f-commission', '7.00');
@@ -31,7 +26,7 @@
     ok('replay view open', vis('bt-view-replay'));
     ok('chart canvas present', !!document.querySelector('#bt-chart canvas'));
     ok('clock shows a time', $('bt-clock-time').textContent.length > 4, $('bt-clock-time').textContent);
-    ok('source label is the synthetic one', /Sentetik|Synthetic/.test($('bt-source-label').textContent), $('bt-source-label').textContent);
+    ok('source label: synthetic data, not real market data', /gerçek piyasa verisi değildir|not real market data|keine echten Marktdaten/.test($('bt-source-label').textContent) && vis('bt-source-label'), $('bt-source-label').textContent);
     ok('spread shown with its pip value', /^\d+\.\d{5} \(0\.2 pip\)$/.test($('bt-spread').textContent), $('bt-spread').textContent);
     ok('bid/ask shown', /^\d+\.\d{5}$/.test($('bt-bid').textContent) && /^\d+\.\d{5}$/.test($('bt-ask').textContent), $('bt-bid').textContent + '/' + $('bt-ask').textContent);
     ok('balance 10000', /10[.,]?000/.test($('bt-stat-balance').textContent), $('bt-stat-balance').textContent);
@@ -109,7 +104,8 @@
     ok('reset button visible with trades', vis('bt-account-reset'));
     ok('symbol locked, balance locked', $('bt-f-symbol').disabled && $('bt-f-balance').disabled);
     ok('edit modal: start date hidden, note about "go to date" shown', !vis('bt-f-start-wrap') && vis('bt-f-start-note'), $('bt-f-start-note').textContent.slice(0, 60));
-    ok('edit modal: [hidden] wins over .bt-field (linked account hidden in local mode)', !vis('bt-f-journal-wrap'));
+    ok('edit modal: [hidden] wins over .bt-field (linked account hidden for a synthetic account)', !vis('bt-f-journal-wrap'));
+    ok('edit modal: data source shown, locked', vis('bt-f-source-wrap') && $('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && vis('bt-f-source-note'));
     $('bt-account-reset').click(); await sleep(100);
     $('bt-reset-confirm').click(); await sleep(400);
     ok('reset deleted the trades', JSON.parse(localStorage.getItem(key)).trades.length === 0 && $('bt-history-count').textContent === '0');

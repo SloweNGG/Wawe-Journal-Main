@@ -35,4 +35,19 @@ describe('bt-i18n', () => {
     const src = fs.readFileSync('src/pages/backtest.astro', 'utf8') + fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
     assert.ok(!/data-lucide="(lock|shield-lock|key)"/.test(src));
   });
+  it('practice mode: synthetic label and source choice exist, no admin gate left in the page', () => {
+    const page = fs.readFileSync('src/pages/backtest.astro', 'utf8');
+    const ctl = fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
+    assert.match(page, /id="bt-f-source-synthetic"[^>]*checked/);
+    assert.match(page, /id="bt-f-source-ctrader"[^>]*disabled/, 'cTrader option is visible but disabled');
+    assert.match(page, /backtest\.source\.soon/);
+    assert.match(page, /id="bt-source-label"[^>]*data-i18n="backtest\.source\.synthetic"/, 'chart label');
+    assert.match(ctl, /sourceBadge\(a\)/, 'account card label');
+    assert.ok(!/bt-view-soon|'soon'|backtest\.gate\./.test(page + ctl), 'no "soon" gate for non-admins');
+    assert.ok(!/storage|saved in this browser|bu tarayıcıda saklan/i.test(loc.tr['backtest.list_banner'] + loc.en['backtest.list_banner'] + loc.de['backtest.list_banner']), 'old browser-storage warning gone');
+    for (const l of LANGS) for (const k of ['backtest.source.synthetic', 'backtest.source.option_synthetic', 'backtest.source.option_ctrader', 'backtest.source.soon', 'backtest.list_banner']) {
+      assert.ok(/./.test(loc[l][k]), `${l} ${k}`);
+    }
+    assert.match(loc.tr['backtest.source.synthetic'], /gerçek piyasa verisi değildir/);
+  });
 });

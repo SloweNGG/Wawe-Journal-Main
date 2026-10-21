@@ -337,14 +337,15 @@
     return {
       id: r.id, userId: r.user_id, journalId: r.journal_id || null, name: r.name, symbol: r.symbol, tf: r.timeframe,
       startCents: toCents(r.starting_balance), spreadH: toHundredths(r.spread_pips), cplCents: toCents(r.commission_per_lot),
-      replaySec: isoToSec(r.replay_time), isActive: r.is_active !== false, createdAt: r.created_at, updatedAt: r.updated_at
+      replaySec: isoToSec(r.replay_time), isActive: r.is_active !== false, dataSource: r.data_source || 'synthetic',
+      createdAt: r.created_at, updatedAt: r.updated_at
     };
   }
   function accountInsertRow(a) {
     var row = {
       user_id: a.userId, journal_id: a.journalId || null, name: a.name, symbol: a.symbol, timeframe: a.tf,
       starting_balance: centsToStr(a.startCents), spread_pips: hundredthsToStr(a.spreadH),
-      commission_per_lot: centsToStr(a.cplCents), replay_time: secToIso(a.replaySec)
+      commission_per_lot: centsToStr(a.cplCents), replay_time: secToIso(a.replaySec), data_source: a.dataSource || 'synthetic'
     };
     if (a.id) row.id = a.id;
     return row;

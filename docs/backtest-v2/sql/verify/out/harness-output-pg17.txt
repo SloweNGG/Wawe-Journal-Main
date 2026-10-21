@@ -58,6 +58,7 @@ PGlite: PostgreSQL 17.11 on aarch64-apple-darwin24.6.0, compiled by Apple clang 
 [V] supabase/tests/backtest_v2_verify.sql (owner-side test) on a Supabase-like auth.users
   ok   verify before 02: clear message -> Migration 202610180002 is not applied; nothing to test.
       BACKTEST V2 TEST SUMMARY: 16 PASS, 0 FAIL (everything was rolled back)
+      [SKIP] S18 data source: 202610180008 not applied yet
       [PASS] S1 free user can open 1 active account
       [PASS] S2 free quota (BACKTEST_LIMIT_EXCEEDED:1)
       [PASS] S3 premium quota 10 (11th: BACKTEST_LIMIT_EXCEEDED:10)
@@ -78,6 +79,7 @@ PGlite: PostgreSQL 17.11 on aarch64-apple-darwin24.6.0, compiled by Apple clang 
       [PASS] S17 reset_user_data deleted the user's backtest accounts
   ok   after 02: all PASS, S15/S16 skipped
       BACKTEST V2 TEST SUMMARY: 19 PASS, 0 FAIL (everything was rolled back)
+      [SKIP] S18 data source: 202610180008 not applied yet
       [PASS] S1 free user can open 1 active account
       [PASS] S2 free quota (BACKTEST_LIMIT_EXCEEDED:1)
       [PASS] S3 premium quota 10 (11th: BACKTEST_LIMIT_EXCEEDED:10)
@@ -97,7 +99,33 @@ PGlite: PostgreSQL 17.11 on aarch64-apple-darwin24.6.0, compiled by Apple clang 
       [PASS] S15b account deletion removed its mirrors (and its trades cascaded)
       [PASS] S16 list_journals trade_count excludes backtest rows (1)
       [PASS] S17 reset_user_data deleted the user's backtest accounts
-  ok   after 04 + 05: all PASS, nothing skipped
+  ok   after 04 + 05: all PASS, only S18 (migration 08) skipped
+      BACKTEST V2 TEST SUMMARY: 23 PASS, 0 FAIL (everything was rolled back)
+      [PASS] S18a a new account defaults to data_source synthetic
+      [PASS] S18b a synthetic account cannot be linked to a journal
+      [PASS] S18c data_source ctrader is not accepted yet
+      [PASS] S18d data_source is immutable
+      [PASS] S1 free user can open 1 active account
+      [PASS] S2 free quota (BACKTEST_LIMIT_EXCEEDED:1)
+      [PASS] S3 premium quota 10 (11th: BACKTEST_LIMIT_EXCEEDED:10)
+      [PASS] S4 another user's journal refused (INVALID_JOURNAL)
+      [PASS] S5 inactive journal refused (INVALID_JOURNAL)
+      [PASS] S6 symbol immutable
+      [PASS] S7 NaN starting_balance refused (new row for relation "backtest_accounts" violates check constraint "chk_backtest_accounts_starting_balance")
+      [PASS] S8 trade symbol must be the account symbol
+      [PASS] S9 trade on another user's account refused
+      [PASS] S10a open + close with gross 41.44 / commission 2.59 / net 38.85
+      [PASS] S10b closed trade is final
+      [PASS] S11 row for another user refused before any check (BACKTEST_NOT_OWNER)
+      [PASS] S12 RLS: a user cannot see another user's accounts
+      [PASS] S13 delete_journal (delete branch) detached the account
+      [PASS] S14 delete_journal (last-journal reset branch) detached the account
+      [PASS] S15a unlink removed the mirror, kept the live trade
+      [PASS] S15b account deletion removed its mirrors (and its trades cascaded)
+      [PASS] S16 list_journals trade_count excludes backtest rows (1)
+      [PASS] S17 reset_user_data deleted the user's backtest accounts
+  ok   after 04 + 05 + 08: all PASS, nothing skipped (S18 data source included)
+  ok   verify rolled back its own CHECK drop (the constraint is still there)
   ok   verify left no test user behind
   ok   verify left no backtest account behind
   ok   verify passes without the OPTIONAL columns too
@@ -326,10 +354,43 @@ PGlite: PostgreSQL 17.11 on aarch64-apple-darwin24.6.0, compiled by Apple clang 
 [M6] 06: apply twice
   ok   six functions dropped
 
+[M8] 08: data_source (synthetic only), no journal link for synthetic accounts, immutable; precondition on linked accounts
+  ok   there are linked accounts before 08 (1)
+  ok   there are journal mirrors before 08 (1)
+  ok   08 refuses while a backtest account is linked to a journal -> PRECONDITION: 1 backtest account(s) are still linked to a journal. Unlink them first (UPDATE public.backtest_accounts SET journal_id = NULL WHERE jour
+  ok   the refused 08 changed nothing (no column)
+  ok   unlinking removed every journal mirror (trigger 04)
+  ok   real (non-backtest) trades were not touched
+  ok   08 keeps every account
+  ok   every existing account is synthetic
+  ok   column: text NOT NULL DEFAULT synthetic
+  ok   a new account defaults to synthetic
+  ok   explicit synthetic accepted
+  ok   'ctrader' is not accepted yet -> new row for relation "backtest_accounts" violates check constraint "chk_backtest_accounts_data_source"
+  ok   other values refused -> new row for relation "backtest_accounts" violates check constraint "chk_backtest_accounts_data_source"
+  ok   NULL refused -> null value in column "data_source" of relation "backtest_accounts" violates not-null constraint
+  ok   INSERT of a synthetic account with a journal refused -> new row for relation "backtest_accounts" violates check constraint "chk_backtest_accounts_journal_needs_ctrader"
+  ok   UPDATE linking a synthetic account refused (owner) -> new row for relation "backtest_accounts" violates check constraint "chk_backtest_accounts_journal_needs_ctrader"
+  ok   UPDATE linking a synthetic account refused (postgres) -> new row for relation "backtest_accounts" violates check constraint "chk_backtest_accounts_journal_needs_ctrader"
+  ok   unlinked synthetic accounts can still be edited
+  ok   data_source cannot change (owner) -> BACKTEST_ACCOUNT_IMMUTABLE:data_source
+  ok   data_source cannot change (postgres) -> BACKTEST_ACCOUNT_IMMUTABLE:data_source
+  ok   writing the same value is a no-op, not an error
+  ok   quota unchanged (free 1) -> BACKTEST_LIMIT_EXCEEDED:1
+  ok   RLS unchanged: U1 sees only its own accounts
+  ok   guard function ACL readable
+  ok   guard function not executable by PUBLIC/anon/authenticated
+
 [R] rollback order guards
   ok   01.down refuses while 02 is applied -> ORDER: migration 202610180002 is still applied (backtest_accounts / backtest_account_trades exist). Run supabase/rollbacks/202610180002_backtest_accou
   ok   02.down refuses while 04 is applied -> ORDER: migration 202610180004 is still applied. Run supabase/rollbacks/202610180004_backtest_journal_link_cleanup.down.sql first.
   ok   01 refuses a re-run after 02 -> ALREADY SUPERSEDED: migration 202610180002 is applied (reset_user_data is its version). Do not re-run 202610180001; it would remove the Backtest v2 st
+
+[R8] 08.down twice (first of the rollbacks)
+  ok   data_source column gone
+  ok   both CHECKs gone
+  ok   guard trigger and function gone
+  ok   08 can be applied again after its rollback
 
 [R6] 06.down twice
   ok   five functions: body/lang/secdef/volatility/config/result/owner identical to the mock live
@@ -347,7 +408,7 @@ PGlite: PostgreSQL 17.11 on aarch64-apple-darwin24.6.0, compiled by Apple clang 
   ok   cleanup triggers gone
 
 [R2] 02.down: data-loss guard, then confirmed, twice
-  ok   02.down refuses to drop tables with rows -> DATA LOSS: 2 backtest account(s) and 0 backtest trade(s) would be deleted. Export/back them up, then uncomment SET LOCAL wawe.confirm_backtest_v2_data
+  ok   02.down refuses to drop tables with rows -> DATA LOSS: 4 backtest account(s) and 0 backtest trade(s) would be deleted. Export/back them up, then uncomment SET LOCAL wawe.confirm_backtest_v2_data
   ok   tables still there
   ok   confirmation line found
   ok   catalog after 02.down == after 01 (ACL hardening of delete_journal/list_journals ignored)
@@ -364,4 +425,4 @@ PGlite: PostgreSQL 17.11 on aarch64-apple-darwin24.6.0, compiled by Apple clang 
       acls + {"fn":"list_journals()","execs":"{authenticated,postgres,service_role}"}
   ok   restored backtest_trades RLS: U2 cannot see U1 rows
 
-RESULT: 266 passed, 0 failed
+RESULT: 297 passed, 0 failed
