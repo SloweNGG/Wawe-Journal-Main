@@ -1,4 +1,20 @@
-# Backtest v2: kaldığımız yer (2026-10-21, Faz 1 pratik modu sonu)
+# Backtest v2: kaldığımız yer (2026-10-21, Faz 2 cTrader verisi, yayın bekliyor)
+
+Okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md` (en üst bölüm, "Faz 2"), `FAZ-E-VERI.md`.
+
+## Faz 2 durumu (önce bunu oku)
+
+- **Bitti ve `backtest-v2`'de (push edildi):** Migration 09 (+rollback), `_shared/ctrader.ts`, `ctrader-candles`, `ctrader-sync`'in ortak kilitli token yenilemesi, arayüz (`bt-ctrader.js`, form, etiket, önbellek, hata mesajları), testler (362/0), duman testi (cTrader senaryosu 39 PASS), pagecheck 6/6.
+- **Canlıda:** yalnızca **Migration 09** (yedek `~/WaweJournal-Backups/20261021T090532Z/`). Edge Function yok, master değişmedi (`ca0abaa`), canlı site Faz 1 gibi.
+- **Engel:** `~/.wawe-supabase.env` içindeki token `edge_functions_read/write` izinsiz (403). Yeni token gerekir.
+- **Sıradaki adımlar (token gelince):** `SON-RAPOR.md` bölüm 6: `ctrader-candles` ve `ctrader-sync` deploy (ikisi birlikte), master'a `--no-ff` merge + push, canlıda `webcheck/run.mjs`, sonra sahibin kendi cTrader hesabıyla deneme (bölüm 5).
+- Gerçek cTrader'a karşı hiç çağrı yapılmadı: ilk gerçek çağrıda `symbols`, `coverage` ve `month` yanıt biçimlerini doğrula (özellikle W1 ipucu ve `symbolInfo` alan adları).
+- Duman testi cTrader senaryosu: `asama-arayuz/smoke/README.md` (`driver-ct.js`). Yerel SQL denemesi: canlı şemanın `pg_dump --schema-only` kopyası yerel PG17'de (harness/PGlite çalıştırılmadı).
+- Geri alma: `git revert -m 1 <merge>` (eski arayüz 09 ile uyumlu); `09.down.sql` yalnız cTrader hesap yokken.
+
+---
+
+## (Önceki) Faz 1 pratik modu sonu, 2026-10-21
 
 Yeni oturum için okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md` (en üstteki bölüm), `FAZ-E-VERI.md`.
 

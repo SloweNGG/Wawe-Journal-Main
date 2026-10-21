@@ -95,7 +95,9 @@ Kurallar (sahip):
 
 ### Veritabanı: Migration 08 + rollback
 
-> **Durum (2026-10-21):** Faz 1'de Migration 08 **kısaltılmış** hâliyle uygulandı: yalnızca `data_source` (`synthetic`), bağlama CHECK'i ve değiştirilemezlik trigger'ı. `source_*` sütunları, `chk_source_fields` ve `'ctrader'` değeri aşağıdaki taslağa göre cTrader turunda **Migration 09** ile gelir. PRECONDITION karşılandı: admin'in bağlı tek sentetik hesabı ayrılıp 4 kopya işlem silindi (SON-RAPOR.md).
+> **Durum (2026-10-21, Faz 2):** Migration 09 yazıldı ve canlıda; `ctrader-candles` ve arayüz kodu hazır, Edge Function yayını token iznini bekliyor (bkz. SON-RAPOR.md).
+>
+> **Durum (2026-10-21, Faz 1):** Faz 1'de Migration 08 **kısaltılmış** hâliyle uygulandı: yalnızca `data_source` (`synthetic`), bağlama CHECK'i ve değiştirilemezlik trigger'ı. `source_*` sütunları, `chk_source_fields` ve `'ctrader'` değeri aşağıdaki taslağa göre cTrader turunda **Migration 09** ile gelir. PRECONDITION karşılandı: admin'in bağlı tek sentetik hesabı ayrılıp 4 kopya işlem silindi (SON-RAPOR.md).
 
 Dosyalar `202610180008_backtest_data_source.sql` ve `.down.sql`, KURALLAR §2 kalıbında.
 
