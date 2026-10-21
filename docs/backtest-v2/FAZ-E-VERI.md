@@ -95,6 +95,8 @@ Kurallar (sahip):
 
 ### Veritabanı: Migration 08 + rollback
 
+> **Durum (2026-10-21):** Faz 1'de Migration 08 **kısaltılmış** hâliyle uygulandı: yalnızca `data_source` (`synthetic`), bağlama CHECK'i ve değiştirilemezlik trigger'ı. `source_*` sütunları, `chk_source_fields` ve `'ctrader'` değeri aşağıdaki taslağa göre cTrader turunda **Migration 09** ile gelir. PRECONDITION karşılandı: admin'in bağlı tek sentetik hesabı ayrılıp 4 kopya işlem silindi (SON-RAPOR.md).
+
 Dosyalar `202610180008_backtest_data_source.sql` ve `.down.sql`, KURALLAR §2 kalıbında.
 
 - `backtest_accounts`'a eklenecek sütunlar:
@@ -133,7 +135,7 @@ Dosyalar `202610180008_backtest_data_source.sql` ve `.down.sql`, KURALLAR §2 ka
 - **Bağlantı kopunca:** cTrader bağlantısı kesilen hesap açılırsa "cTrader bağlantısı gerekli" ekranı gelir. İşlemler ve defter kopyaları durur, veri silinmez.
 - **i18n:** tr, en, de.
 - **Testler:** `node --test` (kaynak seçimi, sync koruması, etiket) ve pagecheck.
-- **Sayfa erişimi:** Sayfa şu an yalnızca admin'e açık. Herkese açmak (sentetik için) ayrı bir adımdır: navbar ve sayfa korumasının değişmesi gerekir.
+- **Sayfa erişimi:** Faz 1'de (2026-10-21) sayfa giriş yapmış herkese açıldı, navbar linki herkese görünür; cTrader seçeneği formda "Yakında" ile pasif.
 
 ### Tahmini süre
 

@@ -1,8 +1,16 @@
-# Backtest v2: kaldığımız yer (2026-10-20, canlı tur 2 sonu)
+# Backtest v2: kaldığımız yer (2026-10-21, Faz 1 pratik modu sonu)
 
-Yeni oturum için okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md`, `ADIMLAR.md` ("Bitirme turu" bölümü).
+Yeni oturum için okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md` (en üstteki bölüm), `FAZ-E-VERI.md`.
 
-## Canlı tur 2 sonu (2026-10-20, güncel durum, önce bunu oku)
+## Faz 1 sonu (2026-10-21, önce bunu oku)
+
+- **Backtest herkese açık** (giriş yapmış tüm kullanıcılar), sentetik veri, hesaplar Supabase'de. Migration 00, 01, 02, 04, 05 ve **08** canlıda. Master: `b6aeb8a` (merge), kod `180addc`. Yedek: `~/WaweJournal-Backups/20261021T062240Z/` (08 öncesi).
+- Migration 08: `backtest_accounts.data_source` (yalnızca `synthetic`, değişmez), sentetik hesap deftere bağlanamaz (CHECK). Admin'in tek test hesabı defterden ayrıldı (4 kopya işlem silindi).
+- **Sıradaki tur: cTrader veri kaynağı** (`FAZ-E-VERI.md`): Migration 09 (`source_*`, CHECK'e `'ctrader'`), `ctrader-candles` Edge Function, hesap formunda gerçek cTrader seçimi. `bt-sync` ve defter bağlama kodu cTrader hesaplar için hazır bekliyor.
+- Yayın sonrası kontrol aracı: `docs/backtest-v2/asama-arayuz/webcheck/run.mjs` (imzalı SPA akışı, canlı siteye de çalışır; `PG_MODULE_DIR` içinde `puppeteer-core` gerekir). Duman testi komutları `asama-arayuz/smoke/README.md`. SQL harness gerçek PG 17'de: `LOCAL-PG17.md` (önce `bt_*` ve `wawe_local` veritabanları silinmeli).
+- Sorun olursa: `git revert -m 1 b6aeb8a` (eski arayüz yeni sütunla uyumlu), gerekirse sonra `08.down.sql`.
+
+## Canlı tur 2 sonu (2026-10-20, tarihî)
 
 - **Migration 00, 01, 02, 04, 05 canlıda çalıştı ve doğrulandı**; canlı `backtest_v2_verify.sql` 19 PASS. `BACKEND = 'supabase'`. `backtest-v2` master'a merge edildi (`0849802`), push edildi, Cloudflare Pages canlıda yeni dosyaları sunuyor (SHA-1 eşleşti). Ayrıntı: `SON-RAPOR.md` "Canlı tur 2".
 - Yedekler: `~/WaweJournal-Backups/20261019T201011Z/` (00 öncesi) ve `20261020T133907Z/` (01 öncesi).

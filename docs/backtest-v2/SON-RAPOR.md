@@ -1,3 +1,117 @@
+# Backtest v2, Faz 1: Pratik modu (2026-10-21, son rapor)
+
+Kod: `180addc` (backtest-v2), master'a `--no-ff` merge `b6aeb8a`, ikisi de push edildi, Cloudflare Pages canlıda yeni dosyaları sunuyor. Migration 08 canlıda çalıştı (yedek alındı). **Revert gerekmedi.** Önceki turların raporu bu dosyanın altındadır.
+
+## 1. Kısa özet
+
+1. **Backtest giriş yapmış herkese açıldı.** Admin kapısı ve "Backtest yakında" ekranı kaldırıldı, navbar linki herkese görünüyor. Kota aynı: ücretsiz 1, premium 10 aktif hesap (canlı veritabanında admin olmayan gerçek bir ücretsiz kullanıcı kimliğiyle denendi, geri alınan işlemde).
+2. **Migration 08 canlıda uygulandı:** `backtest_accounts.data_source` (yalnızca `synthetic`, sonradan değişmez), sentetik hesap deftere bağlanamaz (veritabanı CHECK'i). Rollback dosyası hazır ve harness'te denendi.
+3. **Önce temizlik yapıldı:** 1 hesabın defter bağlantısı kaldırıldı, bağlantıyla birlikte defterdeki **4 kopya işlem** mevcut trigger ile silindi (ayrıntı bölüm 3).
+4. **Arayüz:** yanlış "hesaplar bu tarayıcıda saklanır" uyarısı değişti, grafikte ve hesap kartında "Sentetik veri, gerçek piyasa verisi değildir" etiketi, sentetik hesapta defter seçimi gizli, hesap formunda veri kaynağı seçimi ("Sentetik veri (pratik)" seçili, "cTrader verisi" görünür ama "Yakında" ile pasif). tr, en, de.
+5. **Testler:** birim 312/0, SQL (gerçek PostgreSQL 17) 297/0, canlı `verify.sql` 23 PASS, duman testi dört senaryoda 0 FAIL, pagecheck 6/6, imzalı tarayıcı kontrolü (build ve canlı site, admin ve admin olmayan) 24/0.
+6. **Sınır (dürüstçe):** admin olmayan gerçek bir hesapla canlı sitede giriş yapıp tıklayarak denemedim; kimlik bilgisi yok. Onun yerine canlı sitede sahte oturum ve sahte veritabanı ile tarayıcı akışı, ayrıca gerçek veritabanında gerçek bir admin olmayan kullanıcının kimliğiyle RLS/kota/CHECK denemesi (hepsi geri alındı) yapıldı. Gerçek giriş denemesi sizde (bölüm 7).
+
+## 2. Madde madde
+
+**1. Migration 08 (rollback'iyle): ✅**
+- Dosyalar: [202610180008_backtest_data_source.sql](../../supabase/migrations/202610180008_backtest_data_source.sql), [rollback](sql/supabase/rollbacks/202610180008_backtest_data_source.down.sql), şablonlar `sql/verify/src/08.sql` ve `08.down.sql`, `build.mjs` çıktılarına eklendi.
+- İçerik:
+  - `data_source text NOT NULL DEFAULT 'synthetic'` + `chk_backtest_accounts_data_source CHECK (data_source = 'synthetic')`. `'ctrader'` şimdilik reddedilir; sonraki tur bu CHECK'i değiştirir.
+  - `chk_backtest_accounts_journal_needs_ctrader CHECK (journal_id IS NULL OR data_source = 'ctrader')`: sentetik hesap deftere bağlanamaz (INSERT'te de UPDATE'te de, postgres ve admin dahil). `'ctrader'` kapalı olduğu için şu an hiçbir hesap bağlanamaz.
+  - `trg_backtest_accounts_data_source_guard` (BEFORE UPDATE, yalnızca değer değişirse): `BACKTEST_ACCOUNT_IMMUTABLE:data_source`.
+  - PRECONDITION: bağlı hesap varsa migration durur (açık hata iletisi, hiçbir şey değişmez). Rollback: `data_source` değeri `synthetic` dışındaysa DATA LOSS ile durur.
+  - RLS, kota ve diğer trigger'lara dokunulmadı.
+- FAZ-E-VERI.md'deki taslaktan fark: `source_*` sütunları (broker hesabı, sembol, digits) bu migration'a **konmadı**; yalnızca istenen alan eklendi. Onlar cTrader turunda Migration 09 ile gelir.
+- Harness (gerçek PostgreSQL 17, 297 test): önkoşul reddi ve "hiçbir şey değişmedi", bağlantı kaldırınca kopyaların gitmesi ve gerçek işlemlerin korunması, idempotans (iki kez çalıştırma), varsayılan, `ctrader` ve diğer değerlerin reddi, NULL reddi, INSERT/UPDATE ile bağlamanın reddi (sahip ve postgres), değiştirilemezlik, aynı değeri yazmanın hata vermemesi, kota/RLS değişmedi, fonksiyonun PUBLIC/anon/authenticated'a kapalı olması, rollback iki kez, rollback sonrası tüm katalog başlangıçla aynı.
+
+**2. Defter bağlantılarının kaldırılması (migration'dan önce): ✅**
+- Etkilenen: **1 hesap** (`a34b4117`, "Backtest", EURUSD, sahibi admin), deftere bağlıydı.
+- Silinen: defterdeki **4 kopya işlem** (`platform_source = 'backtest'`). `trades` 101 → 97 satır.
+- Korunan: hesabın kendi **4 backtest işlemi** (`backtest_account_trades`) yerinde. Gerçek defter işlemlerine dokunulmadı (97 satır önceki gerçek işlemler).
+- Yöntem: tek transaction'da `UPDATE backtest_accounts SET journal_id = NULL WHERE journal_id IS NOT NULL;`, trigger `trg_backtest_accounts_cleanup_relink` kopyaları sildi; aynı transaction'da beklenen sayılar doğrulandı (97 / 0 kopya / 0 bağlı / 4 hesap işlemi), tutmasaydı geri alınacaktı.
+
+**3. Arayüz: ✅**
+- Hesap listesi uyarısı: "Mumlar sentetiktir, gerçek piyasa verisi değildir. Hesapların kullanıcı hesabında kayıtlıdır." (anahtar `backtest.list_banner`; en ve de karşılıkları var).
+- Etiket "Sentetik veri, gerçek piyasa verisi değildir": grafiğin üstünde (sarı kesik çizgili hap) ve her hesap kartında.
+- Sentetik hesapta defter seçimi gizli (oluşturmada ve ayarlarda); hesap kartında "Bağlı hesap" satırı yok; defterler için istek de atılmıyor.
+- Yeni hesap formunda "Veri kaynağı": "Sentetik veri (pratik)" seçili ve aktif, "cTrader verisi" + "Yakında" etiketi, pasif. Ayarlar penceresinde ikisi de kilitli, "Veri kaynağı hesap oluşturulduktan sonra değiştirilemez." notu.
+- Yeni anahtarlar tr, en, de'de (`list_banner`, `field.source`, `source.*`). Artık kullanılmayan `gate.*` ve `test_banner` anahtarları silindi.
+- Ekran görüntüleri (repo dışı, scratchpad): koyu tema, 1440x1000; tr, en, de.
+
+**4. Admin kapısı: ✅**
+- `WwBtGate.decide`: `anon`, `demo`, `member`. `soon` ekranı ve `bt-view-soon` kaldırıldı.
+- Navbar: `showBacktestLink()` giriş yapmış herkes için çağrılıyor (önbellekli ve ilk oturum yolu).
+- Kota kuralı aynı (`FREE_LIMIT = 1`, `PREMIUM_LIMIT = 10`; DB trigger'ı belirleyici).
+- Önbellek: `sw.js` v15, dil dosyası sürümü (`i18n.js`), `navbar.js`, backtest asset sürümleri artırıldı (eski dil dosyası ve SW'nin eski kopyaları yeni anahtarları gizlemesin diye).
+
+**5. Testler: ✅** (bölüm 4)
+
+**6. Merge, push, yayın ve canlı kontrol: ✅**
+- Koşullar (testler, build, pagecheck, iki rolle duman testi) sağlandı; `backtest-v2` master'a merge edilip push edildi.
+- Cloudflare: `sw.js` `wawe-v15`; `backtest.js`, `bt-store.js`, `bt-engine.js`, `backtest.css`, `navbar.js`, üç dil dosyası, `i18n.js`, `sw.js` yerel build ile **SHA-1 eşleşti**. `backtest.html` hash'i farklı (Cloudflare HTML'e ekleme yapıyor), ama yeni işaretler (`backtest.css?v=3`, veri kaynağı alanı) sayfada var.
+- Canlı sitede imzalı tarayıcı akışı (bölüm 4) admin olmayan ve admin ile 24/0.
+
+**7. Bu rapor: ✅**
+
+## 3. Canlı veritabanı
+
+- **Yedek:** `~/WaweJournal-Backups/20261021T062240Z/` (repo ve OneDrive dışı): `full.dump` (pg_dump -Fc, 678 KB), `schema.sql`, `roles.sql`, `rowcounts.txt`, `SHA256SUMS`. Satır sayıları: backtest_accounts 1, backtest_account_trades 4, trades 101, journals 9, user_profiles 4. Hata dosyası boş.
+- **Yazılanlar (sırayla):** (a) bağlantı kaldırma (1 hesap, 4 kopya silindi), (b) Migration 08 COMMIT.
+- **Sonrası doğrulama:** sütun `text NOT NULL DEFAULT 'synthetic'`; iki CHECK ve trigger yerinde; 1 hesap, 1 sentetik, 0 bağlı. Geri alınan işlemde `data_source` değiştirme ve bağlama reddedildi.
+- **`verify.sql`:** ilk çalıştırmada (eski sürüm) 10 PASS / 9 FAIL verdi. Neden: eski test sentetik hesapları deftere bağlıyordu, 08 bunu artık yasaklıyor. Migration hatası değil, testin eskimesiydi; hiçbir şey kalıcı yazılmadı (test kendi geri alınır). Test güncellendi (S18a-d: 08'in kendi senaryoları; sonra yalnızca o geri alınan transaction'da bağlantı CHECK'i kaldırılıp eski bağlantı senaryoları, ki cTrader turunda geri gelecek, çalışıyor). Yeniden canlıda: **23 PASS / 0 FAIL**, artıkta test kullanıcısı yok.
+- **Gerçek kullanıcı kimliğiyle RLS denemesi (geri alındı):** admin olmayan gerçek bir ücretsiz hesap (`dcc66303…`, `is_admin() = false`): ilk hesap açıldı (`data_source = synthetic`, `journal_id` boş), 2. hesap `BACKTEST_LIMIT_EXCEEDED:1` ile reddedildi, defter bağlama ve `'ctrader'` CHECK ile reddedildi. İşlem geri alındı, sonrasında 1 hesap (adminin).
+- **Geri alma gerekmedi.** Gerekirse sırası: önce uygulama (`git revert -m 1 b6aeb8a`; eski arayüz yeni sütunla uyumlu, yalnızca defter bağlayamaz), sonra `sql/supabase/rollbacks/202610180008_backtest_data_source.down.sql`.
+
+## 4. Testler
+
+| Kontrol | Sonuç |
+|---|---|
+| Birim testler (`node --test tests/*.test.js`) | **312 geçti / 0 kaldı** (306'ya 6 yeni: kapı, veri kaynağı kuralları, mapper, Supabase sütunları, sayfa içeriği) |
+| `npm run build` | geçti (25 sayfa) |
+| SQL harness, gerçek PostgreSQL 17 | **297 geçti / 0 kaldı** (`sql/verify/out/harness-output-pg17.txt`); PGlite bu turda çalıştırılmadı |
+| `local-run.mjs` (00-06 ve 08, verify.sql, geri alma, yeniden ileri) | hepsi tamam, verify.sql 23 PASS (`out/local-run-pg17.txt`) |
+| Canlı `verify.sql` | **23 PASS / 0 FAIL** |
+| Duman testi, yerel arka uç, admin ve admin olmayan | 51 PASS / 0 FAIL ve 51 PASS / 0 FAIL |
+| Duman testi, Supabase-taklit arka uç (Migration 08 taklitli), admin ve ücretsiz kullanıcı | 22 PASS / 0 FAIL ve 24 PASS / 0 FAIL |
+| Pagecheck (eski master ile yeni build, 6 sayfa) | **6/6 PASS**; premium-dashboard ilk üç denemede Chrome oturumu düştüğü için sonuç vermedi (önceki turlarda da görülen sorun), dördüncüde PASS |
+| İmzalı tarayıcı kontrolü (`asama-arayuz/webcheck/run.mjs`), build | admin/premium ve kullanıcı/ücretsiz: 24 PASS / 0 FAIL |
+| İmzalı tarayıcı kontrolü, **canlı site** | kullanıcı/ücretsiz ve admin/premium: 24 PASS / 0 FAIL |
+
+İmzalı tarayıcı kontrolü neyi kapsar: dashboard'dan navbar tıklamasıyla SPA geçişi, doğrudan adres ve yenileme (service worker aktif), hesap oluşturma, etiketler, kota göstergesi, diğer 5 sayfanın açılması, sayfa hatası ve 4xx/5xx toplama. Sahte oturum ve sahte veritabanıyla çalışır (supabase.co istekleri iptal edilir), yani canlıya hiçbir şey yazmaz. Sınırı: gerçek Supabase girişini ve gerçek RLS'i denemez; RLS tarafı yukarıdaki veritabanı denemesiyle ayrıca doğrulandı.
+
+## 5. Yayın
+
+- Commit'ler: `180addc` (kod), `b6aeb8a` (master merge), rapor commit'i bunların ardından.
+- `wawejournal.com`: asset'ler eşleşiyor, `/backtest` ve doğrudan `/backtest.html` 200.
+
+## 6. Karşılaşılan sorunlar ve çözümleri
+
+1. **Eski `verify.sql` migration'dan sonra 9 FAIL verdi** (bölüm 3). Test güncellendi, tekrar 23/0.
+2. **`local-run.mjs` önceden kırıktı:** migration'lar `supabase/migrations/`'e taşındığından eski yolu okuyordu. Düzeltildi.
+3. **Harness fixture hatası:** ilk 08 senaryolarında silinmiş bir kullanıcıyı ve geçersiz defteri kullandım; fixture düzeltildi.
+4. **Duman testinde `timeout` komutu yok (macOS)** ve ilk çalıştırmalar boş döndü; betik düzeltildi.
+5. **Pagecheck'te Chrome oturumu düştü** (bkz. bölüm 4).
+6. **SPA yerel sunucuda 404:** `python -m http.server` `/backtest` yolunu çözmüyor; imzalı kontrol için `.html` ekleyen küçük bir sunucu kullanıldı (Cloudflare zaten çözüyor).
+7. **Dil anahtarı:** kontrol aracında ilk başta yanlış anahtar (`ww_lang`) yazmıştım, diller uygulanmıyordu; `ww_language` ile düzeltildi, ekran görüntüleri tr/en/de alındı.
+
+## 7. Sizin kontrol etmeniz gerekenler
+
+- [ ] Admin olmayan gerçek bir hesapla (ücretsiz plan) canlı `/backtest`: navbar linki görünüyor mu, hesap açılıyor mu, 2. hesapta yükseltme penceresi geliyor mu.
+- [ ] Admin hesabınızda eski test hesabı (EURUSD, 4 işlem) duruyor ama artık deftere bağlı değil; isterseniz silin. Defterinizdeki 4 kopya işlem silindi.
+- [ ] Safari ve Firefox (yalnızca Chrome ile denendi).
+- [ ] Hesap formunda "cTrader verisi" seçeneğinin pasif ve "Yakında" etiketli görünmesi, tr/en/de metinler.
+- [ ] Yeni yedeği saklayıp saklamayacağınız: `~/WaweJournal-Backups/20261021T062240Z/`.
+
+## 8. Kalan işler
+
+- **cTrader turu:** Migration 09 (`source_*` sütunları, `data_source` CHECK'ine `'ctrader'`, bağlama kuralı CHECK'i `ctrader` hesaplar için), `ctrader-candles` Edge Function (ortak/kilitli token yenileme), IndexedDB önbelleği, hesap formunda gerçek cTrader seçimi ve defter bağlama. Plan: `FAZ-E-VERI.md`. Sentetik hesaplar için `bt-sync` şu an ölü kod; cTrader turunda kullanılacak (kod ve testleri duruyor).
+- Migration 06 kararı, premium dashboard dil hatası, `npm audit`, canlıdaki eski `get-candles` fonksiyonu, backend deploy bekleyenleri (önceki listede).
+- `docs/backtest-v2/` içinde Migration 06 açığının tarifi var; repo herkese açılacaksa kaldırılmalı (KURALLAR §4).
+
+---
+
+# Önceki turlar
+
 # Backtest v2: son rapor (2026-10-19, kesintisiz bitirme turu)
 
 Branch `backtest-v2`, commitler `5e8a53a` (kod) ve `9c8cf7d` (rapor), ikisi de push edildi. master'a dokunulmadı. **Canlıya hiçbir şey yazılmadı, canlı veritabanına bağlanılmadı.**
