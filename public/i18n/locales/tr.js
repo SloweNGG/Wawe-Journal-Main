@@ -1750,7 +1750,7 @@ export default {
   "backtest.ctrader.err_rate": "Çok sık istek gönderildi. Birkaç saniye sonra tekrar dene.",
   "backtest.ctrader.err_session": "Oturumun sona ermiş. Sayfayı yenileyip tekrar giriş yap.",
   "backtest.ctrader.err_network": "Bağlantı hatası. İnternetini kontrol edip tekrar dene.",
-  "backtest.ctrader.err_upstream": "cTrader verisi şu an alınamıyor. Birazdan tekrar dene.",
+  "backtest.ctrader.err_upstream": "Sunucu hatası: cTrader verisi şu an alınamıyor. Birazdan tekrar dene.",
   "backtest.err.ctrader_not_linked": "Bu cTrader hesabı bağlı değil. Önce hesabını bağla.",
   "backtest.source.locked": "Veri kaynağı hesap oluşturulduktan sonra değiştirilemez.",
   "backtest.source.ctrader": "cTrader verisi",

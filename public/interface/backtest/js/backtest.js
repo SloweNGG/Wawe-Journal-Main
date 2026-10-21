@@ -474,7 +474,7 @@
     if (c === 'SESSION') return _t('backtest.ctrader.err_session', 'Oturumun sona ermiş. Sayfayı yenileyip tekrar giriş yap.');
     if (c === 'NETWORK') return _t('backtest.ctrader.err_network', 'Bağlantı hatası. İnternetini kontrol edip tekrar dene.');
     if (c === 'NOT_FOUND') return _t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.');
-    return _t('backtest.ctrader.err_upstream', 'cTrader verisi şu an alınamıyor. Birazdan tekrar dene.');
+    return _t('backtest.ctrader.err_upstream', 'Sunucu hatası: cTrader verisi şu an alınamıyor. Birazdan tekrar dene.');
   }
   function ctSelection() {
     var ctid = Number($('bt-f-ct-account').value), symSel = $('bt-f-ct-symbol'), symbolId = Number(symSel.value), acc = null;
@@ -488,7 +488,15 @@
       var o = document.createElement('option'); o.value = String(a.ctid_trader_account_id); o.textContent = ctAccountLabel(a); sel.appendChild(o);
     });
   }
-  function ctDepth(text, isError) { var d = $('bt-f-ct-depth'); d.textContent = text; d.classList.toggle('bt-error', !!isError); }
+  // `reconnect`: a lost/expired cTrader token needs a new connection, so the message carries a link to the connection page.
+  function ctDepth(text, isError, reconnect) {
+    var d = $('bt-f-ct-depth'); d.textContent = text; d.classList.toggle('bt-error', !!isError);
+    if (reconnect) {
+      var a = document.createElement('a'); a.className = 'bt-link'; a.href = '/journals';
+      a.textContent = _t('backtest.ctrader.reconnect', 'cTrader bağlantısını yenile');
+      d.appendChild(document.createTextNode(' ')); d.appendChild(a);
+    }
+  }
   // Measures how far back the chosen account has data for the chosen symbol and sets the start-date limits. `reloadSymbols`: the
   // account or the page symbol changed, so the broker symbol candidates are rebuilt first.
   async function refreshCtPanel(reloadSymbols) {
@@ -529,9 +537,10 @@
       if (reloadSymbols !== 'keepStart') $('bt-f-start').value = toLocalInput(defaultStart(cov));
     } catch (e) {
       if (seq !== ctSeq || !PAGE.alive) return;
+      var lost = !!(e && (e.code === 'AUTH' || e.needsReconnect));
       if (e && e.code === 'NOT_FOUND') ctDepth(_t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.'), true);
-      else ctDepth(ctErrorText(e), true);
-      if (e && (e.code === 'AUTH' || e.needsReconnect)) { L.ct = null; }
+      else ctDepth(ctErrorText(e), true, lost);
+      if (lost) { L.ct = null; }
     }
   }
   function onSourceChange() {

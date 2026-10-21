@@ -15,7 +15,9 @@ import * as X from '../supabase/functions/_shared/ctrader.ts';
 const MIN = 60000;
 
 // Sahte cTrader: M1 barları bir fonksiyonla üretilir; 14 000 tavanı ve hasMore, gerçek davranış gibi (aralığın SONUNDAN N bar)
-function fakeServer({ firstMin, lastMin, holes = () => false, cap = 14000 }) {
+// quirks (gerçek sunucuda gözlenen / olası davranışlar; eski `count: 1` + ay sonu bitişi sorgusu canlıda "veri yok" üretti):
+//   futureEmpty: bitişi "şimdi"den ilerideyse boş yanıt; slotCount: `count` bar değil ZAMAN YUVASI sayar (bitişten geriye count dakika)
+function fakeServer({ firstMin, lastMin, holes = () => false, cap = 14000, now = Infinity, futureEmpty = false, slotCount = false }) {
   const calls = [];
   const bar = (t) => ({ utcTimestampInMinutes: t, low: 100000 + (t % 50), deltaOpen: 2, deltaHigh: 7, deltaClose: 5 });
   return {
@@ -23,7 +25,9 @@ function fakeServer({ firstMin, lastMin, holes = () => false, cap = 14000 }) {
     async sendRequest(type, p) {
       calls.push({ type, p });
       assert.equal(type, 2137);
-      const a = Math.ceil(p.fromTimestamp / MIN), b = Math.floor(p.toTimestamp / MIN);
+      let a = Math.ceil(p.fromTimestamp / MIN), b = Math.floor(p.toTimestamp / MIN);
+      if (futureEmpty && p.toTimestamp > now) return { payload: { trendbar: [], hasMore: false } };
+      if (slotCount && p.count && p.period === 1) a = Math.max(a, b - p.count + 1);
       const step = p.period === 13 ? 7 * 1440 : 1;
       const all = [];
       for (let t = Math.max(a, firstMin); t <= Math.min(b, lastMin); t += step) if (!holes(t)) all.push(t);
@@ -99,6 +103,38 @@ describe('findFirstMinuteBar', () => {
     const srv = fakeServer({ firstMin: first, lastMin: now / MIN });
     const r = await X.findFirstMinuteBar(srv, 1, 1, now);
     assert.equal(r.firstMonth, '2020-01'); assert.equal(r.firstTMin, first);
+  });
+  it('canlıda görülen sunucu tuhaflıklarında da ilk ayı bulur (gelecek bitişte boş yanıt, count = zaman yuvası)', async () => {
+    const first = Date.UTC(2013, 4, 14, 3, 7) / MIN;
+    for (const quirks of [{ futureEmpty: true }, { slotCount: true }, { futureEmpty: true, slotCount: true }]) {
+      const srv = fakeServer({ firstMin: first, lastMin: now / MIN, holes: (t) => { const d = new Date(t * MIN).getUTCDay(); return d === 6 || d === 0; }, now, ...quirks });
+      const r = await X.findFirstMinuteBar(srv, 1, 41, now);
+      assert.ok(r, JSON.stringify(quirks));
+      assert.equal(r.firstMonth, '2013-05'); assert.equal(r.firstTMin, first);
+    }
+  });
+  it('istekler count taşımaz ve hiçbirinin bitişi "şimdi"den ileride değildir', async () => {
+    const srv = fakeServer({ firstMin: Date.UTC(2020, 0, 1) / MIN, lastMin: now / MIN });
+    await X.findFirstMinuteBar(srv, 1, 1, now);
+    assert.ok(srv.calls.length > 3);
+    assert.ok(srv.calls.every((c) => c.p.count === undefined), 'count yok');
+    assert.ok(srv.calls.every((c) => c.p.toTimestamp <= now), 'bitiş şimdiden ileride değil');
+  });
+  it('dünün ayında bar yoksa bir önceki aya bakar (ay başı)', async () => {
+    const early = Date.UTC(2026, 10, 1, 8);                              // 1 Kasım 08:00: dün Ekim'in son günü
+    const srv = fakeServer({ firstMin: Date.UTC(2020, 0, 1) / MIN, lastMin: Date.UTC(2026, 9, 30, 21) / MIN });
+    const r = await X.findFirstMinuteBar(srv, 1, 1, early);
+    assert.equal(r.firstMonth, '2020-01');
+  });
+  it('W1 ipucu yanlışsa (daha geç bir ay) ipucuna güvenmez', async () => {
+    const first = Date.UTC(2015, 5, 3) / MIN;
+    const srv = fakeServer({ firstMin: first, lastMin: now / MIN });
+    const orig = srv.sendRequest.bind(srv);
+    srv.sendRequest = async (t, p) => (p.period === 13
+      ? { payload: { trendbar: [{ utcTimestampInMinutes: Date.UTC(2022, 0, 3) / MIN, low: 1, deltaOpen: 0, deltaHigh: 0, deltaClose: 0 }], hasMore: false } }
+      : orig(t, p));
+    const r = await X.findFirstMinuteBar(srv, 1, 1, now);
+    assert.equal(r.firstMonth, '2015-06');
   });
   it('veri yoksa null', async () => {
     const srv = fakeServer({ firstMin: 10, lastMin: 5 });   // hiç bar yok

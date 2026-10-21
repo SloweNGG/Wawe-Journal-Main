@@ -1803,7 +1803,7 @@ export default {
   "backtest.ctrader.err_rate": "Too many requests. Try again in a few seconds.",
   "backtest.ctrader.err_session": "Your session has ended. Reload the page and sign in again.",
   "backtest.ctrader.err_network": "Connection error. Check your internet and try again.",
-  "backtest.ctrader.err_upstream": "cTrader data is unavailable right now. Try again shortly.",
+  "backtest.ctrader.err_upstream": "Server error: cTrader data is unavailable right now. Try again shortly.",
   "backtest.err.ctrader_not_linked": "This cTrader account is not connected. Connect it first.",
   "backtest.source.locked": "The data source cannot be changed after the account is created.",
   "backtest.source.ctrader": "cTrader data",

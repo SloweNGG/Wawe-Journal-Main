@@ -1770,7 +1770,7 @@ export default {
   "backtest.ctrader.err_rate": "Zu viele Anfragen. Versuchen Sie es in einigen Sekunden erneut.",
   "backtest.ctrader.err_session": "Ihre Sitzung ist abgelaufen. Laden Sie die Seite neu und melden Sie sich erneut an.",
   "backtest.ctrader.err_network": "Verbindungsfehler. Prüfen Sie Ihr Internet und versuchen Sie es erneut.",
-  "backtest.ctrader.err_upstream": "cTrader-Daten sind gerade nicht verfügbar. Versuchen Sie es gleich erneut.",
+  "backtest.ctrader.err_upstream": "Serverfehler: cTrader-Daten sind gerade nicht verfügbar. Versuchen Sie es gleich erneut.",
   "backtest.err.ctrader_not_linked": "Dieses cTrader-Konto ist nicht verbunden. Verbinden Sie es zuerst.",
   "backtest.source.locked": "Die Datenquelle kann nach dem Erstellen des Kontos nicht mehr geändert werden.",
   "backtest.source.ctrader": "cTrader-Daten",

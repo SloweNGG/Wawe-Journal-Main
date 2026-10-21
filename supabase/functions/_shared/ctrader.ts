@@ -315,13 +315,17 @@ export async function fetchMinuteBars(client: { sendRequest: (t: number, p: any,
   return [...byT.values()].sort((x, y) => x.tMin - y.tMin);
 }
 
-// Aralıkta en az bir M1 barı var mı? (count: 1 -> yalnızca aralığın son barı gelir, yanıt küçüktür)
+// Aralıkta en az bir M1 barı var mı? Ölçümde (probe) çalışan istek biçimi kullanılır: `count` YOK ve bitiş "şimdi"ye kısılır.
+// (Eski sürüm `count: 1` ve ay sonu (gelecek) bitişi gönderiyordu; gerçek sunucu bu biçimde boş yanıt verdi ve arayüz
+// "bu hesapta mum verisi yok" gösterdi.) Aralık tavanı aşarsa sunucu en SON 14 000 barı döner: varlık kontrolü için yeter.
 export async function hasMinuteBars(client: { sendRequest: (t: number, p: any, ms?: number) => Promise<any> },
-  ctid: number, symbolId: number, fromMs: number, toMs: number): Promise<boolean> {
+  ctid: number, symbolId: number, fromMs: number, toMs: number, nowMs: number = Date.now()): Promise<boolean> {
+  const to = Math.min(toMs, nowMs);
+  if (!(fromMs < to)) return false;
   const res = await client.sendRequest(2137, {
-    ctidTraderAccountId: ctid, fromTimestamp: fromMs, toTimestamp: toMs, period: PERIOD_M1, symbolId, count: 1,
+    ctidTraderAccountId: ctid, fromTimestamp: fromMs, toTimestamp: to, period: PERIOD_M1, symbolId,
   });
-  return (res?.payload?.trendbar ?? []).length > 0;
+  return (res?.payload?.trendbar ?? []).some((tb: any) => decodeTrendbar(tb) !== null);
 }
 
 export function monthKeyOf(ms: number): string {
@@ -357,10 +361,17 @@ export async function findFirstMinuteBar(client: { sendRequest: (t: number, p: a
 
   const probeMonth = async (key: string) => {
     probes++;
-    return hasMinuteBars(client, ctid, symbolId, monthStartMs(key), monthStartMs(addMonthsKey(key, 1)) - 1);
+    return hasMinuteBars(client, ctid, symbolId, monthStartMs(key), monthStartMs(addMonthsKey(key, 1)) - 1, nowMs);
   };
-  if (!(await probeMonth(lastMonth))) return null;     // M1 verisi yok ya da güncel değil
-  let lo = loKey, hi = lastMonth;                       // hi: veri var (invariant)
+  // veri üst sınırı: dünün ayı; boşsa bir önceki ay (ay başında dün henüz yeni ay olabilir). İkisi de boşsa gerçekten veri yok.
+  let hi = lastMonth;
+  if (!(await probeMonth(hi))) {
+    hi = addMonthsKey(lastMonth, -1);
+    if (hi < loKey || !(await probeMonth(hi))) return null;
+  }
+  let lo = loKey;                                       // hi: veri var (invariant)
+  // W1 ipucu yalnızca ipucudur: alt sınırın hemen öncesinde M1 verisi varsa ipucu yanlıştır, 2000'den ara
+  if (lo > monthKeyOf(EARLIEST) && lo < hi && (await probeMonth(addMonthsKey(lo, -1)))) lo = monthKeyOf(EARLIEST);
   while (lo < hi) {
     // ay sayısı farkı
     const span = (+hi.slice(0, 4) - +lo.slice(0, 4)) * 12 + (+hi.slice(5, 7) - +lo.slice(5, 7));
@@ -370,7 +381,9 @@ export async function findFirstMinuteBar(client: { sendRequest: (t: number, p: a
   // ilk bar: ayın ilk bar içeren 9 günlük parçası
   const from = monthStartMs(hi), monthEnd = monthStartMs(addMonthsKey(hi, 1));
   for (let a = from; a < monthEnd; a += CHUNK_MS) {
-    const bars = await fetchMinuteBars(client, ctid, symbolId, a, Math.min(a + CHUNK_MS, monthEnd - 1));
+    const end = Math.min(a + CHUNK_MS, monthEnd - 1, nowMs);
+    if (!(a < end)) break;
+    const bars = await fetchMinuteBars(client, ctid, symbolId, a, end);
     probes++;
     if (bars.length) return { firstMonth: monthKeyOf(bars[0].tMin * 60000), firstTMin: bars[0].tMin, probes };
   }

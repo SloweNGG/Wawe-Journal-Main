@@ -170,7 +170,9 @@ serve(async (req: Request) => {
     const c = classifyCtraderError(e);
     if (c.code === 'AUTH') return fail('AUTH', c.message, 401, cors, { needs_reconnect: true });
     if (c.code === 'RATE') return fail('RATE', c.message, 429, cors);
-    console.error('ctrader-candles error:', c.code);   // ham hata yazılmaz (token içerebilir)
+    // ham hata yazılmaz (token içerebilir); yalnızca işlem, sınıf ve cTrader'ın sabit hata kodu (BÜYÜK_HARF enum)
+    const ec = /^[A-Z0-9_]{1,60}$/.test(String(e?.errorCode ?? '')) ? String(e.errorCode) : '-';
+    console.error('ctrader-candles error:', action, c.code, ec);
     return fail('UPSTREAM', 'Mum verisi alınamadı. Birazdan tekrar deneyin.', 502, cors);
   } finally {
     client.close();

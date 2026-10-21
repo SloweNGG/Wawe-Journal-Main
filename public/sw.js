@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v16'; // Backtest v2 Faz 2 (cTrader verisi): bt-ctrader.js, yeni i18n anahtarları; bir önceki aşamadan +1
+const CACHE_VERSION = 'wawe-v17'; // cTrader veri derinliği düzeltmesi + hata ayrımı (bağlantı linki); bir önceki aşamadan +1
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
