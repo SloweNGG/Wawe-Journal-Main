@@ -1,5 +1,6 @@
 // Supabase-backend scenario (practice mode): SupabaseStore over the FakeDb (tests/helpers/fake-supabase.js, Migration 08 emulated).
 // Every signed-in user may use the page; accounts are synthetic, never linked to a journal, and nothing is mirrored into trades.
+// (ct=none, the default: no cTrader account connected. The cTrader scenario is driver-ct.js.)
 (async function () {
   var out = [], role = new URLSearchParams(location.search).get('role') || 'admin';
   function ok(name, cond, extra) { out.push((cond ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? ' :: ' + extra : '')); }
@@ -22,7 +23,8 @@
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
     ok('source: synthetic selected and enabled', $('bt-f-source-synthetic').checked && !$('bt-f-source-synthetic').disabled);
-    ok('source: cTrader visible but disabled, with the "soon" chip', vis('bt-f-source-wrap') && $('bt-f-source-ctrader').disabled && !$('bt-f-source-ctrader').checked && /Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent));
+    ok('source: cTrader visible but disabled while no cTrader account is connected, with the connect link', vis('bt-f-source-wrap') && $('bt-f-source-ctrader').disabled && !$('bt-f-source-ctrader').checked && vis('bt-f-source-connect') && $('bt-f-source-connect-link').getAttribute('href') === '/journals' && /bağla|connect|verbinden/i.test($('bt-f-source-connect-link').textContent) && !/Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent), $('bt-f-source-connect-link').textContent);
+    ok('no cTrader Edge Function call for a synthetic account', window.__ctCalls.length === 0);
     ok('journal field hidden for a synthetic account', !vis('bt-f-journal-wrap'));
     ok('source note (locked) hidden on create', !vis('bt-f-source-note'));
     setv('bt-f-name', 'Practice'); setv('bt-f-commission', '7.00');

@@ -92,17 +92,29 @@ function toWire(row, columns) {
   return out;
 }
 
+const SOURCE_COLS = ['source_ctid_account', 'source_broker_name', 'source_is_live', 'source_symbol_id', 'source_symbol_name', 'source_digits'];
+
 export class FakeDb {
   // migration08: emulate Migration 08 (backtest_accounts.data_source: synthetic only, no journal link, immutable).
   // Off by default so the sync-library tests can keep linking accounts, which stays valid for 'ctrader' accounts.
-  constructor({ userId, journals, migration08 = false }) {
+  // migration09: emulate Migration 09 on top of 08 (data_source 'synthetic'|'ctrader', source_* columns and their CHECK, immutable source,
+  // cTrader account must be connected by the same user = `ctrader.accounts`). `ctrader` also feeds the get_ctrader_status RPC.
+  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null }) {
     this.userId = userId;
-    this.migration08 = migration08;
+    this.migration08 = migration08 || migration09;
+    this.migration09 = migration09;
+    this.ctrader = ctrader || { token_status: 'none', accounts: [] };
     this.journals = journals.map((j) => ({ ...j }));   // [{id, user_id, is_default}]
     this.tables = { trades: [], backtest_accounts: [], backtest_account_trades: [] };
     this.seq = 0;
     this.failNext = [];   // [{ table, op, error, status }]
     this.client = recordingClient((call) => this.handle(call));
+    this.client.rpc = async (name) => {                  // only get_ctrader_status (token-free status, as in the live function)
+      this.client.calls.push({ table: 'rpc:' + name, op: 'rpc', filters: [] });
+      if (name !== 'get_ctrader_status') return { data: null, error: { message: 'unknown function ' + name } };
+      const c = this.ctrader, has = c.token_status && c.token_status !== 'none';
+      return { data: { is_connected: !!has, token_status: has ? c.token_status : 'none', is_expired: false, accounts: has ? c.accounts : [] }, error: null };
+    };
   }
   nextId() { this.seq += 1; return '00000000-0000-4000-8000-' + String(this.seq).padStart(12, '0'); }
   match(row, call) {
@@ -176,6 +188,10 @@ export class FakeDb {
         row.journal_id = row.journal_id ?? null;
         if (this.migration08) {
           row.data_source = row.data_source ?? 'synthetic';
+          if (this.migration09) for (const c of SOURCE_COLS) row[c] = row[c] ?? null;
+          if (this.migration09 && row.data_source === 'ctrader' && !this.ctrader.accounts.some((a) => Number(a.ctid_trader_account_id) === Number(row.source_ctid_account))) {
+            return { data: null, error: { code: 'P0001', message: 'CTRADER_ACCOUNT_NOT_LINKED' }, status: 400 };   // trg_backtest_accounts_ctrader_owner
+          }
           const bad = this.migration08Violation(row);
           if (bad) return { data: null, error: { code: '23514', message: 'new row for relation "backtest_accounts" violates check constraint "' + bad + '"' }, status: 400 };
         }
@@ -191,6 +207,14 @@ export class FakeDb {
     return { data: call.returning ? staged.map((r) => toWire(r, call.columns)) : null, error: null, status: 201 };
   }
   migration08Violation(row) {
+    if (this.migration09) {
+      if (row.data_source !== 'synthetic' && row.data_source !== 'ctrader') return 'chk_backtest_accounts_data_source';
+      const any = SOURCE_COLS.some((c) => row[c] != null);
+      if (row.data_source === 'synthetic' && any) return 'chk_backtest_accounts_source_fields';
+      if (row.data_source === 'ctrader' && !(Number(row.source_ctid_account) > 0 && Number(row.source_symbol_id) > 0 && String(row.source_symbol_name || '').trim())) return 'chk_backtest_accounts_source_fields';
+      if (row.journal_id && row.data_source !== 'ctrader') return 'chk_backtest_accounts_journal_needs_ctrader';
+      return null;
+    }
     if (row.data_source !== 'synthetic') return 'chk_backtest_accounts_data_source';
     if (row.journal_id) return 'chk_backtest_accounts_journal_needs_ctrader';
     return null;
@@ -203,6 +227,7 @@ export class FakeDb {
       for (const r of hits) {
         const next = { ...r, ...call.payload };
         if (next.data_source !== r.data_source) return { data: null, error: { code: 'P0001', message: 'BACKTEST_ACCOUNT_IMMUTABLE:data_source' }, status: 400 };
+        if (this.migration09 && SOURCE_COLS.some((c) => (next[c] ?? null) !== (r[c] ?? null))) return { data: null, error: { code: 'P0001', message: 'BACKTEST_ACCOUNT_IMMUTABLE:source' }, status: 400 };
         const bad = this.migration08Violation(next);
         if (bad) return { data: null, error: { code: '23514', message: 'new row for relation "backtest_accounts" violates check constraint "' + bad + '"' }, status: 400 };
       }

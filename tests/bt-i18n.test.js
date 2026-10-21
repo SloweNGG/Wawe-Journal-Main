@@ -39,13 +39,19 @@ describe('bt-i18n', () => {
     const page = fs.readFileSync('src/pages/backtest.astro', 'utf8');
     const ctl = fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
     assert.match(page, /id="bt-f-source-synthetic"[^>]*checked/);
-    assert.match(page, /id="bt-f-source-ctrader"[^>]*disabled/, 'cTrader option is visible but disabled');
-    assert.match(page, /backtest\.source\.soon/);
+    assert.match(page, /id="bt-f-source-ctrader"[^>]*disabled/, 'cTrader option starts disabled; the controller enables it for users with a connected cTrader account');
+    assert.ok(!/backtest\.source\.soon/.test(page + ctl), 'no "coming soon" chip any more');
+    assert.match(page, /id="bt-f-source-connect-link"[^>]*href="\/journals"/, 'not connected: link to connect the cTrader account');
+    assert.match(page, /id="bt-f-ct-account"/); assert.match(page, /id="bt-f-ct-symbol"/); assert.match(page, /id="bt-f-ct-depth"/);
+    assert.match(page, /id="bt-ctrader-needed"/, 'connection lost banner');
+    assert.match(page, /bt-ctrader\.js/, 'cTrader source script is loaded');
+    assert.match(ctl, /setSourceLabel\(acc\)/, 'chart source label is set per account');
+    assert.match(ctl, /'cTrader · '/, 'label format: cTrader · broker name');
     assert.match(page, /id="bt-source-label"[^>]*data-i18n="backtest\.source\.synthetic"/, 'chart label');
     assert.match(ctl, /sourceBadge\(a\)/, 'account card label');
     assert.ok(!/bt-view-soon|'soon'|backtest\.gate\./.test(page + ctl), 'no "soon" gate for non-admins');
     assert.ok(!/storage|saved in this browser|bu tarayıcıda saklan/i.test(loc.tr['backtest.list_banner'] + loc.en['backtest.list_banner'] + loc.de['backtest.list_banner']), 'old browser-storage warning gone');
-    for (const l of LANGS) for (const k of ['backtest.source.synthetic', 'backtest.source.option_synthetic', 'backtest.source.option_ctrader', 'backtest.source.soon', 'backtest.list_banner']) {
+    for (const l of LANGS) for (const k of ['backtest.source.synthetic', 'backtest.source.option_synthetic', 'backtest.source.option_ctrader', 'backtest.list_banner']) {
       assert.ok(/./.test(loc[l][k]), `${l} ${k}`);
     }
     assert.match(loc.tr['backtest.source.synthetic'], /gerçek piyasa verisi değildir/);

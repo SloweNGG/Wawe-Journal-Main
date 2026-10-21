@@ -205,6 +205,8 @@ const outputs = [
   ['07.down.sql', 'supabase/rollbacks/202610180007_candles_open_to_members.down.sql'],
   ['08.sql', 'supabase/migrations/202610180008_backtest_data_source.sql'],
   ['08.down.sql', 'supabase/rollbacks/202610180008_backtest_data_source.down.sql'],
+  ['09.sql', 'supabase/migrations/202610180009_backtest_ctrader_source.sql'],
+  ['09.down.sql', 'supabase/rollbacks/202610180009_backtest_ctrader_source.down.sql'],
   ['verify.sql', 'supabase/tests/backtest_v2_verify.sql'],
 ];
 

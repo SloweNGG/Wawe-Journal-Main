@@ -1,4 +1,116 @@
-# Backtest v2, Faz 1: Pratik modu (2026-10-21, son rapor)
+# Backtest v2, Faz 2: cTrader verisi (2026-10-21, son rapor)
+
+**Durum: yarım, tek engel Edge Function yayını.** Kod, testler ve **Migration 09 (canlıda, yedekli)** hazır; verilen Supabase token'ında Edge Function izni olmadığı için `ctrader-candles` ve `ctrader-sync` **yayınlanamadı**, bu yüzden **master'a merge edilmedi ve canlı site değişmedi**. Hiçbir şey geri alınmak zorunda değil. Kod `backtest-v2` branch'inde (`8df5b0f` + bu rapor), push edildi.
+
+## 1. Kısa özet
+
+1. **Kaldığın yer:** önceki oturumdan Faz 2 işi yoktu (git temiz, Migration 09 canlıda yok, `ctrader-candles` 404). Sıfırdan başlandı.
+2. **Migration 09 canlıda çalıştı** (yedek: `~/WaweJournal-Backups/20261021T090532Z/`), doğrulandı; eski arayüz yeni şemayla uyumlu (yalnızca ekleme).
+3. **Edge Function yazıldı ve test edildi ama yayınlanamadı:** token `edge_functions_read` ve `edge_functions_write` izinlerinden yoksun (CLI ve doğrudan Management API 403). Başka kimlik bilgisi aranmadı.
+4. **Arayüz bitti** (cTrader seçeneği, hesap + sembol seçimi, veri derinliği ölçümü, kaynak etiketi, tarayıcı önbelleği, bağlantı koptu mesajları, defter bağlantısı, tr/en/de) ve test edildi.
+5. **Testler:** birim 362/0 (önce 312), gerçek tarayıcı duman testi 5 senaryoda 0 FAIL (yeni cTrader senaryosu 39 PASS), pagecheck 6/6, build tamam, `deno check` hatasız.
+6. **Sizden gereken tek şey:** Edge Function izinli bir token (bölüm 6). Sonra iki deploy komutu, merge ve canlı kontrol: bölüm 6.
+
+## 2. Madde madde
+
+**1. Migration 09 (rollback'iyle): ✅ yazıldı, yerelde denendi, canlıda uygulandı**
+- Dosyalar: [202610180009_backtest_ctrader_source.sql](../../supabase/migrations/202610180009_backtest_ctrader_source.sql), [rollback](sql/supabase/rollbacks/202610180009_backtest_ctrader_source.down.sql), şablonlar `sql/verify/src/09.sql` ve `09.down.sql` (`build.mjs` listesine eklendi).
+- İçerik:
+  - `data_source` artık `synthetic` ya da `ctrader`.
+  - Yeni sütunlar: `source_ctid_account` (broker hesap numarası), `source_broker_name`, `source_is_live`, `source_symbol_id`, `source_symbol_name`, `source_digits`. Yabancı anahtar yok (cTrader bağlantısı kesilince satırlar silinip yeni id ile geliyor).
+  - `chk_backtest_accounts_source_fields`: `ctrader` ise hesap numarası, sembol id ve sembol adı dolu; `synthetic` ise hepsi NULL.
+  - **Defter kuralı aynen kaldı:** `chk_backtest_accounts_journal_needs_ctrader` dokunulmadı; sentetik hesap deftere bağlanamaz, cTrader verili hesap bağlanabilir.
+  - `data_source` ve tüm `source_*` sütunları oluşturulduktan sonra değişmez (`BACKTEST_ACCOUNT_IMMUTABLE:source`).
+  - Ek koruma: cTrader hesabı yalnızca **o broker hesabını kendi bağlamış** kullanıcı açabilir (`trg_backtest_accounts_ctrader_owner`, `CTRADER_ACCOUNT_NOT_LINKED`).
+  - `ctrader_tokens.refreshing_since`: ortak ve kilitli token yenilemenin "kira" sütunu.
+- Rollback: `ctrader` hesap varsa DATA LOSS ile durur; yoksa 08 durumuna döner (CHECK yalnız synthetic, 08'in koruma fonksiyonu, `source_*` ve `refreshing_since` gider). Yerelde iki kez çalıştırıldı, tekrar ileri uygulandı.
+- Yerel deneme: canlı şemanın `pg_dump --schema-only` kopyası, gerçek PostgreSQL 17. Denenenler: iki kez çalıştırma, sentetik ve cTrader satırlar, eksik/geçersiz alanlar, başka kullanıcının broker hesabı, değiştirilemezlik, `journal_needs_ctrader`, rollback (DATA LOSS dahil), yeniden ileri. Tam SQL harness'i (PGlite/`harness.mjs`) **çalıştırılmadı** (PGlite paketi yok); 09 için harness testi eklenmedi, yerine bu yerel deneme yapıldı.
+- Canlı doğrulama: 6 `source_*` sütunu, `refreshing_since`, üç CHECK, iki trigger, fonksiyonlar yalnızca postgres/service_role'e açık, 1 hesap hâlâ sentetik ve bağlı değil, `ctrader_tokens` 1 satır `active` ve kira boş.
+
+**2. Edge Function `ctrader-candles`: ✅ yazıldı, test edildi; ❌ yayınlanmadı**
+- [supabase/functions/ctrader-candles/index.ts](../../supabase/functions/ctrader-candles/index.ts), ortak kod [supabase/functions/_shared/ctrader.ts](../../supabase/functions/_shared/ctrader.ts).
+- İşlemler: `symbols`, `symbolInfo`, `coverage`, `month`.
+- **Sahiplik:** kullanıcı JWT'si zorunlu. Token yalnızca çağıranın `ctrader_tokens` satırından. Hesap `ctrader_accounts`'ta (user_id + ctid) çağıranla eşleşmeli. `month` yalnızca `backtestAccountId` ile çalışır: broker hesabı ve sembol veritabanındaki satırdan türetilir, tarayıcının gönderdiği ctid/sembol yok sayılır. Başka kullanıcının hesabı → 404.
+- **Veri:** 9 günlük parçalar, 14 000 bar tavanı için `hasMore` ile geriye sayfalama (tavan 3000'e indirilmiş sahte sunucuyla da bar kaybı yok), en çok 5 istek/sn (250 ms aralık). Sunucuda mum saklanmaz, yanıt `Cache-Control: private`. Bugün ve gelecek dışarıda (yalnızca tam günler).
+- **Kota:** kullanıcı başına dakikada 40 istek ve aynı anda 2 iş. Bu sayaç isolate belleğindedir (en iyi çaba); ölçeklenince birden çok isolate'ta ayrı sayılır.
+- **Ortak, kilitli token yenileme:** `_shared/ctrader.ts` `getAccessToken` + `supabaseTokenStore`. Kira tek `UPDATE ... WHERE refreshing_since IS NULL OR eski` ile atomik alınır; kira alan, kilit altında satırı yeniden okur (beklerken başkası yenilemiş olabilir). Testle kanıtlandı: iki eşzamanlı çağıran → **refresh token yalnızca bir kez** kullanılır. Kesin hata (geçersiz refresh token) → `needs_reconnect`; geçici hata (5xx, ağ) → bağlantı kopmuş **sayılmaz**, token hâlâ geçerliyse onunla devam. Yeni refresh token yazılamazsa 4 kez dener. `ctrader-sync` artık bu ortak koddan geçiyor (eski yenileme bloğu kaldırıldı).
+- Testler: `tests/ctrader-shared.test.js` (20 test, Node tür soyma ile aynı dosyayı çalıştırır). `deno check` iki fonksiyonda hatasız.
+- **Gerçek cTrader'a karşı denenmedi.** Fonksiyon yayınlanamadı ve sahibin canlı token'ını kendi başıma kullanmadım (yenileme kaydı bozabilirdi). WebSocket istemcisi `ctrader-sync`'tekinin kopyası; istek türleri (2137 trendbar, 2114/2116 semboller) Spotware belgesine ve geçen turdaki ölçüme göre. Riskli tek yer: hafta bazlı (W1) "ilk veri" ipucu; hata verirse yok sayılıp 2000'den aranır.
+
+**3. Arayüz: ✅**
+- Yeni hesap formunda "cTrader verisi": cTrader bağlı (token `active`, hesap var) kullanıcıda **etkin**; bağlı değilse pasif ve "cTrader hesabını bağla" bağlantısı (`/journals`), token `needs_reconnect` ise "cTrader bağlantısını yenile". "Yakında" etiketi kalktı.
+- cTrader seçilince: cTrader hesabı seçimi, **broker sembolü** seçimi (uygulamanın sembolüne göre aday liste: EURUSD → EURUSD, EURUSDm, EURUSD.r; XAUUSD → XAUUSD, GOLD; BTC/USDT → BTCUSDT, BTCUSD), ve hesap açılmadan önce **veri derinliği ölçülüp gösterilir** ("Bu hesapta bu sembolün verisi: 05 Şub 2024 – 21 Eki 2026"), başlangıç tarihi bu aralıkla sınırlanır.
+- Hesap açılırken `symbolInfo` ile sembol doğrulanır, `source_*` alanları yazılır (broker hesabı, broker adı, canlı/demo, sembol kimliği ve adı, digits).
+- Etiket: grafikte ve hesap kartında "**cTrader · broker adı · sembol**"; sentetik hesapta eski uyarı aynen.
+- Önbellek: tam aylar tarayıcıda IndexedDB'de kullanıcı kimliğiyle; sayfa açılınca **başka kullanıcıya ait kayıtlar silinir**; içinde bulunulan ay kalıcı saklanmaz; ilk veri ayı 30 gün hatırlanır. IndexedDB yoksa bellek.
+- Bağlantı koptuysa: hesap açılırken liste ekranında kırmızı bildirim ("cTrader bağlantısı gerekli… işlemlerin ve defter kopyaların korunur") ve yenileme bağlantısı; replay sırasında kopmuşsa veri bandında aynı mesaj ve "cTrader bağlantısını yenile" düğmesi. Ham hata metni kullanıcıya gösterilmez; hız sınırı, oturum, ağ ve sunucu hataları için ayrı mesajlar.
+- Defter bağlantısı: cTrader verili hesapta açık (oluştururken ve ayarlarda); kapanan işlem deftere kopyalanır (`bt-sync`). Sentetikte hâlâ gizli.
+- Dil: 20 yeni anahtar tr, en, de; `i18n.js` ve `sw.js` (v16) sürümleri artırıldı.
+- Yeni dosya: `public/interface/backtest/js/bt-ctrader.js`. Değişenler: `backtest.js`, `bt-engine.js`, `bt-store.js`, `backtest.astro`, `backtest.css`.
+
+**4. Testler: ✅**
+
+| Test | Sonuç |
+|---|---|
+| `node --test` | 362 geçti, 0 kaldı (önce 312): +20 Edge ortak kod, +25 `bt-ctrader`, store/engine/i18n güncellemeleri |
+| Duman testi (headless Chrome) | yerel 0 FAIL, Supabase+FakeDb sentetik 23 PASS, **yeni cTrader senaryosu 39 PASS**, `ct=none` ve `ct=reconnect` 5/5 |
+| pagecheck | 6/6 (eski ve yeni build aynı sayılar, JS hatası yok) |
+| `npm run build` | tamam |
+| `deno check` (iki fonksiyon) | hatasız |
+| Canlı SQL | Migration 09 sonrası doğrulama sorguları (bölüm 3) |
+
+cTrader duman senaryosu (sahte `ctrader-candles` yanıtıyla, FakeDb'de Migration 08+09 taklidi): seçenek etkin, broker sembol adayları, derinlik ölçümü ve tarih sınırı, sembol değişince adayların yenilenmesi, `symbolInfo` sonra kayıt, kaydın `source_*` alanları, mumların **yalnızca backtest hesap kimliğiyle** istenmesi (tarayıcı ctid/sembol göndermiyor), IndexedDB'ye kullanıcı kimliğiyle yazılması, etiket, kapanan işlemin deftere kopyalanması, ayarlarda salt okunur özet ve kilit, DB'nin kaynağı değiştirmeyi ve başkasının broker hesabını reddetmesi, replay'de ve açılışta bağlantı koptu mesajları, işlemlerin ve kopyaların yerinde kalması.
+
+**5. Yayın, merge: ❌ yapılmadı (koşul sağlanmadı)**
+- Edge Function'lar yayınlanmadan merge etseydik canlıda cTrader seçeneği bağlı kullanıcılara açılır ama sunucu tarafı olmazdı. Master `ca0abaa`'da, canlı site Faz 1'deki gibi.
+- Canlıda yapılan tek değişiklik Migration 09 (ekleyici, eski arayüzle uyumlu). Gerekirse geri almak: `09.down.sql` (hesap yoksa).
+
+## 3. Canlı veritabanı
+
+- **Yedek:** `~/WaweJournal-Backups/20261021T090532Z/` (repo ve OneDrive dışı): `full.dump` (679 KB, 1055 nesne), `schema.sql`, `roles.sql`, `preflight.txt`, `SHA256SUMS`. Satır sayıları: backtest_accounts 1, ctrader_tokens 1, ctrader_accounts 2, trades 97. Hata dosyaları boş.
+- **Yazılan tek şey:** Migration 09 (COMMIT). Veri değişmedi (yeni sütunlar NULL, hesap sentetik).
+- **Edge Function / secret / Storage:** hiçbiri yazılmadı. Token yalnızca `functions list` ve `deploy` denemesinde kullanıldı (ikisi 403); token hiçbir dosyaya, loga, commit'e ya da bu rapora yazılmadı (yalnızca `~/.wawe-supabase.env`, izinler 600).
+
+## 4. Sınırlar ve dürüst notlar
+
+- **Gerçek cTrader'a ve yayınlanmış fonksiyona karşı uçtan uca deneme yok** (bölüm 2.2). Sizin deneyeceğiniz adımlar bölüm 5.
+- **Sembol eşlemesi:** sayfa yalnızca kendi 6 sembolünü bilir (EURUSD, GBPUSD, USDJPY, XAUUSD, BTC/USDT, ETH/USDT). Broker sembolü ad benzerliğiyle eşlenir (sonek en çok 4 karakter: `.r`, `m`, `.pro`). Kontrat büyüklüğü, pip ve piyasa saatleri **broker'dan değil uygulamanın ayarından** gelir; broker'ın `digits` değeri uygulamanınkinden büyükse (ör. 3 haneli altın) fiyatlar uygulamanın hanesine yuvarlanır, kaydedilen `source_digits` yalnızca bilgi içindir.
+- Bir ayın **tamamı boşsa** (broker boşluğu) o ay `NOT_FOUND` olur ve replay "Mum verisi yüklenemedi" bandı gösterir; Spotware demo'da 2020'den beri böyle ay yok.
+- Mumlar **bid** fiyatlarıdır; spread `spread_pips` ile simüle edilir (broker'ın gerçek spread'i değil).
+- Lisans/koşul riski (Spotware ve broker sözleşmeleri) hukuken doğrulanmadı (FAZ-E-VERI.md risk 1).
+- `ctrader-sync` yayınlandığında repodaki **güncel sürüm** gider; bu sürüm 15 Ekim'den beri yayınlanmamış bakiye ve senkron doğruluğu düzeltmelerini de içerir (`d4083d8`). Bunlar için gereken migration'lar (0005 bakiye sütunları, 0003 imleç tetikleyicisi) canlıda var; 0004 (geliştirici test modu) `ctrader-sync` için gerekli değil.
+- Supabase token'ı bu oturumun isteminde düz metin olarak geçti: yeni token üretince eskisini Supabase panelinden silin.
+
+## 5. Sizin kendi cTrader hesabınızla deneyeceğiniz adımlar (yayından sonra)
+
+1. **/backtest → Yeni hesap:** "cTrader verisi" seçeneği etkin mi? (Bağlı değilse "cTrader hesabını bağla" bağlantısı `/journals`'a gider.)
+2. cTrader'ı seçin: kendi hesabınız listede görünmeli. Sembol olarak **EUR/USD**: broker adayları (`EURUSD`, varsa `EURUSD.r`) çıkmalı. Altın için **XAU/USD**: `XAUUSD` ya da `GOLD`.
+3. **"Bu hesapta bu sembolün verisi: … – …"** satırı: gerçek brokerınızda verinin **ne kadar geriye gittiğini** (varsayım değil, ilk ölçüm) kaydedin; başlangıç tarihini en eski güne yakın seçip deneyin.
+4. Hesabı açın: grafikte "**cTrader · <broker adı> · <sembol>**" yazmalı. Oynatın, ay geçişinde "Sonraki ay yükleniyor" süresini not edin.
+5. **Önbellek:** sayfayı yenileyip aynı hesabı açın; aynı aylar neredeyse anında gelmeli (DevTools → Application → IndexedDB → `ww_bt_ctrader`). Çıkış yapıp başka bir hesapla girerseniz bu kayıtlar silinmeli.
+6. **Defter:** hesabı bir deftere bağlayın, bir işlem kapatın: işlem deftere "Backtest" olarak gelmeli, dashboard ve istatistikler değişmemeli. Bağlantıyı kaldırınca kopya silinmeli.
+7. **Bağlantı koptu:** `/journals`'tan cTrader bağlantısını kesin, backtest hesabını açın: "cTrader bağlantısı gerekli" bildirimi gelmeli, işlemleriniz ve defter kopyalarınız yerinde kalmalı. Yeniden bağlayınca devam etmeli.
+8. **Token yarışı:** `/trades`'te "cTrader'dan Senkronla"ya basarken başka bir ayı açın; ikisi de çalışmalı ve bağlantınız kopmamalı. Kontrol: `select status, refreshing_since, expires_at from ctrader_tokens;` (status `active`, `refreshing_since` boş).
+9. Farklı bir sembol ya da gerçek broker adı sonekleri (örn. `XAUUSD.pro`) çıkmazsa, adını ve broker'ınızı bana bildirin: eşleme listesi `bt-ctrader.js` `ALIASES`.
+
+## 6. Yayını tamamlamak için (sizden)
+
+Edge Function için **Supabase → Account → Access Tokens**'tan yeni bir token üretin (kapsam kısıtlamayın ya da "Edge Functions: read/write" verin) ve `~/.wawe-supabase.env` içindeki `SUPABASE_ACCESS_TOKEN` değerini değiştirin. Sonra yeni oturumda "kaldığın yerden devam et" demeniz yeterli: sırayla
+
+```
+set -a; source ~/.wawe-supabase.env; set +a
+npx supabase functions deploy ctrader-candles --project-ref odasapyhtdopbnlfhwde --use-api
+npx supabase functions deploy ctrader-sync   --project-ref odasapyhtdopbnlfhwde --use-api   # ortak kilitli yenileme için ikisi de yayınlanmalı
+git checkout master && git merge --no-ff backtest-v2 && git push        # sonra Cloudflare yayını
+PG_MODULE_DIR=<puppeteer-core üst klasörü> node docs/backtest-v2/asama-arayuz/webcheck/run.mjs https://wawejournal.com user free
+```
+
+İki fonksiyon **birlikte** yayınlanmalı: eski `ctrader-sync` kilitsiz yeniler ve `ctrader-candles` ile yarışabilir.
+Sorun olursa: `git revert -m 1 <merge>` (eski arayüz Migration 09 ile uyumlu), fonksiyonları eski haline almak için `ctrader-candles` silinir ya da kullanılmaz; gerekirse `09.down.sql` (hiç cTrader hesabı yoksa).
+
+---
+
+# (Önceki tur) Backtest v2, Faz 1: Pratik modu (2026-10-21, son rapor)
 
 Kod: `180addc` (backtest-v2), master'a `--no-ff` merge `b6aeb8a`, ikisi de push edildi, Cloudflare Pages canlıda yeni dosyaları sunuyor. Migration 08 canlıda çalıştı (yedek alındı). **Revert gerekmedi.** Önceki turların raporu bu dosyanın altındadır.
 

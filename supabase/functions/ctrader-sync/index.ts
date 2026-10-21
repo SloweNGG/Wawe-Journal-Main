@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getAccessToken, supabaseTokenStore } from '../_shared/ctrader.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -82,7 +83,7 @@ const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 class CTraderWsClient {
   private ws: WebSocket | null = null;
-  private pending = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void; timer: number }>();
+  private pending = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void; timer: ReturnType<typeof setTimeout> }>();
 
   async connect(host: string, port = 5036, timeoutMs = 8000): Promise<void> {
     const url = `wss://${host}:${port}`;
@@ -254,52 +255,28 @@ serve(async (req: Request) => {
     last_error: null,
   }).eq('id', accountRow.id);
 
-  // 5) Token'ı Al ve Gerekiyorsa Yenile
-  const { data: tokenRow, error: tokErr } = await admin
-    .from('ctrader_tokens')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (tokErr || !tokenRow) {
-    await admin.from('ctrader_accounts').update({ syncing_since: null }).eq('id', accountRow.id);
-    return jsonRes({ error: 'cTrader bağlantı token\'ı bulunamadı. Lütfen hesabı bağlayın.', needs_reconnect: true }, 400, cors);
-  }
-
-  let accessToken = tokenRow.access_token;
-  const expiresAtMs = new Date(tokenRow.expires_at).getTime();
-  const oneDayMs = 24 * 60 * 60 * 1000;
-
-  // 1 günden az kaldıysa token'ı yenile
-  if (expiresAtMs - Date.now() < oneDayMs) {
-    const refreshUrl = `https://openapi.ctrader.com/apps/token?grant_type=refresh_token&refresh_token=${encodeURIComponent(tokenRow.refresh_token)}&client_id=${encodeURIComponent(CTRADER_CLIENT_ID)}&client_secret=${encodeURIComponent(CTRADER_CLIENT_SECRET)}`;
-    try {
-      const refRes = await fetch(refreshUrl, { method: 'GET' });
-      const refData = await refRes.json();
-      if (!refRes.ok || refData.errorCode || !refData.accessToken) {
-        throw new Error(refData.description || 'Token yenileme başarısız');
-      }
-      accessToken = refData.accessToken;
-      const newRefreshToken = refData.refreshToken || tokenRow.refresh_token;
-      const newExpiresAt = new Date(Date.now() + parseInt(refData.expiresIn || '2592000', 10) * 1000).toISOString();
-
-      await admin.from('ctrader_tokens').update({
-        access_token: accessToken,
-        refresh_token: newRefreshToken,
-        expires_at: newExpiresAt,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      }).eq('user_id', user.id);
-    } catch (refErr: any) {
-      console.error('Token refresh error:', refErr);
-      await admin.from('ctrader_tokens').update({ status: 'needs_reconnect' }).eq('user_id', user.id);
+  // 5) Token'ı al ve gerekiyorsa yenile. Yenileme ctrader-candles ile ORTAK ve KİLİTLİ (_shared/ctrader.ts):
+  // iki fonksiyon aynı refresh token'ı aynı anda kullanıp birbirinin bağlantısını bozamaz.
+  const tk = await getAccessToken(supabaseTokenStore(admin), user.id, {
+    clientId: CTRADER_CLIENT_ID, clientSecret: CTRADER_CLIENT_SECRET,
+  });
+  if (!tk.ok) {
+    if (tk.code === 'NO_TOKEN') {
+      await admin.from('ctrader_accounts').update({ syncing_since: null }).eq('id', accountRow.id);
+      return jsonRes({ error: 'cTrader bağlantı token\'ı bulunamadı. Lütfen hesabı bağlayın.', needs_reconnect: true }, 400, cors);
+    }
+    if (tk.code === 'NEEDS_RECONNECT') {
       await admin.from('ctrader_accounts').update({
         syncing_since: null,
         last_error: 'Oturum süresi doldu. Lütfen cTrader hesabınızı yeniden bağlayın.',
       }).eq('id', accountRow.id);
       return jsonRes({ error: 'cTrader yetkilendirme süresi doldu. Lütfen yeniden bağlayın.', needs_reconnect: true }, 401, cors);
     }
+    // geçici yenileme hatası: bağlantıyı kopmuş sayma
+    await admin.from('ctrader_accounts').update({ syncing_since: null }).eq('id', accountRow.id);
+    return jsonRes({ error: 'cTrader token yenilenemedi, birazdan tekrar deneyin.' }, 502, cors);
   }
+  const accessToken = tk.accessToken;
 
   // 6) WebSocket Bağlantısı ve Senkron Döngüsü
   const wsHost = accountRow.is_live ? 'live.ctraderapi.com' : 'demo.ctraderapi.com';

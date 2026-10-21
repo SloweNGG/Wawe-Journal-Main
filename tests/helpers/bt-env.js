@@ -7,7 +7,7 @@ import path from 'node:path';
 const DIR = path.resolve('public/interface/backtest/js');
 const FILES = {
   symbols: 'bt-symbols.js', candles: 'bt-candles.js', engine: 'bt-engine.js', synthetic: 'bt-synthetic.js',
-  data: 'bt-data.js', store: 'bt-store.js'
+  data: 'bt-data.js', store: 'bt-store.js', ctrader: 'bt-ctrader.js'
 };
 
 export function loadBt(names, extra = {}) {
@@ -21,7 +21,7 @@ export function loadBt(names, extra = {}) {
   for (const n of names) vm.runInContext(fs.readFileSync(path.join(DIR, FILES[n]), 'utf8'), win, { filename: FILES[n] });
   return {
     win, S: win.WwBtSymbols, C: win.WwBtCandles, E: win.WwBtEngine, Y: win.WwBtSynthetic,
-    D: win.WwBtData, Store: win.WwBtStore, Gate: win.WwBtGate
+    D: win.WwBtData, Store: win.WwBtStore, Gate: win.WwBtGate, X: win.WwBtCTrader
   };
 }
 

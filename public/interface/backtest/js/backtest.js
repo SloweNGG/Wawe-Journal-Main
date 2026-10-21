@@ -1,5 +1,6 @@
 // Backtest v2: page controller. Open to every signed-in user (practice mode), synthetic candles generated in the browser,
-// accounts and trades in the user's account (WwBtStore, Supabase backend). data_source is 'synthetic' for now ('ctrader' is a later round).
+// accounts and trades in the user's account (WwBtStore, Supabase backend). data_source is 'synthetic' or 'ctrader' (Phase 2: the
+// candles of a cTrader account come from the user's own broker through the ctrader-candles Edge Function, bt-ctrader.js).
 // Re-runs on every SPA visit (data-page-script): top-level state lives in this IIFE and is torn down in PAGE.onLeave.
 // Spec: docs/backtest-v2/asama-arayuz/stage4.md + stage4-ek.md.
 (function () {
@@ -26,7 +27,8 @@
   var SYNC = null;                              // window.WwBtSync, only with the supabase backend
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
   var syncToastShown = false;
-  var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [] };
+  var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
+    srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null };
   var R = null;
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
@@ -60,6 +62,10 @@
   }
   function fmtDateTime(sec) {
     return dtf('dt', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(sec * 1000));
+  }
+  // with the year: the depth of a broker account can reach back many years
+  function fmtDay(sec) {
+    return dtf('day', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(sec * 1000));
   }
   function fmtShort(sec) {
     return dtf('sh', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(sec * 1000));
@@ -111,7 +117,7 @@
   function start() {
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
-      window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData &&
+      window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
       window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
@@ -136,10 +142,17 @@
     try { var pl = await window.getUserPlanSilent(); L.plan = pl && pl.plan === 'premium' ? 'premium' : 'free'; } catch (e) { L.plan = 'free'; }
     if (!PAGE.alive) return;
     L.src = window.WwBtData.createSyntheticSource({ seed: 1 });
+    // cTrader candles: Edge Function client + per-user IndexedDB cache (entries of other user ids are removed)
+    L.ctApi = window.WwBtCTrader.createApi({
+      url: window.SUPABASE_URL, anonKey: window.SUPABASE_ANON_KEY,
+      getToken: function () { return window.sb.auth.getSession().then(function (r) { return r && r.data && r.data.session ? r.data.session.access_token : null; }); }
+    });
+    L.ctCache = window.WwBtCTrader.createCache({ userId: user.id });
+    L.ctCache.purgeOthers().catch(function () { /* best effort */ });
     L.store = BACKEND === 'supabase'
       ? window.WwBtStore.createSupabaseStore({ sb: window.sb, userId: user.id })
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT; } });
-    // Journals are only needed to link cTrader-data accounts; synthetic accounts cannot be linked (database CHECK), so skip the request.
+    // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = await loadList();
     if (!PAGE.alive || !ok) return;
@@ -163,6 +176,7 @@
         tr.forEach(function (t) { if (t.exit_time) { s.closed++; s.realizedCents += E.toCents(t.pnl) || 0; } else s.open++; });
         L.summaries[L.accounts[i].id] = s;
       }
+      if (L.accounts.some(function (a) { return a.dataSource === 'ctrader'; })) await ensureJournals();
       if (!PAGE.alive) return false;
       syncOnList();
       return true;
@@ -199,6 +213,34 @@
     for (var i = 0; i < L.journals.length; i++) if (L.journals[i].id === id) return L.journals[i].name;
     return '';
   }
+  async function ensureJournals() {
+    if (!SYNC || L.journalsLoaded) return;
+    try { L.journals = (await window.journal.listJournals()) || []; L.journalsLoaded = true; } catch (e) { L.journals = []; }
+  }
+  // The candle source of an account: the shared synthetic generator, or the account's own cTrader source (its broker account and symbol)
+  function srcFor(acc) {
+    if (acc.dataSource !== 'ctrader' || !acc.source) return L.src;
+    if (!L.srcs[acc.id]) {
+      L.srcs[acc.id] = window.WwBtCTrader.createCTraderSource({
+        api: L.ctApi, cache: L.ctCache, sym: S.get(acc.symbol),
+        account: { id: acc.id, ctid: acc.source.ctid, symbolId: acc.source.symbolId, symbolName: acc.source.symbolName, brokerName: acc.source.brokerName, isLive: acc.source.isLive }
+      });
+    }
+    return L.srcs[acc.id];
+  }
+  function sourceText(a) {
+    if (a.dataSource !== 'ctrader') return _t('backtest.source.synthetic', 'Sentetik veri, gerçek piyasa verisi değildir');
+    return 'cTrader · ' + ((a.source && a.source.brokerName) || 'broker') + (a.source && a.source.symbolName ? ' · ' + a.source.symbolName : '');
+  }
+  // chart label: the synthetic text keeps its data-i18n (language switch); the cTrader one is plain text (broker name from the account)
+  function setSourceLabel(a) {
+    var e = $('bt-source-label'); if (!e) return;
+    e.setAttribute('data-source', a.dataSource || 'synthetic');
+    if (a.dataSource === 'ctrader') { e.removeAttribute('data-i18n'); e.textContent = sourceText(a); }
+    else { e.setAttribute('data-i18n', 'backtest.source.synthetic'); e.textContent = sourceText(a); }
+  }
+  // list banner "cTrader connection required" (the account's candles cannot be loaded; nothing else is lost)
+  function showCtNeeded(on) { show($('bt-ctrader-needed'), !!on); }
   function showList() {
     if (R) closeReplayState();
     setPageState('list'); renderList();
@@ -239,7 +281,7 @@
   }
   // "Synthetic data, not real market data" label of the card (the chart has the same text in backtest.astro)
   function sourceBadge(a) {
-    var b = el('p', 'bt-source', a.dataSource === 'ctrader' ? _t('backtest.source.ctrader', 'cTrader verisi') : _t('backtest.source.synthetic', 'Sentetik veri, gerçek piyasa verisi değildir'));
+    var b = el('p', 'bt-source', sourceText(a));
     b.setAttribute('data-source', a.dataSource || 'synthetic');
     return b;
   }
@@ -339,6 +381,7 @@
   }
   async function startHint() {
     var s = S.get($('bt-f-symbol').value); if (!s) return;
+    if (selectedSource() === 'ctrader') return refreshCtPanel(true);      // cTrader: coverage of the chosen broker account and symbol
     try {
       var cov = await L.src.coverage(s.id); if (!PAGE.alive) return;
       L.cov[s.id] = cov;
@@ -348,7 +391,11 @@
   }
   function defaultStart(cov) {
     var key = C.addMonths(C.monthKey(cov.lastT), -3);
-    return Math.floor(window.WwTime.zonedToUtcMs(+key.slice(0, 4), +key.slice(5, 7), 1, 0, 0, 0, tz()) / 1000);
+    return Math.max(cov.firstT, Math.floor(window.WwTime.zonedToUtcMs(+key.slice(0, 4), +key.slice(5, 7), 1, 0, 0, 0, tz()) / 1000));
+  }
+  // coverage the account form is working with: the synthetic feed of the symbol, or the measured cTrader depth
+  function formCov() {
+    return selectedSource() === 'ctrader' ? (L.ctForm && L.ctForm.cov) : L.cov[$('bt-f-symbol').value];
   }
 
   async function openAccountModal(mode, acc, opener) {
@@ -374,8 +421,15 @@
       var s0 = S.get($('bt-f-symbol').value); $('bt-f-spread').value = E.hundredthsToStr(Math.round(s0.defaultSpreadPips * 100));
     }
     var source = edit ? acc.dataSource : 'synthetic';
-    fillSourceField(source, edit);
+    var ctState = edit ? 'ready' : (await loadCtStatus()).state;
+    if (!PAGE.alive) return;
+    L.ctForm = null;
+    fillSourceField(source, edit, ctState);
+    if (source === 'ctrader') await ensureJournals();
     fillJournalSelect(edit ? acc.journalId : '', source);
+    show($('bt-f-ct-wrap'), false);
+    var sum = $('bt-f-ct-summary'); show(sum, edit && source === 'ctrader');
+    if (edit && source === 'ctrader' && acc.source) sum.textContent = _t('backtest.ctrader.summary', 'Veri kaynağı: cTrader · {broker} · {symbol} (hesap {account})', { broker: acc.source.brokerName || 'broker', symbol: acc.source.symbolName, account: acc.source.ctid });
     $('bt-f-symbol').disabled = edit; $('bt-f-tf').disabled = edit;
     $('bt-f-balance').disabled = edit && hasTrades;
     $('bt-f-spread').disabled = edit && hasOpen; $('bt-f-commission').disabled = edit && hasOpen;
@@ -387,19 +441,121 @@
     spreadHint();
     if (!edit) {
       await startHint();
-      var cov = L.cov[$('bt-f-symbol').value];
+      var cov = formCov();
       if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov));
     }
     $('bt-f-name').focus();
   }
 
-  // Data source choice: "synthetic" is the only enabled option; "cTrader" is shown as "coming soon". Fixed once the account exists.
-  function fillSourceField(source, locked) {
+  // ---------------------------------------------------------------- cTrader data source (Phase 2)
+  var ctSeq = 0;                                   // the newest form refresh wins; older answers are dropped
+  function ctAccountLabel(a) {
+    return (a.broker_name || 'cTrader') + ' · ' + (a.trader_login || a.ctid_trader_account_id) + ' · ' + (a.is_live ? _t('backtest.ctrader.live', 'Gerçek') : _t('backtest.ctrader.demo', 'Demo'));
+  }
+  // 'ready' (connected, has accounts) | 'reconnect' (the token needs a new connection) | 'none' (not connected)
+  async function loadCtStatus() {
+    var now = Date.now();
+    if (L.ct && now - L.ct.at < 30000) return L.ct;
+    var st = { at: now, state: 'none', accounts: [] };
+    try {
+      var res = await Promise.race([window.sb.rpc('get_ctrader_status'), new Promise(function (r) { setTimeout(function () { r(null); }, 4000); })]);
+      var d = res && !res.error ? res.data : null;
+      if (!d) st.at = 0;                          // timeout or error: do not remember it
+      else if (d.is_connected && d.token_status !== 'active') st.state = 'reconnect';
+      else if (d.is_connected && Array.isArray(d.accounts) && d.accounts.length) { st.accounts = d.accounts; st.state = 'ready'; }
+    } catch (e) { st.at = 0; }
+    L.ct = st;
+    return st;
+  }
+  function ctErrorText(e) {
+    var c = e && e.code;
+    if (c === 'AUTH') return _t('backtest.ctrader.err_auth', 'cTrader bağlantısı gerekli: bağlantı koptu ya da süresi doldu. Hesabını yeniden bağla.');
+    if (c === 'RATE') return _t('backtest.ctrader.err_rate', 'Çok sık istek gönderildi. Birkaç saniye sonra tekrar dene.');
+    if (c === 'SESSION') return _t('backtest.ctrader.err_session', 'Oturumun sona ermiş. Sayfayı yenileyip tekrar giriş yap.');
+    if (c === 'NETWORK') return _t('backtest.ctrader.err_network', 'Bağlantı hatası. İnternetini kontrol edip tekrar dene.');
+    if (c === 'NOT_FOUND') return _t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.');
+    return _t('backtest.ctrader.err_upstream', 'cTrader verisi şu an alınamıyor. Birazdan tekrar dene.');
+  }
+  function ctSelection() {
+    var ctid = Number($('bt-f-ct-account').value), symSel = $('bt-f-ct-symbol'), symbolId = Number(symSel.value), acc = null;
+    if (L.ct) L.ct.accounts.forEach(function (a) { if (Number(a.ctid_trader_account_id) === ctid) acc = a; });
+    var opt = symSel.selectedIndex >= 0 ? symSel.options[symSel.selectedIndex] : null;
+    return { ctid: ctid, acc: acc, symbolId: symbolId, symbolName: opt ? opt.textContent : '', ok: !!(acc && symbolId > 0 && opt) };
+  }
+  function fillCtAccounts() {
+    var sel = $('bt-f-ct-account'); sel.textContent = '';
+    ((L.ct && L.ct.accounts) || []).forEach(function (a) {
+      var o = document.createElement('option'); o.value = String(a.ctid_trader_account_id); o.textContent = ctAccountLabel(a); sel.appendChild(o);
+    });
+  }
+  function ctDepth(text, isError) { var d = $('bt-f-ct-depth'); d.textContent = text; d.classList.toggle('bt-error', !!isError); }
+  // Measures how far back the chosen account has data for the chosen symbol and sets the start-date limits. `reloadSymbols`: the
+  // account or the page symbol changed, so the broker symbol candidates are rebuilt first.
+  async function refreshCtPanel(reloadSymbols) {
+    var seq = ++ctSeq, sym = S.get($('bt-f-symbol').value);
+    L.ctForm = { cov: null, seq: seq };
+    show($('bt-f-ct-wrap'), true);
+    var symSel = $('bt-f-ct-symbol');
+    $('bt-f-start').min = ''; $('bt-f-start').max = '';
+    $('bt-f-start-hint').textContent = '';
+    try {
+      var ctid = Number($('bt-f-ct-account').value);
+      if (!ctid) { ctDepth(_t('backtest.ctrader.pick_account', 'Bir cTrader hesabı seç.'), true); return; }
+      if (reloadSymbols !== false) {
+        symSel.textContent = '';
+        ctDepth(_t('backtest.ctrader.measuring', 'Veri derinliği ölçülüyor…'));
+        var list = L.brokerSyms[ctid];
+        if (!list) { list = await L.ctApi.symbols(ctid); L.brokerSyms[ctid] = list; }
+        if (seq !== ctSeq || !PAGE.alive) return;
+        var cands = window.WwBtCTrader.matchBrokerSymbols(sym.id, list);
+        cands.forEach(function (c) { var o = document.createElement('option'); o.value = String(c.id); o.textContent = c.name; symSel.appendChild(o); });
+        if (!cands.length) { ctDepth(_t('backtest.ctrader.no_symbol', 'Bu cTrader hesabında {symbol} için eşleşen sembol bulunamadı.', { symbol: sym.name }), true); return; }
+      }
+      var symbolId = Number(symSel.value);
+      if (!symbolId) { ctDepth(_t('backtest.ctrader.pick_symbol', 'Bir broker sembolü seç ve veri derinliğinin ölçülmesini bekle.'), true); return; }
+      ctDepth(_t('backtest.ctrader.measuring', 'Veri derinliği ölçülüyor…'));
+      var key = 'ct|' + ctid + '|' + symbolId, cov = L.cov[key];
+      if (!cov) {
+        var j = await L.ctApi.coverage(ctid, symbolId);
+        if (seq !== ctSeq || !PAGE.alive) return;
+        if (!j.firstT) { ctDepth(_t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.'), true); return; }
+        cov = window.WwBtCTrader.buildCoverage(j.firstT, Date.now(), sym.id); L.cov[key] = cov;
+      }
+      if (seq !== ctSeq || !PAGE.alive) return;
+      L.ctForm.cov = cov;
+      $('bt-f-start').min = toLocalInput(cov.firstT); $('bt-f-start').max = toLocalInput(cov.lastT);
+      ctDepth(_t('backtest.ctrader.depth', 'Bu hesapta bu sembolün verisi: {from} – {to}', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }));
+      $('bt-f-start-hint').textContent = _t('backtest.field.start_hint', 'Saat dilimin: {tz}. Veri: {from} – {to}', { tz: tz(), from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) });
+      if (reloadSymbols !== 'keepStart') $('bt-f-start').value = toLocalInput(defaultStart(cov));
+    } catch (e) {
+      if (seq !== ctSeq || !PAGE.alive) return;
+      if (e && e.code === 'NOT_FOUND') ctDepth(_t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.'), true);
+      else ctDepth(ctErrorText(e), true);
+      if (e && (e.code === 'AUTH' || e.needsReconnect)) { L.ct = null; }
+    }
+  }
+  function onSourceChange() {
+    var src = selectedSource();
+    (async function () {
+      if (src === 'ctrader') { await ensureJournals(); fillCtAccounts(); }
+      fillJournalSelect('', src);
+      if (src === 'ctrader') { await refreshCtPanel(true); }
+      else { show($('bt-f-ct-wrap'), false); L.ctForm = null; ctSeq++; await startHint(); var cov = formCov(); if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov)); }
+    })();
+  }
+
+  // Data source choice. Synthetic is always possible; cTrader needs a connected cTrader account (ctState 'ready'), otherwise it is
+  // disabled with a link that leads to the connection. Fixed once the account exists.
+  function fillSourceField(source, locked, ctState) {
     $('bt-f-source-synthetic').checked = source !== 'ctrader';
     $('bt-f-source-ctrader').checked = source === 'ctrader';
     $('bt-f-source-synthetic').disabled = !!locked;
-    $('bt-f-source-ctrader').disabled = true;
+    $('bt-f-source-ctrader').disabled = !!locked || ctState !== 'ready';
     show($('bt-f-source-note'), !!locked);
+    var needLink = !locked && ctState !== 'ready';
+    show($('bt-f-source-connect'), needLink);
+    if (needLink) $('bt-f-source-connect-link').textContent = ctState === 'reconnect'
+      ? _t('backtest.ctrader.reconnect', 'cTrader bağlantısını yenile') : _t('backtest.ctrader.connect', 'cTrader hesabını bağla');
   }
   function selectedSource() { return $('bt-f-source-ctrader').checked ? 'ctrader' : 'synthetic'; }
   function formError(msg) { var e = $('bt-account-error'); e.textContent = msg; e.hidden = false; }
@@ -407,6 +563,7 @@
     var m = String((e && e.message) || '');
     if (m.indexOf('BACKTEST_LIMIT_EXCEEDED') >= 0) return L.plan === 'premium'
       ? _t('backtest.quota.premium_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PREMIUM_LIMIT }) : _t('backtest.quota.free_reached', 'Ücretsiz planda 1 backtest hesabı açabilirsin.');
+    if (m.indexOf('CTRADER_ACCOUNT_NOT_LINKED') >= 0) return _t('backtest.err.ctrader_not_linked', 'Bu cTrader hesabı bağlı değil. Önce hesabını bağla.');
     if (m.indexOf('INVALID_JOURNAL') >= 0) return _t('backtest.err.invalid_journal', 'Seçilen hesap geçersiz.');
     if (m.indexOf('BACKTEST_OPEN_POSITIONS') >= 0) return _t('backtest.err.open_positions_settings', 'Açık pozisyon varken spread ve komisyon değiştirilemez.');
     if (m.indexOf('BACKTEST_REPLAY_BACKWARD') >= 0) return _t('backtest.err.goto_backward', 'İşlem yapılmış hesapta geri gidilemez; önce hesabı sıfırlayın.');
@@ -446,13 +603,22 @@
         toast(_t('backtest.toast.saved', 'Kaydedildi'), 'success');
         return upd;
       }
-      var cov = L.cov[sym.id] || await L.src.coverage(sym.id);
+      var source = selectedSource(), ctSel = null, ctSource = null, cov;
+      if (source === 'ctrader') {
+        ctSel = ctSelection();
+        if (!ctSel.acc) return formError(_t('backtest.ctrader.pick_account', 'Bir cTrader hesabı seç.'));
+        if (!ctSel.ok || !(L.ctForm && L.ctForm.cov)) return formError(_t('backtest.ctrader.pick_symbol', 'Bir broker sembolü seç ve veri derinliğinin ölçülmesini bekle.'));
+        cov = L.ctForm.cov;
+        var info;
+        try { info = await L.ctApi.symbolInfo(ctSel.ctid, ctSel.symbolId); } catch (e0) { return formError(ctErrorText(e0)); }
+        ctSource = { ctid: ctSel.ctid, brokerName: ctSel.acc.broker_name || '', isLive: !!ctSel.acc.is_live, symbolId: ctSel.symbolId, symbolName: ctSel.symbolName, digits: isFinite(info.digits) ? info.digits : null };
+      } else cov = L.cov[sym.id] || await L.src.coverage(sym.id);
       var startSec = fromLocalInput($('bt-f-start').value);
       if (startSec === null) return formError(_t('backtest.err.start_required', 'Başlangıç tarihi seç.'));
-      if (startSec < cov.firstT || startSec > cov.lastT) return formError(_t('backtest.err.start_range', 'Başlangıç {from} ile {to} arasında olmalı.', { from: fmtShort(cov.firstT), to: fmtShort(cov.lastT) }));
+      if (startSec < cov.firstT || startSec > cov.lastT) return formError(_t('backtest.err.start_range', 'Başlangıç {from} ile {to} arasında olmalı.', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }));
       var no = S.nextOpen(startSec * 1000, sym.id);
       if (no === null || no / 1000 > cov.lastT) return formError(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'));
-      var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: SYNC && selectedSource() === 'ctrader' ? ($('bt-f-journal').value || null) : null, dataSource: selectedSource(),
+      var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: SYNC && source === 'ctrader' ? ($('bt-f-journal').value || null) : null, dataSource: source, source: ctSource,
         name: name, symbol: sym.id, tf: $('bt-f-tf').value,
         startCents: bal.value, spreadH: sp.value, cplCents: cm.value, replaySec: no / 1000 + 60 });
       var created = await L.store.createAccount(row);
@@ -521,6 +687,7 @@
     opts = opts || {};
     var acc = findAccount(id); if (!acc) return showList();
     var sym = S.get(acc.symbol); if (!sym) return showList();
+    showCtNeeded(false);
     try {
       var rows = await L.store.listTrades(id);
       if (!PAGE.alive) return;
@@ -532,15 +699,15 @@
         cov: null, win: null, winMonths: [], k: 0, candles: [], builder: null, eng: eng, token: 0, playing: false, rafId: 0, lastTs: null,
         accum: 0, buffering: false, busy: false, loadingNext: null, nextState: null, dirtyFrom: -1, closedQueue: [], gap: null,
         chart: null, series: null, askLine: null, lines: {}, dirty: false, lastSavedReplaySec: acc.replaySec, lastSaveAt: 0, lastLiveAt: 0,
-        src: L.src, abort: new AbortController() };
+        src: srcFor(acc), abort: new AbortController() };
       setPageState('replay');
       $('bt-view-replay').setAttribute('data-replay', 'loading');
-      setText('bt-acc-name', acc.name); setText('bt-acc-symbol', sym.name);
+      setText('bt-acc-name', acc.name); setText('bt-acc-symbol', sym.name); setSourceLabel(acc);
       $('bt-tf').value = acc.tf; $('bt-speed').value = String(spd);
       try { var u = new URL(location.href); u.searchParams.set('account', id); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
       overlay(_t('backtest.chart.loading', 'Mum verisi yükleniyor…'));
       buildChart();
-      R.cov = await L.src.coverage(sym.id);
+      R.cov = await R.src.coverage(sym.id);
       if (!PAGE.alive || !R) return;
       var replaySec = acc.replaySec || R.cov.firstT + 60;
       eng.open.forEach(function (p) { replaySec = Math.max(replaySec, p.entryT); });
@@ -555,8 +722,10 @@
     } catch (e) {
       if (!PAGE.alive) return;
       wwLogWarn(e);
-      toast(_t('backtest.data.unavailable', 'Mum verisi şu an kullanılamıyor.'), 'error');
+      var ctLost = acc.dataSource === 'ctrader' && e && e.code === 'AUTH';
       closeReplayState(); showList();
+      if (ctLost) { L.ct = null; showCtNeeded(true); }                        // trades and journal copies stay; only the data needs the connection
+      else toast(acc.dataSource === 'ctrader' && e && e.code ? ctErrorText(e) : _t('backtest.data.unavailable', 'Mum verisi şu an kullanılamıyor.'), 'error');
     }
   }
   function closeReplayState() {
@@ -1087,8 +1256,11 @@
     if (!ns) return;
     box.hidden = false; btn.hidden = true;
     if (ns.kind === 'end') setText('bt-data-banner-text', _t('backtest.data.end_reached', 'Verinin sonuna ulaşıldı: {time}', { time: fmtDateTime(R.cov.lastT) }));
-    else {
-      setText('bt-data-banner-text', _t('backtest.data.load_failed', 'Mum verisi yüklenemedi.'));
+    else if (ns.err && ns.err.code === 'AUTH') {                              // the cTrader connection is gone: the data cannot be loaded until it is renewed
+      setText('bt-data-banner-text', _t('backtest.ctrader.needed_short', 'cTrader bağlantısı gerekli. Bağlantıyı yenileyince devam edebilirsin.'));
+      btn.hidden = false; btn.textContent = _t('backtest.ctrader.reconnect', 'cTrader bağlantısını yenile'); btn.onclick = function () { window.location.href = '/journals'; };
+    } else {
+      setText('bt-data-banner-text', (R && R.acc.dataSource === 'ctrader' && ns.err && ns.err.code && ns.err.code !== 'NOT_FOUND' && ns.err.code !== 'CORRUPT') ? ctErrorText(ns.err) : _t('backtest.data.load_failed', 'Mum verisi yüklenemedi.'));
       btn.hidden = false; btn.textContent = _t('backtest.retry', 'Tekrar dene'); btn.onclick = function () { retryNext(); };
     }
     updateControls();
@@ -1249,9 +1421,13 @@
     $('bt-account-reset').addEventListener('click', function (e) { openModal('bt-reset-modal', e.currentTarget); });
     $('bt-f-symbol').addEventListener('change', function () {
       var s = S.get(this.value); $('bt-f-spread').value = E.hundredthsToStr(Math.round(s.defaultSpreadPips * 100)); spreadHint();
-      startHint().then(function () { var cov = L.cov[$('bt-f-symbol').value]; if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov)); });
+      startHint().then(function () { var cov = formCov(); if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov)); });
     });
     $('bt-f-spread').addEventListener('input', spreadHint);
+    $('bt-f-source-synthetic').addEventListener('change', onSourceChange);
+    $('bt-f-source-ctrader').addEventListener('change', onSourceChange);
+    $('bt-f-ct-account').addEventListener('change', function () { refreshCtPanel(true); });
+    $('bt-f-ct-symbol').addEventListener('change', function () { refreshCtPanel(false); });
     // delete / reset / position modals
     $('bt-delete-close').addEventListener('click', function () { closeModal('bt-delete-modal'); });
     $('bt-delete-cancel').addEventListener('click', function () { closeModal('bt-delete-modal'); });
@@ -1334,7 +1510,7 @@
     if (R) { try { pause(); saveReplayTime(true); R.abort.abort(); R.token++; } catch (e) { /* ignore */ } }
     if (themeObserver) themeObserver.disconnect();
     try { destroyChart(); } catch (e) { /* ignore */ }
-    R = null; L.accounts = []; L.summaries = {}; L.cov = {};
+    R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; ctSeq++;
   }
   PAGE.onLeave(cleanup);
 
