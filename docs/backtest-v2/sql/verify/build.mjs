@@ -203,6 +203,8 @@ const outputs = [
   ['06.down.sql', 'supabase/rollbacks/202610180006_drop_unused_trade_functions.down.sql'],
   ['07.sql', 'supabase/migrations/202610180007_candles_open_to_members.sql'],
   ['07.down.sql', 'supabase/rollbacks/202610180007_candles_open_to_members.down.sql'],
+  ['08.sql', 'supabase/migrations/202610180008_backtest_data_source.sql'],
+  ['08.down.sql', 'supabase/rollbacks/202610180008_backtest_data_source.down.sql'],
   ['verify.sql', 'supabase/tests/backtest_v2_verify.sql'],
 ];
 

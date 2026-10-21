@@ -1,7 +1,7 @@
 ---
 // ============================================================
-// BACKTEST v2 (Faz A): yalnızca admin görür, veriler tarayıcıda üretilir (sentetik),
-// hesap durumu localStorage'dadır. Veritabanına dokunmaz (bkz. docs/backtest-v2/PLAN.md).
+// BACKTEST v2 (Faz 1, pratik modu): giriş yapmış herkese açık. Mumlar tarayıcıda üretilen sentetik veridir;
+// hesaplar ve işlemler kullanıcının hesabında (Supabase) saklanır (bkz. docs/backtest-v2/PLAN.md, FAZ-E-VERI.md).
 // Route kaydı korunuyor, silmeyin:
 //   - src/components/SpaRouter.astro → SPA_PATHS '/backtest'
 //   - public/components/navbar/page-transition.js → APP_PATHS '/backtest'
@@ -11,37 +11,27 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=2" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=3" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1792500000" is:inline defer></script>
+  <script src="/i18n.js?v=1792700000" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-candles.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-engine.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-engine.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-synthetic.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-data.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-store.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-store.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=2" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=3" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
-
-    <!-- ================= SOON (not an admin) ================= -->
-    <section id="bt-view-soon" class="bt-view" hidden>
-      <div class="bt-empty">
-        <i data-lucide="history" aria-hidden="true"></i>
-        <span class="bt-chip bt-chip-muted" data-i18n="backtest.gate.badge">Yakında</span>
-        <h1 data-i18n="backtest.gate.title">Backtest yakında</h1>
-        <p data-i18n="backtest.gate.soon">Geçmiş piyasa verisinde mum mum işlem pratiği yapabileceğin yeni backtest aracı hazırlanıyor.</p>
-      </div>
-    </section>
 
     <!-- ================= LIST VIEW ================= -->
     <section id="bt-view-list" class="bt-view" aria-labelledby="bt-title" hidden>
@@ -58,8 +48,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
       <p class="bt-banner bt-banner-test" role="status">
-        <i data-lucide="flask-conical" aria-hidden="true"></i>
-        <span data-i18n="backtest.test_banner">Test sürümü: mumlar tarayıcıda üretilen sentetik veridir, hesaplar bu tarayıcıda saklanır.</span>
+        <i data-lucide="info" aria-hidden="true"></i>
+        <span data-i18n="backtest.list_banner">Mumlar sentetiktir, gerçek piyasa verisi değildir. Hesapların kullanıcı hesabında kayıtlıdır.</span>
       </p>
       <p id="bt-storage-warning" class="bt-banner bt-banner-error" role="status" hidden data-i18n="backtest.storage_unavailable">Tarayıcı depolaması kullanılamıyor: hesaplar kaydedilmiyor, sayfa kapanınca kaybolur.</p>
       <p id="bt-quota-note" class="bt-hint" data-i18n="backtest.quota.over_limit" hidden>Plan limitinin üzerindesiniz; mevcut hesaplar çalışmaya devam eder.</p>
@@ -140,7 +130,7 @@ import Layout from '../layouts/Layout.astro';
         <div id="bt-chart-card" class="bt-chart-card">
           <div class="bt-chart-top">
             <div id="bt-legend" class="bt-legend bt-num" aria-hidden="true"></div>
-            <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri · test</span>
+            <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri, gerçek piyasa verisi değildir</span>
           </div>
           <div class="bt-chart-wrap">
             <div id="bt-chart" class="bt-chart"></div>
@@ -272,6 +262,21 @@ import Layout from '../layouts/Layout.astro';
               <option value="30m">M30</option><option value="1h" selected>H1</option><option value="4h">H4</option><option value="1d">D1</option>
             </select></div>
         </div>
+        <fieldset class="bt-source-field" id="bt-f-source-wrap">
+          <legend data-i18n="backtest.field.source">Veri kaynağı</legend>
+          <label class="bt-radio" for="bt-f-source-synthetic">
+            <input type="radio" name="bt-f-source" id="bt-f-source-synthetic" value="synthetic" checked />
+            <span><span class="bt-radio-title" data-i18n="backtest.source.option_synthetic">Sentetik veri (pratik)</span>
+              <small class="bt-hint" data-i18n="backtest.source.option_synthetic_hint">Mumlar tarayıcıda üretilir; gerçek piyasa verisi değildir.</small></span>
+          </label>
+          <label class="bt-radio bt-radio-off" for="bt-f-source-ctrader">
+            <input type="radio" name="bt-f-source" id="bt-f-source-ctrader" value="ctrader" disabled />
+            <span><span class="bt-radio-title"><span data-i18n="backtest.source.option_ctrader">cTrader verisi</span>
+              <span class="bt-chip bt-chip-muted" data-i18n="backtest.source.soon">Yakında</span></span>
+              <small class="bt-hint" data-i18n="backtest.source.option_ctrader_hint">Kendi broker verinle; cTrader hesabını bağlayanlara açılacak.</small></span>
+          </label>
+          <small id="bt-f-source-note" class="bt-hint" data-i18n="backtest.source.locked" hidden>Veri kaynağı hesap oluşturulduktan sonra değiştirilemez.</small>
+        </fieldset>
         <p id="bt-f-symbol-hint" class="bt-hint bt-block-hint" hidden></p>
         <div class="bt-field" id="bt-f-start-wrap"><label for="bt-f-start" data-i18n="backtest.field.start">Başlangıç tarihi ve saati</label>
           <input id="bt-f-start" class="bt-input bt-num" type="datetime-local" step="60" />

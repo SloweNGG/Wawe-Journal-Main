@@ -1,6 +1,6 @@
 // Straight-through run of the REAL migration and rollback files on a persistent local PostgreSQL database
 // (a copy of the 2026-10-18 live schema, built from mock_live_pre/post.sql + the live function bodies).
-// Order: 00 01 02 03 04 05 06 -> verify.sql -> rollbacks 06 05 04 03 02 01 00 -> catalog must equal the start
+// Order: 00 01 02 03 04 05 06 08 -> verify.sql -> rollbacks 08 06 05 04 03 02 01 00 -> catalog must equal the start
 // (except the ACL hardening that the rollbacks keep on delete_journal/list_journals) -> migrate again and leave
 // the database in the migrated state for manual inspection.
 // Usage: PG_MODULE_DIR=<dir with node_modules/pg> PGPORT=54417 node local-run.mjs <plan/sql dir> <db snapshot dir> [database name]
@@ -23,7 +23,7 @@ const FNS = ['is_admin', 'touch_updated_at', 'calc_trade_pnl', 'set_default_jour
 const MIGDIR = path.resolve(planDir, '../../../supabase/migrations'); // forward migrations live in the project's supabase/migrations
 const mig = (n) => fs.readdirSync(MIGDIR).filter((f) => f.startsWith(n))[0];
 const rb = (n) => fs.readdirSync(path.join(planDir, 'supabase/rollbacks')).filter((f) => f.startsWith(n))[0];
-const M = (n) => read(path.join(planDir, 'supabase/migrations', mig(n)));
+const M = (n) => read(path.join(MIGDIR, mig(n)));
 const D = (n) => read(path.join(planDir, 'supabase/rollbacks', rb(n)));
 
 const lines = [];
@@ -78,7 +78,7 @@ await c.query(`CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FO
 log(`live copy built: ${(await c.query(`select count(*)::int n from pg_tables where schemaname = 'public'`)).rows[0].n} public tables, ${(await c.query(`select count(*)::int n from pg_proc where pronamespace = 'public'::regnamespace`)).rows[0].n} functions`);
 const base = await fingerprint();
 
-const FORWARD = ['202610180000', '202610180001', '202610180002', '202610180003', '202610180004', '202610180005', '202610180006'];
+const FORWARD = ['202610180000', '202610180001', '202610180002', '202610180003', '202610180004', '202610180005', '202610180006', '202610180008'];
 async function verifySql() {
   try { await c.query(read(path.join(planDir, 'supabase/tests/backtest_v2_verify.sql'))); return 'NO EXCEPTION'; }
   catch (e) { try { await c.query('ROLLBACK'); } catch { /* */ } return String(e.message); }
@@ -90,12 +90,12 @@ async function forward() {
   ok(!!s && s[2] === '0' && +s[1] >= 19 && !/\[SKIP\]/.test(msg), `verify.sql: ${s ? s[0] : msg.slice(0, 200)}`);
   ok((await c.query(`select count(*)::int n from auth.users`)).rows[0].n === 0, 'verify.sql left no user behind');
 }
-log('\n== forward 00 01 02 03 04 05 06 + verify.sql');
+log('\n== forward 00 01 02 03 04 05 06 08 + verify.sql');
 await forward();
 const migrated = await fingerprint();
 ok(diff(base, migrated, []).length > 0, 'the migrated catalog differs from the start (sanity)');
 
-log('\n== rollbacks 06 05 04 03 02 01 00');
+log('\n== rollbacks 08 06 05 04 03 02 01 00');
 for (const n of [...FORWARD].reverse()) await run(`apply ${rb(n)}`, D(n));
 const back = await fingerprint();
 const d = diff(base, back, ['delete_journal(uuid)', 'list_journals()']);

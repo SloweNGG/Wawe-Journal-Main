@@ -1,4 +1,4 @@
-// Backtest v2, Phase A: account and trade storage (window.WwBtStore) and the admin gate (window.WwBtGate).
+// Backtest v2, Phase A: account and trade storage (window.WwBtStore) and the page gate (window.WwBtGate).
 // The page only knows the WwBtStore interface; Phase B swaps the backend for Supabase without changing it:
 //   listAccounts() getAccount(id) createAccount(row) updateAccount(id, patch) deleteAccount(id)
 //   listTrades(accountId) insertTrade(row) updateTrade(id, patch) deleteTrades(accountId)
@@ -27,14 +27,15 @@
   function charLen(s) { return Array.from(String(s).trim()).length; }
 
   // ---------------------------------------------------------------- gate (pure)
-  // 'anon' (no user), 'demo' (?test=1 fake user: never read or write), 'admin', or 'soon'.
-  // Not a security boundary, only visibility (stage4-ek.md section 4).
+  // 'anon' (no user), 'demo' (?test=1 fake user: never read or write), or 'member' (every signed-in user;
+  // the admin-only gate was removed with practice mode). Not a security boundary, only visibility:
+  // the database (RLS, quota trigger) enforces who may do what.
   var WwBtGate = {
     isAdmin: function (user) { return !!(user && user.app_metadata && user.app_metadata.role === 'admin'); },
     decide: function (user) {
       if (!user) return 'anon';
       if (user.id === 'demo-user-id') return 'demo';
-      return WwBtGate.isAdmin(user) ? 'admin' : 'soon';
+      return 'member';
     }
   };
 
@@ -84,6 +85,8 @@
     function checkAccountValues(a) {
       if (!(charLen(a.name) >= 1 && charLen(a.name) <= 60)) throw fail('chk_backtest_accounts_name', '23514');
       if (!/^[A-Z0-9]{3,12}$/.test(a.symbol)) throw fail('chk_backtest_accounts_symbol', '23514');
+      if ((a.data_source || 'synthetic') !== 'synthetic') throw fail('chk_backtest_accounts_data_source', '23514');   // 'ctrader' opens in a later migration
+      if (a.journal_id) throw fail('chk_backtest_accounts_journal_needs_ctrader', '23514');          // synthetic accounts never link to a journal
       if (TFS.indexOf(a.timeframe) < 0) throw fail('chk_backtest_accounts_timeframe', '23514');
       var sb = num(a.starting_balance), sp = num(a.spread_pips), cm = num(a.commission_per_lot);
       if (!(sb > 0 && sb <= 100000000)) throw fail('chk_backtest_accounts_starting_balance', '23514');
@@ -128,12 +131,13 @@
           timeframe: row.timeframe || '1h', starting_balance: row.starting_balance,
           spread_pips: row.spread_pips == null ? '0.00' : row.spread_pips,
           commission_per_lot: row.commission_per_lot == null ? '0.00' : row.commission_per_lot,
-          replay_time: row.replay_time, is_active: row.is_active !== false, created_at: nowIso(), updated_at: nowIso()
+          replay_time: row.replay_time, is_active: row.is_active !== false, data_source: row.data_source || 'synthetic',
+          created_at: nowIso(), updated_at: nowIso()
         };
         if (row.user_id && row.user_id !== userId) throw fail('BACKTEST_NOT_OWNER', '42501');
         if (findAccount(a.id)) throw fail('duplicate key value violates unique constraint', '23505');
+        if (a.journal_id && opts.journalOwned && !opts.journalOwned(a.journal_id)) throw fail('INVALID_JOURNAL');   // BEFORE trigger, runs before the CHECKs
         checkAccountValues(a);
-        if (a.journal_id && opts.journalOwned && !opts.journalOwned(a.journal_id)) throw fail('INVALID_JOURNAL');
         if (a.is_active && activeCount(null) >= limit()) throw fail('BACKTEST_LIMIT_EXCEEDED:' + limit());
         data.accounts.push(a); save();
         return clone(a);
@@ -145,7 +149,7 @@
         var old = findAccount(id);
         if (!old) throw fail('account not found', 'PGRST116');
         var a = Object.assign({}, old, patch);
-        ['user_id', 'id', 'symbol'].forEach(function (c) { if (a[c] !== old[c]) throw fail('BACKTEST_ACCOUNT_IMMUTABLE:' + c); });
+        ['user_id', 'id', 'symbol', 'data_source'].forEach(function (c) { if (a[c] !== old[c]) throw fail('BACKTEST_ACCOUNT_IMMUTABLE:' + c); });
         var trades = accountTrades(id);
         var spreadChanged = a.spread_pips !== old.spread_pips && num(a.spread_pips) !== num(old.spread_pips);
         var commChanged = a.commission_per_lot !== old.commission_per_lot && num(a.commission_per_lot) !== num(old.commission_per_lot);
@@ -153,8 +157,8 @@
           throw fail('BACKTEST_OPEN_POSITIONS:' + (spreadChanged ? 'spread_pips' : 'commission_per_lot'));
         }
         if (Date.parse(a.replay_time) < Date.parse(old.replay_time) && trades.length) throw fail('BACKTEST_REPLAY_BACKWARD');
-        checkAccountValues(a);
         if (a.journal_id && a.journal_id !== old.journal_id && opts.journalOwned && !opts.journalOwned(a.journal_id)) throw fail('INVALID_JOURNAL');
+        checkAccountValues(a);
         if (a.is_active !== false && old.is_active === false && activeCount(id) >= limit()) throw fail('BACKTEST_LIMIT_EXCEEDED:' + limit());
         a.updated_at = nowIso();
         data.accounts[data.accounts.indexOf(old)] = a; save();
@@ -240,7 +244,7 @@
   // read EVERY user's rows (user_id = auth.uid() OR is_admin()), so without it an admin would see everyone's accounts.
   // The database enforces the rules (quota, immutables, replay direction, CHECKs) and raises the same messages
   // the LocalStore reproduces; they surface as Error(message) with .code (SQLSTATE) and .status.
-  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,created_at,updated_at';
+  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,data_source,created_at,updated_at';
   var PAGE_SIZE = 1000;
 
   function createSupabaseStore(opts) {

@@ -234,6 +234,15 @@ describe('bt-engine: DB mapping', () => {
     assert.equal(back.startCents, 1000000); assert.equal(back.spreadH, 20); assert.equal(back.cplCents, 700); assert.equal(back.replaySec, T0);
     assert.deepEqual(plain(E.accountPatch({ spreadH: 15, tf: '4h' })), { spread_pips: '0.15', timeframe: '4h' });
   });
+  it('account mapping carries data_source (default synthetic, rows without it read as synthetic)', () => {
+    const a = { userId: 'u', journalId: null, name: 'A', symbol: 'EURUSD', tf: '1h', startCents: 1000000, spreadH: 20, cplCents: 700, replaySec: T0 };
+    assert.equal(E.accountInsertRow(a).data_source, 'synthetic');
+    assert.equal(E.accountInsertRow(Object.assign({ dataSource: 'ctrader' }, a)).data_source, 'ctrader');
+    assert.equal(E.accountFromRow(Object.assign({ id: 'x' }, E.accountInsertRow(a))).dataSource, 'synthetic');
+    const legacy = E.accountInsertRow(a); delete legacy.data_source;
+    assert.equal(E.accountFromRow(Object.assign({ id: 'x' }, legacy)).dataSource, 'synthetic');
+    assert.ok(!('data_source' in E.accountPatch({ name: 'n' })), 'the source is never part of an update patch');
+  });
   it('metricsRow feeds WwMetrics', () => {
     const st = eurState();
     E.openPosition(st, { id: 'a', dir: 1, steps: 37, sl: 108111, tp: 108711 });

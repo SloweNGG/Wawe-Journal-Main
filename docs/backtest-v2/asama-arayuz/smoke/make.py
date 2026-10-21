@@ -20,7 +20,7 @@ if(qp.get('backend')!=='supabase')window.sb={};window.wwLog=console;
 window.requireAuth=async function(){return {id:'u-'+role,app_metadata:{role:role}}};
 window.__journals=[{id:'11111111-1111-4111-8111-111111111111',user_id:'u-'+role,name:'Ana Hesap',is_default:true},{id:'22222222-2222-4222-8222-222222222222',user_id:'u-'+role,name:'Ikinci Hesap',is_default:false}];
 window.journal={ensureActiveJournal:async function(){},listJournals:async function(){return window.__journals}};
-window.getUserPlanSilent=async function(){return {plan:'premium'}};
+window.getUserPlanSilent=async function(){return {plan:qp.get('plan')||'premium'}};
 window.__toasts=[];window.showToast=function(m,t){window.__toasts.push([t,m])};
 window.openUpgradeModal=function(){window.__upgrade=true};
 })();
@@ -41,7 +41,7 @@ window.openUpgradeModal=function(){window.__upgrade=true};
 <pre id="bt-smoke-result" style="display:none"></pre>
 <script type="module">
 var qp=new URLSearchParams(location.search);
-if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals});window.sb=window.__db.client;}
+if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0'});window.sb=window.__db.client;}
 var d=document.createElement('script');d.src=qp.get('driver')||'/__driver.js';document.body.appendChild(d);
 </script>
 </body></html>'''

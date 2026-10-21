@@ -1411,7 +1411,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Backtest v2 (Faz A): link yalnızca adminlere gösterilir (görünürlük, güvenlik sınırı değil; sayfa kendi kapısını da uygular)
+// Backtest v2 (Faz 1, pratik modu): link giriş yapmış herkese gösterilir (izinleri veritabanı belirler)
 function showBacktestLink() {
   var l = document.getElementById('nav-backtest-link');
   var lm = document.getElementById('nav-backtest-link-mobile');
@@ -1512,8 +1512,8 @@ async function loadNavbarAvatar() {
         var alm = document.getElementById('admin-link-mobile');
         if (al) al.style.display = 'inline';
         if (alm) alm.style.display = 'block';
-        showBacktestLink();
       }
+      showBacktestLink();
       return;
     }
 
@@ -1533,8 +1533,8 @@ async function loadNavbarAvatar() {
       var alm = document.getElementById('admin-link-mobile');
       if (al) al.style.display = 'inline';
       if (alm) alm.style.display = 'block';
-      showBacktestLink();
     }
+    showBacktestLink();
 
     var displayName = user?.user_metadata?.username || user?.email || 'Kullanıcı';
     if (displayName) {
