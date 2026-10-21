@@ -78,7 +78,7 @@ try {
     ctDisabled: document.getElementById('bt-f-source-ctrader').disabled, ctChecked: document.getElementById('bt-f-source-ctrader').checked,
     wrap: document.getElementById('bt-f-source-wrap').textContent.replace(/\s+/g, ' '), journalHidden: document.getElementById('bt-f-journal-wrap').hidden }));
   ok('form: "Synthetic data (practice)" selected and enabled', src.synChecked && !src.synDisabled && /Synthetic data \(practice\)/.test(src.wrap), src.wrap.slice(0, 120));
-  ok('form: "cTrader data" visible, disabled, "Coming soon"', src.ctDisabled && !src.ctChecked && /cTrader data/.test(src.wrap) && /Coming soon/.test(src.wrap));
+  ok('form: "cTrader data" visible, disabled while no cTrader account is connected (connect link, no "Coming soon")', src.ctDisabled && !src.ctChecked && /cTrader data/.test(src.wrap) && !/Coming soon/.test(src.wrap) && /Connect your cTrader account/.test(src.wrap));
   ok('form: journal selection hidden', src.journalHidden);
   await shot('form-create');
   await pg.type('#bt-f-name', 'Webcheck');

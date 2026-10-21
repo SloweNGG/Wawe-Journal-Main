@@ -1,16 +1,14 @@
-# Backtest v2: kaldığımız yer (2026-10-21, Faz 2 cTrader verisi, yayın bekliyor)
+# Backtest v2: kaldığımız yer (2026-10-21, Faz 2 cTrader verisi, yayında)
 
 Okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md` (en üst bölüm, "Faz 2"), `FAZ-E-VERI.md`.
 
 ## Faz 2 durumu (önce bunu oku)
 
-- **Bitti ve `backtest-v2`'de (push edildi):** Migration 09 (+rollback), `_shared/ctrader.ts`, `ctrader-candles`, `ctrader-sync`'in ortak kilitli token yenilemesi, arayüz (`bt-ctrader.js`, form, etiket, önbellek, hata mesajları), testler (362/0), duman testi (cTrader senaryosu 39 PASS), pagecheck 6/6.
-- **Canlıda:** yalnızca **Migration 09** (yedek `~/WaweJournal-Backups/20261021T090532Z/`). Edge Function yok, master değişmedi (`ca0abaa`), canlı site Faz 1 gibi.
-- **Engel:** `~/.wawe-supabase.env` içindeki token `edge_functions_read/write` izinsiz (403). Yeni token gerekir.
-- **Sıradaki adımlar (token gelince):** `SON-RAPOR.md` bölüm 6: `ctrader-candles` ve `ctrader-sync` deploy (ikisi birlikte), master'a `--no-ff` merge + push, canlıda `webcheck/run.mjs`, sonra sahibin kendi cTrader hesabıyla deneme (bölüm 5).
-- Gerçek cTrader'a karşı hiç çağrı yapılmadı: ilk gerçek çağrıda `symbols`, `coverage` ve `month` yanıt biçimlerini doğrula (özellikle W1 ipucu ve `symbolInfo` alan adları).
-- Duman testi cTrader senaryosu: `asama-arayuz/smoke/README.md` (`driver-ct.js`). Yerel SQL denemesi: canlı şemanın `pg_dump --schema-only` kopyası yerel PG17'de (harness/PGlite çalıştırılmadı).
-- Geri alma: `git revert -m 1 <merge>` (eski arayüz 09 ile uyumlu); `09.down.sql` yalnız cTrader hesap yokken.
+- **Yayında (2026-10-21):** Migration 09 canlıda, `ctrader-candles` v1 ve `ctrader-sync` v7 yayınlandı (`--no-verify-jwt`), master `7d864fd` (merge) push edildi, canlı `webcheck` 24/0, dosya SHA-1'leri eşleşti.
+- **Yapılmadı:** kimlikli gerçek cTrader çağrısı (JWT yok) ve fonksiyon logu (token'da `analytics_logs_read` yok). Sıradaki: sahibin kendi hesabıyla denemesi (`SON-RAPOR.md` bölüm 5); sorun olursa Supabase panelinden fonksiyon logları.
+- İlk gerçek çağrıda `symbols`, `coverage` (özellikle W1 ipucu), `symbolInfo` alan adları ve `month` yanıt biçimini doğrula.
+- Geri alma: `git revert -m 1 7d864fd`; `ctrader-sync`'in eski sürümü `git show ca0abaa:supabase/functions/ctrader-sync/index.ts`; `09.down.sql` yalnız cTrader hesap yokken.
+- Duman testi cTrader senaryosu: `asama-arayuz/smoke/README.md` (`driver-ct.js`). Deploy: `set -a; source ~/.wawe-supabase.env; set +a; npx supabase functions deploy <ad> --project-ref odasapyhtdopbnlfhwde --use-api --no-verify-jwt`.
 
 ---
 

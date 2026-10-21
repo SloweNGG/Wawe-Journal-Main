@@ -1,6 +1,22 @@
-# Backtest v2, Faz 2: cTrader verisi (2026-10-21, son rapor)
+# Backtest v2, Faz 2: cTrader verisi (2026-10-21, son rapor, yayında)
 
-**Durum: yarım, tek engel Edge Function yayını.** Kod, testler ve **Migration 09 (canlıda, yedekli)** hazır; verilen Supabase token'ında Edge Function izni olmadığı için `ctrader-candles` ve `ctrader-sync` **yayınlanamadı**, bu yüzden **master'a merge edilmedi ve canlı site değişmedi**. Hiçbir şey geri alınmak zorunda değil. Kod `backtest-v2` branch'inde (`8df5b0f` + bu rapor), push edildi.
+**Durum: yayında, tek eksik sizin gerçek cTrader denemeniz.** Yeni token ile `ctrader-candles` (v1) ve `ctrader-sync` (v7) birlikte yayınlandı, `backtest-v2` master'a `--no-ff` merge edildi (`7d864fd`) ve push edildi, Cloudflare canlıda. Migration 09 önceki turda canlıya girmişti. Canlıda `webcheck` 24/0 (user/free, user/premium, admin/premium). **Revert gerekmedi.**
+
+## Son tur (yayın) özeti
+
+- **Token:** `~/.wawe-supabase.env` yenisiyle değiştirildi (600), izin salt okunur `GET /functions` ile doğrulandı (200). Değer hiçbir dosyaya, loga, commit'e yazılmadı.
+- **Deploy:** ikisi `--use-api --no-verify-jwt` ile. `--no-verify-jwt` canlıdaki mevcut ayarla aynı (`ctrader-sync`, `ctrader-connect` zaten `verify_jwt=false`); gateway'in JWT kontrolü CORS ön isteğini (OPTIONS) reddederdi, fonksiyonlar kendi oturum kontrolünü yapıyor. Sürümler: `ctrader-candles` v1, `ctrader-sync` v6 → v7.
+- **Not:** canlıdaki `ctrader-sync` v6, 15 Ekim'de yayınlanmıştı; "yayınlanmamış bekleyen backend" notu eskiymiş. Yani bakiye düzeltmeleri zaten canlıdaydı, bu deploy yalnızca ortak kilitli token yenilemesini ekledi.
+- **Sağlık kontrolü (kimlik doğrulamasız, yapabildiğim kadarı):** iki fonksiyonda OPTIONS 204 (CORS), oturumsuz POST 401, geçersiz JWT 401 "Geçersiz oturum." Veritabanı salt okunur: `ctrader_tokens` 1 satır `active`, bitiş 15 Kasım, `refreshing_since` boş; `ctrader_accounts`'ta takılı `syncing_since` yok. İkinci hesabın eski `last_error` değeri ("Invalid access token") deploy öncesinden kalma.
+- **Yapamadıklarım (dürüstçe):**
+  1. **Fonksiyon logları okunamadı:** yeni token'da `analytics_logs_read` izni yok (403). Log doğrulaması yerine yukarıdaki dış kontroller yapıldı.
+  2. **Kimlikli uçtan uca çağrı yapılmadı:** geçerli bir kullanıcı oturumu (JWT) yok; sahte oturum üretmedim. Yani `symbols`, `coverage`, `month` yanıtlarının gerçek cTrader'dan nasıl geldiği ve mevcut kullanıcılar için senkronizasyonun fiilen çalıştığı **henüz görülmedi**. Token 15 Kasım'a kadar geçerli olduğu için yenileme (kilitli yol) da canlıda henüz çalışmadı.
+  3. `webcheck` sahte oturum ve sahte veritabanı kullanır; cTrader yolunu canlıda sınamaz.
+- **Canlı site kontrolü:** `sw.js` v16; `bt-ctrader.js`, `backtest.js`, `bt-store.js`, `bt-engine.js`, `backtest.css`, üç dil dosyası, `i18n.js`, `sw.js` yerel build ile **SHA-1 eşleşti**. `webcheck` betiği güncellendi (cTrader seçeneği artık "Yakında" değil: bağlı değilse pasif + bağlantı linki).
+- **Geri alma (gerekirse):** `git revert -m 1 7d864fd` (eski arayüz Migration 09 ile uyumlu). Fonksiyonlar: `ctrader-sync` önceki sürümü master'daki `ca0abaa` kodundan (`git show ca0abaa:supabase/functions/ctrader-sync/index.ts`; `_shared` olmadan çalışır) yeniden yayınlanır, `ctrader-candles` kullanılmaz hâle gelir (arayüz geri alınınca çağrılmaz).
+- **Önce sizin sınamanız gereken şey:** aşağıdaki bölüm 5'teki adımlar; özellikle 3, 4 (ilk gerçek cTrader çağrısı), 7 ve 8 (token yarışı). Sorun görürseniz hata mesajını ve saati bildirin; Supabase panelinde Functions → ctrader-candles → Logs'a bakılabilir.
+
+---
 
 ## 1. Kısa özet
 
@@ -93,7 +109,7 @@ cTrader duman senaryosu (sahte `ctrader-candles` yanıtıyla, FakeDb'de Migratio
 8. **Token yarışı:** `/trades`'te "cTrader'dan Senkronla"ya basarken başka bir ayı açın; ikisi de çalışmalı ve bağlantınız kopmamalı. Kontrol: `select status, refreshing_since, expires_at from ctrader_tokens;` (status `active`, `refreshing_since` boş).
 9. Farklı bir sembol ya da gerçek broker adı sonekleri (örn. `XAUUSD.pro`) çıkmazsa, adını ve broker'ınızı bana bildirin: eşleme listesi `bt-ctrader.js` `ALIASES`.
 
-## 6. Yayını tamamlamak için (sizden)
+## 6. (Tamamlandı) Yayın adımları
 
 Edge Function için **Supabase → Account → Access Tokens**'tan yeni bir token üretin (kapsam kısıtlamayın ya da "Edge Functions: read/write" verin) ve `~/.wawe-supabase.env` içindeki `SUPABASE_ACCESS_TOKEN` değerini değiştirin. Sonra yeni oturumda "kaldığın yerden devam et" demeniz yeterli: sırayla
 
