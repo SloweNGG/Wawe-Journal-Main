@@ -14,6 +14,12 @@
 // yalnızca CANLI satır taşır. Karışık/backtest listeler cacheKey() ile
 // 'trades@all' / 'trades@backtest' anahtarlarına yazılır; bunlar çapraz beslenmez.
 //
+// DEFTER BAZLI KAPSAM (journals.trade_scope: 'live' | 'backtest' | 'all', varsayılan 'live'):
+//   journalScope(jid) senkron okur (localStorage 'ww_journal_scopes', list_journals her çağrıldığında journal.js
+//   tarafından yenilenir). dashboard, premium-dashboard, takvim, stratejiler, PDF/CSV ve Trades varsayılan
+//   filtresi bu kapsamla çalışır. Prop firm, cTrader senkronu, overtrade/bildirimler ve ana sayfa istatistikleri
+//   HER ZAMAN 'live' kalır (bu yardımcıları KULLANMAZ). Kapsamlı önbellek anahtarı: cacheKey(base, scope).
+//
 // Yükleme: BaseHead.astro (senkron, trade-metrics.js'ten hemen sonra) VE
 // public/src/script.js (bundle.js) içinde yan etki importu. İlk yükleyen kazanır.
 // Node testleri: vm.runInNewContext(...) veya ESM import (globalThis.WwTrades).
@@ -73,6 +79,61 @@
   function cacheKey(base, scope) {
     scope = normScope(scope);
     return scope === 'live' ? base : base + '@' + scope;
+  }
+
+  // ---- Defter bazlı kapsam ----
+  var JSCOPE_KEY = 'ww_journal_scopes';
+  function readScopeMap() {
+    try {
+      var m = JSON.parse(global.localStorage.getItem(JSCOPE_KEY) || '{}');
+      return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {};
+    } catch (e) { return {}; }
+  }
+  function writeScopeMap(m) {
+    try { global.localStorage.setItem(JSCOPE_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  // Senkron: defterin kapsamı; bilinmiyorsa ya da defter yoksa 'live' (mevcut davranış).
+  function journalScope(journalId) {
+    if (!journalId) return 'live';
+    return normScope(readScopeMap()[journalId]);
+  }
+  // list_journals sonucundan tüm haritayı yeniler (silinen defterler de düşer).
+  function rememberJournalScopes(list) {
+    if (!Array.isArray(list)) return;
+    var m = {};
+    list.forEach(function (j) { if (j && j.id) m[j.id] = normScope(j.trade_scope); });
+    writeScopeMap(m);
+  }
+  // Asenkron: haritada defter yoksa (taze tarayıcı, yeni defter) list_journals bir kez çağrılır ve harita dolar.
+  // Listeleme başarısız olursa 'live' (mevcut davranış). Haritada varsa ağa gidilmez.
+  function resolveJournalScope(journalId) {
+    if (!journalId) return Promise.resolve('live');
+    if (Object.prototype.hasOwnProperty.call(readScopeMap(), journalId)) return Promise.resolve(journalScope(journalId));
+    var j = global.journal;
+    if (j && typeof j.listJournals === 'function') {
+      return Promise.resolve().then(function () { return j.listJournals(); }).then(
+        function () { return journalScope(journalId); },
+        function () { return 'live'; });
+    }
+    return Promise.resolve('live');
+  }
+  function setJournalScope(journalId, scope) {
+    if (!journalId) return;
+    var m = readScopeMap();
+    m[journalId] = normScope(scope);
+    writeScopeMap(m);
+  }
+  // Başlık rozeti: 'live' iken gizli; 'all' -> "Backtest dahil", 'backtest' -> "Sadece backtest" (i18n anahtarı data-i18n ile dil değişince yenilenir)
+  var BADGE = { all: ['scope.badge_all', 'Backtest dahil'], backtest: ['scope.badge_backtest', 'Sadece backtest'] };
+  function applyScopeBadge(el, scope) {
+    if (!el) return;
+    scope = normScope(scope);
+    var b = BADGE[scope];
+    if (!b) { el.hidden = true; el.removeAttribute('data-i18n'); el.textContent = ''; return; }
+    var t = global.i18n && typeof global.i18n.t === 'function' ? global.i18n.t(b[0]) : null;
+    el.setAttribute('data-i18n', b[0]);
+    el.textContent = (t && t !== b[0]) ? t : b[1];
+    el.hidden = false;
   }
 
   function getClient(opts) {
@@ -157,6 +218,11 @@
     withSourceCol: withSourceCol,
     cacheKey: cacheKey,
     fetchAll: fetchAll,
-    count: count
+    count: count,
+    journalScope: journalScope,
+    resolveJournalScope: resolveJournalScope,
+    rememberJournalScopes: rememberJournalScopes,
+    setJournalScope: setJournalScope,
+    applyScopeBadge: applyScopeBadge
   };
 })(typeof window !== 'undefined' ? window : globalThis);

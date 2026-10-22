@@ -1570,10 +1570,17 @@ async function loadAllData() {
 
     // ⚡ SWR Önbellek Kontrolü: Stratejiler ve işlemler önbellekte varsa 0ms'de render et!
     var cachedStrategies = (window.wwCache && window.wwCache.get) ? window.wwCache.get('strategies', currentUser.id, jid) : null;
-    // Canlı kapsam: backtest işlemleri strateji istatistiklerine girmez (WwTrades)
+    // Kapsam: defterin trade_scope ayarı (varsayılan 'live': backtest işlemleri strateji istatistiklerine girmez; WwTrades)
+    var tScope = await window.WwTrades.resolveJournalScope(jid);
     var STRAT_TRADE_COLS = ['id', 'symbol', 'direction', 'instrument', 'lot', 'entry_price', 'exit_price', 'trade_date', 'pnl', 'strategy_id', 'multiplier', 'platform_source'];
-    var cachedTrades = (window.wwCache && window.wwCache.get) ? (window.wwCache.get('trades_strategies', currentUser.id, jid, STRAT_TRADE_COLS) || window.wwCache.get('trades', currentUser.id, jid, STRAT_TRADE_COLS)) : null;
-    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, 'live');
+    var cachedTrades = null;
+    if (window.wwCache && window.wwCache.get) {
+      cachedTrades = tScope === 'live'
+        ? (window.wwCache.get('trades_strategies', currentUser.id, jid, STRAT_TRADE_COLS) || window.wwCache.get('trades', currentUser.id, jid, STRAT_TRADE_COLS))
+        // kapsamlı listeler çapraz beslenmez: yalnızca kendi '@kapsam' anahtarı (cache.js sözleşmesi)
+        : window.wwCache.get(window.WwTrades.cacheKey('trades_strategies', tScope), currentUser.id, jid, STRAT_TRADE_COLS);
+    }
+    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, tScope);
 
     var renderedFromCache = false;
     if (cachedStrategies && Array.isArray(cachedStrategies)) {
@@ -1602,7 +1609,7 @@ async function loadAllData() {
             userId: currentUser.id,
             journalId: jid,
             columns: STRAT_TRADE_COLS.join(','),
-            scope: 'live',
+            scope: tScope,
             ascending: false
           });
           if (res.error) {
@@ -1649,7 +1656,7 @@ async function loadAllData() {
       window.wwCache.set('strategies', currentUser.id, jid, stratRes.data);
     }
     if (tradesRes && tradesRes.data && tradesRes.data.length > 0 && window.wwCache) {
-      window.wwCache.set('trades_strategies', currentUser.id, jid, tradesRes.data);
+      window.wwCache.set(window.WwTrades.cacheKey('trades_strategies', tScope), currentUser.id, jid, tradesRes.data);
     }
 
     if (dataChanged) {

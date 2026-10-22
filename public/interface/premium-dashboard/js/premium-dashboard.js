@@ -252,6 +252,7 @@ function headerHtml() {
         '<div class="ph-eyebrow" id="ph-eyebrow">' + HEADER_ICONS.crown + i18nSpan('premium_dash.eyebrow', 'Premium Analitik') + '</div>' +
         '<div class="page-header-title-row">' +
           '<h1 data-i18n="premium_dash.heading">' + _t('premium_dash.heading', 'Performans Analizi') + '</h1>' +
+          scopeBadgeHtml() +
           '<div id="premium-prop-badge"></div>' +
         '</div>' +
         '<div class="ph-meta" id="premium-header-meta"></div>' +
@@ -562,6 +563,28 @@ function buildDashboardShell() {
   });
 
   isDashboardDomRendered = true;
+  syncScopeBadge();
+}
+
+// Defterin trade_scope ayarı (live | backtest | all). Prop kartları bundan ETKİLENMEZ (prop-service kendi canlı verisini çeker).
+function activeTradeScope(jid) {
+  try {
+    var id = jid || (window.journal && window.journal.getActiveJournalId && window.journal.getActiveJournalId());
+    return window.WwTrades ? window.WwTrades.journalScope(id) : 'live';
+  } catch (e) { return 'live'; }
+}
+// "Backtest dahil" / "Sadece backtest" rozeti; 'live' iken boş
+function scopeBadgeHtml() {
+  var sc = activeTradeScope();
+  if (sc === 'live') return '<span id="scope-badge" class="ww-scope-badge" hidden></span>';
+  var key = sc === 'all' ? 'scope.badge_all' : 'scope.badge_backtest';
+  var fb = sc === 'all' ? 'Backtest dahil' : 'Sadece backtest';
+  return '<span id="scope-badge" class="ww-scope-badge" data-i18n="' + key + '">' + _t(key, fb) + '</span>';
+}
+
+// Başlık rozetini (varsa) güncel kapsama göre eşitle: başlık, defter kapsamı çözülmeden önce çizilmiş olabilir
+function syncScopeBadge(tScope) {
+  try { window.WwTrades.applyScopeBadge(document.getElementById('scope-badge'), tScope || activeTradeScope()); } catch (e) {}
 }
 
 // Canlı kapsam kolonları: platform_source listeyi kendini tanımlar kılar (önbellek savunması)
@@ -571,13 +594,15 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
   var allTradesData = [];
 
   try {
-    // Backtest işlemleri analizlere, içgörülere, PDF raporuna ve CSV'ye girmez (WwTrades, scope 'live').
+    // Analizler, içgörüler, PDF raporu ve CSV defterin trade_scope ayarına göre (varsayılan 'live': backtest girmez).
     // Sayfalama ve deftersiz eski işlemlere geri dönüş fetchAll içinde.
+    var tScope = activeTradeScope(jid);
+    syncScopeBadge(tScope);
     var res = await window.WwTrades.fetchAll({
       userId: userId,
       journalId: jid,
       columns: PREMIUM_TRADE_COLS.join(','),
-      scope: 'live',
+      scope: tScope,
       ascending: false,
       unassignedFallback: true
     });
@@ -594,7 +619,7 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
       // Yalnızca kendi anahtarına yaz (ortak 'trades' anahtarı cache.js çapraz beslemesiyle yönetilir)
-      window.wwCache.set('trades_premium', userId, jid, allTradesData);
+      window.wwCache.set(window.WwTrades.cacheKey('trades_premium', tScope), userId, jid, allTradesData);
       // Prop betiği işlemleri ayrıca çekmesin diye haber verilir
       window.dispatchEvent(new CustomEvent('ww:premium-trades'));
     }
@@ -723,12 +748,18 @@ async function loadPremiumData(scope) {
     }
 
     // ⚡ SWR Önbellek Kontrolü: trades_premium, trades veya trades_dashboard varsa 0ms beklemeden hemen göster
+    try { await window.WwTrades.resolveJournalScope(jid); } catch (e) {}
+    var tScope = activeTradeScope(jid);
+    syncScopeBadge(tScope);
     var cachedTrades = (typeof window !== 'undefined' && window.wwCache)
-      ? (window.wwCache.get('trades_premium', user.id, jid, PREMIUM_TRADE_COLS) ||
-         window.wwCache.get('trades', user.id, jid, PREMIUM_TRADE_COLS) ||
-         window.wwCache.get('trades_dashboard', user.id, jid, PREMIUM_TRADE_COLS))
+      ? (tScope === 'live'
+          ? (window.wwCache.get('trades_premium', user.id, jid, PREMIUM_TRADE_COLS) ||
+             window.wwCache.get('trades', user.id, jid, PREMIUM_TRADE_COLS) ||
+             window.wwCache.get('trades_dashboard', user.id, jid, PREMIUM_TRADE_COLS))
+          // kapsamlı listeler çapraz beslenmez: yalnızca kendi '@kapsam' anahtarları (cache.js sözleşmesi)
+          : window.wwCache.get(window.WwTrades.cacheKey('trades_premium', tScope), user.id, jid, PREMIUM_TRADE_COLS))
       : null;
-    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, 'live');   // savunma katmanı
+    if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, tScope);   // savunma katmanı
 
     if (cachedTrades && cachedTrades.length > 0) {
       allTrades = cachedTrades;

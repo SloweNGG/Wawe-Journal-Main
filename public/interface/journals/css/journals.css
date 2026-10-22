@@ -1790,3 +1790,127 @@ body.light-theme .journal-prop-inactive-tip {
 .journal-modal-footer .btn-new-journal:hover:not(:disabled) { transform: none; box-shadow: none; }
 .journal-modal-footer .journal-btn-save:disabled,
 .journal-modal-footer .btn-new-journal:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================
+   DEFTER OLUŞTUR / DÜZENLE PENCERESİ: yeni parçalar
+   (işlem kapsamı ayarı, bağlı-cTrader şeridi, cTrader alt paneli; satır içi stiller sınıfa taşındı)
+   ============================================================ */
+.journal-scope-field { margin-top: 1.1rem; }
+.journal-scope-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.journal-field label.journal-scope-opt {
+  display: flex; align-items: flex-start; gap: 0.6rem; margin: 0; padding: 0.7rem 0.8rem;
+  text-transform: none; letter-spacing: 0; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  color: var(--text); cursor: pointer; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.journal-scope-opt input { margin: 3px 0 0; accent-color: var(--accent, #8b5cf6); flex-shrink: 0; }
+.journal-scope-opt-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.journal-scope-opt-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.journal-scope-opt-desc { font-size: 11.5px; font-weight: 400; color: var(--muted); line-height: 1.4; }
+.journal-field label.journal-scope-opt:hover { border-color: var(--border2, var(--border)); }
+.journal-field label.journal-scope-opt:has(input:checked) {
+  border-color: var(--accent, #8b5cf6);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 8%, transparent);
+}
+.journal-scope-field .journal-field-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.55rem; line-height: 1.45; }
+@media (max-width: 720px) { .journal-scope-options { grid-template-columns: 1fr; } }
+
+.journal-broker-intro { font-size: 0.83rem; color: var(--muted); line-height: 1.45; margin: 0 0 1rem; }
+
+.journal-linked-banner {
+  margin-bottom: 1.25rem; border-radius: 12px; padding: 0.9rem 1.1rem;
+  background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.journal-linked-banner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.journal-linked-banner-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.journal-linked-banner-title { font-weight: 700; font-size: 0.88rem; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.journal-linked-banner-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 6px; background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600; }
+.journal-linked-banner-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.journal-btn-unlink { padding: 0.4rem 0.8rem; font-size: 0.76rem; color: #f87171; border-color: rgba(239, 68, 68, 0.35); flex-shrink: 0; }
+
+.journal-ct-subpanel { margin-top: 1rem; padding: 1rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.journal-ct-label { font-size: 0.8rem; font-weight: 600; color: var(--text); display: block; margin-bottom: 6px; }
+.journal-ct-select {
+  width: 100%; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.88rem;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+}
+.journal-ct-note { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+/* ============================================================
+   KOYU TEMA: oluştur/düzenle (ve silme/broker) pencereleri saf siyah (#000), nötr beyaz çizgiler.
+   Açık temaya dokunulmaz (yalnızca body:not(.light-theme)).
+   ============================================================ */
+body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85);
+}
+body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
+body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal-footer { background: #000; border-top-color: rgba(255, 255, 255, 0.08); }
+body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal-close:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* adım çubuğu */
+body:not(.light-theme) #journal-modal .journal-wizard-steps { background: #000; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+body:not(.light-theme) #journal-modal .wizard-step-item .step-num { background: #000; border-color: rgba(255, 255, 255, 0.18); }
+body:not(.light-theme) #journal-modal .wizard-step-item.active .step-num,
+body:not(.light-theme) #journal-modal .wizard-step-item.completed .step-num { background: var(--accent, #8b5cf6); border-color: var(--accent, #8b5cf6); }
+body:not(.light-theme) #journal-modal .wizard-step-line { background: rgba(255, 255, 255, 0.1); }
+body:not(.light-theme) #journal-modal .wizard-step-line.active { background: var(--accent, #8b5cf6); }
+
+/* giriş alanları */
+body:not(.light-theme) #journal-modal .journal-field input[type="text"],
+body:not(.light-theme) #journal-modal .journal-field textarea,
+body:not(.light-theme) #journal-modal .journal-field select,
+body:not(.light-theme) #journal-modal .journal-prop-select,
+body:not(.light-theme) #journal-modal .journal-prop-input,
+body:not(.light-theme) #journal-modal .journal-ct-select {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+body:not(.light-theme) #journal-modal .journal-field input[type="text"]:focus,
+body:not(.light-theme) #journal-modal .journal-field textarea:focus,
+body:not(.light-theme) #journal-modal .journal-field select:focus,
+body:not(.light-theme) #journal-modal .journal-prop-select:focus,
+body:not(.light-theme) #journal-modal .journal-prop-input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+body:not(.light-theme) #journal-modal .journal-field select option { background: #000; color: #fff; }
+body:not(.light-theme) #journal-modal .journal-color-btn { border-color: rgba(255, 255, 255, 0.12); }
+body:not(.light-theme) #journal-modal .journal-color-btn.active { border-color: #fff; }
+
+/* kartlar / bölümler */
+body:not(.light-theme) #journal-modal .journal-scope-opt,
+body:not(.light-theme) #journal-modal .journal-ct-subpanel,
+body:not(.light-theme) #journal-modal .broker-choice-card,
+body:not(.light-theme) #journal-modal .journal-custom-rules-box,
+body:not(.light-theme) #journal-modal .journal-prop-time-preview,
+body:not(.light-theme) #journal-modal .journal-prop-inactive-box,
+body:not(.light-theme) #journal-modal .journal-prop-inactive-tip {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+body:not(.light-theme) #journal-modal .journal-field label.journal-scope-opt:has(input:checked),
+body:not(.light-theme) #journal-modal .broker-choice-card.active {
+  background: #000;
+  border-color: var(--accent, #8b5cf6);
+}
+body:not(.light-theme) #journal-modal .journal-field label.journal-scope-opt:hover,
+body:not(.light-theme) #journal-modal .broker-choice-card:hover:not(.disabled) { background: #000; border-color: rgba(255, 255, 255, 0.25); }
+body:not(.light-theme) #journal-modal .broker-choice-icon { background: #000; border-color: rgba(255, 255, 255, 0.1); }
+body:not(.light-theme) #journal-modal .broker-choice-radio { border-color: rgba(255, 255, 255, 0.25); }
+body:not(.light-theme) #journal-modal .journal-prop-toggle-card {
+  background: #000; border-color: rgba(255, 255, 255, 0.1); box-shadow: none;
+}
+body:not(.light-theme) #journal-modal .journal-prop-toggle-card:hover { border-color: rgba(255, 255, 255, 0.25); box-shadow: none; }
+body:not(.light-theme) #journal-modal .journal-prop-section { background: #000; border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
+body:not(.light-theme) #journal-modal .journal-slider { background-color: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); }
+body:not(.light-theme) #journal-modal .journal-prop-section .journal-field label,
+body:not(.light-theme) #journal-modal .journal-prop-section .journal-field-hint { color: var(--muted); opacity: 1; }
+body:not(.light-theme) #journal-modal .journal-prop-alert.warning,
+body:not(.light-theme) #journal-modal .journal-prop-alert.info { background: #000; border-color: rgba(255, 255, 255, 0.14); }
+body:not(.light-theme) #journal-modal .journal-linked-banner { background: #000; border-color: rgba(255, 255, 255, 0.12); }
+body:not(.light-theme) #journal-modal .journal-btn-cancel { border-color: rgba(255, 255, 255, 0.14); }
+body:not(.light-theme) #journal-modal .journal-btn-cancel:hover { border-color: rgba(255, 255, 255, 0.35); }

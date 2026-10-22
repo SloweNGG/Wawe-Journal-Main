@@ -281,7 +281,8 @@
       WwCache.invalidate('strategies');
     });
     window.addEventListener('storage', function(e) {
-      if (e.key === 'ww_active_journal_id' || e.key === 'activeJournalId') {
+      // ww_journal_scopes: bir defterin işlem kapsamı (trade_scope) başka sekmede değişti
+      if (e.key === 'ww_active_journal_id' || e.key === 'activeJournalId' || e.key === 'ww_journal_scopes') {
         WwCache.invalidate('trades');
         WwCache.invalidate('strategies');
       }
