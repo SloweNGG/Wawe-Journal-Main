@@ -1,3 +1,15 @@
+# Düzeltme turu: "Select a cTrader account." (cTrader hesap formu, 2026-10-22)
+
+**Belirti:** canlıda cTrader verili hesap açarken veri derinliği doğru geliyor, ama "Create account" "Select a cTrader account." diyor; liste seçili görünüyor.
+
+**Kök neden:** varsayılan seçimin change olayı ya da id tür uyuşmazlığı değildi (ikisi de doğru çalışıyor: yeni duman testi bu yolları geçiyor). Gönderimde hesap, **seçim listesinden değil, ortak durum önbelleğinden** (`L.ct`) aranıyordu. Bir broker hesabında bağlantı hatası (AUTH / needs_reconnect) olunca `refreshCtPanel` bu önbelleği `null` yapıyordu; liste ise eski seçeneklerle açık kalıyordu. Kullanıcı diğer (çalışan) hesabı seçince derinlik ölçülüyor ve doğru görünüyor, ama gönderimde önbellek boş olduğu için hesap bulunamıyordu. Canlıda iki bağlı Spotware demo hesabı var (49132296 / 5937620 ve 49193061 / 5941269); ilk hesapta hata, ikincisinde çalışma bu tabloyla uyumlu (gerçek cTrader'la doğrulanmadı; sahte sunucuda aynı belirti birebir yeniden üretildi, eski kodda başarısız, yenide geçer).
+
+**Düzeltme (`backtest.js`):** gönderim anında hesap, seçim listesinin doldurulduğu hesap listesinden (`L.ctFormAccts`) ve listenin o anki değerinden okunur; bağlantı hatası artık ortak önbelleği silmez, yalnızca bir sonraki açılışta yeniden çekilmesini sağlar (`at = 0`). Varsayılan hesap ve varsayılan broker sembolü, liste her doldurulduğunda açıkça seçilir (`selectedIndex = 0`). Sembol listesi de gönderimde kendi listesinden okunuyordu; aynı sorun yok.
+
+**Test:** `smoke/driver-ct-form.js` (yeni): hiçbir şey değiştirmeden varsayılan hesap + sembolle açma, formu yeniden açma, hesap değiştirip geri dönme, ikinci hesap, tek hesap, ilk hesap bağlantı hatası verip diğeri seçilince açma. Komutlar `smoke/README.md`.
+
+---
+
 # Düzeltme turu: "Bu hesapta bu sembol için mum verisi yok" (2026-10-21, `e313b8a`, yayında)
 
 **Belirti:** canlıda cTrader hesabı + EURUSD seçilince form "mum verisi yok" diyordu (broker sembolleri listelendi, yani bağlantı, AppAuth, AccountAuth ve `symbols` çalışıyordu); aynı Spotware demo sunucusunda ölçüm (probe) 2011'e kadar veri bulmuştu.

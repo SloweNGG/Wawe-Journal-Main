@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v17'; // cTrader veri derinliği düzeltmesi + hata ayrımı (bağlantı linki); bir önceki aşamadan +1
+const CACHE_VERSION = 'wawe-v18'; // cTrader hesap formu: seçili hesap gönderimde seçim listesinden okunur (bir önceki aşamadan +1)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

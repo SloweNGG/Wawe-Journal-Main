@@ -23,7 +23,7 @@ window.journal={ensureActiveJournal:async function(){},listJournals:async functi
 window.getUserPlanSilent=async function(){return {plan:qp.get('plan')||'premium'}};
 window.SUPABASE_URL='https://stub.local';window.SUPABASE_ANON_KEY='anon-stub';
 var ct=qp.get('ct')||'none';
-window.__ctFixture={token_status:ct==='none'?'none':(ct==='reconnect'?'needs_reconnect':'active'),accounts:ct==='none'?[]:[{id:'ca1',ctid_trader_account_id:4455667,is_live:false,trader_login:900123,broker_name:'Spotware',journal_id:null}]};
+window.__ctFixture={token_status:ct==='none'?'none':(ct==='reconnect'?'needs_reconnect':'active'),accounts:ct==='none'?[]:[{id:'ca1',ctid_trader_account_id:4455667,is_live:false,trader_login:900123,broker_name:'Spotware',journal_id:null}].concat(qp.get('ctn')==='2'?[{id:'ca2',ctid_trader_account_id:4455668,is_live:false,trader_login:900124,broker_name:'Spotware',journal_id:null}]:[])};
 window.__ctCalls=[];window.__ctFail=false;
 (function(){var _f=window.fetch.bind(window),gen=null;
 function res(st,j){return {ok:st<300,status:st,json:async function(){return j}}}
@@ -32,6 +32,7 @@ window.fetch=async function(url,init){
   var b=JSON.parse(init.body);window.__ctCalls.push(b);
   if(!/^Bearer /.test((init.headers||{}).Authorization||''))return res(401,{ok:false,code:'UNAUTHORIZED'});
   if(window.__ctFail&&(b.action==='month'||(window.__ctFail==='all'&&b.action==='coverage'&&b.backtestAccountId)))return res(401,{ok:false,code:'AUTH',error:'expired',needs_reconnect:true});
+  if(qp.get('ctbad')&&String(b.ctidAccount)===qp.get('ctbad')&&(b.action==='symbols'||b.action==='coverage'))return res(401,{ok:false,code:'AUTH',error:'expired',needs_reconnect:true});   // one broker account fails (ctbad=<ctid>)
   if(b.action==='symbols')return res(200,{ok:true,symbols:[[41,'GOLD'],[7,'EURGBP'],[2,'EURUSD.r'],[1,'EURUSD'],[8,'GBPUSD'],[40,'XAUUSD']]});
   if(b.action==='symbolInfo')return res(200,{ok:true,symbolId:b.symbolId,digits:b.symbolId===40||b.symbolId===41?2:5,pipPosition:4,lotSize:10000000});
   if(b.action==='coverage')return res(200,{ok:true,firstMonth:'2024-02',firstT:Date.UTC(2024,1,5)/1000,probes:9});

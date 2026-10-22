@@ -28,7 +28,7 @@
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
   var syncToastShown = false;
   var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
-    srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null };
+    srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
@@ -476,17 +476,21 @@
     if (c === 'NOT_FOUND') return _t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.');
     return _t('backtest.ctrader.err_upstream', 'Sunucu hatası: cTrader verisi şu an alınamıyor. Birazdan tekrar dene.');
   }
+  // Read at submit time from the lists themselves: the account is looked up in the accounts the select was filled from (not in the
+  // shared status cache, which may be refreshed or dropped while the form is open), the symbol comes from the symbol select.
   function ctSelection() {
-    var ctid = Number($('bt-f-ct-account').value), symSel = $('bt-f-ct-symbol'), symbolId = Number(symSel.value), acc = null;
-    if (L.ct) L.ct.accounts.forEach(function (a) { if (Number(a.ctid_trader_account_id) === ctid) acc = a; });
+    var accSel = $('bt-f-ct-account'), ctid = Number(accSel.value), symSel = $('bt-f-ct-symbol'), symbolId = Number(symSel.value);
+    var acc = ctid > 0 ? (L.ctFormAccts[String(accSel.value)] || null) : null;
     var opt = symSel.selectedIndex >= 0 ? symSel.options[symSel.selectedIndex] : null;
     return { ctid: ctid, acc: acc, symbolId: symbolId, symbolName: opt ? opt.textContent : '', ok: !!(acc && symbolId > 0 && opt) };
   }
   function fillCtAccounts() {
-    var sel = $('bt-f-ct-account'); sel.textContent = '';
+    var sel = $('bt-f-ct-account'); sel.textContent = ''; L.ctFormAccts = {};
     ((L.ct && L.ct.accounts) || []).forEach(function (a) {
       var o = document.createElement('option'); o.value = String(a.ctid_trader_account_id); o.textContent = ctAccountLabel(a); sel.appendChild(o);
+      L.ctFormAccts[o.value] = a;
     });
+    sel.selectedIndex = sel.options.length ? 0 : -1;                         // the default account is selected explicitly; the form reads the select itself
   }
   // `reconnect`: a lost/expired cTrader token needs a new connection, so the message carries a link to the connection page.
   function ctDepth(text, isError, reconnect) {
@@ -517,6 +521,7 @@
         if (seq !== ctSeq || !PAGE.alive) return;
         var cands = window.WwBtCTrader.matchBrokerSymbols(sym.id, list);
         cands.forEach(function (c) { var o = document.createElement('option'); o.value = String(c.id); o.textContent = c.name; symSel.appendChild(o); });
+        symSel.selectedIndex = cands.length ? 0 : -1;                         // default broker symbol selected explicitly
         if (!cands.length) { ctDepth(_t('backtest.ctrader.no_symbol', 'Bu cTrader hesabında {symbol} için eşleşen sembol bulunamadı.', { symbol: sym.name }), true); return; }
       }
       var symbolId = Number(symSel.value);
@@ -540,7 +545,7 @@
       var lost = !!(e && (e.code === 'AUTH' || e.needsReconnect));
       if (e && e.code === 'NOT_FOUND') ctDepth(_t('backtest.ctrader.no_data', 'Bu hesapta bu sembol için mum verisi yok.'), true);
       else ctDepth(ctErrorText(e), true, lost);
-      if (lost) { L.ct = null; }
+      if (lost) { if (L.ct) L.ct.at = 0; }                                   // refetch the status on the next open; the open form keeps its accounts
     }
   }
   function onSourceChange() {
@@ -1519,7 +1524,7 @@
     if (R) { try { pause(); saveReplayTime(true); R.abort.abort(); R.token++; } catch (e) { /* ignore */ } }
     if (themeObserver) themeObserver.disconnect();
     try { destroyChart(); } catch (e) { /* ignore */ }
-    R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; ctSeq++;
+    R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; L.ctFormAccts = {}; ctSeq++;
   }
   PAGE.onLeave(cleanup);
 
