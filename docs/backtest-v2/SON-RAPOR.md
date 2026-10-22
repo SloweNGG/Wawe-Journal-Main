@@ -1,3 +1,12 @@
+# Yeni özellik: defter bazlı "Hangi işlemler görünsün?" + defter penceresi düzeltmeleri (2026-10-22, yayında)
+
+- **Veritabanı:** `journals.trade_scope` ('live' varsayılan | 'backtest' | 'all'), Migration `202610220001_journal_trade_scope.sql` canlıda uygulandı (7 defterin hepsi 'live', ekranlar değişmedi). Yedek: `~/WaweJournal-Backups/20261022T125319Z/` (SHA256 doğrulandı). Önce canlıda işlem içinde (ROLLBACK ile) denendi: kapsam başına sayaçlar, eski 5 argümanlı `update_journal` çağrısı kapsamı korur, geçersiz kapsam hata verir, ACL'ler; rollback + veri kaybı koruması da denendi. Rollback: `docs/backtest-v2/sql/supabase/rollbacks/202610220001_journal_trade_scope.down.sql`.
+- **Kapsam kullanan yerler:** dashboard, premium analitik (PDF/CSV dahil), takvim, stratejiler, `list_journals` kartları, `get_journals_equity_data`, Trades varsayılan filtresi (elle değişir, oturumda defter başına hatırlanır). **Hep canlı:** prop, cTrader senkronu, overtrade/bildirimler, ana sayfa istatistikleri. Dashboard ve premium başlığında "Backtest dahil" / "Sadece backtest" rozeti.
+- **Pencere:** oluşturma ve düzenleme penceresinin 1. adımında üç seçenekli kontrol; tüm metinler tr/en/de i18n (eksik anahtarlar eklendi, `{tz}` ve "%10 Hedef" hataları düzeltildi); koyu temada saf siyah zemin, nötr beyaz çizgiler; açık tema aynı.
+- **Test:** 377/0 birim testi; pagecheck eski==yeni 6/6 sayfa birebir aynı (varsayılan 'live'); `pagecheck/scope-check.mjs` ('all' 137, 'backtest' 30 işlem, etiketler, prop tutarları her ayarda aynı, defter kartı K/Z); ekran görüntüleri (koyu/açık x tr/en/de x oluştur 1-3 / düzenle); canlı dosya SHA'ları eşleşti, canlı sitede tarayıcı kontrolü.
+
+---
+
 # Düzeltme turu: "Select a cTrader account." (cTrader hesap formu, 2026-10-22)
 
 **Belirti:** canlıda cTrader verili hesap açarken veri derinliği doğru geliyor, ama "Create account" "Select a cTrader account." diyor; liste seçili görünüyor.
