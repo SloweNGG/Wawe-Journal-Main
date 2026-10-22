@@ -6,6 +6,8 @@ Okuma sırası: `KURALLAR.md`, bu dosya, `SON-RAPOR.md` (en üst bölüm, "Faz 2
 
 - **2026-10-21 düzeltme (`e313b8a`, yayında):** formda "mum verisi yok" hatası için `coverage` sorgusu probe biçimine döndürüldü (`SON-RAPOR.md` en üst bölüm). Gerçek cTrader'la canlı doğrulama hâlâ yok (client secret makinede yok); sahibin denemesi bekleniyor. Sorun sürerse fonksiyon logundaki `ctrader-candles error: coverage ...` satırına bak.
 
+- **2026-10-22 düzeltme 2 (`743e7a3`, yayında):** kapanan backtest işlemleri defterde (Trades, Tümü/Backtest) görünmüyordu. Canlı DB salt okunur kontrol: hesap `d30d90b8…` bağlı (journal dolu), 8/8 kapanan işlem `backtest_account_trades`'te VE `trades`'te kopyalı, aktarılmamış işlem yok (tüm hesaplar için 0). Kök neden önbellek: Trades `trades@all` listesi sessionStorage'da 2 dk tutuluyordu, yenilemede aynen dönüyor, başka sekmede/sayfa değişirken yazılan senkron bu sekmenin önbelleğini silmiyordu. Düzeltme: `cache.js` localStorage geçersiz kılma damgası (sekmeler arası), `trades.js` önbellekten çizip arka planda yeniden doğrulama; testler `tests/trades-source.test.js`; `sw.js` v19.
+
 - **2026-10-22 düzeltme (yayında):** hesap formunda "Select a cTrader account." hatası (bir broker hesabı bağlantı hatası verince ortak önbellek siliniyordu); ayrıntı `SON-RAPOR.md` en üst bölüm. Yeni duman testi: `smoke/driver-ct-form.js`.
 
 - **Yayında (2026-10-21):** Migration 09 canlıda, `ctrader-candles` v1 ve `ctrader-sync` v7 yayınlandı (`--no-verify-jwt`), master `7d864fd` (merge) push edildi, canlı `webcheck` 24/0, dosya SHA-1'leri eşleşti.
