@@ -194,16 +194,22 @@
   // KAYNAK KAPSAMI (Canlı / Backtest / Tümü) — Backtest v2
   // ============================================================
   // Liste 'all' kapsamıyla çekilir (düzenleme her satırı bulabilsin); görünüm, sayfalama ve
-  // stat kartları seçili kapsama göre süzülür. Varsayılan 'live' (R20); seçim yalnızca bu oturumda
-  // hatırlanır (sessionStorage), her yeni oturum Canlı ile açılır.
+  // stat kartları seçili kapsama göre süzülür. Varsayılan filtre defterin trade_scope ayarıdır
+  // (journals.trade_scope: live | backtest | all; varsayılan 'live', R20); kullanıcı filtreyi elle değiştirebilir,
+  // bu seçim yalnızca bu oturumda ve o defter için hatırlanır (sessionStorage).
   var SCOPE_KEY = 'ww_trades_scope';
-  var scopeFilter = (function () {
+  function scopeStoreKey(jid) { return SCOPE_KEY + ':' + (jid || ''); }
+  function resolveScopeFilter(jid) {
+    var dflt = (window.WwTrades && window.WwTrades.journalScope) ? window.WwTrades.journalScope(jid) : 'live';
     try {
-      var s = sessionStorage.getItem(SCOPE_KEY);
-      return (s === 'live' || s === 'backtest' || s === 'all') ? s : 'live';
-    } catch (e) { return 'live'; }
-  })();
-  function saveScope(s) { try { sessionStorage.setItem(SCOPE_KEY, s); } catch (e) {} }
+      var s = sessionStorage.getItem(scopeStoreKey(jid));
+      return (s === 'live' || s === 'backtest' || s === 'all') ? s : dflt;
+    } catch (e) { return dflt; }
+  }
+  var scopeFilter = resolveScopeFilter(window.journal && window.journal.getActiveJournalId ? window.journal.getActiveJournalId() : null);
+  function saveScope(s) {
+    try { sessionStorage.setItem(scopeStoreKey(window.journal ? window.journal.getActiveJournalId() : null), s); } catch (e) {}
+  }
   function isBacktestRow(t) { return window.WwTrades.isBacktest(t); }
   function findTrade(id) { return allTrades.find(function (x) { return x.id === id; }); }
   // _t() anahtar eksikse anahtarın kendisini döndürür: JS'te üretilen metinler için yedekli sürüm
@@ -1081,6 +1087,11 @@
         jid = await window.journal.ensureActiveJournal(userId);
       } catch (e) { }
     }
+
+    // Varsayılan kaynak filtresi = defterin trade_scope ayarı (elle yapılan seçim bu oturumda önceliklidir)
+    try { if (jid && window.WwTrades.resolveJournalScope) await window.WwTrades.resolveJournalScope(jid); } catch (e) {}
+    scopeFilter = resolveScopeFilter(jid);
+    try { var scopeSel = safeEl('scope-filter'); if (scopeSel) scopeSel.value = scopeFilter; } catch (e) {}
 
     // Bu sayfa TÜM kapsamları çeker (Canlı / Backtest / Tümü süzgeci + düzenleme). Karışık liste yalnızca
     // 'trades@all' anahtarında tutulur (cache.js: çapraz beslenmez); 'trades' anahtarına canlı alt küme yazılır.

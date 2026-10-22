@@ -2872,3 +2872,21 @@ html.light-theme .wj-ambient-backdrop {
 @supports not selector(::-webkit-scrollbar) {
   * { scrollbar-width: thin; scrollbar-color: var(--border2, rgba(139, 92, 246, 0.35)) transparent; }
 }
+
+/* Defter kapsamı rozeti (dashboard / premium analitik): "Backtest dahil" / "Sadece backtest" (amber, .badge-backtest ile aynı dil) */
+.ww-scope-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--yellow);
+  background: var(--yellow-bg);
+  border: 1px solid color-mix(in srgb, var(--yellow) 35%, transparent);
+}
+.ww-scope-badge[hidden] { display: none; }

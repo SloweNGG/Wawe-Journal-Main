@@ -96,16 +96,37 @@
   }
 
   function liveRows(jid) { return tbl('trades').filter(function (t) { return t.journal_id === jid && (!FLAGS.rpcLiveOnly || t.platform_source !== 'backtest'); }); }
+  // journals.trade_scope (live | backtest | all; missing = live): same rule as list_journals() in migration 202610220001
+  function scopeRows(j) {
+    var sc = j.trade_scope || 'live';
+    return tbl('trades').filter(function (t) {
+      if (t.journal_id !== j.id) return false;
+      if (sc === 'all') return true;
+      if (sc === 'backtest') return t.platform_source === 'backtest';
+      return !FLAGS.rpcLiveOnly || t.platform_source !== 'backtest';
+    });
+  }
   var RPC = {
+    create_journal: function (a) {
+      var row = { id: 'aaaaaaaa-0000-4000-8000-' + String(tbl('journals').length + 1).padStart(12, '0'), user_id: window.__USER.id, name: a.p_name, description: a.p_description || null, color: a.p_color || '#7c6dfa',
+        icon: a.p_icon || 'folder', is_default: false, is_active: true, created_at: new Date().toISOString(), trade_scope: a.p_trade_scope || 'live' };
+      tbl('journals').push(row); return row;
+    },
+    update_journal: function (a) {
+      var j = tbl('journals').filter(function (x) { return x.id === a.p_journal_id; })[0];
+      if (!j) throw new Error('JOURNAL_NOT_FOUND');
+      j.name = a.p_name; j.description = a.p_description; j.color = a.p_color; j.icon = a.p_icon; if (a.p_trade_scope) j.trade_scope = a.p_trade_scope;
+      return j;
+    },
     list_journals: function () {
       return tbl('journals').filter(function (j) { return j.is_active !== false; }).map(function (j) {
-        var rows = liveRows(j.id), wins = rows.filter(function (r) { return r.pnl > 0; }).length, sum = 0, last = null;
+        var rows = scopeRows(j), wins = rows.filter(function (r) { return r.pnl > 0; }).length, sum = 0, last = null;
         rows.forEach(function (r) { sum += Number(r.pnl) || 0; if (!last || r.trade_date > last) last = r.trade_date; });
         return { id: j.id, name: j.name, description: j.description || null, color: j.color || '#7c6dfa', icon: j.icon || 'folder', is_default: !!j.is_default,
           trade_count: rows.length, strategy_count: tbl('strategies').filter(function (s) { return s.journal_id === j.id; }).length,
           total_pnl: sum, win_rate: rows.length ? wins / rows.length * 100 : 0, last_trade_date: last ? last.slice(0, 10) : null, created_at: j.created_at, max_journals: 10, can_create: true,
           platform: j.platform || null, is_connected: !!j.is_connected, connection_status: j.connection_status || 'disconnected', last_synced_at: null,
-          is_prop_firm: false, prop_firm_rules: null, prop_firm_status: 'none', prop_firm_stats: null };
+          is_prop_firm: false, prop_firm_rules: null, prop_firm_status: 'none', prop_firm_stats: null, trade_scope: j.trade_scope || 'live' };
       });
     },
     get_platform_stats: function () {
@@ -117,7 +138,7 @@
   var session = { user: window.__USER, access_token: 'x', expires_at: 9999999999 };
   var emu = {
     from: from,
-    rpc: function (name) { return Promise.resolve().then(function () { window.__calls.push({ rpc: name }); var f = RPC[name]; return { data: f ? f() : null, error: null }; }); },
+    rpc: function (name, args) { return Promise.resolve().then(function () { window.__calls.push({ rpc: name }); var f = RPC[name]; return { data: f ? f(args || {}) : null, error: null }; }); },
     auth: {
       getSession: function () { return Promise.resolve({ data: { session: session }, error: null }); },
       getUser: function () { return Promise.resolve({ data: { user: window.__USER }, error: null }); },

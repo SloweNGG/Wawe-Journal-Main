@@ -3073,15 +3073,18 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       } catch (e) { }
     }
 
-    // Canlı kapsam: backtest işlemleri dashboard'a ASLA girmez (WwTrades, trades-source.js)
+    // Kapsam: defterin trade_scope ayarı (varsayılan 'live': backtest işlemleri dashboard'a girmez). WwTrades, trades-source.js
     var WT = window.WwTrades;
+    var scope = await WT.resolveJournalScope(jid);
+    var CACHE_KEY = WT.cacheKey('trades_dashboard', scope);   // 'live' iken 'trades_dashboard' (eski anahtar)
+    try { WT.applyScopeBadge(safeEl('scope-badge'), scope); } catch (e) { }
     var DASH_COLS = ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier', 'platform_source'];
 
     // ⚡ SWR Önbellek Kontrolü: Varsa hemen önbellekten dön (0ms gecikme)
     if (typeof window !== 'undefined' && window.wwCache) {
-      var cachedTrades = window.wwCache.get('trades_dashboard', userId, jid, DASH_COLS);
+      var cachedTrades = window.wwCache.get(CACHE_KEY, userId, jid, DASH_COLS);
       if (cachedTrades && cachedTrades.length > 0) {
-        return WT.filterScope(cachedTrades, 'live');
+        return WT.filterScope(cachedTrades, scope);
       }
     }
 
@@ -3092,7 +3095,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         userId: userId,
         journalId: jid,
         columns: DASH_COLS.join(','),
-        scope: 'live',
+        scope: scope,
         ascending: false,
         unassignedFallback: !!jid
       });
@@ -3106,9 +3109,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       var finalResult = res.data.reverse();
 
-      // ⚡ Sonucu önbelleğe kaydet ('trades_dashboard' = yalnızca canlı satırlar; cache.js sözleşmesi)
+      // ⚡ Sonucu önbelleğe kaydet ('trades_dashboard' = yalnızca canlı satırlar; kapsamlı listeler '@kapsam' anahtarında, cache.js sözleşmesi)
       if (typeof window !== 'undefined' && window.wwCache) {
-        window.wwCache.set('trades_dashboard', userId, jid, finalResult);
+        window.wwCache.set(CACHE_KEY, userId, jid, finalResult);
       }
 
       return finalResult;

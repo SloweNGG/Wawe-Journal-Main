@@ -35,6 +35,8 @@ function handleJournalError(error) {
     err.code = 'QUOTA_EXCEEDED';
   } else if (msg.includes('INVALID_NAME')) {
     err.code = 'INVALID_NAME';
+  } else if (msg.includes('INVALID_TRADE_SCOPE')) {
+    err.code = 'INVALID_TRADE_SCOPE';
   } else if (msg.includes('JOURNAL_NOT_FOUND')) {
     err.code = 'NOT_FOUND';
   } else if (msg.includes('CANNOT_DELETE_DEFAULT')) {
@@ -80,6 +82,8 @@ export async function listJournals(forceRefresh = false) {
       }
 
       if (error) handleJournalError(error);
+      // Defter bazlı işlem kapsamı (trade_scope) sayfalar tarafından senkron okunur
+      try { if (window.WwTrades && data) window.WwTrades.rememberJournalScopes(data); } catch (e) {}
       return data || [];
     } finally {
       setTimeout(() => { _listJournalsPromise = null; }, 2000);
@@ -120,28 +124,40 @@ export async function ensureActiveJournal(userId) {
   }
 }
 
-export async function createJournal({ name, description, color, icon }) {
+// trade_scope: 'live' | 'backtest' | 'all' (verilmezse oluşturmada 'live', güncellemede mevcut değer korunur)
+function rememberScopeFromRow(row, fallbackId) {
+  try {
+    const r = Array.isArray(row) ? row[0] : row;
+    if (r && r.trade_scope && window.WwTrades) window.WwTrades.setJournalScope(r.id || fallbackId, r.trade_scope);
+  } catch (e) {}
+}
+
+export async function createJournal({ name, description, color, icon, trade_scope }) {
   const sb = getSbClient();
   const { data, error } = await sb.rpc('create_journal', {
     p_name: name,
     p_description: description,
     p_color: color,
-    p_icon: icon
+    p_icon: icon,
+    p_trade_scope: trade_scope || 'live'
   });
   if (error) handleJournalError(error);
+  rememberScopeFromRow(data);
   return data;
 }
 
-export async function updateJournal(id, { name, description, color, icon }) {
+export async function updateJournal(id, { name, description, color, icon, trade_scope }) {
   const sb = getSbClient();
   const { data, error } = await sb.rpc('update_journal', {
     p_journal_id: id,
     p_name: name,
     p_description: description,
     p_color: color,
-    p_icon: icon
+    p_icon: icon,
+    p_trade_scope: trade_scope || null
   });
   if (error) handleJournalError(error);
+  rememberScopeFromRow(data, id);
   return data;
 }
 

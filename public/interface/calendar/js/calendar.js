@@ -861,16 +861,22 @@ async function loadCalendarTradesFromDB(userId) {
     return [];
   }
 
+  // Kapsam: defterin trade_scope ayarı (varsayılan 'live': backtest takvime girmez)
+  var tScope = await window.WwTrades.resolveJournalScope(jid);
+
   // ⚡ SWR Önbellek Kontrolü: trades_calendar, trades veya trades_dashboard varsa 0ms beklemeden dön
   if (typeof window !== 'undefined' && window.wwCache) {
     var calCols = ['id', 'trade_date', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'lot', 'direction', 'instrument', 'multiplier', 'symbol', 'pnl', 'platform_source'];
-    var cachedTrades = window.wwCache.get('trades_calendar', userId, jid, calCols) ||
-                       window.wwCache.get('trades', userId, jid, calCols) ||
-                       window.wwCache.get('trades_dashboard', userId, jid, calCols);
+    var cachedTrades = tScope === 'live'
+      ? (window.wwCache.get('trades_calendar', userId, jid, calCols) ||
+         window.wwCache.get('trades', userId, jid, calCols) ||
+         window.wwCache.get('trades_dashboard', userId, jid, calCols))
+      // kapsamlı listeler çapraz beslenmez: yalnızca kendi '@kapsam' anahtarı (cache.js sözleşmesi)
+      : window.wwCache.get(window.WwTrades.cacheKey('trades_calendar', tScope), userId, jid, calCols);
     if (cachedTrades && cachedTrades.length > 0) {
       // Arka planda sessizce taze verileri kontrol et (SWR revalidate)
       fetchFreshCalendarTrades(userId, jid);
-      return window.WwTrades.filterScope(cachedTrades, 'live');   // savunma katmanı: backtest takvime girmez
+      return window.WwTrades.filterScope(cachedTrades, tScope);   // savunma katmanı
     }
   }
 
@@ -888,12 +894,13 @@ async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
   var allTrades = [];
 
   try {
-    // Canlı kapsam: backtest işlemleri takvime ve gün PDF/CSV'sine girmez (WwTrades); sayfalama fetchAll içinde
+    // Kapsam: defterin trade_scope ayarı (takvim ve gün PDF/CSV'si); sayfalama fetchAll içinde
+    var tScope = window.WwTrades.journalScope(jid);
     var res = await window.WwTrades.fetchAll({
       userId: userId,
       journalId: jid,
       columns: 'id,trade_date,entry_price,exit_price,stop_loss,take_profit,lot,direction,instrument,multiplier,symbol,pnl,platform_source',
-      scope: 'live',
+      scope: tScope,
       ascending: false
     });
 
@@ -910,7 +917,7 @@ async function fetchFreshCalendarTrades(userId, jid, isInitialLoad) {
     if (typeof window !== 'undefined' && window.wwCache) {
       // Yalnızca kendi anahtarına yaz; ortak 'trades' anahtarına eksik kolonlu liste yazılmaz
       // (çapraz besleme cache.js içinde kolon farkındalığıyla yapılır).
-      window.wwCache.set('trades_calendar', userId, jid, allTrades);
+      window.wwCache.set(window.WwTrades.cacheKey('trades_calendar', tScope), userId, jid, allTrades);
     }
 
     if (!isInitialLoad && calendarTrades) {

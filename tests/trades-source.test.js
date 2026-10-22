@@ -304,3 +304,114 @@ describe('cache.js sekmeler arası geçersiz kılma', () => {
     assert.equal(win.wwCache.get('trades', 'u', 'j'), null);
   });
 });
+
+describe('WwTrades defter bazlı kapsam (journals.trade_scope)', () => {
+  function withStorage(extra = {}) {
+    const ls = {};
+    const localStorage = { getItem: (k) => (k in ls ? ls[k] : null), setItem: (k, v) => { ls[k] = String(v); }, removeItem: (k) => { delete ls[k]; } };
+    const r = load({ localStorage, ...extra });
+    return { ...r, ls };
+  }
+
+  it('bilinmeyen / eksik defter = live (mevcut davranış)', () => {
+    const { T } = withStorage();
+    assert.equal(T.journalScope('j1'), 'live');
+    assert.equal(T.journalScope(null), 'live');
+    assert.equal(T.journalScope(undefined), 'live');
+  });
+
+  it('rememberJournalScopes: list_journals sonucundan okunur, geçersiz değer live olur, silinen defter düşer', () => {
+    const { T } = withStorage();
+    T.rememberJournalScopes([{ id: 'a', trade_scope: 'all' }, { id: 'b', trade_scope: 'backtest' }, { id: 'c', trade_scope: 'bogus' }, { id: 'd' }]);
+    assert.equal(T.journalScope('a'), 'all');
+    assert.equal(T.journalScope('b'), 'backtest');
+    assert.equal(T.journalScope('c'), 'live');
+    assert.equal(T.journalScope('d'), 'live');
+    T.rememberJournalScopes([{ id: 'a', trade_scope: 'live' }]);
+    assert.equal(T.journalScope('a'), 'live');
+    assert.equal(T.journalScope('b'), 'live');   // artık listede yok
+    T.rememberJournalScopes('not an array');     // yok sayılır
+    assert.equal(T.journalScope('a'), 'live');
+  });
+
+  it('setJournalScope tek defteri günceller, diğerlerine dokunmaz', () => {
+    const { T } = withStorage();
+    T.rememberJournalScopes([{ id: 'a', trade_scope: 'live' }, { id: 'b', trade_scope: 'all' }]);
+    T.setJournalScope('a', 'backtest');
+    assert.equal(T.journalScope('a'), 'backtest');
+    assert.equal(T.journalScope('b'), 'all');
+    T.setJournalScope('a', 'nonsense');
+    assert.equal(T.journalScope('a'), 'live');
+  });
+
+  it('localStorage yoksa / bozuksa live, istisna yok', () => {
+    const { T } = load({});
+    assert.equal(T.journalScope('a'), 'live');
+    assert.doesNotThrow(() => T.rememberJournalScopes([{ id: 'a', trade_scope: 'all' }]));
+    const bad = withStorage();
+    bad.ls['ww_journal_scopes'] = '{not json';
+    assert.equal(bad.T.journalScope('a'), 'live');
+    bad.ls['ww_journal_scopes'] = '[1,2]';
+    assert.equal(bad.T.journalScope('a'), 'live');
+  });
+
+  it('resolveJournalScope: haritada varsa ağa gitmez; yoksa listJournals çağırır ve harita dolar; hata = live', async () => {
+    let calls = 0;
+    const win = withStorage();
+    win.win.journal = { listJournals: async () => { calls++; win.T.rememberJournalScopes([{ id: 'x', trade_scope: 'all' }]); return []; } };
+    assert.equal(await win.T.resolveJournalScope('x'), 'all');       // haritada yoktu -> listelendi
+    assert.equal(calls, 1);
+    assert.equal(await win.T.resolveJournalScope('x'), 'all');       // artık haritada
+    assert.equal(calls, 1);
+    assert.equal(await win.T.resolveJournalScope(null), 'live');
+    const failing = withStorage();
+    failing.win.journal = { listJournals: async () => { throw new Error('down'); } };
+    assert.equal(await failing.T.resolveJournalScope('y'), 'live');
+    const none = withStorage();
+    assert.equal(await none.T.resolveJournalScope('z'), 'live');     // journal köprüsü yok
+  });
+
+  it('kapsamlı önbellek anahtarı: live = eski anahtar, diğerleri @kapsam', () => {
+    const { T } = withStorage();
+    for (const base of ['trades_dashboard', 'trades_premium', 'trades_calendar', 'trades_strategies']) {
+      assert.equal(T.cacheKey(base, T.journalScope('x')), base);
+    }
+    T.setJournalScope('x', 'all');
+    assert.equal(T.cacheKey('trades_dashboard', T.journalScope('x')), 'trades_dashboard@all');
+    T.setJournalScope('x', 'backtest');
+    assert.equal(T.cacheKey('trades_calendar', T.journalScope('x')), 'trades_calendar@backtest');
+  });
+
+  it('applyScopeBadge: live gizli, all "Backtest dahil", backtest "Sadece backtest"; i18n varsa onu kullanır', () => {
+    const el = { hidden: true, textContent: '', attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; } };
+    const { T } = withStorage();
+    T.applyScopeBadge(el, 'live');
+    assert.equal(el.hidden, true); assert.equal(el.textContent, ''); assert.equal(el.attrs['data-i18n'], undefined);
+    T.applyScopeBadge(el, 'all');
+    assert.equal(el.hidden, false); assert.equal(el.textContent, 'Backtest dahil'); assert.equal(el.attrs['data-i18n'], 'scope.badge_all');
+    T.applyScopeBadge(el, 'backtest');
+    assert.equal(el.textContent, 'Sadece backtest'); assert.equal(el.attrs['data-i18n'], 'scope.badge_backtest');
+    const i18n = { t: (k) => ({ 'scope.badge_all': 'Backtest included' }[k] || k) };
+    const w = withStorage({ i18n });
+    w.T.applyScopeBadge(el, 'all');
+    assert.equal(el.textContent, 'Backtest included');
+    w.T.applyScopeBadge(el, 'backtest');   // anahtar yoksa yedek metin
+    assert.equal(el.textContent, 'Sadece backtest');
+    assert.doesNotThrow(() => w.T.applyScopeBadge(null, 'all'));
+    w.T.applyScopeBadge(el, 'live');
+    assert.equal(el.hidden, true);
+  });
+
+  it('fetchAll scope=all: sorguya kapsam süzgeci eklenmez; scope=backtest: eq platform_source', async () => {
+    const { T } = withStorage();
+    const all = recordingClient(() => ({ data: [{ id: 1 }], error: null }));
+    await T.fetchAll({ client: all, userId: 'u', journalId: 'j', columns: 'id', scope: 'all' });
+    assert.deepEqual(all.calls[0].filters, [['eq', 'user_id', 'u'], ['eq', 'journal_id', 'j']]);
+    const bt = recordingClient(() => ({ data: [{ id: 1 }], error: null }));
+    await T.fetchAll({ client: bt, userId: 'u', journalId: 'j', columns: 'id', scope: 'backtest' });
+    assert.deepEqual(bt.calls[0].filters, [['eq', 'user_id', 'u'], ['eq', 'journal_id', 'j'], ['eq', 'platform_source', 'backtest']]);
+    const live = recordingClient(() => ({ data: [{ id: 1 }], error: null }));
+    await T.fetchAll({ client: live, userId: 'u', journalId: 'j', columns: 'id', scope: T.journalScope('unknown') });
+    assert.deepEqual(live.calls[0].filters, [['eq', 'user_id', 'u'], ['eq', 'journal_id', 'j'], ['or', T.LIVE_OR]]);
+  });
+});
