@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v18'; // cTrader hesap formu: seçili hesap gönderimde seçim listesinden okunur (bir önceki aşamadan +1)
+const CACHE_VERSION = 'wawe-v19'; // Trades/önbellek: sekmeler arası geçersiz kılma damgası + arka plan yeniden doğrulama (bir önceki aşamadan +1)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

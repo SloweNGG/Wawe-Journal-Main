@@ -26,6 +26,31 @@
   var CACHE_TTL_MS = 2 * 60 * 1000; // 2 dakika tazelik süresi
   var memoryCache = new Map();
 
+  // Sekmeler arası geçersiz kılma: invalidate() başka bir sekmenin sessionStorage'ını silemez. Bu yüzden her
+  // geçersiz kılma localStorage'a bir damga yazar (aileye göre: trades* / strategies*); damgadan ESKİ her kayıt
+  // (RAM ya da sessionStorage) bayat sayılır. Aksi halde başka sekmede/sayfa değişirken yapılan bir yazım
+  // (ör. backtest -> defter senkronu) bu sekmede 2 dakika boyunca, yenilemeye rağmen görünmezdi.
+  var INVAL_PREFIX = 'ww_cache_inval_';
+  function family(prefix) {
+    var p = String(prefix || '').split(':')[0];
+    if (/^trades/.test(p)) return 'trades';
+    if (/^strategies/.test(p)) return 'strategies';
+    return p || 'all';
+  }
+  function invalStamp(prefix) {
+    try {
+      var v = parseInt(localStorage.getItem(INVAL_PREFIX + family(prefix)) || '0', 10);
+      return v > 0 ? v : 0;
+    } catch (e) { return 0; }
+  }
+  function writeInvalStamp(prefix) {
+    try { localStorage.setItem(INVAL_PREFIX + family(prefix), String(Date.now())); } catch (e) {}
+  }
+  // Kayıt hem TTL içinde hem de son geçersiz kılmadan sonra mı yazılmış?
+  function isFresh(key, timestamp) {
+    return Date.now() - timestamp < CACHE_TTL_MS && timestamp >= invalStamp(key);
+  }
+
   function getCacheKey(prefix, userId, journalId) {
     return (prefix || 'trades') + ':' + (userId || 'anon') + ':' + (journalId || 'all');
   }
@@ -67,12 +92,12 @@
   // Ham (çapraz mantık olmadan) taze kayıt: önce RAM, sonra sessionStorage
   function readLiveEntry(key) {
     var item = memoryCache.get(key);
-    if (item && Date.now() - item.timestamp < CACHE_TTL_MS) return item;
+    if (item && isFresh(key, item.timestamp)) return item;
     try {
       var raw = sessionStorage.getItem('ww_cache_' + key);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (Date.now() - parsed.timestamp < CACHE_TTL_MS) return parsed;
+        if (isFresh(key, parsed.timestamp)) return parsed;
       }
     } catch (e) {}
     return null;
@@ -104,7 +129,7 @@
         // 1. Önce RAM (Memory Cache) kontrolü
         if (memoryCache.has(key)) {
           var item = memoryCache.get(key);
-          if (Date.now() - item.timestamp < CACHE_TTL_MS) {
+          if (isFresh(key, item.timestamp)) {
             if (hasCols(item.data, needCols)) return item.data;
           } else {
             memoryCache.delete(key);
@@ -115,7 +140,7 @@
         var raw = sessionStorage.getItem('ww_cache_' + key);
         if (raw) {
           var parsed = JSON.parse(raw);
-          if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+          if (isFresh(key, parsed.timestamp)) {
             if (hasCols(parsed.data, needCols)) {
               memoryCache.set(key, parsed);
               return parsed.data;
@@ -160,7 +185,7 @@
               }
             }
             if (dashTrades && Array.isArray(dashTrades.data) && dashTrades.data.length > 0 &&
-                Date.now() - dashTrades.timestamp < CACHE_TTL_MS && hasCols(dashTrades.data, needCols)) {
+                isFresh(dashKey, dashTrades.timestamp) && hasCols(dashTrades.data, needCols)) {
               var descTrades = dashTrades.data.slice().reverse();
               memoryCache.set(key, { timestamp: Date.now(), data: descTrades });
               memoryCache.set(mainKey, { timestamp: Date.now(), data: descTrades });
@@ -220,6 +245,8 @@
      */
     invalidate: function(prefix) {
       try {
+        if (prefix) writeInvalStamp(prefix);
+        else { writeInvalStamp('trades'); writeInvalStamp('strategies'); }
         memoryCache.clear();
         for (var i = sessionStorage.length - 1; i >= 0; i--) {
           var k = sessionStorage.key(i);

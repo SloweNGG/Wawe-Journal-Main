@@ -234,3 +234,73 @@ describe('cache.js kapsam sözleşmesi', () => {
     assert.equal(C.get('trades@all', 'u', 'j'), null);
   });
 });
+
+describe('cache.js sekmeler arası geçersiz kılma', () => {
+  // İki sekme: ayrı RAM + sessionStorage, ortak localStorage ve saat.
+  function tabs() {
+    const clock = { t: 1000000 };
+    const FakeDate = { now: () => clock.t };
+    const ls = {};
+    const localStorage = {
+      getItem: (k) => (k in ls ? ls[k] : null),
+      setItem: (k, v) => { ls[k] = String(v); },
+      removeItem: (k) => { delete ls[k]; }
+    };
+    function tab() {
+      const store = {};
+      const sessionStorage = {
+        getItem: (k) => (k in store ? store[k] : null),
+        setItem: (k, v) => { store[k] = String(v); },
+        removeItem: (k) => { delete store[k]; },
+        key: (i) => Object.keys(store)[i],
+        get length() { return Object.keys(store).length; }
+      };
+      const win = { sessionStorage, localStorage, addEventListener: () => {}, Map, Date: FakeDate, JSON };
+      win.window = win;
+      vm.runInNewContext(cacheCode, win);
+      return win.wwCache;
+    }
+    return { clock, A: tab(), B: tab() };
+  }
+  const live = [{ id: 'l1', platform_source: null }];
+  const mixed = [{ id: 'b1', platform_source: 'backtest' }, { id: 'l1', platform_source: null }];
+
+  it('başka sekmede invalidate: bu sekmenin (RAM ve sessionStorage) kaydı bayat sayılır', () => {
+    const { clock, A, B } = tabs();
+    A.set('trades@all', 'u', 'j', live);
+    A.set('trades', 'u', 'j', live);
+    assert.equal(plainJson(A.get('trades@all', 'u', 'j')).length, 1);
+    clock.t += 5000;
+    B.invalidate('trades');                       // başka sekmede senkron yazdı
+    assert.equal(A.get('trades@all', 'u', 'j'), null);
+    assert.equal(A.get('trades', 'u', 'j'), null);
+    assert.equal(A.get('trades_dashboard', 'u', 'j'), null);
+  });
+
+  it('geçersiz kılmadan SONRA yazılan kayıt taze kalır; strategies damgası trades\'i etkilemez', () => {
+    const { clock, A, B } = tabs();
+    clock.t += 1000;
+    B.invalidate('trades');
+    clock.t += 1000;
+    A.set('trades@all', 'u', 'j', mixed);
+    assert.equal(plainJson(A.get('trades@all', 'u', 'j')).length, 2);
+    clock.t += 1000;
+    B.invalidate('strategies');
+    assert.equal(plainJson(A.get('trades@all', 'u', 'j')).length, 2);
+    A.set('strategies', 'u', 'j', [{ id: 's1' }]);
+    clock.t += 1000;
+    B.invalidate('strategies');
+    assert.equal(A.get('strategies', 'u', 'j'), null);
+  });
+
+  it('localStorage yoksa (özel pencere) eski davranış: yerel invalidate çalışır, hata atmaz', () => {
+    const win = { sessionStorage: { getItem: () => null, setItem() {}, removeItem() {}, key: () => null, length: 0 }, addEventListener: () => {}, Map, Date, JSON };
+    win.window = win;
+    Object.defineProperty(win, 'localStorage', { get() { throw new Error('blocked'); } });
+    vm.runInNewContext(cacheCode, win);
+    win.wwCache.set('trades', 'u', 'j', live);
+    assert.equal(plainJson(win.wwCache.get('trades', 'u', 'j')).length, 1);
+    win.wwCache.invalidate('trades');
+    assert.equal(win.wwCache.get('trades', 'u', 'j'), null);
+  });
+});

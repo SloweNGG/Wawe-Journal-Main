@@ -1051,6 +1051,29 @@
   // ⭐ OPTİMİZE EDİLMİŞ LOAD TRADES
   // ============================================================
   
+  // Önbellekten hemen çizilen liste arka planda yeniden çekilir; fark varsa (örn. backtest senkronuyla gelen
+  // yeni satırlar) liste sessizce güncellenir. Hata sessizce yutulur: önbellekli liste zaten görünüyor.
+  function tradesSignature(list) {
+    return (list || []).map(function (t) { return t.id + ':' + (t.exit_price == null ? '' : t.exit_price) + ':' + (t.pnl == null ? '' : t.pnl) + ':' + (t.platform_source || ''); }).join('|');
+  }
+  async function revalidateTrades(userId, jid, shown) {
+    try {
+      var WT = window.WwTrades;
+      var res = await WT.fetchAll({ userId: userId, journalId: jid, columns: TRADES_COLS, scope: 'all', ascending: false, unassignedFallback: !!jid });
+      if (!PAGE.alive || !res || res.error || !Array.isArray(res.data)) return;
+      var current = window.journal ? window.journal.getActiveJournalId() : null;
+      if (jid && current && current !== jid) return;   // defter bu arada değişti
+      if (tradesSignature(res.data) === tradesSignature(shown)) return;
+      if (window.wwCache) {
+        window.wwCache.set(WT.cacheKey('trades', 'all'), userId, jid, res.data);
+        window.wwCache.set('trades', userId, jid, WT.filterScope(res.data, 'live'));
+      }
+      if (allTrades !== shown) return;   // sayfa bu arada yeniden yüklendi: o kendi listesini taşıyor
+      allTrades = res.data;
+      applyFiltersAndSort();
+    } catch (e) { /* sessiz */ }
+  }
+
   async function loadTrades(userId) {
     var jid = window.journal ? window.journal.getActiveJournalId() : null;
     if (!jid && window.journal && typeof window.journal.ensureActiveJournal === 'function') {
@@ -1068,6 +1091,7 @@
     if (typeof window !== 'undefined' && window.wwCache) {
       var cachedTrades = window.wwCache.get(ALL_KEY, userId, jid, TRADES_COLS.split(','));
       if (cachedTrades && cachedTrades.length > 0) {
+        revalidateTrades(userId, jid, cachedTrades);   // önbellek bayat olabilir (başka sekmede/sayfa değişirken yazılan senkron)
         return cachedTrades;
       }
     }
