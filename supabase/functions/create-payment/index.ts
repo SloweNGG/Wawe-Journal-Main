@@ -128,6 +128,24 @@ function validateCurrency(currency: string): boolean {
 // (Eskiden burada kullanılmayan, USD dışı sabit kurlar içeren fiyat yardımcıları vardı; kaldırıldı. Fiyat
 // ana handler'da system_settings'ten USD olarak okunur.)
 
+// ⭐ Supabase client
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+let supabaseClient: any = null;
+let supabaseAdminClient: any = null;
+
+try {
+  if (supabaseUrl && supabaseAnonKey) {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    if (supabaseServiceKey) {
+      supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey);
+    }
+  }
+} catch (e) {
+  console.warn('⚠️ Supabase client initialization failed:', e);
+}
+
 // ⭐ Fetch with timeout
 async function fetchWithTimeout(url: string, options: RequestInit, timeout: number = 10000): Promise<Response> {
   const controller = new AbortController();
