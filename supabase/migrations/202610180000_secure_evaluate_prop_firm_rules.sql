@@ -2,10 +2,9 @@
 -- WAWE JOURNAL - SECURITY FIX: evaluate_prop_firm_rules(uuid) OWNERSHIP CHECK + NO ANON ACCESS
 -- Migration: 202610180000_secure_evaluate_prop_firm_rules.sql
 -- Description:
---   public.evaluate_prop_firm_rules(uuid) is SECURITY DEFINER, executable by anon and PUBLIC, and does
---   not check who calls it: anyone with the public anon key could call /rest/v1/rpc/evaluate_prop_firm_rules
---   with ANY journal id and make it UPDATE journals.prop_firm_status / prop_firm_stats (IDOR).
---   This migration closes it without dropping anything (Migration 06 may drop it later):
+--   Hardens public.evaluate_prop_firm_rules(uuid) (SECURITY DEFINER): it must only be callable by signed-in
+--   users for journals they own. This migration does so without dropping anything (Migration 06 may drop
+--   it later):
 --     1. EXECUTE is revoked from PUBLIC and anon; authenticated and service_role keep it
 --        (sync_journal_trades calls it as the journal owner).
 --     2. The body gets an ownership check: a caller with a user id (auth.uid()) must own the journal,
@@ -18,7 +17,7 @@
 -- Stage: 0 (security)
 -- Run order: 0 (before 01)
 -- Rollback: supabase/rollbacks/202610180000_secure_evaluate_prop_firm_rules.down.sql
---   (re-opens the hole: only for a verified regression)
+--   (reverts the hardening: only for a verified regression)
 -- Prerequisites: none. Recommended: a fresh backup first (R48), although this file changes no data.
 -- How to run: Supabase SQL Editor, the WHOLE file at once (one transaction). Idempotent.
 -- ============================================================

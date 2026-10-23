@@ -118,7 +118,6 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 │  ├─ tests/               prop_accounts_verify.sql
 │  └─ ADMIN_ROLE.md        Admin rolünün nasıl verileceği
 │
-├─ docs/backtest-v2/       Backtest v2 planı, kurallar, SQL migration'ları (sql/), testler ve raporlar (bkz. 5.7)
 └─ tests/                  node:test birim testleri (trade-metrics, time-settings, chart-theme,
                            prop-calculator, prop-service, prop-card-v2, insights-engine,
                            bt-symbols/candles/engine/synthetic/store/sync/i18n, trades-source, stats-audit)
@@ -294,7 +293,7 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 
 ### 5.7 Backtest v2
 
-**Durum (2026-10-21):** Üretimde (master). Migration 00, 01, 02, 04, 05 ve 08 canlıda çalıştı, `BACKEND = 'supabase'`. **Faz 1, pratik modu:** sayfa giriş yapmış tüm kullanıcılara açık; mumlar sentetiktir, hesaplar ve işlemler kullanıcının hesabında (Supabase) saklanır. cTrader veri kaynağı bir sonraki turdadır. Rapor: `docs/backtest-v2/SON-RAPOR.md`, plan: `docs/backtest-v2/FAZ-E-VERI.md`.
+**Durum (2026-10-21):** Üretimde (master). Migration 00, 01, 02, 04, 05 ve 08 canlıda çalıştı, `BACKEND = 'supabase'`. **Faz 1, pratik modu:** sayfa giriş yapmış tüm kullanıcılara açık; mumlar sentetiktir, hesaplar ve işlemler kullanıcının hesabında (Supabase) saklanır. cTrader veri kaynağı bir sonraki turdadır.
 
 **Sayfa ve kütüphaneler (`public/interface/backtest/`):**
 | Dosya | Görev |
@@ -309,7 +308,7 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 
 **Erişim:** giriş yapmış herkes (admin kapısı Faz 1'de kalktı); navbar linki herkese görünür. Sayfadaki kapı yalnızca görünürlüktür (`WwBtGate`: anon, demo, member), izinleri veritabanı belirler (RLS, kota: ücretsiz 1, premium 10 aktif hesap). **Veri kaynağı:** hesap açarken seçilir, sonradan değişmez (`backtest_accounts.data_source`). Şimdilik yalnızca `synthetic`; `ctrader` seçeneği arayüzde "Yakında" etiketiyle pasif görünür. Sentetik hesaplar defterlere bağlanamaz (veritabanı CHECK'i, arayüzde defter seçimi gizli). Arşiv ve gerçek veri (Migration 03 ve 07, lisans kararı) Faz E'dedir.
 
-**Veritabanı:** migration'lar `supabase/migrations/202610180NNN_*.sql` (kaynak şablonlar `docs/backtest-v2/sql/verify/src/`), her birinin `docs/backtest-v2/sql/supabase/rollbacks/` altında geri alma dosyası var. Elle, SQL Editor'da, sırayla çalıştırılır (`supabase db push` kullanılmaz):
+**Veritabanı:** migration'lar `supabase/migrations/202610180NNN_*.sql` (geri alma dosyaları depoda yok). Elle, SQL Editor'da, sırayla çalıştırılır (`supabase db push` kullanılmaz):
 | No | Ne yapar |
 |---|---|
 | 00 | `evaluate_prop_firm_rules(uuid)` açığını kapatır: anon erişimi kalkar, sahiplik kontrolü gelir (admin ve service role geçer) |
@@ -322,9 +321,9 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 | 07 | Arşivi tüm üyelere açar; lisans onay satırı açılmadan çalışmaz (Faz E) |
 | 08 | `backtest_accounts.data_source` (`synthetic`; `ctrader` sonraki tur), sentetik hesap deftere bağlanamaz (CHECK), alan değiştirilemez (tetikleyici). Önkoşul: bağlı hesap kalmamış olmalı |
 
-**İstatistiklerden yalıtım:** Backtest işlemleri günlüğe yalnızca `trades.platform_source = 'backtest'` ile gider. Tüm okuyucular (dashboard, premium dashboard, takvim, stratejiler, defterler) canlı kapsamı okur (`public/interface/shared/trades-source.js`); işlemler sayfasında Tümü / Canlı / Backtest seçici ve "Backtest" rozeti vardır. Karşılaştırma aracı: `docs/backtest-v2/asama-senkron-istatistik/pagecheck/` (6/6 sayfa eski ve yeni build ile aynı sayıları gösterir).
+**İstatistiklerden yalıtım:** Backtest işlemleri günlüğe yalnızca `trades.platform_source = 'backtest'` ile gider. Tüm okuyucular (dashboard, premium dashboard, takvim, stratejiler, defterler) canlı kapsamı okur (`public/interface/shared/trades-source.js`); işlemler sayfasında Tümü / Canlı / Backtest seçici ve "Backtest" rozeti vardır.
 
-**Test araçları:** `node --test tests/*.test.js` (312 test); SQL için `docs/backtest-v2/sql/verify/` (gerçek PostgreSQL 17 üzerinde 295 test); tarayıcı duman testi `docs/backtest-v2/asama-arayuz/smoke/`.
+**Test araçları:** `node --test tests/*.test.js` (312 test).
 
 ---
 

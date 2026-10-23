@@ -4,9 +4,8 @@
 -- Description (D6): six live-only SQL functions aggregate or write public.trades without any
 --   platform_source filter, so backtest mirrors would count in them. None is called by the app; the
 --   recommended fix is to drop them instead of patching them:
---     evaluate_prop_firm_rules(uuid)    SECURITY DEFINER, executable by anon, no auth.uid()/ownership
---                                       check, UPDATEs journals.prop_firm_status/stats for ANY journal
---                                       id (IDOR). Legacy journals.is_prop_firm system.
+--     evaluate_prop_firm_rules(uuid)    SECURITY DEFINER, hardened by Migration 00. Legacy
+--                                       journals.is_prop_firm system.
 --     sync_journal_trades(uuid, jsonb)  SECURITY DEFINER; upserts trades ON CONFLICT (journal_id,
 --                                       position_id) and calls evaluate_prop_firm_rules. The cTrader
 --                                       Edge Function writes trades directly instead.
