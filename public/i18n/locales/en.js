@@ -1430,6 +1430,8 @@ export default {
   ,
   "earnings.title": "My Earnings & Payouts",
   "earnings.subtitle": "Manage your referral commissions and request payouts",
+  "earnings.paused_title": "The partner program is temporarily suspended",
+  "earnings.paused_desc": "We are not accepting new partner applications or payout requests at the moment. Your existing balance is kept; for questions, email support@wawejournal.com.",
   "earnings.btn_wallets": "My Wallet Addresses",
   "earnings.btn_request_payout": "Request Payout",
   "earnings.loading": "Loading data...",

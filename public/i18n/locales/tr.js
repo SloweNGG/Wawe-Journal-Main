@@ -1377,6 +1377,8 @@ export default {
   ,
   "earnings.title": "Kazançlarım & Para Çekme",
   "earnings.subtitle": "Referans komisyonlarınızı yönetin ve çekim talebi oluşturun",
+  "earnings.paused_title": "Partner programı geçici olarak durduruldu",
+  "earnings.paused_desc": "Şu anda yeni partner başvurusu ve çekim talebi alınmıyor. Mevcut bakiyeniz korunur; sorularınız için support@wawejournal.com adresine yazabilirsiniz.",
   "earnings.btn_wallets": "Cüzdan Adreslerim",
   "earnings.btn_request_payout": "Para Çekme Talebi Gönder",
   "earnings.loading": "Veriler yükleniyor...",

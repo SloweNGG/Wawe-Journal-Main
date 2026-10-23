@@ -1,53 +1,82 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 ---
-<PageLayout title="Gizlilik Politikası – Wawe Journal">
+<PageLayout title="Privacy Policy – Wawe Journal" description="How Wawe Journal collects, uses, stores and protects your personal data.">
   <section class="page-hero">
     <div class="wrap">
-      <span class="pill anim" style="--d:.05s"><b data-i18n="footer.privacy">Privacy</b></span>
-      <h1 class="anim" style="--d:.15s" data-i18n="privacy.title">Gizlilik Politikası</h1>
-      <p class="page-meta anim" style="--d:.3s" data-i18n="privacy.last_updated">Son güncelleme: 15 Mayıs 2026</p>
+      <span class="pill anim" style="--d:.05s"><b>Privacy</b></span>
+      <h1 class="anim" style="--d:.15s">Privacy Policy</h1>
+      <p class="page-meta anim" style="--d:.3s">Last updated: October 23, 2026</p>
     </div>
   </section>
 
   <section class="page-body">
     <div class="wrap">
       <article class="prose reveal">
-        <h2 data-i18n="privacy.sec1_title">1. Toplanan Veriler</h2>
-        <p data-i18n="privacy.sec1_desc">Wawe Journal olarak, yalnızca hizmetlerimizi sunmak için gerekli olan verileri toplarız:</p>
+        <h2>1. Who we are</h2>
+        <p>Wawe Journal (wawejournal.com, "we", "us", "our") is a trading journal and performance analytics service based in İstanbul, Türkiye. We are responsible for the personal data described in this policy. You can reach us at any time at <a href="mailto:support@wawejournal.com">support@wawejournal.com</a>.</p>
+
+        <h2>2. Data we collect</h2>
+        <p>We only collect data needed to run the service:</p>
         <ul>
-          <li data-i18n="privacy.sec1_item1">E-posta adresiniz (hesap oluşturma için)</li>
-          <li data-i18n="privacy.sec1_item2">İşlem verileriniz (sembol, lot, fiyatlar, tarih, notlar)</li>
-          <li data-i18n="privacy.sec1_item3">Son aktif olma zamanınız (kullanıcı durumu için)</li>
+          <li><strong>Account data:</strong> email address, display name, avatar, language and theme settings. If you sign in with Google, we receive your name, email address and profile picture from Google.</li>
+          <li><strong>Trading data you enter or import:</strong> trades (symbol, direction, lot size, entry and exit prices, timestamps, commission, swap, P&amp;L), notes, tags, strategies, screenshots, journals, prop firm rule trackers and backtest accounts.</li>
+          <li><strong>Broker connection data:</strong> if you connect cTrader, we store the access and refresh tokens issued by cTrader, the connected account identifiers and balance, and the closed positions we import. The connection is read-only.</li>
+          <li><strong>Billing data:</strong> your plan, payment status, amount, currency and subscription period. We do not receive or store your full card details.</li>
+          <li><strong>Partner program data:</strong> if you apply to become a partner, your social media handle, follower range, referral codes, commissions, payout requests and the crypto wallet addresses you provide for payouts.</li>
+          <li><strong>Support data:</strong> messages and bug reports you send us.</li>
+          <li><strong>Security and technical data:</strong> IP address and email of login attempts (used to block brute-force attacks), last active time and basic server logs.</li>
         </ul>
 
-        <h2 data-i18n="privacy.sec2_title">2. Verilerin Kullanımı</h2>
-        <p data-i18n="privacy.sec2_desc">Topladığımız veriler yalnızca aşağıdaki amaçlar için kullanılır:</p>
+        <h2>3. How we use your data</h2>
         <ul>
-          <li data-i18n="privacy.sec2_item1">Hesabınızı yönetmek ve kimlik doğrulaması sağlamak</li>
-          <li data-i18n="privacy.sec2_item2">İşlemlerinizi kaydetmek ve analiz etmek</li>
-          <li data-i18n="privacy.sec2_item3">Dashboard ve grafiklerinizi oluşturmak</li>
-          <li data-i18n="privacy.sec2_item4">Teknik destek sağlamak</li>
+          <li>To create and secure your account and keep you signed in.</li>
+          <li>To store, sync and analyze your trades and generate your dashboards, statistics and reports.</li>
+          <li>To process payments, manage subscriptions and partner commissions.</li>
+          <li>To answer support requests and send service notifications.</li>
+          <li>To protect the service against fraud and abuse and to meet legal obligations.</li>
         </ul>
+        <p>We process your data to perform our contract with you, to comply with legal obligations, and on the basis of our legitimate interest in keeping the service secure. We do not sell your data, we do not show third-party ads, and we do not use your trading data for marketing.</p>
 
-        <h2 data-i18n="privacy.sec3_title">3. Veri Güvenliği</h2>
-        <p data-i18n="privacy.sec3_desc">Verileriniz Supabase altyapısında şifrelenmiş olarak saklanır. Row Level Security (RLS) politikaları sayesinde hiçbir kullanıcı başka bir kullanıcının verilerini göremez.</p>
+        <h2>4. Service providers</h2>
+        <p>We share data only with providers that help us run the service, and only as much as they need:</p>
+        <ul>
+          <li><strong>Supabase:</strong> database, authentication and file storage.</li>
+          <li><strong>Cloudflare:</strong> hosting, content delivery and network security.</li>
+          <li><strong>Creem:</strong> our Merchant of Record for card and other fiat payments. Creem processes your payment details, issues receipts and handles sales tax under its own privacy policy.</li>
+          <li><strong>NOWPayments:</strong> processes cryptocurrency payments if you choose to pay with crypto.</li>
+          <li><strong>Google:</strong> only if you choose "Sign in with Google".</li>
+          <li><strong>cTrader (Spotware):</strong> only if you connect a cTrader account, to import your trading history.</li>
+        </ul>
+        <p>Some of these providers may process data outside your country, including outside the EU/EEA. Where this happens, they rely on safeguards such as the EU Standard Contractual Clauses.</p>
 
-        <h2 data-i18n="privacy.sec4_title">4. Üçüncü Taraflar</h2>
-        <p data-i18n="privacy.sec4_desc">Verileriniz asla üçüncü taraflarla paylaşılmaz veya satılmaz. Sadece Supabase (veritabanı) ve Cloudflare (barındırma) altyapıları kullanılır.</p>
+        <h2>5. Data retention</h2>
+        <p>We keep your account and trading data for as long as your account exists. When you delete your account, we remove your data from our active systems. Copies may remain in backups for a limited time before they are overwritten. Payment records may be kept for as long as tax and accounting laws require.</p>
 
-        <h2 data-i18n="privacy.sec5_title">5. Verilerinizi Silme</h2>
-        <p data-i18n="privacy.sec5_desc">Hesabınızı silmek isterseniz, lütfen iletişim sayfamız üzerinden bize ulaşın. Hesabınız ve tüm verileriniz kalıcı olarak silinecektir.</p>
+        <h2>6. Your rights</h2>
+        <p>Depending on where you live, you have the right to access, correct, export or delete your personal data, to restrict or object to its processing, and to withdraw consent. To use any of these rights, email <a href="mailto:support@wawejournal.com">support@wawejournal.com</a>. We reply within 30 days. You also have the right to lodge a complaint with your local data protection authority.</p>
 
-        <h2 data-i18n="privacy.sec6_title">6. Çerezler (Cookies)</h2>
-        <p data-i18n="privacy.sec6_desc">Wawe Journal, yalnızca oturum yönetimi için gerekli olan teknik çerezleri kullanır.</p>
+        <h2>7. Account and data deletion</h2>
+        <p>You can delete individual trades, journals and other records at any time inside the app. To delete your whole account and all associated data, email us from the address linked to your account and we will complete the deletion.</p>
 
-        <h2 data-i18n="privacy.sec7_title">7. İletişim</h2>
-        <p><span data-i18n="privacy.sec7_desc">Gizlilik politikamızla ilgili sorularınız için:</span> <a href="mailto:destek@wawedev.com">destek@wawedev.com</a></p>
+        <h2>8. Security</h2>
+        <p>Your data is stored with Supabase and protected by Row Level Security, so no user can read another user's records. Connections are encrypted with HTTPS. No system is completely secure, so please use a strong password and tell us right away if you suspect unauthorized access.</p>
+
+        <h2>9. Cookies and local storage</h2>
+        <p>We only use technically necessary cookies and browser storage to keep you signed in and remember your preferences such as language and theme. We do not use advertising or cross-site tracking cookies.</p>
+
+        <h2>10. Children</h2>
+        <p>Wawe Journal is not intended for anyone under 18. We do not knowingly collect data from children.</p>
+
+        <h2>11. Changes to this policy</h2>
+        <p>We may update this policy when the service or the law changes. We will change the date at the top of this page and, for significant changes, notify you by email or in the app.</p>
+
+        <h2>12. Contact</h2>
+        <p>For any privacy question or request, contact us at <a href="mailto:support@wawejournal.com">support@wawejournal.com</a>.</p>
       </article>
 
       <div class="page-actions">
-        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Ana Sayfaya Dön</a>
+        <a href="/" class="btn btn-line" data-i18n="common.back_home">← Back to Home</a>
       </div>
     </div>
   </section>

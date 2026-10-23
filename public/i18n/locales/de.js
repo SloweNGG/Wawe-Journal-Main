@@ -1397,6 +1397,8 @@ export default {
   ,
   "earnings.title": "Meine Einnahmen & Auszahlungen",
   "earnings.subtitle": "Verwalten Sie Ihre Empfehlungsprovisionen und fordern Sie Auszahlungen an",
+  "earnings.paused_title": "Das Partnerprogramm ist vorübergehend ausgesetzt",
+  "earnings.paused_desc": "Derzeit nehmen wir keine neuen Partnerbewerbungen oder Auszahlungsanfragen an. Ihr bestehendes Guthaben bleibt erhalten; bei Fragen schreiben Sie an support@wawejournal.com.",
   "earnings.btn_wallets": "Meine Wallet-Adressen",
   "earnings.btn_request_payout": "Auszahlung anfordern",
   "earnings.loading": "Daten werden geladen...",

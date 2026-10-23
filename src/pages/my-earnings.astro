@@ -437,6 +437,20 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
+    <!-- Partner programı geçici olarak durduruldu: bölümler gizli, kod yerinde. Yeniden açmak için bu bloğu ve aşağıdaki stili kaldır. -->
+    <style is:global>
+      #top-action-buttons, #loading-state, #empty-state, #data-state { display: none !important; }
+    </style>
+    <div id="partner-paused" class="partner-status-banner banner-pending" style="margin: 2rem auto;">
+      <div class="status-banner-header">
+        <i data-lucide="pause-circle" style="width:20px; height:20px; color:#eab308;"></i>
+        <span data-i18n="earnings.paused_title">Partner programı geçici olarak durduruldu</span>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin: 6px 0 0 0;" data-i18n="earnings.paused_desc">
+        Şu anda yeni partner başvurusu ve çekim talebi alınmıyor. Mevcut bakiyeniz korunur; sorularınız için support@wawejournal.com adresine yazabilirsiniz.
+      </p>
+    </div>
+
     <!-- Yükleniyor -->
     <div id="loading-state" style="text-align:center; padding: 4rem;">
       <div class="spinner" style="margin: 0 auto;"></div>
