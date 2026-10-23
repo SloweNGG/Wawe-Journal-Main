@@ -243,6 +243,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .disclosures { display: grid; gap: 14px; border-top: 1px solid rgba(255,255,255,.08); padding-top: 24px; }
 .disclosures p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--dim); }
 .disclosures strong { color: var(--nav); font-weight: 500; }
+.disclosures a { color: var(--nav); text-decoration: underline; }
 .legal summary { cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); list-style: none; padding: 6px 0; }
 .legal summary::-webkit-details-marker { display: none; }
 .legal summary::before { content: "+"; display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; font-size: 13px; line-height: 1; }

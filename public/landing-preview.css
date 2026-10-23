@@ -262,6 +262,7 @@ main{padding-top:62px}
 .disclosures{margin-top:32px;padding-top:28px;border-top:1px solid var(--line);display:grid;gap:14px;max-width:980px}
 .disclosures p{font-size:12px;line-height:1.65;color:var(--faint)}
 .disclosures strong{color:var(--muted);font-weight:500}
+.disclosures a{color:var(--muted);text-decoration:underline}
 
 /* collapsible full legal text */
 .disclosures .legal-lead{max-width:980px}
