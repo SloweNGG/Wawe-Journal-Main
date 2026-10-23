@@ -10,7 +10,7 @@ const isActive = (page: string) => {
   if (page === 'journals' && pathname.includes('/journals')) return true;
   if (page === 'settings' && pathname.includes('/settings')) return true;
   if (page === 'report-bug' && pathname.includes('/report-bug')) return true;
-  if (page === 'premium-dashboard' && pathname.includes('/premium-dashboard')) return true;
+  if (page === 'analytics' && pathname.includes('/analytics')) return true;
   if (page === 'my-earnings' && pathname.includes('/my-earnings')) return true;
   if (page === 'admin' && pathname.includes('/admin')) return true;
   return false;
@@ -75,7 +75,7 @@ const isActive = (page: string) => {
     <a href="/strategies.html" data-page="strategies" class={`loaded ${isActive('strategies') ? 'active' : ''}`}><span data-i18n="nav.strategies">Stratejiler</span></a>
     <a href="/calendar.html" data-page="calendar" class={`loaded ${isActive('calendar') ? 'active' : ''}`}><span data-i18n="nav.calendar">Takvim</span></a>
     <a href="/backtest.html" data-page="backtest" id="nav-backtest-link" style="display:none;" class={`loaded ${isActive('backtest') ? 'active' : ''}`}><span data-i18n="nav.backtest">Backtest</span></a>
-    <a href="/premium-dashboard.html" data-page="premium" data-premium-link class={`loaded ${isActive('premium-dashboard') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span><span class="nav-pro-tag">PRO</span></a>
+    <a href="/analytics.html" data-page="analytics" data-pro-link class={`loaded ${isActive('analytics') ? 'active' : ''}`}><span data-i18n="nav.analysis">Analiz</span></a>
   </div>
 
   <div class="nav-right">
@@ -184,7 +184,7 @@ const isActive = (page: string) => {
       <div class="dropdown-divider nav-upgrade-divider" id="avatar-upgrade-divider"></div>
       <a href="/settings.html#panel-plan" class="dropdown-item nav-upgrade-item" id="avatar-upgrade-link" style="color:var(--accent2);">
         <i data-lucide="crown" style="width:16px;height:16px;"></i>
-        <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
+        <span data-i18n="nav.upgrade_pro">Pro'ya Geç →</span>
       </a>
       <div class="dropdown-divider"></div>
       <button class="dropdown-item" id="logout-dropdown-btn">
@@ -207,8 +207,8 @@ const isActive = (page: string) => {
     var lang = localStorage.getItem('ww_language') || document.documentElement.getAttribute('data-lang') || 'en';
     if (lang === 'en' || lang === 'de') {
       var dict = {
-        en: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategies', 'nav.calendar': 'Calendar', 'nav.premium': 'Premium', 'nav.analysis': 'Analytics', 'nav.add_trade': 'Add Trade' },
-        de: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategien', 'nav.calendar': 'Kalender', 'nav.premium': 'Premium', 'nav.analysis': 'Analyse', 'nav.add_trade': 'Trade hinzufügen' }
+        en: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategies', 'nav.calendar': 'Calendar', 'nav.pro': 'Pro', 'nav.analysis': 'Analytics', 'nav.add_trade': 'Add Trade' },
+        de: { 'nav.dashboard': 'Dashboard', 'nav.trades': 'Trades', 'nav.strategies': 'Strategien', 'nav.calendar': 'Kalender', 'nav.pro': 'Pro', 'nav.analysis': 'Analyse', 'nav.add_trade': 'Trade hinzufügen' }
       }[lang];
       if (dict) {
         document.querySelectorAll('.nav-links a span[data-i18n]').forEach(function(sp) {
@@ -218,20 +218,20 @@ const isActive = (page: string) => {
       }
     }
 
-    // 2. Plan rozeti senkronizasyonu (Free vs Premium)
+    // 2. Plan rozeti senkronizasyonu (Free vs Pro)
     var plan = localStorage.getItem('ww_user_plan') || sessionStorage.getItem('ww_user_plan');
     if (plan) {
       var badge = document.getElementById('plan-badge');
       var text = document.getElementById('plan-text');
       if (plan === 'premium') {
-        document.documentElement.classList.add('is-premium');
-        if (document.body) document.body.classList.add('is-premium');
-        if (badge) badge.classList.add('premium');
-        if (text) text.textContent = 'Premium';
+        document.documentElement.classList.add('is-pro');
+        if (document.body) document.body.classList.add('is-pro');
+        if (badge) badge.classList.add('pro');
+        if (text) text.textContent = 'Pro';
       } else {
-        document.documentElement.classList.remove('is-premium');
-        if (document.body) document.body.classList.remove('is-premium');
-        if (badge) badge.classList.remove('premium');
+        document.documentElement.classList.remove('is-pro');
+        if (document.body) document.body.classList.remove('is-pro');
+        if (badge) badge.classList.remove('pro');
         if (text) text.textContent = (lang === 'en' ? 'Free' : (lang === 'de' ? 'Kostenlos' : 'Ücretsiz'));
       }
     }
@@ -315,9 +315,9 @@ const isActive = (page: string) => {
     </div>
 
     <div class="menu-section">
-      <div class="menu-section-title" data-i18n="nav.menu_premium">PREMIUM</div>
-      <a href="/premium-dashboard.html" class={isActive('premium-dashboard') ? 'active' : ''}>
-        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.premium_dashboard">Premium Dashboard</span>
+      <div class="menu-section-title" data-i18n="nav.menu_pro">PRO</div>
+      <a href="/analytics.html" data-pro-link class={isActive('analytics') ? 'active' : ''}>
+        <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> <span data-i18n="nav.analysis">Analiz</span>
       </a>
       <a href="/settings.html#panel-appearance">
         <i data-lucide="palette" style="width:16px;height:16px;"></i> <span data-i18n="nav.theme_customization">Tema Özelleştirme</span>
@@ -325,8 +325,8 @@ const isActive = (page: string) => {
       <a href="/settings.html#panel-overtrade">
         <i data-lucide="bell" style="width:16px;height:16px;"></i> <span data-i18n="nav.overtrade_alert">Over Trade Uyarısı</span>
       </a>
-      <a href="/settings.html#panel-plan" class="go-premium">
-        <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_premium">Premium'a Geç →</span>
+      <a href="/settings.html#panel-plan" class="go-pro">
+        <i data-lucide="rocket" style="width:16px;height:16px;"></i> <span data-i18n="nav.upgrade_pro">Pro'ya Geç →</span>
       </a>
     </div>
 

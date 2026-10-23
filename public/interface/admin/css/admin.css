@@ -122,9 +122,9 @@
 .ww-table td,
 .price-input-group input,
 #stat-total-users,
-#stat-total-premium,
-#stat-premium-revenue,
-#stat-premium-7days {
+#stat-total-pro,
+#stat-pro-revenue,
+#stat-pro-7days {
   font-feature-settings: "tnum" 1;
   -moz-font-feature-settings: "tnum" 1;
   -webkit-font-feature-settings: "tnum" 1;
@@ -620,7 +620,7 @@ body.light-theme .panel-glow.prices-glow {
   border: 1px solid var(--border);
 }
 
-.plan-badge-user.premium {
+.plan-badge-user.pro {
   background: rgba(139,92,246,0.15);
   color: var(--accent2);
   border: 1px solid rgba(139,92,246,0.25);
@@ -633,7 +633,7 @@ body.light-theme .panel-glow.prices-glow {
   display: inline-block;
 }
 
-.plan-badge-user.premium .dot {
+.plan-badge-user.pro .dot {
   background: var(--accent2);
   box-shadow: 0 0 6px rgba(139,92,246,0.4);
   animation: dotPulse 2s ease-in-out infinite;
@@ -966,7 +966,7 @@ body.light-theme .panel-glow.prices-glow {
   50% { opacity: 0.4; }
 }
 
-.recent-premium-card {
+.recent-pro-card {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -977,12 +977,12 @@ body.light-theme .panel-glow.prices-glow {
   transition: all 0.2s ease;
 }
 
-.recent-premium-card:hover {
+.recent-pro-card:hover {
   border-color: rgba(139,92,246,0.3);
   background: rgba(139,92,246,0.03);
 }
 
-.recent-premium-card .avatar-small {
+.recent-pro-card .avatar-small {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -999,32 +999,32 @@ body.light-theme .panel-glow.prices-glow {
   font-family: 'Inter', sans-serif;
 }
 
-.recent-premium-card .avatar-small img {
+.recent-pro-card .avatar-small img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.recent-premium-card .info {
+.recent-pro-card .info {
   flex: 1;
 }
 
-.recent-premium-card .info .name {
+.recent-pro-card .info .name {
   font-weight: 600;
   color: var(--text);
   font-size: 14px;
   font-family: 'Inter', sans-serif;
 }
 
-/* ⭐ RECENT PREMIUM EMAIL - DM Mono KALIR */
-.recent-premium-card .info .email {
+/* ⭐ RECENT PRO EMAIL - DM Mono KALIR */
+.recent-pro-card .info .email {
   font-size: 12px;
   color: var(--muted);
   font-family: 'Inter', sans-serif;
 }
 
 /* ⭐ PLAN TYPE - DM Mono KALIR */
-.recent-premium-card .info .plan-type {
+.recent-pro-card .info .plan-type {
   font-size: 11px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
@@ -1035,7 +1035,7 @@ body.light-theme .panel-glow.prices-glow {
   border: 1px solid rgba(139,92,246,0.15);
 }
 
-.recent-premium-card .amount {
+.recent-pro-card .amount {
   font-family: 'Inter', sans-serif;
   font-size: 16px;
   font-weight: 700;
@@ -1421,7 +1421,7 @@ body.light-theme .panel-glow.prices-glow {
 
 /* ============================================================
    ⭐ GRAFİK ETİKETLERİ - FONT DÜZELTMESİ
-   Günlük Yeni Kullanıcılar & Günlük Premium Satışları
+   Günlük Yeni Kullanıcılar & Günlük Pro Satışları
    ============================================================ */
 
 /* GRAFİK KARTLARI İÇİN ÖZEL FONT */
@@ -1463,7 +1463,7 @@ body.light-theme .panel-glow.prices-glow {
   fill: var(--muted) !important;
 }
 
-/* GRAFİK LEGEND (Free / Premium / User) */
+/* GRAFİK LEGEND (Free / Pro / User) */
 .charts-grid .s-card .recharts-legend-item-text {
   font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
@@ -1505,7 +1505,7 @@ body.light-theme .panel-glow.prices-glow {
   fill: var(--text) !important;
 }
 
-/* GRAFİK İÇİNDEKİ "Free", "Premium", "User" ETİKETLERİ */
+/* GRAFİK İÇİNDEKİ "Free", "Pro", "User" ETİKETLERİ */
 .charts-grid .s-card .legend-item,
 .charts-grid .s-card .recharts-legend-item {
   font-family: 'Inter', sans-serif !important;
@@ -1724,7 +1724,7 @@ body.light-theme .panel-glow.prices-glow {
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
-.kpi-icon-wrap.icon-premium {
+.kpi-icon-wrap.icon-pro {
   background: rgba(168, 85, 247, 0.12);
   color: #c084fc;
   border: 1px solid rgba(168, 85, 247, 0.25);
@@ -1900,7 +1900,7 @@ body.light-theme .panel-glow.prices-glow {
   box-shadow: 0 0 6px #64748b;
 }
 
-.dot-premium {
+.dot-pro {
   background: #7c6dfa;
   box-shadow: 0 0 8px #7c6dfa;
 }
@@ -2001,7 +2001,7 @@ body.light-theme .panel-glow.prices-glow {
   border: 1px solid rgba(100, 116, 139, 0.2);
 }
 
-.badge-sub-premium {
+.badge-sub-pro {
   background: rgba(124, 109, 250, 0.15);
   color: #a78bfa;
   border: 1px solid rgba(124, 109, 250, 0.3);
@@ -2228,8 +2228,8 @@ body.light-theme .panel-glow.prices-glow {
     display: none;
   }
 
-  /* Recent premium card */
-  .recent-premium-card {
+  /* Recent pro card */
+  .recent-pro-card {
     padding: 0.6rem 0.75rem;
     gap: 0.65rem;
   }

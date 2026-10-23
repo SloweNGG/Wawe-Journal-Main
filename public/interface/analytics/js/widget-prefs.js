@@ -63,34 +63,34 @@ function storageKey() {
 // ⭐ GRAFİK SEÇENEKLERİ ŞEMASI — ayar menüsü ve renderer'lar bu tek kaynaktan okur
 function metricChoices() {
   return [
-    { value: 'pnl',     label: _t('premium_dash.opt.metric_pnl', 'Toplam K/Z') },
-    { value: 'avg',     label: _t('premium_dash.opt.metric_avg', 'Ort. K/Z') },
-    { value: 'count',   label: _t('premium_dash.opt.metric_count', 'İşlem sayısı') },
-    { value: 'winrate', label: _t('premium_dash.opt.metric_winrate', 'Win rate') }
+    { value: 'pnl',     label: _t('analytics_dash.opt.metric_pnl', 'Toplam K/Z') },
+    { value: 'avg',     label: _t('analytics_dash.opt.metric_avg', 'Ort. K/Z') },
+    { value: 'count',   label: _t('analytics_dash.opt.metric_count', 'İşlem sayısı') },
+    { value: 'winrate', label: _t('analytics_dash.opt.metric_winrate', 'Win rate') }
   ];
 }
 
 export function getWidgetOptionSchema(key) {
-  var typeLabel = _t('premium_dash.opt.type', 'Grafik tipi');
-  var metricLabel = _t('premium_dash.opt.metric', 'Metrik');
-  var daysFmt = _t('premium_dash.opt.range_days', '{n} gün');
-  var hoursFmt = _t('premium_dash.opt.bucket_hours', '{n} saat');
+  var typeLabel = _t('analytics_dash.opt.type', 'Grafik tipi');
+  var metricLabel = _t('analytics_dash.opt.metric', 'Metrik');
+  var daysFmt = _t('analytics_dash.opt.range_days', '{n} gün');
+  var hoursFmt = _t('analytics_dash.opt.bucket_hours', '{n} saat');
 
   switch (key) {
     case 'cumulative':
       return [
         { id: 'type', label: typeLabel, default: 'area', choices: [
-          { value: 'area',     label: _t('premium_dash.opt.type_area', 'Alan') },
-          { value: 'line',     label: _t('premium_dash.opt.type_line', 'Çizgi') },
-          { value: 'baseline', label: _t('premium_dash.opt.type_baseline', '±0 Renkli') }
+          { value: 'area',     label: _t('analytics_dash.opt.type_area', 'Alan') },
+          { value: 'line',     label: _t('analytics_dash.opt.type_line', 'Çizgi') },
+          { value: 'baseline', label: _t('analytics_dash.opt.type_baseline', '±0 Renkli') }
         ]}
       ];
     case 'winloss':
       return [
         { id: 'type', label: typeLabel, default: 'donut', choices: [
-          { value: 'donut', label: _t('premium_dash.opt.type_donut', 'Halka') },
-          { value: 'pie',   label: _t('premium_dash.opt.type_pie', 'Pasta') },
-          { value: 'bar',   label: _t('premium_dash.opt.type_bar', 'Bar') }
+          { value: 'donut', label: _t('analytics_dash.opt.type_donut', 'Halka') },
+          { value: 'pie',   label: _t('analytics_dash.opt.type_pie', 'Pasta') },
+          { value: 'bar',   label: _t('analytics_dash.opt.type_bar', 'Bar') }
         ]}
       ];
     case 'direction':
@@ -99,26 +99,26 @@ export function getWidgetOptionSchema(key) {
         { id: 'metric', label: metricLabel, default: 'count', choices: metricChoices() },
         // Halka/pasta sadece adet dağılımında anlamlı (K/Z negatif olabilir)
         { id: 'type', label: typeLabel, default: 'donut', when: function(o) { return o.metric === 'count'; }, choices: [
-          { value: 'donut', label: _t('premium_dash.opt.type_donut', 'Halka') },
-          { value: 'pie',   label: _t('premium_dash.opt.type_pie', 'Pasta') },
-          { value: 'bar',   label: _t('premium_dash.opt.type_bar', 'Bar') }
+          { value: 'donut', label: _t('analytics_dash.opt.type_donut', 'Halka') },
+          { value: 'pie',   label: _t('analytics_dash.opt.type_pie', 'Pasta') },
+          { value: 'bar',   label: _t('analytics_dash.opt.type_bar', 'Bar') }
         ]}
       ];
     case 'daily':
       return [
-        { id: 'range', label: _t('premium_dash.opt.range', 'Aralık'), default: 30, choices: [7, 14, 30, 90].map(function(n) {
+        { id: 'range', label: _t('analytics_dash.opt.range', 'Aralık'), default: 30, choices: [7, 14, 30, 90].map(function(n) {
           return { value: n, label: daysFmt.replace('{n}', n) };
         })},
         { id: 'type', label: typeLabel, default: 'bar', choices: [
-          { value: 'bar',  label: _t('premium_dash.opt.type_bar', 'Bar') },
-          { value: 'line', label: _t('premium_dash.opt.type_line', 'Çizgi') },
-          { value: 'area', label: _t('premium_dash.opt.type_area', 'Alan') }
+          { value: 'bar',  label: _t('analytics_dash.opt.type_bar', 'Bar') },
+          { value: 'line', label: _t('analytics_dash.opt.type_line', 'Çizgi') },
+          { value: 'area', label: _t('analytics_dash.opt.type_area', 'Alan') }
         ]}
       ];
     case 'hourly':
       return [
         { id: 'metric', label: metricLabel, default: 'pnl', choices: metricChoices() },
-        { id: 'bucket', label: _t('premium_dash.opt.bucket', 'Saat aralığı'), default: 3, choices: [1, 2, 3, 4].map(function(n) {
+        { id: 'bucket', label: _t('analytics_dash.opt.bucket', 'Saat aralığı'), default: 3, choices: [1, 2, 3, 4].map(function(n) {
           return { value: n, label: hoursFmt.replace('{n}', n) };
         })}
       ];
@@ -131,15 +131,15 @@ export function getWidgetOptionSchema(key) {
     case 'monthly':
       return [
         { id: 'metric', label: metricLabel, default: 'pnl', choices: metricChoices() },
-        { id: 'range', label: _t('premium_dash.opt.range', 'Aralık'), default: 12, choices: [6, 12, 24].map(function(n) {
-          return { value: n, label: _t('premium_dash.opt.range_months', '{n} ay').replace('{n}', n) };
+        { id: 'range', label: _t('analytics_dash.opt.range', 'Aralık'), default: 12, choices: [6, 12, 24].map(function(n) {
+          return { value: n, label: _t('analytics_dash.opt.range_months', '{n} ay').replace('{n}', n) };
         })}
       ];
     case 'calendar':
       return [
-        { id: 'month', label: _t('premium_dash.opt.month', 'Ay'), default: 'current', choices: [
-          { value: 'current',  label: _t('premium_dash.opt.month_current', 'Bu ay') },
-          { value: 'previous', label: _t('premium_dash.opt.month_previous', 'Geçen ay') }
+        { id: 'month', label: _t('analytics_dash.opt.month', 'Ay'), default: 'current', choices: [
+          { value: 'current',  label: _t('analytics_dash.opt.month_current', 'Bu ay') },
+          { value: 'previous', label: _t('analytics_dash.opt.month_previous', 'Geçen ay') }
         ]}
       ];
     default:

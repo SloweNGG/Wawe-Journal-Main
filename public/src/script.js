@@ -85,9 +85,9 @@ import {
 import { 
   getUserPlan, 
   getUserPlanSilent, 
-  isPremium, 
+  isPro, 
   hasFeature, 
-  requirePremium,
+  requirePro,
   getUserStrategies,
   clearStrategiesCache,
   addStrategy,
@@ -102,8 +102,8 @@ import {
   selectPayMethod, 
   getSystemSettings, 
   createNowPaymentInvoice, 
-  upgradeToPremium, 
-  cancelPremium,
+  upgradeToPro, 
+  cancelPro,
   checkAndSyncPaymentStatus
 } from './services/payment.js';
 
@@ -200,9 +200,9 @@ window.throttledUpdateLastActive = throttledUpdateLastActive;
 // Services - user
 window.getUserPlan = getUserPlan;
 window.getUserPlanSilent = getUserPlanSilent;
-window.isPremium = isPremium;
+window.isPro = isPro;
 window.hasFeature = hasFeature;
-window.requirePremium = requirePremium;
+window.requirePro = requirePro;
 window.getUserStrategies = getUserStrategies;
 window.clearStrategiesCache = clearStrategiesCache;
 window.addStrategy = addStrategy;
@@ -215,8 +215,8 @@ window.getStrategiesMap = getStrategiesMap;
 window.selectPayMethod = selectPayMethod;
 window.getSystemSettings = getSystemSettings;
 window.createNowPaymentInvoice = createNowPaymentInvoice;
-window.upgradeToPremium = upgradeToPremium;
-window.cancelPremium = cancelPremium;
+window.upgradeToPro = upgradeToPro;
+window.cancelPro = cancelPro;
 window.checkAndSyncPaymentStatus = checkAndSyncPaymentStatus;
 
 // Services - stats

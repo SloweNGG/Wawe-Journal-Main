@@ -25,9 +25,9 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 | Kütüphane | Sürüm | Nerede |
 |---|---|---|
 | @supabase/supabase-js | 2.117.3 | Neredeyse tüm uygulama ve giriş sayfaları |
-| ApexCharts | 8.2.0 | dashboard, premium-dashboard, strategies, admin |
-| Lightweight Charts | 4.1.3 (standalone) | dashboard, premium-dashboard, backtest |
-| SortableJS | 1.15.0 | premium-dashboard (kart sürükle-bırak) |
+| ApexCharts | 8.2.0 | dashboard, analytics, strategies, admin |
+| Lightweight Charts | 4.1.3 (standalone) | dashboard, analytics, backtest |
+| SortableJS | 1.15.0 | analytics (kart sürükle-bırak) |
 | Lucide (ikonlar) | 0.441.0 | `BaseHead.astro` (navbar'da `lucide@latest` yedeği var) |
 | jsPDF / jspdf-autotable | 2.5.1 / 3.8.2 | İhtiyaç anında yüklenir (`public/src/utils/helpers.js` → `loadJsPDF`) |
 | SheetJS (xlsx) | 0.18.5 | Quick Add içe aktarma, ihtiyaç anında |
@@ -74,7 +74,7 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 │  │  ├─ BaseHead.astro     <head>: fontlar, ortak script'ler, tema/plan sınıfları, wwLog, wwPage, SW kaydı
 │  │  ├─ Navbar.astro       Sunucuda çizilen navbar (davranış public/components/navbar'da)
 │  │  ├─ SpaRouter.astro    Sayfa yenilemeden geçiş (window.wwSpa)
-│  │  ├─ UpgradeModal.astro Premium'a yükseltme penceresi
+│  │  ├─ UpgradeModal.astro Pro'ya yükseltme penceresi
 │  │  ├─ QuickAddModal.astro
 │  │  └─ QuickAddFAB.tsx, quick-add/*.tsx   React sürümü (kullanılmıyor)
 │  └─ pages/                25 sayfa (bkz. bölüm 4)
@@ -97,7 +97,7 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 │  │  └─ utils/             helpers, ui (toast), validation, confirm-dialog, prop-calculator
 │  ├─ interface/           Sayfa bazlı JS/CSS
 │  │  ├─ dashboard/         dashboard.js, prop-card-v2.js + css
-│  │  ├─ premium-dashboard/ ES modülleri: premium-dashboard, dashboard-manager, chart-renderers,
+│  │  ├─ analytics/ ES modülleri: analytics, dashboard-manager, chart-renderers,
 │  │  │                     chart-expand, export-dialog, pdf-report, insights-engine, widget-*, prop-widgets, helpers
 │  │  ├─ trades/, calendar/, strategies/, journals/ (css)
 │  │  ├─ backtest/          Backtest v2: backtest.js (sayfa), bt-symbols/candles/engine/synthetic/data/store/sync + css (bkz. 5.7)
@@ -159,7 +159,7 @@ Sayfalar `/ad.html` olarak üretilir; Cloudflare `/ad` adresini de sunar. Uygula
 | Route | Ana script | Açıklama |
 |---|---|---|
 | `/dashboard` | `interface/dashboard/js/dashboard.js`, `prop-card-v2.js` | Ana dashboard: KPI'lar, kümülatif K/Z, günlük K/Z, sembol, win/loss, performans kartı |
-| `/premium-dashboard` | `interface/premium-dashboard/js/premium-dashboard.js` (modül) | "Analytics": özelleştirilebilir kart düzeni, içgörüler, PDF raporu |
+| `/analytics` | `interface/analytics/js/analytics.js` (modül) | "Analytics": özelleştirilebilir kart düzeni, içgörüler, PDF raporu |
 | `/trades` | `interface/trades/js/trades.js` | İşlem listesi, düzenleme/silme |
 | `/calendar` | `interface/calendar/js/calendar.js` | K/Z takvimi |
 | `/strategies` | `interface/strategies/js/strategies.js` | Strateji analizi ve karşılaştırma |
@@ -216,7 +216,7 @@ Her tabloda `user_id` sahiplik alanıdır ve RLS politikaları `user_id = auth.u
 - Alanlar: `id` (uuid), `user_id`, `name` (en fazla 60 karakter), `description`, `color` (varsayılan `#7c6dfa`), `icon` (Lucide ikon adı, varsayılan `folder`), `is_default`, `is_active`, `created_at`.
 - Eski bağlantı/prop alanları: `platform`, `is_connected`, `connection_status`, `last_synced_at`, `is_prop_firm`, `prop_firm_rules` (jsonb), `prop_firm_status`, `prop_firm_stats` (jsonb). Yeni prop takibi `prop_accounts` tablosundadır.
 - İndeks: `(user_id, is_active)`.
-- Kota: ücretsiz planda `max_journals` (2), aktif premium'da en az 10.
+- Kota: ücretsiz planda `max_journals` (2), aktif Pro'da en az 10.
 - RPC'ler: `create_journal`, `list_journals` (işlem sayısı, strateji sayısı, toplam K/Z, win rate, son işlem tarihi ve `can_create` ile döner). Kodda kullanılan ama migration'da olmayanlar: `update_journal`, `delete_journal`, `switch_default_journal`, `get_journal`.
 - İstemci: `public/src/core/journal.js` → `window.journal`. Aktif defter `localStorage.ww_active_journal_id` içinde tutulur; değişince `journal-changed` olayı yayınlanır. Defter işareti (renkli nokta, prop/cTrader bağlıysa yanıp söner) `public/interface/shared/journal-mark.js` tarafından çizilir.
 
@@ -253,7 +253,7 @@ Her tabloda `user_id` sahiplik alanıdır ve RLS politikaları `user_id = auth.u
 **`prop_accounts`**
 - Alanlar: `id`, `user_id`, `journal_id` (→ `journals`, ON DELETE CASCADE), `template_key`, `template_version`, `rules` (jsonb, en fazla 20 KB), `starting_balance` (> 0), `start_date`, `phase_index`, `reset_tz`, `time_shift_hours` (-14…14), `is_active`, `created_at`, `updated_at`.
 - Defter başına en fazla bir aktif prop hesabı (kısmi unique indeks).
-- `check_prop_account_limit` trigger'ı sahipliği ve kotayı (ücretsiz 1, premium 10) denetler.
+- `check_prop_account_limit` trigger'ı sahipliği ve kotayı (ücretsiz 1, pro 10) denetler.
 - Kurallar ve şablonlar: `public/src/core/prop-templates.js`. Hesaplama: `public/src/utils/prop-calculator.js`, `public/src/services/prop-service.js`.
 
 **`ctrader_tokens`** — PK `user_id`. Token alanları ve `status` (`active` / `needs_reconnect`). RLS açık ama politika yok, yani yalnızca service role (Edge Function) erişir.
@@ -304,7 +304,7 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 | `js/bt-sync.js` | Kapanan işlemleri bağlı deftere `platform_source = 'backtest'` olarak yazar; bağlantı değişince kopyaları siler |
 | `css/backtest.css` | Tam ekran düzen: grafik kalan alanı kaplar, sağda 320–360px yan panel (bakiye ve emir), altta kendi içinde kayan işlem tabloları; 1024px altında alt alta |
 
-**Erişim:** giriş yapmış herkes (admin kapısı Faz 1'de kalktı); navbar linki herkese görünür. Sayfadaki kapı yalnızca görünürlüktür (`WwBtGate`: anon, demo, member), izinleri veritabanı belirler (RLS, kota: ücretsiz 1, premium 10 aktif hesap). **Veri kaynağı:** hesap açarken seçilir, sonradan değişmez (`backtest_accounts.data_source`). Şimdilik yalnızca `synthetic`; `ctrader` seçeneği arayüzde "Yakında" etiketiyle pasif görünür. Sentetik hesaplar defterlere bağlanamaz (veritabanı CHECK'i, arayüzde defter seçimi gizli). Arşiv ve gerçek veri (Migration 03 ve 07, lisans kararı) Faz E'dedir.
+**Erişim:** giriş yapmış herkes (admin kapısı Faz 1'de kalktı); navbar linki herkese görünür. Sayfadaki kapı yalnızca görünürlüktür (`WwBtGate`: anon, demo, member), izinleri veritabanı belirler (RLS, kota: ücretsiz 1, pro 10 aktif hesap). **Veri kaynağı:** hesap açarken seçilir, sonradan değişmez (`backtest_accounts.data_source`). Şimdilik yalnızca `synthetic`; `ctrader` seçeneği arayüzde "Yakında" etiketiyle pasif görünür. Sentetik hesaplar defterlere bağlanamaz (veritabanı CHECK'i, arayüzde defter seçimi gizli). Arşiv ve gerçek veri (Migration 03 ve 07, lisans kararı) Faz E'dedir.
 
 **Veritabanı:** migration'lar `supabase/migrations/202610180NNN_*.sql` (geri alma dosyaları depoda yok). Elle, SQL Editor'da, sırayla çalıştırılır (`supabase db push` kullanılmaz):
 | No | Ne yapar |
@@ -319,7 +319,7 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 | 07 | Arşivi tüm üyelere açar; lisans onay satırı açılmadan çalışmaz (Faz E) |
 | 08 | `backtest_accounts.data_source` (`synthetic`; `ctrader` sonraki tur), sentetik hesap deftere bağlanamaz (CHECK), alan değiştirilemez (tetikleyici). Önkoşul: bağlı hesap kalmamış olmalı |
 
-**İstatistiklerden yalıtım:** Backtest işlemleri günlüğe yalnızca `trades.platform_source = 'backtest'` ile gider. Tüm okuyucular (dashboard, premium dashboard, takvim, stratejiler, defterler) canlı kapsamı okur (`public/interface/shared/trades-source.js`); işlemler sayfasında Tümü / Canlı / Backtest seçici ve "Backtest" rozeti vardır.
+**İstatistiklerden yalıtım:** Backtest işlemleri günlüğe yalnızca `trades.platform_source = 'backtest'` ile gider. Tüm okuyucular (dashboard, pro dashboard, takvim, stratejiler, defterler) canlı kapsamı okur (`public/interface/shared/trades-source.js`); işlemler sayfasında Tümü / Canlı / Backtest seçici ve "Backtest" rozeti vardır.
 
 **Test araçları:** `node --test tests/*.test.js` (312 test).
 
@@ -333,7 +333,7 @@ Supabase Auth kullanılır. Oturum, Supabase JS'nin varsayılanıyla `localStora
 - **Kayıt (`/register`).** Aynı fonksiyonda `action: 'register'` ile yapılır: kullanıcı adı ve e-posta tekilliği kontrol edilir, ardından `signUp` çağrılır. **E-posta otomatik onaylanır**, yani ayrı bir doğrulama adımı yoktur. Profil ve varsayılan defter `handle_new_user` trigger'ı ile oluşur.
 - **Şifre sıfırlama.** `/forgot-password` → `resetPasswordForEmail` → e-postadaki link `/update-password`'a gelir → `auth.updateUser({ password })` (en az 6 karakter).
 - **Sayfa koruması.** Rota düzeyinde sunucu koruması yoktur; her sayfa script'i açılışta `requireAuth()` çağırır (`public/src/core/supabase.js`, `bundle.js` ile global). Oturum yoksa `/login`'e yönlendirir. Profil 3 dakika önbelleğe alınır. `is_active = false` ise kullanıcıyı çıkış yaptırır. Asıl güvenlik veritabanındaki **RLS** politikalarıdır (`202608190001_security_baseline.sql` ve sonraki güvenlik migration'ları).
-- **Premium.** Plan kaynağı `user_profiles.plan = 'premium'` ve geleceğe ait (veya boş) bir `plan_expires_at`'tir. Fonksiyonlar `public/src/services/user.js` içinde: `getUserPlan`, `isPremium`, `hasFeature`, `requirePremium`. Plan sessionStorage'da 5 dakika tutulur. `BaseHead` sayfa çizilmeden `is-premium` sınıfını ekler (yükseltme butonları yanıp sönmesin diye). Ödeme penceresi `UpgradeModal.astro`'dur.
+- **Pro.** Plan kaynağı `user_profiles.plan = 'premium'` ve geleceğe ait (veya boş) bir `plan_expires_at`'tir. Fonksiyonlar `public/src/services/user.js` içinde: `getUserPlan`, `isPro`, `hasFeature`, `requirePro`. Plan sessionStorage'da 5 dakika tutulur. `BaseHead` sayfa çizilmeden `is-pro` sınıfını ekler (yükseltme butonları yanıp sönmesin diye). Ödeme penceresi `UpgradeModal.astro`'dur.
 - **Admin.** Ölçüt `auth.users.raw_app_meta_data.role = 'admin'` (JWT'de `app_metadata.role`). Veritabanında `public.is_admin()` bunu okur. İstemcide `isAdmin()` / `requireAdmin()` kullanılır. Rolün nasıl verileceği `supabase/ADMIN_ROLE.md` dosyasında anlatılır. `user_profiles.role` yalnızca gösterim içindir.
 - **Çıkış.** Navbar'daki çıkış butonu `signOut` çağırır, plan/avatar/aktif defter önbelleklerini temizler ve ana sayfaya döner.
 - **cTrader OAuth.** `/journals` sayfası kullanıcıyı cTrader yetkilendirme sayfasına gönderir. `/ctrader-callback` dönen kodu oturum token'ı ile `ctrader-connect`'e iletir. Hedef defter seçiliyse `link_ctrader_account` ve ardından `ctrader-sync` çağrılır.
@@ -366,11 +366,11 @@ Varsayılan tema koyudur. Açık tema `body.light-theme` sınıfıyla gelir.
 - z-index ölçeği: `--z-dropdown` 300, `--z-popover` 500, `--z-fab` 999, `--z-modal-overlay` 1000, `--z-toast` 9999 vb.
 - Ortam ışığı: `--ambient-*` değişkenleri, `[data-ambient-state=profit|loss|neutral]` ile değişir.
 
-**Güncel kural — grafik ve modallar:** Koyu temada grafikler, tooltip'ler ve modallar temanın morumsu yüzeylerini değil **saf siyah (`#000`)** zemin ve nötr beyaz çizgiler (`rgba(255,255,255,0.05–0.1)`) kullanır. Açık temada beyazdır. Bu kural şu dosyalarda uygulanıyor: `shared/chart-theme.css`, `dashboard.css`, `premium-dashboard.css`, `strategies.css`, `quick-add.css`, `navbar.css`, `buttons.css`. Yeni bir modal veya grafik eklerken bu kurala uyulmalıdır.
+**Güncel kural — grafik ve modallar:** Koyu temada grafikler, tooltip'ler ve modallar temanın morumsu yüzeylerini değil **saf siyah (`#000`)** zemin ve nötr beyaz çizgiler (`rgba(255,255,255,0.05–0.1)`) kullanır. Açık temada beyazdır. Bu kural şu dosyalarda uygulanıyor: `shared/chart-theme.css`, `dashboard.css`, `analytics.css`, `strategies.css`, `quick-add.css`, `navbar.css`, `buttons.css`. Yeni bir modal veya grafik eklerken bu kurala uyulmalıdır.
 
 **Tema anahtarları (localStorage):**
 - `ww_theme`: açık / koyu tema.
-- `ww_custom_theme`: premium'a özel özel koyu tema; hazır ayarlar `public/src/features/theme.js` içinde.
+- `ww_custom_theme`: Pro'ya özel özel koyu tema; hazır ayarlar `public/src/features/theme.js` içinde.
 - Diğerleri: `ww_font_size`, `ww_ambient_mode`, `ww_language`, `ww_time_settings`.
 
 `BaseHead` temayı, planı ve dili sayfa çizilmeden önce `<html>` öğesine uygular; böylece ekran yanıp sönmez.
@@ -395,7 +395,7 @@ Varsayılan tema koyudur. Açık tema `body.light-theme` sınıfıyla gelir.
 | Onay penceresi | `public/src/utils/confirm-dialog.js` | Onay/iptal soruları |
 | Modal, iskelet, boş durum | `styles.css` (`.modal-overlay`/`.modal-box`, `.skeleton*`, `.empty-state`) | Ortak CSS sınıfları |
 | Quick Add | `public/interface/quick-add/` | Hızlı işlem ekleme; broker CSV/XLSX algılama ve eşleştirme |
-| Yükseltme penceresi | `src/components/UpgradeModal.astro` | Premium'a geçiş |
+| Yükseltme penceresi | `src/components/UpgradeModal.astro` | Pro'ya geçiş |
 | **`WwChart`** | `public/interface/shared/chart-theme.js` + `.css` | Tüm grafiklerin ortak görünümü: `apex(opts)`, `lwc(opts)`, `axisLabels()`, `barSize()`, `colors()`, `tipHtml()` (ortak siyah tooltip kartı `.ww-tip`) |
 | **`WwChartViewer`** | `public/interface/shared/chart-viewer.js` | Grafiğe tıklayınca açılan büyütme penceresi: önceki/sonraki gezinme, Esc ile kapatma |
 | **`WwMetrics`** | `public/interface/shared/trade-metrics.js` | K/Z, win rate, profit factor, drawdown, seriler, Sharpe, R:R. Tek doğruluk kaynağı, testli. |
@@ -420,7 +420,7 @@ Böylece font, eksen yazısı, ızgara ve tooltip görünümü diğer sayfalarla
 - **Kurulum:** `npm install` → `npm run dev`. `bundle.js` dev ve build başında otomatik üretilir.
 - **Testler:** `node --test tests/*.test.js` (tarayıcı modülleri `vm` ile yüklenir).
 - **Astro geliştirme araç çubuğu kapalı** (`astro.config.mjs` → `devToolbar.enabled = false`): localhost'ta alt paneldeki tabloların üstünü kapatıyordu.
-- **Önbellek kırma:** Sayfa CSS/JS bağlantıları `?v=<sayı>` parametresi taşır. Bir dosyayı değiştirince ilgili `.astro` sayfasındaki sayıyı artır. Premium-dashboard alt modülleri sürüm parametresi almaz; tarayıcı eski sürümü tutabilir.
+- **Önbellek kırma:** Sayfa CSS/JS bağlantıları `?v=<sayı>` parametresi taşır. Bir dosyayı değiştirince ilgili `.astro` sayfasındaki sayıyı artır. Pro-dashboard alt modülleri sürüm parametresi almaz; tarayıcı eski sürümü tutabilir.
 - **Bilinen sorunlar ve tutarsızlıklar:**
   - `src/components/quick-add/QuickAddModal.tsx` (React, kullanılmıyor) işlemi `journal_id` olmadan ekler.
   - `quick-add-modal.astro`, var olmayan bir script'e bağlanıyor.

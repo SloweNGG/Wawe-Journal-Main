@@ -181,15 +181,15 @@ function widgetMenuHtml(key) {
   var html = '<div class="wwp-head"><span class="wwp-title">' + sanitizeHTML(w.title) + '</span></div>';
 
   var layout = getWidgetLayout(key, w);
-  html += sectionHtml(_t('premium_dash.opt.size', 'Genişlik'), segHtml('data-layout="size"', layout.size, [
+  html += sectionHtml(_t('analytics_dash.opt.size', 'Genişlik'), segHtml('data-layout="size"', layout.size, [
     { value: 'sm',   label: '1/4' },
     { value: 'md',   label: '2/4' },
     { value: 'lg',   label: '3/4' },
-    { value: 'full', label: _t('premium_dash.opt.size_full', 'Tam') }
+    { value: 'full', label: _t('analytics_dash.opt.size_full', 'Tam') }
   ]));
-  html += sectionHtml(_t('premium_dash.opt.height', 'Yükseklik'), segHtml('data-layout="height"', layout.height, [
-    { value: 'normal', label: _t('premium_dash.opt.height_normal', 'Normal') },
-    { value: 'tall',   label: _t('premium_dash.opt.height_tall', 'Uzun') }
+  html += sectionHtml(_t('analytics_dash.opt.height', 'Yükseklik'), segHtml('data-layout="height"', layout.height, [
+    { value: 'normal', label: _t('analytics_dash.opt.height_normal', 'Normal') },
+    { value: 'tall',   label: _t('analytics_dash.opt.height_tall', 'Uzun') }
   ]));
 
   var values = getWidgetOptions(key);
@@ -199,8 +199,8 @@ function widgetMenuHtml(key) {
   });
 
   html += '<div class="wwp-foot">' +
-    '<button type="button" class="wwp-link" data-action="reset-widget">' + sanitizeHTML(_t('premium_dash.reset_widget', 'Varsayılana dön')) + '</button>' +
-    '<button type="button" class="wwp-danger" data-action="hide-widget">' + sanitizeHTML(_t('premium_dash.hide_widget', 'Gizle')) + '</button>' +
+    '<button type="button" class="wwp-link" data-action="reset-widget">' + sanitizeHTML(_t('analytics_dash.reset_widget', 'Varsayılana dön')) + '</button>' +
+    '<button type="button" class="wwp-danger" data-action="hide-widget">' + sanitizeHTML(_t('analytics_dash.hide_widget', 'Gizle')) + '</button>' +
   '</div>';
   return html;
 }
@@ -232,7 +232,7 @@ function onPopoverClick(e) {
   if (action === 'hide-widget') {
     closePopover();
     hideWidget(key);
-    toast(_t('premium_dash.widget_hidden_toast', 'Kart kaldırıldı. "Özelleştir" panelinden geri ekleyebilirsin.'));
+    toast(_t('analytics_dash.widget_hidden_toast', 'Kart kaldırıldı. "Özelleştir" panelinden geri ekleyebilirsin.'));
   } else if (action === 'reset-widget') {
     // Görünürlük korunur; boyut ve grafik ayarları varsayılana döner
     var hidden = getWidgetPrefs(key).hidden;
@@ -399,13 +399,13 @@ function quotaHtml(used) {
   for (var i = 0; i < FREE_ANALYSIS_QUOTA; i++) dots += '<span class="wwd-quota-dot' + (i < used ? ' on' : '') + '"></span>';
   return '<div class="wwd-quota">' +
     '<div class="wwd-quota-top">' +
-      '<span class="wwd-quota-label">' + sanitizeHTML(_t('premium_dash.quota.label', 'Analiz kartların')) + '</span>' +
+      '<span class="wwd-quota-label">' + sanitizeHTML(_t('analytics_dash.quota.label', 'Analiz kartların')) + '</span>' +
       '<span class="wwd-quota-dots" aria-hidden="true">' + dots + '</span>' +
       '<span class="wwd-quota-n">' + Math.min(used, FREE_ANALYSIS_QUOTA) + '/' + FREE_ANALYSIS_QUOTA + '</span>' +
     '</div>' +
     '<div class="wwd-quota-text">' +
-      sanitizeHTML(_t('premium_dash.quota.text', 'Ücretsiz planda istediğin {n} analiz kartını seçip kullanabilirsin.').replace('{n}', FREE_ANALYSIS_QUOTA)) +
-      ' <button type="button" class="wwd-link" data-upgrade="quota">' + sanitizeHTML(_t('premium_dash.quota.cta', 'Pro ile sınırsız →')) + '</button>' +
+      sanitizeHTML(_t('analytics_dash.quota.text', 'Ücretsiz planda istediğin {n} analiz kartını seçip kullanabilirsin.').replace('{n}', FREE_ANALYSIS_QUOTA)) +
+      ' <button type="button" class="wwd-link" data-upgrade="quota">' + sanitizeHTML(_t('analytics_dash.quota.cta', 'Pro ile sınırsız →')) + '</button>' +
     '</div>' +
   '</div>';
 }
@@ -417,12 +417,12 @@ function replacePanelHtml(key, widgets, activeAnalysis) {
       '<span class="wwd-replace-ico">' + iconSvg(widgets[k].icon) + '</span>' + sanitizeHTML(widgets[k].title) + '</button>';
   }).join('');
   return '<div class="wwd-replace" role="group">' +
-    '<div class="wwd-replace-title">' + sanitizeHTML(_t('premium_dash.replace.title', '3 analiz kartın da kullanımda')) + '</div>' +
-    '<div class="wwd-replace-text">' + sanitizeHTML(_t('premium_dash.replace.text', '"{name}" kartını hangisinin yerine ekleyelim?').replace('{name}', widgets[key].title)) + '</div>' +
+    '<div class="wwd-replace-title">' + sanitizeHTML(_t('analytics_dash.replace.title', '3 analiz kartın da kullanımda')) + '</div>' +
+    '<div class="wwd-replace-text">' + sanitizeHTML(_t('analytics_dash.replace.text', '"{name}" kartını hangisinin yerine ekleyelim?').replace('{name}', widgets[key].title)) + '</div>' +
     '<div class="wwd-replace-opts">' + opts + '</div>' +
     '<div class="wwd-replace-foot">' +
-      '<button type="button" class="wwd-btn wwd-btn--add" data-upgrade="replace">' + sanitizeHTML(_t('premium_dash.replace.pro', 'Pro ile hepsini kullan')) + '</button>' +
-      '<button type="button" class="wwd-link" data-cancel-replace>' + sanitizeHTML(_t('premium_dash.replace.cancel', 'Vazgeç')) + '</button>' +
+      '<button type="button" class="wwd-btn wwd-btn--add" data-upgrade="replace">' + sanitizeHTML(_t('analytics_dash.replace.pro', 'Pro ile hepsini kullan')) + '</button>' +
+      '<button type="button" class="wwd-link" data-cancel-replace>' + sanitizeHTML(_t('analytics_dash.replace.cancel', 'Vazgeç')) + '</button>' +
     '</div>' +
   '</div>';
 }
@@ -439,7 +439,7 @@ function renderDrawer() {
   var free = !isPro();
   var scrollTop = drawer.querySelector('.wwd-body') ? drawer.querySelector('.wwd-body').scrollTop : 0;
 
-  var chips = [{ id: 'all', label: _t('premium_dash.cat.all', 'Tümü'), n: keys.length }].concat(categories.map(function(c) {
+  var chips = [{ id: 'all', label: _t('analytics_dash.cat.all', 'Tümü'), n: keys.length }].concat(categories.map(function(c) {
     return { id: c.id, label: c.label, n: keys.filter(function(k) { return widgets[k].category === c.id; }).length };
   })).filter(function(c) { return c.id === 'all' || c.n > 0; }).map(function(c) {
     var active = drawerFilter === c.id;
@@ -457,15 +457,15 @@ function renderDrawer() {
       var w = widgets[k];
       var on = isOn(k);
       var actions = on
-        ? '<button type="button" class="wwd-btn wwd-btn--ghost" data-configure="' + k + '">' + sanitizeHTML(_t('premium_dash.configure', 'Ayarla')) + '</button>' +
-          '<button type="button" class="wwd-btn wwd-btn--remove" data-remove="' + k + '">' + sanitizeHTML(_t('premium_dash.remove', 'Kaldır')) + '</button>'
-        : '<button type="button" class="wwd-btn wwd-btn--add" data-add="' + k + '">' + PLUS_ICON + sanitizeHTML(_t('premium_dash.add', 'Ekle')) + '</button>';
+        ? '<button type="button" class="wwd-btn wwd-btn--ghost" data-configure="' + k + '">' + sanitizeHTML(_t('analytics_dash.configure', 'Ayarla')) + '</button>' +
+          '<button type="button" class="wwd-btn wwd-btn--remove" data-remove="' + k + '">' + sanitizeHTML(_t('analytics_dash.remove', 'Kaldır')) + '</button>'
+        : '<button type="button" class="wwd-btn wwd-btn--add" data-add="' + k + '">' + PLUS_ICON + sanitizeHTML(_t('analytics_dash.add', 'Ekle')) + '</button>';
       return '<div class="wwd-card' + (on ? ' is-on' : '') + '">' +
         '<div class="wwd-thumb">' + iconSvg(w.icon) + '</div>' +
         '<div class="wwd-info">' +
           '<div class="wwd-title">' + sanitizeHTML(w.title) +
-            (on ? ' <span class="wwd-on-badge">' + sanitizeHTML(_t('premium_dash.on_dashboard', 'Panoda')) + '</span>' : '') +
-            (free && isAnalysisWidget(w) ? ' <span class="wwd-tier">' + sanitizeHTML(_t('premium_dash.tier_analysis', 'Analiz')) + '</span>' : '') +
+            (on ? ' <span class="wwd-on-badge">' + sanitizeHTML(_t('analytics_dash.on_dashboard', 'Panoda')) + '</span>' : '') +
+            (free && isAnalysisWidget(w) ? ' <span class="wwd-tier">' + sanitizeHTML(_t('analytics_dash.tier_analysis', 'Analiz')) + '</span>' : '') +
           '</div>' +
           '<div class="wwd-desc">' + sanitizeHTML(w.desc || '') + '</div>' +
         '</div>' +
@@ -482,8 +482,8 @@ function renderDrawer() {
   drawer.innerHTML =
     '<header class="wwd-head">' +
       '<div>' +
-        '<h2 id="ww-drawer-title" class="wwd-heading">' + sanitizeHTML(_t('premium_dash.customize_title', 'Dashboard\'u özelleştir')) + '</h2>' +
-        '<p class="wwd-sub">' + sanitizeHTML(_t('premium_dash.customize_hint', 'Kartları ⠿ ile sürükleyip sırala, ⚙ ile boyut ve grafik ayarlarını değiştir.')) + '</p>' +
+        '<h2 id="ww-drawer-title" class="wwd-heading">' + sanitizeHTML(_t('analytics_dash.customize_title', 'Dashboard\'u özelleştir')) + '</h2>' +
+        '<p class="wwd-sub">' + sanitizeHTML(_t('analytics_dash.customize_hint', 'Kartları ⠿ ile sürükleyip sırala, ⚙ ile boyut ve grafik ayarlarını değiştir.')) + '</p>' +
       '</div>' +
       '<button type="button" class="wwd-close" aria-label="' + sanitizeHTML(_t('common.close', 'Kapat')) + '">' + CLOSE_ICON + '</button>' +
     '</header>' +
@@ -492,8 +492,8 @@ function renderDrawer() {
     (free ? quotaHtml(activeAnalysis.length) : '') +
     '<div class="wwd-body">' + sections + '</div>' +
     '<footer class="wwd-foot">' +
-      '<span class="wwd-foot-count">' + sanitizeHTML(_t('premium_dash.cards_on', '{n} kart panoda').replace('{n}', visibleCount)) + '</span>' +
-      '<button type="button" class="wwp-link" data-action="reset-all">' + sanitizeHTML(_t('premium_dash.reset_layout', 'Düzeni Sıfırla')) + '</button>' +
+      '<span class="wwd-foot-count">' + sanitizeHTML(_t('analytics_dash.cards_on', '{n} kart panoda').replace('{n}', visibleCount)) + '</span>' +
+      '<button type="button" class="wwp-link" data-action="reset-all">' + sanitizeHTML(_t('analytics_dash.reset_layout', 'Düzeni Sıfırla')) + '</button>' +
     '</footer>';
 
   var body = drawer.querySelector('.wwd-body');
@@ -504,11 +504,11 @@ function renderDrawer() {
 function viewOptionsHtml() {
   var current = getKpiDensity();
   var opts = [
-    { value: 'full', label: _t('premium_dash.density_full', 'Detaylı') },
-    { value: 'compact', label: _t('premium_dash.density_compact', 'İnce') }
+    { value: 'full', label: _t('analytics_dash.density_full', 'Detaylı') },
+    { value: 'compact', label: _t('analytics_dash.density_compact', 'İnce') }
   ];
   return '<div class="wwd-view">' +
-    '<span class="wwd-view-label">' + sanitizeHTML(_t('premium_dash.kpi_density', 'Üst istatistikler')) + '</span>' +
+    '<span class="wwd-view-label">' + sanitizeHTML(_t('analytics_dash.kpi_density', 'Üst istatistikler')) + '</span>' +
     '<div class="wwp-seg wwd-view-seg">' + opts.map(function(o) {
       var active = o.value === current;
       return '<button type="button" data-density="' + o.value + '" class="' + (active ? 'active' : '') + '" aria-pressed="' + active + '">' + sanitizeHTML(o.label) + '</button>';
@@ -551,7 +551,7 @@ function onDrawerClick(e) {
     renderDrawer();
     flashWidget(newKey);
     var ws = buildWidgets();
-    toast(_t('premium_dash.replace.done', '"{old}" yerine "{name}" eklendi')
+    toast(_t('analytics_dash.replace.done', '"{old}" yerine "{name}" eklendi')
       .replace('{old}', ws[oldKey].title).replace('{name}', ws[newKey].title), 'success');
     return;
   }
@@ -576,7 +576,7 @@ function onDrawerClick(e) {
     if (ctx) ctx.rerenderAll();
     renderDrawer();
     flashWidget(key);
-    toast(_t('premium_dash.card_added_toast', '"{name}" panoya eklendi').replace('{name}', buildWidgets()[key].title), 'success');
+    toast(_t('analytics_dash.card_added_toast', '"{name}" panoya eklendi').replace('{name}', buildWidgets()[key].title), 'success');
     return;
   }
 
@@ -606,7 +606,7 @@ function onDrawerClick(e) {
     resetPrefs();
     if (ctx) ctx.rerenderAll();
     renderDrawer();
-    toast(_t('premium_dash.layout_reset_done', 'Düzen sıfırlandı'), 'success');
+    toast(_t('analytics_dash.layout_reset_done', 'Düzen sıfırlandı'), 'success');
   }
 }
 
@@ -623,7 +623,7 @@ function flashWidget(key) {
 function openUpgrade() {
   closePopover();
   closeDrawer();
-  if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: 'premium_dashboard' });
+  if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: 'analytics_dashboard' });
 }
 
 function toast(msg, type) {

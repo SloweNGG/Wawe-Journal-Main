@@ -266,12 +266,12 @@ const {
       root.style.fontSize = savedFontSize + 'px';
     }
 
-    // 5. Plan Durumu (Premium vs Free — Upgrade butonlarını 0ms gizler)
+    // 5. Plan Durumu (Pro vs Free — Upgrade butonlarını 0ms gizler)
     var userPlan = localStorage.getItem('ww_user_plan') || sessionStorage.getItem('ww_user_plan');
     if (userPlan === 'premium') {
-      root.classList.add('is-premium');
+      root.classList.add('is-pro');
     } else {
-      root.classList.remove('is-premium');
+      root.classList.remove('is-pro');
     }
   } catch(e) {}
 
@@ -282,10 +282,10 @@ const {
       var body = document.body;
       if (!body) return;
 
-      if (root.classList.contains('is-premium')) {
-        body.classList.add('is-premium');
+      if (root.classList.contains('is-pro')) {
+        body.classList.add('is-pro');
       } else {
-        body.classList.remove('is-premium');
+        body.classList.remove('is-pro');
       }
 
       if (root.classList.contains('light-theme')) {

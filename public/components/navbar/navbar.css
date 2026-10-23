@@ -8,7 +8,7 @@
    ⭐ HAMBURGER BUTONU ZİL İLE AYNI BOYUTTA
    ⭐ PLAN-BADGE ANİMASYONLARI — PAKET B ("ZARİF")
       · Free rozeti: çok hafif nefes (5s)
-      · Premium rozeti: yumuşak glow pulse (3s)
+      · Pro rozeti: yumuşak glow pulse (3s)
       · Noktalar: yumuşak nabız (opaklık %85)
       · Upgrade anı: bounce pop + glow
       · Hover: scale + translateY
@@ -275,13 +275,13 @@ body.light-theme .nav::after {
   transform: translateY(-1px);
 }
 
-.plan-badge.premium {
+.plan-badge.pro {
   background: rgba(139,92,246,0.15);
   border: 1px solid rgba(139,92,246,0.3);
   color: var(--accent2);
 }
 
-.plan-badge.premium:hover {
+.plan-badge.pro:hover {
   background: rgba(139,92,246,0.22);
   border-color: rgba(139,92,246,0.5);
   box-shadow: 0 0 14px rgba(139,92,246,0.25);
@@ -298,7 +298,7 @@ body.light-theme .nav::after {
   will-change: transform, opacity;
 }
 
-.plan-badge.premium .plan-dot {
+.plan-badge.pro .plan-dot {
   background: var(--accent2);
   box-shadow: 0 0 8px rgba(139,92,246,0.4);
 }
@@ -365,7 +365,7 @@ body.light-theme .nav::after {
   letter-spacing: -0.01em;
 }
 
-.plan-badge.premium .plan-tooltip-title {
+.plan-badge.pro .plan-tooltip-title {
   color: #c4b5fd;
 }
 
@@ -997,9 +997,9 @@ body.light-theme .bell-panel-footer {
 }
 
 /* ============================================================
-   PREMIUM DROPDOWN MENU (LUXURY GLASSMORPHISM)
+   PRO DROPDOWN MENU (LUXURY GLASSMORPHISM)
    ============================================================ */
-.nav-dropdown-menu.premium-menu-glass {
+.nav-dropdown-menu.pro-menu-glass {
   position: absolute;
   top: 46px;
   right: 0;
@@ -1025,21 +1025,21 @@ body.light-theme .bell-panel-footer {
   overflow: hidden;
 }
 
-body.light-theme .nav-dropdown-menu.premium-menu-glass {
+body.light-theme .nav-dropdown-menu.pro-menu-glass {
   background: rgba(255, 255, 255, 0.96);
   border-color: rgba(0, 0, 0, 0.08);
   box-shadow: 0 24px 64px -12px rgba(15, 23, 42, 0.18),
               0 0 0 1px rgba(139, 92, 246, 0.1);
 }
 
-.nav-dropdown-menu.premium-menu-glass.open {
+.nav-dropdown-menu.pro-menu-glass.open {
   opacity: 1;
   visibility: visible;
   pointer-events: all;
   transform: translateY(0) scale(1);
 }
 
-.premium-menu-header {
+.pro-menu-header {
   display: flex;
   align-items: center;
   padding: 6px 10px 6px;
@@ -1047,11 +1047,11 @@ body.light-theme .nav-dropdown-menu.premium-menu-glass {
   margin-bottom: 4px;
 }
 
-body.light-theme .premium-menu-header {
+body.light-theme .pro-menu-header {
   border-bottom-color: rgba(0, 0, 0, 0.06);
 }
 
-.premium-menu-title {
+.pro-menu-title {
   font-family: 'DM Sans', sans-serif;
   font-size: 10px;
   font-weight: 700;
@@ -1060,42 +1060,42 @@ body.light-theme .premium-menu-header {
   color: var(--muted);
 }
 
-body.light-theme .premium-menu-title {
+body.light-theme .pro-menu-title {
   color: #64748b;
 }
 
-.premium-menu-tag {
+.pro-menu-tag {
   display: none !important;
 }
 
-.premium-menu-items {
+.pro-menu-items {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.premium-menu-footer {
+.pro-menu-footer {
   margin-top: 2px;
 }
 
 /* ============================================================
-   PREMIUM HESAP KORUMASI — Upgrade butonları ve PRO badge gizleme
+   PRO HESAP KORUMASI — Upgrade butonları ve PRO badge gizleme
    ============================================================ */
-html.is-premium .nav-upgrade-wrapper,
-body.is-premium .nav-upgrade-wrapper,
-html.is-premium .nav-upgrade-item,
-body.is-premium .nav-upgrade-item,
-html.is-premium .nav-upgrade-divider,
-body.is-premium .nav-upgrade-divider,
-html.is-premium .go-premium,
-body.is-premium .go-premium,
-html.is-premium #avatar-upgrade-link,
-body.is-premium #avatar-upgrade-link,
-html.is-premium #avatar-upgrade-divider,
-body.is-premium #avatar-upgrade-divider,
-html.is-premium #premium-menu-footer,
-body.is-premium #premium-menu-footer,
-.premium-menu-tag {
+html.is-pro .nav-upgrade-wrapper,
+body.is-pro .nav-upgrade-wrapper,
+html.is-pro .nav-upgrade-item,
+body.is-pro .nav-upgrade-item,
+html.is-pro .nav-upgrade-divider,
+body.is-pro .nav-upgrade-divider,
+html.is-pro .go-pro,
+body.is-pro .go-pro,
+html.is-pro #avatar-upgrade-link,
+body.is-pro #avatar-upgrade-link,
+html.is-pro #avatar-upgrade-divider,
+body.is-pro #avatar-upgrade-divider,
+html.is-pro #pro-menu-footer,
+body.is-pro #pro-menu-footer,
+.pro-menu-tag {
   display: none !important;
 }
 
@@ -1462,15 +1462,15 @@ body.light-theme .nav-menu {
   box-shadow: 0 0 16px var(--accent-glow), 0 0 32px rgba(139,92,246,0.08);
 }
 
-/* ⭐ "Go Premium" özel vurgu */
-.menu-section a.go-premium {
+/* ⭐ "Go Pro" özel vurgu */
+.menu-section a.go-pro {
   color: var(--accent2);
   font-weight: 700;
   background: rgba(139,92,246,0.06);
   border: 1px solid rgba(139,92,246,0.12);
 }
 
-.menu-section a.go-premium:hover {
+.menu-section a.go-pro:hover {
   background: rgba(139,92,246,0.15);
   border-color: rgba(139,92,246,0.25);
 }
@@ -2095,7 +2095,7 @@ body.light-theme .wj-journal-transit-dot {
 /* ============================================================
    PLAN-BADGE ANİMASYONLARI — PAKET B ("ZARİF")
    ⭐ Global ".nav * { animation: none !important }" kuralına istisna
-   ⭐ Free: çok hafif nefes (5s) / Premium: yumuşak glow pulse (3s)
+   ⭐ Free: çok hafif nefes (5s) / Pro: yumuşak glow pulse (3s)
    ⭐ Noktalar: yumuşak nabız (opaklık %85)
    ⭐ Upgrade: bounce pop + glow (tek seferlik, 450ms)
    ⭐ Hover: scale + translateY
@@ -2123,9 +2123,9 @@ body.light-theme .wj-journal-transit-dot {
   50%      { box-shadow: 0 0 6px 1px rgba(34,197,94,0.12); }
 }
 
-/* 4) Premium rozeti — PAKET B: YUMUŞAK glow pulse
+/* 4) Pro rozeti — PAKET B: YUMUŞAK glow pulse
       Uzun süre (3s), orta yoğunluk, göz yormaz */
-@keyframes badgePremiumPulseSoft {
+@keyframes badgeProPulseSoft {
   0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.10), 0 0 6px rgba(139,92,246,0.15); }
   50%      { box-shadow: 0 0 0 5px rgba(139,92,246,0),   0 0 16px rgba(139,92,246,0.35); }
 }
@@ -2139,13 +2139,13 @@ body.light-theme .wj-journal-transit-dot {
 }
 
 /* 6) Free (default) sürekli hafif nefes — sadece upgrade-pulse yoksa */
-.nav .plan-badge:not(.premium):not(.badge-upgrade-pulse) {
+.nav .plan-badge:not(.pro):not(.badge-upgrade-pulse) {
   animation: badgeFreeBreathSoft 5s ease-in-out infinite !important;
 }
 
-/* 7) Premium sürekli yumuşak glow — sadece upgrade-pulse yoksa */
-.nav .plan-badge.premium:not(.badge-upgrade-pulse) {
-  animation: badgePremiumPulseSoft 3s ease-in-out infinite !important;
+/* 7) Pro sürekli yumuşak glow — sadece upgrade-pulse yoksa */
+.nav .plan-badge.pro:not(.badge-upgrade-pulse) {
+  animation: badgeProPulseSoft 3s ease-in-out infinite !important;
 }
 
 /* 8) Upgrade trigger (JS class ekler/kaldırır) – sürekli animasyonları ezer */
@@ -2707,7 +2707,7 @@ body.light-theme .journal-manage-link:hover {
 }
 
 /* ============================================================
-   SAAS NOTIFICATION ITEMS (PREMIUM DESIGN)
+   SAAS NOTIFICATION ITEMS (PRO DESIGN)
    ============================================================ */
 .noti-item {
   display: flex;
@@ -2818,7 +2818,7 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-icon.finance,
-.noti-icon.premium,
+.noti-icon.pro,
 .noti-icon.partner {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(99, 102, 241, 0.1));
   color: #a78bfa;
@@ -2880,7 +2880,7 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-tag.finance,
-.noti-tag.premium,
+.noti-tag.pro,
 .noti-tag.partner {
   background: rgba(139, 92, 246, 0.14);
   color: #a78bfa;
@@ -3318,11 +3318,11 @@ body.light-theme .noti-stat-chip.limit-danger {
 
 /* ============================================================
    NAVBAR DROPDOWNS: one shared size
-   Premium menu, avatar menu and accounts menu use the same width,
+   Pro menu, avatar menu and accounts menu use the same width,
    radius and padding. The notification panel (bell) stays wider on
    purpose because of its tab row.
    ============================================================ */
-.nav-dropdown-menu.premium-menu-glass,
+.nav-dropdown-menu.pro-menu-glass,
 .dropdown-menu,
 .journal-dropdown {
   box-sizing: border-box;
@@ -3408,21 +3408,10 @@ body.light-theme .noti-stat-chip.limit-danger {
 }
 body.light-theme .nav .nav-links a.active { color: #1e1b2e; }
 
-/* PRO etiketi (Analiz) */
-.nav-pro-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 5px;
-  border-radius: 5px;
-  border: 1px solid rgba(124, 58, 237, 0.5);
-  color: #c4b5fd;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  line-height: 1.3;
+/* Analiz bağlantısı yalnızca Pro üyelere görünür (is-pro sınıfı sayfa açılırken ayarlanır) */
+html:not(.is-pro) a[data-pro-link] {
+  display: none !important;
 }
-body.light-theme .nav-pro-tag { color: #6d28d9; border-color: rgba(109, 40, 217, 0.45); }
 
 /* ── + İşlem Ekle: ortak buton stili (siyah zemin, mor çerçeve, hap) ── */
 .nav-add-btn {
@@ -3494,9 +3483,9 @@ body.light-theme .nav-pro-tag { color: #6d28d9; border-color: rgba(109, 40, 217,
   -webkit-backdrop-filter: none;
 }
 .nav .dropdown-menu .plan-badge:hover,
-.nav .dropdown-menu .plan-badge.premium:hover { transform: none; box-shadow: none; }
+.nav .dropdown-menu .plan-badge.pro:hover { transform: none; box-shadow: none; }
 .nav .dropdown-menu .plan-badge .plan-dot,
-.nav .dropdown-menu .plan-badge.premium .plan-dot { animation: none; box-shadow: none; }
+.nav .dropdown-menu .plan-badge.pro .plan-dot { animation: none; box-shadow: none; }
 
 /* ── Dar ekranlar ── */
 @media (max-width: 1180px) {
@@ -3697,7 +3686,7 @@ body.light-theme .nav .bell-badge { box-shadow: 0 0 0 2px #fff; }
 }
 
 /* ============================================================
-   PLAN ROZETİ (Free / Premium) — navbar'da, avatarın yanında
+   PLAN ROZETİ (Free / Pro) — navbar'da, avatarın yanında
    Yeni işlem: sağ alttaki yüzen + butonu (navbar'daki buton kaldırıldı)
    ============================================================ */
 .nav .nav-right > .plan-badge {
@@ -3709,9 +3698,9 @@ body.light-theme .nav .bell-badge { box-shadow: 0 0 0 2px #fff; }
 }
 .nav .nav-right > .plan-badge .plan-text { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
 .nav .nav-right > .plan-badge:hover,
-.nav .nav-right > .plan-badge.premium:hover { transform: none; box-shadow: none; }
+.nav .nav-right > .plan-badge.pro:hover { transform: none; box-shadow: none; }
 .nav .nav-right > .plan-badge .plan-dot,
-.nav .nav-right > .plan-badge.premium .plan-dot { box-shadow: none; }
+.nav .nav-right > .plan-badge.pro .plan-dot { box-shadow: none; }
 /* Avatar menüsü başlığı artık yalnızca ad + e-posta (rozet navbar'da) */
 .nav .nav-dd-name,
 .nav .nav-dd-email { max-width: 200px; }

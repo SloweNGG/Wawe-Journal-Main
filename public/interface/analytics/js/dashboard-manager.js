@@ -263,7 +263,7 @@ function setDelta(id, diff, text, tone) {
   var dir = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
   el.className = 'pstat-delta ' + dir + (tone === 'neutral' ? ' neutral' : '');
   el.textContent = dir === 'flat' ? '±0' : (dir === 'up' ? '▲ ' : '▼ ') + text;
-  el.title = _t('premium_dash.vs_prev', 'Önceki döneme göre');
+  el.title = _t('analytics_dash.vs_prev', 'Önceki döneme göre');
 }
 
 function setText(id, text) {
@@ -271,15 +271,15 @@ function setText(id, text) {
   if (el) el.textContent = text;
 }
 
-// ⭐ RENDER PREMIUM STATS — prevTrades verilirse (hafta/ay/yıl filtresi) değişim rozetleri gösterilir
-export function renderPremiumStats(trades, prevTrades) {
+// ⭐ RENDER PRO STATS — prevTrades verilirse (hafta/ay/yıl filtresi) değişim rozetleri gösterilir
+export function renderProStats(trades, prevTrades) {
   try {
     var s = computeHeaderStats(trades);
     var p = prevTrades ? computeHeaderStats(prevTrades) : null;
     var hasPrev = !!(p && p.total);
 
     setText('pstat-total', s.total);
-    setText('pstat-total-sub', _t('premium_dash.sub.wl', '{w} kazanan · {l} kaybeden')
+    setText('pstat-total-sub', _t('analytics_dash.sub.wl', '{w} kazanan · {l} kaybeden')
       .replace('{w}', s.wins).replace('{l}', s.losses));
 
     var elPnl = document.getElementById('pstat-pnl');
@@ -287,7 +287,7 @@ export function renderPremiumStats(trades, prevTrades) {
       elPnl.textContent = formatCurrency(s.pnl);
       elPnl.className = 'pstat-value ' + (s.pnl > 0 ? 'positive' : (s.pnl < 0 ? 'negative' : ''));
     }
-    setText('pstat-pnl-sub', _t('premium_dash.sub.per_trade', 'İşlem başı {v}').replace('{v}', formatCurrency(s.avg)));
+    setText('pstat-pnl-sub', _t('analytics_dash.sub.per_trade', 'İşlem başı {v}').replace('{v}', formatCurrency(s.avg)));
 
     setText('pstat-wr', s.wr.toFixed(1) + '%');
     var bar = document.getElementById('pstat-wr-bar');
@@ -296,20 +296,20 @@ export function renderPremiumStats(trades, prevTrades) {
     setText('pstat-pf', window.WwMetrics.formatProfitFactor(s.pf));
     // Brüt kayıp yoksa "+$0,00" yerine nötr "$0,00"
     var zero = formatCurrency(0).replace(/^\+/, '');
-    setText('pstat-pf-sub', _t('premium_dash.sub.gross', 'Brüt {w} / {l}')
+    setText('pstat-pf-sub', _t('analytics_dash.sub.gross', 'Brüt {w} / {l}')
       .replace('{w}', s.grossWin > 0 ? formatCurrency(s.grossWin) : zero)
       .replace('{l}', s.grossLoss > 0 ? formatCurrency(-s.grossLoss) : zero));
 
     // Tek işlemde (sapma yok) Sharpe hesaplanamaz: yanıltıcı "0.00" yerine "—"
     setText('pstat-sharpe', s.sharpe === null ? '—' : s.sharpe.toFixed(2));
-    setText('pstat-sharpe-sub', _t('premium_dash.sub.sharpe', 'İşlem bazlı'));
+    setText('pstat-sharpe-sub', _t('analytics_dash.sub.sharpe', 'İşlem bazlı'));
 
     if (hasPrev) {
       var dTotal = s.total - p.total;
       setDelta('pstat-total-delta', dTotal, String(Math.abs(dTotal)), 'neutral');
       setDelta('pstat-pnl-delta', s.pnl - p.pnl, formatCurrency(Math.abs(s.pnl - p.pnl)).replace(/^[+-]/, ''));
       var dWr = s.wr - p.wr;
-      setDelta('pstat-wr-delta', Math.round(dWr * 10) / 10, Math.abs(dWr).toFixed(1) + ' ' + _t('premium_dash.pts', 'puan'));
+      setDelta('pstat-wr-delta', Math.round(dWr * 10) / 10, Math.abs(dWr).toFixed(1) + ' ' + _t('analytics_dash.pts', 'puan'));
       var pfNow = s.pf === null ? Infinity : s.pf, pfPrev = p.pf === null ? Infinity : p.pf;
       setDelta('pstat-pf-delta', isFinite(pfNow) && isFinite(pfPrev) ? pfNow - pfPrev : null, Math.abs(pfNow - pfPrev).toFixed(2));
       setDelta('pstat-sharpe-delta', s.sharpe !== null && p.sharpe !== null ? s.sharpe - p.sharpe : null,
@@ -345,7 +345,7 @@ export function renderKpiBar(trades) {
     if (elRr) {
       // R:R girilmemişse 0.00 yerine "—" (yanıltıcı sıfır gösterilmez)
       elRr.textContent = m.avgRR === null ? '—' : m.avgRR.toFixed(2);
-      elRr.title = m.avgRR === null ? _t('premium_dash.no_rr_hint', 'R:R verisi yok — işlemlere stop loss ekleyin') : '';
+      elRr.title = m.avgRR === null ? _t('analytics_dash.no_rr_hint', 'R:R verisi yok — işlemlere stop loss ekleyin') : '';
     }
   } catch(e) {}
 }
@@ -353,12 +353,12 @@ export function renderKpiBar(trades) {
 // ⭐ KART KATEGORİLERİ — "Kartlar" panelinde bu sırayla gruplanır
 export function getWidgetCategories() {
   return [
-    { id: 'prop',        label: _t('premium_dash.cat.prop', 'Prop Firm') },
-    { id: 'performance', label: _t('premium_dash.cat.performance', 'Performans') },
-    { id: 'time',        label: _t('premium_dash.cat.time', 'Zaman Analizi') },
-    { id: 'breakdown',   label: _t('premium_dash.cat.breakdown', 'Dağılım') },
-    { id: 'risk',        label: _t('premium_dash.cat.risk', 'Risk & Disiplin') },
-    { id: 'strategy',    label: _t('premium_dash.cat.strategy', 'Strateji') }
+    { id: 'prop',        label: _t('analytics_dash.cat.prop', 'Prop Firm') },
+    { id: 'performance', label: _t('analytics_dash.cat.performance', 'Performans') },
+    { id: 'time',        label: _t('analytics_dash.cat.time', 'Zaman Analizi') },
+    { id: 'breakdown',   label: _t('analytics_dash.cat.breakdown', 'Dağılım') },
+    { id: 'risk',        label: _t('analytics_dash.cat.risk', 'Risk & Disiplin') },
+    { id: 'strategy',    label: _t('analytics_dash.cat.strategy', 'Strateji') }
   ];
 }
 
@@ -393,35 +393,35 @@ export function buildWidgets() {
   return {
     // ⭐ Prop firm — yalnızca prop defteri açıkken, en üst satırda
     'prop-summary': {
-      title: _t('premium_dash.widgets.prop_summary', 'Prop Hesap Durumu'),
+      title: _t('analytics_dash.widgets.prop_summary', 'Prop Hesap Durumu'),
       template: chartDiv('prop-summary'),
       size: 'full',
       propOnly: true,
       pinTop: true,
       category: 'prop',
       icon: 'propsum',
-      desc: _t('premium_dash.desc.prop_summary', 'Hesap, kural durumu ve dört kural tek kartta.'),
-      i18nKey: 'premium_dash.widgets.prop_summary'
+      desc: _t('analytics_dash.desc.prop_summary', 'Hesap, kural durumu ve dört kural tek kartta.'),
+      i18nKey: 'analytics_dash.widgets.prop_summary'
     },
     'prop-daily': propCard('prop-daily', 'prop.today_margin', 'Bugünün Kalan Marjı',
-      'premium_dash.desc.prop_daily', 'Bugün kurallara takılmadan kaybedebileceğin tutar.', 'shield'),
+      'analytics_dash.desc.prop_daily', 'Bugün kurallara takılmadan kaybedebileceğin tutar.', 'shield'),
     'prop-maxloss': propCard('prop-maxloss', 'prop.max_loss_floor', 'Maksimum Kayıp Zemini',
-      'premium_dash.desc.prop_maxloss', 'Hesabın kapanacağı bakiye seviyesi ve ona uzaklığın.', 'floor'),
+      'analytics_dash.desc.prop_maxloss', 'Hesabın kapanacağı bakiye seviyesi ve ona uzaklığın.', 'floor'),
     'prop-target': propCard('prop-target', 'prop.target', 'Kâr Hedefi',
-      'premium_dash.desc.prop_target', 'Bu fazı geçmek için hedefe ne kadar kaldı.', 'target'),
+      'analytics_dash.desc.prop_target', 'Bu fazı geçmek için hedefe ne kadar kaldı.', 'target'),
     'prop-days': propCard('prop-days', 'prop.trading_days_balance', 'İşlem Günü / Bakiye',
-      'premium_dash.desc.prop_days', 'Asgari işlem günü şartı ve güncel bakiye.', 'days'),
+      'analytics_dash.desc.prop_days', 'Asgari işlem günü şartı ve güncel bakiye.', 'days'),
     'insights': {
-      title: _t('premium_dash.widgets.insights', 'İçgörüler'),
+      title: _t('analytics_dash.widgets.insights', 'İçgörüler'),
       template: chartDiv('insights'),
       size: 'sm',
       category: 'performance',
       icon: 'insight',
-      desc: _t('premium_dash.desc.insights', 'Verinden otomatik çıkarılan güçlü ve zayıf yönler.'),
-      i18nKey: 'premium_dash.widgets.insights'
+      desc: _t('analytics_dash.desc.insights', 'Verinden otomatik çıkarılan güçlü ve zayıf yönler.'),
+      i18nKey: 'analytics_dash.widgets.insights'
     },
     'cumulative': {
-      title: _t('premium_dash.widgets.cumulative', 'Kümülatif K/Z'),
+      title: _t('analytics_dash.widgets.cumulative', 'Kümülatif K/Z'),
       badge: true,
       badgeId: 'cumulative-change',
       badgeDefault: '↑ +0%',
@@ -429,143 +429,143 @@ export function buildWidgets() {
       size: 'md',
       category: 'performance',
       icon: 'area',
-      desc: _t('premium_dash.desc.cumulative', 'Toplam K/Z\'nin zaman içindeki eğrisi.'),
-      i18nKey: 'premium_dash.widgets.cumulative'
+      desc: _t('analytics_dash.desc.cumulative', 'Toplam K/Z\'nin zaman içindeki eğrisi.'),
+      i18nKey: 'analytics_dash.widgets.cumulative'
     },
     'winloss': {
-      title: _t('premium_dash.widgets.winloss', 'Win / Loss Dağılımı'),
+      title: _t('analytics_dash.widgets.winloss', 'Win / Loss Dağılımı'),
       template: chartDiv('winloss'),
       doughnut: true,
       category: 'performance',
       icon: 'donut',
-      desc: _t('premium_dash.desc.winloss', 'Kazanan, kaybeden ve başabaş işlem oranı.'),
-      i18nKey: 'premium_dash.widgets.winloss'
+      desc: _t('analytics_dash.desc.winloss', 'Kazanan, kaybeden ve başabaş işlem oranı.'),
+      i18nKey: 'analytics_dash.widgets.winloss'
     },
     'goal': {
-      title: _t('premium_dash.widgets.goal', 'Aylık Hedef'),
+      title: _t('analytics_dash.widgets.goal', 'Aylık Hedef'),
       template: chartDiv('goal'),
       defaultHidden: true,
       category: 'performance',
       icon: 'goal',
-      desc: _t('premium_dash.desc.goal', 'Bu ayki K/Z\'nin belirlediğin hedefe göre ilerlemesi.'),
-      i18nKey: 'premium_dash.widgets.goal'
+      desc: _t('analytics_dash.desc.goal', 'Bu ayki K/Z\'nin belirlediğin hedefe göre ilerlemesi.'),
+      i18nKey: 'analytics_dash.widgets.goal'
     },
     'symbol': {
-      title: _t('premium_dash.widgets.symbol', 'Sembol Bazlı Performans'),
+      title: _t('analytics_dash.widgets.symbol', 'Sembol Bazlı Performans'),
       template: chartDiv('symbol'),
       category: 'breakdown',
       icon: 'hbar',
-      desc: _t('premium_dash.desc.symbol', 'Enstrüman bazında K/Z, işlem sayısı ve win rate.'),
-      i18nKey: 'premium_dash.widgets.symbol'
+      desc: _t('analytics_dash.desc.symbol', 'Enstrüman bazında K/Z, işlem sayısı ve win rate.'),
+      i18nKey: 'analytics_dash.widgets.symbol'
     },
     'daily': {
       // Başlık seçilen aralığı gösterir; 30 gün varsayılanında mevcut çeviri anahtarı kullanılır
       title: dailyRange === 30
-        ? _t('premium_dash.widgets.daily', 'Günlük K/Z – Son 30 Gün')
-        : _t('premium_dash.widgets.daily_range', 'Günlük K/Z – Son {n} Gün').replace('{n}', dailyRange),
+        ? _t('analytics_dash.widgets.daily', 'Günlük K/Z – Son 30 Gün')
+        : _t('analytics_dash.widgets.daily_range', 'Günlük K/Z – Son {n} Gün').replace('{n}', dailyRange),
       template: chartDiv('daily'),
       size: 'md',
       category: 'time',
       icon: 'bar',
-      desc: _t('premium_dash.desc.daily', 'Son 7–90 günün günlük K/Z\'si.'),
-      i18nKey: dailyRange === 30 ? 'premium_dash.widgets.daily' : null
+      desc: _t('analytics_dash.desc.daily', 'Son 7–90 günün günlük K/Z\'si.'),
+      i18nKey: dailyRange === 30 ? 'analytics_dash.widgets.daily' : null
     },
     'direction': {
-      title: _t('premium_dash.widgets.direction', 'Long / Short Dağılımı'),
+      title: _t('analytics_dash.widgets.direction', 'Long / Short Dağılımı'),
       template: chartDiv('direction'),
       doughnut: true,
       category: 'breakdown',
       icon: 'donut',
-      desc: _t('premium_dash.desc.direction', 'Long ve Short işlemlerin adet ve performans karşılaştırması.'),
-      i18nKey: 'premium_dash.widgets.direction'
+      desc: _t('analytics_dash.desc.direction', 'Long ve Short işlemlerin adet ve performans karşılaştırması.'),
+      i18nKey: 'analytics_dash.widgets.direction'
     },
     'strategies': {
       tier: 'analysis',
       freeDefault: true,
-      title: _t('premium_dash.widgets.strategies', 'Strateji Karşılaştırması'),
+      title: _t('analytics_dash.widgets.strategies', 'Strateji Karşılaştırması'),
       template: '<div id="strategy-section-body"></div>',
       size: 'sm',
       height: 'tall',
       category: 'strategy',
       icon: 'table',
-      desc: _t('premium_dash.desc.strategies', 'Stratejilerin win rate, PF ve K/Z karşılaştırması.'),
-      i18nKey: 'premium_dash.widgets.strategies'
+      desc: _t('analytics_dash.desc.strategies', 'Stratejilerin win rate, PF ve K/Z karşılaştırması.'),
+      i18nKey: 'analytics_dash.widgets.strategies'
     },
     'hourly': {
       tier: 'analysis',
       freeDefault: true,
-      title: _t('premium_dash.widgets.hourly', 'Saat Bazlı Performans'),
+      title: _t('analytics_dash.widgets.hourly', 'Saat Bazlı Performans'),
       template: chartDiv('hourly'),
       category: 'time',
       icon: 'bar',
-      desc: _t('premium_dash.desc.hourly', 'Günün hangi saatlerinde daha iyi trade ediyorsun?'),
-      i18nKey: 'premium_dash.widgets.hourly'
+      desc: _t('analytics_dash.desc.hourly', 'Günün hangi saatlerinde daha iyi trade ediyorsun?'),
+      i18nKey: 'analytics_dash.widgets.hourly'
     },
     'dow': {
       tier: 'analysis',
       freeDefault: true,
-      title: _t('premium_dash.widgets.dow', 'Haftanın Günü'),
+      title: _t('analytics_dash.widgets.dow', 'Haftanın Günü'),
       template: chartDiv('dow'),
       category: 'time',
       icon: 'bar',
-      desc: _t('premium_dash.desc.dow', 'Haftanın hangi günleri kârlı?'),
-      i18nKey: 'premium_dash.widgets.dow'
+      desc: _t('analytics_dash.desc.dow', 'Haftanın hangi günleri kârlı?'),
+      i18nKey: 'analytics_dash.widgets.dow'
     },
     'recent': {
-      title: _t('premium_dash.widgets.recent', 'Son İşlemler'),
+      title: _t('analytics_dash.widgets.recent', 'Son İşlemler'),
       template: chartDiv('recent'),
       size: 'md',
       defaultHidden: true,
       category: 'performance',
       icon: 'list',
-      desc: _t('premium_dash.desc.recent', 'En son 8 işlemin tarih, yön ve K/Z özeti.'),
-      i18nKey: 'premium_dash.widgets.recent'
+      desc: _t('analytics_dash.desc.recent', 'En son 8 işlemin tarih, yön ve K/Z özeti.'),
+      i18nKey: 'analytics_dash.widgets.recent'
     },
     'rr': {
       tier: 'analysis',
-      title: _t('premium_dash.widgets.rr', 'R:R Dağılımı'),
+      title: _t('analytics_dash.widgets.rr', 'R:R Dağılımı'),
       template: chartDiv('rr'),
       category: 'breakdown',
       icon: 'bar',
-      desc: _t('premium_dash.desc.rr', 'İşlemlerin risk/ödül oranı dağılımı.'),
-      i18nKey: 'premium_dash.widgets.rr'
+      desc: _t('analytics_dash.desc.rr', 'İşlemlerin risk/ödül oranı dağılımı.'),
+      i18nKey: 'analytics_dash.widgets.rr'
     },
     'lot': {
       tier: 'analysis',
-      title: _t('premium_dash.widgets.lot', 'Lot Büyüklüğü'),
+      title: _t('analytics_dash.widgets.lot', 'Lot Büyüklüğü'),
       template: chartDiv('lot'),
       category: 'breakdown',
       icon: 'bar',
-      desc: _t('premium_dash.desc.lot', 'Pozisyon büyüklüğüne göre sonuçlar.'),
-      i18nKey: 'premium_dash.widgets.lot'
+      desc: _t('analytics_dash.desc.lot', 'Pozisyon büyüklüğüne göre sonuçlar.'),
+      i18nKey: 'analytics_dash.widgets.lot'
     },
     // ⭐ Panelden eklenebilen kartlar (varsayılan gizli)
     'monthly': {
       tier: 'analysis',
-      title: _t('premium_dash.widgets.monthly', 'Aylık K/Z'),
+      title: _t('analytics_dash.widgets.monthly', 'Aylık K/Z'),
       template: chartDiv('monthly'),
       size: 'md',
       defaultHidden: true,
       category: 'performance',
       icon: 'bar',
-      desc: _t('premium_dash.desc.monthly', 'Ay ay K/Z, işlem sayısı veya win rate.'),
-      i18nKey: 'premium_dash.widgets.monthly'
+      desc: _t('analytics_dash.desc.monthly', 'Ay ay K/Z, işlem sayısı veya win rate.'),
+      i18nKey: 'analytics_dash.widgets.monthly'
     },
     'calendar': {
       tier: 'analysis',
-      title: _t('premium_dash.widgets.calendar', 'K/Z Takvimi'),
+      title: _t('analytics_dash.widgets.calendar', 'K/Z Takvimi'),
       template: chartDiv('calendar'),
       size: 'md',
       height: 'tall',
       defaultHidden: true,
       category: 'time',
       icon: 'calendar',
-      desc: _t('premium_dash.desc.calendar', 'Ayın her günü renkli kutularla: hangi gün kâr, hangi gün zarar.'),
-      i18nKey: 'premium_dash.widgets.calendar'
+      desc: _t('analytics_dash.desc.calendar', 'Ayın her günü renkli kutularla: hangi gün kâr, hangi gün zarar.'),
+      i18nKey: 'analytics_dash.widgets.calendar'
     },
     'drawdown': {
       tier: 'analysis',
-      title: _t('premium_dash.widgets.drawdown', 'Drawdown'),
+      title: _t('analytics_dash.widgets.drawdown', 'Drawdown'),
       badge: true,
       badgeId: 'drawdown-max',
       badgeDefault: '—',
@@ -574,18 +574,18 @@ export function buildWidgets() {
       defaultHidden: true,
       category: 'risk',
       icon: 'drawdown',
-      desc: _t('premium_dash.desc.drawdown', 'Zirveden düşüşler: en kötü dönem ne kadar derindi?'),
-      i18nKey: 'premium_dash.widgets.drawdown'
+      desc: _t('analytics_dash.desc.drawdown', 'Zirveden düşüşler: en kötü dönem ne kadar derindi?'),
+      i18nKey: 'analytics_dash.widgets.drawdown'
     },
     'streaks': {
       tier: 'analysis',
-      title: _t('premium_dash.widgets.streaks', 'Kazanç / Kayıp Serileri'),
+      title: _t('analytics_dash.widgets.streaks', 'Kazanç / Kayıp Serileri'),
       template: chartDiv('streaks'),
       defaultHidden: true,
       category: 'risk',
       icon: 'streak',
-      desc: _t('premium_dash.desc.streaks', 'En uzun seriler, mevcut seri ve son işlemlerin dizilimi.'),
-      i18nKey: 'premium_dash.widgets.streaks'
+      desc: _t('analytics_dash.desc.streaks', 'En uzun seriler, mevcut seri ve son işlemlerin dizilimi.'),
+      i18nKey: 'analytics_dash.widgets.streaks'
     }
   };
 }
@@ -599,7 +599,7 @@ export function renderWidgets() {
 
   var widgets = buildWidgets();
   var orderedKeys = getVisibleWidgetKeys(widgets);
-  var settingsLabel = _t('premium_dash.widget_settings', 'Widget ayarları');
+  var settingsLabel = _t('analytics_dash.widget_settings', 'Widget ayarları');
 
   var html = '';
   orderedKeys.forEach(function(key) {
@@ -713,8 +713,8 @@ function renderStrategyCardsDOM(strategiesList, trades, section) {
           <path d="M22 12h-4l-3 9H9l-3-9H2"/>
           <path d="M5 3h14l-2 6H7L5 3z"/>
         </svg>
-        <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">${_t('premium_dash.no_strategies', 'Henüz strateji eklenmemiş.')}</span>
-        <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">${_t('premium_dash.create_strategy', 'Strateji oluştur →')}</a>
+        <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">${_t('analytics_dash.no_strategies', 'Henüz strateji eklenmemiş.')}</span>
+        <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">${_t('analytics_dash.create_strategy', 'Strateji oluştur →')}</a>
       </div>
     `;
     return;
@@ -724,7 +724,7 @@ function renderStrategyCardsDOM(strategiesList, trades, section) {
   strategiesList.forEach(function(s) {
     var perf = computeStrategyPerf(closed.filter(function(t) { return t.strategy_id === s.id; }));
     var row = {
-      name: escapeAttr(s.name || _t('premium_dash.strategy_fallback', 'Strateji')),
+      name: escapeAttr(s.name || _t('analytics_dash.strategy_fallback', 'Strateji')),
       color: safeColor(s.color),
       perf: perf
     };
@@ -740,12 +740,12 @@ function renderStrategyCardsDOM(strategiesList, trades, section) {
   });
 
   var cols = [
-    { key: null,      label: _t('premium_dash.strat.col_strategy', 'Strateji'), cls: 'sc-name-cell' },
-    { key: null,      label: _t('premium_dash.strat.col_trend', 'Eğri'), cls: 'sc-spark-cell' },
-    { key: 'winRate', label: _t('premium_dash.win_rate_label', 'Win Rate'), cls: 'sc-wr-cell' },
+    { key: null,      label: _t('analytics_dash.strat.col_strategy', 'Strateji'), cls: 'sc-name-cell' },
+    { key: null,      label: _t('analytics_dash.strat.col_trend', 'Eğri'), cls: 'sc-spark-cell' },
+    { key: 'winRate', label: _t('analytics_dash.win_rate_label', 'Win Rate'), cls: 'sc-wr-cell' },
     { key: 'pf',      label: 'PF', cls: 'sc-pf', title: _t('dashboard.kpi.profit_factor', 'Profit Factor') },
-    { key: 'avg',     label: _t('premium_dash.strat.col_avg', 'Ort. K/Z'), cls: 'sc-avg' },
-    { key: 'pnl',     label: _t('premium_dash.strat.col_pnl', 'Net K/Z'), cls: 'sc-pnl' }
+    { key: 'avg',     label: _t('analytics_dash.strat.col_avg', 'Ort. K/Z'), cls: 'sc-avg' },
+    { key: 'pnl',     label: _t('analytics_dash.strat.col_pnl', 'Net K/Z'), cls: 'sc-pnl' }
   ];
   var headHtml = '<div class="sc-row sc-head">' + cols.map(function(c) {
     if (!c.key) return '<div class="sc-cell ' + c.cls + '">' + c.label + '</div>';
@@ -759,21 +759,21 @@ function renderStrategyCardsDOM(strategiesList, trades, section) {
 
   if (unassignedTrades.length) {
     bodyHtml += strategyRowHtml({
-      name: escapeAttr(_t('premium_dash.strat.unassigned', 'Stratejisiz işlemler')),
+      name: escapeAttr(_t('analytics_dash.strat.unassigned', 'Stratejisiz işlemler')),
       color: 'var(--muted)',
       perf: computeStrategyPerf(unassignedTrades)
     }, 0, true);
   }
 
   if (!active.length && !unassignedTrades.length) {
-    bodyHtml += '<div class="sc-empty-row">' + _t('premium_dash.strat.no_trades_period', 'Seçili dönemde stratejili işlem yok.') + '</div>';
+    bodyHtml += '<div class="sc-empty-row">' + _t('analytics_dash.strat.no_trades_period', 'Seçili dönemde stratejili işlem yok.') + '</div>';
   }
 
   var footHtml = '';
   if (inactive.length) {
     var names = inactive.map(function(r) { return r.name; }).join(', ');
     footHtml = '<div class="sc-foot" title="' + names + '">' +
-      _t('premium_dash.strat.inactive', '{n} stratejide bu dönemde işlem yok').replace('{n}', inactive.length) +
+      _t('analytics_dash.strat.inactive', '{n} stratejide bu dönemde işlem yok').replace('{n}', inactive.length) +
       ': <span class="sc-foot-names">' + names + '</span></div>';
   }
 
@@ -800,7 +800,7 @@ async function fetchFreshStrategies(userId, jid, trades, section) {
     if (error) {
       console.error('Strateji çekme hatası:', error);
       if (!allStrategies.length) {
-        section.innerHTML = '<div class="strategy-empty-note">' + _t('premium_dash.strategies_load_error', 'Stratejiler yüklenirken hata oluştu.') + '</div>';
+        section.innerHTML = '<div class="strategy-empty-note">' + _t('analytics_dash.strategies_load_error', 'Stratejiler yüklenirken hata oluştu.') + '</div>';
       }
       return;
     }
@@ -820,7 +820,7 @@ export async function loadStrategySection(trades, user) {
   if (!section) return;
 
   if (!user || !user.id) {
-    section.innerHTML = '<div class="strategy-empty-note">' + _t('premium_dash.strategies_not_loaded', 'Stratejiler yüklenemiyor. Lütfen sayfayı yenileyin.') + '</div>';
+    section.innerHTML = '<div class="strategy-empty-note">' + _t('analytics_dash.strategies_not_loaded', 'Stratejiler yüklenemiyor. Lütfen sayfayı yenileyin.') + '</div>';
     return;
   }
 
@@ -857,7 +857,7 @@ export function markOvertradeAsRead() {
   if (body) body.innerHTML = bellEmptyStateHtml();
   var bellPanel = document.getElementById('bell-panel');
   if (bellPanel) bellPanel.classList.remove('open');
-  if (typeof showToast === 'function') showToast(_t('premium_dash.notification_read_toast', 'Bildirim okundu olarak işaretlendi'));
+  if (typeof showToast === 'function') showToast(_t('analytics_dash.notification_read_toast', 'Bildirim okundu olarak işaretlendi'));
 }
 
 // ⭐ NAVBAR AVATAR
@@ -924,7 +924,7 @@ export function exportCSV(trades) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || 'premium';
+    var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || 'pro';
     a.download = 'wawe-journal-' + jName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
     URL.revokeObjectURL(url);

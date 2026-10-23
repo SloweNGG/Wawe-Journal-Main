@@ -204,7 +204,7 @@ import Layout from '../layouts/Layout.astro';
         <div id="prop-quota-warning" class="journal-prop-alert danger" style="display:none;">
           <div>
             <strong data-i18n="prop.quota_title">Prop Hesabı Kotası Doldu</strong>
-            <div id="prop-quota-desc" style="font-size:0.75rem;margin-top:2px;" data-i18n="prop.quota_desc">Free planda 1 aktif prop hesabı oluşturabilirsiniz. Daha fazla hesap için Premium'a yükseltin.</div>
+            <div id="prop-quota-desc" style="font-size:0.75rem;margin-top:2px;" data-i18n="prop.quota_desc">Free planda 1 aktif prop hesabı oluşturabilirsiniz. Daha fazla hesap için Pro'ya yükseltin.</div>
             <a href="/settings.html#panel-plan" style="color:#fff;text-decoration:underline;font-weight:600;font-size:0.75rem;display:inline-block;margin-top:4px;" data-i18n="prop.upgrade_plan">Planı Yükselt</a>
           </div>
         </div>
@@ -603,7 +603,7 @@ import Layout from '../layouts/Layout.astro';
   }
   
   var journalsData = [];
-  var isPremium = false;
+  var isPro = false;
   var deleteId = null;
   var currentModalMode = 'create';
   
@@ -1289,9 +1289,9 @@ import Layout from '../layouts/Layout.astro';
             propQuotaWarn.style.display = 'flex';
             var desc = document.getElementById('prop-quota-desc');
             if (desc) {
-              desc.textContent = quota.isPremium 
-                ? (window.i18n ? window.i18n.t('prop.quota_premium_desc') : 'Premium planda maksimum 10 aktif prop hesabı açabilirsiniz.') 
-                : (window.i18n ? window.i18n.t('prop.quota_desc') : 'Free planda yalnızca 1 aktif prop hesabı açabilirsiniz. Daha fazlası için Premium\'a yükseltin.');
+              desc.textContent = quota.isPro 
+                ? (window.i18n ? window.i18n.t('prop.quota_pro_desc') : 'Pro planda maksimum 10 aktif prop hesabı açabilirsiniz.') 
+                : (window.i18n ? window.i18n.t('prop.quota_desc') : 'Free planda yalnızca 1 aktif prop hesabı açabilirsiniz. Daha fazlası için Pro\'ya yükseltin.');
             }
           }
         }).catch(function() {});
@@ -1773,7 +1773,7 @@ import Layout from '../layouts/Layout.astro';
             var co = JSON.parse(rawCt);
             Object.keys(co).forEach(function(k) { cMap.set(k, co[k]); });
           }
-          drawJournalsGrid(parsedJ, pMap, cMap, isPremium, window.__wwUserProfile || null);
+          drawJournalsGrid(parsedJ, pMap, cMap, isPro, window.__wwUserProfile || null);
         }
       }
     } catch(e) {}
@@ -1866,7 +1866,7 @@ import Layout from '../layouts/Layout.astro';
       ]);
 
       var profile = profRes ? profRes.data : null;
-      isPremium = profile?.plan === 'premium';
+      isPro = profile?.plan === 'premium';
       if (jListData !== null) {
         journalsData = jListData;
       }
@@ -1909,7 +1909,7 @@ import Layout from '../layouts/Layout.astro';
       window._allJournalsList = journalsData;
 
       // Izgarayı taze verilerle güncelle
-      drawJournalsGrid(journalsData, propAccountsMap, ctraderAccountsMap, isPremium, profile);
+      drawJournalsGrid(journalsData, propAccountsMap, ctraderAccountsMap, isPro, profile);
 
       // Cache'e yaz (sadece başarılı bir liste alındığında)
       if (jListData !== null) {

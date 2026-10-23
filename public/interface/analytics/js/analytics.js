@@ -1,5 +1,5 @@
 // ============================================================
-// premium-dashboard.js - ANA DOSYA
+// analytics.js - ANA DOSYA
 // Global state, init, event listeners, koordinasyon
 // ============================================================
 
@@ -39,7 +39,7 @@ import {
   initDragDrop,
   destroyDragDrop,
   forceResizeAllCharts,
-  renderPremiumStats,
+  renderProStats,
   renderKpiBar,
   buildWidgets,
   renderWidgets,
@@ -122,7 +122,7 @@ function scheduleCharts() {
     try {
       renderCharts(currentFilteredTrades);
     } catch (e) {
-      console.error('[Premium Dashboard] Grafik çizim hatası:', e);
+      console.error('[Analiz] Grafik çizim hatası:', e);
     } finally {
       if (isDataReady) hideSkeletons();
     }
@@ -167,7 +167,7 @@ function applyFilter(range, start, end) {
 
   currentFilteredTrades = filterTradesByDate(allTrades, currentRange, customRangeStart, customRangeEnd);
 
-  var options = document.querySelectorAll('#premium-date-filter-group .date-filter-option');
+  var options = document.querySelectorAll('#pro-date-filter-group .date-filter-option');
   var dataReadyForFilter = isDataReady;
   options.forEach(function(opt) {
     if (opt.dataset.range === currentRange) {
@@ -177,7 +177,7 @@ function applyFilter(range, start, end) {
     }
   });
 
-  var customPanel = document.getElementById('premium-custom-range-panel');
+  var customPanel = document.getElementById('pro-custom-range-panel');
   if (customPanel) {
     if (currentRange === 'custom') {
       customPanel.classList.add('open');
@@ -235,70 +235,70 @@ function headerHtml() {
     ['custom', 'dashboard.filter.custom', 'Özel']
   ].map(function(f) {
     return '<button type="button" class="date-filter-option' + (f[0] === 'all' ? ' active' : '') + '" data-range="' + f[0] + '"' +
-      (f[0] === 'custom' ? ' id="premium-custom-range-btn"' : '') + ' data-i18n="' + f[1] + '">' + _t(f[1], f[2]) + '</button>';
+      (f[0] === 'custom' ? ' id="pro-custom-range-btn"' : '') + ' data-i18n="' + f[1] + '">' + _t(f[1], f[2]) + '</button>';
   }).join('');
 
   return '' +
     (isPlanPreview()
       ? '<div class="plan-preview-bar" role="status">' +
           '<span class="plan-preview-dot"></span>' +
-          '<span><strong>' + _t('premium_dash.preview.title', 'Ücretsiz plan önizlemesi') + '</strong> — ' +
-          _t('premium_dash.preview.text', 'Ücretsiz kullanıcıların göreceği dashboard. Buradaki değişiklikler kendi düzenini etkilemez.') + '</span>' +
-          '<a href="' + window.location.pathname + '" class="plan-preview-exit">' + _t('premium_dash.preview.exit', 'Önizlemeden çık') + '</a>' +
+          '<span><strong>' + _t('analytics_dash.preview.title', 'Ücretsiz plan önizlemesi') + '</strong> — ' +
+          _t('analytics_dash.preview.text', 'Ücretsiz kullanıcıların göreceği dashboard. Buradaki değişiklikler kendi düzenini etkilemez.') + '</span>' +
+          '<a href="' + window.location.pathname + '" class="plan-preview-exit">' + _t('analytics_dash.preview.exit', 'Önizlemeden çık') + '</a>' +
         '</div>'
       : '') +
     '<div class="page-header">' +
       '<div class="ph-title">' +
-        '<div class="ph-eyebrow" id="ph-eyebrow">' + HEADER_ICONS.crown + i18nSpan('premium_dash.eyebrow', 'Premium Analitik') + '</div>' +
+        '<div class="ph-eyebrow" id="ph-eyebrow">' + HEADER_ICONS.crown + i18nSpan('analytics_dash.eyebrow', 'Pro Analitik') + '</div>' +
         '<div class="page-header-title-row">' +
-          '<h1 data-i18n="premium_dash.heading">' + _t('premium_dash.heading', 'Performans Analizi') + '</h1>' +
+          '<h1 data-i18n="analytics_dash.heading">' + _t('analytics_dash.heading', 'Performans Analizi') + '</h1>' +
           scopeBadgeHtml() +
-          '<div id="premium-prop-badge"></div>' +
+          '<div id="pro-prop-badge"></div>' +
         '</div>' +
-        '<div class="ph-meta" id="premium-header-meta"></div>' +
+        '<div class="ph-meta" id="pro-header-meta"></div>' +
       '</div>' +
       '<div class="header-actions">' +
         '<div class="ph-prop-actions" id="ph-prop-actions"></div>' +
-        '<div class="date-filter-group" id="premium-date-filter-group">' + filters + '</div>' +
-        '<div class="custom-range-panel" id="premium-custom-range-panel">' +
-          '<input type="date" id="premium-range-start" class="custom-range-input" />' +
+        '<div class="date-filter-group" id="pro-date-filter-group">' + filters + '</div>' +
+        '<div class="custom-range-panel" id="pro-custom-range-panel">' +
+          '<input type="date" id="pro-range-start" class="custom-range-input" />' +
           '<span class="custom-range-sep">–</span>' +
-          '<input type="date" id="premium-range-end" class="custom-range-input" />' +
-          '<button type="button" class="custom-range-apply" id="premium-range-apply" data-i18n="dashboard.filter.apply">' + _t('dashboard.filter.apply', 'Uygula') + '</button>' +
+          '<input type="date" id="pro-range-end" class="custom-range-input" />' +
+          '<button type="button" class="custom-range-apply" id="pro-range-apply" data-i18n="dashboard.filter.apply">' + _t('dashboard.filter.apply', 'Uygula') + '</button>' +
         '</div>' +
         '<div class="ph-export">' +
           '<button type="button" class="ph-btn" id="export-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu">' +
-            HEADER_ICONS.download + i18nSpan('premium_dash.export', 'Dışa aktar') + HEADER_ICONS.chevron +
+            HEADER_ICONS.download + i18nSpan('analytics_dash.export', 'Dışa aktar') + HEADER_ICONS.chevron +
           '</button>' +
           '<div class="ph-menu" id="export-menu" role="menu">' +
             '<button type="button" role="menuitem" class="ph-menu-item" id="export-csv-btn">' + HEADER_ICONS.csv +
-              '<span><strong data-i18n="premium_dash.export_csv">' + _t('premium_dash.export_csv', 'CSV') + '</strong>' +
-              '<small data-i18n="premium_dash.export_csv_desc">' + _t('premium_dash.export_csv_desc', 'Excel için işlem listesi') + '</small></span>' +
+              '<span><strong data-i18n="analytics_dash.export_csv">' + _t('analytics_dash.export_csv', 'CSV') + '</strong>' +
+              '<small data-i18n="analytics_dash.export_csv_desc">' + _t('analytics_dash.export_csv_desc', 'Excel için işlem listesi') + '</small></span>' +
             '</button>' +
             '<button type="button" role="menuitem" class="ph-menu-item" id="export-pdf-btn">' + HEADER_ICONS.pdf +
-              '<span><strong data-i18n="premium_dash.export_pdf">' + _t('premium_dash.export_pdf', 'PDF raporu') + '</strong>' +
-              '<small data-i18n="premium_dash.export_pdf_desc">' + _t('premium_dash.export_pdf_desc', 'Özet ve işlem tablosu') + '</small></span>' +
+              '<span><strong data-i18n="analytics_dash.export_pdf">' + _t('analytics_dash.export_pdf', 'PDF raporu') + '</strong>' +
+              '<small data-i18n="analytics_dash.export_pdf_desc">' + _t('analytics_dash.export_pdf_desc', 'Özet ve işlem tablosu') + '</small></span>' +
             '</button>' +
           '</div>' +
         '</div>' +
         '<button type="button" class="ph-btn ph-btn--accent" id="customize-btn" aria-haspopup="dialog" aria-expanded="false">' +
-          HEADER_ICONS.sliders + i18nSpan('premium_dash.customize', 'Özelleştir') +
+          HEADER_ICONS.sliders + i18nSpan('analytics_dash.customize', 'Özelleştir') +
         '</button>' +
       '</div>' +
     '</div>' +
 
-    '<div class="premium-stats-grid" id="premium-stats-grid">' +
+    '<div class="pro-stats-grid" id="pro-stats-grid">' +
       statCardHtml('pstat-total', 'dashboard.stats.total_trades', 'Toplam İşlem') +
       statCardHtml('pstat-pnl', 'dashboard.stats.total_pnl', 'Toplam K/Z') +
       statCardHtml('pstat-wr', 'dashboard.stats.win_rate', 'Win Rate', '<div class="pstat-bar"><span id="pstat-wr-bar"></span></div>') +
       statCardHtml('pstat-pf', 'dashboard.kpi.profit_factor', 'Profit Factor') +
-      statCardHtml('pstat-sharpe', 'premium_dash.sharpe_ratio', 'Sharpe Ratio') +
+      statCardHtml('pstat-sharpe', 'analytics_dash.sharpe_ratio', 'Sharpe Ratio') +
     '</div>' +
 
     '<div class="kpi-bar">' +
       kpiItemHtml('kpi-avg-win', 'dashboard.kpi.avg_win', 'Ort. Kazanç', 'positive') +
       kpiItemHtml('kpi-avg-loss', 'dashboard.kpi.avg_loss', 'Ort. Kayıp', 'negative') +
-      kpiItemHtml('kpi-payoff', 'premium_dash.kpi.payoff', 'Kazanç/Kayıp Oranı') +
+      kpiItemHtml('kpi-payoff', 'analytics_dash.kpi.payoff', 'Kazanç/Kayıp Oranı') +
       kpiItemHtml('kpi-dd', 'dashboard.kpi.max_drawdown', 'Maks. Drawdown', 'negative') +
       kpiItemHtml('kpi-rr', 'dashboard.kpi.avg_rr', 'Ort. R:R') +
     '</div>' +
@@ -319,7 +319,7 @@ function getPreviousPeriodTrades() {
 
 // Bilgi satırı: defter · dönem · işlem sayısı · son işlem tarihi
 function updateHeaderMeta() {
-  var el = document.getElementById('premium-header-meta');
+  var el = document.getElementById('pro-header-meta');
   if (!el) return;
   var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
   var parts = [];
@@ -334,13 +334,13 @@ function updateHeaderMeta() {
     var fmt = { day: 'numeric', month: 'short' };
     rangeText = window.WwTime.formatDate(customRangeStart, lang, fmt) + ' – ' + window.WwTime.formatDate(customRangeEnd, lang, fmt);
   } else {
-    var active = document.querySelector('#premium-date-filter-group .date-filter-option[data-range="' + currentRange + '"]');
+    var active = document.querySelector('#pro-date-filter-group .date-filter-option[data-range="' + currentRange + '"]');
     rangeText = active ? active.textContent.trim() : '';
   }
   if (rangeText) parts.push({ text: rangeText });
 
   var closed = currentFilteredTrades.filter(function(t) { return window.WwMetrics.isClosed(t); });
-  parts.push({ text: _t('premium_dash.meta.trades', '{n} kapanmış işlem').replace('{n}', closed.length) });
+  parts.push({ text: _t('analytics_dash.meta.trades', '{n} kapanmış işlem').replace('{n}', closed.length) });
 
   var last = '';
   currentFilteredTrades.forEach(function(t) {
@@ -348,7 +348,7 @@ function updateHeaderMeta() {
     if (d > last) last = d;
   });
   if (last) {
-    parts.push({ text: _t('premium_dash.meta.last_trade', 'Son işlem {date}')
+    parts.push({ text: _t('analytics_dash.meta.last_trade', 'Son işlem {date}')
       .replace('{date}', window.WwTime.formatDate(last, lang, { day: 'numeric', month: 'short', year: 'numeric' })) });
   }
 
@@ -361,7 +361,7 @@ function updateHeaderMeta() {
 
 function renderHeaderStats() {
   setAllTrades(allTrades);
-  renderPremiumStats(currentFilteredTrades, getPreviousPeriodTrades());
+  renderProStats(currentFilteredTrades, getPreviousPeriodTrades());
   renderKpiBar(currentFilteredTrades);
   updateHeaderMeta();
 }
@@ -422,7 +422,7 @@ function onPropState() {
   }
 }
 
-// Hesap planını kart görünümüne uygular. Sayfa premium'a özel; ?plan=free ücretsiz plan önizlemesini açar.
+// Hesap planını kart görünümüne uygular. Sayfa Pro'ya özel; ?plan=free ücretsiz plan önizlemesini açar.
 function applyAccountPlan(accountPlan) {
   var wasPro = isPro();
   var previewFree = new URLSearchParams(window.location.search).get('plan') === 'free';
@@ -479,7 +479,7 @@ function renderDashboardDOM() {
   try {
     renderHeaderStats();
   } catch (e) {
-    console.error('[Premium Dashboard] İstatistik hatası:', e);
+    console.error('[Analiz] İstatistik hatası:', e);
   }
   scheduleCharts();
   loadStrategySection(currentFilteredTrades, currentUser);
@@ -500,14 +500,14 @@ function buildDashboardShell() {
   renderHeaderStats();
 
   // Filter toolbar click handlers
-  var filterGroup = document.getElementById('premium-date-filter-group');
+  var filterGroup = document.getElementById('pro-date-filter-group');
   if (filterGroup) {
     filterGroup.addEventListener('click', function(e) {
       var btn = e.target.closest('.date-filter-option');
       if (!btn) return;
       var range = btn.dataset.range;
       if (range === 'custom') {
-        var customPanel = document.getElementById('premium-custom-range-panel');
+        var customPanel = document.getElementById('pro-custom-range-panel');
         if (customPanel) {
           customPanel.classList.toggle('open');
         }
@@ -517,11 +517,11 @@ function buildDashboardShell() {
     });
   }
 
-  var rangeApplyBtn = document.getElementById('premium-range-apply');
+  var rangeApplyBtn = document.getElementById('pro-range-apply');
   if (rangeApplyBtn) {
     rangeApplyBtn.addEventListener('click', function() {
-      var s = document.getElementById('premium-range-start');
-      var e = document.getElementById('premium-range-end');
+      var s = document.getElementById('pro-range-start');
+      var e = document.getElementById('pro-range-end');
       var startVal = s ? s.value : '';
       var endVal = e ? e.value : '';
       if (startVal && endVal) {
@@ -588,7 +588,7 @@ function syncScopeBadge(tScope) {
 }
 
 // Canlı kapsam kolonları: platform_source listeyi kendini tanımlar kılar (önbellek savunması)
-var PREMIUM_TRADE_COLS = ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier', 'platform_source'];
+var PRO_TRADE_COLS = ['id', 'symbol', 'direction', 'lot', 'entry_price', 'exit_price', 'stop_loss', 'take_profit', 'trade_date', 'pnl', 'rr_ratio', 'notes', 'strategy_id', 'instrument', 'multiplier', 'platform_source'];
 
 async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
   var allTradesData = [];
@@ -601,7 +601,7 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
     var res = await window.WwTrades.fetchAll({
       userId: userId,
       journalId: jid,
-      columns: PREMIUM_TRADE_COLS.join(','),
+      columns: PRO_TRADE_COLS.join(','),
       scope: tScope,
       ascending: false,
       unassignedFallback: true
@@ -619,9 +619,9 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
     // ⚡ Sonucu önbelleğe kaydet
     if (typeof window !== 'undefined' && window.wwCache) {
       // Yalnızca kendi anahtarına yaz (ortak 'trades' anahtarı cache.js çapraz beslemesiyle yönetilir)
-      window.wwCache.set(window.WwTrades.cacheKey('trades_premium', tScope), userId, jid, allTradesData);
+      window.wwCache.set(window.WwTrades.cacheKey('trades_pro', tScope), userId, jid, allTradesData);
       // Prop betiği işlemleri ayrıca çekmesin diye haber verilir
-      window.dispatchEvent(new CustomEvent('ww:premium-trades'));
+      window.dispatchEvent(new CustomEvent('ww:pro-trades'));
     }
 
     // Bu arada başka sayfaya geçildiyse yeni sayfanın DOM'una yazma
@@ -642,7 +642,7 @@ async function fetchFreshTrades(userId, jid, renderImmediate, scope) {
       }
     }
   } catch(e) {
-    console.error('[Premium Dashboard] fetchFreshTrades hatası:', e);
+    console.error('[Analiz] fetchFreshTrades hatası:', e);
     if (renderImmediate) revealWithoutData(scope);
   }
 }
@@ -656,9 +656,9 @@ function revealWithoutData(scope) {
   renderDashboardDOM();
 }
 
-// LOAD PREMIUM DATA
-async function loadPremiumData(scope) {
-  wwLog.log('[Premium Dashboard] loadPremiumData başlatıldı...');
+// LOAD PRO DATA
+async function loadProData(scope) {
+  wwLog.log('[Analiz] loadProData başlatıldı...');
 
   // Hızlı auth hazır kontrolü (1 saniye uyumak yerine 20ms aralıklarla kontrol)
   var authTries = 0;
@@ -668,11 +668,11 @@ async function loadPremiumData(scope) {
   }
 
   if (typeof requireAuth === 'undefined') {
-    console.error('[Premium Dashboard] requireAuth hala yüklenmedi!');
+    console.error('[Analiz] requireAuth hala yüklenmedi!');
     var main = document.getElementById('main-content');
     if (main) {
       main.classList.remove('is-loading');
-      main.innerHTML = '\n          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem;padding:2rem;">\n            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>\n            <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="premium_dash.load_error_title">' + _t('premium_dash.load_error_title', 'Yükleme Hatası') + '</h2>\n            <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.load_error_desc">' + _t('premium_dash.load_error_desc', 'Gerekli modüller yüklenemedi. Lütfen sayfayı yenileyin.') + '</p>\n            <button onclick="location.reload()" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;" data-i18n="premium_dash.reload">' + _t('premium_dash.reload', 'Sayfayı Yenile') + '</button>\n          </div>\n        ';
+      main.innerHTML = '\n          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem;padding:2rem;">\n            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>\n            <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="analytics_dash.load_error_title">' + _t('analytics_dash.load_error_title', 'Yükleme Hatası') + '</h2>\n            <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.load_error_desc">' + _t('analytics_dash.load_error_desc', 'Gerekli modüller yüklenemedi. Lütfen sayfayı yenileyin.') + '</p>\n            <button onclick="location.reload()" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;" data-i18n="analytics_dash.reload">' + _t('analytics_dash.reload', 'Sayfayı Yenile') + '</button>\n          </div>\n        ';
     }
     return;
   }
@@ -691,7 +691,7 @@ async function loadPremiumData(scope) {
       try {
         jid = await window.journal.ensureActiveJournal(user.id);
       } catch (e) {
-        wwLog.warn('[Premium Dashboard] ensureActiveJournal hatası:', e);
+        wwLog.warn('[Analiz] ensureActiveJournal hatası:', e);
       }
     } else if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
       // jid zaten biliniyorsa arka planda doğrula, UI'ı bekletme
@@ -707,11 +707,11 @@ async function loadPremiumData(scope) {
       if (!scope.alive) return;
       if (planData.plan !== 'premium') {
         if (typeof window.openUpgradeModal === 'function') {
-          window.openUpgradeModal({ feature: 'premium_dashboard' });
+          window.openUpgradeModal({ feature: 'analytics_dashboard' });
         }
         var main = document.getElementById('main-content');
         main.classList.remove('is-loading');
-        main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="premium_dash.premium_only_title">' + _t('premium_dash.premium_only_title', 'Premium\'a Özel') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.premium_only_desc">' + _t('premium_dash.premium_only_desc', 'Bu sayfa sadece Premium üyelere özeldir.') + '</p>\n          <button onclick="if(window.openUpgradeModal)window.openUpgradeModal({feature:\'premium_dashboard\'});else location.href=\'settings.html#panel-plan\';" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;" data-i18n="nav.upgrade_premium">' + _t('nav.upgrade_premium', 'Premium\'a Geç →') + '</button>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="premium_dash.back_standard">' + _t('premium_dash.back_standard', '← Standart Dashboard\'a Dön') + '</a>\n        </div>\n      ';
+        main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="analytics_dash.pro_only_title">' + _t('analytics_dash.pro_only_title', 'Pro\'ya Özel') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.pro_only_desc">' + _t('analytics_dash.pro_only_desc', 'Bu sayfa sadece Pro üyelere özeldir.') + '</p>\n          <button onclick="if(window.openUpgradeModal)window.openUpgradeModal({feature:\'analytics_dashboard\'});else location.href=\'settings.html#panel-plan\';" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;" data-i18n="nav.upgrade_pro">' + _t('nav.upgrade_pro', 'Pro\'ya Geç →') + '</button>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.back_standard">' + _t('analytics_dash.back_standard', '← Standart Dashboard\'a Dön') + '</a>\n        </div>\n      ';
         return;
       }
     } else {
@@ -724,7 +724,7 @@ async function loadPremiumData(scope) {
         }).catch(function() {});
       }
     }
-    // Buraya yalnızca premium hesap ulaşır (?plan=free ise ücretsiz plan önizlemesi açılır)
+    // Buraya yalnızca pro hesap ulaşır (?plan=free ise ücretsiz plan önizlemesi açılır)
     applyAccountPlan('premium');
 
     // Bloklamayan yardımcı fonksiyonlar (arka planda çalışsın)
@@ -742,22 +742,22 @@ async function loadPremiumData(scope) {
     }
 
     if (!jid) {
-      if (typeof wwLog !== 'undefined') wwLog.warn('[Premium Dashboard] Aktif journal yok, veri yüklenmiyor');
+      if (typeof wwLog !== 'undefined') wwLog.warn('[Analiz] Aktif journal yok, veri yüklenmiyor');
       revealWithoutData(scope);
       return;
     }
 
-    // ⚡ SWR Önbellek Kontrolü: trades_premium, trades veya trades_dashboard varsa 0ms beklemeden hemen göster
+    // ⚡ SWR Önbellek Kontrolü: trades_pro, trades veya trades_dashboard varsa 0ms beklemeden hemen göster
     try { await window.WwTrades.resolveJournalScope(jid); } catch (e) {}
     var tScope = activeTradeScope(jid);
     syncScopeBadge(tScope);
     var cachedTrades = (typeof window !== 'undefined' && window.wwCache)
       ? (tScope === 'live'
-          ? (window.wwCache.get('trades_premium', user.id, jid, PREMIUM_TRADE_COLS) ||
-             window.wwCache.get('trades', user.id, jid, PREMIUM_TRADE_COLS) ||
-             window.wwCache.get('trades_dashboard', user.id, jid, PREMIUM_TRADE_COLS))
+          ? (window.wwCache.get('trades_pro', user.id, jid, PRO_TRADE_COLS) ||
+             window.wwCache.get('trades', user.id, jid, PRO_TRADE_COLS) ||
+             window.wwCache.get('trades_dashboard', user.id, jid, PRO_TRADE_COLS))
           // kapsamlı listeler çapraz beslenmez: yalnızca kendi '@kapsam' anahtarları (cache.js sözleşmesi)
-          : window.wwCache.get(window.WwTrades.cacheKey('trades_premium', tScope), user.id, jid, PREMIUM_TRADE_COLS))
+          : window.wwCache.get(window.WwTrades.cacheKey('trades_pro', tScope), user.id, jid, PRO_TRADE_COLS))
       : null;
     if (cachedTrades) cachedTrades = window.WwTrades.filterScope(cachedTrades, tScope);   // savunma katmanı
 
@@ -775,8 +775,8 @@ async function loadPremiumData(scope) {
     await fetchFreshTrades(user.id, jid, true, scope);
 
   } catch(e) {
-    console.error('[Premium Dashboard] Hata:', e);
-    if (typeof showToast === 'function') showToast(_t('premium_dash.loading_error', 'Premium Dashboard yüklenirken hata oluştu'), 'error');
+    console.error('[Analiz] Hata:', e);
+    if (typeof showToast === 'function') showToast(_t('analytics_dash.loading_error', 'Analiz yüklenirken hata oluştu'), 'error');
     if (document.querySelector('#main-content.is-loading')) revealWithoutData(scope);
   }
 }
@@ -785,7 +785,7 @@ async function loadPremiumData(scope) {
 // Navbar SPA'da kalıcı: ona ve document'a bağlanan dinleyiciler scope.on ile eklenir,
 // sayfadan çıkınca kaldırılır.
 function mount(scope) {
-  wwLog.log('[Premium Dashboard] DOM yüklendi, Premium Dashboard başlatılıyor...');
+  wwLog.log('[Analiz] DOM yüklendi, Analiz başlatılıyor...');
 
   PAGE = scope;
   applyAccountPlan(sessionStorage.getItem('ww_user_plan'));
@@ -826,7 +826,7 @@ function mount(scope) {
 
   // Navbar (avatar, zil, hamburger menü, çıkış) navbar.js tarafından yönetilir. Eskiden burada da
   // aynı butonlara dinleyici ekleniyordu: tek tıklama menüyü iki kez açıp kapattığı için
-  // premium dashboard'da navbar açılır menüleri çalışmıyordu.
+  // pro dashboard'da navbar açılır menüleri çalışmıyordu.
 
   // FAB Toggle
   var fabToggle = document.getElementById('fab-toggle');
@@ -845,12 +845,12 @@ function mount(scope) {
   // Düzeni hemen kur (yükleniyor durumunda), veriyi yükle
   buildDashboardShell();
   showSkeletons();
-  loadPremiumData(scope);
+  loadProData(scope);
 }
 
 var mountedScope = null;
 function mountIfOnPage() {
-  if (!document.querySelector('main.premium-main')) return;
+  if (!document.querySelector('main.pro-main')) return;
   var scope = window.wwPage.current();
   if (!scope.alive || scope === mountedScope) return;
   mountedScope = scope;

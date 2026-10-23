@@ -3,10 +3,10 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" showQuickAdd={true} spa={true}>
 <Fragment slot="head">
-  <title data-i18n="premium_dash.title">Premium Dashboard</title>
+  <title data-i18n="analytics_dash.title">Analiz</title>
   
-  <!-- PREMIUM DASHBOARD CSS -->
-  <link rel="stylesheet" href="/interface/premium-dashboard/css/premium-dashboard.css?v=5" />
+  <!-- PRO DASHBOARD CSS -->
+  <link rel="stylesheet" href="/interface/analytics/css/analytics.css?v=5" />
   <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css" />
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
@@ -66,28 +66,28 @@ import Layout from '../layouts/Layout.astro';
   <div id="quick-add-container"></div>
 
   <!-- PROP FIRM ADVANCE PHASE MODAL -->
-  <div id="premium-advance-phase-modal" class="prop-modal-backdrop" style="display:none;">
+  <div id="pro-advance-phase-modal" class="prop-modal-backdrop" style="display:none;">
     <div class="prop-modal-box">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:0.75rem;">
         <h3 style="margin:0;font-size:1.05rem;font-weight:700;" data-i18n="prop.advance_modal_title">
           <span>Sonraki Faza Geç</span>
         </h3>
-        <button id="close-premium-advance-modal" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
+        <button id="close-pro-advance-modal" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
       </div>
       <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.45;" data-i18n="prop.advance_modal_desc">
         Yeni faza geçtiğinizde başlangıç tarihi güncellenir ve eski işlemler bu faza dahil edilmez.
       </p>
       <div style="margin-bottom:1rem;">
         <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px;" data-i18n="prop.advance_start_date_label">Yeni Faz Başlangıç Tarihi</label>
-        <input type="date" id="premium-advance-start-date" class="journal-prop-input" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0d0d14);color:var(--text);box-sizing:border-box;" />
+        <input type="date" id="pro-advance-start-date" class="journal-prop-input" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0d0d14);color:var(--text);box-sizing:border-box;" />
       </div>
 
       <!-- İşlem Çakışması Uyarısı (Yeni start_date'te işlem varsa) -->
-      <div id="premium-advance-trades-warning" style="display:none;margin-bottom:1rem;padding:0.75rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.8rem;color:#f59e0b;">
+      <div id="pro-advance-trades-warning" style="display:none;margin-bottom:1rem;padding:0.75rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:0.8rem;color:#f59e0b;">
         <div>
-          <span id="premium-advance-trades-warning-text">Bu tarihte işlemler var, yeni faza dahil edilecek.</span>
+          <span id="pro-advance-trades-warning-text">Bu tarihte işlemler var, yeni faza dahil edilecek.</span>
           <div style="margin-top:6px;">
-            <button type="button" id="premium-advance-bump-date-btn" style="background:#f59e0b;color:#000;border:none;border-radius:4px;padding:3px 8px;font-size:0.75rem;font-weight:600;cursor:pointer;" data-i18n="prop.advance_bump_date">
+            <button type="button" id="pro-advance-bump-date-btn" style="background:#f59e0b;color:#000;border:none;border-radius:4px;padding:3px 8px;font-size:0.75rem;font-weight:600;cursor:pointer;" data-i18n="prop.advance_bump_date">
               Başlangıç tarihini ertesi güne al
             </button>
           </div>
@@ -95,47 +95,47 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Özelleştirilmiş Kuralları Koruma Seçeneği -->
-      <div id="premium-advance-custom-rules-choice" style="display:none;margin-bottom:1rem;padding:0.75rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
+      <div id="pro-advance-custom-rules-choice" style="display:none;margin-bottom:1rem;padding:0.75rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
         <div style="font-weight:600;margin-bottom:6px;" data-i18n="prop.advance_rules_title">Kural Ayarları</div>
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;">
-          <input type="radio" name="premium-advance-rules-mode" value="keep" id="premium-advance-rules-keep" checked />
+          <input type="radio" name="pro-advance-rules-mode" value="keep" id="pro-advance-rules-keep" checked />
           <span data-i18n="prop.advance_rules_keep">Özelleştirilmiş kurallarımı koru</span>
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="radio" name="premium-advance-rules-mode" value="template" id="premium-advance-rules-template" />
+          <input type="radio" name="pro-advance-rules-mode" value="template" id="pro-advance-rules-template" />
           <span data-i18n="prop.advance_rules_template">Yeni faz varsayılanlarını kullan</span>
         </label>
       </div>
 
       <div style="margin-bottom:1.25rem;">
         <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:4px;" data-i18n="prop.advance_balance_label">Yeni Başlangıç Bakiyesi ($)</label>
-        <input type="number" id="premium-advance-starting-balance" class="journal-prop-input" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0d0d14);color:var(--text);box-sizing:border-box;" min="1" step="100" />
+        <input type="number" id="pro-advance-starting-balance" class="journal-prop-input" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg2,#0d0d14);color:var(--text);box-sizing:border-box;" min="1" step="100" />
       </div>
       <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
-        <button id="cancel-premium-advance-modal" class="journal-btn-cancel" style="padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;" data-i18n="journal.cancel">İptal</button>
-        <button id="confirm-premium-advance-modal" class="journal-btn-save" style="padding:0.5rem 1.25rem;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;" data-i18n="prop.advance_confirm_btn">Faza Geç</button>
+        <button id="cancel-pro-advance-modal" class="journal-btn-cancel" style="padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;" data-i18n="journal.cancel">İptal</button>
+        <button id="confirm-pro-advance-modal" class="journal-btn-save" style="padding:0.5rem 1.25rem;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;" data-i18n="prop.advance_confirm_btn">Faza Geç</button>
       </div>
     </div>
   </div>
 
   <!-- PROP NOTICES / RULES MODAL -->
-  <div id="premium-prop-notices-modal" class="prop-modal-backdrop" style="display:none;">
+  <div id="pro-prop-notices-modal" class="prop-modal-backdrop" style="display:none;">
     <div class="prop-notices-modal-content">
       <div class="prop-notices-modal-header">
         <h3 class="prop-notices-modal-title">
-          <span id="premium-prop-notices-title" data-i18n="prop.rule_notices_modal_title">Kurallar ve Bildirimler</span>
+          <span id="pro-prop-notices-title" data-i18n="prop.rule_notices_modal_title">Kurallar ve Bildirimler</span>
         </h3>
-        <button id="close-premium-prop-notices" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
+        <button id="close-pro-prop-notices" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
       </div>
-      <div id="premium-prop-notices-body" class="prop-notices-list"></div>
-      <div id="premium-prop-notices-disclaimer" class="prop-native-disclaimer" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid rgba(255,255,255,0.06);"></div>
+      <div id="pro-prop-notices-body" class="prop-notices-list"></div>
+      <div id="pro-prop-notices-disclaimer" class="prop-native-disclaimer" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid rgba(255,255,255,0.06);"></div>
     </div>
   </div>
 
-  <main class="premium-main" id="main-content">
+  <main class="pro-main" id="main-content">
     <div style="display:flex;justify-content:center;align-items:center;min-height:60vh;flex-direction:column;gap:1rem;">
       <div class="spinner"></div>
-      <p style="color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;" data-i18n="premium_dash.loading">Premium Dashboard yükleniyor...</p>
+      <p style="color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;" data-i18n="analytics_dash.loading">Analiz yükleniyor...</p>
     </div>
   </main>
 
@@ -162,8 +162,8 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
   <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
 
-  <!-- 6. ⭐ PREMIUM DASHBOARD - MODÜLER JS (ES Module) -->
-  <script type="module" src="/interface/premium-dashboard/js/premium-dashboard.js?v=1792300000" is:inline defer></script>
+  <!-- 6. ⭐ PRO DASHBOARD - MODÜLER JS (ES Module) -->
+  <script type="module" src="/interface/analytics/js/analytics.js?v=1792300000" is:inline defer></script>
 
   <!-- 7. ⭐ QUICK ADD MANUEL BAŞLATICI (dashboard.html'den alındı) -->
   <script is:inline>
@@ -184,7 +184,7 @@ import Layout from '../layouts/Layout.astro';
             quickAddOpen();
           } else {
             var errMsg = (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function')
-              ? window.i18n.t('premium_dash.quick_add_error')
+              ? window.i18n.t('analytics_dash.quick_add_error')
               : 'Quick Add yüklenemedi. Sayfayı yenileyin.';
             alert(errMsg);
           }
@@ -212,7 +212,7 @@ import Layout from '../layouts/Layout.astro';
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
-        wwLog.log('[Lucide] Icons initialized on premium dashboard');
+        wwLog.log('[Lucide] Icons initialized on pro dashboard');
       }
     });
   </script>
@@ -230,11 +230,11 @@ import Layout from '../layouts/Layout.astro';
   </script>
   <!-- 10. ⭐ PROP FIRM DURUMU
        Prop hesabının kural durumunu hesaplar ve window.__wwPropState olarak yayınlar
-       ('ww:prop-state' olayı). Kartlar ve başlık premium-dashboard modülünde çizilir
+       ('ww:prop-state' olayı). Kartlar ve başlık analytics modülünde çizilir
        (prop-widgets.js); bu betik uyarılar ve faz geçiş pencerelerini yönetir. -->
   <script is:inline>
     // SPA: bu script'in global dinleyicileri sayfadan çıkınca kaldırılır (BaseHead.astro → wwPage)
-    var PREMIUM_BANNER_PAGE = window.wwPage.current();
+    var PRO_BANNER_PAGE = window.wwPage.current();
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -246,8 +246,8 @@ import Layout from '../layouts/Layout.astro';
         .replace(/'/g, '&#39;');
     }
 
-    var _currentPremiumPropSync = null;
-    var _premiumPropNextPhaseIdx = 1;
+    var _currentProPropSync = null;
+    var _proPropNextPhaseIdx = 1;
 
     function publishPropState(state, activeId) {
       window.__wwPropState = state;
@@ -263,16 +263,16 @@ import Layout from '../layouts/Layout.astro';
     }
 
     // İşlemler henüz önbellekte yoksa panonun kendi çekimi beklenir (aynı veri iki kez indirilmesin)
-    function waitForPremiumTrades(timeoutMs) {
+    function waitForProTrades(timeoutMs) {
       return new Promise(function(resolve) {
         var done = false;
         function finish() {
           if (done) return;
           done = true;
-          window.removeEventListener('ww:premium-trades', finish);
+          window.removeEventListener('ww:pro-trades', finish);
           resolve();
         }
-        window.addEventListener('ww:premium-trades', finish);
+        window.addEventListener('ww:pro-trades', finish);
         setTimeout(finish, timeoutMs);
       });
     }
@@ -284,21 +284,21 @@ import Layout from '../layouts/Layout.astro';
         (function check() {
           var ready = window.PropService && window.journal && typeof window.journal.getActiveJournalId === 'function' &&
                       window.journal.getActiveJournalId();
-          if (ready || Date.now() - start > timeoutMs || !PREMIUM_BANNER_PAGE.alive) return resolve();
+          if (ready || Date.now() - start > timeoutMs || !PRO_BANNER_PAGE.alive) return resolve();
           setTimeout(check, 50);
         })();
       });
     }
 
-    async function refreshPremiumPropBanner() {
-      if (!PREMIUM_BANNER_PAGE.alive) return;
+    async function refreshProPropBanner() {
+      if (!PRO_BANNER_PAGE.alive) return;
       await waitForPropDeps(3000);
-      if (!PREMIUM_BANNER_PAGE.alive) return;
+      if (!PRO_BANNER_PAGE.alive) return;
       if (!window.PropService || !window.journal) return;
 
       var activeId = window.journal.getActiveJournalId();
       if (!activeId) {
-        window._isPremiumPropActive = false;
+        window._isProPropActive = false;
         publishPropState({ active: false }, null);
         return;
       }
@@ -311,26 +311,26 @@ import Layout from '../layouts/Layout.astro';
         var readCachedTrades = function() {
           if (!window.wwCache || !uId || !activeId) return null;
           return window.wwCache.get('trades_dashboard', uId, activeId, propCols) ||
-                 window.wwCache.get('trades_premium', uId, activeId, propCols) ||
+                 window.wwCache.get('trades_pro', uId, activeId, propCols) ||
                  window.wwCache.get('trades', uId, activeId, propCols);
         };
         var cachedTrades = readCachedTrades();
         if (!cachedTrades) {
-          await waitForPremiumTrades(4000);
-          if (!PREMIUM_BANNER_PAGE.alive) return;
+          await waitForProTrades(4000);
+          if (!PRO_BANNER_PAGE.alive) return;
           cachedTrades = readCachedTrades();
         }
 
         var syncRes = await window.PropService.syncPropAccountStatus(activeId, cachedTrades);
-        if (!PREMIUM_BANNER_PAGE.alive) return;
+        if (!PRO_BANNER_PAGE.alive) return;
         if (!syncRes || !syncRes.account || !syncRes.status) {
-          window._isPremiumPropActive = false;
+          window._isProPropActive = false;
           publishPropState({ active: false }, activeId);
           return;
         }
 
-        window._isPremiumPropActive = true;
-        _currentPremiumPropSync = syncRes;
+        window._isProPropActive = true;
+        _currentProPropSync = syncRes;
         var account = syncRes.account;
         var status = syncRes.status;
         var tmplKey = account.template_key;
@@ -398,8 +398,8 @@ import Layout from '../layouts/Layout.astro';
         }
 
         var currentPhaseIdx = account.phase_index !== undefined ? account.phase_index : 0;
-        _premiumPropNextPhaseIdx = currentPhaseIdx + 1;
-        var hasNextPhase = Boolean(tmpl && tmpl.phases && tmpl.phases.length > _premiumPropNextPhaseIdx);
+        _proPropNextPhaseIdx = currentPhaseIdx + 1;
+        var hasNextPhase = Boolean(tmpl && tmpl.phases && tmpl.phases.length > _proPropNextPhaseIdx);
 
         // Kart hesapları (eski kokpit bandıyla aynı)
         var dailyRem = Number(status.daily_loss.remaining_margin) || 0;
@@ -456,7 +456,7 @@ import Layout from '../layouts/Layout.astro';
           }
         }, activeId);
       } catch (err) {
-        if (window.wwLog) window.wwLog.error('refreshPremiumPropBanner err:', err);
+        if (window.wwLog) window.wwLog.error('refreshProPropBanner err:', err);
       }
     }
 
@@ -465,8 +465,8 @@ import Layout from '../layouts/Layout.astro';
       var t = function (key, params) {
         return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
       };
-      var noticesBodyEl = document.getElementById('premium-prop-notices-body');
-      var noticesDiscEl = document.getElementById('premium-prop-notices-disclaimer');
+      var noticesBodyEl = document.getElementById('pro-prop-notices-body');
+      var noticesDiscEl = document.getElementById('pro-prop-notices-disclaimer');
       if (noticesBodyEl) {
         var itemsHtml = '';
         (warningsList || []).forEach(function(w) {
@@ -492,38 +492,38 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
-    function openPremiumPropNotices() {
-      var modal = document.getElementById('premium-prop-notices-modal');
+    function openProPropNotices() {
+      var modal = document.getElementById('pro-prop-notices-modal');
       if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('active');
       }
     }
 
-    function openPremiumAdvanceFromHeader() {
-      if (!_currentPremiumPropSync || !_currentPremiumPropSync.account) return;
-      var account = _currentPremiumPropSync.account;
+    function openProAdvanceFromHeader() {
+      if (!_currentProPropSync || !_currentProPropSync.account) return;
+      var account = _currentProPropSync.account;
       var tmpl = window.PropTemplates ? window.PropTemplates.getPropTemplate(account.template_key) : null;
-      openPremiumAdvancePhaseModal(account, tmpl, _premiumPropNextPhaseIdx);
+      openProAdvancePhaseModal(account, tmpl, _proPropNextPhaseIdx);
     }
 
     // Modül başlığındaki prop butonları bu fonksiyonları çağırır
-    PREMIUM_BANNER_PAGE.expose('wwPropOpenNotices', openPremiumPropNotices);
-    PREMIUM_BANNER_PAGE.expose('wwPropOpenAdvance', openPremiumAdvanceFromHeader);
+    PRO_BANNER_PAGE.expose('wwPropOpenNotices', openProPropNotices);
+    PRO_BANNER_PAGE.expose('wwPropOpenAdvance', openProAdvanceFromHeader);
 
-    function updatePremiumTradesOnDateWarning(dateVal) {
-      var warnBox = document.getElementById('premium-advance-trades-warning');
-      var warnText = document.getElementById('premium-advance-trades-warning-text');
-      var bumpBtn = document.getElementById('premium-advance-bump-date-btn');
+    function updateProTradesOnDateWarning(dateVal) {
+      var warnBox = document.getElementById('pro-advance-trades-warning');
+      var warnText = document.getElementById('pro-advance-trades-warning-text');
+      var bumpBtn = document.getElementById('pro-advance-bump-date-btn');
       if (!warnBox || !warnText || !dateVal) return;
 
       var tradesList = [];
-      if (_currentPremiumPropSync && _currentPremiumPropSync.trades && Array.isArray(_currentPremiumPropSync.trades)) {
-        tradesList = _currentPremiumPropSync.trades;
+      if (_currentProPropSync && _currentProPropSync.trades && Array.isArray(_currentProPropSync.trades)) {
+        tradesList = _currentProPropSync.trades;
       } else if (window.wwCache && window.currentUser) {
         var jid = window.journal ? window.journal.getActiveJournalId() : null;
         tradesList = window.wwCache.get('trades_dashboard', window.currentUser.id, jid, ['trade_date']) ||
-                     window.wwCache.get('trades_premium', window.currentUser.id, jid, ['trade_date']) || [];
+                     window.wwCache.get('trades_pro', window.currentUser.id, jid, ['trade_date']) || [];
       }
 
       var count = 0;
@@ -539,10 +539,10 @@ import Layout from '../layouts/Layout.astro';
         warnText.textContent = tFn('prop.advance_trades_on_date_warn', { n: count, tomorrow: tomorrowStr }) || ('Bu tarihte ' + count + ' işlem var, yeni faza dahil edilecek. Başlangıç tarihini ertesi güne (' + tomorrowStr + ') almak ister misin?');
         if (bumpBtn) {
           bumpBtn.onclick = function() {
-            var dateInput = document.getElementById('premium-advance-start-date');
+            var dateInput = document.getElementById('pro-advance-start-date');
             if (dateInput) {
               dateInput.value = tomorrowStr;
-              updatePremiumTradesOnDateWarning(tomorrowStr);
+              updateProTradesOnDateWarning(tomorrowStr);
             }
           };
         }
@@ -552,11 +552,11 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
-    function openPremiumAdvancePhaseModal(account, tmpl, nextPhaseIdx) {
-      var modal = document.getElementById('premium-advance-phase-modal');
-      var dateInput = document.getElementById('premium-advance-start-date');
-      var balInput = document.getElementById('premium-advance-starting-balance');
-      var customChoice = document.getElementById('premium-advance-custom-rules-choice');
+    function openProAdvancePhaseModal(account, tmpl, nextPhaseIdx) {
+      var modal = document.getElementById('pro-advance-phase-modal');
+      var dateInput = document.getElementById('pro-advance-start-date');
+      var balInput = document.getElementById('pro-advance-starting-balance');
+      var customChoice = document.getElementById('pro-advance-custom-rules-choice');
       if (!modal || !dateInput || !balInput) return;
 
       // Başlangıç tarihi varsayılanı: prop hesabının sıfırlama saat dilimindeki bugün
@@ -569,20 +569,20 @@ import Layout from '../layouts/Layout.astro';
       if (customChoice) {
         var isCust = Boolean(account.rules && account.rules.is_customized);
         customChoice.style.display = isCust ? 'block' : 'none';
-        var keepRadio = document.getElementById('premium-advance-rules-keep');
+        var keepRadio = document.getElementById('pro-advance-rules-keep');
         if (keepRadio) keepRadio.checked = true;
       }
 
-      updatePremiumTradesOnDateWarning(todayStr);
-      dateInput.onchange = function() { updatePremiumTradesOnDateWarning(dateInput.value); };
-      dateInput.oninput = function() { updatePremiumTradesOnDateWarning(dateInput.value); };
+      updateProTradesOnDateWarning(todayStr);
+      dateInput.onchange = function() { updateProTradesOnDateWarning(dateInput.value); };
+      dateInput.oninput = function() { updateProTradesOnDateWarning(dateInput.value); };
 
       modal.style.display = 'flex';
       modal.classList.add('active');
     }
 
-    function closePremiumAdvancePhaseModal() {
-      var modal = document.getElementById('premium-advance-phase-modal');
+    function closeProAdvancePhaseModal() {
+      var modal = document.getElementById('pro-advance-phase-modal');
       if (modal) {
         modal.style.display = 'none';
         modal.classList.remove('active');
@@ -590,16 +590,16 @@ import Layout from '../layouts/Layout.astro';
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      var closeBtn = document.getElementById('close-premium-advance-modal');
-      var cancelBtn = document.getElementById('cancel-premium-advance-modal');
-      var confirmBtn = document.getElementById('confirm-premium-advance-modal');
-      if (closeBtn) closeBtn.onclick = closePremiumAdvancePhaseModal;
-      if (cancelBtn) cancelBtn.onclick = closePremiumAdvancePhaseModal;
+      var closeBtn = document.getElementById('close-pro-advance-modal');
+      var cancelBtn = document.getElementById('cancel-pro-advance-modal');
+      var confirmBtn = document.getElementById('confirm-pro-advance-modal');
+      if (closeBtn) closeBtn.onclick = closeProAdvancePhaseModal;
+      if (cancelBtn) cancelBtn.onclick = closeProAdvancePhaseModal;
 
-      var closeNoticesBtn = document.getElementById('close-premium-prop-notices');
+      var closeNoticesBtn = document.getElementById('close-pro-prop-notices');
       if (closeNoticesBtn) {
         closeNoticesBtn.onclick = function() {
-          var modal = document.getElementById('premium-prop-notices-modal');
+          var modal = document.getElementById('pro-prop-notices-modal');
           if (modal) {
             modal.style.display = 'none';
             modal.classList.remove('active');
@@ -607,13 +607,13 @@ import Layout from '../layouts/Layout.astro';
         };
       }
 
-      var advModal = document.getElementById('premium-advance-phase-modal');
+      var advModal = document.getElementById('pro-advance-phase-modal');
       if (advModal) {
         advModal.addEventListener('click', function(e) {
-          if (e.target === advModal) closePremiumAdvancePhaseModal();
+          if (e.target === advModal) closeProAdvancePhaseModal();
         });
       }
-      var noticesModal = document.getElementById('premium-prop-notices-modal');
+      var noticesModal = document.getElementById('pro-prop-notices-modal');
       if (noticesModal) {
         noticesModal.addEventListener('click', function(e) {
           if (e.target === noticesModal) {
@@ -625,12 +625,12 @@ import Layout from '../layouts/Layout.astro';
 
       if (confirmBtn) {
         confirmBtn.onclick = async function() {
-          if (!_currentPremiumPropSync || !_currentPremiumPropSync.account) return;
-          var account = _currentPremiumPropSync.account;
+          if (!_currentProPropSync || !_currentProPropSync.account) return;
+          var account = _currentProPropSync.account;
           var nextPhaseIdx = (account.phase_index !== undefined ? account.phase_index + 1 : 1);
-          var startDate = document.getElementById('premium-advance-start-date').value;
-          var balance = Number(document.getElementById('premium-advance-starting-balance').value);
-          var keepCustomRules = document.getElementById('premium-advance-rules-keep') ? document.getElementById('premium-advance-rules-keep').checked : false;
+          var startDate = document.getElementById('pro-advance-start-date').value;
+          var balance = Number(document.getElementById('pro-advance-starting-balance').value);
+          var keepCustomRules = document.getElementById('pro-advance-rules-keep') ? document.getElementById('pro-advance-rules-keep').checked : false;
           var t = function (key) {
             return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key) : key;
           };
@@ -653,8 +653,8 @@ import Layout from '../layouts/Layout.astro';
               keepCustomRules: keepCustomRules
             });
             if (window.showToast) window.showToast(t('prop.advance_success'), 'success');
-            closePremiumAdvancePhaseModal();
-            refreshPremiumPropBanner();
+            closeProAdvancePhaseModal();
+            refreshProPropBanner();
           } catch (err) {
             if (window.showToast) window.showToast(err.message, 'error');
           } finally {
@@ -663,21 +663,21 @@ import Layout from '../layouts/Layout.astro';
         };
       }
 
-      refreshPremiumPropBanner();
+      refreshProPropBanner();
     });
 
-    PREMIUM_BANNER_PAGE.on(window, 'journal-changed', function() {
-      setTimeout(refreshPremiumPropBanner, 300);
+    PRO_BANNER_PAGE.on(window, 'journal-changed', function() {
+      setTimeout(refreshProPropBanner, 300);
     });
-    PREMIUM_BANNER_PAGE.on(window, 'trade-saved', function() {
-      setTimeout(refreshPremiumPropBanner, 300);
+    PRO_BANNER_PAGE.on(window, 'trade-saved', function() {
+      setTimeout(refreshProPropBanner, 300);
     });
-    PREMIUM_BANNER_PAGE.on(window, 'trade-deleted', function() {
-      setTimeout(refreshPremiumPropBanner, 300);
+    PRO_BANNER_PAGE.on(window, 'trade-deleted', function() {
+      setTimeout(refreshProPropBanner, 300);
     });
     if (window.i18n && typeof window.i18n.onChange === 'function') {
-      PREMIUM_BANNER_PAGE.onI18nChange(function() {
-        refreshPremiumPropBanner();
+      PRO_BANNER_PAGE.onI18nChange(function() {
+        refreshProPropBanner();
       });
     }
   </script>

@@ -1,0 +1,3 @@
+# Eski Analiz (Premium Dashboard) adresi kalıcı olarak /analytics'e taşındı
+/premium-dashboard.html /analytics.html 301
+/premium-dashboard /analytics.html 301

@@ -315,8 +315,8 @@
    Cancel subscription stays red (danger) and only takes the pill shape.
    ------------------------------------------------------------ */
 .btn-action-extend,
-.premium-btn-cta,
-.plan-card .plan-actions .btn-premium,
+.pro-btn-cta,
+.plan-card .plan-actions .btn-pro,
 .nav-btn-next,
 .nav-btn-submit-pay,
 .coupon-submit-btn,
@@ -334,8 +334,8 @@
   border-radius: 999px !important;
 }
 .btn-action-extend:hover,
-.premium-btn-cta:hover,
-.plan-card .plan-actions .btn-premium:hover,
+.pro-btn-cta:hover,
+.plan-card .plan-actions .btn-pro:hover,
 .nav-btn-next:hover,
 .nav-btn-submit-pay:hover,
 .coupon-submit-btn:hover,
@@ -362,8 +362,8 @@
 }
 
 .light-theme .btn-action-extend,
-.light-theme .premium-btn-cta,
-.light-theme .plan-card .plan-actions .btn-premium,
+.light-theme .pro-btn-cta,
+.light-theme .plan-card .plan-actions .btn-pro,
 .light-theme .nav-btn-next,
 .light-theme .nav-btn-submit-pay,
 .light-theme .coupon-submit-btn,
@@ -377,8 +377,8 @@
   border-color: #7c3aed !important;
 }
 .light-theme .btn-action-extend:hover,
-.light-theme .premium-btn-cta:hover,
-.light-theme .plan-card .plan-actions .btn-premium:hover,
+.light-theme .pro-btn-cta:hover,
+.light-theme .plan-card .plan-actions .btn-pro:hover,
 .light-theme .nav-btn-next:hover,
 .light-theme .nav-btn-submit-pay:hover,
 .light-theme .coupon-submit-btn:hover,

@@ -305,9 +305,9 @@ function isMoneyMetric(metric) {
 
 function metricSeriesName(metric) {
   switch (metric) {
-    case 'avg': return _t('premium_dash.opt.metric_avg', 'Ort. K/Z');
-    case 'count': return _t('premium_dash.trade_count', 'İşlem Sayısı');
-    case 'winrate': return _t('premium_dash.opt.metric_winrate', 'Win rate');
+    case 'avg': return _t('analytics_dash.opt.metric_avg', 'Ort. K/Z');
+    case 'count': return _t('analytics_dash.trade_count', 'İşlem Sayısı');
+    case 'winrate': return _t('analytics_dash.opt.metric_winrate', 'Win rate');
     default: return _t('common.pnl', 'K/Z');
   }
 }
@@ -394,7 +394,7 @@ function renderDistribution(key, containerId, cfg) {
   if (type === 'bar') {
     renderOrUpdateApex(key, containerId, {
       chart: { type: 'bar' },
-      series: [{ name: _t('premium_dash.trade_count', 'İşlem Sayısı'), data: cfg.series }],
+      series: [{ name: _t('analytics_dash.trade_count', 'İşlem Sayısı'), data: cfg.series }],
       colors: cfg.colors,
       // Yatay barda xaxis değer eksenidir, yaxis kategori etiketleridir
       xaxis: {
@@ -785,7 +785,7 @@ export function renderHourlyChart(trades) {
 
   renderOrUpdateApex('hourly', containerId, metricBarOptions(metric, labels, data, display, {
     tickAmount: BUCKET_SIZE === 1 ? (isMobile() ? 6 : 12) : undefined,
-    tooltipX: function(val, opts) { return _t('premium_dash.hour_prefix', 'Saat ') + labels[opts.dataPointIndex]; }
+    tooltipX: function(val, opts) { return _t('analytics_dash.hour_prefix', 'Saat ') + labels[opts.dataPointIndex]; }
   }));
 }
 
@@ -857,7 +857,7 @@ export function renderRRChart(trades) {
 
   renderOrUpdateApex('rr', containerId, {
     chart: { type: 'bar' },
-    series: [{ name: _t('premium_dash.trade_count', 'İşlem Sayısı'), data: data }],
+    series: [{ name: _t('analytics_dash.trade_count', 'İşlem Sayısı'), data: data }],
     colors: [CHART_THEME.purple],
     xaxis: {
       categories: labels,
@@ -1234,7 +1234,7 @@ export function renderDrawdownChart(trades) {
 
   renderOrUpdateApex('drawdown', containerId, {
     chart: { type: 'area' },
-    series: [{ name: _t('premium_dash.widgets.drawdown', 'Drawdown'), data: points }],
+    series: [{ name: _t('analytics_dash.widgets.drawdown', 'Drawdown'), data: points }],
     colors: [CHART_THEME.red],
     stroke: { width: 2, curve: 'straight' },
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.05, opacityTo: 0.35, stops: [0, 100] } },
@@ -1308,7 +1308,7 @@ export function renderStreaksWidget(trades) {
   var st = window.WwMetrics.streaks(closed);
   var maxWin = st.maxWin, maxLoss = st.maxLoss, worstRun = st.worstLossRun;
   var currentText = st.current > 0
-    ? st.current + ' ' + (st.currentType === 'win' ? _t('premium_dash.streak.win_suffix', 'kazanç') : _t('premium_dash.streak.loss_suffix', 'kayıp'))
+    ? st.current + ' ' + (st.currentType === 'win' ? _t('analytics_dash.streak.win_suffix', 'kazanç') : _t('analytics_dash.streak.loss_suffix', 'kayıp'))
     : '—';
   var currentCls = st.currentType === 'win' ? 'pos' : (st.currentType === 'loss' ? 'neg' : '');
 
@@ -1324,13 +1324,13 @@ export function renderStreaksWidget(trades) {
   container.innerHTML =
     '<div class="stk">' +
       '<div class="stk-stats">' +
-        '<div class="stk-stat"><span class="stk-val pos">' + maxWin + '</span><span class="stk-label">' + _t('premium_dash.streak.max_win', 'En uzun kazanç serisi') + '</span></div>' +
-        '<div class="stk-stat"><span class="stk-val neg">' + maxLoss + '</span><span class="stk-label">' + _t('premium_dash.streak.max_loss', 'En uzun kayıp serisi') + '</span></div>' +
-        '<div class="stk-stat"><span class="stk-val ' + currentCls + '">' + currentText + '</span><span class="stk-label">' + _t('premium_dash.streak.current', 'Mevcut seri') + '</span></div>' +
-        '<div class="stk-stat"><span class="stk-val' + (worstRun < 0 ? ' neg' : '') + '">' + (worstRun < 0 ? formatCurrency(worstRun) : '—') + '</span><span class="stk-label">' + _t('premium_dash.streak.worst_run', 'En kötü kayıp serisi') + '</span></div>' +
+        '<div class="stk-stat"><span class="stk-val pos">' + maxWin + '</span><span class="stk-label">' + _t('analytics_dash.streak.max_win', 'En uzun kazanç serisi') + '</span></div>' +
+        '<div class="stk-stat"><span class="stk-val neg">' + maxLoss + '</span><span class="stk-label">' + _t('analytics_dash.streak.max_loss', 'En uzun kayıp serisi') + '</span></div>' +
+        '<div class="stk-stat"><span class="stk-val ' + currentCls + '">' + currentText + '</span><span class="stk-label">' + _t('analytics_dash.streak.current', 'Mevcut seri') + '</span></div>' +
+        '<div class="stk-stat"><span class="stk-val' + (worstRun < 0 ? ' neg' : '') + '">' + (worstRun < 0 ? formatCurrency(worstRun) : '—') + '</span><span class="stk-label">' + _t('analytics_dash.streak.worst_run', 'En kötü kayıp serisi') + '</span></div>' +
       '</div>' +
       '<div class="stk-recent">' +
-        '<span class="stk-label">' + _t('premium_dash.streak.last_n', 'Son {n} işlem').replace('{n}', recent.length) + '</span>' +
+        '<span class="stk-label">' + _t('analytics_dash.streak.last_n', 'Son {n} işlem').replace('{n}', recent.length) + '</span>' +
         '<div class="stk-dots">' + dots + '</div>' +
       '</div>' +
     '</div>';
@@ -1433,89 +1433,89 @@ function insightCopy(ins) {
   var nTxt = ins.n + ' ' + _t('dashboard.trades_count_suffix', 'işlem');
   switch (ins.id) {
     case 'best_hour':
-      return { text: tr('premium_dash.ins.best_hour', 'En kârlı saat aralığın {h}', { h: hourRange(d.from, d.to) }),
+      return { text: tr('analytics_dash.ins.best_hour', 'En kârlı saat aralığın {h}', { h: hourRange(d.from, d.to) }),
         detail: formatCurrency(ins.value) + ' · ' + nTxt + ' · %' + pct(d.wr) + ' win rate' };
     case 'weak_hour':
-      return { text: tr('premium_dash.ins.weak_hour', '{h} arası zarar ettiriyor', { h: hourRange(d.from, d.to) }),
-        detail: tr('premium_dash.ins.skip_detail', 'Bu işlemleri atlasaydın K/Z {v} daha iyi olurdu', { v: plainMoney(ins.impact) }) + ' · ' + nTxt };
+      return { text: tr('analytics_dash.ins.weak_hour', '{h} arası zarar ettiriyor', { h: hourRange(d.from, d.to) }),
+        detail: tr('analytics_dash.ins.skip_detail', 'Bu işlemleri atlasaydın K/Z {v} daha iyi olurdu', { v: plainMoney(ins.impact) }) + ' · ' + nTxt };
     case 'weak_dow':
-      return { text: tr('premium_dash.ins.weak_dow', '{day} günleri zarar ediyorsun', { day: dowName(d.dow) }),
-        detail: tr('premium_dash.ins.skip_detail', 'Bu işlemleri atlasaydın K/Z {v} daha iyi olurdu', { v: plainMoney(ins.impact) }) +
-          ' · %' + pct(d.wr) + ' ' + tr('premium_dash.ins.vs_overall_short', '(genel %{wr})', { wr: pct(d.overallWr) }) };
+      return { text: tr('analytics_dash.ins.weak_dow', '{day} günleri zarar ediyorsun', { day: dowName(d.dow) }),
+        detail: tr('analytics_dash.ins.skip_detail', 'Bu işlemleri atlasaydın K/Z {v} daha iyi olurdu', { v: plainMoney(ins.impact) }) +
+          ' · %' + pct(d.wr) + ' ' + tr('analytics_dash.ins.vs_overall_short', '(genel %{wr})', { wr: pct(d.overallWr) }) };
     case 'weak_direction':
-      return { text: tr('premium_dash.ins.weak_direction', '{side} işlemlerin zarar ettiriyor', { side: sideName(d.side) }),
+      return { text: tr('analytics_dash.ins.weak_direction', '{side} işlemlerin zarar ettiriyor', { side: sideName(d.side) }),
         detail: nTxt + ' · ' + formatCurrency(-ins.impact) + ' · ' + sideName(d.side) + ' %' + pct(d.wr) + ', ' +
           sideName(d.side === 'long' ? 'short' : 'long') + ' %' + pct(d.otherWr) };
     case 'best_symbol':
-      return { text: tr('premium_dash.ins.best_symbol', 'En iyi enstrümanın {s}', { s: d.symbol }),
+      return { text: tr('analytics_dash.ins.best_symbol', 'En iyi enstrümanın {s}', { s: d.symbol }),
         detail: formatCurrency(ins.value) + ' · ' + nTxt + ' · %' + pct(d.wr) + ' win rate' };
     case 'weak_symbol':
-      return { text: tr('premium_dash.ins.weak_symbol', '{s} zarar ettiriyor', { s: d.symbol }),
+      return { text: tr('analytics_dash.ins.weak_symbol', '{s} zarar ettiriyor', { s: d.symbol }),
         detail: nTxt + ' · ' + formatCurrency(-ins.impact) + ' · %' + pct(d.wr) + ' win rate' };
     case 'payoff_low':
-      return { text: _t('premium_dash.ins.payoff_low', 'Ortalama kaybın ortalama kazancından büyük'),
-        detail: tr('premium_dash.ins.payoff_cut', 'Ortalama kazancını ({w}) aşan {n} kaybı o seviyede kesseydin {v} daha iyi olurdu',
+      return { text: _t('analytics_dash.ins.payoff_low', 'Ortalama kaybın ortalama kazancından büyük'),
+        detail: tr('analytics_dash.ins.payoff_cut', 'Ortalama kazancını ({w}) aşan {n} kaybı o seviyede kesseydin {v} daha iyi olurdu',
           { w: plainMoney(d.avgWin), n: ins.n, v: plainMoney(ins.impact) }) };
     case 'payoff_high':
-      return { text: tr('premium_dash.ins.payoff_high', 'Kazançların kayıplarının {x} katı', { x: d.ratio.toFixed(1) }),
+      return { text: tr('analytics_dash.ins.payoff_high', 'Kazançların kayıplarının {x} katı', { x: d.ratio.toFixed(1) }),
         detail: formatCurrency(d.avgWin) + ' / ' + formatCurrency(-d.avgLoss) };
     case 'after_loss':
-      return { text: _t('premium_dash.ins.after_loss', 'Kayıptan hemen sonra açtığın işlemler zarar ettiriyor'),
-        detail: tr('premium_dash.ins.after_loss_detail', 'Aynı gün kayıp sonrası {n} işlem: {v} · %{wr} win rate', { n: ins.n, v: formatCurrency(-ins.impact), wr: pct(d.wr) }) };
+      return { text: _t('analytics_dash.ins.after_loss', 'Kayıptan hemen sonra açtığın işlemler zarar ettiriyor'),
+        detail: tr('analytics_dash.ins.after_loss_detail', 'Aynı gün kayıp sonrası {n} işlem: {v} · %{wr} win rate', { n: ins.n, v: formatCurrency(-ins.impact), wr: pct(d.wr) }) };
     case 'overtrading':
-      return { text: tr('premium_dash.ins.overtrading', 'Günün {k}. işleminden sonrası zarar ettiriyor', { k: d.limit + 1 }),
-        detail: tr('premium_dash.ins.overtrading_detail', 'Günde {l} işlemde dursaydın K/Z {v} daha iyi olurdu', { l: d.limit, v: plainMoney(ins.impact) }) + ' · ' + nTxt };
+      return { text: tr('analytics_dash.ins.overtrading', 'Günün {k}. işleminden sonrası zarar ettiriyor', { k: d.limit + 1 }),
+        detail: tr('analytics_dash.ins.overtrading_detail', 'Günde {l} işlemde dursaydın K/Z {v} daha iyi olurdu', { l: d.limit, v: plainMoney(ins.impact) }) + ' · ' + nTxt };
     case 'stop_after_first':
-      return { text: _t('premium_dash.ins.stop_after_first', 'Günün ilk işleminden sonra performansın düşüyor'),
-        detail: tr('premium_dash.ins.stop_after_first_detail', 'İlk işlemler {a}, sonrakiler {b}', { a: formatCurrency(d.firstSum), b: formatCurrency(d.restSum) }) };
+      return { text: _t('analytics_dash.ins.stop_after_first', 'Günün ilk işleminden sonra performansın düşüyor'),
+        detail: tr('analytics_dash.ins.stop_after_first_detail', 'İlk işlemler {a}, sonrakiler {b}', { a: formatCurrency(d.firstSum), b: formatCurrency(d.restSum) }) };
     case 'size_up':
-      return { text: _t('premium_dash.ins.size_up', 'Kayıptan sonra lot büyütmek zarar ettiriyor'),
-        detail: tr('premium_dash.ins.size_up_detail', 'Kayıp sonrası lotu artırdığın {n} işlem: {v}', { n: ins.n, v: formatCurrency(-ins.impact) }) + ' · %' + pct(d.wr) + ' win rate' };
+      return { text: _t('analytics_dash.ins.size_up', 'Kayıptan sonra lot büyütmek zarar ettiriyor'),
+        detail: tr('analytics_dash.ins.size_up_detail', 'Kayıp sonrası lotu artırdığın {n} işlem: {v}', { n: ins.n, v: formatCurrency(-ins.impact) }) + ' · %' + pct(d.wr) + ' win rate' };
     case 'no_stop':
-      return { text: _t('premium_dash.ins.no_stop', 'Stop loss koymadığın işlemler zarar ettiriyor'),
-        detail: tr('premium_dash.ins.no_stop_detail', 'Stop\'suz {n} işlem: {v} · win rate %{wr} (stop\'lu %{wr2})',
+      return { text: _t('analytics_dash.ins.no_stop', 'Stop loss koymadığın işlemler zarar ettiriyor'),
+        detail: tr('analytics_dash.ins.no_stop_detail', 'Stop\'suz {n} işlem: {v} · win rate %{wr} (stop\'lu %{wr2})',
           { n: ins.n, v: formatCurrency(-ins.impact), wr: pct(d.wr), wr2: pct(d.withWr) }) };
     case 'no_sl_data':
-      return { text: _t('premium_dash.ins.no_sl', 'İşlemlerinde stop loss bilgisi yok'),
-        detail: _t('premium_dash.ins.no_sl_detail', 'SL eklersen R:R ve risk analizleri açılır') };
+      return { text: _t('analytics_dash.ins.no_sl', 'İşlemlerinde stop loss bilgisi yok'),
+        detail: _t('analytics_dash.ins.no_sl_detail', 'SL eklersen R:R ve risk analizleri açılır') };
     case 'form_up':
     case 'form_down':
-      return { text: tr(ins.id === 'form_up' ? 'premium_dash.ins.form_up' : 'premium_dash.ins.form_down',
+      return { text: tr(ins.id === 'form_up' ? 'analytics_dash.ins.form_up' : 'analytics_dash.ins.form_down',
           ins.id === 'form_up' ? 'Son 10 işlemde formdasın: win rate %{wr}' : 'Son 10 işlemde form düşüşü: win rate %{wr}', { wr: pct(d.wr) }),
-        detail: tr('premium_dash.ins.vs_overall', 'Genel ortalaman %{wr}', { wr: pct(d.overallWr) }) };
+        detail: tr('analytics_dash.ins.vs_overall', 'Genel ortalaman %{wr}', { wr: pct(d.overallWr) }) };
     case 'concentration':
-      return { text: tr('premium_dash.ins.concentration', 'Kârının büyük kısmı tek bir günden: %{p}', { p: pct(d.share * 100) }),
+      return { text: tr('analytics_dash.ins.concentration', 'Kârının büyük kısmı tek bir günden: %{p}', { p: pct(d.share * 100) }),
         detail: window.WwTime.formatDate(d.date, _getCurrentLang(), { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + formatCurrency(d.sum) };
     case 'best_day':
-      return { text: tr('premium_dash.ins.best_day', 'En iyi günün {date}', { date: window.WwTime.formatDate(d.date, _getCurrentLang(), { day: 'numeric', month: 'long' }) }),
+      return { text: tr('analytics_dash.ins.best_day', 'En iyi günün {date}', { date: window.WwTime.formatDate(d.date, _getCurrentLang(), { day: 'numeric', month: 'long' }) }),
         detail: formatCurrency(d.sum) + ' · ' + nTxt };
     case 'expectancy':
-      return { text: tr(d.avg >= 0 ? 'premium_dash.ins.expectancy_pos' : 'premium_dash.ins.expectancy_neg',
+      return { text: tr(d.avg >= 0 ? 'analytics_dash.ins.expectancy_pos' : 'analytics_dash.ins.expectancy_neg',
           d.avg >= 0 ? 'İşlem başına ortalama {v} kazanıyorsun' : 'İşlem başına ortalama {v} kaybediyorsun', { v: plainMoney(d.avg) }),
-        detail: tr('premium_dash.ins.based_on', '{n} kapanmış işlem · win rate %{wr}', { n: ins.n, wr: pct(d.wr) }) };
+        detail: tr('analytics_dash.ins.based_on', '{n} kapanmış işlem · win rate %{wr}', { n: ins.n, wr: pct(d.wr) }) };
     case 'prop_pace':
-      return { text: tr('premium_dash.ins.prop_pace', 'Bu tempoyla hedefe ~{d} işlem günü', { d: d.days }),
+      return { text: tr('analytics_dash.ins.prop_pace', 'Bu tempoyla hedefe ~{d} işlem günü', { d: d.days }),
         detail: d.byMinDays
-          ? tr('premium_dash.ins.prop_pace_min', 'Minimum işlem günü kuralı belirleyici · kalan hedef {r}', { r: plainMoney(d.remaining) })
-          : tr('premium_dash.ins.prop_pace_detail', 'İşlem günü başına ortalama {v} · kalan hedef {r}', { v: formatCurrency(d.perDay), r: plainMoney(d.remaining) }) };
+          ? tr('analytics_dash.ins.prop_pace_min', 'Minimum işlem günü kuralı belirleyici · kalan hedef {r}', { r: plainMoney(d.remaining) })
+          : tr('analytics_dash.ins.prop_pace_detail', 'İşlem günü başına ortalama {v} · kalan hedef {r}', { v: formatCurrency(d.perDay), r: plainMoney(d.remaining) }) };
     case 'prop_no_progress':
-      return { text: _t('premium_dash.ins.prop_no_progress', 'Bu fazda henüz net kâr yok'),
-        detail: tr('premium_dash.ins.prop_no_progress_detail', '{n} işlem günü · kalan hedef {r}', { n: d.days, r: plainMoney(d.remaining) }) };
+      return { text: _t('analytics_dash.ins.prop_no_progress', 'Bu fazda henüz net kâr yok'),
+        detail: tr('analytics_dash.ins.prop_no_progress_detail', '{n} işlem günü · kalan hedef {r}', { n: d.days, r: plainMoney(d.remaining) }) };
     case 'prop_worst_over_daily':
-      return { text: _t('premium_dash.ins.prop_worst_over_daily', 'En kötü günün günlük kayıp limitini aşıyor'),
-        detail: tr('premium_dash.ins.prop_worst_over_daily_detail', 'En kötü gün {w} · günlük limit {l}', { w: formatCurrency(d.worst), l: plainMoney(d.limit) }) };
+      return { text: _t('analytics_dash.ins.prop_worst_over_daily', 'En kötü günün günlük kayıp limitini aşıyor'),
+        detail: tr('analytics_dash.ins.prop_worst_over_daily_detail', 'En kötü gün {w} · günlük limit {l}', { w: formatCurrency(d.worst), l: plainMoney(d.limit) }) };
     case 'prop_worst_day':
       return { text: d.left <= 0
-          ? _t('premium_dash.ins.prop_worst_breach', 'En kötü günün tekrar etse hesap zemini aşılır')
-          : tr('premium_dash.ins.prop_worst_day', 'En kötü günün tekrar etse zemine {v} kalır', { v: plainMoney(d.left) }),
-        detail: tr('premium_dash.ins.prop_worst_day_detail', 'En kötü gün {w} · zemine şu an {d}', { w: formatCurrency(d.worst), d: plainMoney(d.distance) }) };
+          ? _t('analytics_dash.ins.prop_worst_breach', 'En kötü günün tekrar etse hesap zemini aşılır')
+          : tr('analytics_dash.ins.prop_worst_day', 'En kötü günün tekrar etse zemine {v} kalır', { v: plainMoney(d.left) }),
+        detail: tr('analytics_dash.ins.prop_worst_day_detail', 'En kötü gün {w} · zemine şu an {d}', { w: formatCurrency(d.worst), d: plainMoney(d.distance) }) };
     case 'prop_daily_burn':
-      return { text: tr('premium_dash.ins.prop_daily_burn', 'Kayıplı günlerinde günlük limit kullanımın ortalama %{p}', { p: pct(d.pct) }),
-        detail: tr('premium_dash.ins.prop_daily_burn_detail', 'Ortalama kayıplı gün {v} · günlük limit {l} · {n} gün',
+      return { text: tr('analytics_dash.ins.prop_daily_burn', 'Kayıplı günlerinde günlük limit kullanımın ortalama %{p}', { p: pct(d.pct) }),
+        detail: tr('analytics_dash.ins.prop_daily_burn_detail', 'Ortalama kayıplı gün {v} · günlük limit {l} · {n} gün',
           { v: formatCurrency(-d.avgLossDay), l: plainMoney(d.limit), n: ins.n }) };
     case 'need_more':
-      return { text: tr('premium_dash.ins.need_more', 'Davranış içgörüleri için {k} kapanmış işlem daha gerekiyor', { k: d.more }),
-        detail: tr('premium_dash.ins.need_more_detail', 'Şu an {n} kapanmış işlem var', { n: ins.n }) };
+      return { text: tr('analytics_dash.ins.need_more', 'Davranış içgörüleri için {k} kapanmış işlem daha gerekiyor', { k: d.more }),
+        detail: tr('analytics_dash.ins.need_more_detail', 'Şu an {n} kapanmış işlem var', { n: ins.n }) };
     default:
       return null;
   }
@@ -1601,14 +1601,14 @@ function renderInsightRotator(container, list, sig, itemHtml) {
   }).join('');
   container.innerHTML =
     '<div class="ins-rot' + (multi ? ' is-multi' : '') + '" style="--ins-rot-ms:' + ROT_MS + 'ms" tabindex="0" role="region" aria-roledescription="carousel" aria-label="' +
-      sanitizeInsight(_t('premium_dash.widgets.insights', 'İçgörüler')) + '">' +
+      sanitizeInsight(_t('analytics_dash.widgets.insights', 'İçgörüler')) + '">' +
       '<div class="ins-rot-stage" aria-live="off"></div>' +
       (multi
         ? '<div class="ins-rot-foot">' +
-            '<button type="button" class="ins-rot-nav" data-dir="-1" aria-label="' + sanitizeInsight(_t('premium_dash.ins.prev', 'Önceki')) + '">' + rotIcon(-1) + '</button>' +
+            '<button type="button" class="ins-rot-nav" data-dir="-1" aria-label="' + sanitizeInsight(_t('analytics_dash.ins.prev', 'Önceki')) + '">' + rotIcon(-1) + '</button>' +
             '<div class="ins-rot-dots">' + dots + '</div>' +
             '<span class="ins-rot-count"></span>' +
-            '<button type="button" class="ins-rot-nav" data-dir="1" aria-label="' + sanitizeInsight(_t('premium_dash.ins.next', 'Sonraki')) + '">' + rotIcon(1) + '</button>' +
+            '<button type="button" class="ins-rot-nav" data-dir="1" aria-label="' + sanitizeInsight(_t('analytics_dash.ins.next', 'Sonraki')) + '">' + rotIcon(1) + '</button>' +
           '</div>' +
           '<div class="ins-rot-progress"><span></span></div>'
         : '') +
@@ -1702,12 +1702,12 @@ export function renderInsightsWidget(trades) {
   if (!insights.length) {
     var closedCount = chronologicalClosed(trades).length;
     setInsightsHtml(container, '<div class="ins-empty">' + INSIGHT_ICONS.info + '<span>' +
-      tr('premium_dash.ins.empty', 'Seçili dönemde {n} kapanmış işlem var; içgörüler için en az {min} gerekiyor. Daha geniş bir tarih aralığı seçebilirsin.',
+      tr('analytics_dash.ins.empty', 'Seçili dönemde {n} kapanmış işlem var; içgörüler için en az {min} gerekiyor. Daha geniş bir tarih aralığı seçebilirsin.',
         { n: closedCount, min: MIN_INSIGHT_TRADES }) + '</span></div>', 'empty:' + closedCount);
     return;
   }
 
-  var impactTitle = _t('premium_dash.ins.impact_title', 'Bunu yapmasaydın K/Z bu kadar daha iyi olurdu');
+  var impactTitle = _t('analytics_dash.ins.impact_title', 'Bunu yapmasaydın K/Z bu kadar daha iyi olurdu');
   var itemHtml = function(ins, order) {
     var impact = ins.impact > 0
       ? '<span class="ins-impact" data-value="' + ins.impact + '" title="' + sanitizeInsight(impactTitle) + '">' + sanitizeInsight(formatCurrency(ins.impact)) + '</span>'
@@ -1737,13 +1737,13 @@ export function renderInsightsWidget(trades) {
   var rest = Math.min(insights.length, 6) - 1;
   var moreHtml = rest > 0
     ? '<div class="ins-more" style="--i:2">' +
-        '<div class="ins-more-title">' + tr('premium_dash.ins.more_title', '+{n} içgörü daha hazır', { n: rest }) + '</div>' +
-        '<div class="ins-more-text">' + _t('premium_dash.ins.more_text', 'Pro\'da tüm içgörülerin her gün yeni verinle güncellenir.') + '</div>' +
-        '<button type="button" class="ins-more-btn" data-upgrade="insights">' + _t('premium_dash.ins.more_cta', 'Pro\'yu incele') + '</button>' +
+        '<div class="ins-more-title">' + tr('analytics_dash.ins.more_title', '+{n} içgörü daha hazır', { n: rest }) + '</div>' +
+        '<div class="ins-more-text">' + _t('analytics_dash.ins.more_text', 'Pro\'da tüm içgörülerin her gün yeni verinle güncellenir.') + '</div>' +
+        '<button type="button" class="ins-more-btn" data-upgrade="insights">' + _t('analytics_dash.ins.more_cta', 'Pro\'yu incele') + '</button>' +
       '</div>'
     : '';
   setInsightsHtml(container, '<div class="ins-grid ins-grid--free">' +
-    '<div class="ins-week-label">' + _t('premium_dash.ins.week_label', 'Haftanın içgörüsü') + '</div>' +
+    '<div class="ins-week-label">' + _t('analytics_dash.ins.week_label', 'Haftanın içgörüsü') + '</div>' +
     itemHtml(pick, 1) + moreHtml + '</div>', sig);
 }
 
@@ -1784,7 +1784,7 @@ export function renderRecentTradesWidget(trades) {
     var when = t.trade_date ? window.WwTime.formatDate(t.trade_date, lang, { day: 'numeric', month: 'short' }) : '—';
     var pnlHtml = closed
       ? '<span class="rt-pnl ' + (pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '')) + '">' + formatCurrency(pnl) + '</span>'
-      : '<span class="rt-open">' + _t('premium_dash.recent.open', 'Açık') + '</span>';
+      : '<span class="rt-open">' + _t('analytics_dash.recent.open', 'Açık') + '</span>';
     return '<a class="rt-row" href="/trades.html">' +
       '<span class="rt-date">' + sanitizeInsight(when) + '</span>' +
       '<span class="rt-sym">' + sanitizeInsight((t.symbol || '—').toUpperCase()) + '</span>' +
@@ -1796,7 +1796,7 @@ export function renderRecentTradesWidget(trades) {
 
   container.innerHTML = '<div class="rt">' +
     '<div class="rt-list">' + rows + '</div>' +
-    '<a class="rt-all" href="/trades.html">' + _t('premium_dash.recent.view_all', 'Tüm işlemler →') + '</a>' +
+    '<a class="rt-all" href="/trades.html">' + _t('analytics_dash.recent.view_all', 'Tüm işlemler →') + '</a>' +
   '</div>';
 }
 
@@ -1840,23 +1840,23 @@ export function renderGoalWidget() {
 
   var statusHtml;
   if (remaining <= 0) {
-    statusHtml = '<span class="goal-status pos">' + _t('premium_dash.goal.reached', 'Hedef aşıldı: {v}').replace('{v}', formatCurrency(-remaining)) + '</span>';
+    statusHtml = '<span class="goal-status pos">' + _t('analytics_dash.goal.reached', 'Hedef aşıldı: {v}').replace('{v}', formatCurrency(-remaining)) + '</span>';
   } else {
-    statusHtml = '<span class="goal-status">' + _t('premium_dash.goal.remaining', 'Hedefe {v} kaldı').replace('{v}', formatCurrency(remaining).replace(/^\+/, '')) + '</span>' +
-      '<span class="goal-sub">' + _t('premium_dash.goal.days_left', '{n} gün kaldı').replace('{n}', daysLeft) +
-      ' · ' + _t('premium_dash.goal.per_day', 'günde ort. {v}').replace('{v}', formatCurrency(remaining / daysLeft).replace(/^\+/, '')) + '</span>';
+    statusHtml = '<span class="goal-status">' + _t('analytics_dash.goal.remaining', 'Hedefe {v} kaldı').replace('{v}', formatCurrency(remaining).replace(/^\+/, '')) + '</span>' +
+      '<span class="goal-sub">' + _t('analytics_dash.goal.days_left', '{n} gün kaldı').replace('{n}', daysLeft) +
+      ' · ' + _t('analytics_dash.goal.per_day', 'günde ort. {v}').replace('{v}', formatCurrency(remaining / daysLeft).replace(/^\+/, '')) + '</span>';
   }
 
   var editHtml = goalEditing
     ? '<form class="goal-form" data-goal-form>' +
-        '<label class="goal-form-label" for="goal-input">' + _t('premium_dash.goal.label', 'Aylık hedef') + '</label>' +
+        '<label class="goal-form-label" for="goal-input">' + _t('analytics_dash.goal.label', 'Aylık hedef') + '</label>' +
         '<input id="goal-input" class="goal-input" type="number" min="1" step="any" inputmode="decimal" value="' + target + '" />' +
         '<div class="goal-presets">' + GOAL_PRESETS.map(function(v) {
           return '<button type="button" class="goal-preset" data-goal-preset="' + v + '">' + formatCompactCurrency(v).replace(/^\+/, '') + '</button>';
         }).join('') + '</div>' +
         '<div class="goal-form-actions">' +
-          '<button type="button" class="goal-cancel" data-goal-cancel>' + _t('premium_dash.goal.cancel', 'Vazgeç') + '</button>' +
-          '<button type="submit" class="goal-save">' + _t('premium_dash.goal.save', 'Kaydet') + '</button>' +
+          '<button type="button" class="goal-cancel" data-goal-cancel>' + _t('analytics_dash.goal.cancel', 'Vazgeç') + '</button>' +
+          '<button type="submit" class="goal-save">' + _t('analytics_dash.goal.save', 'Kaydet') + '</button>' +
         '</div>' +
       '</form>'
     : '';
@@ -1864,7 +1864,7 @@ export function renderGoalWidget() {
   container.innerHTML = '<div class="goal' + (goalEditing ? ' is-editing' : '') + '">' +
     '<div class="goal-top">' +
       '<span class="goal-month">' + sanitizeInsight(monthName) + '</span>' +
-      '<button type="button" class="goal-edit" data-goal-edit>' + _t('premium_dash.goal.edit', 'Düzenle') + '</button>' +
+      '<button type="button" class="goal-edit" data-goal-edit>' + _t('analytics_dash.goal.edit', 'Düzenle') + '</button>' +
     '</div>' +
     '<div class="goal-amounts">' +
       '<span class="goal-current ' + (monthPnl > 0 ? 'pos' : (monthPnl < 0 ? 'neg' : '')) + '">' + formatCurrency(monthPnl) + '</span>' +

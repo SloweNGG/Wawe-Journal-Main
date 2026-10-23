@@ -128,13 +128,13 @@
   /**
    * Checks current user's prop quota and capacity.
    *
-   * @returns {Promise<Object>} { count, limit, canCreate, isPremium }
+   * @returns {Promise<Object>} { count, limit, canCreate, isPro }
    */
   async function checkPropAccountQuota() {
     var sb = getSbClient();
     var userRes = await sb.auth.getUser();
     var user = userRes && userRes.data ? userRes.data.user : null;
-    if (!user) return { count: 0, limit: 1, canCreate: false, isPremium: false };
+    if (!user) return { count: 0, limit: 1, canCreate: false, isPro: false };
 
     var profileRes = await sb
       .from('user_profiles')
@@ -143,15 +143,15 @@
       .single();
 
     var profile = profileRes.data || {};
-    var isPremium = profile.plan === 'premium';
-    if (isPremium && profile.plan_expires_at) {
+    var isPro = profile.plan === 'premium';
+    if (isPro && profile.plan_expires_at) {
       var exp = new Date(profile.plan_expires_at).getTime();
       if (!isNaN(exp) && Date.now() > exp) {
-        isPremium = false;
+        isPro = false;
       }
     }
 
-    var limit = isPremium ? 10 : 1;
+    var limit = isPro ? 10 : 1;
     var activeAccounts = await getActivePropAccounts();
     var count = activeAccounts.length;
 
@@ -159,7 +159,7 @@
       count: count,
       limit: limit,
       canCreate: count < limit,
-      isPremium: isPremium
+      isPro: isPro
     };
   }
 

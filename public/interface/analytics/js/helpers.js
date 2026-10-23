@@ -1,5 +1,5 @@
 // ============================================================
-// premium-dashboard/js/helpers.js - Saf yardımcı fonksiyonlar
+// analytics/js/helpers.js - Saf yardımcı fonksiyonlar
 // ⭐ FIX: showEmptyChart zenginleştirildi (ikon + metin + link)
 // ⭐ TEMİZLİK: /add-trade.html referansları kaldırıldı
 //        - "Lot" ve "Henüz işlem" case'leri artık quickAddOpen() çağırıyor

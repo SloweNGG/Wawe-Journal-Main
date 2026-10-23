@@ -223,7 +223,7 @@ function markInvoiceProcessed(invoiceId: string, status: string): void {
 class PaymentRejectedError extends Error {}
 
 // 🔒 Ödenen tutar/para birimi, create-payment'ın kaydettiği beklenen değerle eşleşmeli.
-// Eşleşmezse (ör. istemci fiyatı kurcaladıysa) premium AKTİFLEŞTİRİLMEZ.
+// Eşleşmezse (ör. istemci fiyatı kurcaladıysa) Pro AKTİFLEŞTİRİLMEZ.
 async function verifyExpectedAmount(orderId: string | undefined, payload: any): Promise<{ referral_code: string | null }> {
   if (!orderId) {
     throw new PaymentRejectedError('Missing order_id, cannot verify expected amount');
@@ -275,7 +275,7 @@ async function sendTelegramNotification(userId: string, email: string, planType:
       year: 'numeric'
     });
 
-    const message = `🎉 YENİ PREMIUM KAYDI!
+    const message = `🎉 YENİ PRO KAYDI!
     
 👤 Kullanıcı ID: ${userId}
 📧 Email: ${email}
@@ -283,7 +283,7 @@ async function sendTelegramNotification(userId: string, email: string, planType:
 🗓️ Bitiş Tarihi: ${formattedDate}
 ⏰ Ödeme Tarihi: ${new Date().toLocaleString('tr-TR')}
 
-✅ Premium başarıyla aktifleştirildi!`;
+✅ Pro başarıyla aktifleştirildi!`;
 
     const response = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -585,7 +585,7 @@ serve(async (req: Request) => {
         markInvoiceProcessed(invoiceId, status);
         return new Response(JSON.stringify({
           success: true,
-          message: `User ${userId} upgraded to premium`,
+          message: `User ${userId} upgraded to Pro`,
           expires_at: result.expiresAt.toISOString()
         }), {
           status: 200,

@@ -1,7 +1,7 @@
 // ============================================================
 // ADMIN-DASHBOARD.JS - ANALYTICS & PRICES
 // ⭐ MIGRATE: Chart.js → ApexCharts
-//   - usersChart ve premiumChart artık ApexCharts instance'ı
+//   - usersChart ve proChart artık ApexCharts instance'ı
 //   - ApexCharts destroy() ve re-render aynı şekilde çalışır
 //   - Tema (light/dark) desteği eklendi
 // ============================================================
@@ -107,16 +107,16 @@ async function loadAnalyticsData() {
     var { data: profiles } = await adminFetchAll('user_profiles', '*', 'created_at', false);
     var profileList = profiles || [];
 
-    var premiumUsers = profileList.filter(function(p) {
-      // Bitiş tarihi boş premium (manuel verilen) de aktiftir; kullanıcı tablosu/erişimle tutarlı
+    var proUsers = profileList.filter(function(p) {
+      // Bitiş tarihi boş pro (manuel verilen) de aktiftir; kullanıcı tablosu/erişimle tutarlı
       return p.plan === 'premium' && (!p.plan_expires_at || new Date(p.plan_expires_at) > new Date());
     });
-    var totalPremium = premiumUsers.length;
+    var totalPro = proUsers.length;
     
     var totalRevenue = 0;
     var revenue7Days = 0;
     var revenueByDay = {};
-    var recentPremiumUsers = [];
+    var recentProUsers = [];
 
     var sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -142,7 +142,7 @@ async function loadAnalyticsData() {
       }
 
       var matchedUser = profileList.find(function(prof) { return prof.id === p.user_id; });
-      recentPremiumUsers.push({
+      recentProUsers.push({
         username: (matchedUser && matchedUser.username) || (matchedUser && matchedUser.email) || 'Kullanıcı',
         email: (matchedUser && matchedUser.email) || '—',
         plan: sub.planLabel,
@@ -153,7 +153,7 @@ async function loadAnalyticsData() {
       });
     });
 
-    recentPremiumUsers.sort(function(a, b) {
+    recentProUsers.sort(function(a, b) {
       return new Date(b.date) - new Date(a.date);
     });
 
@@ -165,14 +165,14 @@ async function loadAnalyticsData() {
         return !isNaN(cd.getTime()) && adminDayKey(cd) === d;
       }).length;
     });
-    // "Son 7 Gün Premium": yalnızca son 7 günde gerçekleşen satışlar (eskiden tüm zamanların sayısıydı)
-    var premium7Days = recentPremiumUsers.filter(function(r) { return new Date(r.date) >= sevenDaysAgo; }).length;
+    // "Son 7 Gün Pro": yalnızca son 7 günde gerçekleşen satışlar (eskiden tüm zamanların sayısıydı)
+    var pro7Days = recentProUsers.filter(function(r) { return new Date(r.date) >= sevenDaysAgo; }).length;
 
     var statsEls = {
       'stat-total-users': profileList.length,
-      'stat-total-premium': totalPremium,
-      'stat-premium-revenue': '$' + totalRevenue.toFixed(2),
-      'stat-premium-7days': premium7Days
+      'stat-total-pro': totalPro,
+      'stat-pro-revenue': '$' + totalRevenue.toFixed(2),
+      'stat-pro-7days': pro7Days
     };
     
     Object.keys(statsEls).forEach(function(id) {
@@ -180,14 +180,14 @@ async function loadAnalyticsData() {
       if (el) el.textContent = statsEls[id];
     });
 
-    var recentContainer = document.getElementById('recent-premium-list');
+    var recentContainer = document.getElementById('recent-pro-list');
     if (recentContainer) {
-      if (recentPremiumUsers.length === 0) {
-        recentContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henüz premium satışı yok.</div>';
+      if (recentProUsers.length === 0) {
+        recentContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henüz Pro satışı yok.</div>';
       } else {
         var html = '';
-        for (var j = 0; j < recentPremiumUsers.length && j < 10; j++) {
-          var u = recentPremiumUsers[j];
+        for (var j = 0; j < recentProUsers.length && j < 10; j++) {
+          var u = recentProUsers[j];
           var avatarHtml = u.avatar_url
             ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;">'
             : '<span style="font-weight:700;font-size:14px;">' + getInitials(u.username) + '</span>';
@@ -196,7 +196,7 @@ async function loadAnalyticsData() {
             ? '<span class="kpi-badge badge-purple" style="font-size:10px;padding:2px 6px;margin-left:4px;">🏷️ ' + escapeHtml(u.referralCode) + '</span>' 
             : '';
 
-          html += '<div class="recent-premium-card">' +
+          html += '<div class="recent-pro-card">' +
             '<div class="avatar-small">' + avatarHtml + '</div>' +
             '<div class="info">' +
               '<div class="name">' + escapeHtml(u.username) + '</div>' +
@@ -222,9 +222,9 @@ async function loadAnalyticsData() {
       try { adminState.charts.userChart.destroy(); } catch(e) {}
       adminState.charts.userChart = null;
     }
-    if (adminState.charts.premiumChart) {
-      try { adminState.charts.premiumChart.destroy(); } catch(e) {}
-      adminState.charts.premiumChart = null;
+    if (adminState.charts.proChart) {
+      try { adminState.charts.proChart.destroy(); } catch(e) {}
+      adminState.charts.proChart = null;
     }
 
     // ⭐ KULLANICI GRAFİĞİ (Bar)
@@ -283,13 +283,13 @@ async function loadAnalyticsData() {
       adminState.charts.userChart.render();
     }
 
-    // ⭐ PREMIUM GRAFİĞİ (Bar)
-    var premiumEl = document.getElementById('premiumChart');
-    if (premiumEl) {
-      premiumEl.innerHTML = '';
+    // ⭐ PRO GRAFİĞİ (Bar)
+    var proEl = document.getElementById('proChart');
+    if (proEl) {
+      proEl.innerHTML = '';
       
-      var premiumOptions = adminApex(theme, {
-        series: [{ name: 'Premium Gelir ($)', data: revenueData }],
+      var proOptions = adminApex(theme, {
+        series: [{ name: 'Pro Gelir ($)', data: revenueData }],
         chart: {
           type: 'bar',
           height: '100%',
@@ -299,7 +299,7 @@ async function loadAnalyticsData() {
           bar: {
             borderRadius: adminBarRadius(),
             borderRadiusApplication: 'end',
-            columnWidth: adminBarWidth(premiumEl, labels.length, '60%'),
+            columnWidth: adminBarWidth(proEl, labels.length, '60%'),
             colors: {
               ranges: [
                 { from: 0, to: Number.MAX_VALUE, color: '#7c6dfa' }
@@ -341,8 +341,8 @@ async function loadAnalyticsData() {
           : { show: true, position: 'bottom', labels: { colors: theme.textColor }, fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '10px' }
       });
       
-      adminState.charts.premiumChart = new ApexCharts(premiumEl, premiumOptions);
-      adminState.charts.premiumChart.render();
+      adminState.charts.proChart = new ApexCharts(proEl, proOptions);
+      adminState.charts.proChart.render();
     }
     
     wwLog.log('✅ loadAnalyticsData tamamlandi!');
@@ -906,7 +906,7 @@ async function renderPaymentSettingsUI() {
             <div class="preview-price-sub" id="prev-yearly-equiv" style="color:#34d399;">Ayda ~$8.25</div>\
             <ul class="preview-features-list">\
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 365 Gün Kesintisiz Erişim</li>\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tüm Premium Özellikler</li>\
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tüm Pro Özellikler</li>\
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Öncelikli VIP Destek</li>\
             </ul>\
           </div>\
@@ -1172,7 +1172,7 @@ window.changeOverviewPeriod = function(period) {
 // ============================================================
 // Eskiden gelir, kullanıcının "kalan gün sayısına" bakılarak tahmin ediliyordu (65 günden fazla = yıllık):
 // yıllık aboneliğin son 65 gününde "aylık" sanılıp uydurma 12 $'lık satış ekleniyor, art arda aylık
-// yenilemeler "yıllık" sanılıp 99 $ ekleniyor, admin'in verdiği premium da gelir sayılıyordu.
+// yenilemeler "yıllık" sanılıp 99 $ ekleniyor, admin'in verdiği pro da gelir sayılıyordu.
 // Artık yalnızca payments tablosundaki tamamlanmış ödemeler toplanır.
 
 // Fiyat para birimi dışındaki ödemeler USD'ye çevrilir (create-payment ile aynı sabit kurlar)
@@ -1231,14 +1231,14 @@ function renderOverviewContent(period) {
   var usersList = adminState.users || [];
   var totalUsers = usersList.length;
 
-  // Active Premium & Free counts
+  // Active Pro & Free counts
   var now = new Date();
-  var activePremiumUsers = usersList.filter(function(u) {
+  var activeProUsers = usersList.filter(function(u) {
     return u.plan === 'premium' && (!u.plan_expires_at || new Date(u.plan_expires_at) > now);
   });
-  var premiumCount = activePremiumUsers.length;
-  var freeCount = Math.max(0, totalUsers - premiumCount);
-  var conversionRate = totalUsers > 0 ? ((premiumCount / totalUsers) * 100).toFixed(1) : '0.0';
+  var proCount = activeProUsers.length;
+  var freeCount = Math.max(0, totalUsers - proCount);
+  var conversionRate = totalUsers > 0 ? ((proCount / totalUsers) * 100).toFixed(1) : '0.0';
 
   // Today Users (local start of day)
   var startOfToday = new Date();
@@ -1255,7 +1255,7 @@ function renderOverviewContent(period) {
     return (p.payment_status === 'finished' || p.payment_status === 'confirmed') && p.plan_type !== 'test';
   });
 
-  // Gelir: yalnızca gerçek (tamamlanmış) ödemeler. Admin'in verdiği ya da ödemesi olmayan premium gelir sayılmaz.
+  // Gelir: yalnızca gerçek (tamamlanmış) ödemeler. Admin'in verdiği ya da ödemesi olmayan pro gelir sayılmaz.
   var subscriptions = [];
   var totalRevenue = 0;
   var countedPaymentIds = {};
@@ -1420,7 +1420,7 @@ function renderOverviewContent(period) {
         : '<span>' + getInitials(name) + '</span>';
       var isPrem = u.plan === 'premium';
       var badgeHtml = isPrem
-        ? '<span class="user-mini-badge badge-sub-premium">⭐ Premium</span>'
+        ? '<span class="user-mini-badge badge-sub-pro">⭐ Pro</span>'
         : '<span class="user-mini-badge badge-sub-free">Ücretsiz</span>';
 
       recentUsersHtml += 
@@ -1521,13 +1521,13 @@ function renderOverviewContent(period) {
 
         '<div class="kpi-card">' +
           '<div class="kpi-card-inner">' +
-            '<div class="kpi-icon-wrap icon-premium">' +
+            '<div class="kpi-icon-wrap icon-pro">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
             '</div>' +
             '<div class="kpi-meta">' +
-              '<span class="kpi-label">Premium Üyeler</span>' +
+              '<span class="kpi-label">Pro Üyeler</span>' +
               '<div class="kpi-value-row">' +
-                '<span class="kpi-val" style="color:#a78bfa;">' + premiumCount + '</span>' +
+                '<span class="kpi-val" style="color:#a78bfa;">' + proCount + '</span>' +
                 '<span class="kpi-badge badge-purple">%' + conversionRate + ' Dönüşüm</span>' +
               '</div>' +
             '</div>' +
@@ -1557,7 +1557,7 @@ function renderOverviewContent(period) {
             '<div class="header-icon" style="background:rgba(16,185,129,0.12);color:#34d399;">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' +
             '</div>' +
-            '<div><h2>Gelir İstatistiği ($)</h2><p>' + periodLabelText + ' elde edilen premium abonelik gelirleri</p></div>' +
+            '<div><h2>Gelir İstatistiği ($)</h2><p>' + periodLabelText + ' elde edilen Pro abonelik gelirleri</p></div>' +
             '<div class="chart-corner-stat">' +
               '<span class="corner-val text-emerald">$' + periodRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
               '<span class="corner-lbl">' + periodPillText + '</span>' +
@@ -1581,9 +1581,9 @@ function renderOverviewContent(period) {
             '<div id="overviewPlanDonutChart"></div>' +
             '<div class="plan-summary-bars">' +
               '<div class="plan-summary-item">' +
-                '<span class="plan-dot dot-premium"></span>' +
-                '<span class="plan-name">Premium Plan</span>' +
-                '<span class="plan-count">' + premiumCount + ' üye</span>' +
+                '<span class="plan-dot dot-pro"></span>' +
+                '<span class="plan-name">Pro Plan</span>' +
+                '<span class="plan-count">' + proCount + ' üye</span>' +
                 '<span class="plan-pct" style="color:#a78bfa;">%' + conversionRate + '</span>' +
               '</div>' +
               '<div class="plan-summary-item">' +
@@ -1729,8 +1729,8 @@ function renderOverviewContent(period) {
       var donutColors = adminChartColors(theme);
       var donutFont = adminChartFont();
       var donutOptions = adminApex(theme, {
-        series: [freeCount, premiumCount],
-        labels: ['Ücretsiz', 'Premium'],
+        series: [freeCount, proCount],
+        labels: ['Ücretsiz', 'Pro'],
         chart: {
           type: 'donut',
           height: 220,

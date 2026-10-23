@@ -154,9 +154,9 @@ export async function buildPerformanceReport(trades, meta) {
   font('bold', 7.5); color(C.muted);
   text('WAWE JOURNAL', M, 16, { charSpace: 0.6 });
   font('normal', 7.5);
-  text(_t('premium_dash.report.generated', 'Oluşturulma') + ' ' + fmtDay(window.WwTime.todayKey(), lang), W - M, 16, { align: 'right' });
+  text(_t('analytics_dash.report.generated', 'Oluşturulma') + ' ' + fmtDay(window.WwTime.todayKey(), lang), W - M, 16, { align: 'right' });
   font('bold', 21); color(C.text);
-  text(_t('premium_dash.report.title', 'Performans Raporu'), M, 27);
+  text(_t('analytics_dash.report.title', 'Performans Raporu'), M, 27);
   font('normal', 9.5); color(C.muted);
   text((meta.journalName ? meta.journalName + '   ·   ' : '') + periodText, M, 34);
   draw(C.line); doc.setLineWidth(0.25); doc.line(M, 39, W - M, 39);
@@ -167,21 +167,21 @@ export async function buildPerformanceReport(trades, meta) {
   var pf = window.WwMetrics.formatProfitFactor(s.profitFactor);
   var payoff = window.WwMetrics.formatProfitFactor(s.payoff);
   var cards = [
-    { label: _t('premium_dash.report.net_pnl', 'Net K/Z'), value: money(s.totalPnL), c: tone(s.totalPnL),
-      sub: _t('premium_dash.report.wl', '{w} kazanan · {l} kaybeden').replace('{w}', s.wins).replace('{l}', s.losses) },
-    { label: _t('premium_dash.report.trades', 'İşlem'), value: String(s.total), c: C.text,
-      sub: s.breakeven ? _t('premium_dash.report.breakeven', '{n} başabaş').replace('{n}', s.breakeven) : '' },
-    { label: _t('premium_dash.report.win_rate', 'Win Rate'), value: pct(s.winRate), c: C.text, sub: '' },
-    { label: _t('premium_dash.report.profit_factor', 'Profit Factor'), value: pf, c: C.text,
-      sub: _t('premium_dash.report.gross', 'Brüt {w} / {l}').replace('{w}', moneyPlain(s.grossWin)).replace('{l}', moneyPlain(-s.grossLoss)) },
-    { label: _t('premium_dash.report.expectancy', 'Beklenti'), value: money(s.expectancy), c: tone(s.expectancy),
-      sub: _t('premium_dash.report.per_trade', 'İşlem başı ortalama') },
-    { label: _t('premium_dash.report.payoff', 'Ort. Kazanç / Kayıp'), value: payoff === '∞' ? '∞' : payoff + 'x', c: C.text,
+    { label: _t('analytics_dash.report.net_pnl', 'Net K/Z'), value: money(s.totalPnL), c: tone(s.totalPnL),
+      sub: _t('analytics_dash.report.wl', '{w} kazanan · {l} kaybeden').replace('{w}', s.wins).replace('{l}', s.losses) },
+    { label: _t('analytics_dash.report.trades', 'İşlem'), value: String(s.total), c: C.text,
+      sub: s.breakeven ? _t('analytics_dash.report.breakeven', '{n} başabaş').replace('{n}', s.breakeven) : '' },
+    { label: _t('analytics_dash.report.win_rate', 'Win Rate'), value: pct(s.winRate), c: C.text, sub: '' },
+    { label: _t('analytics_dash.report.profit_factor', 'Profit Factor'), value: pf, c: C.text,
+      sub: _t('analytics_dash.report.gross', 'Brüt {w} / {l}').replace('{w}', moneyPlain(s.grossWin)).replace('{l}', moneyPlain(-s.grossLoss)) },
+    { label: _t('analytics_dash.report.expectancy', 'Beklenti'), value: money(s.expectancy), c: tone(s.expectancy),
+      sub: _t('analytics_dash.report.per_trade', 'İşlem başı ortalama') },
+    { label: _t('analytics_dash.report.payoff', 'Ort. Kazanç / Kayıp'), value: payoff === '∞' ? '∞' : payoff + 'x', c: C.text,
       sub: (s.wins ? money(s.avgWin) : '—') + ' / ' + (s.losses ? money(-s.avgLoss) : '—') },
-    { label: _t('premium_dash.report.max_dd', 'Max Drawdown'), value: s.maxDrawdown > 0 ? money(-s.maxDrawdown) : moneyPlain(0),
+    { label: _t('analytics_dash.report.max_dd', 'Max Drawdown'), value: s.maxDrawdown > 0 ? money(-s.maxDrawdown) : moneyPlain(0),
       c: s.maxDrawdown > 0 ? C.down : C.text, sub: '' },
-    { label: _t('premium_dash.report.best', 'En İyi İşlem'), value: best > 0 ? money(best) : '—', c: best > 0 ? C.up : C.text,
-      sub: worst < 0 ? _t('premium_dash.report.worst', 'En kötü {v}').replace('{v}', money(worst)) : '' }
+    { label: _t('analytics_dash.report.best', 'En İyi İşlem'), value: best > 0 ? money(best) : '—', c: best > 0 ? C.up : C.text,
+      sub: worst < 0 ? _t('analytics_dash.report.worst', 'En kötü {v}').replace('{v}', money(worst)) : '' }
   ];
   var gap = 3, cw = (W - 2 * M - 3 * gap) / 4, ch = 21, y = 45;
   cards.forEach(function (cd, i) {
@@ -197,7 +197,7 @@ export async function buildPerformanceReport(trades, meta) {
   // ---------- kümülatif K/Z grafiği ----------
   var chartH = 64;
   fill(C.card); draw(C.line); doc.roundedRect(M, y, W - 2 * M, chartH, 2, 2, 'FD');
-  font('bold', 9); color(C.text); text(_t('premium_dash.report.equity', 'Kümülatif K/Z'), M + 5, y + 7.5);
+  font('bold', 9); color(C.text); text(_t('analytics_dash.report.equity', 'Kümülatif K/Z'), M + 5, y + 7.5);
   font('bold', 9); color(tone(s.totalPnL)); text(money(s.totalPnL), W - M - 5, y + 7.5, { align: 'right' });
 
   var curve = [0];
@@ -272,7 +272,7 @@ export async function buildPerformanceReport(trades, meta) {
   function pnlCell(v) { return { content: money(v), styles: { textColor: tone(v), fontStyle: 'bold', halign: 'right' } }; }
   function rightCell(v) { return { content: String(v), styles: { halign: 'right' } }; }
   var groupHead = function (first) {
-    return [[first, _t('premium_dash.report.col.trades', 'İşlem'), _t('premium_dash.report.col.win', 'Win %'), _t('premium_dash.report.col.pnl', 'K/Z')]];
+    return [[first, _t('analytics_dash.report.col.trades', 'İşlem'), _t('analytics_dash.report.col.win', 'Win %'), _t('analytics_dash.report.col.pnl', 'K/Z')]];
   };
   var groupRow = function (g, label) { return [label, rightCell(g.n), rightCell(pct(g.n ? g.wins / g.n * 100 : 0)), pnlCell(g.pnl)]; };
   var headAlign = { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } };
@@ -284,12 +284,12 @@ export async function buildPerformanceReport(trades, meta) {
   var byDir = groupBy(closed, function (t) { return String(t.direction || '').toLowerCase() === 'short' ? 'short' : 'long'; });
   var dirLabel = function (k) { return k === 'short' ? _t('direction.short', 'Short') : _t('direction.long', 'Long'); };
 
-  sectionTitle(_t('premium_dash.report.by_symbol', 'Sembol Bazında'), M, y);
-  sectionTitle(_t('premium_dash.report.by_direction', 'Long / Short'), M + half + 6, y);
+  sectionTitle(_t('analytics_dash.report.by_symbol', 'Sembol Bazında'), M, y);
+  sectionTitle(_t('analytics_dash.report.by_direction', 'Long / Short'), M + half + 6, y);
   var startPage = doc.internal.getCurrentPageInfo().pageNumber;
   var leftEnd = table({
     startY: y + 3, tableWidth: half, margin: { left: M, right: W - M - half, top: 18, bottom: 16 },
-    head: groupHead(_t('premium_dash.report.col.symbol', 'Sembol')), body: bySymbol.map(function (g) { return groupRow(g, g.key); }),
+    head: groupHead(_t('analytics_dash.report.col.symbol', 'Sembol')), body: bySymbol.map(function (g) { return groupRow(g, g.key); }),
     headStyles: Object.assign({}, tableBase.headStyles), columnStyles: { 0: { fontStyle: 'bold' } },
     didParseCell: function (d) { if (d.section === 'head' && headAlign[d.column.index]) d.cell.styles.halign = 'right'; }
   });
@@ -297,7 +297,7 @@ export async function buildPerformanceReport(trades, meta) {
   doc.setPage(startPage);
   var rightEnd = table({
     startY: y + 3, tableWidth: half, margin: { left: M + half + 6, right: M, top: 18, bottom: 16 },
-    head: groupHead(_t('premium_dash.report.col.direction', 'Yön')), body: byDir.map(function (g) { return groupRow(g, dirLabel(g.key)); }),
+    head: groupHead(_t('analytics_dash.report.col.direction', 'Yön')), body: byDir.map(function (g) { return groupRow(g, dirLabel(g.key)); }),
     didParseCell: function (d) { if (d.section === 'head' && headAlign[d.column.index]) d.cell.styles.halign = 'right'; }
   });
   var rightPage = doc.internal.getCurrentPageInfo().pageNumber;
@@ -309,13 +309,13 @@ export async function buildPerformanceReport(trades, meta) {
   var byMonth = groupBy(closed, function (t) { return window.WwMetrics.dateKey(t).slice(0, 7); });
   if (byMonth.length >= 2) {
     if (H - 16 - y < 40) y = newPage();
-    sectionTitle(_t('premium_dash.report.by_month', 'Aylık'), M, y);
+    sectionTitle(_t('analytics_dash.report.by_month', 'Aylık'), M, y);
     var monthLabel = function (ym) {
       return window.WwTime.formatDate(ym + '-01', lang, { day: undefined, month: 'long', year: 'numeric' });
     };
     y = table({
       startY: y + 3,
-      head: groupHead(_t('premium_dash.report.col.month', 'Ay')),
+      head: groupHead(_t('analytics_dash.report.col.month', 'Ay')),
       body: byMonth.map(function (g) { return groupRow(g, monthLabel(g.key)); }),
       didParseCell: function (d) { if (d.section === 'head' && headAlign[d.column.index]) d.cell.styles.halign = 'right'; }
     }) + 10;
@@ -324,7 +324,7 @@ export async function buildPerformanceReport(trades, meta) {
   // ---------- işlem listesi ----------
   // başlık + en az ~6 satır sığmıyorsa liste yeni sayfadan başlar (sayfa sonunda 1-2 satır kalmasın)
   if (H - 16 - y < 62) y = newPage();
-  sectionTitle(_t('premium_dash.report.trade_list', 'İşlemler') + ' (' + closed.length + ')', M, y);
+  sectionTitle(_t('analytics_dash.report.trade_list', 'İşlemler') + ' (' + closed.length + ')', M, y);
   var tradeHead = [['#', _t('csv.date', 'Tarih'), _t('csv.symbol', 'Sembol'), _t('csv.direction', 'Yön'), _t('csv.lot', 'Lot'),
     _t('csv.entry', 'Giriş'), _t('csv.exit', 'Çıkış'), _t('csv.rr', 'R:R'), _t('csv.pnl', 'K/Z')]];
   table({
@@ -354,8 +354,8 @@ export async function buildPerformanceReport(trades, meta) {
     doc.setPage(p);
     draw(C.line); doc.setLineWidth(0.2); doc.line(M, H - 11, W - M, H - 11);
     font('normal', 6.8); color(C.muted);
-    text('Wawe Journal  ·  ' + _t('premium_dash.report.title', 'Performans Raporu') + '  ·  ' + periodText, M, H - 6.5);
-    text(_t('premium_dash.report.page', 'Sayfa {x} / {y}').replace('{x}', p).replace('{y}', pages), W - M, H - 6.5, { align: 'right' });
+    text('Wawe Journal  ·  ' + _t('analytics_dash.report.title', 'Performans Raporu') + '  ·  ' + periodText, M, H - 6.5);
+    text(_t('analytics_dash.report.page', 'Sayfa {x} / {y}').replace('{x}', p).replace('{y}', pages), W - M, H - 6.5, { align: 'right' });
   }
 
   var slug = String(meta.journalName || 'rapor').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'rapor';

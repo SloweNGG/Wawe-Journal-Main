@@ -58,7 +58,7 @@ describe('stats audit (static)', () => {
   });
 
   it('every reader module that loads trades into stats uses WwTrades.fetchAll or filterScope', () => {
-    const must = ['public/interface/dashboard/js/dashboard.js', 'public/interface/premium-dashboard/js/premium-dashboard.js',
+    const must = ['public/interface/dashboard/js/dashboard.js', 'public/interface/analytics/js/analytics.js',
       'public/interface/calendar/js/calendar.js', 'public/interface/strategies/js/strategies.js', 'public/interface/trades/js/trades.js'];
     for (const f of must) {
       const src = fs.readFileSync(f, 'utf8');
@@ -75,11 +75,11 @@ describe('stats audit (static)', () => {
   });
 
   it('page scripts that changed are syntactically valid', () => {
-    for (const f of ['public/interface/dashboard/js/dashboard.js', 'public/interface/premium-dashboard/js/premium-dashboard.js', 'public/interface/calendar/js/calendar.js',
+    for (const f of ['public/interface/dashboard/js/dashboard.js', 'public/interface/analytics/js/analytics.js', 'public/interface/calendar/js/calendar.js',
       'public/interface/strategies/js/strategies.js', 'public/interface/trades/js/trades.js', 'public/interface/backtest/js/backtest.js', 'public/components/navbar/navbar.js',
       'public/interface/dashboard/js/onboarding.js', 'public/interface/quick-add/js/quick-add.js', 'public/cache.js']) {
       const src = fs.readFileSync(f, 'utf8');
-      if (/^\s*(import|export)\s/m.test(src)) {                       // ES module (premium dashboard): node --check on a .mjs copy
+      if (/^\s*(import|export)\s/m.test(src)) {                       // ES module (pro dashboard): node --check on a .mjs copy
         const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'wj-syntax-')), 'm.mjs');
         fs.writeFileSync(tmp, src);
         const r = spawnSync(process.execPath, ['--check', tmp], { encoding: 'utf8' });

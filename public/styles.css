@@ -2138,7 +2138,7 @@ body.light-theme .skeleton-stat::after {
 }
 
 /* ============================================================
-   PREMIUM DROPDOWN
+   PRO DROPDOWN
    ============================================================ */
 
 .nav-dropdown {
@@ -2219,7 +2219,7 @@ body.light-theme .skeleton-stat::after {
   background: rgba(139,92,246,0.06);
   color: var(--accent);
 }
-.nav-dropdown-menu a .premium-icon {
+.nav-dropdown-menu a .pro-icon {
   font-size: clamp(11px, 1vw, 14px);
   width: clamp(16px, 2vw, 20px);
   text-align: center;
@@ -2230,8 +2230,8 @@ body.light-theme .skeleton-stat::after {
   margin: clamp(2px, 0.3vw, 4px) clamp(6px, 0.8vw, 12px);
 }
 
-/* Mobile Premium */
-.mobile-premium-label {
+/* Mobile Pro */
+.mobile-pro-label {
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1rem) 0.2rem;
   font-size: clamp(8px, 0.7vw, 10px);
   font-weight: 600;
@@ -2330,7 +2330,7 @@ body.light-theme .skeleton-stat::after {
   color: var(--green);
   white-space: nowrap;
 }
-.plan-badge.premium {
+.plan-badge.pro {
   background: rgba(139,92,246,0.12);
   border: 1px solid rgba(139,92,246,0.25);
   color: var(--accent2);
@@ -2344,7 +2344,7 @@ body.light-theme .skeleton-stat::after {
   animation: dotPulse 2s ease-in-out infinite;
   will-change: transform, opacity;
 }
-.plan-badge.premium .plan-dot {
+.plan-badge.pro .plan-dot {
   background: var(--accent2);
   box-shadow: 0 0 8px rgba(139,92,246,0.4);
 }
@@ -2416,9 +2416,9 @@ body.light-theme .panel-glow {
   }
 
   /* Hareketli gradyanları durdur */
-  .plan-card.premium::before,
-  .plan-card.premium::after,
-  .plan-card-home.premium::after {
+  .plan-card.pro::before,
+  .plan-card.pro::after,
+  .plan-card-home.pro::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
@@ -2815,13 +2815,13 @@ html.light-theme .wj-ambient-backdrop {
   .cal-day:not(.empty),
   /* defterler */
   .journal-card, .broker-choice-card:not(.active),
-  /* premium dashboard */
+  /* pro dashboard */
   .grid-item, .pstat-card, .sc-head, .ins-item, .goal-form, .prop-cockpit-hud,
   .cal-cell:not(.pos):not(.neg):not(.be):not(.cal-blank),
   /* ayarlar */
   .settings-sidebar, .s-card, .plan-card, .plan-perks-box, .perk-item, .settings-group-card,
   .checkout-wizard-card, .plan-tier-card, .duration-option-card:not(.selected),
-  .coupon-interactive-card, .checkout-method-card, .premium-countdown-card,
+  .coupon-interactive-card, .checkout-method-card, .pro-countdown-card,
   .direct-pay-card, .extend-wizard-wrapper,
   /* işlem ekle */
   .form-card, .import-banner,
@@ -2873,7 +2873,7 @@ html.light-theme .wj-ambient-backdrop {
   * { scrollbar-width: thin; scrollbar-color: var(--border2, rgba(139, 92, 246, 0.35)) transparent; }
 }
 
-/* Defter kapsamı rozeti (dashboard / premium analitik): "Backtest dahil" / "Sadece backtest" (amber, .badge-backtest ile aynı dil) */
+/* Defter kapsamı rozeti (dashboard / pro analitik): "Backtest dahil" / "Sadece backtest" (amber, .badge-backtest ile aynı dil) */
 .ww-scope-badge {
   display: inline-block;
   padding: 3px 10px;

@@ -49,7 +49,7 @@ window.FEATURES = {
     label: '🆓 Free',
     maxTrades: Infinity,
     maxStrategies: Infinity,
-    premiumDashboard: false,
+    analyticsDashboard: false,
     dragDropPanels: false,
     advancedCharts: false,
     themeCustomization: false,
@@ -73,10 +73,10 @@ window.FEATURES = {
     basicCharts: true
   },
   premium: {
-    label: '💎 Premium',
+    label: '💎 Pro',
     maxTrades: Infinity,
     maxStrategies: Infinity,
-    premiumDashboard: true,
+    analyticsDashboard: true,
     dragDropPanels: true,
     advancedCharts: true,
     themeCustomization: true,
@@ -104,9 +104,9 @@ window.FEATURES = {
 window.NOTIFICATION_TYPES = {
   OVERTRADE_WARNING: 'overtrade_warning',
   OVERTRADE_CRITICAL: 'overtrade_critical',
-  PREMIUM_EXPIRING: 'premium_expiring',
-  PREMIUM_EXPIRED: 'premium_expired',
-  PREMIUM_UPGRADED: 'premium_upgraded',
+  PRO_EXPIRING: 'premium_expiring',
+  PRO_EXPIRED: 'premium_expired',
+  PRO_UPGRADED: 'premium_upgraded',
   SYSTEM: 'system'
 };
 

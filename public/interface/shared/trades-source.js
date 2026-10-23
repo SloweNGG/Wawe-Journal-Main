@@ -4,7 +4,7 @@
 // ============================================================
 // Backtest hesaplarından deftere aktarılan işlemler public.trades içinde
 // platform_source = 'backtest' ile durur. Canlı istatistikler (dashboard,
-// premium, takvim, stratejiler, prop, overtrade, PDF/CSV, sayaçlar) bu
+// pro, takvim, stratejiler, prop, overtrade, PDF/CSV, sayaçlar) bu
 // satırları HİÇBİR ZAMAN içermez. Tüm okuyucular sorgularını buradan kurar.
 //
 // KURAL (SQL karşılığı): platform_source IS DISTINCT FROM 'backtest'
@@ -16,7 +16,7 @@
 //
 // DEFTER BAZLI KAPSAM (journals.trade_scope: 'live' | 'backtest' | 'all', varsayılan 'live'):
 //   journalScope(jid) senkron okur (localStorage 'ww_journal_scopes', list_journals her çağrıldığında journal.js
-//   tarafından yenilenir). dashboard, premium-dashboard, takvim, stratejiler, PDF/CSV ve Trades varsayılan
+//   tarafından yenilenir). dashboard, analytics, takvim, stratejiler, PDF/CSV ve Trades varsayılan
 //   filtresi bu kapsamla çalışır. Prop firm, cTrader senkronu, overtrade/bildirimler ve ana sayfa istatistikleri
 //   HER ZAMAN 'live' kalır (bu yardımcıları KULLANMAZ). Kapsamlı önbellek anahtarı: cacheKey(base, scope).
 //

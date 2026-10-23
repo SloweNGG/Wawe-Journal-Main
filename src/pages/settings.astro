@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
   <link rel="prefetch" href="/trades.html">
   <link rel="prefetch" href="/strategies.html">
   <link rel="prefetch" href="/calendar.html">
-  <link rel="prefetch" href="/premium-dashboard.html">
+  <link rel="prefetch" href="/analytics.html">
   <!-- ⭐ TEMİZLİK: /settings.html prefetch'i kaldırıldı (sayfa kendini prefetch ediyordu) -->
   
   <!-- ⭐ SERVICE WORKER - OFFLINE DESTEĞİ -->
@@ -345,7 +345,7 @@ import Layout from '../layouts/Layout.astro';
     /* ============================================================
        OVER TRADE AYARLARI
        ============================================================ */
-    .ot-premium-badge {
+    .ot-pro-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -359,34 +359,34 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 20px;
       border: 1px solid rgba(139,92,246,0.2);
     }
-    .ot-premium-badge .diamond {
+    .ot-pro-badge .diamond {
       font-size: 10px;
     }
-    .ot-premium-locked {
+    .ot-pro-locked {
       text-align: center;
       padding: 2.5rem 1.5rem;
       background: var(--surface2);
       border-radius: var(--radius);
       border: 1px solid var(--border);
     }
-    .ot-premium-locked .lock-icon {
+    .ot-pro-locked .lock-icon {
       font-size: 3rem;
       margin-bottom: 0.75rem;
     }
-    .ot-premium-locked h3 {
+    .ot-pro-locked h3 {
       font-family: 'Syne', sans-serif;
       font-size: 1rem;
       color: var(--text);
       margin-bottom: 0.5rem;
     }
-    .ot-premium-locked p {
+    .ot-pro-locked p {
       font-size: 13px;
       color: var(--muted);
       max-width: 400px;
       margin: 0 auto 1.25rem;
       line-height: 1.6;
     }
-    .ot-premium-locked .btn-premium-cta {
+    .ot-pro-locked .btn-pro-cta {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -402,7 +402,7 @@ import Layout from '../layouts/Layout.astro';
       transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       text-decoration: none;
     }
-    .ot-premium-locked .btn-premium-cta:hover {
+    .ot-pro-locked .btn-pro-cta:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 24px rgba(139,92,246,0.4);
     }
@@ -891,12 +891,12 @@ import Layout from '../layouts/Layout.astro';
       position: relative;
       overflow: hidden;
     }
-    .plan-card.premium {
+    .plan-card.pro {
       border-color: rgba(139, 92, 246, 0.4);
       background: var(--surface);
       box-shadow: none;
     }
-    .plan-card.premium::before {
+    .plan-card.pro::before {
       content: '';
       position: absolute;
       top: 0;
@@ -907,12 +907,12 @@ import Layout from '../layouts/Layout.astro';
       background-size: 200% 100%;
       animation: none;
     }
-    @keyframes premiumGradient {
+    @keyframes proGradient {
       0% { background-position: 0% 0%; }
       50% { background-position: 100% 0%; }
       100% { background-position: 0% 0%; }
     }
-    .plan-card.premium::after {
+    .plan-card.pro::after {
       content: '';
       position: absolute;
       top: -50%;
@@ -923,7 +923,7 @@ import Layout from '../layouts/Layout.astro';
       pointer-events: none;
       animation: none;
     }
-    @keyframes premiumPulse {
+    @keyframes proPulse {
       0%, 100% { opacity: 0.5; transform: scale(1); }
       50% { opacity: 1; transform: scale(1.1); }
     }
@@ -950,7 +950,7 @@ import Layout from '../layouts/Layout.astro';
       gap: 0.75rem;
       letter-spacing: -0.02em;
     }
-    .plan-card .plan-name .premium-badge {
+    .plan-card .plan-name .pro-badge {
       font-size: 0.6rem;
       font-weight: 700;
       font-family: 'DM Mono', monospace;
@@ -970,7 +970,7 @@ import Layout from '../layouts/Layout.astro';
       padding-top: 1rem;
       border-top: 1px solid var(--border);
     }
-    .plan-card .plan-actions .btn-premium {
+    .plan-card .plan-actions .btn-pro {
       background: #000;
       border: none;
       color: #fff;
@@ -988,7 +988,7 @@ import Layout from '../layouts/Layout.astro';
       text-align: center;
       letter-spacing: 0.02em;
     }
-    .plan-card .plan-actions .btn-premium::before {
+    .plan-card .plan-actions .btn-pro::before {
       content: '';
       position: absolute;
       top: 0;
@@ -998,29 +998,29 @@ import Layout from '../layouts/Layout.astro';
       display: none;
       transition: left 0.6s ease;
     }
-    .plan-card .plan-actions .btn-premium:hover::before {
+    .plan-card .plan-actions .btn-pro:hover::before {
       left: 100%;
     }
-    .plan-card .plan-actions .btn-premium:hover {
+    .plan-card .plan-actions .btn-pro:hover {
       transform: translateY(-2px) scale(1.02);
       box-shadow: none;
     }
-    .plan-card .plan-actions .btn-premium:active {
+    .plan-card .plan-actions .btn-pro:active {
       transform: scale(0.96);
     }
-    .plan-card .plan-actions .btn-premium.secondary {
+    .plan-card .plan-actions .btn-pro.secondary {
       background: transparent;
       border: 1.5px solid var(--border2);
       color: var(--text);
       box-shadow: none;
     }
-    .plan-card .plan-actions .btn-premium.secondary:hover {
+    .plan-card .plan-actions .btn-pro.secondary:hover {
       border-color: var(--accent2);
       color: var(--accent2);
       box-shadow: none;
       transform: translateY(-2px);
     }
-    .plan-card .plan-actions .btn-premium-outline {
+    .plan-card .plan-actions .btn-pro-outline {
       background: transparent;
       border: 1.5px solid var(--border);
       color: var(--muted);
@@ -1035,7 +1035,7 @@ import Layout from '../layouts/Layout.astro';
       min-width: 140px;
       text-align: center;
     }
-    .plan-card .plan-actions .btn-premium-outline:hover {
+    .plan-card .plan-actions .btn-pro-outline:hover {
       border-color: var(--red);
       color: var(--red);
       background: rgba(239, 68, 68, 0.05);

@@ -373,7 +373,7 @@ describe('WwTrades defter bazlı kapsam (journals.trade_scope)', () => {
 
   it('kapsamlı önbellek anahtarı: live = eski anahtar, diğerleri @kapsam', () => {
     const { T } = withStorage();
-    for (const base of ['trades_dashboard', 'trades_premium', 'trades_calendar', 'trades_strategies']) {
+    for (const base of ['trades_dashboard', 'trades_pro', 'trades_calendar', 'trades_strategies']) {
       assert.equal(T.cacheKey(base, T.journalScope('x')), base);
     }
     T.setJournalScope('x', 'all');

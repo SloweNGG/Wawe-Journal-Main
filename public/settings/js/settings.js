@@ -3,10 +3,10 @@
 // ⭐ Avatar cache - sadece değiştiğinde render
 // ⭐ TEHLİKELİ BÖLGE AKTİF: deleteAllUserData + deactivateAccount
 // ⭐ ÇAKIŞMA ÇÖZÜLDÜ: Ödeme fonksiyonları payment.js'te
-// ⭐ FOWL FIX: SETTINGS_STATE.isPremium null başlıyor
+// ⭐ FOWL FIX: SETTINGS_STATE.isPro null başlıyor
 // ⭐ i18n: Hardcoded metinler i18n.t() çağrılarına dönüştürüldü
 // ⭐ i18n FIX v5 (ASTRO SPA + TÜM init'lerde element-level guard)
-// ⭐ FIX v6: checkAndActivatePremium() sessionStorage kullanıyor
+// ⭐ FIX v6: checkAndActivatePro() sessionStorage kullanıyor
 //           (navbar sessionStorage okuyordu, localStorage değil)
 // ⭐ FIX v6: renderPlan() cancel callback'i window.updateNavbarBadge()
 //           çağırıyor (badge anında güncellensin)
@@ -57,9 +57,9 @@ var SETTINGS_PAGE = window.wwPage.current();
   wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
 })();
 
-// Aktif premium: plan 'premium' VE süresi dolmamış (bitiş tarihi boş = süresiz/manuel). DB'de süresi dolan
-// kullanıcının plan sütunu 'free'ye çekilmediği için yalnızca plan'a bakmak süresi dolanı premium gösteriyordu.
-function isActivePremium(profile) {
+// Aktif pro: plan 'premium' VE süresi dolmamış (bitiş tarihi boş = süresiz/manuel). DB'de süresi dolan
+// kullanıcının plan sütunu 'free'ye çekilmediği için yalnızca plan'a bakmak süresi dolanı pro gösteriyordu.
+function isActivePro(profile) {
   if (!profile || profile.plan !== 'premium') return false;
   if (!profile.plan_expires_at) return true;
   var ms = Date.parse(profile.plan_expires_at);
@@ -335,25 +335,25 @@ if (!window.SETTINGS_STATE) {
     currentAvatarUrl: null,
     timerInterval: null,
     payMethod: 'BTC',
-    isPremium: null
+    isPro: null
   };
 }
 
 // (_langOnChangeBound artık SETTINGS_PAGE üzerinde tutuluyor)
 
 // ============================================================
-// PREMIUM FEATURES
+// PRO FEATURES
 // ============================================================
-var PREMIUM_FEATURES = [
-  { iconName: 'bar-chart-3', key: 'premium_features.dashboard' },
-  { iconName: 'refresh-cw', key: 'premium_features.drag_drop' },
-  { iconName: 'trending-up', key: 'premium_features.advanced_charts' },
-  { iconName: 'palette', key: 'premium_features.theme_customization' },
-  { iconName: 'file-text', key: 'premium_features.detailed_pdf' },
-  { iconName: 'newspaper', key: 'premium_features.news' },
-  { iconName: 'bell', key: 'premium_features.overtrade' },
-  { iconName: 'gem', key: 'premium_features.priority_support' },
-  { iconName: 'rocket', key: 'premium_features.no_ads' }
+var PRO_FEATURES = [
+  { iconName: 'bar-chart-3', key: 'pro_features.dashboard' },
+  { iconName: 'refresh-cw', key: 'pro_features.drag_drop' },
+  { iconName: 'trending-up', key: 'pro_features.advanced_charts' },
+  { iconName: 'palette', key: 'pro_features.theme_customization' },
+  { iconName: 'file-text', key: 'pro_features.detailed_pdf' },
+  { iconName: 'newspaper', key: 'pro_features.news' },
+  { iconName: 'bell', key: 'pro_features.overtrade' },
+  { iconName: 'gem', key: 'pro_features.priority_support' },
+  { iconName: 'rocket', key: 'pro_features.no_ads' }
 ];
 
 // ============================================================
@@ -1034,7 +1034,7 @@ async function renderPlan() {
     var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
     var data = result.data;
 
-    var isPremium = isActivePremium(data);
+    var isPro = isActivePro(data);
 
     // Fiyatlari DB'den canli cek
     try {
@@ -1074,7 +1074,7 @@ async function renderPlan() {
     var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
     var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
 
-    var tplId = isPremium ? 'tpl-plan-premium' : 'tpl-plan-free';
+    var tplId = isPro ? 'tpl-plan-pro' : 'tpl-plan-free';
     var tpl = document.getElementById(tplId);
     if (!tpl) {
       container.innerHTML = '<div style="padding:1rem;color:var(--red);">Template not found: ' + tplId + '</div>';
@@ -1083,8 +1083,8 @@ async function renderPlan() {
 
     var clone = tpl.content.cloneNode(true);
 
-    if (isPremium) {
-      // ⭐ PREMİUM AKTİF GÖRÜNÜMÜ
+    if (isPro) {
+      // ⭐ PRO AKTİF GÖRÜNÜMÜ
       var daysLeft = expiresAt ? Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)) : 0;
       var daysEl = clone.querySelector('[data-bind="days-left"]');
       if (daysEl) daysEl.textContent = Math.max(0, daysLeft) + ' ' + t('settings.plan_days', {}, 'gün');
@@ -1102,7 +1102,7 @@ async function renderPlan() {
 
       var perksGrid = clone.querySelector('#plan-perks-grid');
       if (perksGrid) {
-        PREMIUM_FEATURES.forEach(function(f) {
+        PRO_FEATURES.forEach(function(f) {
           var item = document.createElement('div');
           item.className = 'perk-item';
           var iconSpan = document.createElement('span');
@@ -1121,13 +1121,13 @@ async function renderPlan() {
       container.appendChild(clone);
 
       // İptal Butonu
-      var cancelBtn = container.querySelector('#cancel-premium-btn');
+      var cancelBtn = container.querySelector('#cancel-pro-btn');
       if (cancelBtn) {
         cancelBtn.addEventListener('click', async function(e) {
           e.preventDefault();
           e.stopPropagation();
-          if (window.cancelPremium) {
-            var success = await window.cancelPremium();
+          if (window.cancelPro) {
+            var success = await window.cancelPro();
             if (success) {
               showMsg(t('settings.cancel_subscription_success', {}, 'Abonelik iptal edildi.'), 'success');
               await renderPlan();
@@ -1139,7 +1139,7 @@ async function renderPlan() {
       }
 
       // Uzat / Yenile Butonu & Açılır Sihirbaz
-      var extendBtn = container.querySelector('#extend-premium-btn');
+      var extendBtn = container.querySelector('#extend-pro-btn');
       var extendWrapper = container.querySelector('#extend-wizard-wrapper');
       var closeExtendBtn = container.querySelector('#btn-close-extend-wizard');
       var extendContainer = container.querySelector('#extend-wizard-container');
@@ -1260,9 +1260,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
     } catch(e) {}
   }
 
-  // --- Ödeme onayı: "plan === premium" TEK BAŞINA yeterli değildir ---
-  // Süre uzatan (zaten premium) kullanıcıda ilk yoklamada "ödeme onaylandı" çıkıyor, QR/adres siliniyor ve
-  // kullanıcı ödeme yapmadan panele yönlendiriliyordu. Ödeme başlatılırken premium bitiş tarihi
+  // --- Ödeme onayı: "plan === pro" TEK BAŞINA yeterli değildir ---
+  // Süre uzatan (zaten pro) kullanıcıda ilk yoklamada "ödeme onaylandı" çıkıyor, QR/adres siliniyor ve
+  // kullanıcı ödeme yapmadan panele yönlendiriliyordu. Ödeme başlatılırken pro bitiş tarihi
   // (baselineExpiryMs) kaydedilir; onay ancak bitiş tarihi bunun ÜSTÜNE çıkınca verilir.
   function planActiveExpiryMs(prof) {
     if (!prof || prof.plan !== 'premium' || !prof.plan_expires_at) return 0;
@@ -1473,18 +1473,18 @@ function setupPlanWizard(wizardRoot, isExtending) {
   });
 
   // --- ADIM 1 ETKİNLİKLERİ ---
-  var btnSelectPremium1 = wizardRoot.querySelector('#btn-select-premium-step1');
-  if (btnSelectPremium1) {
-    btnSelectPremium1.addEventListener('click', function(e) {
+  var btnSelectPro1 = wizardRoot.querySelector('#btn-select-pro-step1');
+  if (btnSelectPro1) {
+    btnSelectPro1.addEventListener('click', function(e) {
       e.preventDefault();
       goToStep(2);
     });
   }
 
-  var premiumTierCard1 = wizardRoot.querySelector('.plan-tier-card.premium-tier');
-  if (premiumTierCard1) {
-    premiumTierCard1.addEventListener('click', function(e) {
-      if (e.target.closest('#btn-select-premium-step1')) return;
+  var proTierCard1 = wizardRoot.querySelector('.plan-tier-card.pro-tier');
+  if (proTierCard1) {
+    proTierCard1.addEventListener('click', function(e) {
+      if (e.target.closest('#btn-select-pro-step1')) return;
       goToStep(2);
     });
   }
@@ -1802,8 +1802,8 @@ function setupPlanWizard(wizardRoot, isExtending) {
       btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_preparing_payment', {}, 'Ödeme Sayfası Hazırlanıyor...') + '</span>';
 
       try {
-        if (window.upgradeToPremium) {
-          // Ödeme onayı için referans: ödeme başlamadan önceki premium bitiş zamanı (aktif premium yoksa 0)
+        if (window.upgradeToPro) {
+          // Ödeme onayı için referans: ödeme başlamadan önceki pro bitiş zamanı (aktif pro yoksa 0)
           var baselineExpiryMs = 0;
           try {
             var sbBase = window.sb || window.supabase;
@@ -1815,7 +1815,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
             }
           } catch (baseErr) {}
 
-          var result = await window.upgradeToPremium(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
+          var result = await window.upgradeToPro(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
           if (result && result.payAddress) {
             // ⭐ DOĞRUDAN ÖDEME (Direct Payment): Site içi ekrana geç!
             result.baselineExpiryMs = baselineExpiryMs;
@@ -1983,16 +1983,16 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var directCard = wizardRoot.querySelector('.direct-pay-card');
     var statusText = wizardRoot.querySelector('#direct-pay-status-text');
 
-    if (statusText) statusText.textContent = t('settings.plan_status_confirmed', {}, 'Ödeme onaylandı! Premium aktif.');
+    if (statusText) statusText.textContent = t('settings.plan_status_confirmed', {}, 'Ödeme onaylandı! Pro aktif.');
     if (directCard) directCard.style.display = 'none';
     if (successBox) successBox.style.display = 'block';
 
-    showMsg(t('settings.plan_upgraded_success', {}, '💎 Tebrikler! Premium üyeliğiniz başarıyla aktif edildi.'), 'success');
+    showMsg(t('settings.plan_upgraded_success', {}, '💎 Tebrikler! Pro üyeliğiniz başarıyla aktif edildi.'), 'success');
 
     try {
       sessionStorage.setItem('ww_user_plan', 'premium');
       localStorage.setItem('ww_user_plan', 'premium');
-      sessionStorage.setItem('ww_premium_welcomed', 'true');
+      sessionStorage.setItem('ww_pro_welcomed', 'true');
       sessionStorage.removeItem('ww_pending_payment');
       sessionStorage.removeItem('ww_pending_payment_time');
       localStorage.removeItem('ww_pending_payment');
@@ -2530,9 +2530,9 @@ function loadThemeCustomizationFallback() {
   }
 
   getUserPlanSilent().then(function(result) {
-    var isPremium = result.plan === 'premium';
+    var isPro = result.plan === 'premium';
 
-    if (!isPremium) {
+    if (!isPro) {
       var tplLocked = document.getElementById('tpl-theme-locked');
       if (!tplLocked) return;
       container.innerHTML = '';
@@ -2583,7 +2583,7 @@ function loadThemeCustomizationFallback() {
     setupThemeEventsFallback();
 
   }).catch(function(err) {
-    console.error('❌ Premium kontrol hatası:', err);
+    console.error('❌ Pro kontrol hatası:', err);
     container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ ' + t('settings.theme_load_error') + '</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 ' + t('overtrade.retry') + '</button></div>';
   });
 }
@@ -3444,14 +3444,14 @@ async function updateBadge() {
     var sb = getSb();
     if (!sb) return;
     var result = await sb.from('user_profiles').select('plan, plan_expires_at').eq('id', user.id).single();
-    var isPremium = isActivePremium(result.data);
-    window.SETTINGS_STATE.isPremium = isPremium;
+    var isPro = isActivePro(result.data);
+    window.SETTINGS_STATE.isPro = isPro;
 
-    if (isPremium) {
-      badge.classList.add('premium');
-      text.textContent = t('nav.premium_badge');
+    if (isPro) {
+      badge.classList.add('pro');
+      text.textContent = t('nav.pro_badge');
     } else {
-      badge.classList.remove('premium');
+      badge.classList.remove('pro');
       text.textContent = t('nav.free_badge');
     }
   } catch (e) {}
@@ -3556,10 +3556,10 @@ function initConfirmModal() {
 }
 
 // ============================================================
-// PREMIUM KONTROL
+// PRO KONTROL
 // ============================================================
-async function checkAndActivatePremium() {
-  wwLog.log('🔍 Premium kontrol ediliyor...');
+async function checkAndActivatePro() {
+  wwLog.log('🔍 Pro kontrol ediliyor...');
 
   var user = window.SETTINGS_STATE.currentUser;
   if (!user) {
@@ -3567,7 +3567,7 @@ async function checkAndActivatePremium() {
     return;
   }
   if (user.id === 'test-user-id') {
-    window.SETTINGS_STATE.isPremium = true;
+    window.SETTINGS_STATE.isPro = true;
     return;
   }
 
@@ -3583,7 +3583,7 @@ async function checkAndActivatePremium() {
     if (result.error) throw result.error;
 
     var data = result.data;
-    var isPremium = isActivePremium(data);
+    var isPro = isActivePro(data);
 
     // Fiyatlari DB'den canli cek
     try {
@@ -3605,9 +3605,9 @@ async function checkAndActivatePremium() {
 
     var expiresAt = data && data.plan_expires_at ? new Date(data.plan_expires_at) : null;
 
-    if (isPremium && expiresAt && new Date() > expiresAt) {
-      wwLog.log('⏰ Premium süresi dolmuş.');
-      window.SETTINGS_STATE.isPremium = false;
+    if (isPro && expiresAt && new Date() > expiresAt) {
+      wwLog.log('⏰ Pro süresi dolmuş.');
+      window.SETTINGS_STATE.isPro = false;
       // ⭐ FIX v6: sessionStorage'a yaz (navbar ile aynı storage)
       try {
         sessionStorage.setItem('ww_user_plan', 'free');
@@ -3616,22 +3616,22 @@ async function checkAndActivatePremium() {
       return;
     }
 
-    window.SETTINGS_STATE.isPremium = isPremium;
+    window.SETTINGS_STATE.isPro = isPro;
 
     // ⭐ FIX v6: localStorage yerine sessionStorage kullan (navbar.js ile senkron)
     try {
-      sessionStorage.setItem('ww_user_plan', isPremium ? 'premium' : 'free');
+      sessionStorage.setItem('ww_user_plan', isPro ? 'premium' : 'free');
       sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
     } catch(e) {}
 
-    if (isPremium) {
-      wwLog.log('✅ Premium aktif! Bitiş:', expiresAt);
+    if (isPro) {
+      wwLog.log('✅ Pro aktif! Bitiş:', expiresAt);
     } else {
       wwLog.log('📌 Ücretsiz plan');
     }
 
   } catch (e) {
-    console.error('Premium kontrol hatası:', e);
+    console.error('Pro kontrol hatası:', e);
   }
 }
 
@@ -3670,7 +3670,7 @@ async function bootSettings() {
     if (!user) {
       if (window.location.search.indexOf('test=1') !== -1) {
         user = { email: 'demo@wawejournal.com', id: 'demo-user-id' };
-        window.SETTINGS_STATE.isPremium = true;
+        window.SETTINGS_STATE.isPro = true;
       } else {
         wwLog.warn('⚠️ Giriş yapılmamış, ana sayfaya yönlendiriliyor...');
         window.location.href = '/index.html';
@@ -3681,7 +3681,7 @@ async function bootSettings() {
     wwLog.log('👤 Kullanıcı:', user.email);
     window.SETTINGS_STATE.currentUser = user;
 
-    await checkAndActivatePremium();
+    await checkAndActivatePro();
 
     var cb = document.getElementById('theme-toggle');
     if (cb) {

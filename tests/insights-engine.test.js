@@ -2,7 +2,7 @@
 // WAWE JOURNAL - İÇGÖRÜ MOTORU TEST SUITE
 // File: tests/insights-engine.test.js
 // Runner: node --test tests/*.test.js
-// Kapsam: public/interface/premium-dashboard/js/insights-engine.js
+// Kapsam: public/interface/analytics/js/insights-engine.js
 // ============================================================
 
 import { describe, it, before } from 'node:test';
@@ -30,7 +30,7 @@ function makeWindow() {
 let E;
 before(async () => {
   globalThis.window = makeWindow();
-  E = await import(pathToFileURL(path.resolve('public/interface/premium-dashboard/js/insights-engine.js')).href);
+  E = await import(pathToFileURL(path.resolve('public/interface/analytics/js/insights-engine.js')).href);
 });
 
 // İşlem üretici: gün (Ocak 2026), saat, pnl ve ek alanlar

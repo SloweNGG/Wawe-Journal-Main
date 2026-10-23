@@ -7,11 +7,11 @@ The UI is available in Turkish, English and German.
 ## Features
 
 - **Journal** – multiple journals per user, manual and quick-add trade entry, CSV/XLSX import, strategies, tags and notes, CSV/PDF export. Each journal can choose which trades it shows (live, backtest or all).
-- **Analytics** – dashboard and premium dashboard with equity curve, win rate, profit factor, drawdown, calendar view, per-strategy performance, and overtrading warnings. Statistics are computed from closed trades only.
+- **Analytics** – dashboard and the Pro analytics page with equity curve, win rate, profit factor, drawdown, calendar view, per-strategy performance, and overtrading warnings. Statistics are computed from closed trades only.
 - **Prop firm tracking** – prop account rules (profit target, daily and max drawdown, consistency), progress cards and notifications.
 - **cTrader sync** – connect a cTrader account through OAuth; a Supabase Edge Function imports deals as trades and keeps the balance up to date.
 - **Backtest** – replay candles one bar at a time on virtual accounts, place and manage orders, and have closed backtest trades mirrored into a journal. Candles are synthetic or come from cTrader. Backtest trades are kept separate from live statistics.
-- **Accounts and billing** – Supabase Auth with Cloudflare Turnstile on login/register, a referral and partner programme, and crypto payments for premium plans through NOWPayments.
+- **Accounts and billing** – Supabase Auth with Cloudflare Turnstile on login/register, a referral and partner programme, and crypto payments for Pro plans through NOWPayments.
 
 ## Tech stack
 

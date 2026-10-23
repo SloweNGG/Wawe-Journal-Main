@@ -146,7 +146,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   }
   window.calcTradePnL = calcTradePnL;
 
-  // ⭐ FIX (LOCALE): tr-TR yapıldı → premium-dashboard/helpers.js ile tutarlı
+  // ⭐ FIX (LOCALE): tr-TR yapıldı → analytics/helpers.js ile tutarlı
   function formatCurrency(value) {
     if (typeof window.formatCurrency === 'function') {
       return window.formatCurrency(value);

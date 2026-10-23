@@ -17,7 +17,7 @@
        buildWidgets() sırası optimize edilerek çözüldü.
    ============================================================ */
 
-.premium-main {
+.pro-main {
   padding: 0.9rem 2rem 5rem;
   max-width: 100%;
   margin: 0 auto;
@@ -276,7 +276,7 @@
   .grid-item.size-full {
     grid-column: span 1;
   }
-  .premium-main {
+  .pro-main {
     padding: 0.9rem 1rem 5rem;
   }
   .page-header {

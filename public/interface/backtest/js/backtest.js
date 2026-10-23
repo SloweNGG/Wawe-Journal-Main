@@ -13,7 +13,7 @@
   var MAX_BARS_PER_FRAME = 3000, SAVE_EVERY_MS = 5000, LIVE_UI_MS = 100, PREFETCH_AHEAD_SEC = 2 * 86400;
   var MAX_CHART_CANDLES = 25000, TRIM_TO = 20000, MAX_MARKER_TRADES = 300, MAX_HISTORY_ROWS = 200;
   var BOOT_POLL_MS = 50, BOOT_MAX_TRIES = 160;
-  var FREE_LIMIT = 1, PREMIUM_LIMIT = 10;
+  var FREE_LIMIT = 1, PRO_LIMIT = 10;
   var EXTRA_COLUMNS = true;
   var MONTHS = {
     tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
@@ -151,7 +151,7 @@
     L.ctCache.purgeOthers().catch(function () { /* best effort */ });
     L.store = BACKEND === 'supabase'
       ? window.WwBtStore.createSupabaseStore({ sb: window.sb, userId: user.id })
-      : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT; } });
+      : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; } });
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = await loadList();
@@ -246,14 +246,14 @@
     setPageState('list'); renderList();
     try { var u = new URL(location.href); u.searchParams.delete('account'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
   }
-  function quotaLimit() { return L.plan === 'premium' ? PREMIUM_LIMIT : FREE_LIMIT; }
+  function quotaLimit() { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; }
   function renderList() {
     var box = $('bt-accounts'); box.textContent = ''; box.setAttribute('aria-busy', 'false');
     var n = L.accounts.length;
     show($('bt-accounts-empty'), n === 0); show(box, n > 0);
     show($('bt-storage-warning'), !L.store.persistent);
     setText('bt-quota', _t('backtest.quota.label', 'Hesap {n}/{max}', { n: n, max: quotaLimit() }) + ' · ' +
-      (L.plan === 'premium' ? _t('backtest.quota.plan_premium', 'Premium') : _t('backtest.quota.plan_free', 'Ücretsiz')));
+      (L.plan === 'premium' ? _t('backtest.quota.plan_pro', 'Pro') : _t('backtest.quota.plan_free', 'Ücretsiz')));
     show($('bt-quota-note'), L.plan !== 'premium' && n > FREE_LIMIT);
     L.accounts.forEach(function (a) {
       var sym = S.get(a.symbol), sm = L.summaries[a.id] || { closed: 0, open: 0, realizedCents: 0 };
@@ -294,7 +294,7 @@
   }
   function newAccountClicked(opener) {
     if (L.accounts.length >= quotaLimit()) {
-      if (L.plan === 'premium') return toast(_t('backtest.quota.premium_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PREMIUM_LIMIT }), 'warning');
+      if (L.plan === 'premium') return toast(_t('backtest.quota.pro_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PRO_LIMIT }), 'warning');
       toast(_t('backtest.quota.free_reached', 'Ücretsiz planda 1 backtest hesabı açabilirsin.'), 'info');
       if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: 'backtest' });
       return;
@@ -576,7 +576,7 @@
   function mapStoreError(e) {
     var m = String((e && e.message) || '');
     if (m.indexOf('BACKTEST_LIMIT_EXCEEDED') >= 0) return L.plan === 'premium'
-      ? _t('backtest.quota.premium_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PREMIUM_LIMIT }) : _t('backtest.quota.free_reached', 'Ücretsiz planda 1 backtest hesabı açabilirsin.');
+      ? _t('backtest.quota.pro_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PRO_LIMIT }) : _t('backtest.quota.free_reached', 'Ücretsiz planda 1 backtest hesabı açabilirsin.');
     if (m.indexOf('CTRADER_ACCOUNT_NOT_LINKED') >= 0) return _t('backtest.err.ctrader_not_linked', 'Bu cTrader hesabı bağlı değil. Önce hesabını bağla.');
     if (m.indexOf('INVALID_JOURNAL') >= 0) return _t('backtest.err.invalid_journal', 'Seçilen hesap geçersiz.');
     if (m.indexOf('BACKTEST_OPEN_POSITIONS') >= 0) return _t('backtest.err.open_positions_settings', 'Açık pozisyon varken spread ve komisyon değiştirilemez.');

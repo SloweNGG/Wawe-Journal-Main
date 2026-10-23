@@ -540,7 +540,7 @@ function openDayModal(dateStr) {
         var rrDisplay = window.WwMetrics.formatProfitFactor(perf.payoff);
 
         var tLblPF = calT('strategies.detail.profit_factor', 'PROFIT FACTOR');
-        var tLblRR = calT('premium_dash.kpi.payoff', 'Kazanç/Kayıp Oranı');
+        var tLblRR = calT('analytics_dash.kpi.payoff', 'Kazanç/Kayıp Oranı');
         var tLblDD = calT('strategies.detail.max_drawdown', 'MAX DRAWDOWN');
         var tLblWR = calT('strategies.detail.win_rate', 'WIN RATE');
         var tLblMWS = calT('strategies.detail.max_win_streak', 'MAX WIN STREAK');

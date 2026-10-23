@@ -420,9 +420,9 @@ export async function loadOvertradeSettingsUI(containerId) {
     const applyI18n = () => { if (typeof i18n !== 'undefined' && i18n.apply) try { i18n.apply(); } catch(e) {} };
     
     const { plan } = await getUserPlanSilent();
-    const isPremiumUser = plan === 'premium';
+    const isProUser = plan === 'premium';
     
-    if (!isPremiumUser) {
+    if (!isProUser) {
       const tpl = document.getElementById('tpl-overtrade-locked');
       if (!tpl) return;
       container.innerHTML = '';
@@ -433,7 +433,7 @@ export async function loadOvertradeSettingsUI(containerId) {
     
     const settings = getOvertradeSettings();
     
-    const tpl = document.getElementById('tpl-overtrade-premium');
+    const tpl = document.getElementById('tpl-overtrade-pro');
     if (!tpl) return;
     const clone = tpl.content.cloneNode(true);
     

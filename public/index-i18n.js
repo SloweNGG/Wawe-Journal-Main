@@ -8,6 +8,154 @@
 
   const translations = {
     en: {
+      lp: {
+        "nav": {
+          "journal": "Journal",
+          "analytics": "Analytics",
+          "backtest": "Backtest",
+          "pricing": "Pricing",
+          "faq": "FAQ",
+          "signin": "Sign in",
+          "start": "Start for free"
+        },
+        "hero": {
+          "new": "NEW",
+          "new_text": "Backtest is live →",
+          "title_h": "The trading journal<br>with built-in <span class=\"shine\">backtest replay.</span>",
+          "sub": "Log every trade, find your mistakes and test your strategy.",
+          "start": "Start for free",
+          "signin": "Sign in"
+        },
+        "plat": {
+          "label": "IMPORT FROM YOUR BROKER OR PLATFORM"
+        },
+        "j": {
+          "title_h": "An easy way to journal your trades. <span class=\"dim\">Import a statement or connect cTrader and you're done.</span>",
+          "cta": "Try for free",
+          "dash_tag": "DASHBOARD",
+          "dash_t": "Your whole trading month on one screen.",
+          "dash_d": "Total P&L, win rate, cumulative curve, best and worst trades, and your monthly goal.",
+          "ct_tag": "CTRADER SYNC",
+          "ct_status": "Connected · read-only",
+          "ct_d": "Closed positions land in your journal automatically. We never place or close orders.",
+          "c1_t": "Tags & strategies",
+          "c1_d": "Label every trade with your setup, session and mistakes.",
+          "c2_t": "Screenshots & notes",
+          "c2_d": "Keep the chart and the reasoning next to the result.",
+          "c3_t": "Overtrade alerts",
+          "c3_d": "Daily trade and loss limits that warn you the moment you cross them.",
+          "c4_t": "Multiple journals",
+          "c4_d": "Separate live, prop and practice accounts cleanly."
+        },
+        "a": {
+          "title_h": "Analytics to understand what works. <span class=\"dim\">And to drop what only feels right.</span>",
+          "cta": "View all metrics",
+          "m1": "Win rate",
+          "m2": "Profit factor",
+          "m3": "Payoff ratio",
+          "m4": "Avg win",
+          "m5": "Max drawdown",
+          "m6": "Expectancy",
+          "c1_t": "Cumulative P&L",
+          "c1_d": "Your equity curve, filtered by any tag, symbol or period.",
+          "c2_t": "Strategy comparison",
+          "c2_d": "Win rate and P&L curves of each setup side by side.",
+          "c3_t": "Day & session breakdown",
+          "c3_d": "Find the hours and days that cost you money.",
+          "c4_t": "Best & worst trades",
+          "c4_d": "Learn from the outliers instead of forgetting them."
+        },
+        "b": {
+          "title_h": "Go back in time, candle by candle. <span class=\"dim\">Practice on synthetic data or replay your own cTrader charts.</span>",
+          "cta": "Try a backtest",
+          "s1_t": "Pick your data",
+          "s1_d": "Start instantly on Wawe’s synthetic data, or connect cTrader for real candles up to the previous day.",
+          "s2_t": "Replay and trade",
+          "s2_d": "Step candle by candle or play at up to 10×. Buy or sell with lot size, stop loss and take profit.",
+          "s3_t": "Review in your journal",
+          "s3_d": "Every trade is saved to the linked journal. See its stats separately or combined with live trading."
+        },
+        "p": {
+          "title_h": "Pass the challenge. <span class=\"dim\">Watch every prop firm rule in real time.</span>",
+          "d": "Daily loss, max drawdown and profit target, tracked against your firm's rule set. Overtrade alerts stop the spiral before it starts.",
+          "example": "example",
+          "r1": "Daily loss limit",
+          "r2": "Max drawdown",
+          "r3": "Profit target",
+          "warn": "Max drawdown at 76% of limit. 2.4% left."
+        },
+        "w": {
+          "title": "Why traders journal and backtest",
+          "c1_t": "Memory lies, data doesn’t",
+          "c1_d": "A journal shows which setups actually pay, not the ones that feel good.",
+          "c2_t": "Practice is cheaper than losses",
+          "c2_d": "Backtest replay lets you rehearse a setup a hundred times before risking money.",
+          "c3_t": "Rules protect funded accounts",
+          "c3_d": "Tracking drawdown and daily loss keeps a bad day from ending a challenge.",
+          "priv_tag": "YOUR DATA, YOUR RULES",
+          "priv_t": "Your trading data stays yours.",
+          "priv_d": "We never share your data with third parties. Wawe is not a broker and never trades on your accounts. Your trades are stored only on the secure infrastructure we run Wawe on.",
+          "priv_btn": "Privacy policy"
+        },
+        "pr": {
+          "title_h": "Fair pricing. <span class=\"dim\">Backtest, prop tracking and cTrader sync on every plan.</span>",
+          "monthly": "Monthly",
+          "yearly": "Yearly · save 31%",
+          "free_name": "STARTER",
+          "free_d": "Everything you need to start journaling.",
+          "f1": "Unlimited trade logging & calendar",
+          "f2": "CSV & broker import",
+          "f3": "Core analytics",
+          "f4": "1 backtest account",
+          "f5": "1 prop firm rule tracker",
+          "f6": "cTrader auto-sync",
+          "free_btn": "Start for free",
+          "pro_name": "PRO",
+          "badge": "Most popular",
+          "per_m": " / month",
+          "per_y": " / year",
+          "note_m": "For traders running several accounts and strategies.",
+          "note_y": "About $8.25 a month, 2 months free.",
+          "p1": "Everything in Starter",
+          "p2": "Up to 10 backtest accounts",
+          "p3": "Up to 10 prop firm rule trackers",
+          "p4": "Strategy comparison & advanced analytics",
+          "p5": "Overtrade & daily loss alerts",
+          "p6": "Customizable dashboard charts",
+          "pro_btn": "Go Pro"
+        },
+        "f": {
+          "title": "Frequently asked questions",
+          "q1": "Is Wawe Journal free?",
+          "a1": "Yes. The free Starter plan covers everything beginner and intermediate traders need to journal and review their trades. When you’re ready to go deeper, Pro adds more backtest and prop firm accounts plus advanced analytics.",
+          "q2": "Where does backtest data come from?",
+          "a2": "You have two options. Wawe’s own synthetic data set lets you start practicing instantly. If you want real market data, connect your cTrader broker and practice on real candles that are up to date to the previous day (1-day delay).",
+          "q3": "Do backtest trades affect my real stats?",
+          "a3": "Only if you want them to. Backtest trades are saved to the journal you link, and you decide how to view them: as a separate journal with its own stats, or combined with your live trading.",
+          "q4": "Can Wawe trade on my account?",
+          "a4": "No. Wawe is not a broker, so it never places trades on your real accounts. The only orders you place in Wawe are simulated ones in backtest practice accounts. Connect your real broker accounts to import your history, and use Sync to pull in your latest trades in seconds.",
+          "q5": "Which brokers and platforms are supported?",
+          "a5": "Automatic sync is live for cTrader today.\nYou can also import statements from MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA or any CSV/Excel file.\nAuto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add each integration only once it is error-free, because in trading there is no room for wrong numbers.",
+          "q6": "Is my data private?",
+          "a6": "Yes. We never share your data with third parties. Your trades, broker connections and account data are stored only with the secure infrastructure providers we run Wawe on.",
+          "a6_link": "Read our privacy policy →"
+        },
+        "cta": {
+          "title_h": "You deserve the best.<br><span class=\"soft\">Create your journal now.</span>",
+          "btn": "Start for free →"
+        },
+        "ft": {
+          "desc_h": "Trading journal, analytics and backtest replay. Part of the <a href=\"https://wawedev.com\" target=\"_blank\" rel=\"noopener\">wawedev</a> brand.",
+          "product": "PRODUCT",
+          "company": "COMPANY",
+          "social": "SOCIAL",
+          "about": "About",
+          "privacy": "Privacy",
+          "terms": "Terms",
+          "contact": "Contact",
+          "risk_h": "<strong>Risk disclosure:</strong> Trading forex, futures, stocks and crypto involves substantial risk and is not suitable for everyone. You can lose some or all of your capital. Past and backtested performance does not guarantee future results. Wawe Journal does not provide investment advice."
+        }
+      },
       nav: { login: 'Login', register: 'Sign Up →', strategies: 'Strategies', pricing: 'Pricing', home: 'Home' },
       hero: {
         beta: 'BETA',
@@ -40,6 +188,10 @@
         win_rate: 'Win Rate',
         pnl: 'P&L',
         no_desc: 'No Description'
+      },
+      bt: {
+        title: 'Test your edge before you risk real money.',
+        desc: 'Replay your setups on historical data and see how a strategy would have performed, trade by trade.'
       },
       ot: {
         tag: '03 — Over-Trade & Risk Protection',
@@ -84,7 +236,7 @@
           unlimited: 'Unlimited', yes: 'Yes', no: 'No', coming: 'Yes (Coming soon)',
           partial: 'Partial', limited: 'Limited · 5 msgs/day', pro_only: 'Pro plan only'
         },
-        us: { name: 'Wawe Journal', sub: 'Premium' },
+        us: { name: 'Wawe Journal', sub: 'Pro' },
         tz: { name: 'TradeZella', sub: 'Essential' },
         ew: { name: 'Edgewonk', sub: 'Single plan' },
         ts: { name: 'TraderSync', sub: 'Pro' }
@@ -131,7 +283,7 @@
         free_btn: 'Start free',
 
         monthly_tag: 'most used',
-        monthly_name: 'Premium monthly',
+        monthly_name: 'Pro monthly',
         monthly_period: ' / mo',
         monthly_desc: 'Unlock everything.',
         monthly_f1: 'All features',
@@ -142,13 +294,13 @@
         monthly_f6: 'AI analysis / Wawe AI chat bot',
         monthly_f7: 'Customize Wawe journal',
         monthly_f8: 'Movable charts',
-        monthly_btn: 'Go premium',
+        monthly_btn: 'Go Pro',
 
         yearly_tag: 'best value',
-        yearly_name: 'Premium yearly',
+        yearly_name: 'Pro yearly',
         yearly_period: ' / yr',
         yearly_desc: 'Save 31% annually.',
-        yearly_f1: 'All premium features',
+        yearly_f1: 'All Pro features',
         yearly_f2: '2 months free',
         yearly_btn: 'Buy yearly'
       },
@@ -262,6 +414,154 @@
     },
 
     tr: {
+      lp: {
+        "nav": {
+          "journal": "Günlük",
+          "analytics": "Analiz",
+          "backtest": "Backtest",
+          "pricing": "Fiyatlandırma",
+          "faq": "SSS",
+          "signin": "Giriş yap",
+          "start": "Ücretsiz başla"
+        },
+        "hero": {
+          "new": "YENİ",
+          "new_text": "Backtest yayında →",
+          "title_h": "Dahili <span class=\"shine\">backtest replay</span><br>özellikli trading günlüğü.",
+          "sub": "Her işlemi kaydet, hatalarını bul ve stratejini test et.",
+          "start": "Ücretsiz başla",
+          "signin": "Giriş yap"
+        },
+        "plat": {
+          "label": "BROKER VEYA PLATFORMUNDAN İÇE AKTAR"
+        },
+        "j": {
+          "title_h": "İşlemlerini günlüğe almanın kolay yolu. <span class=\"dim\">Bir ekstre içe aktar ya da cTrader'ı bağla, gerisi tamam.</span>",
+          "cta": "Ücretsiz dene",
+          "dash_tag": "PANEL",
+          "dash_t": "Tüm trading ayın tek ekranda.",
+          "dash_d": "Toplam K/Z, kazanma oranı, kümülatif eğri, en iyi ve en kötü işlemler ve aylık hedefin.",
+          "ct_tag": "CTRADER SENKRONİZASYONU",
+          "ct_status": "Bağlı · salt okunur",
+          "ct_d": "Kapanan pozisyonlar günlüğüne otomatik düşer. Asla emir açmaz ya da kapatmaz.",
+          "c1_t": "Etiketler ve stratejiler",
+          "c1_d": "Her işleme kurulumunu, seansını ve hatalarını etiketle.",
+          "c2_t": "Ekran görüntüleri ve notlar",
+          "c2_d": "Grafiği ve gerekçeni sonucun yanında tut.",
+          "c3_t": "Aşırı işlem uyarıları",
+          "c3_d": "Günlük işlem ve zarar limitleri, aştığın anda seni uyarır.",
+          "c4_t": "Birden fazla günlük",
+          "c4_d": "Canlı, prop ve pratik hesaplarını net şekilde ayır."
+        },
+        "a": {
+          "title_h": "Neyin işe yaradığını anlamak için analiz. <span class=\"dim\">Ve sadece doğru hissettirenleri bırakmak için.</span>",
+          "cta": "Tüm metrikleri gör",
+          "m1": "Kazanma oranı",
+          "m2": "Kâr faktörü",
+          "m3": "Getiri oranı",
+          "m4": "Ort. kazanç",
+          "m5": "Maks. düşüş",
+          "m6": "Beklenti",
+          "c1_t": "Kümülatif K/Z",
+          "c1_d": "Sermaye eğrin; etikete, sembole veya döneme göre filtrelenebilir.",
+          "c2_t": "Strateji karşılaştırma",
+          "c2_d": "Her kurulumun kazanma oranı ve K/Z eğrileri yan yana.",
+          "c3_t": "Gün ve seans dökümü",
+          "c3_d": "Sana para kaybettiren saatleri ve günleri bul.",
+          "c4_t": "En iyi ve en kötü işlemler",
+          "c4_d": "Aykırı işlemleri unutma, onlardan öğren."
+        },
+        "b": {
+          "title_h": "Zamanda geri git, mum mum. <span class=\"dim\">Sentetik veride pratik yap ya da kendi cTrader grafiklerini tekrar oynat.</span>",
+          "cta": "Backtest dene",
+          "s1_t": "Verini seç",
+          "s1_d": "Wawe’nin sentetik verisiyle hemen başla ya da bir önceki güne kadar gerçek mumlar için cTrader’ı bağla.",
+          "s2_t": "Tekrar oynat ve işlem yap",
+          "s2_d": "Mum mum ilerle ya da 10 katına kadar hızda oynat. Lot, zarar durdur ve kâr al ile al veya sat.",
+          "s3_t": "Günlüğünde incele",
+          "s3_d": "Her işlem bağlı günlüğe kaydedilir. İstatistiklerini ayrı ya da canlı işlemlerle birleşik gör."
+        },
+        "p": {
+          "title_h": "Challenge’ı geç. <span class=\"dim\">Her prop firma kuralını gerçek zamanlı izle.</span>",
+          "d": "Günlük zarar, maksimum düşüş ve kâr hedefi, firmanın kural setine göre takip edilir. Aşırı işlem uyarıları kötü gidişi başlamadan durdurur.",
+          "example": "örnek",
+          "r1": "Günlük zarar limiti",
+          "r2": "Maksimum düşüş",
+          "r3": "Kâr hedefi",
+          "warn": "Maksimum düşüş limitin %76’sında. %2,4 kaldı."
+        },
+        "w": {
+          "title": "Trader’lar neden günlük tutar ve backtest yapar",
+          "c1_t": "Hafıza yalan söyler, veri söylemez",
+          "c1_d": "Günlük, iyi hissettirenleri değil, gerçekten kazandıran kurulumları gösterir.",
+          "c2_t": "Pratik, zarardan ucuzdur",
+          "c2_d": "Backtest replay, para riske etmeden önce bir kurulumu yüz kez prova etmeni sağlar.",
+          "c3_t": "Kurallar fonlu hesapları korur",
+          "c3_d": "Düşüşü ve günlük zararı takip etmek, kötü bir günün challenge’ı bitirmesini engeller.",
+          "priv_tag": "VERİN, KURALLARIN",
+          "priv_t": "Trading verin sana ait kalır.",
+          "priv_d": "Verilerini asla üçüncü taraflarla paylaşmayız. Wawe bir broker değildir ve hesaplarında asla işlem yapmaz. İşlemlerin yalnızca Wawe’yi çalıştırdığımız güvenli altyapıda saklanır.",
+          "priv_btn": "Gizlilik politikası"
+        },
+        "pr": {
+          "title_h": "Adil fiyatlandırma. <span class=\"dim\">Backtest, prop takibi ve cTrader senkronizasyonu her planda.</span>",
+          "monthly": "Aylık",
+          "yearly": "Yıllık · %31 tasarruf",
+          "free_name": "BAŞLANGIÇ",
+          "free_d": "Günlük tutmaya başlamak için gereken her şey.",
+          "f1": "Sınırsız işlem kaydı ve takvim",
+          "f2": "CSV ve broker içe aktarma",
+          "f3": "Temel analizler",
+          "f4": "1 backtest hesabı",
+          "f5": "1 prop firma kural takipçisi",
+          "f6": "cTrader otomatik senkronizasyon",
+          "free_btn": "Ücretsiz başla",
+          "pro_name": "PRO",
+          "badge": "En popüler",
+          "per_m": " / ay",
+          "per_y": " / yıl",
+          "note_m": "Birden fazla hesap ve strateji yöneten trader’lar için.",
+          "note_y": "Ayda yaklaşık $8,25, 2 ay ücretsiz.",
+          "p1": "Başlangıç’taki her şey",
+          "p2": "10’a kadar backtest hesabı",
+          "p3": "10’a kadar prop firma kural takipçisi",
+          "p4": "Strateji karşılaştırma ve gelişmiş analizler",
+          "p5": "Aşırı işlem ve günlük zarar uyarıları",
+          "p6": "Özelleştirilebilir panel grafikleri",
+          "pro_btn": "Pro’ya geç"
+        },
+        "f": {
+          "title": "Sıkça sorulan sorular",
+          "q1": "Wawe Journal ücretsiz mi?",
+          "a1": "Evet. Ücretsiz Başlangıç planı, yeni ve orta seviye trader’ların işlemlerini kaydetmesi ve incelemesi için gereken her şeyi kapsar. Daha derine inmeye hazır olduğunda Pro, daha fazla backtest ve prop firma hesabı ile gelişmiş analizler ekler.",
+          "q2": "Backtest verisi nereden geliyor?",
+          "a2": "İki seçeneğin var. Wawe’nin kendi sentetik veri seti hemen pratik yapmaya başlamanı sağlar. Gerçek piyasa verisi istersen cTrader brokerını bağla ve bir önceki güne kadar güncel gerçek mumlarla pratik yap (1 gün gecikmeli).",
+          "q3": "Backtest işlemleri gerçek istatistiklerimi etkiler mi?",
+          "a3": "Sadece sen istersen. Backtest işlemleri bağladığın günlüğe kaydedilir ve nasıl görüntüleyeceğine sen karar verirsin: kendi istatistikleri olan ayrı bir günlük olarak ya da canlı işlemlerinle birleşik.",
+          "q4": "Wawe hesabımda işlem yapabilir mi?",
+          "a4": "Hayır. Wawe bir broker değildir, bu yüzden gerçek hesaplarında asla işlem açmaz. Wawe’de verdiğin tek emirler backtest pratik hesaplarındaki simüle emirlerdir. Geçmişini içe aktarmak için gerçek broker hesaplarını bağla, en son işlemlerini saniyeler içinde çekmek için Senkronize et’i kullan.",
+          "q5": "Hangi broker ve platformlar destekleniyor?",
+          "a5": "Otomatik senkronizasyon bugün cTrader için aktif.\nAyrıca MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA veya herhangi bir CSV/Excel dosyasından ekstre içe aktarabilirsin.\nNinjaTrader, MetaTrader serisi ve daha fazlası için otomatik senkronizasyon yolda. Her entegrasyonu ancak hatasız olduğunda ekleriz, çünkü trading’de yanlış rakama yer yoktur.",
+          "q6": "Verilerim gizli mi?",
+          "a6": "Evet. Verilerini asla üçüncü taraflarla paylaşmayız. İşlemlerin, broker bağlantıların ve hesap verilerin yalnızca Wawe’yi çalıştırdığımız güvenli altyapı sağlayıcılarında saklanır.",
+          "a6_link": "Gizlilik politikamızı oku →"
+        },
+        "cta": {
+          "title_h": "En iyisini hak ediyorsun.<br><span class=\"soft\">Günlüğünü şimdi oluştur.</span>",
+          "btn": "Ücretsiz başla →"
+        },
+        "ft": {
+          "desc_h": "Trading günlüğü, analiz ve backtest replay. <a href=\"https://wawedev.com\" target=\"_blank\" rel=\"noopener\">wawedev</a> markasının bir parçası.",
+          "product": "ÜRÜN",
+          "company": "ŞİRKET",
+          "social": "SOSYAL",
+          "about": "Hakkımızda",
+          "privacy": "Gizlilik",
+          "terms": "Şartlar",
+          "contact": "İletişim",
+          "risk_h": "<strong>Risk bildirimi:</strong> Forex, vadeli işlem, hisse senedi ve kripto ticareti önemli risk içerir ve herkes için uygun değildir. Sermayenin bir kısmını veya tamamını kaybedebilirsin. Geçmiş ve backtest performansı gelecekteki sonuçları garanti etmez. Wawe Journal yatırım tavsiyesi vermez."
+        }
+      },
       nav: { login: 'Giriş', register: 'Kayıt Ol →', strategies: 'Stratejiler', pricing: 'Fiyatlandırma', home: 'Anasayfa' },
       hero: {
         beta: 'BETA',
@@ -294,6 +594,10 @@
         win_rate: 'Win Rate',
         pnl: 'K/Z',
         no_desc: 'Açıklama Yok'
+      },
+      bt: {
+        title: 'Gerçek paranı riske atmadan önce avantajını test et.',
+        desc: 'Kurulumlarını geçmiş veride tekrar oynat; bir stratejinin işlem işlem nasıl performans göstereceğini gör.'
       },
       ot: {
         tag: '03 — Over-Trade & Risk Koruması',
@@ -337,7 +641,7 @@
           unlimited: 'Sınırsız', yes: 'Var', no: 'Yok', coming: 'Var (Yakında)',
           partial: 'Kısmi', limited: 'Sınırlı · 5 mesaj/gün', pro_only: 'Sadece Pro planı'
         },
-        us: { name: 'Wawe Journal', sub: 'Premium' },
+        us: { name: 'Wawe Journal', sub: 'Pro' },
         tz: { name: 'TradeZella', sub: 'Essential' },
         ew: { name: 'Edgewonk', sub: 'Tek plan' },
         ts: { name: 'TraderSync', sub: 'Pro' }
@@ -382,7 +686,7 @@
         free_f5: 'Sınırlı AI analizi',
         free_btn: 'Ücretsiz Başla',
         monthly_tag: 'en çok tercih edilen',
-        monthly_name: 'Premium Aylık',
+        monthly_name: 'Pro Aylık',
         monthly_period: ' / ay',
         monthly_desc: 'Tüm özellikleri aç.',
         monthly_f1: 'Bütün özellikler',
@@ -393,12 +697,12 @@
         monthly_f6: 'AI ile analiz etme / Wawe AI chat bot',
         monthly_f7: 'Wawe journalı özelleştirme',
         monthly_f8: 'Yer değiştirebilir grafikler',
-        monthly_btn: 'Premium Ol',
+        monthly_btn: 'Pro Ol',
         yearly_tag: 'en avantajlı',
-        yearly_name: 'Premium Yıllık',
+        yearly_name: 'Pro Yıllık',
         yearly_period: ' / yıl',
         yearly_desc: 'Yıllık %31 tasarruf et.',
-        yearly_f1: 'Tüm premium özellikler',
+        yearly_f1: 'Tüm Pro özellikler',
         yearly_f2: '2 ay ücretsiz',
         yearly_btn: 'Yıllık Satın Al'
       },
@@ -510,6 +814,154 @@
     },
 
     de: {
+      lp: {
+        "nav": {
+          "journal": "Journal",
+          "analytics": "Analysen",
+          "backtest": "Backtest",
+          "pricing": "Preise",
+          "faq": "FAQ",
+          "signin": "Anmelden",
+          "start": "Kostenlos starten"
+        },
+        "hero": {
+          "new": "NEU",
+          "new_text": "Backtest ist live →",
+          "title_h": "Das Trading-Journal<br>mit integriertem <span class=\"shine\">Backtest-Replay.</span>",
+          "sub": "Erfasse jeden Trade, finde deine Fehler und teste deine Strategie.",
+          "start": "Kostenlos starten",
+          "signin": "Anmelden"
+        },
+        "plat": {
+          "label": "IMPORT VON DEINEM BROKER ODER DEINER PLATTFORM"
+        },
+        "j": {
+          "title_h": "Der einfache Weg, deine Trades zu journalen. <span class=\"dim\">Kontoauszug importieren oder cTrader verbinden, fertig.</span>",
+          "cta": "Kostenlos testen",
+          "dash_tag": "DASHBOARD",
+          "dash_t": "Dein ganzer Trading-Monat auf einem Bildschirm.",
+          "dash_d": "Gesamt-P&L, Gewinnquote, kumulative Kurve, beste und schlechteste Trades und dein Monatsziel.",
+          "ct_tag": "CTRADER-SYNC",
+          "ct_status": "Verbunden · nur Lesezugriff",
+          "ct_d": "Geschlossene Positionen landen automatisch in deinem Journal. Wir platzieren oder schließen niemals Orders.",
+          "c1_t": "Tags & Strategien",
+          "c1_d": "Versieh jeden Trade mit Setup, Session und Fehlern.",
+          "c2_t": "Screenshots & Notizen",
+          "c2_d": "Halte Chart und Begründung direkt neben dem Ergebnis fest.",
+          "c3_t": "Overtrade-Warnungen",
+          "c3_d": "Tägliche Trade- und Verlustlimits, die dich warnen, sobald du sie überschreitest.",
+          "c4_t": "Mehrere Journale",
+          "c4_d": "Trenne Live-, Prop- und Übungskonten sauber voneinander."
+        },
+        "a": {
+          "title_h": "Analysen, um zu verstehen, was funktioniert. <span class=\"dim\">Und um loszulassen, was sich nur richtig anfühlt.</span>",
+          "cta": "Alle Kennzahlen ansehen",
+          "m1": "Gewinnquote",
+          "m2": "Profitfaktor",
+          "m3": "Payoff-Ratio",
+          "m4": "Ø Gewinn",
+          "m5": "Max. Drawdown",
+          "m6": "Erwartungswert",
+          "c1_t": "Kumulatives P&L",
+          "c1_d": "Deine Equity-Kurve, filterbar nach Tag, Symbol oder Zeitraum.",
+          "c2_t": "Strategievergleich",
+          "c2_d": "Gewinnquote und P&L-Kurven jedes Setups nebeneinander.",
+          "c3_t": "Tages- & Session-Auswertung",
+          "c3_d": "Finde die Stunden und Tage, die dich Geld kosten.",
+          "c4_t": "Beste & schlechteste Trades",
+          "c4_d": "Lerne aus den Ausreißern, statt sie zu vergessen."
+        },
+        "b": {
+          "title_h": "Reise zurück in der Zeit, Kerze für Kerze. <span class=\"dim\">Übe mit synthetischen Daten oder spiele deine eigenen cTrader-Charts ab.</span>",
+          "cta": "Backtest ausprobieren",
+          "s1_t": "Wähle deine Daten",
+          "s1_d": "Starte sofort mit den synthetischen Daten von Wawe oder verbinde cTrader für echte Kerzen bis zum Vortag.",
+          "s2_t": "Abspielen und handeln",
+          "s2_d": "Gehe Kerze für Kerze vor oder spiele bis zu 10× schneller ab. Kaufe oder verkaufe mit Lotgröße, Stop-Loss und Take-Profit.",
+          "s3_t": "Im Journal auswerten",
+          "s3_d": "Jeder Trade wird im verknüpften Journal gespeichert. Sieh die Statistiken getrennt oder zusammen mit dem Live-Trading."
+        },
+        "p": {
+          "title_h": "Bestehe die Challenge. <span class=\"dim\">Behalte jede Prop-Firm-Regel in Echtzeit im Blick.</span>",
+          "d": "Tagesverlust, maximaler Drawdown und Gewinnziel, verfolgt gegen das Regelwerk deiner Firma. Overtrade-Warnungen stoppen die Abwärtsspirale, bevor sie beginnt.",
+          "example": "Beispiel",
+          "r1": "Tagesverlustlimit",
+          "r2": "Max. Drawdown",
+          "r3": "Gewinnziel",
+          "warn": "Max. Drawdown bei 76 % des Limits. 2,4 % übrig."
+        },
+        "w": {
+          "title": "Warum Trader journalen und backtesten",
+          "c1_t": "Das Gedächtnis lügt, Daten nicht",
+          "c1_d": "Ein Journal zeigt, welche Setups wirklich Geld bringen, nicht die, die sich gut anfühlen.",
+          "c2_t": "Übung ist günstiger als Verluste",
+          "c2_d": "Mit dem Backtest-Replay kannst du ein Setup hundertmal proben, bevor du Geld riskierst.",
+          "c3_t": "Regeln schützen Funded-Konten",
+          "c3_d": "Das Tracking von Drawdown und Tagesverlust verhindert, dass ein schlechter Tag eine Challenge beendet.",
+          "priv_tag": "DEINE DATEN, DEINE REGELN",
+          "priv_t": "Deine Trading-Daten bleiben deine.",
+          "priv_d": "Wir geben deine Daten niemals an Dritte weiter. Wawe ist kein Broker und handelt niemals auf deinen Konten. Deine Trades werden nur auf der sicheren Infrastruktur gespeichert, auf der Wawe läuft.",
+          "priv_btn": "Datenschutzerklärung"
+        },
+        "pr": {
+          "title_h": "Faire Preise. <span class=\"dim\">Backtest, Prop-Tracking und cTrader-Sync in jedem Plan.</span>",
+          "monthly": "Monatlich",
+          "yearly": "Jährlich · 31 % sparen",
+          "free_name": "STARTER",
+          "free_d": "Alles, was du für den Start ins Journaling brauchst.",
+          "f1": "Unbegrenzte Trade-Erfassung & Kalender",
+          "f2": "CSV- & Broker-Import",
+          "f3": "Kernanalysen",
+          "f4": "1 Backtest-Konto",
+          "f5": "1 Prop-Firm-Regel-Tracker",
+          "f6": "cTrader-Auto-Sync",
+          "free_btn": "Kostenlos starten",
+          "pro_name": "PRO",
+          "badge": "Am beliebtesten",
+          "per_m": " / Monat",
+          "per_y": " / Jahr",
+          "note_m": "Für Trader mit mehreren Konten und Strategien.",
+          "note_y": "Etwa 8,25 $ pro Monat, 2 Monate gratis.",
+          "p1": "Alles aus Starter",
+          "p2": "Bis zu 10 Backtest-Konten",
+          "p3": "Bis zu 10 Prop-Firm-Regel-Tracker",
+          "p4": "Strategievergleich & erweiterte Analysen",
+          "p5": "Overtrade- & Tagesverlust-Warnungen",
+          "p6": "Anpassbare Dashboard-Charts",
+          "pro_btn": "Pro werden"
+        },
+        "f": {
+          "title": "Häufig gestellte Fragen",
+          "q1": "Ist Wawe Journal kostenlos?",
+          "a1": "Ja. Der kostenlose Starter-Plan deckt alles ab, was Einsteiger und fortgeschrittene Trader zum Journalen und Auswerten ihrer Trades brauchen. Wenn du tiefer einsteigen willst, bietet Pro mehr Backtest- und Prop-Firm-Konten sowie erweiterte Analysen.",
+          "q2": "Woher stammen die Backtest-Daten?",
+          "a2": "Du hast zwei Möglichkeiten. Mit dem eigenen synthetischen Datensatz von Wawe kannst du sofort üben. Für echte Marktdaten verbindest du deinen cTrader-Broker und übst mit echten Kerzen, die bis zum Vortag aktuell sind (1 Tag Verzögerung).",
+          "q3": "Beeinflussen Backtest-Trades meine echten Statistiken?",
+          "a3": "Nur, wenn du es willst. Backtest-Trades werden im verknüpften Journal gespeichert, und du entscheidest, wie du sie ansiehst: als separates Journal mit eigenen Statistiken oder zusammen mit deinem Live-Trading.",
+          "q4": "Kann Wawe auf meinem Konto handeln?",
+          "a4": "Nein. Wawe ist kein Broker und platziert daher niemals Trades auf deinen echten Konten. Die einzigen Orders in Wawe sind simulierte Orders in Backtest-Übungskonten. Verbinde deine echten Broker-Konten, um deine Historie zu importieren, und nutze Sync, um deine neuesten Trades in Sekunden zu laden.",
+          "q5": "Welche Broker und Plattformen werden unterstützt?",
+          "a5": "Die automatische Synchronisierung ist heute für cTrader live.\nDu kannst außerdem Kontoauszüge von MetaTrader 4/5, TradingView, Binance, Bybit, Interactive Brokers, XTB, OANDA oder jede CSV-/Excel-Datei importieren.\nAuto-Sync für NinjaTrader, die MetaTrader-Reihe und mehr ist in Arbeit. Wir fügen jede Integration erst hinzu, wenn sie fehlerfrei ist, denn im Trading ist kein Platz für falsche Zahlen.",
+          "q6": "Sind meine Daten privat?",
+          "a6": "Ja. Wir geben deine Daten niemals an Dritte weiter. Deine Trades, Broker-Verbindungen und Kontodaten werden nur bei den sicheren Infrastrukturanbietern gespeichert, auf denen Wawe läuft.",
+          "a6_link": "Lies unsere Datenschutzerklärung →"
+        },
+        "cta": {
+          "title_h": "Du verdienst das Beste.<br><span class=\"soft\">Erstelle jetzt dein Journal.</span>",
+          "btn": "Kostenlos starten →"
+        },
+        "ft": {
+          "desc_h": "Trading-Journal, Analysen und Backtest-Replay. Teil der Marke <a href=\"https://wawedev.com\" target=\"_blank\" rel=\"noopener\">wawedev</a>.",
+          "product": "PRODUKT",
+          "company": "UNTERNEHMEN",
+          "social": "SOCIAL",
+          "about": "Über uns",
+          "privacy": "Datenschutz",
+          "terms": "AGB",
+          "contact": "Kontakt",
+          "risk_h": "<strong>Risikohinweis:</strong> Der Handel mit Forex, Futures, Aktien und Krypto ist mit erheblichem Risiko verbunden und nicht für jeden geeignet. Du kannst einen Teil oder dein gesamtes Kapital verlieren. Vergangene und gebacktestete Ergebnisse garantieren keine zukünftigen Ergebnisse. Wawe Journal bietet keine Anlageberatung."
+        }
+      },
       nav: { login: 'Anmelden', register: 'Registrieren →', strategies: 'Strategien', pricing: 'Preise', home: 'Startseite' },
       hero: {
         beta: 'BETA',
@@ -542,6 +994,10 @@
         win_rate: 'Win-Rate',
         pnl: 'G&V',
         no_desc: 'Keine Beschreibung'
+      },
+      bt: {
+        title: 'Teste deinen Vorteil, bevor du echtes Geld riskierst.',
+        desc: 'Spiele deine Setups mit historischen Daten nach und sieh Trade für Trade, wie eine Strategie abgeschnitten hätte.'
       },
       ot: {
         tag: '03 — Over-Trade & Risikoschutz',
@@ -585,7 +1041,7 @@
           unlimited: 'Unbegrenzt', yes: 'Ja', no: 'Nein', coming: 'Ja (Demnächst)',
           partial: 'Teilweise', limited: 'Begrenzt · 5 Nachr./Tag', pro_only: 'Nur Pro-Plan'
         },
-        us: { name: 'Wawe Journal', sub: 'Premium' },
+        us: { name: 'Wawe Journal', sub: 'Pro' },
         tz: { name: 'TradeZella', sub: 'Essential' },
         ew: { name: 'Edgewonk', sub: 'Einzeltarif' },
         ts: { name: 'TraderSync', sub: 'Pro' }
@@ -630,7 +1086,7 @@
         free_f5: 'Begrenzte KI-Analyse',
         free_btn: 'Kostenlos starten',
         monthly_tag: 'beliebteste Wahl',
-        monthly_name: 'Premium Monatlich',
+        monthly_name: 'Pro Monatlich',
         monthly_period: ' / Monat',
         monthly_desc: 'Alle Funktionen freischalten.',
         monthly_f1: 'Alle Funktionen',
@@ -641,12 +1097,12 @@
         monthly_f6: 'KI-Analyse / Wawe AI Chatbot',
         monthly_f7: 'Wawe Journal anpassen',
         monthly_f8: 'Frei verschiebbare Charts',
-        monthly_btn: 'Premium wählen',
+        monthly_btn: 'Pro wählen',
         yearly_tag: 'bester Wert',
-        yearly_name: 'Premium Jährlich',
+        yearly_name: 'Pro Jährlich',
         yearly_period: ' / Jahr',
         yearly_desc: 'Spare 31 % bei jährlicher Zahlung.',
-        yearly_f1: 'Alle Premium-Funktionen',
+        yearly_f1: 'Alle Pro-Funktionen',
         yearly_f2: '2 Monate geschenkt',
         yearly_btn: 'Jährlich kaufen'
       },

@@ -131,32 +131,32 @@ export class NotificationManager {
     });
   }
 
-  addPremiumExpiring(daysLeft) {
+  addProExpiring(daysLeft) {
     if (daysLeft <= 0) {
       this.add({
-        type: NOTIFICATION_TYPES.PREMIUM_EXPIRED,
+        type: NOTIFICATION_TYPES.PRO_EXPIRED,
         icon: '⏳',
-        title: 'Premium Aboneliğin Sona Erdi!',
-        description: 'Premium aboneliğinin süresi doldu. Tekrar premium\'a geçmek için ayarları ziyaret et.',
+        title: 'Pro Aboneliğin Sona Erdi!',
+        description: 'Pro aboneliğinin süresi doldu. Tekrar Pro\'ya geçmek için ayarları ziyaret et.',
         data: { daysLeft: daysLeft }
       });
     } else if (daysLeft <= 7) {
       this.add({
-        type: NOTIFICATION_TYPES.PREMIUM_EXPIRING,
+        type: NOTIFICATION_TYPES.PRO_EXPIRING,
         icon: '⏰',
-        title: 'Premium Aboneliğin Yakında Sona Eriyor!',
-        description: `${daysLeft} gün içinde premium aboneliğin sona erecek. Yenilemek için ayarları ziyaret et.`,
+        title: 'Pro Aboneliğin Yakında Sona Eriyor!',
+        description: `${daysLeft} gün içinde Pro aboneliğin sona erecek. Yenilemek için ayarları ziyaret et.`,
         data: { daysLeft: daysLeft }
       });
     }
   }
 
-  addPremiumUpgraded(planType) {
+  addProUpgraded(planType) {
     this.add({
-      type: NOTIFICATION_TYPES.PREMIUM_UPGRADED,
+      type: NOTIFICATION_TYPES.PRO_UPGRADED,
       icon: '🎉',
-      title: 'Premium\'a Geçtin!',
-      description: `Tebrikler! ${planType === 'yearly' ? 'Yıllık' : 'Aylık'} Premium planına başarıyla geçtin. Tüm premium özellikler aktif.`,
+      title: 'Pro\'ya Geçtin!',
+      description: `Tebrikler! ${planType === 'yearly' ? 'Yıllık' : 'Aylık'} Pro planına başarıyla geçtin. Tüm Pro özellikler aktif.`,
       data: { planType: planType }
     });
   }
@@ -200,7 +200,7 @@ export class NotificationManager {
     } catch (e) {}
   }
 
-  async checkAndNotifyPremiumExpiry() {
+  async checkAndNotifyProExpiry() {
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) return;
@@ -218,17 +218,17 @@ export class NotificationManager {
       const daysLeft = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
       
       const existing = this.notifications.find(n => 
-        n.type === NOTIFICATION_TYPES.PREMIUM_EXPIRING || 
-        n.type === NOTIFICATION_TYPES.PREMIUM_EXPIRED
+        n.type === NOTIFICATION_TYPES.PRO_EXPIRING || 
+        n.type === NOTIFICATION_TYPES.PRO_EXPIRED
       );
       
       if (daysLeft <= 0) {
-        if (!existing || existing.type !== NOTIFICATION_TYPES.PREMIUM_EXPIRED) {
-          this.addPremiumExpiring(0);
+        if (!existing || existing.type !== NOTIFICATION_TYPES.PRO_EXPIRED) {
+          this.addProExpiring(0);
         }
       } else if (daysLeft <= 7) {
         if (!existing) {
-          this.addPremiumExpiring(daysLeft);
+          this.addProExpiring(daysLeft);
         }
       }
     } catch (e) {}
@@ -236,7 +236,7 @@ export class NotificationManager {
 
   async checkAll() {
     await this.checkAndNotifyOvertrade();
-    await this.checkAndNotifyPremiumExpiry();
+    await this.checkAndNotifyProExpiry();
   }
 }
 
@@ -276,9 +276,9 @@ export function updateNotificationUI() {
         const timeAgo = getTimeAgoSimple(n.timestamp);
         const iconClass = n.type === NOTIFICATION_TYPES.OVERTRADE_CRITICAL ? 'danger' :
                           n.type === NOTIFICATION_TYPES.OVERTRADE_WARNING ? 'warning' :
-                          n.type === NOTIFICATION_TYPES.PREMIUM_EXPIRING ? 'warning' :
-                          n.type === NOTIFICATION_TYPES.PREMIUM_EXPIRED ? 'danger' :
-                          n.type === NOTIFICATION_TYPES.PREMIUM_UPGRADED ? 'success' : 'info';
+                          n.type === NOTIFICATION_TYPES.PRO_EXPIRING ? 'warning' :
+                          n.type === NOTIFICATION_TYPES.PRO_EXPIRED ? 'danger' :
+                          n.type === NOTIFICATION_TYPES.PRO_UPGRADED ? 'success' : 'info';
         
         return `
           <div class="notif-item" data-id="${n.id}" ${isRead}>

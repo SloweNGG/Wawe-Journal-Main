@@ -1,6 +1,6 @@
 // ============================================================
 // prop-widgets.js - Prop firm kartları ve başlık kimliği
-// Veri: premium-dashboard.astro içindeki prop betiği window.__wwPropState olarak yayınlar
+// Veri: analytics.astro içindeki prop betiği window.__wwPropState olarak yayınlar
 // ('ww:prop-state' olayı). Burada yalnızca çizim yapılır; pencereler (uyarılar, faz geçişi)
 // betikteki window.wwPropOpenNotices / window.wwPropOpenAdvance ile açılır.
 //
@@ -275,7 +275,7 @@ export function renderPropWidget(key) {
   if (!el || PROP_WIDGET_KEYS.indexOf(key) === -1) return;
   var s = propState();
   if (!s) {
-    el.innerHTML = '<div class="pw-skeleton" role="status" aria-label="' + esc(_t('premium_dash.prop.loading', 'Prop hesabı yükleniyor…')) + '"></div>';
+    el.innerHTML = '<div class="pw-skeleton" role="status" aria-label="' + esc(_t('analytics_dash.prop.loading', 'Prop hesabı yükleniyor…')) + '"></div>';
     return;
   }
   if (!s.active) {
@@ -311,7 +311,7 @@ export function propChartLevels(lastValue) {
     lines.push({ price: lastValue + s.target.remaining, color: '#22c55e', title: _t('prop.target', 'Kâr Hedefi') });
   }
   if (s.maxLoss.distance > 0) {
-    lines.push({ price: lastValue - s.maxLoss.distance, color: '#ef4444', title: _t('premium_dash.prop.stop_line', 'Maks. kayıp') });
+    lines.push({ price: lastValue - s.maxLoss.distance, color: '#ef4444', title: _t('analytics_dash.prop.stop_line', 'Maks. kayıp') });
   }
   return lines;
 }
@@ -322,7 +322,7 @@ export function propChartLevels(lastValue) {
 var DEFAULT_EYEBROW = null;
 export function renderPropHeader() {
   var eyebrow = document.getElementById('ph-eyebrow');
-  var badge = document.getElementById('premium-prop-badge');
+  var badge = document.getElementById('pro-prop-badge');
   var actions = document.getElementById('ph-prop-actions');
   var pageHeader = document.querySelector('#main-content .page-header');
   if (!eyebrow) return;

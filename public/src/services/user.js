@@ -8,12 +8,12 @@ import { safeLocalStorageGet } from '../core/storage.js';
 import { calcPnL } from '../utils/helpers.js';
 import { showToast } from '../utils/ui.js';
 
-// ── PLAN & PREMIUM ──────────────────────────────────────────
+// ── PLAN & PRO ──────────────────────────────────────────
 // Önbellekteki/profildeki 'premium' planın süresi dolmuş mu? DB'de plan sütunu bir iş (cron/trigger) tarafından
-// hiç 'free'ye çekilmediği için, süresi dolan kullanıcı önbellek doluyken 3-5 dk premium görünüyor, ayarlarda
-// "0 gün" ile aktif premium kartı ve Premium rozeti çıkıyordu. Bitiş tarihi geçmişse plan 'free' sayılır.
-function isPremiumExpired(expiresAt) {
-  if (!expiresAt) return false;               // bitiş tarihi boş = süresiz/manuel premium
+// hiç 'free'ye çekilmediği için, süresi dolan kullanıcı önbellek doluyken 3-5 dk pro görünüyor, ayarlarda
+// "0 gün" ile aktif pro kartı ve Pro rozeti çıkıyordu. Bitiş tarihi geçmişse plan 'free' sayılır.
+function isProExpired(expiresAt) {
+  if (!expiresAt) return false;               // bitiş tarihi boş = süresiz/manuel pro
   const ms = Date.parse(expiresAt);
   return !isFinite(ms) || ms <= Date.now();
 }
@@ -24,14 +24,14 @@ export async function getUserPlan() {
     const cachedPlanTime = sessionStorage.getItem('ww_user_plan_time');
     const cachedExp = sessionStorage.getItem('ww_user_plan_exp');
     if (cachedPlan && cachedPlanTime && (Date.now() - parseInt(cachedPlanTime, 10)) < 300000
-        && !(cachedPlan === 'premium' && isPremiumExpired(cachedExp))) {
+        && !(cachedPlan === 'premium' && isProExpired(cachedExp))) {
       const isPrem = cachedPlan === 'premium';
       return { plan: cachedPlan, features: isPrem ? FEATURES.premium : FEATURES.free };
     }
 
     if (window.__wwUserProfile && window.__wwUserProfile.plan) {
       const prof = window.__wwUserProfile;
-      const plan = (prof.plan === 'premium' && isPremiumExpired(prof.plan_expires_at)) ? 'free' : prof.plan;
+      const plan = (prof.plan === 'premium' && isProExpired(prof.plan_expires_at)) ? 'free' : prof.plan;
       const isPrem = plan === 'premium';
       return { plan, features: isPrem ? FEATURES.premium : FEATURES.free };
     }
@@ -58,7 +58,7 @@ export async function getUserPlan() {
       const expires = new Date(data.plan_expires_at);
       
       if (isNaN(expires.getTime()) || now > expires) {
-        showToast(i18n.t('premium.expired'), 'info');
+        showToast(i18n.t('pro.expired'), 'info');
         try {
           sessionStorage.setItem('ww_user_plan', 'free');
           sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
@@ -89,14 +89,14 @@ export async function getUserPlanSilent() {
     const cachedPlanTime = sessionStorage.getItem('ww_user_plan_time');
     const cachedExp = sessionStorage.getItem('ww_user_plan_exp');
     if (cachedPlan && cachedPlanTime && (Date.now() - parseInt(cachedPlanTime, 10)) < 300000
-        && !(cachedPlan === 'premium' && isPremiumExpired(cachedExp))) {
+        && !(cachedPlan === 'premium' && isProExpired(cachedExp))) {
       const isPrem = cachedPlan === 'premium';
       return { plan: cachedPlan, features: isPrem ? FEATURES.premium : FEATURES.free };
     }
 
     if (window.__wwUserProfile && window.__wwUserProfile.plan) {
       const prof = window.__wwUserProfile;
-      const plan = (prof.plan === 'premium' && isPremiumExpired(prof.plan_expires_at)) ? 'free' : prof.plan;
+      const plan = (prof.plan === 'premium' && isProExpired(prof.plan_expires_at)) ? 'free' : prof.plan;
       const isPrem = plan === 'premium';
       return { plan, features: isPrem ? FEATURES.premium : FEATURES.free };
     }
@@ -129,7 +129,7 @@ export async function getUserPlanSilent() {
   }
 }
 
-export async function isPremium() {
+export async function isPro() {
   const { plan } = await getUserPlan();
   return plan === 'premium';
 }
@@ -139,21 +139,21 @@ export async function hasFeature(featureName) {
   return features[featureName] === true;
 }
 
-export async function requirePremium() {
+export async function requirePro() {
   try {
     const user = await requireAuth();
     if (!user) return null;
     
     const { plan } = await getUserPlan();
     if (plan !== 'premium') {
-      showToast('Bu özellik sadece Premium üyelere özeldir!', 'error');
+      showToast('Bu özellik sadece Pro üyelere özeldir!', 'error');
       window.location.href = 'settings.html#panel-plan';
       return null;
     }
     
     return user;
   } catch (error) {
-    console.error('requirePremium hatası:', error);
+    console.error('requirePro hatası:', error);
     showToast('Bir hata oluştu. Lütfen tekrar deneyin.', 'error');
     window.location.href = 'settings.html';
     return null;

@@ -176,7 +176,7 @@ export function loadFontSize() {
 }
 
 // ============================================================
-// ⭐ PREMIUM KONTROL - MEVCUT
+// ⭐ PRO KONTROL - MEVCUT
 // ============================================================
 
 export async function canCustomizeTheme() {
@@ -190,7 +190,7 @@ export async function canCustomizeTheme() {
 // ============================================================
 
 export async function loadThemeCustomization() {
-  const isPremium = await canCustomizeTheme();
+  const isPro = await canCustomizeTheme();
   const container = document.getElementById('theme-customization-container');
   if (!container) return;
   
@@ -225,8 +225,8 @@ export async function loadThemeCustomization() {
     return;
   }
   
-  // Premium değil → kilit ekranı
-  if (!isPremium) {
+  // Pro değil → kilit ekranı
+  if (!isPro) {
     const tplLocked = document.getElementById('tpl-theme-locked');
     if (!tplLocked) return;
     container.innerHTML = '';
@@ -235,7 +235,7 @@ export async function loadThemeCustomization() {
     return;
   }
   
-  // Premium + Dark → tam form
+  // Pro + Dark → tam form
   const tplForm = document.getElementById('tpl-theme-form');
   if (!tplForm) return;
   const clone = tplForm.content.cloneNode(true);

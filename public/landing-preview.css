@@ -257,17 +257,6 @@ main{padding-top:62px}
 .menu-overlay{inset:0}
 
 
-/* laptop: devices.css (MIT) MacBook Pro in space gray, scaled to the column by script */
-.mbp-wrap{width:100%;max-width:1040px;margin:0 auto}
-.mbp-wrap .device{transform-origin:0 0;perspective:1600px}
-.mbp-wrap .device-frame::before{content:none}
-.mbp-wrap .device-frame{transform-origin:50% 100%}
-.mbp-wrap .device-screen{overflow:hidden;background:#06060a}
-.mbp-wrap .device-screen video{width:100%;height:100%;object-fit:contain}
-.mbp.pre .device-frame{transform:rotateX(-88deg);transition:transform 1.5s cubic-bezier(.22,.8,.24,1)}
-.mbp.pre.open .device-frame{transform:rotateX(0)}
-.mbp.pre .device-screen video{opacity:0;transition:opacity .9s 1.1s ease}
-.mbp.pre.open .device-screen video{opacity:1}
 
 /* legal disclosures under the footer */
 .disclosures{margin-top:32px;padding-top:28px;border-top:1px solid var(--line);display:grid;gap:14px;max-width:980px}

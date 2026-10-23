@@ -11,7 +11,7 @@
 // body'ye toast, modal, FAB, onboarding gibi elemanlar ekleyip onlara bağlı
 // kaldığı için burada özel swap kullanılır:
 //   - Sadece #app-scroll-container içindeki sayfa içeriği değişir (navbar kalır)
-//   - <html>/<body> üzerindeki runtime sınıflar (tema, premium vs.) korunur
+//   - <html>/<body> üzerindeki runtime sınıflar (tema, pro vs.) korunur
 //   - <head>'de sadece sunucudan gelen (data-ssr) elemanlar karşılaştırılır
 //   - Yeni sayfanın script'leri gerçek sayfa yüklemesindeki sırayla çalışır
 //     (parser-blocking → defer → DOMContentLoaded → load)
@@ -65,7 +65,7 @@ const buildId = __WW_BUILD_ID__;
     '/calendar',
     '/strategies',
     '/journals',
-    '/premium-dashboard',
+    '/analytics',
     '/my-earnings',
     '/settings',
     '/backtest',
@@ -343,7 +343,7 @@ const buildId = __WW_BUILD_ID__;
       // Ortak kütüphaneler (supabase, i18n, quick-add...) sadece bir kez çalışır (farklı
       // bir sürümü istenmedikçe); sayfa script'leri (data-page-script) her girişte çalışır.
       // Not: type="module" sayfa script'lerini tarayıcı doküman başına bir kez çalıştırır;
-      // onlar yeniden girişi kendileri ww:page-load ile yakalar (bkz. premium-dashboard.js).
+      // onlar yeniden girişi kendileri ww:page-load ile yakalar (bkz. analytics.js).
       if (s.src) return s.hasAttribute('data-page-script') || !isActive(s.src);
       return true;
     }

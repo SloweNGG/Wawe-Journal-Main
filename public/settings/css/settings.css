@@ -246,9 +246,9 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 /* ============================================================
-   OVER TRADE AYARLARI - PREMIUM KONTROLLÜ
+   OVER TRADE AYARLARI - PRO KONTROLLÜ
    ============================================================ */
-.ot-premium-badge {
+.ot-pro-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -262,11 +262,11 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 20px;
   border: 1px solid rgba(139,92,246,0.2);
 }
-.ot-premium-badge .diamond {
+.ot-pro-badge .diamond {
   font-size: clamp(8px, 0.7vw, 10px);
 }
 
-.ot-premium-banner {
+.ot-pro-banner {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -276,14 +276,14 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 10px;
   margin-bottom: 1rem;
 }
-.ot-premium-banner .banner-icon {
+.ot-pro-banner .banner-icon {
   font-size: clamp(1.2rem, 2vw, 1.4rem);
   flex-shrink: 0;
 }
-.ot-premium-banner .banner-text strong {
+.ot-pro-banner .banner-text strong {
   color: var(--accent);
 }
-.ot-premium-banner .banner-text p {
+.ot-pro-banner .banner-text p {
   font-size: clamp(10px, 0.8vw, 12px);
   color: var(--muted);
   margin: 0;
@@ -355,32 +355,32 @@ body.light-theme .panel-glow.overtrade-glow {
   transform: scale(0.96);
 }
 
-/* ⭐ PREMIUM KİLİTLİ İÇERİK */
-.ot-premium-locked {
+/* ⭐ PRO KİLİTLİ İÇERİK */
+.ot-pro-locked {
   text-align: center;
   padding: clamp(1.5rem, 3vh, 2.5rem) clamp(0.75rem, 1.5vw, 1.5rem);
   background: var(--surface2);
   border-radius: var(--radius);
   border: 1px solid var(--border);
 }
-.ot-premium-locked .lock-icon {
+.ot-pro-locked .lock-icon {
   font-size: clamp(2.5rem, 5vw, 3rem);
   margin-bottom: 0.5rem;
 }
-.ot-premium-locked h3 {
+.ot-pro-locked h3 {
   font-family: 'Syne', sans-serif;
   font-size: clamp(0.85rem, 1.2vw, 1rem);
   color: var(--text);
   margin-bottom: 0.5rem;
 }
-.ot-premium-locked p {
+.ot-pro-locked p {
   font-size: clamp(11px, 0.9vw, 13px);
   color: var(--muted);
   max-width: 400px;
   margin: 0 auto 1rem;
   line-height: 1.6;
 }
-.ot-premium-locked .btn-premium-cta {
+.ot-pro-locked .btn-pro-cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -397,7 +397,7 @@ body.light-theme .panel-glow.overtrade-glow {
   text-decoration: none;
   min-height: 44px;
 }
-.ot-premium-locked .btn-premium-cta:hover {
+.ot-pro-locked .btn-pro-cta:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(139,92,246,0.4);
 }
@@ -1090,7 +1090,7 @@ body.light-theme .panel-glow.overtrade-glow {
   padding-top: 1.25rem;
   margin-top: 1.25rem;
 }
-.premium-badge {
+.pro-badge {
   font-size: 9.5px;
   font-weight: 700;
   font-family: 'DM Mono', monospace;
@@ -1425,7 +1425,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 /* Kilitli Kart Şablonları */
-.theme-premium-locked-card {
+.theme-pro-locked-card {
   text-align: center;
   padding: 32px 18px;
   background: var(--surface2);
@@ -1444,14 +1444,14 @@ body.light-theme .panel-glow.overtrade-glow {
   justify-content: center;
   margin: 0 auto 10px;
 }
-.theme-premium-locked-card h3 {
+.theme-pro-locked-card h3 {
   font-family: 'Syne', sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
   margin: 0 0 4px;
 }
-.theme-premium-locked-card p {
+.theme-pro-locked-card p {
   font-size: 12px;
   color: var(--muted);
   max-width: 380px;
@@ -1609,7 +1609,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 /* ============================================================
-   PLAN CARD - PREMIUM TASARIM
+   PLAN CARD - PRO TASARIM
    ============================================================ */
 .plan-card {
   background: var(--surface);
@@ -1621,13 +1621,13 @@ body.light-theme .panel-glow.overtrade-glow {
   overflow: hidden;
 }
 
-.plan-card.premium {
+.plan-card.pro {
   border-color: rgba(139, 92, 246, 0.4);
   background: var(--surface);
   box-shadow: none;
 }
 
-.plan-card.premium::before {
+.plan-card.pro::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1639,13 +1639,13 @@ body.light-theme .panel-glow.overtrade-glow {
   animation: none;
 }
 
-@keyframes premiumGradient {
+@keyframes proGradient {
   0% { background-position: 0% 0%; }
   50% { background-position: 100% 0%; }
   100% { background-position: 0% 0%; }
 }
 
-.plan-card.premium::after {
+.plan-card.pro::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -1657,7 +1657,7 @@ body.light-theme .panel-glow.overtrade-glow {
   animation: none;
 }
 
-@keyframes premiumPulse {
+@keyframes proPulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.1); }
 }
@@ -1688,7 +1688,7 @@ body.light-theme .panel-glow.overtrade-glow {
   letter-spacing: -0.02em;
 }
 
-.plan-card .plan-name .premium-badge {
+.plan-card .plan-name .pro-badge {
   font-size: clamp(0.5rem, 0.6vw, 0.6rem);
   font-weight: 700;
   font-family: 'DM Sans', sans-serif;
@@ -1804,17 +1804,17 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--muted);
   border: 1px solid var(--border);
 }
-.plan-card .plan-features li.premium-feature {
+.plan-card .plan-features li.pro-feature {
   position: relative;
 }
-.plan-card .plan-features li.premium-feature::after {
+.plan-card .plan-features li.pro-feature::after {
   content: '✦';
   font-size: clamp(6px, 0.5vw, 8px);
   color: var(--accent2);
   margin-left: 4px;
   opacity: 0.6;
 }
-.plan-card .plan-features li.premium-feature .indicator {
+.plan-card .plan-features li.pro-feature .indicator {
   background: rgba(139, 92, 246, 0.12);
   color: var(--accent2);
   border: 1px solid rgba(139, 92, 246, 0.2);
@@ -1828,7 +1828,7 @@ body.light-theme .panel-glow.overtrade-glow {
   padding-top: 0.75rem;
   border-top: 1px solid var(--border);
 }
-.plan-card .plan-actions .btn-premium {
+.plan-card .plan-actions .btn-pro {
   background: #000;
   border: none;
   color: #fff;
@@ -1847,7 +1847,7 @@ body.light-theme .panel-glow.overtrade-glow {
   letter-spacing: 0.02em;
   min-height: 40px;
 }
-.plan-card .plan-actions .btn-premium::before {
+.plan-card .plan-actions .btn-pro::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1857,29 +1857,29 @@ body.light-theme .panel-glow.overtrade-glow {
   display: none;
   transition: left 0.6s ease;
 }
-.plan-card .plan-actions .btn-premium:hover::before {
+.plan-card .plan-actions .btn-pro:hover::before {
   left: 100%;
 }
-.plan-card .plan-actions .btn-premium:hover {
+.plan-card .plan-actions .btn-pro:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: none;
 }
-.plan-card .plan-actions .btn-premium:active {
+.plan-card .plan-actions .btn-pro:active {
   transform: scale(0.96);
 }
-.plan-card .plan-actions .btn-premium.secondary {
+.plan-card .plan-actions .btn-pro.secondary {
   background: transparent;
   border: 1.5px solid var(--border2);
   color: var(--text);
   box-shadow: none;
 }
-.plan-card .plan-actions .btn-premium.secondary:hover {
+.plan-card .plan-actions .btn-pro.secondary:hover {
   border-color: var(--accent2);
   color: var(--accent2);
   box-shadow: none;
   transform: translateY(-2px);
 }
-.plan-card .plan-actions .btn-premium-outline {
+.plan-card .plan-actions .btn-pro-outline {
   background: transparent;
   border: 1.5px solid var(--border);
   color: var(--muted);
@@ -1895,7 +1895,7 @@ body.light-theme .panel-glow.overtrade-glow {
   text-align: center;
   min-height: 40px;
 }
-.plan-card .plan-actions .btn-premium-outline:hover {
+.plan-card .plan-actions .btn-pro-outline:hover {
   border-color: var(--red);
   color: var(--red);
   background: rgba(239, 68, 68, 0.05);
@@ -2288,14 +2288,14 @@ body.light-theme .panel-glow.overtrade-glow {
   opacity: 0.88;
 }
 
-.plan-tier-card.premium-tier {
+.plan-tier-card.pro-tier {
   border: 1px solid rgba(139, 92, 246, 0.5);
   background: var(--surface);
   box-shadow: none;
   cursor: pointer;
 }
 
-.plan-tier-card.premium-tier:hover {
+.plan-tier-card.pro-tier:hover {
   border-color: rgba(139, 92, 246, 0.8);
   box-shadow: none;
 }
@@ -2313,7 +2313,7 @@ body.light-theme .panel-glow.overtrade-glow {
   margin-bottom: 0.85rem;
 }
 
-.plan-top-badge.premium-badge-glow {
+.plan-top-badge.pro-badge-glow {
   background: var(--accent);
   color: #fff;
   box-shadow: none;
@@ -2417,7 +2417,7 @@ body.light-theme .panel-glow.overtrade-glow {
   opacity: 0.6;
 }
 
-.tier-features-list li.premium-feat {
+.tier-features-list li.pro-feat {
   color: #f1f5f9;
 }
 
@@ -2473,14 +2473,14 @@ body.light-theme .panel-glow.overtrade-glow {
   cursor: default;
 }
 
-.premium-btn-cta {
+.pro-btn-cta {
   background: #000;
   color: #fff;
   cursor: pointer;
   box-shadow: none;
 }
 
-.premium-btn-cta:hover {
+.pro-btn-cta:hover {
   transform: translateY(-2px);
   box-shadow: none;
 }
@@ -3863,9 +3863,9 @@ body.light-theme .qr-zoom-big-frame,
 }
 
 /* ============================================================
-   ⭐ PREMIUM AKTİF GÖRÜNÜMÜ (SAYAÇ, UZATMA, İPTAL)
+   ⭐ PRO AKTİF GÖRÜNÜMÜ (SAYAÇ, UZATMA, İPTAL)
    ============================================================ */
-.active-premium-card {
+.active-pro-card {
   border: 1px solid rgba(139, 92, 246, 0.45);
   background: var(--surface);
   box-shadow: none;
@@ -3873,7 +3873,7 @@ body.light-theme .qr-zoom-big-frame,
   padding: clamp(1rem, 2vw, 1.8rem);
 }
 
-.premium-header-flex {
+.pro-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3882,13 +3882,13 @@ body.light-theme .qr-zoom-big-frame,
   gap: 0.75rem;
 }
 
-.premium-hero-info {
+.pro-hero-info {
   display: flex;
   align-items: center;
   gap: 0.85rem;
 }
 
-.premium-gem-circle {
+.pro-gem-circle {
   width: 44px;
   height: 44px;
   border-radius: 12px;
@@ -3901,13 +3901,13 @@ body.light-theme .qr-zoom-big-frame,
   box-shadow: none;
 }
 
-.premium-gem-circle svg {
+.pro-gem-circle svg {
   color: #c4b5fd;
   stroke: #c4b5fd;
   filter: drop-shadow(0 0 8px rgba(196, 181, 253, 0.65));
 }
 
-.premium-badge-pill {
+.pro-badge-pill {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -3920,7 +3920,7 @@ body.light-theme .qr-zoom-big-frame,
 }
 
 /* GÖRSEL SAYAÇ KARTI */
-.premium-countdown-card {
+.pro-countdown-card {
   background: var(--surface2);
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 14px;
@@ -3984,7 +3984,7 @@ body.light-theme .qr-zoom-big-frame,
 }
 
 /* AKSİYON BUTONLARI */
-.premium-action-buttons-row {
+.pro-action-buttons-row {
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -4250,7 +4250,7 @@ body.light-theme .qr-zoom-big-frame,
     text-align: center;
     justify-content: center;
   }
-  .plan-card .plan-actions .btn-premium {
+  .plan-card .plan-actions .btn-pro {
     min-width: 100%;
   }
   .settings-tab-btn {
@@ -4314,7 +4314,7 @@ body.light-theme .qr-zoom-big-frame,
     height: 14px;
     font-size: 8px;
   }
-  .plan-card .plan-actions .btn-premium {
+  .plan-card .plan-actions .btn-pro {
     font-size: 10px;
     padding: 0.3rem 0.6rem;
     min-height: 34px;
@@ -4349,9 +4349,9 @@ body.light-theme .qr-zoom-big-frame,
   .btn-outline-danger,
   .lang-compact-btn,
   .currency-btn,
-  .plan-card .plan-actions .btn-premium,
-  .plan-card .plan-actions .btn-premium-outline,
-  .ot-premium-locked .btn-premium-cta,
+  .plan-card .plan-actions .btn-pro,
+  .plan-card .plan-actions .btn-pro-outline,
+  .ot-pro-locked .btn-pro-cta,
   .avatar-popup-close {
     min-height: 44px;
     min-width: 44px;

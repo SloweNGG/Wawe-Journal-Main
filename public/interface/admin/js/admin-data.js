@@ -10,7 +10,7 @@ function getSbClient() {
 }
 
 // Tüm satırları 1000'lik sayfalarla çeker. PostgREST tek istekte en fazla 1000 satır döndürdüğü için
-// 1000'den fazla kullanıcı/ödeme olunca toplam kullanıcı, premium sayısı, dönüşüm oranı ve gelir sessizce
+// 1000'den fazla kullanıcı/ödeme olunca toplam kullanıcı, pro sayısı, dönüşüm oranı ve gelir sessizce
 // eksik hesaplanıyordu (ödemeler yeni→eski sıralı olduğundan EN ESKİ ödemeler düşüyordu).
 async function adminFetchAll(table, columns, orderColumn, ascending) {
   var client = getSbClient();
@@ -297,13 +297,13 @@ async function renderUsersTable() {
   var rows = filtered.map(function(u) {
     var online = u.last_active && (now - new Date(u.last_active)) < AW;
     var role = (u.user_metadata && u.user_metadata.role) || 'user';
-    var isPremium = u.plan === 'premium';
+    var isPro = u.plan === 'premium';
     var expiresAt = u.plan_expires_at ? new Date(u.plan_expires_at) : null;
-    var isExpired = isPremium && expiresAt && new Date() > expiresAt;
+    var isExpired = isPro && expiresAt && new Date() > expiresAt;
     
     var expiryText = '—';
     var expiryClass = '';
-    if (isPremium && expiresAt) {
+    if (isPro && expiresAt) {
       if (isExpired) {
         expiryText = '⏳ Süresi Doldu';
         expiryClass = 'expired';
@@ -318,9 +318,9 @@ async function renderUsersTable() {
       ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">'
       : '<span style="font-size:11px;font-weight:700;">' + getInitials(u.username) + '</span>';
     
-    return '<tr>\n          <td><span class="id-chip">' + (u.id || '').slice(0, 8) + '…</span></td>\n          <td>\n            <div style="display:flex;align-items:center;gap:8px;">\n              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">\n                ' + avatarHtml + '\n              </div>\n              <span style="font-weight:500;">' + escapeHtml(u.username || '—') + '</span>\n            </div>\n          </td>\n          <td style="color:var(--muted);font-size:12px;">' + escapeHtml(u.email || '—') + '</td>\n          <td>\n            <span class="plan-badge-user ' + (isPremium && !isExpired ? 'premium' : 'free') + '">\n              <span class="dot"></span>\n              ' + (isPremium && !isExpired ? 'Premium' : 'Free') + '\n            </span>\n          </td>\n          <td style="font-size:11px;font-family:Inter,sans-serif;">\n            ' + (isPremium && !isExpired 
+    return '<tr>\n          <td><span class="id-chip">' + (u.id || '').slice(0, 8) + '…</span></td>\n          <td>\n            <div style="display:flex;align-items:center;gap:8px;">\n              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">\n                ' + avatarHtml + '\n              </div>\n              <span style="font-weight:500;">' + escapeHtml(u.username || '—') + '</span>\n            </div>\n          </td>\n          <td style="color:var(--muted);font-size:12px;">' + escapeHtml(u.email || '—') + '</td>\n          <td>\n            <span class="plan-badge-user ' + (isPro && !isExpired ? 'premium' : 'free') + '">\n              <span class="dot"></span>\n              ' + (isPro && !isExpired ? 'Pro' : 'Free') + '\n            </span>\n          </td>\n          <td style="font-size:11px;font-family:Inter,sans-serif;">\n            ' + (isPro && !isExpired 
               ? '<span class="expiry-text ' + expiryClass + '">' + expiryText + '</span>'
-              : '<span class="expiry-text">' + expiryText + '</span>') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">\n            ' + (isPremium && expiresAt && !isExpired ? formatDate(expiresAt) : '—') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">' + formatDate(u.created_at) + '</td>\n          <td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>\n          <td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>\n        </tr>';
+              : '<span class="expiry-text">' + expiryText + '</span>') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">\n            ' + (isPro && expiresAt && !isExpired ? formatDate(expiresAt) : '—') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">' + formatDate(u.created_at) + '</td>\n          <td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>\n          <td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>\n        </tr>';
   }).join('');
 
   container.innerHTML = '\n    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th><th>Durum</th><th>Rol</th><th>İşlem</th></tr>\n          </thead>\n          <tbody>\n            ' + (rows || '<tr><td colspan="10"><div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;">Kullanıcı bulunamadı.</div></td></tr>') + '\n          </tbody>\n        </table>\n      </div>\n    </div>\n  ';

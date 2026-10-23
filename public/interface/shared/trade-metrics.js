@@ -1,7 +1,7 @@
 // ============================================================
 // WAWE JOURNAL - ORTAK İŞLEM METRİKLERİ (tek doğruluk kaynağı)
 // ============================================================
-// Dashboard, Premium Dashboard, Calendar, Trades, Strategies ve Overtrade
+// Dashboard, Analiz, Calendar, Trades, Strategies ve Overtrade
 // aynı metriği (PnL, win rate, profit factor, günlük kova) 4-5 ayrı yerde
 // farklı şekilde hesaplıyordu; aynı işlem sayfalar arasında farklı sonuç
 // gösteriyordu. Bu dosya o tanımları tek yerde toplar.

@@ -1,7 +1,7 @@
 // ============================================================
 // WAWE JOURNAL - SWR / CLIENT CACHE MANAGER (Instant Page Loads)
 // ============================================================
-// Amaç: Dashboard, Trades, Calendar ve Premium Dashboard arasında
+// Amaç: Dashboard, Trades, Calendar ve Analiz arasında
 // gezinirken verileri 0ms'de anında ekrana basmak ve arka planda
 // gerektiğinde tazelemek. Yeni işlem kaydedildiğinde/silindiğinde
 // ('trade-saved') önbellek kendini otomatik temizler.
@@ -151,7 +151,7 @@
         }
 
         // ⚡ 3. Sayfalar Arası Akıllı Senkronizasyon (Cross-page SWR)
-        // Dashboard, Trades, Calendar, Strategies ve Premium Dashboard aynı defterdeki
+        // Dashboard, Trades, Calendar, Strategies ve Analiz aynı defterdeki
         // aynı işlem verisini paylaşır. Biri indirdiğinde diğerleri Supabase'e gitmeden anında faydalanır.
         // Yalnızca ihtiyaç duyulan kolonları taşıyan listeler paylaşılır (needCols).
         var isTradePrefix = isLiveTradePrefix(prefix);
@@ -168,7 +168,7 @@
               return ascTrades;
             }
           } else {
-            // Diğer sayfalar (trades, calendar, strategies, premium) DESC sıra bekler.
+            // Diğer sayfalar (trades, calendar, strategies, pro) DESC sıra bekler.
             // Eğer ana liste yok ama dashboard listesi varsa, ters çevirerek kullan.
             if (prefix !== 'trades') {
               var existingMain = this.get('trades', userId, journalId, needCols);

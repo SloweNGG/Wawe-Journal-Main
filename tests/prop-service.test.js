@@ -65,7 +65,7 @@ describe('PropService API & Methods', () => {
     assert.equal(typeof PropService.syncPropAccountStatus, 'function');
   });
 
-  it('checkPropAccountQuota: Free kullanıcı için kota 1, Premium için 10 olmalıdır', async () => {
+  it('checkPropAccountQuota: Free kullanıcı için kota 1, Pro için 10 olmalıdır', async () => {
     // Mock Supabase for Free user with 1 active prop account
     let mockUser = { id: 'user-free-1' };
     let mockProfile = { plan: 'free' };
@@ -100,15 +100,15 @@ describe('PropService API & Methods', () => {
     };
 
     const quotaFree = await PropService.checkPropAccountQuota();
-    assert.equal(quotaFree.isPremium, false);
+    assert.equal(quotaFree.isPro, false);
     assert.equal(quotaFree.limit, 1);
     assert.equal(quotaFree.count, 1);
     assert.equal(quotaFree.canCreate, false);
 
-    // Mock for Premium user with 1 active prop account
+    // Mock for Pro user with 1 active prop account
     mockProfile.plan = 'premium';
     const quotaPrem = await PropService.checkPropAccountQuota();
-    assert.equal(quotaPrem.isPremium, true);
+    assert.equal(quotaPrem.isPro, true);
     assert.equal(quotaPrem.limit, 10);
     assert.equal(quotaPrem.count, 1);
     assert.equal(quotaPrem.canCreate, true);

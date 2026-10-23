@@ -3,7 +3,7 @@
 // PDF'e tıklayınca açılır: hazır aralıklar (son 7 gün, son 1 ay, son 3 ay, geçen ay,
 // bu yıl, tümü) veya elle başlangıç / bitiş tarihi. Seçilen aralıktaki kapanmış işlem
 // sayısı ve net K/Z anında gösterilir; "PDF oluştur" raporu o aralıkla üretir.
-// Varsayılan: sayfadaki tarih filtresi. Görünüm premium-dashboard.css → .pd-export-*.
+// Varsayılan: sayfadaki tarih filtresi. Görünüm analytics.css → .pd-export-*.
 // ============================================================
 
 import { formatCurrency, calcTradePnL } from './helpers.js';
@@ -39,12 +39,12 @@ function presetKeys(id) {
 }
 
 var PRESETS = [
-  ['7d', 'premium_dash.export.p7d', 'Son 7 gün'],
-  ['1m', 'premium_dash.export.p1m', 'Son 1 ay'],
-  ['3m', 'premium_dash.export.p3m', 'Son 3 ay'],
-  ['lastm', 'premium_dash.export.plastm', 'Geçen ay'],
-  ['ytd', 'premium_dash.export.pytd', 'Bu yıl'],
-  ['all', 'premium_dash.export.pall', 'Tümü']
+  ['7d', 'analytics_dash.export.p7d', 'Son 7 gün'],
+  ['1m', 'analytics_dash.export.p1m', 'Son 1 ay'],
+  ['3m', 'analytics_dash.export.p3m', 'Son 3 ay'],
+  ['lastm', 'analytics_dash.export.plastm', 'Geçen ay'],
+  ['ytd', 'analytics_dash.export.pytd', 'Bu yıl'],
+  ['all', 'analytics_dash.export.pall', 'Tümü']
 ];
 
 // Sayfadaki filtre → pencerenin ilk seçimi
@@ -91,30 +91,30 @@ export function openExportDialog(opts) {
   overlay.innerHTML =
     '<div class="pd-export-box" role="dialog" aria-modal="true" aria-labelledby="pd-export-title">' +
       '<div class="pd-export-head">' +
-        '<div><h3 id="pd-export-title">' + esc(_t('premium_dash.export.title', 'PDF raporu')) + '</h3>' +
-        '<p>' + esc(_t('premium_dash.export.desc', 'Raporun kapsayacağı dönemi seç.')) + '</p></div>' +
+        '<div><h3 id="pd-export-title">' + esc(_t('analytics_dash.export.title', 'PDF raporu')) + '</h3>' +
+        '<p>' + esc(_t('analytics_dash.export.desc', 'Raporun kapsayacağı dönemi seç.')) + '</p></div>' +
         '<button type="button" class="pd-export-x" data-act="close" aria-label="' + esc(_t('common.close', 'Kapat')) + '">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
         '</button>' +
       '</div>' +
       '<div class="pd-export-body">' +
-        '<div class="pd-export-label">' + esc(_t('premium_dash.export.period', 'Dönem')) + '</div>' +
+        '<div class="pd-export-label">' + esc(_t('analytics_dash.export.period', 'Dönem')) + '</div>' +
         '<div class="pd-export-presets" role="radiogroup">' +
           PRESETS.map(function (p) {
             return '<button type="button" class="pd-export-chip" role="radio" data-preset="' + p[0] + '">' + esc(_t(p[1], p[2])) + '</button>';
           }).join('') +
         '</div>' +
-        '<div class="pd-export-label">' + esc(_t('premium_dash.export.custom', 'Ya da tarihleri kendin seç')) + '</div>' +
+        '<div class="pd-export-label">' + esc(_t('analytics_dash.export.custom', 'Ya da tarihleri kendin seç')) + '</div>' +
         '<div class="pd-export-dates">' +
-          '<label><span>' + esc(_t('premium_dash.export.from', 'Başlangıç')) + '</span><input type="date" data-field="start"></label>' +
+          '<label><span>' + esc(_t('analytics_dash.export.from', 'Başlangıç')) + '</span><input type="date" data-field="start"></label>' +
           '<span class="pd-export-dash">–</span>' +
-          '<label><span>' + esc(_t('premium_dash.export.to', 'Bitiş')) + '</span><input type="date" data-field="end"></label>' +
+          '<label><span>' + esc(_t('analytics_dash.export.to', 'Bitiş')) + '</span><input type="date" data-field="end"></label>' +
         '</div>' +
         '<div class="pd-export-summary" aria-live="polite"></div>' +
       '</div>' +
       '<div class="pd-export-foot">' +
         '<button type="button" class="pd-export-btn" data-act="close">' + esc(_t('common.cancel', 'İptal')) + '</button>' +
-        '<button type="button" class="pd-export-btn primary" data-act="export">' + esc(_t('premium_dash.export.create', 'PDF oluştur')) + '</button>' +
+        '<button type="button" class="pd-export-btn primary" data-act="export">' + esc(_t('analytics_dash.export.create', 'PDF oluştur')) + '</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -147,13 +147,13 @@ export function openExportDialog(opts) {
     var net = list.reduce(function (sum, t) { return sum + calcTradePnL(t); }, 0);
     if (invalid) {
       summary.className = 'pd-export-summary warn';
-      summary.textContent = _t('premium_dash.export.bad_range', 'Başlangıç tarihi bitişten sonra olamaz.');
+      summary.textContent = _t('analytics_dash.export.bad_range', 'Başlangıç tarihi bitişten sonra olamaz.');
     } else if (!list.length) {
       summary.className = 'pd-export-summary warn';
-      summary.textContent = _t('premium_dash.export.none', 'Bu aralıkta kapanmış işlem yok.');
+      summary.textContent = _t('analytics_dash.export.none', 'Bu aralıkta kapanmış işlem yok.');
     } else {
       summary.className = 'pd-export-summary';
-      summary.innerHTML = '<b>' + esc(_t('premium_dash.export.count', '{n} işlem').replace('{n}', list.length)) + '</b>' +
+      summary.innerHTML = '<b>' + esc(_t('analytics_dash.export.count', '{n} işlem').replace('{n}', list.length)) + '</b>' +
         '<span class="' + (net > 0 ? 'up' : (net < 0 ? 'down' : '')) + '">' + esc(formatCurrency(net)) + '</span>';
     }
     exportBtn.disabled = busy || invalid || !list.length;
@@ -180,14 +180,14 @@ export function openExportDialog(opts) {
       var k = currentKeys();
       busy = true;
       exportBtn.disabled = true;
-      exportBtn.textContent = _t('premium_dash.export.creating', 'Hazırlanıyor…');
+      exportBtn.textContent = _t('analytics_dash.export.creating', 'Hazırlanıyor…');
       try {
         await opts.onExport(list, { startKey: k.start, endKey: k.end, journalName: opts.journalName });
         busy = false;
         closeExportDialog();
       } catch (err) {
         busy = false;
-        exportBtn.textContent = _t('premium_dash.export.create', 'PDF oluştur');
+        exportBtn.textContent = _t('analytics_dash.export.create', 'PDF oluştur');
         refresh();
       }
     }

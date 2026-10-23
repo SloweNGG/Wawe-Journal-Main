@@ -1,5 +1,5 @@
 ---
-// UpgradeModal.astro — Premium Paywall & Limit Exceeded Modal
+// UpgradeModal.astro — Pro Paywall & Limit Exceeded Modal
 ---
 <div id="ww-upgrade-modal-backdrop" class="ww-up-backdrop" aria-hidden="true" style="display:none;">
   <div class="ww-up-modal" role="dialog" aria-modal="true" aria-labelledby="ww-up-notice-title">
@@ -21,11 +21,11 @@
       </button>
     </div>
 
-    <!-- Hero Visual: Real Premium Dashboard Screenshot Preview -->
+    <!-- Hero Visual: Real Analiz Screenshot Preview -->
     <div class="ww-up-preview-card">
       <img 
-        src="/images/premium-dashboard-preview.png" 
-        alt="Wawe Journal Premium Dashboard" 
+        src="/images/landing/analytics.webp" 
+        alt="Wawe Journal Analiz" 
         class="ww-up-preview-img" 
         loading="eager"
       />
@@ -35,7 +35,7 @@
 
     <!-- Plan Name & Pricing Row -->
     <div class="ww-up-plan-header">
-      <div class="ww-up-plan-name" id="ww-up-plan-name">Premium</div>
+      <div class="ww-up-plan-name" id="ww-up-plan-name">Pro</div>
       <div class="ww-up-plan-price-wrap">
         <div class="ww-up-plan-price">
           <span class="ww-up-price-num" id="ww-up-price-num">$12</span>
@@ -73,10 +73,10 @@
       </div>
     </div>
 
-    <!-- Segmented Control 1: Tier Selector (Basic / Premium) -->
+    <!-- Segmented Control 1: Tier Selector (Basic / Pro) -->
     <div class="ww-up-pill-group" id="ww-up-tier-switch" role="tablist">
       <button type="button" class="ww-up-pill-btn" data-tier="basic" role="tab" aria-selected="false">Basic</button>
-      <button type="button" class="ww-up-pill-btn active" data-tier="premium" role="tab" aria-selected="true">Premium</button>
+      <button type="button" class="ww-up-pill-btn active" data-tier="pro" role="tab" aria-selected="true">Pro</button>
     </div>
 
     <!-- Segmented Control 2: Billing Period Selector (Monthly / Yearly) -->
@@ -529,9 +529,9 @@
 (function() {
   // UPGRADE MODAL CLIENT LOGIC
   var modalState = {
-    tier: 'premium',    // 'basic' | 'premium'
+    tier: 'pro',    // 'basic' | 'pro'
     period: 'monthly',  // 'monthly' | 'yearly'
-    feature: 'journal'  // 'journal' | 'premium_dashboard' | 'csv' | 'generic'
+    feature: 'journal'  // 'journal' | 'analytics_dashboard' | 'csv' | 'generic'
   };
 
   var I18N_DICT = {
@@ -545,9 +545,9 @@
       btn_compare: 'Planları Karşılaştır',
       feat_unlimited_trades: 'Sınırsız İşlem Günlüğü',
       feat_accounts_basic: '3\'e Kadar İşlem Defteri',
-      feat_accounts_premium: 'Sınırsız İşlem Defteri',
+      feat_accounts_pro: 'Sınırsız İşlem Defteri',
       feat_strategies_basic: '3\'e Kadar Strateji',
-      feat_strategies_premium: 'Sınırsız Strateji',
+      feat_strategies_pro: 'Sınırsız Strateji',
       feat_full_analytics: 'Tam Analitik ve İstatistikler',
       feat_auto_sync: 'Otomatik Eşitleme / CSV İçe Aktarma',
       feat_calendar_view: 'Kâr/Zarar Takvim Görünümü',
@@ -558,7 +558,7 @@
       notice_journal_sub: 'Daha fazla hesap eklemek veya limitleri kaldırmak için yukarıdaki planlardan birini seçin.',
 
       notice_dash_title: 'Özellik Dahil Değil',
-      notice_dash_desc: 'Premium Dashboard özelliği Ücretsiz planınıza dahil değildir.',
+      notice_dash_desc: 'Analiz özelliği Ücretsiz planınıza dahil değildir.',
       notice_dash_sub: 'Gelişmiş analitik panelini ve tüm göstergeleri açmak için yukarıdaki planlardan birini seçin.',
 
       notice_csv_title: 'Özellik Dahil Değil',
@@ -579,9 +579,9 @@
       btn_compare: 'Compare Plans',
       feat_unlimited_trades: 'Journal Unlimited Trades',
       feat_accounts_basic: 'Up to 3 Trading Accounts',
-      feat_accounts_premium: 'Unlimited Trading Accounts',
+      feat_accounts_pro: 'Unlimited Trading Accounts',
       feat_strategies_basic: 'Up to 3 Trading Strategies',
-      feat_strategies_premium: 'Unlimited Trading Strategies',
+      feat_strategies_pro: 'Unlimited Trading Strategies',
       feat_full_analytics: 'Full Analytics & Statistics',
       feat_auto_sync: 'Auto Sync Trades / Import CSVs',
       feat_calendar_view: 'P&L Calendar View',
@@ -591,7 +591,7 @@
       notice_journal_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.',
 
       notice_dash_title: 'Feature not included',
-      notice_dash_desc: 'Premium Dashboard is not included in your Free plan.',
+      notice_dash_desc: 'Analytics is not included in your Free plan.',
       notice_dash_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.',
 
       notice_csv_title: 'Feature not included',
@@ -612,9 +612,9 @@
       btn_compare: 'Pläne vergleichen',
       feat_unlimited_trades: 'Unbegrenzte Trades protokollieren',
       feat_accounts_basic: 'Bis zu 3 Trading-Konten',
-      feat_accounts_premium: 'Unbegrenzte Trading-Konten',
+      feat_accounts_pro: 'Unbegrenzte Trading-Konten',
       feat_strategies_basic: 'Bis zu 3 Strategien',
-      feat_strategies_premium: 'Unbegrenzte Strategien',
+      feat_strategies_pro: 'Unbegrenzte Strategien',
       feat_full_analytics: 'Vollständige Analysen & Statistiken',
       feat_auto_sync: 'Auto-Sync / CSV-Import',
       feat_calendar_view: 'P&L Kalenderansicht',
@@ -624,7 +624,7 @@
       notice_journal_sub: 'Wählen Sie oben einen Plan, um Ihr Limit zu erhöhen oder Features freizuschalten.',
 
       notice_dash_title: 'Funktion nicht enthalten',
-      notice_dash_desc: 'Das Premium Dashboard ist in Ihrem Free-Plan nicht enthalten.',
+      notice_dash_desc: 'Die Analyse ist in Ihrem Free-Plan nicht enthalten.',
       notice_dash_sub: 'Wählen Sie oben einen Plan, um dieses Feature freizuschalten.',
 
       notice_csv_title: 'Funktion nicht enthalten',
@@ -696,7 +696,7 @@
     };
 
     return {
-      premium: {
+      pro: {
         monthly: {
           num: currSym + formatNum(monthly),
           periodKey: 'period_mo_label',
@@ -725,14 +725,14 @@
 
   function updateModalUI() {
     var pricingMatrix = getPricingData();
-    var tierKey = (modalState.tier === 'basic') ? 'basic' : 'premium';
+    var tierKey = (modalState.tier === 'basic') ? 'basic' : 'pro';
     var periodKey = (modalState.period === 'yearly') ? 'yearly' : 'monthly';
     var pData = pricingMatrix[tierKey][periodKey];
 
     // Plan title & price
     var nameEl = document.getElementById('ww-up-plan-name');
     if (nameEl) {
-      nameEl.textContent = (tierKey === 'basic') ? 'Basic' : 'Premium';
+      nameEl.textContent = (tierKey === 'basic') ? 'Basic' : 'Pro';
     }
 
     var priceNumEl = document.getElementById('ww-up-price-num');
@@ -754,12 +754,12 @@
     // Feature items
     var featAcc = document.getElementById('ww-up-feat-accounts');
     if (featAcc) {
-      featAcc.textContent = (tierKey === 'premium') ? tStr('feat_accounts_premium') : tStr('feat_accounts_basic');
+      featAcc.textContent = (tierKey === 'pro') ? tStr('feat_accounts_pro') : tStr('feat_accounts_basic');
     }
 
     var featStrat = document.getElementById('ww-up-feat-strategies');
     if (featStrat) {
-      featStrat.textContent = (tierKey === 'premium') ? tStr('feat_strategies_premium') : tStr('feat_strategies_basic');
+      featStrat.textContent = (tierKey === 'pro') ? tStr('feat_strategies_pro') : tStr('feat_strategies_basic');
     }
 
     // Static text translations
@@ -778,7 +778,7 @@
       if (titleEl) titleEl.textContent = tStr('notice_journal_title');
       if (descEl) descEl.textContent = tStr('notice_journal_desc');
       if (subEl) subEl.textContent = tStr('notice_journal_sub');
-    } else if (feat === 'premium_dashboard' || feat === 'dashboard') {
+    } else if (feat === 'analytics_dashboard' || feat === 'dashboard') {
       if (titleEl) titleEl.textContent = tStr('notice_dash_title');
       if (descEl) descEl.textContent = tStr('notice_dash_desc');
       if (subEl) subEl.textContent = tStr('notice_dash_sub');
@@ -811,7 +811,7 @@
   window.openUpgradeModal = function(opts) {
     opts = opts || {};
     if (opts.feature) modalState.feature = opts.feature;
-    modalState.tier = opts.tier || 'premium';
+    modalState.tier = opts.tier || 'pro';
     modalState.period = opts.period || 'monthly';
 
     updateModalUI();
@@ -866,7 +866,7 @@
     // Tier Switcher
     document.querySelectorAll('#ww-up-tier-switch .ww-up-pill-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        modalState.tier = btn.dataset.tier || 'premium';
+        modalState.tier = btn.dataset.tier || 'pro';
         updateModalUI();
       });
     });
@@ -922,27 +922,27 @@
       });
     }
 
-    // Smart Interceptor: Premium Dashboard clicks for free users
+    // Smart Interceptor: Analiz clicks for free users
     document.addEventListener('click', function(e) {
-      var premiumLink = e.target.closest('a[href*="premium-dashboard"]');
-      if (!premiumLink) return;
+      var proLink = e.target.closest('a[href*="/analytics"]');
+      if (!proLink) return;
 
       var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
-      var isPremiumUser = cachedPlan === 'premium' || (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium');
+      var isProUser = cachedPlan === 'premium' || (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium');
 
-      if (!isPremiumUser) {
+      if (!isProUser) {
         e.preventDefault();
         e.stopPropagation();
-        window.openUpgradeModal({ feature: 'premium_dashboard' });
+        window.openUpgradeModal({ feature: 'analytics_dashboard' });
       }
     }, true); // capture phase to intercept before page-transition.js
 
-    // If on premium-dashboard.html directly without premium plan, trigger modal
-    if (window.location.pathname.includes('/premium-dashboard')) {
+    // If on analytics.html directly without pro plan, trigger modal
+    if (window.location.pathname.includes('/analytics')) {
       setTimeout(function() {
         var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
         if (cachedPlan !== 'premium') {
-          window.openUpgradeModal({ feature: 'premium_dashboard' });
+          window.openUpgradeModal({ feature: 'analytics_dashboard' });
         }
       }, 400);
     }

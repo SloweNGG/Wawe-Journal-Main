@@ -66,7 +66,7 @@
   // planda JS ve veri dahil TAMAMEN hazırlanır; tıklayınca anında açılır.
   // Desteklemeyen tarayıcılarda sadece HTML önceden indirilir.
   var APP_PATHS = ['/dashboard', '/trades', '/calendar', '/strategies', '/journals',
-    '/premium-dashboard', '/my-earnings', '/settings', '/backtest', '/add-trade', '/report-bug'];
+    '/analytics', '/my-earnings', '/settings', '/backtest', '/add-trade', '/report-bug'];
   var PRERENDER_MAX_AGE_MS = 60 * 1000;
   var MAX_PRERENDERS = 2;
   var HOVER_INTENT_MS = 80;
@@ -95,8 +95,8 @@
 
   function canPrerender(url) {
     if (!supportsPrerender || !isAppPath(url)) return false;
-    // Premium olmayan kullanıcı premium-dashboard'a tıklayınca upgrade modalı açılıyor
-    if (pathOf(url) === '/premium-dashboard') {
+    // Pro olmayan kullanıcı analytics'e tıklayınca upgrade modalı açılıyor
+    if (pathOf(url) === '/analytics') {
       try {
         var plan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_user_plan');
         if (plan !== 'premium') return false;
@@ -237,7 +237,7 @@
 
     getMainElement: function() {
       // Sayfadaki ana içerik alanını bul (navbar hariç)
-      var target = document.querySelector('main, .main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap, .trades-main, .bug-main, .journals-main, .my-earnings-container, .admin-main, .premium-main');
+      var target = document.querySelector('main, .main, .dashboard-main, .calendar-page-main, .strategies-main, .settings-wrap, .trades-main, .bug-main, .journals-main, .my-earnings-container, .admin-main, .pro-main');
       if (target) return target;
 
       var container = document.getElementById('app-scroll-container');
