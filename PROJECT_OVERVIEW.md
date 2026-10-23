@@ -65,8 +65,6 @@ Bu belge projeye yeni katılan geliştiriciler için hazırlanmıştır. Gizli b
 ├─ .env.example            Ortam değişkeni adları
 ├─ PROJECT_OVERVIEW.md     Bu belge
 ├─ scripts/                ctrader-probe.ts (cTrader API denemesi)
-├─ fix_layout*.cjs, shrink_*.cjs   Tek seferlik yardımcı script'ler
-├─ repomix-output.xml      Eski bir kod anlık görüntüsü (referans)
 │
 ├─ src/                    Astro kaynakları (sayfa iskeletleri)
 │  ├─ layouts/
