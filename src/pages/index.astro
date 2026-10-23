@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import LegalDisclosures from '../components/LegalDisclosures.astro';
 ---
 <Layout
   lang="en"
@@ -18,7 +19,7 @@ import Layout from '../layouts/Layout.astro';
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="/landing-glass.css?v=1" />
+  <link rel="stylesheet" href="/landing-glass.css?v=2" />
 
   <!-- Google Site Name, Brand Entity & WebSite Schema -->
   <script type="application/ld+json" is:inline>
@@ -235,7 +236,7 @@ import Layout from '../layouts/Layout.astro';
         <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/backtest.webp" alt="Wawe backtest workspace replaying EURUSD H1 candles from cTrader with balance, equity and buy/sell panel" width="1600" height="1059" loading="lazy" decoding="async" /></div></div>
         <div class="steps">
           <div class="g stepcard"><span class="mono num">01</span><div class="step-t" data-i18n="lp.b.s1_t">Pick your data</div><div class="step-d" data-i18n="lp.b.s1_d">Start instantly on Wawe’s synthetic data, or connect cTrader for real candles up to the previous day.</div></div>
-          <div class="g stepcard"><span class="mono num">02</span><div class="step-t" data-i18n="lp.b.s2_t">Replay and trade</div><div class="step-d" data-i18n="lp.b.s2_d">Step candle by candle or play at up to 10×. Buy or sell with lot size, stop loss and take profit.</div></div>
+          <div class="g stepcard"><span class="mono num">02</span><div class="step-t" data-i18n="lp.b.s2_t">Replay and trade</div><div class="step-d" data-i18n="lp.b.s2_d">Step candle by candle or play at up to 10×. Place simulated buy and sell orders with lot size, stop loss and take profit. Nothing is sent to your broker.</div></div>
           <div class="g stepcard"><span class="mono num">03</span><div class="step-t" data-i18n="lp.b.s3_t">Review in your journal</div><div class="step-d" data-i18n="lp.b.s3_d">Every trade is saved to the linked journal. See its stats separately or combined with live trading.</div></div>
         </div>
       </div>
@@ -359,10 +360,10 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
         </div>
         <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="#journal" data-i18n="lp.nav.journal">Journal</a><a href="#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="#backtest" data-i18n="lp.nav.backtest">Backtest</a><a href="#pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
         <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="about.html" data-i18n="lp.ft.about">About</a><a href="privacy.html" data-i18n="lp.ft.privacy">Privacy</a><a href="terms.html" data-i18n="lp.ft.terms">Terms</a><a href="contact.html" data-i18n="lp.ft.contact">Contact</a></div>
-        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.social">SOCIAL</div><div class="foot-social"><a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Wawe Journal on Instagram" class="social-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="0.9" fill="currentColor" stroke="none"></circle></svg></a></div></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.social">SOCIAL</div><div class="foot-social"><a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Wawe Journal on Instagram" class="social-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="0.9" fill="currentColor" stroke="none"></circle></svg></a></div><a href="mailto:support@wawejournal.com">support@wawejournal.com</a></div>
       </div>
-      <p class="risk" data-i18n-html="lp.ft.risk_h"><strong>Risk disclosure:</strong> Trading forex, futures, stocks and crypto involves substantial risk and is not suitable for everyone. You can lose some or all of your capital. Past and backtested performance does not guarantee future results. Wawe Journal does not provide investment advice.</p>
-      <div class="copy">© 2026 Wawe Journal · wawedev</div>
+      <LegalDisclosures />
+      <div class="copy"><span data-i18n="lp.ft.tm">MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</span><br />© 2026 Wawe Journal · wawedev</div>
     </div>
   </footer>
 </div>

@@ -1112,10 +1112,8 @@ function getNavbarHTML(translations) {
 
   return `
     <nav class="nav">
-      <a href="/index.html" class="nav-logo" title="Wawe Journal - Ana Sayfa">
-        <div class="logo-icon">
-          <i data-lucide="trending-up" class="logo-icon-svg"></i>
-        </div>
+      <a href="/dashboard.html" class="nav-logo" title="Wawe Journal - Dashboard">
+        <img class="nav-logo-mark" src="/resim.svg" alt="Wawe Journal" width="26" height="26" />
       </a>
       
         <div class="nav-journal-switcher" id="nav-journal-switcher">

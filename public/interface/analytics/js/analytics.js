@@ -700,29 +700,19 @@ async function loadProData(scope) {
 
     if (!scope.alive) return;
 
-    // Plan kontrolü (sessionStorage veya profil önbelleğinden 0ms kontrol)
-    var cachedPlan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
-    if (!cachedPlan || cachedPlan !== 'premium') {
-      var planData = await getUserPlan();
-      if (!scope.alive) return;
-      if (planData.plan !== 'premium') {
-        if (typeof window.openUpgradeModal === 'function') {
-          window.openUpgradeModal({ feature: 'analytics_dashboard' });
-        }
-        var main = document.getElementById('main-content');
-        main.classList.remove('is-loading');
-        main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="analytics_dash.pro_only_title">' + _t('analytics_dash.pro_only_title', 'Pro\'ya Özel') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.pro_only_desc">' + _t('analytics_dash.pro_only_desc', 'Bu sayfa sadece Pro üyelere özeldir.') + '</p>\n          <button onclick="if(window.openUpgradeModal)window.openUpgradeModal({feature:\'analytics_dashboard\'});else location.href=\'settings.html#panel-plan\';" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;" data-i18n="nav.upgrade_pro">' + _t('nav.upgrade_pro', 'Pro\'ya Geç →') + '</button>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.back_standard">' + _t('analytics_dash.back_standard', '← Standart Dashboard\'a Dön') + '</a>\n        </div>\n      ';
-        return;
+    // Plan kontrolü — requireAuth profili zaten önbelleğe aldığı için getUserPlan genelde ağa çıkmadan döner.
+    // Eskiden önbellekteki 'premium' değerine güvenilip arka planda doğrulanıyor, uyuşmazlıkta location.reload()
+    // yapılıyordu; önbellek düzelmediği için (ör. süresi dolmuş Pro) sayfa durmadan yenileniyordu.
+    var planData = await getUserPlan();
+    if (!scope.alive) return;
+    if (!planData || planData.plan !== 'premium') {
+      if (typeof window.openUpgradeModal === 'function') {
+        window.openUpgradeModal({ feature: 'analytics_dashboard' });
       }
-    } else {
-      // Arka planda sessizce doğrula
-      if (typeof getUserPlan === 'function') {
-        getUserPlan().then(function(planData) {
-          if (planData && planData.plan !== 'premium') {
-            location.reload();
-          }
-        }).catch(function() {});
-      }
+      var main = document.getElementById('main-content');
+      main.classList.remove('is-loading');
+      main.innerHTML = '\n        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.5rem;padding:2rem;">\n          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9l4-6z"/><path d="M12 22V9"/><path d="M2 9h20"/><path d="M6 3l6 6 6-6"/></svg>\n          <h2 style="font-family:\'Syne\',sans-serif;font-size:1.5rem;color:var(--text);" data-i18n="analytics_dash.pro_only_title">' + _t('analytics_dash.pro_only_title', 'Pro\'ya Özel') + '</h2>\n          <p style="color:var(--muted);max-width:400px;font-size:14px;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.pro_only_desc">' + _t('analytics_dash.pro_only_desc', 'Bu sayfa sadece Pro üyelere özeldir.') + '</p>\n          <button onclick="if(window.openUpgradeModal)window.openUpgradeModal({feature:\'analytics_dashboard\'});else location.href=\'settings.html#panel-plan\';" class="btn btn-primary" style="padding:0.7rem 2rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;" data-i18n="nav.upgrade_pro">' + _t('nav.upgrade_pro', 'Pro\'ya Geç →') + '</button>\n          <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none;font-family:\'DM Sans\',sans-serif;" data-i18n="analytics_dash.back_standard">' + _t('analytics_dash.back_standard', '← Standart Dashboard\'a Dön') + '</a>\n        </div>\n      ';
+      return;
     }
     // Buraya yalnızca pro hesap ulaşır (?plan=free ise ücretsiz plan önizlemesi açılır)
     applyAccountPlan('premium');

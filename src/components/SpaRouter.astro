@@ -215,6 +215,33 @@ const buildId = __WW_BUILD_ID__;
       return Promise.all(pending);
     }
 
+    // Script'ler sayfa sırasını korumak için tek tek çalıştırılıyor (runPageScripts); önden
+    // preload edilmezse her biri bir öncekinin bitmesini bekleyip ancak sonra inmeye başlıyor
+    // (backtest'te ~10 dosya art arda). Hepsi burada paralel indirilir, çalıştırma önbellekten olur.
+    let scriptPreloads: HTMLLinkElement[] = [];
+    function preloadScripts(doc: Document) {
+      clearScriptPreloads();
+      for (const s of Array.from(doc.querySelectorAll<HTMLScriptElement>('script[src]'))) {
+        const src = s.getAttribute('src');
+        if (!src || !shouldRun(s)) continue;
+        const link = document.createElement('link');
+        if (s.type === 'module') {
+          link.rel = 'modulepreload';
+        } else {
+          link.rel = 'preload';
+          link.as = 'script';
+        }
+        if (s.hasAttribute('crossorigin')) link.crossOrigin = s.getAttribute('crossorigin');
+        link.href = src;
+        document.head.append(link);
+        scriptPreloads.push(link);
+      }
+    }
+    function clearScriptPreloads() {
+      for (const link of scriptPreloads) link.remove();
+      scriptPreloads = [];
+    }
+
     // ── Head ───────────────────────────────────────────────────
     function headKey(el: Element): string | null {
       switch (el.localName) {
@@ -443,6 +470,7 @@ const buildId = __WW_BUILD_ID__;
       if (aborted) return;
       fire('load');
       abortRun = null;
+      clearScriptPreloads();
 
       try {
         w.i18n?.apply?.();
@@ -465,8 +493,9 @@ const buildId = __WW_BUILD_ID__;
         const html = hit && Date.now() - hit.at < HTML_CACHE_TTL_MS ? await hit.html : null;
         if (!html) {
           await defaultLoader();
-          if (!ev.defaultPrevented && ev.newDocument !== document && hasLibraryConflict(ev.newDocument)) {
-            ev.preventDefault();
+          if (!ev.defaultPrevented && ev.newDocument !== document) {
+            if (hasLibraryConflict(ev.newDocument)) ev.preventDefault();
+            else preloadScripts(ev.newDocument);
           }
           return;
         }
@@ -477,6 +506,7 @@ const buildId = __WW_BUILD_ID__;
           return;
         }
         ev.newDocument = newDoc;
+        preloadScripts(newDoc);
         await preloadStyles(newDoc);
       };
     });

@@ -239,6 +239,20 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .risk strong { color: var(--nav); }
 .copy { font-size: 12px; color: var(--dim); }
 
+/* legal disclosures (LegalDisclosures.astro): short notice + collapsible full text */
+.disclosures { display: grid; gap: 14px; border-top: 1px solid rgba(255,255,255,.08); padding-top: 24px; }
+.disclosures p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--dim); }
+.disclosures strong { color: var(--nav); font-weight: 500; }
+.legal summary { cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); list-style: none; padding: 6px 0; }
+.legal summary::-webkit-details-marker { display: none; }
+.legal summary::before { content: "+"; display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; font-size: 13px; line-height: 1; }
+.legal[open] summary::before { content: "−"; }
+.legal summary:hover { color: var(--ink); }
+.legal h4 { margin: 22px 0 8px; font-size: 13px; font-weight: 500; color: var(--nav); }
+.legal p, .legal li { font-size: 12px; line-height: 1.7; color: var(--dim); }
+.legal p { margin: 0 0 10px; }
+.legal ul { margin: 0 0 10px; padding-left: 18px; list-style: disc; }
+
 /* motion */
 @keyframes fxUp { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes drift { 0% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(40px,-30px,0) scale(1.08); } 100% { transform: translate3d(0,0,0) scale(1); } }

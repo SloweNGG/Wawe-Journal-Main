@@ -137,10 +137,10 @@
     if (gate === 'demo') return setPageState('demo');         // nothing is generated, loaded or stored for the ?test=1 fake user
     if (gate !== 'member') return;
     L.user = user;
-    try { await window.journal.ensureActiveJournal(user.id); } catch (e) { /* navbar consistency only */ }
-    if (!PAGE.alive) return;
-    try { var pl = await window.getUserPlanSilent(); L.plan = pl && pl.plan === 'premium' ? 'premium' : 'free'; } catch (e) { L.plan = 'free'; }
-    if (!PAGE.alive) return;
+    setPageState('list');                                     // skeleton cards while the account list loads
+    var planReady = Promise.resolve().then(function () { return window.getUserPlanSilent(); })
+      .then(function (pl) { L.plan = pl && pl.plan === 'premium' ? 'premium' : 'free'; }, function () { L.plan = 'free'; });
+    Promise.resolve().then(function () { return window.journal.ensureActiveJournal(user.id); }).catch(function () { /* navbar consistency only */ });
     L.src = window.WwBtData.createSyntheticSource({ seed: 1 });
     // cTrader candles: Edge Function client + per-user IndexedDB cache (entries of other user ids are removed)
     L.ctApi = window.WwBtCTrader.createApi({
@@ -154,7 +154,7 @@
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; } });
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
-    var ok = await loadList();
+    var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
     var deep = new URLSearchParams(location.search).get('account');
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
@@ -170,13 +170,16 @@
     show($('bt-list-error'), false);
     try {
       var rows = await L.store.listAccounts();
-      L.accounts = rows.map(E.accountFromRow); L.summaries = {};
-      for (var i = 0; i < L.accounts.length; i++) {
-        var tr = await L.store.listTrades(L.accounts[i].id), s = { closed: 0, open: 0, realizedCents: 0 };
-        tr.forEach(function (t) { if (t.exit_time) { s.closed++; s.realizedCents += E.toCents(t.pnl) || 0; } else s.open++; });
-        L.summaries[L.accounts[i].id] = s;
-      }
-      if (L.accounts.some(function (a) { return a.dataSource === 'ctrader'; })) await ensureJournals();
+      var accounts = rows.map(E.accountFromRow), summaries = {};
+      // one request per account, all at once (they used to run one after another)
+      await Promise.all(accounts.map(function (a) {
+        return L.store.listTrades(a.id).then(function (tr) {
+          var s = { closed: 0, open: 0, realizedCents: 0 };
+          tr.forEach(function (t) { if (t.exit_time) { s.closed++; s.realizedCents += E.toCents(t.pnl) || 0; } else s.open++; });
+          summaries[a.id] = s;
+        });
+      }).concat(accounts.some(function (a) { return a.dataSource === 'ctrader'; }) ? [ensureJournals()] : []));
+      L.accounts = accounts; L.summaries = summaries;
       if (!PAGE.alive) return false;
       syncOnList();
       return true;
