@@ -302,6 +302,10 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 | `js/bt-synthetic.js`, `bt-data.js` | Tarayıcıda deterministik sentetik mum üretimi ("Sentetik veri, gerçek piyasa verisi değildir" etiketi: grafikte ve hesap kartında) |
 | `js/bt-store.js` | `SupabaseStore` (üretim) ve yalnızca duman testleri için `LocalStore`; veritabanıyla aynı satır biçimi ve kurallar (kota, kilitler, geri gitme yasağı, `data_source`) |
 | `js/bt-sync.js` | Kapanan işlemleri bağlı deftere `platform_source = 'backtest'` olarak yazar; bağlantı değişince kopyaları siler |
+| `js/bt-layout.js` | Basit / Gelişmiş mod, sürüklenebilir ayırıcılar (sağ panel, alt sekmeler), tam ekran, kısayol sayfası; tercihler `ww_bt_layout_v1` |
+| `js/bt-look.js` | Görünüm çekmecesi: mum stili (mum, Heikin Ashi, çubuk, çizgi, içi boş), renkler, ızgara/hacim/son fiyat/seans arka planı, 4 hazır tema, kayıtlı temalar (`ww_bt_look_v1`) |
+| `js/bt-draw.js` | Çizim araçları (Lightweight Charts series primitive): trend, yatay, ışın, dikdörtgen, Fibonacci, long/short, metin, ölçüm; zaman + fiyat koordinatı; Premium çizimleri `backtest_drawings` tablosunda |
+| `js/bt-stats.js` | İstatistikler sekmesi (WwMetrics): temel rakamlar, bakiye eğrisi; Premium: varlık eğrisi, drawdown, aylık getiri, R dağılımı, seanslar |
 | `css/backtest.css` | Tam ekran düzen: grafik kalan alanı kaplar, sağda 320–360px yan panel (bakiye ve emir), altta kendi içinde kayan işlem tabloları; 1024px altında alt alta |
 
 **Erişim:** giriş yapmış herkes (admin kapısı Faz 1'de kalktı); navbar linki herkese görünür. Sayfadaki kapı yalnızca görünürlüktür (`WwBtGate`: anon, demo, member), izinleri veritabanı belirler (RLS, kota: ücretsiz 1, pro 10 aktif hesap). **Veri kaynağı:** hesap açarken seçilir, sonradan değişmez (`backtest_accounts.data_source`). Şimdilik yalnızca `synthetic`; `ctrader` seçeneği arayüzde "Yakında" etiketiyle pasif görünür. Sentetik hesaplar defterlere bağlanamaz (veritabanı CHECK'i, arayüzde defter seçimi gizli). Arşiv ve gerçek veri (Migration 03 ve 07, lisans kararı) Faz E'dedir.
@@ -318,10 +322,14 @@ Kazanç sayfası RPC'leri: `get_influencer_earnings`, `get_influencer_payout_sum
 | 06 | Kullanılmayan 6 fonksiyonu siler (isteğe bağlı, bu turda çalıştırılmadı) |
 | 07 | Arşivi tüm üyelere açar; lisans onay satırı açılmadan çalışmaz (Faz E) |
 | 08 | `backtest_accounts.data_source` (`synthetic`; `ctrader` sonraki tur), sentetik hesap deftere bağlanamaz (CHECK), alan değiştirilemez (tetikleyici). Önkoşul: bağlı hesap kalmamış olmalı |
+| 202610240001 | `backtest_drawings` (Premium çizimleri; RLS, sahiplik + Premium + hesap başına 500 tetikleyicisi). Rollback `supabase/rollbacks/`, doğrulama `supabase/tests/backtest_drawings_verify.sql` |
+| 202610240002 | cTrader verili hesaplarda ücretsiz plana aylık işlem sınırı: `system_settings.backtest_limits` (varsayılan 100), sayaç `backtest_trade_usage`, tetikleyici `check_backtest_trade_quota`, RPC `get_backtest_trade_usage`. Doğrulama `supabase/tests/backtest_trade_limit_verify.sql` |
 
 **İstatistiklerden yalıtım:** Backtest işlemleri günlüğe yalnızca `trades.platform_source = 'backtest'` ile gider. Tüm okuyucular (dashboard, pro dashboard, takvim, stratejiler, defterler) canlı kapsamı okur (`public/interface/shared/trades-source.js`); işlemler sayfasında Tümü / Canlı / Backtest seçici ve "Backtest" rozeti vardır.
 
-**Test araçları:** `node --test tests/*.test.js` (312 test).
+**Plan:** ücretsiz kullanıcı Premium özelliklere (2 tema dışındaki görünüm ayarları, 6 çizim aracı ve kalıcı çizimler, gelişmiş istatistikler, çoklu grafik, cTrader verisinde sınırsız işlem) tıklayınca `openUpgradeModal` açılır; kontroller küçük "PRO" etiketi taşır. Kontrol `isPro()` / `hasFeature('backtest…')` ile (`config.js` FEATURES).
+
+**Test araçları:** `node --test tests/*.test.js` (411 test). Tarayıcı duman testleri: `tests/smoke/README.md`.
 
 ---
 

@@ -2065,5 +2065,9 @@ export default {
   "backtest.limit.unlimited": "Sınırsız işlem Premium'da",
   "backtest.limit.upgrade": "Yükselt",
   "backtest.limit.reached": "Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium'da.",
-  "backtest.limit.hint": "cTrader verili hesaplarda ücretsiz planın aylık işlem sınırı; sayaç her ayın 1'inde (UTC) sıfırlanır. Açık pozisyonlar her zaman kapatılabilir."
+  "backtest.limit.hint": "cTrader verili hesaplarda ücretsiz planın aylık işlem sınırı; sayaç her ayın 1'inde (UTC) sıfırlanır. Açık pozisyonlar her zaman kapatılabilir.",
+  "backtest.order.lot_hint_crypto": "Adım {step} · {min}–{max} · Değer ≈ {value} · %1 hareket ≈ {pct}",
+  "backtest.field.spread_crypto": "Spread (USD)",
+  "backtest.field.spread_hint_crypto": "AL ile SAT arası {price} USD (varsayılan {def} USD)",
+  "backtest.err.spread_crypto": "Spread 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık)."
 };

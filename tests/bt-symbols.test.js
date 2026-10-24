@@ -69,4 +69,12 @@ describe('bt-symbols: market hours', () => {
     assert.equal(S.tradingDayKey(ms('2026-09-01T21:00:00Z'), 'EURUSD'), '2026-09-02');
     assert.equal(S.tradingDayKey(ms('2026-09-01T23:59:00Z'), 'BTCUSDT'), '2026-09-01');
   });
+  it('spread unit: pips for forex and gold, price units for crypto; crypto position value', () => {
+    assert.equal(S.spreadUnit('EURUSD'), 'pip'); assert.equal(S.spreadUnit('XAUUSD'), 'pip'); assert.equal(S.spreadUnit('USDJPY'), 'pip');
+    assert.equal(S.spreadUnit('BTCUSDT'), 'price'); assert.equal(S.spreadUnit('ETHUSDT'), 'price');
+    assert.equal(S.get('BTCUSDT').pipSize, 1, 'crypto pip = 1 price unit, so spread_pips is the spread in USD');
+    assert.equal(S.spreadPoints(10, 'BTCUSDT'), 1000, '10 USD = 1000 points at 2 digits');
+    assert.equal(S.positionValueUsd('BTCUSDT', 0.1, 60000), 6000);
+    assert.equal(S.positionValueUsd('USDJPY', 1, 150), 100000, 'USD base: the notional is the lot in USD');
+  });
 });

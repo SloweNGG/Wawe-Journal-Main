@@ -455,9 +455,13 @@
   function spreadHint() {
     var s = S.get($('bt-f-symbol').value), p = E.parseScaled($('bt-f-spread').value, 2, 'exact');
     if (!s) return;
+    var crypto = S.spreadUnit(s.id) === 'price', lab = $('bt-f-spread-label');
+    lab.setAttribute('data-i18n', crypto ? 'backtest.field.spread_crypto' : 'backtest.field.spread');
+    lab.textContent = crypto ? _t('backtest.field.spread_crypto', 'Spread (USD)') : _t('backtest.field.spread', 'Spread (pip)');
     var pts = p.ok ? E.spreadPts(s, p.value) : null;
-    $('bt-f-spread-hint').textContent = pts === null ? '' :
-      _t('backtest.field.spread_hint', '{points} puan = {price} (varsayılan {def} pip)', { points: pts, price: E.ptsToStr(pts, s.digits), def: s.defaultSpreadPips });
+    $('bt-f-spread-hint').textContent = pts === null ? '' : crypto
+      ? _t('backtest.field.spread_hint_crypto', 'AL ile SAT arası {price} USD (varsayılan {def} USD)', { price: E.ptsToStr(pts, s.digits), def: E.hundredthsToStr(Math.round(s.defaultSpreadPips * 100)) })
+      : _t('backtest.field.spread_hint', '{points} puan = {price} (varsayılan {def} pip)', { points: pts, price: E.ptsToStr(pts, s.digits), def: s.defaultSpreadPips });
   }
   async function startHint() {
     var s = S.get($('bt-f-symbol').value); if (!s) return;
@@ -673,7 +677,8 @@
     var bal = E.parseScaled($('bt-f-balance').value, 2, 'exact');
     if (!bal.ok || !(bal.value > 0 && bal.value <= 10000000000)) return formError(_t('backtest.err.balance', 'Başlangıç bakiyesi 0 ile 100.000.000 arasında olmalı (en fazla 2 ondalık).'));
     var sp = E.parseScaled($('bt-f-spread').value, 2, 'exact');
-    if (!sp.ok || sp.value < 0 || sp.value > 1000000) return formError(_t('backtest.err.spread', 'Spread 0 ile 10000 pip arasında olmalı (en fazla 2 ondalık).'));
+    if (!sp.ok || sp.value < 0 || sp.value > 1000000) return formError(S.spreadUnit(sym.id) === 'price'
+      ? _t('backtest.err.spread_crypto', 'Spread 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık).') : _t('backtest.err.spread', 'Spread 0 ile 10000 pip arasında olmalı (en fazla 2 ondalık).'));
     var cm = E.parseScaled($('bt-f-commission').value, 2, 'exact');
     if (!cm.ok || cm.value < 0 || cm.value > 1000000) return formError(_t('backtest.err.commission', 'Komisyon 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık).'));
     btn.disabled = true;
@@ -1623,7 +1628,8 @@
     renderClock();
     if (q) {
       setText('bt-bid', E.ptsToStr(q.bid, s.digits)); setText('bt-ask', E.ptsToStr(q.ask, s.digits));
-      setText('bt-spread', E.ptsToStr(R.eng.sp, s.digits) + ' (' + pipsStr(R.acc.spreadH) + ' pip)');
+      // crypto: the spread in the price unit ("10.00 USD"); forex/gold: price and pips
+      setText('bt-spread', S.spreadUnit(s.id) === 'price' ? E.ptsToStr(R.eng.sp, s.digits) + ' USD' : E.ptsToStr(R.eng.sp, s.digits) + ' (' + pipsStr(R.acc.spreadH) + ' pip)');
     }
     var sm = E.summary(R.eng);
     setText('bt-stat-balance', fmtUsd(sm.balanceCents)); setText('bt-stat-equity', fmtUsd(sm.equityCents));
@@ -1633,7 +1639,12 @@
     // order hint
     var lot = parseLotQuiet();
     var hint = $('bt-lot-hint');
-    hint.textContent = _t('backtest.order.lot_hint', 'Adım {step} · {min}–{max} · 1 pip ≈ {pip}', {
+    if (S.spreadUnit(s.id) === 'price') {
+      // crypto: a "pip" is one dollar of price; the position value and the P&L of a 1% move say more
+      var val = lot && q ? S.positionValueUsd(s.id, lot.lot, q.bid / R.scale) : null;
+      hint.textContent = _t('backtest.order.lot_hint_crypto', 'Adım {step} · {min}–{max} · Değer ≈ {value} · %1 hareket ≈ {pct}', {
+        step: s.lot.step, min: s.lot.min, max: s.lot.max, value: val == null ? '—' : fmtUsd(Math.round(val * 100)), pct: val == null ? '—' : fmtUsd(Math.round(val)) });
+    } else hint.textContent = _t('backtest.order.lot_hint', 'Adım {step} · {min}–{max} · 1 pip ≈ {pip}', {
       step: s.lot.step, min: s.lot.min, max: s.lot.max, pip: lot && q ? fmtUsd(Math.round(S.pipValueUsd(s.id, lot.lot, q.bid / R.scale) * 100)) : '—' });
     var risk = $('bt-order-risk'); risk.textContent = '';
     if (lot && q) {

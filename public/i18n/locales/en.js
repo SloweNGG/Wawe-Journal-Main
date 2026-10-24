@@ -2118,5 +2118,9 @@ export default {
   "backtest.limit.unlimited": "Unlimited trades with Premium",
   "backtest.limit.upgrade": "Upgrade",
   "backtest.limit.reached": "You reached this month's trade limit. Unlimited trades with Premium.",
-  "backtest.limit.hint": "Monthly trade limit of the free plan on cTrader-data accounts; the counter resets on the 1st of every month (UTC). Open positions can always be closed."
+  "backtest.limit.hint": "Monthly trade limit of the free plan on cTrader-data accounts; the counter resets on the 1st of every month (UTC). Open positions can always be closed.",
+  "backtest.order.lot_hint_crypto": "Step {step} · {min}–{max} · Value ≈ {value} · 1% move ≈ {pct}",
+  "backtest.field.spread_crypto": "Spread (USD)",
+  "backtest.field.spread_hint_crypto": "{price} USD between BUY and SELL (default {def} USD)",
+  "backtest.err.spread_crypto": "Spread must be between 0 and 10000 USD (at most 2 decimals)."
 };

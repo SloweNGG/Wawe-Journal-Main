@@ -1,4 +1,4 @@
-# Backtest: esnek ve özelleştirilebilir sayfa (2026-10-24)
+# Backtest: esnek ve özelleştirilebilir sayfa (2026-10-24, yedi aşama tamam)
 
 Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 
@@ -11,8 +11,8 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 | 3 | Çizim araçları (Series Primitives), Premium çizimleri `backtest_drawings` tablosunda | Yayında (`5faae7e`, `228f989`, `95273ac`); migration 202610240001 canlıda (2026-10-24 10:34 UTC, yedek `~/WaweJournal-Backups/20261024T103412Z`) |
 | 4 | İstatistikler sekmesi (ücretsiz temel, Premium ek grafikler; WwMetrics) | Yayında (`889e6a7`, `bt-stats.js`) |
 | 5 | Çoklu grafik (Premium) | Yayında (`5aa97ce`; backtest.js grafik görünümleri: `R` ana görünüm, `R.extra` diğerleri) |
-| 6 | Plan sınırları: cTrader verili hesaplarda ücretsiz 100 işlem/ay (trigger, system_settings) | Bu commit; migration 202610240002 canlıda (2026-10-24 11:07 UTC, yedek `~/WaweJournal-Backups/20261024T110742Z`) |
-| 7 | Kripto spread gösterimi | |
+| 6 | Plan sınırları: cTrader verili hesaplarda ücretsiz 100 işlem/ay (trigger, system_settings) | Yayında (`b2c08a5`); migration 202610240002 canlıda (2026-10-24 11:07 UTC, yedek `~/WaweJournal-Backups/20261024T110742Z`) |
+| 7 | Kripto spread gösterimi | Bu commit (`WwBtSymbols.spreadUnit`, `positionValueUsd`) |
 
 ## Nerede ne var
 

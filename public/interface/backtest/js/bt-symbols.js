@@ -289,6 +289,14 @@
     var s = BY_ID[id], q = s.pipSize * s.contractSize * lot;
     return s.toUsd === 'base' ? q / price : q;
   }
+  // How the spread is entered and shown: 'pip' (forex, gold) or 'price' (crypto: pipSize is 1 price unit, so the account's
+  // spread_pips value IS the spread in the quote currency, e.g. 10 -> 10.00 USD; "pip" means nothing for BTC).
+  function spreadUnit(id) { var s = BY_ID[id]; return s && s.instrument === 'crypto' ? 'price' : 'pip'; }
+  // position value in USD at `price` (crypto lot hint: value and the P&L of a 1% move replace the pip value)
+  function positionValueUsd(id, lot, price) {
+    var s = BY_ID[id], v = lot * s.contractSize * price;
+    return s.toUsd === 'base' ? lot * s.contractSize : v;
+  }
 
   SYMBOLS.forEach(prep);
 
@@ -307,6 +315,8 @@
     fromPoints: fromPoints,
     spreadPoints: spreadPoints,
     pipValueUsd: pipValueUsd,
+    spreadUnit: spreadUnit,
+    positionValueUsd: positionValueUsd,
     tradingDayKey: tradingDayKey,
     priceFormat: priceFormat,
     _parts: parts,
