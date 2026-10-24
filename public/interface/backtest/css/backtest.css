@@ -439,3 +439,11 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
 .bt-limit-msg { margin: 0; color: var(--text); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 :root:not(.light-theme) body:not(.light-theme) .bt-limit { border-color: rgba(255, 255, 255, 0.1); }
 :root:not(.light-theme) body:not(.light-theme) .bt-limit-bar { background: rgba(255, 255, 255, 0.08); }
+
+/* ---------------------------------------------------------------- Bölümler (geri dönüş): işlem geçmişi grupları ve filtre */
+.bt-history-filter { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; font-size: 12.5px; color: var(--muted); }
+.bt-history-filter .bt-select { padding: 5px 8px; font-size: 12.5px; }
+.bt-table .bt-sec-row td { padding: 10px 10px 6px; border-top: 1px solid var(--border); background: none; font-size: 12px; }
+.bt-sec-name { font-weight: 700; color: var(--text); margin-right: 10px; }
+.bt-sec-meta { color: var(--muted); }
+#bt-back-modal .modal-footer { flex-wrap: wrap; }

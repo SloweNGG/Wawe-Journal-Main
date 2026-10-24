@@ -2,33 +2,35 @@
 // equity curve) on the account's closed trades; the backtest-only parts (equity with open positions, drawdown, monthly returns,
 // R multiples, sessions) are computed here. Pure functions are unit tested; render() needs the DOM and LightweightCharts.
 // Free plan: the key figures and the balance curve. Premium: everything.
+// Order: trades count in the order they were OPENED (seq), not by market time: the replay can go back in time (account sections),
+// so the balance, the drawdown and the streaks follow the trade sequence; the balance curve's axis is the trade number.
 (function (global) {
   'use strict';
 
   function M() { return global.WwMetrics; }
   var R_BINS = [[-Infinity, -2], [-2, -1], [-1, 0], [0, 1], [1, 2], [2, 3], [3, Infinity]];
 
-  // trades: [{ entryT, exitT, net (cents), comm, riskCents|null, dir }], closed only. Rows for WwMetrics (USD, ISO exit time).
+  // trades: [{ seq, entryT, exitT, net (cents), comm, riskCents|null, dir, section }], closed only.
+  function bySeq(a, b) { return ((a.seq || 0) - (b.seq || 0)) || (a.entryT - b.entryT); }
+  function ordered(trades) { return trades.slice().sort(bySeq); }
+  // Rows for WwMetrics (USD). trade_date is the position in the opening order (WwMetrics orders by it), not a market time.
+  var SEQ_BASE = Date.UTC(2000, 0, 1);
   function metricRows(trades) {
-    return trades.map(function (t) { return { exit_price: 1, pnl: t.net / 100, trade_date: new Date(t.exitT * 1000).toISOString(), rr_ratio: t.rr == null ? null : t.rr }; });
+    return ordered(trades).map(function (t, i) { return { exit_price: 1, pnl: t.net / 100, trade_date: new Date(SEQ_BASE + (i + 1) * 60000).toISOString(), rr_ratio: t.rr == null ? null : t.rr, _n: i + 1 }; });
   }
   // key figures (free): net P&L, win rate, profit factor, trade count; plus expectancy and drawdown for Premium
   function kpis(trades, startCents) {
     var s = M().summarize(metricRows(trades)), rs = trades.filter(function (t) { return t.riskCents > 0; });
     var avgR = rs.length ? rs.reduce(function (a, t) { return a + t.net / t.riskCents; }, 0) / rs.length : null;
-    var dd = maxDrawdown(balanceSeries(trades, startCents, 0));
+    var dd = maxDrawdown(balanceSeries(trades, startCents));
     return { net: s.totalPnL, winRate: s.winRate, profitFactor: s.profitFactor, count: s.total, wins: s.wins, losses: s.losses,
       expectancy: s.expectancy, expectancyR: avgR, avgWin: s.avgWin, avgLoss: s.avgLoss, maxDd: dd.amount, maxDdPct: dd.pct };
   }
-  // balance after every closed trade (WwMetrics.equityCurve, chronological), in USD; one point per second (LWC needs unique times)
-  function balanceSeries(trades, startCents, firstT) {
-    var curve = M().equityCurve(metricRows(trades)), out = [], start = startCents / 100;
-    if (firstT) out.push({ time: firstT, value: start });
-    curve.forEach(function (p) {
-      var t = Math.round(Date.parse(p.trade.trade_date) / 1000), v = Math.round((start + p.equity) * 100) / 100;
-      if (out.length && out[out.length - 1].time >= t) out[out.length - 1].value = v;     // same second: the later balance
-      else out.push({ time: t, value: v });
-    });
+  // balance after every closed trade in the opening order (WwMetrics.equityCurve), in USD. time = trade number (0 = start),
+  // the chart labels it "#n".
+  function balanceSeries(trades, startCents) {
+    var curve = M().equityCurve(metricRows(trades)), start = startCents / 100, out = [{ time: 0, value: start }];
+    curve.forEach(function (p) { out.push({ time: p.trade._n, value: Math.round((start + p.equity) * 100) / 100 }); });
     return out;
   }
   // Equity (balance + open P&L) at the close of every chart candle. `floatCents(trade, closePts)` prices one open trade at a
@@ -60,9 +62,10 @@
     series.forEach(function (p) { if (p.value > peak) peak = p.value; var d = peak - p.value; if (d > worst) { worst = d; pct = peak > 0 ? d / peak * 100 : 0; } });
     return { amount: worst, pct: pct };
   }
-  // monthly returns: P&L of the trades closed in the month / balance at the start of that month. monthOf(sec) -> 'YYYY-MM'.
+  // monthly returns by the market month of the exit: P&L of those trades / the balance before the first of them (opening order).
+  // monthOf(sec) -> 'YYYY-MM'.
   function monthly(trades, startCents, monthOf) {
-    var sorted = trades.slice().sort(function (a, b) { return a.exitT - b.exitT; }), bal = startCents, cells = {}, years = [];
+    var sorted = ordered(trades), bal = startCents, cells = {}, years = [];
     sorted.forEach(function (t) {
       var key = monthOf(t.exitT), y = key.slice(0, 4), m = +key.slice(5, 7);
       if (!cells[y]) { cells[y] = {}; years.push(y); }
@@ -70,6 +73,7 @@
       c.pnl += t.net; c.trades++; bal += t.net;
     });
     var totals = {};
+    years.sort();
     years.forEach(function (y) {
       var p = 0, base = null;
       for (var m = 1; m <= 12; m++) { var c = cells[y][m]; if (c) { c.ret = c.base > 0 ? c.pnl / c.base * 100 : 0; p += c.pnl; if (base === null) base = c.base; } }
@@ -100,17 +104,23 @@
 
   // ---------------------------------------------------------------- render (browser)
   // opts: { box, t, pro, fmtUsd(cents, signed), fmtPct(n), monthNames[], upgrade(), data: { trades, open, candles, startCents,
-  //         floatCents, monthOf, sessionsAt, firstT }, colors (WwChart.colors()), lwc (WwChart.lwc) }
+  //         floatCents, monthOf, sessionsAt, section, sectionTrades, sectionStartCents }, colors (WwChart.colors()), lwc (WwChart.lwc) }
+  //   trades: every closed trade (key figures, balance by trade number, R, sessions, months); sectionTrades/open/candles: the
+  //   current section for the equity curve in market time, starting at sectionStartCents.
   function createView() {
     var charts = [];
     function destroy() { charts.forEach(function (c) { try { c.remove(); } catch (e) { /* removed with the page */ } }); charts = []; }
     function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
     function card(box, title, wide) { var c = el('section', 'bt-st-card' + (wide ? ' bt-st-wide' : '')); c.appendChild(el('h4', 'bt-st-h', title)); box.appendChild(c); return c; }
-    function lineChart(host, series, opts, kind) {
+    // axis: 'time' (market time) or 'seq' (trade number: "#n", 0 = start)
+    function lineChart(host, series, opts, kind, axis) {
+      var seqLabel = function (t) { return t === 0 ? opts.t('backtest.st.start', 'Başlangıç') : '#' + t; };
       var c = global.LightweightCharts.createChart(host, opts.lwc({
         autoSize: true, rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.08 } },
-        timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false }, handleScroll: false, handleScale: false,
-        localization: { locale: opts.locale, priceFormatter: kind === 'pct' ? function (v) { return v.toFixed(1) + '%'; } : function (v) { return opts.fmtUsd(Math.round(v * 100)); } }
+        timeScale: axis === 'seq' ? { borderVisible: false, timeVisible: false, tickMarkFormatter: seqLabel } : { borderVisible: false, timeVisible: true, secondsVisible: false },
+        handleScroll: false, handleScale: false,
+        localization: Object.assign({ locale: opts.locale, priceFormatter: kind === 'pct' ? function (v) { return v.toFixed(1) + '%'; } : function (v) { return opts.fmtUsd(Math.round(v * 100)); } },
+          axis === 'seq' ? { timeFormatter: seqLabel } : {})
       }));
       charts.push(c);
       series.forEach(function (s) {
@@ -145,11 +155,11 @@
       kpi(t('backtest.st.max_dd', 'Maks. düşüş'), k.count ? opts.fmtUsd(Math.round(k.maxDd * 100)) + ' (' + k.maxDdPct.toFixed(2) + '%)' : '—', '', true);
       box.appendChild(row);
       var grid = el('div', 'bt-st-grid'); box.appendChild(grid);
-      var bal = balanceSeries(d.trades, d.startCents, d.firstT);
+      var bal = balanceSeries(d.trades, d.startCents);
+      var c1 = card(grid, t('backtest.st.balance_curve_seq', 'Bakiye eğrisi (işlem sırasıyla)'), true), h1 = el('div', 'bt-st-chart'); c1.appendChild(h1);
+      if (bal.length >= 2) lineChart(h1, [{ data: bal, color: C.up, area: true, top: hexA(C.up, 0.25), bottom: hexA(C.up, 0) }], opts, 'usd', 'seq');
+      else h1.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
       if (!opts.pro) {
-        var c1 = card(grid, t('backtest.st.balance_curve', 'Bakiye eğrisi'), true), h1 = el('div', 'bt-st-chart'); c1.appendChild(h1);
-        if (bal.length >= 2) lineChart(h1, [{ data: bal, color: C.up, area: true, top: hexA(C.up, 0.25), bottom: hexA(C.up, 0) }], opts);
-        else h1.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
         // the Premium sections as one teaser card
         var lock = el('section', 'bt-st-card bt-st-wide bt-st-teaser'); lock.setAttribute('data-pro', '1');
         var hh = el('h4', 'bt-st-h', t('backtest.st.more', 'Gelişmiş analiz')); hh.appendChild(el('span', 'bt-pro', 'PRO')); lock.appendChild(hh);
@@ -158,19 +168,10 @@
         grid.appendChild(lock);
         return;
       }
-      // Premium: balance + equity, drawdown
-      var eq = equitySeries(d.trades, d.open, d.candles, d.startCents, d.floatCents);
-      var c2 = card(grid, t('backtest.st.equity_curve', 'Bakiye ve varlık eğrisi'), true), h2 = el('div', 'bt-st-chart'); c2.appendChild(h2);
-      var leg = el('p', 'bt-st-legend');
-      leg.appendChild(swatch(C.up)); leg.appendChild(document.createTextNode(t('backtest.st.balance', 'Bakiye') + '  '));
-      leg.appendChild(swatch('#38bdf8')); leg.appendChild(document.createTextNode(t('backtest.st.equity', 'Varlık (açık pozisyonlar dahil)')));
-      c2.insertBefore(leg, h2);
-      if (eq.length >= 2 || bal.length >= 2) {
-        lineChart(h2, [{ data: eq, color: '#38bdf8', width: 1.5 }].concat(bal.length >= 2 ? [{ data: stepTo(bal, eq, d.candles.length ? d.candles[0].span : 0), color: C.up, width: 2 }] : []), opts);
-      } else h2.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
-      var dd = drawdownSeries(eq.length ? eq : bal);
+      // Premium: drawdown on the trade sequence, equity of the current section in market time
+      var dd = drawdownSeries(bal);
       var c3 = card(grid, t('backtest.st.drawdown', 'Drawdown (zirveden düşüş, %)'), false), h3 = el('div', 'bt-st-chart'); c3.appendChild(h3);
-      if (dd.length >= 2) lineChart(h3, [{ data: dd, color: C.down, area: true, top: hexA(C.down, 0), bottom: hexA(C.down, 0.3), invert: true }], opts, 'pct');
+      if (dd.length >= 2) lineChart(h3, [{ data: dd, color: C.down, area: true, top: hexA(C.down, 0), bottom: hexA(C.down, 0.3), invert: true }], opts, 'pct', 'seq');
       else h3.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
       // R distribution
       var rd = rDistribution(d.trades), c4 = card(grid, t('backtest.st.r_dist', 'R dağılımı'), false);
@@ -186,6 +187,11 @@
       c4.appendChild(bars);
       c4.appendChild(el('p', 'bt-hint', (rd.avg == null ? '' : t('backtest.st.avg_r', 'Ortalama {r}R', { r: (rd.avg >= 0 ? '+' : '') + rd.avg.toFixed(2) }) + ' · ') +
         t('backtest.st.no_sl', 'Zarar durdursuz {n} işlem R hesabına girmez.', { n: rd.skipped })));
+      // equity (balance + open positions) of the current section, at every candle close of the section
+      var eq = equitySeries(d.sectionTrades || d.trades, d.open, d.candles, d.sectionStartCents == null ? d.startCents : d.sectionStartCents, d.floatCents);
+      var c2 = card(grid, t('backtest.st.equity_section', 'Varlık eğrisi · bölüm {n} (açık pozisyonlar dahil)', { n: d.section || 1 }), true), h2 = el('div', 'bt-st-chart'); c2.appendChild(h2);
+      if (eq.length >= 2) lineChart(h2, [{ data: eq, color: '#38bdf8', width: 1.5 }], opts);
+      else h2.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades_section', 'Bu bölümde henüz işlem yok.')));
       // sessions
       var ss = sessionStats(d.trades, d.sessionsAt), c5 = card(grid, t('backtest.st.sessions', 'Seanslara göre kazanma oranı (giriş saati)'), false);
       var tb = el('div', 'bt-st-sess');
@@ -222,7 +228,6 @@
         wrap.appendChild(tbl); c6.appendChild(wrap);
       }
     }
-    function swatch(c) { var s = el('i', 'bt-st-sw'); s.style.background = c; return s; }
     return { render: render, destroy: destroy };
   }
   // the balance as a step line on the equity times (so both lines share the time axis); a candle shows the balance at its END
@@ -239,7 +244,7 @@
   }
 
   global.WwBtStats = {
-    R_BINS: R_BINS, metricRows: metricRows, kpis: kpis, balanceSeries: balanceSeries, equitySeries: equitySeries, drawdownSeries: drawdownSeries,
+    R_BINS: R_BINS, bySeq: bySeq, metricRows: metricRows, kpis: kpis, balanceSeries: balanceSeries, equitySeries: equitySeries, drawdownSeries: drawdownSeries,
     maxDrawdown: maxDrawdown, monthly: monthly, rDistribution: rDistribution, sessionStats: sessionStats, stepTo: stepTo, createView: createView
   };
 })(typeof window !== 'undefined' ? window : globalThis);

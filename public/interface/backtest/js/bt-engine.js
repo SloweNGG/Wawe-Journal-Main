@@ -169,7 +169,9 @@
         sl: toPts(r.stop_loss, s.digits), tp: toPts(r.take_profit, s.digits),
         sl0: r.initial_stop_loss != null ? toPts(r.initial_stop_loss, s.digits) : toPts(r.stop_loss, s.digits),
         tp0: r.initial_take_profit != null ? toPts(r.initial_take_profit, s.digits) : toPts(r.take_profit, s.digits),
-        comm: toCents(r.commission) || 0, rr: toHundredths(r.rr_ratio)
+        comm: toCents(r.commission) || 0, rr: toHundredths(r.rr_ratio),
+        // opening order (the balance follows it, not the market time: the replay can go back in time) and the account section
+        seq: Date.parse(r.created_at) || entryT * 1000, section: r.section_no > 0 ? Number(r.section_no) : 1
       };
       if (r.exit_time) {
         var exitT = isoToSec(r.exit_time), net = toCents(r.pnl);
@@ -182,10 +184,13 @@
       } else open.push(p);
     });
     open.sort(function (a, b) { return a.entryT - b.entryT; });
-    closed.sort(function (a, b) { return a.exitT - b.exitT || a.entryT - b.entryT; });
+    closed.sort(bySeq);
     st.open = open; st.closed = closed; st.realizedCents = real;
     return st;
   }
+
+  // trades in the order they were opened (ties: market entry time, then id)
+  function bySeq(a, b) { return (a.seq - b.seq) || (a.entryT - b.entryT) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); }
 
   function indexOfId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return i; return -1; }
 
@@ -235,7 +240,8 @@
       sl: o.sl == null ? null : o.sl, tp: o.tp == null ? null : o.tp,
       sl0: o.sl == null ? null : o.sl, tp0: o.tp == null ? null : o.tp,
       comm: commissionCents(st.sym, st.cplCents, o.steps),       // round-turn, snapshotted now, booked at close
-      rr: rrHundredths(entry, o.sl == null ? null : o.sl, o.tp == null ? null : o.tp)
+      rr: rrHundredths(entry, o.sl == null ? null : o.sl, o.tp == null ? null : o.tp),
+      seq: o.seq != null ? o.seq : Date.now(), section: o.section > 0 ? o.section : 1
     };
     st.open.push(p);
     return p;
@@ -307,8 +313,8 @@
       if (t.ambiguous) amb++;
       comm += t.comm;
     });
-    // drawdown on the closed-trade balance curve, from startCents
-    var curve = st.closed.slice().sort(function (a, b) { return a.exitT - b.exitT; });
+    // drawdown on the closed-trade balance curve, from startCents, in opening order
+    var curve = st.closed.slice().sort(bySeq);
     var b = st.startCents, peak = b, maxDd = 0, ddPeak = peak;
     curve.forEach(function (t) {
       b += t.net;
@@ -338,6 +344,10 @@
       id: r.id, userId: r.user_id, journalId: r.journal_id || null, name: r.name, symbol: r.symbol, tf: r.timeframe,
       startCents: toCents(r.starting_balance), spreadH: toHundredths(r.spread_pips), cplCents: toCents(r.commission_per_lot),
       replaySec: isoToSec(r.replay_time), isActive: r.is_active !== false, dataSource: r.data_source || 'synthetic',
+      sectionNo: r.section_no > 0 ? Number(r.section_no) : 1,
+      sections: (Array.isArray(r.sections) && r.sections.length ? r.sections : [{ no: 1, start: r.replay_time }]).map(function (x) {
+        return { no: Number(x.no) || 1, start: isoToSec(x.start) };
+      }),
       source: r.data_source === 'ctrader' ? {
         ctid: Number(r.source_ctid_account), brokerName: r.source_broker_name || '', isLive: r.source_is_live === true,
         symbolId: Number(r.source_symbol_id), symbolName: r.source_symbol_name || '', digits: r.source_digits == null ? null : Number(r.source_digits)
@@ -407,7 +417,7 @@
     marketFill: marketFill, closeFill: closeFill, exitOnBar: exitOnBar,
     createState: createState, setQuote: setQuote, quote: quote, restore: restore,
     validateOrder: validateOrder, openPosition: openPosition, validateModify: validateModify, modifyPosition: modifyPosition,
-    closePosition: closePosition, onBar: onBar, floating: floating, summary: summary, preview: preview,
+    closePosition: closePosition, onBar: onBar, bySeq: bySeq, floating: floating, summary: summary, preview: preview,
     accountFromRow: accountFromRow, accountInsertRow: accountInsertRow, accountPatch: accountPatch,
     tradeInsertRow: tradeInsertRow, tradeClosePatch: tradeClosePatch, tradeModifyPatch: tradeModifyPatch, metricsRow: metricsRow
   };

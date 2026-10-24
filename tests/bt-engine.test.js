@@ -217,6 +217,25 @@ describe('bt-engine: DB mapping', () => {
     assert.equal(c.steps, 37); assert.equal(c.entry, 108311); assert.equal(c.net, 3885); assert.equal(c.gross, 4144); assert.equal(c.exitBarT, T0 + 60);
     assert.equal(st2.realizedCents, 3885);
   });
+  it('sections: closed trades follow the opening order (created_at), not the market time; drawdown too', () => {
+    const st = E.createState({ sym: 'EURUSD', startCents: 1000000, spreadPts: 0, cplCents: 0 });
+    const iso = (sec) => new Date(sec * 1000).toISOString();
+    const row = (id, entry, exit, pnl, created, section) => ({ id, direction: 'LONG', lot: '0.10', entry_price: '1.10000', entry_time: iso(entry), exit_time: iso(exit),
+      exit_price: '1.10100', exit_reason: 'manual', pnl, gross_pnl: pnl, commission: '0.00', created_at: created, section_no: section });
+    // section 1 traded in March (+100, then -300); section 2 went back to January (+50) AFTER those, in wall-clock time
+    E.restore(st, [row('jan', T0 - 60 * 86400, T0 - 60 * 86400 + 3600, '50.00', '2026-10-24T12:00:00Z', 2),
+      row('mar1', T0, T0 + 3600, '100.00', '2026-10-24T10:00:00Z', 1), row('mar2', T0 + 7200, T0 + 9000, '-300.00', '2026-10-24T11:00:00Z', 1)]);
+    assert.deepEqual(plain(st.closed.map((t) => t.id)), ['mar1', 'mar2', 'jan'], 'opening order');
+    assert.deepEqual(plain(st.closed.map((t) => t.section)), [1, 1, 2]);
+    const sm = E.summary(st);
+    assert.equal(sm.maxDdCents, 30000, 'peak 10100 after mar1, low 9800 after mar2 (market-time order would give a different curve)');
+    assert.equal(sm.balanceCents, 1000000 - 15000);
+    const p = E.openPosition(Object.assign(st, { quote: { t: T0, bid: 110000 } }), { id: 'n', dir: 1, steps: 10, sl: null, tp: null, section: 2 });
+    assert.equal(p.section, 2); assert.ok(p.seq >= Date.parse('2026-01-01'));
+    const a = E.accountFromRow({ id: 'x', replay_time: iso(T0), section_no: 2, sections: [{ no: 1, start: iso(T0 - 100 * 86400) }, { no: 2, start: iso(T0 - 61 * 86400) }] });
+    assert.equal(a.sectionNo, 2); assert.deepEqual(plain(a.sections), [{ no: 1, start: T0 - 100 * 86400 }, { no: 2, start: T0 - 61 * 86400 }]);
+    assert.deepEqual(plain(E.accountFromRow({ id: 'y', replay_time: iso(T0) }).sections), [{ no: 1, start: T0 }], 'old rows: one section');
+  });
   it('restore rebuilds gross when the column is missing; open rows stay open', () => {
     const st = E.createState({ sym: 'EURUSD', startCents: 1000000, spreadPts: 2, cplCents: 0 });
     E.restore(st, [

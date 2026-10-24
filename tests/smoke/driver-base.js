@@ -98,7 +98,9 @@
     // go-to rules with trades
     var cur = $('bt-goto-input').value;
     setv('bt-goto-input', $('bt-goto-input').min); $('bt-goto-btn').click(); await sleep(300);
-    ok('go-to backwards blocked on an account with trades', /geri gidilemez|go back/i.test(toasts()), toasts().slice(-140));
+    ok('go-to backwards on an account with trades asks first (continue / reset / cancel)', $('bt-back-modal').classList.contains('active'));
+    var clk = $('bt-clock-time').textContent; $('bt-back-cancel').click(); await sleep(300);
+    ok('cancel keeps the replay where it was', !$('bt-back-modal').classList.contains('active') && $('bt-clock-time').textContent === clk);
     // reset then go back
     $('bt-acc-settings-btn').click(); await waitFor(function () { return $('bt-account-modal').classList.contains('active'); }, 5000, 'settings modal');
     ok('reset button visible with trades', vis('bt-account-reset'));

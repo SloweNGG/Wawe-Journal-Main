@@ -46,7 +46,7 @@
       ok('free: locked figure opens the upgrade window', window.__upgrade === true);
     } else {
       ok('premium: no PRO tags', qa('.bt-pro').length === 0);
-      ok('premium: equity + drawdown charts', qa('.bt-st-chart canvas').length >= 2 && qa('.bt-st-chart').length === 2);
+      ok('premium: balance (trade order) + drawdown + section equity charts', qa('.bt-st-chart canvas').length >= 3 && qa('.bt-st-chart').length === 3);
       ok('premium: R distribution with 7 bins, counts add up', qa('.bt-st-bar').length === 7 &&
         Array.prototype.reduce.call(qa('.bt-st-count'), function (a, e) { return a + (+e.textContent); }, 0) === eng.closed.filter(function (t) { return t.sl0 != null; }).length);
       ok('premium: trades without a stop loss mentioned', /1/.test(q('.bt-st-bars').parentNode.querySelector('.bt-hint').textContent), q('.bt-st-bars').parentNode.querySelector('.bt-hint').textContent);

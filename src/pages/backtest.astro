@@ -12,29 +12,29 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=11" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=12" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793400000" is:inline defer></script>
+  <script src="/i18n.js?v=1793500000" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-candles.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-engine.js?v=3" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-engine.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-synthetic.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-data.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-ctrader.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-store.js?v=4" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-store.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-layout.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-stats.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=14" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-stats.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=15" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -94,6 +94,7 @@ import Layout from '../layouts/Layout.astro';
         <div class="bt-replay-title">
           <h2 id="bt-acc-name"></h2>
           <span id="bt-acc-symbol" class="bt-chip"></span>
+          <span id="bt-acc-section" class="bt-chip bt-chip-muted" hidden></span>
         </div>
         <div class="bt-head-tools">
           <div class="bt-seg" role="group" data-i18n-title="backtest.mode.label" title="Görünüm">
@@ -275,6 +276,10 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <div id="bt-panel-history" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-history" hidden>
+          <div id="bt-history-filter" class="bt-history-filter" hidden>
+            <label for="bt-history-section" data-i18n="backtest.section.filter">Bölüm</label>
+            <select id="bt-history-section" class="bt-select bt-num"><option value="all" data-i18n="backtest.section.all">Tüm bölümler</option></select>
+          </div>
           <div class="bt-table-wrap"><table class="bt-table">
             <thead><tr>
               <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
@@ -435,6 +440,25 @@ import Layout from '../layouts/Layout.astro';
         <button type="button" id="bt-keys-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
       </div>
       <div class="modal-body"><div id="bt-keys-list"></div></div>
+    </div>
+  </div>
+
+  <div id="bt-back-modal" class="modal-overlay bt-modal" role="alertdialog" aria-modal="true" aria-labelledby="bt-back-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-back-title" data-i18n="backtest.back.title">Geçmişe dönüyorsun</h3>
+        <button type="button" id="bt-back-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <div class="modal-body">
+        <p data-i18n="backtest.back.text">Daha önce gördüğün mumlara geri dönüyorsun; bu dönemde açacağın işlemler bu bilgiden etkilenebilir.</p>
+        <p id="bt-back-note" class="bt-hint"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="bt-back-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <span class="bt-spacer"></span>
+        <button type="button" id="bt-back-reset" class="bt-btn-danger-ghost"><span data-i18n="backtest.back.reset">Hesabı sıfırla ve başla</span></button>
+        <button type="button" id="bt-back-continue" class="btn-modal-confirm"><span data-i18n="backtest.back.continue">Devam et</span></button>
+      </div>
     </div>
   </div>
 

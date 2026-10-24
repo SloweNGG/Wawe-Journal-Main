@@ -35,6 +35,17 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 - Trigger `trg_check_backtest_trade_quota` (yalnız INSERT; açık pozisyonlar kapatılabilir), RPC `get_backtest_trade_usage()`.
 - Doğrulama `supabase/tests/backtest_trade_limit_verify.sql` (ROLLBACK, canlıda 12/12). Rollback `supabase/rollbacks/202610240002_backtest_trade_limit.down.sql`.
 
+## Geri dönüş ve bölümler (2026-10-24)
+
+- İşlemi olan hesapta geri gidilebilir; açık pozisyon varken gidilemez (`BACKTEST_OPEN_POSITIONS:replay_time`). Onay penceresi:
+  Devam et / Hesabı sıfırla ve başla / İptal. Her geri dönüş yeni bölüm: `backtest_accounts.section_no`, `sections` (jsonb: no, start, at),
+  `backtest_account_trades.section_no`; hepsini trigger yazar (istemci değiştiremez). Hesapta işlem kalmayınca tek bölüme döner.
+- Bakiye, drawdown ve istatistikler açılış sırasına göre (`seq` = `created_at`); bakiye eğrisinin ekseni işlem numarası; Premium varlık
+  eğrisi yalnız güncel bölüm. Defter kopyaları piyasa zamanıyla (bt-sync değişmedi).
+- Migration 202610240003 canlıda (2026-10-24 12:04 UTC, yedek `~/WaweJournal-Backups/20261024T120442Z`), doğrulama
+  `supabase/tests/backtest_replay_sections_verify.sql` (11/11), rollback `supabase/rollbacks/202610240003_backtest_replay_sections.down.sql`
+  (birden çok bölümlü hesap varsa durur; eski fonksiyon gövdesini md5 ile birebir geri yükler).
+
 ## Yayın notu
 
 - Her aşamada değişen backtest dosyalarının `?v=` numarası artırılır (sayfa `backtest.astro`). Yeni çeviri anahtarı eklenince

@@ -196,6 +196,7 @@ export class FakeDb {
         if (row.is_active === undefined) row.is_active = true;
         row.created_at = row.created_at || new Date().toISOString(); row.updated_at = row.updated_at || row.created_at;
         row.journal_id = row.journal_id ?? null;
+        row.section_no = 1; row.sections = [{ no: 1, start: row.replay_time, at: row.created_at }];   // 202610240003
         if (this.migration08) {
           row.data_source = row.data_source ?? 'synthetic';
           if (this.migration09) for (const c of SOURCE_COLS) row[c] = row[c] ?? null;
@@ -212,6 +213,10 @@ export class FakeDb {
           if (this.plan !== 'premium' && this.tradeUsed >= this.tradeLimit) return { data: null, error: { code: 'P0001', message: 'BACKTEST_TRADE_LIMIT:' + this.tradeLimit }, status: 400 };
           this.tradeUsed++;
         }
+      }
+      if (call.table === 'backtest_account_trades') {      // trg_backtest_trade_section
+        const acc2 = this.tables.backtest_accounts.find((a) => a.id === row.backtest_account_id);
+        row.section_no = (acc2 && acc2.section_no) || 1;
       }
       if (call.table === 'backtest_account_trades') {      // defaults + trg_check_backtest_trade (initial levels = levels at open)
         row.initial_stop_loss = row.stop_loss ?? null; row.initial_take_profit = row.take_profit ?? null;
@@ -263,9 +268,23 @@ export class FakeDb {
         if (bad) return { data: null, error: { code: '23514', message: 'new row for relation "backtest_accounts" violates check constraint "' + bad + '"' }, status: 400 };
       }
     }
+    if (call.table === 'backtest_accounts') {             // 202610240003: back in time without open positions only, sections
+      for (const r of hits) {
+        const trades = this.tables.backtest_account_trades.filter((t) => t.backtest_account_id === r.id);
+        const back = call.payload.replay_time && Date.parse(call.payload.replay_time) < Date.parse(r.replay_time);
+        if (back && trades.some((t) => !t.exit_time)) return { data: null, error: { code: 'P0001', message: 'BACKTEST_OPEN_POSITIONS:replay_time' }, status: 400 };
+      }
+    }
     for (const r of hits) {
       const old = { ...r };
       Object.assign(r, call.payload);
+      if (call.table === 'backtest_accounts') {
+        const trades = this.tables.backtest_account_trades.filter((t) => t.backtest_account_id === r.id);
+        const back = Date.parse(r.replay_time) < Date.parse(old.replay_time);
+        r.section_no = old.section_no || 1; r.sections = (old.sections || []).slice();
+        if (!trades.length) { if (back || r.section_no !== 1 || r.sections.length !== 1) { r.section_no = 1; r.sections = [{ no: 1, start: r.replay_time, at: new Date().toISOString() }]; } }
+        else if (back) { r.section_no += 1; r.sections.push({ no: r.section_no, start: r.replay_time, at: new Date().toISOString() }); }
+      }
       if (call.table === 'trades') trgCalcPnlBranch1(r);
       if (call.table === 'backtest_accounts' && old.journal_id && old.journal_id !== r.journal_id) this.cleanupMirrors(old);
       out.push(r);

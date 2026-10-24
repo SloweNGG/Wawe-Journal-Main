@@ -141,6 +141,7 @@
           source_symbol_name: row.source_symbol_name == null ? null : row.source_symbol_name, source_digits: row.source_digits == null ? null : row.source_digits,
           created_at: nowIso(), updated_at: nowIso()
         };
+        a.section_no = 1; a.sections = [{ no: 1, start: a.replay_time, at: a.created_at }];   // trg_backtest_accounts_sections
         if (row.user_id && row.user_id !== userId) throw fail('BACKTEST_NOT_OWNER', '42501');
         if (findAccount(a.id)) throw fail('duplicate key value violates unique constraint', '23505');
         if (a.journal_id && opts.journalOwned && !opts.journalOwned(a.journal_id)) throw fail('INVALID_JOURNAL');   // BEFORE trigger, runs before the CHECKs
@@ -166,7 +167,12 @@
         if ((spreadChanged || commChanged) && trades.some(function (t) { return t.exit_time == null; })) {
           throw fail('BACKTEST_OPEN_POSITIONS:' + (spreadChanged ? 'spread_pips' : 'commission_per_lot'));
         }
-        if (Date.parse(a.replay_time) < Date.parse(old.replay_time) && trades.length) throw fail('BACKTEST_REPLAY_BACKWARD');
+        // migration 202610240003: back in time only without open positions; a new section when the account has trades
+        var back = Date.parse(a.replay_time) < Date.parse(old.replay_time);
+        if (back && trades.some(function (t) { return t.exit_time == null; })) throw fail('BACKTEST_OPEN_POSITIONS:replay_time');
+        a.section_no = old.section_no || 1; a.sections = clone(old.sections || [{ no: 1, start: old.replay_time, at: old.created_at }]);
+        if (!trades.length) { if (back || a.section_no !== 1 || a.sections.length !== 1) { a.section_no = 1; a.sections = [{ no: 1, start: a.replay_time, at: nowIso() }]; } }
+        else if (back) { a.section_no += 1; a.sections.push({ no: a.section_no, start: a.replay_time, at: nowIso() }); }
         if (a.journal_id && a.journal_id !== old.journal_id && opts.journalOwned && !opts.journalOwned(a.journal_id)) throw fail('INVALID_JOURNAL');
         checkAccountValues(a);
         if (a.is_active !== false && old.is_active === false && activeCount(id) >= limit()) throw fail('BACKTEST_LIMIT_EXCEEDED:' + limit());
@@ -208,7 +214,8 @@
           entry_time: row.entry_time, exit_time: row.exit_time == null ? null : row.exit_time,
           pnl: row.pnl == null ? null : row.pnl, commission: row.commission == null ? '0.00' : row.commission,
           rr_ratio: row.rr_ratio == null ? null : row.rr_ratio, exit_reason: row.exit_reason == null ? null : row.exit_reason,
-          gross_pnl: row.gross_pnl == null ? null : row.gross_pnl, exit_ambiguous: !!row.exit_ambiguous, created_at: nowIso()
+          gross_pnl: row.gross_pnl == null ? null : row.gross_pnl, exit_ambiguous: !!row.exit_ambiguous, created_at: nowIso(),
+          section_no: acc.section_no || 1                                            // trg_backtest_trade_section
         };
         for (var i = 0; i < data.trades.length; i++) if (data.trades[i].id === t.id) throw fail('duplicate key value violates unique constraint', '23505');
         checkTradeValues(t);
@@ -218,7 +225,7 @@
     };
 
     var IMMUTABLE_TRADE_COLS = ['id', 'user_id', 'backtest_account_id', 'symbol', 'direction', 'lot', 'entry_price', 'entry_time',
-      'initial_stop_loss', 'initial_take_profit', 'rr_ratio', 'created_at'];
+      'initial_stop_loss', 'initial_take_profit', 'rr_ratio', 'created_at', 'section_no'];
     // resolves with the updated rows ([] when nothing matched), like supabase .update().select('id').
     // opts.onlyOpen mirrors .is('exit_time', null): a position closed elsewhere matches nothing.
     store.updateTrade = function (id, patch, o) {
@@ -254,7 +261,7 @@
   // read EVERY user's rows (user_id = auth.uid() OR is_admin()), so without it an admin would see everyone's accounts.
   // The database enforces the rules (quota, immutables, replay direction, CHECKs) and raises the same messages
   // the LocalStore reproduces; they surface as Error(message) with .code (SQLSTATE) and .status.
-  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,data_source,source_ctid_account,source_broker_name,source_is_live,source_symbol_id,source_symbol_name,source_digits,created_at,updated_at';
+  var ACC_COLS = 'id,user_id,journal_id,name,symbol,timeframe,starting_balance,spread_pips,commission_per_lot,replay_time,is_active,data_source,source_ctid_account,source_broker_name,source_is_live,source_symbol_id,source_symbol_name,source_digits,section_no,sections,created_at,updated_at';
   var PAGE_SIZE = 1000;
 
   function createSupabaseStore(opts) {

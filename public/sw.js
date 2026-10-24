@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v24'; // Backtest: kripto spread çeviri anahtarları (yerel dosya önbelleği yenilensin)
+const CACHE_VERSION = 'wawe-v25'; // Backtest: geri dönüş ve bölümler çeviri anahtarları (yerel dosya önbelleği yenilensin)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

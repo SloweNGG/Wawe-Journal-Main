@@ -347,6 +347,7 @@
       row(_t('backtest.field.timeframe', 'Zaman dilimi'), C.TF_LABEL[a.tf] || a.tf);
       row(_t('backtest.card.trades', 'İşlemler'), sm.closed + ' / ' + sm.open);
       row(_t('backtest.card.replay_time', 'Replay zamanı'), a.replaySec ? fmtDateTime(a.replaySec) : '—');
+      if (a.sectionNo > 1) row(_t('backtest.section.current', 'Bölüm'), String(a.sectionNo));
       if (SYNC && a.dataSource === 'ctrader') row(_t('backtest.card.journal', 'Bağlı hesap'), a.journalId ? (journalName(a.journalId) || '…') : '—');
       card.appendChild(dl);
       card.appendChild(sourceBadge(a));
@@ -394,6 +395,7 @@
   function anyModalOpen() { return !!document.querySelector('.bt-modal.active'); }
   function closeAllModals() {
     if (textCb) finishText(false);
+    if (backResolve) finishBack('cancel');
     var m = document.querySelectorAll('.bt-modal.active'); for (var i = 0; i < m.length; i++) m[i].classList.remove('active');
     if (confirmResolve) finishConfirm(false);
   }
@@ -663,8 +665,9 @@
       ? _t('backtest.quota.pro_reached', 'En fazla {n} aktif backtest hesabı açabilirsin.', { n: PRO_LIMIT }) : _t('backtest.quota.free_reached', 'Ücretsiz planda 1 backtest hesabı açabilirsin.');
     if (m.indexOf('CTRADER_ACCOUNT_NOT_LINKED') >= 0) return _t('backtest.err.ctrader_not_linked', 'Bu cTrader hesabı bağlı değil. Önce hesabını bağla.');
     if (m.indexOf('INVALID_JOURNAL') >= 0) return _t('backtest.err.invalid_journal', 'Seçilen hesap geçersiz.');
+    if (m.indexOf('BACKTEST_OPEN_POSITIONS:replay_time') >= 0) return _t('backtest.err.goto_open_positions', 'Açık pozisyon varken başka bir tarihe gidilemez. Önce açık pozisyonlarını kapat.');
     if (m.indexOf('BACKTEST_OPEN_POSITIONS') >= 0) return _t('backtest.err.open_positions_settings', 'Açık pozisyon varken spread ve komisyon değiştirilemez.');
-    if (m.indexOf('BACKTEST_REPLAY_BACKWARD') >= 0) return _t('backtest.err.goto_backward', 'İşlem yapılmış hesapta geri gidilemez; önce hesabı sıfırlayın.');
+    if (m.indexOf('BACKTEST_REPLAY_BACKWARD') >= 0) return _t('backtest.err.goto_backward', 'Geri dönüş kaydedilemedi. Sayfayı yenileyip tekrar dene.');
     if (e && e.code === '23514') return _t('backtest.err.invalid_value', 'Geçersiz değer.');
     return _t('backtest.err.generic', 'Bir hata oluştu. Lütfen tekrar dene.');
   }
@@ -763,13 +766,12 @@
   async function confirmReset() {
     var acc = editing; if (!acc) return;
     try {
-      await L.store.deleteTrades(acc.id);
-      if (SYNC && acc.journalId) syncResult(await SYNC.reconcileAccount(syncAcc(acc), { closedTrades: [] }));   // the mirrors of the deleted trades go too
+      await resetTrades(acc);                                               // the journal copies of the deleted trades go too
       closeModal('bt-reset-modal'); closeModal('bt-account-modal');
-      if (R && R.acc.id === acc.id) {
-        R.eng.open = []; R.eng.closed = []; R.eng.realizedCents = 0;
-        syncPriceLines(); rebuildMarkers(); renderTables(); renderStats(); renderLive(true);
-      }
+      // one section again: any account update without trades resets the sections (database trigger)
+      var here = R && R.acc.id === acc.id && R.win ? R.win.t[R.k] + 60 : acc.replaySec;
+      var fresh = await L.store.updateAccount(acc.id, E.accountPatch({ replaySec: here }));
+      if (R && R.acc.id === acc.id) { R.lastSavedReplaySec = here; applyAccountChange(E.accountFromRow(fresh)); renderTables(); }
       await loadList();
       if (!R) renderList();
       toast(_t('backtest.reset.done', 'Hesap sıfırlandı'), 'success');
@@ -777,7 +779,7 @@
   }
   function applyAccountChange(a) {
     R.acc = a; R.eng.sp = E.spreadPts(R.sym, a.spreadH); R.eng.cplCents = a.cplCents; R.eng.startCents = a.startCents;
-    setText('bt-acc-name', a.name);
+    setText('bt-acc-name', a.name); renderSectionChip();
     updateAskLine(); renderLive(true); renderStats();
   }
 
@@ -810,8 +812,10 @@
       R.cov = await R.src.coverage(sym.id);
       if (!PAGE.alive || !R) return;
       var replaySec = acc.replaySec || R.cov.firstT + 60;
+      // never before the trades of the CURRENT section (earlier sections may lie later in market time)
       eng.open.forEach(function (p) { replaySec = Math.max(replaySec, p.entryT); });
-      eng.closed.forEach(function (t) { replaySec = Math.max(replaySec, t.reason === 'manual' ? t.exitT : t.exitT + 60); });
+      eng.closed.forEach(function (t) { if (t.section === acc.sectionNo) replaySec = Math.max(replaySec, t.reason === 'manual' ? t.exitT : t.exitT + 60); });
+      renderSectionChip();
       L.usage = null; renderLimit();
       if (acc.dataSource === 'ctrader') loadUsage().then(function () { if (R && R.acc.id === acc.id) { renderLimit(); updateControls(); } });
       var g0 = opts.startAt ? 'goto' : 'resume';
@@ -1048,15 +1052,65 @@
     }
     advance1(); afterFrame(); saveReplayTime(true);
   }
+  // Go to a date. Never with an open position (close it first). Back in time on an account with trades: a confirmation, then a new
+  // section (the database numbers it); the trades stay and the balance continues in the order they were opened.
   async function goTo(sec) {
     if (!R) return;
     if (sec === null) return toast(_t('backtest.err.start_required', 'Tarih seç.'), 'warning');
-    if (R.eng.open.length) return toast(_t('backtest.err.goto_open_positions', 'Açık pozisyon varken tarihe gidilemez.'), 'warning');
-    var nowSec = R.win.t[R.k] + 60;
-    if (R.eng.closed.length && sec < nowSec) return toast(_t('backtest.err.goto_backward', 'İşlem yapılmış hesapta geri gidilemez; önce hesabı sıfırlayın.'), 'warning');
+    if (R.eng.open.length) return toast(_t('backtest.err.goto_open_positions', 'Açık pozisyon varken başka bir tarihe gidilemez. Önce açık pozisyonlarını kapat.'), 'warning');
     if (sec > R.cov.lastT) return toast(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'), 'warning');
-    await placeCursor(Math.max(sec, R.cov.firstT), 'goto');
-    if (R) saveReplayTime(true);
+    var nowSec = R.win.t[R.k] + 60, target = Math.max(sec, R.cov.firstT);
+    if (!(R.eng.closed.length && target < nowSec)) {
+      await placeCursor(target, 'goto');
+      if (R) saveReplayTime(true);
+      return;
+    }
+    var choice = await askBack(R.acc.sectionNo + 1);
+    if (!R || choice === 'cancel') return;
+    var acc = R.acc;
+    if (choice === 'reset') {
+      try { await resetTrades(acc); } catch (e) { return toast(mapStoreError(e), 'error'); }
+      if (!R || R.acc.id !== acc.id) return;
+    }
+    pause();
+    await placeCursor(target, 'goto');
+    if (!R || R.acc.id !== acc.id) return;
+    var newSec = R.win.t[R.k] + 60;
+    try {
+      var row = await L.store.updateAccount(acc.id, E.accountPatch({ replaySec: newSec }));
+      if (!R || R.acc.id !== acc.id) return;
+      R.lastSavedReplaySec = newSec; R.dirty = false;
+      applyAccountChange(E.accountFromRow(row));
+      rebuildMarkers(); renderTables();
+      if (choice === 'continue') toast(_t('backtest.back.started', 'Bölüm {n} başladı.', { n: R.acc.sectionNo }), 'success');
+    } catch (e) {
+      // not stored (an open position elsewhere, an old database rule): back to where the account is
+      toast(mapStoreError(e), 'error');
+      if (R && R.acc.id === acc.id) await placeCursor(nowSec, 'resume');
+    }
+  }
+  // the three-way confirmation of going back: resolves 'continue' | 'reset' | 'cancel'
+  var backResolve = null;
+  function askBack(nextSection) {
+    return new Promise(function (resolve) {
+      if (backResolve) backResolve('cancel');
+      backResolve = resolve;
+      $('bt-back-note').textContent = _t('backtest.back.note', 'İşlemlerin silinmez; Bölüm {n} başlar. Bakiye, işlemleri açtığın sırayla devam eder.', { n: nextSection });
+      openModal('bt-back-modal');
+    });
+  }
+  function finishBack(v) {
+    $('bt-back-modal').classList.remove('active');
+    var r = backResolve; backResolve = null; if (r) r(v);
+  }
+  // delete every trade of the account (and their journal copies), then one section again (the database resets it on the next update)
+  async function resetTrades(acc) {
+    await L.store.deleteTrades(acc.id);
+    if (SYNC && acc.journalId) syncResult(await SYNC.reconcileAccount(syncAcc(acc), { closedTrades: [] }));
+    if (R && R.acc.id === acc.id) {
+      R.eng.open = []; R.eng.closed = []; R.eng.realizedCents = 0;
+      syncPriceLines(); rebuildMarkers(); renderTables(); renderStats(); renderLive(true);
+    }
   }
   function setTimeframe(tfId) {
     if (!R || !C.TF_MIN[tfId] || tfId === R.tfId) return;
@@ -1082,7 +1136,7 @@
     R.lastSavedReplaySec = sec;
     L.store.updateAccount(acc.id, E.accountPatch({ replaySec: sec })).catch(function (e) {
       if (R) R.lastSavedReplaySec = prev;
-      if (String(e && e.message).indexOf('BACKTEST_REPLAY_BACKWARD') < 0) wwLogWarn(e);
+      if (!/BACKTEST_REPLAY_BACKWARD|BACKTEST_OPEN_POSITIONS/.test(String(e && e.message))) wwLogWarn(e);
     });
   }
   function wwLogWarn(e) { try { window.wwLog.warn('[bt]', e); } catch (x) { /* ignore */ } }
@@ -1162,7 +1216,7 @@
     if (atLimit()) { orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.')); openUpgrade('backtest_trades'); return; }
     var rd = readOrder(dir); if (!rd.ok) return orderError(rd.msg);
     var pos;
-    try { pos = E.openPosition(R.eng, { id: newId(), dir: dir, steps: rd.o.steps, sl: rd.o.sl, tp: rd.o.tp }); } catch (e) { return orderError(codeMessage(e)); }
+    try { pos = E.openPosition(R.eng, { id: newId(), dir: dir, steps: rd.o.steps, sl: rd.o.sl, tp: rd.o.tp, section: R.acc.sectionNo }); } catch (e) { return orderError(codeMessage(e)); }
     orderError('');
     var row = E.tradeInsertRow(R.eng, pos, ctx()), acc = R.acc;
     persist('open', function () {
@@ -1376,7 +1430,8 @@
   }
   function rebuildMarkers() {
     if (!R) return;
-    var c = colors(), trades = R.eng.closed.slice(-MAX_MARKER_TRADES).concat(R.eng.open);
+    var c = colors(), sec = R.acc.sectionNo;
+    var trades = R.eng.closed.filter(function (t) { return t.section === sec; }).slice(-MAX_MARKER_TRADES).concat(R.eng.open);   // this section's trades
     views().forEach(function (v) {
       if (!v.series) return;
       var first = v.candles.length ? v.candles[0].time : 0, last = v.candles.length ? v.candles[v.candles.length - 1].time : 0, m = [];
@@ -1709,12 +1764,52 @@
     show($('bt-mini-pos-empty'), R.eng.open.length === 0);
     setText('bt-mini-pos-count', String(R.eng.open.length));
   }
+  function sectionStart(no) {
+    var list = (R && R.acc.sections) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].no === no) return list[i].start;
+    return null;
+  }
+  function renderSectionChip() {
+    var c = $('bt-acc-section'); if (!c || !R) return;
+    c.hidden = R.acc.sectionNo <= 1;
+    c.textContent = _t('backtest.section.chip', 'Bölüm {n}', { n: R.acc.sectionNo });
+    var st = sectionStart(R.acc.sectionNo); c.title = st ? _t('backtest.section.since', '{date} tarihinden', { date: fmtDay(st) }) : '';
+  }
+  // the section filter of the history (all / one section); hidden while the account has a single section
+  function fillSectionFilter(nums) {
+    var sel = $('bt-history-section'), keep = sel.value || 'all';
+    sel.textContent = '';
+    var all = document.createElement('option'); all.value = 'all'; all.textContent = _t('backtest.section.all', 'Tüm bölümler'); sel.appendChild(all);
+    nums.forEach(function (n) {
+      var o = document.createElement('option'); o.value = String(n); var st = sectionStart(n);
+      o.textContent = _t('backtest.section.chip', 'Bölüm {n}', { n: n }) + (st ? ' · ' + fmtDay(st) : ''); sel.appendChild(o);
+    });
+    sel.value = keep === 'all' || nums.indexOf(+keep) >= 0 ? keep : 'all';
+    show($('bt-history-filter'), nums.length > 1);
+    return sel.value;
+  }
   function renderTables() {
     if (!R) return;
     renderOpenRows();
     var s = R.sym, body = $('bt-history-body'); body.textContent = '';
-    var rows = R.eng.closed.slice().sort(function (a, b) { return b.exitT - a.exitT; });
-    rows.slice(0, MAX_HISTORY_ROWS).forEach(function (t) {
+    // newest first in the order they were opened, grouped by section
+    var all = R.eng.closed.slice().sort(E.bySeq).reverse(), nums = [];
+    all.forEach(function (t) { if (nums.indexOf(t.section) < 0) nums.push(t.section); });
+    nums.sort(function (a, b) { return b - a; });
+    var f = fillSectionFilter(nums), rows = f === 'all' ? all : all.filter(function (t) { return t.section === +f; });
+    var grouped = nums.length > 1, shown = rows.slice(0, MAX_HISTORY_ROWS), lastSec = null;
+    var sums = {}; rows.forEach(function (t) { var x = sums[t.section] || (sums[t.section] = { n: 0, net: 0 }); x.n++; x.net += t.net; });
+    shown.forEach(function (t) {
+      if (grouped && t.section !== lastSec) {
+        lastSec = t.section;
+        var hr = el('tr', 'bt-sec-row'), hc = el('td'); hc.colSpan = 10;
+        var st = sectionStart(t.section), x = sums[t.section];
+        hc.appendChild(el('span', 'bt-sec-name', _t('backtest.section.chip', 'Bölüm {n}', { n: t.section })));
+        hc.appendChild(el('span', 'bt-sec-meta bt-num', (st ? _t('backtest.section.since', '{date} tarihinden', { date: fmtDay(st) }) + ' · ' : '') +
+          _t('backtest.section.trades', '{n} işlem', { n: x.n }) + ' · '));
+        hc.appendChild(el('span', 'bt-num ' + pnlClass(x.net), fmtUsd(x.net, true)));
+        hr.appendChild(hc); body.appendChild(hr);
+      }
       var tr = el('tr');
       tr.appendChild(td(dirLabel(t.dir), t.dir > 0 ? 'bt-up' : 'bt-down')); tr.appendChild(td(E.stepsToStr(t.steps, s.lotDigits), 'bt-num'));
       tr.appendChild(td(fmtShort(t.entryT), 'bt-num')); tr.appendChild(td(E.ptsToStr(t.entry, s.digits), 'bt-num'));
@@ -1727,7 +1822,7 @@
     show($('bt-history-empty'), rows.length === 0);
     var more = $('bt-history-more'); more.hidden = rows.length <= MAX_HISTORY_ROWS;
     more.textContent = _t('backtest.history.more', 'Son {n} işlem gösteriliyor ({total} işlemden).', { n: MAX_HISTORY_ROWS, total: rows.length });
-    setText('bt-history-count', String(rows.length));
+    setText('bt-history-count', String(all.length));
   }
   // Statistics tab: drawn only while it is visible (the charts are not free), coalesced while the replay closes trades
   function renderStats() {
@@ -1741,14 +1836,16 @@
     R.statsDirty = false;
     var sym = R.sym, eng = R.eng, sp = eng.sp;
     function risk(t) { return t.sl0 == null ? null : -E.grossCents(sym, t.dir, t.entry, t.sl0, t.steps) + t.comm; }
-    var trades = eng.closed.map(function (t) { return { entryT: t.entryT, exitT: t.exitT, net: t.net, comm: t.comm, dir: t.dir, entry: t.entry, steps: t.steps, riskCents: risk(t), rr: t.rr == null ? null : t.rr / 100 }; });
+    var trades = eng.closed.map(function (t) { return { seq: t.seq, section: t.section, entryT: t.entryT, exitT: t.exitT, net: t.net, comm: t.comm, dir: t.dir, entry: t.entry, steps: t.steps, riskCents: risk(t), rr: t.rr == null ? null : t.rr / 100 }; });
     var open = eng.open.map(function (t) { return { entryT: t.entryT, exitT: null, net: 0, comm: t.comm, dir: t.dir, entry: t.entry, steps: t.steps }; });
-    var firstT = trades.concat(open).length ? Math.min.apply(null, trades.concat(open).map(function (t) { return t.entryT; })) - 60 : 0;
-    // equity from the candle of the first trade on (the loaded history reaches back months)
+    // equity curve in market time: the current section only, from the balance the earlier sections left
+    var secNo = R.acc.sectionNo, secTrades = trades.filter(function (t) { return t.section === secNo; });
+    var secStartCents = R.acc.startCents + trades.reduce(function (a, t) { return t.section === secNo ? a : a + t.net; }, 0);
+    var firstT = secTrades.concat(open).length ? Math.min.apply(null, secTrades.concat(open).map(function (t) { return t.entryT; })) - 60 : 0;
     var span = R.tfMin * 60, candles = !firstT ? [] : R.candles.filter(function (c) { return c.time + span > firstT; }).map(function (c) { return { time: c.time, close: c.close, span: span }; });
     STATS.render({ box: $('bt-stats-view'), t: _t, pro: can('backtestStats'), fmtUsd: fmtUsd, locale: localeTag(), colors: colors(), lwc: window.WwChart.lwc,
       monthNames: MONTHS[lang()] || MONTHS.tr, upgrade: function () { openUpgrade('backtest_stats'); },
-      data: { trades: trades, open: open, candles: candles, startCents: R.acc.startCents, firstT: firstT,
+      data: { trades: trades, open: open, candles: candles, startCents: R.acc.startCents, section: secNo, sectionTrades: secTrades, sectionStartCents: secStartCents,
         floatCents: function (t, closePts) { return E.grossCents(sym, t.dir, t.entry, E.closeFill(t.dir, closePts, sp), t.steps) - t.comm; },
         monthOf: function (sec) { var p = window.WwTime.partsInTz(sec * 1000, tz()); return p.y + '-' + pad2(p.m); },
         sessionsAt: window.WwBtLook.sessionsAt } });
@@ -1843,6 +1940,12 @@
       change: function (next, how) { L.look = next; window.WwBtLook.save(safeStorage(), next); applyLook(how); } });
     $('bt-look-btn').addEventListener('click', function () { toggleDrawer(); });
     $('bt-limit-upgrade').addEventListener('click', function () { openUpgrade('backtest_trades'); });
+    $('bt-back-continue').addEventListener('click', function () { finishBack('continue'); });
+    $('bt-back-reset').addEventListener('click', function () { finishBack('reset'); });
+    $('bt-back-cancel').addEventListener('click', function () { finishBack('cancel'); });
+    $('bt-back-close').addEventListener('click', function () { finishBack('cancel'); });
+    $('bt-back-modal').addEventListener('click', function (e) { if (e.target === $('bt-back-modal')) finishBack('cancel'); });
+    $('bt-history-section').addEventListener('change', function () { renderTables(); });
     // multi-chart layout picker (Premium)
     $('bt-layout-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleLayoutPop(); });
     $('bt-layout-pop').addEventListener('click', function (e) {
@@ -1946,6 +2049,7 @@
     clearTimeout(bootTimer); clearTimeout(resizeTimer); clearTimeout(chipTimer);
     if (SYNC) { try { SYNC.cancelPending(); } catch (e) { /* ignore */ } }
     if (confirmResolve) { var cr = confirmResolve; confirmResolve = null; cr(false); }
+    if (backResolve) { var br = backResolve; backResolve = null; br('cancel'); }
     if (R) { try { pause(); saveReplayTime(true); R.abort.abort(); R.token++; } catch (e) { /* ignore */ } }
     if (themeObserver) themeObserver.disconnect();
     try { destroyCharts(); } catch (e) { /* ignore */ }

@@ -29,12 +29,21 @@ describe('bt-stats', () => {
     assert.ok(near(k.expectancyR, (2 - 1 - 0.5) / 3), 'average R over the trades that had a stop loss');
     assert.ok(near(k.maxDd, 100) && near(k.maxDdPct, 100 / 10200 * 100), 'drawdown from the 10 200 peak after the first trade');
   });
-  it('balance curve: starts at the starting balance, one point per closed trade, unique ascending times', () => {
-    const b = S.balanceSeries(trades, 1000000, D(2026, 1, 5, 8));
-    assert.deepEqual(plain(b.map((p) => p.value)), [10000, 10200, 10100, 10150, 10125]);
-    assert.ok(b.every((p, i) => i === 0 || p.time > b[i - 1].time));
-    const same = S.balanceSeries([{ entryT: 1, exitT: 100, net: 100 }, { entryT: 2, exitT: 100, net: 200 }], 0, 0);
-    assert.deepEqual(plain(same), [{ time: 100, value: 3 }], 'two closes in the same second become one point with the later balance');
+  it('balance curve: by trade number (0 = start), one point per closed trade in the opening order', () => {
+    const b = S.balanceSeries(trades, 1000000);
+    assert.deepEqual(plain(b), [{ time: 0, value: 10000 }, { time: 1, value: 10200 }, { time: 2, value: 10100 }, { time: 3, value: 10150 }, { time: 4, value: 10125 }]);
+  });
+  it('sections: a trade opened later at an EARLIER market time (replay went back) comes later in the balance and the drawdown', () => {
+    const t = [
+      { seq: 1, entryT: D(2026, 3, 1), exitT: D(2026, 3, 2), net: 10000 },
+      { seq: 2, entryT: D(2026, 3, 5), exitT: D(2026, 3, 6), net: -30000 },
+      { seq: 3, entryT: D(2026, 1, 5), exitT: D(2026, 1, 6), net: 5000 }];       // section 2, back in January
+    assert.deepEqual(plain(S.balanceSeries(t, 1000000).map((p) => p.value)), [10000, 10100, 9800, 9850]);
+    const k = S.kpis(t, 1000000);
+    assert.ok(near(k.maxDd, 300), 'peak 10 100 after #1, low 9 800 after #2');
+    const mo = S.monthly(t, 1000000, (sec) => new Date(sec * 1000).toISOString().slice(0, 7));
+    assert.ok(near(mo.cells['2026'][1].ret, 50 / 9800 * 100), 'January (opened last) is measured on the balance before it');
+    assert.ok(near(mo.cells['2026'][3].ret, -200 / 10000 * 100));
   });
   it('equity at candle closes: realized trades plus open positions priced at the close', () => {
     const closed = [{ entryT: 100, exitT: 250, net: 500, dir: 1, entry: 10 }], open = [{ entryT: 260, exitT: null, dir: 1, entry: 10 }];

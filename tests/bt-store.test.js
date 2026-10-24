@@ -124,14 +124,22 @@ describe('LocalStore: accounts', () => {
     await st.updateTrade(trade(a.id).id, { exit_price: '1.08400', exit_time: '2026-09-01T02:00:00.000Z', exit_reason: 'manual', pnl: '0.20', gross_pnl: '0.90' });
     await st.updateAccount(a.id, { spread_pips: '0.50' });                      // closed now: allowed
   });
-  it('replay_time cannot go backwards once the account has trades (go-to-date rule)', async () => {
+  it('go-to-date: back in time only without open positions; every going back on an account with trades starts a section', async () => {
     const st = mk(memStorage()); const a = await st.createAccount(acc());
-    await st.updateAccount(a.id, { replay_time: '2026-08-01T00:00:00.000Z' });  // no trades yet: free
-    await st.insertTrade(trade(a.id));
-    await st.updateAccount(a.id, { replay_time: '2026-09-02T00:00:00.000Z' });
-    await assert.rejects(() => st.updateAccount(a.id, { replay_time: '2026-09-01T00:00:00.000Z' }), (e) => msg(e) === 'BACKTEST_REPLAY_BACKWARD');
+    assert.equal(a.section_no, 1); assert.equal(a.sections.length, 1);
+    await st.updateAccount(a.id, { replay_time: '2026-08-01T00:00:00.000Z' });  // no trades yet: free, still one section
+    await st.insertTrade(trade(a.id));                                          // open position
+    await st.updateAccount(a.id, { replay_time: '2026-09-02T00:00:00.000Z' });  // forward with an open position: allowed
+    await assert.rejects(() => st.updateAccount(a.id, { replay_time: '2026-09-01T00:00:00.000Z' }), (e) => msg(e) === 'BACKTEST_OPEN_POSITIONS:replay_time');
+    await st.updateTrade(trade(a.id).id, { exit_price: '1.08400', exit_time: '2026-09-01T02:00:00.000Z', exit_reason: 'manual', pnl: '0.20', gross_pnl: '0.90' });
+    const b = await st.updateAccount(a.id, { replay_time: '2026-08-15T00:00:00.000Z', section_no: 9 });
+    assert.equal(b.section_no, 2, 'closed only: going back is allowed and starts section 2 (client value ignored)');
+    assert.deepEqual(b.sections.map((x) => [x.no, x.start]), [[1, '2026-08-01T00:00:00.000Z'], [2, '2026-08-15T00:00:00.000Z']]);
+    const t2 = await st.insertTrade(Object.assign(trade(a.id), { id: 'x2' }));
+    assert.equal(t2.section_no, 2);
     await st.deleteTrades(a.id);                                                // account reset
-    await st.updateAccount(a.id, { replay_time: '2026-09-01T00:00:00.000Z' });
+    const c = await st.updateAccount(a.id, { replay_time: '2026-08-10T00:00:00.000Z' });
+    assert.equal(c.section_no, 1); assert.equal(c.sections.length, 1);
   });
   it('CHECK constraints', async () => {
     const st = mk(memStorage());

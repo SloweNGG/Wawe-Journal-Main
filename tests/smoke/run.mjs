@@ -41,6 +41,8 @@ const SCENARIOS = {
   'limit-phone': ['backend=supabase&driver=/__driver-limit.js&role=user&plan=free&ct=ready&tlimit=3&tused=1', PHONE],
   crypto: ['driver=/__driver-crypto.js&role=user&plan=free&i18n=tr', DESKTOP],
   'crypto-en': ['driver=/__driver-crypto.js&role=user&plan=free&i18n=en', DESKTOP],
+  sections: ['driver=/__driver-sections.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  'sections-ct': ['backend=supabase&driver=/__driver-sections.js&role=user&plan=premium&ct=ready&i18n=en', DESKTOP],
   // screenshots only (use with --shots)
   'shot-drawer': ['driver=/__driver-shot.js&shot=drawer&plan=premium&i18n=tr', DESKTOP, true],
   'shot-sessions': ['driver=/__driver-shot.js&shot=sessions&plan=premium&i18n=tr', DESKTOP, true],
