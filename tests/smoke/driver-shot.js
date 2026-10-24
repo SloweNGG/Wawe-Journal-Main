@@ -36,6 +36,7 @@
       S.select(ms.id);
       if (qp.get('fs') === '1') $('bt-fs-btn').click();
     }
+    if (shot === 'multi') { $('bt-layout-btn').click(); $('bt-layout-pop').querySelector('[data-layout="1+3"]').click(); await sleep(800); }
     if (window.__shotHook) await window.__shotHook(shot);
     await sleep(600);
   } catch (e) { console.warn(e); }

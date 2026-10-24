@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v21'; // Backtest: istatistikler sekmesinin yeni çeviri anahtarları (yerel dosya önbelleği yenilensin)
+const CACHE_VERSION = 'wawe-v22'; // Backtest: çoklu grafik çeviri anahtarları (yerel dosya önbelleği yenilensin)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

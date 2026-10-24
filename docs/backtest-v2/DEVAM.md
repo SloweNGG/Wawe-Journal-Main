@@ -9,8 +9,8 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 | 1 | Düzen altyapısı: Basit / Gelişmiş mod, ayırıcılar, tam ekran, kısayol sayfası | Yayında (`2848396`) |
 | 2 | Görünüm ayarları çekmecesi (temalar, mum stili, renkler, göster/gizle, kendi temaları) | Yayında (`33757d8`) |
 | 3 | Çizim araçları (Series Primitives), Premium çizimleri `backtest_drawings` tablosunda | Yayında (`5faae7e`, `228f989`, `95273ac`); migration 202610240001 canlıda (2026-10-24 10:34 UTC, yedek `~/WaweJournal-Backups/20261024T103412Z`) |
-| 4 | İstatistikler sekmesi (ücretsiz temel, Premium ek grafikler; WwMetrics) | Bu commit (`bt-stats.js`) |
-| 5 | Çoklu grafik (Premium) | |
+| 4 | İstatistikler sekmesi (ücretsiz temel, Premium ek grafikler; WwMetrics) | Yayında (`889e6a7`, `bt-stats.js`) |
+| 5 | Çoklu grafik (Premium) | Bu commit (backtest.js grafik görünümleri: `R` ana görünüm, `R.extra` diğerleri) |
 | 6 | Plan sınırları: cTrader verili hesaplarda ücretsiz 100 işlem/ay (trigger, system_settings) | |
 | 7 | Kripto spread gösterimi | |
 

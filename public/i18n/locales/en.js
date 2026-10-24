@@ -2105,5 +2105,13 @@ export default {
   "backtest.st.session_ny": "New York",
   "backtest.st.session_off": "Off-session",
   "backtest.st.monthly": "Monthly return (%)",
-  "backtest.st.year": "Year"
+  "backtest.st.year": "Year",
+  "backtest.multi.title": "Chart layout",
+  "backtest.multi.timeframe": "Timeframe of this chart",
+  "backtest.multi.layout_1": "One chart",
+  "backtest.multi.layout_2h": "2 charts, side by side",
+  "backtest.multi.layout_2v": "2 charts, stacked",
+  "backtest.multi.layout_2x2": "4 charts (2×2)",
+  "backtest.multi.layout_1p3": "1 large + 3 small",
+  "backtest.multi.narrow": "Narrow screens show one chart."
 };

@@ -2072,5 +2072,13 @@ export default {
   "backtest.st.session_ny": "New York",
   "backtest.st.session_off": "Außerhalb",
   "backtest.st.monthly": "Monatsrendite (%)",
-  "backtest.st.year": "Jahr"
+  "backtest.st.year": "Jahr",
+  "backtest.multi.title": "Chart-Layout",
+  "backtest.multi.timeframe": "Zeitrahmen dieses Charts",
+  "backtest.multi.layout_1": "Ein Chart",
+  "backtest.multi.layout_2h": "2 Charts nebeneinander",
+  "backtest.multi.layout_2v": "2 Charts untereinander",
+  "backtest.multi.layout_2x2": "4 Charts (2×2)",
+  "backtest.multi.layout_1p3": "1 groß + 3 klein",
+  "backtest.multi.narrow": "Schmale Bildschirme zeigen einen Chart."
 };

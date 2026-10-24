@@ -772,7 +772,7 @@
         cov: null, win: null, winMonths: [], k: 0, candles: [], builder: null, eng: eng, token: 0, playing: false, rafId: 0, lastTs: null,
         accum: 0, buffering: false, busy: false, loadingNext: null, nextState: null, dirtyFrom: -1, closedQueue: [], gap: null,
         chart: null, series: null, askLine: null, lines: {}, dirty: false, lastSavedReplaySec: acc.replaySec, lastSaveAt: 0, lastLiveAt: 0,
-        src: srcFor(acc), abort: new AbortController() };
+        src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0, userAt: 0 };
       setPageState('replay');
       $('bt-view-replay').setAttribute('data-replay', 'loading');
       setText('bt-acc-name', acc.name); setText('bt-acc-symbol', sym.name); setSourceLabel(acc);
@@ -780,7 +780,7 @@
       try { var u = new URL(location.href); u.searchParams.set('account', id); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
       overlay(_t('backtest.chart.loading', 'Mum verisi yükleniyor…'));
       DRAW.setAccount(acc.id);
-      buildChart();
+      buildChart(R); markUser(R);
       R.cov = await R.src.coverage(sym.id);
       if (!PAGE.alive || !R) return;
       var replaySec = acc.replaySec || R.cov.firstT + 60;
@@ -810,7 +810,8 @@
     if (STATS) STATS.destroy();
     pause(); saveReplayTime(true);
     R.abort.abort(); R.token++;
-    destroyChart();
+    destroyCharts();
+    (R.extra || []).forEach(function (v) { if (v.cell) v.cell.remove(); }); R.extra = [];
     R = null;
     window.clearTimeout(chipTimer);
   }
@@ -839,7 +840,7 @@
 
   async function placeCursor(targetSec, mode) {
     var tok = ++R.token; pause(); setReplay('loading'); overlay(_t('backtest.chart.loading', 'Mum verisi yükleniyor…'));
-    resetLoads();
+    resetLoads(); R.hist = null; R.histMonths = 0;
     var cov = R.cov, id = R.sym.id;
     var want = mode === 'goto' ? Math.floor((S.nextOpen(targetSec * 1000, id) || cov.lastT * 1000) / 1000) : targetSec - 60;
     want = Math.min(Math.max(want, cov.firstT), cov.lastT);
@@ -862,8 +863,10 @@
     E.setQuote(R.eng, barAt(R.k));
     R.candles = C.aggregate(m, R.tfMin, id, 0, R.k);
     R.builder = C.createBuilder(R.tfMin, id, R.candles);
+    (R.extra || []).forEach(viewCandles);
     renderChartData(); rebuildMarkers(); syncPriceLines(); updateAskLine(); renderLive(true); renderTables(); renderStats();
     hideOverlay(); setReplay('ready');
+    applyChartLayout();
     var gi = $('bt-goto-input');
     gi.min = toLocalInput(cov.firstT); gi.max = toLocalInput(cov.lastT); gi.value = toLocalInput(R.win.t[R.k] + 60);
     loadHistory(tok); maybePrefetch();
@@ -874,25 +877,32 @@
     showDataBanner({ kind: 'error', err: e });
   }
 
+  // the months before the window, as many as the longest timeframe on screen needs; kept as minutes (R.hist) so every chart
+  // view can aggregate them in its own timeframe
   async function loadHistory(tok) {
-    var first = R.winMonths[0], need = C.historyMonths(R.tfMin), keys = [];
+    var first = R.winMonths[0], need = historyNeed(), keys = [];
     for (var i = 1; i <= need; i++) { var k2 = C.addMonths(first, -i); if (R.cov.months.indexOf(k2) >= 0) keys.unshift(k2); }
-    if (!keys.length) return;
-    var hist = [];
+    if (!keys.length) { R.hist = null; R.histMonths = need; return; }
+    var hist = null;
     for (var j = 0; j < keys.length; j++) {
       var mm;
       try { mm = await monthMinutes(keys[j], tok); } catch (e) { return; }
       if (stale(tok) || !mm) return;
       overlay(_t('backtest.chart.loading_n', 'Geçmiş yükleniyor {done}/{total}', { done: j + 1, total: keys.length }), true);
-      hist = C.merge(hist, C.aggregate(mm, R.tfMin, R.sym.id));
+      hist = C.concatMinutes(hist, mm);
     }
     hideOverlay();
-    var before = R.candles.length, range = R.chart ? R.chart.timeScale().getVisibleLogicalRange() : null;
-    R.candles = C.merge(hist, R.candles);
-    var added = R.candles.length - before;
-    R.builder = C.createBuilder(R.tfMin, R.sym.id, R.candles);
-    renderChartData();
-    if (range) R.chart.timeScale().setVisibleLogicalRange({ from: range.from + added, to: range.to + added });
+    R.hist = hist; R.histMonths = need;
+    var id = R.sym.id;
+    views().forEach(function (v) {
+      var wStart = C.bucketStart(R.win.t[0], v.tfMin, id), before = v.candles.length, range = v.chart ? v.chart.timeScale().getVisibleLogicalRange() : null;
+      v.candles = C.merge(C.aggregate(hist, v.tfMin, id), v.candles.filter(function (c) { return c.time >= wStart; }));
+      var added = v.candles.length - before;
+      v.builder = C.createBuilder(v.tfMin, id, v.candles);
+      if (v === R) R.builder = v.builder;
+      renderChartData(v);
+      if (range && v.chart) v.chart.timeScale().setVisibleLogicalRange({ from: range.from + added, to: range.to + added });
+    });
     rebuildMarkers();
   }
   function maybePrefetch() {
@@ -925,6 +935,10 @@
     var closed = E.onBar(R.eng, BAR);
     var idx = R.builder.push(BAR[0], BAR[1], BAR[2], BAR[3], BAR[4]);
     if (R.dirtyFrom < 0 || idx < R.dirtyFrom) R.dirtyFrom = idx;
+    for (var x = 0, ex = R.extra; x < ex.length; x++) {
+      var vi = ex[x].builder.push(BAR[0], BAR[1], BAR[2], BAR[3], BAR[4]);
+      if (ex[x].dirtyFrom < 0 || vi < ex[x].dirtyFrom) ex[x].dirtyFrom = vi;
+    }
     if (closed.length) Array.prototype.push.apply(R.closedQueue, closed);
     if (k > 0 && BAR[0] - W.t[k - 1] > 60) R.gap = C.gapKind(W.t[k - 1], BAR[0], R.sym.id);
     R.dirty = true;
@@ -1022,7 +1036,8 @@
     resetLoads(); hideOverlay();
     R.candles = C.aggregate(R.win, R.tfMin, R.sym.id, 0, R.k);
     R.builder = C.createBuilder(R.tfMin, R.sym.id, R.candles);
-    renderChartData(); rebuildMarkers();
+    R.tickSeen = null; R.tickHide = null;
+    renderChartData(R); rebuildMarkers();
     loadHistory(tok); maybePrefetch();
     L.store.updateAccount(R.acc.id, { timeframe: tfId }).catch(function (e) { toast(mapStoreError(e), 'error'); });
     R.acc.tf = tfId;
@@ -1162,42 +1177,50 @@
     return r === 'tp' ? 'TP' : r === 'sl' ? 'SL' : _t('backtest.reason.manual', 'Manuel');
   }
 
-  // ---------------------------------------------------------------- chart
+  // ---------------------------------------------------------------- chart views
+  // R itself is the main view: the account timeframe (toolbar, candle step, legend, statistics). R.extra holds the other charts
+  // of a multi-chart layout (Premium), each with its own timeframe over the same replay cursor. A view has: el, tfMin, chart,
+  // series, vol, sessions, layer, candles, builder, bars, ha, dirtyFrom, lines, askLine, bidLine, look, tickSeen, tickHide.
+  var LAYOUTS = { '1': 1, '2h': 2, '2v': 2, '2x2': 4, '1+3': 4 }, LAYOUT_IDS = ['1', '2h', '2v', '2x2', '1+3'];
+  var EXTRA_TFS = ['15m', '4h', '1d'], syncing = false, crossing = false;
+  function views() { return R ? [R].concat(R.extra || []) : []; }
   function colors() { return window.WwChart.colors(); }
   // The chart clips a label whose centre is closer to the left edge than half its width ("30 Jun" showed as "0 Jun").
   // Such a tick is shown blank instead. The chart caches the formatted text per tick time, so the set of blanked ticks
   // is re-checked whenever the visible range changes and the labels are re-formatted when that set changes.
   function clipLimit(len) { return len * 3.8 + 4; }
-  function tickLabel(time, type) {
-    var text = tickText(time, type);
-    if (!text || !R || !R.chart) return text;
-    if (!R.tickSeen) { R.tickSeen = {}; R.tickHide = {}; }
-    R.tickSeen[time] = text.length;
-    try {
-      var x = R.chart.timeScale().timeToCoordinate(time);
-      if (x !== null && x > -4 && x < clipLimit(text.length)) { R.tickHide[time] = true; return ''; }
-    } catch (e) { /* keep the label */ }
-    return R.tickHide[time] ? '' : text;
+  function tickLabelFor(v) {
+    return function (time, type) {
+      var text = tickText(v, time, type);
+      if (!text || !R || !v.chart) return text;
+      if (!v.tickSeen) { v.tickSeen = {}; v.tickHide = {}; }
+      v.tickSeen[time] = text.length;
+      try {
+        var x = v.chart.timeScale().timeToCoordinate(time);
+        if (x !== null && x > -4 && x < clipLimit(text.length)) { v.tickHide[time] = true; return ''; }
+      } catch (e) { /* keep the label */ }
+      return v.tickHide[time] ? '' : text;
+    };
   }
-  function refreshClippedTicks() {
-    if (!R || !R.chart || !R.tickSeen) return;
-    var ts = R.chart.timeScale(), seen = R.tickSeen, hide = {}, changed = false, k;
+  function refreshClippedTicks(v) {
+    if (!R || !v.chart || !v.tickSeen) return;
+    var ts = v.chart.timeScale(), seen = v.tickSeen, hide = {}, changed = false, k;
     var keys = Object.keys(seen);
-    if (keys.length > 4000) { R.tickSeen = {}; R.tickHide = {}; return; }
+    if (keys.length > 4000) { v.tickSeen = {}; v.tickHide = {}; return; }
     keys.forEach(function (t) {
       var x = ts.timeToCoordinate(+t);
       if (x !== null && x > -4 && x < clipLimit(seen[t])) hide[t] = true;
     });
-    for (k in hide) if (!R.tickHide[k]) changed = true;
-    for (k in R.tickHide) if (!hide[k]) changed = true;
+    for (k in hide) if (!v.tickHide[k]) changed = true;
+    for (k in v.tickHide) if (!hide[k]) changed = true;
     if (!changed) return;
-    R.tickHide = hide;
-    ts.applyOptions({ tickMarkFormatter: tickLabel });
+    v.tickHide = hide;
+    ts.applyOptions({ tickMarkFormatter: tickLabelFor(v) });
   }
-  function tickText(time, type) {
+  function tickText(v, time, type) {
     if (typeof time !== 'number' || !R) return null;
     var mo = MONTHS[lang()] || MONTHS.tr;
-    if (R.tfMin >= 1440) {
+    if (v.tfMin >= 1440) {
       var key = S.tradingDayKey(time * 1000, R.sym.id), y = +key.slice(0, 4), m = +key.slice(5, 7), d = +key.slice(8, 10);
       return type === 0 ? String(y) : type === 1 ? mo[m - 1] : d + ' ' + mo[m - 1];
     }
@@ -1207,133 +1230,158 @@
     if (type === 2 || (p.H === 0 && p.Mi === 0)) return p.d + ' ' + mo[p.m - 1];
     return fmtTime(time);
   }
-  function crosshairTime(time) { return R && R.tfMin >= 1440 ? fmtTradingDay(time) : fmtDateTime(time); }
+  function crosshairTimeFor(v) { return function (time) { return v.tfMin >= 1440 ? fmtTradingDay(time) : fmtDateTime(time); }; }
   // the resolved appearance (free users: one of the two free themes, whatever is stored)
   function look() { return window.WwBtLook.resolve(L.look, window.WwChart.isLight(), can('backtestThemes')); }
-  function buildChart() {
+  function buildChart(v) {
+    v = v || R;
     var c = colors(), lk = look(), LK = window.WwBtLook;
-    R.look = lk;
-    R.chart = window.LightweightCharts.createChart($('bt-chart'), window.WwChart.mergeDeep(window.WwChart.lwc({
+    v.look = lk; v.lines = {}; v.tickSeen = null; v.tickHide = null;
+    v.chart = window.LightweightCharts.createChart(v.el, window.WwChart.mergeDeep(window.WwChart.lwc({
       autoSize: true,
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: lk.showVolume ? 0.2 : 0.08 } },
-      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: 8,
-        shiftVisibleRangeOnNewBar: true, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: tickLabel },
-      localization: { locale: localeTag(), timeFormatter: crosshairTime },
+      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: v === R ? 8 : 6,
+        shiftVisibleRangeOnNewBar: true, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: tickLabelFor(v) },
+      localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) },
       crosshair: { mode: window.LightweightCharts.CrosshairMode.Normal },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true }
     }), LK.chartOptions(lk, c)));
-    R.series = LK.addSeries(R.chart, lk, S.priceFormat(R.sym.id));
-    R.vol = null;
+    v.series = LK.addSeries(v.chart, lk, S.priceFormat(R.sym.id));
+    v.vol = null;
     if (lk.showVolume) {
-      R.vol = R.chart.addHistogramSeries({ priceScaleId: 'bt-vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
-      R.chart.priceScale('bt-vol').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 }, visible: false });
+      v.vol = v.chart.addHistogramSeries({ priceScaleId: 'bt-vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
+      v.chart.priceScale('bt-vol').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 }, visible: false });
     }
-    R.sessions = LK.createSessionPrimitive({ bars: function () { return R && R.bars ? R.bars : []; }, tfMin: function () { return R ? R.tfMin : 60; } });
-    R.series.attachPrimitive(R.sessions); R.sessions.setVisible(lk.showSessions);
-    R.chart.subscribeCrosshairMove(renderLegend);
-    R.chart.timeScale().subscribeVisibleLogicalRangeChange(refreshClippedTicks);
+    v.sessions = LK.createSessionPrimitive({ bars: function () { return v.bars || []; }, tfMin: function () { return v.tfMin; } });
+    v.series.attachPrimitive(v.sessions); v.sessions.setVisible(lk.showSessions);
+    if (v === R) v.chart.subscribeCrosshairMove(renderLegend);
+    v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); });
+    v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (!syncing && Date.now() - (v.userAt || 0) < 500) syncFrom(v); });
     var dg = R.sym.digits;
-    R.layer = DRAW.attach({ chart: R.chart, series: R.series, el: $('bt-chart'), bars: function () { return R && R.bars ? R.bars : []; },
-      tfSec: function () { return R ? R.tfMin * 60 : 3600; }, fmt: function (p) { return Number(p).toFixed(dg); } });
-    if (!R.chart.autoSizeActive || !R.chart.autoSizeActive()) installResizeFallback();
+    v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; },
+      tfSec: function () { return v.tfMin * 60; }, fmt: function (p) { return Number(p).toFixed(dg); } });
+    if (!v.chart.autoSizeActive || !v.chart.autoSizeActive()) installResizeFallback();
   }
-  function destroyChart() {
-    if (!R || !R.chart) return;
-    if (R.layer) { DRAW.detach(R.layer); R.layer = null; }
-    try { R.chart.remove(); } catch (e) { /* ignore */ }
-    R.chart = null; R.series = null; R.vol = null; R.sessions = null; R.lines = {}; R.askLine = null; R.bidLine = null;
+  function destroyChart(v) {
+    v = v || R;
+    if (!v || !v.chart) return;
+    if (v.layer) { DRAW.detach(v.layer); v.layer = null; }
+    try { v.chart.remove(); } catch (e) { /* ignore */ }
+    v.chart = null; v.series = null; v.vol = null; v.sessions = null; v.lines = {}; v.askLine = null; v.bidLine = null;
   }
+  function destroyCharts() { views().forEach(destroyChart); }
   function rebuildChart() {
     if (!R || !R.chart) return;
-    var range = R.chart.timeScale().getVisibleLogicalRange();
-    destroyChart(); buildChart();
-    if (R.candles.length) { renderChartData(); rebuildMarkers(); syncPriceLines(); updateAskLine(); }
-    if (range) R.chart.timeScale().setVisibleLogicalRange(range);
+    views().forEach(function (v) {
+      if (!v.chart) return;
+      var range = v.chart.timeScale().getVisibleLogicalRange();
+      destroyChart(v); buildChart(v);
+      if (v.candles && v.candles.length) renderChartData(v);
+      if (range) v.chart.timeScale().setVisibleLogicalRange(range);
+    });
+    rebuildMarkers(); syncPriceLines(); updateAskLine();
   }
-  // R.bars: the candles in prices (legend, drawings, sessions); R.ha: their Heikin Ashi version when that style is on
-  function renderChartData() {
-    if (!R.series) return;
-    if (R.candles.length > MAX_CHART_CANDLES) { R.candles.splice(0, R.candles.length - TRIM_TO); R.builder = C.createBuilder(R.tfMin, R.sym.id, R.candles); }
-    R.bars = R.candles.map(function (x) { return C.toChartBar(x, R.scale); });
-    R.ha = R.look.style === 'heikin' ? window.WwBtLook.heikinAshi(R.bars, 0, []) : null;
-    R.series.setData(window.WwBtLook.toSeriesData(R.look, R.bars, R.ha));
-    if (R.vol) R.vol.setData(R.candles.map(volPoint));
-    R.dirtyFrom = -1;
-    renderLegend();
+  // v.bars: the candles in prices (legend, drawings, sessions); v.ha: their Heikin Ashi version when that style is on
+  function renderChartData(v) {
+    if (!v) { views().forEach(renderChartData); return; }
+    if (!v.series) return;
+    if (v.candles.length > MAX_CHART_CANDLES) { v.candles.splice(0, v.candles.length - TRIM_TO); v.builder = C.createBuilder(v.tfMin, R.sym.id, v.candles); }
+    v.bars = v.candles.map(function (x) { return C.toChartBar(x, R.scale); });
+    v.ha = v.look.style === 'heikin' ? window.WwBtLook.heikinAshi(v.bars, 0, []) : null;
+    v.series.setData(window.WwBtLook.toSeriesData(v.look, v.bars, v.ha));
+    if (v.vol) v.vol.setData(v.candles.map(function (x) { return volPoint(v, x); }));
+    v.dirtyFrom = -1;
+    if (v === R) renderLegend();
   }
-  function volPoint(x) {
-    var a = window.WwBtLook.withAlpha(x.close >= x.open ? R.look.up : R.look.down, 0.45);
+  function volPoint(v, x) {
+    var a = window.WwBtLook.withAlpha(x.close >= x.open ? v.look.up : v.look.down, 0.45);
     return { time: x.time, value: x.v || 0, color: a };
   }
-  function seriesPoint(i) {
-    var b = R.bars[i];
-    if (R.look.style === 'line') return { time: b.time, value: b.close };
-    return R.look.style === 'heikin' ? R.ha[i] : b;
+  function seriesPoint(v, i) {
+    var b = v.bars[i];
+    if (v.look.style === 'line') return { time: b.time, value: b.close };
+    return v.look.style === 'heikin' ? v.ha[i] : b;
   }
   function flushChart() {
-    if (R.dirtyFrom < 0 || !R.series) return;
-    var from = R.dirtyFrom, i;
-    for (i = from; i < R.candles.length; i++) R.bars[i] = C.toChartBar(R.candles[i], R.scale);
-    if (R.ha) window.WwBtLook.heikinAshi(R.bars, from, R.ha);
-    for (i = from; i < R.candles.length; i++) { R.series.update(seriesPoint(i)); if (R.vol) R.vol.update(volPoint(R.candles[i])); }
-    R.dirtyFrom = -1;
+    views().forEach(function (v) {
+      if (v.dirtyFrom < 0 || !v.series) return;
+      var from = v.dirtyFrom, i;
+      for (i = from; i < v.candles.length; i++) v.bars[i] = C.toChartBar(v.candles[i], R.scale);
+      if (v.ha) window.WwBtLook.heikinAshi(v.bars, from, v.ha);
+      for (i = from; i < v.candles.length; i++) { v.series.update(seriesPoint(v, i)); if (v.vol) v.vol.update(volPoint(v, v.candles[i])); }
+      v.dirtyFrom = -1;
+    });
   }
-  // appearance change from the drawer: colors and switches in place, a new candle style or volume rebuilds the chart
+  // appearance change from the drawer: colors and switches in place, a new candle style or volume rebuilds the charts
   function applyLook(how) {
     if (!R || !R.chart) return;
     var lk = look(), prev = R.look;
     if (how === 'full' || !prev || lk.style !== prev.style || lk.showVolume !== prev.showVolume || lk.hollow !== prev.hollow) return rebuildChart();
-    R.look = lk;
-    R.chart.applyOptions(window.WwBtLook.chartOptions(lk, colors()));
-    R.series.applyOptions(window.WwBtLook.seriesOptions(lk, S.priceFormat(R.sym.id)));
-    if (R.sessions) R.sessions.setVisible(lk.showSessions);
-    if (R.vol) R.vol.setData(R.candles.map(volPoint));
+    views().forEach(function (v) {
+      if (!v.chart) return;
+      v.look = lk;
+      v.chart.applyOptions(window.WwBtLook.chartOptions(lk, colors()));
+      v.series.applyOptions(window.WwBtLook.seriesOptions(lk, S.priceFormat(R.sym.id)));
+      if (v.sessions) v.sessions.setVisible(lk.showSessions);
+      if (v.vol) v.vol.setData(v.candles.map(function (x) { return volPoint(v, x); }));
+    });
     rebuildMarkers(); syncPriceLines(); updateAskLine();
   }
   function rebuildMarkers() {
-    if (!R || !R.series) return;
-    var c = colors(), first = R.candles.length ? R.candles[0].time : 0, last = R.candles.length ? R.candles[R.candles.length - 1].time : 0, m = [];
-    R.eng.closed.slice(-MAX_MARKER_TRADES).concat(R.eng.open).forEach(function (t) {
-      var long = t.dir > 0;
-      m.push({ time: C.bucketStart(t.entryBarT, R.tfMin, R.sym.id), position: long ? 'belowBar' : 'aboveBar', shape: long ? 'arrowUp' : 'arrowDown',
-        color: long ? c.up : c.down, text: dirLabel(t.dir) + ' ' + E.stepsToStr(t.steps, R.sym.lotDigits) });
-      if (t.exitT != null) m.push({ time: C.bucketStart(t.exitBarT, R.tfMin, R.sym.id), position: long ? 'aboveBar' : 'belowBar', shape: 'circle',
-        color: t.net >= 0 ? c.up : c.down, text: reasonLabel(t.reason) });
+    if (!R) return;
+    var c = colors(), trades = R.eng.closed.slice(-MAX_MARKER_TRADES).concat(R.eng.open);
+    views().forEach(function (v) {
+      if (!v.series) return;
+      var first = v.candles.length ? v.candles[0].time : 0, last = v.candles.length ? v.candles[v.candles.length - 1].time : 0, m = [];
+      trades.forEach(function (t) {
+        var long = t.dir > 0;
+        m.push({ time: C.bucketStart(t.entryBarT, v.tfMin, R.sym.id), position: long ? 'belowBar' : 'aboveBar', shape: long ? 'arrowUp' : 'arrowDown',
+          color: long ? c.up : c.down, text: dirLabel(t.dir) + ' ' + E.stepsToStr(t.steps, R.sym.lotDigits) });
+        if (t.exitT != null) m.push({ time: C.bucketStart(t.exitBarT, v.tfMin, R.sym.id), position: long ? 'aboveBar' : 'belowBar', shape: 'circle',
+          color: t.net >= 0 ? c.up : c.down, text: reasonLabel(t.reason) });
+      });
+      m = m.filter(function (x) { return x.time >= first && x.time <= last; }).sort(function (a, b) { return a.time - b.time; });
+      v.series.setMarkers(m);
     });
-    m = m.filter(function (x) { return x.time >= first && x.time <= last; }).sort(function (a, b) { return a.time - b.time; });
-    R.series.setMarkers(m);
   }
-  function priceLine(Ls, key, pts, opts) {
-    if (pts == null) { if (Ls[key]) { R.series.removePriceLine(Ls[key]); Ls[key] = null; } return; }
+  function priceLine(v, Ls, key, pts, opts) {
+    if (pts == null) { if (Ls[key]) { v.series.removePriceLine(Ls[key]); Ls[key] = null; } return; }
     var price = pts / R.scale;
     if (Ls[key]) Ls[key].applyOptions({ price: price });
-    else Ls[key] = R.series.createPriceLine(Object.assign({ price: price, lineWidth: 1, axisLabelVisible: true }, opts));
+    else Ls[key] = v.series.createPriceLine(Object.assign({ price: price, lineWidth: 1, axisLabelVisible: true }, opts));
   }
   function syncPriceLines() {
-    if (!R || !R.series) return;
-    var c = colors(), keep = {}, LS = window.LightweightCharts.LineStyle;
-    R.eng.open.forEach(function (p) {
-      var Ls = R.lines[p.id] || (R.lines[p.id] = {}); keep[p.id] = true;
-      priceLine(Ls, 'entry', p.entry, { color: p.dir > 0 ? c.up : c.down, lineStyle: LS.Solid, title: dirLabel(p.dir) + ' ' + E.stepsToStr(p.steps, R.sym.lotDigits) });
-      priceLine(Ls, 'sl', p.sl, { color: c.down, lineStyle: LS.Dashed, title: 'SL' });
-      priceLine(Ls, 'tp', p.tp, { color: c.up, lineStyle: LS.Dashed, title: 'TP' });
-    });
-    Object.keys(R.lines).forEach(function (id) {
-      if (!keep[id]) { ['entry', 'sl', 'tp'].forEach(function (k) { priceLine(R.lines[id], k, null); }); delete R.lines[id]; }
+    if (!R) return;
+    var c = colors(), LS = window.LightweightCharts.LineStyle;
+    views().forEach(function (v) {
+      if (!v.series) return;
+      var keep = {};
+      R.eng.open.forEach(function (p) {
+        var Ls = v.lines[p.id] || (v.lines[p.id] = {}); keep[p.id] = true;
+        priceLine(v, Ls, 'entry', p.entry, { color: p.dir > 0 ? c.up : c.down, lineStyle: LS.Solid, title: dirLabel(p.dir) + ' ' + E.stepsToStr(p.steps, R.sym.lotDigits) });
+        priceLine(v, Ls, 'sl', p.sl, { color: c.down, lineStyle: LS.Dashed, title: 'SL' });
+        priceLine(v, Ls, 'tp', p.tp, { color: c.up, lineStyle: LS.Dashed, title: 'TP' });
+      });
+      Object.keys(v.lines).forEach(function (id) {
+        if (!keep[id]) { ['entry', 'sl', 'tp'].forEach(function (k) { priceLine(v, v.lines[id], k, null); }); delete v.lines[id]; }
+      });
     });
   }
   function updateAskLine() {
-    if (!R || !R.series || !R.eng.quote) return;
-    // Heikin Ashi: the last REAL price (bid), since the series' own last value is an averaged close
-    var haLast = R.look && R.look.style === 'heikin' && R.look.showLastPrice, bid = R.eng.quote.bid / R.scale;
-    if (!haLast && R.bidLine) { R.series.removePriceLine(R.bidLine); R.bidLine = null; }
-    else if (haLast && R.bidLine) R.bidLine.applyOptions({ price: bid });
-    else if (haLast) R.bidLine = R.series.createPriceLine({ price: bid, color: R.look.up, lineWidth: 1, lineStyle: window.LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'Bid' });
-    if (!R.eng.sp) { if (R.askLine) { R.series.removePriceLine(R.askLine); R.askLine = null; } return; }
-    var ask = (R.eng.quote.bid + R.eng.sp) / R.scale;
-    if (R.askLine) R.askLine.applyOptions({ price: ask });
-    else R.askLine = R.series.createPriceLine({ price: ask, color: colors().muted, lineWidth: 1, lineStyle: window.LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'Ask' });
+    if (!R || !R.eng.quote) return;
+    var LS = window.LightweightCharts.LineStyle, bid = R.eng.quote.bid / R.scale, ask = (R.eng.quote.bid + R.eng.sp) / R.scale;
+    views().forEach(function (v) {
+      if (!v.series) return;
+      // Heikin Ashi: the last REAL price (bid), since the series' own last value is an averaged close
+      var haLast = v.look && v.look.style === 'heikin' && v.look.showLastPrice;
+      if (!haLast && v.bidLine) { v.series.removePriceLine(v.bidLine); v.bidLine = null; }
+      else if (haLast && v.bidLine) v.bidLine.applyOptions({ price: bid });
+      else if (haLast) v.bidLine = v.series.createPriceLine({ price: bid, color: v.look.up, lineWidth: 1, lineStyle: LS.Dotted, axisLabelVisible: true, title: 'Bid' });
+      if (!R.eng.sp) { if (v.askLine) { v.series.removePriceLine(v.askLine); v.askLine = null; } return; }
+      if (v.askLine) v.askLine.applyOptions({ price: ask });
+      else v.askLine = v.series.createPriceLine({ price: ask, color: colors().muted, lineWidth: 1, lineStyle: LS.Dotted, axisLabelVisible: true, title: 'Ask' });
+    });
   }
   function renderLegend(param) {
     var box = $('bt-legend'); if (!box || !R) return;
@@ -1348,11 +1396,123 @@
       box.appendChild(s);
     });
   }
+  var resizeFallbackOn = false;
   function installResizeFallback() {
+    if (resizeFallbackOn) return; resizeFallbackOn = true;
     PAGE.on(window, 'resize', function () {
       clearTimeout(resizeTimer);
-      resizeTimer = later(function () { var w = $('bt-chart'); if (R && R.chart && w) R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); }, 80);
+      resizeTimer = later(function () { views().forEach(function (v) { if (v.chart && v.el) v.chart.applyOptions({ width: v.el.clientWidth, height: v.el.clientHeight }); }); }, 80);
     });
+  }
+
+  // ---------------------------------------------------------------- multi-chart (Premium): layouts, own timeframes, sync
+  function wideScreen() { try { return window.matchMedia('(min-width: 1025px)').matches; } catch (e) { return true; } }
+  // the layout actually shown: Premium, advanced mode and a wide screen, otherwise one chart (the stored choice stays)
+  function shownLayout() {
+    var id = LAY.prefs().charts;
+    return can('backtestMultiChart') && LAY.mode() === 'advanced' && wideScreen() && LAYOUTS[id] ? id : '1';
+  }
+  function historyNeed() { var n = 1; views().forEach(function (v) { n = Math.max(n, C.historyMonths(v.tfMin)); }); return n; }
+  // candles of a view from the loaded history minutes and the window up to the cursor (never later than the cursor)
+  function viewCandles(v) {
+    var id = R.sym.id;
+    v.candles = C.merge(R.hist && R.hist.n ? C.aggregate(R.hist, v.tfMin, id) : [], R.win ? C.aggregate(R.win, v.tfMin, id, 0, R.k) : []);
+    v.builder = C.createBuilder(v.tfMin, id, v.candles);
+    v.dirtyFrom = -1;
+  }
+  function tfOptions(sel, value) {
+    sel.textContent = '';
+    C.TF_IDS.forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = C.TF_LABEL[id]; sel.appendChild(o); });
+    sel.value = value;
+  }
+  function newView(i, tf) {
+    var cell = el('div', 'bt-cell bt-cell-x'), head = el('div', 'bt-cell-head'), sel = el('select', 'bt-select bt-num bt-cell-tf');
+    sel.setAttribute('aria-label', _t('backtest.multi.timeframe', 'Bu grafiğin zaman dilimi'));
+    tfOptions(sel, C.TF_MIN[tf] ? tf : EXTRA_TFS[i]);
+    head.appendChild(sel); cell.appendChild(head);
+    var host = el('div', 'bt-chart'); cell.appendChild(host);
+    $('bt-charts').appendChild(cell);
+    var v = { el: host, cell: cell, tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1, userAt: 0 };
+    sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); });
+    markUser(v);
+    return v;
+  }
+  function markUser(v) {
+    var on = function () { v.userAt = Date.now(); };
+    ['pointerdown', 'wheel', 'touchstart'].forEach(function (ev) { v.el.addEventListener(ev, on, { capture: true, passive: true }); });
+    ['pointermove'].forEach(function (ev) { v.el.addEventListener(ev, function (e) { if (e.buttons) on(); }, { capture: true, passive: true }); });
+  }
+  function applyChartLayout() {
+    if (!R || !R.chart) return;
+    var id = shownLayout(), need = LAYOUTS[id] - 1, tfs = LAY.prefs().tfs, added = false;
+    $('bt-charts').setAttribute('data-layout', id);
+    R.extra = R.extra || [];
+    while (R.extra.length > need) { var gone = R.extra.pop(); destroyChart(gone); gone.cell.remove(); }
+    while (R.extra.length < need) {
+      var i = R.extra.length, v = newView(i, tfs[i]);
+      R.extra.push(v); buildChart(v); viewCandles(v); renderChartData(v); added = true;
+    }
+    if (added) { rebuildMarkers(); syncPriceLines(); updateAskLine(); syncFrom(R); }
+    renderLayoutPicker();
+    if (added && R.histMonths < historyNeed()) loadHistory(R.token);
+  }
+  function setViewTimeframe(v, tfId) {
+    if (!R || !C.TF_MIN[tfId]) return;
+    v.tfId = tfId; v.tfMin = C.TF_MIN[tfId];
+    viewCandles(v);
+    var cr = R.chart.timeScale().getVisibleLogicalRange();
+    renderChartData(v); rebuildMarkers();
+    v.tickSeen = null; v.tickHide = null;
+    v.chart.applyOptions({ timeScale: { tickMarkFormatter: tickLabelFor(v) }, localization: { timeFormatter: crosshairTimeFor(v) } });
+    if (cr) syncFrom(R);
+    LAY.setCharts(LAY.prefs().charts, R.extra.map(function (x) { return x.tfId; }));
+    if (R.histMonths < historyNeed()) loadHistory(R.token);
+  }
+  // time sync: the other charts keep their zoom and are scrolled to the same centre time
+  function syncFrom(src) {
+    var others = views().filter(function (x) { return x !== src && x.chart && x.bars && x.bars.length; });
+    if (!others.length || !src.chart || !src.bars || !src.bars.length) return;
+    var r = src.chart.timeScale().getVisibleLogicalRange(); if (!r) return;
+    var D = window.WwBtDraw, tC = D.logicalToTime(src.bars, src.tfMin * 60, (r.from + r.to) / 2);
+    syncing = true;
+    try {
+      others.forEach(function (v) {
+        var vr = v.chart.timeScale().getVisibleLogicalRange(); if (!vr) return;
+        var w = vr.to - vr.from, c = D.timeToLogical(v.bars, v.tfMin * 60, tC);
+        v.chart.timeScale().setVisibleLogicalRange({ from: c - w / 2, to: c + w / 2 });
+      });
+    } finally { syncing = false; }
+  }
+  // crosshair sync: the same time (the candle that contains it) and price on every other chart
+  function barAtOrBefore(bars, t) {
+    var lo = 0, hi = bars.length - 1, ans = -1;
+    while (lo <= hi) { var mid = (lo + hi) >> 1; if (bars[mid].time <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+    return ans < 0 ? null : bars[ans].time;
+  }
+  function crossFrom(src, p) {
+    if (crossing || !R || !R.extra || !R.extra.length) return;
+    crossing = true;
+    try {
+      var price = p && p.point && src.series ? src.series.coordinateToPrice(p.point.y) : null;
+      views().forEach(function (v) {
+        if (v === src || !v.chart) return;
+        var t = p && p.time && price !== null ? barAtOrBefore(v.bars || [], p.time) : null;
+        if (t === null) v.chart.clearCrosshairPosition(); else v.chart.setCrosshairPosition(price, t, v.series);
+      });
+    } finally { crossing = false; }
+  }
+  function renderLayoutPicker() {
+    var box = $('bt-layout-pop'); if (!box) return;
+    var cur = shownLayout(), pro = can('backtestMultiChart');
+    box.textContent = '';
+    LAYOUT_IDS.forEach(function (id) {
+      var b = el('button', 'bt-layout-opt'); b.type = 'button'; b.setAttribute('data-layout', id); b.setAttribute('aria-pressed', cur === id ? 'true' : 'false');
+      var ic = el('span', 'bt-layout-ico bt-li-' + id.replace('+', 'p')); for (var k = 0; k < LAYOUTS[id]; k++) ic.appendChild(el('i'));
+      b.appendChild(ic); b.appendChild(el('span', '', _t('backtest.multi.layout_' + id.replace('+', 'p'), id)));
+      if (id !== '1' && !pro) { b.appendChild(el('span', 'bt-pro', 'PRO')); b.setAttribute('data-pro', '1'); }
+      box.appendChild(b);
+    });
+    if (!wideScreen()) box.appendChild(el('p', 'bt-hint', _t('backtest.multi.narrow', 'Dar ekranda tek grafik gösterilir.')));
   }
 
   // ---------------------------------------------------------------- UI rendering
@@ -1629,6 +1789,18 @@
       light: function () { return window.WwChart.isLight(); }, upgrade: function () { openUpgrade('backtest_themes'); }, newId: newId,
       change: function (next, how) { L.look = next; window.WwBtLook.save(safeStorage(), next); applyLook(how); } });
     $('bt-look-btn').addEventListener('click', function () { toggleDrawer(); });
+    // multi-chart layout picker (Premium)
+    $('bt-layout-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleLayoutPop(); });
+    $('bt-layout-pop').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-layout]'); if (!b) return;
+      var id = b.getAttribute('data-layout');
+      if (b.hasAttribute('data-pro')) { toggleLayoutPop(false); return openUpgrade('backtest_multichart'); }
+      LAY.setCharts(id, (R && R.extra.length ? R.extra.map(function (x) { return x.tfId; }) : LAY.prefs().tfs));
+      toggleLayoutPop(false); applyChartLayout();
+    });
+    PAGE.on(document, 'click', function (e) { if (!e.target.closest('#bt-layout-pop, #bt-layout-btn')) toggleLayoutPop(false); });
+    var wasWide = wideScreen();
+    PAGE.on(window, 'resize', function () { var w = wideScreen(); if (w !== wasWide) { wasWide = w; if (R) applyChartLayout(); } });
     $('bt-text-ok').addEventListener('click', function () { finishText(true); });
     $('bt-text-cancel').addEventListener('click', function () { finishText(false); });
     $('bt-text-close').addEventListener('click', function () { finishText(false); });
@@ -1658,6 +1830,7 @@
   }
   // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
   function escapeChain() {
+    if (!$('bt-layout-pop').hidden) { toggleLayoutPop(false); return true; }
     if (!$('bt-look-drawer').hidden) { toggleDrawer(false); return true; }
     if (DRAW && DRAW.escape()) return true;
     if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(false); return true; }
@@ -1665,6 +1838,12 @@
   }
   // drawing keys (1-9 tools, V cursor, M magnet, Del) in advanced mode, where the toolbar is
   function handleToolKey(e) { return !!DRAW && LAY.mode() === 'advanced' && DRAW.key(e); }
+  function toggleLayoutPop(on) {
+    var p = $('bt-layout-pop'); if (!p) return;
+    if (on === undefined) on = p.hidden;
+    if (on) renderLayoutPicker();
+    p.hidden = !on; $('bt-layout-btn').setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
   function toggleDrawer(on) {
     var d = $('bt-look-drawer'); if (on === undefined) on = d.hidden;
     if (on) { DRAWER.render(); d.hidden = false; $('bt-look-btn').setAttribute('aria-expanded', 'true'); var f = d.querySelector('button, input'); if (f) f.focus(); }
@@ -1678,6 +1857,7 @@
   function onLayoutChange(prefs, what) {
     if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
     if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
+    if (what === 'mode' && R) applyChartLayout();
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } }, 60); }
   }
   function setupVisibility() {
@@ -1699,7 +1879,8 @@
         fmtCache = {};
         if (R) {
           renderLive(true); renderTables(); renderStats(); setPlayUi(R.playing);
-          if (R.chart) { R.chart.applyOptions({ localization: { locale: localeTag(), timeFormatter: crosshairTime }, timeScale: { tickMarkFormatter: tickLabel } }); rebuildMarkers(); }
+          views().forEach(function (v) { if (v.chart) v.chart.applyOptions({ localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) }, timeScale: { tickMarkFormatter: tickLabelFor(v) } }); });
+          rebuildMarkers(); renderLayoutPicker();
         } else if (L.store) renderList();
       });
     });
@@ -1713,7 +1894,7 @@
     if (confirmResolve) { var cr = confirmResolve; confirmResolve = null; cr(false); }
     if (R) { try { pause(); saveReplayTime(true); R.abort.abort(); R.token++; } catch (e) { /* ignore */ } }
     if (themeObserver) themeObserver.disconnect();
-    try { destroyChart(); } catch (e) { /* ignore */ }
+    try { destroyCharts(); } catch (e) { /* ignore */ }
     if (LAY) { try { LAY.destroy(); } catch (e) { /* ignore */ } }
     if (DRAW) { try { DRAW.destroy(); } catch (e) { /* ignore */ } }
     clearTimeout(statsTimer);
@@ -1723,7 +1904,8 @@
   PAGE.onLeave(cleanup);
   // browser smoke tests only (tests/smoke/make.py sets __BT_TEST__): read access to the chart and the drawings
   if (window.__BT_TEST__) PAGE.expose('__btTest', { chart: function () { return R && R.chart; }, series: function () { return R && R.series; },
-    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; } });
+    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; },
+    cross: function (p) { crossFrom(R, p); } });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

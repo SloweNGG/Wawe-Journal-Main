@@ -2052,5 +2052,13 @@ export default {
   "backtest.st.session_ny": "New York",
   "backtest.st.session_off": "Seans dışı",
   "backtest.st.monthly": "Aylık getiri (%)",
-  "backtest.st.year": "Yıl"
+  "backtest.st.year": "Yıl",
+  "backtest.multi.title": "Grafik düzeni",
+  "backtest.multi.timeframe": "Bu grafiğin zaman dilimi",
+  "backtest.multi.layout_1": "Tek grafik",
+  "backtest.multi.layout_2h": "2 grafik, yan yana",
+  "backtest.multi.layout_2v": "2 grafik, alt alta",
+  "backtest.multi.layout_2x2": "4 grafik (2×2)",
+  "backtest.multi.layout_1p3": "1 büyük + 3 küçük",
+  "backtest.multi.narrow": "Dar ekranda tek grafik gösterilir."
 };

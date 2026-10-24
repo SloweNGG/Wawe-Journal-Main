@@ -32,6 +32,9 @@ const SCENARIOS = {
   'stats-free': ['driver=/__driver-stats.js&role=user&plan=free', DESKTOP],
   'stats-pro': ['driver=/__driver-stats.js&role=user&plan=premium', DESKTOP],
   'stats-phone': ['driver=/__driver-stats.js&role=user&plan=premium&phone=1', PHONE],
+  'multi-pro': ['driver=/__driver-multi.js&role=user&plan=premium', DESKTOP],
+  'multi-free': ['driver=/__driver-multi.js&role=user&plan=free', DESKTOP],
+  'multi-phone': ['driver=/__driver-multi.js&role=user&plan=premium&phone=1', PHONE],
   // screenshots only (use with --shots)
   'shot-drawer': ['driver=/__driver-shot.js&shot=drawer&plan=premium&i18n=tr', DESKTOP, true],
   'shot-sessions': ['driver=/__driver-shot.js&shot=sessions&plan=premium&i18n=tr', DESKTOP, true],
@@ -41,6 +44,7 @@ const SCENARIOS = {
   'shot-drawings-free-phone': ['driver=/__driver-shot.js&shot=drawings&plan=free&i18n=tr', PHONE, true],
   'shot-stats': ['driver=/__driver-stats.js&role=user&plan=premium&i18n=tr&big=1', { width: 1440, height: 1500 }, true],
   'shot-stats-free': ['driver=/__driver-stats.js&role=user&plan=free&i18n=en&big=1', { width: 1440, height: 1100 }, true],
+  'shot-multi': ['driver=/__driver-shot.js&shot=multi&plan=premium&i18n=tr', DESKTOP, true],
   'shot-drawer-free': ['driver=/__driver-shot.js&shot=drawer&plan=free&i18n=en', DESKTOP, true],
   'shot-simple': ['driver=/__driver-shot.js&shot=simple', DESKTOP, true],
   'shot-advanced': ['driver=/__driver-shot.js&shot=advanced&plan=premium', DESKTOP, true],

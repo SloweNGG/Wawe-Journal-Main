@@ -12,14 +12,14 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=9" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=10" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793100000" is:inline defer></script>
+  <script src="/i18n.js?v=1793200000" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=1" is:inline defer></script>
@@ -34,7 +34,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-look.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=11" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=12" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -100,6 +100,12 @@ import Layout from '../layouts/Layout.astro';
             <button type="button" data-bt-mode="simple" aria-pressed="true" data-i18n-title="backtest.mode.simple_hint" title="Grafik, replay ve emir paneli"><span data-i18n="backtest.mode.simple">Basit</span></button>
             <button type="button" data-bt-mode="advanced" aria-pressed="false" data-i18n-title="backtest.mode.advanced_hint" title="Tüm paneller ve araçlar"><span data-i18n="backtest.mode.advanced">Gelişmiş</span></button>
           </div>
+          <div class="bt-layout-wrap bt-adv-only">
+            <button type="button" id="bt-layout-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-layout-pop" data-i18n-title="backtest.multi.title" title="Grafik düzeni">
+              <i data-lucide="layout-grid" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.multi.title">Grafik düzeni</span>
+            </button>
+            <div id="bt-layout-pop" class="bt-layout-pop" role="menu" hidden></div>
+          </div>
           <button type="button" id="bt-look-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-look-drawer" data-i18n-title="backtest.look.title" title="Görünüm ayarları">
             <i data-lucide="palette" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.look.title">Görünüm ayarları</span>
           </button>
@@ -160,7 +166,9 @@ import Layout from '../layouts/Layout.astro';
           <div class="bt-chart-body">
           <div id="bt-draw-bar" class="bt-draw-bar bt-adv-only" role="toolbar" aria-orientation="vertical" data-i18n-title="backtest.draw.toolbar" title="Çizim araçları"></div>
           <div class="bt-chart-wrap">
-            <div id="bt-chart" class="bt-chart"></div>
+            <div id="bt-charts" class="bt-charts" data-layout="1">
+              <div class="bt-cell bt-cell-main"><div id="bt-chart" class="bt-chart"></div></div>
+            </div>
             <div id="bt-chart-overlay" class="bt-chart-overlay" hidden>
               <span id="bt-overlay-text">Mum verisi yükleniyor…</span>
             </div>

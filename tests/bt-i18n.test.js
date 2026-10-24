@@ -26,7 +26,7 @@ describe('bt-i18n', () => {
   it('every key used by the page and the controller exists', () => {
     const src = fs.readFileSync('src/pages/backtest.astro', 'utf8') + fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
     const used = new Set();
-    for (const m of src.matchAll(/(?:data-i18n(?:-placeholder|-title)?="|_t\(')((?:backtest|nav|common)\.[a-z0-9_.]+)/g)) if (!m[1].endsWith('.')) used.add(m[1]);   // dynamic keys (backtest.group.<id>) are checked below
+    for (const m of src.matchAll(/(?:data-i18n(?:-placeholder|-title)?="|_t\(')((?:backtest|nav|common)\.[a-z0-9_.]+)/g)) if (!/[._]$/.test(m[1])) used.add(m[1]);   // dynamic keys (backtest.group.<id>, backtest.multi.layout_<id>) are checked below
     assert.ok(used.size > 100);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
     for (const g of ['forex', 'gold', 'crypto']) for (const l of LANGS) assert.ok(`backtest.group.${g}` in loc[l]);
@@ -49,6 +49,7 @@ describe('bt-i18n', () => {
     await import('../public/interface/backtest/js/bt-draw.js');
     for (const id of globalThis.WwBtDraw.TOOLS) used.add('backtest.draw.tool_' + id);
     for (const id of ['asia', 'london', 'ny', 'off']) used.add('backtest.st.session_' + id);
+    for (const id of ['1', '2h', '2v', '2x2', '1p3']) used.add('backtest.multi.layout_' + id);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
   });
   it('no lock icon anywhere in the page (owner preference)', () => {
