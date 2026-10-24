@@ -20,8 +20,9 @@ const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="/landing-preview.css?v=5" />
+  <link rel="stylesheet" href="/landing-preview.css?v=6" />
   <link rel="stylesheet" href="/pages.css?v=2" />
+  <link rel="stylesheet" href="/page-chrome.css?v=1" />
   <style is:global>
     * { box-sizing: border-box; }
     html {
@@ -30,9 +31,10 @@ const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
       height: auto !important;
       scroll-behavior: smooth;
     }
+    /* clip (not hidden) so body does not become a scroll container and the sticky navbar keeps working */
     body {
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
+      overflow-y: visible !important;
+      overflow-x: clip !important;
       height: auto !important;
       min-height: 100vh !important;
       max-width: 100%;
@@ -48,63 +50,50 @@ const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
   </style>
 </Fragment>
 
-  <header class="nav">
-    <div class="wrap nav-inner">
-      <a href="/" class="nav-logo" aria-label="Wawe Journal">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><polyline points="2,16 7,9 12,13 19,4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Wawe <span class="logo-accent">Journal</span></span>
+  <header class="lp-head">
+    <div class="g navbar" id="navbar">
+      <a href="/" class="brand" aria-label="Wawe Journal home">
+        <img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="30" height="20" />
+        <span class="navword">Wawe <span class="brand-accent">Journal</span></span>
       </a>
-      <span class="nav-spacer"></span>
-      <a href="/#pricing" class="nav-link" data-i18n="nav.pricing">Pricing</a>
-      <div class="nav-actions">
-        <a href="/login" class="btn btn-line" data-i18n="nav.login">Login</a>
-        <a href="/register" class="btn btn-solid" data-i18n="nav.register">Sign Up →</a>
-      </div>
+      <nav class="navlinks" aria-label="Primary">
+        <a href="/#journal" data-i18n="lp.nav.journal">Journal</a>
+        <a href="/#analytics" data-i18n="lp.nav.analytics">Analytics</a>
+        <a href="/#backtest" data-i18n="lp.nav.backtest">Backtest</a>
+        <a href="/#pricing" data-i18n="lp.nav.pricing">Pricing</a>
+        <a href="/#faq" data-i18n="lp.nav.faq">FAQ</a>
+      </nav>
+      <div class="grow"></div>
       <div class="lang-selector" id="lang-selector">
-        <div class="lang-current" id="lang-current" role="button" tabindex="0" aria-label="Language"><span class="lang-current-flag">EN</span><span class="lang-current-arrow">▼</span></div>
-        <div class="lang-dropdown" id="lang-dropdown">
-          <div class="lang-option" data-lang="tr" data-flag="TR"><span>Türkçe</span><span class="lang-option-check"></span></div>
-          <div class="lang-option active" data-lang="en" data-flag="EN"><span>English</span><span class="lang-option-check">✓</span></div>
-          <div class="lang-option" data-lang="de" data-flag="DE"><span>Deutsch</span><span class="lang-option-check"></span></div>
+        <div class="lang-current mono" id="lang-current" role="button" tabindex="0" aria-label="Language"><span class="lang-current-flag">EN</span><span class="lang-current-arrow" aria-hidden="true">▾</span></div>
+        <div class="g lang-dropdown" id="lang-dropdown">
+          <div class="lang-option" data-lang="en" data-flag="EN"><span>English</span><span class="mono lang-code">EN</span></div>
+          <div class="lang-option" data-lang="tr" data-flag="TR"><span>Türkçe</span><span class="mono lang-code">TR</span></div>
+          <div class="lang-option" data-lang="de" data-flag="DE"><span>Deutsch</span><span class="mono lang-code">DE</span></div>
         </div>
       </div>
-      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+      <a href="/login" class="navsignin" data-i18n="lp.nav.signin">Sign in</a>
+      <a href="/register" class="b bp bs" data-i18n="lp.nav.start">Start for free</a>
     </div>
   </header>
-  <div class="mobile-menu" id="mobile-menu">
-    <a href="/#pricing" data-i18n="nav.pricing">Pricing</a>
-    <a href="/login" data-i18n="nav.login">Login</a>
-    <a href="/register" class="btn btn-accent" data-i18n="nav.register">Sign Up →</a>
-  </div>
-  <div class="menu-overlay" id="menu-overlay"></div>
 
   <main>
     <slot />
   </main>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="footer-top">
-        <div class="footer-col">
-          <div class="footer-logo"><svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true"><polyline points="2,16 7,9 12,13 19,4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Wawe Journal</span></div>
-          <p class="footer-desc" data-i18n="footer.desc">A modern trading journal built for professional traders.</p>
+  <footer class="lp-foot">
+    <div class="foot-in">
+      <div class="foot-top">
+        <div class="foot-brand">
+          <div class="foot-logo"><img class="logo-glow" src="/images/brand/logo-mark.png" srcset="/images/brand/logo-mark.png 1x, /images/brand/logo-mark@2x.png 2x" alt="" width="36" height="24" />Wawe Journal</div>
+          <div class="foot-desc" data-i18n-html="lp.ft.desc_h">Trading journal, analytics and backtest replay. Part of the <a href="https://wawedev.com" target="_blank" rel="noopener">wawedev</a> brand.</div>
         </div>
-        <div class="footer-col"><h4 data-i18n="footer.links">Links</h4><ul>
-          <li><a href="/" data-i18n="nav.home">Home</a></li><li><a href="/#pricing" data-i18n="nav.pricing">Pricing</a></li><li><a href="/login" data-i18n="nav.login">Login</a></li><li><a href="/register" data-i18n="nav.register">Sign Up</a></li></ul></div>
-        <div class="footer-col"><h4 data-i18n="footer.corporate">Corporate</h4><ul>
-          <li><a href="/about" data-i18n="footer.about">About</a></li><li><a href="/privacy" data-i18n="footer.privacy">Privacy</a></li><li><a href="/terms" data-i18n="footer.terms">Terms</a></li><li><a href="/contact" data-i18n="footer.contact">Contact</a></li></ul></div>
-        <div class="footer-col"><h4 data-i18n="footer.contact_title">Contact</h4><ul>
-          <li><a href="mailto:support@wawejournal.com">support@wawejournal.com</a></li><li><span>İstanbul, Türkiye</span></li><li><span>Wawe Journal</span></li></ul></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.product">PRODUCT</div><a href="/#journal" data-i18n="lp.nav.journal">Journal</a><a href="/#analytics" data-i18n="lp.nav.analytics">Analytics</a><a href="/#backtest" data-i18n="lp.nav.backtest">Backtest</a><a href="/#pricing" data-i18n="lp.nav.pricing">Pricing</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.company">COMPANY</div><a href="/about" data-i18n="lp.ft.about">About</a><a href="/privacy" data-i18n="lp.ft.privacy">Privacy</a><a href="/terms" data-i18n="lp.ft.terms">Terms</a><a href="/contact" data-i18n="lp.ft.contact">Contact</a></div>
+        <div class="foot-col"><div class="mono foot-h" data-i18n="lp.ft.social">SOCIAL</div><div class="foot-social"><a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Wawe Journal on Instagram" class="social-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="0.9" fill="currentColor" stroke="none"></circle></svg></a></div><a href="mailto:support@wawejournal.com">support@wawejournal.com</a></div>
       </div>
-      <div class="footer-bottom">
-        <p>© 2026 <span data-i18n-html="footer.credit">WaweJournal is a part of <a href="https://wawedev.com" target="_blank" rel="noopener" class="wawedev-link">wawedev</a> brand.</span> <span data-i18n="footer.rights">All rights reserved.</span></p>
-        <div class="footer-social">
-          <a href="https://www.instagram.com/wawejournal/" target="_blank" rel="noopener" aria-label="Instagram"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></a>
-          <a href="mailto:support@wawejournal.com" aria-label="Email"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>
-        </div>
-      </div>
-
       <LegalDisclosures />
+      <div class="copy"><span data-i18n="lp.ft.tm">MetaTrader, cTrader, TradingView, FTMO and other broker, platform and prop firm names are trademarks of their respective owners. Wawe Journal is not affiliated with or endorsed by them.</span><br />© 2026 Wawe Journal · wawedev</div>
     </div>
   </footer>
 
@@ -119,17 +108,10 @@ const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
       var langFlag = document.querySelector('.lang-current-flag');
 
       function updateLanguageUI(lang) {
-        langOptions.forEach(function(opt) {
-          var check = opt.querySelector('.lang-option-check');
-          if (opt.dataset.lang === lang) {
-            opt.classList.add('active');
-            if (check) check.textContent = '✓';
-            if (langFlag) langFlag.textContent = opt.dataset.flag;
-          } else {
-            opt.classList.remove('active');
-            if (check) check.textContent = '';
-          }
-        });
+        var sel = document.querySelector('.lang-option[data-lang="' + lang + '"]');
+        if (!sel) return;
+        if (langFlag) langFlag.textContent = sel.dataset.flag;
+        langOptions.forEach(function(opt) { opt.classList.toggle('active', opt.dataset.lang === lang); });
       }
 
       if (typeof window.i18n !== 'undefined') {
@@ -159,22 +141,13 @@ const canonical = new URL(cleanPath, 'https://wawejournal.com').href;
         if (langCurrent && langDropdown && !langCurrent.contains(e.target) && !langDropdown.contains(e.target)) closeDD();
       });
 
-      // MOBILE MENU
-      var hamburger = document.getElementById('hamburger');
-      var mobileMenu = document.getElementById('mobile-menu');
-      var overlay = document.getElementById('menu-overlay');
-      function toggleMenu() {
-        if (!hamburger || !mobileMenu) return;
-        hamburger.classList.toggle('active');
-        mobileMenu.classList.toggle('active');
-        if (overlay) overlay.classList.toggle('active');
-        document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+      // NAV: compact the glass pill once the page is scrolled (same as the landing page)
+      var nav = document.getElementById('navbar');
+      if (nav) {
+        var onScroll = function() { nav.classList.toggle('is-compact', (window.scrollY || document.documentElement.scrollTop || 0) > 80); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
       }
-      if (hamburger) hamburger.addEventListener('click', toggleMenu);
-      if (overlay) overlay.addEventListener('click', toggleMenu);
-      document.querySelectorAll('.mobile-menu a').forEach(function(l) {
-        l.addEventListener('click', toggleMenu);
-      });
 
       // REVEAL
       var obs = new IntersectionObserver(function(entries) {

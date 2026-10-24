@@ -75,9 +75,10 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       height: auto !important;
       scroll-behavior: smooth;
     }
+    /* clip (not hidden) so body does not become a scroll container and the sticky navbar keeps working */
     body {
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
+      overflow-y: visible !important;
+      overflow-x: clip !important;
       height: auto !important;
       min-height: 100vh !important;
       max-width: 100%;
