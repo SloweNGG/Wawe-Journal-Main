@@ -29,7 +29,7 @@ if(qp.get('backend')!=='supabase')window.sb={};window.wwLog=console;
 window.requireAuth=async function(){return {id:'u-'+role,app_metadata:{role:role}}};
 window.__journals=[{id:'11111111-1111-4111-8111-111111111111',user_id:'u-'+role,name:'Ana Hesap',is_default:true},{id:'22222222-2222-4222-8222-222222222222',user_id:'u-'+role,name:'Ikinci Hesap',is_default:false}];
 window.journal={ensureActiveJournal:async function(){},listJournals:async function(){return window.__journals}};
-window.getUserPlanSilent=async function(){return {plan:qp.get('plan')||'premium'}};
+window.getUserPlanSilent=async function(){return {plan:qp.get('plan')||'premium'}};window.isPro=async function(){return (qp.get('plan')||'premium')==='premium'};window.hasFeature=async function(f){return /^backtest/.test(f)&&(qp.get('plan')||'premium')==='premium'};
 window.SUPABASE_URL='https://stub.local';window.SUPABASE_ANON_KEY='anon-stub';
 var ct=qp.get('ct')||'none';
 window.__ctFixture={token_status:ct==='none'?'none':(ct==='reconnect'?'needs_reconnect':'active'),accounts:ct==='none'?[]:[{id:'ca1',ctid_trader_account_id:4455667,is_live:false,trader_login:900123,broker_name:'Spotware',journal_id:null}].concat(qp.get('ctn')==='2'?[{id:'ca2',ctid_trader_account_id:4455668,is_live:false,trader_login:900124,broker_name:'Spotware',journal_id:null}]:[])};
@@ -61,6 +61,7 @@ window.openUpgradeModal=function(){window.__upgrade=true};
 })();
 </script>
 ''' + scripts + '''
+<script>if(new URLSearchParams(location.search).get('i18n')){try{localStorage.setItem('ww_language',new URLSearchParams(location.search).get('i18n'))}catch(e){}window.WW_I18N_PATH='/i18n/locales/';document.write('<script src="/i18n.js"><\/script>')}</script>
 <pre id="bt-smoke-result" style="display:none"></pre>
 <script type="module">
 var qp=new URLSearchParams(location.search);

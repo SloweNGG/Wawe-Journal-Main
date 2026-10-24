@@ -273,3 +273,53 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
   #bt-root.bt-fs #bt-stats .bt-stat:nth-child(n+3) { display: none; }
   #bt-root.bt-fs .bt-fs-exit span { display: none; }
 }
+
+/* ---------------------------------------------------------------- Görünüm çekmecesi (bt-look.js) */
+.bt-pro { display: inline-flex; align-items: center; padding: 1px 6px; margin-left: 6px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em;
+  color: #fff; background: var(--gradient-accent, var(--accent)); vertical-align: middle; line-height: 1.5; }
+.bt-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-modal-overlay, 1000); width: min(380px, 100vw); display: flex; flex-direction: column;
+  background: var(--modal-bg); border-left: 1px solid var(--modal-line); box-shadow: var(--modal-shadow); animation: bt-drawer-in 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+.bt-drawer[hidden] { display: none !important; }
+@keyframes bt-drawer-in { from { transform: translateX(24px); opacity: 0; } }
+.bt-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 1rem var(--modal-pad-x, 1.35rem); border-bottom: 1px solid var(--modal-line); }
+.bt-drawer-head h3 { margin: 0; font-size: 16px; }
+.bt-drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 0.4rem var(--modal-pad-x, 1.35rem) 1.2rem; }
+.bt-look-sec { padding: 14px 0; border-bottom: 1px solid var(--modal-line); }
+.bt-look-sec:last-of-type { border-bottom: 0; }
+.bt-look-h { margin: 0 0 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+  background: none; -webkit-text-fill-color: currentColor; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; }
+.bt-look-themes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bt-look-theme { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; border: 1px solid var(--modal-line-strong); background: var(--modal-field-bg);
+  color: var(--text); cursor: pointer; font: inherit; text-align: left; }
+.bt-look-theme[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.bt-look-theme:hover { border-color: var(--accent3); }
+.bt-look-prev { width: 100%; height: auto; display: block; border-radius: 5px; border: 1px solid var(--modal-line); }
+.bt-look-theme-name { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; }
+.bt-look-styles { width: 100%; margin-bottom: 10px; }
+.bt-look-styles button { flex: 1; padding: 7px 6px; font-size: 12.5px; }
+.bt-look-colors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.bt-look-color { display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; min-width: 0; }
+.bt-look-color input { width: 30px; height: 24px; padding: 0; border: 1px solid var(--modal-line-strong); border-radius: 6px; background: none; cursor: pointer; flex: none; }
+.bt-look-color input::-webkit-color-swatch-wrapper { padding: 2px; }
+.bt-look-color input::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.bt-look-sec .bt-link-btn { margin-top: 10px; }
+.bt-switch { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; cursor: pointer; }
+.bt-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.bt-switch-ui { position: relative; width: 32px; height: 18px; border-radius: 999px; background: var(--modal-line-strong); flex: none; transition: background 0.15s; }
+.bt-switch-ui::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.bt-switch input:checked + .bt-switch-ui { background: var(--accent); }
+.bt-switch input:checked + .bt-switch-ui::after { transform: translateX(14px); }
+.bt-switch input:focus-visible + .bt-switch-ui { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bt-switch input:disabled + .bt-switch-ui, .bt-switch input:disabled ~ span { opacity: 0.45; }
+.bt-look-save { display: flex; gap: 8px; }
+.bt-look-save .bt-input { flex: 1; background: var(--modal-field-bg); border-color: var(--modal-field-line); }
+.bt-look-save .bt-input.bt-invalid { border-color: var(--red); }
+.bt-look-save .btn { padding: 7px 14px; font-size: 13px; }
+.bt-look-mine { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.bt-look-mine li { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bt-look-mine-name { background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; text-align: left; flex: 1; }
+.bt-look-mine-name[aria-pressed="true"] { border-color: var(--accent); }
+.bt-look-del { color: var(--red); margin: 0 !important; }
+.bt-look-foot { margin-top: 12px; }
+#bt-look-btn[aria-expanded="true"] { border-color: var(--accent); }
+

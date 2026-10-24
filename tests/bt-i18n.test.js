@@ -36,10 +36,16 @@ describe('bt-i18n', () => {
     const used = new Set();
     for (const f of files) {
       const src = fs.readFileSync('public/interface/backtest/js/' + f, 'utf8');
-      for (const m of src.matchAll(/\bt\('((?:backtest|common)\.[a-z0-9_.]+)'/g)) if (!m[1].endsWith('.')) used.add(m[1]);
+      for (const m of src.matchAll(/\bt\('((?:backtest|common)\.[a-z0-9_.]+)'/g)) if (!/[._]$/.test(m[1])) used.add(m[1]);   // dynamic prefixes are listed below
     }
     await import('../public/interface/backtest/js/bt-layout.js');
+    await import('../public/interface/backtest/js/bt-look.js');
     for (const s of globalThis.WwBtLayout.SHORTCUTS) used.add('backtest.keys.' + s.id);
+    const LK = globalThis.WwBtLook;
+    for (const id of LK.STYLES) used.add('backtest.look.style_' + id);
+    for (const id of LK.COLOR_KEYS) used.add('backtest.look.color_' + id);
+    for (const id of LK.SWITCHES) used.add('backtest.look.' + id);
+    for (const id of LK.PRESET_IDS) used.add('backtest.look.preset.' + id);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
   });
   it('no lock icon anywhere in the page (owner preference)', () => {

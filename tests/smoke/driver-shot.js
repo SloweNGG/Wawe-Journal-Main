@@ -20,6 +20,8 @@
     var cl = $('bt-open-body').querySelector('button[data-act="close"]'); if (cl) cl.click();
     if (shot !== 'simple') document.querySelector('[data-bt-mode="advanced"]').click();
     if (shot === 'fs') $('bt-fs-btn').click();
+    if (shot === 'drawer') { $('bt-look-btn').click(); await sleep(100); if (qp.get('plan') !== 'free') { $('bt-look-body').querySelector('[data-preset="night"]').click(); await sleep(100); $('bt-look-body').querySelector('input[data-switch="showVolume"]').click(); $('bt-look-body').querySelector('input[data-switch="showSessions"]').click(); $('bt-step-btn').click(); } }
+    if (shot === 'sessions') { setv('bt-tf', '15m'); await sleep(800); $('bt-look-btn').click(); await sleep(100); $('bt-look-body').querySelector('input[data-switch="showSessions"]').click(); await sleep(100); $('bt-look-body').querySelector('[data-style="heikin"]').click(); await sleep(100); $('bt-look-close').click(); }
     if (window.__shotHook) await window.__shotHook(shot);
     await sleep(600);
   } catch (e) { console.warn(e); }

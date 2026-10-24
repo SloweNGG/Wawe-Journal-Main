@@ -37,7 +37,14 @@ export const FEATURES = {
     basicOvertrade: true,
     trades: true,
     strategies: true,
-    basicCharts: true
+    basicCharts: true,
+    // Backtest (backtest.js reads them with hasFeature): appearance beyond the two free themes, every drawing tool with saved drawings,
+    // the extended statistics, multi-chart layouts, unlimited trades on cTrader-data accounts (the database enforces the limit too)
+    backtestThemes: false,
+    backtestDrawings: false,
+    backtestStats: false,
+    backtestMultiChart: false,
+    backtestUnlimitedTrades: false
   },
   premium: {
     label: '💎 Pro',
@@ -64,7 +71,12 @@ export const FEATURES = {
     basicOvertrade: true,
     trades: true,
     strategies: true,
-    basicCharts: true
+    basicCharts: true,
+    backtestThemes: true,
+    backtestDrawings: true,
+    backtestStats: true,
+    backtestMultiChart: true,
+    backtestUnlimitedTrades: true
   }
 };
 

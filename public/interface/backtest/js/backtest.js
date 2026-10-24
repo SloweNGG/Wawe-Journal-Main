@@ -27,10 +27,12 @@
   var SYNC = null;                              // window.WwBtSync, only with the supabase backend
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
   var syncToastShown = false;
-  var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
+  var L = { user: null, plan: 'free', feat: {}, look: null, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
   var LAY = null;                               // window.WwBtLayout controller (mode, panel sizes, full screen)
+  var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
+  var FEATURES = ['backtestThemes', 'backtestDrawings', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
 
@@ -119,7 +121,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtLook &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -139,8 +141,13 @@
     if (gate !== 'member') return;
     L.user = user;
     setPageState('list');                                     // skeleton cards while the account list loads
-    var planReady = Promise.resolve().then(function () { return window.getUserPlanSilent(); })
-      .then(function (pl) { L.plan = pl && pl.plan === 'premium' ? 'premium' : 'free'; }, function () { L.plan = 'free'; });
+    // plan and the backtest features through user.js (isPro / hasFeature); any failure counts as the free plan
+    var planReady = Promise.all([Promise.resolve().then(function () { return window.isPro(); })].concat(FEATURES.map(function (f) {
+      return Promise.resolve().then(function () { return window.hasFeature(f); });
+    }))).then(function (r) {
+      L.plan = r[0] === true ? 'premium' : 'free';
+      FEATURES.forEach(function (f, i) { L.feat[f] = r[i + 1] === true; });
+    }, function () { L.plan = 'free'; L.feat = {}; });
     Promise.resolve().then(function () { return window.journal.ensureActiveJournal(user.id); }).catch(function () { /* navbar consistency only */ });
     L.src = window.WwBtData.createSyntheticSource({ seed: 1 });
     // cTrader candles: Edge Function client + per-user IndexedDB cache (entries of other user ids are removed)
@@ -154,6 +161,7 @@
       ? window.WwBtStore.createSupabaseStore({ sb: window.sb, userId: user.id })
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; } });
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
+    L.look = window.WwBtLook.load(safeStorage());
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
@@ -164,6 +172,9 @@
   }
   function safeStorage() { try { return window.localStorage; } catch (e) { return null; } }
   function isPro() { return L.plan === 'premium'; }
+  function can(f) { return L.feat[f] === true; }
+  // free user on a Premium control: the upgrade window (the control shows a small PRO tag)
+  function openUpgrade(feature) { if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: feature || 'backtest_pro' }); }
   function whenActivated() {
     return document.prerendering ? new Promise(function (r) { document.addEventListener('prerenderingchange', r, { once: true }); }) : Promise.resolve();
   }
@@ -753,6 +764,7 @@
   function closeReplayState() {
     if (!R) return;
     if (LAY) LAY.setFullscreen(false);
+    if ($('bt-look-drawer')) $('bt-look-drawer').hidden = true;
     pause(); saveReplayTime(true);
     R.abort.abort(); R.token++;
     destroyChart();
@@ -1153,22 +1165,29 @@
     return fmtTime(time);
   }
   function crosshairTime(time) { return R && R.tfMin >= 1440 ? fmtTradingDay(time) : fmtDateTime(time); }
+  // the resolved appearance (free users: one of the two free themes, whatever is stored)
+  function look() { return window.WwBtLook.resolve(L.look, window.WwChart.isLight(), can('backtestThemes')); }
   function buildChart() {
-    var c = colors();
-    R.chart = window.LightweightCharts.createChart($('bt-chart'), window.WwChart.lwc({
+    var c = colors(), lk = look(), LK = window.WwBtLook;
+    R.look = lk;
+    R.chart = window.LightweightCharts.createChart($('bt-chart'), window.WwChart.mergeDeep(window.WwChart.lwc({
       autoSize: true,
-      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.08 } },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: lk.showVolume ? 0.2 : 0.08 } },
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: 8,
         shiftVisibleRangeOnNewBar: true, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: tickLabel },
       localization: { locale: localeTag(), timeFormatter: crosshairTime },
       crosshair: { mode: window.LightweightCharts.CrosshairMode.Normal },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true }
-    }));
-    R.series = R.chart.addCandlestickSeries({
-      upColor: c.up, downColor: c.down, borderUpColor: c.up, borderDownColor: c.down, wickUpColor: c.up, wickDownColor: c.down,
-      priceFormat: S.priceFormat(R.sym.id)
-    });
+    }), LK.chartOptions(lk, c)));
+    R.series = LK.addSeries(R.chart, lk, S.priceFormat(R.sym.id));
+    R.vol = null;
+    if (lk.showVolume) {
+      R.vol = R.chart.addHistogramSeries({ priceScaleId: 'bt-vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
+      R.chart.priceScale('bt-vol').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 }, visible: false });
+    }
+    R.sessions = LK.createSessionPrimitive({ bars: function () { return R && R.bars ? R.bars : []; }, tfMin: function () { return R ? R.tfMin : 60; } });
+    R.series.attachPrimitive(R.sessions); R.sessions.setVisible(lk.showSessions);
     R.chart.subscribeCrosshairMove(renderLegend);
     R.chart.timeScale().subscribeVisibleLogicalRangeChange(refreshClippedTicks);
     if (!R.chart.autoSizeActive || !R.chart.autoSizeActive()) installResizeFallback();
@@ -1176,7 +1195,7 @@
   function destroyChart() {
     if (!R || !R.chart) return;
     try { R.chart.remove(); } catch (e) { /* ignore */ }
-    R.chart = null; R.series = null; R.lines = {}; R.askLine = null;
+    R.chart = null; R.series = null; R.vol = null; R.sessions = null; R.lines = {}; R.askLine = null; R.bidLine = null;
   }
   function rebuildChart() {
     if (!R || !R.chart) return;
@@ -1185,17 +1204,45 @@
     if (R.candles.length) { renderChartData(); rebuildMarkers(); syncPriceLines(); updateAskLine(); }
     if (range) R.chart.timeScale().setVisibleLogicalRange(range);
   }
+  // R.bars: the candles in prices (legend, drawings, sessions); R.ha: their Heikin Ashi version when that style is on
   function renderChartData() {
     if (!R.series) return;
     if (R.candles.length > MAX_CHART_CANDLES) { R.candles.splice(0, R.candles.length - TRIM_TO); R.builder = C.createBuilder(R.tfMin, R.sym.id, R.candles); }
-    R.series.setData(R.candles.map(function (x) { return C.toChartBar(x, R.scale); }));
+    R.bars = R.candles.map(function (x) { return C.toChartBar(x, R.scale); });
+    R.ha = R.look.style === 'heikin' ? window.WwBtLook.heikinAshi(R.bars, 0, []) : null;
+    R.series.setData(window.WwBtLook.toSeriesData(R.look, R.bars, R.ha));
+    if (R.vol) R.vol.setData(R.candles.map(volPoint));
     R.dirtyFrom = -1;
     renderLegend();
   }
+  function volPoint(x) {
+    var a = window.WwBtLook.withAlpha(x.close >= x.open ? R.look.up : R.look.down, 0.45);
+    return { time: x.time, value: x.v || 0, color: a };
+  }
+  function seriesPoint(i) {
+    var b = R.bars[i];
+    if (R.look.style === 'line') return { time: b.time, value: b.close };
+    return R.look.style === 'heikin' ? R.ha[i] : b;
+  }
   function flushChart() {
     if (R.dirtyFrom < 0 || !R.series) return;
-    for (var i = R.dirtyFrom; i < R.candles.length; i++) R.series.update(C.toChartBar(R.candles[i], R.scale));
+    var from = R.dirtyFrom, i;
+    for (i = from; i < R.candles.length; i++) R.bars[i] = C.toChartBar(R.candles[i], R.scale);
+    if (R.ha) window.WwBtLook.heikinAshi(R.bars, from, R.ha);
+    for (i = from; i < R.candles.length; i++) { R.series.update(seriesPoint(i)); if (R.vol) R.vol.update(volPoint(R.candles[i])); }
     R.dirtyFrom = -1;
+  }
+  // appearance change from the drawer: colors and switches in place, a new candle style or volume rebuilds the chart
+  function applyLook(how) {
+    if (!R || !R.chart) return;
+    var lk = look(), prev = R.look;
+    if (how === 'full' || !prev || lk.style !== prev.style || lk.showVolume !== prev.showVolume || lk.hollow !== prev.hollow) return rebuildChart();
+    R.look = lk;
+    R.chart.applyOptions(window.WwBtLook.chartOptions(lk, colors()));
+    R.series.applyOptions(window.WwBtLook.seriesOptions(lk, S.priceFormat(R.sym.id)));
+    if (R.sessions) R.sessions.setVisible(lk.showSessions);
+    if (R.vol) R.vol.setData(R.candles.map(volPoint));
+    rebuildMarkers(); syncPriceLines(); updateAskLine();
   }
   function rebuildMarkers() {
     if (!R || !R.series) return;
@@ -1231,6 +1278,11 @@
   }
   function updateAskLine() {
     if (!R || !R.series || !R.eng.quote) return;
+    // Heikin Ashi: the last REAL price (bid), since the series' own last value is an averaged close
+    var haLast = R.look && R.look.style === 'heikin' && R.look.showLastPrice, bid = R.eng.quote.bid / R.scale;
+    if (!haLast && R.bidLine) { R.series.removePriceLine(R.bidLine); R.bidLine = null; }
+    else if (haLast && R.bidLine) R.bidLine.applyOptions({ price: bid });
+    else if (haLast) R.bidLine = R.series.createPriceLine({ price: bid, color: R.look.up, lineWidth: 1, lineStyle: window.LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'Bid' });
     if (!R.eng.sp) { if (R.askLine) { R.series.removePriceLine(R.askLine); R.askLine = null; } return; }
     var ask = (R.eng.quote.bid + R.eng.sp) / R.scale;
     if (R.askLine) R.askLine.applyOptions({ price: ask });
@@ -1238,9 +1290,9 @@
   }
   function renderLegend(param) {
     var box = $('bt-legend'); if (!box || !R) return;
-    var bar = null;
-    if (param && param.time && param.seriesData && R.series) bar = param.seriesData.get(R.series);
-    if (!bar && R.candles.length) bar = C.toChartBar(R.candles[R.candles.length - 1], R.scale);
+    var bar = null, bars = R.bars || [];
+    if (param && param.time && param.logical != null) { var li = Math.round(param.logical); if (bars[li] && bars[li].time === param.time) bar = bars[li]; }
+    if (!bar && bars.length) bar = bars[bars.length - 1];
     if (!bar) { box.textContent = ''; return; }
     var d = R.sym.digits, up = bar.close >= bar.open;
     box.textContent = '';
@@ -1517,6 +1569,12 @@
     $('bt-keys-btn').addEventListener('click', function (e) { openKeys(e.currentTarget); });
     $('bt-keys-link').addEventListener('click', function (e) { openKeys(e.currentTarget); });
     $('bt-keys-close').addEventListener('click', function () { closeModal('bt-keys-modal'); });
+    // appearance drawer
+    DRAWER = window.WwBtLook.mountDrawer({ box: $('bt-look-body'), t: _t, state: function () { return L.look; }, pro: function () { return can('backtestThemes'); },
+      light: function () { return window.WwChart.isLight(); }, upgrade: function () { openUpgrade('backtest_themes'); }, newId: newId,
+      change: function (next, how) { L.look = next; window.WwBtLook.save(safeStorage(), next); applyLook(how); } });
+    $('bt-look-btn').addEventListener('click', function () { toggleDrawer(); });
+    $('bt-look-close').addEventListener('click', function () { toggleDrawer(false); });
     ['open', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
     $('bt-save-retry-btn').addEventListener('click', retrySave);
   }
@@ -1540,10 +1598,16 @@
   }
   // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
   function escapeChain() {
+    if (!$('bt-look-drawer').hidden) { toggleDrawer(false); return true; }
     if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(false); return true; }
     return false;
   }
   function handleToolKey(e) { void e; return false; }
+  function toggleDrawer(on) {
+    var d = $('bt-look-drawer'); if (on === undefined) on = d.hidden;
+    if (on) { DRAWER.render(); d.hidden = false; $('bt-look-btn').setAttribute('aria-expanded', 'true'); var f = d.querySelector('button, input'); if (f) f.focus(); }
+    else if (!d.hidden) { d.hidden = true; $('bt-look-btn').setAttribute('aria-expanded', 'false'); try { $('bt-look-btn').focus(); } catch (e) { /* ignore */ } }
+  }
   function openKeys(opener) {
     var box = $('bt-keys-list'); LAY.renderSheet(box);
     if (LAY.mode() !== 'advanced') Array.prototype.forEach.call(box.querySelectorAll('.bt-adv-only'), function (r) { r.remove(); });

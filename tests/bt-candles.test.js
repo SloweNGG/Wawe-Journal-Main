@@ -43,7 +43,8 @@ describe('bt-candles: buckets and aggregation', () => {
     const t0 = sec('2026-09-01T10:00:00Z'), m = minutes(C, bars(t0, 12));
     const cs = C.aggregate(m, 5, 'EURUSD');
     assert.equal(cs.length, 3);
-    assert.deepEqual(plain(cs[0]), { time: t0, open: 100000, high: 100007, low: 99998, close: 100005, n: 5 });
+    assert.deepEqual(plain(cs[0]), { time: t0, open: 100000, high: 100007, low: 99998, close: 100005, n: 5, v: cs[0].v });
+    assert.ok(cs[0].v > 0, 'activity = sum of the 1m ranges');
     assert.equal(cs[2].n, 2);
   });
   it('D1 FX opens at 17:00 New York (summer 21:00Z, winter 22:00Z)', () => {
@@ -98,7 +99,7 @@ describe('bt-candles: merge and builder', () => {
     const a = [{ time: 1, open: 1, high: 5, low: 1, close: 2, n: 2 }, { time: 2, open: 2, high: 6, low: 2, close: 3, n: 1 }];
     const b = [{ time: 2, open: 3, high: 9, low: 0, close: 4, n: 2 }, { time: 3, open: 4, high: 4, low: 4, close: 4, n: 1 }];
     const m = C.merge(a, b);
-    assert.equal(m.length, 3); assert.deepEqual(plain(m[1]), { time: 2, open: 2, high: 9, low: 0, close: 4, n: 3 });
+    assert.equal(m.length, 3); assert.deepEqual(plain(m[1]), { time: 2, open: 2, high: 9, low: 0, close: 4, n: 3, v: 0 });
     assert.throws(() => C.merge(b, a), (e) => e.code === 'BT_NON_MONOTONIC');
     assert.equal(C.merge([], b).length, 2);
   });

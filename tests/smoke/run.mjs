@@ -23,7 +23,13 @@ const SCENARIOS = {
   'layout-free': ['driver=/__driver-layout.js&role=user&plan=free', DESKTOP],
   'layout-pro': ['driver=/__driver-layout.js&role=user&plan=premium', DESKTOP],
   'layout-phone': ['driver=/__driver-layout.js&role=user&plan=free&phone=1', PHONE],
+  'look-free': ['driver=/__driver-look.js&role=user&plan=free', DESKTOP],
+  'look-pro': ['driver=/__driver-look.js&role=user&plan=premium', DESKTOP],
   // screenshots only (use with --shots)
+  'shot-drawer': ['driver=/__driver-shot.js&shot=drawer&plan=premium&i18n=tr', DESKTOP, true],
+  'shot-sessions': ['driver=/__driver-shot.js&shot=sessions&plan=premium&i18n=tr', DESKTOP, true],
+  'shot-sessions-light': ['driver=/__driver-shot.js&shot=sessions&plan=premium&i18n=de&light=1', DESKTOP, true],
+  'shot-drawer-free': ['driver=/__driver-shot.js&shot=drawer&plan=free&i18n=en', DESKTOP, true],
   'shot-simple': ['driver=/__driver-shot.js&shot=simple', DESKTOP, true],
   'shot-advanced': ['driver=/__driver-shot.js&shot=advanced&plan=premium', DESKTOP, true],
   'shot-fs': ['driver=/__driver-shot.js&shot=fs&plan=premium', DESKTOP, true],

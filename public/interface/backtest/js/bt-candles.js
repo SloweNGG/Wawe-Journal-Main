@@ -1,7 +1,9 @@
 // Backtest v2: 1m -> timeframe aggregation and cursor maths (window.WwBtCandles). Pure: no DOM, no network.
 // Data types:
 //   Minutes: { n, t: Float64Array (UTC s of the 1m bar open), o, h, l, c: Int32Array (integer POINTS) }
-//   Candle:  { time (bucket start, UTC s), open, high, low, close, n } in points
+//   Candle:  { time (bucket start, UTC s), open, high, low, close, n, v } in points. n = 1m bars inside, v = sum of their ranges
+//            (high - low, points): the "volume" bars of the chart. Neither data source delivers traded volume, so the page labels
+//            it as an activity estimate.
 // Depends on WwBtSymbols (dayAnchor, nextOpen).
 (function (global) {
   'use strict';
@@ -109,8 +111,8 @@
     var out = [], cur = null, i0 = from || 0, i1 = to == null ? m.n - 1 : to;
     for (var i = i0; i <= i1; i++) {
       var s = bucketStart(m.t[i], tfMin, id);
-      if (!cur || cur.time !== s) { cur = { time: s, open: m.o[i], high: m.h[i], low: m.l[i], close: m.c[i], n: 1 }; out.push(cur); }
-      else { if (m.h[i] > cur.high) cur.high = m.h[i]; if (m.l[i] < cur.low) cur.low = m.l[i]; cur.close = m.c[i]; cur.n++; }
+      if (!cur || cur.time !== s) { cur = { time: s, open: m.o[i], high: m.h[i], low: m.l[i], close: m.c[i], n: 1, v: m.h[i] - m.l[i] }; out.push(cur); }
+      else { if (m.h[i] > cur.high) cur.high = m.h[i]; if (m.l[i] < cur.low) cur.low = m.l[i]; cur.close = m.c[i]; cur.n++; cur.v += m.h[i] - m.l[i]; }
     }
     return out;
   }
@@ -133,7 +135,7 @@
     var la = a[a.length - 1], fb = b[0];
     if (fb.time < la.time) { var e = new Error('BT_NON_MONOTONIC'); e.code = 'BT_NON_MONOTONIC'; throw e; }
     if (fb.time === la.time) {
-      var m = { time: la.time, open: la.open, high: Math.max(la.high, fb.high), low: Math.min(la.low, fb.low), close: fb.close, n: la.n + fb.n };
+      var m = { time: la.time, open: la.open, high: Math.max(la.high, fb.high), low: Math.min(la.low, fb.low), close: fb.close, n: la.n + fb.n, v: (la.v || 0) + (fb.v || 0) };
       return a.slice(0, -1).concat([m], b.slice(1));
     }
     return a.concat(b);
@@ -148,10 +150,10 @@
         if (last && last.time === s) {
           if (h > last.high) last.high = h;
           if (l < last.low) last.low = l;
-          last.close = c; last.n++;
+          last.close = c; last.n++; last.v = (last.v || 0) + (h - l);
           return candles.length - 1;
         }
-        candles.push({ time: s, open: o, high: h, low: l, close: c, n: 1 });
+        candles.push({ time: s, open: o, high: h, low: l, close: c, n: 1, v: h - l });
         return candles.length - 1;
       }
     };
