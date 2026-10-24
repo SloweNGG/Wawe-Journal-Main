@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v19'; // Trades/önbellek: sekmeler arası geçersiz kılma damgası + arka plan yeniden doğrulama (bir önceki aşamadan +1)
+const CACHE_VERSION = 'wawe-v20'; // Backtest: yeni çeviri anahtarları (düzen, görünüm, çizim araçları) eski yerel dosya önbelleğine takılmasın
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
