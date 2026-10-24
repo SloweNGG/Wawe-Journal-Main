@@ -2113,5 +2113,10 @@ export default {
   "backtest.multi.layout_2v": "2 charts, stacked",
   "backtest.multi.layout_2x2": "4 charts (2×2)",
   "backtest.multi.layout_1p3": "1 large + 3 small",
-  "backtest.multi.narrow": "Narrow screens show one chart."
+  "backtest.multi.narrow": "Narrow screens show one chart.",
+  "backtest.limit.usage": "This month {used} / {limit} trades",
+  "backtest.limit.unlimited": "Unlimited trades with Premium",
+  "backtest.limit.upgrade": "Upgrade",
+  "backtest.limit.reached": "You reached this month's trade limit. Unlimited trades with Premium.",
+  "backtest.limit.hint": "Monthly trade limit of the free plan on cTrader-data accounts; the counter resets on the 1st of every month (UTC). Open positions can always be closed."
 };

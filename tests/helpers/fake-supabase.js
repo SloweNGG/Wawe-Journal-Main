@@ -100,8 +100,10 @@ export class FakeDb {
   // migration09: emulate Migration 09 on top of 08 (data_source 'synthetic'|'ctrader', source_* columns and their CHECK, immutable source,
   // cTrader account must be connected by the same user = `ctrader.accounts`). `ctrader` also feeds the get_ctrader_status RPC.
   // drawings: emulate 202610240001 (backtest_drawings: own account, Premium writes only, upsert by id); plan: 'free' | 'premium'.
-  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null, drawings = false, plan = 'free' }) {
-    this.plan = plan;
+  // tradeLimit: emulate 202610240002 (monthly limit on cTrader-data accounts for the free plan, counter never decremented);
+  // null = migration not applied (the RPC is missing).
+  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null, drawings = false, plan = 'free', tradeLimit = null, tradeUsed = 0 }) {
+    this.plan = plan; this.tradeLimit = tradeLimit; this.tradeUsed = tradeUsed;
     this.userId = userId;
     this.migration08 = migration08 || migration09;
     this.migration09 = migration09;
@@ -112,8 +114,12 @@ export class FakeDb {
     this.seq = 0;
     this.failNext = [];   // [{ table, op, error, status }]
     this.client = recordingClient((call) => this.handle(call));
-    this.client.rpc = async (name) => {                  // only get_ctrader_status (token-free status, as in the live function)
+    this.client.rpc = async (name) => {                  // get_ctrader_status (token-free status, as in the live function), get_backtest_trade_usage
       this.client.calls.push({ table: 'rpc:' + name, op: 'rpc', filters: [] });
+      if (name === 'get_backtest_trade_usage') {
+        if (this.tradeLimit == null) return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.get_backtest_trade_usage' } };
+        return { data: { used: this.tradeUsed, limit: this.tradeLimit, premium: this.plan === 'premium', month: new Date().toISOString().slice(0, 7), resets_at: null }, error: null };
+      }
       if (name !== 'get_ctrader_status') return { data: null, error: { message: 'unknown function ' + name } };
       const c = this.ctrader, has = c.token_status && c.token_status !== 'none';
       return { data: { is_connected: !!has, token_status: has ? c.token_status : 'none', is_expired: false, accounts: has ? c.accounts : [] }, error: null };
@@ -198,6 +204,13 @@ export class FakeDb {
           }
           const bad = this.migration08Violation(row);
           if (bad) return { data: null, error: { code: '23514', message: 'new row for relation "backtest_accounts" violates check constraint "' + bad + '"' }, status: 400 };
+        }
+      }
+      if (call.table === 'backtest_account_trades' && this.tradeLimit != null) {   // trg_check_backtest_trade_quota
+        const acc = this.tables.backtest_accounts.find((a) => a.id === row.backtest_account_id);
+        if (acc && acc.data_source === 'ctrader') {
+          if (this.plan !== 'premium' && this.tradeUsed >= this.tradeLimit) return { data: null, error: { code: 'P0001', message: 'BACKTEST_TRADE_LIMIT:' + this.tradeLimit }, status: 400 };
+          this.tradeUsed++;
         }
       }
       if (call.table === 'backtest_account_trades') {      // defaults + trg_check_backtest_trade (initial levels = levels at open)

@@ -10,8 +10,8 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 | 2 | Görünüm ayarları çekmecesi (temalar, mum stili, renkler, göster/gizle, kendi temaları) | Yayında (`33757d8`) |
 | 3 | Çizim araçları (Series Primitives), Premium çizimleri `backtest_drawings` tablosunda | Yayında (`5faae7e`, `228f989`, `95273ac`); migration 202610240001 canlıda (2026-10-24 10:34 UTC, yedek `~/WaweJournal-Backups/20261024T103412Z`) |
 | 4 | İstatistikler sekmesi (ücretsiz temel, Premium ek grafikler; WwMetrics) | Yayında (`889e6a7`, `bt-stats.js`) |
-| 5 | Çoklu grafik (Premium) | Bu commit (backtest.js grafik görünümleri: `R` ana görünüm, `R.extra` diğerleri) |
-| 6 | Plan sınırları: cTrader verili hesaplarda ücretsiz 100 işlem/ay (trigger, system_settings) | |
+| 5 | Çoklu grafik (Premium) | Yayında (`5aa97ce`; backtest.js grafik görünümleri: `R` ana görünüm, `R.extra` diğerleri) |
+| 6 | Plan sınırları: cTrader verili hesaplarda ücretsiz 100 işlem/ay (trigger, system_settings) | Bu commit; migration 202610240002 canlıda (2026-10-24 11:07 UTC, yedek `~/WaweJournal-Backups/20261024T110742Z`) |
 | 7 | Kripto spread gösterimi | |
 
 ## Nerede ne var
@@ -26,6 +26,14 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
   (`public/src/core/config.js` FEATURES). Ücretsiz kullanıcı Premium kontrole tıklayınca `openUpgradeModal`, kontrolde küçük "PRO" etiketi.
 - Tercihler tarayıcıda: `ww_bt_layout_v1` (mod, boyutlar, grafik düzeni), `ww_bt_look_v1` (görünüm).
 - Hacim: veri kaynakları işlem hacmi vermiyor; mumdaki `v` alanı 1 dakikalık mum aralıklarının toplamı (çekmecede açıklama var).
+
+## İşlem sınırı (aşama 6)
+
+- Sınır değeri: `system_settings.backtest_limits = {"ctrader_free_monthly_trades": 100}`. Değiştirmek için (yayın gerekmez):
+  `UPDATE public.system_settings SET value = jsonb_set(value, '{ctrader_free_monthly_trades}', '150'), updated_at = now() WHERE key = 'backtest_limits';`
+- Sayaç `public.backtest_trade_usage` (kullanıcı, ay UTC, işlem). İşlem silmek veya hesabı sıfırlamak sayacı düşürmez. Sentetik hesaplar sayılmaz.
+- Trigger `trg_check_backtest_trade_quota` (yalnız INSERT; açık pozisyonlar kapatılabilir), RPC `get_backtest_trade_usage()`.
+- Doğrulama `supabase/tests/backtest_trade_limit_verify.sql` (ROLLBACK, canlıda 12/12). Rollback `supabase/rollbacks/202610240002_backtest_trade_limit.down.sql`.
 
 ## Yayın notu
 

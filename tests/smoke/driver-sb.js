@@ -34,6 +34,7 @@
     ok('account row stored: synthetic, no journal', db.tables.backtest_accounts.length === 1 && a.data_source === 'synthetic' && a.journal_id === null, JSON.stringify(a).slice(0, 200));
     ok('every request carries the user filter', db.client.calls.filter(function (c) { return c.table.indexOf('backtest_') === 0 && c.op !== 'insert'; }).every(function (c) { return c.filters.some(function (f) { return f[1] === 'user_id' && f[2] === 'u-' + role; }); }));
     ok('chart label: synthetic data, not real market data', vis('bt-source-label') && /gerçek piyasa verisi değildir|not real market data|keine echten Marktdaten/.test($('bt-source-label').textContent), $('bt-source-label').textContent);
+    ok('synthetic account: no monthly trade limit indicator', $('bt-limit').hidden && !$('bt-buy-btn').disabled);
     // one closed trade: it stays in the account, nothing is copied to a journal
     setv('bt-lot', '0.10'); $('bt-buy-btn').click(); await sleep(200);
     $('bt-step1m-btn').click(); await sleep(200);

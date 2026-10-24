@@ -12,14 +12,14 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=10" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=11" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793200000" is:inline defer></script>
+  <script src="/i18n.js?v=1793300000" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=1" is:inline defer></script>
@@ -34,7 +34,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-look.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=12" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=13" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -202,6 +202,11 @@ import Layout from '../layouts/Layout.astro';
           </div>
 
           <form id="bt-order-form" class="bt-card bt-order" novalidate autocomplete="off">
+            <div id="bt-limit" class="bt-limit" role="status" aria-live="polite" data-i18n-title="backtest.limit.hint" title="cTrader verili hesaplarda ücretsiz planın aylık işlem sınırı; sayaç her ayın 1'inde (UTC) sıfırlanır. Açık pozisyonlar her zaman kapatılabilir." hidden>
+              <div class="bt-limit-row"><span id="bt-limit-text" class="bt-num"></span><span class="bt-limit-bar"><span id="bt-limit-fill"></span></span></div>
+              <p id="bt-limit-full" class="bt-limit-msg" hidden><span data-i18n="backtest.limit.unlimited">Sınırsız işlem Premium'da</span>
+                <button type="button" id="bt-limit-upgrade" class="bt-link-btn" data-i18n="backtest.limit.upgrade">Yükselt</button></p>
+            </div>
             <div class="bt-quote">
               <button type="button" id="bt-sell-btn" class="bt-btn-sell" data-dir="-1">
                 <span data-i18n="backtest.order.sell">SAT</span><span id="bt-bid" class="bt-num">—</span>

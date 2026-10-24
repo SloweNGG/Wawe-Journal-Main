@@ -564,7 +564,10 @@
 
       notice_default_title: 'Özellik Dahil Değil',
       notice_default_desc: 'Bu özellik Ücretsiz planınıza dahil değildir.',
-      notice_default_sub: 'Daha yüksek limitlerle devam etmek veya özellikleri açmak için bir plana geçin.'
+      notice_default_sub: 'Daha yüksek limitlerle devam etmek veya özellikleri açmak için bir plana geçin.',
+      notice_bt_trades_title: 'Aylık İşlem Sınırına Ulaşıldı',
+      notice_bt_trades_desc: 'Ücretsiz planda cTrader verili backtest hesaplarında ayda en fazla belirli sayıda işlem açabilirsiniz. Açık pozisyonlarınızı kapatabilirsiniz; sentetik veriyle işlem sınırsızdır.',
+      notice_bt_trades_sub: 'Sınırsız işlem için Premium\'a geçin.'
     },
     en: {
       period_monthly: 'Monthly',
@@ -597,7 +600,10 @@
 
       notice_default_title: 'Feature not included',
       notice_default_desc: 'This feature is not included in your Free plan.',
-      notice_default_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.'
+      notice_default_sub: 'Choose a plan above to continue with a higher limit or unlock this feature.',
+      notice_bt_trades_title: 'Monthly trade limit reached',
+      notice_bt_trades_desc: 'On the free plan, backtest accounts with cTrader data have a monthly trade limit. You can still close your open positions; synthetic-data trading is unlimited.',
+      notice_bt_trades_sub: 'Go Premium for unlimited trades.'
     },
     de: {
       period_monthly: 'Monatlich',
@@ -630,7 +636,10 @@
 
       notice_default_title: 'Funktion nicht enthalten',
       notice_default_desc: 'Diese Funktion ist in Ihrem Free-Plan nicht enthalten.',
-      notice_default_sub: 'Wählen Sie oben einen Plan, um dieses Feature freizuschalten.'
+      notice_default_sub: 'Wählen Sie oben einen Plan, um dieses Feature freizuschalten.',
+      notice_bt_trades_title: 'Monatliches Trade-Limit erreicht',
+      notice_bt_trades_desc: 'Im kostenlosen Plan haben Backtest-Konten mit cTrader-Daten ein monatliches Trade-Limit. Offene Positionen können Sie weiterhin schließen; mit synthetischen Daten ist der Handel unbegrenzt.',
+      notice_bt_trades_sub: 'Mit Premium handeln Sie unbegrenzt.'
     }
   };
 
@@ -779,6 +788,10 @@
       if (titleEl) titleEl.textContent = tStr('notice_dash_title');
       if (descEl) descEl.textContent = tStr('notice_dash_desc');
       if (subEl) subEl.textContent = tStr('notice_dash_sub');
+    } else if (feat === 'backtest_trades') {
+      if (titleEl) titleEl.textContent = tStr('notice_bt_trades_title');
+      if (descEl) descEl.textContent = tStr('notice_bt_trades_desc');
+      if (subEl) subEl.textContent = tStr('notice_bt_trades_sub');
     } else if (feat === 'csv' || feat === 'csv_import') {
       if (titleEl) titleEl.textContent = tStr('notice_csv_title');
       if (descEl) descEl.textContent = tStr('notice_csv_desc');

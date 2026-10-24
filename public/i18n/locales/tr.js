@@ -2060,5 +2060,10 @@ export default {
   "backtest.multi.layout_2v": "2 grafik, alt alta",
   "backtest.multi.layout_2x2": "4 grafik (2×2)",
   "backtest.multi.layout_1p3": "1 büyük + 3 küçük",
-  "backtest.multi.narrow": "Dar ekranda tek grafik gösterilir."
+  "backtest.multi.narrow": "Dar ekranda tek grafik gösterilir.",
+  "backtest.limit.usage": "Bu ay {used} / {limit} işlem",
+  "backtest.limit.unlimited": "Sınırsız işlem Premium'da",
+  "backtest.limit.upgrade": "Yükselt",
+  "backtest.limit.reached": "Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium'da.",
+  "backtest.limit.hint": "cTrader verili hesaplarda ücretsiz planın aylık işlem sınırı; sayaç her ayın 1'inde (UTC) sıfırlanır. Açık pozisyonlar her zaman kapatılabilir."
 };

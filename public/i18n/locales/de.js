@@ -2080,5 +2080,10 @@ export default {
   "backtest.multi.layout_2v": "2 Charts untereinander",
   "backtest.multi.layout_2x2": "4 Charts (2×2)",
   "backtest.multi.layout_1p3": "1 groß + 3 klein",
-  "backtest.multi.narrow": "Schmale Bildschirme zeigen einen Chart."
+  "backtest.multi.narrow": "Schmale Bildschirme zeigen einen Chart.",
+  "backtest.limit.usage": "Diesen Monat {used} / {limit} Trades",
+  "backtest.limit.unlimited": "Unbegrenzte Trades mit Premium",
+  "backtest.limit.upgrade": "Upgraden",
+  "backtest.limit.reached": "Du hast das Trade-Limit dieses Monats erreicht. Unbegrenzte Trades mit Premium.",
+  "backtest.limit.hint": "Monatliches Trade-Limit des kostenlosen Plans bei Konten mit cTrader-Daten; der Zähler wird am 1. jedes Monats (UTC) zurückgesetzt. Offene Positionen können immer geschlossen werden."
 };

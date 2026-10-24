@@ -27,7 +27,7 @@
   var SYNC = null;                              // window.WwBtSync, only with the supabase backend
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
   var syncToastShown = false;
-  var L = { user: null, plan: 'free', feat: {}, look: null, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
+  var L = { user: null, plan: 'free', feat: {}, look: null, usage: null, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
   var LAY = null;                               // window.WwBtLayout controller (mode, panel sizes, full screen)
@@ -214,6 +214,27 @@
   function can(f) { return L.feat[f] === true; }
   // free user on a Premium control: the upgrade window (the control shows a small PRO tag)
   function openUpgrade(feature) { if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: feature || 'backtest_pro' }); }
+  // Monthly trade limit of cTrader-data accounts on the free plan (migration 202610240002, enforced by the database trigger;
+  // the page shows it and disables the order buttons). Synthetic-data accounts are never limited. null usage = no limit shown.
+  function loadUsage() {
+    if (BACKEND !== 'supabase' || !window.sb.rpc) { L.usage = null; return Promise.resolve(null); }
+    return Promise.resolve(window.sb.rpc('get_backtest_trade_usage')).then(function (r) {
+      L.usage = r && !r.error && r.data && isFinite(r.data.used) && isFinite(r.data.limit) ? r.data : null;
+      return L.usage;
+    }, function () { L.usage = null; return null; });
+  }
+  function limitApplies() { return !!(R && R.acc.dataSource === 'ctrader' && L.usage && !L.usage.premium && !can('backtestUnlimitedTrades')); }
+  function atLimit() { return limitApplies() && L.usage.used >= L.usage.limit; }
+  function renderLimit() {
+    var box = $('bt-limit'); if (!box) return;
+    var on = limitApplies(); box.hidden = !on;
+    if (!on) return;
+    var u = L.usage, full = u.used >= u.limit;
+    setText('bt-limit-text', _t('backtest.limit.usage', 'Bu ay {used} / {limit} işlem', { used: Math.min(u.used, u.limit), limit: u.limit }));
+    $('bt-limit-fill').style.width = Math.min(100, u.limit ? u.used / u.limit * 100 : 100) + '%';
+    box.classList.toggle('bt-limit-full', full);
+    show($('bt-limit-full'), full);
+  }
   function whenActivated() {
     return document.prerendering ? new Promise(function (r) { document.addEventListener('prerenderingchange', r, { once: true }); }) : Promise.resolve();
   }
@@ -786,6 +807,8 @@
       var replaySec = acc.replaySec || R.cov.firstT + 60;
       eng.open.forEach(function (p) { replaySec = Math.max(replaySec, p.entryT); });
       eng.closed.forEach(function (t) { replaySec = Math.max(replaySec, t.reason === 'manual' ? t.exitT : t.exitT + 60); });
+      L.usage = null; renderLimit();
+      if (acc.dataSource === 'ctrader') loadUsage().then(function () { if (R && R.acc.id === acc.id) { renderLimit(); updateControls(); } });
       var g0 = opts.startAt ? 'goto' : 'resume';
       await placeCursor(opts.startAt || replaySec, g0);
       if (SYNC && acc.journalId && R) {
@@ -1058,10 +1081,12 @@
     });
   }
   function wwLogWarn(e) { try { window.wwLog.warn('[bt]', e); } catch (x) { /* ignore */ } }
-  function persist(label, run, onFail) {
-    var job = { label: label, run: run, onFail: onFail };
+  // onError(e) -> true: the error was handled (no retry, no banner)
+  function persist(label, run, onFail, onError) {
+    var job = { label: label, run: run, onFail: onFail, onError: onError };
     run().then(function () { show($('bt-save-banner'), failedJobs.length > 0); }, function (e) {
       if (e && e.code === '23505') return;
+      if (onError && onError(e)) return;
       failedJobs.push(job);
       if (onFail) onFail();
       toast(_t('backtest.err.save_failed', 'Kaydedilemedi, tekrar denenecek.'), 'error');
@@ -1070,7 +1095,7 @@
   }
   function retrySave() {
     var jobs = failedJobs; failedJobs = []; show($('bt-save-banner'), false);
-    jobs.forEach(function (j) { persist(j.label, j.run, j.onFail); });
+    jobs.forEach(function (j) { persist(j.label, j.run, j.onFail, j.onError); });
   }
   function ctx() { return { userId: L.user.id, accountId: R.acc.id }; }
   function persistClose(t) {
@@ -1129,12 +1154,28 @@
   }
   function submitOrder(dir) {
     if (!R || !R.win) return;
+    if (atLimit()) { orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.')); openUpgrade('backtest_trades'); return; }
     var rd = readOrder(dir); if (!rd.ok) return orderError(rd.msg);
     var pos;
     try { pos = E.openPosition(R.eng, { id: newId(), dir: dir, steps: rd.o.steps, sl: rd.o.sl, tp: rd.o.tp }); } catch (e) { return orderError(codeMessage(e)); }
     orderError('');
-    var row = E.tradeInsertRow(R.eng, pos, ctx());
-    persist('open', function () { return L.store.insertTrade(row); }, function () { pos.unsaved = true; renderTables(); });
+    var row = E.tradeInsertRow(R.eng, pos, ctx()), acc = R.acc;
+    persist('open', function () {
+      return L.store.insertTrade(row).then(function (r) { if (acc.dataSource === 'ctrader' && L.usage) { L.usage.used++; renderLimit(); updateControls(); } return r; });
+    }, function () { pos.unsaved = true; renderTables(); }, function (e) {
+      // the database refused the trade over the monthly limit: take the position back (nothing was stored)
+      if (String(e && e.message).indexOf('BACKTEST_TRADE_LIMIT') < 0) return false;
+      var lim = parseInt(String(e.message).split(':')[1], 10);
+      if (L.usage) { L.usage.limit = isFinite(lim) ? lim : L.usage.limit; L.usage.used = Math.max(L.usage.used, L.usage.limit); }
+      else L.usage = { used: lim || 0, limit: lim || 0, premium: false };
+      if (R && R.acc.id === acc.id) {
+        R.eng.open = R.eng.open.filter(function (p) { return p.id !== pos.id; });
+        syncPriceLines(); rebuildMarkers(); renderTables(); renderLive(true); renderLimit(); updateControls();
+      }
+      orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.'));
+      openUpgrade('backtest_trades');
+      return true;
+    });
     $('bt-sl').value = ''; $('bt-tp').value = '';
     syncPriceLines(); rebuildMarkers(); renderTables(); renderLive(true); renderStats(); saveReplayTime(true);
   }
@@ -1520,7 +1561,8 @@
   function updateControls() {
     if (!R) return;
     var st = $('bt-view-replay').getAttribute('data-replay'), blocked = st === 'loading' || st === 'error';
-    $('bt-buy-btn').disabled = blocked || !R.eng.quote; $('bt-sell-btn').disabled = blocked || !R.eng.quote;
+    var capped = atLimit();
+    $('bt-buy-btn').disabled = blocked || !R.eng.quote || capped; $('bt-sell-btn').disabled = blocked || !R.eng.quote || capped;
     var atEnd = R.nextState && R.nextState.kind === 'end' && R.win && R.k + 1 >= R.win.n;
     $('bt-play-btn').disabled = blocked || !!atEnd; $('bt-step-btn').disabled = blocked || !!atEnd; $('bt-step1m-btn').disabled = blocked || !!atEnd;
   }
@@ -1789,6 +1831,7 @@
       light: function () { return window.WwChart.isLight(); }, upgrade: function () { openUpgrade('backtest_themes'); }, newId: newId,
       change: function (next, how) { L.look = next; window.WwBtLook.save(safeStorage(), next); applyLook(how); } });
     $('bt-look-btn').addEventListener('click', function () { toggleDrawer(); });
+    $('bt-limit-upgrade').addEventListener('click', function () { openUpgrade('backtest_trades'); });
     // multi-chart layout picker (Premium)
     $('bt-layout-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleLayoutPop(); });
     $('bt-layout-pop').addEventListener('click', function (e) {
