@@ -12,14 +12,14 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=8" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=9" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793000000" is:inline defer></script>
+  <script src="/i18n.js?v=1793100000" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=1" is:inline defer></script>
@@ -33,7 +33,8 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-layout.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=10" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-stats.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=11" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -276,8 +277,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <div id="bt-panel-stats" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-stats" hidden>
-          <dl id="bt-stats-grid" class="bt-stats-grid"></dl>
-          <p class="bt-hint" data-i18n="backtest.stat.currency_note">Tutarlar USD cinsindendir.</p>
+          <div id="bt-stats-view" class="bt-st"></div>
+          <p class="bt-hint bt-st-foot"><span id="bt-stats-extra" class="bt-num"></span> <span data-i18n="backtest.stat.currency_note">Tutarlar USD cinsindendir.</span></p>
         </div>
       </section>
     </section>

@@ -354,3 +354,45 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
   #bt-root.bt-fs .bt-draw-bar { top: 84px; bottom: auto; left: 12px; right: 12px; width: auto; height: 42px; padding: 0 6px; }
   #bt-root.bt-fs .bt-chart-top { top: 132px; }
 }
+
+/* ---------------------------------------------------------------- İstatistikler sekmesi (bt-stats.js) */
+.bt-st { display: flex; flex-direction: column; gap: 12px; padding-bottom: 4px; }
+.bt-st-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.bt-st-kpi { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.bt-st-kpi.bt-st-locked { cursor: pointer; }
+.bt-st-label { color: var(--muted); font-size: 11.5px; display: flex; align-items: center; }
+.bt-st-value { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bt-st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bt-st-card { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px 12px; min-width: 0; }
+.bt-st-wide { grid-column: 1 / -1; }
+.bt-st-h { margin: 0 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+  background: none; -webkit-text-fill-color: currentColor; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; }
+.bt-st-chart { position: relative; height: 190px; }
+.bt-st-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; }
+.bt-st-legend { margin: -2px 0 6px; font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bt-st-sw { display: inline-block; width: 10px; height: 3px; border-radius: 2px; }
+.bt-st-teaser { cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; border-style: dashed; }
+.bt-st-teaser .bt-hint { margin: 0; max-width: 640px; }
+.bt-st-teaser .btn { padding: 7px 14px; font-size: 13px; }
+.bt-st-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; height: 150px; align-items: end; }
+.bt-st-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; min-width: 0; }
+.bt-st-fill { width: 70%; min-height: 2px; border-radius: 4px 4px 0 0; }
+.bt-st-neg { background: var(--red); opacity: 0.75; }
+.bt-st-pos { background: var(--green); opacity: 0.75; }
+.bt-st-count { font-size: 11.5px; font-weight: 600; }
+.bt-st-blabel { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.bt-st-sess { display: flex; flex-direction: column; gap: 9px; padding-top: 4px; }
+.bt-st-srow { display: grid; grid-template-columns: 74px 1fr 42px auto; align-items: center; gap: 8px; font-size: 12.5px; }
+.bt-st-track { height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+.bt-st-sfill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.bt-st-sval { text-align: right; font-weight: 700; }
+.bt-st-smeta { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+.bt-st-heat-wrap { overflow-x: auto; }
+.bt-st-heat { border-collapse: separate; border-spacing: 3px; font-size: 11.5px; min-width: 560px; width: 100%; }
+.bt-st-heat th { color: var(--muted); font-weight: 600; text-align: center; padding: 2px 4px; }
+.bt-st-heat td { text-align: center; padding: 6px 2px; border-radius: 6px; background: var(--surface2); }
+.bt-st-heat .bt-st-total { background: none; font-weight: 700; }
+.bt-st-foot { margin-top: 10px; }
+:root:not(.light-theme) body:not(.light-theme) :is(.bt-st-kpi, .bt-st-card) { border-color: rgba(255, 255, 255, 0.08); }
+:root:not(.light-theme) body:not(.light-theme) :is(.bt-st-track, .bt-st-heat td) { background: rgba(255, 255, 255, 0.05); }
+@media (max-width: 760px) { .bt-st-grid { grid-template-columns: minmax(0, 1fr); } .bt-st-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

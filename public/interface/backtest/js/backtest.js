@@ -33,6 +33,7 @@
   var LAY = null;                               // window.WwBtLayout controller (mode, panel sizes, full screen)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
+  var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
   var FEATURES = ['backtestThemes', 'backtestDrawings', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
@@ -122,7 +123,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtLook && window.WwBtDraw &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtLook && window.WwBtDraw && window.WwBtStats &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -168,6 +169,7 @@
       upgrade: function () { openUpgrade('backtest_drawings'); }, toast: toast, newId: newId, askText: askText, confirm: function (txt) { return askConfirm(txt); },
       icons: icons, local: safeStorage(), session: safeSession(), db: drawingsDb(), userId: function () { return L.user && L.user.id; }
     });
+    STATS = window.WwBtStats.createView();
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
@@ -805,6 +807,7 @@
     if (LAY) LAY.setFullscreen(false);
     if ($('bt-look-drawer')) $('bt-look-drawer').hidden = true;
     if (DRAW) DRAW.setAccount(null);
+    if (STATS) STATS.destroy();
     pause(); saveReplayTime(true);
     R.abort.abort(); R.token++;
     destroyChart();
@@ -939,7 +942,7 @@
     if (!R) return;
     if (R.rafId) cancelAnimationFrame(R.rafId);
     R.rafId = 0;
-    if (R.playing) { R.playing = false; setPlayUi(false); setReplay('ready'); saveReplayTime(true); }
+    if (R.playing) { R.playing = false; setPlayUi(false); setReplay('ready'); saveReplayTime(true); renderStats(); }
   }
   function tick(ts) {
     if (R) R.rafId = 0;
@@ -1513,30 +1516,38 @@
     more.textContent = _t('backtest.history.more', 'Son {n} işlem gösteriliyor ({total} işlemden).', { n: MAX_HISTORY_ROWS, total: rows.length });
     setText('bt-history-count', String(rows.length));
   }
+  // Statistics tab: drawn only while it is visible (the charts are not free), coalesced while the replay closes trades
   function renderStats() {
     if (!R) return;
-    var sm = E.summary(R.eng), grid = $('bt-stats-grid'); grid.textContent = '';
-    var met = null;
-    try { if (window.WwMetrics) met = window.WwMetrics.summarize(R.eng.closed.map(function (t) { return E.metricsRow(R.eng, t); })); } catch (e) { met = null; }
-    function item(k, v) { var d = el('div', 'bt-stats-item'); d.appendChild(el('dt', '', k)); d.appendChild(el('dd', 'bt-num', v)); grid.appendChild(d); }
-    item(_t('backtest.stat.balance', 'Bakiye'), fmtUsd(sm.balanceCents));
-    item(_t('backtest.stat.trades', 'Kapanan işlem'), String(sm.closedCount));
-    item(_t('backtest.stat.wins_losses', 'Kazanç / Kayıp'), sm.wins + ' / ' + sm.losses);
-    item(_t('backtest.stat.win_rate', 'Kazanma oranı'), (met ? met.winRate : (sm.closedCount ? sm.wins / sm.closedCount * 100 : 0)).toFixed(1) + '%');
-    if (met) {
-      item(_t('backtest.stat.profit_factor', 'Profit factor'), window.WwMetrics.formatProfitFactor ? window.WwMetrics.formatProfitFactor(met.profitFactor) : String(met.profitFactor));
-      item(_t('backtest.stat.expectancy', 'Beklenti (işlem başı)'), fmtUsd(Math.round(met.expectancy * 100), true));
-      item(_t('backtest.stat.avg_rr', 'Ortalama R:R'), met.avgRR == null ? '—' : met.avgRR.toFixed(2));
-    }
-    item(_t('backtest.stat.max_dd', 'Maks. düşüş'), fmtUsd(sm.maxDdCents) + ' (' + (sm.maxDdBp / 100).toFixed(2) + '%)');
-    item(_t('backtest.stat.commission', 'Toplam komisyon'), fmtUsd(sm.commissionCents));
-    item(_t('backtest.stat.ambiguous', 'Belirsiz çıkış (TP+SL aynı mumda)'), String(sm.ambiguous));
+    if ($('bt-panel-stats').hidden || !$('bt-panel-stats').offsetParent) { R.statsDirty = true; return; }
+    clearTimeout(statsTimer);
+    statsTimer = later(drawStats, 120);
+  }
+  function drawStats() {
+    if (!R || !STATS) return;
+    R.statsDirty = false;
+    var sym = R.sym, eng = R.eng, sp = eng.sp;
+    function risk(t) { return t.sl0 == null ? null : -E.grossCents(sym, t.dir, t.entry, t.sl0, t.steps) + t.comm; }
+    var trades = eng.closed.map(function (t) { return { entryT: t.entryT, exitT: t.exitT, net: t.net, comm: t.comm, dir: t.dir, entry: t.entry, steps: t.steps, riskCents: risk(t), rr: t.rr == null ? null : t.rr / 100 }; });
+    var open = eng.open.map(function (t) { return { entryT: t.entryT, exitT: null, net: 0, comm: t.comm, dir: t.dir, entry: t.entry, steps: t.steps }; });
+    var firstT = trades.concat(open).length ? Math.min.apply(null, trades.concat(open).map(function (t) { return t.entryT; })) - 60 : 0;
+    // equity from the candle of the first trade on (the loaded history reaches back months)
+    var span = R.tfMin * 60, candles = !firstT ? [] : R.candles.filter(function (c) { return c.time + span > firstT; }).map(function (c) { return { time: c.time, close: c.close, span: span }; });
+    STATS.render({ box: $('bt-stats-view'), t: _t, pro: can('backtestStats'), fmtUsd: fmtUsd, locale: localeTag(), colors: colors(), lwc: window.WwChart.lwc,
+      monthNames: MONTHS[lang()] || MONTHS.tr, upgrade: function () { openUpgrade('backtest_stats'); },
+      data: { trades: trades, open: open, candles: candles, startCents: R.acc.startCents, firstT: firstT,
+        floatCents: function (t, closePts) { return E.grossCents(sym, t.dir, t.entry, E.closeFill(t.dir, closePts, sp), t.steps) - t.comm; },
+        monthOf: function (sec) { var p = window.WwTime.partsInTz(sec * 1000, tz()); return p.y + '-' + pad2(p.m); },
+        sessionsAt: window.WwBtLook.sessionsAt } });
+    var sm = E.summary(eng);
+    setText('bt-stats-extra', _t('backtest.stat.commission', 'Toplam komisyon') + ': ' + fmtUsd(sm.commissionCents) + ' · ' +
+      _t('backtest.stat.ambiguous', 'Belirsiz çıkış (TP+SL aynı mumda)') + ': ' + sm.ambiguous + ' ·');
   }
   function selectTab(name) {
     ['open', 'history', 'stats'].forEach(function (n) {
       $('bt-tab-' + n).setAttribute('aria-selected', n === name ? 'true' : 'false'); show($('bt-panel-' + n), n === name);
     });
-    if (name === 'stats') renderStats();
+    if (name === 'stats') { renderStats(); icons(); }
   }
 
   // ---------------------------------------------------------------- listeners
@@ -1665,7 +1676,7 @@
     openModal('bt-keys-modal', opener);
   }
   function onLayoutChange(prefs, what) {
-    if (what === 'mode' && R) { renderTables(); renderLive(true); }
+    if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
     if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } }, 60); }
   }
@@ -1677,7 +1688,7 @@
     var last = document.body.classList.contains('light-theme');
     themeObserver = new MutationObserver(function () {
       var now = document.body.classList.contains('light-theme');
-      if (now !== last) { last = now; rebuildChart(); }
+      if (now !== last) { last = now; rebuildChart(); renderStats(); }
     });
     themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }
@@ -1705,6 +1716,8 @@
     try { destroyChart(); } catch (e) { /* ignore */ }
     if (LAY) { try { LAY.destroy(); } catch (e) { /* ignore */ } }
     if (DRAW) { try { DRAW.destroy(); } catch (e) { /* ignore */ } }
+    clearTimeout(statsTimer);
+    if (STATS) { try { STATS.destroy(); } catch (e) { /* ignore */ } }
     R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; L.ctFormAccts = {}; ctSeq++;
   }
   PAGE.onLeave(cleanup);
