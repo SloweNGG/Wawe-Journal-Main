@@ -337,13 +337,13 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* Modal */
+/* Modal — görünüm styles.css'teki --modal-* token'larından (ortak panel); burada yalnız aç/kapa mekanizması */
 .journal-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-blur));
+  -webkit-backdrop-filter: blur(var(--modal-blur));
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -360,41 +360,30 @@
 }
 
 .journal-modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-  animation: modalIn 0.2s ease-out;
+  box-shadow: var(--modal-shadow);
+  animation: var(--modal-anim);
 }
 
 #journal-modal .journal-modal {
   max-width: 900px;
 }
 
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 .journal-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem 1.45rem;
-  border-bottom: 1px solid var(--border);
+  gap: 0.75rem;
+  padding: 1.1rem var(--modal-pad-x);
+  border-bottom: 1px solid var(--modal-line);
   flex-shrink: 0;
 }
 
@@ -402,27 +391,35 @@
   font-family: 'Syne', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text);
   margin: 0;
 }
 
 .journal-modal-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
+  transition: all 0.15s ease;
 }
 
 .journal-modal-close:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--modal-hover);
+  border-color: var(--modal-line);
   color: var(--text);
 }
 
 .journal-modal-body {
-  padding: 1.35rem 1.45rem;
+  padding: 1.25rem var(--modal-pad-x);
   flex: 1;
   overflow-y: auto;
 }
@@ -602,10 +599,10 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.95rem 1.45rem;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
+  gap: 0.6rem;
+  padding: 0.95rem var(--modal-pad-x);
+  border-top: 1px solid var(--modal-line);
+  background: var(--modal-bg);
   flex-shrink: 0;
 }
 
@@ -1772,9 +1769,9 @@ body.light-theme .journal-prop-inactive-tip {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 42px;
-  padding: 0 22px;
-  border-radius: 999px;
+  min-height: 38px;
+  padding: 0.45rem 1.2rem;
+  border-radius: 10px;
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
@@ -1841,15 +1838,6 @@ body.light-theme .journal-prop-inactive-tip {
    KOYU TEMA: oluştur/düzenle (ve silme/broker) pencereleri saf siyah (#000), nötr beyaz çizgiler.
    Açık temaya dokunulmaz (yalnızca body:not(.light-theme)).
    ============================================================ */
-body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal {
-  background: #000;
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85);
-}
-body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
-body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal-footer { background: #000; border-top-color: rgba(255, 255, 255, 0.08); }
-body:not(.light-theme) :is(#journal-modal, #delete-modal, #broker-modal) .journal-modal-close:hover { background: rgba(255, 255, 255, 0.06); }
-
 /* adım çubuğu */
 body:not(.light-theme) #journal-modal .journal-wizard-steps { background: #000; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 body:not(.light-theme) #journal-modal .wizard-step-item .step-num { background: #000; border-color: rgba(255, 255, 255, 0.18); }

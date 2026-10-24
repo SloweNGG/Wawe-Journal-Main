@@ -27,15 +27,15 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: color-mix(in srgb, var(--bg, #07070c) 82%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-blur));
+  -webkit-backdrop-filter: blur(var(--modal-blur));
   font-family: 'DM Sans', sans-serif;
 }
 .pd-export-box {
-  --pdx-bg: #000;
-  --pdx-line: rgba(255, 255, 255, 0.09);
-  --pdx-line-strong: rgba(255, 255, 255, 0.22);
+  --pdx-bg: var(--modal-bg);
+  --pdx-line: var(--modal-line);
+  --pdx-line-strong: var(--modal-line-strong);
   --pdx-chip-on-bg: #f1f1f5;
   --pdx-chip-on-text: #000;
   width: min(100%, 480px);
@@ -43,10 +43,10 @@
   overflow-y: auto;
   background: var(--pdx-bg);
   border: 1px solid var(--pdx-line);
-  border-radius: 18px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
   color: var(--text);
-  animation: pdxIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: var(--modal-anim);
 }
 @keyframes pdxIn { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
 

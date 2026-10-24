@@ -704,9 +704,9 @@
       var btBadge = isBt
         ? '<span class="badge-backtest" title="' + escAttr(_tf('trades.backtest_readonly_hint', 'Backtest hesabından aktarıldı. Yalnızca not ve strateji düzenlenebilir.')) + '" data-i18n="trades.badge_backtest">Backtest</span>'
         : '';
-      var delBtn = isBt ? '' : '<button class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="' + deleteTitle + '">\uD83D\uDDD1\uFE0F</button>';
+      var delBtn = isBt ? '' : '<button type="button" class="btn-icon del" onclick="deleteTrade(\'' + t.id + '\')" title="' + deleteTitle + '" aria-label="' + deleteTitle + '"><i data-lucide="trash-2"></i></button>';
 
-      rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          ' + selectCell + '\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>' + btBadge + '\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="' + editTitle + '">✏️</button>\n              ' + delBtn + '\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong>📝 ' + notesLabel + ':</strong><br>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>') + '\n          </td>\n        </tr>\n      ';
+      rows += '\n        <tr onclick="toggleNote(\'' + t.id + '\')">\n          ' + selectCell + '\n          <td>\n            <div class="symbol-cell">\n              <span class="row-indicator ' + indClass + '"></span>\n              <span class="symbol-text">' + safeSymbol + '</span>' + btBadge + '\n            </div>\n          </td>\n          <td>' + (t.direction === 'LONG' || t.direction === 'BUY' ? '<span class="badge-long">LONG</span>' : '<span class="badge-short">SHORT</span>') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.lot ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.entry_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.exit_price ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.stop_loss ?? '—') + '</td>\n          <td style="font-family:\'DM Mono\',monospace;">' + (t.take_profit ?? '—') + '</td>\n          <td>' + pnlStr + '</td>\n          <td>' + rrStr + '</td>\n          <td>' + (strategyName !== '—' ? '<span class="strategy-badge" title="' + safeStrategy + '">' + (safeStrategy.length > 15 ? safeStrategy.slice(0,12)+'..' : safeStrategy) + '</span>' : '—') + '</td>\n          <td class="trade-date-time" style="font-family:\'DM Mono\',monospace;">' + dateTimeStr + '</td>\n          <td onclick="event.stopPropagation()">\n            <div class="tt-actions">\n              <button type="button" class="btn-icon" onclick="openEdit(\'' + t.id + '\')" title="' + editTitle + '" aria-label="' + editTitle + '"><i data-lucide="pencil"></i></button>\n              ' + delBtn + '\n            </div>\n          </td>\n        </tr>\n        <tr id="note-row-' + t.id + '" style="display:none;" class="trade-note-row">\n          <td colspan="13">\n            <strong class="trade-note-label"><i data-lucide="sticky-note"></i>' + notesLabel + '</strong>\n            ' + (hasNote ? safeNotes : '<span style="opacity:0.5;">' + noNotesText + '</span>') + '\n          </td>\n        </tr>\n      ';
     }
     return '\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr>\n              <th style="width:36px;"><input type="checkbox" class="trade-checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"></th>\n              <th>' + _t('trades.th_symbol') + '</th><th>' + _t('trades.th_direction') + '</th><th>' + _t('trades.th_lot') + '</th><th>' + _t('trades.th_entry') + '</th><th>' + _t('trades.th_exit') + '</th><th>' + _t('trades.th_sl') + '</th><th>' + _t('trades.th_tp') + '</th><th>' + _t('trades.th_pnl') + '</th><th>' + _t('trades.th_rr') + '</th><th>' + _t('trades.th_strategy') + '</th><th>' + _t('trades.th_date') + '</th><th style="width:70px;"></th>\n            </tr>\n          </thead>\n          <tbody>' + rows + '</tbody>\n        </table>\n      </div>\n    ';
   }
@@ -778,8 +778,8 @@
       html +=         '<div class="trade-card-field trade-card-field-full"><label data-i18n="trades.notes">Not</label><span>' + notesDisplay + '</span></div>';
       html +=       '</div>';
       html +=       '<div class="trade-card-actions">';
-      html +=         '<button type="button" class="trade-card-btn edit" onclick="event.stopPropagation();openEdit(\'' + t.id + '\')">✏️ <span data-i18n="common.edit">Düzenle</span></button>';
-      if (!isBtCard) html +=         '<button type="button" class="trade-card-btn del" onclick="event.stopPropagation();deleteTrade(\'' + t.id + '\')">🗑️ <span data-i18n="common.delete">Sil</span></button>';
+      html +=         '<button type="button" class="trade-card-btn edit" onclick="event.stopPropagation();openEdit(\'' + t.id + '\')"><i data-lucide="pencil"></i><span data-i18n="common.edit">Düzenle</span></button>';
+      if (!isBtCard) html +=         '<button type="button" class="trade-card-btn del" onclick="event.stopPropagation();deleteTrade(\'' + t.id + '\')"><i data-lucide="trash-2"></i><span data-i18n="common.delete">Sil</span></button>';
       html +=       '</div>';
       html +=     '</div>';
       html +=   '</div>';
@@ -793,6 +793,11 @@
   // TABLO RENDER
   // ============================================================
   
+  // Dinamik üretilen <i data-lucide> etiketlerini SVG'ye çevirir
+  function refreshIcons() {
+    try { if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); } catch (e) {}
+  }
+
   function renderTable(trades) {
     var wrap = safeEl('table-wrap');
     if (!wrap) return;
@@ -827,6 +832,7 @@
     }
     
     if (typeof i18n !== 'undefined' && i18n.apply) i18n.apply();
+    refreshIcons();
     renderPagination();
   }
 
@@ -834,15 +840,34 @@
   // İŞLEM SİLME
   // ============================================================
   
-  async function deleteTrade(id) {
+  var pendingDeleteId = null;
+
+  function deleteTrade(id) {
     var target = findTrade(id);
     if (target && isBacktestRow(target)) {
       showToast(_tf('trades.backtest_delete_blocked', 'Backtest işlemleri buradan silinemez; Backtest sayfasından yönetilir.'), 'warning');
       return;
     }
-    var confirmText = _t('trades.delete_confirm') || 'Bu işlemi silmek istediğinize emin misiniz?';
-    if (!confirm(confirmText)) return;
-    
+    var modal = safeEl('del-modal');
+    if (!modal) return;
+    pendingDeleteId = id;
+    var txt = safeEl('del-confirm-text');
+    if (txt) txt.textContent = _tf('trades.delete_confirm', 'Bu işlemi silmek istediğinize emin misiniz?');
+    modal.classList.add('active');
+    refreshIcons();
+  }
+
+  function closeDelModal() {
+    var modal = safeEl('del-modal');
+    if (modal) modal.classList.remove('active');
+    pendingDeleteId = null;
+  }
+
+  async function confirmDeleteTrade() {
+    var id = pendingDeleteId;
+    closeDelModal();
+    if (!id) return;
+
     try {
       if (typeof sb === 'undefined') {
         showToast(_t('common.db_connection_error'), 'error');
@@ -989,6 +1014,7 @@
 
     var modal = safeEl('edit-modal');
     if (modal) modal.classList.add('active');
+    refreshIcons();
   }
   window.openEdit = openEdit;
 
@@ -1395,6 +1421,19 @@
           });
         }
       
+        var delModal = safeEl('del-modal');
+        if (delModal) {
+          delModal.addEventListener('click', function(e) {
+            if (e.target === this) closeDelModal();
+          });
+        }
+        var delCancel = safeEl('del-cancel');
+        if (delCancel) delCancel.addEventListener('click', closeDelModal);
+        var delConfirm = safeEl('del-confirm');
+        if (delConfirm) delConfirm.addEventListener('click', confirmDeleteTrade);
+        var editClose = safeEl('edit-close');
+        if (editClose) editClose.addEventListener('click', closeModal);
+
         var bulkModal = safeEl('bulk-modal');
         if (bulkModal) {
           bulkModal.addEventListener('click', function(e) {
@@ -1406,6 +1445,7 @@
           if (e.key === 'Escape') { 
             closeModal(); 
             closeBulkModal(); 
+            closeDelModal();
           } 
         });
       

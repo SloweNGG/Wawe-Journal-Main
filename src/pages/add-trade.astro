@@ -411,8 +411,9 @@ import Layout from '../layouts/Layout.astro';
     .bulk-import-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
+      background: var(--modal-backdrop);
+      backdrop-filter: blur(var(--modal-blur));
+      -webkit-backdrop-filter: blur(var(--modal-blur));
       z-index: 9999;
       display: flex;
       align-items: center;
@@ -428,9 +429,10 @@ import Layout from '../layouts/Layout.astro';
       visibility: visible;
     }
     .bulk-import-overlay .bulk-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--modal-bg);
+      border: 1px solid var(--modal-line);
+      border-radius: var(--modal-radius);
+      box-shadow: var(--modal-shadow);
       padding: 2rem;
       max-width: 500px;
       width: 90%;

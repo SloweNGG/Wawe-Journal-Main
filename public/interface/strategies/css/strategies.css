@@ -735,136 +735,18 @@
 .comparison-skeleton .comparison-card-skeleton .skeleton-chart-area .skeleton-bar-group .skeleton-bar:nth-child(8) { height: 50%; }
 
 /* ============================================================
-   MODAL STILLERI - strategies'e özel
-   ⭐ FAZ 2.1: z-index değişkenleri kullanılıyor
+   MODAL — iskelet (overlay/box/header/footer) styles.css'te tek kaynak;
+   burada yalnızca strateji paneline özel alanlar kalır
    ============================================================ */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(6px);
-  z-index: var(--z-modal-overlay);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-.modal-overlay.active { display: flex; }
-.modal-box {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: 16px;
-  max-width: 460px;
-  width: 100%;
-  overflow: hidden;
-  animation: modal-in 0.2s ease;
-}
-@keyframes modal-in {
-  from { opacity: 0; transform: scale(0.96) translateY(12px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.1rem 1.35rem;
-  border-bottom: 1px solid var(--border);
-}
-.modal-header h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-  font-family: 'Syne', sans-serif;
-}
-.modal-close {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.modal-close:hover { color: var(--text); }
-.modal-body { padding: 1.25rem 1.35rem; }
-.modal-field { margin-bottom: 0.9rem; }
-.modal-field label {
-  display: block;
-  font-family: 'DM Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 0.4rem;
-}
-.modal-field input[type="text"],
-.modal-field textarea {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.65rem 0.9rem;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-  resize: vertical;
-}
-.modal-field input[type="text"]:focus,
-.modal-field textarea:focus { border-color: var(--accent); }
 .modal-field input[type="color"] {
   width: 100%;
   height: 44px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: var(--modal-field-bg);
+  border: 1px solid var(--modal-field-line);
   border-radius: 8px;
   padding: 4px;
   cursor: pointer;
 }
-.modal-footer {
-  display: flex;
-  gap: 0.6rem;
-  justify-content: flex-end;
-  padding: 0.9rem 1.35rem 1.25rem;
-}
-.btn-modal-cancel {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 0.55rem 1.15rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-modal-cancel:hover {
-  border-color: var(--accent);
-  color: var(--text);
-}
-.btn-modal-confirm {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border: none;
-  color: #fff;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 0.55rem 1.35rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(139,92,246,0.3);
-}
-.btn-modal-confirm:hover {
-  box-shadow: 0 6px 18px rgba(139,92,246,0.5);
-  transform: translateY(-1px);
-}
-
-.modal-box.modal-box-lg { max-width: 880px; }
-.modal-box.modal-box-md { max-width: 620px; }
 
 .detail-metrics-grid {
   display: grid;
@@ -1064,16 +946,8 @@ table.detail-table td.neg { color: var(--red); font-weight: 600; }
    The theme's --surface/--surface2/--border lean purple, so the
    modals set their own black and neutral line tones here.
    ============================================================ */
-body:not(.light-theme) .modal-box {
-  --sm-line: rgba(255, 255, 255, 0.08);
-  background: #000;
-  border-color: var(--sm-line);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
-}
-body:not(.light-theme) .modal-header { border-bottom-color: var(--sm-line); }
+body:not(.light-theme) .modal-box { --sm-line: var(--modal-line); }
 body:not(.light-theme) .detail-metric-box,
-body:not(.light-theme) .modal-field input[type="text"],
-body:not(.light-theme) .modal-field textarea,
 body:not(.light-theme) .modal-field input[type="color"] {
   background: #000;
   border-color: var(--sm-line);

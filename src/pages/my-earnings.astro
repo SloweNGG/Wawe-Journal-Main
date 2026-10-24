@@ -334,8 +334,9 @@ import Layout from '../layouts/Layout.astro';
     .earnings-modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
+      background: var(--modal-backdrop);
+      backdrop-filter: blur(var(--modal-blur));
+      -webkit-backdrop-filter: blur(var(--modal-blur));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -345,62 +346,56 @@ import Layout from '../layouts/Layout.astro';
       transition: opacity 0.2s ease;
       padding: 1rem;
     }
-    body.light-theme .earnings-modal-overlay {
-      background: rgba(0, 0, 0, 0.45);
-    }
     .earnings-modal-overlay.open {
       opacity: 1;
       pointer-events: auto;
     }
     .earnings-modal-card {
       font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      background: var(--modal-bg);
+      border: 1px solid var(--modal-line);
+      border-radius: var(--modal-radius);
       width: 100%;
       max-width: 480px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      box-shadow: var(--modal-shadow);
       overflow: hidden;
       transform: translateY(15px);
       transition: transform 0.2s ease;
-    }
-    body.light-theme .earnings-modal-card {
-      box-shadow: 0 20px 48px rgba(0,0,0,0.15);
     }
     .earnings-modal-overlay.open .earnings-modal-card {
       transform: translateY(0);
     }
     .earnings-modal-header {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid var(--border);
+      padding: 1.1rem var(--modal-pad-x);
+      border-bottom: 1px solid var(--modal-line);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
     .earnings-modal-header h3 {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      font-family: 'Syne', sans-serif !important;
       margin: 0;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
       color: var(--text);
       -webkit-text-fill-color: initial !important;
       background: none !important;
     }
     .earnings-modal-body {
       font-family: 'DM Sans', sans-serif;
-      padding: 1.5rem;
+      padding: 1.25rem var(--modal-pad-x);
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
     }
     .earnings-modal-footer {
-      padding: 1rem 1.5rem;
-      border-top: 1px solid var(--border);
+      padding: 0.95rem var(--modal-pad-x);
+      border-top: 1px solid var(--modal-line);
       display: flex;
       justify-content: flex-end;
-      gap: 0.75rem;
-      background: var(--surface2);
+      gap: 0.6rem;
+      background: var(--modal-bg);
     }
     .crypto-radio-group {
       display: grid;

@@ -15,7 +15,7 @@
 .bt-card, .bt-chart-card, .bt-account-card, .bt-empty {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg, 20px); box-sizing: border-box;
 }
-:root:not(.light-theme) body:not(.light-theme) :is(.bt-card, .bt-chart-card, .bt-account-card, .bt-empty, .bt-modal .modal-box) {
+:root:not(.light-theme) body:not(.light-theme) :is(.bt-card, .bt-chart-card, .bt-account-card, .bt-empty) {
   background: #000; border-color: rgba(255, 255, 255, 0.08);
 }
 :root:not(.light-theme) body:not(.light-theme) :is(.bt-input, .bt-select) { background: #000; border-color: rgba(255, 255, 255, 0.12); }
@@ -142,25 +142,9 @@
 .bt-stats-item dd { margin: 3px 0 0; font-size: 16px; font-weight: 700; }
 .bt-shortcuts { margin: auto 0 0; padding-top: 4px; }
 
-/* modallar: .modal-header / .modal-close / .modal-footer / .btn-modal-* sayfa CSS'lerinde (strategies.css gibi) tanımlı, burada yüklenmez; aynı görünüm için buraya alındı */
-.bt-modal .modal-box { border-color: var(--border2); animation: bt-modal-in 0.2s ease; }
-@keyframes bt-modal-in { from { opacity: 0; transform: scale(0.96) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+/* modallar: iskelet (.modal-*) styles.css'teki ortak panel bloğundan gelir; burada yalnız backtest'e özel farklar */
 .bt-modal .modal-box-sm { max-width: 440px; }
-.bt-modal .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none;
-  padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--border); }
-.bt-modal .modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
-.bt-modal .modal-close { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 30px; height: 30px; padding: 0; margin: -4px -6px -4px 0;
-  background: none; border: none; border-radius: 8px; color: var(--muted); font-size: 1.05rem; line-height: 1; cursor: pointer; transition: color 0.2s, background 0.2s; }
-.bt-modal .modal-close:hover, .bt-modal .modal-close:focus-visible { color: var(--text); background: var(--surface2); outline: none; }
-.bt-modal .modal-body { padding: 1.25rem 1.35rem; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
-.bt-modal .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; flex: none; padding: 0.9rem 1.35rem 1.25rem; }
-/* Eylem düğmelerinin görünümü /buttons.css'ten gelir (siyah, mor çerçeve): Kaydet birincil; İptal ikincil, nötr çerçeve */
-.bt-modal :is(.btn-modal-cancel, .btn-modal-confirm) { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-.bt-modal .btn-modal-confirm { font-weight: 600; }
-.bt-modal .btn-modal-cancel { font-weight: 500; border-color: var(--border2) !important; color: var(--muted) !important; }
-.bt-modal .btn-modal-cancel:hover { border-color: var(--muted) !important; color: var(--text) !important; }
 .bt-modal :is(.btn-modal-cancel, .btn-modal-confirm, .bt-btn-danger, .bt-btn-danger-ghost):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-:root:not(.light-theme) body:not(.light-theme) .bt-modal .modal-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
 .bt-btn-danger { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 0.55rem 1.15rem; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
 .bt-btn-danger-ghost { background: none; color: var(--red); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 0.5rem 0.9rem;
   font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px; }
@@ -189,7 +173,6 @@ body.light-theme .bt-chart-overlay.bt-soft { background: rgba(255, 255, 255, 0.9
 }
 
 /* açık tema (devam) */
-body.light-theme .bt-modal .modal-box { border-color: var(--border); }
 :root:not(.light-theme) body:not(.light-theme) .bt-table th { background: #000; }
 
 @media (max-width: 1024px) { .bt-clock { margin-left: 0; } }

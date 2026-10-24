@@ -279,33 +279,31 @@ function filterUsers(term) {
 async function renderUsersTable() {
   var container = document.getElementById('users-table-container');
   if (!container) return;
-  
+
   var term = '';
   var searchInput = document.getElementById('user-search');
   if (searchInput) term = searchInput.value || '';
-  
+
   var filtered = filterUsers(term);
   var countEl = document.getElementById('user-count');
   if (countEl) countEl.textContent = filtered.length;
 
-  // (Eskiden burada her çizimde TÜM işlemlerin user_id'si çekilip kullanıcı başına sayılıyordu; sonuç hiçbir yerde
-  // gösterilmediği halde ağır bir sorguydu ve 1000 satırda kesiliyordu. Kaldırıldı.)
-
   var now = new Date();
-  var AW = 10 * 60 * 1000;
+  var ACTIVE_WINDOW_MS = 10 * 60 * 1000;
 
   var rows = filtered.map(function(u) {
-    var online = u.last_active && (now - new Date(u.last_active)) < AW;
-    var role = (u.user_metadata && u.user_metadata.role) || 'user';
+    var online = u.last_active && (now - new Date(u.last_active)) < ACTIVE_WINDOW_MS;
+    var role = (u.user_metadata && u.user_metadata.role) === 'admin' ? 'admin' : 'user';
     var isPro = u.plan === 'premium';
     var expiresAt = u.plan_expires_at ? new Date(u.plan_expires_at) : null;
-    var isExpired = isPro && expiresAt && new Date() > expiresAt;
-    
+    var isExpired = isPro && expiresAt && now > expiresAt;
+    var proActive = isPro && !isExpired;
+
     var expiryText = '—';
     var expiryClass = '';
     if (isPro && expiresAt) {
       if (isExpired) {
-        expiryText = '⏳ Süresi Doldu';
+        expiryText = 'Süresi doldu';
         expiryClass = 'expired';
       } else {
         var daysLeft = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
@@ -313,40 +311,86 @@ async function renderUsersTable() {
         if (daysLeft < 3) expiryClass = 'soon';
       }
     }
-    
-    var avatarHtml = u.avatar_url
-      ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">'
-      : '<span style="font-size:11px;font-weight:700;">' + getInitials(u.username) + '</span>';
-    
-    return '<tr>\n          <td><span class="id-chip">' + (u.id || '').slice(0, 8) + '…</span></td>\n          <td>\n            <div style="display:flex;align-items:center;gap:8px;">\n              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">\n                ' + avatarHtml + '\n              </div>\n              <span style="font-weight:500;">' + escapeHtml(u.username || '—') + '</span>\n            </div>\n          </td>\n          <td style="color:var(--muted);font-size:12px;">' + escapeHtml(u.email || '—') + '</td>\n          <td>\n            <span class="plan-badge-user ' + (isPro && !isExpired ? 'premium' : 'free') + '">\n              <span class="dot"></span>\n              ' + (isPro && !isExpired ? 'Pro' : 'Free') + '\n            </span>\n          </td>\n          <td style="font-size:11px;font-family:Inter,sans-serif;">\n            ' + (isPro && !isExpired 
-              ? '<span class="expiry-text ' + expiryClass + '">' + expiryText + '</span>'
-              : '<span class="expiry-text">' + expiryText + '</span>') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">\n            ' + (isPro && expiresAt && !isExpired ? formatDate(expiresAt) : '—') + '\n          </td>\n          <td style="font-size:12px;color:var(--muted);">' + formatDate(u.created_at) + '</td>\n          <td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>\n          <td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>\n        </tr>';
+
+    return '<tr>' +
+      '<td><span class="id-chip">' + escapeHtml((u.id || '').slice(0, 8)) + '…</span></td>' +
+      '<td><div class="cell-user"><div class="mini-avatar">' + avatarMarkup(u.avatar_url, u.username) + '</div>' +
+        '<span class="name">' + escapeHtml(u.username || '—') + '</span></div></td>' +
+      '<td class="muted">' + escapeHtml(u.email || '—') + '</td>' +
+      '<td><span class="plan-badge-user ' + (proActive ? 'pro' : 'free') + '"><span class="dot"></span>' + (proActive ? 'Pro' : 'Free') + '</span></td>' +
+      '<td><span class="expiry-text ' + expiryClass + '">' + expiryText + '</span></td>' +
+      '<td class="muted nowrap">' + (proActive && expiresAt ? formatDate(expiresAt) : '—') + '</td>' +
+      '<td class="muted nowrap">' + formatDate(u.created_at) + '</td>' +
+      '<td>' + (online ? '<span class="status-online">Aktif</span>' : '<span class="status-offline">Çevrimdışı</span>') + '</td>' +
+      '<td><span class="role-badge role-' + role + '">' + (role === 'admin' ? 'Admin' : 'User') + '</span></td>' +
+      '<td class="right"><div class="table-action-btns"><button type="button" class="btn btn-ghost btn-sm" data-notify-user="' + escapeHtml(u.id) + '" data-notify-name="' + escapeHtml(u.username || u.email || '') + '">Bildirim</button></div></td>' +
+    '</tr>';
   }).join('');
 
-  container.innerHTML = '\n    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead>\n            <tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th><th>Durum</th><th>Rol</th><th>İşlem</th></tr>\n          </thead>\n          <tbody>\n            ' + (rows || '<tr><td colspan="10"><div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;">Kullanıcı bulunamadı.</div></td></tr>') + '\n          </tbody>\n        </table>\n      </div>\n    </div>\n  ';
+  container.innerHTML =
+    '<div class="table-wrap"><div class="table-scroll"><table class="ww-table">' +
+      '<thead><tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Plan</th><th>Kalan Süre</th><th>Bitiş Tarihi</th><th>Kayıt</th><th>Durum</th><th>Rol</th><th class="right">İşlem</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="10" class="empty-cell"><div class="empty-state">Kullanıcı bulunamadı.</div></td></tr>') + '</tbody>' +
+    '</table></div></div>';
+
+  // Satır içi onclick yerine tek olay dinleyicisi (kimlik/ad değerleri HTML'e gömülmez)
+  container.onclick = function(e) {
+    var btn = e.target.closest('[data-notify-user]');
+    if (btn && typeof window.openNotificationModal === 'function') {
+      window.openNotificationModal(btn.getAttribute('data-notify-user'), btn.getAttribute('data-notify-name'));
+    }
+  };
 }
+
+var ADMIN_SOCIAL_ICONS = {
+  instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/>',
+  twitter: '<path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>',
+  youtube: '<path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>',
+  linkedin: '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>'
+};
+var ADMIN_SOCIAL_LABELS = { instagram: 'Instagram', twitter: 'Twitter / X', youtube: 'YouTube', linkedin: 'LinkedIn' };
 
 function renderReferencesTable() {
   var container = document.getElementById('references-table-container');
   if (!container) return;
-  
+
   var countEl = document.getElementById('ref-count');
   if (countEl) countEl.textContent = adminState.references.length;
 
   var rows = adminState.references.map(function(r) {
-    var socialIcons = '';
-    if (r.instagram) socialIcons += '<span title="Instagram"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><line x1="17" y1="7" x2="17.01" y2="7"/></svg></span>';
-    if (r.twitter) socialIcons += '<span title="Twitter"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg></span>';
-    if (r.youtube) socialIcons += '<span title="YouTube"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></span>';
-    if (r.linkedin) socialIcons += '<span title="LinkedIn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></span>';
-    if (!r.instagram && !r.twitter && !r.youtube && !r.linkedin) socialIcons = '<span style="color:var(--muted);font-size:12px;">—</span>';
-    
-    return '<tr>\n      <td>\n        <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--border2);background:var(--surface2);">\n          <img src="' + (r.image_url || 'https://placehold.co/40x40?text=?') + '" style="width:100%;height:100%;object-fit:cover;">\n        </div>\n      </td>\n      <td>\n        <div style="font-weight:600;color:var(--text);">' + escapeHtml(r.name) + '</div>\n        <div style="font-size:11px;color:var(--muted);margin-top:2px;">' + escapeHtml(r.title || '—') + '</div>\n      </td>\n      <td><div style="display:flex;gap:4px;align-items:center;">' + socialIcons + '</div></td>\n      <td>\n        ' + (r.is_active
-          ? '<span style="background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);padding:3px 10px;border-radius:99px;font-size:10px;font-weight:600;">Aktif</span>'
-          : '<span style="background:rgba(107,107,128,0.1);color:var(--muted);border:1px solid var(--border);padding:3px 10px;border-radius:99px;font-size:10px;font-weight:600;">Pasif</span>') + '\n      </td>\n      <td>\n        <div class="table-action-btns" style="display:flex;gap:6px;align-items:center;">\n          <button type="button" class="btn btn-ghost btn-sm" onclick="window.editReference(\'' + r.id + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;">\n            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\n            Düzenle\n          </button>\n          <button type="button" class="btn btn-danger btn-sm" onclick="window.deleteReference(\'' + r.id + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;">\n            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>\n            Sil\n          </button>\n        </div>\n      </td>\n    </tr>';
+    var socials = Object.keys(ADMIN_SOCIAL_ICONS).filter(function(key) { return r[key]; }).map(function(key) {
+      return '<span title="' + ADMIN_SOCIAL_LABELS[key] + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + ADMIN_SOCIAL_ICONS[key] + '</svg></span>';
+    }).join('');
+
+    var img = safeUrl(r.image_url) || 'https://placehold.co/40x40?text=?';
+    var id = escapeHtml(r.id);
+
+    return '<tr>' +
+      '<td><div class="mini-avatar lg"><img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer"></div></td>' +
+      '<td><div class="name">' + escapeHtml(r.name) + '</div><div class="muted">' + escapeHtml(r.title || '—') + '</div></td>' +
+      '<td><div class="social-icons">' + (socials || '<span>—</span>') + '</div></td>' +
+      '<td>' + (r.is_active ? '<span class="status-pill approved">Aktif</span>' : '<span class="status-pill">Pasif</span>') + '</td>' +
+      '<td class="right"><div class="table-action-btns">' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-ref-edit="' + id + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Düzenle</button>' +
+        '<button type="button" class="btn btn-danger btn-sm" data-ref-delete="' + id + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Sil</button>' +
+      '</div></td>' +
+    '</tr>';
   }).join('');
 
-  container.innerHTML = '\n    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\n      <div style="overflow-x:auto;">\n        <table class="ww-table">\n          <thead><tr><th>Fotoğraf</th><th>Kişi / Kurum</th><th>Sosyal</th><th>Durum</th><th>İşlem</th></tr></thead>\n          <tbody>\n            ' + (rows || '<tr><td colspan="5"><div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;">Henüz referans eklenmemiş.</div></td></tr>') + '\n          </tbody>\n        </table>\n      </div>\n    </div>\n  ';
+  container.innerHTML =
+    '<div class="table-wrap"><div class="table-scroll"><table class="ww-table">' +
+      '<thead><tr><th>Fotoğraf</th><th>Kişi / Kurum</th><th>Sosyal</th><th>Durum</th><th class="right">İşlem</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="5" class="empty-cell"><div class="empty-state">Henüz referans eklenmemiş.</div></td></tr>') + '</tbody>' +
+    '</table></div></div>';
+
+  container.onclick = function(e) {
+    var edit = e.target.closest('[data-ref-edit]');
+    if (edit) { window.editReference(edit.getAttribute('data-ref-edit')); return; }
+    var del = e.target.closest('[data-ref-delete]');
+    if (del) window.deleteReference(del.getAttribute('data-ref-delete'));
+  };
 }
 
 function openReferenceModal(ref) {
@@ -396,10 +440,13 @@ async function uploadImage(file) {
   try {
     var client = getSbClient();
     if (!client) return null;
-    var ext = file.name.split('.').pop();
-    var path = 'references/' + Date.now() + '_' + Math.random().toString(36).slice(7) + '.' + ext;
+    var ext = (file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'png';
+    var path = 'references/' + Date.now() + '_' + Math.random().toString(36).slice(2, 9) + '.' + ext;
     var { error } = await client.storage.from('references-images').upload(path, file);
-    if (error) return null;
+    if (error) {
+      console.warn('uploadImage hatası:', error);
+      return null;
+    }
     var publicUrl = client.storage.from('references-images').getPublicUrl(path).data.publicUrl;
     return publicUrl;
   } catch(e) {
@@ -429,7 +476,11 @@ async function saveReference() {
   
   if (adminState.currentImageFile) {
     var url = await uploadImage(adminState.currentImageFile);
-    if (url) imageUrl = url;
+    if (!url) {
+      if (typeof showToast === 'function') showToast('Resim yüklenemedi, lütfen tekrar deneyin.', 'error');
+      return;
+    }
+    imageUrl = url;
   }
   
   var nameEl = document.getElementById('ref-name');
@@ -507,8 +558,12 @@ async function deleteReference(id) {
 }
 
 function initReferenceModal() {
-  if (window._refModalInitialized) return;
-  window._refModalInitialized = true;
+  var modalEl = document.getElementById('ref-modal');
+  if (!modalEl) return;
+  // Bayrak window'da değil modal düğümünde tutulur: SPA'da sayfaya tekrar girilince
+  // DOM yenilenir ve düğmelerin dinleyicileri yeniden bağlanmalıdır
+  if (modalEl.dataset.bound === '1') return;
+  modalEl.dataset.bound = '1';
 
   var uploadBtn = document.getElementById('upload-image-btn');
   if (uploadBtn) {
@@ -843,7 +898,7 @@ async function processPayoutRequest(id, status, adminNote) {
 
     // Bildirim gönderme (opsiyonel)
     try {
-      var payoutItem = (adminState.payouts || []).find(function(p) { return p.id === id; });
+      var payoutItem = (adminState.payouts || []).find(function(p) { return String(p.id) === String(id); });
       var targetUserId = payoutItem ? payoutItem.user_id : null;
       if (targetUserId) {
         var notifType = status === 'approved' ? 'success' : 'warning';
@@ -980,6 +1035,9 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
       rpcMissing = rpcErr.code === 'PGRST202' || rpcErr.code === '42883';
       if (!rpcMissing) throw rpcErr;
       console.warn('review_partner_application RPC bulunamadı, doğrudan güncelleme yapılacak:', rpcErr);
+    } else {
+      // Hata yok ama beklenen {success:true} cevabı da yok: işlendiğini varsayma
+      throw new Error('Başvuru işlenemedi (sunucudan beklenmeyen cevap).');
     }
 
     if (!rpcOk && rpcMissing) {
@@ -1003,7 +1061,7 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
       }
 
       if (status === 'approved' && code) {
-        var app = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
+        var app = (adminState.partnerApplications || []).find(function(a) { return String(a.id) === String(appId); });
         if (app && app.user_id) {
           // Kod zaten varsa güncelle (eskiden unique ihlali sessizce yutuluyor, kod influencer'a bağlanmıyordu)
           var { error: codeErr } = await client.from('referral_codes').upsert([{
@@ -1020,7 +1078,7 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
     }
 
     // Kullanıcıya bildirim gönder (RPC bildirim göndermediyse veya fallback kullanıldıysa)
-    var currentApp = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
+    var currentApp = (adminState.partnerApplications || []).find(function(a) { return String(a.id) === String(appId); });
     var targetUserId = currentApp ? currentApp.user_id : null;
     if (!targetUserId) {
       try {
@@ -1164,11 +1222,17 @@ window.closeNotificationModal = function() {
 };
 
 window.sendAdminNotification = async function() {
-  var userId = document.getElementById('noti-modal-user-id').value;
-  var type = document.getElementById('noti-modal-type').value;
-  var title = document.getElementById('noti-modal-title').value.trim();
-  var desc = document.getElementById('noti-modal-desc').value.trim();
+  var idEl = document.getElementById('noti-modal-user-id');
+  var typeEl = document.getElementById('noti-modal-type');
+  var titleEl = document.getElementById('noti-modal-title');
+  var descEl = document.getElementById('noti-modal-desc');
   var btn = document.getElementById('send-noti-btn');
+  if (!idEl || !typeEl || !titleEl || !descEl || !btn) return;
+
+  var userId = idEl.value;
+  var type = typeEl.value;
+  var title = titleEl.value.trim();
+  var desc = descEl.value.trim();
 
   if (!userId || !title || !desc) {
     if (typeof showToast === 'function') showToast('Lütfen başlık ve açıklama girin.', 'error');
@@ -1494,7 +1558,8 @@ async function unbanUserFromSupport(banId, email) {
         .delete()
         .eq('id', banId);
 
-      if (error) console.warn('support_bans delete error:', error.message);
+      // Kayıt gerçekten silinemediyse engel kalkmış gibi gösterme
+      if (error) throw error;
     }
 
     // Local state ve fallback temizle
@@ -1512,7 +1577,7 @@ async function unbanUserFromSupport(banId, email) {
     return true;
   } catch (e) {
     console.error('unbanUserFromSupport error:', e);
-    if (typeof showToast === 'function') showToast('Engel kaldırılamadı.', 'error');
+    if (typeof showToast === 'function') showToast('Engel kaldırılamadı: ' + (e.message || ''), 'error');
     return false;
   }
 }

@@ -1685,7 +1685,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (ltcChip) {
       var existingTag = ltcChip.querySelector('.chip-discount-tag');
       if (appliedDiscount > 0) {
-        var discountTagText = '%' + appliedDiscount + ' ' + t('settings.plan_discount_tag', {}, 'İndirim');
+        var discountTagText = t('settings.plan_discount_off', { pct: appliedDiscount }, '%' + appliedDiscount + ' indirim');
         if (!existingTag) {
           var tag = document.createElement('span');
           tag.className = 'chip-discount-tag';
@@ -1746,12 +1746,13 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
     if (appliedDiscount > 0 && isLtc) {
       if (discountRow) discountRow.style.display = 'flex';
-      if (discountAmountEl) discountAmountEl.textContent = '-$' + discountAmount.toFixed(2) + ' (‑%' + appliedDiscount + ')';
+      if (discountAmountEl) discountAmountEl.textContent = '-$' + discountAmount.toFixed(2) + ' (-' + appliedDiscount + '%)';
     } else {
       if (discountRow) discountRow.style.display = 'none';
     }
 
     if (netTotalEl) netTotalEl.textContent = netTotal.toFixed(2);
+
     if (btnPayLabel) {
       btnPayLabel.textContent = t('settings.plan_pay_submit_simple', {}, 'Ödeme Yap');
     }

@@ -136,22 +136,18 @@ body.light-theme {
 .quick-add-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(8, 8, 14, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-blur));
+  -webkit-backdrop-filter: blur(var(--modal-blur));
   z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1rem;
   animation: qaFadeIn 0.2s ease-out;
 }
 .quick-add-overlay.active {
   display: flex;
-}
-
-body.light-theme .quick-add-overlay {
-  background: rgba(235, 235, 245, 0.82);
 }
 
 @keyframes qaFadeIn {
@@ -163,16 +159,15 @@ body.light-theme .quick-add-overlay {
    MODAL CONTAINER — DESKTOP HORIZONTAL (860px)
    ============================================================ */
 .quick-add-modal {
-  background: var(--qa-surface);
-  border: 1px solid var(--qa-border-strong);
-  border-top: 3px solid var(--qa-accent);
-  border-radius: var(--qa-r-lg);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
   max-width: 720px;
   width: 100%;
   min-height: 450px;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 28px 56px -14px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: var(--modal-shadow);
   position: relative;
   scrollbar-width: thin;
   scrollbar-color: var(--qa-border-strong) transparent;
@@ -186,10 +181,6 @@ body.light-theme .quick-add-overlay {
 .quick-add-modal::-webkit-scrollbar-thumb {
   background: var(--qa-border-strong);
   border-radius: 99px;
-}
-
-body.light-theme .quick-add-modal {
-  box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 @keyframes qaModalSpring {
@@ -211,11 +202,11 @@ body.light-theme .quick-add-modal {
   align-items: center;
   justify-content: space-between;
   min-height: var(--qa-header-h);
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--qa-border);
+  padding: 0.75rem var(--modal-pad-x);
+  border-bottom: 1px solid var(--modal-line);
   position: sticky;
   top: 0;
-  background: var(--qa-surface);
+  background: var(--modal-bg);
   z-index: 3;
 }
 .quick-add-header h2 {

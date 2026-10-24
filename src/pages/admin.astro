@@ -4,10 +4,10 @@ import Layout from '../layouts/Layout.astro';
 <Layout lang="tr" spa={true}>
 <Fragment slot="head">
   <title>Admin Panel – Wawe Journal</title>
-  
+
   <!-- ADMIN CSS -->
-  <link rel="stylesheet" href="/interface/admin/css/admin.css?v=1790450001" />
-  
+  <link rel="stylesheet" href="/interface/admin/css/admin.css?v=1792800100" />
+
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" is:inline defer></script>
@@ -15,26 +15,15 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js?v=1790450000" is:inline defer></script>
   <script src="/i18n.js?v=1790450000" is:inline defer></script>
   <script type="module" src="/src/bundle.js?v=1790450000" is:inline></script>
-  <script src="/interface/admin/js/admin-core.js?v=1790450000" is:inline defer data-page-script></script>
-  <script src="/interface/admin/js/admin-data.js?v=1790450000" is:inline defer data-page-script></script>
-  <script src="/interface/admin/js/admin-dashboard.js?v=1790450001" is:inline defer data-page-script></script>
-
-  <script is:inline>
-    // Eski Service Worker Ã¶nbelleÄŸini temizle (Ã¶zellikle admin gÃ¼ncellemeleri iÃ§in)
-    if (typeof window !== 'undefined' && 'caches' in window) {
-      caches.keys().then(function(names) {
-        names.forEach(function(name) {
-          if (name !== 'wawe-v7') caches.delete(name);
-        });
-      });
-    }
-  </script>
+  <script src="/interface/admin/js/admin-core.js?v=1792800100" is:inline defer data-page-script></script>
+  <script src="/interface/admin/js/admin-data.js?v=1792800100" is:inline defer data-page-script></script>
+  <script src="/interface/admin/js/admin-dashboard.js?v=1792800100" is:inline defer data-page-script></script>
 </Fragment>
   <!-- MAIN -->
   <main class="admin-main" id="main-content">
-    <div style="display:flex;justify-content:center;padding:4rem;flex-direction:column;align-items:center;gap:1rem;">
+    <div class="admin-loading">
       <div class="spinner"></div>
-      <p style="color:var(--muted);">Admin panel yÃ¼kleniyor...</p>
+      <p>Admin panel yükleniyor...</p>
     </div>
   </main>
 
@@ -46,270 +35,261 @@ import Layout from '../layouts/Layout.astro';
     <div class="modal-box">
       <div class="modal-header">
         <h2 id="ref-modal-title">Yeni Referans Ekle</h2>
-        <button class="modal-close" id="close-ref-modal">âœ•</button>
+        <button type="button" class="modal-close" id="close-ref-modal" aria-label="Kapat">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="ref-id" />
         <div class="field-row">
           <div class="field">
-            <label>Ä°sim *</label>
-            <input type="text" id="ref-name" placeholder="Ahmet YÄ±lmaz" />
+            <label for="ref-name">İsim *</label>
+            <input type="text" id="ref-name" placeholder="Ahmet Yılmaz" />
           </div>
           <div class="field">
-            <label>Ãœnvan / Pozisyon</label>
+            <label for="ref-title">Ünvan / Pozisyon</label>
             <input type="text" id="ref-title" placeholder="Forex Trader" />
           </div>
         </div>
         <div class="field">
-          <label>AÃ§Ä±klama</label>
-          <textarea id="ref-desc" rows="3" placeholder="Bu kiÅŸi hakkÄ±nda kÄ±sa bilgi..."></textarea>
+          <label for="ref-desc">Açıklama</label>
+          <textarea id="ref-desc" rows="3" placeholder="Bu kişi hakkında kısa bilgi..."></textarea>
         </div>
-        <div class="section-divider">Profil FotoÄŸrafÄ±</div>
+        <div class="section-divider">Profil Fotoğrafı</div>
         <div class="avatar-upload">
           <div class="avatar-preview-sm">
-            <img id="ref-image-preview-img" src="https://placehold.co/64x64?text=Photo" />
+            <img id="ref-image-preview-img" src="https://placehold.co/64x64?text=Photo" alt="Önizleme" />
           </div>
           <div class="avatar-actions">
-            <input type="file" id="ref-image-file" accept="image/*" style="display:none;" />
-            <button type="button" class="btn btn-ghost btn-sm" id="upload-image-btn">Resim SeÃ§</button>
-            <button type="button" class="btn btn-danger btn-sm" id="remove-image-btn">KaldÄ±r</button>
+            <input type="file" id="ref-image-file" accept="image/*" hidden />
+            <button type="button" class="btn btn-ghost btn-sm" id="upload-image-btn">Resim Seç</button>
+            <button type="button" class="btn btn-danger btn-sm" id="remove-image-btn">Kaldır</button>
             <input type="hidden" id="ref-image" value="" />
           </div>
         </div>
-        <div class="field-row" style="margin-top:0.75rem;">
-          <div class="field"><label>SÄ±ralama</label><input type="number" id="ref-order" value="0" /></div>
-          <div class="field"><label>Durum</label><select id="ref-active"><option value="true">âœ“ Aktif</option><option value="false">â—‹ Pasif</option></select></div>
+        <div class="field-row field-row-spaced">
+          <div class="field"><label for="ref-order">Sıralama</label><input type="number" id="ref-order" value="0" /></div>
+          <div class="field"><label for="ref-active">Durum</label><select id="ref-active"><option value="true">Aktif</option><option value="false">Pasif</option></select></div>
         </div>
         <div class="section-divider">Sosyal Medya</div>
         <div class="field-row">
-          <div class="field"><label>Instagram</label><input type="text" id="ref-insta" placeholder="https://instagram.com/..." /></div>
-          <div class="field"><label>Twitter / X</label><input type="text" id="ref-twitter" placeholder="https://twitter.com/..." /></div>
+          <div class="field"><label for="ref-insta">Instagram</label><input type="text" id="ref-insta" placeholder="https://instagram.com/..." /></div>
+          <div class="field"><label for="ref-twitter">Twitter / X</label><input type="text" id="ref-twitter" placeholder="https://twitter.com/..." /></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>YouTube</label><input type="text" id="ref-youtube" placeholder="https://youtube.com/..." /></div>
-          <div class="field"><label>LinkedIn</label><input type="text" id="ref-linkedin" placeholder="https://linkedin.com/..." /></div>
+          <div class="field"><label for="ref-youtube">YouTube</label><input type="text" id="ref-youtube" placeholder="https://youtube.com/..." /></div>
+          <div class="field"><label for="ref-linkedin">LinkedIn</label><input type="text" id="ref-linkedin" placeholder="https://linkedin.com/..." /></div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancel-ref-btn">Ä°ptal</button>
-        <button class="btn btn-primary" id="save-ref-btn">Kaydet</button>
+        <button type="button" class="btn btn-ghost" id="cancel-ref-btn">İptal</button>
+        <button type="button" class="btn btn-primary" id="save-ref-btn">Kaydet</button>
       </div>
     </div>
   </div>
-
 
   <!-- REFERRAL CODE MODAL -->
   <div id="referral-code-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
         <h2 id="rc-modal-title">Yeni Referans Kodu Ekle</h2>
-        <button class="modal-close" id="close-rc-modal">âœ•</button>
+        <button type="button" class="modal-close" id="close-rc-modal" aria-label="Kapat">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="rc-id" />
         <div class="field-row">
           <div class="field">
-            <label>Kod *</label>
-            <input type="text" id="rc-code" placeholder="Ã–rn: AHMET20" style="text-transform: uppercase;" />
+            <label for="rc-code">Kod *</label>
+            <input type="text" id="rc-code" placeholder="Örn: AHMET20" class="input-upper" />
           </div>
           <div class="field">
-            <label>Ä°ndirim YÃ¼zdesi * (0-100)</label>
+            <label for="rc-discount">İndirim Yüzdesi * (0-100)</label>
             <input type="number" id="rc-discount" placeholder="20" min="0" max="100" />
           </div>
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Referans AdÄ±</label>
-            <input type="text" id="rc-name" placeholder="Ahmet YÄ±lmaz" />
+            <label for="rc-name">Referans Adı</label>
+            <input type="text" id="rc-name" placeholder="Ahmet Yılmaz" />
           </div>
           <div class="field">
-            <label>Referans E-postasÄ±</label>
+            <label for="rc-email">Referans E-postası</label>
             <input type="email" id="rc-email" placeholder="ahmet@example.com" />
           </div>
         </div>
+        <div class="field">
+          <label for="rc-influencer-email">Influencer Hesabı (Sistem E-postası)</label>
+          <input type="email" id="rc-influencer-email" placeholder="Sisteme kayıtlı e-posta..." />
+          <small class="field-hint">Boş bırakılırsa Kazançlarım paneline yansımaz.</small>
+        </div>
         <div class="field-row">
-          <div class="field" style="flex:1.5;">
-            <label>Influencer Hesabı (Sistem E-postası)</label>
-            <input type="email" id="rc-influencer-email" placeholder="Sisteme kayıtlı e-posta..." />
-            <small style="color:var(--muted);font-size:0.75rem;">Boş bırakılırsa panele yansımaz.</small>
-          </div>
           <div class="field">
-            <label>Aylık Komisyon ($)</label>
+            <label for="rc-commission">Aylık Komisyon ($)</label>
             <input type="number" id="rc-commission" placeholder="Örn: 4" min="0" step="0.01" />
           </div>
           <div class="field">
-            <label>Yıllık Komisyon ($)</label>
+            <label for="rc-commission-yearly">Yıllık Komisyon ($)</label>
             <input type="number" id="rc-commission-yearly" placeholder="Örn: 25" min="0" step="0.01" />
           </div>
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Maksimum KullanÄ±m (BoÅŸ = SÄ±nÄ±rsÄ±z)</label>
-            <input type="number" id="rc-max-usage" placeholder="100" />
+            <label for="rc-max-usage">Maksimum Kullanım (Boş = Sınırsız)</label>
+            <input type="number" id="rc-max-usage" placeholder="100" min="0" />
           </div>
           <div class="field">
-            <label>Son Kullanma Tarihi (BoÅŸ = SÃ¼resiz)</label>
+            <label for="rc-expires">Son Kullanma Tarihi (Boş = Süresiz)</label>
             <input type="date" id="rc-expires" />
           </div>
         </div>
-        <div class="field-row" style="margin-top:0.75rem;">
+        <div class="field-row field-row-spaced">
           <div class="field">
-            <label>Durum</label>
+            <label for="rc-active">Durum</label>
             <select id="rc-active">
-              <option value="true">âœ“ Aktif</option>
-              <option value="false">â—‹ Pasif</option>
+              <option value="true">Aktif</option>
+              <option value="false">Pasif</option>
             </select>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancel-rc-btn">Ä°ptal</button>
-        <button class="btn btn-primary" id="save-rc-btn">Kaydet</button>
+        <button type="button" class="btn btn-ghost" id="cancel-rc-btn">İptal</button>
+        <button type="button" class="btn btn-primary" id="save-rc-btn">Kaydet</button>
       </div>
     </div>
   </div>
 
   <!-- PAYOUT ACTION MODAL -->
   <div id="payout-action-modal" class="modal-overlay">
-    <div class="modal-box" style="max-width:480px;">
+    <div class="modal-box modal-box-sm">
       <div class="modal-header">
         <h2 id="payout-modal-title">Çekim Talebi İşlemi</h2>
-        <button class="modal-close" id="close-payout-modal" onclick="if(window.closePayoutModal) window.closePayoutModal();">✕</button>
+        <button type="button" class="modal-close" id="close-payout-modal" aria-label="Kapat" onclick="if(window.closePayoutModal) window.closePayoutModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="payout-action-id" />
         <input type="hidden" id="payout-action-type" />
 
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem;font-size:13px;">
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">Kullanıcı:</span>
-            <strong id="payout-modal-user" style="color:var(--text);">—</strong>
+        <div class="info-box">
+          <div class="info-row">
+            <span>Kullanıcı</span>
+            <strong id="payout-modal-user">—</strong>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">Tutar:</span>
-            <strong id="payout-modal-amount" style="color:#22c55e;font-size:15px;">—</strong>
+          <div class="info-row">
+            <span>Tutar</span>
+            <strong id="payout-modal-amount" class="text-green">—</strong>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">Kripto Para:</span>
-            <span id="payout-modal-currency" style="font-weight:600;">—</span>
+          <div class="info-row">
+            <span>Kripto Para</span>
+            <strong id="payout-modal-currency">—</strong>
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <span style="color:var(--muted);">Çekim Adresi:</span>
-            <div id="payout-modal-address" style="font-family:monospace;background:var(--surface);border:1px solid var(--border);padding:6px 8px;border-radius:6px;word-break:break-all;font-size:12px;color:var(--text);user-select:all;">—</div>
+          <div class="info-col">
+            <span>Çekim Adresi</span>
+            <div id="payout-modal-address" class="info-mono">—</div>
           </div>
         </div>
 
         <div class="field">
-          <label id="payout-note-label">Admin Notu / İşlem Referansı (TxID)</label>
+          <label id="payout-note-label" for="payout-modal-note">Admin Notu / İşlem Referansı (TxID)</label>
           <textarea id="payout-modal-note" rows="3" placeholder="Örn: TXID: a1b2c3d4... veya onaylandı/reddedildi açıklaması"></textarea>
-          <small id="payout-note-help" style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">Bu not kullanıcı tarafından da görüntülenebilir.</small>
+          <small id="payout-note-help" class="field-hint">Bu not kullanıcı tarafından da görüntülenebilir.</small>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancel-payout-btn" onclick="if(window.closePayoutModal) window.closePayoutModal();">Vazgeç</button>
-        <button class="btn btn-primary" id="confirm-payout-btn" onclick="if(window.confirmPayoutAction) window.confirmPayoutAction();">Onayla</button>
+        <button type="button" class="btn btn-ghost" id="cancel-payout-btn" onclick="if(window.closePayoutModal) window.closePayoutModal();">Vazgeç</button>
+        <button type="button" class="btn btn-primary" id="confirm-payout-btn" onclick="if(window.confirmPayoutAction) window.confirmPayoutAction();">Onayla</button>
       </div>
     </div>
   </div>
 
   <!-- PARTNER APPLICATION REVIEW MODAL -->
   <div id="partner-app-modal" class="modal-overlay">
-    <div class="modal-box" style="max-width:520px;">
+    <div class="modal-box modal-box-md">
       <div class="modal-header">
-        <h2 id="partner-app-modal-title">Partner BaÅŸvurusu Ä°ÅŸlemi</h2>
-        <button class="modal-close" id="close-partner-app-modal" onclick="if(window.closePartnerAppModal) window.closePartnerAppModal();">âœ•</button>
+        <h2 id="partner-app-modal-title">Partner Başvurusu İşlemi</h2>
+        <button type="button" class="modal-close" id="close-partner-app-modal" aria-label="Kapat" onclick="if(window.closePartnerAppModal) window.closePartnerAppModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="pa-modal-id" />
         <input type="hidden" id="pa-modal-type" />
 
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem;font-size:13px;">
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">KullanÄ±cÄ±:</span>
-            <strong id="pa-modal-user" style="color:var(--text);">â€”</strong>
+        <div class="info-box">
+          <div class="info-row">
+            <span>Kullanıcı</span>
+            <strong id="pa-modal-user">—</strong>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">Instagram:</span>
-            <a id="pa-modal-instagram" href="#" target="_blank" style="color:var(--accent);font-weight:600;text-decoration:none;">â€”</a>
+          <div class="info-row">
+            <span>Instagram</span>
+            <a id="pa-modal-instagram" href="#" target="_blank" rel="noopener noreferrer" class="info-link">—</a>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">TakipÃ§i Boyutu:</span>
-            <span id="pa-modal-followers" style="font-weight:600;color:var(--text);">â€”</span>
+          <div class="info-row">
+            <span>Takipçi Boyutu</span>
+            <strong id="pa-modal-followers">—</strong>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">Kripto KullanÄ±mÄ±:</span>
-            <span id="pa-modal-crypto" style="font-weight:600;">â€”</span>
+          <div class="info-row">
+            <span>Kripto Kullanımı</span>
+            <strong id="pa-modal-crypto">—</strong>
           </div>
-          <div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">
-            <span style="color:var(--muted);">KullanÄ±cÄ± Notu:</span>
-            <div id="pa-modal-user-note" style="font-size:12px;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:6px 10px;border-radius:6px;max-height:80px;overflow-y:auto;">â€”</div>
+          <div class="info-col">
+            <span>Kullanıcı Notu</span>
+            <div id="pa-modal-user-note" class="info-note">—</div>
           </div>
         </div>
 
-        <!-- Onaylama Durumunda GÃ¶zÃ¼kecek Kod TanÄ±mlama AlanlarÄ± -->
-        <div id="pa-approve-fields" style="display:none;display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem;">
-          <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;">TanÄ±mlanacak Referans Kodu</div>
+        <!-- Onaylama durumunda görünen kod tanımlama alanları -->
+        <div id="pa-approve-fields" class="approve-fields">
+          <div class="section-divider">Tanımlanacak Referans Kodu</div>
           <div class="field-row">
             <div class="field">
-              <label>Referans Kodu *</label>
-              <input type="text" id="pa-code-input" placeholder="Ã–rn: INSTA10" style="text-transform:uppercase;" />
+              <label for="pa-code-input">Referans Kodu *</label>
+              <input type="text" id="pa-code-input" placeholder="Örn: INSTA10" class="input-upper" />
             </div>
             <div class="field">
-              <label>KullanÄ±cÄ± Ä°ndirimi (%) *</label>
+              <label for="pa-discount-input">Kullanıcı İndirimi (%) *</label>
               <input type="number" id="pa-discount-input" value="10" min="0" max="100" />
             </div>
+          </div>
           <div class="field-row">
             <div class="field">
-              <label>Aylık Komisyon ($/satış) *</label>
+              <label for="pa-commission-input">Aylık Komisyon ($/satış) *</label>
               <input type="number" id="pa-commission-input" value="4" min="0" step="0.5" />
             </div>
             <div class="field">
-              <label>Yıllık Komisyon ($/satış) *</label>
+              <label for="pa-commission-yearly-input">Yıllık Komisyon ($/satış) *</label>
               <input type="number" id="pa-commission-yearly-input" value="25" min="0" step="0.5" />
             </div>
           </div>
         </div>
 
-        <!-- YÃ¶netici Notu (Her iki durumda da geÃ§erli) -->
+        <!-- Yönetici notu (her iki durumda da geçerli) -->
         <div class="field">
-          <label id="pa-note-label">YÃ¶netici Notu</label>
-          <textarea id="pa-modal-admin-note" rows="3" placeholder="AÃ§Ä±klama veya ret gerekÃ§esi..."></textarea>
-          <small id="pa-note-help" style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">Bu aÃ§Ä±klama kullanÄ±cÄ±nÄ±n panelinde gÃ¶sterilir.</small>
+          <label id="pa-note-label" for="pa-modal-admin-note">Yönetici Notu</label>
+          <textarea id="pa-modal-admin-note" rows="3" placeholder="Açıklama veya ret gerekçesi..."></textarea>
+          <small id="pa-note-help" class="field-hint">Bu açıklama kullanıcının panelinde gösterilir.</small>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="if(window.closePartnerAppModal) window.closePartnerAppModal();">VazgeÃ§</button>
-        <button class="btn btn-primary" id="confirm-partner-app-btn" onclick="if(window.confirmPartnerAppAction) window.confirmPartnerAppAction();">Onayla</button>
+        <button type="button" class="btn btn-ghost" onclick="if(window.closePartnerAppModal) window.closePartnerAppModal();">Vazgeç</button>
+        <button type="button" class="btn btn-primary" id="confirm-partner-app-btn" onclick="if(window.confirmPartnerAppAction) window.confirmPartnerAppAction();">Onayla</button>
       </div>
     </div>
   </div>
 
-  <!-- SCRIPTS -->
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  <!-- Bildirim Gönderme Modal -->
+  <!-- BİLDİRİM GÖNDERME MODAL -->
   <div class="modal-overlay" id="admin-notification-modal">
-    <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-box modal-box-sm">
       <div class="modal-header">
-        <h3>Özel Bildirim Gönder</h3>
-        <button class="modal-close" onclick="if(window.closeNotificationModal) window.closeNotificationModal();">✕</button>
+        <h2>Özel Bildirim Gönder</h2>
+        <button type="button" class="modal-close" aria-label="Kapat" onclick="if(window.closeNotificationModal) window.closeNotificationModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="noti-modal-user-id" />
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;justify-content:space-between;font-size:13px;">
-          <span style="color:var(--muted);">Kullanıcı:</span>
-          <strong id="noti-modal-user-name" style="color:var(--text);">—</strong>
+        <div class="info-box">
+          <div class="info-row">
+            <span>Kullanıcı</span>
+            <strong id="noti-modal-user-name">—</strong>
+          </div>
         </div>
         <div class="field">
-          <label>Bildirim Tipi</label>
+          <label for="noti-modal-type">Bildirim Tipi</label>
           <select id="noti-modal-type" class="ww-select">
             <option value="info">Bilgi (Info)</option>
             <option value="success">Başarılı (Success)</option>
@@ -319,129 +299,133 @@ import Layout from '../layouts/Layout.astro';
           </select>
         </div>
         <div class="field">
-          <label>Başlık</label>
+          <label for="noti-modal-title">Başlık</label>
           <input type="text" id="noti-modal-title" placeholder="Örn: Hesabınız Onaylandı" />
         </div>
         <div class="field">
-          <label>Açıklama</label>
+          <label for="noti-modal-desc">Açıklama</label>
           <textarea id="noti-modal-desc" rows="3" placeholder="Mesajınız..."></textarea>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="if(window.closeNotificationModal) window.closeNotificationModal();">Vazgeç</button>
-        <button class="btn btn-primary" id="send-noti-btn" onclick="if(window.sendAdminNotification) window.sendAdminNotification();">Bildirimi Gönder</button>
+        <button type="button" class="btn btn-ghost" onclick="if(window.closeNotificationModal) window.closeNotificationModal();">Vazgeç</button>
+        <button type="button" class="btn btn-primary" id="send-noti-btn" onclick="if(window.sendAdminNotification) window.sendAdminNotification();">Bildirimi Gönder</button>
       </div>
     </div>
   </div>
 
-  <!-- SUPPORT BAN MODAL (KULLANICI ENGELLEME) -->
+  <!-- DESTEK ENGELLEME MODAL -->
   <div class="modal-overlay" id="support-ban-modal">
-    <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-box modal-box-sm">
       <div class="modal-header">
-        <h3 style="display:flex;align-items:center;gap:8px;color:#f43f5e;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        <h2 class="modal-title-danger">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           Kullanıcıyı Destekten Engelle
-        </h3>
-        <button class="modal-close" onclick="if(window.closeBanModal) window.closeBanModal();">✕</button>
+        </h2>
+        <button type="button" class="modal-close" aria-label="Kapat" onclick="if(window.closeBanModal) window.closeBanModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="ban-modal-user-id" />
         <input type="hidden" id="ban-modal-user-email" />
         <input type="hidden" id="ban-modal-user-name" />
-        
-        <div style="background:rgba(244, 63, 94, 0.08);border:1px solid rgba(244, 63, 94, 0.25);border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:13px;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-            <span style="color:var(--muted);">Kullanıcı Adı:</span>
-            <strong id="ban-modal-display-name" style="color:var(--text);">—</strong>
+
+        <div class="info-box info-box-danger">
+          <div class="info-row">
+            <span>Kullanıcı Adı</span>
+            <strong id="ban-modal-display-name">—</strong>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:var(--muted);">E-posta:</span>
-            <span id="ban-modal-display-email" style="color:var(--text);font-family:monospace;">—</span>
+          <div class="info-row">
+            <span>E-posta</span>
+            <strong id="ban-modal-display-email" class="mono">—</strong>
           </div>
         </div>
 
         <div class="field">
-          <label style="font-weight:700;color:var(--text);">Engelleme Gerekçesi (Kullanıcıya Gösterilecek) *</label>
-          <textarea id="ban-modal-reason" rows="3" placeholder="Örn: Uygunsuz üslup, spam ve anlamsız hata bildirimleri gönderimi sebebiyle erişiminiz askıya alınmıştır." style="width:100%;box-sizing:border-box;"></textarea>
-          <small style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">
-            Bu gerekçe kullanıcı hata bildirme sayfasına girdiğinde doğrudan karşısına çıkacak ve form göndermesi engellenecektir.
-          </small>
+          <label for="ban-modal-reason">Engelleme Gerekçesi (Kullanıcıya Gösterilecek) *</label>
+          <textarea id="ban-modal-reason" rows="3" placeholder="Örn: Uygunsuz üslup, spam ve anlamsız hata bildirimleri gönderimi sebebiyle erişiminiz askıya alınmıştır."></textarea>
+          <small class="field-hint">Bu gerekçe kullanıcı hata bildirme sayfasına girdiğinde doğrudan karşısına çıkacak ve form göndermesi engellenecektir.</small>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="if(window.closeBanModal) window.closeBanModal();">Vazgeç</button>
-        <button class="btn btn-danger" id="confirm-ban-btn" onclick="if(window.confirmSupportBan) window.confirmSupportBan();" style="background:#f43f5e;color:#fff;">
-          Engelle ve Erişimi Durdur
-        </button>
+        <button type="button" class="btn btn-ghost" onclick="if(window.closeBanModal) window.closeBanModal();">Vazgeç</button>
+        <button type="button" class="btn btn-danger btn-danger-solid" id="confirm-ban-btn" onclick="if(window.confirmSupportBan) window.confirmSupportBan();">Engelle ve Erişimi Durdur</button>
       </div>
     </div>
   </div>
 
-  <!-- BUG REPORT REPLY MODAL -->
+  <!-- HATA BİLDİRİMİ YANIT MODAL -->
   <div class="modal-overlay" id="bug-reply-modal">
-    <div class="modal-box" style="max-width: 520px;">
+    <div class="modal-box modal-box-md">
       <div class="modal-header">
-        <h3 style="display:flex;align-items:center;gap:8px;color:var(--accent);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+        <h2 class="modal-title-accent">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
           Bildirime Yanıt Ver
-        </h3>
-        <button class="modal-close" onclick="if(window.closeBugReplyModal) window.closeBugReplyModal();">✕</button>
+        </h2>
+        <button type="button" class="modal-close" aria-label="Kapat" onclick="if(window.closeBugReplyModal) window.closeBugReplyModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="reply-modal-report-id" />
-        
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.9rem;margin-bottom:1rem;font-size:13px;display:flex;flex-direction:column;gap:5px;">
-          <div><span style="color:var(--muted);">Konu:</span> <strong id="reply-modal-subject" style="color:var(--text);">—</strong></div>
-          <div><span style="color:var(--muted);">Gönderen:</span> <span id="reply-modal-sender" style="color:var(--accent);">—</span></div>
+
+        <div class="info-box">
+          <div class="info-row">
+            <span>Konu</span>
+            <strong id="reply-modal-subject">—</strong>
+          </div>
+          <div class="info-row">
+            <span>Gönderen</span>
+            <strong id="reply-modal-sender" class="text-accent">—</strong>
+          </div>
         </div>
 
-        <div class="field" style="margin-bottom:0.75rem;">
-          <label style="font-weight:700;">Yeni Durum</label>
+        <div class="field">
+          <label for="reply-modal-status">Yeni Durum</label>
           <select id="reply-modal-status" class="ww-select">
             <option value="answered">Yanıtlandı (Answered)</option>
             <option value="in_progress">İnceleniyor (In Progress)</option>
-            <option value="closed">Çözüldü & Kapatıldı (Resolved)</option>
+            <option value="closed">Çözüldü &amp; Kapatıldı (Resolved)</option>
             <option value="rejected">Reddedildi (Rejected)</option>
           </select>
         </div>
 
         <div class="field">
-          <label style="font-weight:700;color:var(--text);">Admin Yanıtı *</label>
-          <textarea id="reply-modal-text" rows="4" placeholder="Kullanıcıya iletilecek açıklama ve çözüm mesajı..." style="width:100%;box-sizing:border-box;"></textarea>
-          <small style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">
-            Mesaj kullanıcıya "Wawe Journal Ekibi (Admin)" rozetiyle aktarılacaktır.
-          </small>
+          <label for="reply-modal-text">Admin Yanıtı *</label>
+          <textarea id="reply-modal-text" rows="4" placeholder="Kullanıcıya iletilecek açıklama ve çözüm mesajı..."></textarea>
+          <small class="field-hint">Mesaj kullanıcıya "Wawe Journal Ekibi (Admin)" rozetiyle aktarılacaktır.</small>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="if(window.closeBugReplyModal) window.closeBugReplyModal();">Vazgeç</button>
-        <button class="btn btn-primary" id="confirm-reply-btn" onclick="if(window.confirmBugReply) window.confirmBugReply();">
-          Cevabı Gönder
-        </button>
+        <button type="button" class="btn btn-ghost" onclick="if(window.closeBugReplyModal) window.closeBugReplyModal();">Vazgeç</button>
+        <button type="button" class="btn btn-primary" id="confirm-reply-btn" onclick="if(window.confirmBugReply) window.confirmBugReply();">Cevabı Gönder</button>
       </div>
     </div>
   </div>
 
-  <!-- BUG REPORT REJECT MODAL -->
+  <!-- HATA BİLDİRİMİ RET MODAL -->
   <div class="modal-overlay" id="bug-reject-modal">
-    <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-box modal-box-md">
       <div class="modal-header">
-        <h3 style="display:flex;align-items:center;gap:8px;color:#ef4444;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <h2 class="modal-title-danger">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           Bildirimi Reddet
-        </h3>
-        <button class="modal-close" onclick="if(window.closeBugRejectModal) window.closeBugRejectModal();">✕</button>
+        </h2>
+        <button type="button" class="modal-close" aria-label="Kapat" onclick="if(window.closeBugRejectModal) window.closeBugRejectModal();">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="reject-modal-report-id" />
-        
-        <div style="background:rgba(239, 68, 68, 0.08);border:1px solid rgba(239, 68, 68, 0.25);border-radius:10px;padding:0.9rem;margin-bottom:1rem;font-size:13px;display:flex;flex-direction:column;gap:5px;">
-          <div><span style="color:var(--muted);">Konu:</span> <strong id="reject-modal-subject" style="color:var(--text);">—</strong></div>
-          <div><span style="color:var(--muted);">Gönderen:</span> <span id="reject-modal-sender" style="color:#ef4444;">—</span></div>
+
+        <div class="info-box info-box-danger">
+          <div class="info-row">
+            <span>Konu</span>
+            <strong id="reject-modal-subject">—</strong>
+          </div>
+          <div class="info-row">
+            <span>Gönderen</span>
+            <strong id="reject-modal-sender" class="text-red">—</strong>
+          </div>
         </div>
 
-        <div class="field" style="margin-bottom:0.75rem;">
-          <label style="font-weight:700;">Hızlı Reddetme Gerekçesi</label>
+        <div class="field">
+          <label for="reject-preset-select">Hızlı Reddetme Gerekçesi</label>
           <select id="reject-preset-select" class="ww-select" onchange="if(window.onBugRejectPresetChange) window.onBugRejectPresetChange(this.value);">
             <option value="invalid">Geçersiz / Doğrulanamayan Bildirim</option>
             <option value="user_error">Kullanıcı Hatası / Sistem Hatası Değil</option>
@@ -453,18 +437,14 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <div class="field">
-          <label style="font-weight:700;color:var(--text);">Kullanıcıya Gösterilecek Reddetme Notu *</label>
-          <textarea id="reject-modal-reason" rows="3" placeholder="Bildirimin neden reddedildiğini açıklayın..." style="width:100%;box-sizing:border-box;"></textarea>
-          <small style="color:var(--muted);font-size:11.5px;display:block;margin-top:4px;">
-            Bu açıklama kullanıcının hata bildirimi detayında "Reddedildi" statüsü altında görüntülenecektir.
-          </small>
+          <label for="reject-modal-reason">Kullanıcıya Gösterilecek Reddetme Notu *</label>
+          <textarea id="reject-modal-reason" rows="3" placeholder="Bildirimin neden reddedildiğini açıklayın..."></textarea>
+          <small class="field-hint">Bu açıklama kullanıcının hata bildirimi detayında "Reddedildi" statüsü altında görüntülenecektir.</small>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="if(window.closeBugRejectModal) window.closeBugRejectModal();">Vazgeç</button>
-        <button class="btn btn-danger" id="confirm-reject-btn" onclick="if(window.confirmBugReject) window.confirmBugReject();" style="background:#ef4444;color:#fff;">
-          Bildirimi Reddet
-        </button>
+        <button type="button" class="btn btn-ghost" onclick="if(window.closeBugRejectModal) window.closeBugRejectModal();">Vazgeç</button>
+        <button type="button" class="btn btn-danger btn-danger-solid" id="confirm-reject-btn" onclick="if(window.confirmBugReject) window.confirmBugReject();">Bildirimi Reddet</button>
       </div>
     </div>
   </div>
@@ -494,7 +474,7 @@ import Layout from '../layouts/Layout.astro';
             console.error('initAdmin fonksiyonu bulunamadı (timeout).');
             var mc = document.getElementById('main-content');
             if (mc) {
-              mc.innerHTML = '<div style="text-align:center;padding:4rem;"><p style="color:#ef4444;font-weight:600;font-size:15px;">Admin panel başlatılamadı.</p><p style="color:var(--muted);font-size:13px;margin-top:0.5rem;">Lütfen sayfayı yenileyin veya internet bağlantınızı kontrol edin.</p><button class="btn btn-primary" onclick="location.reload()" style="margin-top:1.25rem;">Sayfayı Yenile</button></div>';
+              mc.innerHTML = '<div class="admin-loading"><p class="admin-error-title">Admin panel başlatılamadı.</p><p>Lütfen sayfayı yenileyin veya internet bağlantınızı kontrol edin.</p><button type="button" class="btn btn-primary" onclick="location.reload()">Sayfayı Yenile</button></div>';
             }
           }
         }, 100);

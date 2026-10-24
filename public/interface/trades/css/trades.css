@@ -141,7 +141,7 @@
   border: 1px solid color-mix(in srgb, var(--yellow) 35%, transparent);
 }
 .trade-card-header .badge-backtest { margin-left: 0; flex-shrink: 0; }
-#edit-modal .edit-bt-note { font-size: 12px; color: var(--yellow); margin: -0.75rem 0 1rem; }
+#edit-modal .edit-bt-note { font-size: 12px; color: var(--yellow); background: var(--yellow-bg); border: 1px solid color-mix(in srgb, var(--yellow) 30%, transparent); border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0 0 0.85rem; }
 #edit-modal.is-backtest .field :disabled { opacity: 0.55; cursor: not-allowed; }
 
 .strategy-badge {
@@ -178,20 +178,25 @@
 }
 
 .btn-icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 8px;
+  border-radius: 8px;
   cursor: pointer;
   color: var(--muted);
-  font-size: 12px;
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.btn-icon:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,92,246,0.05); }
-.btn-icon.del:hover { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.05); }
+.btn-icon svg, .btn-icon i { width: 15px; height: 15px; stroke-width: 2; pointer-events: none; }
+.btn-icon:hover, .btn-icon:focus-visible { border-color: var(--accent); color: var(--accent); background: rgba(139,92,246,0.08); outline: none; }
+.btn-icon.del:hover, .btn-icon.del:focus-visible { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+.trade-note-label { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.trade-note-label svg, .trade-note-label i { width: 14px; height: 14px; stroke-width: 2; color: var(--accent); }
 
 /* ============================================================
    STATS GRID
@@ -594,80 +599,57 @@
 }
 
 /* ============================================================
-   MODAL STILLERI - SADECE trades.css'E ÖZEL
+   MODAL — iskelet (.modal-overlay/.modal-box/.modal-header/.modal-body/
+   .modal-footer, .field) styles.css'teki ortak panel bloğundan gelir.
+   Burada yalnızca düzenleme panelinin iç düzeni var.
    ============================================================ */
-.field {
+.edit-section + .edit-section {
+  margin-top: 1.15rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--modal-line);
+}
+.edit-section-title {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.85rem;
-}
-.field label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-}
-.field input, .field select, .field textarea {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  outline: none;
-  transition: all 0.2s;
-}
-.field input:focus, .field select:focus, .field textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(6px);
-  z-index: var(--z-modal-overlay);
-  display: flex !important;
   align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  visibility: hidden;
-  opacity: 0;
-  transition: visibility 0.2s, opacity 0.2s;
+  gap: 8px;
+  margin-bottom: 0.85rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
-.modal-overlay.active {
-  visibility: visible;
-  opacity: 1;
+.edit-section-title svg, .edit-section-title i { width: 14px; height: 14px; stroke-width: 2; color: var(--accent); }
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 0.85rem;
 }
-.modal-overlay .card {
-  max-width: 520px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  z-index: var(--z-modal-content);
+.edit-section .field:last-child,
+.edit-grid .field:nth-last-child(-n+2) { margin-bottom: 0; }
+#edit-modal .field input[type="date"] { color-scheme: dark; min-height: 36px; }
+body.light-theme #edit-modal .field input[type="date"] { color-scheme: light; }
+#edit-modal .field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8ba3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
 }
-#edit-modal {
-  visibility: hidden;
-  opacity: 0;
+#edit-modal .error-msg {
+  margin: 0.85rem 0 0;
+  padding: 0.55rem 0.8rem;
+  background: var(--red-bg);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: 8px;
+  color: var(--red);
+  font-size: 12px;
 }
-#edit-modal.active {
-  visibility: visible;
-  opacity: 1;
-}
-#bulk-modal {
-  display: none;
-}
-#bulk-modal.active {
-  display: flex !important;
+@media (max-width: 520px) {
+  .edit-grid { grid-template-columns: 1fr; }
+  .edit-grid .field:nth-last-child(2) { margin-bottom: 0.9rem; }
 }
 
 /* ============================================================
@@ -926,6 +908,7 @@ body.light-theme .skeleton-row .skeleton-cell::after {
   gap: 0.4rem;
   transition: all 0.2s;
 }
+.trade-card-btn svg, .trade-card-btn i { width: 15px; height: 15px; stroke-width: 2; flex-shrink: 0; }
 .trade-card-btn.edit:active {
   border-color: var(--accent);
   color: var(--accent);
@@ -934,7 +917,7 @@ body.light-theme .skeleton-row .skeleton-cell::after {
 .trade-card-btn.del:active {
   border-color: var(--red);
   color: var(--red);
-  background: rgba(239,68,68,0.06);
+  background: var(--red-bg);
 }
 
 /* ============================================================

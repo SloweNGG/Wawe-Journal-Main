@@ -1,9 +1,10 @@
 // ============================================================
-// ADMIN-DASHBOARD.JS - ANALYTICS & PRICES
-// ⭐ MIGRATE: Chart.js → ApexCharts
-//   - usersChart ve proChart artık ApexCharts instance'ı
-//   - ApexCharts destroy() ve re-render aynı şekilde çalışır
-//   - Tema (light/dark) desteği eklendi
+// ADMIN-DASHBOARD.JS - GENEL BAKIŞ, İSTATİSTİK, FİYAT, REFERANS KODU,
+// PARTNER, ÇEKİM VE HATA BİLDİRİMİ PANELLERİ
+// Grafikler ApexCharts ile çizilir; renk ve yazı tipi ortak tema
+// (window.WwChart) ile uygulamanın CSS değişkenlerinden gelir.
+// Tablolardaki düğmeler satır içi onclick yerine veri öznitelikleri +
+// tek bir olay dinleyicisiyle çalışır (kimlik/metinler HTML'e gömülmez).
 // ============================================================
 var wwLog = (typeof window !== 'undefined' && window.wwLog) ? window.wwLog : console;
 if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
@@ -14,7 +15,7 @@ var ADMIN_PAGE = window.wwPage.current();
 
 // Sayfadan çıkarken grafikleri yok et
 ADMIN_PAGE.onLeave(function() {
-  var charts = (window.adminState && window.adminState.charts) || (typeof adminState !== 'undefined' && adminState.charts) || {};
+  var charts = (window.adminState && window.adminState.charts) || {};
   Object.keys(charts).forEach(function(key) {
     if (charts[key] && typeof charts[key].destroy === 'function') {
       try { charts[key].destroy(); } catch (e) {}
@@ -27,28 +28,37 @@ function getSbClient() {
   return (typeof window !== 'undefined' && window.sb) ? window.sb : (typeof sb !== 'undefined' ? sb : null);
 }
 
-wwLog.log('🔥 admin-dashboard.js yukleniyor...');
+// ============================================================
+// GRAFİK YARDIMCILARI
+// ============================================================
+function adminCssVar(name, fallback) {
+  try {
+    var v = getComputedStyle(document.body).getPropertyValue(name).trim();
+    return v || fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
 
-// ============================================================
-// APEXCHARTS TEMA YARDIMCISI
-// ============================================================
 function getAdminApexTheme() {
   var isLight = document.body.classList.contains('light-theme');
   return {
     mode: isLight ? 'light' : 'dark',
-    textColor: isLight ? '#1e293b' : '#6b6b80',
-    gridColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)',
-    surface: isLight ? '#ffffff' : '#0e0e16'
+    textColor: isLight ? '#475569' : '#a8a8c0',
+    gridColor: isLight ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.05)',
+    accent: adminCssVar('--accent', '#8b5cf6'),
+    accent2: adminCssVar('--accent2', '#c084fc'),
+    green: adminCssVar('--green', '#22c55e'),
+    muted: adminCssVar('--muted', '#a0a0b8')
   };
 }
 
-// Ortak grafik görünümü (window.WwChart, shared/chart-theme.js): DM Sans, soluk ızgara, siyah ipucu kartı.
-// WwChart yoksa (eski önbellekli sayfa) eski admin görünümüne düşer.
-var ADMIN_CHART_FALLBACK_FONT = "'Inter', sans-serif";
+// WwChart (shared/chart-theme.js) yüklenmemişse (eski önbellekli sayfa) sade bir yedek kullanılır
+var ADMIN_CHART_FALLBACK_FONT = "'DM Sans', sans-serif";
 
 function adminChartColors(theme) {
   if (window.WwChart) return WwChart.colors();
-  return { text: theme.mode === 'dark' ? '#fff' : '#0f172a', muted: theme.textColor, grid: theme.gridColor };
+  return { text: theme.mode === 'dark' ? '#e8e8f0' : '#0f172a', muted: theme.textColor, grid: theme.gridColor };
 }
 
 function adminChartFont() {
@@ -57,7 +67,7 @@ function adminChartFont() {
 
 function adminAxisLabels(theme) {
   if (window.WwChart) return WwChart.axisLabels();
-  return { colors: theme.textColor, fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '11px' };
+  return { colors: theme.textColor, fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '12px' };
 }
 
 function adminBarRadius() {
@@ -78,1094 +88,52 @@ function adminApex(theme, opts) {
   opts.chart.toolbar = { show: false };
   opts.grid = opts.grid || {};
   opts.grid.borderColor = theme.gridColor;
-  opts.grid.strokeDashArray = 4;
   opts.tooltip = opts.tooltip || {};
   opts.tooltip.theme = theme.mode;
   opts.tooltip.style = { fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '12px' };
   return opts;
 }
 
-// ============================================================
-// LOAD ANALYTICS DATA
-// ============================================================
-async function loadAnalyticsData() {
-  wwLog.log('📊 loadAnalyticsData basladi...');
-  
-  try {
-    var last7 = [];
-    for (var i = 6; i >= 0; i--) {
-      var d = new Date();
-      d.setDate(d.getDate() - i);
-      last7.push(adminDayKey(d));
-    }
-
-    var client = getSbClient();
-    if (!client) {
-      wwLog.warn('Supabase client not ready for analytics');
-      return;
-    }
-    var { data: profiles } = await adminFetchAll('user_profiles', '*', 'created_at', false);
-    var profileList = profiles || [];
-
-    var proUsers = profileList.filter(function(p) {
-      // Bitiş tarihi boş pro (manuel verilen) de aktiftir; kullanıcı tablosu/erişimle tutarlı
-      return p.plan === 'premium' && (!p.plan_expires_at || new Date(p.plan_expires_at) > new Date());
-    });
-    var totalPro = proUsers.length;
-    
-    var totalRevenue = 0;
-    var revenue7Days = 0;
-    var revenueByDay = {};
-    var recentProUsers = [];
-
-    var sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-
-    var paymentsList = (adminState.payments || []).filter(function(p) {
-      // Geliştirici test planı (plan_type 'test') gelir/satış istatistiklerine dahil edilmez
-      return (p.payment_status === 'finished' || p.payment_status === 'confirmed') && p.plan_type !== 'test';
-    });
-
-    // Gelir ve "son satışlar" yalnızca gerçek ödemelerden hesaplanır
-    paymentsList.forEach(function(p) {
-      var sub = paymentToSubscription(p);
-      if (sub.price <= 0) return;
-      totalRevenue += sub.price;
-
-      var dayKey = adminDayKey(sub.startDate);
-      if (!revenueByDay[dayKey]) revenueByDay[dayKey] = 0;
-      revenueByDay[dayKey] += sub.price;
-
-      if (sub.startDate >= sevenDaysAgo) {
-        revenue7Days += sub.price;
-      }
-
-      var matchedUser = profileList.find(function(prof) { return prof.id === p.user_id; });
-      recentProUsers.push({
-        username: (matchedUser && matchedUser.username) || (matchedUser && matchedUser.email) || 'Kullanıcı',
-        email: (matchedUser && matchedUser.email) || '—',
-        plan: sub.planLabel,
-        amount: sub.price,
-        date: sub.startDate,
-        referralCode: sub.referralCode,
-        avatar_url: (matchedUser && matchedUser.avatar_url) || null
-      });
-    });
-
-    recentProUsers.sort(function(a, b) {
-      return new Date(b.date) - new Date(a.date);
-    });
-
-    var revenueData = last7.map(function(d) { return revenueByDay[d] || 0; });
-    var uCounts = last7.map(function(d) {
-      return profileList.filter(function(p) {
-        if (!p.created_at) return false;
-        var cd = new Date(p.created_at);
-        return !isNaN(cd.getTime()) && adminDayKey(cd) === d;
-      }).length;
-    });
-    // "Son 7 Gün Pro": yalnızca son 7 günde gerçekleşen satışlar (eskiden tüm zamanların sayısıydı)
-    var pro7Days = recentProUsers.filter(function(r) { return new Date(r.date) >= sevenDaysAgo; }).length;
-
-    var statsEls = {
-      'stat-total-users': profileList.length,
-      'stat-total-pro': totalPro,
-      'stat-pro-revenue': '$' + totalRevenue.toFixed(2),
-      'stat-pro-7days': pro7Days
-    };
-    
-    Object.keys(statsEls).forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = statsEls[id];
-    });
-
-    var recentContainer = document.getElementById('recent-pro-list');
-    if (recentContainer) {
-      if (recentProUsers.length === 0) {
-        recentContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henüz Pro satışı yok.</div>';
-      } else {
-        var html = '';
-        for (var j = 0; j < recentProUsers.length && j < 10; j++) {
-          var u = recentProUsers[j];
-          var avatarHtml = u.avatar_url
-            ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;">'
-            : '<span style="font-weight:700;font-size:14px;">' + getInitials(u.username) + '</span>';
-          
-          var refBadge = u.referralCode 
-            ? '<span class="kpi-badge badge-purple" style="font-size:10px;padding:2px 6px;margin-left:4px;">🏷️ ' + escapeHtml(u.referralCode) + '</span>' 
-            : '';
-
-          html += '<div class="recent-pro-card">' +
-            '<div class="avatar-small">' + avatarHtml + '</div>' +
-            '<div class="info">' +
-              '<div class="name">' + escapeHtml(u.username) + '</div>' +
-              '<div class="email">' + escapeHtml(u.email) + '</div>' +
-              '<div style="display:flex;align-items:center;gap:0.5rem;margin-top:2px;flex-wrap:wrap;">' +
-                '<span class="plan-type">' + u.plan + '</span>' +
-                refBadge +
-                '<span style="font-size:11px;color:var(--muted);font-family:\'Inter\',sans-serif;">' + formatDateFull(u.date) + '</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="amount">+$' + u.amount.toFixed(2) + '</div>' +
-          '</div>';
-        }
-        recentContainer.innerHTML = html;
-      }
-    }
-
-    var labels = last7.map(function(d) { return d.slice(5).replace('-', '/'); });
-    var theme = getAdminApexTheme();
-    
-    // ⭐ Destroy eski grafikler (ApexCharts destroy() Chart.js ile aynı)
-    if (adminState.charts.userChart) {
-      try { adminState.charts.userChart.destroy(); } catch(e) {}
-      adminState.charts.userChart = null;
-    }
-    if (adminState.charts.proChart) {
-      try { adminState.charts.proChart.destroy(); } catch(e) {}
-      adminState.charts.proChart = null;
-    }
-
-    // ⭐ KULLANICI GRAFİĞİ (Bar)
-    var usersEl = document.getElementById('usersChart');
-    if (usersEl) {
-      usersEl.innerHTML = '';
-      
-      var usersOptions = adminApex(theme, {
-        series: [{ name: 'Kullanıcı', data: uCounts }],
-        chart: {
-          type: 'bar',
-          height: '100%',
-          animations: { enabled: false }
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: adminBarRadius(),
-            borderRadiusApplication: 'end',
-            columnWidth: adminBarWidth(usersEl, labels.length, '60%'),
-            colors: {
-              ranges: [
-                { from: 0, to: Number.MAX_VALUE, color: '#34d399' }
-              ]
-            }
-          }
-        },
-        colors: ['#34d399'],
-        fill: {
-          type: 'solid',
-          opacity: 0.25
-        },
-        stroke: {
-          show: true,
-          width: 2,
-          colors: ['#34d399']
-        },
-        dataLabels: { enabled: false },
-        grid: { position: 'back' },
-        xaxis: {
-          categories: labels,
-          labels: { style: adminAxisLabels(theme) },
-          axisBorder: { show: false },
-          axisTicks: { show: false }
-        },
-        yaxis: {
-          labels: {
-            style: adminAxisLabels(theme),
-            formatter: function(val) { return Math.floor(val); }
-          }
-        },
-        tooltip: {},
-        legend: { show: false }
-      });
-      
-      adminState.charts.userChart = new ApexCharts(usersEl, usersOptions);
-      adminState.charts.userChart.render();
-    }
-
-    // ⭐ PRO GRAFİĞİ (Bar)
-    var proEl = document.getElementById('proChart');
-    if (proEl) {
-      proEl.innerHTML = '';
-      
-      var proOptions = adminApex(theme, {
-        series: [{ name: 'Pro Gelir ($)', data: revenueData }],
-        chart: {
-          type: 'bar',
-          height: '100%',
-          animations: { enabled: false }
-        },
-        plotOptions: {
-          bar: {
-            borderRadius: adminBarRadius(),
-            borderRadiusApplication: 'end',
-            columnWidth: adminBarWidth(proEl, labels.length, '60%'),
-            colors: {
-              ranges: [
-                { from: 0, to: Number.MAX_VALUE, color: '#7c6dfa' }
-              ]
-            }
-          }
-        },
-        colors: ['#7c6dfa'],
-        fill: {
-          type: 'solid',
-          opacity: 0.25
-        },
-        stroke: {
-          show: true,
-          width: 2,
-          colors: ['#7c6dfa']
-        },
-        dataLabels: { enabled: false },
-        grid: { position: 'back' },
-        xaxis: {
-          categories: labels,
-          labels: { style: adminAxisLabels(theme) },
-          axisBorder: { show: false },
-          axisTicks: { show: false }
-        },
-        yaxis: {
-          labels: {
-            style: adminAxisLabels(theme),
-            formatter: function(val) { return '$' + val; }
-          }
-        },
-        tooltip: {
-          y: {
-            formatter: function(val) { return '$' + val.toFixed(2); }
-          }
-        },
-        legend: window.WwChart
-          ? { show: true, position: 'bottom' }
-          : { show: true, position: 'bottom', labels: { colors: theme.textColor }, fontFamily: ADMIN_CHART_FALLBACK_FONT, fontSize: '10px' }
-      });
-      
-      adminState.charts.proChart = new ApexCharts(proEl, proOptions);
-      adminState.charts.proChart.render();
-    }
-    
-    wwLog.log('✅ loadAnalyticsData tamamlandi!');
-  } catch (e) {
-    console.error('loadAnalyticsData hatasi:', e);
-  }
+// Sayı (adet) grafiği için Y ekseni: yalnızca tam sayı basamakları.
+// Eskiden ApexCharts 0.2'lik adımlar üretip etiketleri yuvarladığı için "1 1 1 0 0 0" görünüyordu.
+function adminCountAxis(values, theme) {
+  var top = Math.max.apply(null, (values || []).concat([1]));
+  var step = Math.max(1, Math.ceil(top / 4));
+  var ticks = Math.ceil(top / step);
+  return {
+    min: 0,
+    max: step * ticks,
+    tickAmount: ticks,
+    forceNiceScale: false,
+    labels: { style: adminAxisLabels(theme), formatter: function(v) { return Math.round(v); } }
+  };
 }
 
-// ============================================================
-// RENDER PRICES CONTENT
-// ============================================================
-function renderPricesContent() {
-  if (typeof renderPaymentSettingsUI === 'function') {
-    renderPaymentSettingsUI();
-  }
-}
-window.renderPricesContent = renderPricesContent;
-window.addPaymentMethod = function() {};
-window.removePaymentMethod = function() {};
-
-wwLog.log('✅ admin-dashboard.js yuklendi!');
-
-// ============================================================
-// REFERANS KODLARI UI (REFERRAL CODES)
-// ============================================================
-window.copyReferralCode = function(code) {
-  if (!code) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(code).then(function() {
-      if (typeof showToast === 'function') showToast('Referans kodu kopyalandı: ' + code, 'success');
-    }).catch(function() {
-      fallbackCopy(code);
-    });
+// Dolar grafiği için Y ekseni (veri yoksa $0–$10 gösterilir, negatif eksen oluşmaz)
+function adminMoneyAxis(values, theme) {
+  var top = Math.max.apply(null, (values || []).concat([0]));
+  var axis = {
+    min: 0,
+    labels: { style: adminAxisLabels(theme), formatter: function(v) { return '$' + Math.round(v).toLocaleString('en-US'); } }
+  };
+  if (top <= 0) {
+    axis.max = 10;
+    axis.tickAmount = 2;
   } else {
-    fallbackCopy(code);
+    axis.forceNiceScale = true;
   }
-
-  function fallbackCopy(text) {
-    try {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      if (typeof showToast === 'function') showToast('Referans kodu kopyalandı: ' + text, 'success');
-    } catch(e) {
-      if (typeof showToast === 'function') showToast('Kod kopyalanamadı', 'error');
-    }
-  }
-};
-
-window.handleToggleReferralCode = async function(id, newStatus) {
-  var ok = await toggleReferralCodeStatus(id, newStatus);
-  if (ok) {
-    renderReferralCodesTable();
-  }
-};
-
-function renderReferralCodesTable() {
-  var c = document.getElementById('referral-codes-container');
-  if (!c) return;
-  var codes = adminState.referralCodes || [];
-
-  // 1. ÖZET İSTATİSTİKLERİ HESAPLA
-  var totalCodes = codes.length;
-  var activeCodes = codes.filter(function(item) { return item.is_active; }).length;
-  var totalUsages = codes.reduce(function(acc, item) { return acc + (parseInt(item.usage_count, 10) || 0); }, 0);
-  var avgDiscount = totalCodes > 0
-    ? Math.round(codes.reduce(function(acc, item) { return acc + (parseInt(item.discount_percent, 10) || 0); }, 0) / totalCodes)
-    : 0;
-
-  var statsHtml = '\
-    <div class="ref-stats-grid">\
-      <div class="ref-stat-card">\
-        <div class="ref-stat-icon icon-code">\
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>\
-        </div>\
-        <div class="ref-stat-meta">\
-          <span class="ref-stat-label">Toplam Kod</span>\
-          <div class="ref-stat-val">' + totalCodes + '</div>\
-        </div>\
-      </div>\
-      <div class="ref-stat-card">\
-        <div class="ref-stat-icon icon-active">\
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>\
-        </div>\
-        <div class="ref-stat-meta">\
-          <span class="ref-stat-label">Aktif Kodlar</span>\
-          <div class="ref-stat-val" style="color:#34d399;">' + activeCodes + '</div>\
-        </div>\
-      </div>\
-      <div class="ref-stat-card">\
-        <div class="ref-stat-icon icon-usage">\
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>\
-        </div>\
-        <div class="ref-stat-meta">\
-          <span class="ref-stat-label">Toplam Kullanım</span>\
-          <div class="ref-stat-val" style="color:#60a5fa;">' + totalUsages + '</div>\
-        </div>\
-      </div>\
-      <div class="ref-stat-card">\
-        <div class="ref-stat-icon icon-discount">\
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>\
-        </div>\
-        <div class="ref-stat-meta">\
-          <span class="ref-stat-label">Ort. İndirim</span>\
-          <div class="ref-stat-val" style="color:#fbbf24;">%' + avgDiscount + '</div>\
-        </div>\
-      </div>\
-    </div>\
-  ';
-
-  if (codes.length === 0) {
-    c.innerHTML = statsHtml + '\
-      <div class="preview-video-placeholder" style="padding:3.5rem 1.5rem;">\
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(124,109,250,0.12);display:flex;align-items:center;justify-content:center;color:#a78bfa;margin-bottom:0.5rem;">\
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>\
-        </div>\
-        <h3 style="font-size:15px;font-weight:600;color:var(--text);margin:0;">Henüz referans kodu tanımlanmadı</h3>\
-        <p style="font-size:13px;color:var(--muted);max-width:340px;margin:0;">İş ortaklarınız veya kampanyalarınız için özel indirim kodları oluşturmaya başlayın.</p>\
-        <button class="btn btn-primary btn-sm" onclick="if(window.openReferralModal) window.openReferralModal();" style="margin-top:0.75rem;display:inline-flex;align-items:center;gap:6px;">\
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>\
-          İlk Kodu Oluştur\
-        </button>\
-      </div>\
-    ';
-    return;
-  }
-
-  var rows = codes.map(function(item) {
-    var isExpired = item.expires_at && new Date() > new Date(item.expires_at);
-    var expiryBadge = '';
-    if (item.expires_at) {
-      if (isExpired) {
-        expiryBadge = '<span class="expiry-pill expired" title="Süresi Doldu">⏳ Doldu (' + formatDate(item.expires_at) + ')</span>';
-      } else {
-        expiryBadge = '<span class="expiry-pill valid" title="Son Geçerlilik">📅 ' + formatDate(item.expires_at) + '</span>';
-      }
-    } else {
-      expiryBadge = '<span class="expiry-pill infinite" title="Süresiz Kod">♾️ Süresiz</span>';
-    }
-
-    var usageCount = parseInt(item.usage_count, 10) || 0;
-    var maxUsage = item.max_usage ? parseInt(item.max_usage, 10) : null;
-    var usagePct = maxUsage ? Math.min(100, Math.round((usageCount / maxUsage) * 100)) : 0;
-    var usageText = '<strong>' + usageCount + '</strong> / ' + (maxUsage !== null ? maxUsage : '<span style="font-size:13px;">∞</span>');
-    var progressBar = maxUsage
-      ? '<div class="usage-track"><div class="usage-bar" style="width:' + usagePct + '%;"></div></div>'
-      : '';
-
-    var statusHtml = '\
-      <button type="button" class="status-toggle-btn ' + (item.is_active ? 'active' : 'inactive') + '" onclick="handleToggleReferralCode(\'' + item.id + '\', ' + (!item.is_active) + ')" title="Durumu değiştirmek için tıklayın">\
-        <span class="status-dot"></span>\
-        ' + (item.is_active ? 'Aktif' : 'Pasif') + '\
-      </button>\
-    ';
-
-    return '\
-      <tr>\
-        <td>\
-          <div class="coupon-code-wrap">\
-            <div class="coupon-code-chip" onclick="copyReferralCode(\'' + escapeHtml(item.code) + '\')" title="Kodu Kopyala">\
-              <svg class="coupon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>\
-              <strong>' + escapeHtml(item.code) + '</strong>\
-              <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>\
-            </div>\
-            ' + (item.referrer_name ? '<div class="coupon-referrer">' + escapeHtml(item.referrer_name) + (item.referrer_email ? ' <span class="text-muted">(' + escapeHtml(item.referrer_email) + ')</span>' : '') + '</div>' : '<div class="coupon-referrer text-muted">Genel Kampanya</div>') + '\
-            <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">Komisyon: <span style="color:#22c55e;font-weight:600;">$' + (item.commission_rate || 0) + ' (Aylık)</span> / <span style="color:#818cf8;font-weight:600;">$' + (item.commission_rate_yearly || 0) + ' (Yıllık)</span></div>\
-          </div>\
-        </td>\
-        <td>\
-          <span class="discount-pill">\
-            <span class="discount-pct">%' + item.discount_percent + '</span>\
-            <span class="discount-sub">İndirim</span>\
-          </span>\
-        </td>\
-        <td>\
-          <div class="usage-progress-wrap">\
-            <div class="usage-text">' + usageText + '</div>\
-            ' + progressBar + '\
-          </div>\
-        </td>\
-        <td>' + expiryBadge + '</td>\
-        <td>' + statusHtml + '</td>\
-        <td>\
-          <div class="table-action-btns">\
-            <button class="btn btn-ghost btn-sm" onclick="editReferralCode(\'' + item.id + '\')" title="Kodu Düzenle" style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;">\
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\
-              Düzenle\
-            </button>\
-            <button class="btn btn-danger btn-sm" onclick="delReferralCode(\'' + item.id + '\')" title="Kodu Sil" style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;">\
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>\
-              Sil\
-            </button>\
-          </div>\
-        </td>\
-      </tr>\
-    ';
-  }).join('');
-
-  c.innerHTML = statsHtml + '\
-    <div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">\
-      <div style="overflow-x:auto;">\
-        <table class="ww-table">\
-          <thead>\
-            <tr>\
-              <th>Referans Kodu & Sahibi</th>\
-              <th>İndirim</th>\
-              <th>Kullanım Durumu</th>\
-              <th>Son Geçerlilik</th>\
-              <th>Durum</th>\
-              <th style="text-align:right;">İşlem</th>\
-            </tr>\
-          </thead>\
-          <tbody>\
-            ' + rows + '\
-          </tbody>\
-        </table>\
-      </div>\
-    </div>\
-  ';
+  return axis;
 }
 
-window.editReferralCode = function(id) {
-  var item = (adminState.referralCodes || []).find(function(x) { return String(x.id) === String(id); });
-  if (!item) return;
-  var idEl = document.getElementById('rc-id');
-  if (idEl) idEl.value = item.id;
-  var codeEl = document.getElementById('rc-code');
-  if (codeEl) codeEl.value = item.code;
-  var discEl = document.getElementById('rc-discount');
-  if (discEl) discEl.value = item.discount_percent;
-  var nameEl = document.getElementById('rc-name');
-  if (nameEl) nameEl.value = item.referrer_name || '';
-  var emailEl = document.getElementById('rc-email');
-  if (emailEl) emailEl.value = item.referrer_email || '';
-  var maxEl = document.getElementById('rc-max-usage');
-  if (maxEl) maxEl.value = item.max_usage || '';
-  var expEl = document.getElementById('rc-expires');
-  if (expEl) expEl.value = item.expires_at ? adminDayKey(new Date(item.expires_at)) : '';
-  var actEl = document.getElementById('rc-active');
-  if (actEl) actEl.value = item.is_active ? 'true' : 'false';
-
-  var infEmailEl = document.getElementById('rc-influencer-email');
-  var infEmail = '';
-  if (item.user_profiles) {
-    infEmail = Array.isArray(item.user_profiles) ? (item.user_profiles[0]?.email || '') : (item.user_profiles.email || '');
-  }
-  if (infEmailEl) infEmailEl.value = infEmail;
-  
-  var commEl = document.getElementById('rc-commission');
-  if (commEl) commEl.value = item.commission_rate || '0';
-
-  var commYrEl = document.getElementById('rc-commission-yearly');
-  if (commYrEl) commYrEl.value = item.commission_rate_yearly || '0';
-  
-  var titleEl = document.getElementById('rc-modal-title');
-  if (titleEl) titleEl.textContent = 'Referans Kodunu Düzenle';
-  var modalEl = document.getElementById('referral-code-modal');
-  if (modalEl) modalEl.classList.add('open');
-};
-
-window.delReferralCode = async function(id) {
-  if (!confirm('Bu referans kodunu kalıcı olarak silmek istediğinizden emin misiniz?')) return;
-  if (typeof deleteReferralCode === 'function') {
-    var ok = await deleteReferralCode(id);
-    if (ok) {
-      if (typeof showToast === 'function') showToast('Referans kodu silindi', 'success');
-      renderReferralCodesTable();
-    }
-  }
-};
-
-function initReferralModal() {
-  if (window._referralModalInitialized) return;
-  window._referralModalInitialized = true;
-
-  var modal = document.getElementById('referral-code-modal');
-  var btnAdd = document.getElementById('add-referral-code-btn');
-  var btnClose = document.getElementById('close-rc-modal');
-  var btnCancel = document.getElementById('cancel-rc-btn');
-  var btnSave = document.getElementById('save-rc-btn');
-
-  if (btnAdd) {
-    btnAdd.addEventListener('click', function() {
-      document.getElementById('rc-id').value = '';
-      document.getElementById('rc-code').value = '';
-      document.getElementById('rc-discount').value = '20';
-      document.getElementById('rc-name').value = '';
-      document.getElementById('rc-email').value = '';
-      document.getElementById('rc-max-usage').value = '';
-      document.getElementById('rc-expires').value = '';
-      document.getElementById('rc-active').value = 'true';
-      document.getElementById('rc-influencer-email').value = '';
-      document.getElementById('rc-commission').value = '';
-      var rcCommYr = document.getElementById('rc-commission-yearly');
-      if (rcCommYr) rcCommYr.value = '';
-      document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
-      modal.classList.add('open');
-    });
-  }
-
-  function close() { if (modal) modal.classList.remove('open'); }
-  if (btnClose) btnClose.addEventListener('click', close);
-  if (btnCancel) btnCancel.addEventListener('click', close);
-
-  if (btnSave) {
-    btnSave.addEventListener('click', async function() {
-      var code = document.getElementById('rc-code').value.trim().toUpperCase();
-      var discount = parseInt(document.getElementById('rc-discount').value, 10);
-      if (!code) {
-        if (typeof showToast === 'function') showToast('Lütfen referans kodunu girin.', 'error');
-        else alert('Lütfen referans kodunu girin.');
-        return;
-      }
-      if (isNaN(discount) || discount < 0 || discount > 100) {
-        if (typeof showToast === 'function') showToast('İndirim yüzdesi 0 ile 100 arasında olmalıdır.', 'error');
-        else alert('İndirim yüzdesi 0 ile 100 arasında olmalıdır.');
-        return;
-      }
-      
-      var maxUsageVal = document.getElementById('rc-max-usage').value.trim();
-      var expiresVal = document.getElementById('rc-expires').value.trim();
-      
-      var influencerEmail = document.getElementById('rc-influencer-email').value.trim().toLowerCase();
-      var commissionRate = parseFloat(document.getElementById('rc-commission').value);
-      var commYrEl = document.getElementById('rc-commission-yearly');
-      var commissionRateYearly = commYrEl ? parseFloat(commYrEl.value) : 0;
-      
-      var influencerUserId = null;
-      if (influencerEmail) {
-        var client = window.sb; // Get supabase client
-        try {
-          var { data, error } = await client.from('user_profiles').select('id').eq('email', influencerEmail).single();
-          if (error) throw error;
-          if (data && data.id) {
-            influencerUserId = data.id;
-          }
-        } catch (e) {
-          console.error("Influencer email not found:", e);
-          if (typeof showToast === 'function') showToast('Influencer e-postası bulunamadı, lütfen kontrol edin.', 'error');
-          else alert('Influencer e-postası bulunamadı.');
-          return;
-        }
-      }
-
-      var payload = {
-        code: code,
-        discount_percent: discount,
-        referrer_name: document.getElementById('rc-name').value.trim() || null,
-        referrer_email: document.getElementById('rc-email').value.trim() || null,
-        influencer_user_id: influencerUserId,
-        commission_rate: isNaN(commissionRate) ? 0 : commissionRate,
-        commission_rate_yearly: isNaN(commissionRateYearly) ? 0 : commissionRateYearly,
-        // 0 / boş / geçersiz = limitsiz (tablo ∞ gösterir). Eskiden 0 kaydedilip sunucuda her kullanımı reddediyordu.
-        max_usage: (parseInt(maxUsageVal, 10) > 0) ? parseInt(maxUsageVal, 10) : null,
-        // Son geçerlilik GÜNÜN SONUNA kadar geçerlidir (eskiden 00:00 UTC: seçilen gün başlar başlamaz süresi doluyordu)
-        expires_at: expiresVal ? new Date(expiresVal + 'T23:59:59').toISOString() : null,
-        is_active: document.getElementById('rc-active').value === 'true'
-      };
-
-      var id = document.getElementById('rc-id').value;
-      
-      btnSave.disabled = true;
-      btnSave.textContent = 'Kaydediliyor...';
-      var ok = await saveReferralCode(id, payload);
-      btnSave.disabled = false;
-      btnSave.textContent = 'Kaydet';
-      
-      if (ok) {
-        close();
-        renderReferralCodesTable();
-      }
-    });
-  }
+function adminCategoryAxis(labels, theme) {
+  return {
+    categories: labels,
+    labels: { style: adminAxisLabels(theme), rotate: 0, hideOverlappingLabels: true, trim: false },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+    tooltip: { enabled: false }
+  };
 }
-
-// ============================================================
-// PAYMENT SETTINGS UI (SAAS PRICING & CONFIG HUB)
-// ============================================================
-async function renderPaymentSettingsUI() {
-  var c = document.getElementById('prices-container');
-  if (!c) return;
-
-  var current = await loadPaymentSettings();
-  if (!current) {
-    current = {
-      monthly_price_usd: 12,
-      yearly_price_usd: 99,
-      video_embed_url: '',
-      video_embed_enabled: false,
-      ltc_discount_enabled: true,
-      yearly_discount_percent: 31,
-      days_per_monthly: 30,
-      days_per_yearly: 365,
-      referral_note: 'Referans kodu sadece Litecoin (LTC) ödemelerinde geçerlidir.'
-    };
-  }
-
-  var monthlyVal = current.monthly_price_usd || 12;
-  var yearlyVal = current.yearly_price_usd || 99;
-  var videoUrlVal = current.video_embed_url || '';
-  var videoEnabledVal = !!current.video_embed_enabled;
-  var ltcDiscountVal = current.ltc_discount_enabled !== false;
-
-  c.innerHTML = '\
-    <div class="pricing-mgmt-container">\
-      <!-- SOL PANEL: FİYAT VE PARAMETRE AYARLARI -->\
-      <div class="pricing-config-card">\
-        <div class="pricing-config-header">\
-          <div class="icon-bubble">\
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>\
-          </div>\
-          <div>\
-            <h3>Fiyatlandırma & Paket Yönetimi</h3>\
-            <p>Platform abonelik fiyatlarını, indirimleri ve ödeme seçeneklerini belirleyin</p>\
-          </div>\
-        </div>\
-\
-        <!-- Bölüm 1: Plan Ücretleri -->\
-        <div class="pricing-form-section">\
-          <h4 class="section-title">\
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>\
-            Abonelik Plan Ücretleri\
-          </h4>\
-          <div class="field-row">\
-            <div class="field">\
-              <label>Aylık Plan Ücreti (Sabit & Kilitli)</label>\
-              <div class="input-with-icon">\
-                <span class="input-prefix">$</span>\
-                <input type="number" id="ps-monthly" value="12" disabled style="opacity:0.85;cursor:not-allowed;" />\
-                <span class="input-suffix">/ ay</span>\
-              </div>\
-            </div>\
-            <div class="field">\
-              <label>Yıllık Plan Ücreti (Sabit & Kilitli)</label>\
-              <div class="input-with-icon">\
-                <span class="input-prefix">$</span>\
-                <input type="number" id="ps-yearly" value="99" disabled style="opacity:0.85;cursor:not-allowed;" />\
-                <span class="input-suffix">/ yıl</span>\
-              </div>\
-            </div>\
-          </div>\
-          <div class="pricing-calc-info" id="pricing-calc-badge">\
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>\
-            <span id="pricing-calc-text">🔒 Fiyatlar sistem yapılandırmasında sabitlenmiştir ($12/ay & $99/yıl). Kampanyalar Referans Kodları sekmesinden yönetilir.</span>\
-          </div>\
-        </div>\
-\
-        <!-- Bölüm 2: Kripto & Promosyon Ayarları -->\
-        <div class="pricing-form-section">\
-          <h4 class="section-title">\
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>\
-            Promosyon & Kripto Ödemeleri\
-          </h4>\
-          <div class="toggle-card">\
-            <div class="toggle-info">\
-              <strong>Litecoin (LTC) Referans İndirimi</strong>\
-              <p>Referans indirim kuponları LTC ile ödeme yapan kullanıcılara anında indirim sağlar.</p>\
-            </div>\
-            <label class="ios-switch">\
-              <input type="checkbox" id="ps-ltc-discount" ' + (ltcDiscountVal ? 'checked' : '') + ' />\
-              <span class="slider"></span>\
-            </label>\
-          </div>\
-        </div>\
-\
-        <!-- Bölüm 3: Tanıtım / Rehber Videosu -->\
-        <div class="pricing-form-section">\
-          <h4 class="section-title">\
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>\
-            Ödeme Sayfası Tanıtım Videosu\
-          </h4>\
-          <div class="toggle-card" style="margin-bottom:0.75rem;">\
-            <div class="toggle-info">\
-              <strong>Video Gösterimi Aktif</strong>\
-              <p>Ödeme ekranında kullanıcılara adım adım rehber veya tanıtım videosu gösterilsin.</p>\
-            </div>\
-            <label class="ios-switch">\
-              <input type="checkbox" id="ps-video-enabled" ' + (videoEnabledVal ? 'checked' : '') + ' />\
-              <span class="slider"></span>\
-            </label>\
-          </div>\
-          <div class="field" id="video-url-field-wrap">\
-            <label>YouTube Embed Video URL</label>\
-            <div class="input-with-icon">\
-              <span class="input-prefix" style="font-size:12px;">🔗</span>\
-              <input type="text" id="ps-video-url" value="' + escapeHtml(videoUrlVal) + '" placeholder="https://www.youtube.com/embed/..." />\
-            </div>\
-            <p class="field-hint">Format: <code>https://www.youtube.com/embed/VIDEO_ID</code></p>\
-          </div>\
-        </div>\
-\
-        <!-- Bölüm 4: Geliştirici Test Modu -->\
-        <div class="pricing-form-section">\
-          <h4 class="section-title">\
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>\
-            Geliştirici Test Modu\
-          </h4>\
-          <p class="field-hint" style="margin-bottom:0.75rem;">Sandbox çalışmadığında gerçek ödeme akışını denemek için. Kodu bilen kullanıcı Ayarlar &gt; Gelişmiş sekmesinde girince Plan ekranında <strong>1 $ / 1 günlük</strong> bir test planı görür. Kod sunucuda yalnızca hash olarak saklanır, sonradan görüntülenemez. Test ödemeleri gelir istatistiklerine dahil edilmez.</p>\
-          <div class="pricing-calc-info" id="dev-test-status" style="margin-bottom:0.75rem;">\
-            <span>Durum yükleniyor...</span>\
-          </div>\
-          <div class="field">\
-            <label>Geliştirici kodu (en az 8 karakter)</label>\
-            <input type="password" id="dev-test-code" autocomplete="new-password" placeholder="Yeni kod belirleyin" maxlength="128" />\
-            <p class="field-hint">Yeni kod kaydetmek, eski kodla alınmış tüm test erişimlerini iptal eder.</p>\
-          </div>\
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:0.5rem;">\
-            <button class="btn btn-primary" id="dev-test-save-btn" type="button">Kodu Kaydet ve Aç</button>\
-            <button class="btn btn-ghost" id="dev-test-toggle-btn" type="button" disabled>Test Modunu Kapat</button>\
-          </div>\
-        </div>\
-\
-        <!-- Kaydet Butonu -->\
-        <div class="pricing-form-actions" style="margin-top:0.5rem;">\
-          <button class="btn btn-primary" id="save-ps-btn" style="display:inline-flex;align-items:center;gap:8px;padding:0.75rem 1.75rem;font-size:14px;">\
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>\
-            <span>Ayarları Kaydet</span>\
-          </button>\
-        </div>\
-      </div>\
-\
-      <!-- SAĞ PANEL: CANLI KULLANICI ÖNİZLEMESİ -->\
-      <div class="pricing-preview-panel">\
-        <div class="preview-header">\
-          <div class="preview-badge">\
-            <span class="live-dot"></span> Canlı Kullanıcı Önizlemesi\
-          </div>\
-          <p>Kullanıcıların satın alma ekranında göreceği fiyatlandırma kartları</p>\
-        </div>\
-\
-        <div class="preview-cards-container">\
-          <!-- Aylık Plan Önizleme -->\
-          <div class="preview-plan-card" id="prev-monthly-card">\
-            <div class="preview-plan-name">Aylık Plan</div>\
-            <div class="preview-price-row">\
-              <span class="preview-price-val" id="prev-monthly-price">$' + monthlyVal + '</span>\
-              <span class="preview-price-cycle">/ ay</span>\
-            </div>\
-            <div class="preview-price-sub">Her ay otomatik yenilenir</div>\
-            <ul class="preview-features-list">\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Sınırsız İşlem Günlüğü</li>\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Detaylı Analitik & İstatistik</li>\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Otomatik Metrik Hesaplama</li>\
-            </ul>\
-          </div>\
-\
-          <!-- Yıllık Plan Önizleme (Featured) -->\
-          <div class="preview-plan-card featured" id="prev-yearly-card">\
-            <span class="preview-plan-badge" id="prev-yearly-savings-badge">%31 Tasarruf</span>\
-            <div class="preview-plan-name" style="color:#a78bfa;">Yıllık Plan</div>\
-            <div class="preview-price-row">\
-              <span class="preview-price-val" id="prev-yearly-price">$' + yearlyVal + '</span>\
-              <span class="preview-price-cycle">/ yıl</span>\
-            </div>\
-            <div class="preview-price-sub" id="prev-yearly-equiv" style="color:#34d399;">Ayda ~$8.25</div>\
-            <ul class="preview-features-list">\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 365 Gün Kesintisiz Erişim</li>\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tüm Pro Özellikler</li>\
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Öncelikli VIP Destek</li>\
-            </ul>\
-          </div>\
-        </div>\
-\
-        <!-- Video Canlı Önizleme Kutusu -->\
-        <div class="preview-video-box" id="prev-video-box">\
-          <div class="video-label">\
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>\
-            Video Canlı Önizlemesi\
-          </div>\
-          <div id="prev-video-player-container"></div>\
-        </div>\
-      </div>\
-    </div>\
-  ';
-
-  // Live Preview & Calculation Engine
-  function updateLivePricingPreview() {
-    var m = parseFloat(document.getElementById('ps-monthly').value) || 0;
-    var y = parseFloat(document.getElementById('ps-yearly').value) || 0;
-    var vUrl = (document.getElementById('ps-video-url').value || '').trim();
-    var vEnabled = document.getElementById('ps-video-enabled').checked;
-
-    // Fiyat etiketlerini güncelle
-    var mPriceEl = document.getElementById('prev-monthly-price');
-    var yPriceEl = document.getElementById('prev-yearly-price');
-    var yEquivEl = document.getElementById('prev-yearly-equiv');
-    var yBadgeEl = document.getElementById('prev-yearly-savings-badge');
-    var calcTextEl = document.getElementById('pricing-calc-text');
-
-    if (mPriceEl) mPriceEl.textContent = '$' + (m % 1 === 0 ? m : m.toFixed(2));
-    if (yPriceEl) yPriceEl.textContent = '$' + (y % 1 === 0 ? y : y.toFixed(2));
-
-    var regularYearly = m * 12;
-    var savingsPct = 0;
-    var savingsDollars = 0;
-
-    if (regularYearly > 0 && y > 0 && regularYearly > y) {
-      savingsPct = Math.round(((regularYearly - y) / regularYearly) * 100);
-      savingsDollars = Math.round(regularYearly - y);
-    }
-
-    var monthlyEquiv = (y / 12).toFixed(2);
-    if (yEquivEl) yEquivEl.textContent = 'Ayda ~$' + monthlyEquiv + ' ($' + regularYearly + ' yerine)';
-    if (yBadgeEl) yBadgeEl.textContent = '%' + (savingsPct > 0 ? savingsPct : 0) + ' Tasarruf';
-
-    if (calcTextEl) {
-      if (savingsPct > 0) {
-        calcTextEl.innerHTML = 'Kullanıcılar yıllık planda <strong>%' + savingsPct + ' indirim</strong> (yılda <strong>$' + savingsDollars + '</strong> tasarruf) elde ediyor.';
-      } else {
-        calcTextEl.innerHTML = 'Aylık 12 ay toplamı: <strong>$' + regularYearly + '</strong>. Yıllık fiyat: <strong>$' + y + '</strong>.';
-      }
-    }
-
-    // Video Player Önizlemesini Güncelle
-    var vContainer = document.getElementById('prev-video-player-container');
-    if (vContainer) {
-      if (vEnabled && vUrl) {
-        // Sanitize YouTube URL for embed
-        var safeEmbedUrl = vUrl;
-        if (vUrl.indexOf('youtube.com/watch?v=') !== -1) {
-          var vidId = vUrl.split('v=')[1].split('&')[0];
-          safeEmbedUrl = 'https://www.youtube.com/embed/' + vidId;
-        } else if (vUrl.indexOf('youtu.be/') !== -1) {
-          var vidId2 = vUrl.split('youtu.be/')[1].split('?')[0];
-          safeEmbedUrl = 'https://www.youtube.com/embed/' + vidId2;
-        }
-
-        vContainer.innerHTML = '\
-          <div class="preview-video-iframe-wrap">\
-            <iframe src="' + escapeHtml(safeEmbedUrl) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\
-          </div>\
-        ';
-      } else if (vEnabled && !vUrl) {
-        vContainer.innerHTML = '\
-          <div class="preview-video-placeholder">\
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>\
-            <span>Video aktif edildi fakat henüz URL girilmedi.</span>\
-          </div>\
-        ';
-      } else {
-        vContainer.innerHTML = '\
-          <div class="preview-video-placeholder">\
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/></svg>\
-            <span>Tanıtım videosu gösterimi şu anda pasif durumda.</span>\
-          </div>\
-        ';
-      }
-    }
-  }
-
-  // Bind live change listeners
-  var mInput = document.getElementById('ps-monthly');
-  var yInput = document.getElementById('ps-yearly');
-  var vUrlInput = document.getElementById('ps-video-url');
-  var vEnabledInput = document.getElementById('ps-video-enabled');
-
-  if (mInput) mInput.addEventListener('input', updateLivePricingPreview);
-  if (yInput) yInput.addEventListener('input', updateLivePricingPreview);
-  if (vUrlInput) vUrlInput.addEventListener('input', updateLivePricingPreview);
-  if (vEnabledInput) vEnabledInput.addEventListener('change', updateLivePricingPreview);
-
-  // Initial calculation
-  updateLivePricingPreview();
-
-  // ---- Geliştirici Test Modu (kod sunucuda hash olarak saklanır; admin_set_dev_test_code RPC) ----
-  var devState = { configured: false, enabled: false };
-  async function refreshDevTestStatus() {
-    var statusEl = document.getElementById('dev-test-status');
-    var toggleBtn = document.getElementById('dev-test-toggle-btn');
-    var client = getSbClient();
-    if (!statusEl || !client) return;
-    try {
-      var { data, error } = await client.rpc('admin_get_dev_test_status');
-      if (error || !data || data.success === false) throw new Error((error && error.message) || (data && data.error) || 'Durum alınamadı');
-      devState.configured = !!data.configured;
-      devState.enabled = !!data.enabled;
-      var text;
-      if (!data.configured) text = 'Henüz kod belirlenmemiş. Test modu kapalı.';
-      else if (data.enabled) text = '🟢 Test modu AÇIK. Şu an test erişimi olan kullanıcı sayısı: <strong>' + (data.active_users || 0) + '</strong>';
-      else text = '⚪ Test modu KAPALI (kod kayıtlı, kimse test planını göremez).';
-      statusEl.innerHTML = '<span>' + text + '</span>';
-      if (toggleBtn) {
-        toggleBtn.disabled = !data.configured;
-        toggleBtn.textContent = data.enabled ? 'Test Modunu Kapat' : 'Test Modunu Aç';
-      }
-    } catch (e) {
-      statusEl.innerHTML = '<span>Durum alınamadı: ' + escapeHtml(e.message || String(e)) + ' (migration 202610150004 uygulandı mı?)</span>';
-    }
-  }
-
-  var devSaveBtn = document.getElementById('dev-test-save-btn');
-  if (devSaveBtn) {
-    devSaveBtn.addEventListener('click', async function() {
-      var input = document.getElementById('dev-test-code');
-      var code = input ? input.value.trim() : '';
-      if (code.length < 8) {
-        if (typeof showToast === 'function') showToast('Kod en az 8 karakter olmalıdır.', 'error');
-        return;
-      }
-      devSaveBtn.disabled = true;
-      try {
-        var { data, error } = await getSbClient().rpc('admin_set_dev_test_code', { p_code: code, p_enabled: true });
-        if (error || !data || data.success === false) throw new Error((error && error.message) || (data && data.error) || 'Kod kaydedilemedi');
-        if (input) input.value = '';
-        if (typeof showToast === 'function') showToast('Geliştirici kodu kaydedildi, test modu açıldı.', 'success');
-      } catch (e) {
-        if (typeof showToast === 'function') showToast('Kaydedilemedi: ' + (e.message || e), 'error');
-      } finally {
-        devSaveBtn.disabled = false;
-        refreshDevTestStatus();
-      }
-    });
-  }
-  var devToggleBtn = document.getElementById('dev-test-toggle-btn');
-  if (devToggleBtn) {
-    devToggleBtn.addEventListener('click', async function() {
-      devToggleBtn.disabled = true;
-      try {
-        var { data, error } = await getSbClient().rpc('admin_set_dev_test_code', { p_code: null, p_enabled: !devState.enabled });
-        if (error || !data || data.success === false) throw new Error((error && error.message) || (data && data.error) || 'İşlem başarısız');
-        if (typeof showToast === 'function') showToast(data.enabled ? 'Test modu açıldı.' : 'Test modu kapatıldı.', 'success');
-      } catch (e) {
-        if (typeof showToast === 'function') showToast('İşlem başarısız: ' + (e.message || e), 'error');
-      } finally {
-        refreshDevTestStatus();
-      }
-    });
-  }
-  refreshDevTestStatus();
-
-  // Save button action
-  var saveBtn = document.getElementById('save-ps-btn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', async function() {
-      var m = parseFloat(document.getElementById('ps-monthly').value) || 12;
-      var y = parseFloat(document.getElementById('ps-yearly').value) || 99;
-      var vUrl = document.getElementById('ps-video-url').value.trim();
-      var vEnabled = document.getElementById('ps-video-enabled').checked;
-      var ltcDisc = document.getElementById('ps-ltc-discount').checked;
-
-      var regYear = m * 12;
-      var discPct = regYear > 0 && y < regYear ? Math.round(((regYear - y) / regYear) * 100) : 0;
-
-      var payload = {
-        monthly_price_usd: m,
-        yearly_price_usd: y,
-        yearly_discount_percent: discPct,
-        video_embed_url: vUrl,
-        video_embed_enabled: vEnabled,
-        ltc_discount_enabled: ltcDisc,
-        days_per_monthly: 30,
-        days_per_yearly: 365,
-        referral_note: 'Referans kodu sadece Litecoin (LTC) ödemelerinde geçerlidir.'
-      };
-
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;"></div><span> Kaydediliyor...</span>';
-      
-      var ok = await savePaymentSettings(payload);
-      
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Ayarları Kaydet</span>';
-
-      if (ok) {
-        updateLivePricingPreview();
-      }
-    });
-  }
-}
-
-window.openReferralModal = function() {
-  document.getElementById('rc-id').value = '';
-  document.getElementById('rc-code').value = '';
-  document.getElementById('rc-discount').value = '20';
-  document.getElementById('rc-name').value = '';
-  document.getElementById('rc-email').value = '';
-  document.getElementById('rc-max-usage').value = '';
-  document.getElementById('rc-expires').value = '';
-  document.getElementById('rc-active').value = 'true';
-  document.getElementById('rc-influencer-email').value = '';
-  document.getElementById('rc-commission').value = '';
-  document.getElementById('rc-modal-title').textContent = 'Yeni Referans Kodu Ekle';
-  var m = document.getElementById('referral-code-modal');
-  if (m) m.classList.add('open');
-};
-
-// ============================================================
-// GENEL (OVERVIEW) DASHBOARD
-// ============================================================
-
-function destroyOverviewCharts() {
-  if (!window.adminState) return;
-  if (!window.adminState.charts) {
-    window.adminState.charts = {};
-    return;
-  }
-  var c = window.adminState.charts;
-  if (c.overviewUserChart) {
-    try { c.overviewUserChart.destroy(); } catch(e) {}
-    c.overviewUserChart = null;
-  }
-  if (c.overviewRevenueChart) {
-    try { c.overviewRevenueChart.destroy(); } catch(e) {}
-    c.overviewRevenueChart = null;
-  }
-  if (c.overviewPlanDonut) {
-    try { c.overviewPlanDonut.destroy(); } catch(e) {}
-    c.overviewPlanDonut = null;
-  }
-}
-
-window.changeOverviewPeriod = function(period) {
-  if (window.adminState) window.adminState.overviewPeriod = period;
-  if (typeof renderOverviewContent === 'function') {
-    renderOverviewContent(period);
-  }
-};
 
 // ============================================================
 // GELİR = yalnızca GERÇEK ödemeler (payments: finished/confirmed)
@@ -1209,12 +177,852 @@ function paymentToSubscription(p) {
   };
 }
 
+// Geliştirici test planı (plan_type 'test') gelir/satış istatistiklerine dahil edilmez
+function adminCompletedPayments() {
+  return (adminState.payments || []).filter(function(p) {
+    return (p.payment_status === 'finished' || p.payment_status === 'confirmed') && p.plan_type !== 'test';
+  });
+}
+
 // Yerel takvim günü anahtarı (YYYY-MM-DD): "İstatistikler" ve "Genel" panelleri aynı günlük kovayı kullanır
 function adminDayKey(d) {
   var y = d.getFullYear();
   var m = String(d.getMonth() + 1).padStart(2, '0');
   var day = String(d.getDate()).padStart(2, '0');
   return y + '-' + m + '-' + day;
+}
+
+// ============================================================
+// İSTATİSTİKLER PANELİ
+// ============================================================
+async function loadAnalyticsData() {
+  try {
+    var last7 = [];
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date();
+      d.setDate(d.getDate() - i);
+      last7.push(adminDayKey(d));
+    }
+
+    var client = getSbClient();
+    if (!client) {
+      wwLog.warn('Supabase client not ready for analytics');
+      return;
+    }
+    var profilesRes = await adminFetchAll('user_profiles', '*', 'created_at', false);
+    var profileList = profilesRes.data || [];
+    var profileById = {};
+    profileList.forEach(function(p) { profileById[p.id] = p; });
+
+    // Bitiş tarihi boş pro (manuel verilen) de aktiftir; kullanıcı tablosu/erişimle tutarlı
+    var totalPro = profileList.filter(function(p) {
+      return p.plan === 'premium' && (!p.plan_expires_at || new Date(p.plan_expires_at) > new Date());
+    }).length;
+
+    var totalRevenue = 0;
+    var revenueByDay = {};
+    var recentProUsers = [];
+
+    var sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Gelir ve "son satışlar" yalnızca gerçek ödemelerden hesaplanır
+    adminCompletedPayments().forEach(function(p) {
+      var sub = paymentToSubscription(p);
+      if (sub.price <= 0) return;
+      totalRevenue += sub.price;
+
+      var dayKey = adminDayKey(sub.startDate);
+      revenueByDay[dayKey] = (revenueByDay[dayKey] || 0) + sub.price;
+
+      var matchedUser = profileById[p.user_id];
+      recentProUsers.push({
+        username: (matchedUser && (matchedUser.username || matchedUser.email)) || 'Kullanıcı',
+        email: (matchedUser && matchedUser.email) || '—',
+        plan: sub.planLabel,
+        amount: sub.price,
+        date: sub.startDate,
+        referralCode: sub.referralCode,
+        avatar_url: (matchedUser && matchedUser.avatar_url) || null
+      });
+    });
+
+    recentProUsers.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+
+    var revenueData = last7.map(function(day) { return Math.round((revenueByDay[day] || 0) * 100) / 100; });
+    var userCountByDay = {};
+    profileList.forEach(function(p) {
+      if (!p.created_at) return;
+      var cd = new Date(p.created_at);
+      if (isNaN(cd.getTime())) return;
+      var key = adminDayKey(cd);
+      userCountByDay[key] = (userCountByDay[key] || 0) + 1;
+    });
+    var uCounts = last7.map(function(day) { return userCountByDay[day] || 0; });
+
+    // "Son 7 Gün Pro": yalnızca son 7 günde gerçekleşen satışlar
+    var pro7Days = recentProUsers.filter(function(r) { return new Date(r.date) >= sevenDaysAgo; }).length;
+
+    var statsEls = {
+      'stat-total-users': profileList.length,
+      'stat-total-pro': totalPro,
+      'stat-pro-revenue': '$' + totalRevenue.toFixed(2),
+      'stat-pro-7days': pro7Days
+    };
+    Object.keys(statsEls).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = statsEls[id];
+    });
+
+    var recentContainer = document.getElementById('recent-pro-list');
+    if (recentContainer) {
+      if (recentProUsers.length === 0) {
+        recentContainer.innerHTML = '<div class="empty-state">Henüz Pro satışı yok.</div>';
+      } else {
+        recentContainer.innerHTML = recentProUsers.slice(0, 10).map(function(u) {
+          var refBadge = u.referralCode
+            ? '<span class="kpi-badge badge-purple">' + escapeHtml(u.referralCode) + '</span>'
+            : '';
+          return '<div class="recent-pro-card">' +
+            '<div class="avatar-small">' + avatarMarkup(u.avatar_url, u.username) + '</div>' +
+            '<div class="info">' +
+              '<div class="name">' + escapeHtml(u.username) + '</div>' +
+              '<div class="email">' + escapeHtml(u.email) + '</div>' +
+              '<div class="meta"><span class="chip">' + escapeHtml(u.plan) + '</span>' + refBadge + '<span>' + formatDateFull(u.date) + '</span></div>' +
+            '</div>' +
+            '<div class="amount">+$' + u.amount.toFixed(2) + '</div>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    var labels = last7.map(function(day) { return day.slice(5).replace('-', '/'); });
+    var theme = getAdminApexTheme();
+
+    ['userChart', 'proChart'].forEach(function(key) {
+      if (adminState.charts[key]) {
+        try { adminState.charts[key].destroy(); } catch (e) {}
+        adminState.charts[key] = null;
+      }
+    });
+
+    if (typeof ApexCharts === 'undefined') return;
+
+    function barChart(el, name, data, color, yaxis, tooltipFormatter) {
+      el.innerHTML = '';
+      return new ApexCharts(el, adminApex(theme, {
+        series: [{ name: name, data: data }],
+        chart: { type: 'bar', height: '100%', animations: { enabled: false } },
+        plotOptions: {
+          bar: {
+            borderRadius: adminBarRadius(),
+            borderRadiusApplication: 'end',
+            columnWidth: adminBarWidth(el, labels.length, '45%')
+          }
+        },
+        colors: [color],
+        fill: { type: 'solid', opacity: 0.28 },
+        stroke: { show: true, width: 2, colors: [color] },
+        grid: { position: 'back' },
+        xaxis: adminCategoryAxis(labels, theme),
+        yaxis: yaxis,
+        tooltip: tooltipFormatter ? { y: { formatter: tooltipFormatter } } : {},
+        legend: { show: false }
+      }));
+    }
+
+    var usersEl = document.getElementById('usersChart');
+    if (usersEl) {
+      adminState.charts.userChart = barChart(usersEl, 'Kullanıcı', uCounts, theme.green, adminCountAxis(uCounts, theme));
+      adminState.charts.userChart.render();
+    }
+
+    var proEl = document.getElementById('proChart');
+    if (proEl) {
+      adminState.charts.proChart = barChart(proEl, 'Pro Gelir ($)', revenueData, theme.accent, adminMoneyAxis(revenueData, theme),
+        function(val) { return '$' + Number(val).toFixed(2); });
+      adminState.charts.proChart.render();
+    }
+  } catch (e) {
+    console.error('loadAnalyticsData hatası:', e);
+  }
+}
+
+// ============================================================
+// FİYAT YÖNETİMİ (içerik aşağıda: renderPaymentSettingsUI)
+// ============================================================
+function renderPricesContent() {
+  if (typeof renderPaymentSettingsUI === 'function') {
+    renderPaymentSettingsUI();
+  }
+}
+window.renderPricesContent = renderPricesContent;
+window.addPaymentMethod = function() {};
+window.removePaymentMethod = function() {};
+
+// Panoya kopyala (güvenli bağlamda Clipboard API, değilse textarea yedeği)
+function adminCopyText(text, successMessage) {
+  if (!text) return;
+  function fallback() {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    showToast(ok ? successMessage : 'Kopyalanamadı', ok ? 'success' : 'error');
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { showToast(successMessage, 'success'); }).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+window.copyReferralCode = function(code) { adminCopyText(code, 'Referans kodu kopyalandı: ' + code); };
+function copyPayoutAddress(addr) { adminCopyText(addr, 'Cüzdan adresi kopyalandı'); }
+
+// ============================================================
+// REFERANS KODLARI
+// ============================================================
+var ADMIN_REF_ICONS = {
+  code: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/>',
+  active: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  usage: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  discount: '<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>'
+};
+
+function adminIconSvg(inner, size) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+    (size ? ' width="' + size + '" height="' + size + '"' : '') + ' aria-hidden="true">' + inner + '</svg>';
+}
+
+function renderReferralCodesTable() {
+  var c = document.getElementById('referral-codes-container');
+  if (!c) return;
+  var codes = adminState.referralCodes || [];
+
+  var totalCodes = codes.length;
+  var activeCodes = codes.filter(function(item) { return item.is_active; }).length;
+  var totalUsages = codes.reduce(function(acc, item) { return acc + (parseInt(item.usage_count, 10) || 0); }, 0);
+  var avgDiscount = totalCodes > 0
+    ? Math.round(codes.reduce(function(acc, item) { return acc + (parseInt(item.discount_percent, 10) || 0); }, 0) / totalCodes)
+    : 0;
+
+  function statCard(icon, tone, label, value, valueClass) {
+    return '<div class="ref-stat-card">' +
+      '<div class="ref-stat-icon ' + tone + '">' + adminIconSvg(ADMIN_REF_ICONS[icon]) + '</div>' +
+      '<div class="ref-stat-meta"><span class="ref-stat-label">' + label + '</span>' +
+      '<div class="ref-stat-val ' + (valueClass || '') + '">' + value + '</div></div>' +
+    '</div>';
+  }
+
+  var statsHtml = '<div class="ref-stats-grid">' +
+    statCard('code', 'icon-code', 'Toplam Kod', totalCodes) +
+    statCard('active', 'icon-active', 'Aktif Kodlar', activeCodes, 'green') +
+    statCard('usage', 'icon-usage', 'Toplam Kullanım', totalUsages, 'blue') +
+    statCard('discount', 'icon-discount', 'Ort. İndirim', '%' + avgDiscount, 'amber') +
+  '</div>';
+
+  if (codes.length === 0) {
+    c.innerHTML = statsHtml +
+      '<div class="empty-state">' +
+        '<div class="empty-state-icon">' + adminIconSvg(ADMIN_REF_ICONS.code) + '</div>' +
+        '<strong>Henüz referans kodu tanımlanmadı</strong>' +
+        '<p>İş ortaklarınız veya kampanyalarınız için özel indirim kodları oluşturmaya başlayın.</p>' +
+        '<button type="button" class="btn btn-primary btn-sm" data-add-code>' + adminSvg('plus', '', 14) + 'İlk Kodu Oluştur</button>' +
+      '</div>';
+    bindReferralCodesTable(c);
+    return;
+  }
+
+  var now = new Date();
+  var rows = codes.map(function(item) {
+    var expiryBadge;
+    if (item.expires_at) {
+      expiryBadge = now > new Date(item.expires_at)
+        ? '<span class="expiry-pill expired">Doldu (' + formatDate(item.expires_at) + ')</span>'
+        : '<span class="expiry-pill valid">' + formatDate(item.expires_at) + '</span>';
+    } else {
+      expiryBadge = '<span class="expiry-pill infinite">Süresiz</span>';
+    }
+
+    var usageCount = parseInt(item.usage_count, 10) || 0;
+    var maxUsage = item.max_usage ? parseInt(item.max_usage, 10) : null;
+    var usagePct = maxUsage ? Math.min(100, Math.round((usageCount / maxUsage) * 100)) : 0;
+    var usageText = '<strong>' + usageCount + '</strong> / ' + (maxUsage !== null ? maxUsage : '∞');
+    var progressBar = maxUsage ? '<div class="usage-track"><div class="usage-bar" style="width:' + usagePct + '%"></div></div>' : '';
+
+    var id = escapeHtml(item.id);
+    var code = escapeHtml(item.code);
+    var owner = item.referrer_name
+      ? '<div class="coupon-referrer">' + escapeHtml(item.referrer_name) +
+        (item.referrer_email ? ' <span class="text-muted">(' + escapeHtml(item.referrer_email) + ')</span>' : '') + '</div>'
+      : '<div class="coupon-referrer is-muted">Genel Kampanya</div>';
+
+    return '<tr>' +
+      '<td><div class="coupon-code-wrap">' +
+        '<div class="coupon-code-chip" role="button" tabindex="0" data-copy-code="' + code + '" title="Kodu kopyala">' +
+          adminIconSvg(ADMIN_REF_ICONS.code, 14).replace('<svg ', '<svg class="coupon-icon" ') +
+          '<strong>' + code + '</strong>' +
+          '<svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+        '</div>' + owner +
+        '<div class="coupon-commission">Komisyon: <b class="text-green">$' + escapeHtml(item.commission_rate || 0) + ' (Aylık)</b> / <b class="text-accent">$' + escapeHtml(item.commission_rate_yearly || 0) + ' (Yıllık)</b></div>' +
+      '</div></td>' +
+      '<td><span class="discount-pill"><span class="discount-pct">%' + escapeHtml(item.discount_percent) + '</span><span class="discount-sub">İndirim</span></span></td>' +
+      '<td><div class="usage-progress-wrap"><div class="usage-text">' + usageText + '</div>' + progressBar + '</div></td>' +
+      '<td>' + expiryBadge + '</td>' +
+      '<td><button type="button" class="status-toggle-btn ' + (item.is_active ? 'active' : 'inactive') + '" data-toggle-code="' + id + '" data-next="' + (item.is_active ? 'false' : 'true') + '" title="Durumu değiştirmek için tıklayın"><span class="status-dot"></span>' + (item.is_active ? 'Aktif' : 'Pasif') + '</button></td>' +
+      '<td class="right"><div class="table-action-btns">' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-edit-code="' + id + '" title="Kodu düzenle">Düzenle</button>' +
+        '<button type="button" class="btn btn-danger btn-sm" data-del-code="' + id + '" title="Kodu sil">Sil</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+
+  c.innerHTML = statsHtml +
+    '<div class="table-wrap"><div class="table-scroll"><table class="ww-table">' +
+      '<thead><tr><th>Referans Kodu &amp; Sahibi</th><th>İndirim</th><th>Kullanım Durumu</th><th>Son Geçerlilik</th><th>Durum</th><th class="right">İşlem</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table></div></div>';
+
+  bindReferralCodesTable(c);
+}
+
+function bindReferralCodesTable(c) {
+  c.onclick = function(e) {
+    var copy = e.target.closest('[data-copy-code]');
+    if (copy) { window.copyReferralCode(copy.getAttribute('data-copy-code')); return; }
+    var toggle = e.target.closest('[data-toggle-code]');
+    if (toggle) { window.handleToggleReferralCode(toggle.getAttribute('data-toggle-code'), toggle.getAttribute('data-next') === 'true'); return; }
+    var edit = e.target.closest('[data-edit-code]');
+    if (edit) { window.editReferralCode(edit.getAttribute('data-edit-code')); return; }
+    var del = e.target.closest('[data-del-code]');
+    if (del) { window.delReferralCode(del.getAttribute('data-del-code')); return; }
+    if (e.target.closest('[data-add-code]')) window.openReferralModal();
+  };
+  c.onkeydown = function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var copy = e.target.closest('[data-copy-code]');
+    if (copy) { e.preventDefault(); window.copyReferralCode(copy.getAttribute('data-copy-code')); }
+  };
+}
+
+window.handleToggleReferralCode = async function(id, newStatus) {
+  var ok = await toggleReferralCodeStatus(id, newStatus);
+  if (ok) renderReferralCodesTable();
+};
+
+var ADMIN_RC_FIELDS = [
+  'rc-id', 'rc-code', 'rc-discount', 'rc-name', 'rc-email', 'rc-max-usage',
+  'rc-expires', 'rc-active', 'rc-influencer-email', 'rc-commission', 'rc-commission-yearly'
+];
+
+function adminSetField(id, value) {
+  var el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
+// Referans kodu penceresini boş/varsayılan değerlerle açar
+window.openReferralModal = function() {
+  var defaults = { 'rc-discount': '20', 'rc-active': 'true' };
+  ADMIN_RC_FIELDS.forEach(function(id) { adminSetField(id, defaults[id] !== undefined ? defaults[id] : ''); });
+  var title = document.getElementById('rc-modal-title');
+  if (title) title.textContent = 'Yeni Referans Kodu Ekle';
+  var m = document.getElementById('referral-code-modal');
+  if (m) m.classList.add('open');
+};
+
+window.editReferralCode = function(id) {
+  var item = (adminState.referralCodes || []).find(function(x) { return String(x.id) === String(id); });
+  if (!item) return;
+
+  var influencerEmail = '';
+  if (item.user_profiles) {
+    influencerEmail = Array.isArray(item.user_profiles)
+      ? ((item.user_profiles[0] && item.user_profiles[0].email) || '')
+      : (item.user_profiles.email || '');
+  }
+
+  adminSetField('rc-id', item.id);
+  adminSetField('rc-code', item.code);
+  adminSetField('rc-discount', item.discount_percent);
+  adminSetField('rc-name', item.referrer_name || '');
+  adminSetField('rc-email', item.referrer_email || '');
+  adminSetField('rc-max-usage', item.max_usage || '');
+  adminSetField('rc-expires', item.expires_at ? adminDayKey(new Date(item.expires_at)) : '');
+  adminSetField('rc-active', item.is_active ? 'true' : 'false');
+  adminSetField('rc-influencer-email', influencerEmail);
+  adminSetField('rc-commission', item.commission_rate || '0');
+  adminSetField('rc-commission-yearly', item.commission_rate_yearly || '0');
+
+  var titleEl = document.getElementById('rc-modal-title');
+  if (titleEl) titleEl.textContent = 'Referans Kodunu Düzenle';
+  var modalEl = document.getElementById('referral-code-modal');
+  if (modalEl) modalEl.classList.add('open');
+};
+
+window.delReferralCode = async function(id) {
+  if (!confirm('Bu referans kodunu kalıcı olarak silmek istediğinizden emin misiniz?')) return;
+  if (typeof deleteReferralCode === 'function') {
+    var ok = await deleteReferralCode(id);
+    if (ok) {
+      showToast('Referans kodu silindi', 'success');
+      renderReferralCodesTable();
+    }
+  }
+};
+
+function initReferralModal() {
+  var modal = document.getElementById('referral-code-modal');
+  if (!modal) return;
+  // Bayrak window'da değil düğümde: SPA'da sayfaya tekrar girilince DOM yenilenir, dinleyiciler yeniden bağlanmalı
+  if (modal.dataset.bound === '1') return;
+  modal.dataset.bound = '1';
+
+  var btnAdd = document.getElementById('add-referral-code-btn');
+  var btnClose = document.getElementById('close-rc-modal');
+  var btnCancel = document.getElementById('cancel-rc-btn');
+  var btnSave = document.getElementById('save-rc-btn');
+
+  function close() { modal.classList.remove('open'); }
+  if (btnAdd) btnAdd.addEventListener('click', window.openReferralModal);
+  if (btnClose) btnClose.addEventListener('click', close);
+  if (btnCancel) btnCancel.addEventListener('click', close);
+
+  if (!btnSave) return;
+  btnSave.addEventListener('click', async function() {
+    var code = document.getElementById('rc-code').value.trim().toUpperCase();
+    var discount = parseInt(document.getElementById('rc-discount').value, 10);
+    if (!code) {
+      showToast('Lütfen referans kodunu girin.', 'error');
+      return;
+    }
+    if (isNaN(discount) || discount < 0 || discount > 100) {
+      showToast('İndirim yüzdesi 0 ile 100 arasında olmalıdır.', 'error');
+      return;
+    }
+
+    var maxUsageVal = document.getElementById('rc-max-usage').value.trim();
+    var expiresVal = document.getElementById('rc-expires').value.trim();
+    var influencerEmail = document.getElementById('rc-influencer-email').value.trim().toLowerCase();
+    var commissionRate = parseFloat(document.getElementById('rc-commission').value);
+    var commissionRateYearly = parseFloat(document.getElementById('rc-commission-yearly').value);
+
+    var influencerUserId = null;
+    if (influencerEmail) {
+      var client = getSbClient();
+      try {
+        var res = await client.from('user_profiles').select('id').eq('email', influencerEmail).maybeSingle();
+        if (res.error) throw res.error;
+        if (!res.data || !res.data.id) {
+          showToast('Influencer e-postası bulunamadı, lütfen kontrol edin.', 'error');
+          return;
+        }
+        influencerUserId = res.data.id;
+      } catch (e) {
+        console.error('Influencer araması başarısız:', e);
+        showToast('Influencer e-postası doğrulanamadı: ' + (e.message || e), 'error');
+        return;
+      }
+    }
+
+    var payload = {
+      code: code,
+      discount_percent: discount,
+      referrer_name: document.getElementById('rc-name').value.trim() || null,
+      referrer_email: document.getElementById('rc-email').value.trim() || null,
+      influencer_user_id: influencerUserId,
+      commission_rate: isNaN(commissionRate) ? 0 : commissionRate,
+      commission_rate_yearly: isNaN(commissionRateYearly) ? 0 : commissionRateYearly,
+      // 0 / boş / geçersiz = limitsiz (tablo ∞ gösterir). Eskiden 0 kaydedilip sunucuda her kullanımı reddediyordu.
+      max_usage: (parseInt(maxUsageVal, 10) > 0) ? parseInt(maxUsageVal, 10) : null,
+      // Son geçerlilik GÜNÜN SONUNA kadar geçerlidir (eskiden 00:00 UTC: seçilen gün başlar başlamaz süresi doluyordu)
+      expires_at: expiresVal ? new Date(expiresVal + 'T23:59:59').toISOString() : null,
+      is_active: document.getElementById('rc-active').value === 'true'
+    };
+
+    var id = document.getElementById('rc-id').value;
+
+    btnSave.disabled = true;
+    btnSave.textContent = 'Kaydediliyor...';
+    var ok = await saveReferralCode(id, payload);
+    btnSave.disabled = false;
+    btnSave.textContent = 'Kaydet';
+
+    if (ok) {
+      close();
+      renderReferralCodesTable();
+    }
+  });
+}
+
+// ============================================================
+// FİYAT YÖNETİMİ: ÖDEME AYARLARI
+// ============================================================
+// Fiyatlar sistem yapılandırmasında sabittir (savePaymentSettings aynı değerleri yazar);
+// kampanyalar Referans Kodları sekmesinden yönetilir.
+var ADMIN_LOCKED_PRICES = { monthly: 12, yearly: 99 };
+
+// YouTube adresini embed biçimine çevirir; YouTube dışı adresleri reddeder ('' döner).
+// Ödeme sayfasında iframe olarak gösterildiği için rastgele adres kabul edilmez.
+function normalizeYoutubeEmbed(url) {
+  var u = String(url || '').trim();
+  if (!u) return '';
+  var m = u.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/embed\/|youtube-nocookie\.com\/embed\/)([\w-]{6,})(?:[?&#].*)?$/i) ||
+    u.match(/^https:\/\/(?:www\.|m\.)?youtube\.com\/watch\?(?:.*&)?v=([\w-]{6,})(?:[&#].*)?$/i) ||
+    u.match(/^https:\/\/youtu\.be\/([\w-]{6,})(?:[?#].*)?$/i);
+  return m ? 'https://www.youtube.com/embed/' + m[1] : '';
+}
+window.normalizeYoutubeEmbed = normalizeYoutubeEmbed;
+
+function adminToggleCard(title, desc, inputId, checked, extraClass) {
+  return '<div class="toggle-card' + (extraClass ? ' ' + extraClass : '') + '">' +
+    '<div class="toggle-info"><strong>' + title + '</strong><p>' + desc + '</p></div>' +
+    '<label class="ios-switch"><input type="checkbox" id="' + inputId + '"' + (checked ? ' checked' : '') + ' /><span class="slider"></span></label>' +
+  '</div>';
+}
+
+function adminSectionTitle(iconInner, text) {
+  return '<h4 class="section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' + iconInner + '</svg>' + text + '</h4>';
+}
+
+async function renderPaymentSettingsUI() {
+  var c = document.getElementById('prices-container');
+  if (!c) return;
+
+  var current = await loadPaymentSettings();
+  if (!current) {
+    current = { video_embed_url: '', video_embed_enabled: false, ltc_discount_enabled: true };
+  }
+
+  var monthlyVal = ADMIN_LOCKED_PRICES.monthly;
+  var yearlyVal = ADMIN_LOCKED_PRICES.yearly;
+  var videoUrlVal = current.video_embed_url || '';
+  var videoEnabledVal = !!current.video_embed_enabled;
+  var ltcDiscountVal = current.ltc_discount_enabled !== false;
+  var check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  c.innerHTML =
+    '<div class="pricing-mgmt-container">' +
+      '<div class="pricing-config-card">' +
+        '<div class="pricing-config-header">' +
+          '<div class="icon-bubble">' + adminSvg('dollar') + '</div>' +
+          '<div><h3>Fiyatlandırma &amp; Paket Yönetimi</h3><p>Platform abonelik fiyatlarını, indirimleri ve ödeme seçeneklerini belirleyin</p></div>' +
+        '</div>' +
+
+        '<div class="pricing-form-section">' +
+          adminSectionTitle('<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>', 'Abonelik Plan Ücretleri') +
+          '<div class="field-row">' +
+            '<div class="field"><label for="ps-monthly">Aylık Plan Ücreti (Sabit)</label>' +
+              '<div class="input-with-icon"><span class="input-prefix">$</span><input type="number" id="ps-monthly" value="' + monthlyVal + '" disabled /><span class="input-suffix">/ ay</span></div></div>' +
+            '<div class="field"><label for="ps-yearly">Yıllık Plan Ücreti (Sabit)</label>' +
+              '<div class="input-with-icon"><span class="input-prefix">$</span><input type="number" id="ps-yearly" value="' + yearlyVal + '" disabled /><span class="input-suffix">/ yıl</span></div></div>' +
+          '</div>' +
+          '<div class="pricing-calc-info" id="pricing-calc-badge">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+            '<span id="pricing-calc-text"></span>' +
+          '</div>' +
+          '<small class="field-hint">Fiyatlar sistem yapılandırmasında sabitlenmiştir ($' + monthlyVal + '/ay &amp; $' + yearlyVal + '/yıl). Kampanyalar Referans Kodları sekmesinden yönetilir.</small>' +
+        '</div>' +
+
+        '<div class="pricing-form-section">' +
+          adminSectionTitle('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', 'Promosyon &amp; Kripto Ödemeleri') +
+          adminToggleCard('Litecoin (LTC) Referans İndirimi', 'Referans indirim kuponları LTC ile ödeme yapan kullanıcılara anında indirim sağlar.', 'ps-ltc-discount', ltcDiscountVal) +
+        '</div>' +
+
+        '<div class="pricing-form-section">' +
+          adminSectionTitle('<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>', 'Ödeme Sayfası Tanıtım Videosu') +
+          adminToggleCard('Video Gösterimi Aktif', 'Ödeme ekranında kullanıcılara adım adım rehber veya tanıtım videosu gösterilsin.', 'ps-video-enabled', videoEnabledVal, 'spaced') +
+          '<div class="field" id="video-url-field-wrap"><label for="ps-video-url">YouTube Embed Video URL</label>' +
+            '<input type="text" id="ps-video-url" value="' + escapeHtml(videoUrlVal) + '" placeholder="https://www.youtube.com/embed/..." />' +
+            '<small class="field-hint">Format: <code>https://www.youtube.com/embed/VIDEO_ID</code> (watch ve youtu.be bağlantıları otomatik çevrilir)</small></div>' +
+        '</div>' +
+
+        '<div class="pricing-form-section">' +
+          adminSectionTitle('<path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/>', 'Geliştirici Test Modu') +
+          '<p class="field-hint">Sandbox çalışmadığında gerçek ödeme akışını denemek için. Kodu bilen kullanıcı Ayarlar &gt; Gelişmiş sekmesinde girince Plan ekranında <strong>1 $ / 1 günlük</strong> bir test planı görür. Kod sunucuda yalnızca hash olarak saklanır, sonradan görüntülenemez. Test ödemeleri gelir istatistiklerine dahil edilmez.</p>' +
+          '<div class="pricing-calc-info" id="dev-test-status"><span>Durum yükleniyor...</span></div>' +
+          '<div class="field"><label for="dev-test-code">Geliştirici kodu (en az 8 karakter)</label>' +
+            '<input type="password" id="dev-test-code" autocomplete="new-password" placeholder="Yeni kod belirleyin" maxlength="128" />' +
+            '<small class="field-hint">Yeni kod kaydetmek, eski kodla alınmış tüm test erişimlerini iptal eder.</small></div>' +
+          '<div class="dev-test-actions">' +
+            '<button type="button" class="btn btn-primary" id="dev-test-save-btn">Kodu Kaydet ve Aç</button>' +
+            '<button type="button" class="btn btn-ghost" id="dev-test-toggle-btn" disabled>Test Modunu Kapat</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="pricing-form-actions">' +
+          '<button type="button" class="btn btn-primary" id="save-ps-btn"><span>Ayarları Kaydet</span></button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="pricing-preview-panel">' +
+        '<div class="preview-header">' +
+          '<div class="preview-badge"><span class="live-dot"></span> Canlı Kullanıcı Önizlemesi</div>' +
+          '<p>Kullanıcıların satın alma ekranında göreceği fiyatlandırma kartları</p>' +
+        '</div>' +
+        '<div class="preview-cards-container">' +
+          '<div class="preview-plan-card" id="prev-monthly-card">' +
+            '<div class="preview-plan-name">Aylık Plan</div>' +
+            '<div class="preview-price-row"><span class="preview-price-val" id="prev-monthly-price">$' + monthlyVal + '</span><span class="preview-price-cycle">/ ay</span></div>' +
+            '<div class="preview-price-sub">Her ay otomatik yenilenir</div>' +
+            '<ul class="preview-features-list">' +
+              '<li>' + check + ' Sınırsız İşlem Günlüğü</li>' +
+              '<li>' + check + ' Detaylı Analitik &amp; İstatistik</li>' +
+              '<li>' + check + ' Otomatik Metrik Hesaplama</li>' +
+            '</ul>' +
+          '</div>' +
+          '<div class="preview-plan-card featured" id="prev-yearly-card">' +
+            '<span class="preview-plan-badge" id="prev-yearly-savings-badge">%31 Tasarruf</span>' +
+            '<div class="preview-plan-name">Yıllık Plan</div>' +
+            '<div class="preview-price-row"><span class="preview-price-val" id="prev-yearly-price">$' + yearlyVal + '</span><span class="preview-price-cycle">/ yıl</span></div>' +
+            '<div class="preview-price-sub" id="prev-yearly-equiv">Ayda ~$8.25</div>' +
+            '<ul class="preview-features-list">' +
+              '<li>' + check + ' 365 Gün Kesintisiz Erişim</li>' +
+              '<li>' + check + ' Tüm Pro Özellikler</li>' +
+              '<li>' + check + ' Öncelikli VIP Destek</li>' +
+            '</ul>' +
+          '</div>' +
+        '</div>' +
+        '<div class="preview-video-box" id="prev-video-box">' +
+          '<div class="video-label"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>Video Canlı Önizlemesi</div>' +
+          '<div id="prev-video-player-container"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  var videoPlaceholder = function(iconInner, text) {
+    return '<div class="preview-video-placeholder"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">' + iconInner + '</svg><span>' + text + '</span></div>';
+  };
+  var PLAY_ICON = '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>';
+  var OFF_ICON = '<line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/>';
+
+  // Canlı önizleme + hesaplama
+  function updateLivePricingPreview() {
+    var m = parseFloat(document.getElementById('ps-monthly').value) || 0;
+    var y = parseFloat(document.getElementById('ps-yearly').value) || 0;
+    var vUrl = (document.getElementById('ps-video-url').value || '').trim();
+    var vEnabled = document.getElementById('ps-video-enabled').checked;
+
+    var mPriceEl = document.getElementById('prev-monthly-price');
+    var yPriceEl = document.getElementById('prev-yearly-price');
+    var yEquivEl = document.getElementById('prev-yearly-equiv');
+    var yBadgeEl = document.getElementById('prev-yearly-savings-badge');
+    var calcTextEl = document.getElementById('pricing-calc-text');
+
+    if (mPriceEl) mPriceEl.textContent = '$' + (m % 1 === 0 ? m : m.toFixed(2));
+    if (yPriceEl) yPriceEl.textContent = '$' + (y % 1 === 0 ? y : y.toFixed(2));
+
+    var regularYearly = m * 12;
+    var savingsPct = 0;
+    var savingsDollars = 0;
+    if (regularYearly > 0 && y > 0 && regularYearly > y) {
+      savingsPct = Math.round(((regularYearly - y) / regularYearly) * 100);
+      savingsDollars = Math.round(regularYearly - y);
+    }
+
+    if (yEquivEl) yEquivEl.textContent = 'Ayda ~$' + (y / 12).toFixed(2) + ' ($' + regularYearly + ' yerine)';
+    if (yBadgeEl) yBadgeEl.textContent = '%' + savingsPct + ' Tasarruf';
+
+    if (calcTextEl) {
+      calcTextEl.innerHTML = savingsPct > 0
+        ? 'Kullanıcılar yıllık planda <strong>%' + savingsPct + ' indirim</strong> (yılda <strong>$' + savingsDollars + '</strong> tasarruf) elde ediyor.'
+        : 'Aylık 12 ay toplamı: <strong>$' + regularYearly + '</strong>. Yıllık fiyat: <strong>$' + y + '</strong>.';
+    }
+
+    var vContainer = document.getElementById('prev-video-player-container');
+    if (!vContainer) return;
+    if (vEnabled && vUrl) {
+      var embed = normalizeYoutubeEmbed(vUrl);
+      vContainer.innerHTML = embed
+        ? '<div class="preview-video-iframe-wrap"><iframe src="' + escapeHtml(embed) + '" title="Tanıtım videosu" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>'
+        : videoPlaceholder(PLAY_ICON, 'Geçerli bir YouTube bağlantısı girin (youtube.com/embed/…).');
+    } else if (vEnabled) {
+      vContainer.innerHTML = videoPlaceholder(PLAY_ICON, 'Video aktif edildi fakat henüz URL girilmedi.');
+    } else {
+      vContainer.innerHTML = videoPlaceholder(OFF_ICON, 'Tanıtım videosu gösterimi şu anda pasif durumda.');
+    }
+  }
+
+  document.getElementById('ps-video-url').addEventListener('input', updateLivePricingPreview);
+  document.getElementById('ps-video-enabled').addEventListener('change', updateLivePricingPreview);
+  updateLivePricingPreview();
+
+  // ---- Geliştirici Test Modu (kod sunucuda hash olarak saklanır; admin_set_dev_test_code RPC) ----
+  var devState = { configured: false, enabled: false };
+  async function refreshDevTestStatus() {
+    var statusEl = document.getElementById('dev-test-status');
+    var toggleBtn = document.getElementById('dev-test-toggle-btn');
+    var client = getSbClient();
+    if (!statusEl || !client) return;
+    try {
+      var res = await client.rpc('admin_get_dev_test_status');
+      var data = res.data;
+      if (res.error || !data || data.success === false) throw new Error((res.error && res.error.message) || (data && data.error) || 'Durum alınamadı');
+      devState.configured = !!data.configured;
+      devState.enabled = !!data.enabled;
+      var text;
+      if (!data.configured) text = 'Henüz kod belirlenmemiş. Test modu kapalı.';
+      else if (data.enabled) text = '<strong class="text-green">Test modu AÇIK.</strong> Şu an test erişimi olan kullanıcı sayısı: <strong>' + escapeHtml(data.active_users || 0) + '</strong>';
+      else text = '<strong>Test modu KAPALI</strong> (kod kayıtlı, kimse test planını göremez).';
+      statusEl.innerHTML = '<span>' + text + '</span>';
+      if (toggleBtn) {
+        toggleBtn.disabled = !data.configured;
+        toggleBtn.textContent = data.enabled ? 'Test Modunu Kapat' : 'Test Modunu Aç';
+      }
+    } catch (e) {
+      statusEl.innerHTML = '<span>Durum alınamadı: ' + escapeHtml(e.message || String(e)) + ' (migration 202610150004 uygulandı mı?)</span>';
+    }
+  }
+
+  var devSaveBtn = document.getElementById('dev-test-save-btn');
+  devSaveBtn.addEventListener('click', async function() {
+    var input = document.getElementById('dev-test-code');
+    var code = input ? input.value.trim() : '';
+    if (code.length < 8) {
+      showToast('Kod en az 8 karakter olmalıdır.', 'error');
+      return;
+    }
+    devSaveBtn.disabled = true;
+    try {
+      var res = await getSbClient().rpc('admin_set_dev_test_code', { p_code: code, p_enabled: true });
+      if (res.error || !res.data || res.data.success === false) throw new Error((res.error && res.error.message) || (res.data && res.data.error) || 'Kod kaydedilemedi');
+      if (input) input.value = '';
+      showToast('Geliştirici kodu kaydedildi, test modu açıldı.', 'success');
+    } catch (e) {
+      showToast('Kaydedilemedi: ' + (e.message || e), 'error');
+    } finally {
+      devSaveBtn.disabled = false;
+      refreshDevTestStatus();
+    }
+  });
+
+  var devToggleBtn = document.getElementById('dev-test-toggle-btn');
+  devToggleBtn.addEventListener('click', async function() {
+    devToggleBtn.disabled = true;
+    try {
+      var res = await getSbClient().rpc('admin_set_dev_test_code', { p_code: null, p_enabled: !devState.enabled });
+      if (res.error || !res.data || res.data.success === false) throw new Error((res.error && res.error.message) || (res.data && res.data.error) || 'İşlem başarısız');
+      showToast(res.data.enabled ? 'Test modu açıldı.' : 'Test modu kapatıldı.', 'success');
+    } catch (e) {
+      showToast('İşlem başarısız: ' + (e.message || e), 'error');
+    } finally {
+      refreshDevTestStatus();
+    }
+  });
+  refreshDevTestStatus();
+
+  var SAVE_LABEL = '<span>Ayarları Kaydet</span>';
+  var saveBtn = document.getElementById('save-ps-btn');
+  saveBtn.addEventListener('click', async function() {
+    var vUrl = document.getElementById('ps-video-url').value.trim();
+    var vEnabled = document.getElementById('ps-video-enabled').checked;
+    var ltcDisc = document.getElementById('ps-ltc-discount').checked;
+
+    // Ödeme sayfasında iframe olarak gösterilir: yalnızca YouTube embed adresi kaydedilir
+    var embedUrl = normalizeYoutubeEmbed(vUrl);
+    if (vUrl && !embedUrl) {
+      showToast('Video adresi geçerli bir YouTube bağlantısı olmalıdır.', 'error');
+      return;
+    }
+    if (vEnabled && !embedUrl) {
+      showToast('Videoyu göstermek için bir YouTube bağlantısı girin.', 'error');
+      return;
+    }
+
+    var m = ADMIN_LOCKED_PRICES.monthly;
+    var y = ADMIN_LOCKED_PRICES.yearly;
+    var regYear = m * 12;
+    var payload = {
+      monthly_price_usd: m,
+      yearly_price_usd: y,
+      yearly_discount_percent: regYear > 0 && y < regYear ? Math.round(((regYear - y) / regYear) * 100) : 0,
+      video_embed_url: embedUrl,
+      video_embed_enabled: vEnabled,
+      ltc_discount_enabled: ltcDisc,
+      days_per_monthly: 30,
+      days_per_yearly: 365,
+      referral_note: 'Referans kodu sadece Litecoin (LTC) ödemelerinde geçerlidir.'
+    };
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner sm"></span><span>Kaydediliyor...</span>';
+    var ok = await savePaymentSettings(payload);
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = SAVE_LABEL;
+
+    if (ok) {
+      document.getElementById('ps-video-url').value = embedUrl;
+      updateLivePricingPreview();
+    }
+  });
+}
+
+// ============================================================
+// GENEL (OVERVIEW) PANELİ
+// ============================================================
+function destroyOverviewCharts() {
+  if (!window.adminState) return;
+  if (!window.adminState.charts) {
+    window.adminState.charts = {};
+    return;
+  }
+  var c = window.adminState.charts;
+  ['overviewUserChart', 'overviewRevenueChart', 'overviewPlanDonut'].forEach(function(key) {
+    if (c[key]) {
+      try { c[key].destroy(); } catch (e) {}
+      c[key] = null;
+    }
+  });
+}
+
+window.changeOverviewPeriod = function(period) {
+  if (window.adminState) window.adminState.overviewPeriod = period;
+  if (typeof renderOverviewContent === 'function') renderOverviewContent(period);
+};
+
+var ADMIN_TR_DAYS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+var ADMIN_TR_MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+// Seçilen döneme göre grafik kovalarını (gün ya da ay) üretir
+function adminPeriodBuckets(period, now) {
+  var buckets = [];
+  var i;
+  if (period === 'year') {
+    for (i = 11; i >= 0; i--) {
+      var mStart = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
+      var mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+      buckets.push({ start: mStart, end: mEnd, label: ADMIN_TR_MONTHS[mStart.getMonth()] + ' ' + mStart.getFullYear() });
+    }
+    return { buckets: buckets, labelText: 'Son 12 Ay', pillText: '1 Yıl' };
+  }
+
+  var days = period === 'month' ? 30 : 7;
+  for (i = days - 1; i >= 0; i--) {
+    var start = new Date(now);
+    start.setDate(start.getDate() - i);
+    start.setHours(0, 0, 0, 0);
+    var end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    // Haftalık görünümde etiket iki satır (tarih + gün) olur; böylece eksen etiketleri eğilip kırpılmaz
+    var label = days === 7
+      ? [start.getDate() + ' ' + ADMIN_TR_MONTHS[start.getMonth()], ADMIN_TR_DAYS[start.getDay()]]
+      : start.getDate() + ' ' + ADMIN_TR_MONTHS[start.getMonth()];
+    buckets.push({ start: start, end: end, label: label });
+  }
+  return period === 'month'
+    ? { buckets: buckets, labelText: 'Son 30 Gün', pillText: '1 Ay' }
+    : { buckets: buckets, labelText: 'Son 7 Gün', pillText: '1 Hafta' };
+}
+
+function adminMoney0(n) {
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function renderOverviewContent(period) {
@@ -1224,24 +1032,22 @@ function renderOverviewContent(period) {
   var container = document.getElementById('overview-content');
   if (!container) return;
 
-  // Destroy previous charts before modifying DOM to prevent leaks or conflicts
+  // Kapsayıcıyı değiştirmeden önce eski grafikleri yok et (sızıntı/çakışma olmasın)
   destroyOverviewCharts();
 
   var theme = getAdminApexTheme();
   var usersList = adminState.users || [];
   var totalUsers = usersList.length;
-
-  // Active Pro & Free counts
   var now = new Date();
-  var activeProUsers = usersList.filter(function(u) {
-    return u.plan === 'premium' && (!u.plan_expires_at || new Date(u.plan_expires_at) > now);
-  });
-  var proCount = activeProUsers.length;
-  var freeCount = Math.max(0, totalUsers - proCount);
-  var conversionRate = totalUsers > 0 ? ((proCount / totalUsers) * 100).toFixed(1) : '0.0';
 
-  // Today Users (local start of day)
-  var startOfToday = new Date();
+  var proCount = usersList.filter(function(u) {
+    return u.plan === 'premium' && (!u.plan_expires_at || new Date(u.plan_expires_at) > now);
+  }).length;
+  var freeCount = Math.max(0, totalUsers - proCount);
+  var proPct = totalUsers > 0 ? (proCount / totalUsers) * 100 : 0;
+  var conversionRate = proPct.toFixed(1);
+
+  var startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
   var todayUsers = usersList.filter(function(u) {
     if (!u.created_at) return false;
@@ -1249,496 +1055,198 @@ function renderOverviewContent(period) {
     return !isNaN(d.getTime()) && d >= startOfToday;
   }).length;
 
-  // Payments List (Gerçekleşen Ödemeler)
-  var paymentsList = (adminState.payments || []).filter(function(p) {
-    // Geliştirici test planı (plan_type 'test') gelir/satış istatistiklerine dahil edilmez
-    return (p.payment_status === 'finished' || p.payment_status === 'confirmed') && p.plan_type !== 'test';
-  });
-
   // Gelir: yalnızca gerçek (tamamlanmış) ödemeler. Admin'in verdiği ya da ödemesi olmayan pro gelir sayılmaz.
-  var subscriptions = [];
+  var sales = [];
   var totalRevenue = 0;
-  var countedPaymentIds = {};
-
-  paymentsList.forEach(function(p) {
+  adminCompletedPayments().forEach(function(p) {
     var sub = paymentToSubscription(p);
     if (sub.price <= 0) return;
-    var matchedUser = usersList.find(function(u) { return u.id === p.user_id; }) || null;
-    subscriptions.push({ user: matchedUser, sub: sub });
+    sales.push(sub);
     totalRevenue += sub.price;
-    if (p.id) countedPaymentIds[p.id] = true;
   });
 
-  // Period Buckets & Labels
+  var spec = adminPeriodBuckets(period, now);
   var bucketLabels = [];
   var userCounts = [];
   var revenueAmounts = [];
   var periodUsers = 0;
   var periodRevenue = 0;
 
-  var trDays = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-  var trMonths = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  spec.buckets.forEach(function(b) {
+    bucketLabels.push(b.label);
 
-  var periodLabelText = 'Son 7 Gün';
-  var periodPillText = '1 Hafta';
+    var uCount = usersList.filter(function(u) {
+      if (!u.created_at) return false;
+      var ud = new Date(u.created_at);
+      return !isNaN(ud.getTime()) && ud >= b.start && ud <= b.end;
+    }).length;
+    userCounts.push(uCount);
+    periodUsers += uCount;
 
-  if (period === 'week') {
-    periodLabelText = 'Son 7 Gün';
-    periodPillText = '1 Hafta';
+    var rSum = 0;
+    sales.forEach(function(s) {
+      if (s.startDate >= b.start && s.startDate <= b.end) rSum += s.price;
+    });
+    rSum = Math.round(rSum * 100) / 100;
+    revenueAmounts.push(rSum);
+    periodRevenue += rSum;
+  });
 
-    for (var i = 6; i >= 0; i--) {
-      var dayStart = new Date();
-      dayStart.setDate(dayStart.getDate() - i);
-      dayStart.setHours(0, 0, 0, 0);
-
-      var dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      var label = dayStart.getDate() + ' ' + trMonths[dayStart.getMonth()] + ' (' + trDays[dayStart.getDay()] + ')';
-      bucketLabels.push(label);
-
-      var uCount = usersList.filter(function(u) {
-        if (!u.created_at) return false;
-        var ud = new Date(u.created_at);
-        return !isNaN(ud.getTime()) && ud >= dayStart && ud <= dayEnd;
-      }).length;
-      userCounts.push(uCount);
-      periodUsers += uCount;
-
-      var rSum = 0;
-      subscriptions.forEach(function(item) {
-        var s = item.sub;
-        if (s.startDate >= dayStart && s.startDate <= dayEnd) {
-          rSum += s.price;
-        }
-      });
-      paymentsList.forEach(function(p) {
-        if (!countedPaymentIds[p.id] && p.created_at) {
-          var pd = new Date(p.created_at);
-          if (!isNaN(pd.getTime()) && pd >= dayStart && pd <= dayEnd) {
-            rSum += (Number(p.amount) || 0);
-          }
-        }
-      });
-      revenueAmounts.push(rSum);
-      periodRevenue += rSum;
-    }
-  } else if (period === 'month') {
-    periodLabelText = 'Son 30 Gün';
-    periodPillText = '1 Ay';
-
-    for (var i = 29; i >= 0; i--) {
-      var dayStart = new Date();
-      dayStart.setDate(dayStart.getDate() - i);
-      dayStart.setHours(0, 0, 0, 0);
-
-      var dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      var label = dayStart.getDate() + ' ' + trMonths[dayStart.getMonth()];
-      bucketLabels.push(label);
-
-      var uCount = usersList.filter(function(u) {
-        if (!u.created_at) return false;
-        var ud = new Date(u.created_at);
-        return !isNaN(ud.getTime()) && ud >= dayStart && ud <= dayEnd;
-      }).length;
-      userCounts.push(uCount);
-      periodUsers += uCount;
-
-      var rSum = 0;
-      subscriptions.forEach(function(item) {
-        var s = item.sub;
-        if (s.startDate >= dayStart && s.startDate <= dayEnd) {
-          rSum += s.price;
-        }
-      });
-      paymentsList.forEach(function(p) {
-        if (!countedPaymentIds[p.id] && p.created_at) {
-          var pd = new Date(p.created_at);
-          if (!isNaN(pd.getTime()) && pd >= dayStart && pd <= dayEnd) {
-            rSum += (Number(p.amount) || 0);
-          }
-        }
-      });
-      revenueAmounts.push(rSum);
-      periodRevenue += rSum;
-    }
-  } else if (period === 'year') {
-    periodLabelText = 'Son 12 Ay';
-    periodPillText = '1 Yıl';
-
-    for (var i = 11; i >= 0; i--) {
-      var mStart = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
-      var mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
-
-      var label = trMonths[mStart.getMonth()] + ' ' + mStart.getFullYear();
-      bucketLabels.push(label);
-
-      var uCount = usersList.filter(function(u) {
-        if (!u.created_at) return false;
-        var ud = new Date(u.created_at);
-        return !isNaN(ud.getTime()) && ud >= mStart && ud <= mEnd;
-      }).length;
-      userCounts.push(uCount);
-      periodUsers += uCount;
-
-      var rSum = 0;
-      subscriptions.forEach(function(item) {
-        var s = item.sub;
-        if (s.startDate >= mStart && s.startDate <= mEnd) {
-          rSum += s.price;
-        }
-      });
-      paymentsList.forEach(function(p) {
-        if (!countedPaymentIds[p.id] && p.created_at) {
-          var pd = new Date(p.created_at);
-          if (!isNaN(pd.getTime()) && pd >= mStart && pd <= mEnd) {
-            rSum += (Number(p.amount) || 0);
-          }
-        }
-      });
-      revenueAmounts.push(rSum);
-      periodRevenue += rSum;
-    }
-  }
-
-  // Recent Users List (Latest 8)
   var sortedUsers = usersList.slice().sort(function(a, b) {
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   }).slice(0, 8);
 
-  var recentUsersHtml = '';
-  if (sortedUsers.length === 0) {
-    recentUsersHtml = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px;">Henüz kullanıcı bulunmuyor.</div>';
-  } else {
-    sortedUsers.forEach(function(u) {
-      var name = escapeHtml(u.username || (u.email ? u.email.split('@')[0] : 'Kullanıcı'));
-      var email = escapeHtml(u.email || '—');
-      var avatarContent = u.avatar_url
-        ? '<img src="' + u.avatar_url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;">'
-        : '<span>' + getInitials(name) + '</span>';
-      var isPrem = u.plan === 'premium';
-      var badgeHtml = isPrem
-        ? '<span class="user-mini-badge badge-sub-pro">⭐ Pro</span>'
-        : '<span class="user-mini-badge badge-sub-free">Ücretsiz</span>';
-
-      recentUsersHtml += 
-        '<div class="overview-user-row">' +
-          '<div class="user-mini-avatar">' + avatarContent + '</div>' +
-          '<div class="user-mini-info">' +
-            '<div class="user-mini-name">' + name + '</div>' +
-            '<div class="user-mini-email">' + email + '</div>' +
-          '</div>' +
-          badgeHtml +
+  var recentUsersHtml = sortedUsers.length === 0
+    ? '<div class="empty-state">Henüz kullanıcı bulunmuyor.</div>'
+    : sortedUsers.map(function(u) {
+        var name = u.username || (u.email ? u.email.split('@')[0] : 'Kullanıcı');
+        var isPro = u.plan === 'premium';
+        return '<div class="overview-user-row">' +
+          '<div class="user-mini-avatar">' + avatarMarkup(u.avatar_url, name) + '</div>' +
+          '<div class="user-mini-info"><div class="user-mini-name">' + escapeHtml(name) + '</div><div class="user-mini-email">' + escapeHtml(u.email || '—') + '</div></div>' +
+          '<span class="user-mini-badge ' + (isPro ? 'badge-sub-pro' : 'badge-sub-free') + '">' + (isPro ? 'Pro' : 'Ücretsiz') + '</span>' +
           '<div class="user-mini-date">' + formatDate(u.created_at) + '</div>' +
         '</div>';
-    });
-  }
+      }).join('');
 
-  // Build HTML
-  container.innerHTML = 
+  var online = navigator.onLine !== false;
+  var periodBtn = function(key, text) {
+    return '<button type="button" class="period-pill-btn' + (period === key ? ' active' : '') + '" aria-pressed="' + (period === key) + '" data-period="' + key + '">' + text + '</button>';
+  };
+  var kpi = function(opts) {
+    return '<div class="kpi-card' + (opts.highlight ? ' highlight-card' : '') + '"><div class="kpi-card-inner">' +
+      '<div class="kpi-icon-wrap ' + opts.iconClass + '">' + (opts.pulse ? '<div class="live-pulse"></div>' : '') + adminIconSvg(opts.icon) + '</div>' +
+      '<div class="kpi-meta"><span class="kpi-label">' + opts.label + '</span>' +
+        '<div class="kpi-value-row"><span class="kpi-val ' + (opts.valClass || '') + '">' + opts.value + '</span>' +
+        '<span class="kpi-badge ' + opts.badgeClass + '">' + opts.badge + '</span></div></div>' +
+    '</div></div>';
+  };
+  var chartHeader = function(icon, tone, title, sub, cornerClass, cornerVal) {
+    return '<div class="s-card-header"><div class="header-icon ' + tone + '">' + adminIconSvg(icon, 16) + '</div>' +
+      '<div><h2>' + title + '</h2><p>' + sub + '</p></div>' +
+      '<div class="chart-corner-stat"><span class="corner-val ' + cornerClass + '">' + cornerVal + '</span><span class="corner-lbl">' + spec.pillText + '</span></div></div>';
+  };
+
+  container.innerHTML =
     '<div class="overview-container">' +
       '<div class="overview-header-bar">' +
         '<div>' +
-          '<h2 style="font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 4px 0;color:var(--text);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-            'Platform Genel Bakış ' +
-            '<span class="live-connection-badge ' + (navigator.onLine ? 'online' : 'offline') + '" id="overview-live-badge">' +
-              '<span class="live-status-dot ' + (navigator.onLine ? 'pulse' : '') + '"></span>' +
-              '<span class="live-status-text">' + (navigator.onLine ? 'Güncellenme : Şuan Canlı' : 'İnternet bağlantısı kesildi') + '</span>' +
+          '<h2 class="overview-main-title">Platform Genel Bakış ' +
+            '<span class="live-connection-badge ' + (online ? 'online' : 'offline') + '" id="overview-live-badge">' +
+              '<span class="live-status-dot"></span>' +
+              '<span class="live-status-text">' + (online ? 'Güncellenme : Şuan Canlı' : 'İnternet bağlantısı kesildi') + '</span>' +
             '</span>' +
           '</h2>' +
-          '<p style="font-size:13px;color:var(--muted);margin:0;">Sistem geneli kullanıcı, abonelik ve gelir metrikleri</p>' +
+          '<p class="overview-main-sub">Sistem geneli kullanıcı, abonelik ve gelir metrikleri</p>' +
         '</div>' +
-        '<div class="period-switcher-pill">' +
-          '<button type="button" class="period-pill-btn ' + (period === 'week' ? 'active' : '') + '" onclick="window.changeOverviewPeriod(\'week\')">1 Hafta</button>' +
-          '<button type="button" class="period-pill-btn ' + (period === 'month' ? 'active' : '') + '" onclick="window.changeOverviewPeriod(\'month\')">1 Ay</button>' +
-          '<button type="button" class="period-pill-btn ' + (period === 'year' ? 'active' : '') + '" onclick="window.changeOverviewPeriod(\'year\')">1 Yıl</button>' +
-        '</div>' +
+        '<div class="period-switcher-pill" role="group" aria-label="Dönem">' + periodBtn('week', '1 Hafta') + periodBtn('month', '1 Ay') + periodBtn('year', '1 Yıl') + '</div>' +
       '</div>' +
 
       '<div class="overview-kpi-grid">' +
-        '<div class="kpi-card">' +
-          '<div class="kpi-card-inner">' +
-            '<div class="kpi-icon-wrap icon-users">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
-            '</div>' +
-            '<div class="kpi-meta">' +
-              '<span class="kpi-label">Toplam Kullanıcılar</span>' +
-              '<div class="kpi-value-row">' +
-                '<span class="kpi-val">' + totalUsers + '</span>' +
-                '<span class="kpi-badge badge-green">Tüm Zamanlar</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="kpi-card highlight-card">' +
-          '<div class="kpi-card-inner">' +
-            '<div class="kpi-icon-wrap icon-today">' +
-              '<div class="live-pulse"></div>' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
-            '</div>' +
-            '<div class="kpi-meta">' +
-              '<span class="kpi-label">Bugün Gelen Kullanıcılar</span>' +
-              '<div class="kpi-value-row">' +
-                '<span class="kpi-val" style="color:#22c55e;">+' + todayUsers + '</span>' +
-                '<span class="kpi-badge badge-pulse">Bugün</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="kpi-card">' +
-          '<div class="kpi-card-inner">' +
-            '<div class="kpi-icon-wrap icon-users">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>' +
-            '</div>' +
-            '<div class="kpi-meta">' +
-              '<span class="kpi-label">' + periodLabelText + ' Yeni Kayıt</span>' +
-              '<div class="kpi-value-row">' +
-                '<span class="kpi-val">+' + periodUsers + '</span>' +
-                '<span class="kpi-badge badge-purple">' + periodPillText + '</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="kpi-card">' +
-          '<div class="kpi-card-inner">' +
-            '<div class="kpi-icon-wrap icon-revenue">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' +
-            '</div>' +
-            '<div class="kpi-meta">' +
-              '<span class="kpi-label">Toplam Gelir</span>' +
-              '<div class="kpi-value-row">' +
-                '<span class="kpi-val" style="color:#10b981;">$' + totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
-                '<span class="kpi-badge badge-emerald">Dönem: $' + periodRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="kpi-card">' +
-          '<div class="kpi-card-inner">' +
-            '<div class="kpi-icon-wrap icon-pro">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
-            '</div>' +
-            '<div class="kpi-meta">' +
-              '<span class="kpi-label">Pro Üyeler</span>' +
-              '<div class="kpi-value-row">' +
-                '<span class="kpi-val" style="color:#a78bfa;">' + proCount + '</span>' +
-                '<span class="kpi-badge badge-purple">%' + conversionRate + ' Dönüşüm</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
+        kpi({ iconClass: 'icon-users', icon: ADMIN_ICONS.users, label: 'Toplam Kullanıcılar', value: totalUsers, badge: 'Tüm Zamanlar', badgeClass: 'badge-green' }) +
+        kpi({ iconClass: 'icon-today', icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', pulse: true, highlight: true, label: 'Bugün Gelen Kullanıcılar', value: '+' + todayUsers, valClass: 'green', badge: 'Bugün', badgeClass: 'badge-pulse' }) +
+        kpi({ iconClass: 'icon-users', icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>', label: spec.labelText + ' Yeni Kayıt', value: '+' + periodUsers, badge: spec.pillText, badgeClass: 'badge-purple' }) +
+        kpi({ iconClass: 'icon-revenue', icon: ADMIN_ICONS.dollar, label: 'Toplam Gelir', value: '$' + adminMoney0(totalRevenue), valClass: 'green', badge: 'Dönem: $' + adminMoney0(periodRevenue), badgeClass: 'badge-emerald' }) +
+        kpi({ iconClass: 'icon-pro', icon: ADMIN_ICONS.star, label: 'Pro Üyeler', value: proCount, valClass: 'accent', badge: '%' + conversionRate + ' Dönüşüm', badgeClass: 'badge-purple' }) +
       '</div>' +
 
       '<div class="overview-charts-row">' +
         '<div class="s-card">' +
-          '<div class="s-card-header">' +
-            '<div class="header-icon" style="background:rgba(124,109,250,0.12);color:#a78bfa;">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
-            '</div>' +
-            '<div><h2>Kullanıcı Büyümesi</h2><p>' + periodLabelText + ' kayıt olan yeni kullanıcı trendi</p></div>' +
-            '<div class="chart-corner-stat">' +
-              '<span class="corner-val">+' + periodUsers + '</span>' +
-              '<span class="corner-lbl">' + periodPillText + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="s-card-body" style="padding-top:0.5rem;">' +
-            '<div id="overviewUserGrowthChart"></div>' +
-          '</div>' +
+          chartHeader('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', '', 'Kullanıcı Büyümesi', spec.labelText + ' kayıt olan yeni kullanıcı trendi', '', '+' + periodUsers) +
+          '<div class="s-card-body"><div id="overviewUserGrowthChart"></div></div>' +
         '</div>' +
-
         '<div class="s-card">' +
-          '<div class="s-card-header">' +
-            '<div class="header-icon" style="background:rgba(16,185,129,0.12);color:#34d399;">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' +
-            '</div>' +
-            '<div><h2>Gelir İstatistiği ($)</h2><p>' + periodLabelText + ' elde edilen Pro abonelik gelirleri</p></div>' +
-            '<div class="chart-corner-stat">' +
-              '<span class="corner-val text-emerald">$' + periodRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '</span>' +
-              '<span class="corner-lbl">' + periodPillText + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="s-card-body" style="padding-top:0.5rem;">' +
-            '<div id="overviewRevenueChart"></div>' +
-          '</div>' +
+          chartHeader(ADMIN_ICONS.chart, 'tone-green', 'Gelir İstatistiği ($)', spec.labelText + ' elde edilen Pro abonelik gelirleri', 'text-emerald', '$' + adminMoney0(periodRevenue)) +
+          '<div class="s-card-body"><div id="overviewRevenueChart"></div></div>' +
         '</div>' +
       '</div>' +
 
       '<div class="overview-bottom-row">' +
         '<div class="s-card">' +
-          '<div class="s-card-header">' +
-            '<div class="header-icon" style="background:rgba(168,85,247,0.12);color:#c084fc;">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>' +
-            '</div>' +
-            '<div><h2>Plan Dağılımı</h2><p>Kullanıcıların abonelik türü oranı</p></div>' +
-          '</div>' +
+          '<div class="s-card-header"><div class="header-icon">' + adminIconSvg('<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/>', 16) + '</div>' +
+            '<div><h2>Plan Dağılımı</h2><p>Kullanıcıların abonelik türü oranı</p></div></div>' +
           '<div class="s-card-body">' +
             '<div id="overviewPlanDonutChart"></div>' +
             '<div class="plan-summary-bars">' +
-              '<div class="plan-summary-item">' +
-                '<span class="plan-dot dot-pro"></span>' +
-                '<span class="plan-name">Pro Plan</span>' +
-                '<span class="plan-count">' + proCount + ' üye</span>' +
-                '<span class="plan-pct" style="color:#a78bfa;">%' + conversionRate + '</span>' +
-              '</div>' +
-              '<div class="plan-summary-item">' +
-                '<span class="plan-dot dot-free"></span>' +
-                '<span class="plan-name">Ücretsiz Plan</span>' +
-                '<span class="plan-count">' + freeCount + ' üye</span>' +
-                '<span class="plan-pct" style="color:#94a3b8;">%' + (100 - parseFloat(conversionRate)).toFixed(1) + '</span>' +
-              '</div>' +
+              '<div class="plan-summary-item"><span class="plan-dot dot-pro"></span><span class="plan-name">Pro Plan</span><span class="plan-count">' + proCount + ' üye</span><span class="plan-pct pro">%' + conversionRate + '</span></div>' +
+              '<div class="plan-summary-item"><span class="plan-dot dot-free"></span><span class="plan-name">Ücretsiz Plan</span><span class="plan-count">' + freeCount + ' üye</span><span class="plan-pct free">%' + (totalUsers > 0 ? (100 - proPct).toFixed(1) : '0.0') + '</span></div>' +
             '</div>' +
           '</div>' +
         '</div>' +
-
         '<div class="s-card">' +
-          '<div class="s-card-header">' +
-            '<div class="header-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>' +
-            '</div>' +
+          '<div class="s-card-header"><div class="header-icon tone-blue">' + adminIconSvg('<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>', 16) + '</div>' +
             '<div><h2>Son Kayıt Olan Kullanıcılar</h2><p>Platforma en son katılan ' + sortedUsers.length + ' üye</p></div>' +
-            '<button class="btn btn-ghost btn-sm" onclick="switchPanel(\'panel-users\')" style="margin-left:auto;font-size:11px;padding:4px 10px;">' +
-              'Tümünü Gör →' +
-            '</button>' +
-          '</div>' +
-          '<div class="s-card-body" style="padding:0;">' +
-            '<div class="overview-user-list">' +
-              recentUsersHtml +
-            '</div>' +
-          '</div>' +
+            '<div class="header-actions"><button type="button" class="btn btn-ghost btn-sm" data-goto-panel="panel-users">Tümünü Gör →</button></div></div>' +
+          '<div class="s-card-body flush"><div class="overview-user-list">' + recentUsersHtml + '</div></div>' +
         '</div>' +
       '</div>' +
     '</div>';
 
-
+  // Dönem düğmeleri ve "Tümünü Gör" için tek dinleyici
+  container.onclick = function(e) {
+    var pbtn = e.target.closest('[data-period]');
+    if (pbtn) { window.changeOverviewPeriod(pbtn.getAttribute('data-period')); return; }
+    var go = e.target.closest('[data-goto-panel]');
+    if (go) switchPanel(go.getAttribute('data-goto-panel'));
+  };
 
   if (typeof ApexCharts === 'undefined') {
-    wwLog.warn('⚠️ ApexCharts henüz yüklenmedi');
+    wwLog.warn('ApexCharts henüz yüklenmedi');
     return;
   }
 
-  // Render ApexCharts after next paint frame so DOM container dimensions are resolved
+  // DOM boyutları çözülsün diye bir sonraki karede çiz
   setTimeout(function() {
-    // 1. User Growth Area Chart
+    // Panel/dönem hızlıca değişirse eski çağrı yeni DOM'u çizmesin
+    if (document.getElementById('overview-content') !== container) return;
+    if (adminState.overviewPeriod !== period) return;
+
     var userChartEl = document.getElementById('overviewUserGrowthChart');
     if (userChartEl) {
-      var userChartOptions = adminApex(theme, {
+      adminState.charts.overviewUserChart = new ApexCharts(userChartEl, adminApex(theme, {
         series: [{ name: 'Yeni Kullanıcı', data: userCounts }],
-        chart: {
-          type: 'area',
-          height: 280,
-          zoom: { enabled: false },
-          animations: { enabled: false }
-        },
-        colors: ['#7c6dfa'],
-        fill: {
-          type: 'gradient',
-          gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.45,
-            opacityTo: 0.05,
-            stops: [0, 95, 100]
-          }
-        },
+        chart: { type: 'area', height: 280, zoom: { enabled: false }, animations: { enabled: false } },
+        colors: [theme.accent],
+        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.03, stops: [0, 95, 100] } },
         stroke: { curve: 'smooth', width: 2.5 },
-        dataLabels: { enabled: false },
-        xaxis: {
-          categories: bucketLabels,
-          tickAmount: period === 'month' ? 6 : undefined,
-          labels: { style: adminAxisLabels(theme) },
-          axisBorder: { show: false },
-          axisTicks: { show: false }
-        },
-        yaxis: {
-          labels: {
-            style: adminAxisLabels(theme),
-            formatter: function(val) { return Math.round(val); }
-          }
-        },
-        tooltip: {
-          y: { formatter: function(val) { return val + ' kullanıcı'; } }
-        }
-      });
-      adminState.charts.overviewUserChart = new ApexCharts(userChartEl, userChartOptions);
+        xaxis: adminCategoryAxis(bucketLabels, theme),
+        yaxis: adminCountAxis(userCounts, theme),
+        tooltip: { y: { formatter: function(val) { return val + ' kullanıcı'; } } }
+      }));
       adminState.charts.overviewUserChart.render();
     }
 
-    // 2. Revenue Column Chart
     var revenueChartEl = document.getElementById('overviewRevenueChart');
     if (revenueChartEl) {
-      var revChartOptions = adminApex(theme, {
+      adminState.charts.overviewRevenueChart = new ApexCharts(revenueChartEl, adminApex(theme, {
         series: [{ name: 'Gelir ($)', data: revenueAmounts }],
-        chart: {
-          type: 'bar',
-          height: 280,
-          animations: { enabled: false }
-        },
+        chart: { type: 'bar', height: 280, animations: { enabled: false } },
         plotOptions: {
           bar: {
-            borderRadius: window.WwChart ? adminBarRadius() : (period === 'month' ? 3 : 6),
+            borderRadius: adminBarRadius(),
             borderRadiusApplication: 'end',
-            columnWidth: adminBarWidth(revenueChartEl, bucketLabels.length,
-              period === 'month' ? '60%' : (period === 'year' ? '50%' : '38%')),
-            distributed: false
+            columnWidth: adminBarWidth(revenueChartEl, bucketLabels.length, period === 'month' ? '60%' : (period === 'year' ? '50%' : '38%'))
           }
         },
-        colors: ['#10b981'],
-        fill: {
-          type: 'gradient',
-          gradient: {
-            shade: 'light',
-            type: 'vertical',
-            shadeIntensity: 0.25,
-            gradientToColors: ['#34d399'],
-            inverseColors: true,
-            opacityFrom: 0.95,
-            opacityTo: 0.75,
-            stops: [0, 100]
-          }
-        },
-        dataLabels: { enabled: false },
-        xaxis: {
-          categories: bucketLabels,
-          tickAmount: period === 'month' ? 6 : undefined,
-          labels: { style: adminAxisLabels(theme) },
-          axisBorder: { show: false },
-          axisTicks: { show: false }
-        },
-        yaxis: {
-          labels: {
-            style: adminAxisLabels(theme),
-            formatter: function(val) { return '$' + Math.round(val); }
-          }
-        },
-        tooltip: {
-          y: { formatter: function(val) { return '$' + Number(val).toFixed(2); } }
-        }
-      });
-      adminState.charts.overviewRevenueChart = new ApexCharts(revenueChartEl, revChartOptions);
+        colors: [theme.green],
+        fill: { type: 'solid', opacity: 0.85 },
+        xaxis: adminCategoryAxis(bucketLabels, theme),
+        yaxis: adminMoneyAxis(revenueAmounts, theme),
+        tooltip: { y: { formatter: function(val) { return '$' + Number(val).toFixed(2); } } }
+      }));
       adminState.charts.overviewRevenueChart.render();
     }
 
-    // 3. Plan Donut Chart
     var donutChartEl = document.getElementById('overviewPlanDonutChart');
     if (donutChartEl) {
       var donutColors = adminChartColors(theme);
       var donutFont = adminChartFont();
-      var donutOptions = adminApex(theme, {
+      adminState.charts.overviewPlanDonut = new ApexCharts(donutChartEl, adminApex(theme, {
         series: [freeCount, proCount],
         labels: ['Ücretsiz', 'Pro'],
-        chart: {
-          type: 'donut',
-          height: 220,
-          animations: { enabled: false }
-        },
-        colors: ['#475569', '#7c6dfa'],
+        chart: { type: 'donut', height: 220, animations: { enabled: false } },
+        colors: [theme.muted, theme.accent],
         stroke: { width: 0 },
-        dataLabels: { enabled: false },
         legend: { show: false },
         plotOptions: {
           pie: {
@@ -1748,184 +1256,162 @@ function renderOverviewContent(period) {
                 show: true,
                 name: { show: true, fontSize: '12px', fontFamily: donutFont, color: donutColors.muted },
                 value: { show: true, fontSize: '20px', fontFamily: donutFont, fontWeight: 700, color: donutColors.text },
-                total: {
-                  show: true,
-                  label: 'Toplam',
-                  fontSize: '12px',
-                  fontFamily: donutFont,
-                  color: donutColors.muted,
-                  formatter: function() { return totalUsers; }
-                }
+                total: { show: true, label: 'Toplam', fontSize: '12px', fontFamily: donutFont, color: donutColors.muted, formatter: function() { return totalUsers; } }
               }
             }
           }
         },
-        tooltip: {
-          y: {
-            formatter: function(val) {
-              return val + ' kullanıcı (%' + ((val / (totalUsers || 1)) * 100).toFixed(1) + ')';
-            }
-          }
-        }
-      });
-      adminState.charts.overviewPlanDonut = new ApexCharts(donutChartEl, donutOptions);
+        tooltip: { y: { formatter: function(val) { return val + ' kullanıcı (%' + ((val / (totalUsers || 1)) * 100).toFixed(1) + ')'; } } }
+      }));
       adminState.charts.overviewPlanDonut.render();
     }
   }, 50);
 }
 
 window.renderOverviewContent = renderOverviewContent;
-window.changeOverviewPeriod = window.changeOverviewPeriod || changeOverviewPeriod;
 window.destroyOverviewCharts = destroyOverviewCharts;
 window.loadAnalyticsData = loadAnalyticsData;
-window.renderPricesContent = renderPricesContent;
 window.renderPaymentSettingsUI = renderPaymentSettingsUI;
 window.initReferralModal = initReferralModal;
 window.renderReferralCodesTable = renderReferralCodesTable;
 
 // ============================================================
-// PARTNER BAŞVURULARI TABLOSU VE İŞLEMLERİ
+// ORTAK: durum rozeti, arama kutusu, panel yeniden çizimi
 // ============================================================
+var ADMIN_CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+var ADMIN_CLOCK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+var ADMIN_X_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
 
+// status: 'pending' | 'approved' | 'rejected'; labels: { pending, approved, rejected }
+function adminStatusPill(status, labels) {
+  if (status === 'approved') return '<span class="status-pill approved">' + ADMIN_CHECK_SVG + escapeHtml(labels.approved) + '</span>';
+  if (status === 'rejected') return '<span class="status-pill rejected">' + ADMIN_X_SVG + escapeHtml(labels.rejected) + '</span>';
+  return '<span class="status-pill pending">' + ADMIN_CLOCK_SVG + escapeHtml(labels.pending) + '</span>';
+}
+
+function adminFilterButtons(items, current, attr) {
+  return '<div class="filter-group">' + items.map(function(it) {
+    return '<button type="button" class="filter-btn' + (current === it.key ? ' active' : '') + '" aria-pressed="' + (current === it.key) + '" ' + attr + '="' + it.key + '">' +
+      escapeHtml(it.label) + ' (' + it.count + ')</button>';
+  }).join('') + '</div>';
+}
+
+function adminStatCard(label, valueHtml, valueClass) {
+  return '<div class="stat-card"><div class="stat-label">' + label + '</div><div class="stat-value ' + (valueClass || '') + '">' + valueHtml + '</div></div>';
+}
+
+function adminSearchBox(id, value, placeholder, width) {
+  return '<div class="search-wrap">' + adminSvg('search', '', 14) +
+    '<input type="text" id="' + id + '" class="search-input" placeholder="' + escapeHtml(placeholder) + '" value="' + escapeHtml(value) + '" aria-label="' + escapeHtml(placeholder) + '" style="width:' + (width || 230) + 'px" /></div>';
+}
+
+// Arama kutusu yazarken panel yeniden çizilir; odak ve imleç korunur
+function adminRerenderKeepingFocus(inputId, render) {
+  var f = captureInputFocus(inputId);
+  render();
+  restoreInputFocus(inputId, f.had, f.caret);
+}
+
+function adminInstagramUrl(instagram) {
+  var raw = String(instagram || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  var handle = raw.replace(/^@/, '').replace(/[^\w.]/g, '');
+  return handle ? 'https://instagram.com/' + handle : '';
+}
+
+function adminInstagramHandle(instagram) {
+  return String(instagram || '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/\/+$/, '').trim();
+}
+
+// ============================================================
+// PARTNER BAŞVURULARI
+// ============================================================
 var currentPartnerAppFilter = 'all';
 var partnerAppSearchTerm = '';
+var PARTNER_STATUS_LABELS = { pending: 'Beklemede', approved: 'Onaylandı', rejected: 'Reddedildi' };
 
 function renderPartnerApplicationsTable() {
   var container = document.getElementById('partner-applications-container');
   if (!container) return;
 
   var apps = adminState.partnerApplications || [];
-  
-  var totalCount = apps.length;
   var pendingCount = apps.filter(function(a) { return a.status === 'pending'; }).length;
   var approvedCount = apps.filter(function(a) { return a.status === 'approved'; }).length;
   var rejectedCount = apps.filter(function(a) { return a.status === 'rejected'; }).length;
 
+  var term = partnerAppSearchTerm.toLowerCase();
   var filtered = apps.filter(function(a) {
     if (currentPartnerAppFilter !== 'all' && a.status !== currentPartnerAppFilter) return false;
-    if (partnerAppSearchTerm) {
-      var term = partnerAppSearchTerm.toLowerCase();
-      var userStr = ((a.user && a.user.email) || '').toLowerCase();
-      var instaStr = (a.instagram || '').toLowerCase();
-      var noteStr = (a.note || '').toLowerCase();
-      return userStr.indexOf(term) !== -1 || instaStr.indexOf(term) !== -1 || noteStr.indexOf(term) !== -1;
-    }
-    return true;
+    if (!term) return true;
+    return [(a.user && a.user.email), a.instagram, a.note].some(function(v) {
+      return String(v || '').toLowerCase().indexOf(term) !== -1;
+    });
   });
 
-  var html = '';
+  var rows = filtered.map(function(item) {
+    var userEmail = (item.user && item.user.email) || '—';
+    var handle = adminInstagramHandle(item.instagram);
+    var igUrl = safeUrl(adminInstagramUrl(item.instagram));
+    var id = escapeHtml(item.id);
+    var note = String(item.note || '');
+    var noteShort = note ? (note.length > 40 ? note.substring(0, 40) + '…' : note) : '—';
 
-  // KPI Cards
-  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-bottom:1.5rem;">';
-  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Toplam Başvuru</div><div class="stat-value" style="font-size:1.5rem; color:var(--text);">' + totalCount + '</div></div>';
-  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Bekleyen</div><div class="stat-value" style="font-size:1.5rem; color:#eab308;">' + pendingCount + '</div></div>';
-  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Onaylanan</div><div class="stat-value" style="font-size:1.5rem; color:#22c55e;">' + approvedCount + '</div></div>';
-  html += '  <div class="stat-card" style="padding:1rem;"><div class="stat-label">Reddedilen</div><div class="stat-value" style="font-size:1.5rem; color:#ef4444;">' + rejectedCount + '</div></div>';
-  html += '</div>';
+    var deleteBtn = '<button type="button" class="btn btn-danger btn-sm" data-pa-delete="' + id + '" data-user-id="' + escapeHtml(item.user_id || '') + '" data-user-email="' + escapeHtml((item.user && item.user.email) || '') + '" title="Başvuruyu ve kazanç kaydını sil">Sil</button>';
 
-  // Filters & Search Bar
-  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">';
-  html += '  <div style="display:flex; gap:6px;">';
-  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'all' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'all\')">Tümü (' + totalCount + ')</button>';
-  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'pending' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'pending\')">Bekleyen (' + pendingCount + ')</button>';
-  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'approved' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'approved\')">Onaylanan (' + approvedCount + ')</button>';
-  html += '    <button class="payout-filter-btn' + (currentPartnerAppFilter === 'rejected' ? ' active' : '') + '" onclick="setPartnerAppFilter(\'rejected\')">Reddedilen (' + rejectedCount + ')</button>';
-  html += '  </div>';
-  html += '  <div class="search-wrap">';
-  html += '    <input type="text" id="partner-app-search" class="search-input" placeholder="Kullanıcı veya Instagram ara..." value="' + (partnerAppSearchTerm ? partnerAppSearchTerm.replace(/"/g, '&quot;') : '') + '" oninput="handlePartnerAppSearch(this.value)" style="width:230px;" />';
-  html += '  </div>';
-  html += '</div>';
+    var actions;
+    if (item.status === 'pending') {
+      actions = '<button type="button" class="btn btn-success btn-sm" data-pa-open="' + id + '" data-action="approve">' + ADMIN_CHECK_SVG.replace('<svg ', '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" ') + 'Onayla &amp; Kod Ata</button>' +
+        '<button type="button" class="btn btn-danger btn-sm" data-pa-open="' + id + '" data-action="reject">Reddet</button>' + deleteBtn;
+    } else if (item.status === 'approved') {
+      actions = '<span class="inline-note text-green">' + ADMIN_CHECK_SVG + 'Kod Tanımlandı</span>' + deleteBtn;
+    } else {
+      actions = '<span class="inline-note text-red"' + (item.admin_note ? ' title="' + escapeHtml(item.admin_note) + '"' : '') + '>Reddedildi</span>' + deleteBtn;
+    }
 
-  // Table
-  html += '<div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">';
-  html += '  <div style="overflow-x:auto;">';
-  html += '    <table class="ww-table">';
-  html += '      <thead>';
-  html += '        <tr>';
-  html += '          <th>Tarih</th>';
-  html += '          <th>Kullanıcı</th>';
-  html += '          <th>Instagram</th>';
-  html += '          <th>Kitle Boyutu</th>';
-  html += '          <th>Kripto</th>';
-  html += '          <th>Tanıtım Notu</th>';
-  html += '          <th>Durum</th>';
-  html += '          <th style="text-align:right;">İşlem</th>';
-  html += '        </tr>';
-  html += '      </thead>';
-  html += '      <tbody>';
+    return '<tr>' +
+      '<td class="muted nowrap">' + formatDateFull(item.created_at) + '</td>' +
+      '<td><strong>' + escapeHtml(userEmail) + '</strong></td>' +
+      '<td>' + (igUrl ? '<a href="' + igUrl + '" target="_blank" rel="noopener noreferrer" class="info-link">@' + escapeHtml(handle) + ' ↗</a>' : '<span class="text-muted">—</span>') + '</td>' +
+      '<td><strong>' + escapeHtml(item.follower_count || '—') + '</strong></td>' +
+      '<td>' + (item.uses_crypto ? '<span class="inline-note text-green">' + ADMIN_CHECK_SVG + 'Evet</span>' : '<span class="text-muted">Hayır</span>') + '</td>' +
+      '<td class="muted clip" title="' + escapeHtml(note) + '">' + escapeHtml(noteShort) + '</td>' +
+      '<td>' + adminStatusPill(item.status, PARTNER_STATUS_LABELS) + '</td>' +
+      '<td class="right"><div class="table-action-btns">' + actions + '</div></td>' +
+    '</tr>';
+  }).join('');
 
-  if (filtered.length === 0) {
-    html += '<tr><td colspan="8" style="text-align:center; padding:3rem; color:var(--muted); font-size:14px;">Eşleşen partner başvurusu bulunamadı.</td></tr>';
-  } else {
-    filtered.forEach(function(item) {
-      var userEmail = (item.user && item.user.email) || '—';
-      var dateStr = typeof formatDateFull === 'function' ? formatDateFull(item.created_at) : (item.created_at || '—');
-      
-      var instaHandle = (item.instagram || '').replace(/^@/, '').trim();
-      var instaUrl = item.instagram.startsWith('http') ? item.instagram : ('https://instagram.com/' + instaHandle);
+  container.innerHTML =
+    '<div class="stats-grid stats-grid-lg">' +
+      adminStatCard('Toplam Başvuru', apps.length) +
+      adminStatCard('Bekleyen', pendingCount, 'amber') +
+      adminStatCard('Onaylanan', approvedCount, 'green') +
+      adminStatCard('Reddedilen', rejectedCount, 'red') +
+    '</div>' +
+    '<div class="toolbar">' +
+      adminFilterButtons([
+        { key: 'all', label: 'Tümü', count: apps.length },
+        { key: 'pending', label: 'Bekleyen', count: pendingCount },
+        { key: 'approved', label: 'Onaylanan', count: approvedCount },
+        { key: 'rejected', label: 'Reddedilen', count: rejectedCount }
+      ], currentPartnerAppFilter, 'data-pa-filter') +
+      adminSearchBox('partner-app-search', partnerAppSearchTerm, 'Kullanıcı veya Instagram ara...') +
+    '</div>' +
+    '<div class="table-wrap"><div class="table-scroll"><table class="ww-table">' +
+      '<thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Instagram</th><th>Kitle Boyutu</th><th>Kripto</th><th>Tanıtım Notu</th><th>Durum</th><th class="right">İşlem</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="8" class="empty-cell"><div class="empty-state">Eşleşen partner başvurusu bulunamadı.</div></td></tr>') + '</tbody>' +
+    '</table></div></div>';
 
-      var cryptoBadge = item.uses_crypto 
-        ? '<span style="color:#22c55e; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Evet</span>'
-        : '<span style="color:var(--muted); font-size:11px;">Hayır</span>';
-
-      var statusBadge = '';
-      if (item.status === 'pending') statusBadge = '<span class="badge-status badge-pending">⏳ Beklemede</span>';
-      else if (item.status === 'approved') statusBadge = '<span class="badge-status badge-approved">✅ Onaylandı</span>';
-      else if (item.status === 'rejected') statusBadge = '<span class="badge-status badge-rejected">❌ Reddedildi</span>';
-
-      var noteShort = item.note ? (item.note.length > 40 ? item.note.substring(0, 40) + '...' : item.note) : '—';
-
-      var deleteBtn = '\
-        <button class="btn btn-ghost btn-sm" onclick="confirmDeletePartnerApp(\'' + item.id + '\', \'' + (item.user_id || '') + '\', \'' + ((item.user && item.user.email) || '').replace(/'/g, "\\'") + '\')" title="Başvuruyu ve Kazanç Kaydını Sil" style="color:#ef4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.06); padding:3px 8px; font-size:11.5px; display:inline-flex; align-items:center; gap:4px; border-radius:4px; cursor:pointer;">\
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>\
-          Sil\
-        </button>';
-
-      var actionBtns = '';
-      if (item.status === 'pending') {
-        actionBtns = '\
-          <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">\
-            <button class="btn btn-primary btn-sm" onclick="openPartnerAppModal(\'' + item.id + '\', \'approve\')" style="padding:3px 10px; font-size:11.5px; background:#22c55e; border-color:#22c55e;">Onayla & Kod Ata</button>\
-            <button class="btn btn-danger btn-sm" onclick="openPartnerAppModal(\'' + item.id + '\', \'reject\')" style="padding:3px 10px; font-size:11.5px;">Reddet</button>\
-            ' + deleteBtn + '\
-          </div>';
-      } else if (item.status === 'approved') {
-        actionBtns = '\
-          <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">\
-            <span style="color:#22c55e; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">\
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>\
-              Kod Tanımlandı\
-            </span>\
-            ' + deleteBtn + '\
-          </div>';
-      } else {
-        var reasonText = item.admin_note ? (' title="' + item.admin_note.replace(/"/g, '&quot;') + '"') : '';
-        actionBtns = '\
-          <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">\
-            <span style="color:#ef4444; font-size:12px;"' + reasonText + '>Reddedildi</span>\
-            ' + deleteBtn + '\
-          </div>';
-      }
-
-      html += '<tr>';
-      html += '  <td style="font-size:12px; color:var(--muted); white-space:nowrap;">' + dateStr + '</td>';
-      html += '  <td style="font-weight:600; color:var(--text);">' + (userEmail ? userEmail.replace(/[&<>"']/g, '') : '') + '</td>';
-      html += '  <td><a href="' + instaUrl.replace(/"/g, '&quot;') + '" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">@' + (instaHandle ? instaHandle.replace(/[&<>"']/g, '') : '') + ' ↗</a></td>';
-      html += '  <td><span style="font-size:12px; color:var(--text); font-weight:600;">' + (item.follower_count ? item.follower_count.replace(/[&<>"']/g, '') : '—') + '</span></td>';
-      html += '  <td>' + cryptoBadge + '</td>';
-      html += '  <td style="font-size:12px; color:var(--muted); max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="' + (item.note ? item.note.replace(/"/g, '&quot;') : '') + '">' + (noteShort ? noteShort.replace(/[&<>"']/g, '') : '') + '</td>';
-      html += '  <td>' + statusBadge + '</td>';
-      html += '  <td style="text-align:right;">' + actionBtns + '</td>';
-      html += '</tr>';
-    });
-  }
-
-  html += '      </tbody>';
-  html += '    </table>';
-  html += '  </div>';
-  html += '</div>';
-
-  container.innerHTML = html;
+  container.onclick = function(e) {
+    var f = e.target.closest('[data-pa-filter]');
+    if (f) { setPartnerAppFilter(f.getAttribute('data-pa-filter')); return; }
+    var open = e.target.closest('[data-pa-open]');
+    if (open) { openPartnerAppModal(open.getAttribute('data-pa-open'), open.getAttribute('data-action')); return; }
+    var del = e.target.closest('[data-pa-delete]');
+    if (del) confirmDeletePartnerApp(del.getAttribute('data-pa-delete'), del.getAttribute('data-user-id'), del.getAttribute('data-user-email'));
+  };
+  var search = document.getElementById('partner-app-search');
+  if (search) search.oninput = function() { handlePartnerAppSearch(search.value); };
 }
 
 function setPartnerAppFilter(filter) {
@@ -1937,63 +1423,62 @@ function handlePartnerAppSearch(val) {
   partnerAppSearchTerm = val;
   clearTimeout(window._partnerAppSearchTimeout);
   window._partnerAppSearchTimeout = setTimeout(function() {
-    renderPartnerApplicationsTable();
+    adminRerenderKeepingFocus('partner-app-search', renderPartnerApplicationsTable);
   }, 250);
 }
 
+function findPartnerApp(appId) {
+  return (adminState.partnerApplications || []).find(function(a) { return String(a.id) === String(appId); });
+}
+
 function openPartnerAppModal(appId, actionType) {
-  var app = (adminState.partnerApplications || []).find(function(a) { return a.id === appId; });
+  var app = findPartnerApp(appId);
   if (!app) return;
 
   var modal = document.getElementById('partner-app-modal');
   if (!modal) return;
 
-  document.getElementById('pa-modal-id').value = appId;
+  document.getElementById('pa-modal-id').value = app.id;
   document.getElementById('pa-modal-type').value = actionType;
+  document.getElementById('pa-modal-user').textContent = (app.user && app.user.email) || '—';
 
-  var userEmail = (app.user && app.user.email) || '—';
-  document.getElementById('pa-modal-user').textContent = userEmail;
-
-  var instaHandle = (app.instagram || '').replace(/^@/, '').trim();
+  var handle = adminInstagramHandle(app.instagram);
+  var igUrl = adminInstagramUrl(app.instagram);
   var instaEl = document.getElementById('pa-modal-instagram');
-  instaEl.textContent = '@' + instaHandle;
-  instaEl.href = app.instagram.startsWith('http') ? app.instagram : ('https://instagram.com/' + instaHandle);
+  instaEl.textContent = handle ? '@' + handle : '—';
+  if (/^https?:\/\//i.test(igUrl)) {
+    instaEl.href = igUrl;
+  } else {
+    instaEl.removeAttribute('href');
+  }
 
   document.getElementById('pa-modal-followers').textContent = app.follower_count || '—';
-  document.getElementById('pa-modal-crypto').textContent = app.uses_crypto ? 'Evet (BTC/LTC)' : 'Hayır';
-  document.getElementById('pa-modal-crypto').style.color = app.uses_crypto ? '#22c55e' : 'var(--muted)';
+  var cryptoEl = document.getElementById('pa-modal-crypto');
+  cryptoEl.textContent = app.uses_crypto ? 'Evet (BTC/LTC)' : 'Hayır';
+  cryptoEl.classList.toggle('text-green', !!app.uses_crypto);
+  cryptoEl.classList.toggle('text-muted', !app.uses_crypto);
   document.getElementById('pa-modal-user-note').textContent = app.note || 'Not girilmemiş';
 
   var approveFields = document.getElementById('pa-approve-fields');
   var confirmBtn = document.getElementById('confirm-partner-app-btn');
   var titleEl = document.getElementById('partner-app-modal-title');
   var noteLabel = document.getElementById('pa-note-label');
-  var noteInput = document.getElementById('pa-modal-admin-note');
-  noteInput.value = '';
+  var noteHelp = document.getElementById('pa-note-help');
+  document.getElementById('pa-modal-admin-note').value = '';
 
-  if (actionType === 'approve') {
-    titleEl.textContent = 'Partner Başvurusunu Onayla & Kod Tanımla';
-    approveFields.style.display = 'flex';
-    confirmBtn.textContent = 'Onayla & Kodu Oluştur';
-    confirmBtn.className = 'btn btn-primary';
-    confirmBtn.style.background = '#22c55e';
-    confirmBtn.style.borderColor = '#22c55e';
-    noteLabel.textContent = 'Admin Notu (Opsiyonel)';
-    
-    var suggestedCode = instaHandle.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8) + '10';
-    document.getElementById('pa-code-input').value = suggestedCode;
+  var approving = actionType === 'approve';
+  approveFields.hidden = !approving;
+  titleEl.textContent = approving ? 'Partner Başvurusunu Onayla & Kod Tanımla' : 'Partner Başvurusunu Reddet';
+  confirmBtn.textContent = approving ? 'Onayla & Kodu Oluştur' : 'Başvuruyu Reddet';
+  confirmBtn.className = approving ? 'btn btn-primary' : 'btn btn-danger btn-danger-solid';
+  noteLabel.textContent = approving ? 'Admin Notu (Opsiyonel)' : 'Reddetme Gerekçesi (Kullanıcıya gösterilir) *';
+  if (noteHelp) noteHelp.textContent = 'Bu açıklama kullanıcının panelinde gösterilir.';
+
+  if (approving) {
+    document.getElementById('pa-code-input').value = handle.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8) + '10';
     document.getElementById('pa-discount-input').value = '10';
     document.getElementById('pa-commission-input').value = '4';
-    var paCommYrEl = document.getElementById('pa-commission-yearly-input');
-    if (paCommYrEl) paCommYrEl.value = '25';
-  } else {
-    titleEl.textContent = 'Partner Başvurusunu Reddet';
-    approveFields.style.display = 'none';
-    confirmBtn.textContent = 'Başvuruyu Reddet';
-    confirmBtn.className = 'btn btn-danger';
-    confirmBtn.style.background = '';
-    confirmBtn.style.borderColor = '';
-    noteLabel.textContent = 'Reddetme Gerekçesi (Kullanıcıya gösterilir) *';
+    document.getElementById('pa-commission-yearly-input').value = '25';
   }
 
   modal.classList.add('open');
@@ -2012,55 +1497,49 @@ async function confirmPartnerAppAction() {
   var code = null;
   var discount = 10;
   var commission = 4;
+  var commissionYearly = 25;
 
   if (actionType === 'approve') {
     code = document.getElementById('pa-code-input').value.trim().toUpperCase();
     // 0 geçerli bir değerdir (ör. komisyonsuz promosyon kodu); yalnızca boş/geçersizse varsayılan kullanılır
     discount = window.adminNumOr(document.getElementById('pa-discount-input').value, 10, 0, 100);
     commission = window.adminNumOr(document.getElementById('pa-commission-input').value, 4, 0);
-    var paCommYr = document.getElementById('pa-commission-yearly-input');
-    var commissionYearly = paCommYr ? window.adminNumOr(paCommYr.value, 25, 0) : 25;
+    commissionYearly = window.adminNumOr(document.getElementById('pa-commission-yearly-input').value, 25, 0);
 
     if (!code) {
-      if (typeof showToast === 'function') showToast('Lütfen referans kodu girin.', 'error');
-      else alert('Lütfen referans kodu girin.');
+      showToast('Lütfen referans kodu girin.', 'error');
       return;
     }
-  } else {
-    if (!adminNote) {
-      if (typeof showToast === 'function') showToast('Lütfen ret gerekçesi giriniz (Kullanıcı bilgilendirmesi için zorunludur).', 'error');
-      else alert('Lütfen ret gerekçesi giriniz.');
-      return;
-    }
+  } else if (!adminNote) {
+    showToast('Lütfen ret gerekçesi giriniz (kullanıcı bilgilendirmesi için zorunludur).', 'error');
+    return;
   }
 
   var btn = document.getElementById('confirm-partner-app-btn');
+  var label = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'İşleniyor...';
 
   try {
     var ok = await reviewPartnerApplication(appId, actionType === 'approve' ? 'approved' : 'rejected', adminNote, code, discount, commission, commissionYearly);
-    if (ok) {
-      closePartnerAppModal();
-    }
+    if (ok) closePartnerAppModal();
   } finally {
     btn.disabled = false;
+    btn.textContent = label;
   }
 }
 
 function confirmDeletePartnerApp(appId, userId, userEmail) {
   var userText = userEmail ? ('"' + userEmail + '" kullanıcısının ') : 'Bu ';
   var msg = userText + 'partner başvurusunu ve bağlı tüm kazanç/referans kodu kayıtlarını silmek istediğinize emin misiniz?\n\n' +
-    '⚠️ Dikkat:\n' +
+    'Dikkat:\n' +
     '1. Kullanıcının tanımlanmış referans kodu ve kazanç tablosu silinecektir.\n' +
     '2. Kullanıcı /my-earnings sayfasından tekrar sıfırdan başvuru yapabilecek konuma gelecektir.';
 
   if (!confirm(msg)) return;
 
-  if (typeof deletePartnerApplication === 'function') {
-    deletePartnerApplication(appId, userId);
-  } else if (window.deletePartnerApplication) {
-    window.deletePartnerApplication(appId, userId);
+  if (typeof window.deletePartnerApplication === 'function') {
+    window.deletePartnerApplication(appId, userId || null);
   }
 }
 
@@ -2073,173 +1552,106 @@ window.confirmPartnerAppAction = confirmPartnerAppAction;
 window.confirmDeletePartnerApp = confirmDeletePartnerApp;
 
 // ============================================================
-// PAYOUT REQUESTS MANAGEMENT (ÇEKİM TALEPLERİ)
+// ÇEKİM TALEPLERİ
 // ============================================================
-
 var currentPayoutFilter = 'all';
 var payoutSearchTerm = '';
+var PAYOUT_STATUS_LABELS = { pending: 'Beklemede', approved: 'Ödendi', rejected: 'Reddedildi' };
+
+function payoutUser(item) {
+  return item.user_profiles || (adminState.users || []).find(function(u) { return u.id === item.user_id; }) || {};
+}
 
 function renderPayoutsTable() {
   var container = document.getElementById('payouts-admin-container');
   if (!container) return;
 
   var payouts = adminState.payouts || [];
-  
-  var totalCount = payouts.length;
   var pendingList = payouts.filter(function(p) { return p.status === 'pending'; });
   var approvedList = payouts.filter(function(p) { return p.status === 'approved'; });
   var rejectedList = payouts.filter(function(p) { return p.status === 'rejected'; });
+  var sum = function(list) { return list.reduce(function(acc, p) { return acc + (parseFloat(p.amount) || 0); }, 0); };
 
-  var pendingCount = pendingList.length;
-  var approvedCount = approvedList.length;
-  var rejectedCount = rejectedList.length;
-
-  var pendingSum = pendingList.reduce(function(sum, p) { return sum + (parseFloat(p.amount) || 0); }, 0);
-  var approvedSum = approvedList.reduce(function(sum, p) { return sum + (parseFloat(p.amount) || 0); }, 0);
-
+  var term = payoutSearchTerm.toLowerCase();
   var filtered = payouts.filter(function(item) {
     if (currentPayoutFilter !== 'all' && item.status !== currentPayoutFilter) return false;
-    if (payoutSearchTerm) {
-      var term = payoutSearchTerm.toLowerCase();
-      var user = item.user_profiles || (adminState.users || []).find(function(u) { return u.id === item.user_id; }) || {};
-      var userEmail = (user.email || '').toLowerCase();
-      var addr = (item.payout_address || '').toLowerCase();
-      var note = (item.admin_note || '').toLowerCase();
-      var curr = (item.currency || '').toLowerCase();
-      return userEmail.indexOf(term) !== -1 || addr.indexOf(term) !== -1 || note.indexOf(term) !== -1 || curr.indexOf(term) !== -1;
-    }
-    return true;
+    if (!term) return true;
+    var user = payoutUser(item);
+    return [user.email, item.payout_address, item.admin_note, item.currency].some(function(v) {
+      return String(v || '').toLowerCase().indexOf(term) !== -1;
+    });
   });
 
-  var html = '';
+  var rows = filtered.map(function(item) {
+    var user = payoutUser(item);
+    var amountVal = parseFloat(item.amount) || 0;
+    var curr = String(item.currency || 'LTC').toUpperCase();
+    var id = escapeHtml(item.id);
+    var addr = String(item.payout_address || '');
+    var note = String(item.admin_note || '');
+    var noteShort = note ? (note.length > 35 ? note.substring(0, 35) + '…' : note) : '—';
 
-  // KPI Summary Cards
-  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">';
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Toplam Çekim Talebi</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:var(--text);">' + totalCount + '</div>';
-  html += '  </div>';
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Bekleyen Ödemeler</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#f59e0b;">$' + pendingSum.toFixed(2) + ' <span style="font-size:12px; font-weight:normal; color:var(--muted);">(' + pendingCount + ')</span></div>';
-  html += '  </div>';
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Tamamlanan Ödemeler</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#22c55e;">$' + approvedSum.toFixed(2) + ' <span style="font-size:12px; font-weight:normal; color:var(--muted);">(' + approvedCount + ')</span></div>';
-  html += '  </div>';
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Reddedilen Talepler</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#ef4444;">' + rejectedCount + '</div>';
-  html += '  </div>';
-  html += '</div>';
+    var actions;
+    if (item.status === 'pending') {
+      actions = '<button type="button" class="btn btn-success btn-sm" data-payout-open="' + id + '" data-action="approve">' + ADMIN_CHECK_SVG.replace('<svg ', '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" ') + 'Öde &amp; Onayla</button>' +
+        '<button type="button" class="btn btn-danger btn-sm" data-payout-open="' + id + '" data-action="reject">Reddet</button>';
+    } else if (item.status === 'approved') {
+      actions = '<span class="inline-note text-green">' + ADMIN_CHECK_SVG + 'Ödeme Yapıldı</span>';
+    } else {
+      actions = '<span class="inline-note text-red">Talep Reddedildi</span>';
+    }
 
-  // Filters & Search Bar
-  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">';
-  html += '  <div class="payout-filters">';
-  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'all' ? ' active' : '') + '" onclick="setPayoutFilter(\'all\')">Tümü (' + totalCount + ')</button>';
-  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'pending' ? ' active' : '') + '" onclick="setPayoutFilter(\'pending\')">Bekleyen (' + pendingCount + ')</button>';
-  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'approved' ? ' active' : '') + '" onclick="setPayoutFilter(\'approved\')">Ödenen (' + approvedCount + ')</button>';
-  html += '    <button class="payout-filter-btn' + (currentPayoutFilter === 'rejected' ? ' active' : '') + '" onclick="setPayoutFilter(\'rejected\')">Reddedilen (' + rejectedCount + ')</button>';
-  html += '  </div>';
-  html += '  <div class="search-wrap">';
-  html += '    <input type="text" id="payout-search-input" class="search-input" placeholder="Kullanıcı veya cüzdan ara..." value="' + (payoutSearchTerm ? payoutSearchTerm.replace(/"/g, '&quot;') : '') + '" oninput="handlePayoutSearch(this.value)" style="width:230px;" />';
-  html += '  </div>';
-  html += '</div>';
+    return '<tr>' +
+      '<td class="muted nowrap">' + formatDateFull(item.created_at) + '</td>' +
+      '<td><strong>' + escapeHtml(user.email || user.username || '—') + '</strong></td>' +
+      '<td><strong class="text-green">$' + amountVal.toFixed(2) + '</strong></td>' +
+      '<td><span class="crypto-badge ' + (curr === 'BTC' ? 'crypto-btc' : 'crypto-ltc') + '">' + escapeHtml(curr) + '</span></td>' +
+      '<td>' + (addr
+        ? '<div class="address-chip" role="button" tabindex="0" data-copy-address="' + escapeHtml(addr) + '" title="Kopyalamak için tıklayın"><span class="addr-text">' + escapeHtml(addr) + '</span>' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>'
+        : '—') + '</td>' +
+      '<td>' + adminStatusPill(item.status, PAYOUT_STATUS_LABELS) + '</td>' +
+      '<td class="muted clip" title="' + escapeHtml(note) + '">' + escapeHtml(noteShort) + '</td>' +
+      '<td class="right"><div class="table-action-btns">' + actions + '</div></td>' +
+    '</tr>';
+  }).join('');
 
-  // Table
-  html += '<div class="table-wrap" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">';
-  html += '  <div style="overflow-x:auto;">';
-  html += '    <table class="ww-table">';
-  html += '      <thead>';
-  html += '        <tr>';
-  html += '          <th>Tarih</th>';
-  html += '          <th>Kullanıcı</th>';
-  html += '          <th>Tutar</th>';
-  html += '          <th>Kripto</th>';
-  html += '          <th>Çekim Adresi</th>';
-  html += '          <th>Durum</th>';
-  html += '          <th>TxID / Admin Notu</th>';
-  html += '          <th style="text-align:right;">İşlem</th>';
-  html += '        </tr>';
-  html += '      </thead>';
-  html += '      <tbody>';
+  container.innerHTML =
+    '<div class="stats-grid stats-grid-lg">' +
+      adminStatCard('Toplam Çekim Talebi', payouts.length) +
+      adminStatCard('Bekleyen Ödemeler', '$' + sum(pendingList).toFixed(2) + ' <small>(' + pendingList.length + ')</small>', 'amber') +
+      adminStatCard('Tamamlanan Ödemeler', '$' + sum(approvedList).toFixed(2) + ' <small>(' + approvedList.length + ')</small>', 'green') +
+      adminStatCard('Reddedilen Talepler', rejectedList.length, 'red') +
+    '</div>' +
+    '<div class="toolbar">' +
+      adminFilterButtons([
+        { key: 'all', label: 'Tümü', count: payouts.length },
+        { key: 'pending', label: 'Bekleyen', count: pendingList.length },
+        { key: 'approved', label: 'Ödenen', count: approvedList.length },
+        { key: 'rejected', label: 'Reddedilen', count: rejectedList.length }
+      ], currentPayoutFilter, 'data-payout-filter') +
+      adminSearchBox('payout-search-input', payoutSearchTerm, 'Kullanıcı veya cüzdan ara...') +
+    '</div>' +
+    '<div class="table-wrap"><div class="table-scroll"><table class="ww-table">' +
+      '<thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Tutar</th><th>Kripto</th><th>Çekim Adresi</th><th>Durum</th><th>TxID / Admin Notu</th><th class="right">İşlem</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="8" class="empty-cell"><div class="empty-state">Herhangi bir para çekme talebi bulunamadı.</div></td></tr>') + '</tbody>' +
+    '</table></div></div>';
 
-  if (filtered.length === 0) {
-    html += '<tr><td colspan="8" style="text-align:center; padding:3rem; color:var(--muted); font-size:14px;">Herhangi bir para çekme talebi bulunamadı.</td></tr>';
-  } else {
-    filtered.forEach(function(item) {
-      var user = item.user_profiles || (adminState.users || []).find(function(u) { return u.id === item.user_id; }) || {};
-      var userEmail = user.email || user.username || '—';
-      var dateStr = typeof formatDateFull === 'function' ? formatDateFull(item.created_at) : (item.created_at || '—');
-      var amountVal = parseFloat(item.amount) || 0;
-      var curr = (item.currency || 'LTC').toUpperCase();
-      var currClass = curr === 'BTC' ? 'crypto-btc' : 'crypto-ltc';
-
-      var statusBadge = '';
-      if (item.status === 'pending') {
-        statusBadge = '<span class="payout-status-badge pending">⏳ Beklemede</span>';
-      } else if (item.status === 'approved') {
-        statusBadge = '<span class="payout-status-badge approved">✅ Ödendi</span>';
-      } else if (item.status === 'rejected') {
-        statusBadge = '<span class="payout-status-badge rejected">❌ Reddedildi</span>';
-      }
-
-      var noteShort = item.admin_note ? (item.admin_note.length > 35 ? item.admin_note.substring(0, 35) + '...' : item.admin_note) : '—';
-
-      var safeAddr = (item.payout_address || '').replace(/'/g, "\\'");
-      var addrChip = '\
-        <div class="payout-address-chip" onclick="copyPayoutAddress(\'' + safeAddr + '\')" title="Kopyalamak için tıklayın">\
-          <span class="addr-text">' + (item.payout_address || '—') + '</span>\
-          <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>\
-        </div>';
-
-      var actionBtns = '';
-      if (item.status === 'pending') {
-        actionBtns = '\
-          <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">\
-            <button class="btn btn-primary btn-sm" onclick="openPayoutModal(\'' + item.id + '\', \'approve\')" style="padding:4px 10px; font-size:11.5px; background:#22c55e; border-color:#22c55e; display:inline-flex; align-items:center; gap:4px;">\
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>\
-              Öde & Onayla\
-            </button>\
-            <button class="btn btn-danger btn-sm" onclick="openPayoutModal(\'' + item.id + '\', \'reject\')" style="padding:4px 10px; font-size:11.5px;">\
-              Reddet\
-            </button>\
-          </div>';
-      } else if (item.status === 'approved') {
-        actionBtns = '\
-          <div style="display:flex; justify-content:flex-end; align-items:center;">\
-            <span style="color:#22c55e; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">\
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>\
-              Ödeme Yapıldı\
-            </span>\
-          </div>';
-      } else {
-        var rejectReason = item.admin_note ? (' title="' + item.admin_note.replace(/"/g, '&quot;') + '"') : '';
-        actionBtns = '\
-          <div style="display:flex; justify-content:flex-end; align-items:center;">\
-            <span style="color:#ef4444; font-size:12px; font-weight:600;"' + rejectReason + '>Talebi Reddedildi</span>\
-          </div>';
-      }
-
-      html += '<tr>';
-      html += '  <td style="font-size:12px; color:var(--muted); white-space:nowrap;">' + dateStr + '</td>';
-      html += '  <td style="font-weight:600; color:var(--text);">' + (userEmail.replace(/[&<>"']/g, '')) + '</td>';
-      html += '  <td><strong style="color:#22c55e; font-size:13.5px;">$' + amountVal.toFixed(2) + '</strong></td>';
-      html += '  <td><span class="crypto-badge ' + currClass + '">' + curr + '</span></td>';
-      html += '  <td>' + addrChip + '</td>';
-      html += '  <td>' + statusBadge + '</td>';
-      html += '  <td style="font-size:12px; color:var(--muted); max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="' + (item.admin_note ? item.admin_note.replace(/"/g, '&quot;') : '') + '">' + (noteShort.replace(/[&<>"']/g, '')) + '</td>';
-      html += '  <td style="text-align:right;">' + actionBtns + '</td>';
-      html += '</tr>';
-    });
-  }
-
-  html += '      </tbody>';
-  html += '    </table>';
-  html += '  </div>';
-  html += '</div>';
-
-  container.innerHTML = html;
+  container.onclick = function(e) {
+    var f = e.target.closest('[data-payout-filter]');
+    if (f) { setPayoutFilter(f.getAttribute('data-payout-filter')); return; }
+    var open = e.target.closest('[data-payout-open]');
+    if (open) { openPayoutModal(open.getAttribute('data-payout-open'), open.getAttribute('data-action')); return; }
+    var copy = e.target.closest('[data-copy-address]');
+    if (copy) copyPayoutAddress(copy.getAttribute('data-copy-address'));
+  };
+  container.onkeydown = function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var copy = e.target.closest('[data-copy-address]');
+    if (copy) { e.preventDefault(); copyPayoutAddress(copy.getAttribute('data-copy-address')); }
+  };
+  var search = document.getElementById('payout-search-input');
+  if (search) search.oninput = function() { handlePayoutSearch(search.value); };
 }
 
 function setPayoutFilter(filter) {
@@ -2251,82 +1663,40 @@ function handlePayoutSearch(val) {
   payoutSearchTerm = val;
   clearTimeout(window._payoutSearchTimeout);
   window._payoutSearchTimeout = setTimeout(function() {
-    renderPayoutsTable();
+    adminRerenderKeepingFocus('payout-search-input', renderPayoutsTable);
   }, 250);
 }
 
-function copyPayoutAddress(addr) {
-  if (!addr) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(addr).then(function() {
-      if (typeof showToast === 'function') showToast('Cüzdan adresi kopyalandı: ' + addr, 'success');
-      else alert('Kopyalandı: ' + addr);
-    }).catch(function() {
-      fallbackCopyText(addr);
-    });
-  } else {
-    fallbackCopyText(addr);
-  }
-}
-
-function fallbackCopyText(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand('copy');
-    if (typeof showToast === 'function') showToast('Cüzdan adresi kopyalandı', 'success');
-  } catch(e) {}
-  document.body.removeChild(ta);
-}
-
 function openPayoutModal(payoutId, actionType) {
-  var payout = (adminState.payouts || []).find(function(p) { return p.id === payoutId; });
+  var payout = (adminState.payouts || []).find(function(p) { return String(p.id) === String(payoutId); });
   if (!payout) return;
 
   var modal = document.getElementById('payout-action-modal');
   if (!modal) return;
 
-  document.getElementById('payout-action-id').value = payoutId;
+  document.getElementById('payout-action-id').value = payout.id;
   document.getElementById('payout-action-type').value = actionType;
 
-  var user = payout.user_profiles || (adminState.users || []).find(function(u) { return u.id === payout.user_id; }) || {};
-  var userEmail = user.email || user.username || '—';
-  document.getElementById('payout-modal-user').textContent = userEmail;
+  var user = payoutUser(payout);
+  document.getElementById('payout-modal-user').textContent = user.email || user.username || '—';
   document.getElementById('payout-modal-amount').textContent = '$' + (parseFloat(payout.amount) || 0).toFixed(2);
-  document.getElementById('payout-modal-currency').textContent = (payout.currency || 'LTC').toUpperCase();
+  document.getElementById('payout-modal-currency').textContent = String(payout.currency || 'LTC').toUpperCase();
   document.getElementById('payout-modal-address').textContent = payout.payout_address || '—';
 
   var noteInput = document.getElementById('payout-modal-note');
   noteInput.value = '';
 
-  var titleEl = document.getElementById('payout-modal-title');
-  var noteLabel = document.getElementById('payout-note-label');
-  var noteHelp = document.getElementById('payout-note-help');
-  var confirmBtn = document.getElementById('confirm-payout-btn');
+  var approving = actionType === 'approve';
+  document.getElementById('payout-modal-title').textContent = approving ? 'Çekim Talebini Onayla (Ödeme Yapıldı)' : 'Çekim Talebini Reddet';
+  document.getElementById('payout-note-label').textContent = approving ? 'Admin Notu / İşlem Referansı (TxID)' : 'Reddetme Gerekçesi (Zorunlu) *';
+  noteInput.placeholder = approving ? 'Örn: LTC TXID: 3a2c5f... veya Transfer tamamlandı' : 'Örn: Cüzdan adresi hatalı veya bakiye şartı sağlanamadı.';
+  document.getElementById('payout-note-help').textContent = approving
+    ? 'Girilen TxID veya not kullanıcının çekim geçmişinde gösterilir.'
+    : 'Bu açıklama kullanıcıya gösterilecek ve çekim tutarı iade edilecektir.';
 
-  if (actionType === 'approve') {
-    titleEl.textContent = 'Çekim Talebini Onayla (Ödeme Yapıldı)';
-    noteLabel.textContent = 'Admin Notu / İşlem Referansı (TxID)';
-    noteInput.placeholder = 'Örn: LTC TXID: 3a2c5f... veya Transfer tamamlandı';
-    noteHelp.textContent = 'Girilen TxID veya not kullanıcının çekim geçmişinde gösterilir.';
-    confirmBtn.textContent = 'Onayla & Ödendi Olarak İşaretle';
-    confirmBtn.className = 'btn btn-primary';
-    confirmBtn.style.background = '#22c55e';
-    confirmBtn.style.borderColor = '#22c55e';
-  } else {
-    titleEl.textContent = 'Çekim Talebini Reddet';
-    noteLabel.textContent = 'Reddetme Gerekçesi (Zorunlu) *';
-    noteInput.placeholder = 'Örn: Cüzdan adresi hatalı veya bakiye şartı sağlanamadı.';
-    noteHelp.textContent = 'Bu açıklama kullanıcıya gösterilecek ve çekim tutarı iade edilecektir.';
-    confirmBtn.textContent = 'Talebi Reddet';
-    confirmBtn.className = 'btn btn-danger';
-    confirmBtn.style.background = '#ef4444';
-    confirmBtn.style.borderColor = '#ef4444';
-  }
+  var confirmBtn = document.getElementById('confirm-payout-btn');
+  confirmBtn.textContent = approving ? 'Onayla & Ödendi Olarak İşaretle' : 'Talebi Reddet';
+  confirmBtn.className = approving ? 'btn btn-primary' : 'btn btn-danger btn-danger-solid';
 
   modal.classList.add('open');
 }
@@ -2342,23 +1712,21 @@ async function confirmPayoutAction() {
   var note = document.getElementById('payout-modal-note').value.trim();
 
   if (actionType === 'reject' && !note) {
-    if (typeof showToast === 'function') showToast('Lütfen çekim talebinin reddedilme gerekçesini belirtin.', 'error');
-    else alert('Lütfen red gerekçesini belirtin.');
+    showToast('Lütfen çekim talebinin reddedilme gerekçesini belirtin.', 'error');
     return;
   }
 
   var btn = document.getElementById('confirm-payout-btn');
+  var label = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'İşleniyor...';
 
   try {
-    var status = actionType === 'approve' ? 'approved' : 'rejected';
-    var ok = await processPayoutRequest(payoutId, status, note);
-    if (ok) {
-      closePayoutModal();
-    }
+    var ok = await processPayoutRequest(payoutId, actionType === 'approve' ? 'approved' : 'rejected', note);
+    if (ok) closePayoutModal();
   } finally {
     btn.disabled = false;
+    btn.textContent = label;
   }
 }
 
@@ -2371,12 +1739,33 @@ window.closePayoutModal = closePayoutModal;
 window.confirmPayoutAction = confirmPayoutAction;
 
 // ============================================================
-// HATA BİLDİRİMLERİ, DESTEK VE KULLANICI ENGELLEME PANELİ
+// HATA BİLDİRİMLERİ, DESTEK VE KULLANICI ENGELLEME
 // ============================================================
-
 var currentBugFilter = 'all';
 var bugSearchTerm = '';
-var currentBugSubTab = 'reports'; // 'reports' or 'bans'
+var currentBugSubTab = 'reports'; // 'reports' | 'bans'
+
+var BUG_CATEGORY_LABELS = {
+  ui: 'Arayüz / Tasarım',
+  chart: 'Grafik & Hesaplama',
+  trade: 'İşlem / Veri',
+  perf: 'Performans / Yavaşlık',
+  feature: 'Öneri / Fikir',
+  other: 'Diğer'
+};
+
+var BUG_PRIORITY = {
+  high: { cls: 'prio-high', text: 'Yüksek (Kritik)' },
+  medium: { cls: 'prio-medium', text: 'Orta' },
+  low: { cls: 'prio-low', text: 'Düşük' }
+};
+
+var SUPPORT_MODES = [
+  { key: 'online', option: 'Aktif & Çevrim İçi', label: 'Teknik Destek: Aktif & Çevrim İçi' },
+  { key: 'busy', option: 'Yoğunluk Nedeniyle Gecikmeli', label: 'Teknik Destek: Yoğunluk Nedeniyle Gecikmeli' },
+  { key: 'offline', option: 'Mesai Dışı / Çevrim Dışı', label: 'Teknik Destek: Çevrim Dışı' },
+  { key: 'maintenance', option: 'Bakım Modu', label: 'Teknik Destek: Sistem Bakımda' }
+];
 
 function setBugFilter(filter) {
   currentBugFilter = filter;
@@ -2392,9 +1781,132 @@ window.setBugSubTab = setBugSubTab;
 
 function handleBugSearch(val) {
   bugSearchTerm = val;
-  renderBugReportsPanel();
+  adminRerenderKeepingFocus('bug-search-input', renderBugReportsPanel);
 }
 window.handleBugSearch = handleBugSearch;
+
+function adminFindBugReport(reportId) {
+  return (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
+    (adminState.bugReports || []).find(function(item) { return String(item.id) === String(reportId); });
+}
+
+function adminShortDateTime(value) {
+  if (!value) return '—';
+  var d = new Date(value);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function bugReportCard(r, bans) {
+  var isAnswered = r.status === 'answered' || r.status === 'closed';
+  var isRejected = r.status === 'rejected';
+  var userBanned = bans.some(function(b) {
+    return (r.user_id && b.user_id === r.user_id) || (r.user_email && b.user_email === r.user_email);
+  });
+  var prio = BUG_PRIORITY[r.priority] || BUG_PRIORITY.low;
+  var rid = escapeHtml(r.id || '');
+
+  var statusPill;
+  if (isRejected) statusPill = '<span class="status-pill rejected">' + ADMIN_X_SVG + 'Reddedildi</span>';
+  else if (isAnswered) statusPill = '<span class="status-pill ' + (r.status === 'closed' ? 'closed' : 'answered') + '">' + ADMIN_CHECK_SVG + (r.status === 'closed' ? 'Çözüldü &amp; Kapatıldı' : 'Yanıtlandı') + '</span>';
+  else statusPill = '<span class="status-pill ' + (r.status === 'in_progress' ? 'in-progress' : 'pending') + '">' + ADMIN_CLOCK_SVG + (r.status === 'in_progress' ? 'İnceleniyor' : 'Beklemede') + '</span>';
+
+  var actions =
+    '<button type="button" class="btn btn-primary btn-sm" data-action="reply-bug" data-report-id="' + rid + '">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>' +
+      (isAnswered ? 'Cevabı Düzenle' : 'Cevapla') + '</button>' +
+    (isRejected ? '' : '<button type="button" class="btn btn-danger btn-sm" data-action="reject-bug" data-report-id="' + rid + '">Reddet</button>') +
+    (!userBanned && (r.user_id || r.user_email)
+      ? '<button type="button" class="btn btn-ghost btn-sm" data-action="ban-bug-user" data-report-id="' + rid + '">Engelle</button>'
+      : '');
+
+  var imgUrl = safeUrl(r.screenshot_url, true);
+  var sys = (r.system_info && typeof r.system_info === 'object') ? r.system_info : {};
+  var attach = '';
+  if (imgUrl) {
+    attach += '<a href="' + imgUrl + '" target="_blank" rel="noopener noreferrer" class="attach-link">' +
+      '<img src="' + imgUrl + '" alt="Ekran görüntüsü" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' +
+      'Ekran Görüntüsü <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+  }
+  [['browser', 'Browser'], ['os', 'OS'], ['resolution', 'Res']].forEach(function(pair) {
+    if (sys[pair[0]]) attach += '<span class="sys-chip">' + pair[1] + ': ' + escapeHtml(sys[pair[0]]) + '</span>';
+  });
+
+  var reply = '';
+  if (r.admin_reply) {
+    var label = isRejected ? 'Reddetme Gerekçesi (Admin)' : (r.replied_by || 'Wawe Journal Ekibi (Admin)');
+    reply = '<div class="report-reply' + (isRejected ? ' is-rejected' : '') + '">' +
+      '<div class="report-reply-head"><span class="who"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>' + escapeHtml(label) + '</span>' +
+      '<span class="when">' + adminShortDateTime(r.replied_at) + '</span></div>' +
+      '<p>' + escapeHtml(r.admin_reply) + '</p></div>';
+  }
+
+  return '<div class="s-card report-card' + (isRejected ? ' is-rejected' : (isAnswered ? ' is-answered' : '')) + '">' +
+    '<div class="report-head"><div>' +
+      '<div class="report-tags">' +
+        '<span class="chip upper">' + escapeHtml(BUG_CATEGORY_LABELS[r.category] || r.category || 'Bildirim') + '</span>' +
+        '<span class="chip ' + prio.cls + '"><span class="chip-dot"></span>' + prio.text + '</span>' +
+        statusPill +
+        (userBanned ? '<span class="chip is-danger">Bu kullanıcı engelli</span>' : '') +
+      '</div>' +
+      '<h3 class="report-title">' + escapeHtml(r.subject || 'Konusuz') + '</h3>' +
+      '<div class="report-meta">Gönderen: <strong>' + escapeHtml(r.user_name || 'Kullanıcı') + '</strong> (' + escapeHtml(r.user_email || '—') + ')' +
+        '<span class="sep">•</span>' + adminShortDateTime(r.created_at) + '</div>' +
+    '</div><div class="report-actions">' + actions + '</div></div>' +
+    '<div class="report-desc">' + escapeHtml(r.description || '') + '</div>' +
+    (attach ? '<div class="report-attach">' + attach + '</div>' : '') +
+    reply +
+  '</div>';
+}
+
+function supportCardMarkup(statusData) {
+  var mode = SUPPORT_MODES.filter(function(m) { return m.key === statusData.status; })[0] || SUPPORT_MODES[0];
+  var indicator = mode.key;
+
+  return '<div class="s-card support-card">' +
+    '<div class="s-card-header"><div class="header-icon">' + adminIconSvg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', 18) + '</div>' +
+      '<div><h2>Teknik Destek Canlı Durum Ayarı</h2><p>Kullanıcıların /report-bug sayfasında gördüğü destek rozetini ve durum mesajını canlı ayarlayın.</p></div>' +
+      '<div class="header-actions"><span class="status-indicator ' + indicator + '">' + escapeHtml(statusData.label || mode.label) + '</span></div></div>' +
+    '<div class="s-card-body"><div class="support-form-grid">' +
+      '<div class="field"><label for="admin-support-status-select">Destek Modu</label>' +
+        '<select id="admin-support-status-select" class="ww-select">' + SUPPORT_MODES.map(function(m) {
+          return '<option value="' + m.key + '"' + (statusData.status === m.key ? ' selected' : '') + '>' + m.option + '</option>';
+        }).join('') + '</select></div>' +
+      '<div class="field"><label for="admin-support-status-label">Görüntülenen Durum Metni</label>' +
+        '<input type="text" id="admin-support-status-label" class="ww-input" value="' + escapeHtml(statusData.label || mode.label) + '" /></div>' +
+      '<div class="field"><label for="admin-support-status-note">Ortalama Yanıt Süresi Notu</label>' +
+        '<input type="text" id="admin-support-status-note" class="ww-input" placeholder="Örn: Ortalama yanıt süresi 15 dakika." value="' + escapeHtml(statusData.note || '') + '" /></div>' +
+      '<div><button type="button" class="btn btn-primary" data-action="save-support-status">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Durumu Güncelle</button></div>' +
+    '</div></div></div>';
+}
+
+function bansSectionMarkup(bans) {
+  var form = '<div class="s-card"><div class="s-card-header"><div class="header-icon tone-red">' +
+      adminIconSvg('<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>', 18) + '</div>' +
+    '<div><h2>Hızlı Manuel Kullanıcı Engelleme</h2><p>Bir kullanıcıyı e-posta adresiyle doğrudan engelleyebilir ve nedenini belirtebilirsiniz.</p></div></div>' +
+    '<div class="s-card-body"><div class="ban-form-grid">' +
+      '<div class="field"><label for="manual-ban-email">Kullanıcı E-Postası *</label><input type="email" id="manual-ban-email" class="ww-input" placeholder="user@example.com" /></div>' +
+      '<div class="field"><label for="manual-ban-reason">Engelleme Gerekçesi *</label><input type="text" id="manual-ban-reason" class="ww-input" placeholder="Örn: Sürekli anlamsız spam ve uygunsuz bildirimler" /></div>' +
+      '<button type="button" class="btn btn-danger btn-danger-solid" data-action="manual-ban">Engelle</button>' +
+    '</div></div></div>';
+
+  if (bans.length === 0) {
+    return form + '<div class="s-card"><div class="empty-state">Şu anda engellenmiş hiçbir kullanıcı yok.</div></div>';
+  }
+
+  var rows = bans.map(function(b) {
+    return '<tr>' +
+      '<td><strong>' + escapeHtml(b.user_name || 'Kullanıcı') + '</strong><div class="muted mono">' + escapeHtml(b.user_email || '—') + '</div></td>' +
+      '<td class="ban-reason">' + escapeHtml(b.reason || '—') + '</td>' +
+      '<td class="muted nowrap">' + adminShortDateTime(b.created_at) + '</td>' +
+      '<td class="right"><button type="button" class="btn btn-success btn-sm" data-action="unban" data-ban-id="' + escapeHtml(b.id) + '" data-ban-email="' + escapeHtml(b.user_email || '') + '">Engeli Kaldır</button></td>' +
+    '</tr>';
+  }).join('');
+
+  return form + '<div class="s-card"><div class="s-card-body flush"><div class="table-scroll"><table class="ww-table">' +
+    '<thead><tr><th>Kullanıcı / E-posta</th><th>Engelleme Gerekçesi (Kullanıcıya Gösterilen)</th><th>Tarih</th><th class="right">İşlem</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div></div></div>';
+}
 
 async function renderBugReportsPanel() {
   var container = document.getElementById('bug-reports-admin-container');
@@ -2408,443 +1920,105 @@ async function renderBugReportsPanel() {
     note: 'Ortalama yanıt süresi 15 dakika.'
   };
 
-  var totalReports = reports.length;
-  var pendingReports = reports.filter(function(r) { return r.status === 'pending' || r.status === 'in_progress'; });
-  var answeredReports = reports.filter(function(r) { return r.status === 'answered' || r.status === 'closed'; });
+  var isPending = function(r) { return r.status === 'pending' || r.status === 'in_progress'; };
+  var isDone = function(r) { return r.status === 'answered' || r.status === 'closed'; };
+  var pendingReports = reports.filter(isPending);
+  var answeredReports = reports.filter(isDone);
   var rejectedReports = reports.filter(function(r) { return r.status === 'rejected'; });
-  var totalBans = bans.length;
 
-  var categoryMap = {
-    ui: 'Arayüz / Tasarım',
-    chart: 'Grafik & Hesaplama',
-    trade: 'İşlem / Veri',
-    perf: 'Performans / Yavaşlık',
-    feature: 'Öneri / Fikir',
-    other: 'Diğer'
-  };
+  window.bugReportsMap = {};
+  reports.forEach(function(r) { if (r && r.id) window.bugReportsMap[String(r.id)] = r; });
 
-  var html = '';
-
-  // 1. CANLI TEKNİK DESTEK DURUM AYARLARI KARTI
-  html += '<div class="s-card" style="margin-bottom:1.5rem; border:1px solid rgba(124, 109, 250, 0.25); background:linear-gradient(135deg, rgba(124, 109, 250, 0.04) 0%, rgba(20, 20, 32, 0.6) 100%);">';
-  html += '  <div class="s-card-header">';
-  html += '    <div class="header-icon" style="background:rgba(124,109,250,0.15); color:var(--accent);">';
-  html += '      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-  html += '    </div>';
-  html += '    <div>';
-  html += '      <h2>Teknik Destek Canlı Durum Ayarı</h2>';
-  html += '      <p>Kullanıcıların /report-bug sayfasında gördüğü destek rozetini ve durum mesajını canlı ayarlayın.</p>';
-  html += '    </div>';
-  html += '    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">';
-  
-  var statusBadgeColor = '#22c55e';
-  var statusBadgeText = statusData.label || 'Teknik Destek: Aktif & Çevrim İçi';
-  if (statusData.status === 'busy') { statusBadgeColor = '#f59e0b'; }
-  else if (statusData.status === 'offline') { statusBadgeColor = '#ef4444'; }
-  else if (statusData.status === 'maintenance') { statusBadgeColor = '#a855f7'; }
-
-  html += '      <span style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:700; color:' + statusBadgeColor + '; background:rgba(255,255,255,0.04); border:1px solid ' + statusBadgeColor + '40;">';
-  html += '        <span style="width:7px; height:7px; border-radius:50%; background:' + statusBadgeColor + '; box-shadow:0 0 6px ' + statusBadgeColor + ';"></span>';
-  html += '        <span>' + statusBadgeText + '</span>';
-  html += '      </span>';
-  html += '    </div>';
-  html += '  </div>';
-
-  html += '  <div class="s-card-body" style="padding-top:0.5rem;">';
-  html += '    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; align-items:end;">';
-  
-  // Durum Seçici
-  html += '      <div class="field">';
-  html += '        <label style="font-weight:700; font-size:12px; margin-bottom:4px; display:block;">Destek Modu</label>';
-  html += '        <select id="admin-support-status-select" class="ww-select" onchange="onSupportModeChange(this.value)" style="width:100%;">';
-  html += '          <option value="online"' + (statusData.status === 'online' ? ' selected' : '') + '>🟢 Aktif & Çevrim İçi</option>';
-  html += '          <option value="busy"' + (statusData.status === 'busy' ? ' selected' : '') + '>🟡 Yoğunluk Nedeniyle Gecikmeli</option>';
-  html += '          <option value="offline"' + (statusData.status === 'offline' ? ' selected' : '') + '>🔴 Mesai Dışı / Çevrim Dışı</option>';
-  html += '          <option value="maintenance"' + (statusData.status === 'maintenance' ? ' selected' : '') + '>🛠️ Bakım Modu</option>';
-  html += '        </select>';
-  html += '      </div>';
-
-  // Durum Başlık Metni
-  html += '      <div class="field">';
-  html += '        <label style="font-weight:700; font-size:12px; margin-bottom:4px; display:block;">Görüntülenen Durum Metni</label>';
-  html += '        <input type="text" id="admin-support-status-label" class="ww-input" value="' + (statusData.label || 'Teknik Destek: Aktif & Çevrim İçi').replace(/"/g, '&quot;') + '" style="width:100%; box-sizing:border-box;" />';
-  html += '      </div>';
-
-  // Yanıt Süresi / Not
-  html += '      <div class="field">';
-  html += '        <label style="font-weight:700; font-size:12px; margin-bottom:4px; display:block;">Ortalama Yanıt Süresi Notu</label>';
-  html += '        <input type="text" id="admin-support-status-note" class="ww-input" placeholder="Örn: Ortalama yanıt süresi 15 dakika." value="' + (statusData.note || '').replace(/"/g, '&quot;') + '" style="width:100%; box-sizing:border-box;" />';
-  html += '      </div>';
-
-  // Kaydet Butonu
-  html += '      <div>';
-  html += '        <button class="btn btn-primary" onclick="saveSupportStatusFromUI()" style="width:100%; padding:0.65rem 1rem; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;">';
-  html += '          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
-  html += '          Durumu Güncelle';
-  html += '        </button>';
-  html += '      </div>';
-
-  html += '    </div>';
-  html += '  </div>';
-  html += '</div>';
-
-  // 2. 5 ADET KPI İSTATİSTİK KARTI
-  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-bottom:1.5rem;">';
-  
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Toplam Bildirim</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:var(--text);">' + totalReports + '</div>';
-  html += '  </div>';
-
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">İncelenen / Bekleyen</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#f59e0b;">' + pendingReports.length + '</div>';
-  html += '  </div>';
-
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Yanıtlanan Bildirimler</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#22c55e;">' + answeredReports.length + '</div>';
-  html += '  </div>';
-
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Reddedilen Bildirimler</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#ef4444;">' + rejectedReports.length + '</div>';
-  html += '  </div>';
-
-  html += '  <div class="stat-card" style="padding:1rem;">';
-  html += '    <div class="stat-label">Engellenen Kullanıcılar</div>';
-  html += '    <div class="stat-value" style="font-size:1.5rem; color:#f43f5e;">' + totalBans + '</div>';
-  html += '  </div>';
-
-  html += '</div>';
-
-  // 3. ALT SEKMELER & FİLTRELER
-  html += '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">';
-  
-  // Sekmeler (Bildirimler vs Engelliler)
-  html += '  <div style="display:flex; gap:6px;">';
-  html += '    <button class="btn btn-sm ' + (currentBugSubTab === 'reports' ? 'btn-primary' : 'btn-ghost') + '" onclick="setBugSubTab(\'reports\')" style="display:inline-flex; align-items:center; gap:6px;">';
-  html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/></svg>';
-  html += '      Bildirim Akışı & Yanıtlama (' + totalReports + ')';
-  html += '    </button>';
-  html += '    <button class="btn btn-sm ' + (currentBugSubTab === 'bans' ? 'btn-danger' : 'btn-ghost') + '" onclick="setBugSubTab(\'bans\')" style="display:inline-flex; align-items:center; gap:6px;' + (currentBugSubTab === 'bans' ? 'background:#f43f5e;color:#fff;' : '') + '">';
-  html += '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
-  html += '      Engellenen Kullanıcılar (' + totalBans + ')';
-  html += '    </button>';
-  html += '  </div>';
-
-  if (currentBugSubTab === 'reports') {
-    // Filtre butonları ve Arama
-    html += '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
-    html += '    <div class="payout-filters">';
-    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'all' ? ' active' : '') + '" onclick="setBugFilter(\'all\')">Tümü (' + totalReports + ')</button>';
-    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'pending' ? ' active' : '') + '" onclick="setBugFilter(\'pending\')">Bekleyenler (' + pendingReports.length + ')</button>';
-    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'answered' ? ' active' : '') + '" onclick="setBugFilter(\'answered\')">Yanıtlananlar (' + answeredReports.length + ')</button>';
-    html += '      <button class="payout-filter-btn' + (currentBugFilter === 'rejected' ? ' active' : '') + '" onclick="setBugFilter(\'rejected\')">Reddedilenler (' + rejectedReports.length + ')</button>';
-    html += '    </div>';
-    html += '    <div class="search-wrap">';
-    html += '      <input type="text" id="bug-search-input" class="search-input" placeholder="Konu, kullanıcı veya içerik..." value="' + (bugSearchTerm ? bugSearchTerm.replace(/"/g, '&quot;') : '') + '" oninput="handleBugSearch(this.value)" style="width:220px;" />';
-    html += '    </div>';
-    html += '  </div>';
-  }
-
-  html += '</div>';
-
-  // 4. İÇERİK: BİLDİRİMLER LİSTESİ VEYA ENGELLENENLER LİSTESİ
-  if (currentBugSubTab === 'reports') {
-    // FİLTRELENMİŞ BİLDİRİMLER
-    var filteredReports = reports.filter(function(r) {
-      if (currentBugFilter === 'pending' && !(r.status === 'pending' || r.status === 'in_progress')) return false;
-      if (currentBugFilter === 'answered' && !(r.status === 'answered' || r.status === 'closed')) return false;
-      if (currentBugFilter === 'rejected' && r.status !== 'rejected') return false;
-      if (bugSearchTerm) {
-        var term = bugSearchTerm.toLowerCase();
-        var subj = (r.subject || '').toLowerCase();
-        var desc = (r.description || '').toLowerCase();
-        var email = (r.user_email || '').toLowerCase();
-        var name = (r.user_name || '').toLowerCase();
-        return subj.indexOf(term) !== -1 || desc.indexOf(term) !== -1 || email.indexOf(term) !== -1 || name.indexOf(term) !== -1;
-      }
-      return true;
+  var term = bugSearchTerm.toLowerCase();
+  var filteredReports = reports.filter(function(r) {
+    if (currentBugFilter === 'pending' && !isPending(r)) return false;
+    if (currentBugFilter === 'answered' && !isDone(r)) return false;
+    if (currentBugFilter === 'rejected' && r.status !== 'rejected') return false;
+    if (!term) return true;
+    return [r.subject, r.description, r.user_email, r.user_name].some(function(v) {
+      return String(v || '').toLowerCase().indexOf(term) !== -1;
     });
+  });
 
-    if (filteredReports.length === 0) {
-      html += '<div class="s-card" style="text-align:center; padding:3.5rem 1rem; color:var(--muted);">';
-      html += '  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:0.75rem; opacity:0.3;"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>';
-      html += '  <p style="font-size:14px; font-weight:600; margin:0;">Kayıtlı bildirim bulunamadı.</p>';
-      html += '</div>';
-    } else {
-      html += '<div style="display:flex; flex-direction:column; gap:1rem;">';
-      filteredReports.forEach(function(r) {
-        var isAnswered = (r.status === 'answered' || r.status === 'closed');
-        var isRejected = (r.status === 'rejected');
-        var userBanned = bans.some(function(b) { return (r.user_id && b.user_id === r.user_id) || (r.user_email && b.user_email === r.user_email); });
-        
-        var prioColor = '#38bdf8';
-        var prioText = 'Düşük';
-        if (r.priority === 'high') { prioColor = '#f43f5e'; prioText = 'Yüksek (Kritik)'; }
-        else if (r.priority === 'medium') { prioColor = '#fbbf24'; prioText = 'Orta'; }
+  var html = supportCardMarkup(statusData);
 
-        var dateStr = r.created_at ? new Date(r.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
-        var borderLeftColor = isRejected ? '#ef4444' : (isAnswered ? '#22c55e' : '#f59e0b');
+  html += '<div class="stats-grid stats-grid-lg">' +
+    adminStatCard('Toplam Bildirim', reports.length) +
+    adminStatCard('İncelenen / Bekleyen', pendingReports.length, 'amber') +
+    adminStatCard('Yanıtlanan Bildirimler', answeredReports.length, 'green') +
+    adminStatCard('Reddedilen Bildirimler', rejectedReports.length, 'red') +
+    adminStatCard('Engellenen Kullanıcılar', bans.length, 'red') +
+  '</div>';
 
-        html += '<div class="s-card" style="padding:1.25rem; border-left:3px solid ' + borderLeftColor + ';">';
-        
-        // Kart Üst Satır
-        html += '  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:0.75rem;">';
-        html += '    <div>';
-        html += '      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">';
-        html += '        <span style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.06); text-transform:uppercase; letter-spacing:0.03em;">' + (categoryMap[r.category] || r.category || 'Bildirim') + '</span>';
-        html += '        <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:' + prioColor + '; padding:2px 8px; border-radius:999px; background:' + prioColor + '18; border:1px solid ' + prioColor + '30;">';
-        html += '          <span style="width:6px; height:6px; border-radius:50%; background:' + prioColor + ';"></span>';
-        html += '          ' + prioText;
-        html += '        </span>';
-        
-        if (isRejected) {
-          html += '      <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#f87171; padding:2px 8px; border-radius:999px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25);">';
-          html += '        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-          html += '        Reddedildi';
-          html += '      </span>';
-        } else if (isAnswered) {
-          html += '      <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#4ade80; padding:2px 8px; border-radius:999px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.25);">';
-          html += '        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
-          html += '        ' + (r.status === 'closed' ? 'Çözüldü & Kapatıldı' : 'Yanıtlandı');
-          html += '      </span>';
-        } else {
-          html += '      <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#fbbf24; padding:2px 8px; border-radius:999px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.25);">';
-          html += '        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-          html += '        ' + (r.status === 'in_progress' ? 'İnceleniyor' : 'Beklemede');
-          html += '      </span>';
-        }
+  html += '<div class="toolbar">' +
+    '<div class="subtabs">' +
+      '<button type="button" class="filter-btn' + (currentBugSubTab === 'reports' ? ' active' : '') + '" aria-pressed="' + (currentBugSubTab === 'reports') + '" data-bug-subtab="reports">Bildirim Akışı &amp; Yanıtlama (' + reports.length + ')</button>' +
+      '<button type="button" class="filter-btn' + (currentBugSubTab === 'bans' ? ' active' : '') + '" aria-pressed="' + (currentBugSubTab === 'bans') + '" data-bug-subtab="bans">Engellenen Kullanıcılar (' + bans.length + ')</button>' +
+    '</div>' +
+    (currentBugSubTab === 'reports'
+      ? '<div class="toolbar-group">' + adminFilterButtons([
+          { key: 'all', label: 'Tümü', count: reports.length },
+          { key: 'pending', label: 'Bekleyenler', count: pendingReports.length },
+          { key: 'answered', label: 'Yanıtlananlar', count: answeredReports.length },
+          { key: 'rejected', label: 'Reddedilenler', count: rejectedReports.length }
+        ], currentBugFilter, 'data-bug-filter') + adminSearchBox('bug-search-input', bugSearchTerm, 'Konu, kullanıcı veya içerik...', 220) + '</div>'
+      : '') +
+  '</div>';
 
-        if (userBanned) {
-          html += '      <span style="font-size:11px; font-weight:700; color:#fda4af; padding:2px 8px; border-radius:999px; background:rgba(244,63,94,0.18); border:1px solid rgba(244,63,94,0.35);">';
-          html += '        ⛔ Bu Kullanıcı Engelli';
-          html += '      </span>';
-        }
-
-        html += '      </div>';
-        html += '      <h3 style="font-size:1.05rem; font-weight:700; color:var(--text); margin:0 0 3px;">' + escapeHtml(r.subject || 'Konusuz') + '</h3>';
-        html += '      <div style="font-size:12px; color:var(--muted);">';
-        html += '        <span>Gönderen: <strong style="color:var(--text);">' + escapeHtml(r.user_name || 'Kullanıcı') + '</strong> (' + escapeHtml(r.user_email || '—') + ')</span>';
-        html += '        <span style="margin:0 6px;">•</span>';
-        html += '        <span>' + dateStr + '</span>';
-        html += '      </div>';
-        html += '    </div>';
-
-        // Kayıt önbelleğine al
-        if (r && r.id) {
-          window.bugReportsMap = window.bugReportsMap || {};
-          window.bugReportsMap[String(r.id)] = r;
-        }
-
-        // Aksiyon Butonları
-        html += '    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; position:relative; z-index:10;">';
-        
-        // Cevapla / Yanıtla Butonu
-        html += '      <button type="button" class="btn btn-primary btn-sm btn-bug-action" data-action="reply-bug" data-report-id="' + escapeHtml(String(r.id || '')) + '" onclick="window.handleBugActionClick && window.handleBugActionClick(event, this);" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; padding:0.35rem 0.75rem; cursor:pointer;">';
-        html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>';
-        html += '        ' + (isAnswered ? 'Cevabı Düzenle' : 'Cevapla');
-        html += '      </button>';
-
-        // Reddet Butonu
-        if (!isRejected) {
-          html += '      <button type="button" class="btn btn-danger btn-sm btn-bug-action" data-action="reject-bug" data-report-id="' + escapeHtml(String(r.id || '')) + '" onclick="window.handleBugActionClick && window.handleBugActionClick(event, this);" style="background:rgba(239, 68, 68, 0.12); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); display:inline-flex; align-items:center; gap:5px; font-weight:600; padding:0.35rem 0.75rem; cursor:pointer;">';
-          html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-          html += '        Reddet';
-          html += '      </button>';
-        }
-
-        // Engelle Butonu
-        if (!userBanned && (r.user_id || r.user_email)) {
-          html += '      <button type="button" class="btn btn-ghost btn-sm btn-bug-action" data-action="ban-bug-user" data-report-id="' + escapeHtml(String(r.id || '')) + '" onclick="window.handleBugActionClick && window.handleBugActionClick(event, this);" style="color:#f43f5e; border-color:rgba(244,63,94,0.3); display:inline-flex; align-items:center; gap:5px; padding:0.35rem 0.75rem; cursor:pointer;">';
-          html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
-          html += '        Engelle';
-          html += '      </button>';
-        }
-
-        html += '    </div>';
-        html += '  </div>';
-
-        // Açıklama Metni
-        html += '  <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.85rem 1rem; margin-bottom:0.75rem; font-size:13.5px; line-height:1.55; color:var(--text); white-space:pre-wrap;">' + escapeHtml(r.description || '') + '</div>';
-
-        // Sistem Tanı Bilgileri / Ekran Görüntüsü Varsa
-        var hasSys = r.system_info && typeof r.system_info === 'object' && Object.keys(r.system_info).length > 0;
-        var rawUrl = (r.screenshot_url || '').trim();
-        var isValidImgUrl = /^(https?:\/\/|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(rawUrl);
-        var safeImgUrl = isValidImgUrl ? escapeHtml(rawUrl) : null;
-        var hasImg = !!safeImgUrl;
-
-        if (hasSys || hasImg) {
-          html += '  <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:0.75rem;">';
-          if (hasImg) {
-            html += '    <a href="' + safeImgUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; padding:4px 8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:6px; text-decoration:none; color:var(--text); transition:all 0.15s ease;" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,0.12)\'">';
-            html += '      <img src="' + safeImgUrl + '" alt="Ekran Görüntüsü" style="width:28px; height:28px; object-fit:cover; border-radius:4px; border:1px solid rgba(255,255,255,0.15); display:block;" onerror="this.style.display=\'none\';" />';
-            html += '      <span style="font-size:11.5px; font-weight:600; color:var(--accent); display:flex; align-items:center; gap:4px;">';
-            html += '        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
-            html += '        Ekran Görüntüsü';
-            html += '      </span>';
-            html += '    </a>';
-          }
-          if (hasSys) {
-            var sys = r.system_info;
-            if (sys.browser) html += '<span style="font-family:monospace; font-size:11px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--muted);">Browser: ' + escapeHtml(sys.browser) + '</span>';
-            if (sys.os) html += '<span style="font-family:monospace; font-size:11px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--muted);">OS: ' + escapeHtml(sys.os) + '</span>';
-            if (sys.resolution) html += '<span style="font-family:monospace; font-size:11px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); color:var(--muted);">Res: ' + escapeHtml(sys.resolution) + '</span>';
-          }
-          html += '  </div>';
-        }
-
-        // Varsa Admin Yanıtı / Ret Gerekçesi
-        if (r.admin_reply) {
-          var isRej = (r.status === 'rejected');
-          var replyDate = r.replied_at ? new Date(r.replied_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
-          var boxBg = isRej ? 'rgba(239, 68, 68, 0.08)' : 'rgba(124, 109, 250, 0.08)';
-          var boxBorder = isRej ? 'rgba(239, 68, 68, 0.25)' : 'rgba(124, 109, 250, 0.25)';
-          var boxLeft = isRej ? '#ef4444' : '#7c6dfa';
-          var boxTagColor = isRej ? '#fca5a5' : '#c4b5fd';
-          var boxLabel = isRej ? 'Reddetme Gerekçesi (Admin)' : (r.replied_by || 'Wawe Journal Ekibi (Admin)');
-
-          html += '  <div style="background:' + boxBg + '; border:1px solid ' + boxBorder + '; border-left:3px solid ' + boxLeft + '; border-radius:8px; padding:0.85rem 1rem;">';
-          html += '    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">';
-          html += '      <span style="font-size:11.5px; font-weight:700; color:' + boxTagColor + '; display:inline-flex; align-items:center; gap:4px;">';
-          html += '        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>';
-          html += '        ' + escapeHtml(boxLabel);
-          html += '      </span>';
-          html += '      <span style="font-size:11px; color:var(--muted);">' + replyDate + '</span>';
-          html += '    </div>';
-          html += '    <p style="font-size:13px; line-height:1.5; color:var(--text); margin:0;">' + escapeHtml(r.admin_reply) + '</p>';
-          html += '  </div>';
-        }
-
-        html += '</div>';
-      });
-      html += '</div>';
-    }
+  if (currentBugSubTab === 'reports') {
+    html += filteredReports.length === 0
+      ? '<div class="s-card"><div class="empty-state"><strong>Kayıtlı bildirim bulunamadı.</strong></div></div>'
+      : '<div class="report-list">' + filteredReports.map(function(r) { return bugReportCard(r, bans); }).join('') + '</div>';
   } else {
-    // ENGELLENEN KULLANICILAR SEKMESİ
-    html += '<div class="s-card" style="margin-bottom:1.5rem;">';
-    html += '  <div class="s-card-header">';
-    html += '    <div class="header-icon" style="background:rgba(244,63,94,0.15); color:#f43f5e;">';
-    html += '      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
-    html += '    </div>';
-    html += '    <div>';
-    html += '      <h2>Hızlı Manuel Kullanıcı Engelleme</h2>';
-    html += '      <p>Bir kullanıcıyı e-posta adresiyle doğrudan engelleyebilir ve nedenini belirtebilirsiniz.</p>';
-    html += '    </div>';
-    html += '  </div>';
-    html += '  <div class="s-card-body" style="padding-top:0.5rem;">';
-    html += '    <div style="display:grid; grid-template-columns:1fr 2fr auto; gap:0.75rem; align-items:end;">';
-    html += '      <div class="field">';
-    html += '        <label style="font-size:12px; font-weight:700;">Kullanıcı E-Postası *</label>';
-    html += '        <input type="email" id="manual-ban-email" class="ww-input" placeholder="user@example.com" style="width:100%; box-sizing:border-box;" />';
-    html += '      </div>';
-    html += '      <div class="field">';
-    html += '        <label style="font-size:12px; font-weight:700;">Engelleme Gerekçesi *</label>';
-    html += '        <input type="text" id="manual-ban-reason" class="ww-input" placeholder="Örn: Sürekli anlamsız spam ve uygunsuz bildirimler" style="width:100%; box-sizing:border-box;" />';
-    html += '      </div>';
-    html += '      <button class="btn btn-danger" onclick="submitManualBan()" style="background:#f43f5e; color:#fff; padding:0.65rem 1.1rem; font-weight:700;">Engelle</button>';
-    html += '    </div>';
-    html += '  </div>';
-    html += '</div>';
-
-    // Engelliler Tablosu
-    if (bans.length === 0) {
-      html += '<div class="s-card" style="text-align:center; padding:3.5rem 1rem; color:var(--muted);">';
-      html += '  <p style="font-size:14px; font-weight:600; margin:0;">Şu anda engellenmiş hiçbir kullanıcı yok.</p>';
-      html += '</div>';
-    } else {
-      html += '<div class="s-card">';
-      html += '  <div class="s-card-body" style="padding:0;">';
-      html += '    <table class="ww-table" style="width:100%;">';
-      html += '      <thead>';
-      html += '        <tr>';
-      html += '          <th>Kullanıcı / E-posta</th>';
-      html += '          <th>Engelleme Gerekçesi (Kullanıcıya Gösterilen)</th>';
-      html += '          <th>Tarih</th>';
-      html += '          <th style="text-align:right;">İşlem</th>';
-      html += '        </tr>';
-      html += '      </thead>';
-      html += '      <tbody>';
-
-      bans.forEach(function(b) {
-        var banDate = b.created_at ? new Date(b.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
-        var banEmailEsc = (b.user_email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
-        html += '        <tr>';
-        html += '          <td>';
-        html += '            <strong style="color:var(--text); display:block;">' + escapeHtml(b.user_name || 'Kullanıcı') + '</strong>';
-        html += '            <span style="font-size:12px; color:var(--muted); font-family:monospace;">' + escapeHtml(b.user_email || '—') + '</span>';
-        html += '          </td>';
-        html += '          <td style="color:#fda4af; max-width:320px; font-size:13px;">' + escapeHtml(b.reason || '—') + '</td>';
-        html += '          <td style="color:var(--muted); font-size:12px;">' + banDate + '</td>';
-        html += '          <td style="text-align:right;">';
-        html += '            <button class="btn btn-ghost btn-sm" onclick="unbanUserFromSupport(\'' + b.id + '\', \'' + banEmailEsc + '\').then(function(){ renderBugReportsPanel(); })" style="color:#22c55e; border-color:rgba(34,197,94,0.3); font-size:11.5px; font-weight:700;">';
-        html += '              Engeli Kaldır';
-        html += '            </button>';
-        html += '          </td>';
-        html += '        </tr>';
-      });
-
-      html += '      </tbody>';
-      html += '    </table>';
-      html += '  </div>';
-      html += '</div>';
-    }
+    html += bansSectionMarkup(bans);
   }
 
   container.innerHTML = html;
-
-  // Doğrudan DOM elemanlarına tıklama dinleyicilerini bağla (fail-safe)
-  try {
-    var bugActionButtons = container.querySelectorAll('.btn-bug-action');
-    bugActionButtons.forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        if (window.handleBugActionClick) {
-          window.handleBugActionClick(e, btn);
-        }
-      });
-    });
-  } catch(e) {
-    console.warn('[renderBugReportsPanel] Buton dinleyici hatası:', e);
-  }
+  bindBugReportsPanel(container);
 }
 window.renderBugReportsPanel = renderBugReportsPanel;
 
-// MERKEZİ AKSİYON TIKLAMA YÖNETİCİSİ
+// Panel içindeki tüm düğmeler tek yerden yönetilir (eskiden satır içi onclick + düğme başına dinleyici + belge
+// dinleyicisi aynı tıklamayı üç kez işliyordu).
+function bindBugReportsPanel(container) {
+  container.onclick = function(e) {
+    var sub = e.target.closest('[data-bug-subtab]');
+    if (sub) { setBugSubTab(sub.getAttribute('data-bug-subtab')); return; }
+    var filter = e.target.closest('[data-bug-filter]');
+    if (filter) { setBugFilter(filter.getAttribute('data-bug-filter')); return; }
+    var btn = e.target.closest('[data-action]');
+    if (btn && container.contains(btn)) handleBugActionClick(e, btn);
+  };
+  container.onchange = function(e) {
+    if (e.target && e.target.id === 'admin-support-status-select') onSupportModeChange(e.target.value);
+  };
+  var search = document.getElementById('bug-search-input');
+  if (search) search.oninput = function() { handleBugSearch(search.value); };
+}
+
 function handleBugActionClick(e, btn) {
-  if (e) {
-    try {
-      e.preventDefault();
-      e.stopPropagation();
-    } catch(err) {}
-  }
   if (!btn) return;
   var action = btn.getAttribute('data-action');
   var reportId = btn.getAttribute('data-report-id');
 
-  console.log('🚀 [BugAction]', action, 'Report ID:', reportId);
-
-  if (action === 'reply-bug') {
-    openBugReplyModal(reportId);
-  } else if (action === 'reject-bug') {
-    openBugRejectModal(reportId);
-  } else if (action === 'ban-bug-user') {
-    openSupportBanModalByReport(reportId);
+  if (action === 'reply-bug') openBugReplyModal(reportId);
+  else if (action === 'reject-bug') openBugRejectModal(reportId);
+  else if (action === 'ban-bug-user') openSupportBanModalByReport(reportId);
+  else if (action === 'save-support-status') saveSupportStatusFromUI();
+  else if (action === 'manual-ban') submitManualBan();
+  else if (action === 'unban') {
+    unbanUserFromSupport(btn.getAttribute('data-ban-id'), btn.getAttribute('data-ban-email')).then(function() { renderBugReportsPanel(); });
   }
 }
 window.handleBugActionClick = handleBugActionClick;
 
-// MODAL VE AKSİYON HELPERLARI
-
+// ------------------------------------------------------------
+// Destek durumu
+// ------------------------------------------------------------
 function onSupportModeChange(val) {
   var labelInput = document.getElementById('admin-support-status-label');
-  if (!labelInput) return;
-  if (val === 'online') labelInput.value = 'Teknik Destek: Aktif & Çevrim İçi';
-  else if (val === 'busy') labelInput.value = 'Teknik Destek: Yoğunluk Nedeniyle Gecikmeli';
-  else if (val === 'offline') labelInput.value = 'Teknik Destek: Çevrim Dışı';
-  else if (val === 'maintenance') labelInput.value = 'Teknik Destek: Sistem Bakımda';
+  var mode = SUPPORT_MODES.filter(function(m) { return m.key === val; })[0];
+  if (labelInput && mode) labelInput.value = mode.label;
 }
 window.onSupportModeChange = onSupportModeChange;
 
@@ -2853,98 +2027,83 @@ async function saveSupportStatusFromUI() {
   var labelInput = document.getElementById('admin-support-status-label');
   var noteInput = document.getElementById('admin-support-status-note');
 
-  var status = select ? select.value : 'online';
-  var label = labelInput ? labelInput.value.trim() : 'Teknik Destek: Aktif & Çevrim İçi';
-  var note = noteInput ? noteInput.value.trim() : '';
-
-  var ok = await saveSupportStatus({ status: status, label: label, note: note });
-  if (ok) {
-    renderBugReportsPanel();
-  }
+  var ok = await saveSupportStatus({
+    status: select ? select.value : 'online',
+    label: labelInput ? labelInput.value.trim() : '',
+    note: noteInput ? noteInput.value.trim() : ''
+  });
+  if (ok) renderBugReportsPanel();
 }
 window.saveSupportStatusFromUI = saveSupportStatusFromUI;
 
-// 1. BAN (KULLANICI ENGELLEME) MODAL
-function openSupportBanModal(userId, email, name) {
-  var modal = document.getElementById('support-ban-modal');
+// ------------------------------------------------------------
+// Paneller (modal): yalnızca sınıf ile açılıp kapanır (styles.css PANEL bloğu)
+// ------------------------------------------------------------
+function adminOpenModal(id, focusId) {
+  var modal = document.getElementById(id);
   if (!modal) {
-    console.error('Modal #support-ban-modal bulunamadı.');
-    return;
+    console.error('#' + id + ' bulunamadı.');
+    return null;
   }
-
-  // Teleport: Modal scroll container içinde sıkışmasın diye doğrudan body'ye ekle
-  if (modal.parentElement !== document.body) {
-    document.body.appendChild(modal);
+  if (modal.parentElement !== document.body) document.body.appendChild(modal);
+  modal.classList.add('open');
+  if (focusId) {
+    setTimeout(function() {
+      var el = document.getElementById(focusId);
+      if (el) el.focus();
+    }, 100);
   }
+  return modal;
+}
 
-  var idEl = document.getElementById('ban-modal-user-id');
-  var emailEl = document.getElementById('ban-modal-user-email');
-  var nameEl = document.getElementById('ban-modal-user-name');
+function adminCloseModal(id) {
+  var modal = document.getElementById(id);
+  if (modal) modal.classList.remove('open', 'active');
+}
+
+// 1. Engelleme paneli
+function openSupportBanModal(userId, email, name) {
+  if (!adminOpenModal('support-ban-modal', 'ban-modal-reason')) return;
+
+  adminSetField('ban-modal-user-id', userId || '');
+  adminSetField('ban-modal-user-email', email || '');
+  adminSetField('ban-modal-user-name', name || email || '');
   var dispName = document.getElementById('ban-modal-display-name');
   var dispEmail = document.getElementById('ban-modal-display-email');
-  var reasonEl = document.getElementById('ban-modal-reason');
-
-  if (idEl) idEl.value = userId || '';
-  if (emailEl) emailEl.value = email || '';
-  if (nameEl) nameEl.value = name || email || '';
   if (dispName) dispName.textContent = name || email || 'Kullanıcı';
   if (dispEmail) dispEmail.textContent = email || '—';
-  if (reasonEl) reasonEl.value = 'Uygunsuz üslup ve asılsız bildirim gönderimi sebebiyle destek erişiminiz askıya alınmıştır.';
-
-  modal.classList.add('open', 'active');
-  modal.style.display = 'flex';
-  modal.style.visibility = 'visible';
-  modal.style.opacity = '1';
-  modal.style.zIndex = '999999';
-
-  setTimeout(function() {
-    if (reasonEl) reasonEl.focus();
-  }, 100);
+  adminSetField('ban-modal-reason', 'Uygunsuz üslup ve asılsız bildirim gönderimi sebebiyle destek erişiminiz askıya alınmıştır.');
 }
 window.openSupportBanModal = openSupportBanModal;
 
-function closeBanModal() {
-  var modal = document.getElementById('support-ban-modal');
-  if (modal) {
-    modal.classList.remove('open', 'active');
-    modal.style.display = 'none';
-  }
-}
+function closeBanModal() { adminCloseModal('support-ban-modal'); }
 window.closeBanModal = closeBanModal;
 
 async function confirmSupportBan() {
-  var idEl = document.getElementById('ban-modal-user-id');
-  var emailEl = document.getElementById('ban-modal-user-email');
-  var nameEl = document.getElementById('ban-modal-user-name');
   var reasonEl = document.getElementById('ban-modal-reason');
-
-  var userId = idEl ? idEl.value : '';
-  var email = emailEl ? emailEl.value : '';
-  var name = nameEl ? nameEl.value : '';
   var reason = reasonEl ? reasonEl.value.trim() : '';
-
   if (!reason) {
-    if (typeof showToast === 'function') showToast('Lütfen engelleme nedenini belirtin.', 'error');
+    showToast('Lütfen engelleme nedenini belirtin.', 'error');
     return;
   }
 
   var btn = document.getElementById('confirm-ban-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Engelleniyor...';
-  }
+  var label = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Engelleniyor...'; }
 
   try {
-    var ok = await banUserFromSupport(userId, email, name, reason);
+    var ok = await banUserFromSupport(
+      document.getElementById('ban-modal-user-id').value,
+      document.getElementById('ban-modal-user-email').value,
+      document.getElementById('ban-modal-user-name').value,
+      reason
+    );
     if (ok) {
       closeBanModal();
       renderBugReportsPanel();
     }
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Engelle ve Erişimi Durdur';
-    }
+    if (btn) { btn.disabled = false; btn.textContent = label; }
   }
 }
 window.confirmSupportBan = confirmSupportBan;
@@ -2956,7 +2115,7 @@ async function submitManualBan() {
   var reason = reasonInput ? reasonInput.value.trim() : '';
 
   if (!email || !reason) {
-    if (typeof showToast === 'function') showToast('Lütfen e-posta ve gerekçe alanlarını doldurunuz.', 'error');
+    showToast('Lütfen e-posta ve gerekçe alanlarını doldurunuz.', 'error');
     return;
   }
 
@@ -2969,96 +2128,46 @@ async function submitManualBan() {
 }
 window.submitManualBan = submitManualBan;
 
-// Helper: Open ban modal directly from report ID
 function openSupportBanModalByReport(reportId, fallbackUserId, fallbackEmail, fallbackName) {
-  var r = (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
-          (adminState.bugReports || []).find(function(item) {
-            return String(item.id) === String(reportId);
-          });
-
-  var uid = (r && r.user_id) || fallbackUserId || null;
+  var r = adminFindBugReport(reportId);
   var email = (r && r.user_email) || fallbackEmail || '';
-  var name = (r && r.user_name) || fallbackName || email || 'Kullanıcı';
-
-  openSupportBanModal(uid, email, name);
+  openSupportBanModal((r && r.user_id) || fallbackUserId || null, email, (r && r.user_name) || fallbackName || email || 'Kullanıcı');
 }
 window.openSupportBanModalByReport = openSupportBanModalByReport;
 
-// 2. CEVAPLA (REPLY) MODAL
+// 2. Yanıt paneli
 function openBugReplyModal(reportId, subject, sender, currentReply, currentStatus) {
-  var modal = document.getElementById('bug-reply-modal');
-  if (!modal) {
-    console.error('Modal #bug-reply-modal bulunamadı.');
-    return;
-  }
+  if (!adminOpenModal('bug-reply-modal', 'reply-modal-text')) return;
 
-  // Teleport to body
-  if (modal.parentElement !== document.body) {
-    document.body.appendChild(modal);
-  }
-
-  var r = (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
-          (adminState.bugReports || []).find(function(item) {
-            return String(item.id) === String(reportId);
-          });
-
-  var finalSubject = (r && r.subject) || subject || '—';
+  var r = adminFindBugReport(reportId);
   var finalSender = r ? ((r.user_name || 'Kullanıcı') + ' (' + (r.user_email || '—') + ')') : (sender || '—');
-  var finalReply = (r && r.admin_reply) || currentReply || '';
-  var finalStatus = (r && (r.status === 'pending' ? 'answered' : r.status)) || currentStatus || 'answered';
 
-  var idEl = document.getElementById('reply-modal-report-id');
+  adminSetField('reply-modal-report-id', reportId || (r ? r.id : ''));
   var subjEl = document.getElementById('reply-modal-subject');
   var senderEl = document.getElementById('reply-modal-sender');
-  var textEl = document.getElementById('reply-modal-text');
-  var statusEl = document.getElementById('reply-modal-status');
-
-  if (idEl) idEl.value = reportId || (r ? r.id : '');
-  if (subjEl) subjEl.textContent = finalSubject;
+  if (subjEl) subjEl.textContent = (r && r.subject) || subject || '—';
   if (senderEl) senderEl.textContent = finalSender;
-  if (textEl) textEl.value = finalReply;
-  if (statusEl) statusEl.value = finalStatus;
-
-  modal.classList.add('open', 'active');
-  modal.style.display = 'flex';
-  modal.style.visibility = 'visible';
-  modal.style.opacity = '1';
-  modal.style.zIndex = '999999';
-
-  setTimeout(function() {
-    if (textEl) textEl.focus();
-  }, 100);
+  adminSetField('reply-modal-text', (r && r.admin_reply) || currentReply || '');
+  adminSetField('reply-modal-status', (r && (r.status === 'pending' ? 'answered' : r.status)) || currentStatus || 'answered');
 }
 window.openBugReplyModal = openBugReplyModal;
 
-function closeBugReplyModal() {
-  var modal = document.getElementById('bug-reply-modal');
-  if (modal) {
-    modal.classList.remove('open', 'active');
-    modal.style.display = 'none';
-  }
-}
+function closeBugReplyModal() { adminCloseModal('bug-reply-modal'); }
 window.closeBugReplyModal = closeBugReplyModal;
 
 async function confirmBugReply() {
-  var idEl = document.getElementById('reply-modal-report-id');
-  var textEl = document.getElementById('reply-modal-text');
-  var statusEl = document.getElementById('reply-modal-status');
-
-  var reportId = idEl ? idEl.value : '';
-  var replyText = textEl ? textEl.value.trim() : '';
-  var status = statusEl ? statusEl.value : 'answered';
+  var reportId = document.getElementById('reply-modal-report-id').value;
+  var replyText = document.getElementById('reply-modal-text').value.trim();
+  var status = document.getElementById('reply-modal-status').value || 'answered';
 
   if (!replyText) {
-    if (typeof showToast === 'function') showToast('Lütfen bir yanıt metni girin.', 'error');
+    showToast('Lütfen bir yanıt metni girin.', 'error');
     return;
   }
 
   var btn = document.getElementById('confirm-reply-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Gönderiliyor...';
-  }
+  var label = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
 
   try {
     var ok = await replyBugReport(reportId, replyText, status);
@@ -3067,15 +2176,12 @@ async function confirmBugReply() {
       renderBugReportsPanel();
     }
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Cevabı Gönder';
-    }
+    if (btn) { btn.disabled = false; btn.textContent = label; }
   }
 }
 window.confirmBugReply = confirmBugReply;
 
-// 3. REDDET (REJECT) MODAL & PRESETS
+// 3. Ret paneli + hazır gerekçeler
 var BUG_REJECT_PRESETS = {
   invalid: 'İnceleme sonucunda bildirilen durum sistem genelinde veya belirtilen akışta doğrulanamamıştır. Eğer sorun devam ediyorsa lütfen tekrarlama adımlarını daha detaylı belirterek yeni bir bildirim iletiniz.',
   user_error: 'İncelenen durum sistemsel bir yazılım hatası değil, tarayıcı/cihaz ayarları veya hesap yapılandırması kaynaklıdır.',
@@ -3087,56 +2193,21 @@ var BUG_REJECT_PRESETS = {
 window.BUG_REJECT_PRESETS = BUG_REJECT_PRESETS;
 
 function openBugRejectModal(reportId, fallbackSubject, fallbackSender) {
-  var modal = document.getElementById('bug-reject-modal');
-  if (!modal) {
-    console.error('Modal #bug-reject-modal bulunamadı.');
-    return;
-  }
+  if (!adminOpenModal('bug-reject-modal', 'reject-modal-reason')) return;
 
-  // Teleport to body
-  if (modal.parentElement !== document.body) {
-    document.body.appendChild(modal);
-  }
-
-  var r = (window.bugReportsMap && window.bugReportsMap[String(reportId)]) ||
-          (adminState.bugReports || []).find(function(item) {
-            return String(item.id) === String(reportId);
-          });
-
-  var finalSubject = (r && r.subject) || fallbackSubject || '—';
-  var finalSender = r ? ((r.user_name || 'Kullanıcı') + ' (' + (r.user_email || '—') + ')') : (fallbackSender || '—');
-
-  var idEl = document.getElementById('reject-modal-report-id');
+  var r = adminFindBugReport(reportId);
   var subjEl = document.getElementById('reject-modal-subject');
   var senderEl = document.getElementById('reject-modal-sender');
-  var presetEl = document.getElementById('reject-preset-select');
-  var reasonEl = document.getElementById('reject-modal-reason');
+  if (subjEl) subjEl.textContent = (r && r.subject) || fallbackSubject || '—';
+  if (senderEl) senderEl.textContent = r ? ((r.user_name || 'Kullanıcı') + ' (' + (r.user_email || '—') + ')') : (fallbackSender || '—');
 
-  if (idEl) idEl.value = reportId || (r ? r.id : '');
-  if (subjEl) subjEl.textContent = finalSubject;
-  if (senderEl) senderEl.textContent = finalSender;
-  if (presetEl) presetEl.value = 'invalid';
-  if (reasonEl) reasonEl.value = BUG_REJECT_PRESETS.invalid;
-
-  modal.classList.add('open', 'active');
-  modal.style.display = 'flex';
-  modal.style.visibility = 'visible';
-  modal.style.opacity = '1';
-  modal.style.zIndex = '999999';
-
-  setTimeout(function() {
-    if (reasonEl) reasonEl.focus();
-  }, 100);
+  adminSetField('reject-modal-report-id', reportId || (r ? r.id : ''));
+  adminSetField('reject-preset-select', 'invalid');
+  adminSetField('reject-modal-reason', BUG_REJECT_PRESETS.invalid);
 }
 window.openBugRejectModal = openBugRejectModal;
 
-function closeBugRejectModal() {
-  var modal = document.getElementById('bug-reject-modal');
-  if (modal) {
-    modal.classList.remove('open', 'active');
-    modal.style.display = 'none';
-  }
-}
+function closeBugRejectModal() { adminCloseModal('bug-reject-modal'); }
 window.closeBugRejectModal = closeBugRejectModal;
 
 function onBugRejectPresetChange(presetKey) {
@@ -3152,21 +2223,17 @@ function onBugRejectPresetChange(presetKey) {
 window.onBugRejectPresetChange = onBugRejectPresetChange;
 
 async function confirmBugReject() {
-  var idEl = document.getElementById('reject-modal-report-id');
-  var reasonEl = document.getElementById('reject-modal-reason');
-  var reportId = idEl ? idEl.value : '';
-  var reason = reasonEl ? reasonEl.value.trim() : '';
+  var reportId = document.getElementById('reject-modal-report-id').value;
+  var reason = document.getElementById('reject-modal-reason').value.trim();
 
   if (!reason) {
-    if (typeof showToast === 'function') showToast('Lütfen bir ret gerekçesi belirtin.', 'error');
+    showToast('Lütfen bir ret gerekçesi belirtin.', 'error');
     return;
   }
 
   var btn = document.getElementById('confirm-reject-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Reddediliyor...';
-  }
+  var label = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Reddediliyor...'; }
 
   try {
     var ok = await replyBugReport(reportId, reason, 'rejected');
@@ -3175,34 +2242,7 @@ async function confirmBugReject() {
       renderBugReportsPanel();
     }
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Bildirimi Reddet';
-    }
+    if (btn) { btn.disabled = false; btn.textContent = label; }
   }
 }
 window.confirmBugReject = confirmBugReject;
-
-// Global Event Delegation & Backdrop Click Listeners
-if (typeof document !== 'undefined' && !ADMIN_PAGE.__bugReportsListenersAttached) {
-  ADMIN_PAGE.__bugReportsListenersAttached = true;
-  ADMIN_PAGE.on(document, 'click', function(e) {
-    // 1. Any Bug Action Button (Reply, Reject, Ban)
-    var btn = e.target.closest('.btn-bug-action, [data-action="reply-bug"], [data-action="reject-bug"], [data-action="ban-bug-user"]');
-    if (btn) {
-      if (window.handleBugActionClick) {
-        window.handleBugActionClick(e, btn);
-      }
-      return;
-    }
-
-    // 2. Modal Backdrop Click to Close
-    if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
-      e.target.classList.remove('open', 'active');
-      e.target.style.display = 'none';
-    }
-  });
-}
-
-
-

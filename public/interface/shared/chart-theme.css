@@ -140,8 +140,8 @@
    A centered modal, the size the dashboard's chart modal always had: up to 1560px
    wide, the chart clamp(340px, 52vh, 720px) tall, a blurred backdrop around it. */
 .ww-viewer {
-  --ww-viewer-bg: #000;
-  --ww-viewer-line: rgba(255, 255, 255, 0.08);
+  --ww-viewer-bg: var(--modal-bg);
+  --ww-viewer-line: var(--modal-line);
   --ww-viewer-btn-hover: rgba(255, 255, 255, 0.22);
   position: fixed;
   inset: 0;
@@ -150,16 +150,13 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: color-mix(in srgb, var(--bg, #07070c) 82%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-blur));
+  -webkit-backdrop-filter: blur(var(--modal-blur));
   font-family: 'DM Sans', sans-serif;
 }
 .light-theme .ww-viewer {
-  --ww-viewer-bg: #fff;
-  --ww-viewer-line: #e2e8f0;
   --ww-viewer-btn-hover: #cbd5e1;
-  background: rgba(15, 23, 42, 0.45);
 }
 .ww-viewer.active { display: flex; }
 html.ww-viewer-open, html.ww-viewer-open body { overflow: hidden; }
@@ -171,8 +168,8 @@ html.ww-viewer-open, html.ww-viewer-open body { overflow: hidden; }
   flex-direction: column;
   background: var(--ww-viewer-bg);
   border: 1px solid var(--ww-viewer-line);
-  border-radius: 20px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
   color: var(--ww-tip-text);
   overflow: hidden;
   animation: wwViewerIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);

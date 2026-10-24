@@ -76,6 +76,20 @@
   --z-modal-content: 1001;
   --z-avatar-popup: 2000;
   --z-toast: 9999;
+
+  /* PANEL (MODAL) TASARIM TOKEN'LARI — tüm paneller bu değerleri kullanır */
+  --modal-bg: #000;
+  --modal-line: rgba(255, 255, 255, 0.08);
+  --modal-line-strong: rgba(255, 255, 255, 0.14);
+  --modal-field-bg: #000;
+  --modal-field-line: rgba(255, 255, 255, 0.12);
+  --modal-hover: rgba(255, 255, 255, 0.06);
+  --modal-backdrop: rgba(4, 2, 10, 0.78);
+  --modal-blur: 8px;
+  --modal-radius: 16px;
+  --modal-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  --modal-pad-x: 1.35rem;
+  --modal-anim: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ============================================================
@@ -116,6 +130,15 @@ body.light-theme {
   --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-secondary));
 
   --shadow: 0 4px 24px rgba(0,0,0,0.06);
+
+  --modal-bg: #fff;
+  --modal-line: #e2e8f0;
+  --modal-line-strong: #cbd5e1;
+  --modal-field-bg: #f8fafc;
+  --modal-field-line: #e2e8f0;
+  --modal-hover: #f1f5f9;
+  --modal-backdrop: rgba(15, 23, 42, 0.45);
+  --modal-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.18);
 }
 
 /* ============================================================
@@ -1757,33 +1780,29 @@ body.light-theme .ww-toast-close:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-blur));
+  -webkit-backdrop-filter: blur(var(--modal-blur));
   z-index: var(--z-modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  animation: modalFadeIn 0.3s ease;
 }
 .confirm-modal.active { display: flex; }
-@keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
 .confirm-modal-box {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: clamp(14px, 2vw, 20px);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
   max-width: min(420px, 92vw);
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.08);
+  box-shadow: var(--modal-shadow);
+  animation: var(--modal-anim);
 }
 .confirm-modal-header {
-  padding: clamp(0.75rem, 1.2vw, 1.25rem) clamp(0.75rem, 1.5vw, 1.5rem);
-  border-bottom: 1px solid var(--border);
+  padding: 1.1rem var(--modal-pad-x);
+  border-bottom: 1px solid var(--modal-line);
   display: flex;
   align-items: center;
   gap: clamp(8px, 1vw, 12px);
@@ -1801,13 +1820,13 @@ body.light-theme .ww-toast-close:hover {
 .confirm-modal-header .icon-wrap svg { width: clamp(16px, 2vw, 20px); height: clamp(16px, 2vw, 20px); stroke: var(--red); stroke-width: 2; }
 .confirm-modal-header h3 {
   font-family: 'Syne', sans-serif;
-  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
-.confirm-modal-body { padding: clamp(0.75rem, 1.2vw, 1.25rem) clamp(0.75rem, 1.5vw, 1.5rem); }
+.confirm-modal-body { padding: 1.25rem var(--modal-pad-x); }
 .confirm-modal-body p {
   font-family: 'DM Sans', sans-serif;
   font-size: clamp(11px, 0.9vw, 13px);
@@ -1830,24 +1849,17 @@ body.light-theme .ww-toast-close:hover {
 }
 .confirm-modal-body .warning-text svg { width: clamp(12px, 1.2vw, 14px); height: clamp(12px, 1.2vw, 14px); stroke: currentColor; flex-shrink: 0; }
 .confirm-modal-footer {
-  padding: clamp(0.5rem, 0.8vw, 1rem) clamp(0.75rem, 1.5vw, 1.5rem) clamp(0.75rem, 1.2vw, 1.25rem);
-  border-top: 1px solid var(--border);
+  padding: 0.95rem var(--modal-pad-x);
+  border-top: 1px solid var(--modal-line);
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(6px, 0.8vw, 10px);
+  gap: 0.6rem;
   justify-content: flex-end;
 }
 .confirm-modal-footer .btn-modal-cancel {
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 40px;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(10px, 0.8vw, 12px);
-  font-weight: 500;
-  padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.4rem);
-  cursor: pointer;
-  min-height: 36px;
 }
 .confirm-modal-footer .btn-modal-cancel:hover {
   border-color: var(--accent);
@@ -1857,16 +1869,8 @@ body.light-theme .ww-toast-close:hover {
 .confirm-modal-footer .btn-modal-danger {
   background: #dc2626;
   border: none;
-  border-radius: 40px;
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
-  font-size: clamp(10px, 0.8vw, 12px);
-  font-weight: 600;
-  padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.8rem, 1vw, 1.6rem);
-  cursor: pointer;
   box-shadow: none;
-  min-height: 36px;
-  transition: background 0.15s ease;
 }
 .confirm-modal-footer .btn-modal-danger:hover {
   background: #b91c1c;
@@ -2623,14 +2627,24 @@ body {
 .plan .plan-badge { display: none; }
 
 /* ============================================================
-   GLOBAL MODAL BASE STILLERI
+   PANEL (MODAL) — TEK KAYNAK
+   Tüm sayfalar .modal-overlay > .modal-box > .modal-header / .modal-body /
+   .modal-footer yapısını kullanır. Sayfa CSS'leri bu bloğu KOPYALAMAMALI;
+   yalnızca genişlik (.modal-box-lg/-md/-sm) gibi sayfaya özel farkları ekler.
+   journals / dashboard-goal / confirm / quick-add / prop panelleri de aynı
+   --modal-* token'larını ve aşağıdaki başlık/kapat/alt çubuk ölçülerini kullanır.
    ============================================================ */
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-blur));
+  -webkit-backdrop-filter: blur(var(--modal-blur));
   z-index: var(--z-modal-overlay, 1000);
   display: none;
   align-items: center;
@@ -2649,22 +2663,160 @@ body {
 }
 
 .modal-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   max-height: 90dvh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  box-shadow: var(--modal-shadow);
+  animation: var(--modal-anim);
   overflow: hidden;
   box-sizing: border-box;
 }
+.modal-box.modal-box-sm { max-width: 440px; }
+.modal-box.modal-box-md { max-width: 620px; }
+.modal-box.modal-box-lg { max-width: 880px; }
 
-.modal-box.modal-box-lg {
-  max-width: 880px;
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.1rem var(--modal-pad-x);
+  border-bottom: 1px solid var(--modal-line);
+  flex-shrink: 0;
+}
+.modal-header h2,
+.modal-header h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.modal-close svg, .modal-close i { width: 16px; height: 16px; stroke-width: 2; }
+.modal-close:hover,
+.modal-close:focus-visible {
+  background: var(--modal-hover);
+  border-color: var(--modal-line);
+  color: var(--text);
+  outline: none;
+}
+
+.modal-body {
+  padding: 1.25rem var(--modal-pad-x);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.95rem var(--modal-pad-x);
+  border-top: 1px solid var(--modal-line);
+  background: var(--modal-bg);
+  flex-shrink: 0;
+}
+
+/* Alt çubuk düğmeleri: renk /buttons.css'ten (siyah + mor çerçeve), ölçü burada tek yerde */
+.modal-footer .btn,
+.modal-footer .btn-modal-cancel,
+.modal-footer .btn-modal-confirm,
+.modal-footer .btn-primary,
+.modal-footer .btn-ghost,
+.confirm-modal-footer .btn-modal-cancel,
+.confirm-modal-footer .btn-modal-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0.45rem 1.2rem;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-footer .btn svg, .modal-footer .btn i { width: 15px; height: 15px; stroke-width: 2.25; }
+
+/* Panel içi form alanları (.field / .modal-field) */
+.modal-body .field,
+.modal-body .modal-field { margin-bottom: 0.9rem; }
+.modal-body .field label,
+.modal-body .modal-field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.modal-body .field input,
+.modal-body .field select,
+.modal-body .field textarea,
+.modal-body .modal-field input[type="text"],
+.modal-body .modal-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--modal-field-bg);
+  border: 1px solid var(--modal-field-line);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.modal-body .field input:focus,
+.modal-body .field select:focus,
+.modal-body .field textarea:focus,
+.modal-body .modal-field input[type="text"]:focus,
+.modal-body .modal-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+.modal-body .field select option { background: var(--modal-bg); color: var(--text); }
+.modal-body :disabled { opacity: 0.55; cursor: not-allowed; }
+
+@media (max-width: 520px) {
+  .modal-footer .btn,
+  .modal-footer .btn-modal-cancel,
+  .modal-footer .btn-modal-confirm,
+  .confirm-modal-footer .btn-modal-cancel,
+  .confirm-modal-footer .btn-modal-danger { flex: 1; min-height: 44px; }
 }
 
 /* ============================================================

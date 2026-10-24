@@ -721,9 +721,9 @@ html.light-theme .prop-cockpit-col-val {
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background: rgba(8, 8, 16, 0.78) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
+  background: var(--modal-backdrop) !important;
+  backdrop-filter: blur(var(--modal-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--modal-blur)) !important;
   z-index: 99999 !important;
   display: none;
   align-items: center !important;
@@ -746,15 +746,15 @@ html.light-theme .prop-cockpit-col-val {
 
 .prop-modal-box {
   margin: auto !important;
-  background: var(--surface, #12121a);
-  border: 1px solid var(--border, #262636);
-  border-radius: 16px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
   width: 92%;
   max-width: 450px;
   padding: 1.5rem;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: var(--modal-shadow);
   box-sizing: border-box;
-  animation: propModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: var(--modal-anim);
 }
 
 @keyframes propModalScaleIn {
@@ -770,25 +770,25 @@ html.light-theme .prop-cockpit-col-val {
 }
 
 .prop-notices-modal-content {
-  background: var(--surface, #12121a);
-  border: 1px solid var(--border, #262636);
-  border-radius: 16px;
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-line);
+  border-radius: var(--modal-radius);
   width: 92%;
   max-width: 480px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: var(--modal-shadow);
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   margin: auto !important;
-  animation: propModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: var(--modal-anim);
 }
 
 .prop-notices-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--modal-line);
   padding-bottom: 0.75rem;
 }
 
