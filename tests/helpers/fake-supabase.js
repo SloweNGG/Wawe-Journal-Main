@@ -99,13 +99,16 @@ export class FakeDb {
   // Off by default so the sync-library tests can keep linking accounts, which stays valid for 'ctrader' accounts.
   // migration09: emulate Migration 09 on top of 08 (data_source 'synthetic'|'ctrader', source_* columns and their CHECK, immutable source,
   // cTrader account must be connected by the same user = `ctrader.accounts`). `ctrader` also feeds the get_ctrader_status RPC.
-  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null }) {
+  // drawings: emulate 202610240001 (backtest_drawings: own account, Premium writes only, upsert by id); plan: 'free' | 'premium'.
+  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null, drawings = false, plan = 'free' }) {
+    this.plan = plan;
     this.userId = userId;
     this.migration08 = migration08 || migration09;
     this.migration09 = migration09;
     this.ctrader = ctrader || { token_status: 'none', accounts: [] };
     this.journals = journals.map((j) => ({ ...j }));   // [{id, user_id, is_default}]
     this.tables = { trades: [], backtest_accounts: [], backtest_account_trades: [] };
+    if (drawings) this.tables.backtest_drawings = [];
     this.seq = 0;
     this.failNext = [];   // [{ table, op, error, status }]
     this.client = recordingClient((call) => this.handle(call));
@@ -155,6 +158,7 @@ export class FakeDb {
       if (call.single) return { data: data[0] || null, error: (call.single === 'single' && !data.length) ? { code: 'PGRST116', message: 'no rows' } : null, status: 200 };
       return { data, error: null, status: 200 };
     }
+    if ((call.op === 'upsert' || call.op === 'insert') && call.table === 'backtest_drawings') return this.drawingWrite(call);
     if (call.op === 'upsert' || call.op === 'insert') return this.insert(call);
     if (call.op === 'update') return this.update(call);
     if (call.op === 'delete') return this.remove(call);
@@ -206,6 +210,20 @@ export class FakeDb {
     for (const row of staged) { row.id = row.id || this.nextId(); t.push(row); }
     return { data: call.returning ? staged.map((r) => toWire(r, call.columns)) : null, error: null, status: 201 };
   }
+  // trg_check_backtest_drawing + upsert (INSERT ... ON CONFLICT (id) DO UPDATE)
+  drawingWrite(call) {
+    const t = this.tables.backtest_drawings, rows = Array.isArray(call.payload) ? call.payload : [call.payload];
+    for (const src of rows) {
+      if (this.plan !== 'premium') return { data: null, error: { code: 'P0001', message: 'BACKTEST_DRAWINGS_PREMIUM' }, status: 400 };
+      if (!this.tables.backtest_accounts.some((a) => a.id === src.backtest_account_id && a.user_id === src.user_id)) return { data: null, error: { code: 'P0001', message: 'INVALID_BACKTEST_ACCOUNT' }, status: 400 };
+      if (!['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure'].includes(src.tool)) return { data: null, error: { code: '23514', message: 'chk_backtest_drawings_tool' }, status: 400 };
+      const old = t.find((r) => r.id === src.id);
+      if (old && call.op === 'insert') return { data: null, error: { code: '23505', message: 'duplicate key' }, status: 409 };
+      if (old) { if (old.backtest_account_id !== src.backtest_account_id) return { data: null, error: { code: 'P0001', message: 'BACKTEST_DRAWING_IMMUTABLE' }, status: 400 }; Object.assign(old, src, { updated_at: new Date().toISOString() }); }
+      else t.push({ ...src, id: src.id || this.nextId(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+    }
+    return { data: null, error: null, status: 201 };
+  }
   migration08Violation(row) {
     if (this.migration09) {
       if (row.data_source !== 'synthetic' && row.data_source !== 'ctrader') return 'chk_backtest_accounts_data_source';
@@ -249,6 +267,7 @@ export class FakeDb {
     if (call.table === 'backtest_accounts') {
       for (const a of hits) {
         this.tables.backtest_account_trades = this.tables.backtest_account_trades.filter((x) => x.backtest_account_id !== a.id);  // ON DELETE CASCADE
+        if (this.tables.backtest_drawings) this.tables.backtest_drawings = this.tables.backtest_drawings.filter((x) => x.backtest_account_id !== a.id);
         if (a.journal_id) this.cleanupMirrors(a);                                                                               // Migration 04 AFTER DELETE
       }
     }

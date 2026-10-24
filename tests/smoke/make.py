@@ -18,8 +18,8 @@ page = '''<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name=
 ''' + links + '''</head>
 ''' + body + '''
 <script>
-(function(){var cur={alive:true,_c:[],onLeave:function(f){this._c.push(f)},on:function(t,e,f,o){t.addEventListener(e,f,o)},onI18nChange:function(){},expose:function(){}};
-window.wwPage={current:function(){return cur}};
+(function(){var cur={alive:true,_c:[],onLeave:function(f){this._c.push(f)},on:function(t,e,f,o){t.addEventListener(e,f,o)},onI18nChange:function(){},expose:function(n,v){window[n]=v}};
+window.wwPage={current:function(){return cur}};window.__BT_TEST__=true;
 var qp=new URLSearchParams(location.search);var role=qp.get('role')||'admin';
 if(qp.get('backend')!=='supabase')window.WW_BT_BACKEND='local';
 window.__warns=[];console.warn=function(){window.__warns.push([].slice.call(arguments).map(function(x){return x&&x.stack||String(x)}).join(' '))};
@@ -65,7 +65,7 @@ window.openUpgradeModal=function(){window.__upgrade=true};
 <pre id="bt-smoke-result" style="display:none"></pre>
 <script type="module">
 var qp=new URLSearchParams(location.search);
-if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0',migration09:qp.get('m09')!=='0',ctrader:window.__ctFixture});window.sb=window.__db.client;window.sb.auth={getSession:async function(){return {data:{session:{access_token:'jwt-stub'}}}}};}
+if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0',migration09:qp.get('m09')!=='0',ctrader:window.__ctFixture,drawings:qp.get('m10')!=='0',plan:qp.get('plan')||'premium'});window.sb=window.__db.client;window.sb.auth={getSession:async function(){return {data:{session:{access_token:'jwt-stub'}}}}};}
 var d=document.createElement('script');d.src=qp.get('driver')||'/__driver.js';document.body.appendChild(d);
 </script>
 </body></html>'''

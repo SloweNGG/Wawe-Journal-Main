@@ -49,7 +49,7 @@
     { id: 'fullscreen', keys: ['F'] },
     { id: 'exit', keys: ['Esc'] },
     { id: 'mode', keys: ['Shift', 'M'] },
-    { id: 'tools', keys: ['1', '…', '8'], advanced: true },
+    { id: 'tools', keys: ['1', '…', '9'], advanced: true },
     { id: 'cursor', keys: ['V'], advanced: true },
     { id: 'magnet', keys: ['M'], advanced: true },
     { id: 'delete_drawing', keys: ['Del'], advanced: true },

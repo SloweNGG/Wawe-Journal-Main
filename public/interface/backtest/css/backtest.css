@@ -323,3 +323,34 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
 .bt-look-foot { margin-top: 12px; }
 #bt-look-btn[aria-expanded="true"] { border-color: var(--accent); }
 
+/* ---------------------------------------------------------------- Çizim araçları (bt-draw.js) */
+.bt-chart-body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; gap: 8px; }
+.bt-chart-body .bt-chart-wrap { flex: 1 1 auto; min-width: 0; }
+.bt-draw-bar { flex: none; display: grid; grid-auto-flow: column; grid-template-rows: repeat(10, 32px); grid-auto-columns: 34px;
+  gap: 2px 3px; align-content: start; justify-items: center; align-items: center; padding: 2px 0; overflow: hidden; }
+.bt-draw-bar::-webkit-scrollbar { display: none; }
+.bt-draw-btn { position: relative; flex: none; width: 34px; height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;
+  background: none; color: var(--muted); border: 1px solid transparent; border-radius: 8px; }
+.bt-draw-btn svg { width: 17px; height: 17px; }
+.bt-draw-btn:hover { color: var(--text); background: var(--surface2); }
+.bt-draw-btn[aria-pressed="true"] { color: var(--accent3); border-color: var(--border2); background: var(--accent-bg, rgba(139, 92, 246, 0.12)); }
+.bt-draw-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.bt-draw-btn.bt-draw-del:hover { color: var(--red); }
+.bt-draw-pro { position: absolute; right: -3px; bottom: -2px; margin: 0; padding: 0 3px; font-size: 7.5px; line-height: 1.4; pointer-events: none; }
+.bt-draw-sep { width: 18px; height: 1px; background: var(--border); }
+.bt-draw-color { flex: none; width: 26px; height: 22px; padding: 0; margin: 2px 0; border: 1px solid var(--border); border-radius: 6px; background: none; cursor: pointer; }
+.bt-draw-color::-webkit-color-swatch-wrapper { padding: 2px; }
+.bt-draw-color::-webkit-color-swatch { border: 0; border-radius: 3px; }
+:root:not(.light-theme) body:not(.light-theme) .bt-draw-btn:hover { background: rgba(255, 255, 255, 0.06); }
+#bt-root.bt-fs .bt-chart-body { position: absolute; inset: 0; display: block; }
+#bt-root.bt-fs .bt-draw-bar { position: fixed; left: 12px; top: 120px; bottom: 90px; z-index: 995; height: auto; padding: 6px 4px;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+:root:not(.light-theme) body:not(.light-theme) #bt-root.bt-fs .bt-draw-bar { background: #000; border-color: rgba(255, 255, 255, 0.14); }
+@media (max-width: 1024px) {
+  .bt-chart-body { flex-direction: column; gap: 4px; }
+  .bt-draw-bar { display: flex; width: auto; height: 38px; flex-direction: row; align-items: center; gap: 3px; overflow-x: auto; overflow-y: hidden; padding: 0 2px; scrollbar-width: none; }
+  .bt-draw-bar::-webkit-scrollbar { display: none; }
+  .bt-draw-sep { flex: none; width: 1px; height: 20px; margin: 0 3px; }
+  #bt-root.bt-fs .bt-draw-bar { top: 84px; bottom: auto; left: 12px; right: 12px; width: auto; height: 42px; padding: 0 6px; }
+  #bt-root.bt-fs .bt-chart-top { top: 132px; }
+}

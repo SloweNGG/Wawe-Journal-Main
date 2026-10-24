@@ -46,6 +46,8 @@ describe('bt-i18n', () => {
     for (const id of LK.COLOR_KEYS) used.add('backtest.look.color_' + id);
     for (const id of LK.SWITCHES) used.add('backtest.look.' + id);
     for (const id of LK.PRESET_IDS) used.add('backtest.look.preset.' + id);
+    await import('../public/interface/backtest/js/bt-draw.js');
+    for (const id of globalThis.WwBtDraw.TOOLS) used.add('backtest.draw.tool_' + id);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
   });
   it('no lock icon anywhere in the page (owner preference)', () => {

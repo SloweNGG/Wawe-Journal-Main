@@ -32,6 +32,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-layout.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-draw.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/backtest.js?v=9" is:inline defer data-page-script></script>
 </Fragment>
 
@@ -155,11 +156,14 @@ import Layout from '../layouts/Layout.astro';
             <div id="bt-legend" class="bt-legend bt-num" aria-hidden="true"></div>
             <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri, gerçek piyasa verisi değildir</span>
           </div>
+          <div class="bt-chart-body">
+          <div id="bt-draw-bar" class="bt-draw-bar bt-adv-only" role="toolbar" aria-orientation="vertical" data-i18n-title="backtest.draw.toolbar" title="Çizim araçları"></div>
           <div class="bt-chart-wrap">
             <div id="bt-chart" class="bt-chart"></div>
             <div id="bt-chart-overlay" class="bt-chart-overlay" hidden>
               <span id="bt-overlay-text">Mum verisi yükleniyor…</span>
             </div>
+          </div>
           </div>
           <div id="bt-data-banner" class="bt-banner" role="status" hidden>
             <span id="bt-data-banner-text"></span>
@@ -417,6 +421,23 @@ import Layout from '../layouts/Layout.astro';
         <button type="button" id="bt-keys-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
       </div>
       <div class="modal-body"><div id="bt-keys-list"></div></div>
+    </div>
+  </div>
+
+  <div id="bt-text-modal" class="modal-overlay bt-modal" role="dialog" aria-modal="true" aria-labelledby="bt-text-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-header">
+        <h3 id="bt-text-title" data-i18n="backtest.draw.text_title">Metin</h3>
+        <button type="button" id="bt-text-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+      </div>
+      <form id="bt-text-form" class="modal-body" novalidate autocomplete="off">
+        <div class="bt-field"><label for="bt-text-input" data-i18n="backtest.draw.text_label">Grafiğe yazılacak metin</label>
+          <input id="bt-text-input" class="bt-input" type="text" maxlength="200" /></div>
+      </form>
+      <div class="modal-footer">
+        <button type="button" id="bt-text-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
+        <button type="button" id="bt-text-ok" class="btn-modal-confirm"><span data-i18n="common.save">Kaydet</span></button>
+      </div>
     </div>
   </div>
 

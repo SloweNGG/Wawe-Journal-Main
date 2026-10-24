@@ -32,6 +32,7 @@
   var R = null;
   var LAY = null;                               // window.WwBtLayout controller (mode, panel sizes, full screen)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
+  var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var FEATURES = ['backtestThemes', 'backtestDrawings', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
@@ -121,7 +122,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtLook &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtLook && window.WwBtDraw &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -162,6 +163,11 @@
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; } });
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
     L.look = window.WwBtLook.load(safeStorage());
+    DRAW = window.WwBtDraw.createController({
+      bar: $('bt-draw-bar'), t: _t, pro: function () { return can('backtestDrawings'); }, saveable: function () { return can('backtestDrawings'); },
+      upgrade: function () { openUpgrade('backtest_drawings'); }, toast: toast, newId: newId, askText: askText, confirm: function (txt) { return askConfirm(txt); },
+      icons: icons, local: safeStorage(), session: safeSession(), db: drawingsDb(), userId: function () { return L.user && L.user.id; }
+    });
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
@@ -171,6 +177,37 @@
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
   }
   function safeStorage() { try { return window.localStorage; } catch (e) { return null; } }
+  function safeSession() { try { return window.sessionStorage; } catch (e) { return null; } }
+  // Premium drawings: public.backtest_drawings (RLS: own rows; the database also checks the plan). Smoke tests (local backend): localStorage.
+  function drawingsDb() {
+    if (BACKEND !== 'supabase') {
+      var K = 'ww-bt-drawings-test', all = function () { try { return JSON.parse(localStorage.getItem(K) || '[]'); } catch (e) { return []; } };
+      var put = function (rows) { localStorage.setItem(K, JSON.stringify(rows)); };
+      return {
+        load: function (acc) { return Promise.resolve({ data: all().filter(function (r) { return r.backtest_account_id === acc; }), error: null }); },
+        save: function (row) { if (!can('backtestDrawings')) return Promise.resolve({ error: { message: 'BACKTEST_DRAWINGS_PREMIUM' } }); var a = all().filter(function (r) { return r.id !== row.id; }); a.push(row); put(a); return Promise.resolve({ error: null }); },
+        remove: function (id) { put(all().filter(function (r) { return r.id !== id; })); return Promise.resolve({ error: null }); }
+      };
+    }
+    return {
+      load: function (acc) { return window.sb.from('backtest_drawings').select('id,tool,points,style,created_at').eq('user_id', L.user.id).eq('backtest_account_id', acc).order('created_at', { ascending: true }); },
+      save: function (row) { return window.sb.from('backtest_drawings').upsert(row); },
+      remove: function (id) { return window.sb.from('backtest_drawings').delete().eq('id', id).eq('user_id', L.user.id); }
+    };
+  }
+  // text of a text drawing (page-local modal, like askConfirm)
+  var textCb = null;
+  function askText(initial, cb) {
+    textCb = cb;
+    $('bt-text-input').value = initial || '';
+    $('bt-text-modal').classList.add('active');
+    setTimeout(function () { try { $('bt-text-input').focus(); } catch (e) { /* ignore */ } }, 30);
+  }
+  function finishText(ok) {
+    $('bt-text-modal').classList.remove('active');
+    var cb = textCb; textCb = null;
+    if (cb) cb(ok ? $('bt-text-input').value.trim().slice(0, window.WwBtDraw.MAX_TEXT) : '');
+  }
   function isPro() { return L.plan === 'premium'; }
   function can(f) { return L.feat[f] === true; }
   // free user on a Premium control: the upgrade window (the control shows a small PRO tag)
@@ -333,6 +370,7 @@
   }
   function anyModalOpen() { return !!document.querySelector('.bt-modal.active'); }
   function closeAllModals() {
+    if (textCb) finishText(false);
     var m = document.querySelectorAll('.bt-modal.active'); for (var i = 0; i < m.length; i++) m[i].classList.remove('active');
     if (confirmResolve) finishConfirm(false);
   }
@@ -739,6 +777,7 @@
       $('bt-tf').value = acc.tf; $('bt-speed').value = String(spd);
       try { var u = new URL(location.href); u.searchParams.set('account', id); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
       overlay(_t('backtest.chart.loading', 'Mum verisi yükleniyor…'));
+      DRAW.setAccount(acc.id);
       buildChart();
       R.cov = await R.src.coverage(sym.id);
       if (!PAGE.alive || !R) return;
@@ -765,6 +804,7 @@
     if (!R) return;
     if (LAY) LAY.setFullscreen(false);
     if ($('bt-look-drawer')) $('bt-look-drawer').hidden = true;
+    if (DRAW) DRAW.setAccount(null);
     pause(); saveReplayTime(true);
     R.abort.abort(); R.token++;
     destroyChart();
@@ -1190,10 +1230,14 @@
     R.series.attachPrimitive(R.sessions); R.sessions.setVisible(lk.showSessions);
     R.chart.subscribeCrosshairMove(renderLegend);
     R.chart.timeScale().subscribeVisibleLogicalRangeChange(refreshClippedTicks);
+    var dg = R.sym.digits;
+    R.layer = DRAW.attach({ chart: R.chart, series: R.series, el: $('bt-chart'), bars: function () { return R && R.bars ? R.bars : []; },
+      tfSec: function () { return R ? R.tfMin * 60 : 3600; }, fmt: function (p) { return Number(p).toFixed(dg); } });
     if (!R.chart.autoSizeActive || !R.chart.autoSizeActive()) installResizeFallback();
   }
   function destroyChart() {
     if (!R || !R.chart) return;
+    if (R.layer) { DRAW.detach(R.layer); R.layer = null; }
     try { R.chart.remove(); } catch (e) { /* ignore */ }
     R.chart = null; R.series = null; R.vol = null; R.sessions = null; R.lines = {}; R.askLine = null; R.bidLine = null;
   }
@@ -1574,6 +1618,11 @@
       light: function () { return window.WwChart.isLight(); }, upgrade: function () { openUpgrade('backtest_themes'); }, newId: newId,
       change: function (next, how) { L.look = next; window.WwBtLook.save(safeStorage(), next); applyLook(how); } });
     $('bt-look-btn').addEventListener('click', function () { toggleDrawer(); });
+    $('bt-text-ok').addEventListener('click', function () { finishText(true); });
+    $('bt-text-cancel').addEventListener('click', function () { finishText(false); });
+    $('bt-text-close').addEventListener('click', function () { finishText(false); });
+    $('bt-text-form').addEventListener('submit', function (e) { e.preventDefault(); finishText(true); });
+    $('bt-text-modal').addEventListener('click', function (e) { if (e.target === $('bt-text-modal')) finishText(false); });
     $('bt-look-close').addEventListener('click', function () { toggleDrawer(false); });
     ['open', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
     $('bt-save-retry-btn').addEventListener('click', retrySave);
@@ -1599,10 +1648,12 @@
   // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
   function escapeChain() {
     if (!$('bt-look-drawer').hidden) { toggleDrawer(false); return true; }
+    if (DRAW && DRAW.escape()) return true;
     if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(false); return true; }
     return false;
   }
-  function handleToolKey(e) { void e; return false; }
+  // drawing keys (1-9 tools, V cursor, M magnet, Del) in advanced mode, where the toolbar is
+  function handleToolKey(e) { return !!DRAW && LAY.mode() === 'advanced' && DRAW.key(e); }
   function toggleDrawer(on) {
     var d = $('bt-look-drawer'); if (on === undefined) on = d.hidden;
     if (on) { DRAWER.render(); d.hidden = false; $('bt-look-btn').setAttribute('aria-expanded', 'true'); var f = d.querySelector('button, input'); if (f) f.focus(); }
@@ -1615,6 +1666,7 @@
   }
   function onLayoutChange(prefs, what) {
     if (what === 'mode' && R) { renderTables(); renderLive(true); }
+    if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } }, 60); }
   }
   function setupVisibility() {
@@ -1652,9 +1704,13 @@
     if (themeObserver) themeObserver.disconnect();
     try { destroyChart(); } catch (e) { /* ignore */ }
     if (LAY) { try { LAY.destroy(); } catch (e) { /* ignore */ } }
+    if (DRAW) { try { DRAW.destroy(); } catch (e) { /* ignore */ } }
     R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; L.ctFormAccts = {}; ctSeq++;
   }
   PAGE.onLeave(cleanup);
+  // browser smoke tests only (tests/smoke/make.py sets __BT_TEST__): read access to the chart and the drawings
+  if (window.__BT_TEST__) PAGE.expose('__btTest', { chart: function () { return R && R.chart; }, series: function () { return R && R.series; },
+    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; } });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
