@@ -31,6 +31,17 @@ describe('bt-i18n', () => {
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
     for (const g of ['forex', 'gold', 'crypto']) for (const l of LANGS) assert.ok(`backtest.group.${g}` in loc[l]);
   });
+  it('the new modules (layout, look, drawings, stats, charts) only use existing keys', async () => {
+    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|look|draw|stats|multi)/.test(f));
+    const used = new Set();
+    for (const f of files) {
+      const src = fs.readFileSync('public/interface/backtest/js/' + f, 'utf8');
+      for (const m of src.matchAll(/\bt\('((?:backtest|common)\.[a-z0-9_.]+)'/g)) if (!m[1].endsWith('.')) used.add(m[1]);
+    }
+    await import('../public/interface/backtest/js/bt-layout.js');
+    for (const s of globalThis.WwBtLayout.SHORTCUTS) used.add('backtest.keys.' + s.id);
+    for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
+  });
   it('no lock icon anywhere in the page (owner preference)', () => {
     const src = fs.readFileSync('src/pages/backtest.astro', 'utf8') + fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
     assert.ok(!/data-lucide="(lock|shield-lock|key)"/.test(src));

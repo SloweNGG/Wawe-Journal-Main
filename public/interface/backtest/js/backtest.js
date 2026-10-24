@@ -30,6 +30,7 @@
   var L = { user: null, plan: 'free', accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
+  var LAY = null;                               // window.WwBtLayout controller (mode, panel sizes, full screen)
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
 
@@ -118,7 +119,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -153,12 +154,16 @@
       ? window.WwBtStore.createSupabaseStore({ sb: window.sb, userId: user.id })
       : window.WwBtStore.createLocalStore({ userId: user.id, limit: function () { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; } });
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
+    LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
+    LAY.decideMode(L.accounts.length);
     var deep = new URLSearchParams(location.search).get('account');
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
   }
+  function safeStorage() { try { return window.localStorage; } catch (e) { return null; } }
+  function isPro() { return L.plan === 'premium'; }
   function whenActivated() {
     return document.prerendering ? new Promise(function (r) { document.addEventListener('prerenderingchange', r, { once: true }); }) : Promise.resolve();
   }
@@ -747,6 +752,7 @@
   }
   function closeReplayState() {
     if (!R) return;
+    if (LAY) LAY.setFullscreen(false);
     pause(); saveReplayTime(true);
     R.abort.abort(); R.token++;
     destroyChart();
@@ -1370,7 +1376,26 @@
     });
     show($('bt-open-empty'), R.eng.open.length === 0);
     setText('bt-open-count', String(R.eng.open.length));
+    renderMiniPositions(fl);
     void q;
+  }
+  // simple mode: the open positions under the order panel (the bottom tabs are hidden there)
+  function renderMiniPositions(fl) {
+    var list = $('bt-mini-pos-list'), s = R.sym; if (!list) return;
+    list.textContent = '';
+    R.eng.open.forEach(function (p) {
+      var f = fl.byId[p.id], li = el('li');
+      li.appendChild(el('span', 'bt-num ' + (p.dir > 0 ? 'bt-up' : 'bt-down'), dirLabel(p.dir) + ' ' + E.stepsToStr(p.steps, s.lotDigits)));
+      li.appendChild(el('span', 'bt-mini-meta bt-num', '@ ' + E.ptsToStr(p.entry, s.digits)));
+      var act = el('span', 'bt-mini-act');
+      act.appendChild(el('span', 'bt-num ' + (f ? pnlClass(f.net) : ''), f ? fmtUsd(f.net, true) : '—'));
+      var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit'); b1.setAttribute('data-id', p.id);
+      var b2 = el('button', 'btn btn-ghost', _t('backtest.pos.close', 'Kapat')); b2.type = 'button'; b2.setAttribute('data-act', 'close'); b2.setAttribute('data-id', p.id);
+      act.appendChild(b1); act.appendChild(b2); li.appendChild(act);
+      list.appendChild(li);
+    });
+    show($('bt-mini-pos-empty'), R.eng.open.length === 0);
+    setText('bt-mini-pos-count', String(R.eng.open.length));
   }
   function renderTables() {
     if (!R) return;
@@ -1460,7 +1485,7 @@
     $('bt-pos-cancel').addEventListener('click', function () { closeModal('bt-pos-modal'); });
     $('bt-pos-save').addEventListener('click', submitEditPos);
     $('bt-pos-form').addEventListener('submit', function (e) { e.preventDefault(); submitEditPos(); });
-    ['bt-account-modal', 'bt-delete-modal', 'bt-reset-modal', 'bt-pos-modal'].forEach(function (id) {
+    ['bt-account-modal', 'bt-delete-modal', 'bt-reset-modal', 'bt-pos-modal', 'bt-keys-modal'].forEach(function (id) {
       $(id).addEventListener('click', function (e) { if (e.target === $(id)) closeModal(id); });
     });
     // toolbar
@@ -1476,10 +1501,22 @@
     $('bt-sell-btn').addEventListener('click', function () { submitOrder(-1); });
     $('bt-order-form').addEventListener('submit', function (e) { e.preventDefault(); });
     ['bt-lot', 'bt-sl', 'bt-tp'].forEach(function (id) { $(id).addEventListener('input', function () { orderError(''); renderLive(false); }); });
-    $('bt-open-body').addEventListener('click', function (e) {
-      var b = e.target.closest('button[data-act]'); if (!b) return;
-      if (b.getAttribute('data-act') === 'close') closePos(b.getAttribute('data-id')); else openEditPos(b.getAttribute('data-id'));
+    ['bt-open-body', 'bt-mini-pos-list'].forEach(function (id) {
+      $(id).addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-act]'); if (!b) return;
+        if (b.getAttribute('data-act') === 'close') closePos(b.getAttribute('data-id')); else openEditPos(b.getAttribute('data-id'));
+      });
     });
+    // layout: mode switch, full screen, shortcut sheet
+    Array.prototype.forEach.call(document.querySelectorAll('[data-bt-mode]'), function (b) {
+      b.addEventListener('click', function () { LAY.setMode(b.getAttribute('data-bt-mode')); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-bt-fs]'), function (b) {
+      b.addEventListener('click', function () { LAY.setFullscreen(!LAY.isFullscreen()); });
+    });
+    $('bt-keys-btn').addEventListener('click', function (e) { openKeys(e.currentTarget); });
+    $('bt-keys-link').addEventListener('click', function (e) { openKeys(e.currentTarget); });
+    $('bt-keys-close').addEventListener('click', function () { closeModal('bt-keys-modal'); });
     ['open', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
     $('bt-save-retry-btn').addEventListener('click', retrySave);
   }
@@ -1487,11 +1524,34 @@
     PAGE.on(document, 'keydown', function (e) {
       if (e.key === 'Escape' && anyModalOpen()) { closeAllModals(); return; }
       if (!R || anyModalOpen()) return;
+      if (e.key === 'Escape') { if (escapeChain()) e.preventDefault(); return; }
       var tg = e.target && e.target.tagName;
-      if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
+      if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === ' ') { e.preventDefault(); if (R.playing) pause(); else play(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) stepMinute(); else stepCandle(); }
+      else if (e.key === '?') { e.preventDefault(); openKeys(null); }
+      else if (e.shiftKey && (e.key === 'B' || e.key === 'b')) { e.preventDefault(); if (!$('bt-buy-btn').disabled) submitOrder(1); }
+      else if (e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); if (!$('bt-sell-btn').disabled) submitOrder(-1); }
+      else if (e.shiftKey && (e.key === 'M' || e.key === 'm')) { e.preventDefault(); LAY.toggleMode(); }
+      else if (!e.shiftKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); LAY.setFullscreen(!LAY.isFullscreen()); }
+      else if (handleToolKey(e)) e.preventDefault();
     });
+  }
+  // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
+  function escapeChain() {
+    if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(false); return true; }
+    return false;
+  }
+  function handleToolKey(e) { void e; return false; }
+  function openKeys(opener) {
+    var box = $('bt-keys-list'); LAY.renderSheet(box);
+    if (LAY.mode() !== 'advanced') Array.prototype.forEach.call(box.querySelectorAll('.bt-adv-only'), function (r) { r.remove(); });
+    openModal('bt-keys-modal', opener);
+  }
+  function onLayoutChange(prefs, what) {
+    if (what === 'mode' && R) { renderTables(); renderLive(true); }
+    if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } }, 60); }
   }
   function setupVisibility() {
     PAGE.on(document, 'visibilitychange', function () { if (document.hidden && R) { pause(); saveReplayTime(true); } });
@@ -1527,6 +1587,7 @@
     if (R) { try { pause(); saveReplayTime(true); R.abort.abort(); R.token++; } catch (e) { /* ignore */ } }
     if (themeObserver) themeObserver.disconnect();
     try { destroyChart(); } catch (e) { /* ignore */ }
+    if (LAY) { try { LAY.destroy(); } catch (e) { /* ignore */ } }
     R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; L.ctFormAccts = {}; ctSeq++;
   }
   PAGE.onLeave(cleanup);
