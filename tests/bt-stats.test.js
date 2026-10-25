@@ -83,4 +83,12 @@ describe('bt-stats', () => {
     assert.deepEqual(plain(S.stepTo(bal, eq).map((p) => p.value)), [1, 1, 2]);
     assert.deepEqual(plain(S.stepTo(bal, eq, 10).map((p) => p.value)), [1, 2, 3], 'a close inside the last candle reaches the line');
   });
+  it('R figures say how many trades they come from (only trades opened with a stop loss have an R)', () => {
+    const t = [{ seq: 1, entryT: 1, exitT: 2, net: 500, comm: 0, riskCents: 1000 }, { seq: 2, entryT: 3, exitT: 4, net: -300, comm: 0, riskCents: null },
+      { seq: 3, entryT: 5, exitT: 6, net: 200, comm: 0, riskCents: null }];
+    const k = S.kpis(t, 1000000);
+    assert.equal(k.rCount, 1); assert.equal(k.count, 3); assert.ok(near(k.expectancyR, 0.5)); assert.ok(near(k.expectancy, 4 / 3), 'the dollar figure uses all three');
+    const rd = S.rDistribution(t); assert.equal(rd.count, 1); assert.equal(rd.skipped, 2);
+    assert.ok(S.R_FEW > 1); assert.equal(S.SEQ_STEP % 60, 0, 'trade numbers on whole minutes (tick weights)'); assert.equal((20 * S.SEQ_STEP) % 3600, 0, 'every 20th trade on a whole hour'); assert.equal((10 * S.SEQ_STEP) % 1800, 0, 'every 10th on a half hour'); assert.notEqual((5 * S.SEQ_STEP) % 1800, 0);
+  });
 });

@@ -712,3 +712,18 @@ html.bt-stfs-lock, html.bt-stfs-lock body { overflow: hidden !important; }
 .bt-table-orders .bt-c-act { width: 17%; }
 .bt-table-orders th:nth-child(n+3):nth-child(-n+8) { text-align: right; }
 #bt-root.bt-fs #bt-order-form .bt-ordtype button { padding: 5px 6px; font-size: 12px; }
+
+/* ---------------------------------------------------------------- işlem işaretinin bilgi kutusu (fareyle üzerine gelince) */
+.bt-mark-tip { position: fixed; z-index: 1003; pointer-events: none; max-width: 360px; padding: 7px 10px; display: flex; flex-direction: column; gap: 4px;
+  background: var(--modal-bg, var(--surface)); border: 1px solid var(--modal-line, var(--border)); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 12px; color: var(--text); }
+.bt-mark-tip[hidden] { display: none; }
+:root:not(.light-theme) body:not(.light-theme) .bt-mark-tip { background: #000; border-color: rgba(255, 255, 255, 0.16); }
+.bt-mark-row { display: grid; grid-template-columns: auto auto auto auto; gap: 10px; align-items: baseline; white-space: nowrap; }
+.bt-mark-dir { font-weight: 700; }
+.bt-mark-why { color: var(--muted); }
+.bt-mark-tip .bt-hint { margin: 0; }
+.bt-st-sub { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.bt-st-sub .bt-num { font-weight: 600; }
+.bt-st-warn { margin: 2px 0 6px; font-size: 11.5px; color: var(--yellow); }
+.bt-st-rnote { margin: 0 0 6px; }

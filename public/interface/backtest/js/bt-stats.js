@@ -10,6 +10,10 @@
 
   function M() { return global.WwMetrics; }
   var R_BINS = [[-Infinity, -2], [-2, -1], [-1, 0], [0, 1], [1, 2], [2, 3], [3, Infinity]];
+  var R_FEW = 5;                       // fewer R trades than this: the R figures are marked as unreliable
+  // the trade-number axis: trade n sits at n * SEQ_STEP seconds (3 minutes), so the chart's tick weights rank the trade numbers
+  // #120 > #60 > #20 > #10 > #5 (12 h, 3 h, hour, half hour, 5 min): a narrow chart shows #20, #40 ..., a wide one #10, #20 ...
+  var SEQ_STEP = 180;
 
   // trades: [{ seq, entryT, exitT, net (cents), comm, riskCents|null, dir, section }], closed only.
   function bySeq(a, b) { return ((a.seq || 0) - (b.seq || 0)) || (a.entryT - b.entryT); }
@@ -25,7 +29,7 @@
     var avgR = rs.length ? rs.reduce(function (a, t) { return a + t.net / t.riskCents; }, 0) / rs.length : null;
     var dd = maxDrawdown(balanceSeries(trades, startCents));
     return { net: s.totalPnL, winRate: s.winRate, profitFactor: s.profitFactor, count: s.total, wins: s.wins, losses: s.losses,
-      expectancy: s.expectancy, expectancyR: avgR, avgWin: s.avgWin, avgLoss: s.avgLoss, maxDd: dd.amount, maxDdPct: dd.pct };
+      expectancy: s.expectancy, expectancyR: avgR, rCount: rs.length, avgWin: s.avgWin, avgLoss: s.avgLoss, maxDd: dd.amount, maxDdPct: dd.pct };
   }
   // balance after every closed trade in the opening order (WwMetrics.equityCurve), in USD. time = trade number (0 = start),
   // the chart labels it "#n".
@@ -147,19 +151,22 @@
   //   trades: every closed trade (key figures, balance by trade number, R, sessions, months); sectionTrades/open/candles: the
   //   current section for the equity curve in market time, starting at sectionStartCents.
   function createView() {
-    var charts = [], sortable = null, ro = null, last = null;
+    var charts = [], sortable = null, ro = null, last = null, fits = [];
     function destroy() {
       charts.forEach(function (c) { try { c.remove(); } catch (e) { /* removed with the page */ } }); charts = [];
+      fits.forEach(function (o) { o.disconnect(); }); fits = [];
       if (sortable) { try { sortable.destroy(); } catch (e) { /* ignore */ } sortable = null; }
       if (ro) { ro.disconnect(); ro = null; }
     }
     function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
     // axis: 'time' (market time) or 'seq' (trade number: "#n", 0 = start); `own` charts are the viewer's (not destroyed here)
     function lineChart(host, series, opts, kind, axis, own) {
-      var seqLabel = function (t) { return t === 0 ? opts.t('backtest.st.start', 'Başlangıç') : '#' + t; };
+      var seq = axis === 'seq';
+      var seqLabel = function (t) { var n = Math.round(t / SEQ_STEP); return n === 0 ? opts.t('backtest.st.start', 'Başlangıç') : '#' + n; };
       var c = global.LightweightCharts.createChart(host, opts.lwc({
-        autoSize: true, rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.08 } },
-        timeScale: axis === 'seq' ? { borderVisible: false, timeVisible: false, tickMarkFormatter: seqLabel } : { borderVisible: false, timeVisible: true, secondsVisible: false },
+        autoSize: true, rightPriceScale: { borderVisible: false, entireTextOnly: true, scaleMargins: { top: 0.12, bottom: 0.08 } },
+        timeScale: seq ? { borderVisible: false, timeVisible: false, tickMarkFormatter: seqLabel, fixLeftEdge: true, fixRightEdge: true, rightOffset: 0 }
+          : { borderVisible: false, timeVisible: true, secondsVisible: false },
         handleScroll: false, handleScale: false,
         localization: Object.assign({ locale: opts.locale, priceFormatter: kind === 'pct' ? function (v) { return v.toFixed(1) + '%'; } : function (v) { return opts.fmtUsd(Math.round(v * 100)); } },
           axis === 'seq' ? { timeFormatter: seqLabel } : {})
@@ -168,9 +175,18 @@
       series.forEach(function (s) {
         var api = s.area ? c.addAreaSeries({ lineColor: s.color, topColor: s.top, bottomColor: s.bottom, lineWidth: 2, priceLineVisible: false, lastValueVisible: true, invertFilledArea: !!s.invert })
           : c.addLineSeries({ color: s.color, lineWidth: s.width || 2, lineStyle: s.dashed ? 2 : 0, priceLineVisible: false, lastValueVisible: true });
-        api.setData(s.data);
+        api.setData(seq ? s.data.map(function (p) { return { time: p.time * SEQ_STEP, value: p.value }; }) : s.data);
       });
       c.timeScale().fitContent();
+      // the widget may get its real width after the chart (hidden window, new layout): fit again on every size change, so the
+      // curve always uses the whole width (it stayed squeezed at the right edge)
+      if (global.ResizeObserver) {
+        var fr = 0, o = new global.ResizeObserver(function () {
+          cancelAnimationFrame(fr);
+          fr = requestAnimationFrame(function () { if (!host.isConnected) { o.disconnect(); return; } try { c.timeScale().fitContent(); } catch (e) { o.disconnect(); } });
+        });
+        o.observe(host); fits.push(o);
+      }
       return c;
     }
     function empty(host, text) { host.appendChild(el('p', 'bt-hint bt-st-empty', text)); return null; }
@@ -192,7 +208,17 @@
         kpi(t('backtest.st.win_rate', 'Kazanma oranı'), k.count ? k.winRate.toFixed(1) + '%' : '—');
         kpi(t('backtest.st.profit_factor', 'Profit factor'), k.count ? pf : '—');
         kpi(t('backtest.st.trades', 'İşlem sayısı'), String(k.count) + (k.count ? ' (' + k.wins + '/' + k.losses + ')' : ''));
-        kpi(t('backtest.st.expectancy', 'Beklenen değer'), k.count ? opts.fmtUsd(Math.round(k.expectancy * 100), true) + (k.expectancyR == null ? '' : ' · ' + (k.expectancyR >= 0 ? '+' : '') + k.expectancyR.toFixed(2) + 'R') : '—', k.expectancy > 0 ? 'bt-up' : k.expectancy < 0 ? 'bt-down' : '', true);
+        kpi(t('backtest.st.expectancy', 'Beklenen değer'), k.count ? opts.fmtUsd(Math.round(k.expectancy * 100), true) : '—', k.expectancy > 0 ? 'bt-up' : k.expectancy < 0 ? 'bt-down' : '', true);
+        if (k.count && opts.pro) {
+          var ev = row.lastChild, sub = el('span', 'bt-st-sub');
+          sub.appendChild(el('span', '', t('backtest.st.per_trade_usd', 'Tüm {n} işlem', { n: k.count })));
+          var rl = el('span', 'bt-num ' + (k.expectancyR > 0 ? 'bt-up' : k.expectancyR < 0 ? 'bt-down' : ''),
+            k.rCount ? t('backtest.st.expectancy_r', 'R: {r} · {n}/{total} işlem (stop loss\'lu)', { r: (k.expectancyR >= 0 ? '+' : '') + k.expectancyR.toFixed(2) + 'R', n: k.rCount, total: k.count })
+              : t('backtest.st.r_none', 'R: — (stop loss ile açılan işlem yok)'));
+          sub.appendChild(rl);
+          if (k.rCount && k.rCount < R_FEW) sub.appendChild(el('span', 'bt-st-warn', t('backtest.st.r_few_short', 'R verisi az; güvenilir değil.')));
+          ev.appendChild(sub);
+        }
         kpi(t('backtest.st.max_dd', 'Maks. düşüş'), k.count ? opts.fmtUsd(Math.round(k.maxDd * 100)) + ' (' + k.maxDdPct.toFixed(2) + '%)' : '—', '', true);
         host.appendChild(row);
         return null;
@@ -214,7 +240,11 @@
           : empty(h3, t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.'));
       }
       if (id === 'rdist') {
-        var rd = rDistribution(d.trades), maxC = Math.max.apply(null, rd.bins.map(function (b) { return b.count; }).concat([1])), bars = el('div', 'bt-st-bars');
+        var rd = rDistribution(d.trades), total = rd.count + rd.skipped;
+        host.appendChild(el('p', 'bt-hint bt-st-rnote', t('backtest.st.r_count', 'R hesaplanan işlem: {n} / {total} (açılışta stop loss olan işlemler)', { n: rd.count, total: total })));
+        if (!rd.count) return empty(host, t('backtest.st.r_empty', 'R hesaplanacak işlem yok. R = kâr/zarar ÷ ilk risk; ilk risk, işlem açılırken konan stop loss\'tan gelir.'));
+        if (rd.count < R_FEW) host.appendChild(el('p', 'bt-st-warn', t('backtest.st.r_few', 'R verisi az ({n} işlem): dağılım ve ortalama güvenilir değil. İşlemleri stop loss ile açarsan R hesaplanır.', { n: rd.count })));
+        var maxC = Math.max.apply(null, rd.bins.map(function (b) { return b.count; }).concat([1])), bars = el('div', 'bt-st-bars');
         rd.bins.forEach(function (b) {
           var lab = b.from === -Infinity ? '< ' + b.to + 'R' : b.to === Infinity ? '≥ ' + b.from + 'R' : b.from + '…' + b.to + 'R';
           var col = el('div', 'bt-st-bar'), fill = el('span', 'bt-st-fill ' + (b.to <= 0 ? 'bt-st-neg' : 'bt-st-pos'));
@@ -223,7 +253,7 @@
           bars.appendChild(col);
         });
         host.appendChild(bars);
-        host.appendChild(el('p', 'bt-hint', (rd.avg == null ? '' : t('backtest.st.avg_r', 'Ortalama {r}R', { r: (rd.avg >= 0 ? '+' : '') + rd.avg.toFixed(2) }) + ' · ') +
+        host.appendChild(el('p', 'bt-hint', t('backtest.st.avg_r', 'Ortalama {r}R', { r: (rd.avg >= 0 ? '+' : '') + rd.avg.toFixed(2) }) + ' · ' +
           t('backtest.st.no_sl', 'Zarar durdursuz {n} işlem R hesabına girmez.', { n: rd.skipped })));
         return null;
       }
@@ -380,7 +410,7 @@
       }
       document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
     }
-    return { render: render, destroy: destroy };
+    return { render: render, destroy: destroy, charts: function () { return charts; } };
   }
   // the balance as a step line on the equity times (so both lines share the time axis); a candle shows the balance at its END
   // (span = candle length), like the equity next to it
@@ -397,7 +427,7 @@
 
   global.WwBtStats = {
     R_BINS: R_BINS, bySeq: bySeq, metricRows: metricRows, kpis: kpis, balanceSeries: balanceSeries, equitySeries: equitySeries, drawdownSeries: drawdownSeries,
-    maxDrawdown: maxDrawdown, monthly: monthly, rDistribution: rDistribution, sessionStats: sessionStats, stepTo: stepTo, createView: createView,
+    maxDrawdown: maxDrawdown, R_FEW: R_FEW, SEQ_STEP: SEQ_STEP, monthly: monthly, rDistribution: rDistribution, sessionStats: sessionStats, stepTo: stepTo, createView: createView,
     WIDGETS: WIDGETS, widgetIds: widgetIds, normalizeWidgets: normalizeWidgets, columnsFor: columnsFor, spanFor: spanFor
   };
 })(typeof window !== 'undefined' ? window : globalThis);

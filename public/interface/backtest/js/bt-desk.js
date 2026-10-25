@@ -34,6 +34,9 @@
       replay: [0, 0, 1, 0.12], chart: [0, 0.12, 0.37, 0.44], chart2: [0.37, 0.12, 0.37, 0.44], chart3: [0, 0.56, 0.37, 0.44],
       chart4: [0.37, 0.56, 0.37, 0.44], balance: [0.74, 0.12, 0.26, 0.24], order: [0.74, 0.36, 0.26, 0.64] } }
   };
+  // where a window closed in the preset appears when it is opened the first time
+  var FIRST_OPEN = { stats: [0.3, 0.04, 0.7, 0.92], history: [0.1, 0.5, 0.62, 0.48], open: [0.05, 0.55, 0.6, 0.43], orders: [0.15, 0.55, 0.6, 0.43],
+    balance: [0.7, 0.12, 0.3, 0.24], order: [0.7, 0.12, 0.3, 0.64], replay: [0, 0, 1, 0.12] };
   var GAP = 8, EDGE = 14, CORNER = 72, MAGNET = 10, TASKBAR = 38, MAX_SAVED = 500, MAX_NAME = 40;   // Premium: unlimited in practice (a guard against a runaway store)
   // multi-chart grid (full screen: the charts share one grid); slots [rowFrom, rowTo, colFrom, colTo], slot 0 = the big one in 1+3
   var GRID = {
@@ -153,7 +156,7 @@
       var f = p.wins[w];
       if (!f) {
         // closed in this preset; a chart window gets a place for when the chart layout asks for it
-        var fb = CHARTS.indexOf(w) > 0 ? [0.2 + 0.05 * CHARTS.indexOf(w), 0.2, 0.4, 0.4] : [0.25, 0.25, 0.4, 0.4];
+        var fb = CHARTS.indexOf(w) > 0 ? [0.2 + 0.05 * CHARTS.indexOf(w), 0.2, 0.4, 0.4] : (FIRST_OPEN[w] || [0.25, 0.25, 0.4, 0.4]);
         wins[w] = Object.assign(toFrac(inset(fb, desk), desk), { st: 'normal', closed: CLOSABLE.indexOf(w) >= 0 });
         return;
       }

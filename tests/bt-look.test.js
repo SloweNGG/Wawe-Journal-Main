@@ -81,4 +81,32 @@ describe('bt-look', () => {
     assert.equal(K.toHex('rgba(42,46,57,0.6)'), '#2a2e39'); assert.equal(K.toHex('#abc'), '#aabbcc'); assert.equal(K.toHex(null, '#000000'), '#000000');
     assert.deepEqual(K.toSeriesData({ style: 'line' }, [{ time: 1, close: 5 }]), [{ time: 1, value: 5 }]);
   });
+  it('trade markers: small arrows and exit dots without text by default, one marker with a count per candle and kind', () => {
+    const col = { up: '#0a0', down: '#a00' };
+    const tr = (id, dir, e, x, net, open) => ({ id, dir, open: !!open, entry: { time: e, label: (dir > 0 ? 'BUY' : 'SELL') + ' 0.10' }, exit: x == null ? null : { time: x, label: 'TP', net } });
+    const list = [tr('a', 1, 100, 200, 500), tr('b', 1, 100, 200, -800), tr('c', 1, 100, 300, 100), tr('d', -1, 400, null, 0, true)];
+    const r = K.tradeMarkers(list, 'arrows', col);
+    const at = (t, shape) => r.markers.filter((m) => m.time === t && m.shape === shape);
+    assert.equal(at(100, 'arrowUp').length, 1, 'three buys on one candle: one marker');
+    assert.equal(at(100, 'arrowUp')[0].text, '3'); assert.equal(at(100, 'arrowUp')[0].position, 'belowBar');
+    assert.equal(r.groups[at(100, 'arrowUp')[0].id].length, 3, 'the hover box lists all three');
+    assert.equal(at(200, 'circle')[0].text, '2'); assert.equal(at(200, 'circle')[0].color, col.down, 'merged exits: color of the summed P&L (+5 - 8)');
+    assert.equal(at(300, 'circle')[0].text, '', 'a single exit has no text');
+    assert.equal(at(400, 'arrowDown')[0].position, 'aboveBar');
+    assert.ok(r.markers.every((m) => m.size < 1), 'smaller than the chart default');
+    assert.deepEqual(r.markers.map((m) => m.time), [100, 200, 300, 400], 'sorted by time');
+    const lab = K.tradeMarkers([list[2], list[3]], 'labels', col);
+    assert.deepEqual(lab.markers.map((m) => m.text), ['BUY 0.10', 'TP', 'SELL 0.10']);
+    const op = K.tradeMarkers(list, 'open', col);
+    assert.deepEqual(op.markers.map((m) => m.time + m.shape), ['400arrowDown'], 'open positions only');
+    assert.deepEqual(K.tradeMarkers(list, 'none', col).markers, []);
+  });
+  it('marker mode and entry-exit lines are stored and apply on every plan', () => {
+    const n = K.normalize({ marks: 'labels', tradeLines: true });
+    assert.equal(n.marks, 'labels'); assert.equal(n.tradeLines, true);
+    assert.equal(K.normalize({ marks: 'weird' }).marks, 'arrows'); assert.equal(K.normalize({}).tradeLines, false);
+    const free = K.resolve(Object.assign(K.normalize({ marks: 'open', tradeLines: true }), { preset: 'night' }), false, false);
+    assert.equal(free.marks, 'open'); assert.equal(free.tradeLines, true); assert.equal(free.id, 'wawe', 'the theme stays Premium');
+    assert.deepEqual(K.MARKS, ['arrows', 'labels', 'open', 'none']);
+  });
 });

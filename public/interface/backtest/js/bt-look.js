@@ -10,6 +10,7 @@
   var COLOR_KEYS = ['up', 'down', 'wickUp', 'wickDown', 'borderUp', 'borderDown', 'bg', 'grid'];
   var SWITCHES = ['showGrid', 'showVolume', 'showLastPrice', 'showSessions'];
   var FREE_PRESETS = ['wawe', 'tradingview'];
+  var MARKS = ['arrows', 'labels', 'open', 'none'];          // trade markers on the chart (every plan)
   var MAX_SAVED = 12;
 
   // Ready-made themes. A color of null follows the site theme (pure black / white background, the shared grid line).
@@ -41,13 +42,13 @@
     SWITCHES.forEach(function (k) { if (typeof o[k] === 'boolean') out[k] = o[k]; });
     return out;
   }
-  // Stored state: { preset, custom (overrides on top of the preset), saved: [{ id, name, look }] }
+  // Stored state: { preset, custom (overrides on top of the preset), saved: [{ id, name, look }], marks, tradeLines }
   function normalize(s) {
     s = s && typeof s === 'object' ? s : {};
     var saved = Array.isArray(s.saved) ? s.saved.filter(function (x) { return x && typeof x.id === 'string' && typeof x.name === 'string'; })
       .slice(0, MAX_SAVED).map(function (x) { return { id: x.id, name: String(x.name).slice(0, 40), look: clean(x.look) }; }) : [];
     var preset = PRESET_IDS.indexOf(s.preset) >= 0 || (typeof s.preset === 'string' && saved.some(function (x) { return 'saved:' + x.id === s.preset; })) ? s.preset : 'wawe';
-    return { preset: preset, custom: clean(s.custom), saved: saved };
+    return { preset: preset, custom: clean(s.custom), saved: saved, marks: MARKS.indexOf(s.marks) >= 0 ? s.marks : 'arrows', tradeLines: s.tradeLines === true };
   }
   function load(storage) {
     var raw = null, p = null;
@@ -68,6 +69,8 @@
     } else base = Object.assign({}, P[id] || P.wawe);
     var look = pro ? Object.assign(base, state.custom) : base;
     look.id = id;
+    look.marks = MARKS.indexOf(state.marks) >= 0 ? state.marks : 'arrows';      // a reading aid, not a theme: every plan
+    look.tradeLines = state.tradeLines === true;
     look.wickUp = look.wickUp || look.up; look.wickDown = look.wickDown || look.down;
     look.borderUp = look.borderUp || look.up; look.borderDown = look.borderDown || look.down;
     return look;
@@ -112,6 +115,32 @@
     SESSIONS.forEach(function (s) { var lm = localMinute(key * 900, s.tz); if (!lm.weekend && lm.min >= s.from && lm.min < s.to) out.push(s.id); });
     if (Object.keys(hourCache).length > 20000) hourCache = {};
     return (hourCache[key] = out);
+  }
+
+  // ---------------------------------------------------------------- trade markers (pure)
+  // trades: [{ id, dir, open (bool), entry: { time (candle), label }, exit: { time, label, net } | null }], mode: MARKS, colors { up, down }.
+  // Default 'arrows': small arrows at the entries (buy up below the candle, sell down above it) and a small dot at the exits, no text;
+  // 'labels' adds the text; 'open' shows the open positions only; 'none' nothing. Markers of one kind on one candle become one
+  // marker with their count. Returns { markers (sorted by time, for series.setMarkers), groups: { marker id: [{ trade, kind }] } }.
+  function tradeMarkers(trades, mode, colors) {
+    var out = [], groups = {}, byKey = {};
+    if (mode === 'none') return { markers: out, groups: groups };
+    function add(time, pos, shape, color, text, item, net) {
+      var id = 'm:' + time + ':' + pos + ':' + shape, g = byKey[id];
+      if (!g) { g = byKey[id] = { time: time, position: pos, shape: shape, color: color, text: text, id: id, n: 0, net: 0 }; groups[id] = []; out.push(g); }
+      g.n++; g.net += net || 0; groups[id].push(item);
+      if (g.n > 1) { g.text = String(g.n); if (shape === 'circle') g.color = g.net >= 0 ? colors.up : colors.down; }
+    }
+    trades.forEach(function (t) {
+      if (mode === 'open' && !t.open) return;
+      var long = t.dir > 0, lab = mode === 'labels';
+      add(t.entry.time, long ? 'belowBar' : 'aboveBar', long ? 'arrowUp' : 'arrowDown', long ? colors.up : colors.down, lab ? t.entry.label : '', { trade: t, kind: 'entry' }, 0);
+      if (t.exit && mode !== 'open') add(t.exit.time, long ? 'aboveBar' : 'belowBar', 'circle', t.exit.net >= 0 ? colors.up : colors.down, lab ? t.exit.label : '', { trade: t, kind: 'exit' }, t.exit.net);
+    });
+    var markers = out.map(function (g) {
+      return { time: g.time, position: g.position, shape: g.shape, color: g.color, text: g.text, id: g.id, size: g.shape === 'circle' ? 0.6 : 0.75 };
+    }).sort(function (a, b) { return a.time - b.time; });
+    return { markers: markers, groups: groups };
   }
 
   // ---------------------------------------------------------------- chart helpers (browser)
@@ -180,6 +209,38 @@
     };
   }
 
+  // Thin dashed line from each closed trade's entry to its exit (green: profit, red: loss), over the candles.
+  // opts: { segments() -> [{ t0, p0, t1, p1, win }] (candle times, prices), colors() -> { up, down } }
+  function createTradeLinePrimitive(opts) {
+    var api = { chart: null, series: null, requestUpdate: null }, visible = false;
+    var renderer = {
+      draw: function (target) {
+        if (!visible || !api.chart || !api.series) return;
+        var ts = api.chart.timeScale(), sr = api.series, c = opts.colors();
+        target.useMediaCoordinateSpace(function (scope) {
+          var ctx = scope.context; ctx.save(); ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+          opts.segments().forEach(function (s) {
+            var x0 = ts.timeToCoordinate(s.t0), x1 = ts.timeToCoordinate(s.t1), y0 = sr.priceToCoordinate(s.p0), y1 = sr.priceToCoordinate(s.p1);
+            if (x0 === null || x1 === null || y0 === null || y1 === null) return;
+            ctx.strokeStyle = withAlpha(s.win ? c.up : c.down, 0.85);
+            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+          });
+          ctx.restore();
+        });
+      }
+    };
+    var view = { renderer: function () { return renderer; }, zOrder: function () { return 'normal'; } };
+    return {
+      attached: function (p) { api = p; },
+      detached: function () { api = { chart: null }; },
+      paneViews: function () { return [view]; },
+      autoscaleInfo: function () { return null; },
+      updateAllViews: function () {},
+      setVisible: function (v) { visible = !!v; if (api.requestUpdate) api.requestUpdate(); },
+      refresh: function () { if (api.requestUpdate) api.requestUpdate(); }
+    };
+  }
+
   // '#22c55e' + 0.4 -> 'rgba(34,197,94,0.4)' (volume bars); other formats are returned unchanged
   function withAlpha(c, a) {
     var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c || '').trim());
@@ -229,6 +290,16 @@
     function render() {
       var st = opts.state(), light = opts.light(), cur = resolve(st, light, pro()), P = presets(light);
       box.textContent = '';
+      // trade markers (every plan): arrows / arrows and labels / open positions only / hidden, entry-exit lines
+      var s0 = section(t('backtest.look.marks', 'İşlem işaretleri'), false), mseg = el('div', 'bt-seg bt-look-marks');
+      MARKS.forEach(function (id) {
+        var b = el('button', '', t('backtest.look.marks_' + id, id)); b.type = 'button'; b.setAttribute('data-marks', id);
+        b.setAttribute('aria-pressed', cur.marks === id ? 'true' : 'false'); mseg.appendChild(b);
+      });
+      s0.appendChild(mseg);
+      var tl = toggle('tradeLines', t('backtest.look.trade_lines', 'Giriş ile çıkış arasında çizgi (kâr yeşil, zarar kırmızı)'), !!cur.tradeLines, false), tli = tl.querySelector('input');
+      tli.removeAttribute('data-switch'); tli.setAttribute('data-pref', 'tradeLines'); s0.appendChild(tl);
+      s0.appendChild(el('p', 'bt-hint', t('backtest.look.marks_hint', 'Bir işaretin üzerine gelince ayrıntısı görünür; aynı mumdaki işaretler tek işarette toplanır ve sayısı yazılır.')));
       // themes (two free, two premium) and the user's own
       var s1 = section(t('backtest.look.themes', 'Hazır temalar'), false), grid = el('div', 'bt-look-themes');
       PRESET_IDS.forEach(function (id) {
@@ -298,6 +369,7 @@
       var b = e.target.closest('button'); if (!b || !box.contains(b)) return;
       var st = opts.state(), next = JSON.parse(JSON.stringify(st));
       if (b.hasAttribute('data-preset')) { next.preset = b.getAttribute('data-preset'); next.custom = {}; return commit(next, 'full'); }
+      if (b.hasAttribute('data-marks')) { next.marks = b.getAttribute('data-marks'); return commit(next, 'colors'); }
       if (b.hasAttribute('data-style')) { next.custom.style = b.getAttribute('data-style'); return commit(next, 'full'); }
       if (b.hasAttribute('data-saved')) { next.preset = 'saved:' + b.getAttribute('data-saved'); next.custom = {}; return commit(next, 'full'); }
       if (b.hasAttribute('data-del')) {
@@ -323,7 +395,8 @@
       if (k) { opts.change(normalize(set(k, e.target.value)), 'colors'); return; }      // live while the picker is open, no re-render
     }
     function onChange(e) {
-      var k = e.target.getAttribute('data-color'), sw = e.target.getAttribute('data-switch');
+      var k = e.target.getAttribute('data-color'), sw = e.target.getAttribute('data-switch'), pref = e.target.getAttribute('data-pref');
+      if (pref === 'tradeLines') { var st = JSON.parse(JSON.stringify(opts.state())); st.tradeLines = !!e.target.checked; return commit(st, 'colors'); }
       if (k) return commit(set(k, e.target.value), 'colors');
       if (sw) return commit(set(sw, !!e.target.checked), sw === 'showVolume' || sw === 'hollow' ? 'full' : 'colors');
     }
@@ -334,7 +407,7 @@
   }
 
   global.WwBtLook = {
-    KEY: KEY, STYLES: STYLES, COLOR_KEYS: COLOR_KEYS, SWITCHES: SWITCHES, PRESET_IDS: PRESET_IDS, FREE_PRESETS: FREE_PRESETS, MAX_SAVED: MAX_SAVED,
+    KEY: KEY, STYLES: STYLES, MARKS: MARKS, tradeMarkers: tradeMarkers, createTradeLinePrimitive: createTradeLinePrimitive, COLOR_KEYS: COLOR_KEYS, SWITCHES: SWITCHES, PRESET_IDS: PRESET_IDS, FREE_PRESETS: FREE_PRESETS, MAX_SAVED: MAX_SAVED,
     SESSIONS: SESSIONS, presets: presets, isColor: isColor, clean: clean, normalize: normalize, load: load, save: save,
     resolve: resolve, needsPro: needsPro, heikinAshi: heikinAshi, sessionsAt: sessionsAt,
     seriesOptions: seriesOptions, addSeries: addSeries, chartOptions: chartOptions, toSeriesData: toSeriesData,

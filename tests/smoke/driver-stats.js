@@ -49,7 +49,8 @@
       ok('premium: balance (trade order) + drawdown + section equity charts', qa('.bt-st-chart canvas').length >= 3 && qa('.bt-st-chart').length === 3);
       ok('premium: R distribution with 7 bins, counts add up', qa('.bt-st-bar').length === 7 &&
         Array.prototype.reduce.call(qa('.bt-st-count'), function (a, e) { return a + (+e.textContent); }, 0) === eng.closed.filter(function (t) { return t.sl0 != null; }).length);
-      ok('premium: trades without a stop loss mentioned', /1/.test(q('.bt-st-bars').parentNode.querySelector('.bt-hint').textContent), q('.bt-st-bars').parentNode.querySelector('.bt-hint').textContent);
+      var rcard = q('.bt-st-bars').parentNode.textContent;
+      ok('premium: R card says how many trades have an R (3 / 4) and that 1 without a stop loss is left out', /3 \/ 4/.test(rcard) && /(durdursuz|without a stop|ohne Stop)[^0-9]*1|1 [^0-9]*(durdursuz|without a stop|ohne Stop)/i.test(rcard), rcard.slice(0, 300));
       ok('premium: four session rows', qa('.bt-st-srow').length === 4);
       ok('premium: monthly heatmap with a value', !!q('.bt-st-heat') && Array.prototype.some.call(qa('.bt-st-heat td'), function (td) { return /[0-9]/.test(td.textContent); }));
       ok('premium: expectancy and drawdown shown', vals[4] !== '—' && vals[5] !== '—', vals[4] + ' | ' + vals[5]);

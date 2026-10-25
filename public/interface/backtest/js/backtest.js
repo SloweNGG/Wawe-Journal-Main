@@ -1611,7 +1611,7 @@
     v.look = lk; v.lines = {}; v.tickSeen = null; v.tickHide = null;
     v.chart = window.LightweightCharts.createChart(v.el, window.WwChart.mergeDeep(window.WwChart.lwc({
       autoSize: true,
-      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: lk.showVolume ? 0.2 : 0.08 } },
+      rightPriceScale: { borderVisible: false, entireTextOnly: true, scaleMargins: { top: 0.08, bottom: lk.showVolume ? 0.2 : 0.08 } },
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6, barSpacing: v === R ? 8 : 6,
         shiftVisibleRangeOnNewBar: true, lockVisibleTimeRangeOnResize: true, tickMarkFormatter: tickLabelFor(v) },
       localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) },
@@ -1628,7 +1628,9 @@
     v.sessions = LK.createSessionPrimitive({ bars: function () { return v.bars || []; }, tfMin: function () { return v.tfMin; } });
     v.series.attachPrimitive(v.sessions); v.sessions.setVisible(lk.showSessions);
     if (v === R) v.chart.subscribeCrosshairMove(renderLegend);
-    v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); });
+    v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); markTip(v, p); });
+    v.tlines = LK.createTradeLinePrimitive({ segments: function () { return v.tlSegs || []; }, colors: function () { return { up: v.look.up, down: v.look.down }; } });
+    v.series.attachPrimitive(v.tlines); v.tlines.setVisible(lk.tradeLines);
     v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (!syncing && Date.now() - (v.userAt || 0) < 500) syncFrom(v); if (v === R) updateNowBtn(); });
     bindOrderDrag(v);
     var dg = R.sym.digits;
@@ -1641,7 +1643,8 @@
     if (!v || !v.chart) return;
     if (v.layer) { DRAW.detach(v.layer); v.layer = null; }
     try { v.chart.remove(); } catch (e) { /* ignore */ }
-    v.chart = null; v.series = null; v.vol = null; v.sessions = null; v.lines = {}; v.askLine = null; v.bidLine = null;
+    v.chart = null; v.series = null; v.vol = null; v.sessions = null; v.tlines = null; v.markGroups = {}; v.lines = {}; v.askLine = null; v.bidLine = null;
+    markTip(v, null);
   }
   function destroyCharts() { views().forEach(destroyChart); }
   function rebuildChart() {
@@ -1707,27 +1710,74 @@
       v.chart.applyOptions(window.WwBtLook.chartOptions(lk, colors()));
       v.series.applyOptions(window.WwBtLook.seriesOptions(lk, S.priceFormat(R.sym.id)));
       if (v.sessions) v.sessions.setVisible(lk.showSessions);
+      if (v.tlines) v.tlines.setVisible(lk.tradeLines);
       if (v.vol) v.vol.setData(v.candles.map(function (x) { return volPoint(v, x); }));
     });
     rebuildMarkers(); syncPriceLines(); updateAskLine();
   }
+  // Trade markers (WwBtLook.tradeMarkers): small arrows and exit dots by default, labels / open positions only / none from the
+  // appearance drawer; markers of one kind on one candle are merged with their count. Hover: a box with the trades (markTip).
   function rebuildMarkers() {
     if (!R) return;
-    var c = colors(), sec = R.acc.sectionNo;
+    var c = colors(), sec = R.acc.sectionNo, lk = look(), LK = window.WwBtLook;
     var trades = R.eng.closed.filter(function (t) { return t.section === sec; }).slice(-MAX_MARKER_TRADES).concat(R.eng.open);   // this section's trades
     views().forEach(function (v) {
       if (!v.series) return;
-      var first = v.candles.length ? v.candles[0].time : 0, last = v.candles.length ? v.candles[v.candles.length - 1].time : 0, m = [];
+      var first = v.candles.length ? v.candles[0].time : 0, last = v.candles.length ? v.candles[v.candles.length - 1].time : 0;
+      var inView = function (tm) { return tm >= first && tm <= last; }, list = [], segs = [];
       trades.forEach(function (t) {
-        var long = t.dir > 0;
-        m.push({ time: C.bucketStart(t.entryBarT, v.tfMin, R.sym.id), position: long ? 'belowBar' : 'aboveBar', shape: long ? 'arrowUp' : 'arrowDown',
-          color: long ? c.up : c.down, text: dirLabel(t.dir) + ' ' + E.stepsToStr(t.steps, R.sym.lotDigits) });
-        if (t.exitT != null) m.push({ time: C.bucketStart(t.exitBarT, v.tfMin, R.sym.id), position: long ? 'aboveBar' : 'belowBar', shape: 'circle',
-          color: t.net >= 0 ? c.up : c.down, text: reasonLabel(t.reason) });
+        var e = C.bucketStart(t.entryBarT, v.tfMin, R.sym.id), x = t.exitT != null ? C.bucketStart(t.exitBarT, v.tfMin, R.sym.id) : null;
+        if (!inView(e) && !(x !== null && inView(x))) return;
+        list.push({ id: t.id, dir: t.dir, open: t.exitT == null, src: t,
+          entry: inView(e) ? { time: e, label: dirLabel(t.dir) + ' ' + E.stepsToStr(t.steps, R.sym.lotDigits) } : { time: e, label: '' },
+          exit: x !== null && inView(x) ? { time: x, label: reasonLabel(t.reason), net: t.net } : null });
+        if (x !== null && inView(e) && inView(x)) segs.push({ t0: e, p0: t.entry / R.scale, t1: x, p1: t.exit / R.scale, win: t.net >= 0 });
       });
-      m = m.filter(function (x) { return x.time >= first && x.time <= last; }).sort(function (a, b) { return a.time - b.time; });
-      v.series.setMarkers(m);
+      // an entry before the loaded candles is left out (its exit still shows)
+      var r = LK.tradeMarkers(list, lk.marks, { up: c.up, down: c.down });
+      r.markers = r.markers.filter(function (m) { return inView(m.time); });
+      v.markGroups = r.groups; v.tlSegs = segs;
+      v.series.setMarkers(r.markers);
+      if (v.tlines) { v.tlines.setVisible(lk.tradeLines); v.tlines.refresh(); }
     });
+  }
+  // Lightweight Charts keeps reporting the last hovered marker while the pointer stays in its bar column: the pointer must be
+  // within half a bar of the marker and in its band (below the low / above the high of the candle)
+  function nearMarker(v, id, pt) {
+    var k = id.split(':'), time = +k[1], below = k[2] === 'belowBar', ts = v.chart.timeScale(), x = ts.timeToCoordinate(time);
+    if (x === null || Math.abs(pt.x - x) > Math.max(8, ts.options().barSpacing / 2 + 4)) return false;
+    var bars = v.bars || [], lo = 0, hi = bars.length - 1;
+    while (lo < hi) { var mid = (lo + hi) >> 1; if (bars[mid].time < time) lo = mid + 1; else hi = mid; }
+    var b = bars[lo]; if (!b || b.time !== time) return false;
+    var y = v.series.priceToCoordinate(below ? b.low : b.high); if (y === null) return false;
+    return below ? pt.y >= y - 4 && pt.y <= y + 60 : pt.y <= y + 4 && pt.y >= y - 60;
+  }
+  // the box over a hovered marker: direction, lot, entry and exit price, reason and P&L of each trade on it
+  var MAX_TIP_ROWS = 6;
+  function markTip(v, p) {
+    var tip = $('bt-mark-tip');
+    var g = p && p.hoveredObjectId && p.point && v && v.markGroups && nearMarker(v, p.hoveredObjectId, p.point) ? v.markGroups[p.hoveredObjectId] : null;
+    if (!g) { if (tip && tip.getAttribute('data-view') === String(views().indexOf(v))) tip.hidden = true; return; }
+    if (!tip) { tip = el('div', 'bt-mark-tip'); tip.id = 'bt-mark-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+    tip.setAttribute('data-view', String(views().indexOf(v)));
+    tip.textContent = '';
+    var s = R.sym, d = s.digits;
+    g.slice(0, MAX_TIP_ROWS).forEach(function (it) {
+      var t = it.trade.src, row = el('div', 'bt-mark-row'), open = t.exitT == null;
+      row.appendChild(el('span', 'bt-mark-dir ' + (t.dir > 0 ? 'bt-up' : 'bt-down'), dirLabel(t.dir) + ' ' + E.stepsToStr(t.steps, s.lotDigits)));
+      row.appendChild(el('span', 'bt-num', E.ptsToStr(t.entry, d) + (open ? '' : ' → ' + E.ptsToStr(t.exit, d))));
+      var net = open ? (R.eng.quote ? E.grossCents(s, t.dir, t.entry, E.closeFill(t.dir, R.eng.quote.bid, R.eng.sp), t.steps) - t.comm : 0) : t.net;
+      row.appendChild(el('span', 'bt-mark-why', open ? _t('backtest.mark.open', 'Açık') : reasonLabel(t.reason)));
+      row.appendChild(el('span', 'bt-num ' + (net > 0 ? 'bt-up' : net < 0 ? 'bt-down' : ''), fmtUsd(net, true)));
+      tip.appendChild(row);
+    });
+    if (g.length > MAX_TIP_ROWS) tip.appendChild(el('div', 'bt-hint', _t('backtest.mark.more', '+{n} işlem daha', { n: g.length - MAX_TIP_ROWS })));
+    tip.hidden = false;
+    var r = v.el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = r.left + p.point.x + 14, y = r.top + p.point.y + 14;
+    if (x + w > window.innerWidth - 8) x = r.left + p.point.x - w - 14;
+    if (y + h > window.innerHeight - 8) y = r.top + p.point.y - h - 14;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
   }
   // a price line only for a valid price (finite, positive); anything else removes the line
   function okPrice(p) { return typeof p === 'number' && isFinite(p) && p > 0; }
@@ -2657,7 +2707,7 @@
   PAGE.onLeave(cleanup);
   // browser smoke tests only (tests/smoke/make.py sets __BT_TEST__): read access to the chart and the drawings
   if (window.__BT_TEST__) PAGE.expose('__btTest', { chart: function () { return R && R.chart; }, series: function () { return R && R.series; },
-    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, desk: function () { return DESK; }, openWin: showWin,
+    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, desk: function () { return DESK; }, openWin: showWin, stats: function () { return STATS; },
     cross: function (p) { crossFrom(R, p); } });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

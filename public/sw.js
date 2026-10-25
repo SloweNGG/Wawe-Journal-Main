@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v30'; // backtest window system
+const CACHE_VERSION = 'wawe-v31'; // backtest trade markers, R notes
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
