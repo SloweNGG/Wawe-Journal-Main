@@ -713,7 +713,7 @@ function renderStrategyCardsDOM(strategiesList, trades, section) {
           <path d="M22 12h-4l-3 9H9l-3-9H2"/>
           <path d="M5 3h14l-2 6H7L5 3z"/>
         </svg>
-        <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;">${_t('analytics_dash.no_strategies', 'Henüz strateji eklenmemiş.')}</span>
+        <span style="font-size:13px;color:var(--muted);font-family:var(--font);">${_t('analytics_dash.no_strategies', 'Henüz strateji eklenmemiş.')}</span>
         <a href="strategies.html" style="color:var(--accent2);font-size:12px;text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.2rem 0.8rem;border-radius:20px;transition:all 0.2s;background:var(--surface);" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)';">${_t('analytics_dash.create_strategy', 'Strateji oluştur →')}</a>
       </div>
     `;

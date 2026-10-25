@@ -12,7 +12,7 @@
   flex-direction: column;
   gap: 16px;
   height: 100%;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   color: var(--text);
 }
 .light-theme .pc2 {
@@ -56,7 +56,7 @@
 .pc2-goal { display: flex; flex-direction: column; gap: 8px; }
 .pc2-goal-top { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); }
 .pc2-goal-top svg { flex-shrink: 0; }
-.pc2-goal-top b { margin-left: auto; font-family: 'JetBrains Mono', 'DM Mono', monospace; font-size: 12px; font-weight: 700; color: var(--text); }
+.pc2-goal-top b { margin-left: auto; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--text); }
 .pc2-goal .pc2-bar span { background: var(--pc-brand); }
 .pc2-goal.passed .pc2-goal-top, .pc2-goal.passed .pc2-goal-top b { color: var(--pc-ok); }
 .pc2-goal.passed .pc2-bar span { background: var(--pc-ok); }
@@ -67,7 +67,7 @@
 .pc2-meters { display: flex; flex-direction: column; gap: 14px; padding-top: 16px; border-top: 1px solid var(--pc-line); }
 .pc2-meter { display: flex; flex-direction: column; gap: 6px; cursor: default; }
 .pc2-meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
-.pc2-meter-val { font-family: 'JetBrains Mono', 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+.pc2-meter-val { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
 .pc2-meter-val b { color: var(--text); font-weight: 700; }
 .pc2-bar { height: 6px; border-radius: 99px; background: var(--pc-track); overflow: hidden; }
 .pc2-bar span { display: block; height: 100%; border-radius: 99px; min-width: 2px; transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -81,19 +81,19 @@
   display: inline-flex; align-items: baseline; gap: 6px;
   padding: 4px 11px; border-radius: 999px;
   border: 1px solid var(--pc-line);
-  font-family: 'JetBrains Mono', 'DM Mono', monospace; font-size: 11px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
 }
-.pc2-chip em { font-style: normal; font-family: 'DM Sans', sans-serif; font-weight: 500; color: var(--muted); }
+.pc2-chip em { font-style: normal; font-family: var(--font); font-weight: 500; color: var(--muted); }
 .pc2-chip.done { color: var(--pc-ok); }
 
 /* standard account card */
 .pc2 .pc2-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: 999px;
-  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; cursor: pointer;
+  font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer;
 }
 .pc2-goal-meta { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
-.pc2-goal-meta b { font-family: 'JetBrains Mono', 'DM Mono', monospace; font-size: 12px; font-weight: 700; color: var(--muted); }
+.pc2-goal-meta b { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--muted); }
 .pc2-goal-meta b.on { color: var(--pc-brand); }
 .pc2-goal.passed .pc2-goal-meta b { color: var(--pc-ok); }
 .pc2-goal-figures { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }

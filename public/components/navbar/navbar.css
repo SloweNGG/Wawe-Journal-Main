@@ -113,7 +113,7 @@ body.light-theme .nav::after {
   border-radius: 7px;
   text-decoration: none;
   white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   min-width: 88px;
   text-align: center;
   display: inline-flex;
@@ -197,7 +197,7 @@ body.light-theme .nav::after {
 }
 
 .nav-logo-text {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -212,7 +212,7 @@ body.light-theme .nav::after {
 }
 
 .nav-version {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.5rem;
   font-weight: 600;
   color: var(--muted);
@@ -240,7 +240,7 @@ body.light-theme .nav::after {
   gap: 5px;
   padding: 0.2rem 0.75rem 0.2rem 0.55rem;
   border-radius: 20px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 0.625rem;
   font-weight: 600;
   background: rgba(34,197,94,0.1);
@@ -309,7 +309,7 @@ body.light-theme .nav::after {
   border-radius: 12px;
   box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(139, 92, 246, 0.15);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -357,7 +357,7 @@ body.light-theme .nav::after {
 .plan-tooltip-sub {
   font-size: 10px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
 }
 
@@ -598,7 +598,7 @@ body.light-theme .nav-bug-btn {
   border-radius: 99px;
   background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
   color: #ffffff;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 700;
   display: flex;
@@ -711,7 +711,7 @@ body.light-theme .bell-panel-header {
 }
 
 .bell-panel-header h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text);
@@ -720,7 +720,7 @@ body.light-theme .bell-panel-header {
 }
 
 .bell-unread-pill {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10.5px;
   font-weight: 700;
   padding: 2px 7px;
@@ -744,7 +744,7 @@ body.light-theme .bell-panel-header {
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.25);
   color: #22c55e;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 0.72rem;
   font-weight: 600;
   padding: 4px 10px;
@@ -821,7 +821,7 @@ body.light-theme .bell-filter-tabs {
   background: transparent;
   border: 1px solid transparent;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 500;
   padding: 5px 10px;
@@ -855,7 +855,7 @@ body.light-theme .bell-tab-btn.active {
 }
 
 .bell-tab-btn .tab-count {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 700;
   padding: 1px 5px;
@@ -922,7 +922,7 @@ body.light-theme .bell-panel-footer {
   border-radius: 8px;
   color: var(--muted);
   text-decoration: none;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 500;
   font-size: 11.5px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -940,7 +940,7 @@ body.light-theme .bell-panel-footer {
 
 /* Empty State */
 .bell-panel-empty {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   text-align: center;
   padding: 2.2rem 1rem;
   display: flex;
@@ -968,7 +968,7 @@ body.light-theme .bell-panel-footer {
 }
 
 .bell-empty-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text);
@@ -1037,7 +1037,7 @@ body.light-theme .pro-menu-header {
 }
 
 .pro-menu-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1133,7 +1133,7 @@ body.light-theme .dropdown-menu {
   color: var(--muted);
   text-decoration: none;
   font-size: 12px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 500;
   border-radius: 10px;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1338,7 +1338,7 @@ body.light-theme .nav-menu {
 }
 
 .user-card-name {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text);
@@ -1352,7 +1352,7 @@ body.light-theme .nav-menu {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 0.625rem;
   font-weight: 600;
   color: var(--green);
@@ -1388,7 +1388,7 @@ body.light-theme .nav-menu {
 }
 
 .menu-section-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 0.5625rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -1414,7 +1414,7 @@ body.light-theme .nav-menu {
   border: none;
   cursor: pointer;
   text-align: left;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   transition: color 0.2s ease, background-color 0.2s ease, padding-left 0.2s ease;
   position: relative;
 }
@@ -2014,7 +2014,7 @@ body.light-theme .wj-journal-transit-hud {
 }
 
 .wj-journal-transit-name {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 12px;
   font-weight: 700;
   color: var(--text, #fff);
@@ -2033,7 +2033,7 @@ body.light-theme .wj-journal-transit-dot {
 }
 
 .wj-journal-transit-sub {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10.5px;
   font-weight: 500;
   color: var(--muted);
@@ -2061,7 +2061,7 @@ body.light-theme .wj-journal-transit-dot {
   color: #22c55e;
   font-size: 10.5px;
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   animation: checkPop 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
@@ -2160,7 +2160,7 @@ body.light-theme .wj-journal-transit-dot {
 
 .nav-prop-tag {
   display: inline-block;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
   padding: 1px 5px;
@@ -2179,7 +2179,7 @@ body.light-theme .wj-journal-transit-dot {
   gap: 4px;
   padding: 2px 7px 2px 4px;
   border-radius: 6px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 10px;
   line-height: 1.1;
@@ -2255,7 +2255,7 @@ body.light-theme .wj-journal-transit-dot {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
   padding: 4px 8px;
@@ -2358,7 +2358,7 @@ body.light-theme .journal-menu-header {
 }
 
 .journal-menu-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -2367,7 +2367,7 @@ body.light-theme .journal-menu-header {
 }
 
 .journal-menu-count {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 700;
   padding: 1px 6px;
@@ -2552,7 +2552,7 @@ body.light-theme .journal-item.active {
 }
 
 .journal-info .journal-name {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
@@ -2562,7 +2562,7 @@ body.light-theme .journal-item.active {
 }
 
 .journal-count {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--muted);
 }
@@ -2599,7 +2599,7 @@ body.light-theme .journal-menu-footer {
   padding: 8px 12px;
   border-radius: 8px;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 500;
   text-decoration: none;
@@ -2656,7 +2656,7 @@ body.light-theme .journal-manage-link:hover {
   min-width: 0;
 }
 .menu-journal-label {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2664,7 +2664,7 @@ body.light-theme .journal-manage-link:hover {
   margin-bottom: 2px;
 }
 .menu-journal-name {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -2829,7 +2829,7 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-tag {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -2873,7 +2873,7 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -2882,7 +2882,7 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-desc {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   color: var(--muted);
   line-height: 1.45;
@@ -2907,7 +2907,7 @@ body.light-theme .noti-item.unread {
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 3px 8px;
   border-radius: 7px;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: -0.01em;
   color: var(--text);
@@ -2941,7 +2941,7 @@ body.light-theme .noti-stat-chip.limit-danger {
 }
 
 .noti-time {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10.5px;
   color: var(--muted);
   opacity: 0.75;
@@ -2968,7 +2968,7 @@ body.light-theme .noti-stat-chip.limit-danger {
   transition: all 0.18s ease;
   border-radius: 6px;
   font-size: 10.5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 .noti-mark-read svg {
@@ -3236,12 +3236,12 @@ body.light-theme .noti-stat-chip.limit-danger {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12px;
   color: var(--muted);
 }
 .journal-dropdown .journal-count-num {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -3397,7 +3397,7 @@ html:not(.is-pro) a[data-pro-link] {
   border: 1px solid #7c3aed;
   background: #000;
   color: #f4f4f5;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -3422,7 +3422,7 @@ html:not(.is-pro) a[data-pro-link] {
 }
 .nav-dd-id { min-width: 0; }
 .nav-dd-name {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13.5px;
   font-weight: 700;
   color: var(--text);
@@ -3433,7 +3433,7 @@ html:not(.is-pro) a[data-pro-link] {
 }
 .nav-dd-email {
   margin-top: 1px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   color: var(--muted);
   white-space: nowrap;
@@ -3443,7 +3443,7 @@ html:not(.is-pro) a[data-pro-link] {
 }
 .nav-dd-plan {
   padding: 0 0.7rem 0.55rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   color: var(--muted);
 }
@@ -3607,7 +3607,7 @@ body.light-theme .nav .nav-bell-btn.has-alert {
   border-radius: 99px;
   background: #ef4444;
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;

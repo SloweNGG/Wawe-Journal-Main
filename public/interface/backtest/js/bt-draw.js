@@ -193,7 +193,7 @@
     function line(ctx, x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
     // `maxX`: keep a centered label inside the pane (it would be cut by the price axis)
     function label(ctx, text, x, y, color, align, bg, maxX) {
-      ctx.font = '600 11.5px "DM Sans", sans-serif'; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '600 11.5px "Geist", system-ui, sans-serif'; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
       var tw = ctx.measureText(text).width;
       if (align === 'center' && maxX) x = Math.max(tw / 2 + 7, Math.min(maxX - tw / 2 - 7, x));
       if (bg) {
@@ -244,7 +244,7 @@
           label(ctx, 'R:R ' + (st.rr == null ? '—' : st.rr.toFixed(2)), mid, ye, textColor(), 'center', light() ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.7)', m.w);
           break;
         case 'text':
-          ctx.font = '600 13px "DM Sans", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.font = '600 13px "Geist", system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
           var w = ctx.measureText(d.text).width; ctx.fillStyle = c; ctx.fillText(d.text, x[0], y[0]);
           b = { x1: x[0] - 3, y1: y[0] - 10, x2: x[0] + w + 3, y2: y[0] + 10 };
           if (selected) { ctx.strokeStyle = withAlpha(c.charAt(0) === '#' ? c : '#8b5cf6', 0.6); ctx.lineWidth = 1; ctx.strokeRect(b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1); }

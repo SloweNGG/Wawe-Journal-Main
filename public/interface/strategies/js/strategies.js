@@ -136,7 +136,7 @@ function getStrategiesApexTheme() {
   };
 }
 
-// Ortak grafik görünümü (window.WwChart, shared/chart-theme.js): DM Sans, ortak boyut/renkte eksen yazıları,
+// Ortak grafik görünümü (window.WwChart, shared/chart-theme.js): Geist, ortak boyut/renkte eksen yazıları,
 // sadece yatay soluk ızgara, siyah ipucu kartı. WwChart yoksa (eski önbellekli sayfa) aynı değerlere
 // yakın yerel bir görünüme düşer. Renkler çizim anında okunur (temayı izler).
 function getStrategiesChartLook() {
@@ -151,7 +151,7 @@ function getStrategiesChartLook() {
     grid: theme.gridColor,
     up: '#22c55e',
     down: '#ef4444',
-    axis: { colors: theme.textColor, fontSize: '11px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 },
+    axis: { colors: theme.textColor, fontSize: '11px', fontFamily: "'Geist', system-ui, sans-serif", fontWeight: 500 },
     radius: 4
   };
 }
@@ -818,7 +818,7 @@ function buildComparisonOptions(kind, el, height, full) {
       width: '100%',
       toolbar: { show: false },
       background: 'transparent',
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Geist', system-ui, sans-serif",
       animations: { enabled: true, speed: 500 }
     },
     plotOptions: {
@@ -868,7 +868,7 @@ function buildComparisonOptions(kind, el, height, full) {
         formatter: isWr ? function(v) { return v.toFixed(1) + '%'; } : function(v) { return formatCurrencySafe(v); }
       },
       style: {
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Geist', system-ui, sans-serif",
         fontSize: '11px'
       }
     },
@@ -1171,7 +1171,7 @@ function openEquityModal(strategyId) {
         width: '100%',
         toolbar: { show: false },
         background: 'transparent',
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Geist', system-ui, sans-serif",
         animations: { enabled: true, speed: 500 },
         zoom: { enabled: false }
       },
@@ -1230,7 +1230,7 @@ function openEquityModal(strategyId) {
           formatter: function(v) { return formatCurrencySafe(v); }
         },
         style: {
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Geist', system-ui, sans-serif",
           fontSize: '11px'
         }
       },

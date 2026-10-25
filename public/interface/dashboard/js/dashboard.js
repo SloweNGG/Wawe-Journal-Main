@@ -284,7 +284,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     options.layout = Object.assign({
       background: { type: 'solid', color: 'transparent' },
       textColor: getApexColors().mutedColor,
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Geist', system-ui, sans-serif",
       fontSize: 11
     }, options.layout || {});
     return options;
@@ -292,7 +292,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   function wwAxisLabels(extra) {
     var base = window.WwChart ? window.WwChart.axisLabels() : {
-      colors: getApexColors().mutedColor, fontSize: '11px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500
+      colors: getApexColors().mutedColor, fontSize: '11px', fontFamily: "'Geist', system-ui, sans-serif", fontWeight: 500
     };
     return Object.assign(base, extra || {});
   }
@@ -1192,7 +1192,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var closedTrades = (trades || []).filter(function (t) { return t.exit_price; });
     if (!closedTrades.length) {
-      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:var(--font);">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
       return null;
     }
 
@@ -1483,7 +1483,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
     var hasData = dailyData.some(function (item) { return item.value !== 0; });
     if (!hasData) {
-      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:var(--font);">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
       return null;
     }
 
@@ -1937,7 +1937,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         },
         style: {
           fontSize: '11px',
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Geist', system-ui, sans-serif",
           fontWeight: 600,
           colors: ['#ffffff']
         },
@@ -3047,7 +3047,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         containerIds.forEach(function (cid) {
           var el = safeEl(cid);
           if (el) {
-            el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:\'DM Sans\',sans-serif;">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
+            el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;font-family:var(--font);">' + (i18n.t('dashboard.no_trades') || 'İşlem bulunamadı') + '</div>';
           }
         });
         try { window.dispatchEvent(new CustomEvent('dashboard-refreshed', { detail: { trades: [], allTrades: allTrades } })); } catch (e) {}

@@ -3,7 +3,7 @@
    ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
    ⭐ FAZ 2.2: .confirm-modal-overlay kopyası SİLİNDİ (styles.css'te tek kaynak)
    ⭐ FAZ 2.3: .panel-glow ortak kısmı styles.css'te, sadece renk varyantları kaldı
-   ⭐ FONT FIX: TÜM DM Mono → DM Sans (okunabilirlik için)
+   ⭐ FONT: styles.css değişkenleri (--font / --font-mono / --font-display); Syne sadece başlıklarda
    ============================================================ */
 
 .settings-wrap {
@@ -64,7 +64,7 @@
   font-size: clamp(1.2rem, 2.5vw, 1.6rem);
   font-weight: 700;
   color: var(--muted);
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   background: var(--surface2);
 }
 .sidebar-avatar:hover {
@@ -73,14 +73,14 @@
 }
 
 .sidebar-username {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.75rem, 1vw, 0.9rem);
   font-weight: 600;
   color: var(--text);
   margin-bottom: .15rem;
 }
 .sidebar-email {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(8px, 0.7vw, 10px);
   color: var(--muted);
   word-break: break-all;
@@ -95,7 +95,7 @@
   gap: clamp(0.4rem, 0.6vw, 0.65rem);
   padding: clamp(0.4rem, 0.6vw, 0.6rem) clamp(0.5rem, 0.8vw, 0.85rem);
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 500;
   color: var(--muted);
@@ -230,7 +230,7 @@ body.light-theme .panel-glow.overtrade-glow {
   height: clamp(12px, 1.5vw, 15px);
 }
 .s-card-header h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.75rem, 1vw, 0.9rem);
   font-weight: 600;
   color: var(--text);
@@ -254,7 +254,7 @@ body.light-theme .panel-glow.overtrade-glow {
   gap: 4px;
   font-size: clamp(8px, 0.7vw, 10px);
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   letter-spacing: 0.08em;
   background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(192,132,252,0.1));
   color: var(--accent2);
@@ -294,7 +294,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 .ot-field label {
   display: block;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(7px, 0.6vw, 9px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -308,7 +308,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 8px;
   padding: clamp(0.4rem, 0.6vw, 0.6rem) clamp(0.6rem, 0.8vw, 0.9rem);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(12px, 0.9vw, 13px);
   outline: none;
   transition: border-color 0.2s;
@@ -335,7 +335,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: #fff;
   padding: clamp(0.5rem, 0.8vw, 0.7rem) clamp(1rem, 1.5vw, 1.5rem);
   border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(12px, 0.9vw, 13px);
   font-weight: 600;
   cursor: pointer;
@@ -368,7 +368,7 @@ body.light-theme .panel-glow.overtrade-glow {
   margin-bottom: 0.5rem;
 }
 .ot-pro-locked h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.85rem, 1.2vw, 1rem);
   color: var(--text);
   margin-bottom: 0.5rem;
@@ -389,7 +389,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: #fff;
   padding: clamp(0.5rem, 0.8vw, 0.65rem) clamp(1.2rem, 2vw, 1.8rem);
   border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(12px, 1vw, 14px);
   font-weight: 600;
   cursor: pointer;
@@ -417,7 +417,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border-bottom: 1px solid var(--border);
 }
 .avatar-upload-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: clamp(0.7rem, 1vw, 0.8rem);
   font-weight: 600;
   color: var(--text);
@@ -452,7 +452,7 @@ body.light-theme .panel-glow.overtrade-glow {
   font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 700;
   color: var(--muted);
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   background: var(--surface2);
 }
 .avatar-buttons {
@@ -466,7 +466,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: #fff;
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 1vw, 1rem);
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
   cursor: pointer;
@@ -486,7 +486,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--muted);
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 1vw, 1rem);
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
   cursor: pointer;
@@ -531,7 +531,7 @@ body.light-theme .panel-glow.overtrade-glow {
   flex-shrink: 0;
 }
 .info-value {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.7vw, 12px);
   color: var(--text);
   text-align: right;
@@ -541,7 +541,7 @@ body.light-theme .panel-glow.overtrade-glow {
   display: inline-flex;
   align-items: center;
   gap: .3rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(8px, 0.6vw, 10px);
   padding: 2px 8px;
   border-radius: 20px;
@@ -559,7 +559,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 .pw-field label {
   display: block;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(7px, 0.6vw, 9px);
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -573,7 +573,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 8px;
   padding: clamp(0.4rem, 0.6vw, 0.65rem) 2.5rem clamp(0.4rem, 0.6vw, 0.65rem) clamp(0.6rem, 0.8vw, 0.9rem);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(12px, 0.9vw, 14px);
   outline: none;
 }
@@ -605,7 +605,7 @@ body.light-theme .panel-glow.overtrade-glow {
 .pw-strength-bar.medium { background: #facc15; }
 .pw-strength-bar.strong { background: var(--green); }
 .pw-strength-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(7px, 0.6vw, 9px);
   color: var(--muted);
   margin-top: .2rem;
@@ -626,7 +626,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 .appearance-section-title {
   display: block;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.8rem, 1vw, 0.92rem);
   font-weight: 600;
   color: var(--text);
@@ -766,7 +766,7 @@ body.light-theme .panel-glow.overtrade-glow {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -826,7 +826,7 @@ body.light-theme .panel-glow.overtrade-glow {
   flex-shrink: 0;
 }
 .pref-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -856,7 +856,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 24px;
   padding: 4px 10px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 600;
   color: var(--muted);
@@ -890,7 +890,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 24px;
   padding: 4px 10px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 600;
   color: var(--muted);
@@ -927,7 +927,7 @@ body.light-theme .panel-glow.overtrade-glow {
   background: transparent;
   border: none;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 600;
   text-align: right;
@@ -983,7 +983,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 24px;
   padding: 4px 10px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 600;
   color: var(--muted);
@@ -1027,7 +1027,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 3px 9px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -1093,7 +1093,7 @@ body.light-theme .panel-glow.overtrade-glow {
 .pro-badge {
   font-size: 9.5px;
   font-weight: 700;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   letter-spacing: 0.08em;
   background: rgba(139,92,246,0.15);
   color: var(--accent2);
@@ -1125,7 +1125,7 @@ body.light-theme .panel-glow.overtrade-glow {
   margin-bottom: 16px;
 }
 .theme-subblock-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1233,7 +1233,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text);
   text-align: center;
@@ -1263,7 +1263,7 @@ body.light-theme .panel-glow.overtrade-glow {
   gap: 6px;
 }
 .font-badge {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   color: var(--accent2);
@@ -1281,7 +1281,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--muted);
   border-radius: 6px;
   padding: 3px 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10.5px;
   font-weight: 500;
   cursor: pointer;
@@ -1316,7 +1316,7 @@ body.light-theme .panel-glow.overtrade-glow {
   justify-content: space-between;
   font-size: 9.5px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   margin-top: 4px;
 }
 
@@ -1344,13 +1344,13 @@ body.light-theme .panel-glow.overtrade-glow {
   gap: 8px;
 }
 .mini-trade-symbol {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 700;
   color: inherit;
 }
 .mini-trade-dir.long {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
@@ -1359,7 +1359,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: #22c55e;
 }
 .mini-trade-pnl.positive {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 700;
   color: #22c55e;
@@ -1392,7 +1392,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border: none;
   border-radius: 8px;
   padding: 8px 18px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -1412,7 +1412,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--muted);
   border-radius: 8px;
   padding: 8px 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
@@ -1445,7 +1445,7 @@ body.light-theme .panel-glow.overtrade-glow {
   margin: 0 auto 10px;
 }
 .theme-pro-locked-card h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -1521,7 +1521,7 @@ body.light-theme .panel-glow.overtrade-glow {
   background: transparent;
   border: 1px solid var(--red);
   color: var(--red);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 600;
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 1vw, 1.1rem);
@@ -1546,7 +1546,7 @@ body.light-theme .panel-glow.overtrade-glow {
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(7px, 0.6vw, 9px);
   letter-spacing: .15em;
   text-transform: uppercase;
@@ -1558,7 +1558,7 @@ body.light-theme .panel-glow.overtrade-glow {
   margin-bottom: .5rem;
 }
 .settings-page-header h1 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.2rem, 3vw, 1.8rem);
   font-weight: 700;
   color: var(--text);
@@ -1589,7 +1589,7 @@ body.light-theme .panel-glow.overtrade-glow {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: clamp(0.3rem, 0.5vw, 0.45rem) clamp(0.5rem, 0.8vw, 0.85rem);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
   color: var(--muted);
@@ -1678,7 +1678,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .plan-card .plan-name {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1rem, 1.8vw, 1.3rem);
   font-weight: 700;
   color: var(--text);
@@ -1691,7 +1691,7 @@ body.light-theme .panel-glow.overtrade-glow {
 .plan-card .plan-name .pro-badge {
   font-size: clamp(0.5rem, 0.6vw, 0.6rem);
   font-weight: 700;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: var(--accent);
@@ -1709,7 +1709,8 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .plan-card .plan-price {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(1.6rem, 3.5vw, 2.2rem);
   font-weight: 700;
   color: var(--text);
@@ -1730,7 +1731,7 @@ body.light-theme .panel-glow.overtrade-glow {
   display: inline-block;
   font-size: clamp(0.45rem, 0.5vw, 0.6rem);
   font-weight: 700;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   background: rgba(34, 197, 94, 0.15);
   color: var(--green);
   padding: 0.1rem 0.5rem;
@@ -1834,7 +1835,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: #fff;
   padding: clamp(0.4rem, 0.6vw, 0.7rem) clamp(0.8rem, 1.2vw, 1.6rem);
   border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.8vw, 13px);
   font-weight: 600;
   cursor: pointer;
@@ -1885,7 +1886,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: var(--muted);
   padding: clamp(0.4rem, 0.6vw, 0.7rem) clamp(0.8rem, 1.2vw, 1.6rem);
   border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.8vw, 13px);
   font-weight: 500;
   cursor: pointer;
@@ -1909,7 +1910,7 @@ body.light-theme .panel-glow.overtrade-glow {
   gap: 0.4rem;
   font-size: clamp(9px, 0.7vw, 11px);
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   padding: 0.2rem 0.6rem;
   border-radius: 20px;
   letter-spacing: 0.02em;
@@ -1949,7 +1950,7 @@ body.light-theme .panel-glow.overtrade-glow {
   font-size: clamp(9px, 0.7vw, 11px);
   color: var(--muted);
   margin-top: 0.3rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -1996,7 +1997,7 @@ body.light-theme .panel-glow.overtrade-glow {
   font-weight: 700;
   color: var(--text);
   margin-bottom: 0.5rem;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -2041,7 +2042,7 @@ body.light-theme .panel-glow.overtrade-glow {
   font-size: clamp(10px, 0.8vw, 12.5px);
   font-weight: 500;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 /* ⭐ ABONELİK SÜRESİ */
@@ -2061,14 +2062,15 @@ body.light-theme .panel-glow.overtrade-glow {
 .subscription-timer .timer-label {
   font-size: clamp(9px, 0.7vw, 11px);
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   letter-spacing: 0.05em;
 }
 .subscription-timer .timer-value {
   font-size: clamp(11px, 1vw, 14px);
   font-weight: 700;
   color: var(--text);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
 }
 .subscription-timer .timer-progress-wrap {
   width: 100%;
@@ -2132,7 +2134,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-circle {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   width: clamp(26px, 3.5vw, 32px);
   height: clamp(26px, 3.5vw, 32px);
   border-radius: 50%;
@@ -2175,7 +2177,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-text {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: clamp(11.5px, 1vw, 13.5px);
   font-weight: 600;
   color: var(--text);
@@ -2236,7 +2238,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .step-main-title {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: clamp(1.2rem, 1.8vw, 1.45rem);
   font-weight: 700;
   color: var(--text);
@@ -2336,7 +2338,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .tier-title {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
@@ -2360,14 +2362,14 @@ body.light-theme .panel-glow.overtrade-glow {
 .tier-price-currency {
   font-size: 1.3rem;
   font-weight: 700;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
 }
 
 .tier-price-amount {
   font-size: clamp(2rem, 3vw, 2.5rem);
   font-weight: 800;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.03em;
@@ -2375,7 +2377,7 @@ body.light-theme .panel-glow.overtrade-glow {
 
 .tier-price-sub {
   font-size: 0.85rem;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--muted);
 }
 
@@ -2385,7 +2387,7 @@ body.light-theme .panel-glow.overtrade-glow {
   color: #a78bfa;
   margin-top: 0.15rem;
   margin-bottom: 0.85rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 .tier-desc {
@@ -2570,7 +2572,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-badge {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2605,7 +2607,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-title {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
@@ -2623,27 +2625,27 @@ body.light-theme .panel-glow.overtrade-glow {
 .rate-curr {
   font-size: 1rem;
   font-weight: 700;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
 }
 
 .rate-val {
   font-size: 1.7rem;
   font-weight: 800;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
   letter-spacing: -0.02em;
 }
 
 .rate-unit {
   font-size: 0.8rem;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--muted);
 }
 
 .period-total-cost {
   font-size: 0.85rem;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
   margin-bottom: 0.6rem;
 }
@@ -2656,7 +2658,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .period-desc {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: 0.78rem;
   color: var(--muted);
   margin: auto 0 0 0;
@@ -2746,7 +2748,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .coupon-top-visual h4 {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
@@ -2869,7 +2871,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .box-title {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
@@ -2952,7 +2954,7 @@ body.light-theme .panel-glow.overtrade-glow {
 .total-curr {
   font-size: 1.8rem;
   font-weight: 800;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.02em;
@@ -2961,7 +2963,7 @@ body.light-theme .panel-glow.overtrade-glow {
 .total-number {
   font-size: 1.8rem;
   font-weight: 800;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.02em;
@@ -3275,7 +3277,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .qr-zoom-header h4 {
-  font-family: 'DM Sans', -apple-system, sans-serif;
+  font-family: var(--font);
   font-size: 1.3rem;
   font-weight: 800;
   color: var(--text);
@@ -3355,7 +3357,7 @@ body.light-theme .panel-glow.overtrade-glow {
 
 .direct-pay-timer-box strong {
   color: var(--text);
-  font-family: 'DM Sans', monospace;
+  font-family: var(--font);
   font-size: 0.95rem;
   font-weight: 700;
 }
@@ -3418,7 +3420,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .dcf-val-big {
-  font-family: 'DM Sans', -apple-system, sans-serif;
+  font-family: var(--font);
   font-size: 1.35rem;
   font-weight: 800;
   color: var(--text);
@@ -3432,7 +3434,7 @@ body.light-theme .panel-glow.overtrade-glow {
 }
 
 .dcf-address-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.88rem;
   word-break: break-all;
   color: #f1f5f9;
@@ -3959,7 +3961,7 @@ body.light-theme .qr-zoom-big-frame,
 .stat-highlight-value {
   font-size: clamp(1.4rem, 2.4vw, 1.9rem);
   font-weight: 800;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font);
   color: var(--accent);
   letter-spacing: -0.02em;
 }
@@ -4059,7 +4061,7 @@ body.light-theme .qr-zoom-big-frame,
 }
 
 .extend-wizard-title span {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
@@ -4173,7 +4175,7 @@ body.light-theme .qr-zoom-big-frame,
   font-size: clamp(3rem, 8vw, 5rem);
   font-weight: 700;
   color: var(--muted);
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   background: var(--surface2);
 }
 
@@ -4376,11 +4378,11 @@ body.light-theme .qr-zoom-big-frame,
 
 /* Plan - ödeme metodu */
 .plan-payment-method-block { margin: 0.75rem 0; padding: 0.75rem; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); }
-.plan-payment-method-label { font-size: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem; }
+.plan-payment-method-label { font-size: 10px; color: var(--muted); font-family: var(--font); display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem; }
 .plan-payment-methods { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.pay-method-btn { padding: 0.4rem 1.2rem; border-radius: 20px; border: 2px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+.pay-method-btn { padding: 0.4rem 1.2rem; border-radius: 20px; border: 2px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font); font-size: 12px; font-weight: 600; transition: all 0.2s; }
 .pay-method-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
-.timer-expiry { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: 'DM Sans', sans-serif; }
+.timer-expiry { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: var(--font); }
 
 /* Overtrade */
 .ot-form { display: flex; flex-direction: column; gap: 1.25rem; }
@@ -4388,13 +4390,13 @@ body.light-theme .qr-zoom-big-frame,
 .ot-checkbox { accent-color: var(--accent); width: 18px; height: 18px; cursor: pointer; }
 .ot-label { font-size: 13px; font-weight: 500; color: var(--text); }
 .ot-input-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 4px; }
-.ot-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; }
+.ot-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: var(--font); font-size: 13px; }
 .ot-unit, .ot-currency { font-size: 12px; color: var(--muted); }
-.ot-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; margin-top: 4px; }
-.btn-save-ot { display: inline-flex; gap: 0.5rem; align-items: center; align-self: flex-start; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; padding: 0.65rem 1.4rem; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.ot-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: var(--font); font-size: 13px; margin-top: 4px; }
+.btn-save-ot { display: inline-flex; gap: 0.5rem; align-items: center; align-self: flex-start; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; padding: 0.65rem 1.4rem; border-radius: 10px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-save-ot:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,92,246,0.35); }
 .ot-secondary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
-.btn-ot-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 0.8rem; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.btn-ot-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 0.8rem; border-radius: 8px; font-family: var(--font); font-size: 12px; cursor: pointer; transition: all 0.2s; }
 .btn-ot-ghost:hover { border-color: var(--accent); color: var(--accent); }
 .ot-error-box { text-align: center; padding: 1.5rem; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
 .ot-error-text { color: var(--muted); font-size: 13px; margin-bottom: 0.5rem; }
@@ -4407,7 +4409,7 @@ body.light-theme .qr-zoom-big-frame,
 .color-field label { font-size: 12px; color: var(--muted); }
 .color-input-group { display: flex; align-items: center; gap: 0.5rem; }
 .color-input-picker { width: 44px; height: 38px; border: none; cursor: pointer; background: transparent; padding: 0; border-radius: 6px; }
-.color-input-text { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; }
+.color-input-text { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text); font-family: var(--font); font-size: 12px; }
 .font-size-field { display: flex; flex-direction: column; gap: 0.25rem; }
 .font-size-field label { font-size: 12px; color: var(--muted); }
 .font-size-slider { width: 100%; accent-color: var(--accent); }
@@ -4566,13 +4568,13 @@ body.light-theme .wj-ambient-backdrop {
   color: var(--muted);
 }
 .time-preview-value {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
 }
 .time-preview-example {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 500;
   color: var(--muted);
 }
@@ -4581,7 +4583,7 @@ body.light-theme .wj-ambient-backdrop {
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 600;
   padding: 7px 10px;
@@ -4609,7 +4611,7 @@ body.light-theme .wj-ambient-backdrop {
   border-radius: 20px;
   padding: 4px 12px;
   min-height: 28px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 600;
   color: var(--accent2);

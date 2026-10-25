@@ -30,17 +30,17 @@ describe('WwChart.colors', () => {
 });
 
 describe('WwChart.apex', () => {
-  it('her grafikte DM Sans ve 12px net eksen yazısı', () => {
+  it('her grafikte Geist ve 12px net eksen yazısı', () => {
     const o = load().apex({});
-    assert.equal(o.chart.fontFamily, "'DM Sans', sans-serif");
-    assert.deepEqual(plain(o.xaxis.labels.style), { colors: '#c9c9d6', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 });
+    assert.equal(o.chart.fontFamily, "'Geist', system-ui, sans-serif");
+    assert.deepEqual(plain(o.xaxis.labels.style), { colors: '#c9c9d6', fontSize: '12px', fontFamily: "'Geist', system-ui, sans-serif", fontWeight: 500 });
   });
 
   it('grafiğin kendi ayarları kazanır, diğer varsayılanlar korunur', () => {
     const fmt = (v) => '$' + v;
     const o = load().apex({ chart: { type: 'bar', height: 220 }, yaxis: { labels: { formatter: fmt } }, colors: ['#f00'] });
     assert.equal(o.chart.type, 'bar');
-    assert.equal(o.chart.fontFamily, "'DM Sans', sans-serif");
+    assert.equal(o.chart.fontFamily, "'Geist', system-ui, sans-serif");
     assert.equal(o.yaxis.labels.formatter, fmt);
     assert.equal(o.yaxis.labels.style.fontSize, '12px');
     assert.deepEqual([...o.colors], ['#f00']);
@@ -50,7 +50,7 @@ describe('WwChart.apex', () => {
     const o = load().apex({ yaxis: [{ opposite: false }, { opposite: true }] });
     assert.equal(o.yaxis.length, 2);
     assert.equal(o.yaxis[1].opposite, true);
-    assert.equal(o.yaxis[1].labels.style.fontFamily, "'DM Sans', sans-serif");
+    assert.equal(o.yaxis[1].labels.style.fontFamily, "'Geist', system-ui, sans-serif");
   });
 
   it('temel nesneyi değiştirmez', () => {
@@ -90,7 +90,7 @@ describe('WwChart.lwc', () => {
   it('Lightweight Charts için aynı font ve siyah etiket zemini', () => {
     const o = load().lwc({ width: 300, layout: { fontSize: 12 } });
     assert.equal(o.width, 300);
-    assert.equal(o.layout.fontFamily, "'DM Sans', sans-serif");
+    assert.equal(o.layout.fontFamily, "'Geist', system-ui, sans-serif");
     assert.equal(o.layout.fontSize, 12);
     assert.equal(o.crosshair.vertLine.labelBackgroundColor, '#000000');
   });

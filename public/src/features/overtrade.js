@@ -310,13 +310,13 @@ export function renderOvertradeWarning(warnings, containerId) {
           <div class="notif-title">${w.message || 'Uyarı'}</div>
           <div class="notif-desc">
             <span style="display:inline-flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:2px;">
-              <span style="font-size:9px;font-weight:600;font-family:'DM Mono',monospace;background:${config.iconClass === 'danger' ? 'rgba(239,68,68,0.12)' : config.iconClass === 'warning' ? 'rgba(251,191,36,0.12)' : 'rgba(59,130,246,0.12)'};color:${config.iconClass === 'danger' ? '#ef4444' : config.iconClass === 'warning' ? '#f59e0b' : '#3b82f6'};padding:0.15rem 0.6rem;border-radius:10px;border:1px solid ${config.iconClass === 'danger' ? 'rgba(239,68,68,0.2)' : config.iconClass === 'warning' ? 'rgba(251,191,36,0.2)' : 'rgba(59,130,246,0.2)'};">
+              <span style="font-size:9px;font-weight:600;font-family:var(--font-mono);background:${config.iconClass === 'danger' ? 'rgba(239,68,68,0.12)' : config.iconClass === 'warning' ? 'rgba(251,191,36,0.12)' : 'rgba(59,130,246,0.12)'};color:${config.iconClass === 'danger' ? '#ef4444' : config.iconClass === 'warning' ? '#f59e0b' : '#3b82f6'};padding:0.15rem 0.6rem;border-radius:10px;border:1px solid ${config.iconClass === 'danger' ? 'rgba(239,68,68,0.2)' : config.iconClass === 'warning' ? 'rgba(251,191,36,0.2)' : 'rgba(59,130,246,0.2)'};">
                 ${config.label}
               </span>
             </span>
           </div>
           <div class="notif-ot-stats" style="display:flex;gap:1rem;font-size:11px;color:var(--muted);margin-top:4px;flex-wrap:wrap;align-items:center;">
-            <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);padding:0.15rem 0.6rem;border-radius:4px;font-family:'DM Mono',monospace;">
+            <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);padding:0.15rem 0.6rem;border-radius:4px;font-family:var(--font-mono);">
               <span style="font-weight:700;color:${isOverLimit ? 'var(--red)' : 'var(--text)'};">${currentDisplay}</span>
               <span style="opacity:0.4;">/</span>
               <span style="opacity:0.7;">${limitDisplay}</span>

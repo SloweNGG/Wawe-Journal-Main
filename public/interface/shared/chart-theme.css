@@ -1,6 +1,6 @@
 /* ============================================================
    WAWE JOURNAL - SHARED CHART LOOK (all app pages, loaded by BaseHead)
-   One look for every chart: DM Sans everywhere (no monospace), crisp
+   One look for every chart: Geist everywhere (no monospace), crisp
    12px axis labels, faint gridlines, and one hover card style.
    Dark mode is plain black; light mode is white. Values come from
    chart-theme.js (window.WwChart), which sets the same numbers in JS.
@@ -35,7 +35,7 @@
   background: var(--ww-tip-bg);
   border: 1px solid var(--ww-tip-line);
   box-shadow: var(--ww-tip-shadow);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   line-height: 1.35;
   color: var(--ww-tip-text);
@@ -73,7 +73,7 @@
   border-radius: 10px !important;
   box-shadow: var(--ww-tip-shadow) !important;
   color: var(--ww-tip-text) !important;
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-size: 11px !important;
   font-variant-numeric: tabular-nums;
 }
@@ -87,7 +87,7 @@
   background: transparent !important;
   border-bottom: 1px solid var(--ww-tip-divider) !important;
   color: var(--ww-tip-muted) !important;
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   padding: 7px 11px 6px !important;
@@ -99,14 +99,14 @@
 .apexcharts-tooltip-text-y-label,
 .apexcharts-tooltip-text-goals-label,
 .apexcharts-tooltip-text-z-label {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-size: 11px !important;
   color: var(--ww-tip-muted) !important;
 }
 .apexcharts-tooltip-text-y-value,
 .apexcharts-tooltip-text-goals-value,
 .apexcharts-tooltip-text-z-value {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-weight: 600 !important;
   color: var(--ww-tip-text) !important;
   margin-left: 6px !important;
@@ -117,7 +117,7 @@
   background: var(--ww-tip-bg) !important;
   border: 1px solid var(--ww-tip-line) !important;
   color: var(--ww-tip-text) !important;
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-size: 11px !important;
   border-radius: 6px !important;
 }
@@ -132,7 +132,7 @@
 .apexcharts-datalabel,
 .apexcharts-datalabel-label,
 .apexcharts-datalabel-value {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -153,7 +153,7 @@
   background: var(--modal-backdrop);
   backdrop-filter: blur(var(--modal-blur));
   -webkit-backdrop-filter: blur(var(--modal-blur));
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .light-theme .ww-viewer {
   --ww-viewer-btn-hover: #cbd5e1;

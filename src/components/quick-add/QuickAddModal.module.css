@@ -16,10 +16,10 @@
   --qa-muted: #6f6f80;
   --qa-green: #22c55e;
   --qa-red: #ef4444;
-  --qa-font-display: 'Syne', sans-serif;
-  --qa-font-body: 'DM Sans', sans-serif;
-  --qa-font-mono: 'DM Mono', monospace;
-  --qa-font-numeric: 'Inter', sans-serif;
+  --qa-font-display: var(--font-display);
+  --qa-font-body: var(--font);
+  --qa-font-mono: var(--font-mono);
+  --qa-font-numeric: var(--font);
   --qa-header-h: 56px;
   --qa-r-sm: 8px;
   --qa-r-md: 12px;
@@ -507,6 +507,7 @@
   font-size: 0.95rem;
   font-weight: 700;
   font-family: var(--qa-font-numeric);
+  font-variant-numeric: tabular-nums;
   color: var(--qa-text);
 }
 

@@ -131,7 +131,7 @@ import Layout from '../layouts/Layout.astro';
       font-size: 1.6rem;
       font-weight: 700;
       color: var(--muted);
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       background: var(--surface2);
     }
     .sidebar-avatar:hover {
@@ -139,14 +139,14 @@ import Layout from '../layouts/Layout.astro';
       box-shadow: 0 0 20px rgba(139,92,246,0.25);
     }
     .sidebar-username {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       font-size: .9rem;
       font-weight: 600;
       color: var(--text);
       margin-bottom: .15rem;
     }
     .sidebar-email {
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 10px;
       color: var(--muted);
       word-break: break-all;
@@ -160,7 +160,7 @@ import Layout from '../layouts/Layout.astro';
       gap: .65rem;
       padding: .6rem .85rem;
       border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 13px;
       font-weight: 500;
       color: var(--muted);
@@ -329,7 +329,7 @@ import Layout from '../layouts/Layout.astro';
       stroke-width: 1.8;
     }
     .s-card-header h2 {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       font-size: .9rem;
       font-weight: 600;
       color: var(--text);
@@ -351,7 +351,7 @@ import Layout from '../layouts/Layout.astro';
       gap: 6px;
       font-size: 10px;
       font-weight: 600;
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       letter-spacing: 0.08em;
       background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(192,132,252,0.1));
       color: var(--accent2);
@@ -374,7 +374,7 @@ import Layout from '../layouts/Layout.astro';
       margin-bottom: 0.75rem;
     }
     .ot-pro-locked h3 {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       font-size: 1rem;
       color: var(--text);
       margin-bottom: 0.5rem;
@@ -395,7 +395,7 @@ import Layout from '../layouts/Layout.astro';
       color: #fff;
       padding: 0.65rem 1.8rem;
       border-radius: 10px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -416,7 +416,7 @@ import Layout from '../layouts/Layout.astro';
       border-bottom: 1px solid var(--border);
     }
     .avatar-upload-title {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font);
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--text);
@@ -451,7 +451,7 @@ import Layout from '../layouts/Layout.astro';
       font-size: 2rem;
       font-weight: 700;
       color: var(--muted);
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       background: var(--surface2);
     }
     .avatar-buttons {
@@ -465,7 +465,7 @@ import Layout from '../layouts/Layout.astro';
       color: #fff;
       padding: 0.5rem 1rem;
       border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
@@ -484,7 +484,7 @@ import Layout from '../layouts/Layout.astro';
       color: var(--muted);
       padding: 0.5rem 1rem;
       border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
@@ -528,7 +528,7 @@ import Layout from '../layouts/Layout.astro';
       flex-shrink: 0;
     }
     .info-value {
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 12px;
       color: var(--text);
       text-align: right;
@@ -538,7 +538,7 @@ import Layout from '../layouts/Layout.astro';
       display: inline-flex;
       align-items: center;
       gap: .3rem;
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 10px;
       padding: 2px 9px;
       border-radius: 20px;
@@ -556,7 +556,7 @@ import Layout from '../layouts/Layout.astro';
     }
     .pw-field label {
       display: block;
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 9px;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -570,7 +570,7 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 8px;
       padding: .65rem 2.5rem .65rem .9rem;
       color: var(--text);
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 14px;
       outline: none;
     }
@@ -602,7 +602,7 @@ import Layout from '../layouts/Layout.astro';
     .pw-strength-bar.medium { background: #facc15; }
     .pw-strength-bar.strong { background: var(--green); }
     .pw-strength-label {
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 9px;
       color: var(--muted);
       margin-top: .25rem;
@@ -645,7 +645,7 @@ import Layout from '../layouts/Layout.astro';
       stroke-width: 1.8;
     }
     .theme-toggle-text h4 {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       font-size: 0.9rem;
       font-weight: 600;
       margin: 0 0 2px;
@@ -707,7 +707,7 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 40px;
       padding: 0.35rem 0.75rem;
       cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 0.7rem;
       font-weight: 600;
       color: var(--muted);
@@ -738,7 +738,7 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 40px;
       padding: 0.35rem 0.75rem;
       cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 0.7rem;
       font-weight: 600;
       color: var(--muted);
@@ -797,7 +797,7 @@ import Layout from '../layouts/Layout.astro';
       background: transparent;
       border: 1px solid var(--red);
       color: var(--red);
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 12px;
       font-weight: 600;
       padding: .5rem 1.1rem;
@@ -821,7 +821,7 @@ import Layout from '../layouts/Layout.astro';
       display: inline-flex;
       align-items: center;
       gap: .4rem;
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 9px;
       letter-spacing: .15em;
       text-transform: uppercase;
@@ -833,7 +833,7 @@ import Layout from '../layouts/Layout.astro';
       margin-bottom: .5rem;
     }
     .settings-page-header h1 {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       font-size: clamp(1.3rem, 3vw, 1.8rem);
       font-weight: 700;
       margin: 0 0 .25rem;
@@ -854,7 +854,7 @@ import Layout from '../layouts/Layout.astro';
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: .45rem .85rem;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 12px;
       font-weight: 500;
       color: var(--muted);
@@ -941,7 +941,7 @@ import Layout from '../layouts/Layout.astro';
       gap: 0.5rem;
     }
     .plan-card .plan-name {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       font-size: 1.3rem;
       font-weight: 700;
       color: var(--text);
@@ -953,7 +953,7 @@ import Layout from '../layouts/Layout.astro';
     .plan-card .plan-name .pro-badge {
       font-size: 0.6rem;
       font-weight: 700;
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       background: var(--accent);
@@ -976,7 +976,7 @@ import Layout from '../layouts/Layout.astro';
       color: #fff;
       padding: 0.7rem 1.6rem;
       border-radius: 10px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -1026,7 +1026,7 @@ import Layout from '../layouts/Layout.astro';
       color: var(--muted);
       padding: 0.7rem 1.6rem;
       border-radius: 10px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
@@ -1048,7 +1048,7 @@ import Layout from '../layouts/Layout.astro';
       gap: 0.5rem;
       font-size: 11px;
       font-weight: 600;
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       padding: 0.3rem 0.9rem;
       border-radius: 20px;
       letter-spacing: 0.02em;
@@ -1112,7 +1112,7 @@ import Layout from '../layouts/Layout.astro';
       font-weight: 700;
       color: var(--text);
       margin-bottom: 0.85rem;
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font);
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -1151,7 +1151,7 @@ import Layout from '../layouts/Layout.astro';
       font-size: 12.5px;
       font-weight: 500;
       color: var(--text);
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
     }
 
     /* ⭐ ABONELİK SÜRESİ */
@@ -1171,14 +1171,15 @@ import Layout from '../layouts/Layout.astro';
     .subscription-timer .timer-label {
       font-size: 11px;
       color: var(--muted);
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       letter-spacing: 0.05em;
     }
     .subscription-timer .timer-value {
       font-size: 14px;
       font-weight: 700;
       color: var(--text);
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font);
+      font-variant-numeric: tabular-nums;
     }
     .subscription-timer .timer-progress-wrap {
       width: 100%;
@@ -1275,7 +1276,7 @@ import Layout from '../layouts/Layout.astro';
       font-size: 5rem;
       font-weight: 700;
       color: var(--muted);
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-display);
       background: var(--surface2);
     }
 

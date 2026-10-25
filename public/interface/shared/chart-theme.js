@@ -8,7 +8,7 @@
 (function (global) {
   'use strict';
 
-  var FONT = "'DM Sans', sans-serif";
+  var FONT = "'Geist', system-ui, sans-serif";
 
   function isLight() {
     var d = global.document;

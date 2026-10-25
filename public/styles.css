@@ -4,13 +4,12 @@
    ⭐ FIX 4.2: mini-cal-day boyutları KALDIRILDI (dashboard.css'te)
    ⭐ FIX 4.3: .stat-card::before accent-color kullanıyor
    ⭐ FIX: Tema değişkenleri TEK BLOK'ta toplandı (çakışma yok)
-   ⭐ FAZ 1.3: Space Grotesk ve JetBrains Mono eklendi
+   ⭐ FONT SİSTEMİ: Geist (--font), Syne (--font-display, sadece başlıklar), Geist Mono (--font-mono); :root içinde tek kaynak
    ⭐ FAZ 1.1: --radius-lg eklendi (index.css'ten taşındı)
    ⭐ FAZ 2.1: Z-INDEX SKALASI eklendi
    ⭐ FAZ 2.3: Panel-glow ortak kısmı eklendi
    ⭐ FAZ 4.1: Global transition KALDIRILDI (scope edildi)
    ⭐ FAZ 4.2: prefers-reduced-motion desteği eklendi
-   ⭐ FONT FIX: DM Mono → DM Sans (okunabilirlik için)
    ⭐ EKLENDİ: strategy-tags-card, strategy-pill, best-worst (dashboard/strategies ortak)
    ⭐ EKLENDİ: empty-state stilleri
    ============================================================ */
@@ -60,9 +59,15 @@
   --radius-lg: 20px;
   --shadow: 0 4px 24px rgba(0,0,0,0.3);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font: 'DM Sans', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --font-display: 'Syne', sans-serif;
+  /* FONT SİSTEMİ - TEK KAYNAK (yükleme: BaseHead.astro)
+     --font         Geist      : gövde, etiket, buton, büyük sayılar (sayılarda font-variant-numeric: tabular-nums)
+     --font-display Syne       : SADECE başlıklar (sayfa / modal başlıkları); küçük etiketlerde kullanılmaz
+     --font-mono    Geist Mono : sembol, kod, küçük sayısal rozetler
+     Font adını elle yazma, bu değişkenleri kullan. İstisna: grafik (ApexCharts) ve canvas yazıları
+     CSS değişkeni okuyamaz; orada düz "'Geist', system-ui, sans-serif" yazılır. */
+  --font: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: 'Syne', 'Geist', system-ui, sans-serif;
 
   /* ⭐ FAZ 2.1: Z-INDEX SKALASI - TEK KAYNAK */
   --z-backdrop: 150;
@@ -223,7 +228,7 @@ html { scroll-behavior: auto; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 15px;
   line-height: 1.6;
   min-height: 100vh;
@@ -253,7 +258,7 @@ body.light-theme::before {
    ============================================================ */
 
 h1, h2, h3, h4, h5, .h1, .h2, .h3, .h4, .h5 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.22;
   letter-spacing: -0.02em;
@@ -275,7 +280,7 @@ body.light-theme h4, body.light-theme h5 {
 .stat-value.positive, .stat-value.negative,
 .kpi-value.positive, .kpi-value.negative,
 .trade-pnl.positive, .trade-pnl.negative {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   letter-spacing: -0.02em;
   font-feature-settings: "tnum";
@@ -361,7 +366,7 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.2rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .stat-card .stat-value {
   font-size: clamp(1.1rem, 2.5vw, 1.5rem);
@@ -383,7 +388,7 @@ body.light-theme h4, body.light-theme h5 {
   display: flex;
   align-items: center;
   gap: 3px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .stat-trend.positive { color: var(--green); }
 .stat-trend.negative { color: var(--red); }
@@ -407,7 +412,7 @@ body.light-theme h4, body.light-theme h5 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .kpi-value {
   font-size: clamp(0.7rem, 1.2vw, 0.9rem);
@@ -483,11 +488,11 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin: 0;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .chart-badge {
   font-size: clamp(8px, 0.7vw, 10px);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   padding: 2px 8px;
   border-radius: 20px;
   background: rgba(34,197,94,0.1);
@@ -515,7 +520,7 @@ body.light-theme h4, body.light-theme h5 {
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.5rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .streak-dots {
   display: flex;
@@ -550,7 +555,7 @@ body.light-theme h4, body.light-theme h5 {
 .streak-label {
   font-size: clamp(9px, 1vw, 11px);
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 /* ============================================================
@@ -585,7 +590,7 @@ body.light-theme h4, body.light-theme h5 {
 
 .strategy-tags-card .empty-state .empty-text {
   font-size: 11px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   color: var(--muted);
 }
 
@@ -594,7 +599,7 @@ body.light-theme h4, body.light-theme h5 {
   text-decoration: none;
   font-size: 11px;
   font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 .strategy-tags-card .empty-state .empty-link:hover {
@@ -617,7 +622,7 @@ body.light-theme h4, body.light-theme h5 {
   padding: 0.25rem 0.7rem;
   margin: 0.2rem;
   font-size: clamp(9px, 2vw, 11px);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   transition: all 0.2s;
 }
 
@@ -642,7 +647,8 @@ body.light-theme h4, body.light-theme h5 {
   margin-top: 0.75rem;
   font-size: clamp(9px, 2vw, 10px);
   color: var(--muted);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -680,7 +686,7 @@ body.light-theme h4, body.light-theme h5 {
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
 }
 .trade-icon.long {
   background: rgba(34,197,94,0.15);
@@ -693,7 +699,7 @@ body.light-theme h4, body.light-theme h5 {
   box-shadow: 0 0 8px rgba(239,68,68,0.2);
 }
 .trade-symbol {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
   font-size: clamp(0.6rem, 1vw, 0.85rem);
   color: var(--text);
@@ -746,7 +752,7 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(0.5rem, 0.7vw, 0.7rem);
   color: var(--muted);
   text-align: right;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 /* ============================================================
@@ -780,7 +786,7 @@ body.light-theme h4, body.light-theme h5 {
   gap: 0.5rem;
 }
 .cal-header .cal-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1rem, 2vw, 1.4rem);
   font-weight: 700;
   color: var(--text);
@@ -822,7 +828,7 @@ body.light-theme h4, body.light-theme h5 {
   cursor: pointer;
   padding: clamp(0.2rem, 0.4vw, 0.35rem) clamp(0.4rem, 0.8vw, 0.9rem);
   font-size: clamp(9px, 0.8vw, 12px);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 500;
   border-radius: 40px;
   white-space: nowrap;
@@ -868,7 +874,7 @@ body.light-theme h4, body.light-theme h5 {
   margin-bottom: 0.4rem;
 }
 .cal-day-names .dname {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(7px, 0.7vw, 10px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -913,7 +919,8 @@ body.light-theme h4, body.light-theme h5 {
 .cal-day .day-bg.glow { filter: blur(2px); }
 
 .cal-day .day-number {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(10px, 1.2vw, 14px);
   font-weight: 600;
   color: var(--text);
@@ -921,7 +928,8 @@ body.light-theme h4, body.light-theme h5 {
   z-index: 1;
 }
 .cal-day .day-pnl {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(6px, 0.7vw, 10px);
   font-weight: 500;
   position: relative;
@@ -931,7 +939,7 @@ body.light-theme h4, body.light-theme h5 {
 .cal-day .day-pnl.positive { color: #4ade80; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .cal-day .day-pnl.negative { color: #ff7b7b; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .cal-day .day-trade-count {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(5px, 0.5vw, 8px);
   color: #ffffff !important;
   font-weight: 600;
@@ -1120,7 +1128,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   line-height: 1.2;
 }
 .summary-mini-card .s-info .s-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(6px, 0.5vw, 8px);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1128,7 +1136,8 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   color: var(--muted);
 }
 .summary-mini-card .s-info .s-value {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(0.7rem, 1.2vw, 1rem);
   font-weight: 700;
   color: var(--text);
@@ -1171,7 +1180,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding-bottom: 0.4rem;
 }
 .calendar-day-popup .popup-header h4 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.8rem, 1.2vw, 0.95rem);
   font-weight: 600;
   color: var(--text);
@@ -1204,7 +1213,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(3px, 0.4vw, 6px) 0;
   border-bottom: 1px solid var(--border);
   font-size: clamp(10px, 0.9vw, 12px);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .calendar-day-popup .popup-trade:last-child { border-bottom: none; }
 .calendar-day-popup .popup-trade .pt-left {
@@ -1213,7 +1222,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   gap: clamp(3px, 0.4vw, 6px);
 }
 .calendar-day-popup .popup-trade .pt-badge {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(6px, 0.5vw, 8px);
   font-weight: 700;
   padding: 1px clamp(3px, 0.4vw, 6px);
@@ -1230,13 +1239,14 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: 1px solid rgba(239,68,68,0.2);
 }
 .calendar-day-popup .popup-trade .pt-symbol {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
   color: var(--text);
 }
 .calendar-day-popup .popup-trade .pt-pnl {
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
 }
 .calendar-day-popup .popup-trade .pt-pnl.positive { color: var(--green); }
 .calendar-day-popup .popup-trade .pt-pnl.negative { color: var(--red); }
@@ -1287,7 +1297,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .ww-table th {
   border-bottom: 1px solid var(--border);
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(8px, 0.7vw, 11px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -1302,7 +1312,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(0.3rem, 0.5vw, 0.75rem) clamp(0.4rem, 0.6vw, 0.9rem);
   vertical-align: middle;
   white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .ww-table tr:last-child td { border-bottom: none; }
 .ww-table tbody tr { transition: all 0.15s; }
@@ -1325,7 +1335,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-size: 10px;
   padding: 4px 10px;
   border-radius: 6px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
@@ -1356,7 +1366,8 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 }
 .sel-bar.visible { display: flex; }
 .sel-bar .sel-count {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: clamp(10px, 1vw, 13px);
   font-weight: 600;
   color: var(--text);
@@ -1367,7 +1378,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   text-align: center;
 }
 .sel-bar .sel-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(9px, 0.8vw, 12px);
   color: var(--muted);
   font-weight: 500;
@@ -1386,7 +1397,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   color: var(--muted);
   padding: 0.2rem 0.6rem;
   font-size: clamp(9px, 0.7vw, 11px);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 500;
   cursor: pointer;
   min-height: 32px;
@@ -1404,7 +1415,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(0.25rem, 0.4vw, 0.45rem) clamp(0.6rem, 0.8vw, 1.2rem);
   border: none;
   border-radius: 40px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(9px, 0.8vw, 11px);
   font-weight: 600;
   color: #fff;
@@ -1445,7 +1456,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .auth-box .auth-title {
   font-size: clamp(1.1rem, 2.5vw, 1.4rem);
   margin-bottom: 0.3rem;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.03em;
   background: linear-gradient(135deg, var(--text), var(--accent2));
@@ -1457,7 +1468,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   color: var(--muted);
   font-size: clamp(11px, 1vw, 13px);
   margin-bottom: 1rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 /* ============================================================
@@ -1476,7 +1487,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .field input,
 .field select,
@@ -1485,7 +1496,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(12px, 1vw, 14px);
   padding: clamp(0.4rem, 0.6vw, 0.65rem) clamp(0.5rem, 0.7vw, 0.9rem);
   outline: none;
@@ -1507,7 +1518,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 600;
   padding: clamp(0.4rem, 0.6vw, 0.6rem) clamp(0.6rem, 1vw, 1.2rem);
@@ -1547,7 +1558,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 500;
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1.2rem);
@@ -1568,7 +1579,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   border: none;
   border-radius: 8px;
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 600;
   padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.6rem, 0.8vw, 1.2rem);
@@ -1590,7 +1601,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 
 .badge {
   border-radius: 4px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(8px, 0.7vw, 11px);
   font-weight: 500;
   padding: 2px clamp(4px, 0.5vw, 7px);
@@ -1646,7 +1657,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-size: clamp(12px, 0.9vw, 13.5px);
   font-weight: 500;
   line-height: 1.45;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font);
   padding: 0.7rem 0.9rem;
   display: flex;
   align-items: center;
@@ -1819,7 +1830,7 @@ body.light-theme .ww-toast-close:hover {
 }
 .confirm-modal-header .icon-wrap svg { width: clamp(16px, 2vw, 20px); height: clamp(16px, 2vw, 20px); stroke: var(--red); stroke-width: 2; }
 .confirm-modal-header h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
@@ -1828,7 +1839,7 @@ body.light-theme .ww-toast-close:hover {
 }
 .confirm-modal-body { padding: 1.25rem var(--modal-pad-x); }
 .confirm-modal-body p {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(11px, 0.9vw, 13px);
   color: var(--muted);
   line-height: 1.6;
@@ -1840,7 +1851,7 @@ body.light-theme .ww-toast-close:hover {
   background: rgba(239,68,68,0.06);
   border: 1px solid rgba(239,68,68,0.15);
   border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(9px, 0.7vw, 11px);
   color: var(--red);
   display: flex;
@@ -2156,7 +2167,7 @@ body.light-theme .skeleton-stat::after {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
   padding: clamp(0.2rem, 0.3vw, 0.3rem) clamp(0.4rem, 0.6vw, 0.7rem);
@@ -2215,7 +2226,7 @@ body.light-theme .skeleton-stat::after {
   padding: clamp(0.3rem, 0.4vw, 0.45rem) clamp(0.6rem, 0.8vw, 1rem);
   color: var(--text);
   text-decoration: none;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 500;
 }
@@ -2270,7 +2281,7 @@ body.light-theme .skeleton-stat::after {
   font-weight: 700;
   color: var(--text);
   margin-bottom: clamp(0.4rem, 0.6vw, 0.85rem);
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   display: flex;
   align-items: center;
   gap: clamp(0.3rem, 0.5vw, 0.5rem);
@@ -2313,7 +2324,7 @@ body.light-theme .skeleton-stat::after {
   font-size: clamp(10px, 0.9vw, 12.5px);
   font-weight: 500;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 /* ============================================================
@@ -2326,7 +2337,7 @@ body.light-theme .skeleton-stat::after {
   gap: clamp(3px, 0.4vw, 5px);
   padding: clamp(0.1rem, 0.2vw, 0.2rem) clamp(0.4rem, 0.6vw, 0.7rem) clamp(0.1rem, 0.2vw, 0.2rem) clamp(0.3rem, 0.4vw, 0.5rem);
   border-radius: 20px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: clamp(8px, 0.7vw, 10px);
   font-weight: 600;
   background: rgba(34,197,94,0.1);
@@ -2692,7 +2703,7 @@ body {
 }
 .modal-header h2,
 .modal-header h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -2761,7 +2772,7 @@ body {
   min-height: 38px;
   padding: 0.45rem 1.2rem;
   border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -2776,7 +2787,7 @@ body {
 .modal-body .modal-field label {
   display: block;
   margin-bottom: 0.35rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -2795,7 +2806,7 @@ body {
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -3031,7 +3042,7 @@ html.light-theme .wj-ambient-backdrop {
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.4;
@@ -3042,3 +3053,17 @@ html.light-theme .wj-ambient-backdrop {
   border: 1px solid color-mix(in srgb, var(--yellow) 35%, transparent);
 }
 .ww-scope-badge[hidden] { display: none; }
+
+/* Font render kalitesi: mobilde otomatik yazı büyütme kapalı, ince ve net kenarlar, başlıklarda dengeli satır kırma */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  font-kerning: normal;
+}
+h1, h2, h3 { text-wrap: balance; }

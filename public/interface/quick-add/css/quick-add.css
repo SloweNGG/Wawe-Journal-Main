@@ -10,10 +10,10 @@
    ============================================================ */
 
 :root {
-  --qa-font-display: 'Syne', sans-serif;
-  --qa-font-body: 'DM Sans', sans-serif;
-  --qa-font-mono: 'DM Mono', monospace;
-  --qa-font-numeric: 'Inter', sans-serif;
+  --qa-font-display: var(--font-display);
+  --qa-font-body: var(--font);
+  --qa-font-mono: var(--font-mono);
+  --qa-font-numeric: var(--font);
 
   --qa-header-h: 48px;
   --qa-header-h-mobile: 44px;
@@ -736,6 +736,7 @@ body.light-theme {
   font-size: 1.12rem;
   font-weight: 700;
   font-family: var(--qa-font-numeric);
+  font-variant-numeric: tabular-nums;
   color: var(--qa-text);
   letter-spacing: -0.01em;
   transition: color 0.2s ease;
@@ -766,6 +767,7 @@ body.light-theme {
   border-top: 1px dashed rgba(255, 255, 255, 0.08);
   font-size: 0.68rem;
   font-family: var(--qa-font-numeric);
+  font-variant-numeric: tabular-nums;
   color: var(--qa-muted);
   flex-wrap: wrap;
 }
@@ -1003,6 +1005,7 @@ body.light-theme .qa-comm-modal-dialog {
 .qa-comm-input-wrap input {
   padding-right: 48px;
   font-family: var(--qa-font-numeric);
+  font-variant-numeric: tabular-nums;
 }
 .qa-comm-input-suffix {
   position: absolute;

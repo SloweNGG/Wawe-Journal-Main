@@ -119,7 +119,7 @@ import Layout from '../layouts/Layout.astro';
 
     /* Partner Hero & Application Stilleri */
     .partner-hero-card {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font);
       background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, rgba(20, 20, 30, 0.5) 100%);
       border: 1px solid rgba(139, 92, 246, 0.25);
       border-radius: 16px;
@@ -155,7 +155,7 @@ import Layout from '../layouts/Layout.astro';
       background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
     }
     .partner-hero-badge {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -175,7 +175,7 @@ import Layout from '../layouts/Layout.astro';
       color: var(--accent);
     }
     .partner-hero-title {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      font-family: var(--font) !important;
       font-size: clamp(1.5rem, 2.6vw, 2.2rem);
       font-weight: 700;
       color: var(--text) !important;
@@ -187,7 +187,7 @@ import Layout from '../layouts/Layout.astro';
       background: none !important;
     }
     .partner-hero-desc {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       color: var(--muted);
       font-size: clamp(13px, 1.2vw, 15px);
       max-width: 580px;
@@ -239,7 +239,7 @@ import Layout from '../layouts/Layout.astro';
       border-color: rgba(108, 92, 231, 0.2);
     }
     .step-title {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      font-family: var(--font) !important;
       font-size: 1.05rem;
       font-weight: 700;
       color: var(--text) !important;
@@ -249,14 +249,14 @@ import Layout from '../layouts/Layout.astro';
       background: none !important;
     }
     .step-desc {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-size: 13.5px;
       color: var(--muted);
       line-height: 1.5;
       margin: 0;
     }
     .partner-cta-btn {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       padding: 0.9rem 2.2rem;
       font-size: 1rem;
       font-weight: 700;
@@ -351,7 +351,7 @@ import Layout from '../layouts/Layout.astro';
       pointer-events: auto;
     }
     .earnings-modal-card {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font);
       background: var(--modal-bg);
       border: 1px solid var(--modal-line);
       border-radius: var(--modal-radius);
@@ -373,7 +373,7 @@ import Layout from '../layouts/Layout.astro';
       justify-content: space-between;
     }
     .earnings-modal-header h3 {
-      font-family: 'Syne', sans-serif !important;
+      font-family: var(--font-display) !important;
       margin: 0;
       font-size: 1.05rem;
       font-weight: 700;
@@ -383,7 +383,7 @@ import Layout from '../layouts/Layout.astro';
       background: none !important;
     }
     .earnings-modal-body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       padding: 1.25rem var(--modal-pad-x);
       display: flex;
       flex-direction: column;

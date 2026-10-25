@@ -44,7 +44,7 @@
   background: transparent;
   border: none;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11.5px;
   font-weight: 600;
   padding: 0.4rem 0.65rem;
@@ -72,7 +72,7 @@
   background: transparent;
   border: none;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12px;
   outline: none;
 }
@@ -102,7 +102,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 12.5px;
   padding: 0.58rem 0.9rem;
@@ -250,7 +250,7 @@
   margin-top: 1px;
 }
 .sc-name {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text);
@@ -266,7 +266,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .sc-wr-dot {
   flex-shrink: 0;
@@ -305,10 +305,11 @@
   color: var(--muted);
   margin-bottom: 0.15rem;
   font-weight: 600;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
 }
 .sc-stat-val {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text);
@@ -326,7 +327,7 @@
   padding: 0.35rem 0.55rem;
   margin-bottom: 0.6rem;
   font-size: 10.5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   color: var(--muted);
 }
 .sc-instrument-tag .tag-icon {
@@ -341,7 +342,7 @@
   color: var(--text);
 }
 .sc-instrument-tag .tag-pnl {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 600;
   font-size: 10px;
 }
@@ -366,7 +367,7 @@
   color: var(--muted);
   opacity: 0;
   transition: opacity 0.15s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   pointer-events: none;
 }
 .sc-spark.clickable:hover .sc-spark-hint { opacity: 0.7; }
@@ -407,7 +408,7 @@
   -webkit-backdrop-filter: blur(6px);
   color: var(--muted);
   font-size: 10.5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   letter-spacing: 0.01em;
   pointer-events: none;
   transition: border-color 0.2s, color 0.2s;
@@ -479,7 +480,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
   padding: 2px 8px 2px 6px;
@@ -554,7 +555,7 @@
   font-size: 13px;
   color: var(--muted);
   font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 .empty-strategies {
@@ -595,13 +596,13 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.4rem;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
 }
 .empty-strategies p {
   color: var(--muted);
   font-size: 0.875rem;
   opacity: 0.8;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 .btn-add-strategy {
@@ -610,7 +611,7 @@
   gap: 0.45rem;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 13px;
   padding: 0.6rem 1.25rem;
@@ -635,7 +636,7 @@
   font-weight: 600;
   color: var(--text);
   margin-bottom: 0.85rem;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
 }
 .comparison-title em {
   font-style: normal;
@@ -656,11 +657,11 @@
   border-radius: var(--radius);
   overflow: hidden;
 }
-/* grafik başlığı: panodaki grafik başlıklarıyla aynı (DM Sans, 0.82rem, 600) */
+/* grafik başlığı: panodaki grafik başlıklarıyla aynı (Geist, 0.82rem, 600) */
 .comparison-card-header {
   padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--border);
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font) !important;
   font-size: 0.82rem !important;
   font-weight: 600 !important;
   letter-spacing: normal !important;
@@ -680,7 +681,7 @@
   font-weight: 600;
   color: var(--text);
   margin-bottom: 0.85rem;
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   opacity: 0.5;
 }
 .comparison-skeleton .comparison-grid {
@@ -774,11 +775,12 @@
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 600;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   margin-bottom: 0.25rem;
 }
 .detail-metric-val {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
@@ -787,7 +789,7 @@
 .detail-metric-val.neg { color: var(--red); }
 
 .detail-section-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 700;
   color: var(--text);
@@ -805,7 +807,7 @@
 table.detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12px;
 }
 table.detail-table thead th {
@@ -820,7 +822,7 @@ table.detail-table thead th {
   text-align: left;
   padding: 0.5rem 0.7rem;
   border-bottom: 1px solid var(--border);
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
 }
 table.detail-table tbody td {
   padding: 0.45rem 0.7rem;
@@ -838,7 +840,7 @@ table.detail-table td.neg { color: var(--red); font-weight: 600; }
   text-align: center;
   color: var(--muted);
   font-size: 12.5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .equity-chart-wrap {
   height: 360px;

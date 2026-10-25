@@ -1,8 +1,7 @@
 /* ============================================================
    CALENDAR SAYFASI ÖZEL STİLLER
    ⭐ FAZ 2.1: z-index değerleri değişkenlerle değiştirildi
-   ⭐ FONT FIX: TÜM DM Mono → DM Sans (okunabilirlik için)
-   ⭐ SADECE semboller (pt-symbol) DM Mono kalır
+   ⭐ FONT: metin var(--font) (Geist); semboller (pt-symbol) var(--font-mono) (Geist Mono)
    ⭐ FONT SIZE: Tüm metinler büyütüldü (okunabilirlik)
    ⭐ MOBIL FIX: 7 sütun grid taşması önlendi, tam responsive
    ⭐ MODAL: Strateji paneli ile birebir aynı modern popup tasarımı
@@ -26,7 +25,7 @@
 }
 
 .calendar-page-header h1 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.4rem, 4vw, 1.8rem);
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -80,7 +79,7 @@
 }
 
 .cal-header .cal-title {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font);
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -184,7 +183,7 @@
 }
 
 .cal-jump-popover .jump-year-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
@@ -205,7 +204,7 @@
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 .cal-jump-popover .jump-month-btn:hover {
@@ -238,7 +237,7 @@
   cursor: pointer;
   padding: 0.35rem 0.9rem;
   font-size: 12px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 500;
   transition: all 0.2s;
   border-radius: 40px;
@@ -277,7 +276,7 @@
 }
 
 .cal-day-names .dname {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -421,7 +420,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
 }
 
 .cal-day .day-number {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 14px;
   font-weight: 700;
   color: #ffffff;
@@ -438,7 +437,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
 }
 
 .cal-day .day-pnl {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
   font-weight: 700;
   position: relative;
@@ -462,7 +461,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
 }
 
 .cal-day .day-trade-count {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   font-weight: 600;
   color: #ffffff !important;
@@ -644,7 +643,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
 }
 
 .cal-legend .legend-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10.5px;
   color: var(--muted);
   margin-left: 2px;
@@ -758,7 +757,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 }
 
 .summary-mini-card .s-info .s-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -767,7 +766,8 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 }
 
 .summary-mini-card .s-info .s-value {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
@@ -786,7 +786,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 }
 
 .summary-mini-card .s-info .s-subvalue {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   font-weight: 500;
   color: var(--muted);
@@ -862,12 +862,13 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 600;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   margin-bottom: 0.25rem;
 }
 
 .detail-metric-val {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
@@ -882,7 +883,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 }
 
 .detail-section-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 700;
   color: var(--text);
@@ -905,7 +906,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 table.detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12px;
 }
 
@@ -921,7 +922,7 @@ table.detail-table thead th {
   text-align: left;
   padding: 0.5rem 0.7rem;
   border-bottom: 1px solid var(--border);
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   white-space: nowrap;
   z-index: 1;
 }
@@ -961,7 +962,7 @@ table.detail-table td.neg {
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 12px;
   padding: 0.5rem 0.85rem;
@@ -982,7 +983,7 @@ table.detail-table td.neg {
   text-align: center;
   color: var(--muted);
   font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 
 body.light-theme .cal-day .day-number {

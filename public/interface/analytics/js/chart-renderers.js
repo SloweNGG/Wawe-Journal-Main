@@ -60,7 +60,7 @@ var CHART_THEME = {
   purple: '#8b5cf6',
   orange: '#f97316',
   gray: '#64748b',
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Geist', system-ui, sans-serif",
   fontSizeDesktop: '11px',
   fontSizeMobile: '10px',
   legendSizeDesktop: '12px',
@@ -118,7 +118,7 @@ function getLegendSize() {
   return isMobile() ? CHART_THEME.legendSizeMobile : CHART_THEME.legendSizeDesktop;
 }
 
-// Eksen etiketleri: tüm sayfalardaki gibi soluk renk, DM Sans, 500 kalınlık (mobilde 10px)
+// Eksen etiketleri: tüm sayfalardaki gibi soluk renk, Geist, 500 kalınlık (mobilde 10px)
 function axisStyle() {
   var W = wwChart();
   var style = W ? W.axisLabels() : { colors: CHART_THEME.mutedColor, fontFamily: CHART_THEME.fontFamily, fontWeight: 500 };

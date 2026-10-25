@@ -30,7 +30,7 @@
   background: var(--modal-backdrop);
   backdrop-filter: blur(var(--modal-blur));
   -webkit-backdrop-filter: blur(var(--modal-blur));
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
 }
 .pd-export-box {
   --pdx-bg: var(--modal-bg);

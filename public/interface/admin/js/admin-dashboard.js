@@ -54,7 +54,7 @@ function getAdminApexTheme() {
 }
 
 // WwChart (shared/chart-theme.js) yüklenmemişse (eski önbellekli sayfa) sade bir yedek kullanılır
-var ADMIN_CHART_FALLBACK_FONT = "'DM Sans', sans-serif";
+var ADMIN_CHART_FALLBACK_FONT = "'Geist', system-ui, sans-serif";
 
 function adminChartColors(theme) {
   if (window.WwChart) return WwChart.colors();

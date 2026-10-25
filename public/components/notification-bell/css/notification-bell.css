@@ -70,7 +70,8 @@
   border-radius: 99px;
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 9px;
   font-weight: 700;
   display: flex;
@@ -123,7 +124,7 @@
 }
 
 .notif-panel-header h4 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font);
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text);
@@ -135,7 +136,7 @@
   background: transparent;
   border: none;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
@@ -229,7 +230,7 @@
 }
 
 .notif-item .notif-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
@@ -238,14 +239,14 @@
 }
 
 .notif-item .notif-desc {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   color: var(--muted);
   line-height: 1.4;
 }
 
 .notif-item .notif-time {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   color: var(--muted);
   opacity: 0.6;
@@ -295,7 +296,7 @@
   background: rgba(255, 255, 255, 0.04);
   padding: 0.1rem 0.5rem;
   border-radius: 4px;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 /* ⭐ ALL GOOD STATE */
@@ -310,7 +311,7 @@
   text-align: center;
   padding: 2.5rem 1rem;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font);
   font-size: 13px;
 }
 

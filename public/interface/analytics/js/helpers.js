@@ -212,7 +212,7 @@ export function showEmptyChart(containerId, typeOrMessage) {
 
   var actionText = _t(cfg.actionKey);
 
-  var btnStyle = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;";
+  var btnStyle = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:500;border:1px solid var(--border);padding:0.15rem 0.7rem;border-radius:20px;transition:all 0.2s;background:var(--surface);cursor:pointer;font-family:var(--font);";
   var btnHover = "onmouseover=\"this.style.borderColor='var(--accent)';this.style.background='rgba(139,92,246,0.05)';\" onmouseout=\"this.style.borderColor='var(--border)';this.style.background='var(--surface)';\"";
 
   var buttonHtml = '';
@@ -223,7 +223,7 @@ export function showEmptyChart(containerId, typeOrMessage) {
   }
 
   container.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:80px;padding:0.5rem;text-align:center;color:var(--muted);font-family:'DM Sans',sans-serif;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:80px;padding:0.5rem;text-align:center;color:var(--muted);font-family:var(--font);">
       <div style="margin-bottom:0.5rem;opacity:0.6;color:var(--muted);display:flex;align-items:center;justify-content:center;">${cfg.icon}</div>
       <p style="font-size:12px;margin:0 0 0.3rem;color:var(--muted);">${displayMessage}</p>
       ${buttonHtml}

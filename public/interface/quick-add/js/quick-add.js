@@ -355,14 +355,14 @@ function ensureCsvParsers() {
 .qa-date-input-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
 .qa-date-picker-overlay { position: fixed; inset: 0; z-index: 9999; background: transparent; display: none; }
 .qa-date-picker-overlay.open { display: block; }
-.qa-date-picker { position: fixed; z-index: 10000; background: var(--qa-surface, #111118); border: 1px solid var(--qa-border-strong, rgba(255,255,255,0.12)); border-radius: 14px; padding: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(124,109,250,0.08); width: 300px; font-family: var(--qa-font-body, 'DM Sans', system-ui, sans-serif); color: var(--qa-text, #e8e8f0); opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.97); transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.18s; pointer-events: none; user-select: none; -webkit-user-select: none; }
+.qa-date-picker { position: fixed; z-index: 10000; background: var(--qa-surface, #111118); border: 1px solid var(--qa-border-strong, rgba(255,255,255,0.12)); border-radius: 14px; padding: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(124,109,250,0.08); width: 300px; font-family: var(--qa-font-body); color: var(--qa-text, #e8e8f0); opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.97); transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.18s; pointer-events: none; user-select: none; -webkit-user-select: none; }
 .qa-date-picker.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto; }
 .qa-date-picker-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--qa-border, rgba(255,255,255,0.06)); }
 .qa-dp-nav { width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: transparent; border: 1px solid var(--qa-border, rgba(255,255,255,0.06)); color: var(--qa-muted, #6b6b80); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; padding: 0; }
 .qa-dp-nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
 .qa-dp-nav:hover { border-color: var(--qa-accent, #7c6dfa); color: var(--qa-accent, #7c6dfa); background: rgba(124,109,250,0.08); }
 .qa-dp-nav:active { transform: scale(0.94); }
-.qa-dp-title { flex: 1; background: transparent; border: none; color: var(--qa-text, #e8e8f0); font-family: var(--qa-font-heading, 'Syne', inherit); font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 8px; cursor: default; text-align: center; }
+.qa-dp-title { flex: 1; background: transparent; border: none; color: var(--qa-text, #e8e8f0); font-family: var(--font); font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 8px; cursor: default; text-align: center; }
 .qa-date-picker-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
 .qa-dp-weekday { text-align: center; font-size: 10px; font-weight: 600; color: var(--qa-muted, #6b6b80); padding: 6px 0; text-transform: uppercase; letter-spacing: 0.05em; }
 .qa-date-picker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -1015,7 +1015,7 @@ async function fileToCsvText(file) {
             <div class="quick-tab-content" id="tab-bulk">
               <div class="quick-bulk-area">
                 <p style="font-size:12px;color:var(--muted);margin-bottom:0.5rem;" data-quick-i18n="quickmodal.bulk_desc">Her satıra bir işlem gelecek şekilde girin:</p>
-                <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;margin-bottom:0.75rem;">
+                <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);background:var(--surface2);padding:6px 10px;border-radius:6px;margin-bottom:0.75rem;">
                   <span data-quick-i18n="quickmodal.bulk_format">sembol,yön,lot,giriş,çıkış,tarih,not</span><br>
                   <span data-quick-i18n="quickmodal.bulk_example">EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem</span>
                 </div>
@@ -1797,7 +1797,7 @@ async function fileToCsvText(file) {
     }
 
     html += '<div style="overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;border-radius:6px;border:1px solid var(--border);">';
-    html += '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;">';
+    html += '<table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);">';
     const hasCommOrSwap = rows.some(function(r) {
       return (r.commission != null && Number(r.commission) > 0) || (r.swap != null && Number(r.swap) !== 0);
     });
@@ -1880,7 +1880,7 @@ async function fileToCsvText(file) {
     html += '<button class="btn btn-primary" id="csv-confirm-import" style="font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:4px;">' + ICONS.check + '<span>' + escapeHtml(t('quickmodal.import')) + '</span></button>';
     html += '</div>';
     html += '<div style="overflow-x:auto;max-height:200px;overflow-y:auto;font-size:12px;">';
-    html += '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;">';
+    html += '<table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);">';
 
     html += '<thead><tr style="background:var(--surface);">';
     headers.forEach(function(h) {
