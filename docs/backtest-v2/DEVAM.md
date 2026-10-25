@@ -118,8 +118,18 @@ Aşama 3 notları:
 |---|---|
 | 1 Hatalar | Yayında (`2328813`): fiyat ekseni öz denetimi (ortalamadan sonra eksen mumları çerçevelemiyorsa görünüm yeniden kurulur, aralıklar loglanır). Fiyat çizgileri otomatik ölçeğe hiç katılmaz (LWC); eksi milyarlar ancak seri verisi ya da bir primitive'den gelebilir. Diğer maddeler önceki turda tamamdı. |
 | 2 Çizim araçları | Yayında (`d97092d`), canlı kontrol 30/30 (ücretsiz ve Premium) |
-| 3 Pencere sistemi | Sürüyor: `bt-desk.js` (bt-dock.js'in yerine) |
-| 4 Bekleyen emirler | Önceki turda yayında; pencere sistemiyle "Bekleyen emirler" penceresi olacak |
+| 3 Pencere sistemi | Yayında (`5743de5`): `bt-desk.js` (bt-dock.js'in yerine), canlı kontrol 31/31 (ücretsiz ve Premium) |
+| 4 Bekleyen emirler | Önceki turda yayında; motor yeniden gözden geçirildi, değişiklik gerekmedi; liste artık "Bekleyen emirler" penceresinde |
 
 - Smoke'ta gerçek fare/klavye: `run.mjs` sayfaya `window.__pp({ op })` verir (puppeteer `page.mouse` / `page.keyboard`). Senaryolar `draw-real-pro`, `draw-real-free`.
 - Bu makinede araçlar: puppeteer `PP_DIR`, gerçek BTC verisi `CTDATA`, PGlite `PGLITE_DIR` önceki oturumun scratchpad'inde; Chrome `C:/Program Files/Google/Chrome/Application/chrome.exe`.
+
+Aşama 3 notları:
+- `bt-desk.js`: model (saf, `tests/bt-desk.test.js`) + `mount()`. Pencere kesirleri masaüstüne göre (x, y, w, h), z sırası, durum
+  (normal / min / max), `prev` (ekranı kaplama ve yapıştırmadan önceki boyut). Düzen `ww_bt_desk_v1:<kullanıcı>`; ilk açılışta eski
+  `ww_bt_dock_v1` widget'ları ve çoklu grafik ızgarası alınır.
+- `data-desk`: free (Gelişmiş, geniş), simple (Basit, çerçevesiz ızgara), stack (≤1024 px), fs (tam ekran: pencereler `display: contents`).
+- Çoklu grafik: ek grafiklerin hücresi serbest masaüstünde kendi penceresinde, tam ekranda ortak ızgarada (`placeCells`). Düzen
+  seçicisi grafik pencerelerini ana grafiğin alanında döşer (`tileCharts`, en küçük boyutlara göre alan büyür).
+- Sekmeler kalktı: `showWin('open'|'orders'|'history'|'stats')`; smoke sürücülerinde `window.__btTest.openWin(...)`.
+- Smoke: `desk-pro`, `desk-free`, `desk-phone` (gerçek fare ve klavye).

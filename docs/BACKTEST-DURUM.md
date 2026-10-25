@@ -1,13 +1,13 @@
-# Backtest: durum raporu (2026-10-25, akşam)
+# Backtest: durum raporu (2026-10-25, gece)
 
-Kaynak: master `a3bbb8a`, canlı site (wawejournal.com), kod ve test çalıştırması.
-Ayrıntılı geçmiş: `docs/backtest-v2/DEVAM.md`. Bu raporun önceki sürümü sabah (`fd371b9`) yazıldı; o gün üç aşama yayına alındı:
+Kaynak: master, canlı site (wawejournal.com), kod ve test çalıştırması. Ayrıntılı geçmiş: `docs/backtest-v2/DEVAM.md`.
+Bu turda dört aşama yayına alındı:
 
 | Commit | Aşama |
 |---|---|
-| `ff9fff5` | 1. Hatalar: BTCUSD ekseni, grafiği ortalama, kayan sayılar, "Aktivite (tahmini)", stats-audit, 202610220001 rollback'i |
-| `7928a23` | 2. Taşınabilir paneller, istatistik paneli / tam ekran, istatistik widget'ları, çoklu grafikte yer ve boyut |
-| `a3bbb8a` | 3. Bekleyen emirler (limit / stop) |
+| `2328813` | 1. Hatalar: fiyat ekseni öz denetimi (BTCUSD), "Aktivite (tahmini)" yedek metni; diğer maddeler önceki turdan doğrulandı |
+| `d97092d` | 2. Çizim araçları baştan: tutamaçlar, Shift, Esc, geri al/yinele, ayar penceresi, yerinde metin |
+| `5743de5` | 3. Pencere sistemi (`bt-desk.js`), bekleyen emirler kendi penceresinde (4) |
 
 ## 1. Özellik listesi
 
@@ -15,87 +15,121 @@ Ayrıntılı geçmiş: `docs/backtest-v2/DEVAM.md`. Bu raporun önceki sürümü
 
 | Alan | Özellik | Durum | Not |
 |---|---|---|---|
-| Veri | Sentetik mumlar | ✅ | Tarayıcıda üretilir, 2024-01'den itibaren |
-| Veri | cTrader verisi | ✅ | Int32'ye sığmayan, sıfır/eksi veya sonsuz değer atılıyor; bozuk önbellek ayı yeniden indiriliyor (bkz. 3) |
-| Veri | Kendi arşivimiz (Dukascopy/Binance → Storage) | ❌ | Lisans kararı bekliyor |
-| Replay | Oynat/duraklat, hız, mum ve dakika adımı | ✅ | |
-| Replay | Tarihe git | ✅ | Grafik yeni tarihe ortalanır, fiyat ölçeği otomatiğe döner |
-| Replay | Bölümler (işlemli hesapta geri dönüş) | ✅ | Açık pozisyon varken engelli; bekleyen emirler iptal edilir |
-| Motor | Piyasa emri | ✅ | Kuruş hassasiyetinde, en fazla 20 açık pozisyon |
-| Motor | Bekleyen emirler (limit / stop) | ✅ | Gap'te açılıştan dolum, 1 dakikalık mum içinde mum yolu sırası, ileriye bakmaz; tarayıcıda saklanır (bkz. 3) |
-| Motor | SL/TP, sonradan değiştirme | ✅ | |
-| Motor | Spread, komisyon | ✅ | |
-| Hesap | Hesaplar ve kotalar, defter senkronu | ✅ | Ücretsiz 1, Premium 10 hesap |
-| Arayüz | Basit / Gelişmiş mod | ✅ | |
-| Arayüz | Paneller: sürükleyip taşıma, önizleme, boyutlandırma, gizleme | ✅ | Gelişmiş mod ve geniş ekran; telefonda alt alta |
-| Arayüz | Grafiği ortala (R), "Şimdiki muma dön" | ✅ | Fiyat eksenine çift tıklama otomatik ölçeğe döner |
-| Arayüz | Tam ekran (F) ve kısayol sayfası | ✅ | |
-| Arayüz | Görünüm çekmecesi ve temalar | ✅ | |
-| Arayüz | Aktivite çubukları | ✅ | Adı "Aktivite (tahmini)", grafikte açıklama satırı |
-| Arayüz | Canlı sayılar | ✅ | Sabit genişlik, sağa hizalı; açık pozisyon satırları yerinde güncellenir |
-| Çizim | Çizim araçları | ✅ | Otomatik ölçeğe katılmaz |
-| İstatistik | İstatistik sekmesi / ayrı panel / tam ekran | ✅ | |
-| İstatistik | İstatistik widget'ları | ✅ | Taşı (SortableJS), boyutlandır, gizle, büyüt (WwChartViewer) |
-| Grafik | Çoklu grafik | ✅ | Grafikler sürüklenerek yer değiştirir, sütun/satır boyutları ayrı ayrı |
-| Plan | Ayda 100 işlem (cTrader verili hesap, ücretsiz) | ✅ | Tetiklenen bekleyen emirlerde de geçerli |
-| Dil | tr/en/de | ✅ | Her dilde 417 `backtest.*` anahtarı, eşitlik testi geçiyor |
+| Veri | Sentetik mumlar | ✅ | |
+| Veri | cTrader verisi | ✅ | Geçersiz değerler seriye ulaşmaz; bozuk önbellek ayı yeniden indirilir |
+| Veri | Kendi arşivimiz | ❌ | Lisans kararı bekliyor |
+| Replay | Oynat, adım, tarihe git, bölümler | ✅ | Tarih, bölüm, zaman dilimi, hesap açılışı ve tam ekrandan sonra grafik imlece ortalanır |
+| Grafik | Fiyat ekseni öz denetimi | ✅ | Yeni: ortalamadan sonra eksen görünen mumları çerçevelemiyorsa görünüm yeniden kurulur ve durum loglanır (bkz. 3) |
+| Grafik | Grafiği ortala (R), "Şimdiki muma dön", eksene çift tık | ✅ | |
+| Çizim | 9 araç | ✅ | Yeni sürüm, ayrıntı aşağıda |
+| Çizim | Geri al / yinele | ✅ | Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z, Ctrl+Y ve araç çubuğu |
+| Çizim | Ayar penceresi | ✅ | Çift tık veya sağ tık: renk, kalınlık, çizgi stili, dolgu, opaklık; Fibonacci seviyeleri, metin boyutu |
+| Arayüz | Pencere sistemi (Gelişmiş mod) | ✅ | Yeni, ayrıntı aşağıda |
+| Arayüz | Basit mod | ✅ | Çerçevesiz sabit düzen |
+| Arayüz | Telefon | ✅ | Pencereler alt alta, sürükleme yok |
+| Arayüz | Canlı sayılar | ✅ | Sabit genişlik; tam ekrandaki yüzen kutular da kaymıyor (yeni test) |
+| Motor | Piyasa / limit / stop emirleri | ✅ | Gap'te açılıştan dolum, 1 dakikalık mum içinde mum yolu, ileriye bakmaz |
+| İstatistik | Widget'lar (taşı, boyutlandır, gizle, büyüt) | ✅ | İstatistikler penceresinde |
+| Plan | Ayda 100 işlem (cTrader verili, ücretsiz) | ✅ | Tetiklenen emirlerde de |
+| Dil | tr/en/de | ✅ | Eşitlik testi geçiyor |
+
+### Çizim araçları (aşama 2)
+
+| Araç | Ne yapar |
+|---|---|
+| Hepsi | Sürükleyerek ya da iki tıklamayla çizim; seç, taşı, tutamaçtan boyutlandır, Del ile sil; Esc çizimi veya sürüklemeyi iptal eder (hayalet kalmaz); imleç duruma göre değişir (artı, taşı, kenar oku, tut). Seçim araç çubuğunun genişliğini değiştirmez (önceden grafik seçimde daralıyor, çizimler yana kayıyordu) |
+| Dikdörtgen | Herhangi bir köşeden herhangi bir yöne; 8 tutamaç; Shift ile ekranda tam kare; dolgusuz kutu yalnız kenarından tutulur |
+| Trend çizgisi, ışın | Shift ile yatay, dikey veya 45° (uç sürüklerken de); iki uç ayrı ayrı |
+| Fibonacci | İki uç ayrı ayrı; seviyeler ayar penceresinden (en fazla 12) |
+| Long / short | Giriş, TP, SL ve genişlik tutamaçları; grafikte R:R, pip (kriptoda puan) ve emir panelindeki lota göre tutar |
+| Metin | Grafikte yerinde yazılır ve düzenlenir (çift tık); Enter kaydeder, Esc bırakır |
+| Ölçüm | Mum sayısı, süre, fiyat farkı ve yüzde |
+| Mıknatıs | Uçlar en yakın açılış/yüksek/düşük/kapanışa yapışır |
+
+Stil alanları `backtest_drawings.style` (jsonb) içinde; veritabanı değişikliği gerekmedi.
+
+### Pencere sistemi (aşama 3)
+
+| Özellik | Ayrıntı |
+|---|---|
+| Pencereler | Replay kontrolleri, grafik (çoklu grafikte her grafik), emir paneli, bakiye, açık pozisyonlar, bekleyen emirler, işlem geçmişi, istatistikler |
+| Taşıma ve boyut | Başlıktan sürükle; 4 kenar ve 4 köşeden boyutlandır; en küçük boyutlar; başlıkta ok tuşları taşır, Shift + ok boyutlandırır |
+| Düğmeler | Simge durumuna küçült (görev çubuğuna), ekranı kapla / önceki boyut (başlığa çift tık da), kapat (grafikler yalnız küçülür; sayıları grafik düzeninden gelir) |
+| Görev çubuğu | Açık pencereler; küçültülen kesik çerçeveli; tıklama geri getirir, öndekini küçültür (Windows gibi) |
+| Öne gelme | Tıklanan pencere öne gelir |
+| Yapıştırma | Sol/sağ kenar yarım, üst kenar tam, köşeler çeyrek; bırakılacak yer önizlemesi; ekranı kaplayan ya da yapışan pencere sürüklenince eski boyutuna döner |
+| Mıknatıs | Pencereler masaüstü kenarlarına ve birbirine 8 px aralıkla yapışır (10 px yakınlıkta) |
+| Grafikler | Pencere boyutu değişince yeniden çizilir; çoklu grafik düzeni seçilince grafik pencereleri ana grafiğin alanını paylaşır |
+| Düzenler | Mevcut düzen kullanıcıya özel otomatik kaydedilir; hazır düzenler Klasik, Odak, Analiz, Çoklu grafik (Premium); adlı düzen kaydet / yükle / sil (ücretsiz 1, Premium sınırsız); "Düzeni sıfırla" |
+| Basit mod | Çerçevesiz sabit düzen (replay üstte, grafik solda, bakiye ve emir sağda) |
+| Telefon | Pencereler alt alta tam genişlikte, sürükleme ve boyutlama yok |
+| Tam ekran (F) | Eskisi gibi: grafik ekranı kaplar, bakiye, replay ve hızlı emir yüzer |
+
+Kütüphane kararı: kendi kodumuz (`bt-desk.js`, bağımlılık yok). WinBox.js (Apache-2.0) pencereleri sayfanın gövdesine sabitliyor, masaüstü
+alanı, görev çubuğu ve yapıştırma önizlemesi için ağır değişiklik gerekiyordu; interact.js (MIT) yalnız sürükleme/boyutlama veriyor,
+yapıştırma, mıknatıs, görev çubuğu, düzenler ve grafik yeniden çizimi yine bize kalıyordu. Kendi kodla aynı iş, dış bağımlılık riski yok.
 
 ## 2. Ücretsiz / Premium
 
-Kurallar değişmedi. Yeni özelliklerin dağılımı:
+Kurallar değişmedi (`public/src/core/config.js` FEATURES).
 
 | Özellik | Ücretsiz | Premium |
 |---|---|---|
-| Panelleri taşıma, gizleme, düzen sıfırlama | ✅ | ✅ |
-| Grafiği ortala, şimdiki muma dön | ✅ | ✅ |
-| Bekleyen emirler | ✅ (cTrader verili hesapta tetiklenen emir aylık sınıra sayılır) | ✅ |
-| İstatistik paneli / tam ekran, widget taşıma ve boyut | ✅ (temel rakamlar, bakiye eğrisi, Premium tanıtım kartı) | ✅ (tüm grafikler) |
-| Çoklu grafikte yer ve boyut | ❌ (çoklu grafik Premium) | ✅ |
-
-Kapılar yine `public/src/core/config.js` FEATURES içinde.
+| Trend, yatay çizgi, dikdörtgen (oturumda) | ✅ | ✅ (hesaba kaydedilir) |
+| Diğer 6 çizim aracı | ❌ (PRO etiketi, yükseltme penceresi) | ✅ |
+| Geri al / yinele, ayar penceresi | ✅ | ✅ |
+| Pencere sistemi, hazır düzenler | ✅ (Çoklu grafik hariç) | ✅ |
+| Adlı düzen | 1 | Sınırsız |
+| Çoklu grafik | ❌ | ✅ |
+| Bekleyen emirler | ✅ (tetiklenen emir aylık sınıra sayılır) | ✅ |
 
 ## 3. Bilinen sorunlar ve sınırlar
 
 | Konu | Durum |
 |---|---|
-| BTCUSD eksi milyarlar | Gerçek BTC 1m verisiyle (Binance) yeniden üretildi. Bulunan kök nedenler: elle ölçeklenen fiyat ekseni (otomatik ölçek kapanır) tarih/bölüm değişince öyle kalıyordu, 2019 mumları ekran dışında = boş grafik; görünür aralık imlece taşınmıyordu. İkisi de düzeldi (smoke `btc-repro-pz`, `btc-repro-scroll`). Bildirilen sayılar (−1,24 … −1,68 milyar) 1e-5 birimli BTC 26 150–30 550 fiyatlarının Int32 taşmasıyla birebir örtüşüyor; o değer bu makinede gerçek cTrader verisiyle yeniden üretilemedi (cTrader hesabına erişim yok), bu yol artık kapalı: dönüşüm ve önbellek bu değerleri atıyor, seriye geçersiz mum ulaşmıyor. Kullanıcının aynı hesapta tekrar denemesi gerekiyor. |
-| Bekleyen emirler cihazlar arası | Emirler tarayıcıda saklanıyor (`ww_bt_orders_v1:<kullanıcı>:<hesap>`). Başka cihazda görünmez. Veritabanına taşımak için yeni tablo (migration + rollback) gerekir; bu makineden canlı veritabanına erişim yok. |
-| Panel ve widget düzeni cihazlar arası | Kullanıcıya özel, tarayıcıda (`ww_bt_dock_v1:<kullanıcı>`). Aynı sebeple veritabanında değil. |
-| Bir dakika içindeki sıra | 1m verinin içi bilinmez; emir ile SL/TP aynı 1 dakikalık mumdaysa mum yolu varsayılır (yükselen mum açılış → dip → tepe → kapanış, düşen mum açılış → tepe → dip → kapanış). Bu işlemler "belirsiz" sayılır ve kullanıcıya bildirilir. |
-| Panel taşıma Basit modda yok | Bilinçli: Basit mod sabit düzen; özelleştirme Gelişmiş modda. |
+| BTCUSD eksi milyarlar | Lightweight Charts'ta fiyat çizgileri otomatik ölçeğe hiç katılmaz; eksen ancak seri verisi ya da bir primitive'in autoscaleInfo'su ile kayabilir. Seriye geçersiz mum ulaşmıyor, çizim ve seans primitive'leri ölçeğe katılmıyor. Yine de olursa: ortalamadan sonra eksen mumları çerçevelemiyorsa görünüm yeniden kurulur ve `[bt] price scale off the candles: axis [..] candles [..]` uyarısı loglanır. Hatayı kullanıcının hesabında görmek için bu satır gerekir. cTrader hesabına bu makineden erişim yok. |
+| Bekleyen emirler cihazlar arası | Tarayıcıda (`ww_bt_orders_v1:<kullanıcı>:<hesap>`). Veritabanına taşımak için tablo (migration + rollback) gerekir; canlı veritabanına bu makineden erişim yok. |
+| Pencere düzeni ve adlı düzenler cihazlar arası | Kullanıcıya özel, tarayıcıda (`ww_bt_desk_v1:<kullanıcı>`); aynı sebeple veritabanında değil. Eski panel düzeninin istatistik widget'ları ve çoklu grafik ızgarası ilk açılışta alınır. |
+| Bir dakika içindeki sıra | 1m mumun içi bilinmez; emir ile SL/TP aynı mumdaysa mum yolu varsayılır ve işlem "belirsiz" sayılır. |
+| Safari | Testler Windows'ta Chrome ile koştu; macOS Safari ve Chrome elle denenmeli (aşağıdaki adımlar). |
 
 ## 4. Teknik durum
 
 | Konu | Değer |
 |---|---|
-| master'daki son commit | `a3bbb8a`, `origin/master` ile aynı |
-| Canlıdaki sürüm | master ile aynı. `backtest.js?v=18`, `bt-engine.js?v=5`, `bt-dock.js?v=1`, `bt-stats.js?v=3`, `backtest.css?v=15`, `i18n.js?v=1793500003`, SW `wawe-v28` |
-| Sayfa ve modüller | `src/pages/backtest.astro`, `public/interface/backtest/js/` içinde 14 dosya (yaklaşık 7.300 satır); yeni: `bt-dock.js` |
-| Dış kütüphane | SortableJS 1.15.0 (Premium dashboard ile aynı), Lightweight Charts 4.1.3 |
+| Canlıdaki sürüm | `backtest.js?v=21`, `bt-draw.js?v=3`, `bt-desk.js?v=1`, `bt-layout.js?v=4`, `backtest.css?v=17`, SW `wawe-v30` |
+| Sayfa ve modüller | `src/pages/backtest.astro`, `public/interface/backtest/js/` içinde 14 dosya (yaklaşık 8.000 satır); `bt-dock.js` yerine `bt-desk.js` |
+| Dış kütüphane | Lightweight Charts 4.1.3, SortableJS 1.15.0 (istatistik widget'ları) |
 
-Veritabanı: bu turda değişiklik yok, canlıya yazılmadı. Migration'lar:
+Veritabanı: bu turda değişiklik yok, canlıya yazılmadı. 202610220001 rollback'i yerinde, PGlite provası yeniden koşuldu, 16 kontrolün hepsi geçti.
 
-| Migration | Konu | Rollback / doğrulama |
-|---|---|---|
-| 202610180001–0009 | Hesaplar, işlemler, defter bağı, veri kaynakları | — |
-| 202610220001 | `journals.trade_scope` | `supabase/rollbacks/202610220001_journal_trade_scope.down.sql` geri kondu (`b7860ac` ile birebir). Yerel prova `supabase/tests/rehearse_202610220001.mjs` (PGlite): 17/17 |
-| 202610240001 | `backtest_drawings` | `.down.sql`, doğrulama 15/15 |
-| 202610240002 | Aylık işlem sınırı | `.down.sql`, doğrulama 12/12 |
-| 202610240003 | Geri dönüş ve bölümler | `.down.sql`, doğrulama 11/11 |
-
-Testler (2026-10-25, bu makinede):
+Testler (2026-10-25 gece, bu makinede):
 
 | Tür | Sonuç |
 |---|---|
-| Tüm birim testleri (`node --test tests/*.test.js`) | 456 / 456 (Windows'ta stats-audit dahil) |
-| Backtest birim testleri (14 adet `bt-*.test.js`) | 234 / 234; yeni `bt-dock.test.js` (15), `bt-orders.test.js` (21) |
-| Duman testleri (`tests/smoke`, Chrome + puppeteer-core) | 35 senaryo, hepsi geçti; yeni `stage1`, `stage1-de`, `dock-pro`, `dock-free`, `dock-phone`, `orders`, `orders-limit` |
-| Gerçek veriyle duman (`btc-repro*`, `CTDATA`) | 6 / 6 |
-| Canlı kontrol (sahte oturum, canlıya yazmaz) | Ücretsiz ve Premium, her aşamadan sonra: 26–28 / 26–28 |
+| Tüm birim testleri (`node --test tests/*.test.js`) | 460 / 460 |
+| Backtest birim testleri (14 dosya) | 238 / 238; yeni `bt-desk.test.js` (14), `bt-draw.test.js` 17 |
+| Duman testleri (Chrome, puppeteer-core) | 37 senaryo, 826 kontrol, hepsi geçti; yeni gerçek fare/klavye senaryoları `draw-real-pro` (82), `draw-real-free` (50), `desk-pro` (47), `desk-free` (44), `desk-phone` |
+| Gerçek BTC verisiyle duman (`btc-repro*`) | 6 / 6 senaryo (çoklu grafikte çok küçük grafik penceresi bulundu ve düzeltildi) |
+| Pagecheck (diğer sayfalar) | Eski ve yeni build aynı; premium-dashboard iki build'de de boş çiziliyor (bu makinedeki araç sorunu, fark yok) |
+| Canlı kontrol (sahte oturum, canlıya yazmaz) | Ücretsiz ve Premium: aşama 1-2 kontrolü 30/30, aşama 3 kontrolü 31/31 |
 
-## 5. Sonraki adımlar
+## 5. Senin deneyeceğin adımlar
 
-1. **BTCUSD'yi kullanıcı hesabında doğrulamak.** cTrader BTCUSD H1, 10.07.2019, Bölüm 2. Eksen hâlâ bozuksa: tarayıcı konsolunda `localStorage` ve IndexedDB `ww_bt_ctrader` kaydı ile ekran görüntüsü.
-2. **Bekleyen emirler ve düzen veritabanında.** `backtest_pending_orders` tablosu ve kullanıcı düzeni için migration + rollback + yerel prova; canlıya uygulamak için veritabanı erişimi olan makine ve yedek gerekli.
-3. **Kendi veri arşivimiz.** Lisans kararından sonra.
-4. **Emir süresi (GTC dışında gün sonu iptali) ve OCO** isteniyorsa motorda kolayca eklenir.
+1. **BTCUSD ekseni (cTrader, Spotware, BTCUSD, H1):** 10.07.2019'a git, Bölüm 2'ye geç. Eksen yine bozuksa tarayıcı konsolunda `[bt] price scale off the candles` satırını kopyala.
+2. **Dikdörtgen:** Gelişmiş modda dikdörtgen aracıyla sağ alttan sol üste sürükle; bir kez de iki tıklamayla çiz. Kenar ve köşe tutamaçlarından boyutlandır, Shift ile kare yap. Cmd+Z geri alır, Shift+Cmd+Z yineler.
+3. **Trend çizgisi:** Shift basılıyken yatay, dikey ve 45° çiz; uçları ayrı ayrı sürükle; çizerken Esc'e bas (çizim kalmamalı).
+4. **Ayar penceresi:** Bir çizime çift tıkla, sonra sağ tıkla. Renk, kalınlık, kesik çizgi, dolgu ve opaklığı değiştir; Fibonacci'de seviyeleri `0, 0.5, 0.618, 1` yap.
+5. **Long aracı:** TP ve SL tutamaçlarını sürükle. R:R, pip ve tutar emir panelindeki lota göre değişmeli.
+6. **Metin:** Metin aracıyla grafiğe tıkla, yaz, Enter'a bas; çift tıklayıp yerinde değiştir.
+7. **Pencereler:** Gelişmiş modda bir pencereyi başlığından sürükle, kenarından ve köşesinden boyutlandır. Sol kenara, üste ve bir köşeye bırak (önizleme görünmeli). Küçült, görev çubuğundan geri getir; başlığa çift tıkla; kapat ve "Pencereler ve düzenler" menüsünden geri aç.
+8. **Düzenler:** Odak, Analiz ve (Premium'da) Çoklu grafik düzenlerini dene. Bir düzeni adla kaydet, başka bir düzene geç, kaydettiğini yükle, sonra "Düzeni sıfırla".
+9. **Basit mod ve telefon:** Basit modda çerçeve olmamalı. Telefonda pencereler alt alta dizilmeli ve sürüklenmemeli.
+10. **Bekleyen emir:** Limit seç, seviye gir, AL. "Bekleyen emirler" penceresinde görünmeli; grafikteki çizgiyi sürükle; replay'de tetiklendiğinde açık pozisyonlara geçmeli.
+11. **Safari ve Chrome (macOS):** 2, 3 ve 7. adımları iki tarayıcıda da dene (Cmd kısayolları dahil).
+
+## 6. Sonraki adımlar
+
+1. BTCUSD'yi kullanıcı hesabında doğrulamak (yukarıdaki log satırıyla).
+2. Bekleyen emirler ve pencere düzenleri veritabanında (migration + rollback + yerel prova; canlıya uygulamak için veritabanı erişimi olan makine ve yedek).
+3. Kendi veri arşivimiz (lisans kararından sonra).
