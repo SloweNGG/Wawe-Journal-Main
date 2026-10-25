@@ -1,4 +1,4 @@
-# Backtest: esnek ve özelleştirilebilir sayfa (2026-10-24, yedi aşama tamam)
+# Backtest: esnek ve özelleştirilebilir sayfa (2026-10-24, yedi aşama tamam; 2026-10-25 hata/panel/emir turu sürüyor)
 
 Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 
@@ -64,3 +64,22 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 
 - Bağlantı: `set -a; source ~/.wawe-db.env; set +a`, psql/pg_dump `~/WaweJournal-pg17/tools/pg/bin`.
 - Yedekler `~/WaweJournal-Backups/<UTC>/` (repo dışı). Migration'lar `supabase/migrations/`, rollback'ler `supabase/rollbacks/`.
+
+## 2026-10-25 turu (hatalar, paneller, bekleyen emirler)
+
+| Aşama | Durum |
+|---|---|
+| 1 Hatalar (BTCUSD ekseni, ortalama, kayan sayılar, Aktivite adı, stats-audit, 202610220001 rollback) | Tamam, yayın notu aşağıda |
+| 2 Paneller ve istatistik widget'ları | Bekliyor |
+| 3 Bekleyen emirler | Bekliyor |
+
+Aşama 1 notları:
+- BTCUSD: gerçek BTC 1m verisiyle (Binance, `tests/smoke/fetch-binance.mjs`, senaryolar `btc-repro*`) yeniden üretildi. Kök nedenler:
+  fiyat ölçeği elle ölçeklenince (eksen sürükleme) otomatik ölçek kapanıyor ve tarih/bölüm değişince öyle kalıyordu (eksen eski
+  fiyatlarda, mumlar ekran dışında = boş grafik); görünür aralık imlece taşınmıyordu. Eksi milyarlar 1e-5 birimli BTC 26 150–30 550
+  fiyatlarının Int32 taşmasıyla birebir örtüşüyor; dönüşüm artık Int32'ye sığmayan, sıfır/eksi, sonsuz değeri atıyor
+  (`WwBtCTrader.columnsToMinutes`, `WwBtCandles.toMinutes`), tarayıcı önbelleğindeki bozuk ay yeniden indiriliyor (`validMinutes`),
+  seriye giden her mum `validBar` ile süzülüyor, fiyat çizgileri yalnız geçerli fiyatla, çizim/seans primitive'leri `autoscaleInfo: null`.
+- Ortalama: `centerView`/`centerAll` (100 mum, imleç mumu sağda, otomatik ölçek), düğme ve R, "Şimdiki muma dön" (`#bt-now-btn`).
+- 202610220001 rollback'i `supabase/rollbacks/` altına geri kondu (`b7860ac` ile birebir), yerel prova `supabase/tests/rehearse_202610220001.mjs` (PGlite, 17/17).
+- Aynı çalışma kopyasında başka bir oturum navbar/quick-add üzerinde çalışıyor: commit'lere yalnız backtest yolları eklenir.

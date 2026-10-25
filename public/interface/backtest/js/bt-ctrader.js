@@ -158,13 +158,36 @@
     return cache;
   }
 
+  // ---------------------------------------------------------------- server columns -> Minutes (pure)
+  // j: { n, scale (price units per 1, 100000 from the Edge Function), tm (minute offsets in the month), o, h, l, c (integers) }.
+  // Prices become integer points of the page symbol (`digits`). A bar is dropped when a value is not finite, not positive or does not
+  // fit the Int32 point arrays (it would wrap to a negative price: BTC above 21,474.83 in 1e-5 units is 2^31). The rest is repaired so
+  // that low <= open/close <= high.
+  var INT32_MAX = 2147483647;
+  function columnsToMinutes(j, key, digits) {
+    var C = global.WwBtCandles, N = Math.max(0, Math.min(j && j.n | 0, (j && j.tm && j.tm.length) || 0)), base = C.monthStart(key);
+    var scale = Number(j && j.scale), rawDigits = RAW_DIGITS;
+    if (isFinite(scale) && scale >= 1) { var k = Math.round(Math.log(scale) / Math.LN10); if (Math.pow(10, k) === scale) rawDigits = k; }
+    var div = Math.pow(10, rawDigits - digits);
+    var t = new Float64Array(N), o_ = new Int32Array(N), h = new Int32Array(N), l = new Int32Array(N), c = new Int32Array(N);
+    var n = 0, bad = 0, last = -Infinity;
+    for (var i = 0; i < N; i++) {
+      var ts = base + j.tm[i] * 60;
+      var vo = Math.round(j.o[i] / div), vh = Math.round(j.h[i] / div), vl = Math.round(j.l[i] / div), vc = Math.round(j.c[i] / div);
+      if (!(ts > last) || !isFinite(ts) || !(vo > 0 && vh > 0 && vl > 0 && vc > 0) || !(vo <= INT32_MAX && vh <= INT32_MAX && vl <= INT32_MAX && vc <= INT32_MAX)) { bad++; continue; }
+      if (vh < vo || vh < vc) vh = Math.max(vo, vc);
+      if (vl > vo || vl > vc) vl = Math.min(vo, vc);
+      t[n] = ts; o_[n] = vo; h[n] = vh; l[n] = vl; c[n] = vc; last = ts; n++;
+    }
+    return { n: n, t: t.subarray(0, n), o: o_.subarray(0, n), h: h.subarray(0, n), l: l.subarray(0, n), c: c.subarray(0, n), bad: bad };
+  }
+
   // ---------------------------------------------------------------- the source
   // o: { api, cache, userId, account: { id (backtest account id), ctid, symbolId, symbolName, brokerName, isLive }, sym (WwBtSymbols entry), now }
   function createCTraderSource(o) {
     var C = global.WwBtCandles;
     var api = o.api, cache = o.cache, acc = o.account, sym = o.sym;
     var nowMs = typeof o.now === 'function' ? o.now : function () { return Date.now(); };
-    var div = Math.pow(10, RAW_DIGITS - sym.digits);
     var mem = {}, order = [], inflight = {}, covPromise = null;
     var ckey = function (key) { return acc.ctid + '|' + acc.symbolId + '|' + sym.digits + '|' + key; };
 
@@ -183,22 +206,6 @@
         p.then(function (v) { signal.removeEventListener('abort', onAbort); resolve(v); }, function (e) { signal.removeEventListener('abort', onAbort); reject(e); });
       });
     }
-    // server columns (1e-5 integers, minute offsets) -> Minutes in points; prices repaired so that low <= open/close <= high
-    function toMinutesFromColumns(j, key) {
-      var N = j.n | 0, base = C.monthStart(key);
-      var t = new Float64Array(N), o_ = new Int32Array(N), h = new Int32Array(N), l = new Int32Array(N), c = new Int32Array(N);
-      var n = 0, bad = 0, last = -Infinity;
-      for (var i = 0; i < N; i++) {
-        var ts = base + j.tm[i] * 60;
-        var vo = Math.round(j.o[i] / div), vh = Math.round(j.h[i] / div), vl = Math.round(j.l[i] / div), vc = Math.round(j.c[i] / div);
-        if (!(ts > last) || !(vo > 0 && vh > 0 && vl > 0 && vc > 0) || !isFinite(vo + vh + vl + vc)) { bad++; continue; }
-        if (vh < vo || vh < vc) vh = Math.max(vo, vc);
-        if (vl > vo || vl > vc) vl = Math.min(vo, vc);
-        t[n] = ts; o_[n] = vo; h[n] = vh; l[n] = vl; c[n] = vc; last = ts; n++;
-      }
-      return { n: n, t: t.subarray(0, n), o: o_.subarray(0, n), h: h.subarray(0, n), l: l.subarray(0, n), c: c.subarray(0, n), bad: bad };
-    }
-
     var src = {
       kind: 'ctrader',
       provider: function () { return 'cTrader'; },
@@ -227,9 +234,10 @@
         if (!inflight[k]) {
           // the shared load is not tied to one caller's AbortSignal (another caller may still want the month)
           inflight[k] = Promise.resolve(cache.get(k)).catch(function () { return null; }).then(function (rec) {
-            if (rec) return { n: rec.n, t: rec.t, o: rec.o, h: rec.h, l: rec.l, c: rec.c, bad: 0 };
+            var cached = rec ? { n: rec.n, t: rec.t, o: rec.o, h: rec.h, l: rec.l, c: rec.c, bad: 0 } : null;
+            if (cached && C.validMinutes(cached)) return cached;               // an invalid cached month is fetched again (and overwritten)
             return api.month(acc.id, key).then(function (j) {
-              var m = toMinutesFromColumns(j, key);
+              var m = columnsToMinutes(j, key, sym.digits);
               if (!m.n) throw fail('NOT_FOUND', 'no data for ' + key);
               var complete = C.monthStart(C.nextMonth(key)) <= endOfFeedSec();     // a month still in progress is never persisted
               Promise.resolve(cache.put(k, m, complete)).catch(function () {});
@@ -254,7 +262,7 @@
   }
 
   global.WwBtCTrader = {
-    matchBrokerSymbols: matchBrokerSymbols, buildCoverage: buildCoverage, createApi: createApi, createCache: createCache, createCTraderSource: createCTraderSource,
+    matchBrokerSymbols: matchBrokerSymbols, buildCoverage: buildCoverage, columnsToMinutes: columnsToMinutes, createApi: createApi, createCache: createCache, createCTraderSource: createCTraderSource,
     ALIASES: ALIASES
   };
 })(typeof window !== 'undefined' ? window : globalThis);

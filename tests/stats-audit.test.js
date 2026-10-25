@@ -12,9 +12,10 @@ import { FakeDb } from './helpers/fake-supabase.js';
 
 const ROOTS = ['public', 'src'];
 const SKIP = (f) => f.endsWith('public/src/bundle.js') || f.includes('/node_modules/');
+// paths with '/' on every OS (Windows path.join gives '\', the checks below compare with '/')
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
+    const p = path.join(dir, e.name).split(path.sep).join('/');
     if (e.isDirectory()) walk(p, out);
     else if (/\.(js|astro|tsx)$/.test(e.name) && !SKIP(p)) out.push(p);
   }

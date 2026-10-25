@@ -16,7 +16,7 @@
 --   Untouched on purpose (always live trades only): evaluate_prop_firm_rules / prop cards, cTrader sync,
 --   overtrade and notifications, get_platform_stats, get_total_trades_count, get_today_trades_count,
 --   get_strategy_performance, sync_journal_trades.
--- Run order: after 202610180009. Rollback: docs/backtest-v2/sql/supabase/rollbacks/202610220001_journal_trade_scope.down.sql
+-- Run order: after 202610180009. Rollback: supabase/rollbacks/202610220001_journal_trade_scope.down.sql
 -- How to run: Supabase SQL Editor or psql -v ON_ERROR_STOP=1, the WHOLE file at once (one transaction).
 --   Writes to the LIVE schema: backup first (docs/backtest-v2/KURALLAR.md sections 1 and 3).
 -- ============================================================

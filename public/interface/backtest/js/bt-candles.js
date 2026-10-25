@@ -12,6 +12,7 @@
   var TF_MIN = { '1m': 1, '5m': 5, '15m': 15, '30m': 30, '1h': 60, '4h': 240, '1d': 1440 };
   var TF_LABEL = { '1m': 'M1', '5m': 'M5', '15m': 'M15', '30m': 'M30', '1h': 'H1', '4h': 'H4', '1d': 'D1' };
   var HISTORY_MONTHS = { 1: 1, 5: 1, 15: 1, 30: 2, 60: 2, 240: 4, 1440: 10 };
+  var INT32_MAX = 2147483647;
 
   function S() { return global.WwBtSymbols; }
   function symId(x) { return typeof x === 'string' ? x : x.id; }
@@ -50,6 +51,8 @@
         ok = Math.abs(vo - Math.round(vo)) <= 1e-6 && Math.abs(vh - Math.round(vh)) <= 1e-6 &&
              Math.abs(vl - Math.round(vl)) <= 1e-6 && Math.abs(vc - Math.round(vc)) <= 1e-6;
       }
+      // positive and inside the Int32 point arrays (a larger value would wrap to a negative price)
+      if (ok) ok = vo > 0 && vh > 0 && vl > 0 && vc > 0 && vo <= INT32_MAX && vh <= INT32_MAX && vl <= INT32_MAX && vc <= INT32_MAX;
       if (!ok) { bad++; continue; }
       t[n] = ts; o[n] = Math.round(vo); h[n] = Math.round(vh); l[n] = Math.round(vl); c[n] = Math.round(vc);
       last = ts; n++;
@@ -189,6 +192,19 @@
   function toChartBar(c, scale) {
     return { time: c.time, open: c.open / scale, high: c.high / scale, low: c.low / scale, close: c.close / scale };
   }
+  // a bar a chart series may receive: finite, positive prices, low <= open/close <= high
+  function validBar(b) {
+    return !!b && isFinite(b.time) && isFinite(b.open) && isFinite(b.high) && isFinite(b.low) && isFinite(b.close) &&
+      b.low > 0 && b.low <= b.high && b.open >= b.low && b.open <= b.high && b.close >= b.low && b.close <= b.high;
+  }
+  // every 1m bar positive and in range (records cached by an older page version are checked before use)
+  function validMinutes(m) {
+    if (!m || !(m.n >= 0) || !m.t || !m.o || m.t.length < m.n) return false;
+    for (var i = 0; i < m.n; i++) {
+      if (!(m.l[i] > 0 && m.o[i] > 0 && m.c[i] > 0 && m.h[i] > 0 && m.l[i] <= m.h[i]) || !isFinite(m.t[i]) || (i && !(m.t[i] > m.t[i - 1]))) return false;
+    }
+    return true;
+  }
 
   global.WwBtCandles = {
     TF_IDS: TF_IDS, TF_MIN: TF_MIN, TF_LABEL: TF_LABEL,
@@ -198,6 +214,6 @@
     indexAtOrAfter: indexAtOrAfter, indexAtOrBefore: indexAtOrBefore, resumeIndex: resumeIndex,
     bucketStart: bucketStart, aggregate: aggregate, aggregateUpTo: aggregateUpTo, partialAt: partialAt,
     merge: merge, createBuilder: createBuilder, bucketEndIndex: bucketEndIndex, stepTarget: stepTarget,
-    gapKind: gapKind, framePlan: framePlan, toChartBar: toChartBar
+    gapKind: gapKind, framePlan: framePlan, toChartBar: toChartBar, validBar: validBar, validMinutes: validMinutes
   };
 })(typeof window !== 'undefined' ? window : globalThis);

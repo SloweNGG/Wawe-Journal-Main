@@ -288,7 +288,7 @@
     function axisViews() {
       if (set.hidden()) return [];
       return set.list().filter(function (d) { return d.tool === 'hline'; }).map(function (d) {
-        var y = series.priceToCoordinate(d.pts[0].p), c = colorOf(d);
+        var y = isFinite(d.pts[0].p) ? series.priceToCoordinate(d.pts[0].p) : null, c = colorOf(d);
         return { coordinate: function () { return y === null ? -100 : y; }, text: function () { return opts.fmt(d.pts[0].p); },
           textColor: function () { return '#ffffff'; }, backColor: function () { return c; }, visible: function () { return y !== null; }, tickVisible: function () { return true; } };
       });
@@ -298,6 +298,8 @@
       detached: function () { api = null; },
       paneViews: function () { return [paneView]; },
       priceAxisViews: axisViews,
+      // drawings never take part in the price scale's auto-scale (a line drawn at another time or price must not stretch the axis)
+      autoscaleInfo: function () { return null; },
       updateAllViews: function () {}
     };
     series.attachPrimitive(primitive);

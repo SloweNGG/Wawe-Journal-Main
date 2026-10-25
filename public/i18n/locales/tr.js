@@ -1986,10 +1986,10 @@ export default {
   "backtest.look.reset": "Temanın renklerine dön",
   "backtest.look.show": "Göster / gizle",
   "backtest.look.showGrid": "Izgara",
-  "backtest.look.showVolume": "Hacim",
+  "backtest.look.showVolume": "Aktivite (tahmini)",
   "backtest.look.showLastPrice": "Son fiyat çizgisi",
   "backtest.look.showSessions": "Seans arka planları (Asya, Londra, New York)",
-  "backtest.look.volume_note": "Hacim: veri kaynakları işlem hacmi vermez; çubuklar 1 dakikalık mum aralıklarının toplamıdır (aktivite tahmini).",
+  "backtest.look.volume_note": "Aktivite (tahmini): veri kaynakları işlem hacmi vermez; çubuklar 1 dakikalık mum aralıklarının toplamıdır, gerçek hacim değildir.",
   "backtest.look.mine": "Temalarım",
   "backtest.look.name_ph": "Tema adı",
   "backtest.look.save": "Kaydet",
@@ -2085,5 +2085,9 @@ export default {
   "backtest.st.start": "Başlangıç",
   "backtest.st.balance_curve_seq": "Bakiye eğrisi (işlem sırasıyla)",
   "backtest.st.equity_section": "Varlık eğrisi · bölüm {n} (açık pozisyonlar dahil)",
-  "backtest.st.need_trades_section": "Bu bölümde henüz işlem yok."
+  "backtest.st.need_trades_section": "Bu bölümde henüz işlem yok.",
+  "backtest.chart.activity": "Aktivite (tahmini)",
+  "backtest.chart.center": "Grafiği ortala (R)",
+  "backtest.chart.now": "Şimdiki muma dön",
+  "backtest.keys.center": "Grafiği ortala (son mum sağda, otomatik ölçek)"
 };

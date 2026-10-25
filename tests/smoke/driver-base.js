@@ -27,7 +27,7 @@
     ok('chart canvas present', !!document.querySelector('#bt-chart canvas'));
     ok('clock shows a time', $('bt-clock-time').textContent.length > 4, $('bt-clock-time').textContent);
     ok('source label: synthetic data, not real market data', /gerçek piyasa verisi değildir|not real market data|keine echten Marktdaten/.test($('bt-source-label').textContent) && vis('bt-source-label'), $('bt-source-label').textContent);
-    ok('spread shown with its pip value', /^\d+\.\d{5} \(0\.2 pip\)$/.test($('bt-spread').textContent), $('bt-spread').textContent);
+    ok('spread shown with its pip value', /^\d+\.\d{5}\s\(0\.2 pip\)$/.test($('bt-spread').textContent), $('bt-spread').textContent);
     ok('bid/ask shown', /^\d+\.\d{5}$/.test($('bt-bid').textContent) && /^\d+\.\d{5}$/.test($('bt-ask').textContent), $('bt-bid').textContent + '/' + $('bt-ask').textContent);
     ok('balance 10000', /10[.,]?000/.test($('bt-stat-balance').textContent), $('bt-stat-balance').textContent);
     var key = Object.keys(localStorage).filter(function (k) { return k.indexOf('ww-bt:v1:') === 0; })[0];

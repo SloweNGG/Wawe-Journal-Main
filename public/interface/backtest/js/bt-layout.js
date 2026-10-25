@@ -47,6 +47,7 @@
     { id: 'buy', keys: ['Shift', 'B'] },
     { id: 'sell', keys: ['Shift', 'S'] },
     { id: 'fullscreen', keys: ['F'] },
+    { id: 'center', keys: ['R'] },
     { id: 'exit', keys: ['Esc'] },
     { id: 'mode', keys: ['Shift', 'M'] },
     { id: 'tools', keys: ['1', '…', '9'], advanced: true },

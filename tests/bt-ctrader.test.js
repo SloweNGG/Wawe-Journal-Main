@@ -303,3 +303,38 @@ describe('createCTraderSource', () => {
     assert.equal(X.buildCoverage(Date.UTC(2026, 9, 1) / 1000, NOW, 'EURUSD').months.join(), '2026-10');
   });
 });
+
+// ------------------------------------------------------------ 2026-10-25: BTCUSD price axis (invalid values never reach the chart)
+describe('bt-ctrader columnsToMinutes', () => {
+  const btc = S.get('BTCUSDT');
+  it('BTCUSD 1e-5 integers become points of 2 digits (12534.12 -> 1253412)', () => {
+    const m = X.columnsToMinutes(cols([[0, 1253412000, 1255171000, 1252551000, 1253251000]], '2019-07'), '2019-07', btc.digits);
+    assert.equal(m.n, 1); assert.deepEqual([m.o[0], m.h[0], m.l[0], m.c[0]], [1253412, 1255171, 1252551, 1253251]);
+    assert.equal(C.toChartBar({ time: 1, open: m.o[0], high: m.h[0], low: m.l[0], close: m.c[0] }, 100).open, 12534.12);
+  });
+  it('values above 2^31 points, zero, negative or not finite are dropped (they would wrap in the Int32 arrays)', () => {
+    const big = 2147483648 * 1000;                     // 2^31 points after / 1000
+    const m = X.columnsToMinutes(cols([[0, 1253412000, 1255171000, 1252551000, 1253251000], [1, big, big, big, big], [2, 0, 5, 0, 1],
+      [3, -1295000000, -1290000000, -1300000000, -1294000000], [4, NaN, 1, 1, 1], [5, 1253412000, 1255171000, 1252551000, 1253251000]], '2019-07'), '2019-07', btc.digits);
+    assert.equal(m.n, 2); assert.equal(m.bad, 4);
+    for (let i = 0; i < m.n; i++) assert.ok(m.o[i] > 0 && m.h[i] > 0 && m.l[i] > 0 && m.c[i] > 0);
+  });
+  it('the server scale is honoured (1e-5 default, another power of ten when sent)', () => {
+    const j = cols([[0, 12534120, 12551710, 12525510, 12532510]], '2019-07'); j.scale = 1000;     // 1e-3 units
+    const m = X.columnsToMinutes(j, '2019-07', 2);
+    assert.equal(m.o[0], 1253412);
+    const k = cols([[0, 1253412000, 1255171000, 1252551000, 1253251000]], '2019-07'); delete k.scale;
+    assert.equal(X.columnsToMinutes(k, '2019-07', 2).o[0], 1253412);
+  });
+  it('an invalid month in the browser cache is not used: the month is fetched again', async () => {
+    const cache = X.createCache({ userId: U1, indexedDB: null }), calls = [];
+    const api = { month: (id, key) => { calls.push(key); return Promise.resolve(cols([[0, 1253412000, 1255171000, 1252551000, 1253251000]], key)); },
+      coverageOfAccount: () => Promise.resolve({ firstT: Date.UTC(2019, 0, 1) / 1000 }) };
+    const acc = { id: 'a1', ctid: 1, symbolId: 50, brokerName: 'Spotware' };
+    // a record with a wrapped (negative) price, as an older page version could have stored it
+    await cache.put('1|50|2|2019-07', { n: 1, t: new Float64Array([Date.UTC(2019, 6, 1) / 1000]), o: new Int32Array([-1294967]), h: new Int32Array([5]), l: new Int32Array([-1294968]), c: new Int32Array([1]) }, false);
+    const src = X.createCTraderSource({ api, cache, sym: btc, account: acc, now: () => Date.UTC(2026, 9, 25) });
+    const m = await src.getMonthMinutes('BTCUSDT', '2019-07');
+    assert.deepEqual(calls, ['2019-07']); assert.equal(m.o[0], 1253412);
+  });
+});

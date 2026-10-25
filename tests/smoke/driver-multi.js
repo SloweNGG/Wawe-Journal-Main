@@ -63,8 +63,10 @@
       for (var q = 3; q < d.length; q += 16) if (d[q] > 0) n++;
       return n;
     }
-    var mb = R().bars, pt = { x: 100, y: R().series.priceToCoordinate(mb[mb.length - 10].close) };
-    T().cross({ time: mb[mb.length - 10].time, point: pt, logical: mb.length - 10 }); await sleep(150);
+    // every chart centred on the cursor first (R), so the crosshair time lies inside the narrowest chart's range
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true })); await sleep(250);
+    var mb = R().bars, pt = { x: 100, y: R().series.priceToCoordinate(mb[mb.length - 3].close) };
+    T().cross({ time: mb[mb.length - 3].time, point: pt, logical: mb.length - 3 }); await sleep(150);
     var inked = ex.map(topInk);
     T().cross({ time: undefined, point: undefined }); await sleep(150);
     var cleared = ex.map(topInk);

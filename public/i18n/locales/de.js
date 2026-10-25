@@ -2006,10 +2006,10 @@ export default {
   "backtest.look.reset": "Zurück zu den Designfarben",
   "backtest.look.show": "Anzeigen / ausblenden",
   "backtest.look.showGrid": "Raster",
-  "backtest.look.showVolume": "Volumen",
+  "backtest.look.showVolume": "Aktivität (geschätzt)",
   "backtest.look.showLastPrice": "Linie des letzten Kurses",
   "backtest.look.showSessions": "Sitzungshintergründe (Asien, London, New York)",
-  "backtest.look.volume_note": "Volumen: Die Datenquellen liefern kein Handelsvolumen; die Balken sind die Summe der 1-Minuten-Kerzenspannen (Aktivitätsschätzung).",
+  "backtest.look.volume_note": "Aktivität (geschätzt): Die Datenquellen liefern kein Handelsvolumen; die Balken sind die Summe der 1-Minuten-Kerzenspannen, kein echtes Volumen.",
   "backtest.look.mine": "Meine Designs",
   "backtest.look.name_ph": "Name des Designs",
   "backtest.look.save": "Speichern",
@@ -2105,5 +2105,9 @@ export default {
   "backtest.st.start": "Start",
   "backtest.st.balance_curve_seq": "Kontostandskurve (in Trade-Reihenfolge)",
   "backtest.st.equity_section": "Equity-Kurve · Abschnitt {n} (inkl. offener Positionen)",
-  "backtest.st.need_trades_section": "In diesem Abschnitt gibt es noch keine Trades."
+  "backtest.st.need_trades_section": "In diesem Abschnitt gibt es noch keine Trades.",
+  "backtest.chart.activity": "Aktivität (geschätzt)",
+  "backtest.chart.center": "Chart zentrieren (R)",
+  "backtest.chart.now": "Zur aktuellen Kerze",
+  "backtest.keys.center": "Chart zentrieren (letzte Kerze rechts, automatische Skala)"
 };

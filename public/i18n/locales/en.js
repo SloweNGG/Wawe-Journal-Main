@@ -2039,10 +2039,10 @@ export default {
   "backtest.look.reset": "Back to the theme colors",
   "backtest.look.show": "Show / hide",
   "backtest.look.showGrid": "Grid",
-  "backtest.look.showVolume": "Volume",
+  "backtest.look.showVolume": "Activity (estimated)",
   "backtest.look.showLastPrice": "Last price line",
   "backtest.look.showSessions": "Session backgrounds (Asia, London, New York)",
-  "backtest.look.volume_note": "Volume: the data sources deliver no traded volume; the bars are the sum of the 1-minute candle ranges (an activity estimate).",
+  "backtest.look.volume_note": "Activity (estimated): the data sources deliver no traded volume; the bars are the sum of the 1-minute candle ranges, not real volume.",
   "backtest.look.mine": "My themes",
   "backtest.look.name_ph": "Theme name",
   "backtest.look.save": "Save",
@@ -2138,5 +2138,9 @@ export default {
   "backtest.st.start": "Start",
   "backtest.st.balance_curve_seq": "Balance curve (in trade order)",
   "backtest.st.equity_section": "Equity curve · section {n} (incl. open positions)",
-  "backtest.st.need_trades_section": "No trades in this section yet."
+  "backtest.st.need_trades_section": "No trades in this section yet.",
+  "backtest.chart.activity": "Activity (estimated)",
+  "backtest.chart.center": "Center chart (R)",
+  "backtest.chart.now": "Back to the current candle",
+  "backtest.keys.center": "Center the chart (last candle on the right, auto scale)"
 };

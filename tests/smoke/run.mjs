@@ -42,7 +42,16 @@ const SCENARIOS = {
   crypto: ['driver=/__driver-crypto.js&role=user&plan=free&i18n=tr', DESKTOP],
   'crypto-en': ['driver=/__driver-crypto.js&role=user&plan=free&i18n=en', DESKTOP],
   sections: ['driver=/__driver-sections.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  stage1: ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  'stage1-de': ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=de', DESKTOP],
   'sections-ct': ['backend=supabase&driver=/__driver-sections.js&role=user&plan=premium&ct=ready&i18n=en', DESKTOP],
+  // needs real 1m files in dist/__ctdata (tests/smoke/README.md); not in the default run
+  'btc-repro': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1', DESKTOP, true],
+  'btc-repro-ha': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1&style=heikin&vol=1', DESKTOP, true],
+  'btc-repro-multi': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1&multi=2x2&vol=1', DESKTOP, true],
+  'btc-repro-scroll': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1&scroll=-400', DESKTOP, true],
+  'btc-repro-pz': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1&pz=1', DESKTOP, true],
+  'btc-repro-line': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1&style=line', DESKTOP, true],
   // screenshots only (use with --shots)
   'shot-drawer': ['driver=/__driver-shot.js&shot=drawer&plan=premium&i18n=tr', DESKTOP, true],
   'shot-sessions': ['driver=/__driver-shot.js&shot=sessions&plan=premium&i18n=tr', DESKTOP, true],
@@ -73,6 +82,8 @@ const names = args.length ? args : Object.keys(SCENARIOS).filter((n) => !SCENARI
 for (const f of fs.readdirSync('tests/smoke')) if (/^driver-.*\.js$/.test(f)) fs.copyFileSync(path.join('tests/smoke', f), path.join(DIST, '__' + f));
 fs.copyFileSync('tests/smoke/driver-base.js', path.join(DIST, '__driver.js'));
 fs.copyFileSync('tests/helpers/fake-supabase.js', path.join(DIST, '__fakedb.mjs'));
+// real 1m month files for ?ctdata=1 (btc-repro): CTDATA=<folder with YYYY-MM.json>
+if (process.env.CTDATA) { fs.mkdirSync(path.join(DIST, '__ctdata'), { recursive: true }); for (const f of fs.readdirSync(process.env.CTDATA)) if (/^\d{4}-\d{2}\.json$/.test(f)) fs.copyFileSync(path.join(process.env.CTDATA, f), path.join(DIST, '__ctdata', f)); }
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 const srv = await new Promise((resolve) => {

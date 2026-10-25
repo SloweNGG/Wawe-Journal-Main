@@ -13,6 +13,7 @@
   var MAX_BARS_PER_FRAME = 3000, SAVE_EVERY_MS = 5000, LIVE_UI_MS = 100, PREFETCH_AHEAD_SEC = 2 * 86400;
   var MAX_CHART_CANDLES = 25000, TRIM_TO = 20000, MAX_MARKER_TRADES = 300, MAX_HISTORY_ROWS = 200;
   var BOOT_POLL_MS = 50, BOOT_MAX_TRIES = 160;
+  var CENTER_BARS = 100, RIGHT_OFFSET = 6;          // "center the chart": about 100 candles, the cursor candle on the right
   var FREE_LIMIT = 1, PRO_LIMIT = 10;
   var EXTRA_COLUMNS = true;
   var MONTHS = {
@@ -896,9 +897,11 @@
     R.candles = C.aggregate(m, R.tfMin, id, 0, R.k);
     R.builder = C.createBuilder(R.tfMin, id, R.candles);
     (R.extra || []).forEach(viewCandles);
+    views().forEach(clearPriceLines);                        // nothing of the previous date / section stays on the chart
     renderChartData(); rebuildMarkers(); syncPriceLines(); updateAskLine(); renderLive(true); renderTables(); renderStats();
     hideOverlay(); setReplay('ready');
     applyChartLayout();
+    centerAll();
     var gi = $('bt-goto-input');
     gi.min = toLocalInput(cov.firstT); gi.max = toLocalInput(cov.lastT); gi.value = toLocalInput(R.win.t[R.k] + 60);
     loadHistory(tok); maybePrefetch();
@@ -1119,7 +1122,9 @@
     R.candles = C.aggregate(R.win, R.tfMin, R.sym.id, 0, R.k);
     R.builder = C.createBuilder(R.tfMin, R.sym.id, R.candles);
     R.tickSeen = null; R.tickHide = null;
-    renderChartData(R); rebuildMarkers();
+    clearPriceLines(R);
+    renderChartData(R); rebuildMarkers(); syncPriceLines(); updateAskLine();
+    centerView(R);
     loadHistory(tok); maybePrefetch();
     L.store.updateAccount(R.acc.id, { timeframe: tfId }).catch(function (e) { toast(mapStoreError(e), 'error'); });
     R.acc.tf = tfId;
@@ -1345,7 +1350,7 @@
       localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) },
       crosshair: { mode: window.LightweightCharts.CrosshairMode.Normal },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true }
+      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: { time: true, price: true } }
     }), LK.chartOptions(lk, c)));
     v.series = LK.addSeries(v.chart, lk, S.priceFormat(R.sym.id));
     v.vol = null;
@@ -1357,7 +1362,7 @@
     v.series.attachPrimitive(v.sessions); v.sessions.setVisible(lk.showSessions);
     if (v === R) v.chart.subscribeCrosshairMove(renderLegend);
     v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); });
-    v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (!syncing && Date.now() - (v.userAt || 0) < 500) syncFrom(v); });
+    v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (!syncing && Date.now() - (v.userAt || 0) < 500) syncFrom(v); if (v === R) updateNowBtn(); });
     var dg = R.sym.digits;
     v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; },
       tfSec: function () { return v.tfMin * 60; }, fmt: function (p) { return Number(p).toFixed(dg); } });
@@ -1388,6 +1393,13 @@
     if (!v.series) return;
     if (v.candles.length > MAX_CHART_CANDLES) { v.candles.splice(0, v.candles.length - TRIM_TO); v.builder = C.createBuilder(v.tfMin, R.sym.id, v.candles); }
     v.bars = v.candles.map(function (x) { return C.toChartBar(x, R.scale); });
+    if (!v.bars.every(C.validBar)) {                       // never hand an invalid price to a series (the data layer drops them already)
+      wwLogWarn(new Error('invalid candles dropped'));
+      v.candles = v.candles.filter(function (x, i) { return C.validBar(v.bars[i]); });
+      v.bars = v.bars.filter(C.validBar);
+      v.builder = C.createBuilder(v.tfMin, R.sym.id, v.candles);
+      if (v === R) R.builder = v.builder;
+    }
     v.ha = v.look.style === 'heikin' ? window.WwBtLook.heikinAshi(v.bars, 0, []) : null;
     v.series.setData(window.WwBtLook.toSeriesData(v.look, v.bars, v.ha));
     if (v.vol) v.vol.setData(v.candles.map(function (x) { return volPoint(v, x); }));
@@ -1396,7 +1408,7 @@
   }
   function volPoint(v, x) {
     var a = window.WwBtLook.withAlpha(x.close >= x.open ? v.look.up : v.look.down, 0.45);
-    return { time: x.time, value: x.v || 0, color: a };
+    return { time: x.time, value: isFinite(x.v) && x.v > 0 ? x.v : 0, color: a };
   }
   function seriesPoint(v, i) {
     var b = v.bars[i];
@@ -1409,7 +1421,10 @@
       var from = v.dirtyFrom, i;
       for (i = from; i < v.candles.length; i++) v.bars[i] = C.toChartBar(v.candles[i], R.scale);
       if (v.ha) window.WwBtLook.heikinAshi(v.bars, from, v.ha);
-      for (i = from; i < v.candles.length; i++) { v.series.update(seriesPoint(v, i)); if (v.vol) v.vol.update(volPoint(v, v.candles[i])); }
+      for (i = from; i < v.candles.length; i++) {
+        if (!C.validBar(v.bars[i])) continue;
+        v.series.update(seriesPoint(v, i)); if (v.vol) v.vol.update(volPoint(v, v.candles[i]));
+      }
       v.dirtyFrom = -1;
     });
   }
@@ -1446,11 +1461,21 @@
       v.series.setMarkers(m);
     });
   }
+  // a price line only for a valid price (finite, positive); anything else removes the line
+  function okPrice(p) { return typeof p === 'number' && isFinite(p) && p > 0; }
   function priceLine(v, Ls, key, pts, opts) {
-    if (pts == null) { if (Ls[key]) { v.series.removePriceLine(Ls[key]); Ls[key] = null; } return; }
-    var price = pts / R.scale;
+    var price = pts == null ? NaN : pts / R.scale;
+    if (!okPrice(price)) { if (Ls[key]) { try { v.series.removePriceLine(Ls[key]); } catch (e) { /* series rebuilt */ } Ls[key] = null; } return; }
     if (Ls[key]) Ls[key].applyOptions({ price: price });
     else Ls[key] = v.series.createPriceLine(Object.assign({ price: price, lineWidth: 1, axisLabelVisible: true }, opts));
+  }
+  // every price line of a view (positions, Ask, Bid) off the chart; syncPriceLines / updateAskLine draw the current ones again
+  function clearPriceLines(v) {
+    if (!v || !v.series) return;
+    Object.keys(v.lines || {}).forEach(function (id) { ['entry', 'sl', 'tp'].forEach(function (k) { priceLine(v, v.lines[id], k, null); }); });
+    v.lines = {};
+    [v.askLine, v.bidLine].forEach(function (l) { if (l) { try { v.series.removePriceLine(l); } catch (e) { /* ignore */ } } });
+    v.askLine = null; v.bidLine = null;
   }
   function syncPriceLines() {
     if (!R) return;
@@ -1472,6 +1497,7 @@
   function updateAskLine() {
     if (!R || !R.eng.quote) return;
     var LS = window.LightweightCharts.LineStyle, bid = R.eng.quote.bid / R.scale, ask = (R.eng.quote.bid + R.eng.sp) / R.scale;
+    if (!okPrice(bid) || !okPrice(ask)) { views().forEach(clearAskBid); return; }
     views().forEach(function (v) {
       if (!v.series) return;
       // Heikin Ashi: the last REAL price (bid), since the series' own last value is an averaged close
@@ -1484,18 +1510,53 @@
       else v.askLine = v.series.createPriceLine({ price: ask, color: colors().muted, lineWidth: 1, lineStyle: LS.Dotted, axisLabelVisible: true, title: 'Ask' });
     });
   }
+  function clearAskBid(v) {
+    [v.askLine, v.bidLine].forEach(function (l) { if (l && v.series) { try { v.series.removePriceLine(l); } catch (e) { /* ignore */ } } });
+    v.askLine = null; v.bidLine = null;
+  }
+  // "Center the chart": about CENTER_BARS candles with the replay cursor's candle on the right, and the price scale back on auto
+  // scale. After going to a date, a section, a timeframe change, opening the account and full screen; the button and R do the same.
+  function centerView(v) {
+    if (!v || !v.chart) return;
+    v.userAt = 0;                                          // not a user scroll: the range event must not re-sync the other charts
+    try { v.chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) { /* ignore */ }
+    var n = v.bars ? v.bars.length : 0; if (!n) return;
+    syncing = true;
+    try { v.chart.timeScale().setVisibleLogicalRange({ from: n - CENTER_BARS, to: n - 1 + RIGHT_OFFSET }); } finally { syncing = false; }
+    if (v === R) updateNowBtn();
+  }
+  function centerAll() { views().forEach(function (v) { v.userAt = 0; }); views().forEach(centerView); updateNowBtn(); }
+  // "Back to the current candle": shown while the cursor's candle is scrolled out of the main chart
+  function updateNowBtn() {
+    var b = $('bt-now-btn'); if (!b) return;
+    var away = false;
+    if (R && R.chart && R.bars && R.bars.length) {
+      var r = R.chart.timeScale().getVisibleLogicalRange(), n = R.bars.length;
+      away = !!r && (r.to < n - 1.5 || r.from > n - 1);
+    }
+    if (b.hidden === away) b.hidden = !away;
+  }
   function renderLegend(param) {
     var box = $('bt-legend'); if (!box || !R) return;
-    var bar = null, bars = R.bars || [];
-    if (param && param.time && param.logical != null) { var li = Math.round(param.logical); if (bars[li] && bars[li].time === param.time) bar = bars[li]; }
-    if (!bar && bars.length) bar = bars[bars.length - 1];
+    var bar = null, bars = R.bars || [], at = -1;
+    if (param && param.time && param.logical != null) { var li = Math.round(param.logical); if (bars[li] && bars[li].time === param.time) { bar = bars[li]; at = li; } }
+    if (!bar && bars.length) { at = bars.length - 1; bar = bars[at]; }
     if (!bar) { box.textContent = ''; return; }
     var d = R.sym.digits, up = bar.close >= bar.open;
+    // a fixed width per value (the widest price of the chart), so hovering or a new digit never moves the row
+    var w = String(Math.floor(Math.max(bar.high, bars.length ? bars[bars.length - 1].high : 0))).length + d + 1;
+    if (!R.legW || w > R.legW) { R.legW = w; box.style.setProperty('--bt-leg-ch', w); }
     box.textContent = '';
     [['O', bar.open], ['H', bar.high], ['L', bar.low], ['C', bar.close]].forEach(function (x) {
-      var s = el('span', 'bt-leg ' + (up ? 'bt-up' : 'bt-down')); s.appendChild(el('i', '', x[0])); s.appendChild(document.createTextNode(' ' + Number(x[1]).toFixed(d)));
+      var s = el('span', 'bt-leg ' + (up ? 'bt-up' : 'bt-down')); s.appendChild(el('i', '', x[0])); s.appendChild(el('b', '', Number(x[1]).toFixed(d)));
       box.appendChild(s);
     });
+    // activity estimate of the candle (sum of its 1-minute ranges, in price units) when the bars are shown
+    var c = R.candles && R.candles[at];
+    if (R.look && R.look.showVolume && c) {
+      var a = el('span', 'bt-leg bt-leg-act'); a.appendChild(el('i', '', _t('backtest.chart.activity', 'Aktivite (tahmini)'))); a.appendChild(el('b', '', ((c.v || 0) / R.scale).toFixed(d)));
+      box.appendChild(a);
+    }
   }
   var resizeFallbackOn = false;
   function installResizeFallback() {
@@ -1561,11 +1622,11 @@
     if (!R || !C.TF_MIN[tfId]) return;
     v.tfId = tfId; v.tfMin = C.TF_MIN[tfId];
     viewCandles(v);
-    var cr = R.chart.timeScale().getVisibleLogicalRange();
-    renderChartData(v); rebuildMarkers();
+    clearPriceLines(v);
+    renderChartData(v); rebuildMarkers(); syncPriceLines(); updateAskLine();
     v.tickSeen = null; v.tickHide = null;
     v.chart.applyOptions({ timeScale: { tickMarkFormatter: tickLabelFor(v) }, localization: { timeFormatter: crosshairTimeFor(v) } });
-    if (cr) syncFrom(R);
+    centerView(v);
     LAY.setCharts(LAY.prefs().charts, R.extra.map(function (x) { return x.tfId; }));
     if (R.histMonths < historyNeed()) loadHistory(R.token);
   }
@@ -1684,7 +1745,7 @@
     if (q) {
       setText('bt-bid', E.ptsToStr(q.bid, s.digits)); setText('bt-ask', E.ptsToStr(q.ask, s.digits));
       // crypto: the spread in the price unit ("10.00 USD"); forex/gold: price and pips
-      setText('bt-spread', S.spreadUnit(s.id) === 'price' ? E.ptsToStr(R.eng.sp, s.digits) + ' USD' : E.ptsToStr(R.eng.sp, s.digits) + ' (' + pipsStr(R.acc.spreadH) + ' pip)');
+      setText('bt-spread', S.spreadUnit(s.id) === 'price' ? E.ptsToStr(R.eng.sp, s.digits) + ' USD' : E.ptsToStr(R.eng.sp, s.digits) + '\n(' + pipsStr(R.acc.spreadH) + ' pip)');
     }
     var sm = E.summary(R.eng);
     setText('bt-stat-balance', fmtUsd(sm.balanceCents)); setText('bt-stat-equity', fmtUsd(sm.equityCents));
@@ -1724,45 +1785,63 @@
   }
 
   function td(text, cls) { return el('td', cls || '', text); }
+  // Open positions: the rows are built when the set of positions (or a stop, target, saved state) changes; while the replay runs only
+  // the live cells (price, P&L) get new text, so the buttons stay where they are and can be clicked during play.
+  function posKey(p) { return p.id + ':' + p.sl + ':' + p.tp + ':' + (p.unsaved ? 1 : 0); }
   function renderOpenRows() {
-    var body = $('bt-open-body'), q = R.eng.quote, s = R.sym, fl = E.floating(R.eng);
-    body.textContent = '';
-    R.eng.open.forEach(function (p) {
-      var tr = el('tr'), f = fl.byId[p.id];
-      tr.appendChild(td(dirLabel(p.dir), p.dir > 0 ? 'bt-up' : 'bt-down')); tr.appendChild(td(E.stepsToStr(p.steps, s.lotDigits), 'bt-num'));
-      tr.appendChild(td(fmtShort(p.entryT), 'bt-num')); tr.appendChild(td(E.ptsToStr(p.entry, s.digits), 'bt-num'));
-      tr.appendChild(td(p.sl == null ? '—' : E.ptsToStr(p.sl, s.digits), 'bt-num')); tr.appendChild(td(p.tp == null ? '—' : E.ptsToStr(p.tp, s.digits), 'bt-num'));
-      tr.appendChild(td(f ? E.ptsToStr(f.mark, s.digits) : '—', 'bt-num'));
-      var pc = td(f ? fmtUsd(f.net, true) : '—', 'bt-num ' + (f ? pnlClass(f.net) : '')); tr.appendChild(pc);
-      var act = el('td', 'bt-actions');
-      var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit'); b1.setAttribute('data-id', p.id);
-      var b2 = el('button', 'btn btn-ghost', _t('backtest.pos.close', 'Kapat')); b2.type = 'button'; b2.setAttribute('data-act', 'close'); b2.setAttribute('data-id', p.id);
-      act.appendChild(b1); act.appendChild(b2);
-      if (p.unsaved) act.appendChild(el('span', 'bt-chip bt-chip-warn', _t('backtest.pos.unsaved', 'Kaydedilmedi')));
-      tr.appendChild(act); body.appendChild(tr);
-    });
-    show($('bt-open-empty'), R.eng.open.length === 0);
-    setText('bt-open-count', String(R.eng.open.length));
+    var body = $('bt-open-body'), s = R.sym, fl = E.floating(R.eng);
+    var key = R.eng.open.map(posKey).join('|') + '#' + lang();
+    if (key !== R.openKey || body.children.length !== R.eng.open.length) {
+      R.openKey = key; body.textContent = '';
+      R.eng.open.forEach(function (p) {
+        var tr = el('tr'); tr.setAttribute('data-id', p.id);
+        tr.appendChild(td(dirLabel(p.dir), p.dir > 0 ? 'bt-up' : 'bt-down')); tr.appendChild(td(E.stepsToStr(p.steps, s.lotDigits), 'bt-num'));
+        tr.appendChild(td(fmtShort(p.entryT), 'bt-num')); tr.appendChild(td(E.ptsToStr(p.entry, s.digits), 'bt-num'));
+        tr.appendChild(td(p.sl == null ? '—' : E.ptsToStr(p.sl, s.digits), 'bt-num')); tr.appendChild(td(p.tp == null ? '—' : E.ptsToStr(p.tp, s.digits), 'bt-num'));
+        tr.appendChild(td('—', 'bt-num bt-live-mark')); tr.appendChild(td('—', 'bt-num bt-live-pnl'));
+        var act = el('td', 'bt-actions');
+        var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit'); b1.setAttribute('data-id', p.id);
+        var b2 = el('button', 'btn btn-ghost', _t('backtest.pos.close', 'Kapat')); b2.type = 'button'; b2.setAttribute('data-act', 'close'); b2.setAttribute('data-id', p.id);
+        act.appendChild(b1); act.appendChild(b2);
+        if (p.unsaved) act.appendChild(el('span', 'bt-chip bt-chip-warn', _t('backtest.pos.unsaved', 'Kaydedilmedi')));
+        tr.appendChild(act); body.appendChild(tr);
+      });
+      show($('bt-open-empty'), R.eng.open.length === 0);
+      setText('bt-open-count', String(R.eng.open.length));
+    }
+    for (var i = 0; i < body.children.length; i++) {
+      var row = body.children[i], f = fl.byId[row.getAttribute('data-id')];
+      var mk = row.querySelector('.bt-live-mark'), pc = row.querySelector('.bt-live-pnl');
+      setCell(mk, f ? E.ptsToStr(f.mark, s.digits) : '—', 'bt-num bt-live-mark');
+      setCell(pc, f ? fmtUsd(f.net, true) : '—', 'bt-num bt-live-pnl ' + (f ? pnlClass(f.net) : ''));
+    }
     renderMiniPositions(fl);
-    void q;
   }
-  // simple mode: the open positions under the order panel (the bottom tabs are hidden there)
+  function setCell(c, text, cls) { if (!c) return; if (c.textContent !== text) c.textContent = text; if (c.className !== cls) c.className = cls; }
+  // simple mode: the open positions under the order panel (the bottom tabs are hidden there); same in-place updates
   function renderMiniPositions(fl) {
     var list = $('bt-mini-pos-list'), s = R.sym; if (!list) return;
-    list.textContent = '';
-    R.eng.open.forEach(function (p) {
-      var f = fl.byId[p.id], li = el('li');
-      li.appendChild(el('span', 'bt-num ' + (p.dir > 0 ? 'bt-up' : 'bt-down'), dirLabel(p.dir) + ' ' + E.stepsToStr(p.steps, s.lotDigits)));
-      li.appendChild(el('span', 'bt-mini-meta bt-num', '@ ' + E.ptsToStr(p.entry, s.digits)));
-      var act = el('span', 'bt-mini-act');
-      act.appendChild(el('span', 'bt-num ' + (f ? pnlClass(f.net) : ''), f ? fmtUsd(f.net, true) : '—'));
-      var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit'); b1.setAttribute('data-id', p.id);
-      var b2 = el('button', 'btn btn-ghost', _t('backtest.pos.close', 'Kapat')); b2.type = 'button'; b2.setAttribute('data-act', 'close'); b2.setAttribute('data-id', p.id);
-      act.appendChild(b1); act.appendChild(b2); li.appendChild(act);
-      list.appendChild(li);
-    });
-    show($('bt-mini-pos-empty'), R.eng.open.length === 0);
-    setText('bt-mini-pos-count', String(R.eng.open.length));
+    var key = R.eng.open.map(posKey).join('|') + '#' + lang();
+    if (key !== R.miniKey || list.children.length !== R.eng.open.length) {
+      R.miniKey = key; list.textContent = '';
+      R.eng.open.forEach(function (p) {
+        var li = el('li'); li.setAttribute('data-id', p.id);
+        li.appendChild(el('span', 'bt-num ' + (p.dir > 0 ? 'bt-up' : 'bt-down'), dirLabel(p.dir) + ' ' + E.stepsToStr(p.steps, s.lotDigits)));
+        li.appendChild(el('span', 'bt-mini-meta bt-num', '@ ' + E.ptsToStr(p.entry, s.digits)));
+        var act = el('span', 'bt-mini-act');
+        act.appendChild(el('span', 'bt-num bt-live-pnl', '—'));
+        var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit'); b1.setAttribute('data-id', p.id);
+        var b2 = el('button', 'btn btn-ghost', _t('backtest.pos.close', 'Kapat')); b2.type = 'button'; b2.setAttribute('data-act', 'close'); b2.setAttribute('data-id', p.id);
+        act.appendChild(b1); act.appendChild(b2); li.appendChild(act);
+        list.appendChild(li);
+      });
+      show($('bt-mini-pos-empty'), R.eng.open.length === 0);
+      setText('bt-mini-pos-count', String(R.eng.open.length));
+    }
+    for (var i = 0; i < list.children.length; i++) {
+      var li2 = list.children[i], f = fl.byId[li2.getAttribute('data-id')];
+      setCell(li2.querySelector('.bt-live-pnl'), f ? fmtUsd(f.net, true) : '—', 'bt-num bt-live-pnl ' + (f ? pnlClass(f.net) : ''));
+    }
   }
   function sectionStart(no) {
     var list = (R && R.acc.sections) || [];
@@ -1912,6 +1991,8 @@
     $('bt-step-btn').addEventListener('click', stepCandle);
     $('bt-step1m-btn').addEventListener('click', stepMinute);
     $('bt-goto-btn').addEventListener('click', function () { goTo(fromLocalInput($('bt-goto-input').value)); });
+    $('bt-center-btn').addEventListener('click', function () { centerAll(); });
+    $('bt-now-btn').addEventListener('click', function () { centerAll(); });
     $('bt-goto-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); goTo(fromLocalInput(this.value)); } });
     // orders
     $('bt-buy-btn').addEventListener('click', function () { submitOrder(1); });
@@ -1982,6 +2063,7 @@
       else if (e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); if (!$('bt-sell-btn').disabled) submitOrder(-1); }
       else if (e.shiftKey && (e.key === 'M' || e.key === 'm')) { e.preventDefault(); LAY.toggleMode(); }
       else if (!e.shiftKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); LAY.setFullscreen(!LAY.isFullscreen()); }
+      else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); centerAll(); }
       else if (handleToolKey(e)) e.preventDefault();
     });
   }
@@ -2015,7 +2097,7 @@
     if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
     if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
     if (what === 'mode' && R) applyChartLayout();
-    if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } }, 60); }
+    if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } if (R) centerAll(); }, 80); }
   }
   function setupVisibility() {
     PAGE.on(document, 'visibilitychange', function () { if (document.hidden && R) { pause(); saveReplayTime(true); } });

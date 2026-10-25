@@ -174,6 +174,7 @@
       attached: function (p) { api = p; },
       detached: function () { api = { chart: null }; },
       paneViews: function () { return [view]; },
+      autoscaleInfo: function () { return null; },                // background bands only, never the price range
       updateAllViews: function () {},
       setVisible: function (v) { visible = !!v; if (api.requestUpdate) api.requestUpdate(); }
     };

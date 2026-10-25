@@ -42,8 +42,12 @@ window.fetch=async function(url,init){
   if(!/^Bearer /.test((init.headers||{}).Authorization||''))return res(401,{ok:false,code:'UNAUTHORIZED'});
   if(window.__ctFail&&(b.action==='month'||(window.__ctFail==='all'&&b.action==='coverage'&&b.backtestAccountId)))return res(401,{ok:false,code:'AUTH',error:'expired',needs_reconnect:true});
   if(qp.get('ctbad')&&String(b.ctidAccount)===qp.get('ctbad')&&(b.action==='symbols'||b.action==='coverage'))return res(401,{ok:false,code:'AUTH',error:'expired',needs_reconnect:true});   // one broker account fails (ctbad=<ctid>)
+  var real=qp.get('ctdata');   // ctdata=1: real 1m files /__ctdata/<YYYY-MM>.json in the server format (BTCUSD, see tests/smoke/README.md)
+  if(real&&b.action==='symbols')return res(200,{ok:true,symbols:[[50,'BTCUSD'],[41,'GOLD'],[1,'EURUSD']]});
+  if(real&&b.action==='coverage')return res(200,{ok:true,firstMonth:qp.get('ctfirst')||'2019-05',firstT:Date.UTC(+(qp.get('ctfirst')||'2019-05').slice(0,4),+(qp.get('ctfirst')||'2019-05').slice(5,7)-1,1)/1000,probes:9});
+  if(real&&b.action==='month'){var rr=await _f('/__ctdata/'+b.month+'.json');if(!rr.ok)return res(200,{ok:true,month:b.month,n:0,tm:[],o:[],h:[],l:[],c:[]});return res(200,await rr.json());}
   if(b.action==='symbols')return res(200,{ok:true,symbols:[[41,'GOLD'],[7,'EURGBP'],[2,'EURUSD.r'],[1,'EURUSD'],[8,'GBPUSD'],[40,'XAUUSD']]});
-  if(b.action==='symbolInfo')return res(200,{ok:true,symbolId:b.symbolId,digits:b.symbolId===40||b.symbolId===41?2:5,pipPosition:4,lotSize:10000000});
+  if(b.action==='symbolInfo')return res(200,{ok:true,symbolId:b.symbolId,digits:b.symbolId===40||b.symbolId===41||b.symbolId===50?2:5,pipPosition:4,lotSize:10000000});
   if(b.action==='coverage')return res(200,{ok:true,firstMonth:'2024-02',firstT:Date.UTC(2024,1,5)/1000,probes:9});
   if(b.action==='month'){
     var acc=(window.__db.tables.backtest_accounts||[]).filter(function(a){return a.id===b.backtestAccountId})[0];

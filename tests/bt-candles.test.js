@@ -138,3 +138,22 @@ describe('bt-candles: stepping, gaps, frames', () => {
     assert.equal(C.TF_MIN['4h'], 240); assert.equal(C.historyMonths(1440), 10);
   });
 });
+
+// ------------------------------------------------------------ 2026-10-25: invalid values never reach a chart series
+describe('bt-candles validation', () => {
+  it('toMinutes drops non-positive values and values that do not fit Int32 points', () => {
+    const m = C.toMinutes([[60, 1.1, 1.2, 1.0, 1.1], [120, 0, 1, 0, 1], [180, -1, 1, -2, 1], [240, 30000000, 30000000, 30000000, 30000000], [300, 1.1, 1.2, 1.0, 1.1]], 2);
+    assert.equal(m.n, 2); assert.equal(m.bad, 3);
+  });
+  it('validBar: finite, positive, low <= open/close <= high', () => {
+    assert.ok(C.validBar({ time: 1, open: 2, high: 3, low: 1, close: 2 }));
+    for (const b of [{ time: 1, open: 2, high: 3, low: -1, close: 2 }, { time: 1, open: NaN, high: 3, low: 1, close: 2 }, { time: 1, open: 2, high: 1, low: 3, close: 2 },
+      { time: 1, open: 4, high: 3, low: 1, close: 2 }, { time: 1, open: 2, high: Infinity, low: 1, close: 2 }, null]) assert.equal(C.validBar(b), false, JSON.stringify(b));
+  });
+  it('validMinutes rejects a negative price or unordered times', () => {
+    const ok = C.toMinutes([[60, 1.1, 1.2, 1.0, 1.1], [120, 1.1, 1.2, 1.0, 1.1]], 2);
+    assert.ok(C.validMinutes(ok));
+    assert.equal(C.validMinutes({ n: 1, t: new Float64Array([60]), o: new Int32Array([-5]), h: new Int32Array([5]), l: new Int32Array([-6]), c: new Int32Array([1]) }), false);
+    assert.equal(C.validMinutes({ n: 2, t: new Float64Array([120, 60]), o: new Int32Array([1, 1]), h: new Int32Array([1, 1]), l: new Int32Array([1, 1]), c: new Int32Array([1, 1]) }), false);
+  });
+});

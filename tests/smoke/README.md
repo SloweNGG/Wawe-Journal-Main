@@ -17,3 +17,13 @@ PP_DIR=... node tests/smoke/run.mjs shot-fs shot-phone --shots /tmp/bt-shots    
   `#bt-smoke-result` and end with `DONE`; `VERBOSE=1` prints every line.
 - Query parameters understood by `make.py`: `plan=free|premium`, `role=user|admin`, `backend=supabase` (FakeDb),
   `driver=/__driver-x.js`, `ct=ready|none|reconnect` (cTrader fixture), `i18n=tr|en|de` (loads the real translations).
+
+## Real BTC data (btc-repro scenarios)
+
+`btc-repro*` replay a cTrader BTCUSD H1 account on real 1-minute candles (Binance public klines, same shape as the Edge Function's
+`month` answer) and go back to 10.07.2019. Not in the default run (they need the files):
+
+```bash
+node tests/smoke/fetch-binance.mjs /tmp/ctdata 2019-05 2019-06 2019-07 2019-08 2026-07 2026-08 2026-09 2026-10
+CTDATA=/tmp/ctdata PP_DIR=... node tests/smoke/run.mjs btc-repro btc-repro-scroll btc-repro-pz btc-repro-multi btc-repro-ha btc-repro-line
+```
