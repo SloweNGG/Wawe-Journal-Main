@@ -38,8 +38,10 @@ const buildId = __WW_BUILD_ID__;
   #navbar-container {
     view-transition-name: ww-navbar;
   }
-  /* Quick-add butonu body'de kalıcı; kullanmayan sayfaya SPA ile geçilince gizle */
-  body:not([data-quick-add]) #quick-add-fab {
+  /* Quick-add butonu ve penceresi body'de kalıcı; kullanmayan sayfaya SPA ile geçilince gizle.
+     O sayfada quick-add.css yok: pencere stilsiz kalıp sayfanın (add-trade'de navbar'ın) üstüne biniyordu */
+  body:not([data-quick-add]) #quick-add-fab,
+  body:not([data-quick-add]) #quick-add-container {
     display: none !important;
   }
   ::view-transition-old(root),

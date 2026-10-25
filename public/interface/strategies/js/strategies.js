@@ -1795,28 +1795,8 @@ async function initStrategies() {
       if (adminLinkMobile) adminLinkMobile.style.display = 'block';
     }
 
-    var userAvatar = document.getElementById('user-avatar');
-    var dropdownMenu = document.getElementById('dropdown-menu');
-    if (userAvatar && dropdownMenu) {
-      STRAT_PAGE.on(userAvatar, 'click', function(e) {
-        e.stopPropagation();
-        dropdownMenu.classList.toggle('show');
-      });
-      STRAT_PAGE.on(document, 'click', function(e) {
-        if (!e.target.closest('#user-avatar') && !e.target.closest('#dropdown-menu')) {
-          dropdownMenu.classList.remove('show');
-        }
-      });
-    }
-
-    var logoutDropdownBtn = document.getElementById('logout-dropdown-btn');
-    if (logoutDropdownBtn) {
-      STRAT_PAGE.on(logoutDropdownBtn, 'click', async function() {
-        try { localStorage.removeItem('ww_last_active_push'); } catch(e) {}
-        await sb.auth.signOut();
-        window.location.href = 'index.html';
-      });
-    }
+    // Avatar menüsü ve çıkış navbar.js'te (onclick + initNavEvents); burada ikinci kez
+    // bağlanırsa aynı tıklamada menü açılıp hemen kapanıyordu
 
     // Strateji ekleme modal event'leri
     var openAddBtn = document.getElementById('open-add-strategy-modal');

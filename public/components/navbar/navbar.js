@@ -1,6 +1,14 @@
+// Hızlı ekleme bu sayfada kullanılabilir mi? SPA geçişinde pencere body'de kalıyor ama
+// quick-add kullanmayan sayfada gizli (bkz. SpaRouter.astro, body[data-quick-add])
+function wwQuickAddReady() {
+  if (typeof window.quickAddOpen !== 'function' || !document.getElementById('quick-add-overlay')) return false;
+  var spa = !!document.querySelector('meta[name="astro-view-transitions-enabled"]');
+  return !spa || document.body.hasAttribute('data-quick-add');
+}
+
 // Yeni işlem: bu sayfada hızlı ekleme penceresi varsa onu açar, yoksa işlem ekleme sayfasına gider
 function wwOpenAddTrade() {
-  if (typeof window.quickAddOpen === 'function' && document.getElementById('quick-add-overlay')) {
+  if (wwQuickAddReady()) {
     window.quickAddOpen();
     return;
   }
@@ -988,14 +996,6 @@ window.updateNotificationBadge = async function(force) {
   }
 };
 
-window.wwToggleJournal = function(e, btn) {
-  e.preventDefault();
-  e.stopPropagation();
-  if (window.closeAllNavDropdowns) window.closeAllNavDropdowns('journal');
-  var js = document.getElementById('nav-journal-switcher');
-  if (js) js.classList.toggle('open');
-};
-
 window.closeMobileMenuAndNavigate = function(e, url) {
   if (e) e.preventDefault();
   var toggle = document.getElementById('nav-toggle');
@@ -1846,7 +1846,7 @@ function initNavEvents() {
       var t = e.target;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
       if (document.querySelector('.quick-add-overlay.active, [role="dialog"][aria-modal="true"]:not([hidden])')) return;
-      if (typeof window.quickAddOpen !== 'function' || !document.getElementById('quick-add-overlay')) return;
+      if (!wwQuickAddReady()) return;
       e.preventDefault();
       wwOpenAddTrade();
     });
