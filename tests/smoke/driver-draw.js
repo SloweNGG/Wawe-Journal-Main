@@ -123,8 +123,9 @@
       key('7'); await sleep(30); await click(xy(b2[k2 - 12].time, b2[k2 - 12].close));   // short position
       key('9'); await sleep(30); await click(P1); await sleep(30); ptr('pointermove', P2.x, P2.y, 0); await sleep(30); await click(P2);   // measure: click, move, click
       key('8'); await sleep(30); await click(xy(b2[k2 - 15].time, b2[k2 - 15].high));
-      await waitFor(function () { return $('bt-text-modal').classList.contains('active'); }, 3000, 'text modal');
-      $('bt-text-input').value = 'Destek'; $('bt-text-ok').click(); await sleep(100);
+      await waitFor(function () { return document.querySelector('#bt-chart .bt-draw-edit'); }, 3000, 'text editor');
+      var te = document.querySelector('#bt-chart .bt-draw-edit'); te.value = 'Destek';
+      te.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); await sleep(100);
       var tools = list().map(function (x) { return x.tool; }).sort().join(',');
       ok('premium: ray, fib, long, short, measure and text drawn', list().length === before + 6 && /fib/.test(tools) && /long/.test(tools) && /short/.test(tools) && /measure/.test(tools) && /ray/.test(tools) && /text/.test(tools), tools);
       var lg = list().filter(function (x) { return x.tool === 'long'; })[0];

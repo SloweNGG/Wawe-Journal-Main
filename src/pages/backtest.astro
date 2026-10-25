@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=15" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=16" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -20,7 +20,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793500003" is:inline defer></script>
+  <script src="/i18n.js?v=1793500004" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
@@ -31,12 +31,12 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-ctrader.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-store.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-layout.js?v=3" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-layout.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-dock.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=3" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-draw.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-draw.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=3" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=19" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=20" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -560,23 +560,6 @@ import Layout from '../layouts/Layout.astro';
         <span class="bt-spacer"></span>
         <button type="button" id="bt-back-reset" class="bt-btn-danger-ghost"><span data-i18n="backtest.back.reset">Hesabı sıfırla ve başla</span></button>
         <button type="button" id="bt-back-continue" class="btn-modal-confirm"><span data-i18n="backtest.back.continue">Devam et</span></button>
-      </div>
-    </div>
-  </div>
-
-  <div id="bt-text-modal" class="modal-overlay bt-modal" role="dialog" aria-modal="true" aria-labelledby="bt-text-title">
-    <div class="modal-box modal-box-sm">
-      <div class="modal-header">
-        <h3 id="bt-text-title" data-i18n="backtest.draw.text_title">Metin</h3>
-        <button type="button" id="bt-text-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
-      </div>
-      <form id="bt-text-form" class="modal-body" novalidate autocomplete="off">
-        <div class="bt-field"><label for="bt-text-input" data-i18n="backtest.draw.text_label">Grafiğe yazılacak metin</label>
-          <input id="bt-text-input" class="bt-input" type="text" maxlength="200" /></div>
-      </form>
-      <div class="modal-footer">
-        <button type="button" id="bt-text-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
-        <button type="button" id="bt-text-ok" class="btn-modal-confirm"><span data-i18n="common.save">Kaydet</span></button>
       </div>
     </div>
   </div>

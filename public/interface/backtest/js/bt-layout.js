@@ -54,6 +54,10 @@
     { id: 'cursor', keys: ['V'], advanced: true },
     { id: 'magnet', keys: ['M'], advanced: true },
     { id: 'delete_drawing', keys: ['Del'], advanced: true },
+    { id: 'undo', keys: ['@mod', 'Z'], advanced: true },
+    { id: 'redo', keys: ['@mod', 'Shift', 'Z'], advanced: true },
+    { id: 'draw_shift', keys: ['Shift'], advanced: true },
+    { id: 'draw_settings', keys: ['@dblclick'], advanced: true },
     { id: 'sheet', keys: ['?'] }
   ];
 
@@ -154,7 +158,12 @@
       SHORTCUTS.forEach(function (s) {
         var row = document.createElement('div'); row.className = 'bt-keys-row' + (s.advanced ? ' bt-adv-only' : '');
         var dt = document.createElement('dt');
-        s.keys.forEach(function (k) { var kb = document.createElement(k === '…' ? 'span' : 'kbd'); kb.textContent = k === 'Space' ? t('backtest.keys.space', 'Boşluk') : k; dt.appendChild(kb); });
+        s.keys.forEach(function (k) {
+          var kb = document.createElement(k === '…' ? 'span' : 'kbd');
+          kb.textContent = k === 'Space' ? t('backtest.keys.space', 'Boşluk') : k === '@mod' ? (/Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl')
+            : k === '@dblclick' ? t('backtest.keys.dblclick', 'Çift tık / sağ tık') : k;
+          dt.appendChild(kb);
+        });
         var dd = document.createElement('dd'); dd.textContent = t('backtest.keys.' + s.id, s.id);
         row.appendChild(dt); row.appendChild(dd); list.appendChild(row);
       });

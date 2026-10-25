@@ -50,6 +50,8 @@ const SCENARIOS = {
   'dock-phone': ['driver=/__driver-dock.js&role=user&plan=premium&phone=1&i18n=tr', PHONE],
   'stage1-de': ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=de', DESKTOP],
   'sections-ct': ['backend=supabase&driver=/__driver-sections.js&role=user&plan=premium&ct=ready&i18n=en', DESKTOP],
+  'draw-real-pro': ['driver=/__driver-draw2.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  'draw-real-free': ['driver=/__driver-draw2.js&role=user&plan=free&i18n=en', DESKTOP],
   // needs real 1m files in dist/__ctdata (tests/smoke/README.md); not in the default run
   'btc-repro': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1', DESKTOP, true],
   'btc-repro-ha': ['backend=supabase&driver=/__driver-btcrepro.js&role=user&plan=premium&ct=ready&ctdata=1&style=heikin&vol=1', DESKTOP, true],
@@ -70,6 +72,8 @@ const SCENARIOS = {
   'shot-dock': ['driver=/__driver-shot.js&shot=dock&plan=premium&i18n=tr', DESKTOP, true],
   'shot-orders': ['driver=/__driver-shot.js&shot=orders&plan=premium&i18n=tr', DESKTOP, true],
   'shot-orders-phone': ['driver=/__driver-shot.js&shot=orders&plan=premium&i18n=tr', PHONE, true],
+  'shot-draw': ['driver=/__driver-shot-draw.js&plan=premium&i18n=tr', DESKTOP, true],
+  'shot-draw-light': ['driver=/__driver-shot-draw.js&plan=premium&i18n=en&light=1', DESKTOP, true],
   'shot-dock-stats-fs': ['driver=/__driver-shot.js&shot=dock-stats-fs&plan=premium&i18n=tr', { width: 1440, height: 1100 }, true],
   'shot-limit': ['backend=supabase&driver=/__driver-limit.js&role=user&plan=free&ct=ready&tlimit=100&tused=37&race=1&i18n=tr', DESKTOP, true],
   'shot-drawer-free': ['driver=/__driver-shot.js&shot=drawer&plan=free&i18n=en', DESKTOP, true],
@@ -115,6 +119,19 @@ for (const name of names) {
   await page.setViewport(sc[1]);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e && e.message || e)));
+  // trusted input for drivers (real mouse and keyboard through the browser, like a user): await window.__pp({ op, ... })
+  //   move {x, y, steps}, down / up {button}, click {x, y, count, button}, wheel {x, y, dy}, key {key, type: 'down'|'up'|'press'}
+  await page.exposeFunction('__pp', async (c) => {
+    const m = page.mouse, k = page.keyboard;
+    if (c.op === 'move') await m.move(c.x, c.y, { steps: c.steps || 1 });
+    else if (c.op === 'down') await m.down({ button: c.button || 'left', clickCount: c.count || 1 });
+    else if (c.op === 'up') await m.up({ button: c.button || 'left', clickCount: c.count || 1 });
+    else if (c.op === 'click') await m.click(c.x, c.y, { button: c.button || 'left', count: c.count || 1, delay: c.delay || 0 });
+    else if (c.op === 'wheel') { await m.move(c.x, c.y); await m.wheel({ deltaY: c.dy || 0, deltaX: c.dx || 0 }); }
+    else if (c.op === 'type') await k.type(c.text, { delay: 10 });
+    else if (c.op === 'key') { if (c.type === 'down') await k.down(c.key); else if (c.type === 'up') await k.up(c.key); else await k.press(c.key); }
+    return true;
+  });
   const url = `http://127.0.0.1:${port}/__bt.html${sc[0] ? '?' + sc[0] : ''}`;
   const t0 = Date.now();
   await page.goto(url, { waitUntil: 'load' });

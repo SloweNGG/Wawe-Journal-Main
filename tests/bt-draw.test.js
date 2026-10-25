@@ -96,6 +96,86 @@ describe('bt-draw', () => {
     assert.equal(s.selected(), null); assert.equal(s.list().length, 0);
     assert.equal(s.add({ id: 'b', tool: 'trend', pts: [] }), null);
   });
+  it('Shift: lines lock to 0/45/90 degrees around the anchor, boxes become squares on screen', () => {
+    assert.deepEqual(D.lockAngle(100, 100, 180, 108), { x: 180, y: 100, kind: 'h' }, 'nearly flat -> horizontal, keeps the x');
+    assert.deepEqual(D.lockAngle(100, 100, 96, 20), { x: 100, y: 20, kind: 'v' }, 'nearly vertical -> vertical, keeps the y');
+    const d = D.lockAngle(100, 100, 150, 140);
+    assert.equal(d.kind, 'd'); assert.ok(near(d.x - 100, d.y - 100, 1e-9) && d.x > 100, '45 degrees down-right ' + JSON.stringify(d));
+    const u = D.lockAngle(100, 100, 40, 160);
+    assert.ok(near(100 - u.x, u.y - 100, 1e-9) && u.x < 100, '45 degrees down-left');
+    assert.equal(D.lockAngle(5, 5, 5, 5).kind, 'h');
+    assert.deepEqual(D.squareBox(10, 10, 50, 25), { x: 50, y: 50 });
+    assert.deepEqual(D.squareBox(10, 10, -20, 5), { x: -20, y: -20 }, 'up-left keeps the direction');
+  });
+  it('rectangle: eight handles, edges and corners resize, dragging past the opposite edge flips the box', () => {
+    const hs = D.rectHandles(50, 80, 10, 20);
+    assert.deepEqual(hs.map((h) => h.i), ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']);
+    assert.deepEqual(hs.find((h) => h.i === 'nw'), { i: 'nw', x: 10, y: 20 }); assert.deepEqual(hs.find((h) => h.i === 's'), { i: 's', x: 30, y: 80 });
+    // pts drawn from bottom-right to top-left: [later time, lower price] then [earlier time, higher price]
+    const r = { id: 'r', tool: 'rect', pts: [{ t: 200, p: 1.0 }, { t: 100, p: 2.0 }] };
+    assert.deepEqual(D.resizeRect(r, 'e', 300, 9).pts, [{ t: 300, p: 1.0 }, { t: 100, p: 2.0 }], 'right edge = the later point');
+    assert.deepEqual(D.resizeRect(r, 'n', 9, 2.5).pts, [{ t: 200, p: 1.0 }, { t: 100, p: 2.5 }], 'top edge = the higher price');
+    assert.deepEqual(D.resizeRect(r, 'sw', 50, 0.5).pts, [{ t: 200, p: 0.5 }, { t: 50, p: 2.0 }]);
+    assert.deepEqual(D.setHandle(r, 'w', 260, 1).pts, [{ t: 200, p: 1.0 }, { t: 260, p: 2.0 }], 'past the right edge: flipped, still two points');
+    assert.deepEqual(D.setHandle(r, 0, 7, 8, H).pts[0], { t: 7, p: 8 }, 'numeric handles still move a point');
+  });
+  it('style: width, line style, fill, opacity, fib levels and text size are checked; defaults are left out; row round trip', () => {
+    const base = { id: 'a', tool: 'rect', pts: [{ t: 1, p: 1 }, { t: 2, p: 2 }] };
+    assert.deepEqual(D.sanitize(Object.assign({ width: 2, dash: 'solid', opacity: 0.14 }, base)), Object.assign({ color: null, locked: false }, base), 'defaults are not stored');
+    const r = D.sanitize(Object.assign({ width: 3, dash: 'dotted', fill: false, opacity: 0.456, levels: [1] }, base));
+    assert.equal(r.width, 3); assert.equal(r.dash, 'dotted'); assert.equal(r.fill, false); assert.equal(r.opacity, 0.46); assert.equal(r.levels, undefined, 'levels only on fib');
+    for (const bad of [{ width: 0 }, { width: 5 }, { width: 2.5 }, { dash: 'wavy' }, { opacity: 1.5 }, { opacity: 'x' }]) {
+      const x = D.sanitize(Object.assign({}, base, bad)); assert.ok(x && x.width === undefined && x.dash === undefined && x.opacity === undefined, JSON.stringify(bad));
+    }
+    assert.equal(D.sanitize({ id: 't', tool: 'trend', pts: base.pts, fill: false, opacity: 0.5 }).fill, undefined, 'a line has no fill');
+    const fib = D.sanitize({ id: 'f', tool: 'fib', pts: base.pts, levels: [1, '0.5', 0, 0.5, 'x', 2.618] });
+    assert.deepEqual(fib.levels, [0, 0.5, 1, 2.618], 'sorted, unique, numbers only');
+    assert.equal(D.sanitize({ id: 'f', tool: 'fib', pts: base.pts, levels: D.FIB_LEVELS.slice() }).levels, undefined, 'the default set is not stored');
+    assert.deepEqual(D.fibLevels(fib).map((l) => l.level), [0, 0.5, 1, 2.618]);
+    const tx = D.sanitize({ id: 'x', tool: 'text', pts: [{ t: 1, p: 1 }], text: 'Hi', size: 20, width: 3 });
+    assert.equal(tx.size, 20); assert.equal(tx.width, undefined, 'text has a size, not a line width');
+    assert.equal(D.sanitize({ id: 'x', tool: 'text', pts: [{ t: 1, p: 1 }], text: 'Hi', size: 17 }).size, undefined, 'only the offered sizes');
+    const row = D.toRow(r, 'u', 'a1');
+    assert.deepEqual(row.style, { color: null, locked: false, width: 3, dash: 'dotted', fill: false, opacity: 0.46 });
+    assert.deepEqual(D.fromRow(row), r);
+    assert.deepEqual(D.fromRow(D.toRow(fib, 'u', 'a1')), fib);
+    assert.ok(JSON.stringify(D.toRow(fib, 'u', 'a1').style).length < 2048, 'fits the 2 KB style check');
+    assert.equal(D.fillOf(r), 0); assert.equal(D.fillOf(D.sanitize(base)), 0.14); assert.equal(D.widthOf(fib), 1); assert.equal(D.widthOf(r), 3);
+  });
+  it('fib levels from text: separators, percent sign, limits', () => {
+    assert.deepEqual(D.parseLevels('0, 0.5; 0.618 1'), [0, 0.5, 0.618, 1]);
+    assert.deepEqual(D.parseLevels('1.618%, -0.272'), [-0.272, 1.618]);
+    assert.equal(D.parseLevels(''), null); assert.equal(D.parseLevels('a, b'), null);
+    assert.equal(D.parseLevels(Array.from({ length: 13 }, (_, i) => i / 10).join(',')), null, 'at most 12 levels');
+    assert.equal(D.cleanLevels([11, -6]), null, 'out of range');
+  });
+  it('history: create, move, settings, delete and clear are undone and redone through the set; drags are not steps', () => {
+    const s = D.createSet(), h = D.createHistory(s), ev = [];
+    s.on((k, d) => { if (k !== 'select' && k !== 'view') ev.push(k + ':' + (d && d.id ? d.id : '')); });
+    const a = s.add({ id: 'a', tool: 'trend', pts: [{ t: 1, p: 1 }, { t: 2, p: 2 }] });
+    s.add({ id: 'b', tool: 'hline', pts: [{ t: 1, p: 5 }] });
+    s.put(Object.assign({}, a, { pts: [{ t: 1, p: 1.5 }, { t: 2, p: 2 }] }), true);       // dragging
+    s.put(Object.assign({}, a, { pts: [{ t: 1, p: 1.7 }, { t: 2, p: 2 }] }), true);
+    s.put(s.get('a'));                                                                     // drop
+    s.put(Object.assign({}, s.get('a'), { width: 4 }));                                    // settings
+    s.put(Object.assign({}, s.get('a')));                                                  // no change: no step
+    s.remove('b');
+    assert.ok(h.canUndo() && !h.canRedo());
+    h.undo(); assert.deepEqual(s.list().map((d) => d.id), ['a', 'b'], 'delete undone, back in its stacking place');
+    assert.equal(s.selected(), 'b', 'the restored drawing is selected');
+    h.undo(); assert.equal(s.get('a').width, undefined, 'settings undone');
+    h.undo(); assert.equal(s.get('a').pts[0].p, 1, 'the whole drag is one step');
+    h.redo(); assert.equal(s.get('a').pts[0].p, 1.7);
+    h.undo(); h.undo(); assert.deepEqual(s.list().map((d) => d.id), ['a']); h.undo(); assert.equal(s.list().length, 0); assert.equal(h.canUndo(), false);
+    assert.equal(h.undo(), false, 'nothing left');
+    h.redo(); h.redo(); assert.deepEqual(s.list().map((d) => d.id), ['a', 'b']);
+    s.add({ id: 'c', tool: 'hline', pts: [{ t: 1, p: 6 }] });
+    assert.equal(h.canRedo(), false, 'a new change drops the redo steps');
+    s.clear(); assert.equal(s.list().length, 0); h.undo(); assert.deepEqual(s.list().map((d) => d.id), ['a', 'b', 'c'], 'clear is one step');
+    s.reset([]); assert.equal(h.canUndo(), false, 'another account: no history');
+    assert.ok(ev.includes('remove:b') && ev.includes('add:b'), 'undo goes through the set (saved like any change)');
+    h.destroy();
+  });
   it('controller: free -> session storage only; premium -> debounced upserts and deletes; saved rows + session merged on load', async () => {
     const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
     const calls = [], rows = [{ id: 'r1', tool: 'hline', points: [{ t: 5, p: 1.2 }], style: { color: null, locked: false } }];
@@ -125,6 +205,15 @@ describe('bt-draw', () => {
     assert.deepEqual(calls[2], ['remove', 'r1']);
     assert.equal(c.key({ key: '3', shiftKey: false }), true); assert.equal(c.tool(), 'ray');
     assert.equal(c.escape(), true); assert.equal(c.tool(), 'cursor');
+    // undo / redo keys: the delete of r1 comes back and goes again (and reaches the database both ways)
+    assert.equal(c.undoKey({ key: 'z', ctrlKey: true }), true); assert.ok(c.set.get('r1'), 'Ctrl+Z restores');
+    await sleep(450);
+    assert.ok(calls.some((x) => x[0] === 'save' && x[1] === 'r1'), 'the restored drawing is saved again');
+    assert.equal(c.undoKey({ key: 'Z', metaKey: true, shiftKey: true }), true); assert.equal(c.set.get('r1'), null, 'Shift+Cmd+Z redoes');
+    await sleep(10);
+    assert.deepEqual(calls[calls.length - 1], ['remove', 'r1'], 'and deletes it again');
+    assert.equal(c.undoKey({ key: 'y', ctrlKey: true }), true);
+    assert.equal(c.undoKey({ key: 'z' }), false, 'no modifier: not ours');
     c.destroy();
   });
 });

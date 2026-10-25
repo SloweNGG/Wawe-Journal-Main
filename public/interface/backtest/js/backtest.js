@@ -168,8 +168,8 @@
     L.look = window.WwBtLook.load(safeStorage());
     DRAW = window.WwBtDraw.createController({
       bar: $('bt-draw-bar'), t: _t, pro: function () { return can('backtestDrawings'); }, saveable: function () { return can('backtestDrawings'); },
-      upgrade: function () { openUpgrade('backtest_drawings'); }, toast: toast, newId: newId, askText: askText, confirm: function (txt) { return askConfirm(txt); },
-      icons: icons, local: safeStorage(), session: safeSession(), db: drawingsDb(), userId: function () { return L.user && L.user.id; }
+      upgrade: function () { openUpgrade('backtest_drawings'); }, toast: toast, newId: newId, confirm: function (txt) { return askConfirm(txt); },
+      icons: icons, local: safeStorage(), session: safeSession(), db: drawingsDb(), userId: function () { return L.user && L.user.id; }, quote: drawQuote
     });
     STATS = window.WwBtStats.createView();
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
@@ -201,18 +201,16 @@
       remove: function (id) { return window.sb.from('backtest_drawings').delete().eq('id', id).eq('user_id', L.user.id); }
     };
   }
-  // text of a text drawing (page-local modal, like askConfirm)
-  var textCb = null;
-  function askText(initial, cb) {
-    textCb = cb;
-    $('bt-text-input').value = initial || '';
-    $('bt-text-modal').classList.add('active');
-    setTimeout(function () { try { $('bt-text-input').focus(); } catch (e) { /* ignore */ } }, 30);
-  }
-  function finishText(ok) {
-    $('bt-text-modal').classList.remove('active');
-    var cb = textCb; textCb = null;
-    if (cb) cb(ok ? $('bt-text-input').value.trim().slice(0, window.WwBtDraw.MAX_TEXT) : '');
+  // labels of the long/short drawing tool: distance in pips (crypto: price points) and the money at the order panel's lot
+  // (the symbol's minimum lot when the field is empty or invalid). diff: signed price move in the trade's favour.
+  function drawQuote(diff, price) {
+    if (!R || !R.sym) return null;
+    var s = R.sym, r = E.parseScaled($('bt-lot').value, s.lotDigits, 'exact'), unit = Math.round(s.lot.step * Math.pow(10, s.lotDigits));
+    var lot = r.ok && r.value > 0 && r.value % unit === 0 ? r.value / Math.pow(10, s.lotDigits) : s.lot.min;
+    var crypto = S.spreadUnit(s.id) === 'price', ad = Math.abs(diff);
+    var dist = crypto ? _t('backtest.draw.points', '{n} puan', { n: ad.toFixed(s.digits) }) : _t('backtest.draw.pips', '{n} pip', { n: (ad / s.pipSize).toFixed(1) });
+    var usd = diff / s.pipSize * S.pipValueUsd(s.id, lot, price > 0 ? price : 1);
+    return { dist: dist, money: (usd >= 0 ? '+' : '-') + Math.abs(usd).toFixed(2) + ' $', lot: _t('backtest.draw.lot', '{n} lot', { n: lot.toFixed(s.lotDigits) }) };
   }
   function isPro() { return L.plan === 'premium'; }
   function can(f) { return L.feat[f] === true; }
@@ -398,7 +396,6 @@
   }
   function anyModalOpen() { return !!document.querySelector('.bt-modal.active'); }
   function closeAllModals() {
-    if (textCb) finishText(false);
     if (backResolve) finishBack('cancel');
     var m = document.querySelectorAll('.bt-modal.active'); for (var i = 0; i < m.length; i++) m[i].classList.remove('active');
     if (confirmResolve) finishConfirm(false);
@@ -2362,11 +2359,6 @@
     if (window.ResizeObserver) { var croF = 0, cro = new ResizeObserver(function () { cancelAnimationFrame(croF); croF = requestAnimationFrame(positionSplits); }); cro.observe($('bt-charts')); PAGE.onLeave(function () { cro.disconnect(); }); }
     var wasWide = wideScreen();
     PAGE.on(window, 'resize', function () { var w = wideScreen(); if (w !== wasWide) { wasWide = w; if (R) applyChartLayout(); } });
-    $('bt-text-ok').addEventListener('click', function () { finishText(true); });
-    $('bt-text-cancel').addEventListener('click', function () { finishText(false); });
-    $('bt-text-close').addEventListener('click', function () { finishText(false); });
-    $('bt-text-form').addEventListener('submit', function (e) { e.preventDefault(); finishText(true); });
-    $('bt-text-modal').addEventListener('click', function (e) { if (e.target === $('bt-text-modal')) finishText(false); });
     $('bt-look-close').addEventListener('click', function () { toggleDrawer(false); });
     ['open', 'orders', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
     // pending orders: type, list, edit modal
@@ -2395,6 +2387,7 @@
       if (e.key === 'Escape') { if (escapeChain()) e.preventDefault(); return; }
       var tg = e.target && e.target.tagName;
       if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+      if ((e.ctrlKey || e.metaKey) && DRAW && LAY.mode() === 'advanced' && DRAW.undoKey(e)) { e.preventDefault(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === ' ') { e.preventDefault(); if (R.playing) pause(); else play(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) stepMinute(); else stepCandle(); }

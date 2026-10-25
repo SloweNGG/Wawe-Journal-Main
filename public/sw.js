@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v28'; // Backtest: bekleyen emirler
+const CACHE_VERSION = 'wawe-v29'; // backtest drawing tools: settings, undo, keys
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
