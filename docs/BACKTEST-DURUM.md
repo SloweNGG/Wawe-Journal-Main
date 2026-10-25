@@ -69,6 +69,15 @@ Kütüphane kararı: kendi kodumuz (`bt-desk.js`, bağımlılık yok). WinBox.js
 alanı, görev çubuğu ve yapıştırma önizlemesi için ağır değişiklik gerekiyordu; interact.js (MIT) yalnız sürükleme/boyutlama veriyor,
 yapıştırma, mıknatıs, görev çubuğu, düzenler ve grafik yeniden çizimi yine bize kalıyordu. Kendi kodla aynı iş, dış bağımlılık riski yok.
 
+### Grafik ve istatistik düzeltmeleri (`cacf307`)
+
+| Konu | Ne değişti |
+|---|---|
+| İşlem işaretleri | Varsayılan küçük oklar ve çıkışta nokta, yazı yok; aynı mumdaki aynı tür işaretler tek işarette sayıyla; üzerine gelince yön, lot, giriş → çıkış, neden ve K/Z. Görünüm ayarlarında (her plan): Oklar / Oklar ve etiketler / Sadece açık pozisyonlar / Gizle ve isteğe bağlı giriş–çıkış çizgisi |
+| Bakiye eğrisi | Widget boyutunu sonradan alınca grafik sağa sıkışıyordu; her boyut değişiminde yeniden sığdırılıyor. Eksende yuvarlak işlem numaraları (#10, #20 … ya da dar grafikte #20, #40 …) |
+| R değerleri | R yalnız açılışta stop loss konan işlemlerde hesaplanır (başlangıç riski). R kartı "R hesaplanan işlem: n / toplam" yazar, 5'ten az ise uyarır; beklenen değerde dolar (tüm işlemler) ve R (stop loss'lu işlemler) ayrı satırlarda |
+| Fiyat ekseni | Sığmayan etiket yarım çizilmez, gizlenir |
+
 ## 2. Ücretsiz / Premium
 
 Kurallar değişmedi (`public/src/core/config.js` FEATURES).
