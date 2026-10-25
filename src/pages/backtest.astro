@@ -12,14 +12,15 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=13" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=14" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793500001" is:inline defer></script>
+  <script src="/i18n.js?v=1793500002" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
@@ -31,10 +32,11 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-store.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-layout.js?v=3" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-dock.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-stats.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=16" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-stats.js?v=3" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=17" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -107,6 +109,12 @@ import Layout from '../layouts/Layout.astro';
             </button>
             <div id="bt-layout-pop" class="bt-layout-pop" role="menu" hidden></div>
           </div>
+          <div class="bt-layout-wrap bt-adv-only">
+            <button type="button" id="bt-panels-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-panels-pop" data-i18n-title="backtest.dock.menu" title="Paneller">
+              <i data-lucide="panels-top-left" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.menu">Paneller</span>
+            </button>
+            <div id="bt-panels-pop" class="bt-layout-pop" role="menu" hidden></div>
+          </div>
           <button type="button" id="bt-look-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-look-drawer" data-i18n-title="backtest.look.title" title="Görünüm ayarları">
             <i data-lucide="palette" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.look.title">Görünüm ayarları</span>
           </button>
@@ -161,53 +169,77 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <div class="bt-layout">
-        <div id="bt-chart-card" class="bt-chart-card">
-          <div class="bt-chart-top">
-            <div id="bt-legend" class="bt-legend bt-num" aria-hidden="true"></div>
-            <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri, gerçek piyasa verisi değildir</span>
-          </div>
-          <div class="bt-chart-body">
-          <div id="bt-draw-bar" class="bt-draw-bar bt-adv-only" role="toolbar" aria-orientation="vertical" data-i18n-title="backtest.draw.toolbar" title="Çizim araçları"></div>
-          <div class="bt-chart-wrap">
-            <div id="bt-charts" class="bt-charts" data-layout="1">
-              <div class="bt-cell bt-cell-main"><div id="bt-chart" class="bt-chart"></div></div>
+      <div id="bt-save-banner" class="bt-banner bt-banner-error" role="alert" hidden>
+        <span data-i18n="backtest.err.save_failed_final">Bazı değişiklikler kaydedilemedi.</span>
+        <button type="button" id="bt-save-retry-btn" class="btn btn-ghost"><span data-i18n="backtest.retry">Tekrar dene</span></button>
+      </div>
+
+      <div id="bt-dock" class="bt-dock">
+        <div class="bt-zone bt-zone-row" data-zone="top" hidden></div>
+        <div class="bt-zsplit bt-zsplit-h" data-zsplit="top" role="separator" aria-orientation="horizontal" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
+        <div class="bt-zone" data-zone="left" hidden></div>
+        <div class="bt-zsplit bt-zsplit-v" data-zsplit="left" role="separator" aria-orientation="vertical" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
+        <div class="bt-zone" data-zone="center">
+        <section class="bt-pbox bt-pbox-chart" data-panel="chart">
+          <div id="bt-chart-card" class="bt-chart-card">
+            <div class="bt-chart-top" data-dock-grip="chart">
+              <button type="button" class="bt-grip" data-dock-grip="chart" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.panel_chart">Grafik</span></button>
+              <div id="bt-legend" class="bt-legend bt-num" aria-hidden="true"></div>
+              <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri, gerçek piyasa verisi değildir</span>
             </div>
-            <button type="button" id="bt-now-btn" class="bt-now-btn" hidden data-i18n-title="backtest.chart.now" title="Şimdiki muma dön">
-              <span data-i18n="backtest.chart.now">Şimdiki muma dön</span><i data-lucide="chevrons-right" aria-hidden="true"></i>
+            <div class="bt-chart-body">
+            <div id="bt-draw-bar" class="bt-draw-bar bt-adv-only" role="toolbar" aria-orientation="vertical" data-i18n-title="backtest.draw.toolbar" title="Çizim araçları"></div>
+            <div class="bt-chart-wrap">
+              <div id="bt-charts" class="bt-charts" data-layout="1">
+                <div class="bt-cell bt-cell-main"><div id="bt-chart" class="bt-chart"></div></div>
+              </div>
+              <button type="button" id="bt-now-btn" class="bt-now-btn" hidden data-i18n-title="backtest.chart.now" title="Şimdiki muma dön">
+                <span data-i18n="backtest.chart.now">Şimdiki muma dön</span><i data-lucide="chevrons-right" aria-hidden="true"></i>
+              </button>
+              <div id="bt-chart-overlay" class="bt-chart-overlay" hidden>
+                <span id="bt-overlay-text">Mum verisi yükleniyor…</span>
+              </div>
+            </div>
+            </div>
+            <div id="bt-data-banner" class="bt-banner" role="status" hidden>
+              <span id="bt-data-banner-text"></span>
+              <button type="button" id="bt-data-banner-btn" class="btn btn-ghost" hidden></button>
+            </div>
+            <button type="button" id="bt-fs-exit" class="bt-fs-exit" data-bt-fs aria-pressed="false">
+              <i data-lucide="minimize-2" aria-hidden="true"></i><span data-i18n="backtest.fs.exit">Tam ekrandan çık (Esc)</span>
             </button>
-            <div id="bt-chart-overlay" class="bt-chart-overlay" hidden>
-              <span id="bt-overlay-text">Mum verisi yükleniyor…</span>
-            </div>
+            <footer class="bt-chart-foot">
+              <span id="bt-gap-note" class="bt-hint"></span>
+              <p class="bt-attribution">
+                <span data-i18n="backtest.attribution_prefix">Grafikler:</span>
+                <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView Lightweight Charts™</a>
+                <span>Copyright (c) 2023 TradingView, Inc.</span>
+              </p>
+            </footer>
           </div>
-          </div>
-          <div id="bt-data-banner" class="bt-banner" role="status" hidden>
-            <span id="bt-data-banner-text"></span>
-            <button type="button" id="bt-data-banner-btn" class="btn btn-ghost" hidden></button>
-          </div>
-          <button type="button" id="bt-fs-exit" class="bt-fs-exit" data-bt-fs aria-pressed="false">
-            <i data-lucide="minimize-2" aria-hidden="true"></i><span data-i18n="backtest.fs.exit">Tam ekrandan çık (Esc)</span>
-          </button>
-          <footer class="bt-chart-foot">
-            <span id="bt-gap-note" class="bt-hint"></span>
-            <p class="bt-attribution">
-              <span data-i18n="backtest.attribution_prefix">Grafikler:</span>
-              <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView Lightweight Charts™</a>
-              <span>Copyright (c) 2023 TradingView, Inc.</span>
-            </p>
-          </footer>
+        </section>
         </div>
-
-        <div class="bt-split bt-split-v" data-bt-split="side" role="separator" aria-orientation="vertical" tabindex="0" data-i18n-title="backtest.layout.resize_side" title="Paneli yeniden boyutlandır (sürükle veya ok tuşları)"></div>
-
-        <aside class="bt-side">
+        <div class="bt-zsplit bt-zsplit-v" data-zsplit="right" role="separator" aria-orientation="vertical" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
+        <div class="bt-zone" data-zone="right">
+        <section class="bt-pbox" data-panel="balance">
+          <div class="bt-pbox-head" data-dock-grip="balance">
+            <button type="button" class="bt-grip" data-dock-grip="balance" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i></button>
+            <span class="bt-pbox-title" data-i18n="backtest.dock.panel_balance">Bakiye</span>
+            <button type="button" class="bt-pbox-btn" data-dock-hide="balance" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
+          </div>
           <div id="bt-stats" class="bt-card bt-stats">
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.balance">Bakiye</span><span id="bt-stat-balance" class="bt-num">—</span></div>
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.equity">Özsermaye</span><span id="bt-stat-equity" class="bt-num">—</span></div>
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.realized">Gerçekleşen K/Z</span><span id="bt-stat-realized" class="bt-num">—</span></div>
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.floating">Açık K/Z</span><span id="bt-stat-floating" class="bt-num">—</span></div>
           </div>
-
+        </section>
+        <section class="bt-pbox" data-panel="order">
+          <div class="bt-pbox-head" data-dock-grip="order">
+            <button type="button" class="bt-grip" data-dock-grip="order" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i></button>
+            <span class="bt-pbox-title" data-i18n="backtest.dock.panel_order">Emir paneli</span>
+            <button type="button" class="bt-pbox-btn" data-dock-hide="order" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
+          </div>
           <form id="bt-order-form" class="bt-card bt-order" novalidate autocomplete="off">
             <div id="bt-limit" class="bt-limit" role="status" aria-live="polite" data-i18n-title="backtest.limit.hint" title="cTrader verili hesaplarda ücretsiz planın aylık işlem sınırı; sayaç her ayın 1'inde (UTC) sıfırlanır. Açık pozisyonlar her zaman kapatılabilir." hidden>
               <div class="bt-limit-row"><span id="bt-limit-text" class="bt-num"></span><span class="bt-limit-bar"><span id="bt-limit-fill"></span></span></div>
@@ -248,66 +280,99 @@ import Layout from '../layouts/Layout.astro';
           </section>
           <p class="bt-hint bt-shortcuts"><span data-i18n="backtest.shortcuts">Kısayollar: Boşluk = oynat/duraklat, → = bir mum, Shift+→ = 1 dakika</span>
             <button type="button" id="bt-keys-link" class="bt-link-btn" data-i18n="backtest.keys.all">Tüm kısayollar (?)</button></p>
-        </aside>
-      </div>
-
-      <div id="bt-save-banner" class="bt-banner bt-banner-error" role="alert" hidden>
-        <span data-i18n="backtest.err.save_failed_final">Bazı değişiklikler kaydedilemedi.</span>
-        <button type="button" id="bt-save-retry-btn" class="btn btn-ghost"><span data-i18n="backtest.retry">Tekrar dene</span></button>
-      </div>
-
-      <div class="bt-split bt-split-h bt-adv-only" data-bt-split="bottom" role="separator" aria-orientation="horizontal" tabindex="0" data-i18n-title="backtest.layout.resize_bottom" title="Alt paneli yeniden boyutlandır (sürükle veya ok tuşları)"></div>
-
-      <section class="bt-card bt-tables bt-adv-only">
-        <div class="bt-tabs" role="tablist">
-          <button type="button" role="tab" id="bt-tab-open" aria-controls="bt-panel-open" aria-selected="true">
-            <span data-i18n="backtest.pos.title">Açık pozisyonlar</span> <span id="bt-open-count" class="bt-count bt-num">0</span></button>
-          <button type="button" role="tab" id="bt-tab-history" aria-controls="bt-panel-history" aria-selected="false">
-            <span data-i18n="backtest.history.title">İşlem geçmişi</span> <span id="bt-history-count" class="bt-count bt-num">0</span></button>
-          <button type="button" role="tab" id="bt-tab-stats" aria-controls="bt-panel-stats" aria-selected="false">
-            <span data-i18n="backtest.stats.title">İstatistikler</span></button>
+        </section>
         </div>
-
-        <div id="bt-panel-open" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-open">
-          <div class="bt-table-wrap"><table class="bt-table bt-table-live">
-            <colgroup><col class="bt-c-dir" /><col class="bt-c-lot" /><col class="bt-c-time" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-pnl" /><col class="bt-c-act" /></colgroup>
-            <thead><tr>
-              <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
-              <th data-i18n="backtest.col.entry_time">Giriş zamanı</th><th data-i18n="backtest.col.entry">Giriş</th>
-              <th>SL</th><th>TP</th><th data-i18n="backtest.col.price">Güncel fiyat</th>
-              <th data-i18n="backtest.col.pnl">K/Z</th><th><span class="bt-sr" data-i18n="backtest.col.actions">İşlemler</span></th>
-            </tr></thead>
-            <tbody id="bt-open-body"></tbody>
-          </table></div>
-          <p id="bt-open-empty" class="bt-hint" data-i18n="backtest.pos.empty">Açık pozisyon yok.</p>
-        </div>
-
-        <div id="bt-panel-history" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-history" hidden>
-          <div id="bt-history-filter" class="bt-history-filter" hidden>
-            <label for="bt-history-section" data-i18n="backtest.section.filter">Bölüm</label>
-            <select id="bt-history-section" class="bt-select bt-num"><option value="all" data-i18n="backtest.section.all">Tüm bölümler</option></select>
+        <div class="bt-zsplit bt-zsplit-h" data-zsplit="bottom" role="separator" aria-orientation="horizontal" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
+        <div class="bt-zone bt-zone-row" data-zone="bottom">
+        <section class="bt-pbox bt-pbox-tabs" data-panel="tabs">
+        <section class="bt-card bt-tables">
+          <div class="bt-tabs-row" data-dock-grip="tabs">
+            <button type="button" class="bt-grip" data-dock-grip="tabs" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.panel_tabs">Alt sekmeler</span></button>
+          <div class="bt-tabs" role="tablist">
+            <button type="button" role="tab" id="bt-tab-open" aria-controls="bt-panel-open" aria-selected="true">
+              <span data-i18n="backtest.pos.title">Açık pozisyonlar</span> <span id="bt-open-count" class="bt-count bt-num">0</span></button>
+            <button type="button" role="tab" id="bt-tab-history" aria-controls="bt-panel-history" aria-selected="false">
+              <span data-i18n="backtest.history.title">İşlem geçmişi</span> <span id="bt-history-count" class="bt-count bt-num">0</span></button>
+            <button type="button" role="tab" id="bt-tab-stats" aria-controls="bt-panel-stats" aria-selected="false">
+              <span data-i18n="backtest.stats.title">İstatistikler</span></button>
           </div>
-          <div class="bt-table-wrap"><table class="bt-table">
-            <thead><tr>
-              <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
-              <th data-i18n="backtest.col.entry_time">Giriş zamanı</th><th data-i18n="backtest.col.entry">Giriş</th>
-              <th data-i18n="backtest.col.exit_time">Çıkış zamanı</th><th data-i18n="backtest.col.exit">Çıkış</th>
-              <th data-i18n="backtest.col.reason">Sebep</th><th data-i18n="backtest.col.commission">Komisyon</th>
-              <th data-i18n="backtest.col.net">Net K/Z</th><th data-i18n="backtest.col.rr">R:R</th>
-            </tr></thead>
-            <tbody id="bt-history-body"></tbody>
-          </table></div>
-          <p id="bt-history-empty" class="bt-hint" data-i18n="backtest.history.empty">Henüz kapanan işlem yok.</p>
-          <p id="bt-history-more" class="bt-hint" hidden></p>
-        </div>
+            <button type="button" class="bt-pbox-btn" data-dock-hide="tabs" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
+          </div>
 
-        <div id="bt-panel-stats" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-stats" hidden>
-          <div id="bt-stats-view" class="bt-st"></div>
-          <p class="bt-hint bt-st-foot"><span id="bt-stats-extra" class="bt-num"></span> <span data-i18n="backtest.stat.currency_note">Tutarlar USD cinsindendir.</span></p>
+          <div id="bt-panel-open" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-open">
+            <div class="bt-table-wrap"><table class="bt-table bt-table-live">
+              <colgroup><col class="bt-c-dir" /><col class="bt-c-lot" /><col class="bt-c-time" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-pnl" /><col class="bt-c-act" /></colgroup>
+              <thead><tr>
+                <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
+                <th data-i18n="backtest.col.entry_time">Giriş zamanı</th><th data-i18n="backtest.col.entry">Giriş</th>
+                <th>SL</th><th>TP</th><th data-i18n="backtest.col.price">Güncel fiyat</th>
+                <th data-i18n="backtest.col.pnl">K/Z</th><th><span class="bt-sr" data-i18n="backtest.col.actions">İşlemler</span></th>
+              </tr></thead>
+              <tbody id="bt-open-body"></tbody>
+            </table></div>
+            <p id="bt-open-empty" class="bt-hint" data-i18n="backtest.pos.empty">Açık pozisyon yok.</p>
+          </div>
+
+          <div id="bt-panel-history" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-history" hidden>
+            <div id="bt-history-filter" class="bt-history-filter" hidden>
+              <label for="bt-history-section" data-i18n="backtest.section.filter">Bölüm</label>
+              <select id="bt-history-section" class="bt-select bt-num"><option value="all" data-i18n="backtest.section.all">Tüm bölümler</option></select>
+            </div>
+            <div class="bt-table-wrap"><table class="bt-table">
+              <thead><tr>
+                <th data-i18n="backtest.col.dir">Yön</th><th data-i18n="backtest.col.lot">Lot</th>
+                <th data-i18n="backtest.col.entry_time">Giriş zamanı</th><th data-i18n="backtest.col.entry">Giriş</th>
+                <th data-i18n="backtest.col.exit_time">Çıkış zamanı</th><th data-i18n="backtest.col.exit">Çıkış</th>
+                <th data-i18n="backtest.col.reason">Sebep</th><th data-i18n="backtest.col.commission">Komisyon</th>
+                <th data-i18n="backtest.col.net">Net K/Z</th><th data-i18n="backtest.col.rr">R:R</th>
+              </tr></thead>
+              <tbody id="bt-history-body"></tbody>
+            </table></div>
+            <p id="bt-history-empty" class="bt-hint" data-i18n="backtest.history.empty">Henüz kapanan işlem yok.</p>
+            <p id="bt-history-more" class="bt-hint" hidden></p>
+          </div>
+
+          <div id="bt-panel-stats" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-stats" hidden>
+            <div id="bt-stats-host" class="bt-stats-host">
+              <div class="bt-st-tools">
+                <div class="bt-layout-wrap">
+                  <button type="button" id="bt-widgets-btn" class="bt-chip-btn" aria-expanded="false" aria-controls="bt-widgets-pop"><i data-lucide="layout-dashboard" aria-hidden="true"></i><span data-i18n="backtest.st.widgets">Widget'lar</span></button>
+                  <div id="bt-widgets-pop" class="bt-layout-pop bt-pop-left" role="menu" hidden></div>
+                </div>
+                <span class="bt-spacer"></span>
+                <button type="button" id="bt-stats-detach" class="bt-chip-btn" data-i18n-title="backtest.st.detach_hint" title="İstatistikleri ayrı bir panelde aç"><i data-lucide="panel-top-open" aria-hidden="true"></i><span id="bt-stats-detach-label" data-i18n="backtest.st.detach">Ayrı panel</span></button>
+                <button type="button" id="bt-stats-fs-btn" class="bt-chip-btn" data-i18n-title="backtest.st.fullscreen" title="Tam ekran"><i data-lucide="maximize-2" aria-hidden="true"></i><span data-i18n="backtest.st.fullscreen">Tam ekran</span></button>
+              </div>
+              <div id="bt-stats-view" class="bt-st"></div>
+              <p class="bt-hint bt-st-foot"><span id="bt-stats-extra" class="bt-num"></span> <span data-i18n="backtest.stat.currency_note">Tutarlar USD cinsindendir.</span></p>
+            </div>
+          </div>
+        </section>
+        </section>
+        <section class="bt-pbox bt-pbox-stats" data-panel="stats" hidden>
+          <div class="bt-pbox-head" data-dock-grip="stats">
+            <button type="button" class="bt-grip" data-dock-grip="stats" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i></button>
+            <span class="bt-pbox-title" data-i18n="backtest.dock.panel_stats">İstatistikler</span>
+            <button type="button" class="bt-pbox-btn" data-act="stats-fs" data-i18n-title="backtest.st.fullscreen" title="Tam ekran"><i data-lucide="maximize-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.st.fullscreen">Tam ekran</span></button>
+            <button type="button" class="bt-pbox-btn" data-act="stats-back" data-i18n-title="backtest.st.attach" title="Sekmeye geri al"><i data-lucide="panel-bottom-close" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.st.attach">Sekmeye geri al</span></button>
+            <button type="button" class="bt-pbox-btn" data-dock-hide="stats" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
+          </div>
+          <div id="bt-stats-slot" class="bt-pbox-body"></div>
+        </section>
         </div>
-      </section>
+        <div class="bt-dock-preview" hidden></div>
+      </div>
     </section>
   </main>
+
+  <!-- statistics in full screen (the stats host moves in here) -->
+  <div id="bt-stats-fs" class="bt-stats-fs" role="dialog" aria-modal="true" aria-labelledby="bt-stats-fs-title" hidden>
+    <div class="bt-stats-fs-head">
+      <h3 id="bt-stats-fs-title" data-i18n="backtest.stats.title">İstatistikler</h3>
+      <button type="button" id="bt-stats-fs-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
+    </div>
+    <div id="bt-stats-fs-slot" class="bt-stats-fs-body"></div>
+  </div>
 
   <!-- appearance drawer (bt-look.js builds the body; outside main so it also covers the full-screen chart) -->
   <aside id="bt-look-drawer" class="bt-drawer" aria-labelledby="bt-look-title" hidden>

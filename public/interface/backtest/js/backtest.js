@@ -31,7 +31,8 @@
   var L = { user: null, plan: 'free', feat: {}, look: null, usage: null, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
-  var LAY = null;                               // window.WwBtLayout controller (mode, panel sizes, full screen)
+  var LAY = null;                               // window.WwBtLayout controller (mode, full screen, shortcut sheet)
+  var DOCK = null, statsFs = false;             // window.WwBtDock controller (movable panels, multi-chart grid, stats widgets)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
@@ -124,7 +125,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtLook && window.WwBtDraw && window.WwBtStats &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDock && window.WwBtLook && window.WwBtDraw && window.WwBtStats &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -172,10 +173,12 @@
     });
     STATS = window.WwBtStats.createView();
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
+    DOCK = window.WwBtDock.mount({ page: PAGE, dock: $('bt-dock'), storage: safeStorage(), userId: user.id, mode: function () { return LAY.mode(); },
+      fullscreen: function () { return LAY.isFullscreen(); }, wide: wideScreen, t: _t, onChange: onDockChange });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
-    LAY.decideMode(L.accounts.length);
+    LAY.decideMode(L.accounts.length); DOCK.apply(); placeStatsHost();
     var deep = new URLSearchParams(location.search).get('account');
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
   }
@@ -838,6 +841,7 @@
   function closeReplayState() {
     if (!R) return;
     if (LAY) LAY.setFullscreen(false);
+    openStatsFs(false);
     if ($('bt-look-drawer')) $('bt-look-drawer').hidden = true;
     if (DRAW) DRAW.setAccount(null);
     if (STATS) STATS.destroy();
@@ -1128,6 +1132,7 @@
     loadHistory(tok); maybePrefetch();
     L.store.updateAccount(R.acc.id, { timeframe: tfId }).catch(function (e) { toast(mapStoreError(e), 'error'); });
     R.acc.tf = tfId;
+    if (shownLayout() !== '1') mainHead(true);
   }
   function setSpeed(v) { if (!R) return; R.speed = v; try { localStorage.setItem(SPEED_KEY, String(v)); } catch (e) { /* ignore */ } }
 
@@ -1591,7 +1596,7 @@
     var cell = el('div', 'bt-cell bt-cell-x'), head = el('div', 'bt-cell-head'), sel = el('select', 'bt-select bt-num bt-cell-tf');
     sel.setAttribute('aria-label', _t('backtest.multi.timeframe', 'Bu grafiğin zaman dilimi'));
     tfOptions(sel, C.TF_MIN[tf] ? tf : EXTRA_TFS[i]);
-    head.appendChild(sel); cell.appendChild(head);
+    head.appendChild(cellGrip()); head.appendChild(sel); cell.appendChild(head);
     var host = el('div', 'bt-chart'); cell.appendChild(host);
     $('bt-charts').appendChild(cell);
     var v = { el: host, cell: cell, tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1, userAt: 0 };
@@ -1616,6 +1621,7 @@
     }
     if (added) { rebuildMarkers(); syncPriceLines(); updateAskLine(); syncFrom(R); }
     renderLayoutPicker();
+    layoutCells();
     if (added && R.histMonths < historyNeed()) loadHistory(R.token);
   }
   function setViewTimeframe(v, tfId) {
@@ -1906,7 +1912,8 @@
   // Statistics tab: drawn only while it is visible (the charts are not free), coalesced while the replay closes trades
   function renderStats() {
     if (!R) return;
-    if ($('bt-panel-stats').hidden || !$('bt-panel-stats').offsetParent) { R.statsDirty = true; return; }
+    var sv = $('bt-stats-view');
+    if (!sv || !sv.getClientRects().length) { R.statsDirty = true; return; }
     clearTimeout(statsTimer);
     statsTimer = later(drawStats, 120);
   }
@@ -1923,6 +1930,7 @@
     var firstT = secTrades.concat(open).length ? Math.min.apply(null, secTrades.concat(open).map(function (t) { return t.entryT; })) - 60 : 0;
     var span = R.tfMin * 60, candles = !firstT ? [] : R.candles.filter(function (c) { return c.time + span > firstT; }).map(function (c) { return { time: c.time, close: c.close, span: span }; });
     STATS.render({ box: $('bt-stats-view'), t: _t, pro: can('backtestStats'), fmtUsd: fmtUsd, locale: localeTag(), colors: colors(), lwc: window.WwChart.lwc,
+      layout: DOCK ? DOCK.widgets() : null, drag: wideScreen(), onLayout: function (l) { if (DOCK) DOCK.setWidgets(l); if (!$('bt-widgets-pop').hidden) renderWidgetsMenu(); },
       monthNames: MONTHS[lang()] || MONTHS.tr, upgrade: function () { openUpgrade('backtest_stats'); },
       data: { trades: trades, open: open, candles: candles, startCents: R.acc.startCents, section: secNo, sectionTrades: secTrades, sectionStartCents: secStartCents,
         floatCents: function (t, closePts) { return E.grossCents(sym, t.dir, t.entry, E.closeFill(t.dir, closePts, sp), t.steps) - t.comm; },
@@ -2036,7 +2044,28 @@
       LAY.setCharts(id, (R && R.extra.length ? R.extra.map(function (x) { return x.tfId; }) : LAY.prefs().tfs));
       toggleLayoutPop(false); applyChartLayout();
     });
-    PAGE.on(document, 'click', function (e) { if (!e.target.closest('#bt-layout-pop, #bt-layout-btn')) toggleLayoutPop(false); });
+    PAGE.on(document, 'click', function (e) {
+      if (!e.target.closest('#bt-layout-pop, #bt-layout-btn')) toggleLayoutPop(false);
+      if (!e.target.closest('#bt-panels-pop, #bt-panels-btn')) togglePop('bt-panels', false);
+      if (!e.target.closest('#bt-widgets-pop, #bt-widgets-btn')) togglePop('bt-widgets', false);
+    });
+    // panels menu (show / hide, reset), statistics: own panel / back to the tab / full screen, widget menu
+    $('bt-panels-btn').addEventListener('click', function (e) { e.stopPropagation(); togglePop('bt-panels'); });
+    $('bt-panels-pop').addEventListener('change', function (e) { var id = e.target.getAttribute('data-panel-toggle'); if (id) DOCK.setPanel(id, e.target.checked); });
+    $('bt-panels-pop').addEventListener('click', function (e) { if (e.target.closest('[data-act="reset-layout"]')) { DOCK.reset(); togglePop('bt-panels', false); toast(_t('backtest.dock.reset_done', 'Düzen sıfırlandı'), 'success'); } });
+    $('bt-widgets-btn').addEventListener('click', function (e) { e.stopPropagation(); togglePop('bt-widgets'); });
+    $('bt-widgets-pop').addEventListener('change', function (e) { var id = e.target.getAttribute('data-widget-toggle'); if (id) setWidget(id, e.target.checked); });
+    $('bt-widgets-pop').addEventListener('click', function (e) { if (e.target.closest('[data-act="reset-widgets"]')) { DOCK.setWidgets(null); renderWidgetsMenu(); renderStats(); } });
+    $('bt-stats-detach').addEventListener('click', function () { DOCK.setStatsDetached(!DOCK.statsDetached()); });
+    $('bt-stats-fs-btn').addEventListener('click', function () { openStatsFs(!statsFs); });
+    $('bt-stats-fs-close').addEventListener('click', function () { openStatsFs(false); });
+    $('bt-dock').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]'); if (!b) return;
+      if (b.getAttribute('data-act') === 'stats-back') DOCK.setStatsDetached(false);
+      else if (b.getAttribute('data-act') === 'stats-fs') openStatsFs(true);
+    });
+    $('bt-charts').addEventListener('pointerdown', onChartsPointer);
+    if (window.ResizeObserver) { var croF = 0, cro = new ResizeObserver(function () { cancelAnimationFrame(croF); croF = requestAnimationFrame(positionSplits); }); cro.observe($('bt-charts')); PAGE.onLeave(function () { cro.disconnect(); }); }
     var wasWide = wideScreen();
     PAGE.on(window, 'resize', function () { var w = wideScreen(); if (w !== wasWide) { wasWide = w; if (R) applyChartLayout(); } });
     $('bt-text-ok').addEventListener('click', function () { finishText(true); });
@@ -2051,7 +2080,8 @@
   function setupKeyboard() {
     PAGE.on(document, 'keydown', function (e) {
       if (e.key === 'Escape' && anyModalOpen()) { closeAllModals(); return; }
-      if (!R || anyModalOpen()) return;
+      if (e.key === 'Escape' && statsFs) { openStatsFs(false); e.preventDefault(); return; }
+      if (!R || anyModalOpen() || statsFs) return;
       if (e.key === 'Escape') { if (escapeChain()) e.preventDefault(); return; }
       var tg = e.target && e.target.tagName;
       if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
@@ -2069,6 +2099,9 @@
   }
   // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
   function escapeChain() {
+    if (statsFs) { openStatsFs(false); return true; }
+    if (!$('bt-panels-pop').hidden) { togglePop('bt-panels', false); return true; }
+    if (!$('bt-widgets-pop').hidden) { togglePop('bt-widgets', false); return true; }
     if (!$('bt-layout-pop').hidden) { toggleLayoutPop(false); return true; }
     if (!$('bt-look-drawer').hidden) { toggleDrawer(false); return true; }
     if (DRAW && DRAW.escape()) return true;
@@ -2094,10 +2127,189 @@
     openModal('bt-keys-modal', opener);
   }
   function onLayoutChange(prefs, what) {
+    if ((what === 'mode' || what === 'fullscreen') && DOCK) { DOCK.apply(); placeStatsHost(); }
     if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
     if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
     if (what === 'mode' && R) applyChartLayout();
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } if (R) centerAll(); }, 80); }
+  }
+  // ---------------------------------------------------------------- panels (bt-dock.js), statistics placement, widgets
+  function onDockChange(lay, what) {
+    if (!$('bt-panels-pop').hidden) renderPanelsMenu();
+    placeStatsHost();
+    if (what === 'reset' && R) applyChartLayout();
+    if (R) later(function () {
+      if (!R) return;
+      views().forEach(function (v) { if (v.chart && v.el && !(v.chart.autoSizeActive && v.chart.autoSizeActive())) v.chart.applyOptions({ width: v.el.clientWidth, height: v.el.clientHeight }); });
+      positionSplits(); updateNowBtn();
+    }, 60);
+  }
+  function togglePop(name, on) {
+    var p = $(name + '-pop'), b = $(name + '-btn'); if (!p) return;
+    if (on === undefined) on = p.hidden;
+    if (on) { if (name === 'bt-panels') renderPanelsMenu(); else renderWidgetsMenu(); }
+    p.hidden = !on; b.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  function popCheck(box, attr, id, label, checked) {
+    var l = el('label', 'bt-pop-check'), i = el('input'); i.type = 'checkbox'; i.checked = checked; i.setAttribute(attr, id);
+    l.appendChild(i); l.appendChild(el('span', '', label)); box.appendChild(l);
+  }
+  function popBtn(box, act, icon, label) {
+    var b = el('button', 'bt-pop-btn'); b.type = 'button'; b.setAttribute('data-act', act);
+    var ic = el('i'); ic.setAttribute('data-lucide', icon); ic.setAttribute('aria-hidden', 'true'); b.appendChild(ic); b.appendChild(el('span', '', label));
+    box.appendChild(b);
+  }
+  var PANEL_LABELS = { balance: ['backtest.dock.panel_balance', 'Bakiye'], order: ['backtest.dock.panel_order', 'Emir paneli'], tabs: ['backtest.dock.panel_tabs', 'Alt sekmeler'],
+    stats: ['backtest.dock.panel_stats_own', 'İstatistikler (ayrı panel)'] };
+  function renderPanelsMenu() {
+    var box = $('bt-panels-pop'), lay = DOCK.layout(); box.textContent = '';
+    ['balance', 'order', 'tabs', 'stats'].forEach(function (id) {
+      var on = id === 'stats' ? lay.statsDetached && lay.hidden.indexOf('stats') < 0 : lay.hidden.indexOf(id) < 0;
+      popCheck(box, 'data-panel-toggle', id, _t(PANEL_LABELS[id][0], PANEL_LABELS[id][1]), on);
+    });
+    box.appendChild(el('div', 'bt-pop-sep'));
+    box.appendChild(el('p', 'bt-hint', wideScreen() ? _t('backtest.dock.drag_hint', 'Panelleri başlıklarından tutup sürükleyerek taşı; kenarlarından boyutlandır.')
+      : _t('backtest.dock.narrow_hint', 'Dar ekranda paneller alt alta dizilir; taşıma geniş ekranda.')));
+    popBtn(box, 'reset-layout', 'rotate-ccw', _t('backtest.dock.reset', 'Düzeni sıfırla'));
+    icons();
+  }
+  var WIDGET_LABELS = { kpis: ['backtest.st.w_kpis', 'Temel rakamlar'], balance: ['backtest.st.balance_curve_seq', 'Bakiye eğrisi (işlem sırasıyla)'], teaser: ['backtest.st.more', 'Gelişmiş analiz'],
+    drawdown: ['backtest.st.drawdown', 'Drawdown (zirveden düşüş, %)'], rdist: ['backtest.st.r_dist', 'R dağılımı'], equity: ['backtest.st.w_equity', 'Varlık eğrisi (bölüm)'],
+    sessions: ['backtest.st.sessions', 'Seanslara göre kazanma oranı (giriş saati)'], monthly: ['backtest.st.monthly', 'Aylık getiri (%)'] };
+  function renderWidgetsMenu() {
+    var box = $('bt-widgets-pop'), lay = window.WwBtStats.normalizeWidgets(DOCK.widgets()); box.textContent = '';
+    window.WwBtStats.widgetIds(can('backtestStats')).forEach(function (id) {
+      popCheck(box, 'data-widget-toggle', id, _t(WIDGET_LABELS[id][0], WIDGET_LABELS[id][1]), lay.hidden.indexOf(id) < 0);
+    });
+    box.appendChild(el('div', 'bt-pop-sep'));
+    popBtn(box, 'reset-widgets', 'rotate-ccw', _t('backtest.st.w_reset', 'Widget düzenini sıfırla'));
+    icons();
+  }
+  function setWidget(id, on) {
+    var lay = window.WwBtStats.normalizeWidgets(DOCK.widgets());
+    lay.hidden = lay.hidden.filter(function (x) { return x !== id; }); if (!on) lay.hidden.push(id);
+    DOCK.setWidgets(lay); renderStats();
+  }
+  // the statistics (bar, widgets, footer) live in the tab, in their own panel or in the full-screen window
+  function placeStatsHost() {
+    var host = $('bt-stats-host'); if (!host || !DOCK || !LAY) return;
+    var det = DOCK.statsDetached() && LAY.mode() === 'advanced';
+    var slot = statsFs ? $('bt-stats-fs-slot') : det ? $('bt-stats-slot') : $('bt-panel-stats');
+    if (host.parentNode !== slot) slot.insertBefore(host, slot.firstChild);
+    show($('bt-tab-stats'), !det);
+    if (det && $('bt-tab-stats').getAttribute('aria-selected') === 'true') selectTab('open');
+    var lab = $('bt-stats-detach-label');
+    lab.setAttribute('data-i18n', det ? 'backtest.st.attach' : 'backtest.st.detach');
+    lab.textContent = det ? _t('backtest.st.attach', 'Sekmeye geri al') : _t('backtest.st.detach', 'Ayrı panel');
+    show($('bt-stats-detach'), !statsFs && !det); show($('bt-stats-fs-btn'), !statsFs && !det);      // the own panel has both in its header; full screen has its close button
+    if (R) renderStats();
+  }
+  function openStatsFs(on) {
+    on = !!on; if (on === statsFs && (on || $('bt-stats-fs').hidden)) return;
+    statsFs = on;
+    $('bt-stats-fs').hidden = !on;
+    document.documentElement.classList.toggle('bt-stfs-lock', on);
+    if (on && R && R.playing) pause();
+    placeStatsHost();
+    if (on) { try { $('bt-stats-fs-close').focus(); } catch (e) { /* ignore */ } } else if ($('bt-stats-fs-btn')) { try { $('bt-stats-fs-btn').focus(); } catch (e) { /* ignore */ } }
+  }
+
+  // ---------------------------------------------------------------- multi-chart grid: swap charts by their grip, resize each track
+  function cellGrip() {
+    var b = el('button', 'bt-grip bt-cell-grip'); b.type = 'button'; b.title = _t('backtest.multi.move', 'Grafiğin yerini değiştir (başka bir grafiğin üstüne sürükle)');
+    b.setAttribute('aria-label', b.title);
+    var i = el('i'); i.setAttribute('data-lucide', 'grip-vertical'); i.setAttribute('aria-hidden', 'true'); b.appendChild(i);
+    return b;
+  }
+  function cellOf(v) { return v === R ? R.el.parentNode : v.cell; }
+  // the main chart's cell gets a head (grip + timeframe) when there is more than one chart
+  function mainHead(on) {
+    var cell = R.el.parentNode, h = cell.querySelector('.bt-cell-head');
+    if (!on) { if (h) h.remove(); return; }
+    if (!h) { h = el('div', 'bt-cell-head bt-cell-head-main'); h.appendChild(cellGrip()); h.appendChild(el('span', 'bt-cell-tag bt-num')); cell.appendChild(h); icons(); }
+    h.querySelector('.bt-cell-tag').textContent = (C.TF_LABEL[R.tfId] || R.tfId) + ' · ' + _t('backtest.multi.main', 'ana');
+  }
+  function layoutCells() {
+    if (!R || !R.chart) return;
+    var id = shownLayout(), box = $('bt-charts'), D = window.WwBtDock, vs = views();
+    Array.prototype.slice.call(box.querySelectorAll('.bt-msplit')).forEach(function (x) { x.remove(); });
+    if (id === '1') { box.style.gridTemplateColumns = ''; box.style.gridTemplateRows = ''; vs.forEach(function (v) { cellOf(v).style.gridArea = ''; }); mainHead(false); return; }
+    var m = DOCK.multi(id);
+    box.style.gridTemplateColumns = D.template(m.cols); box.style.gridTemplateRows = D.template(m.rows);
+    vs.forEach(function (v, i) { cellOf(v).style.gridArea = D.cellArea(id, m, i); });
+    mainHead(true);
+    D.GRID[id].splits.forEach(function (sp, k) {
+      var sEl = el('div', 'bt-msplit bt-msplit-' + sp.kind); sEl.setAttribute('data-msplit', String(k)); sEl.setAttribute('role', 'separator');
+      sEl.setAttribute('aria-orientation', sp.kind === 'col' ? 'vertical' : 'horizontal'); sEl.title = _t('backtest.dock.resize', 'Boyutlandır (sürükle veya ok tuşları)');
+      box.appendChild(sEl);
+    });
+    positionSplits();
+  }
+  function tracksPx(cs, prop) { return cs[prop].split(' ').map(parseFloat).filter(function (x) { return isFinite(x); }); }
+  function positionSplits() {
+    var box = $('bt-charts'); if (!box || !R || !LAY) return;
+    var id = shownLayout(); if (id === '1') return;
+    var cs = getComputedStyle(box), cols = tracksPx(cs, 'gridTemplateColumns'), rows = tracksPx(cs, 'gridTemplateRows');
+    var g = parseFloat(cs.columnGap) || 6, rg = parseFloat(cs.rowGap) || 6;
+    function off(tr, gap, i) { var x = 0; for (var k = 0; k < i; k++) x += tr[k] + gap; return x; }
+    window.WwBtDock.GRID[id].splits.forEach(function (sp, k) {
+      var sEl = box.querySelector('[data-msplit="' + k + '"]'); if (!sEl) return;
+      if (sp.kind === 'col') {
+        var x = off(cols, g, sp.i + 1) - g / 2, t0 = off(rows, rg, sp.from - 1);
+        sEl.style.left = (x - 5) + 'px'; sEl.style.width = '10px'; sEl.style.top = t0 + 'px'; sEl.style.height = Math.max(0, off(rows, rg, sp.to - 1) - rg - t0) + 'px';
+      } else {
+        var y = off(rows, rg, sp.i + 1) - rg / 2, l0 = off(cols, g, sp.from - 1);
+        sEl.style.top = (y - 5) + 'px'; sEl.style.height = '10px'; sEl.style.left = l0 + 'px'; sEl.style.width = Math.max(0, off(cols, g, sp.to - 1) - g - l0) + 'px';
+      }
+    });
+  }
+  var cellDrag = null;
+  function onChartsPointer(e) {
+    if (e.button > 0 || !R || shownLayout() === '1' || !wideScreen()) return;
+    var sp = e.target.closest('.bt-msplit'), grip = e.target.closest('.bt-cell-grip');
+    if (!sp && !grip) return;
+    e.preventDefault(); e.stopPropagation();
+    var id = shownLayout(), m = DOCK.multi(id), box = $('bt-charts'), cs = getComputedStyle(box);
+    if (sp) {
+      var spec = window.WwBtDock.GRID[id].splits[+sp.getAttribute('data-msplit')], col = spec.kind === 'col';
+      var px = tracksPx(cs, col ? 'gridTemplateColumns' : 'gridTemplateRows'), total = px.reduce(function (a, b) { return a + b; }, 0);
+      cellDrag = { kind: 'split', id: id, spec: spec, col: col, x: e.clientX, y: e.clientY, start: (col ? m.cols : m.rows).slice(), m: m, total: total, el: sp };
+      sp.classList.add('bt-split-active');
+    } else {
+      var cell = grip.closest('.bt-cell'), from = -1;
+      views().forEach(function (v, i) { if (cellOf(v) === cell) from = i; });
+      cellDrag = { kind: 'swap', id: id, from: from, m: m, cell: cell, over: null };
+      cell.classList.add('bt-cell-moving');
+    }
+    $('bt-root').classList.add('bt-resizing');
+    document.addEventListener('pointermove', onChartsMove); document.addEventListener('pointerup', onChartsUp); document.addEventListener('pointercancel', onChartsUp);
+  }
+  function onChartsMove(e) {
+    var d = cellDrag; if (!d) return;
+    var box = $('bt-charts');
+    if (d.kind === 'split') {
+      var tr = window.WwBtDock.resizeTracks(d.start, d.spec.i, d.col ? e.clientX - d.x : e.clientY - d.y, d.total);
+      if (d.col) { d.m.cols = tr; box.style.gridTemplateColumns = window.WwBtDock.template(tr); } else { d.m.rows = tr; box.style.gridTemplateRows = window.WwBtDock.template(tr); }
+      positionSplits();
+      return;
+    }
+    var t = document.elementFromPoint(e.clientX, e.clientY), c = t && t.closest('#bt-charts .bt-cell');
+    if (d.over && d.over !== c) d.over.classList.remove('bt-cell-drop');
+    d.over = c && c !== d.cell ? c : null;
+    if (d.over) d.over.classList.add('bt-cell-drop');
+  }
+  function onChartsUp() {
+    var d = cellDrag; cellDrag = null;
+    document.removeEventListener('pointermove', onChartsMove); document.removeEventListener('pointerup', onChartsUp); document.removeEventListener('pointercancel', onChartsUp);
+    $('bt-root').classList.remove('bt-resizing');
+    if (!d) return;
+    if (d.kind === 'split') { d.el.classList.remove('bt-split-active'); DOCK.setMulti(d.id, d.m); return; }
+    d.cell.classList.remove('bt-cell-moving');
+    if (d.over) {
+      d.over.classList.remove('bt-cell-drop');
+      var to = -1; views().forEach(function (v, i) { if (cellOf(v) === d.over) to = i; });
+      if (to >= 0 && d.from >= 0) { DOCK.setMulti(d.id, window.WwBtDock.swapViews(d.m, d.from, to)); layoutCells(); }
+    }
   }
   function setupVisibility() {
     PAGE.on(document, 'visibilitychange', function () { if (document.hidden && R) { pause(); saveReplayTime(true); } });
@@ -2136,6 +2348,8 @@
     if (themeObserver) themeObserver.disconnect();
     try { destroyCharts(); } catch (e) { /* ignore */ }
     if (LAY) { try { LAY.destroy(); } catch (e) { /* ignore */ } }
+    if (DOCK) { try { DOCK.destroy(); } catch (e) { /* ignore */ } }
+    document.documentElement.classList.remove('bt-stfs-lock');
     if (DRAW) { try { DRAW.destroy(); } catch (e) { /* ignore */ } }
     clearTimeout(statsTimer);
     if (STATS) { try { STATS.destroy(); } catch (e) { /* ignore */ } }
@@ -2144,7 +2358,7 @@
   PAGE.onLeave(cleanup);
   // browser smoke tests only (tests/smoke/make.py sets __BT_TEST__): read access to the chart and the drawings
   if (window.__BT_TEST__) PAGE.expose('__btTest', { chart: function () { return R && R.chart; }, series: function () { return R && R.series; },
-    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; },
+    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, dock: function () { return DOCK; },
     cross: function (p) { crossFrom(R, p); } });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

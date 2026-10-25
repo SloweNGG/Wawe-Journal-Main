@@ -37,6 +37,13 @@
       if (qp.get('fs') === '1') $('bt-fs-btn').click();
     }
     if (shot === 'multi') { $('bt-layout-btn').click(); $('bt-layout-pop').querySelector('[data-layout="1+3"]').click(); await sleep(800); }
+    // custom panel layout: balance left, statistics in their own panel under the chart, orders right
+    if (shot === 'dock' || shot === 'dock-stats-fs') {
+      var Dk = window.__btTest.dock();
+      Dk.move('balance', 'left', 0); Dk.setStatsDetached(true); Dk.move('stats', 'center', 1);
+      await sleep(900);
+      if (shot === 'dock-stats-fs') { $('bt-stats-fs-btn').click(); await sleep(900); }
+    }
     if (window.__shotHook) await window.__shotHook(shot);
     await sleep(600);
   } catch (e) { console.warn(e); }

@@ -70,7 +70,7 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 | Aşama | Durum |
 |---|---|
 | 1 Hatalar (BTCUSD ekseni, ortalama, kayan sayılar, Aktivite adı, stats-audit, 202610220001 rollback) | Tamam, yayın notu aşağıda |
-| 2 Paneller ve istatistik widget'ları | Bekliyor |
+| 2 Paneller ve istatistik widget'ları | Tamam (`bt-dock.js`, widget'lar `bt-stats.js`) |
 | 3 Bekleyen emirler | Bekliyor |
 
 Aşama 1 notları:
@@ -83,3 +83,15 @@ Aşama 1 notları:
 - Ortalama: `centerView`/`centerAll` (100 mum, imleç mumu sağda, otomatik ölçek), düğme ve R, "Şimdiki muma dön" (`#bt-now-btn`).
 - 202610220001 rollback'i `supabase/rollbacks/` altına geri kondu (`b7860ac` ile birebir), yerel prova `supabase/tests/rehearse_202610220001.mjs` (PGlite, 17/17).
 - Aynı çalışma kopyasında başka bir oturum navbar/quick-add üzerinde çalışıyor: commit'lere yalnız backtest yolları eklenir.
+
+Aşama 2 notları:
+- `bt-dock.js`: paneller (grafik, bakiye, emir, alt sekmeler, ayrı istatistik) beş bölgede (üst, sol, orta, sağ, alt). Başlıktan sürükle
+  (önizleme `.bt-dock-preview`), Alt + ok tuşu, bölge kenarı ve iki esnek panel arası ayırıcı, eksi ile gizle, "Paneller" menüsü,
+  "Düzeni sıfırla". Yalnız Gelişmiş modda ve geniş ekranda; Basit mod sabit, ≤1024 px alt alta, sürükleme yok. Tam ekran eski yüzen düzen.
+- Düzen kullanıcı başına tarayıcıda: `ww_bt_dock_v1:<user id>` (zones, hidden, size, weight, statsDetached, multi, widgets).
+  Veritabanı yok (bu makineden canlı DB'ye erişim yok); ilk açılışta eski `ww_bt_layout_v1` sideW/bottomH alınır.
+- İstatistikler: `#bt-stats-host` sekmede, kendi panelinde (`data-panel="stats"`) ya da tam ekranda (`#bt-stats-fs`).
+  Widget'lar: kpis, balance, teaser (ücretsiz), drawdown, rdist, equity, sessions, monthly (Premium). SortableJS (Premium dashboard
+  ile aynı kütüphane ve seçenekler, `forceFallback`), köşeden boyut, gizle, WwChartViewer ile büyüt.
+- Çoklu grafik: hücre başlığındaki tutamaçla yer değiştirme, `.bt-msplit` ile sütun/satır boyutu, düzen başına saklanır.
+- Smoke: `dock-pro`, `dock-free`, `dock-phone`; ekran görüntüsü `shot-dock`, `shot-dock-stats-fs`.

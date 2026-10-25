@@ -1,7 +1,8 @@
 // Backtest v2: statistics tab (window.WwBtStats). The numbers come from WwMetrics (net P&L, win rate, profit factor, expectancy,
 // equity curve) on the account's closed trades; the backtest-only parts (equity with open positions, drawdown, monthly returns,
 // R multiples, sessions) are computed here. Pure functions are unit tested; render() needs the DOM and LightweightCharts.
-// Free plan: the key figures and the balance curve. Premium: everything.
+// Free plan: the key figures and the balance curve. Premium: everything. Each card is a widget (move, resize, hide, enlarge); the
+// arrangement is stored by the page (bt-dock.js layout).
 // Order: trades count in the order they were OPENED (seq), not by market time: the replay can go back in time (account sections),
 // so the balance, the drawdown and the streaks follow the trade sequence; the balance curve's axis is the trade number.
 (function (global) {
@@ -102,18 +103,59 @@
     return ids.map(function (id) { var a = acc[id]; a.winRate = a.trades ? a.wins / a.trades * 100 : null; return a; });
   }
 
+  // ---------------------------------------------------------------- widgets (pure layout model)
+  // Every card of the tab is a widget: id, default width in quarters of the row (w 1..4) and height in px (0 = its content).
+  // free: shown on the free plan; pro: Premium only; chart: has a "enlarge" button (WwChartViewer).
+  var WIDGETS = [
+    { id: 'kpis', w: 4, h: 0, free: true },
+    { id: 'balance', w: 4, h: 240, free: true, chart: true },
+    { id: 'teaser', w: 4, h: 0, free: true, freeOnly: true },
+    { id: 'drawdown', w: 2, h: 240, pro: true, chart: true },
+    { id: 'rdist', w: 2, h: 240, pro: true, chart: true },
+    { id: 'equity', w: 4, h: 240, pro: true, chart: true },
+    { id: 'sessions', w: 2, h: 220, pro: true, chart: true },
+    { id: 'monthly', w: 4, h: 0, pro: true, chart: true }
+  ];
+  var W_BY = {}; WIDGETS.forEach(function (w) { W_BY[w.id] = w; });
+  var H_MIN = 140, H_MAX = 760;
+  function widgetIds(pro) { return WIDGETS.filter(function (w) { return pro ? !w.freeOnly : w.free; }).map(function (w) { return w.id; }); }
+  // { order: [ids], hidden: [ids], size: { id: { w, h } } } with every known widget once (new ones at their default place)
+  function normalizeWidgets(l) {
+    l = l && typeof l === 'object' ? l : {};
+    var order = (Array.isArray(l.order) ? l.order : []).filter(function (id, i, a) { return W_BY[id] && a.indexOf(id) === i; });
+    WIDGETS.forEach(function (w, i) {
+      if (order.indexOf(w.id) >= 0) return;
+      var prev = null; for (var k = i - 1; k >= 0; k--) if (order.indexOf(WIDGETS[k].id) >= 0) { prev = WIDGETS[k].id; break; }
+      order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, w.id);
+    });
+    var hidden = (Array.isArray(l.hidden) ? l.hidden : []).filter(function (id, i, a) { return W_BY[id] && a.indexOf(id) === i; });
+    var size = {};
+    WIDGETS.forEach(function (w) {
+      var s = l.size && l.size[w.id], ww = s ? Math.round(Number(s.w)) : w.w, hh = s ? Math.round(Number(s.h)) : w.h;
+      size[w.id] = { w: ww >= 1 && ww <= 4 ? ww : w.w, h: hh === 0 ? 0 : (isFinite(hh) ? Math.max(H_MIN, Math.min(H_MAX, hh)) : w.h) };
+    });
+    return { order: order, hidden: hidden, size: size };
+  }
+  // columns of the widget grid for a width (px): 4 on a wide panel, 2, 1 on a phone
+  function columnsFor(width) { return width >= 900 ? 4 : width >= 520 ? 2 : 1; }
+  function spanFor(w, cols) { return Math.max(1, Math.min(cols, Math.round(w * cols / 4))); }
+
   // ---------------------------------------------------------------- render (browser)
-  // opts: { box, t, pro, fmtUsd(cents, signed), fmtPct(n), monthNames[], upgrade(), data: { trades, open, candles, startCents,
-  //         floatCents, monthOf, sessionsAt, section, sectionTrades, sectionStartCents }, colors (WwChart.colors()), lwc (WwChart.lwc) }
+  // opts: { box, t, pro, fmtUsd(cents, signed), monthNames[], upgrade(), data: { trades, open, candles, startCents, floatCents, monthOf,
+  //         sessionsAt, section, sectionTrades, sectionStartCents }, colors (WwChart.colors()), lwc (WwChart.lwc),
+  //         layout (widget layout, normalizeWidgets), onLayout(layout), drag (true: widgets can be moved and resized) }
   //   trades: every closed trade (key figures, balance by trade number, R, sessions, months); sectionTrades/open/candles: the
   //   current section for the equity curve in market time, starting at sectionStartCents.
   function createView() {
-    var charts = [];
-    function destroy() { charts.forEach(function (c) { try { c.remove(); } catch (e) { /* removed with the page */ } }); charts = []; }
+    var charts = [], sortable = null, ro = null, last = null;
+    function destroy() {
+      charts.forEach(function (c) { try { c.remove(); } catch (e) { /* removed with the page */ } }); charts = [];
+      if (sortable) { try { sortable.destroy(); } catch (e) { /* ignore */ } sortable = null; }
+      if (ro) { ro.disconnect(); ro = null; }
+    }
     function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-    function card(box, title, wide) { var c = el('section', 'bt-st-card' + (wide ? ' bt-st-wide' : '')); c.appendChild(el('h4', 'bt-st-h', title)); box.appendChild(c); return c; }
-    // axis: 'time' (market time) or 'seq' (trade number: "#n", 0 = start)
-    function lineChart(host, series, opts, kind, axis) {
+    // axis: 'time' (market time) or 'seq' (trade number: "#n", 0 = start); `own` charts are the viewer's (not destroyed here)
+    function lineChart(host, series, opts, kind, axis, own) {
       var seqLabel = function (t) { return t === 0 ? opts.t('backtest.st.start', 'Başlangıç') : '#' + t; };
       var c = global.LightweightCharts.createChart(host, opts.lwc({
         autoSize: true, rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.08 } },
@@ -122,7 +164,7 @@
         localization: Object.assign({ locale: opts.locale, priceFormatter: kind === 'pct' ? function (v) { return v.toFixed(1) + '%'; } : function (v) { return opts.fmtUsd(Math.round(v * 100)); } },
           axis === 'seq' ? { timeFormatter: seqLabel } : {})
       }));
-      charts.push(c);
+      if (!own) charts.push(c);
       series.forEach(function (s) {
         var api = s.area ? c.addAreaSeries({ lineColor: s.color, topColor: s.top, bottomColor: s.bottom, lineWidth: 2, priceLineVisible: false, lastValueVisible: true, invertFilledArea: !!s.invert })
           : c.addLineSeries({ color: s.color, lineWidth: s.width || 2, lineStyle: s.dashed ? 2 : 0, priceLineVisible: false, lastValueVisible: true });
@@ -131,83 +173,81 @@
       c.timeScale().fitContent();
       return c;
     }
-    function render(opts) {
-      destroy();
-      var box = opts.box, t = opts.t, d = opts.data, C = opts.colors;
-      box.textContent = '';
-      box.onclick = function (e) { if (!opts.pro && e.target.closest('[data-pro]')) opts.upgrade(); };
-      var k = kpis(d.trades, d.startCents);
-      // key figures
-      var row = el('div', 'bt-st-kpis');
-      function kpi(label, value, cls, pro) {
-        var e = el('div', 'bt-st-kpi' + (pro && !opts.pro ? ' bt-st-locked' : ''));
-        var l = el('span', 'bt-st-label', label); if (pro && !opts.pro) { var tg = el('span', 'bt-pro', 'PRO'); l.appendChild(tg); }
-        e.appendChild(l); e.appendChild(el('span', 'bt-num bt-st-value ' + (cls || ''), pro && !opts.pro ? '—' : value));
-        if (pro && !opts.pro) e.setAttribute('data-pro', '1');
-        row.appendChild(e);
+    function empty(host, text) { host.appendChild(el('p', 'bt-hint bt-st-empty', text)); return null; }
+    // widget bodies: build(id, host, opts, own) -> a Lightweight chart, or null
+    function build(id, host, opts, own) {
+      var t = opts.t, d = opts.data, C = opts.colors, k = kpis(d.trades, d.startCents), bal = balanceSeries(d.trades, d.startCents);
+      function chartHost() { var h = el('div', 'bt-st-chart'); host.appendChild(h); return h; }
+      if (id === 'kpis') {
+        var row = el('div', 'bt-st-kpis');
+        var kpi = function (label, value, cls, pro) {
+          var e = el('div', 'bt-st-kpi' + (pro && !opts.pro ? ' bt-st-locked' : ''));
+          var l = el('span', 'bt-st-label', label); if (pro && !opts.pro) l.appendChild(el('span', 'bt-pro', 'PRO'));
+          e.appendChild(l); e.appendChild(el('span', 'bt-num bt-st-value ' + (cls || ''), pro && !opts.pro ? '—' : value));
+          if (pro && !opts.pro) e.setAttribute('data-pro', '1');
+          row.appendChild(e);
+        };
+        var pf = M().formatProfitFactor(k.profitFactor);
+        kpi(t('backtest.st.net', 'Net K/Z'), opts.fmtUsd(Math.round(k.net * 100), true), k.net > 0 ? 'bt-up' : k.net < 0 ? 'bt-down' : '');
+        kpi(t('backtest.st.win_rate', 'Kazanma oranı'), k.count ? k.winRate.toFixed(1) + '%' : '—');
+        kpi(t('backtest.st.profit_factor', 'Profit factor'), k.count ? pf : '—');
+        kpi(t('backtest.st.trades', 'İşlem sayısı'), String(k.count) + (k.count ? ' (' + k.wins + '/' + k.losses + ')' : ''));
+        kpi(t('backtest.st.expectancy', 'Beklenen değer'), k.count ? opts.fmtUsd(Math.round(k.expectancy * 100), true) + (k.expectancyR == null ? '' : ' · ' + (k.expectancyR >= 0 ? '+' : '') + k.expectancyR.toFixed(2) + 'R') : '—', k.expectancy > 0 ? 'bt-up' : k.expectancy < 0 ? 'bt-down' : '', true);
+        kpi(t('backtest.st.max_dd', 'Maks. düşüş'), k.count ? opts.fmtUsd(Math.round(k.maxDd * 100)) + ' (' + k.maxDdPct.toFixed(2) + '%)' : '—', '', true);
+        host.appendChild(row);
+        return null;
       }
-      var pf = M().formatProfitFactor(k.profitFactor);
-      kpi(t('backtest.st.net', 'Net K/Z'), opts.fmtUsd(Math.round(k.net * 100), true), k.net > 0 ? 'bt-up' : k.net < 0 ? 'bt-down' : '');
-      kpi(t('backtest.st.win_rate', 'Kazanma oranı'), k.count ? k.winRate.toFixed(1) + '%' : '—');
-      kpi(t('backtest.st.profit_factor', 'Profit factor'), k.count ? pf : '—');
-      kpi(t('backtest.st.trades', 'İşlem sayısı'), String(k.count) + (k.count ? ' (' + k.wins + '/' + k.losses + ')' : ''));
-      kpi(t('backtest.st.expectancy', 'Beklenen değer'), k.count ? opts.fmtUsd(Math.round(k.expectancy * 100), true) + (k.expectancyR == null ? '' : ' · ' + (k.expectancyR >= 0 ? '+' : '') + k.expectancyR.toFixed(2) + 'R') : '—', k.expectancy > 0 ? 'bt-up' : k.expectancy < 0 ? 'bt-down' : '', true);
-      kpi(t('backtest.st.max_dd', 'Maks. düşüş'), k.count ? opts.fmtUsd(Math.round(k.maxDd * 100)) + ' (' + k.maxDdPct.toFixed(2) + '%)' : '—', '', true);
-      box.appendChild(row);
-      var grid = el('div', 'bt-st-grid'); box.appendChild(grid);
-      var bal = balanceSeries(d.trades, d.startCents);
-      var c1 = card(grid, t('backtest.st.balance_curve_seq', 'Bakiye eğrisi (işlem sırasıyla)'), true), h1 = el('div', 'bt-st-chart'); c1.appendChild(h1);
-      if (bal.length >= 2) lineChart(h1, [{ data: bal, color: C.up, area: true, top: hexA(C.up, 0.25), bottom: hexA(C.up, 0) }], opts, 'usd', 'seq');
-      else h1.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
-      if (!opts.pro) {
-        // the Premium sections as one teaser card
-        var lock = el('section', 'bt-st-card bt-st-wide bt-st-teaser'); lock.setAttribute('data-pro', '1');
-        var hh = el('h4', 'bt-st-h', t('backtest.st.more', 'Gelişmiş analiz')); hh.appendChild(el('span', 'bt-pro', 'PRO')); lock.appendChild(hh);
-        lock.appendChild(el('p', 'bt-hint', t('backtest.st.more_desc', 'Varlık eğrisi (açık pozisyonlarla), drawdown grafiği, aylık getiri ısı haritası, R dağılımı, seanslara göre kazanma oranı ve beklenen değer Premium\'da.')));
-        var up = el('button', 'btn btn-primary', t('backtest.st.upgrade', 'Premium\'a geç')); up.type = 'button'; lock.appendChild(up);
-        grid.appendChild(lock);
-        return;
+      if (id === 'balance') {
+        var h1 = chartHost();
+        return bal.length >= 2 ? lineChart(h1, [{ data: bal, color: C.up, area: true, top: hexA(C.up, 0.25), bottom: hexA(C.up, 0) }], opts, 'usd', 'seq', own)
+          : empty(h1, t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.'));
       }
-      // Premium: drawdown on the trade sequence, equity of the current section in market time
-      var dd = drawdownSeries(bal);
-      var c3 = card(grid, t('backtest.st.drawdown', 'Drawdown (zirveden düşüş, %)'), false), h3 = el('div', 'bt-st-chart'); c3.appendChild(h3);
-      if (dd.length >= 2) lineChart(h3, [{ data: dd, color: C.down, area: true, top: hexA(C.down, 0), bottom: hexA(C.down, 0.3), invert: true }], opts, 'pct', 'seq');
-      else h3.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
-      // R distribution
-      var rd = rDistribution(d.trades), c4 = card(grid, t('backtest.st.r_dist', 'R dağılımı'), false);
-      var maxC = Math.max.apply(null, rd.bins.map(function (b) { return b.count; }).concat([1]));
-      var bars = el('div', 'bt-st-bars');
-      rd.bins.forEach(function (b) {
-        var lab = b.from === -Infinity ? '< ' + b.to + 'R' : b.to === Infinity ? '≥ ' + b.from + 'R' : b.from + '…' + b.to + 'R';
-        var col = el('div', 'bt-st-bar'), fill = el('span', 'bt-st-fill ' + (b.to <= 0 ? 'bt-st-neg' : 'bt-st-pos'));
-        fill.style.height = Math.round(b.count / maxC * 100) + '%'; fill.title = lab + ': ' + b.count;
-        col.appendChild(el('span', 'bt-num bt-st-count', String(b.count))); col.appendChild(fill); col.appendChild(el('span', 'bt-st-blabel', lab));
-        bars.appendChild(col);
-      });
-      c4.appendChild(bars);
-      c4.appendChild(el('p', 'bt-hint', (rd.avg == null ? '' : t('backtest.st.avg_r', 'Ortalama {r}R', { r: (rd.avg >= 0 ? '+' : '') + rd.avg.toFixed(2) }) + ' · ') +
-        t('backtest.st.no_sl', 'Zarar durdursuz {n} işlem R hesabına girmez.', { n: rd.skipped })));
-      // equity (balance + open positions) of the current section, at every candle close of the section
-      var eq = equitySeries(d.sectionTrades || d.trades, d.open, d.candles, d.sectionStartCents == null ? d.startCents : d.sectionStartCents, d.floatCents);
-      var c2 = card(grid, t('backtest.st.equity_section', 'Varlık eğrisi · bölüm {n} (açık pozisyonlar dahil)', { n: d.section || 1 }), true), h2 = el('div', 'bt-st-chart'); c2.appendChild(h2);
-      if (eq.length >= 2) lineChart(h2, [{ data: eq, color: '#38bdf8', width: 1.5 }], opts);
-      else h2.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades_section', 'Bu bölümde henüz işlem yok.')));
-      // sessions
-      var ss = sessionStats(d.trades, d.sessionsAt), c5 = card(grid, t('backtest.st.sessions', 'Seanslara göre kazanma oranı (giriş saati)'), false);
-      var tb = el('div', 'bt-st-sess');
-      ss.forEach(function (x) {
-        var r = el('div', 'bt-st-srow');
-        r.appendChild(el('span', 'bt-st-sname', t('backtest.st.session_' + x.id, x.id)));
-        var track = el('span', 'bt-st-track'), f = el('span', 'bt-st-sfill'); f.style.width = (x.winRate == null ? 0 : x.winRate) + '%'; track.appendChild(f); r.appendChild(track);
-        r.appendChild(el('span', 'bt-num bt-st-sval', x.winRate == null ? '—' : x.winRate.toFixed(0) + '%'));
-        r.appendChild(el('span', 'bt-num bt-st-smeta ' + (x.pnl > 0 ? 'bt-up' : x.pnl < 0 ? 'bt-down' : ''), x.trades + ' · ' + opts.fmtUsd(x.pnl, true)));
-        tb.appendChild(r);
-      });
-      c5.appendChild(tb);
-      // monthly heatmap
-      var mo = monthly(d.trades, d.startCents, d.monthOf), c6 = card(grid, t('backtest.st.monthly', 'Aylık getiri (%)'), true);
-      if (!mo.years.length) c6.appendChild(el('p', 'bt-hint bt-st-empty', t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.')));
-      else {
+      if (id === 'teaser') {
+        host.setAttribute('data-pro', '1');
+        host.appendChild(el('p', 'bt-hint', t('backtest.st.more_desc', 'Varlık eğrisi (açık pozisyonlarla), drawdown grafiği, aylık getiri ısı haritası, R dağılımı, seanslara göre kazanma oranı ve beklenen değer Premium\'da.')));
+        var up = el('button', 'btn btn-primary', t('backtest.st.upgrade', 'Premium\'a geç')); up.type = 'button'; host.appendChild(up);
+        return null;
+      }
+      if (id === 'drawdown') {
+        var dd = drawdownSeries(bal), h3 = chartHost();
+        return dd.length >= 2 ? lineChart(h3, [{ data: dd, color: C.down, area: true, top: hexA(C.down, 0), bottom: hexA(C.down, 0.3), invert: true }], opts, 'pct', 'seq', own)
+          : empty(h3, t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.'));
+      }
+      if (id === 'rdist') {
+        var rd = rDistribution(d.trades), maxC = Math.max.apply(null, rd.bins.map(function (b) { return b.count; }).concat([1])), bars = el('div', 'bt-st-bars');
+        rd.bins.forEach(function (b) {
+          var lab = b.from === -Infinity ? '< ' + b.to + 'R' : b.to === Infinity ? '≥ ' + b.from + 'R' : b.from + '…' + b.to + 'R';
+          var col = el('div', 'bt-st-bar'), fill = el('span', 'bt-st-fill ' + (b.to <= 0 ? 'bt-st-neg' : 'bt-st-pos'));
+          fill.style.height = Math.round(b.count / maxC * 100) + '%'; fill.title = lab + ': ' + b.count;
+          col.appendChild(el('span', 'bt-num bt-st-count', String(b.count))); col.appendChild(fill); col.appendChild(el('span', 'bt-st-blabel', lab));
+          bars.appendChild(col);
+        });
+        host.appendChild(bars);
+        host.appendChild(el('p', 'bt-hint', (rd.avg == null ? '' : t('backtest.st.avg_r', 'Ortalama {r}R', { r: (rd.avg >= 0 ? '+' : '') + rd.avg.toFixed(2) }) + ' · ') +
+          t('backtest.st.no_sl', 'Zarar durdursuz {n} işlem R hesabına girmez.', { n: rd.skipped })));
+        return null;
+      }
+      if (id === 'equity') {
+        var eq = equitySeries(d.sectionTrades || d.trades, d.open, d.candles, d.sectionStartCents == null ? d.startCents : d.sectionStartCents, d.floatCents), h2 = chartHost();
+        return eq.length >= 2 ? lineChart(h2, [{ data: eq, color: '#38bdf8', width: 1.5 }], opts, 'usd', 'time', own)
+          : empty(h2, t('backtest.st.need_trades_section', 'Bu bölümde henüz işlem yok.'));
+      }
+      if (id === 'sessions') {
+        var ss = sessionStats(d.trades, d.sessionsAt), tb = el('div', 'bt-st-sess');
+        ss.forEach(function (x) {
+          var r = el('div', 'bt-st-srow');
+          r.appendChild(el('span', 'bt-st-sname', t('backtest.st.session_' + x.id, x.id)));
+          var track = el('span', 'bt-st-track'), f = el('span', 'bt-st-sfill'); f.style.width = (x.winRate == null ? 0 : x.winRate) + '%'; track.appendChild(f); r.appendChild(track);
+          r.appendChild(el('span', 'bt-num bt-st-sval', x.winRate == null ? '—' : x.winRate.toFixed(0) + '%'));
+          r.appendChild(el('span', 'bt-num bt-st-smeta ' + (x.pnl > 0 ? 'bt-up' : x.pnl < 0 ? 'bt-down' : ''), x.trades + ' · ' + opts.fmtUsd(x.pnl, true)));
+          tb.appendChild(r);
+        });
+        host.appendChild(tb);
+        return null;
+      }
+      if (id === 'monthly') {
+        var mo = monthly(d.trades, d.startCents, d.monthOf);
+        if (!mo.years.length) return empty(host, t('backtest.st.need_trades', 'Grafik için kapanmış işlem gerekiyor.'));
         var wrap = el('div', 'bt-st-heat-wrap'), tbl = el('table', 'bt-st-heat'), thead = el('tr');
         thead.appendChild(el('th', '', ''));
         opts.monthNames.forEach(function (n) { thead.appendChild(el('th', '', n)); });
@@ -222,11 +262,123 @@
             if (c) { td.textContent = (c.ret >= 0 ? '+' : '') + c.ret.toFixed(1); td.style.background = hexA(c.ret >= 0 ? C.up : C.down, 0.12 + 0.55 * Math.min(1, Math.abs(c.ret) / maxAbs)); td.title = c.trades + ' · ' + opts.fmtUsd(c.pnl, true); }
             tr.appendChild(td);
           }
-          var tot = mo.totals[y], tt = el('td', 'bt-num bt-st-total ' + (tot.ret > 0 ? 'bt-up' : tot.ret < 0 ? 'bt-down' : ''), (tot.ret >= 0 ? '+' : '') + tot.ret.toFixed(1));
-          tr.appendChild(tt); tbl.appendChild(tr);
+          var tot = mo.totals[y];
+          tr.appendChild(el('td', 'bt-num bt-st-total ' + (tot.ret > 0 ? 'bt-up' : tot.ret < 0 ? 'bt-down' : ''), (tot.ret >= 0 ? '+' : '') + tot.ret.toFixed(1)));
+          tbl.appendChild(tr);
         });
-        wrap.appendChild(tbl); c6.appendChild(wrap);
+        wrap.appendChild(tbl); host.appendChild(wrap);
+        return null;
       }
+      return null;
+    }
+    function title(id, opts) {
+      var t = opts.t;
+      switch (id) {
+        case 'kpis': return t('backtest.st.w_kpis', 'Temel rakamlar');
+        case 'balance': return t('backtest.st.balance_curve_seq', 'Bakiye eğrisi (işlem sırasıyla)');
+        case 'teaser': return t('backtest.st.more', 'Gelişmiş analiz');
+        case 'drawdown': return t('backtest.st.drawdown', 'Drawdown (zirveden düşüş, %)');
+        case 'rdist': return t('backtest.st.r_dist', 'R dağılımı');
+        case 'equity': return t('backtest.st.equity_section', 'Varlık eğrisi · bölüm {n} (açık pozisyonlar dahil)', { n: opts.data.section || 1 });
+        case 'sessions': return t('backtest.st.sessions', 'Seanslara göre kazanma oranı (giriş saati)');
+        case 'monthly': return t('backtest.st.monthly', 'Aylık getiri (%)');
+      }
+      return id;
+    }
+    function iconBtn(cls, icon, label, attrs) {
+      var b = el('button', 'bt-pbox-btn ' + cls); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label);
+      var i = el('i'); i.setAttribute('data-lucide', icon); i.setAttribute('aria-hidden', 'true'); b.appendChild(i);
+      Object.keys(attrs || {}).forEach(function (k) { b.setAttribute(k, attrs[k]); });
+      return b;
+    }
+    // the enlarged chart (WwChartViewer): every visible chart widget, previous / next
+    function expand(id, opts, list) {
+      var V = global.WwChartViewer; if (!V) return;
+      var items = list.map(function (x) { return { key: x, title: title(x, opts) }; });
+      V.open({ items: items, index: Math.max(0, list.indexOf(id)), render: function (host, item) {
+        host.classList.add('bt-st-viewer');
+        var c = build(item.key, host, opts, true);
+        if (c) return c;
+        return { resize: function () {}, destroy: function () { host.textContent = ''; } };
+      } });
+    }
+    function render(opts) {
+      destroy();
+      last = opts;
+      var box = opts.box, lay = normalizeWidgets(opts.layout), ids = widgetIds(opts.pro);
+      box.textContent = '';
+      box.onclick = function (e) {
+        if (!opts.pro && e.target.closest('[data-pro]') && !e.target.closest('.bt-st-whead')) return opts.upgrade();
+        var b = e.target.closest('[data-w-act]'); if (!b) return;
+        var w = b.closest('[data-w]').getAttribute('data-w'), act = b.getAttribute('data-w-act');
+        if (act === 'hide') { lay.hidden.push(w); opts.layout = lay; if (opts.onLayout) opts.onLayout(lay); render(opts); }
+        else if (act === 'expand') expand(w, opts, lay.order.filter(function (x) { return ids.indexOf(x) >= 0 && lay.hidden.indexOf(x) < 0 && W_BY[x].chart; }));
+      };
+      var grid = el('div', 'bt-st-widgets'); box.appendChild(grid);
+      var cols = columnsFor(box.clientWidth || 1000);
+      grid.style.setProperty('--bt-st-cols', cols);
+      lay.order.forEach(function (id) {
+        if (ids.indexOf(id) < 0 || lay.hidden.indexOf(id) >= 0) return;
+        var def = W_BY[id], sz = lay.size[id];
+        var w = el('section', 'bt-st-w' + (id === 'teaser' ? ' bt-st-teaser' : '') + (def.pro ? ' bt-st-pro' : ''));
+        w.setAttribute('data-w', id); w.setAttribute('data-wspan', sz.w);
+        w.style.gridColumn = 'span ' + spanFor(sz.w, cols);
+        if (sz.h) { w.style.height = sz.h + 'px'; w.classList.add('bt-st-fixed'); }
+        var head = el('div', 'bt-st-whead');
+        if (opts.drag) head.appendChild(iconBtn('bt-st-grip', 'grip-vertical', opts.t('backtest.st.w_move', 'Widget\'ı taşı (sürükle)')));
+        var h4 = el('h4', 'bt-st-h', title(id, opts)); if (id === 'teaser') h4.appendChild(el('span', 'bt-pro', 'PRO'));
+        head.appendChild(h4);
+        if (def.chart) head.appendChild(iconBtn('', 'maximize-2', opts.t('backtest.st.w_expand', 'Büyüt'), { 'data-w-act': 'expand' }));
+        head.appendChild(iconBtn('', 'eye-off', opts.t('backtest.st.w_hide', 'Gizle'), { 'data-w-act': 'hide' }));
+        w.appendChild(head);
+        var body = el('div', 'bt-st-wbody'); w.appendChild(body);
+        build(id, body, opts, false);
+        if (opts.drag) { var rz = el('span', 'bt-st-rsz'); rz.title = opts.t('backtest.st.w_resize', 'Boyutlandır (sürükle)'); rz.setAttribute('aria-hidden', 'true'); w.appendChild(rz); }
+        grid.appendChild(w);
+      });
+      if (!grid.children.length) grid.appendChild(el('p', 'bt-hint', opts.t('backtest.st.w_none', 'Tüm widget\'lar gizli. «Widget\'lar» menüsünden geri açabilirsin.')));
+      if (global.lucide) try { global.lucide.createIcons(); } catch (e) { /* optional */ }
+      // reorder like the Premium dashboard (SortableJS, handle, ghost, animation); pointer fallback so touch and mouse behave the same
+      if (opts.drag && global.Sortable) {
+        sortable = new global.Sortable(grid, { animation: 300, handle: '.bt-st-grip', ghostClass: 'sortable-ghost', draggable: '.bt-st-w', forceFallback: true, fallbackOnBody: true,
+          onEnd: function () {
+            var shown = Array.prototype.map.call(grid.querySelectorAll('.bt-st-w'), function (x) { return x.getAttribute('data-w'); });
+            var rest = lay.order.filter(function (x) { return shown.indexOf(x) < 0; });
+            lay.order = shown.concat(rest); opts.layout = lay;
+            if (opts.onLayout) opts.onLayout(lay);
+          } });
+      }
+      // capture phase: the corner must not reach SortableJS (it would take the press as the start of a move)
+      if (opts.drag) grid.addEventListener('pointerdown', function (e) { var r = e.target.closest('.bt-st-rsz'); if (r) startResize(e, r.parentNode, lay, opts, grid); }, true);
+      // fewer columns on a narrow panel: re-render when the column count changes
+      if (global.ResizeObserver) {
+        var raf = 0;
+        ro = new global.ResizeObserver(function () {
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(function () { var c = columnsFor(box.clientWidth || 1000); if (c !== cols && box.isConnected && last) render(last); });
+        });
+        ro.observe(box);
+      }
+    }
+    // corner handle: width in columns (snaps), height in 10 px steps; the charts follow by themselves (autoSize)
+    function startResize(e, w, lay, opts, grid) {
+      e.preventDefault(); e.stopPropagation();
+      var id = w.getAttribute('data-w'), r = w.getBoundingClientRect(), cols = columnsFor(opts.box.clientWidth || 1000), gap = 12;
+      var colW = (grid.clientWidth - gap * (cols - 1)) / cols, x0 = e.clientX, y0 = e.clientY, h0 = r.height, s0 = spanFor(lay.size[id].w, cols);
+      w.classList.add('bt-st-resizing');
+      function move(ev) {
+        var span = Math.max(1, Math.min(cols, Math.round((r.width + ev.clientX - x0 + gap) / (colW + gap))));
+        var h = Math.max(H_MIN, Math.min(H_MAX, Math.round((h0 + ev.clientY - y0) / 10) * 10));
+        w.style.gridColumn = 'span ' + span; w.style.height = h + 'px'; w.classList.add('bt-st-fixed');
+        lay.size[id] = { w: Math.max(1, Math.min(4, Math.round(span * 4 / cols))), h: h };
+        void s0;
+      }
+      function up() {
+        document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+        w.classList.remove('bt-st-resizing'); opts.layout = lay;
+        if (opts.onLayout) opts.onLayout(lay);
+      }
+      document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
     }
     return { render: render, destroy: destroy };
   }
@@ -245,6 +397,7 @@
 
   global.WwBtStats = {
     R_BINS: R_BINS, bySeq: bySeq, metricRows: metricRows, kpis: kpis, balanceSeries: balanceSeries, equitySeries: equitySeries, drawdownSeries: drawdownSeries,
-    maxDrawdown: maxDrawdown, monthly: monthly, rDistribution: rDistribution, sessionStats: sessionStats, stepTo: stepTo, createView: createView
+    maxDrawdown: maxDrawdown, monthly: monthly, rDistribution: rDistribution, sessionStats: sessionStats, stepTo: stepTo, createView: createView,
+    WIDGETS: WIDGETS, widgetIds: widgetIds, normalizeWidgets: normalizeWidgets, columnsFor: columnsFor, spanFor: spanFor
   };
 })(typeof window !== 'undefined' ? window : globalThis);

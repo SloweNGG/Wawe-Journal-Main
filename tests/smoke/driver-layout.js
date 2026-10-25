@@ -36,27 +36,28 @@
     ok('Shift+M toggles back to simple', $('bt-root').getAttribute('data-mode') === 'simple');
     key('M', { shiftKey: true }); await sleep(100);
     if (!phone) {
-      // splitters
-      var sv = document.querySelector('[data-bt-split="side"]'), side = document.querySelector('.bt-side');
-      ok('side splitter visible on desktop', vis(sv));
+      // zone edges (bt-dock.js): right zone width by pointer, bottom zone height by keyboard
+      var sv = document.querySelector('[data-zsplit="right"]'), side = document.querySelector('[data-zone="right"]');
+      ok('right zone splitter visible on desktop', vis(sv));
       var w0 = side.getBoundingClientRect().width, r = sv.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + 40;
       sv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, pointerId: 7, button: 0 }));
-      sv.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x - 80, clientY: y, pointerId: 7 }));
-      sv.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x - 80, clientY: y, pointerId: 7 }));
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x - 80, clientY: y, pointerId: 7 }));
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x - 80, clientY: y, pointerId: 7 }));
       await sleep(150);
       var w1 = side.getBoundingClientRect().width;
-      ok('dragging the side splitter widens the panel by 80 px', Math.abs((w1 - w0) - 80) <= 2, w0 + ' -> ' + w1);
-      ok('panel width stored', JSON.parse(localStorage.getItem('ww_bt_layout_v1')).sideW === Math.round(w1), localStorage.getItem('ww_bt_layout_v1'));
-      var sh = document.querySelector('[data-bt-split="bottom"]'), tables = document.querySelector('.bt-tables');
+      ok('dragging the right zone edge widens the panel by 80 px', Math.abs((w1 - w0) - 80) <= 2, w0 + ' -> ' + w1);
+      var dk = Object.keys(localStorage).filter(function (k) { return k.indexOf('ww_bt_dock_v1:') === 0; })[0];
+      ok('panel width stored (per user)', !!dk && JSON.parse(localStorage.getItem(dk)).size.right === Math.round(w1), dk + ' ' + localStorage.getItem(dk));
+      var sh = document.querySelector('[data-zsplit="bottom"]'), tables = document.querySelector('.bt-tables');
       var h0 = tables.getBoundingClientRect().height; sh.focus();
       sh.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
       await sleep(100);
-      ok('bottom splitter with the keyboard: +16 px', Math.abs(tables.getBoundingClientRect().height - h0 - 16) <= 2, h0 + ' -> ' + tables.getBoundingClientRect().height);
+      ok('bottom zone edge with the keyboard: +16 px', Math.abs(tables.getBoundingClientRect().height - h0 - 16) <= 2, h0 + ' -> ' + tables.getBoundingClientRect().height);
       sh.blur();
       await sleep(200);
       ok('chart canvas follows the resize', Math.abs(document.querySelector('#bt-chart table').getBoundingClientRect().width - $('bt-chart').getBoundingClientRect().width) <= 2);
     } else {
-      ok('phone: splitters hidden', !vis(document.querySelector('[data-bt-split="side"]')) && !vis(document.querySelector('[data-bt-split="bottom"]')));
+      ok('phone: splitters hidden', !vis(document.querySelector('[data-zsplit="right"]')) && !vis(document.querySelector('[data-zsplit="bottom"]')));
       ok('phone: replay without horizontal scroll', noHScroll(), document.documentElement.scrollWidth + ' > ' + window.innerWidth);
     }
     // full screen

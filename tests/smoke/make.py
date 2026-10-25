@@ -5,7 +5,8 @@ head = html[:html.index('<body')]
 # the page's own scripts in production order (the shared ones are loaded by BaseHead in production, listed here by hand)
 own = re.findall(r'<script src="(/interface/backtest/js/[^"?]+)[^"]*"', head)
 shared = ['https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js',
-          '/interface/shared/time-settings.js', '/interface/shared/trade-metrics.js', '/interface/shared/chart-theme.js', '/interface/shared/trades-source.js']
+          '/interface/shared/time-settings.js', '/interface/shared/trade-metrics.js', '/interface/shared/chart-theme.js', '/interface/shared/chart-viewer.js', '/interface/shared/trades-source.js',
+          'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js']
 css = [h for h in re.findall(r'<link rel="stylesheet" href="((?:/|https://fonts)[^"]+)"', head)]
 links = '\n'.join('<link rel="stylesheet" href="%s">' % h for h in css)
 shared.append('https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js')

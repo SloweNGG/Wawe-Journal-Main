@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v26'; // Backtest: Aktivite (tahmini), grafiği ortala
+const CACHE_VERSION = 'wawe-v27'; // Backtest: paneller ve istatistik widget'ları
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

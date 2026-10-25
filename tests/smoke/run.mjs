@@ -43,6 +43,9 @@ const SCENARIOS = {
   'crypto-en': ['driver=/__driver-crypto.js&role=user&plan=free&i18n=en', DESKTOP],
   sections: ['driver=/__driver-sections.js&role=user&plan=premium&i18n=tr', DESKTOP],
   stage1: ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  'dock-pro': ['driver=/__driver-dock.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  'dock-free': ['driver=/__driver-dock.js&role=user&plan=free&i18n=en', DESKTOP],
+  'dock-phone': ['driver=/__driver-dock.js&role=user&plan=premium&phone=1&i18n=tr', PHONE],
   'stage1-de': ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=de', DESKTOP],
   'sections-ct': ['backend=supabase&driver=/__driver-sections.js&role=user&plan=premium&ct=ready&i18n=en', DESKTOP],
   // needs real 1m files in dist/__ctdata (tests/smoke/README.md); not in the default run
@@ -62,6 +65,8 @@ const SCENARIOS = {
   'shot-stats': ['driver=/__driver-stats.js&role=user&plan=premium&i18n=tr&big=1', { width: 1440, height: 1500 }, true],
   'shot-stats-free': ['driver=/__driver-stats.js&role=user&plan=free&i18n=en&big=1', { width: 1440, height: 1100 }, true],
   'shot-multi': ['driver=/__driver-shot.js&shot=multi&plan=premium&i18n=tr', DESKTOP, true],
+  'shot-dock': ['driver=/__driver-shot.js&shot=dock&plan=premium&i18n=tr', DESKTOP, true],
+  'shot-dock-stats-fs': ['driver=/__driver-shot.js&shot=dock-stats-fs&plan=premium&i18n=tr', { width: 1440, height: 1100 }, true],
   'shot-limit': ['backend=supabase&driver=/__driver-limit.js&role=user&plan=free&ct=ready&tlimit=100&tused=37&race=1&i18n=tr', DESKTOP, true],
   'shot-drawer-free': ['driver=/__driver-shot.js&shot=drawer&plan=free&i18n=en', DESKTOP, true],
   'shot-simple': ['driver=/__driver-shot.js&shot=simple', DESKTOP, true],
