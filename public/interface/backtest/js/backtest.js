@@ -1799,6 +1799,28 @@
     syncing = true;
     try { v.chart.timeScale().setVisibleLogicalRange({ from: n - CENTER_BARS, to: n - 1 + RIGHT_OFFSET }); } finally { syncing = false; }
     if (v === R) updateNowBtn();
+    later(function () { checkScale(v); }, 150);
+  }
+  // self-check after centering: with auto scale on, the price axis must frame the visible candles. Price lines never take part in
+  // auto scale; only series data and primitives do. If the axis is far off the candles (the BTCUSD axis at minus billions), the
+  // case is logged with both ranges and the view is built again from its candles (no stray series or primitive survives that).
+  function checkScale(v, again) {
+    if (!v || !v.chart || !v.series || !v.bars || !v.bars.length || !v.el) return;
+    var h = v.el.clientHeight - (v.chart.timeScale().height() || 0); if (!(h > 40)) return;
+    var a = v.series.coordinateToPrice(4), b = v.series.coordinateToPrice(h - 4), r = v.chart.timeScale().getVisibleLogicalRange();
+    if (a == null || b == null || !r) return;
+    var lo = Math.min(a, b), hi = Math.max(a, b), n = v.bars.length, clo = Infinity, chi = -Infinity;
+    for (var i = Math.max(0, Math.ceil(r.from)); i <= Math.min(n - 1, Math.floor(r.to)); i++) { clo = Math.min(clo, v.bars[i].low); chi = Math.max(chi, v.bars[i].high); }
+    if (!isFinite(clo)) return;
+    var span = Math.max(chi - clo, chi * 1e-4);
+    if (isFinite(lo) && isFinite(hi) && lo <= clo + span * 0.05 && hi >= chi - span * 0.05 && hi - lo <= span * 4) return;
+    wwLogWarn(new Error('price scale off the candles: axis [' + lo + ', ' + hi + '] candles [' + clo + ', ' + chi + '] style ' + (v.look && v.look.style) + (again ? ' (after rebuild)' : '')));
+    if (again) return;
+    var range = v.chart.timeScale().getVisibleLogicalRange();
+    destroyChart(v); buildChart(v); renderChartData(v);
+    if (range) v.chart.timeScale().setVisibleLogicalRange(range);
+    rebuildMarkers(); syncPriceLines(); updateAskLine();
+    later(function () { checkScale(v, true); }, 150);
   }
   function centerAll() { views().forEach(function (v) { v.userAt = 0; }); views().forEach(centerView); updateNowBtn(); }
   // "Back to the current candle": shown while the cursor's candle is scrolled out of the main chart

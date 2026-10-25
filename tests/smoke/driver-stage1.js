@@ -100,6 +100,15 @@
     key('f'); await sleep(400);
     ok('full screen: centered', centered(view()), txt(view()));
     key('Escape'); await sleep(300);
+    // self-check: a stray primitive at minus billions (the reported BTCUSD axis) is dropped by centering, the scale comes back
+    var warns = []; window.wwLog = window.wwLog || {}; var lw0 = window.wwLog.warn; window.wwLog.warn = function () { warns.push([].slice.call(arguments).join(' ')); };
+    var stray = { autoscaleInfo: function () { return { priceRange: { minValue: -1.68e9, maxValue: -1.24e9 } }; }, paneViews: function () { return []; }, updateAllViews: function () {} };
+    var chart0 = R().chart; R().series.attachPrimitive(stray); R().chart.timeScale().scrollToPosition(0, false); await sleep(300);
+    ok('stray primitive skews the axis (test setup)', !centered(view()), txt(view()));
+    key('r'); await sleep(900);
+    ok('centering rebuilds the view: axis around the candles again', R().chart !== chart0 && centered(view()), txt(view()));
+    ok('the case is logged with the axis and candle ranges', warns.some(function (w) { return /price scale off the candles: axis \[-1\d{9}/.test(w) && /candles \[5\d{4}/.test(w); }), warns.join(' | '));
+    window.wwLog.warn = lw0;
     // activity bars: label in the drawer and on the chart
     $('bt-look-btn').click(); await sleep(200);
     var sw = document.querySelector('#bt-look-body [data-switch="showVolume"]');

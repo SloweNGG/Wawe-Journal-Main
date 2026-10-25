@@ -263,7 +263,7 @@
       // show / hide
       var s4 = section(t('backtest.look.show', 'Göster / gizle'), true);
       SWITCHES.forEach(function (k) { s4.appendChild(toggle(k, t('backtest.look.' + k, k), !!cur[k], false)); });
-      s4.appendChild(el('p', 'bt-hint', t('backtest.look.volume_note', 'Hacim: veri kaynakları işlem hacmi vermez; çubuklar 1 dakikalık mum aralıklarının toplamıdır (aktivite tahmini).')));
+      s4.appendChild(el('p', 'bt-hint', t('backtest.look.volume_note', 'Aktivite (tahmini): veri kaynakları işlem hacmi vermez; çubuklar 1 dakikalık mum aralıklarının toplamıdır, gerçek hacim değildir.')));
       // my themes
       var s5 = section(t('backtest.look.mine', 'Temalarım'), true), row = el('div', 'bt-look-save');
       var name = el('input', 'bt-input'); name.type = 'text'; name.maxLength = 40; name.id = 'bt-look-name';
