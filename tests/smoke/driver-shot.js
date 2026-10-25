@@ -44,6 +44,14 @@
       await sleep(900);
       if (shot === 'dock-stats-fs') { $('bt-stats-fs-btn').click(); await sleep(900); }
     }
+    if (shot === 'orders') {
+      var Eo = window.WwBtEngine, Ro = window.__btTest.R(), qo = Eo.quote(Ro.eng), fx = function (p) { return Eo.ptsToStr(p, Ro.sym.digits); };
+      document.querySelector('#bt-ordtype [data-ordtype="limit"]').click();
+      setv('bt-ord-price', fx(qo.ask - 40)); setv('bt-sl', fx(qo.ask - 90)); setv('bt-tp', fx(qo.ask + 60)); $('bt-buy-btn').click(); await sleep(100);
+      document.querySelector('#bt-ordtype [data-ordtype="stop"]').click();
+      setv('bt-ord-price', fx(qo.bid - 35)); $('bt-sell-btn').click(); await sleep(100);
+      $('bt-tab-orders').click(); await sleep(300);
+    }
     if (window.__shotHook) await window.__shotHook(shot);
     await sleep(600);
   } catch (e) { console.warn(e); }

@@ -6,7 +6,8 @@
 (function (global) {
   'use strict';
 
-  var MAX_POSITIONS = 20;
+  var MAX_POSITIONS = 20, MAX_ORDERS = 50;
+  var ORDER_TYPES = ['limit', 'stop'];
 
   function S() { return global.WwBtSymbols; }
   function sym(x) { return typeof x === 'string' ? S().get(x) : x; }
@@ -150,7 +151,8 @@
   // ---------------------------------------------------------------- state
   function createState(o) {
     return { sym: sym(o.sym), sp: o.spreadPts | 0, startCents: o.startCents, cplCents: o.cplCents | 0,
-             open: [], closed: [], realizedCents: 0, quote: null };
+             open: [], closed: [], realizedCents: 0, quote: null,
+             orders: [], events: [], allowFill: null };      // pending orders; fills/rejections of the last bars (the page drains them)
   }
   function setQuote(st, bar) { st.quote = { t: bar[0], bid: bar[4] }; }     // never keeps the (reused) bar array
   function quote(st) { return st.quote ? { t: st.quote.t, bid: st.quote.bid, ask: st.quote.bid + st.sp } : null; }
@@ -289,7 +291,8 @@
     return settle(st, i, closeFill(st.open[i].dir, st.quote.bid, st.sp), st.quote.t + 60, st.quote.t, 'manual', false);
   }
 
-  // one newly revealed 1m bar: TP/SL for positions opened BEFORE it, then the quote moves. Returns closed trades.
+  // one newly revealed 1m bar: TP/SL for positions opened BEFORE it, then the pending orders placed BEFORE it, then the quote
+  // moves. Returns closed trades (also those a pending order opened and closed inside this bar); fills and rejections go to st.events.
   function onBar(st, bar) {
     var out = [];
     for (var i = 0; i < st.open.length;) {
@@ -300,8 +303,140 @@
       }
       i++;
     }
+    if (st.orders && st.orders.length) fillOrders(st, bar, out);
     setQuote(st, bar);
     return out;
+  }
+
+  // ---------------------------------------------------------------- pending orders (limit / stop)
+  // order: { id, dir, type 'limit'|'stop', price (points; the ASK level for a buy, the BID level for a sell), steps, sl, tp,
+  //          placedT, placedBarT, seq, section }. A buy limit waits below the ask, a buy stop above it; a sell limit above the bid,
+  //          a sell stop below it. An order never looks at the bar it was placed in or an earlier one (placedBarT < bar time).
+  function validatePending(st, o) {
+    var s = st.sym;
+    if (!st.quote) return { ok: false, code: 'NO_QUOTE' };
+    if (ORDER_TYPES.indexOf(o.type) < 0 || (o.dir !== 1 && o.dir !== -1)) return { ok: false, code: 'ORDER_TYPE' };
+    var minSteps = Math.round(s.lot.min / s.lot.step), maxSteps = Math.round(s.lot.max / s.lot.step);
+    if (!Number.isInteger(o.steps) || o.steps < minSteps || o.steps > maxSteps) return { ok: false, code: 'LOT_RANGE', field: 'lot' };
+    if (!(Number.isInteger(o.price) && o.price > 0)) return { ok: false, code: 'PRICE', field: 'price' };
+    if (!validLevel(o.sl)) return { ok: false, code: 'PRICE', field: 'sl' };
+    if (!validLevel(o.tp)) return { ok: false, code: 'PRICE', field: 'tp' };
+    var bid = st.quote.bid, ask = bid + st.sp;
+    if (o.dir > 0 && o.type === 'limit' && !(o.price < ask)) return { ok: false, code: 'LIMIT_BUY', field: 'price' };
+    if (o.dir > 0 && o.type === 'stop' && !(o.price > ask)) return { ok: false, code: 'STOP_BUY', field: 'price' };
+    if (o.dir < 0 && o.type === 'limit' && !(o.price > bid)) return { ok: false, code: 'LIMIT_SELL', field: 'price' };
+    if (o.dir < 0 && o.type === 'stop' && !(o.price < bid)) return { ok: false, code: 'STOP_SELL', field: 'price' };
+    if (o.dir > 0) {
+      if (o.sl != null && !(o.sl < o.price - st.sp)) return { ok: false, code: 'SL_ORDER_LONG', field: 'sl' };     // a long's stop triggers on the bid
+      if (o.tp != null && !(o.tp > o.price)) return { ok: false, code: 'TP_ORDER_LONG', field: 'tp' };
+    } else {
+      if (o.sl != null && !(o.sl > o.price + st.sp)) return { ok: false, code: 'SL_ORDER_SHORT', field: 'sl' };    // a short's stop triggers on the ask
+      if (o.tp != null && !(o.tp < o.price)) return { ok: false, code: 'TP_ORDER_SHORT', field: 'tp' };
+    }
+    return { ok: true };
+  }
+  function placeOrder(st, o) {
+    if ((st.orders || []).length >= MAX_ORDERS) throw codeError('MAX_ORDERS');
+    var v = validatePending(st, o);
+    if (!v.ok) throw codeError(v.code, v.field);
+    var ord = { id: o.id, dir: o.dir, type: o.type, price: o.price, steps: o.steps, sl: o.sl == null ? null : o.sl, tp: o.tp == null ? null : o.tp,
+      placedT: st.quote.t + 60, placedBarT: st.quote.t, seq: o.seq != null ? o.seq : Date.now(), section: o.section > 0 ? o.section : 1 };
+    st.orders.push(ord);
+    return ord;
+  }
+  // change price / SL / TP / lot of a pending order (the same rules as placing it, against the live quote)
+  function modifyOrder(st, id, ch) {
+    var i = indexOfId(st.orders || [], id);
+    if (i < 0) throw codeError('NOT_FOUND');
+    var cur = st.orders[i], n = {};
+    Object.keys(cur).forEach(function (k) { n[k] = cur[k]; });
+    ['price', 'sl', 'tp', 'steps'].forEach(function (k) { if (ch && ch[k] !== undefined) n[k] = ch[k]; });
+    var v = validatePending(st, n);
+    if (!v.ok) throw codeError(v.code, v.field);
+    st.orders[i] = n;
+    return n;
+  }
+  function cancelOrder(st, id) {
+    var i = indexOfId(st.orders || [], id);
+    return i < 0 ? null : st.orders.splice(i, 1)[0];
+  }
+  // The price path inside one 1m bar (BID points): a rising bar goes open -> low -> high -> close, a falling one open -> high -> low
+  // -> close. It decides the order of events inside a single minute (an order and the SL/TP of the position it opens).
+  function barPath(bar) { return bar[4] >= bar[1] ? [bar[1], bar[3], bar[2], bar[4]] : [bar[1], bar[2], bar[3], bar[4]]; }
+  // the first point of the path (from `from`, default the open) where the bid reaches `thr` falling ('le') or rising ('ge'):
+  // { seg (segment index), bid, atStart (already there at `from`) } or null
+  function firstCross(path, thr, cond, from) {
+    from = from || { seg: 0, bid: path[0] };
+    var start = from.bid;
+    if (cond === 'le' ? start <= thr : start >= thr) return { seg: from.seg, bid: start, atStart: true };
+    for (var k = from.seg; k < path.length - 1; k++) {
+      var a = k === from.seg ? start : path[k], b = path[k + 1];
+      if (cond === 'le' ? (b <= thr && a > thr) : (b >= thr && a < thr)) return { seg: k, bid: thr, atStart: false };
+    }
+    return null;
+  }
+  // when and where a pending order fills in this bar: { fill (price of the order side: ask for a buy, bid for a sell), seg, bid, gap }
+  // or null. Gap: the bar opens beyond the level, the fill is the open (a limit gets the better price, a stop slips).
+  function orderFillOnBar(ord, bar, sp) {
+    var adj = ord.dir > 0 ? sp : 0, thr = ord.price - adj;                           // the level as a BID
+    var cond = (ord.dir > 0) === (ord.type === 'limit') ? 'le' : 'ge';                 // buy limit and sell stop wait for a fall
+    var path = barPath(bar), x = firstCross(path, thr, cond);
+    if (!x) return null;
+    if (x.atStart) return { fill: path[0] + adj, seg: 0, bid: path[0], gap: path[0] !== thr };
+    return { fill: ord.price, seg: x.seg, bid: x.bid, gap: false };
+  }
+  // SL / TP of a position on the rest of the bar path after `from` (its fill point): { reason, pts } or null; the earlier one wins
+  function exitOnPath(pos, path, from, sp) {
+    var adj = pos.dir > 0 ? 0 : sp, best = null;
+    function test(level, reason, cond) {
+      if (level == null) return;
+      var x = firstCross(path, level - adj, cond, from);
+      if (!x) return;
+      var at = x.atStart ? x.seg - 0.5 : x.seg;
+      if (!best || at < best.at) best = { reason: reason, pts: level, at: at };
+    }
+    if (pos.dir > 0) { test(pos.sl, 'sl', 'le'); test(pos.tp, 'tp', 'ge'); } else { test(pos.sl, 'sl', 'ge'); test(pos.tp, 'tp', 'le'); }
+    return best ? { reason: best.reason, pts: best.pts } : null;
+  }
+  // pending orders against one bar. A filled order becomes a position (entry inside this bar, entry time = the bar's open) and may
+  // close again on the rest of the bar path. The position limit (20), the equity and the page's guard (monthly trade limit) can
+  // refuse a fill: the order is dropped with a 'reject' event.
+  function fillOrders(st, bar, out) {
+    var keep = [];
+    st.orders.forEach(function (ord) {
+      if (!(ord.placedBarT < bar[0])) { keep.push(ord); return; }
+      var f = orderFillOnBar(ord, bar, st.sp);
+      if (!f) { keep.push(ord); return; }
+      var deny = st.open.length >= MAX_POSITIONS ? 'MAX_POSITIONS'
+        : (st.startCents + st.realizedCents + floating(st).total <= 0 ? 'NO_EQUITY' : (typeof st.allowFill === 'function' ? st.allowFill(ord) : null));
+      if (deny) { st.events.push({ kind: 'reject', order: ord, code: deny, t: bar[0] }); return; }
+      var p = {
+        id: ord.id, dir: ord.dir, steps: ord.steps, entry: f.fill, entryT: bar[0], entryBarT: bar[0],
+        sl: ord.sl, tp: ord.tp, sl0: ord.sl, tp0: ord.tp, comm: commissionCents(st.sym, st.cplCents, ord.steps),
+        rr: rrHundredths(f.fill, ord.sl, ord.tp), seq: ord.seq, section: ord.section > 0 ? ord.section : 1, fromOrder: ord.type, gap: f.gap
+      };
+      st.open.push(p);
+      st.events.push({ kind: 'fill', order: ord, position: p, gap: f.gap, t: bar[0] });
+      var ex = exitOnPath(p, barPath(bar), { seg: f.seg, bid: f.bid }, st.sp);
+      if (ex) {
+        var t = settle(st, st.open.length - 1, ex.pts, bar[0], bar[0], ex.reason, true);
+        t.intrabar = true;                                     // entry and exit inside one 1m bar: the bar path decided the order
+        out.push(t);
+      }
+    });
+    st.orders = keep;
+  }
+  // the fills and rejections since the last call
+  function takeEvents(st) { var e = st.events || []; st.events = []; return e; }
+  // stored orders (browser storage) -> valid orders only
+  function sanitizeOrders(list) {
+    return (Array.isArray(list) ? list : []).filter(function (o) {
+      return o && typeof o.id === 'string' && (o.dir === 1 || o.dir === -1) && ORDER_TYPES.indexOf(o.type) >= 0 && Number.isInteger(o.price) && o.price > 0 &&
+        Number.isInteger(o.steps) && o.steps > 0 && validLevel(o.sl) && validLevel(o.tp) && isFinite(o.placedT) && isFinite(o.placedBarT);
+    }).slice(0, MAX_ORDERS).map(function (o) {
+      return { id: o.id, dir: o.dir, type: o.type, price: o.price, steps: o.steps, sl: o.sl == null ? null : o.sl, tp: o.tp == null ? null : o.tp,
+        placedT: o.placedT, placedBarT: o.placedBarT, seq: isFinite(o.seq) ? o.seq : o.placedT * 1000, section: o.section > 0 ? o.section : 1 };
+    });
   }
 
   // ---------------------------------------------------------------- summary
@@ -329,10 +464,10 @@
     };
   }
 
-  // numbers for the order hint: risk = gross loss at SL + commission, reward = gross at TP - commission
+  // numbers for the order hint: risk = gross loss at SL + commission, reward = gross at TP - commission (o.entry: at a pending price)
   function preview(st, o) {
     if (!st.quote) return null;
-    var entry = marketFill(o.dir, st.quote.bid, st.sp), comm = commissionCents(st.sym, st.cplCents, o.steps);
+    var entry = o.entry != null ? o.entry : marketFill(o.dir, st.quote.bid, st.sp), comm = commissionCents(st.sym, st.cplCents, o.steps);   // entry: a pending order's price
     var risk = o.sl != null ? -grossCents(st.sym, o.dir, entry, o.sl, o.steps) + comm : null;
     var reward = o.tp != null ? grossCents(st.sym, o.dir, entry, o.tp, o.steps) - comm : null;
     return { entry: entry, riskCents: risk, rewardCents: reward, commCents: comm, rr: rrHundredths(entry, o.sl, o.tp) };
@@ -409,7 +544,7 @@
   }
 
   global.WwBtEngine = {
-    MAX_POSITIONS: MAX_POSITIONS,
+    MAX_POSITIONS: MAX_POSITIONS, MAX_ORDERS: MAX_ORDERS, ORDER_TYPES: ORDER_TYPES,
     roundDiv: roundDiv, toPlainDecimalString: toPlainDecimalString, parseScaled: parseScaled,
     scaledToStr: scaledToStr, centsToStr: centsToStr, ptsToStr: ptsToStr, stepsToStr: stepsToStr, hundredthsToStr: hundredthsToStr,
     toCents: toCents, toPts: toPts, toSteps: toSteps, toHundredths: toHundredths,
@@ -417,7 +552,9 @@
     marketFill: marketFill, closeFill: closeFill, exitOnBar: exitOnBar,
     createState: createState, setQuote: setQuote, quote: quote, restore: restore,
     validateOrder: validateOrder, openPosition: openPosition, validateModify: validateModify, modifyPosition: modifyPosition,
-    closePosition: closePosition, onBar: onBar, bySeq: bySeq, floating: floating, summary: summary, preview: preview,
+    closePosition: closePosition, onBar: onBar, bySeq: bySeq,
+    validatePending: validatePending, placeOrder: placeOrder, modifyOrder: modifyOrder, cancelOrder: cancelOrder, barPath: barPath,
+    orderFillOnBar: orderFillOnBar, exitOnPath: exitOnPath, takeEvents: takeEvents, sanitizeOrders: sanitizeOrders, floating: floating, summary: summary, preview: preview,
     accountFromRow: accountFromRow, accountInsertRow: accountInsertRow, accountPatch: accountPatch,
     tradeInsertRow: tradeInsertRow, tradeClosePatch: tradeClosePatch, tradeModifyPatch: tradeModifyPatch, metricsRow: metricsRow
   };

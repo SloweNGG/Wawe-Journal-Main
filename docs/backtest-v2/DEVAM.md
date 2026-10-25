@@ -71,7 +71,7 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 |---|---|
 | 1 Hatalar (BTCUSD ekseni, ortalama, kayan sayılar, Aktivite adı, stats-audit, 202610220001 rollback) | Tamam, yayın notu aşağıda |
 | 2 Paneller ve istatistik widget'ları | Tamam (`bt-dock.js`, widget'lar `bt-stats.js`) |
-| 3 Bekleyen emirler | Bekliyor |
+| 3 Bekleyen emirler | Tamam (`bt-engine.js` placeOrder/onBar, sayfa `backtest.js`) |
 
 Aşama 1 notları:
 - BTCUSD: gerçek BTC 1m verisiyle (Binance, `tests/smoke/fetch-binance.mjs`, senaryolar `btc-repro*`) yeniden üretildi. Kök nedenler:
@@ -95,3 +95,19 @@ Aşama 2 notları:
   ile aynı kütüphane ve seçenekler, `forceFallback`), köşeden boyut, gizle, WwChartViewer ile büyüt.
 - Çoklu grafik: hücre başlığındaki tutamaçla yer değiştirme, `.bt-msplit` ile sütun/satır boyutu, düzen başına saklanır.
 - Smoke: `dock-pro`, `dock-free`, `dock-phone`; ekran görüntüsü `shot-dock`, `shot-dock-stats-fs`.
+
+Aşama 3 notları:
+- Motor: `placeOrder`, `modifyOrder`, `cancelOrder`, `onBar` içinde `fillOrders` (çıkışlardan sonra), `takeEvents`, `sanitizeOrders`.
+  Alış emirleri ASK, satış emirleri BID seviyesinde. Gap: açılış seviyenin ötesindeyse dolum açılıştan (limit daha iyi, stop kayar).
+  Bir dakikalık mum içinde sıra mumun yolu: yükselen O→L→H→C, düşen O→H→L→C; emrin açtığı pozisyonun SL/TP'si yolun kalanında
+  aranır (`intrabar`, `ambiguous`). Emir verildiği mumu ve öncesini asla görmez (`placedBarT < bar[0]`).
+- Ret: 20 açık pozisyon, özsermaye yok, sayfa koruması (`allowFill`: aylık sınır doluysa). Veritabanı tetikleyicisi yine son karar
+  (`insertPosition` reddi geri alır, dolup kapanmış işlemi de). Sınırdayken emir verilemez (butonlar kapalı).
+- Saklama: veritabanı değişikliği yok. Bekleyen emirler tarayıcıda `ww_bt_orders_v1:<user>:<account>`; dolan emir normal işlem
+  satırı (aylık sınır, defter kopyası aynen). Tarihe git / yeni bölüm / hesap sıfırlama bekleyen emirleri iptal eder; hesap silinince
+  anahtar silinir. Cihazlar arası taşımak için `backtest_pending_orders` tablosu (migration + rollback) gerekir; bu makineden canlı
+  veritabanına erişim olmadığı için yapılmadı.
+- Arayüz: emir panelinde Piyasa/Limit/Stop (`ww_bt_ordtype`), "Bekleyen emirler" sekmesi (düzenle, iptal, uzaklık), basit modda kısa
+  liste, düzenleme penceresi, grafikte kesik çizgiler; emir çizgisi sürüklenir (SL/TP aynı mesafeyle taşınır), SL veya TP çizgisi tek
+  başına sürüklenir; geçersiz yer: eski değere döner, uyarı.
+- Testler: `tests/bt-orders.test.js` (21), smoke `orders`, `orders-limit`, ekran görüntüsü `shot-orders`, `shot-orders-phone`.

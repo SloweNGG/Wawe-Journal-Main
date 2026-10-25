@@ -760,6 +760,7 @@
         var dr = await SYNC.deleteAccount(syncAcc(acc));
         if (!dr.ok) throw (dr.error || new Error('delete failed'));
       } else await L.store.deleteAccount(acc.id);
+      dropOrders(acc.id);
       closeModal('bt-delete-modal'); closeModal('bt-account-modal');
       if (R && R.acc.id === acc.id) { closeReplayState(); }
       await loadList(); showList();
@@ -798,13 +799,16 @@
       if (!PAGE.alive) return;
       var eng = E.createState({ sym: sym, startCents: acc.startCents, spreadPts: E.spreadPts(sym, acc.spreadH), cplCents: acc.cplCents });
       E.restore(eng, rows);
+      eng.orders = loadOrders(acc.id);                                   // pending orders of this browser
+      eng.allowFill = function () { return atLimit() ? 'TRADE_LIMIT' : null; };
       var spd = SPEED_DEFAULT;
       try { var sv = parseFloat(localStorage.getItem(SPEED_KEY)); if (SPEEDS.indexOf(sv) >= 0) spd = sv; } catch (e) { /* ignore */ }
       R = { acc: acc, sym: sym, scale: Math.pow(10, sym.digits), tfId: acc.tf, tfMin: C.TF_MIN[acc.tf] || 60, speed: spd,
         cov: null, win: null, winMonths: [], k: 0, candles: [], builder: null, eng: eng, token: 0, playing: false, rafId: 0, lastTs: null,
         accum: 0, buffering: false, busy: false, loadingNext: null, nextState: null, dirtyFrom: -1, closedQueue: [], gap: null,
         chart: null, series: null, askLine: null, lines: {}, dirty: false, lastSavedReplaySec: acc.replaySec, lastSaveAt: 0, lastLiveAt: 0,
-        src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0, userAt: 0 };
+        src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0, userAt: 0,
+        fillQueue: [], inserting: {}, dropped: {} };
       setPageState('replay');
       $('bt-view-replay').setAttribute('data-replay', 'loading');
       setText('bt-acc-name', acc.name); setText('bt-acc-symbol', sym.name); setSourceLabel(acc);
@@ -819,6 +823,7 @@
       // never before the trades of the CURRENT section (earlier sections may lie later in market time)
       eng.open.forEach(function (p) { replaySec = Math.max(replaySec, p.entryT); });
       eng.closed.forEach(function (t) { if (t.section === acc.sectionNo) replaySec = Math.max(replaySec, t.reason === 'manual' ? t.exitT : t.exitT + 60); });
+      eng.orders.forEach(function (o) { if (o.section === acc.sectionNo) replaySec = Math.max(replaySec, o.placedT); });
       renderSectionChip();
       L.usage = null; renderLimit();
       if (acc.dataSource === 'ctrader') loadUsage().then(function () { if (R && R.acc.id === acc.id) { renderLimit(); updateControls(); } });
@@ -902,7 +907,7 @@
     R.builder = C.createBuilder(R.tfMin, id, R.candles);
     (R.extra || []).forEach(viewCandles);
     views().forEach(clearPriceLines);                        // nothing of the previous date / section stays on the chart
-    renderChartData(); rebuildMarkers(); syncPriceLines(); updateAskLine(); renderLive(true); renderTables(); renderStats();
+    renderChartData(); rebuildMarkers(); syncPriceLines(); updateAskLine(); renderLive(true); renderTables(); renderOrders(true); renderStats();
     hideOverlay(); setReplay('ready');
     applyChartLayout();
     centerAll();
@@ -972,6 +977,7 @@
     var W = R.win, k = ++R.k;
     BAR[0] = W.t[k]; BAR[1] = W.o[k]; BAR[2] = W.h[k]; BAR[3] = W.l[k]; BAR[4] = W.c[k];
     var closed = E.onBar(R.eng, BAR);
+    if (R.eng.events.length) Array.prototype.push.apply(R.fillQueue, E.takeEvents(R.eng));
     var idx = R.builder.push(BAR[0], BAR[1], BAR[2], BAR[3], BAR[4]);
     if (R.dirtyFrom < 0 || idx < R.dirtyFrom) R.dirtyFrom = idx;
     for (var x = 0, ex = R.extra; x < ex.length; x++) {
@@ -1022,6 +1028,7 @@
   }
   function afterFrame() {
     flushChart();
+    if (R.fillQueue.length) handleOrderEvents(R.fillQueue.splice(0));        // fills first: their rows are inserted before a close updates them
     if (R.closedQueue.length) handleClosed(R.closedQueue.splice(0));
     updateAskLine();
     var now = performance.now();
@@ -1068,6 +1075,7 @@
     if (sec > R.cov.lastT) return toast(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'), 'warning');
     var nowSec = R.win.t[R.k] + 60, target = Math.max(sec, R.cov.firstT);
     if (!(R.eng.closed.length && target < nowSec)) {
+      cancelAllOrders('goto');
       await placeCursor(target, 'goto');
       if (R) saveReplayTime(true);
       return;
@@ -1080,6 +1088,7 @@
       if (!R || R.acc.id !== acc.id) return;
     }
     pause();
+    cancelAllOrders('goto');
     await placeCursor(target, 'goto');
     if (!R || R.acc.id !== acc.id) return;
     var newSec = R.win.t[R.k] + 60;
@@ -1114,6 +1123,8 @@
   async function resetTrades(acc) {
     await L.store.deleteTrades(acc.id);
     if (SYNC && acc.journalId) syncResult(await SYNC.reconcileAccount(syncAcc(acc), { closedTrades: [] }));
+    if (R && R.acc.id === acc.id) cancelAllOrders('reset');
+    else dropOrders(acc.id);
     if (R && R.acc.id === acc.id) {
       R.eng.open = []; R.eng.closed = []; R.eng.realizedCents = 0;
       syncPriceLines(); rebuildMarkers(); renderTables(); renderStats(); renderLive(true);
@@ -1168,9 +1179,11 @@
   }
   function ctx() { return { userId: L.user.id, accountId: R.acc.id }; }
   function persistClose(t) {
-    var patch = E.tradeClosePatch(R.eng, t, { extraColumns: EXTRA_COLUMNS }), id = t.id, acc = R.acc;
+    if (R.dropped[t.id]) return;
+    var patch = E.tradeClosePatch(R.eng, t, { extraColumns: EXTRA_COLUMNS }), id = t.id, acc = R.acc, wait = R.inserting[t.id], dropped = R.dropped;
     persist('close', function () {
-      return L.store.updateTrade(id, patch, { onlyOpen: true }).then(function (rows) {
+      return Promise.resolve(wait).then(function () { return dropped[id] ? [] : L.store.updateTrade(id, patch, { onlyOpen: true }); }).then(function (rows) {
+        if (dropped[id]) return;
         if (!rows.length) return wwLogWarn('close matched no open row');
         // linked account: copy the CLOSED trade (the saved DB row, not the engine object) into the journal
         if (SYNC && acc.journalId) SYNC.syncClosedTrade(syncAcc(acc), rows[0]).then(function (r) {
@@ -1197,6 +1210,16 @@
       case 'NO_EQUITY': return _t('backtest.err.no_equity', 'Özsermaye tükendi, yeni işlem açılamaz.');
       case 'MODIFY_LONG': return _t('backtest.err.modify_long', 'AL için SL piyasanın altında, TP üstünde olmalı.');
       case 'MODIFY_SHORT': return _t('backtest.err.modify_short', 'SAT için SL piyasanın üstünde, TP altında olmalı.');
+      case 'PRICE_REQUIRED': return _t('backtest.err.price_required', 'Emir fiyatını gir.');
+      case 'LIMIT_BUY': return _t('backtest.err.limit_buy', 'AL limit fiyatı AL fiyatının ({ask}) altında olmalı.', { ask: E.ptsToStr(q.ask, s.digits) });
+      case 'STOP_BUY': return _t('backtest.err.stop_buy', 'AL stop fiyatı AL fiyatının ({ask}) üstünde olmalı.', { ask: E.ptsToStr(q.ask, s.digits) });
+      case 'LIMIT_SELL': return _t('backtest.err.limit_sell', 'SAT limit fiyatı SAT fiyatının ({bid}) üstünde olmalı.', { bid: E.ptsToStr(q.bid, s.digits) });
+      case 'STOP_SELL': return _t('backtest.err.stop_sell', 'SAT stop fiyatı SAT fiyatının ({bid}) altında olmalı.', { bid: E.ptsToStr(q.bid, s.digits) });
+      case 'SL_ORDER_LONG': return _t('backtest.err.sl_order_long', 'AL emrinde SL, emir fiyatının spread kadar altında olmalı.');
+      case 'TP_ORDER_LONG': return _t('backtest.err.tp_order_long', 'AL emrinde TP, emir fiyatının üstünde olmalı.');
+      case 'SL_ORDER_SHORT': return _t('backtest.err.sl_order_short', 'SAT emrinde SL, emir fiyatının spread kadar üstünde olmalı.');
+      case 'TP_ORDER_SHORT': return _t('backtest.err.tp_order_short', 'SAT emrinde TP, emir fiyatının altında olmalı.');
+      case 'MAX_ORDERS': return _t('backtest.err.max_orders', 'En fazla {n} bekleyen emir olabilir.', { n: E.MAX_ORDERS });
       default: return _t('backtest.err.generic', 'Bir hata oluştu. Lütfen tekrar dene.');
     }
   }
@@ -1224,27 +1247,12 @@
   function submitOrder(dir) {
     if (!R || !R.win) return;
     if (atLimit()) { orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.')); openUpgrade('backtest_trades'); return; }
+    if (ordType() !== 'market') return placePending(dir);
     var rd = readOrder(dir); if (!rd.ok) return orderError(rd.msg);
     var pos;
     try { pos = E.openPosition(R.eng, { id: newId(), dir: dir, steps: rd.o.steps, sl: rd.o.sl, tp: rd.o.tp, section: R.acc.sectionNo }); } catch (e) { return orderError(codeMessage(e)); }
     orderError('');
-    var row = E.tradeInsertRow(R.eng, pos, ctx()), acc = R.acc;
-    persist('open', function () {
-      return L.store.insertTrade(row).then(function (r) { if (acc.dataSource === 'ctrader' && L.usage) { L.usage.used++; renderLimit(); updateControls(); } return r; });
-    }, function () { pos.unsaved = true; renderTables(); }, function (e) {
-      // the database refused the trade over the monthly limit: take the position back (nothing was stored)
-      if (String(e && e.message).indexOf('BACKTEST_TRADE_LIMIT') < 0) return false;
-      var lim = parseInt(String(e.message).split(':')[1], 10);
-      if (L.usage) { L.usage.limit = isFinite(lim) ? lim : L.usage.limit; L.usage.used = Math.max(L.usage.used, L.usage.limit); }
-      else L.usage = { used: lim || 0, limit: lim || 0, premium: false };
-      if (R && R.acc.id === acc.id) {
-        R.eng.open = R.eng.open.filter(function (p) { return p.id !== pos.id; });
-        syncPriceLines(); rebuildMarkers(); renderTables(); renderLive(true); renderLimit(); updateControls();
-      }
-      orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.'));
-      openUpgrade('backtest_trades');
-      return true;
-    });
+    insertPosition(pos);
     $('bt-sl').value = ''; $('bt-tp').value = '';
     syncPriceLines(); rebuildMarkers(); renderTables(); renderLive(true); renderStats(); saveReplayTime(true);
   }
@@ -1280,11 +1288,266 @@
       var t = trades[0];
       toast(_t('backtest.toast.closed', '{dir} kapandı ({reason}): {pnl}', { dir: dirLabel(t.dir), reason: reasonLabel(t.reason), pnl: fmtUsd(t.net, true) }), sum >= 0 ? 'success' : 'info');
     } else toast(_t('backtest.toast.closed_many', '{n} işlem kapandı: {pnl}', { n: trades.length, pnl: fmtUsd(sum, true) }), sum >= 0 ? 'success' : 'info');
-    if (trades.some(function (t) { return t.ambiguous; })) toast(_t('backtest.toast.ambiguous', 'TP ve SL aynı 1 dakikalık mumda: SL sayıldı.'), 'warning');
+    if (trades.some(function (t) { return t.ambiguous && !t.intrabar; })) toast(_t('backtest.toast.ambiguous', 'TP ve SL aynı 1 dakikalık mumda: SL sayıldı.'), 'warning');
+    if (trades.some(function (t) { return t.intrabar; })) toast(_t('backtest.toast.intrabar', 'Emir ve SL/TP aynı 1 dakikalık mumda: sıra mumun yoluna (açılış, dip/tepe, kapanış) göre belirlendi.'), 'info');
   }
   function dirLabel(dir) { return dir > 0 ? _t('backtest.order.buy', 'AL') : _t('backtest.order.sell', 'SAT'); }
   function reasonLabel(r) {
     return r === 'tp' ? 'TP' : r === 'sl' ? 'SL' : _t('backtest.reason.manual', 'Manuel');
+  }
+
+  // ---------------------------------------------------------------- pending orders (limit / stop)
+  // Kept in this browser per user and account ('ww_bt_orders_v1:<user>:<account>'); a fill becomes a normal trade row (database,
+  // monthly limit, journal copy). Going to another date or resetting the account cancels them (they belong to the replay time).
+  var ORD_KEY = 'ww_bt_orders_v1', ORDTYPE_KEY = 'ww_bt_ordtype';
+  function ordersKey(accId) { return ORD_KEY + ':' + (L.user ? L.user.id : '') + ':' + accId; }
+  function loadOrders(accId) {
+    try { return E.sanitizeOrders(JSON.parse(localStorage.getItem(ordersKey(accId)) || '[]')); } catch (e) { return []; }
+  }
+  function saveOrders() {
+    if (!R) return;
+    try {
+      if (R.eng.orders.length) localStorage.setItem(ordersKey(R.acc.id), JSON.stringify(R.eng.orders));
+      else localStorage.removeItem(ordersKey(R.acc.id));
+    } catch (e) { /* storage full or blocked: the orders stay for this visit */ }
+  }
+  function dropOrders(accId) { try { localStorage.removeItem(ordersKey(accId)); } catch (e) { /* ignore */ } }
+  function findOrder(id) { var list = (R && R.eng.orders) || []; for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+  function ordType() { return L.ordType || 'market'; }
+  // "AL LİMİT", "SAT STOP"
+  function ordLabel(dir, type) {
+    var k = (dir > 0 ? 'buy_' : 'sell_') + type;
+    return _t('backtest.order.' + k, { buy_limit: 'AL LİMİT', buy_stop: 'AL STOP', sell_limit: 'SAT LİMİT', sell_stop: 'SAT STOP' }[k]);
+  }
+  function setOrdType(t) {
+    if (E.ORDER_TYPES.indexOf(t) < 0) t = 'market';
+    L.ordType = t;
+    try { localStorage.setItem(ORDTYPE_KEY, t); } catch (e) { /* ignore */ }
+    Array.prototype.forEach.call(document.querySelectorAll('#bt-ordtype [data-ordtype]'), function (b) { b.setAttribute('aria-checked', b.getAttribute('data-ordtype') === t ? 'true' : 'false'); });
+    show($('bt-ord-price-wrap'), t !== 'market');
+    var buy = $('bt-buy-label'), sell = $('bt-sell-label');
+    if (t === 'market') {
+      buy.setAttribute('data-i18n', 'backtest.order.buy'); sell.setAttribute('data-i18n', 'backtest.order.sell');
+      buy.textContent = _t('backtest.order.buy', 'AL'); sell.textContent = _t('backtest.order.sell', 'SAT');
+    } else {
+      buy.setAttribute('data-i18n', 'backtest.order.buy_' + t); sell.setAttribute('data-i18n', 'backtest.order.sell_' + t);
+      buy.textContent = ordLabel(1, t); sell.textContent = ordLabel(-1, t);
+    }
+    orderError(''); if (R) renderLive(false);
+  }
+  // the price rule under the price field, with the live quote
+  function ordPriceHint() {
+    var h = $('bt-ord-price-hint'); if (!h || !R) return;
+    var q = E.quote(R.eng), t = ordType(), d = R.sym.digits;
+    if (!q || t === 'market') { h.textContent = ''; return; }
+    h.textContent = t === 'limit'
+      ? _t('backtest.order.limit_hint', 'AL limit {ask} altında, SAT limit {bid} üstünde', { ask: E.ptsToStr(q.ask, d), bid: E.ptsToStr(q.bid, d) })
+      : _t('backtest.order.stop_hint', 'AL stop {ask} üstünde, SAT stop {bid} altında', { ask: E.ptsToStr(q.ask, d), bid: E.ptsToStr(q.bid, d) });
+  }
+  function placePending(dir) {
+    if (atLimit()) { orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.')); openUpgrade('backtest_trades'); return; }
+    var rd = readOrder(dir); if (!rd.ok) return orderError(rd.msg);
+    var price = parseLevel('bt-ord-price');
+    if (!price.ok) return orderError(codeMessage({ code: 'PRICE' }));
+    if (price.value == null) return orderError(codeMessage({ code: 'PRICE_REQUIRED' }));
+    var o;
+    try { o = E.placeOrder(R.eng, { id: newId(), dir: dir, type: ordType(), price: price.value, steps: rd.o.steps, sl: rd.o.sl, tp: rd.o.tp, section: R.acc.sectionNo }); }
+    catch (e) { return orderError(codeMessage(e)); }
+    orderError(''); saveOrders();
+    $('bt-ord-price').value = ''; $('bt-sl').value = ''; $('bt-tp').value = '';
+    syncPriceLines(); renderOrders(); renderLive(true);
+    toast(_t('backtest.orders.placed', '{label} {lot} @ {price} verildi', { label: ordLabel(o.dir, o.type), lot: E.stepsToStr(o.steps, R.sym.lotDigits), price: E.ptsToStr(o.price, R.sym.digits) }), 'success');
+  }
+  function cancelOrderId(id, quiet) {
+    if (!R) return;
+    var o = E.cancelOrder(R.eng, id); if (!o) return;
+    saveOrders(); syncPriceLines(); renderOrders();
+    if (!quiet) toast(_t('backtest.orders.cancelled', 'Bekleyen emir iptal edildi'), 'info');
+  }
+  // the date changes (go to, a new section, reset): pending orders of the old replay time go
+  function cancelAllOrders(reason) {
+    if (!R || !R.eng.orders.length) return;
+    var n = R.eng.orders.length; R.eng.orders = []; saveOrders(); syncPriceLines(); renderOrders();
+    toast(_t(reason === 'reset' ? 'backtest.orders.cancelled_reset' : 'backtest.orders.cancelled_goto', '{n} bekleyen emir iptal edildi (tarih değişti).', { n: n }), 'info');
+  }
+  // fills and refusals reported by the engine after a frame (before the closes of the same frame are stored)
+  function handleOrderEvents(evs) {
+    var fills = 0;
+    evs.forEach(function (ev) {
+      if (ev.kind === 'fill') {
+        fills++;
+        insertPosition(ev.position);
+        toast(_t(ev.gap ? 'backtest.orders.filled_gap' : 'backtest.orders.filled', '{label} doldu: {price}', { label: ordLabel(ev.order.dir, ev.order.type), price: E.ptsToStr(ev.position.entry, R.sym.digits) }), 'success');
+      } else if (ev.kind === 'reject') {
+        var msg = ev.code === 'TRADE_LIMIT' ? _t('backtest.orders.rejected_limit', 'Emir tetiklendi ama bu ayın işlem sınırına ulaştın; emir iptal edildi.')
+          : ev.code === 'MAX_POSITIONS' ? _t('backtest.orders.rejected_max', 'Emir tetiklendi ama en fazla {n} açık pozisyon olabilir; emir iptal edildi.', { n: E.MAX_POSITIONS })
+          : _t('backtest.orders.rejected_equity', 'Emir tetiklendi ama özsermaye yetersiz; emir iptal edildi.');
+        toast(msg, 'warning');
+        if (ev.code === 'TRADE_LIMIT') openUpgrade('backtest_trades');
+      }
+    });
+    saveOrders();
+    syncPriceLines(); rebuildMarkers(); renderOrders(); renderTables(); renderLive(true); if (fills) renderStats();
+  }
+  // a new position (market order or a filled pending order) into the database; the monthly limit can refuse it there
+  function insertPosition(pos) {
+    var row = E.tradeInsertRow(R.eng, pos, ctx()), acc = R.acc, done;
+    R.inserting[pos.id] = new Promise(function (r) { done = r; });
+    persist('open', function () {
+      return L.store.insertTrade(row).then(function (r) {
+        if (acc.dataSource === 'ctrader' && L.usage) { L.usage.used++; renderLimit(); updateControls(); }
+        done(); return r;
+      });
+    }, function () { done(); pos.unsaved = true; renderTables(); }, function (e) {
+      done();
+      // the database refused the trade over the monthly limit: take the position back (nothing was stored)
+      if (String(e && e.message).indexOf('BACKTEST_TRADE_LIMIT') < 0) return false;
+      var lim = parseInt(String(e.message).split(':')[1], 10);
+      if (L.usage) { L.usage.limit = isFinite(lim) ? lim : L.usage.limit; L.usage.used = Math.max(L.usage.used, L.usage.limit); }
+      else L.usage = { used: lim || 0, limit: lim || 0, premium: false };
+      if (R && R.acc.id === acc.id) {
+        R.dropped[pos.id] = true;
+        R.eng.open = R.eng.open.filter(function (p) { return p.id !== pos.id; });
+        R.eng.closed = R.eng.closed.filter(function (t) { if (t.id !== pos.id) return true; R.eng.realizedCents -= t.net; return false; });
+        syncPriceLines(); rebuildMarkers(); renderTables(); renderLive(true); renderLimit(); updateControls(); renderStats();
+      }
+      if (pos.fromOrder) toast(_t('backtest.orders.rejected_limit', 'Emir tetiklendi ama bu ayın işlem sınırına ulaştın; emir iptal edildi.'), 'warning');
+      orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.'));
+      openUpgrade('backtest_trades');
+      return true;
+    });
+  }
+  // pending orders: the tab table and the compact list (simple mode). Rows are rebuilt when the orders change; the distance cell
+  // follows the quote in place.
+  function ordKey(o) { return o.id + ':' + o.price + ':' + o.sl + ':' + o.tp + ':' + o.steps; }
+  function ordDistance(o) {
+    var q = E.quote(R.eng); if (!q) return '—';
+    var d = Math.abs(o.price - (o.dir > 0 ? q.ask : q.bid)), s = R.sym;
+    return S.spreadUnit(s.id) === 'price' ? E.ptsToStr(d, s.digits) + ' USD' : (d / s.pointsPerPip).toFixed(1) + ' pip';
+  }
+  function renderOrders(force) {
+    if (!R) return;
+    var list = R.eng.orders, s = R.sym, body = $('bt-orders-body'), mini = $('bt-mini-ord-list');
+    var key = list.map(ordKey).join('|') + '#' + lang();
+    if (force || key !== R.ordKey) {
+      R.ordKey = key; body.textContent = ''; mini.textContent = '';
+      list.forEach(function (o) {
+        var tr = el('tr'); tr.setAttribute('data-id', o.id);
+        tr.appendChild(td(dirLabel(o.dir), o.dir > 0 ? 'bt-up' : 'bt-down'));
+        tr.appendChild(td(o.type === 'limit' ? _t('backtest.order.type_limit', 'Limit') : _t('backtest.order.type_stop', 'Stop')));
+        tr.appendChild(td(E.stepsToStr(o.steps, s.lotDigits), 'bt-num')); tr.appendChild(td(E.ptsToStr(o.price, s.digits), 'bt-num'));
+        tr.appendChild(td(o.sl == null ? '—' : E.ptsToStr(o.sl, s.digits), 'bt-num')); tr.appendChild(td(o.tp == null ? '—' : E.ptsToStr(o.tp, s.digits), 'bt-num'));
+        tr.appendChild(td('—', 'bt-num bt-live-dist')); tr.appendChild(td(fmtShort(o.placedT), 'bt-num'));
+        var act = el('td', 'bt-actions');
+        var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit-order'); b1.setAttribute('data-id', o.id);
+        var b2 = el('button', 'btn btn-ghost', _t('backtest.orders.cancel_short', 'İptal')); b2.type = 'button'; b2.setAttribute('data-act', 'cancel-order'); b2.setAttribute('data-id', o.id);
+        act.appendChild(b1); act.appendChild(b2); tr.appendChild(act); body.appendChild(tr);
+        var li = el('li'); li.setAttribute('data-id', o.id);
+        li.appendChild(el('span', 'bt-num ' + (o.dir > 0 ? 'bt-up' : 'bt-down'), ordLabel(o.dir, o.type) + ' ' + E.stepsToStr(o.steps, s.lotDigits)));
+        li.appendChild(el('span', 'bt-mini-meta bt-num', '@ ' + E.ptsToStr(o.price, s.digits)));
+        var ma = el('span', 'bt-mini-act');
+        var m1 = el('button', 'btn btn-ghost', _t('backtest.orders.cancel_short', 'İptal')); m1.type = 'button'; m1.setAttribute('data-act', 'cancel-order'); m1.setAttribute('data-id', o.id);
+        ma.appendChild(m1); li.appendChild(ma); mini.appendChild(li);
+      });
+      show($('bt-orders-empty'), list.length === 0);
+      setText('bt-orders-count', String(list.length)); setText('bt-mini-ord-count', String(list.length));
+      show($('bt-mini-ord'), list.length > 0);
+    }
+    for (var i = 0; i < body.children.length; i++) {
+      var o2 = findOrder(body.children[i].getAttribute('data-id'));
+      setCell(body.children[i].querySelector('.bt-live-dist'), o2 ? ordDistance(o2) : '—', 'bt-num bt-live-dist');
+    }
+  }
+  function openEditOrder(id) {
+    var o = findOrder(id); if (!o) return;
+    editing = o; var s = R.sym;
+    $('bt-ord-info').textContent = ordLabel(o.dir, o.type) + ' · ' + _t('backtest.col.placed', 'Verildi') + ' ' + fmtShort(o.placedT);
+    $('bt-ord-f-price').value = E.ptsToStr(o.price, s.digits); $('bt-ord-f-lot').value = E.stepsToStr(o.steps, s.lotDigits);
+    $('bt-ord-f-sl').value = o.sl == null ? '' : E.ptsToStr(o.sl, s.digits); $('bt-ord-f-tp').value = o.tp == null ? '' : E.ptsToStr(o.tp, s.digits);
+    show($('bt-ord-error'), false);
+    openModal('bt-ord-modal');
+  }
+  function submitEditOrder() {
+    var o = editing; if (!o || !R || !findOrder(o.id)) { closeModal('bt-ord-modal'); return; }
+    var s = R.sym, err = $('bt-ord-error');
+    function lv(id, required) { var v = $(id).value.trim(); if (v === '') return required ? { ok: false } : { ok: true, value: null }; var r = E.parseScaled(v, s.digits, 'round'); return r.ok && r.value > 0 ? { ok: true, value: r.value } : { ok: false }; }
+    var price = lv('bt-ord-f-price', true), sl = lv('bt-ord-f-sl'), tp = lv('bt-ord-f-tp');
+    var lot = E.parseScaled($('bt-ord-f-lot').value, s.lotDigits, 'exact'), unit = Math.round(s.lot.step * Math.pow(10, s.lotDigits));
+    if (!price.ok || !sl.ok || !tp.ok) { err.textContent = codeMessage({ code: 'PRICE' }); err.hidden = false; return; }
+    if (!lot.ok || lot.value % unit !== 0) { err.textContent = _t('backtest.err.lot_format', 'Lot en fazla {step} adımlarıyla girilebilir.', { step: s.lot.step }); err.hidden = false; return; }
+    try { E.modifyOrder(R.eng, o.id, { price: price.value, sl: sl.value, tp: tp.value, steps: lot.value / unit }); } catch (e) { err.textContent = codeMessage(e); err.hidden = false; return; }
+    saveOrders(); closeModal('bt-ord-modal'); syncPriceLines(); renderOrders();
+    toast(_t('backtest.orders.updated', 'Bekleyen emir güncellendi'), 'success');
+  }
+  // pending order lines are dragged on the chart (cursor tool): price, SL or TP; validated on release, reverted when not allowed
+  function orderLineHit(v, y) {
+    var best = null;
+    (R.eng.orders || []).forEach(function (o) {
+      ['price', 'sl', 'tp'].forEach(function (k) {
+        if (o[k] == null) return;
+        var yy = v.series.priceToCoordinate(o[k] / R.scale); if (yy === null) return;
+        var d = Math.abs(yy - y); if (d <= 6 && (!best || d < best.d)) best = { id: o.id, key: k, d: d };
+      });
+    });
+    return best;
+  }
+  // Bound once per chart element; the element remembers its current view (a rebuilt chart or another account reuses the element).
+  // Dragging the order line moves its SL and TP along (same distance); dragging an SL or TP line moves only that level.
+  function bindOrderDrag(view) {
+    var host = view.el; host.__btView = view;
+    if (host.__btOrderDrag) return;
+    host.__btOrderDrag = true;
+    var drag = null, saved = null;
+    function cur() { return host.__btView; }
+    function local(e) { var r = host.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    function inPane(v, pt) { var ts = v.chart.timeScale(); return pt.x >= 0 && pt.x < ts.width() && pt.y >= 0 && pt.y < host.clientHeight - ts.height(); }
+    function usable(v) { return R && v && v.chart && R.eng.orders.length && (!DRAW || DRAW.tool() === 'cursor'); }
+    host.addEventListener('pointerdown', function (e) {
+      var v = cur();
+      if (e.button > 0 || !usable(v)) return;
+      var pt = local(e); if (!inPane(v, pt)) return;
+      var h = orderLineHit(v, pt.y); if (!h) return;
+      e.preventDefault(); e.stopPropagation();
+      var o = findOrder(h.id);
+      drag = { v: v, id: h.id, key: h.key, orig: { price: o.price, sl: o.sl, tp: o.tp }, pid: e.pointerId, moved: false };
+      var op = v.chart.options(); saved = { handleScroll: op.handleScroll, handleScale: op.handleScale };
+      v.chart.applyOptions({ handleScroll: false, handleScale: false });
+      try { host.setPointerCapture(e.pointerId); } catch (x) { /* synthetic event */ }
+    }, true);
+    host.addEventListener('pointermove', function (e) {
+      var v = cur(); if (!R || !v || !v.chart) return;
+      var pt = local(e);
+      if (drag) {
+        e.preventDefault(); e.stopPropagation();
+        var p = drag.v.series.coordinateToPrice(pt.y), o = findOrder(drag.id);
+        if (p === null || !o) return;
+        var pts = Math.round(p * R.scale); if (!(pts > 0)) return;
+        if (o[drag.key] === pts) return;
+        if (drag.key === 'price') {
+          var dl = pts - drag.orig.price;
+          o.price = pts; o.sl = drag.orig.sl == null ? null : drag.orig.sl + dl; o.tp = drag.orig.tp == null ? null : drag.orig.tp + dl;
+        } else o[drag.key] = pts;
+        drag.moved = true; syncPriceLines();
+        return;
+      }
+      if (usable(v) && inPane(v, pt) && orderLineHit(v, pt.y)) { host.style.cursor = 'ns-resize'; e.stopPropagation(); }
+    }, true);
+    function up(e) {
+      if (!drag) return;
+      var d = drag; drag = null; e.stopPropagation();
+      try { host.releasePointerCapture(d.pid); } catch (x) { /* ignore */ }
+      if (saved && d.v.chart) d.v.chart.applyOptions(saved); saved = null;
+      var o = findOrder(d.id); if (!o || !d.moved) return;
+      var ch = { price: o.price, sl: o.sl, tp: o.tp };
+      o.price = d.orig.price; o.sl = d.orig.sl; o.tp = d.orig.tp;      // back to the stored values; the engine checks the new ones
+      var val = ch[d.key];
+      try {
+        E.modifyOrder(R.eng, d.id, ch); saveOrders();
+        toast(_t('backtest.orders.moved', '{what}: {price}', { what: d.key === 'price' ? _t('backtest.order.price', 'Emir fiyatı') : d.key.toUpperCase(), price: E.ptsToStr(val, R.sym.digits) }), 'success');
+      } catch (err) { toast(codeMessage(err), 'warning'); }
+      syncPriceLines(); renderOrders(true);
+    }
+    host.addEventListener('pointerup', up, true); host.addEventListener('pointercancel', up, true);
   }
 
   // ---------------------------------------------------------------- chart views
@@ -1368,6 +1631,7 @@
     if (v === R) v.chart.subscribeCrosshairMove(renderLegend);
     v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); });
     v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (!syncing && Date.now() - (v.userAt || 0) < 500) syncFrom(v); if (v === R) updateNowBtn(); });
+    bindOrderDrag(v);
     var dg = R.sym.digits;
     v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; },
       tfSec: function () { return v.tfMin * 60; }, fmt: function (p) { return Number(p).toFixed(dg); } });
@@ -1471,7 +1735,7 @@
   function priceLine(v, Ls, key, pts, opts) {
     var price = pts == null ? NaN : pts / R.scale;
     if (!okPrice(price)) { if (Ls[key]) { try { v.series.removePriceLine(Ls[key]); } catch (e) { /* series rebuilt */ } Ls[key] = null; } return; }
-    if (Ls[key]) Ls[key].applyOptions({ price: price });
+    if (Ls[key]) Ls[key].applyOptions({ price: price, title: opts.title });
     else Ls[key] = v.series.createPriceLine(Object.assign({ price: price, lineWidth: 1, axisLabelVisible: true }, opts));
   }
   // every price line of a view (positions, Ask, Bid) off the chart; syncPriceLines / updateAskLine draw the current ones again
@@ -1493,6 +1757,12 @@
         priceLine(v, Ls, 'entry', p.entry, { color: p.dir > 0 ? c.up : c.down, lineStyle: LS.Solid, title: dirLabel(p.dir) + ' ' + E.stepsToStr(p.steps, R.sym.lotDigits) });
         priceLine(v, Ls, 'sl', p.sl, { color: c.down, lineStyle: LS.Dashed, title: 'SL' });
         priceLine(v, Ls, 'tp', p.tp, { color: c.up, lineStyle: LS.Dashed, title: 'TP' });
+      });
+      (R.eng.orders || []).forEach(function (o) {
+        var key = 'o:' + o.id, Ls = v.lines[key] || (v.lines[key] = {}); keep[key] = true;
+        priceLine(v, Ls, 'entry', o.price, { color: o.dir > 0 ? c.up : c.down, lineStyle: LS.LargeDashed, title: ordLabel(o.dir, o.type) + ' ' + E.stepsToStr(o.steps, R.sym.lotDigits) });
+        priceLine(v, Ls, 'sl', o.sl, { color: c.down, lineStyle: LS.SparseDotted, title: 'SL' });
+        priceLine(v, Ls, 'tp', o.tp, { color: c.up, lineStyle: LS.SparseDotted, title: 'TP' });
       });
       Object.keys(v.lines).forEach(function (id) {
         if (!keep[id]) { ['entry', 'sl', 'tp'].forEach(function (k) { priceLine(v, v.lines[id], k, null); }); delete v.lines[id]; }
@@ -1768,17 +2038,19 @@
         step: s.lot.step, min: s.lot.min, max: s.lot.max, value: val == null ? '—' : fmtUsd(Math.round(val * 100)), pct: val == null ? '—' : fmtUsd(Math.round(val)) });
     } else hint.textContent = _t('backtest.order.lot_hint', 'Adım {step} · {min}–{max} · 1 pip ≈ {pip}', {
       step: s.lot.step, min: s.lot.min, max: s.lot.max, pip: lot && q ? fmtUsd(Math.round(S.pipValueUsd(s.id, lot.lot, q.bid / R.scale) * 100)) : '—' });
+    ordPriceHint();
     var risk = $('bt-order-risk'); risk.textContent = '';
     if (lot && q) {
-      var sl = quietLevel('bt-sl'), tp = quietLevel('bt-tp');
-      if (sl !== false && tp !== false && (sl !== null || tp !== null)) {
-        var pvB = E.preview(R.eng, { dir: 1, steps: lot.steps, sl: sl, tp: tp });
+      var sl = quietLevel('bt-sl'), tp = quietLevel('bt-tp'), op = ordType() === 'market' ? null : quietLevel('bt-ord-price');
+      if (sl !== false && tp !== false && op !== false && (sl !== null || tp !== null)) {
+        var pvB = E.preview(R.eng, { dir: 1, steps: lot.steps, sl: sl, tp: tp, entry: op });
         if (pvB) risk.textContent = _t('backtest.order.risk', 'Risk {risk} · Kazanç {reward} · R:R {rr}', {
           risk: pvB.riskCents == null ? '—' : fmtUsd(pvB.riskCents), reward: pvB.rewardCents == null ? '—' : fmtUsd(pvB.rewardCents),
           rr: pvB.rr == null ? '—' : E.hundredthsToStr(pvB.rr) });
       }
     }
     if (force || R.eng.open.length) renderOpenRows();
+    if (R.eng.orders.length) renderOrders();
     updateControls();
   }
   function parseLotQuiet() {
@@ -1941,7 +2213,7 @@
       _t('backtest.stat.ambiguous', 'Belirsiz çıkış (TP+SL aynı mumda)') + ': ' + sm.ambiguous + ' ·');
   }
   function selectTab(name) {
-    ['open', 'history', 'stats'].forEach(function (n) {
+    ['open', 'orders', 'history', 'stats'].forEach(function (n) {
       $('bt-tab-' + n).setAttribute('aria-selected', n === name ? 'true' : 'false'); show($('bt-panel-' + n), n === name);
     });
     if (name === 'stats') { renderStats(); icons(); }
@@ -1989,7 +2261,7 @@
     $('bt-pos-cancel').addEventListener('click', function () { closeModal('bt-pos-modal'); });
     $('bt-pos-save').addEventListener('click', submitEditPos);
     $('bt-pos-form').addEventListener('submit', function (e) { e.preventDefault(); submitEditPos(); });
-    ['bt-account-modal', 'bt-delete-modal', 'bt-reset-modal', 'bt-pos-modal', 'bt-keys-modal'].forEach(function (id) {
+    ['bt-account-modal', 'bt-delete-modal', 'bt-reset-modal', 'bt-pos-modal', 'bt-ord-modal', 'bt-keys-modal'].forEach(function (id) {
       $(id).addEventListener('click', function (e) { if (e.target === $(id)) closeModal(id); });
     });
     // toolbar
@@ -2074,7 +2346,23 @@
     $('bt-text-form').addEventListener('submit', function (e) { e.preventDefault(); finishText(true); });
     $('bt-text-modal').addEventListener('click', function (e) { if (e.target === $('bt-text-modal')) finishText(false); });
     $('bt-look-close').addEventListener('click', function () { toggleDrawer(false); });
-    ['open', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
+    ['open', 'orders', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
+    // pending orders: type, list, edit modal
+    $('bt-ordtype').addEventListener('click', function (e) { var b = e.target.closest('[data-ordtype]'); if (b) setOrdType(b.getAttribute('data-ordtype')); });
+    $('bt-ord-price').addEventListener('input', function () { orderError(''); renderLive(false); });
+    ['bt-orders-body', 'bt-mini-ord-list'].forEach(function (id) {
+      $(id).addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-act]'); if (!b) return;
+        if (b.getAttribute('data-act') === 'cancel-order') cancelOrderId(b.getAttribute('data-id')); else if (b.getAttribute('data-act') === 'edit-order') openEditOrder(b.getAttribute('data-id'));
+      });
+    });
+    $('bt-ord-close').addEventListener('click', function () { closeModal('bt-ord-modal'); });
+    $('bt-ord-cancel').addEventListener('click', function () { closeModal('bt-ord-modal'); });
+    $('bt-ord-save').addEventListener('click', submitEditOrder);
+    $('bt-ord-form').addEventListener('submit', function (e) { e.preventDefault(); submitEditOrder(); });
+    $('bt-ord-cancel-order').addEventListener('click', function () { var o = editing; closeModal('bt-ord-modal'); if (o) cancelOrderId(o.id); });
+    try { L.ordType = localStorage.getItem(ORDTYPE_KEY) || 'market'; } catch (e) { L.ordType = 'market'; }
+    setOrdType(L.ordType);
     $('bt-save-retry-btn').addEventListener('click', retrySave);
   }
   function setupKeyboard() {
