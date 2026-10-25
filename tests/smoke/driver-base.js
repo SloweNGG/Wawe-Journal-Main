@@ -4,6 +4,7 @@
   function $(id) { return document.getElementById(id); }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function waitFor(fn, ms, what) { var t = Date.now(); while (Date.now() - t < (ms || 20000)) { try { if (fn()) return true; } catch (e) {} await sleep(50); } out.push('TIMEOUT ' + what); return false; }
+  function tab(id) { document.querySelector('#bt-acc-tabs [data-acc-tab="' + id + '"]').click(); }
   function vis(id) { var e = $(id); return !!e && !e.hidden && e.offsetParent !== null; }
   function setv(id, v) { var e = $(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }
   function toasts() { return window.__toasts.map(function (x) { return x[1]; }).join(' | '); }
@@ -17,6 +18,8 @@
     ok('list banner says synthetic, not the old browser-storage claim', /entetik|ynthetic|ynthetisch/.test(document.querySelector('.bt-banner-test').textContent) && !/tarayıcıda saklan|in this browser/i.test(document.querySelector('.bt-banner-test').textContent));
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal + default start');
+    ok('create window: tabs (no danger zone), General first, footer only Cancel + Create', !$('bt-acc-tab-danger').offsetParent && $('bt-acc-tab-general').getAttribute('aria-selected') === 'true' && document.querySelectorAll('#bt-account-modal .modal-footer button').length === 2);
+    tab('data');
     ok('source choice: synthetic selected, cTrader visible but disabled (no cTrader account connected: link shown, no "soon" chip)', $('bt-f-source-synthetic').checked && !$('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && vis('bt-f-source-connect') && !/Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent));
     ok('create modal open with default start', !!$('bt-f-start').value, $('bt-f-start').value);
     ok('spread default for EURUSD', $('bt-f-spread').value === '0.20', $('bt-f-spread').value);
@@ -103,11 +106,17 @@
     ok('cancel keeps the replay where it was', !$('bt-back-modal').classList.contains('active') && $('bt-clock-time').textContent === clk);
     // reset then go back
     $('bt-acc-settings-btn').click(); await waitFor(function () { return $('bt-account-modal').classList.contains('active'); }, 5000, 'settings modal');
-    ok('reset button visible with trades', vis('bt-account-reset'));
-    ok('symbol locked, balance locked', $('bt-f-symbol').disabled && $('bt-f-balance').disabled);
-    ok('edit modal: start date hidden, note about "go to date" shown', !vis('bt-f-start-wrap') && vis('bt-f-start-note'), $('bt-f-start-note').textContent.slice(0, 60));
-    ok('edit modal: [hidden] wins over .bt-field (linked account hidden for a synthetic account)', !vis('bt-f-journal-wrap'));
-    ok('edit modal: data source shown, locked', vis('bt-f-source-wrap') && $('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && vis('bt-f-source-note'));
+    ok('settings: footer only Cancel and Save, Save off without changes', document.querySelectorAll('#bt-account-modal .modal-footer button').length === 2 && $('bt-account-submit').disabled);
+    var nm0 = $('bt-f-name').value; setv('bt-f-name', nm0 + ' x');
+    ok('Save on after a change, off again when undone', !$('bt-account-submit').disabled && (setv('bt-f-name', nm0), $('bt-account-submit').disabled));
+    tab('data'); var info = $('bt-f-info').textContent;
+    ok('data tab: read-only card (symbol, synthetic source, start, section, timeframe link) with locks, no radios or date field', vis('bt-f-info') && /EUR\/USD/.test(info) && /entetik|ynthetic/.test(info) && /1 \/ 1|1 of 1|1 von 1/.test(info) && !vis('bt-f-source-synthetic') && !vis('bt-f-start') && !!$('bt-f-info').querySelector('[data-act="tf-toolbar"]') && $('bt-f-info').querySelectorAll('.bt-ro-lock[data-tip]').length === 4, info);
+    tab('trading');
+    ok('trading tab: balance locked with a lock that explains why (trades exist)', $('bt-f-balance').disabled && vis('bt-f-balance-lock') && /İşlem varken|trades|Trades/.test($('bt-f-balance-lock').querySelector('.bt-ro-lock').getAttribute('data-tip')));
+    tab('journal');
+    ok('journal tab: a synthetic account says why it cannot be linked', $('bt-f-journal-wrap').hidden && vis('bt-f-journal-off') && /entetik|ynthetic|ynthetisch/.test($('bt-f-journal-off').textContent));
+    tab('danger');
+    ok('danger zone: reset and delete with short descriptions, reset enabled with trades', vis('bt-account-reset') && !$('bt-account-reset').disabled && vis('bt-account-delete') && $('bt-acc-pane-danger').querySelectorAll('.bt-hint').length === 2);
     $('bt-account-reset').click(); await sleep(100);
     $('bt-reset-confirm').click(); await sleep(400);
     ok('reset deleted the trades', JSON.parse(localStorage.getItem(key)).trades.length === 0 && $('bt-history-count').textContent === '0');

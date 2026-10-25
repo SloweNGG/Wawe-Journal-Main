@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=18" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=19" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -20,7 +20,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793500006" is:inline defer></script>
+  <script src="/i18n.js?v=1793500007" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
@@ -36,7 +36,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-look.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=5" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=22" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=23" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -575,73 +575,105 @@ import Layout from '../layouts/Layout.astro';
   </aside>
 
   <!-- ================= MODALS (page slot: SPA removes them with the page) ================= -->
-  <div id="bt-account-modal" class="modal-overlay bt-modal" role="dialog" aria-modal="true" aria-labelledby="bt-account-modal-title">
-    <div class="modal-box">
+  <div id="bt-account-modal" class="modal-overlay bt-modal bt-acc-modal" role="dialog" aria-modal="true" aria-labelledby="bt-account-modal-title" data-mode="create">
+    <div class="modal-box bt-acc-box">
       <div class="modal-header">
         <h3 id="bt-account-modal-title" data-i18n="backtest.modal.create_title">Yeni backtest hesabı</h3>
         <button type="button" id="bt-account-close" class="modal-close" data-i18n-title="common.close" title="Kapat">✕</button>
       </div>
-      <form id="bt-account-form" class="modal-body" novalidate autocomplete="off">
-        <div class="bt-field"><label for="bt-f-name" data-i18n="backtest.field.name">Hesap adı</label>
-          <input id="bt-f-name" class="bt-input" type="text" maxlength="60" data-i18n-placeholder="backtest.field.name_ph" placeholder="Örn. EURUSD Londra seansı" /></div>
-        <div class="bt-field-row">
-          <div class="bt-field"><label for="bt-f-symbol" data-i18n="backtest.field.symbol">Sembol</label>
-            <select id="bt-f-symbol" class="bt-select"></select></div>
-          <div class="bt-field"><label for="bt-f-tf" data-i18n="backtest.field.timeframe">Zaman dilimi</label>
-            <select id="bt-f-tf" class="bt-select bt-num">
-              <option value="1m">M1</option><option value="5m">M5</option><option value="15m">M15</option>
-              <option value="30m">M30</option><option value="1h" selected>H1</option><option value="4h">H4</option><option value="1d">D1</option>
-            </select></div>
+      <div class="bt-acc-body">
+        <div class="bt-acc-tabs" role="tablist" aria-orientation="vertical" id="bt-acc-tabs">
+          <button type="button" role="tab" id="bt-acc-tab-general" data-acc-tab="general" aria-controls="bt-acc-pane-general" aria-selected="true"><i data-lucide="type" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_general">Genel</span></button>
+          <button type="button" role="tab" id="bt-acc-tab-data" data-acc-tab="data" aria-controls="bt-acc-pane-data" aria-selected="false" tabindex="-1"><i data-lucide="database" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_data">Veri</span></button>
+          <button type="button" role="tab" id="bt-acc-tab-trading" data-acc-tab="trading" aria-controls="bt-acc-pane-trading" aria-selected="false" tabindex="-1"><i data-lucide="sliders-horizontal" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_trading">İşlem koşulları</span></button>
+          <button type="button" role="tab" id="bt-acc-tab-journal" data-acc-tab="journal" aria-controls="bt-acc-pane-journal" aria-selected="false" tabindex="-1"><i data-lucide="book-open" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_journal">Defter bağlantısı</span></button>
+          <button type="button" role="tab" id="bt-acc-tab-danger" data-acc-tab="danger" aria-controls="bt-acc-pane-danger" aria-selected="false" tabindex="-1" class="bt-acc-tab-danger"><i data-lucide="triangle-alert" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_danger">Tehlikeli bölge</span></button>
         </div>
-        <fieldset class="bt-source-field" id="bt-f-source-wrap">
-          <legend data-i18n="backtest.field.source">Veri kaynağı</legend>
-          <label class="bt-radio" for="bt-f-source-synthetic">
-            <input type="radio" name="bt-f-source" id="bt-f-source-synthetic" value="synthetic" checked />
-            <span><span class="bt-radio-title" data-i18n="backtest.source.option_synthetic">Sentetik veri (pratik)</span>
-              <small class="bt-hint" data-i18n="backtest.source.option_synthetic_hint">Mumlar tarayıcıda üretilir; gerçek piyasa verisi değildir.</small></span>
-          </label>
-          <label class="bt-radio" for="bt-f-source-ctrader">
-            <input type="radio" name="bt-f-source" id="bt-f-source-ctrader" value="ctrader" disabled />
-            <span><span class="bt-radio-title" data-i18n="backtest.source.option_ctrader">cTrader verisi</span>
-              <small class="bt-hint" data-i18n="backtest.source.option_ctrader_hint">Mumlar bağlı cTrader hesabından, kendi broker verinle gelir.</small></span>
-          </label>
-          <small id="bt-f-source-connect" class="bt-hint" hidden><a id="bt-f-source-connect-link" class="bt-link" href="/journals">cTrader hesabını bağla</a></small>
-          <small id="bt-f-source-note" class="bt-hint" data-i18n="backtest.source.locked" hidden>Veri kaynağı hesap oluşturulduktan sonra değiştirilemez.</small>
-        </fieldset>
-        <div id="bt-f-ct-wrap" class="bt-ct-wrap" hidden>
-          <div class="bt-field-row">
-            <div class="bt-field"><label for="bt-f-ct-account" data-i18n="backtest.ctrader.account">cTrader hesabı</label>
-              <select id="bt-f-ct-account" class="bt-select"></select></div>
-            <div class="bt-field"><label for="bt-f-ct-symbol" data-i18n="backtest.ctrader.symbol">Broker sembolü</label>
-              <select id="bt-f-ct-symbol" class="bt-select"></select></div>
-          </div>
-          <p id="bt-f-ct-depth" class="bt-hint bt-block-hint" role="status" aria-live="polite"></p>
-        </div>
-        <p id="bt-f-ct-summary" class="bt-hint bt-block-hint" hidden></p>
-        <p id="bt-f-symbol-hint" class="bt-hint bt-block-hint" hidden></p>
-        <div class="bt-field" id="bt-f-start-wrap"><label for="bt-f-start" data-i18n="backtest.field.start">Başlangıç tarihi ve saati</label>
-          <input id="bt-f-start" class="bt-input bt-num" type="datetime-local" step="60" />
-          <small id="bt-f-start-hint" class="bt-hint"></small></div>
-        <p id="bt-f-start-note" class="bt-hint bt-block-hint" data-i18n="backtest.field.start_edit_note" hidden>Başlangıç tarihi hesap oluşturulurken seçilir. Replay zamanını değiştirmek için araç çubuğundaki «Tarihe git» alanını kullan.</p>
-        <div class="bt-field-row">
-          <div class="bt-field" id="bt-f-balance-wrap"><label for="bt-f-balance" data-i18n="backtest.field.balance">Başlangıç bakiyesi (USD)</label>
-            <input id="bt-f-balance" class="bt-input bt-num" type="text" inputmode="decimal" value="10000.00" />
-            <small id="bt-f-balance-hint" class="bt-hint" hidden></small></div>
-          <div class="bt-field"><label for="bt-f-spread" id="bt-f-spread-label" data-i18n="backtest.field.spread">Spread (pip)</label>
-            <input id="bt-f-spread" class="bt-input bt-num" type="text" inputmode="decimal" />
-            <small id="bt-f-spread-hint" class="bt-hint bt-num"></small></div>
-        </div>
-        <div class="bt-field"><label for="bt-f-commission" data-i18n="backtest.field.commission">Komisyon (lot başına, açılış+kapanış, USD)</label>
-          <input id="bt-f-commission" class="bt-input bt-num" type="text" inputmode="decimal" value="0.00" />
-          <small id="bt-f-commission-hint" class="bt-hint" data-i18n="backtest.field.commission_hint">Pozisyon kapanınca bakiyeden düşülür.</small></div>
-        <div class="bt-field" id="bt-f-journal-wrap" hidden><label for="bt-f-journal" data-i18n="backtest.field.journal">Bağlı hesap (isteğe bağlı)</label>
-          <select id="bt-f-journal" class="bt-select"><option value="" data-i18n="backtest.field.journal_none">Bağlantı yok</option></select>
-          <small id="bt-f-journal-hint" class="bt-hint"></small></div>
-        <p id="bt-account-error" class="bt-error" role="alert" hidden></p>
-      </form>
+        <form id="bt-account-form" class="bt-acc-panes" novalidate autocomplete="off">
+          <section class="bt-acc-pane" id="bt-acc-pane-general" role="tabpanel" aria-labelledby="bt-acc-tab-general" data-acc-pane="general">
+            <div class="bt-field"><label for="bt-f-name" data-i18n="backtest.field.name">Hesap adı</label>
+              <input id="bt-f-name" class="bt-input" type="text" maxlength="60" data-i18n-placeholder="backtest.field.name_ph" placeholder="Örn. EURUSD Londra seansı" /></div>
+          </section>
+
+          <section class="bt-acc-pane" id="bt-acc-pane-data" role="tabpanel" aria-labelledby="bt-acc-tab-data" data-acc-pane="data" hidden>
+            <!-- create: choices -->
+            <div class="bt-acc-create">
+              <div class="bt-field-row">
+                <div class="bt-field"><label for="bt-f-symbol" data-i18n="backtest.field.symbol">Sembol</label>
+                  <select id="bt-f-symbol" class="bt-select"></select></div>
+                <div class="bt-field"><label for="bt-f-tf" data-i18n="backtest.field.timeframe">Zaman dilimi</label>
+                  <select id="bt-f-tf" class="bt-select bt-num">
+                    <option value="1m">M1</option><option value="5m">M5</option><option value="15m">M15</option>
+                    <option value="30m">M30</option><option value="1h" selected>H1</option><option value="4h">H4</option><option value="1d">D1</option>
+                  </select></div>
+              </div>
+              <fieldset class="bt-source-field" id="bt-f-source-wrap">
+                <legend data-i18n="backtest.field.source">Veri kaynağı</legend>
+                <div class="bt-choice-row">
+                  <label class="bt-radio" for="bt-f-source-synthetic">
+                    <input type="radio" name="bt-f-source" id="bt-f-source-synthetic" value="synthetic" checked />
+                    <span class="bt-radio-title"><span data-i18n="backtest.source.option_synthetic">Sentetik veri (pratik)</span>
+                      <button type="button" class="bt-info" data-tip-key="" data-tip="" aria-label="">i</button></span>
+                  </label>
+                  <label class="bt-radio" for="bt-f-source-ctrader">
+                    <input type="radio" name="bt-f-source" id="bt-f-source-ctrader" value="ctrader" disabled />
+                    <span class="bt-radio-title"><span data-i18n="backtest.source.option_ctrader">cTrader verisi</span>
+                      <button type="button" class="bt-info" data-tip-key="" data-tip="" aria-label="">i</button></span>
+                  </label>
+                </div>
+                <small id="bt-f-source-connect" class="bt-hint" hidden><a id="bt-f-source-connect-link" class="bt-link" href="/journals">cTrader hesabını bağla</a></small>
+              </fieldset>
+              <div id="bt-f-ct-wrap" class="bt-ct-wrap" hidden>
+                <div class="bt-field-row">
+                  <div class="bt-field"><label for="bt-f-ct-account" data-i18n="backtest.ctrader.account">cTrader hesabı</label>
+                    <select id="bt-f-ct-account" class="bt-select"></select></div>
+                  <div class="bt-field"><label for="bt-f-ct-symbol" data-i18n="backtest.ctrader.symbol">Broker sembolü</label>
+                    <select id="bt-f-ct-symbol" class="bt-select"></select></div>
+                </div>
+                <p id="bt-f-ct-depth" class="bt-hint bt-block-hint" role="status" aria-live="polite"></p>
+              </div>
+              <div class="bt-field" id="bt-f-start-wrap"><label for="bt-f-start" data-i18n="backtest.field.start">Başlangıç tarihi ve saati</label>
+                <input id="bt-f-start" class="bt-input bt-num" type="datetime-local" step="60" />
+                <small id="bt-f-start-hint" class="bt-hint"></small></div>
+            </div>
+            <!-- edit: read-only facts -->
+            <dl id="bt-f-info" class="bt-acc-info" hidden></dl>
+          </section>
+
+          <section class="bt-acc-pane" id="bt-acc-pane-trading" role="tabpanel" aria-labelledby="bt-acc-tab-trading" data-acc-pane="trading" hidden>
+            <div class="bt-field" id="bt-f-balance-wrap"><label for="bt-f-balance"><span data-i18n="backtest.field.balance">Başlangıç bakiyesi (USD)</span><span class="bt-acc-lock" id="bt-f-balance-lock" hidden></span></label>
+              <input id="bt-f-balance" class="bt-input bt-num" type="text" inputmode="decimal" value="10000.00" /></div>
+            <div class="bt-field"><label for="bt-f-spread"><span id="bt-f-spread-label" data-i18n="backtest.field.spread">Spread (pip)</span><span class="bt-acc-lock" id="bt-f-spread-lock" hidden></span></label>
+              <input id="bt-f-spread" class="bt-input bt-num" type="text" inputmode="decimal" />
+              <small id="bt-f-spread-hint" class="bt-hint bt-num"></small></div>
+            <div class="bt-field"><label for="bt-f-commission"><span data-i18n="backtest.field.commission_short">Komisyon (lot başına, USD)</span>
+              <button type="button" class="bt-info" data-tip-key="" data-tip="" aria-label="">i</button><span class="bt-acc-lock" id="bt-f-commission-lock" hidden></span></label>
+              <input id="bt-f-commission" class="bt-input bt-num" type="text" inputmode="decimal" value="0.00" /></div>
+          </section>
+
+          <section class="bt-acc-pane" id="bt-acc-pane-journal" role="tabpanel" aria-labelledby="bt-acc-tab-journal" data-acc-pane="journal" hidden>
+            <div class="bt-field" id="bt-f-journal-wrap" hidden><label for="bt-f-journal"><span data-i18n="backtest.field.journal">Bağlı hesap (isteğe bağlı)</span>
+              <button type="button" class="bt-info" data-tip-key="" data-tip="" aria-label="">i</button></label>
+              <select id="bt-f-journal" class="bt-select"><option value="" data-i18n="backtest.field.journal_none">Bağlantı yok</option></select></div>
+            <p id="bt-f-journal-off" class="bt-acc-note" hidden></p>
+          </section>
+
+          <section class="bt-acc-pane" id="bt-acc-pane-danger" role="tabpanel" aria-labelledby="bt-acc-tab-danger" data-acc-pane="danger" hidden>
+            <div class="bt-acc-danger">
+              <div><strong data-i18n="backtest.reset.button">Hesabı sıfırla</strong>
+                <p class="bt-hint" id="bt-account-reset-desc" data-i18n="backtest.acc.reset_desc">Tüm işlemler silinir, bakiye başlangıca döner; ayarlar ve bölüm kalır.</p></div>
+              <button type="button" id="bt-account-reset" class="bt-btn-danger-ghost"><span data-i18n="backtest.reset.button">Hesabı sıfırla</span></button>
+            </div>
+            <div class="bt-acc-danger">
+              <div><strong data-i18n="backtest.modal.delete_account">Hesabı sil</strong>
+                <p class="bt-hint" data-i18n="backtest.acc.delete_desc">Hesap ve tüm işlemleri kalıcı olarak silinir. Geri alınamaz.</p></div>
+              <button type="button" id="bt-account-delete" class="bt-btn-danger"><span data-i18n="backtest.modal.delete_account">Hesabı sil</span></button>
+            </div>
+          </section>
+          <p id="bt-account-error" class="bt-error" role="alert" hidden></p>
+        </form>
+      </div>
       <div class="modal-footer">
-        <button type="button" id="bt-account-delete" class="bt-btn-danger-ghost" hidden><span data-i18n="backtest.modal.delete_account">Hesabı sil</span></button>
-        <button type="button" id="bt-account-reset" class="bt-btn-danger-ghost" hidden><span data-i18n="backtest.reset.button">Hesabı sıfırla</span></button>
         <span class="bt-spacer"></span>
         <button type="button" id="bt-account-cancel" class="btn-modal-cancel"><span data-i18n="common.cancel">İptal</span></button>
         <button type="button" id="bt-account-submit" class="btn-modal-confirm"><span id="bt-account-submit-label" data-i18n="backtest.modal.create">Hesabı oluştur</span></button>

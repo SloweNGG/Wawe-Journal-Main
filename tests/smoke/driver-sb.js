@@ -7,6 +7,7 @@
   function $(id) { return document.getElementById(id); }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function waitFor(fn, ms, what) { var t = Date.now(); while (Date.now() - t < (ms || 20000)) { try { if (fn()) return true; } catch (e) {} await sleep(50); } out.push('TIMEOUT ' + what); return false; }
+  function tab(id) { document.querySelector('#bt-acc-tabs [data-acc-tab="' + id + '"]').click(); }
   function vis(id) { var e = $(id); return !!e && !e.hidden && e.offsetParent !== null; }
   function setv(id, v) { var e = $(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }
   function toasts() { return window.__toasts.map(function (x) { return x[1]; }).join(' | '); }
@@ -22,11 +23,12 @@
     ok('journals were not requested (synthetic accounts cannot be linked)', !db.client.calls.some(function (c) { return c.table === 'journals'; }));
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
+    tab('data');
     ok('source: synthetic selected and enabled', $('bt-f-source-synthetic').checked && !$('bt-f-source-synthetic').disabled);
     ok('source: cTrader visible but disabled while no cTrader account is connected, with the connect link', vis('bt-f-source-wrap') && $('bt-f-source-ctrader').disabled && !$('bt-f-source-ctrader').checked && vis('bt-f-source-connect') && $('bt-f-source-connect-link').getAttribute('href') === '/journals' && /bağla|connect|verbinden/i.test($('bt-f-source-connect-link').textContent) && !/Yakında|Coming soon|Demnächst/.test($('bt-f-source-wrap').textContent), $('bt-f-source-connect-link').textContent);
     ok('no cTrader Edge Function call for a synthetic account', window.__ctCalls.length === 0);
-    ok('journal field hidden for a synthetic account', !vis('bt-f-journal-wrap'));
-    ok('source note (locked) hidden on create', !vis('bt-f-source-note'));
+    tab('journal');
+    ok('journal tab: no field for a synthetic account, the reason instead', !vis('bt-f-journal-wrap') && vis('bt-f-journal-off'));
     setv('bt-f-name', 'Practice'); setv('bt-f-commission', '7.00');
     $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready'; }, 40000, 'replay ready');
@@ -44,7 +46,9 @@
     ok('no journal mirror, no write to trades at all', db.tables.trades.length === 0 && tradeWrites().length === 0, JSON.stringify(tradeWrites().map(function (c) { return c.op; })));
     // settings: source locked, journal hidden
     $('bt-acc-settings-btn').click(); await waitFor(function () { return $('bt-account-modal').classList.contains('active'); }, 5000, 'settings');
-    ok('settings: source shown and locked, journal hidden', vis('bt-f-source-wrap') && $('bt-f-source-synthetic').checked && $('bt-f-source-synthetic').disabled && $('bt-f-source-ctrader').disabled && vis('bt-f-source-note') && !vis('bt-f-journal-wrap'));
+    tab('data'); var sinfo = $('bt-f-info').textContent;
+    ok('settings: source shown as a locked fact, no radios', vis('bt-f-info') && /entetik|ynthetic|ynthetisch/.test(sinfo) && !vis('bt-f-source-synthetic') && $('bt-f-info').querySelectorAll('.bt-ro-lock').length >= 2, sinfo);
+    tab('journal'); ok('settings: journal tab explains why a synthetic account cannot be linked', $('bt-f-journal-wrap').hidden && vis('bt-f-journal-off'));
     setv('bt-f-name', 'Practice 2'); $('bt-account-submit').click();
     await waitFor(function () { return db.tables.backtest_accounts[0].name === 'Practice 2'; }, 8000, 'rename');
     ok('rename works and keeps the source', db.tables.backtest_accounts[0].name === 'Practice 2' && db.tables.backtest_accounts[0].data_source === 'synthetic');

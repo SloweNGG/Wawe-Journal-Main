@@ -56,9 +56,14 @@ describe('bt-i18n', () => {
     for (const id of ['chart', 'balance', 'order']) used.add('backtest.dock.panel_' + id);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
   });
-  it('no lock icon anywhere in the page (owner preference)', () => {
-    const src = fs.readFileSync('src/pages/backtest.astro', 'utf8') + fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
-    assert.ok(!/data-lucide="(lock|shield-lock|key)"/.test(src));
+  it('lock icons only on values that cannot be changed (owner: never for Premium gating; read-only values asked for one, 2026-10-25)', () => {
+    const page = fs.readFileSync('src/pages/backtest.astro', 'utf8'), ctl = fs.readFileSync('public/interface/backtest/js/backtest.js', 'utf8');
+    assert.ok(!/data-lucide="(lock|shield-lock|key)"/.test(page + ctl), 'no lock in the markup');
+    const uses = ctl.split('\n').filter((l) => /'data-lucide', '(lock|shield-lock|key)'/.test(l));
+    assert.equal(uses.length, 1, 'one place creates a lock');
+    const fn = ctl.slice(ctl.indexOf('function roLock('), ctl.indexOf('function roLock(') + 400);
+    assert.ok(fn.indexOf("'data-lucide', 'lock'") > 0, 'and it is roLock (read-only values)');
+    assert.ok(!/roLock\([^)]*(pro|PRO|upgrade)/.test(ctl), 'never for plan gating');
   });
   it('practice mode: synthetic label and source choice exist, no admin gate left in the page', () => {
     const page = fs.readFileSync('src/pages/backtest.astro', 'utf8');

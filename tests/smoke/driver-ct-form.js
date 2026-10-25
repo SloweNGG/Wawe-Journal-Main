@@ -7,6 +7,7 @@
   function $(id) { return document.getElementById(id); }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function waitFor(fn, ms, what) { var t = Date.now(); while (Date.now() - t < (ms || 20000)) { try { if (fn()) return true; } catch (e) {} await sleep(50); } out.push('TIMEOUT ' + what); return false; }
+  function tab(id) { document.querySelector('#bt-acc-tabs [data-acc-tab="' + id + '"]').click(); }
   function vis(id) { var e = $(id); return !!e && !e.hidden && e.offsetParent !== null; }
   function setv(id, v) { var e = $(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }
   function check(id, on) { var e = $(id); e.checked = on; e.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -20,6 +21,7 @@
     await toList();
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
+    tab('data');
     check('bt-f-source-ctrader', true);
     await waitFor(function () { return vis('bt-f-ct-wrap') && $('bt-f-ct-symbol').options.length > 0 && /2024/.test($('bt-f-ct-depth').textContent); }, 15000, 'measured');
   }
@@ -71,6 +73,7 @@
       await toList();
       $('bt-new-account-btn').click();
       await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal bad');
+    tab('data');
       check('bt-f-source-ctrader', true);
       await waitFor(function () { return vis('bt-f-ct-wrap') && $('bt-f-ct-depth').classList.contains('bt-error') && /cTrader/.test($('bt-f-ct-depth').textContent); }, 15000, 'first account error shown');
       ok('first account fails: connection message with reconnect link in the panel', !!$('bt-f-ct-depth').querySelector('a[href="/journals"]'), $('bt-f-ct-depth').textContent);

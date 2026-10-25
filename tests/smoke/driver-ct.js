@@ -7,6 +7,7 @@
   function $(id) { return document.getElementById(id); }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function waitFor(fn, ms, what) { var t = Date.now(); while (Date.now() - t < (ms || 20000)) { try { if (fn()) return true; } catch (e) {} await sleep(50); } out.push('TIMEOUT ' + what); return false; }
+  function tab(id) { document.querySelector('#bt-acc-tabs [data-acc-tab="' + id + '"]').click(); }
   function vis(id) { var e = $(id); return !!e && !e.hidden && e.offsetParent !== null; }
   function setv(id, v) { var e = $(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }
   function check(id, on) { var e = $(id); e.checked = on; e.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -31,6 +32,7 @@
     db = window.__db;
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
+    tab('data');
     var linkText = $('bt-f-source-connect-link').textContent;
 
     if (ct !== 'ready') {
@@ -53,7 +55,9 @@
     ok('depth measured and shown (first data month 2024-02)', /2024/.test($('bt-f-ct-depth').textContent), $('bt-f-ct-depth').textContent);
     ok('start date limited to the measured depth', /^2024-02/.test($('bt-f-start').min) && $('bt-f-start').max.length > 8, $('bt-f-start').min + ' / ' + $('bt-f-start').max);
     ok('default start is inside the depth', $('bt-f-start').value >= $('bt-f-start').min, $('bt-f-start').value);
-    ok('journal select appears for a cTrader account', vis('bt-f-journal-wrap') && $('bt-f-journal').options.length >= 2);
+    tab('journal');
+    ok('journal select appears for a cTrader account (journal tab)', vis('bt-f-journal-wrap') && $('bt-f-journal').options.length >= 2 && !vis('bt-f-journal-off'));
+    tab('data');
     ok('only symbols and the coverage were requested so far (no candles)', window.__ctCalls.every(function (c) { return c.action === 'symbols' || c.action === 'coverage'; }), JSON.stringify(window.__ctCalls.map(function (c) { return c.action; })));
     // symbol change re-matches the candidates
     setv('bt-f-symbol', 'XAUUSD');
@@ -63,8 +67,8 @@
     await waitFor(function () { return $('bt-f-ct-symbol').options.length === 2 && $('bt-f-ct-symbol').options[0].textContent === 'EURUSD' && /2024/.test($('bt-f-ct-depth').textContent); }, 10000, 'eur candidates again');
     // back to synthetic and again to cTrader: the panel hides and the synthetic limits return
     check('bt-f-source-synthetic', true);
-    await waitFor(function () { return !vis('bt-f-ct-wrap') && !vis('bt-f-journal-wrap'); }, 5000, 'back to synthetic');
-    ok('synthetic again: panel and journal hidden', !vis('bt-f-ct-wrap') && !vis('bt-f-journal-wrap'));
+    await waitFor(function () { return !vis('bt-f-ct-wrap') && $('bt-f-journal-wrap').hidden; }, 5000, 'back to synthetic');
+    ok('synthetic again: panel and journal hidden', !vis('bt-f-ct-wrap') && $('bt-f-journal-wrap').hidden && !$('bt-f-journal-off').hidden);
     check('bt-f-source-ctrader', true);
     await waitFor(function () { return vis('bt-f-ct-wrap') && /2024/.test($('bt-f-ct-depth').textContent) && $('bt-f-ct-symbol').options.length > 0; }, 10000, 'ctrader again');
     setv('bt-f-ct-symbol', '2');                       // pick EURUSD.r (symbolId 2)
@@ -101,9 +105,11 @@
     // settings: source locked, summary, journal editable
     $('bt-acc-settings-btn').click(); await waitFor(function () { return $('bt-account-modal').classList.contains('active'); }, 5000, 'settings');
     await sleep(200);
-    ok('settings: source locked (both radios disabled), cTrader checked, note shown', $('bt-f-source-ctrader').checked && $('bt-f-source-ctrader').disabled && $('bt-f-source-synthetic').disabled && vis('bt-f-source-note'));
-    ok('settings: read-only summary of the broker account and symbol, no picker', vis('bt-f-ct-summary') && /Spotware/.test($('bt-f-ct-summary').textContent) && /EURUSD\.r/.test($('bt-f-ct-summary').textContent) && /4455667/.test($('bt-f-ct-summary').textContent) && !vis('bt-f-ct-wrap'), $('bt-f-ct-summary').textContent);
-    ok('settings: journal link visible and selected', vis('bt-f-journal-wrap') && $('bt-f-journal').value === J1);
+    tab('data'); var info = $('bt-f-info').textContent;
+    ok('settings: the source is a read-only card (no radio buttons), cTrader shown', vis('bt-f-info') && /cTrader/.test(info) && !vis('bt-f-source-ctrader') && !vis('bt-f-source-synthetic'), info);
+    ok('settings: broker, broker symbol and account number in the card, no picker', /Spotware/.test(info) && /EURUSD\.r/.test(info) && /4455667/.test(info) && !vis('bt-f-ct-wrap'), info);
+    tab('journal');
+    ok('settings: journal link visible and selected (journal tab)', vis('bt-f-journal-wrap') && $('bt-f-journal').value === J1);
     $('bt-account-cancel').click(); await sleep(200);
     // DB rules of Migration 09
     var up1 = await db.client.from('backtest_accounts').update({ source_symbol_name: 'GOLD' }).eq('id', a.id).eq('user_id', 'u-' + role).select('id');
@@ -118,6 +124,7 @@
     async function newCtAccount(name, appSym) {
       $('bt-new-account-btn').click();
       await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal ' + name);
+      tab('data');
       check('bt-f-source-ctrader', true);
       await waitFor(function () { return vis('bt-f-ct-wrap') && $('bt-f-ct-symbol').options.length > 0 && /2024/.test($('bt-f-ct-depth').textContent); }, 15000, 'measured ' + name);
       if (appSym) {

@@ -422,12 +422,17 @@
   function fillJournalSelect(selected, source) {
     var linkable = !!SYNC && source === 'ctrader';
     show($('bt-f-journal-wrap'), linkable);
-    if (!linkable) return;
+    var off = $('bt-f-journal-off'); show(off, !linkable);
+    if (!linkable) {
+      off.textContent = source !== 'ctrader' ? (editing ? _t('backtest.acc.journal_synthetic', 'Sentetik veriyle çalışan hesap deftere bağlanamaz: işlemleri gerçek piyasa verisinden gelmez.')
+        : _t('backtest.acc.journal_create', 'Deftere yalnızca cTrader verili hesaplar bağlanır. Veri sekmesinde cTrader verisini seçebilirsin.'))
+        : _t('backtest.acc.journal_unavailable', 'Defter bağlantısı şu an kullanılamıyor.');
+      return;
+    }
     var sel = $('bt-f-journal'); sel.textContent = '';
     var none = document.createElement('option'); none.value = ''; none.textContent = _t('backtest.field.journal_none', 'Bağlantı yok'); sel.appendChild(none);
     L.journals.forEach(function (j) { var o = document.createElement('option'); o.value = j.id; o.textContent = j.name; sel.appendChild(o); });
     sel.value = selected || '';
-    $('bt-f-journal-hint').textContent = _t('backtest.sync.link_hint', 'Bağlı hesaba yalnızca kapanan işlemler aktarılır; canlı istatistiklere girmezler.');
   }
   // Change the linked journal (SYNC only). Confirms when mirrors would be removed. Returns { ok } | { aborted } | { error }.
   async function changeJournal(acc, newJ) {
@@ -487,23 +492,80 @@
     return selectedSource() === 'ctrader' ? (L.ctForm && L.ctForm.cov) : L.cov[$('bt-f-symbol').value];
   }
 
+  // ---------------------------------------------------------------- account window: tabs (Genel, Veri, İşlem koşulları, Defter, Tehlikeli bölge)
+  var ACC_TABS = ['general', 'data', 'trading', 'journal', 'danger'], accSnap = null;
+  function accTabs() { return ACC_TABS.filter(function (id) { return !$('bt-acc-tab-' + id).hidden; }); }
+  function selectAccTab(id, focus) {
+    if (accTabs().indexOf(id) < 0) id = 'general';
+    ACC_TABS.forEach(function (t) {
+      var on = t === id, b = $('bt-acc-tab-' + t);
+      b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
+      $('bt-acc-pane-' + t).hidden = !on;
+    });
+    if (focus) try { $('bt-acc-tab-' + id).focus(); } catch (e) { /* ignore */ }
+  }
+  // the explanation of a small "i" (hover / focus) follows the language
+  function refreshTips(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('[data-tip-key]'), function (b) {
+      var txt = _t(b.getAttribute('data-tip-key'), b.getAttribute('data-tip')); b.setAttribute('data-tip', txt); b.setAttribute('aria-label', txt);
+    });
+  }
+  // a small lock next to a value that cannot be changed; its reason opens on hover / focus
+  function roLock(tip) {
+    var b = el('span', 'bt-ro-lock'); b.tabIndex = 0; b.setAttribute('role', 'img'); b.setAttribute('data-tip', tip); b.setAttribute('aria-label', tip);
+    var i = el('i'); i.setAttribute('data-lucide', 'lock'); i.setAttribute('aria-hidden', 'true'); b.appendChild(i);
+    return b;
+  }
+  function setLock(id, on, tip) { var h = $(id); h.textContent = ''; h.hidden = !on; if (on) h.appendChild(roLock(tip)); }
+  // edit: symbol, source, start, section and timeframe as facts (they cannot be changed here)
+  function fillAccInfo(acc) {
+    var dl = $('bt-f-info'); dl.textContent = '';
+    var locked = _t('backtest.acc.locked', 'Hesap oluşturulduktan sonra değiştirilemez.');
+    function row(label, value, lock, extra) {
+      var r = el('div', 'bt-acc-info-row'), dt = el('dt', '', label), dd = el('dd');
+      dd.appendChild(el('span', 'bt-acc-info-val', value));
+      if (lock) dd.appendChild(roLock(lock));
+      if (extra) dd.appendChild(extra);
+      r.appendChild(dt); r.appendChild(dd); dl.appendChild(r);
+    }
+    var sym = S.get(acc.symbol);
+    row(_t('backtest.field.symbol', 'Sembol'), sym ? sym.name : acc.symbol, locked);
+    row(_t('backtest.field.source', 'Veri kaynağı'), acc.dataSource === 'ctrader' && acc.source
+      ? _t('backtest.acc.source_ct', 'cTrader · {broker} · {symbol} · hesap {account}', { broker: acc.source.brokerName || 'broker', symbol: acc.source.symbolName, account: acc.source.ctid })
+      : _t('backtest.source.option_synthetic', 'Sentetik veri (pratik)'), locked);
+    var first = acc.sections && acc.sections.length ? acc.sections[0].start : acc.replaySec;
+    row(_t('backtest.acc.start', 'Başlangıç tarihi'), first ? fmtDateTime(first) : '—', _t('backtest.acc.start_tip', 'Hesap açılırken seçilir. Replay zamanı için araç çubuğundaki «Tarihe git».'));
+    var total = acc.sections ? acc.sections.length : 1;
+    row(_t('backtest.acc.section', 'Mevcut bölüm'), _t('backtest.acc.section_value', 'Bölüm {n} / {total}', { n: acc.sectionNo || 1, total: total }), _t('backtest.acc.section_tip', 'Geçmişe her dönüş yeni bir bölüm açar.'));
+    var tfb = el('button', 'bt-link-btn bt-acc-tf-link', _t('backtest.acc.tf_toolbar', 'Araç çubuğundan değiştir')); tfb.type = 'button'; tfb.setAttribute('data-act', 'tf-toolbar');
+    row(_t('backtest.field.timeframe', 'Zaman dilimi'), C.TF_LABEL[acc.tf] || acc.tf, null, tfb);
+  }
+  function accValues() { return [$('bt-f-name').value.trim(), $('bt-f-balance').value.trim(), $('bt-f-spread').value.trim(), $('bt-f-commission').value.trim(), $('bt-f-journal').value || ''].join('|'); }
+  // edit: Save stays off until something changed
+  function accDirty() { if (!editing) return; $('bt-account-submit').disabled = accValues() === accSnap; }
+
   async function openAccountModal(mode, acc, opener) {
     fillSymbolSelect();
     editing = mode === 'edit' ? acc : null;
-    var edit = mode === 'edit';
+    var edit = mode === 'edit', modal = $('bt-account-modal');
+    modal.setAttribute('data-mode', edit ? 'edit' : 'create');
     $('bt-account-modal-title').textContent = edit ? _t('backtest.modal.edit_title', 'Hesap ayarları') : _t('backtest.modal.create_title', 'Yeni backtest hesabı');
     $('bt-account-submit-label').textContent = edit ? _t('common.save', 'Kaydet') : _t('backtest.modal.create', 'Hesabı oluştur');
+    $('bt-account-submit').disabled = false;
     show($('bt-account-error'), false);
-    show($('bt-f-start-wrap'), !edit);
-    show($('bt-f-start-note'), edit);
+    $('bt-acc-tab-danger').hidden = !edit;
+    show(modal.querySelector('.bt-acc-create'), !edit); show($('bt-f-info'), edit);
+    selectAccTab('general');
     var trades = edit ? await L.store.listTrades(acc.id) : [];
     if (!PAGE.alive) return;
     var hasTrades = trades.length > 0, hasOpen = trades.some(function (t) { return !t.exit_time; });
-    $('bt-account-delete').hidden = !edit; $('bt-account-reset').hidden = !(edit && hasTrades);
+    $('bt-account-reset').disabled = !(edit && hasTrades);
+    $('bt-account-reset-desc').textContent = edit && !hasTrades ? _t('backtest.acc.reset_none', 'Sıfırlanacak işlem yok.') : _t('backtest.acc.reset_desc', 'Tüm işlemler silinir, bakiye başlangıca döner; ayarlar ve bölüm kalır.');
     if (edit) {
       $('bt-f-name').value = acc.name; $('bt-f-symbol').value = acc.symbol; $('bt-f-tf').value = acc.tf;
       $('bt-f-balance').value = E.centsToStr(acc.startCents); $('bt-f-spread').value = E.hundredthsToStr(acc.spreadH);
       $('bt-f-commission').value = E.centsToStr(acc.cplCents);
+      fillAccInfo(acc);
     } else {
       $('bt-f-name').value = ''; $('bt-f-tf').value = '1h'; $('bt-f-balance').value = '10000.00'; $('bt-f-commission').value = '0.00';
       $('bt-f-symbol').selectedIndex = 0;
@@ -513,26 +575,26 @@
     var ctState = edit ? 'ready' : (await loadCtStatus()).state;
     if (!PAGE.alive) return;
     L.ctForm = null;
-    fillSourceField(source, edit, ctState);
+    if (!edit) fillSourceField(source, ctState);
     if (source === 'ctrader') await ensureJournals();
     fillJournalSelect(edit ? acc.journalId : '', source);
     show($('bt-f-ct-wrap'), false);
-    var sum = $('bt-f-ct-summary'); show(sum, edit && source === 'ctrader');
-    if (edit && source === 'ctrader' && acc.source) sum.textContent = _t('backtest.ctrader.summary', 'Veri kaynağı: cTrader · {broker} · {symbol} (hesap {account})', { broker: acc.source.brokerName || 'broker', symbol: acc.source.symbolName, account: acc.source.ctid });
     $('bt-f-symbol').disabled = edit; $('bt-f-tf').disabled = edit;
     $('bt-f-balance').disabled = edit && hasTrades;
     $('bt-f-spread').disabled = edit && hasOpen; $('bt-f-commission').disabled = edit && hasOpen;
-    var sh = $('bt-f-symbol-hint'); show(sh, edit); sh.textContent = edit ? _t('backtest.field.symbol_locked', 'Sembol oluşturulduktan sonra değiştirilemez.') : '';
-    var bh = $('bt-f-balance-hint'); show(bh, edit && hasTrades); bh.textContent = _t('backtest.field.balance_locked', 'İşlem varken başlangıç bakiyesi değiştirilemez.');
-    var lockMsg = _t('backtest.field.locked_open_positions', 'Açık pozisyon varken değiştirilemez.');
-    $('bt-f-commission-hint').textContent = edit && hasOpen ? lockMsg : _t('backtest.field.commission_hint', 'Pozisyon kapanınca bakiyeden düşülür.');
+    var openLock = _t('backtest.field.locked_open_positions', 'Açık pozisyon varken değiştirilemez.');
+    setLock('bt-f-balance-lock', edit && hasTrades, _t('backtest.field.balance_locked', 'İşlem varken başlangıç bakiyesi değiştirilemez.'));
+    setLock('bt-f-spread-lock', edit && hasOpen, openLock); setLock('bt-f-commission-lock', edit && hasOpen, openLock);
+    refreshTips(modal);
     openModal('bt-account-modal', opener);
+    icons();
     spreadHint();
     if (!edit) {
       await startHint();
       var cov = formCov();
       if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov));
     }
+    accSnap = edit ? accValues() : null; accDirty();
     $('bt-f-name').focus();
   }
 
@@ -626,7 +688,7 @@
       if (seq !== ctSeq || !PAGE.alive) return;
       L.ctForm.cov = cov;
       $('bt-f-start').min = toLocalInput(cov.firstT); $('bt-f-start').max = toLocalInput(cov.lastT);
-      ctDepth(_t('backtest.ctrader.depth', 'Bu hesapta bu sembolün verisi: {from} – {to}', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }));
+      ctDepth(_t('backtest.ctrader.depth', 'Bu hesapta bu sembolün verisi: {from} – {to}', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }), 'data');
       $('bt-f-start-hint').textContent = _t('backtest.field.start_hint', 'Saat dilimin: {tz}. Veri: {from} – {to}', { tz: tz(), from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) });
       if (reloadSymbols !== 'keepStart') $('bt-f-start').value = toLocalInput(defaultStart(cov));
     } catch (e) {
@@ -649,19 +711,19 @@
 
   // Data source choice. Synthetic is always possible; cTrader needs a connected cTrader account (ctState 'ready'), otherwise it is
   // disabled with a link that leads to the connection. Fixed once the account exists.
-  function fillSourceField(source, locked, ctState) {
+  function fillSourceField(source, ctState) {
     $('bt-f-source-synthetic').checked = source !== 'ctrader';
     $('bt-f-source-ctrader').checked = source === 'ctrader';
-    $('bt-f-source-synthetic').disabled = !!locked;
-    $('bt-f-source-ctrader').disabled = !!locked || ctState !== 'ready';
-    show($('bt-f-source-note'), !!locked);
-    var needLink = !locked && ctState !== 'ready';
+    $('bt-f-source-synthetic').disabled = false;
+    $('bt-f-source-ctrader').disabled = ctState !== 'ready';
+    var needLink = ctState !== 'ready';
     show($('bt-f-source-connect'), needLink);
     if (needLink) $('bt-f-source-connect-link').textContent = ctState === 'reconnect'
       ? _t('backtest.ctrader.reconnect', 'cTrader bağlantısını yenile') : _t('backtest.ctrader.connect', 'cTrader hesabını bağla');
   }
   function selectedSource() { return $('bt-f-source-ctrader').checked ? 'ctrader' : 'synthetic'; }
-  function formError(msg) { var e = $('bt-account-error'); e.textContent = msg; e.hidden = false; }
+  // a form error is shown under the panes and the tab with the field opens
+  function formError(msg, tab) { var e = $('bt-account-error'); e.textContent = msg; e.hidden = false; if (tab) selectAccTab(tab); }
   function mapStoreError(e) {
     var m = String((e && e.message) || '');
     if (m.indexOf('BACKTEST_LIMIT_EXCEEDED') >= 0) return L.plan === 'premium'
@@ -679,14 +741,14 @@
     var btn = $('bt-account-submit'); if (btn.disabled) return;
     var edit = !!editing, sym = S.get($('bt-f-symbol').value);
     var name = $('bt-f-name').value.trim();
-    if (!(Array.from(name).length >= 1 && Array.from(name).length <= 60)) return formError(_t('backtest.err.name', 'Hesap adı 1-60 karakter olmalı.'));
+    if (!(Array.from(name).length >= 1 && Array.from(name).length <= 60)) return formError(_t('backtest.err.name', 'Hesap adı 1-60 karakter olmalı.'), 'general');
     var bal = E.parseScaled($('bt-f-balance').value, 2, 'exact');
-    if (!bal.ok || !(bal.value > 0 && bal.value <= 10000000000)) return formError(_t('backtest.err.balance', 'Başlangıç bakiyesi 0 ile 100.000.000 arasında olmalı (en fazla 2 ondalık).'));
+    if (!bal.ok || !(bal.value > 0 && bal.value <= 10000000000)) return formError(_t('backtest.err.balance', 'Başlangıç bakiyesi 0 ile 100.000.000 arasında olmalı (en fazla 2 ondalık).'), 'trading');
     var sp = E.parseScaled($('bt-f-spread').value, 2, 'exact');
     if (!sp.ok || sp.value < 0 || sp.value > 1000000) return formError(S.spreadUnit(sym.id) === 'price'
-      ? _t('backtest.err.spread_crypto', 'Spread 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık).') : _t('backtest.err.spread', 'Spread 0 ile 10000 pip arasında olmalı (en fazla 2 ondalık).'));
+      ? _t('backtest.err.spread_crypto', 'Spread 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık).') : _t('backtest.err.spread', 'Spread 0 ile 10000 pip arasında olmalı (en fazla 2 ondalık).'), 'trading');
     var cm = E.parseScaled($('bt-f-commission').value, 2, 'exact');
-    if (!cm.ok || cm.value < 0 || cm.value > 1000000) return formError(_t('backtest.err.commission', 'Komisyon 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık).'));
+    if (!cm.ok || cm.value < 0 || cm.value > 1000000) return formError(_t('backtest.err.commission', 'Komisyon 0 ile 10000 USD arasında olmalı (en fazla 2 ondalık).'), 'trading');
     btn.disabled = true;
     try {
       if (edit) {
@@ -711,18 +773,18 @@
       var source = selectedSource(), ctSel = null, ctSource = null, cov;
       if (source === 'ctrader') {
         ctSel = ctSelection();
-        if (!ctSel.acc) return formError(_t('backtest.ctrader.pick_account', 'Bir cTrader hesabı seç.'));
-        if (!ctSel.ok || !(L.ctForm && L.ctForm.cov)) return formError(_t('backtest.ctrader.pick_symbol', 'Bir broker sembolü seç ve veri derinliğinin ölçülmesini bekle.'));
+        if (!ctSel.acc) return formError(_t('backtest.ctrader.pick_account', 'Bir cTrader hesabı seç.'), 'data');
+        if (!ctSel.ok || !(L.ctForm && L.ctForm.cov)) return formError(_t('backtest.ctrader.pick_symbol', 'Bir broker sembolü seç ve veri derinliğinin ölçülmesini bekle.'), 'data');
         cov = L.ctForm.cov;
         var info;
-        try { info = await L.ctApi.symbolInfo(ctSel.ctid, ctSel.symbolId); } catch (e0) { return formError(ctErrorText(e0)); }
+        try { info = await L.ctApi.symbolInfo(ctSel.ctid, ctSel.symbolId); } catch (e0) { return formError(ctErrorText(e0), 'data'); }
         ctSource = { ctid: ctSel.ctid, brokerName: ctSel.acc.broker_name || '', isLive: !!ctSel.acc.is_live, symbolId: ctSel.symbolId, symbolName: ctSel.symbolName, digits: isFinite(info.digits) ? info.digits : null };
       } else cov = L.cov[sym.id] || await L.src.coverage(sym.id);
       var startSec = fromLocalInput($('bt-f-start').value);
-      if (startSec === null) return formError(_t('backtest.err.start_required', 'Başlangıç tarihi seç.'));
+      if (startSec === null) return formError(_t('backtest.err.start_required', 'Başlangıç tarihi seç.'), 'data');
       if (startSec < cov.firstT || startSec > cov.lastT) return formError(_t('backtest.err.start_range', 'Başlangıç {from} ile {to} arasında olmalı.', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }));
       var no = S.nextOpen(startSec * 1000, sym.id);
-      if (no === null || no / 1000 > cov.lastT) return formError(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'));
+      if (no === null || no / 1000 > cov.lastT) return formError(_t('backtest.err.no_data_after', 'Bu tarihten sonra veri yok.'), 'data');
       var row = E.accountInsertRow({ id: newId(), userId: L.user.id, journalId: SYNC && source === 'ctrader' ? ($('bt-f-journal').value || null) : null, dataSource: source, source: ctSource,
         name: name, symbol: sym.id, tf: $('bt-f-tf').value,
         startCents: bal.value, spreadH: sp.value, cplCents: cm.value, replaySec: no / 1000 + 60 });
@@ -2327,6 +2389,24 @@
     $('bt-account-cancel').addEventListener('click', function () { closeModal('bt-account-modal'); });
     $('bt-account-delete').addEventListener('click', function (e) { openDeleteModal(editing, e.currentTarget); });
     $('bt-account-reset').addEventListener('click', function (e) { openModal('bt-reset-modal', e.currentTarget); });
+    // tabs: click, arrow keys (vertical on desktop, horizontal on a phone), Home / End
+    $('bt-acc-tabs').addEventListener('click', function (e) { var t = e.target.closest('[data-acc-tab]'); if (t) selectAccTab(t.getAttribute('data-acc-tab')); });
+    $('bt-acc-tabs').addEventListener('keydown', function (e) {
+      var list = accTabs(), cur = list.indexOf((document.activeElement && document.activeElement.getAttribute('data-acc-tab')) || ''), k = e.key;
+      if (cur < 0) return;
+      var next = k === 'ArrowDown' || k === 'ArrowRight' ? cur + 1 : k === 'ArrowUp' || k === 'ArrowLeft' ? cur - 1 : k === 'Home' ? 0 : k === 'End' ? list.length - 1 : null;
+      if (next === null) return;
+      e.preventDefault(); selectAccTab(list[(next + list.length) % list.length], true);
+    });
+    $('bt-account-form').addEventListener('input', accDirty);
+    $('bt-account-form').addEventListener('change', accDirty);
+    // timeframe: changed in the replay toolbar, not here
+    $('bt-account-form').addEventListener('click', function (e) {
+      if (!e.target.closest('[data-act="tf-toolbar"]')) return;
+      var acc = editing; closeModal('bt-account-modal');
+      if (R && acc && R.acc.id === acc.id) { if (DESK) DESK.show('replay'); try { $('bt-tf').focus(); } catch (x) { /* ignore */ } }
+      else if (acc) openAccount(acc.id);
+    });
     $('bt-f-symbol').addEventListener('change', function () {
       var s = S.get(this.value); $('bt-f-spread').value = E.hundredthsToStr(Math.round(s.defaultSpreadPips * 100)); spreadHint();
       startHint().then(function () { var cov = formCov(); if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov)); });
@@ -2677,6 +2757,7 @@
       requestAnimationFrame(function () {
         if (!PAGE.alive) return;
         fmtCache = {};
+        refreshTips($('bt-account-modal'));
         if (R) {
           renderLive(true); renderTables(); renderStats(); setPlayUi(R.playing);
           views().forEach(function (v) { if (v.chart) v.chart.applyOptions({ localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) }, timeScale: { tickMarkFormatter: tickLabelFor(v) } }); });

@@ -727,3 +727,73 @@ html.bt-stfs-lock, html.bt-stfs-lock body { overflow: hidden !important; }
 .bt-st-sub .bt-num { font-weight: 600; }
 .bt-st-warn { margin: 2px 0 6px; font-size: 11.5px; color: var(--yellow); }
 .bt-st-rnote { margin: 0 0 6px; }
+
+/* ---------------------------------------------------------------- hesap penceresi: solda sekmeler, sağda içerik, sabit boyut */
+.bt-acc-modal .bt-acc-box { max-width: 760px; height: min(560px, 90vh); height: min(560px, 90dvh); }
+.bt-acc-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 196px minmax(0, 1fr); }
+.bt-acc-tabs { display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; border-right: 1px solid var(--modal-line); overflow-y: auto; }
+.bt-acc-tabs [role="tab"] { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px; background: none; color: var(--muted);
+  font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; white-space: nowrap; }
+.bt-acc-tabs [role="tab"] svg { width: 16px; height: 16px; flex: none; }
+.bt-acc-tabs [role="tab"]:hover { background: var(--modal-hover); color: var(--text); }
+.bt-acc-tabs [role="tab"][aria-selected="true"] { background: var(--modal-hover); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+.bt-acc-tabs [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bt-acc-tabs [role="tab"][hidden] { display: none; }
+.bt-acc-tabs .bt-acc-tab-danger { margin-top: auto; }
+.bt-acc-tabs .bt-acc-tab-danger[aria-selected="true"], .bt-acc-tabs .bt-acc-tab-danger:hover { color: var(--red); }
+.bt-acc-panes { min-width: 0; min-height: 0; overflow-y: auto; padding: 1.1rem var(--modal-pad-x, 1.35rem); }
+.bt-acc-pane[hidden] { display: none !important; }
+.bt-acc-modal .bt-input, .bt-acc-modal .bt-select { background: var(--modal-field-bg); border-color: var(--modal-field-line); }
+.bt-acc-modal .bt-field label { display: inline-flex; align-items: center; gap: 6px; }
+.bt-acc-modal .bt-choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bt-acc-modal .bt-radio { align-items: center; border-color: var(--modal-field-line); }
+.bt-acc-modal .bt-radio-title { gap: 6px; }
+.bt-acc-modal .bt-error { margin-top: 4px; }
+/* değiştirilemeyen bilgiler: sade kart */
+.bt-acc-info { margin: 0; border: 1px solid var(--modal-line); border-radius: 12px; overflow: hidden; }
+.bt-acc-info-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: center; padding: 11px 14px; }
+.bt-acc-info-row + .bt-acc-info-row { border-top: 1px solid var(--modal-line); }
+.bt-acc-info dt { color: var(--muted); font-size: 12.5px; }
+.bt-acc-info dd { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; font-size: 13.5px; font-weight: 600; }
+.bt-acc-info-val { overflow-wrap: anywhere; }
+.bt-acc-tf-link { font-size: 12.5px; margin-left: auto; }
+.bt-acc-note { margin: 0; padding: 12px 14px; border: 1px solid var(--modal-line); border-radius: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+/* kilit ve "i": üzerine gelince (ya da odakta) kısa açıklama */
+.bt-ro-lock, .bt-info { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; color: var(--muted); }
+.bt-ro-lock { width: 18px; height: 18px; border-radius: 5px; cursor: help; }
+.bt-ro-lock svg { width: 13px; height: 13px; }
+.bt-info { width: 16px; height: 16px; padding: 0; border: 1px solid var(--modal-line-strong, var(--border)); border-radius: 50%; background: none; font: 700 10.5px/1 var(--font, inherit);
+  font-style: italic; cursor: help; }
+.bt-info:hover, .bt-info:focus-visible, .bt-ro-lock:hover, .bt-ro-lock:focus-visible { color: var(--text); outline: none; border-color: var(--accent); }
+.bt-ro-lock:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.bt-info::after, .bt-ro-lock::after { content: attr(data-tip); position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); z-index: 20; width: max-content;
+  max-width: 240px; padding: 7px 9px; border-radius: 8px; background: var(--modal-bg); border: 1px solid var(--modal-line-strong, var(--border)); box-shadow: var(--modal-shadow);
+  color: var(--text); font: 500 12px/1.45 var(--font, inherit); font-style: normal; text-transform: none; letter-spacing: 0; white-space: normal; text-align: left;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.12s; }
+.bt-info:hover::after, .bt-info:focus-visible::after, .bt-ro-lock:hover::after, .bt-ro-lock:focus-visible::after { opacity: 1; visibility: visible; }
+.bt-acc-lock { display: inline-flex; }
+.bt-acc-lock[hidden] { display: none; }
+/* tehlikeli bölge */
+.bt-acc-danger { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 12px; }
+.bt-acc-danger + .bt-acc-danger { margin-top: 10px; }
+.bt-acc-danger strong { font-size: 13.5px; }
+.bt-acc-danger .bt-hint { margin: 3px 0 0; }
+.bt-acc-danger button { flex: none; }
+.bt-acc-danger button:disabled { opacity: 0.45; cursor: not-allowed; }
+.bt-acc-modal .modal-footer .btn-modal-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
+/* telefon: sekmeler üstte yatay, kaydırılabilir */
+@media (max-width: 640px) {
+  .bt-acc-modal .bt-acc-box { height: min(640px, 92dvh); }
+  .bt-acc-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .bt-acc-tabs { flex-direction: row; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--modal-line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .bt-acc-tabs::-webkit-scrollbar { display: none; }
+  .bt-acc-tabs [role="tab"] { width: auto; flex: none; padding: 8px 10px; }
+  .bt-acc-tabs [role="tab"][aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--accent); }
+  .bt-acc-tabs .bt-acc-tab-danger { margin-top: 0; }
+  .bt-acc-panes { padding: 1rem; }
+  .bt-acc-modal .bt-choice-row, .bt-acc-modal .bt-field-row { grid-template-columns: minmax(0, 1fr); }
+  .bt-acc-info-row { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .bt-acc-tf-link { margin-left: 0; }
+  .bt-acc-danger { flex-direction: column; align-items: stretch; }
+  .bt-info::after, .bt-ro-lock::after { left: auto; right: -8px; transform: none; max-width: 220px; }
+}
