@@ -26,7 +26,7 @@
     }
     $('bt-buy-btn').click(); await sleep(80); $('bt-step-btn').click(); await sleep(80);     // one open position for the equity curve
     var eng = window.__btTest.R().eng;
-    $('bt-tab-stats').click();
+    window.__btTest.openWin('stats');
     await waitFor(function () { return qa('.bt-st-kpi').length >= 6; }, 5000, 'stats rendered');
     var net = eng.closed.reduce(function (a, t) { return a + t.net; }, 0);
     var vals = Array.prototype.map.call(qa('.bt-st-kpi .bt-st-value'), function (e) { return e.textContent; });

@@ -43,11 +43,11 @@ const SCENARIOS = {
   'crypto-en': ['driver=/__driver-crypto.js&role=user&plan=free&i18n=en', DESKTOP],
   sections: ['driver=/__driver-sections.js&role=user&plan=premium&i18n=tr', DESKTOP],
   stage1: ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=tr', DESKTOP],
-  'dock-pro': ['driver=/__driver-dock.js&role=user&plan=premium&i18n=tr', DESKTOP],
+  'desk-pro': ['driver=/__driver-desk.js&role=user&plan=premium&i18n=tr', DESKTOP],
   orders: ['driver=/__driver-orders.js&role=user&plan=premium&i18n=tr', DESKTOP],
   'orders-limit': ['backend=supabase&driver=/__driver-orders.js&role=user&plan=free&ct=ready&tlimit=2&tused=1&mode=limit&i18n=tr', DESKTOP],
-  'dock-free': ['driver=/__driver-dock.js&role=user&plan=free&i18n=en', DESKTOP],
-  'dock-phone': ['driver=/__driver-dock.js&role=user&plan=premium&phone=1&i18n=tr', PHONE],
+  'desk-free': ['driver=/__driver-desk.js&role=user&plan=free&i18n=en', DESKTOP],
+  'desk-phone': ['driver=/__driver-desk.js&role=user&plan=premium&phone=1&i18n=tr', PHONE],
   'stage1-de': ['driver=/__driver-stage1.js&role=user&plan=premium&i18n=de', DESKTOP],
   'sections-ct': ['backend=supabase&driver=/__driver-sections.js&role=user&plan=premium&ct=ready&i18n=en', DESKTOP],
   'draw-real-pro': ['driver=/__driver-draw2.js&role=user&plan=premium&i18n=tr', DESKTOP],
@@ -118,7 +118,7 @@ for (const name of names) {
   const page = await ctx.newPage();
   await page.setViewport(sc[1]);
   const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e && e.message || e)));
+  page.on('pageerror', (e) => errors.push(String(e && e.message || e) + (process.env.STACKS ? ' :: ' + String(e && e.stack || '').slice(0, 900) : '')));
   // trusted input for drivers (real mouse and keyboard through the browser, like a user): await window.__pp({ op, ... })
   //   move {x, y, steps}, down / up {button}, click {x, y, count, button}, wheel {x, y, dy}, key {key, type: 'down'|'up'|'press'}
   await page.exposeFunction('__pp', async (c) => {

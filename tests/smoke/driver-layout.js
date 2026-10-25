@@ -30,34 +30,18 @@
     ok('position closed from the compact list', $('bt-mini-pos-count').textContent === '0' && $('bt-history-count').textContent === '1');
     // advanced mode
     document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(150);
-    ok('advanced: bottom tabs visible, compact list hidden', vis(document.querySelector('.bt-tables')) && !vis('bt-mini-pos'));
+    ok('advanced: open positions window visible, compact list hidden', vis(document.querySelector('.bt-win[data-win="open"]')) && !vis('bt-mini-pos'));
     ok('advanced stored', JSON.parse(localStorage.getItem('ww_bt_layout_v1')).mode === 'advanced');
     key('M', { shiftKey: true }); await sleep(100);
     ok('Shift+M toggles back to simple', $('bt-root').getAttribute('data-mode') === 'simple');
     key('M', { shiftKey: true }); await sleep(100);
     if (!phone) {
-      // zone edges (bt-dock.js): right zone width by pointer, bottom zone height by keyboard
-      var sv = document.querySelector('[data-zsplit="right"]'), side = document.querySelector('[data-zone="right"]');
-      ok('right zone splitter visible on desktop', vis(sv));
-      var w0 = side.getBoundingClientRect().width, r = sv.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + 40;
-      sv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, pointerId: 7, button: 0 }));
-      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x - 80, clientY: y, pointerId: 7 }));
-      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x - 80, clientY: y, pointerId: 7 }));
-      await sleep(150);
-      var w1 = side.getBoundingClientRect().width;
-      ok('dragging the right zone edge widens the panel by 80 px', Math.abs((w1 - w0) - 80) <= 2, w0 + ' -> ' + w1);
-      var dk = Object.keys(localStorage).filter(function (k) { return k.indexOf('ww_bt_dock_v1:') === 0; })[0];
-      ok('panel width stored (per user)', !!dk && JSON.parse(localStorage.getItem(dk)).size.right === Math.round(w1), dk + ' ' + localStorage.getItem(dk));
-      var sh = document.querySelector('[data-zsplit="bottom"]'), tables = document.querySelector('.bt-tables');
-      var h0 = tables.getBoundingClientRect().height; sh.focus();
-      sh.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-      await sleep(100);
-      ok('bottom zone edge with the keyboard: +16 px', Math.abs(tables.getBoundingClientRect().height - h0 - 16) <= 2, h0 + ' -> ' + tables.getBoundingClientRect().height);
-      sh.blur();
+      // windows (bt-desk.js; moving and resizing with the real mouse: smoke desk-*)
+      ok('desktop: free windows with title bars', $('bt-desk').getAttribute('data-desk') === 'free' && vis(document.querySelector('.bt-win[data-win="order"] .bt-win-head')));
       await sleep(200);
-      ok('chart canvas follows the resize', Math.abs(document.querySelector('#bt-chart table').getBoundingClientRect().width - $('bt-chart').getBoundingClientRect().width) <= 2);
+      ok('chart canvas follows the window', Math.abs(document.querySelector('#bt-chart table').getBoundingClientRect().width - $('bt-chart').getBoundingClientRect().width) <= 2);
     } else {
-      ok('phone: splitters hidden', !vis(document.querySelector('[data-zsplit="right"]')) && !vis(document.querySelector('[data-zsplit="bottom"]')));
+      ok('phone: windows stacked without frames (no title bar buttons, no resize handles)', $('bt-desk').getAttribute('data-desk') === 'stack' && !vis(document.querySelector('.bt-win-btns')) && !vis(document.querySelector('.bt-win-rz')));
       ok('phone: replay without horizontal scroll', noHScroll(), document.documentElement.scrollWidth + ' > ' + window.innerWidth);
     }
     // full screen
@@ -66,7 +50,7 @@
     var cr = $('bt-chart').getBoundingClientRect();
     ok('full screen: chart covers the window', cr.width >= window.innerWidth - 2 && cr.height >= window.innerHeight - 2, cr.width + 'x' + cr.height);
     ok('full screen: balance, replay controls and quick order float', vis('bt-stats') && vis('bt-play-btn') && vis('bt-buy-btn') && getComputedStyle($('bt-order-form')).position === 'fixed');
-    ok('full screen: header and tables hidden, exit button shown', !vis(document.querySelector('.bt-replay-head')) && !vis(document.querySelector('.bt-tables')) && vis('bt-fs-exit'));
+    ok('full screen: header and tables hidden, exit button shown', !vis(document.querySelector('.bt-replay-head')) && !vis(document.querySelector('.bt-win[data-win="open"]')) && vis('bt-fs-exit'));
     if (phone) ok('phone full screen: no horizontal scroll', noHScroll());
     $('bt-buy-btn').click(); await sleep(200);
     ok('quick order works in full screen', $('bt-open-count').textContent === '1');

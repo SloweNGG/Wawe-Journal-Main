@@ -68,7 +68,7 @@
     var o = R().eng.orders[0];
     ok('buy limit placed: stored with price, SL, TP and the time it was placed', !!o && o.price === lim && o.sl === lim - 40 && o.tp === lim + 60 && o.placedT === R().win.t[R().k] + 60, JSON.stringify(o));
     ok('fields cleared, toast', $('bt-ord-price').value === '' && /verildi/.test(toasts()));
-    $('bt-tab-orders').click(); await sleep(100);
+    window.__btTest.openWin('orders'); await sleep(100);
     ok('orders tab: one row with the price and the distance', $('bt-orders-count').textContent === '1' && $('bt-orders-body').children.length === 1 &&
       $('bt-orders-body').textContent.indexOf(px(lim)) >= 0 && /pip/.test($('bt-orders-body').textContent));
     var lines = R().lines['o:' + o.id];

@@ -32,7 +32,7 @@
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
   var LAY = null;                               // window.WwBtLayout controller (mode, full screen, shortcut sheet)
-  var DOCK = null, statsFs = false;             // window.WwBtDock controller (movable panels, multi-chart grid, stats widgets)
+  var DESK = null, statsFs = false;             // window.WwBtDesk controller (windows, layouts, full-screen multi-chart grid, stats widgets)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
@@ -125,7 +125,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDock && window.WwBtLook && window.WwBtDraw && window.WwBtStats &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtDraw && window.WwBtStats &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -173,12 +173,14 @@
     });
     STATS = window.WwBtStats.createView();
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
-    DOCK = window.WwBtDock.mount({ page: PAGE, dock: $('bt-dock'), storage: safeStorage(), userId: user.id, mode: function () { return LAY.mode(); },
-      fullscreen: function () { return LAY.isFullscreen(); }, wide: wideScreen, t: _t, onChange: onDockChange });
+    DESK = window.WwBtDesk.mount({ page: PAGE, desk: $('bt-desk'), storage: safeStorage(), userId: user.id, t: _t, mode: function () { return LAY.mode(); },
+      wide: wideScreen, fullscreen: function () { return LAY.isFullscreen(); }, pro: function () { return can('backtestMultiChart'); }, present: chartPresent,
+      charts: function () { return shownLayout(); }, setCharts: setChartsFromDesk, upgrade: function () { openUpgrade('backtest_multichart'); }, toast: toast,
+      onChange: onDeskChange });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
-    LAY.decideMode(L.accounts.length); DOCK.apply(); placeStatsHost();
+    LAY.decideMode(L.accounts.length); DESK.apply(); placeCells(); placeStatsHost();
     var deep = new URLSearchParams(location.search).get('account');
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
   }
@@ -1887,7 +1889,7 @@
     tfOptions(sel, C.TF_MIN[tf] ? tf : EXTRA_TFS[i]);
     head.appendChild(cellGrip()); head.appendChild(sel); cell.appendChild(head);
     var host = el('div', 'bt-chart'); cell.appendChild(host);
-    $('bt-charts').appendChild(cell);
+    cellHost(i).appendChild(cell);
     var v = { el: host, cell: cell, tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1, userAt: 0 };
     sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); });
     markUser(v);
@@ -1898,10 +1900,30 @@
     ['pointerdown', 'wheel', 'touchstart'].forEach(function (ev) { v.el.addEventListener(ev, on, { capture: true, passive: true }); });
     ['pointermove'].forEach(function (ev) { v.el.addEventListener(ev, function (e) { if (e.buttons) on(); }, { capture: true, passive: true }); });
   }
+  // where an extra chart's cell goes: its own window on the free desk, the shared grid otherwise (full screen)
+  function freeDesk() { return !!DESK && DESK.kind() === 'free'; }
+  function cellHost(i) { var w = freeDesk() && document.querySelector('.bt-win[data-win="chart' + (i + 2) + '"] .bt-win-body'); return w || $('bt-charts'); }
+  function gridLayout() { return freeDesk() ? '1' : shownLayout(); }
+  function placeCells() {
+    if (!R || !R.extra) return;
+    R.extra.forEach(function (v, i) { var h = cellHost(i); if (v.cell.parentNode !== h) h.appendChild(v.cell); });
+    $('bt-charts').setAttribute('data-layout', gridLayout());
+    layoutCells();
+  }
+  // chart window present on the desk: the main one always, chart2..4 while the chart layout has that many charts
+  function chartPresent(id) { var i = window.WwBtDesk.CHARTS.indexOf(id); return i <= 0 || !!(R && R.extra && R.extra.length >= i); }
+  // a layout or preset asks for a chart layout: multi-chart stays Premium
+  function setChartsFromDesk(id) {
+    if (!LAYOUTS[id]) id = '1';
+    if (id !== '1' && !can('backtestMultiChart')) return false;
+    LAY.setCharts(id, (R && R.extra && R.extra.length ? R.extra.map(function (x) { return x.tfId; }) : LAY.prefs().tfs));
+    if (R) applyChartLayout();
+    return true;
+  }
   function applyChartLayout() {
     if (!R || !R.chart) return;
     var id = shownLayout(), need = LAYOUTS[id] - 1, tfs = LAY.prefs().tfs, added = false;
-    $('bt-charts').setAttribute('data-layout', id);
+    $('bt-charts').setAttribute('data-layout', gridLayout());
     R.extra = R.extra || [];
     while (R.extra.length > need) { var gone = R.extra.pop(); destroyChart(gone); gone.cell.remove(); }
     while (R.extra.length < need) {
@@ -1910,7 +1932,8 @@
     }
     if (added) { rebuildMarkers(); syncPriceLines(); updateAskLine(); syncFrom(R); }
     renderLayoutPicker();
-    layoutCells();
+    if (DESK) DESK.apply();
+    placeCells();
     if (added && R.histMonths < historyNeed()) loadHistory(R.token);
   }
   function setViewTimeframe(v, tfId) {
@@ -1954,7 +1977,9 @@
       views().forEach(function (v) {
         if (v === src || !v.chart) return;
         var t = p && p.time && price !== null ? barAtOrBefore(v.bars || [], p.time) : null;
-        if (t === null) v.chart.clearCrosshairPosition(); else v.chart.setCrosshairPosition(price, t, v.series);
+        // a time the chart cannot place yet (data being rebuilt) throws in Lightweight Charts: no crosshair there then
+        if (t !== null) { try { v.chart.setCrosshairPosition(price, t, v.series); return; } catch (e) { /* fall through */ } }
+        v.chart.clearCrosshairPosition();
       });
     } finally { crossing = false; }
   }
@@ -2221,7 +2246,7 @@
     var firstT = secTrades.concat(open).length ? Math.min.apply(null, secTrades.concat(open).map(function (t) { return t.entryT; })) - 60 : 0;
     var span = R.tfMin * 60, candles = !firstT ? [] : R.candles.filter(function (c) { return c.time + span > firstT; }).map(function (c) { return { time: c.time, close: c.close, span: span }; });
     STATS.render({ box: $('bt-stats-view'), t: _t, pro: can('backtestStats'), fmtUsd: fmtUsd, locale: localeTag(), colors: colors(), lwc: window.WwChart.lwc,
-      layout: DOCK ? DOCK.widgets() : null, drag: wideScreen(), onLayout: function (l) { if (DOCK) DOCK.setWidgets(l); if (!$('bt-widgets-pop').hidden) renderWidgetsMenu(); },
+      layout: DESK ? DESK.widgets() : null, drag: wideScreen(), onLayout: function (l) { if (DESK) DESK.setWidgets(l); if (!$('bt-widgets-pop').hidden) renderWidgetsMenu(); },
       monthNames: MONTHS[lang()] || MONTHS.tr, upgrade: function () { openUpgrade('backtest_stats'); },
       data: { trades: trades, open: open, candles: candles, startCents: R.acc.startCents, section: secNo, sectionTrades: secTrades, sectionStartCents: secStartCents,
         floatCents: function (t, closePts) { return E.grossCents(sym, t.dir, t.entry, E.closeFill(t.dir, closePts, sp), t.steps) - t.comm; },
@@ -2231,12 +2256,8 @@
     setText('bt-stats-extra', _t('backtest.stat.commission', 'Toplam komisyon') + ': ' + fmtUsd(sm.commissionCents) + ' · ' +
       _t('backtest.stat.ambiguous', 'Belirsiz çıkış (TP+SL aynı mumda)') + ': ' + sm.ambiguous + ' ·');
   }
-  function selectTab(name) {
-    ['open', 'orders', 'history', 'stats'].forEach(function (n) {
-      $('bt-tab-' + n).setAttribute('aria-selected', n === name ? 'true' : 'false'); show($('bt-panel-' + n), n === name);
-    });
-    if (name === 'stats') { renderStats(); icons(); }
-  }
+  // open positions, pending orders, history and statistics are windows: open one and bring it to the front
+  function showWin(name) { if (DESK) DESK.show(name); if (name === 'stats') { renderStats(); icons(); } }
 
   // ---------------------------------------------------------------- listeners
   function bindStaticUi() {
@@ -2334,6 +2355,7 @@
       if (b.hasAttribute('data-pro')) { toggleLayoutPop(false); return openUpgrade('backtest_multichart'); }
       LAY.setCharts(id, (R && R.extra.length ? R.extra.map(function (x) { return x.tfId; }) : LAY.prefs().tfs));
       toggleLayoutPop(false); applyChartLayout();
+      if (freeDesk()) DESK.tileCharts(shownLayout());
     });
     PAGE.on(document, 'click', function (e) {
       if (!e.target.closest('#bt-layout-pop, #bt-layout-btn')) toggleLayoutPop(false);
@@ -2342,25 +2364,19 @@
     });
     // panels menu (show / hide, reset), statistics: own panel / back to the tab / full screen, widget menu
     $('bt-panels-btn').addEventListener('click', function (e) { e.stopPropagation(); togglePop('bt-panels'); });
-    $('bt-panels-pop').addEventListener('change', function (e) { var id = e.target.getAttribute('data-panel-toggle'); if (id) DOCK.setPanel(id, e.target.checked); });
-    $('bt-panels-pop').addEventListener('click', function (e) { if (e.target.closest('[data-act="reset-layout"]')) { DOCK.reset(); togglePop('bt-panels', false); toast(_t('backtest.dock.reset_done', 'Düzen sıfırlandı'), 'success'); } });
+    $('bt-panels-pop').addEventListener('change', function (e) { DESK.onMenuChange(e); });
+    $('bt-panels-pop').addEventListener('click', function (e) { e.stopPropagation(); DESK.onMenu(e, $('bt-panels-pop')); });
+    $('bt-panels-pop').addEventListener('submit', function (e) { DESK.onMenuSubmit(e, $('bt-panels-pop')); });
     $('bt-widgets-btn').addEventListener('click', function (e) { e.stopPropagation(); togglePop('bt-widgets'); });
     $('bt-widgets-pop').addEventListener('change', function (e) { var id = e.target.getAttribute('data-widget-toggle'); if (id) setWidget(id, e.target.checked); });
-    $('bt-widgets-pop').addEventListener('click', function (e) { if (e.target.closest('[data-act="reset-widgets"]')) { DOCK.setWidgets(null); renderWidgetsMenu(); renderStats(); } });
-    $('bt-stats-detach').addEventListener('click', function () { DOCK.setStatsDetached(!DOCK.statsDetached()); });
+    $('bt-widgets-pop').addEventListener('click', function (e) { if (e.target.closest('[data-act="reset-widgets"]')) { DESK.setWidgets(null); renderWidgetsMenu(); renderStats(); } });
     $('bt-stats-fs-btn').addEventListener('click', function () { openStatsFs(!statsFs); });
     $('bt-stats-fs-close').addEventListener('click', function () { openStatsFs(false); });
-    $('bt-dock').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-act]'); if (!b) return;
-      if (b.getAttribute('data-act') === 'stats-back') DOCK.setStatsDetached(false);
-      else if (b.getAttribute('data-act') === 'stats-fs') openStatsFs(true);
-    });
     $('bt-charts').addEventListener('pointerdown', onChartsPointer);
     if (window.ResizeObserver) { var croF = 0, cro = new ResizeObserver(function () { cancelAnimationFrame(croF); croF = requestAnimationFrame(positionSplits); }); cro.observe($('bt-charts')); PAGE.onLeave(function () { cro.disconnect(); }); }
     var wasWide = wideScreen();
     PAGE.on(window, 'resize', function () { var w = wideScreen(); if (w !== wasWide) { wasWide = w; if (R) applyChartLayout(); } });
     $('bt-look-close').addEventListener('click', function () { toggleDrawer(false); });
-    ['open', 'orders', 'history', 'stats'].forEach(function (n) { $('bt-tab-' + n).addEventListener('click', function () { selectTab(n); }); });
     // pending orders: type, list, edit modal
     $('bt-ordtype').addEventListener('click', function (e) { var b = e.target.closest('[data-ordtype]'); if (b) setOrdType(b.getAttribute('data-ordtype')); });
     $('bt-ord-price').addEventListener('input', function () { orderError(''); renderLive(false); });
@@ -2430,27 +2446,27 @@
     openModal('bt-keys-modal', opener);
   }
   function onLayoutChange(prefs, what) {
-    if ((what === 'mode' || what === 'fullscreen') && DOCK) { DOCK.apply(); placeStatsHost(); }
+    if ((what === 'mode' || what === 'fullscreen') && DESK) { DESK.apply(); placeCells(); placeStatsHost(); }
     if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
     if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
     if (what === 'mode' && R) applyChartLayout();
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } if (R) centerAll(); }, 80); }
   }
-  // ---------------------------------------------------------------- panels (bt-dock.js), statistics placement, widgets
-  function onDockChange(lay, what) {
-    if (!$('bt-panels-pop').hidden) renderPanelsMenu();
-    placeStatsHost();
-    if (what === 'reset' && R) applyChartLayout();
+  // ---------------------------------------------------------------- windows (bt-desk.js), statistics placement, widgets
+  function onDeskChange(what) {
+    if (!$('bt-panels-pop').hidden) DESK.renderMenu($('bt-panels-pop'));
+    if (what === 'preset' || what === 'load' || what === 'reset') placeCells();
     if (R) later(function () {
       if (!R) return;
       views().forEach(function (v) { if (v.chart && v.el && !(v.chart.autoSizeActive && v.chart.autoSizeActive())) v.chart.applyOptions({ width: v.el.clientWidth, height: v.el.clientHeight }); });
-      positionSplits(); updateNowBtn();
+      positionSplits(); updateNowBtn(); DRAW && DRAW.render();
+      if (R.statsDirty) renderStats();
     }, 60);
   }
   function togglePop(name, on) {
     var p = $(name + '-pop'), b = $(name + '-btn'); if (!p) return;
     if (on === undefined) on = p.hidden;
-    if (on) { if (name === 'bt-panels') renderPanelsMenu(); else renderWidgetsMenu(); }
+    if (on) { if (name === 'bt-panels') { DESK.renderMenu(p); icons(); } else renderWidgetsMenu(); }
     p.hidden = !on; b.setAttribute('aria-expanded', on ? 'true' : 'false');
   }
   function popCheck(box, attr, id, label, checked) {
@@ -2462,25 +2478,11 @@
     var ic = el('i'); ic.setAttribute('data-lucide', icon); ic.setAttribute('aria-hidden', 'true'); b.appendChild(ic); b.appendChild(el('span', '', label));
     box.appendChild(b);
   }
-  var PANEL_LABELS = { balance: ['backtest.dock.panel_balance', 'Bakiye'], order: ['backtest.dock.panel_order', 'Emir paneli'], tabs: ['backtest.dock.panel_tabs', 'Alt sekmeler'],
-    stats: ['backtest.dock.panel_stats_own', 'İstatistikler (ayrı panel)'] };
-  function renderPanelsMenu() {
-    var box = $('bt-panels-pop'), lay = DOCK.layout(); box.textContent = '';
-    ['balance', 'order', 'tabs', 'stats'].forEach(function (id) {
-      var on = id === 'stats' ? lay.statsDetached && lay.hidden.indexOf('stats') < 0 : lay.hidden.indexOf(id) < 0;
-      popCheck(box, 'data-panel-toggle', id, _t(PANEL_LABELS[id][0], PANEL_LABELS[id][1]), on);
-    });
-    box.appendChild(el('div', 'bt-pop-sep'));
-    box.appendChild(el('p', 'bt-hint', wideScreen() ? _t('backtest.dock.drag_hint', 'Panelleri başlıklarından tutup sürükleyerek taşı; kenarlarından boyutlandır.')
-      : _t('backtest.dock.narrow_hint', 'Dar ekranda paneller alt alta dizilir; taşıma geniş ekranda.')));
-    popBtn(box, 'reset-layout', 'rotate-ccw', _t('backtest.dock.reset', 'Düzeni sıfırla'));
-    icons();
-  }
   var WIDGET_LABELS = { kpis: ['backtest.st.w_kpis', 'Temel rakamlar'], balance: ['backtest.st.balance_curve_seq', 'Bakiye eğrisi (işlem sırasıyla)'], teaser: ['backtest.st.more', 'Gelişmiş analiz'],
     drawdown: ['backtest.st.drawdown', 'Drawdown (zirveden düşüş, %)'], rdist: ['backtest.st.r_dist', 'R dağılımı'], equity: ['backtest.st.w_equity', 'Varlık eğrisi (bölüm)'],
     sessions: ['backtest.st.sessions', 'Seanslara göre kazanma oranı (giriş saati)'], monthly: ['backtest.st.monthly', 'Aylık getiri (%)'] };
   function renderWidgetsMenu() {
-    var box = $('bt-widgets-pop'), lay = window.WwBtStats.normalizeWidgets(DOCK.widgets()); box.textContent = '';
+    var box = $('bt-widgets-pop'), lay = window.WwBtStats.normalizeWidgets(DESK.widgets()); box.textContent = '';
     window.WwBtStats.widgetIds(can('backtestStats')).forEach(function (id) {
       popCheck(box, 'data-widget-toggle', id, _t(WIDGET_LABELS[id][0], WIDGET_LABELS[id][1]), lay.hidden.indexOf(id) < 0);
     });
@@ -2489,22 +2491,16 @@
     icons();
   }
   function setWidget(id, on) {
-    var lay = window.WwBtStats.normalizeWidgets(DOCK.widgets());
+    var lay = window.WwBtStats.normalizeWidgets(DESK.widgets());
     lay.hidden = lay.hidden.filter(function (x) { return x !== id; }); if (!on) lay.hidden.push(id);
-    DOCK.setWidgets(lay); renderStats();
+    DESK.setWidgets(lay); renderStats();
   }
-  // the statistics (bar, widgets, footer) live in the tab, in their own panel or in the full-screen window
+  // the statistics (bar, widgets, footer) live in their window or in the full-screen statistics view
   function placeStatsHost() {
-    var host = $('bt-stats-host'); if (!host || !DOCK || !LAY) return;
-    var det = DOCK.statsDetached() && LAY.mode() === 'advanced';
-    var slot = statsFs ? $('bt-stats-fs-slot') : det ? $('bt-stats-slot') : $('bt-panel-stats');
+    var host = $('bt-stats-host'); if (!host || !DESK) return;
+    var slot = statsFs ? $('bt-stats-fs-slot') : $('bt-stats-slot');
     if (host.parentNode !== slot) slot.insertBefore(host, slot.firstChild);
-    show($('bt-tab-stats'), !det);
-    if (det && $('bt-tab-stats').getAttribute('aria-selected') === 'true') selectTab('open');
-    var lab = $('bt-stats-detach-label');
-    lab.setAttribute('data-i18n', det ? 'backtest.st.attach' : 'backtest.st.detach');
-    lab.textContent = det ? _t('backtest.st.attach', 'Sekmeye geri al') : _t('backtest.st.detach', 'Ayrı panel');
-    show($('bt-stats-detach'), !statsFs && !det); show($('bt-stats-fs-btn'), !statsFs && !det);      // the own panel has both in its header; full screen has its close button
+    show($('bt-stats-fs-btn'), !statsFs);
     if (R) renderStats();
   }
   function openStatsFs(on) {
@@ -2534,10 +2530,10 @@
   }
   function layoutCells() {
     if (!R || !R.chart) return;
-    var id = shownLayout(), box = $('bt-charts'), D = window.WwBtDock, vs = views();
+    var id = gridLayout(), box = $('bt-charts'), D = window.WwBtDesk, vs = views();
     Array.prototype.slice.call(box.querySelectorAll('.bt-msplit')).forEach(function (x) { x.remove(); });
     if (id === '1') { box.style.gridTemplateColumns = ''; box.style.gridTemplateRows = ''; vs.forEach(function (v) { cellOf(v).style.gridArea = ''; }); mainHead(false); return; }
-    var m = DOCK.multi(id);
+    var m = DESK.multi(id);
     box.style.gridTemplateColumns = D.template(m.cols); box.style.gridTemplateRows = D.template(m.rows);
     vs.forEach(function (v, i) { cellOf(v).style.gridArea = D.cellArea(id, m, i); });
     mainHead(true);
@@ -2551,11 +2547,11 @@
   function tracksPx(cs, prop) { return cs[prop].split(' ').map(parseFloat).filter(function (x) { return isFinite(x); }); }
   function positionSplits() {
     var box = $('bt-charts'); if (!box || !R || !LAY) return;
-    var id = shownLayout(); if (id === '1') return;
+    var id = gridLayout(); if (id === '1') return;
     var cs = getComputedStyle(box), cols = tracksPx(cs, 'gridTemplateColumns'), rows = tracksPx(cs, 'gridTemplateRows');
     var g = parseFloat(cs.columnGap) || 6, rg = parseFloat(cs.rowGap) || 6;
     function off(tr, gap, i) { var x = 0; for (var k = 0; k < i; k++) x += tr[k] + gap; return x; }
-    window.WwBtDock.GRID[id].splits.forEach(function (sp, k) {
+    window.WwBtDesk.GRID[id].splits.forEach(function (sp, k) {
       var sEl = box.querySelector('[data-msplit="' + k + '"]'); if (!sEl) return;
       if (sp.kind === 'col') {
         var x = off(cols, g, sp.i + 1) - g / 2, t0 = off(rows, rg, sp.from - 1);
@@ -2568,13 +2564,13 @@
   }
   var cellDrag = null;
   function onChartsPointer(e) {
-    if (e.button > 0 || !R || shownLayout() === '1' || !wideScreen()) return;
+    if (e.button > 0 || !R || gridLayout() === '1' || !wideScreen()) return;
     var sp = e.target.closest('.bt-msplit'), grip = e.target.closest('.bt-cell-grip');
     if (!sp && !grip) return;
     e.preventDefault(); e.stopPropagation();
-    var id = shownLayout(), m = DOCK.multi(id), box = $('bt-charts'), cs = getComputedStyle(box);
+    var id = gridLayout(), m = DESK.multi(id), box = $('bt-charts'), cs = getComputedStyle(box);
     if (sp) {
-      var spec = window.WwBtDock.GRID[id].splits[+sp.getAttribute('data-msplit')], col = spec.kind === 'col';
+      var spec = window.WwBtDesk.GRID[id].splits[+sp.getAttribute('data-msplit')], col = spec.kind === 'col';
       var px = tracksPx(cs, col ? 'gridTemplateColumns' : 'gridTemplateRows'), total = px.reduce(function (a, b) { return a + b; }, 0);
       cellDrag = { kind: 'split', id: id, spec: spec, col: col, x: e.clientX, y: e.clientY, start: (col ? m.cols : m.rows).slice(), m: m, total: total, el: sp };
       sp.classList.add('bt-split-active');
@@ -2591,8 +2587,8 @@
     var d = cellDrag; if (!d) return;
     var box = $('bt-charts');
     if (d.kind === 'split') {
-      var tr = window.WwBtDock.resizeTracks(d.start, d.spec.i, d.col ? e.clientX - d.x : e.clientY - d.y, d.total);
-      if (d.col) { d.m.cols = tr; box.style.gridTemplateColumns = window.WwBtDock.template(tr); } else { d.m.rows = tr; box.style.gridTemplateRows = window.WwBtDock.template(tr); }
+      var tr = window.WwBtDesk.resizeTracks(d.start, d.spec.i, d.col ? e.clientX - d.x : e.clientY - d.y, d.total);
+      if (d.col) { d.m.cols = tr; box.style.gridTemplateColumns = window.WwBtDesk.template(tr); } else { d.m.rows = tr; box.style.gridTemplateRows = window.WwBtDesk.template(tr); }
       positionSplits();
       return;
     }
@@ -2606,12 +2602,12 @@
     document.removeEventListener('pointermove', onChartsMove); document.removeEventListener('pointerup', onChartsUp); document.removeEventListener('pointercancel', onChartsUp);
     $('bt-root').classList.remove('bt-resizing');
     if (!d) return;
-    if (d.kind === 'split') { d.el.classList.remove('bt-split-active'); DOCK.setMulti(d.id, d.m); return; }
+    if (d.kind === 'split') { d.el.classList.remove('bt-split-active'); DESK.setMulti(d.id, d.m); return; }
     d.cell.classList.remove('bt-cell-moving');
     if (d.over) {
       d.over.classList.remove('bt-cell-drop');
       var to = -1; views().forEach(function (v, i) { if (cellOf(v) === d.over) to = i; });
-      if (to >= 0 && d.from >= 0) { DOCK.setMulti(d.id, window.WwBtDock.swapViews(d.m, d.from, to)); layoutCells(); }
+      if (to >= 0 && d.from >= 0) { DESK.setMulti(d.id, window.WwBtDesk.swapViews(d.m, d.from, to)); layoutCells(); }
     }
   }
   function setupVisibility() {
@@ -2651,7 +2647,7 @@
     if (themeObserver) themeObserver.disconnect();
     try { destroyCharts(); } catch (e) { /* ignore */ }
     if (LAY) { try { LAY.destroy(); } catch (e) { /* ignore */ } }
-    if (DOCK) { try { DOCK.destroy(); } catch (e) { /* ignore */ } }
+    if (DESK) { try { DESK.destroy(); } catch (e) { /* ignore */ } }
     document.documentElement.classList.remove('bt-stfs-lock');
     if (DRAW) { try { DRAW.destroy(); } catch (e) { /* ignore */ } }
     clearTimeout(statsTimer);
@@ -2661,7 +2657,7 @@
   PAGE.onLeave(cleanup);
   // browser smoke tests only (tests/smoke/make.py sets __BT_TEST__): read access to the chart and the drawings
   if (window.__BT_TEST__) PAGE.expose('__btTest', { chart: function () { return R && R.chart; }, series: function () { return R && R.series; },
-    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, dock: function () { return DOCK; },
+    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, desk: function () { return DESK; }, openWin: showWin,
     cross: function (p) { crossFrom(R, p); } });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

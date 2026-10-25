@@ -37,10 +37,10 @@
       if (qp.get('fs') === '1') $('bt-fs-btn').click();
     }
     if (shot === 'multi') { $('bt-layout-btn').click(); $('bt-layout-pop').querySelector('[data-layout="1+3"]').click(); await sleep(800); }
-    // custom panel layout: balance left, statistics in their own panel under the chart, orders right
+    // windows: the Analysis preset (statistics open next to the chart)
     if (shot === 'dock' || shot === 'dock-stats-fs') {
-      var Dk = window.__btTest.dock();
-      Dk.move('balance', 'left', 0); Dk.setStatsDetached(true); Dk.move('stats', 'center', 1);
+      $('bt-panels-btn').click(); await sleep(100);
+      document.querySelector('#bt-panels-pop [data-preset="analysis"]').click(); await sleep(200); $('bt-panels-btn').click();
       await sleep(900);
       if (shot === 'dock-stats-fs') { $('bt-stats-fs-btn').click(); await sleep(900); }
     }
@@ -50,7 +50,7 @@
       setv('bt-ord-price', fx(qo.ask - 40)); setv('bt-sl', fx(qo.ask - 90)); setv('bt-tp', fx(qo.ask + 60)); $('bt-buy-btn').click(); await sleep(100);
       document.querySelector('#bt-ordtype [data-ordtype="stop"]').click();
       setv('bt-ord-price', fx(qo.bid - 35)); $('bt-sell-btn').click(); await sleep(100);
-      $('bt-tab-orders').click(); await sleep(300);
+      window.__btTest.openWin('orders'); await sleep(300);
     }
     if (window.__shotHook) await window.__shotHook(shot);
     await sleep(600);

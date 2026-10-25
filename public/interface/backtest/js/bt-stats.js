@@ -2,7 +2,7 @@
 // equity curve) on the account's closed trades; the backtest-only parts (equity with open positions, drawdown, monthly returns,
 // R multiples, sessions) are computed here. Pure functions are unit tested; render() needs the DOM and LightweightCharts.
 // Free plan: the key figures and the balance curve. Premium: everything. Each card is a widget (move, resize, hide, enlarge); the
-// arrangement is stored by the page (bt-dock.js layout).
+// arrangement is stored by the page (bt-desk.js layout).
 // Order: trades count in the order they were OPENED (seq), not by market time: the replay can go back in time (account sections),
 // so the balance, the drawdown and the streaks follow the trade sequence; the balance curve's axis is the trade number.
 (function (global) {

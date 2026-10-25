@@ -73,7 +73,7 @@
     var net = R().eng.closed.reduce(function (a, t) { return a + t.net; }, 0);
     ok('balance continues: start + every trade', R().eng.startCents + R().eng.realizedCents === R().eng.startCents + net);
     // history grouped and filtered
-    $('bt-tab-history').click(); await sleep(150);
+    window.__btTest.openWin('history'); await sleep(150);
     ok('history: filter shown, one header per section, newest section first', vis('bt-history-filter') && document.querySelectorAll('#bt-history-body .bt-sec-row').length === 2 &&
       /2/.test(document.querySelector('#bt-history-body .bt-sec-row').textContent));
     setv('bt-history-section', '1'); await sleep(100);
@@ -82,7 +82,7 @@
     ok('filter section 2: its trade', document.querySelectorAll('#bt-history-body tr:not(.bt-sec-row)').length === 1);
     setv('bt-history-section', 'all');
     // statistics in trade order
-    $('bt-tab-stats').click(); await waitFor(function () { return document.querySelectorAll('#bt-stats-view .bt-st-kpi').length >= 6; }, 5000, 'stats');
+    window.__btTest.openWin('stats'); await waitFor(function () { return document.querySelectorAll('#bt-stats-view .bt-st-kpi').length >= 6; }, 5000, 'stats');
     ok('statistics count every section', /^4/.test(document.querySelector('#bt-stats-view .bt-st-kpi:nth-child(4) .bt-st-value').textContent));
     if (sb) {
       await sleep(600);

@@ -41,7 +41,7 @@
     for (var i = 0; i < 60; i++) { $('bt-step-btn').click(); await sleep(15); }
     // live numbers: buttons and labels keep their place while prices change
     $('bt-buy-btn').click(); await sleep(250);
-    $('bt-tab-open').click(); await sleep(100);
+    window.__btTest.openWin('open'); await sleep(100);
     var closeBtn = function () { return $('bt-open-body').querySelector('button[data-act="close"]'); };
     var before = [rect($('bt-buy-btn')), rect($('bt-sell-btn')), rect(closeBtn()), rect($('bt-stat-floating')), rect($('bt-stat-equity'))];
     var btn0 = closeBtn(), changes = 0, prev = $('bt-stat-floating').textContent, moved = [];
@@ -99,6 +99,12 @@
     R().chart.timeScale().scrollToPosition(-300, false);
     key('f'); await sleep(400);
     ok('full screen: centered', centered(view()), txt(view()));
+    // full screen: the floating boxes keep their place while the numbers change
+    $('bt-buy-btn').click(); await sleep(200);
+    var fsEls = [$('bt-stat-floating'), $('bt-stat-equity'), $('bt-buy-btn'), $('bt-sell-btn'), $('bt-step1m-btn')], fs0 = fsEls.map(rect).join('|'), fsMoved = 0, fsChg = 0, fsPrev = $('bt-stat-floating').textContent;
+    for (i = 0; i < 30; i++) { $('bt-step1m-btn').click(); await sleep(25); if ($('bt-stat-floating').textContent !== fsPrev) { fsChg++; fsPrev = $('bt-stat-floating').textContent; } if (fsEls.map(rect).join('|') !== fs0) fsMoved++; }
+    ok('full screen: floating balance, order buttons and replay controls never move while the P&L changes', fsChg > 3 && fsMoved === 0, fsChg + ' changes, moved ' + fsMoved);
+    $('bt-open-body').querySelector('button[data-act="close"]').click(); await sleep(300);
     key('Escape'); await sleep(300);
     // self-check: a stray primitive at minus billions (the reported BTCUSD axis) is dropped by centering, the scale comes back
     var warns = []; window.wwLog = window.wwLog || {}; var lw0 = window.wwLog.warn; window.wwLog.warn = function () { warns.push([].slice.call(arguments).join(' ')); };
@@ -107,7 +113,7 @@
     ok('stray primitive skews the axis (test setup)', !centered(view()), txt(view()));
     key('r'); await sleep(900);
     ok('centering rebuilds the view: axis around the candles again', R().chart !== chart0 && centered(view()), txt(view()));
-    ok('the case is logged with the axis and candle ranges', warns.some(function (w) { return /price scale off the candles: axis \[-1\d{9}/.test(w) && /candles \[5\d{4}/.test(w); }), warns.join(' | '));
+    ok('the case is logged with the axis and candle ranges', warns.some(function (w) { return /price scale off the candles: axis \[-\d{9,}/.test(w) && /candles \[5\d{4}/.test(w); }), warns.join(' | '));
     window.wwLog.warn = lw0;
     // activity bars: label in the drawer and on the chart
     $('bt-look-btn').click(); await sleep(200);

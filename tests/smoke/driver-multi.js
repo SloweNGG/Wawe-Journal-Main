@@ -38,7 +38,12 @@
       throw 'done';
     }
     var ex = R().extra;
-    ok('2x2: four charts with canvases', $('bt-charts').getAttribute('data-layout') === '2x2' && document.querySelectorAll('.bt-cell').length === 4 && document.querySelectorAll('.bt-cell canvas').length >= 4 * 2);
+    // advanced desk: every chart in its own window, the windows share the chart's area (bt-desk.js tileCharts)
+    function wr(id) { return document.querySelector('.bt-win[data-win="' + id + '"]').getBoundingClientRect(); }
+    var w1 = wr('chart'), w2 = wr('chart2'), w3 = wr('chart3');
+    ok('2x2: four charts with canvases, each in its own window, tiled 2x2', document.querySelectorAll('.bt-cell').length === 4 && document.querySelectorAll('.bt-cell canvas').length >= 4 * 2 &&
+      ex.every(function (v, i) { return document.querySelector('.bt-win[data-win="chart' + (i + 2) + '"]').contains(v.el); }) && Math.abs(w1.top - w2.top) <= 1 && Math.abs(w1.left - w3.left) <= 1 && w2.left > w1.right && w3.top > w1.bottom,
+      JSON.stringify([w1.left, w1.top, w2.left, w2.top, w3.left, w3.top]));
     ok('extra charts: own timeframes 15m / 4h / 1d', ex.map(function (v) { return v.tfId; }).join(',') === '15m,4h,1d' && ex.every(function (v) { return v.tfSel.value === v.tfId; }));
     ok('layout stored', prefs().charts === '2x2', JSON.stringify(prefs()));
     ok('every chart has candles and none is later than the replay time', [R()].concat(ex).every(function (v) { return v.bars.length > 2 && lastT(v) < replaySec(); }), [R()].concat(ex).map(function (v) { return v.bars.length + ':' + (replaySec() - lastT(v)); }).join(' '));
@@ -75,7 +80,13 @@
     ok('drawing layers on every chart', [R()].concat(ex).every(function (v) { return !!v.layer; }));
     // 1+3
     pick('1+3'); await sleep(500);
-    ok('1+3: four charts, the big one spans three rows', document.querySelectorAll('.bt-cell').length === 4 && getComputedStyle(document.querySelector('.bt-cell-main')).gridRowEnd === '4');
+    var b1 = wr('chart'), b2 = wr('chart2'), b4 = wr('chart4');
+    ok('1+3: four chart windows, the big one as tall as the three others', document.querySelectorAll('.bt-cell').length === 4 && Math.abs(b1.top - b2.top) <= 1 && Math.abs(b1.bottom - b4.bottom) <= 1 && b2.left > b1.right, JSON.stringify([b1.top, b1.bottom, b2.top, b4.bottom]));
+    // full screen: the charts share one grid again (the big one spans three rows)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true })); await sleep(400);
+    ok('full screen: one grid of four charts, the big one spans three rows', $('bt-charts').getAttribute('data-layout') === '1+3' && $('bt-charts').querySelectorAll('.bt-cell').length === 4 && getComputedStyle(document.querySelector('.bt-cell-main')).gridRowEnd === '4');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await sleep(400);
+    ok('out of full screen: the charts are back in their windows', ex.every(function (v, i) { return document.querySelector('.bt-win[data-win="chart' + (i + 2) + '"]').contains(v.el); }));
     pick('2h'); await sleep(400);
     ok('2 side by side: two charts', document.querySelectorAll('.bt-cell').length === 2 && R().extra.length === 1);
     // simple mode: one chart; back to advanced: the layout returns

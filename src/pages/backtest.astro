@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=16" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=17" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -20,7 +20,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793500004" is:inline defer></script>
+  <script src="/i18n.js?v=1793500005" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
@@ -32,11 +32,11 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-store.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-layout.js?v=4" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-dock.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-desk.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=3" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-stats.js?v=3" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=20" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-stats.js?v=4" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=21" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -110,8 +110,8 @@ import Layout from '../layouts/Layout.astro';
             <div id="bt-layout-pop" class="bt-layout-pop" role="menu" hidden></div>
           </div>
           <div class="bt-layout-wrap bt-adv-only">
-            <button type="button" id="bt-panels-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-panels-pop" data-i18n-title="backtest.dock.menu" title="Paneller">
-              <i data-lucide="panels-top-left" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.menu">Paneller</span>
+            <button type="button" id="bt-panels-btn" class="bt-icon-btn" aria-expanded="false" aria-controls="bt-panels-pop" data-i18n-title="backtest.win.menu" title="Pencereler ve düzenler">
+              <i data-lucide="app-window" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.win.menu">Pencereler ve düzenler</span>
             </button>
             <div id="bt-panels-pop" class="bt-layout-pop" role="menu" hidden></div>
           </div>
@@ -130,6 +130,22 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </header>
 
+      <div id="bt-save-banner" class="bt-banner bt-banner-error" role="alert" hidden>
+        <span data-i18n="backtest.err.save_failed_final">Bazı değişiklikler kaydedilemedi.</span>
+        <button type="button" id="bt-save-retry-btn" class="btn btn-ghost"><span data-i18n="backtest.retry">Tekrar dene</span></button>
+      </div>
+
+      <div id="bt-desk" class="bt-desk" data-desk="simple">
+        <section class="bt-win" data-win="replay" aria-labelledby="bt-wt-replay">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-replay"><span data-i18n="backtest.win.replay">Replay</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
       <div class="bt-toolbar" role="toolbar">
         <label class="bt-sr" for="bt-tf" data-i18n="backtest.field.timeframe">Zaman dilimi</label>
         <select id="bt-tf" class="bt-select bt-num">
@@ -168,22 +184,28 @@ import Layout from '../layouts/Layout.astro';
           <span id="bt-market-chip" class="bt-chip bt-chip-muted" hidden></span>
         </div>
       </div>
-
-      <div id="bt-save-banner" class="bt-banner bt-banner-error" role="alert" hidden>
-        <span data-i18n="backtest.err.save_failed_final">Bazı değişiklikler kaydedilemedi.</span>
-        <button type="button" id="bt-save-retry-btn" class="btn btn-ghost"><span data-i18n="backtest.retry">Tekrar dene</span></button>
-      </div>
-
-      <div id="bt-dock" class="bt-dock">
-        <div class="bt-zone bt-zone-row" data-zone="top" hidden></div>
-        <div class="bt-zsplit bt-zsplit-h" data-zsplit="top" role="separator" aria-orientation="horizontal" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
-        <div class="bt-zone" data-zone="left" hidden></div>
-        <div class="bt-zsplit bt-zsplit-v" data-zsplit="left" role="separator" aria-orientation="vertical" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
-        <div class="bt-zone" data-zone="center">
-        <section class="bt-pbox bt-pbox-chart" data-panel="chart">
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win bt-win-chart" data-win="chart" aria-labelledby="bt-wt-chart">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-chart"><span data-i18n="backtest.dock.panel_chart">Grafik</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
           <div id="bt-chart-card" class="bt-chart-card">
-            <div class="bt-chart-top" data-dock-grip="chart">
-              <button type="button" class="bt-grip" data-dock-grip="chart" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.panel_chart">Grafik</span></button>
+            <div class="bt-chart-top">
               <div id="bt-legend" class="bt-legend bt-num" aria-hidden="true"></div>
               <span id="bt-source-label" class="bt-source" data-i18n="backtest.source.synthetic">Sentetik veri, gerçek piyasa verisi değildir</span>
             </div>
@@ -217,29 +239,115 @@ import Layout from '../layouts/Layout.astro';
               </p>
             </footer>
           </div>
-        </section>
-        </div>
-        <div class="bt-zsplit bt-zsplit-v" data-zsplit="right" role="separator" aria-orientation="vertical" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
-        <div class="bt-zone" data-zone="right">
-        <section class="bt-pbox" data-panel="balance">
-          <div class="bt-pbox-head" data-dock-grip="balance">
-            <button type="button" class="bt-grip" data-dock-grip="balance" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i></button>
-            <span class="bt-pbox-title" data-i18n="backtest.dock.panel_balance">Bakiye</span>
-            <button type="button" class="bt-pbox-btn" data-dock-hide="balance" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
           </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win bt-win-chart" data-win="chart2" aria-labelledby="bt-wt-chart2">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-chart2"><span data-i18n="backtest.win.chart_n" data-i18n-params='{"n":2}'>Grafik 2</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win bt-win-chart" data-win="chart3" aria-labelledby="bt-wt-chart3">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-chart3"><span data-i18n="backtest.win.chart_n" data-i18n-params='{"n":3}'>Grafik 3</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win bt-win-chart" data-win="chart4" aria-labelledby="bt-wt-chart4">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-chart4"><span data-i18n="backtest.win.chart_n" data-i18n-params='{"n":4}'>Grafik 4</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win" data-win="balance" aria-labelledby="bt-wt-balance">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-balance"><span data-i18n="backtest.dock.panel_balance">Bakiye</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
           <div id="bt-stats" class="bt-card bt-stats">
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.balance">Bakiye</span><span id="bt-stat-balance" class="bt-num">—</span></div>
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.equity">Özsermaye</span><span id="bt-stat-equity" class="bt-num">—</span></div>
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.realized">Gerçekleşen K/Z</span><span id="bt-stat-realized" class="bt-num">—</span></div>
             <div class="bt-stat"><span class="bt-stat-label" data-i18n="backtest.stat.floating">Açık K/Z</span><span id="bt-stat-floating" class="bt-num">—</span></div>
           </div>
-        </section>
-        <section class="bt-pbox" data-panel="order">
-          <div class="bt-pbox-head" data-dock-grip="order">
-            <button type="button" class="bt-grip" data-dock-grip="order" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i></button>
-            <span class="bt-pbox-title" data-i18n="backtest.dock.panel_order">Emir paneli</span>
-            <button type="button" class="bt-pbox-btn" data-dock-hide="order" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
           </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win" data-win="order" aria-labelledby="bt-wt-order">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-order"><span data-i18n="backtest.dock.panel_order">Emir paneli</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
           <form id="bt-order-form" class="bt-card bt-order" novalidate autocomplete="off">
             <div id="bt-limit" class="bt-limit" role="status" aria-live="polite" data-i18n-title="backtest.limit.hint" title="cTrader verili hesaplarda ücretsiz planın aylık işlem sınırı; sayaç her ayın 1'inde (UTC) sıfırlanır. Açık pozisyonlar her zaman kapatılabilir." hidden>
               <div class="bt-limit-row"><span id="bt-limit-text" class="bt-num"></span><span class="bt-limit-bar"><span id="bt-limit-fill"></span></span></div>
@@ -294,28 +402,27 @@ import Layout from '../layouts/Layout.astro';
           </section>
           <p class="bt-hint bt-shortcuts"><span data-i18n="backtest.shortcuts">Kısayollar: Boşluk = oynat/duraklat, → = bir mum, Shift+→ = 1 dakika</span>
             <button type="button" id="bt-keys-link" class="bt-link-btn" data-i18n="backtest.keys.all">Tüm kısayollar (?)</button></p>
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
         </section>
-        </div>
-        <div class="bt-zsplit bt-zsplit-h" data-zsplit="bottom" role="separator" aria-orientation="horizontal" tabindex="0" data-i18n-title="backtest.dock.resize" title="Boyutlandır (sürükle veya ok tuşları)"></div>
-        <div class="bt-zone bt-zone-row" data-zone="bottom">
-        <section class="bt-pbox bt-pbox-tabs" data-panel="tabs">
-        <section class="bt-card bt-tables">
-          <div class="bt-tabs-row" data-dock-grip="tabs">
-            <button type="button" class="bt-grip" data-dock-grip="tabs" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.panel_tabs">Alt sekmeler</span></button>
-          <div class="bt-tabs" role="tablist">
-            <button type="button" role="tab" id="bt-tab-open" aria-controls="bt-panel-open" aria-selected="true">
-              <span data-i18n="backtest.pos.title">Açık pozisyonlar</span> <span id="bt-open-count" class="bt-count bt-num">0</span></button>
-          <button type="button" role="tab" id="bt-tab-orders" aria-controls="bt-panel-orders" aria-selected="false">
-            <span data-i18n="backtest.orders.title">Bekleyen emirler</span> <span id="bt-orders-count" class="bt-count bt-num">0</span></button>
-            <button type="button" role="tab" id="bt-tab-history" aria-controls="bt-panel-history" aria-selected="false">
-              <span data-i18n="backtest.history.title">İşlem geçmişi</span> <span id="bt-history-count" class="bt-count bt-num">0</span></button>
-            <button type="button" role="tab" id="bt-tab-stats" aria-controls="bt-panel-stats" aria-selected="false">
-              <span data-i18n="backtest.stats.title">İstatistikler</span></button>
-          </div>
-            <button type="button" class="bt-pbox-btn" data-dock-hide="tabs" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
-          </div>
-
-          <div id="bt-panel-open" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-open">
+        <section class="bt-win" data-win="open" aria-labelledby="bt-wt-open">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-open"><span data-i18n="backtest.pos.title">Açık pozisyonlar</span> <span id="bt-open-count" class="bt-count bt-num">0</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+          <div id="bt-panel-open" class="bt-panel">
             <div class="bt-table-wrap"><table class="bt-table bt-table-live">
               <colgroup><col class="bt-c-dir" /><col class="bt-c-lot" /><col class="bt-c-time" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-pnl" /><col class="bt-c-act" /></colgroup>
               <thead><tr>
@@ -328,8 +435,27 @@ import Layout from '../layouts/Layout.astro';
             </table></div>
             <p id="bt-open-empty" class="bt-hint" data-i18n="backtest.pos.empty">Açık pozisyon yok.</p>
           </div>
-
-          <div id="bt-panel-orders" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-orders" hidden>
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win" data-win="orders" aria-labelledby="bt-wt-orders">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-orders"><span data-i18n="backtest.orders.title">Bekleyen emirler</span> <span id="bt-orders-count" class="bt-count bt-num">0</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+          <div id="bt-panel-orders" class="bt-panel">
           <div class="bt-table-wrap"><table class="bt-table bt-table-live bt-table-orders">
             <colgroup><col class="bt-c-dir" /><col class="bt-c-type" /><col class="bt-c-lot" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-px" /><col class="bt-c-time" /><col class="bt-c-act" /></colgroup>
             <thead><tr>
@@ -342,8 +468,27 @@ import Layout from '../layouts/Layout.astro';
           <p id="bt-orders-empty" class="bt-hint" data-i18n="backtest.orders.empty">Bekleyen emir yok. Emir panelinde Limit veya Stop seç.</p>
           <p class="bt-hint" data-i18n="backtest.orders.note">Bekleyen emirler bu tarayıcıda saklanır; tetiklenen emir normal bir işlem olarak hesaba yazılır. Çizgileri grafikte sürükleyerek fiyatı değiştirebilirsin.</p>
         </div>
-
-        <div id="bt-panel-history" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-history" hidden>
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win" data-win="history" aria-labelledby="bt-wt-history">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-history"><span data-i18n="backtest.history.title">İşlem geçmişi</span> <span id="bt-history-count" class="bt-count bt-num">0</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+        <div id="bt-panel-history" class="bt-panel">
             <div id="bt-history-filter" class="bt-history-filter" hidden>
               <label for="bt-history-section" data-i18n="backtest.section.filter">Bölüm</label>
               <select id="bt-history-section" class="bt-select bt-num"><option value="all" data-i18n="backtest.section.all">Tüm bölümler</option></select>
@@ -361,8 +506,27 @@ import Layout from '../layouts/Layout.astro';
             <p id="bt-history-empty" class="bt-hint" data-i18n="backtest.history.empty">Henüz kapanan işlem yok.</p>
             <p id="bt-history-more" class="bt-hint" hidden></p>
           </div>
-
-          <div id="bt-panel-stats" class="bt-panel" role="tabpanel" aria-labelledby="bt-tab-stats" hidden>
+          </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win" data-win="stats" aria-labelledby="bt-wt-stats">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <span class="bt-win-title" id="bt-wt-stats"><span data-i18n="backtest.stats.title">İstatistikler</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn" data-win-act="min" data-i18n-title="backtest.win.minimize" title="Simge durumuna küçült"><i data-lucide="minus" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn" data-win-act="max" data-i18n-title="backtest.win.maximize" title="Ekranı kapla"><i data-lucide="square" class="bt-ic-max" aria-hidden="true"></i><i data-lucide="copy" class="bt-ic-restore" aria-hidden="true"></i></button>
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body">
+            <div id="bt-stats-slot" class="bt-stats-slot">
             <div id="bt-stats-host" class="bt-stats-host">
               <div class="bt-st-tools">
                 <div class="bt-layout-wrap">
@@ -370,27 +534,24 @@ import Layout from '../layouts/Layout.astro';
                   <div id="bt-widgets-pop" class="bt-layout-pop bt-pop-left" role="menu" hidden></div>
                 </div>
                 <span class="bt-spacer"></span>
-                <button type="button" id="bt-stats-detach" class="bt-chip-btn" data-i18n-title="backtest.st.detach_hint" title="İstatistikleri ayrı bir panelde aç"><i data-lucide="panel-top-open" aria-hidden="true"></i><span id="bt-stats-detach-label" data-i18n="backtest.st.detach">Ayrı panel</span></button>
                 <button type="button" id="bt-stats-fs-btn" class="bt-chip-btn" data-i18n-title="backtest.st.fullscreen" title="Tam ekran"><i data-lucide="maximize-2" aria-hidden="true"></i><span data-i18n="backtest.st.fullscreen">Tam ekran</span></button>
               </div>
               <div id="bt-stats-view" class="bt-st"></div>
               <p class="bt-hint bt-st-foot"><span id="bt-stats-extra" class="bt-num"></span> <span data-i18n="backtest.stat.currency_note">Tutarlar USD cinsindendir.</span></p>
             </div>
+            </div>
           </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
         </section>
-        </section>
-        <section class="bt-pbox bt-pbox-stats" data-panel="stats" hidden>
-          <div class="bt-pbox-head" data-dock-grip="stats">
-            <button type="button" class="bt-grip" data-dock-grip="stats" data-i18n-title="backtest.dock.move" title="Paneli taşı (başlıktan sürükle, Alt + ok tuşları)"><i data-lucide="grip-vertical" aria-hidden="true"></i></button>
-            <span class="bt-pbox-title" data-i18n="backtest.dock.panel_stats">İstatistikler</span>
-            <button type="button" class="bt-pbox-btn" data-act="stats-fs" data-i18n-title="backtest.st.fullscreen" title="Tam ekran"><i data-lucide="maximize-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.st.fullscreen">Tam ekran</span></button>
-            <button type="button" class="bt-pbox-btn" data-act="stats-back" data-i18n-title="backtest.st.attach" title="Sekmeye geri al"><i data-lucide="panel-bottom-close" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.st.attach">Sekmeye geri al</span></button>
-            <button type="button" class="bt-pbox-btn" data-dock-hide="stats" data-i18n-title="backtest.dock.hide" title="Paneli gizle (Paneller menüsünden geri aç)"><i data-lucide="minus" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.dock.hide">Paneli gizle</span></button>
-          </div>
-          <div id="bt-stats-slot" class="bt-pbox-body"></div>
-        </section>
-        </div>
-        <div class="bt-dock-preview" hidden></div>
+        <div class="bt-desk-preview" hidden></div>
+        <div class="bt-taskbar" role="toolbar" aria-label="Görev çubuğu"></div>
       </div>
     </section>
   </main>
