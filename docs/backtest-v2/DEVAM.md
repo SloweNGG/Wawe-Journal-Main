@@ -111,3 +111,15 @@ Aşama 3 notları:
   liste, düzenleme penceresi, grafikte kesik çizgiler; emir çizgisi sürüklenir (SL/TP aynı mesafeyle taşınır), SL veya TP çizgisi tek
   başına sürüklenir; geçersiz yer: eski değere döner, uyarı.
 - Testler: `tests/bt-orders.test.js` (21), smoke `orders`, `orders-limit`, ekran görüntüsü `shot-orders`, `shot-orders-phone`.
+
+## 2026-10-25 akşam turu (hatalar, çizim araçları, pencere sistemi, bekleyen emirler)
+
+| Aşama | Durum |
+|---|---|
+| 1 Hatalar | Yayında (`2328813`): fiyat ekseni öz denetimi (ortalamadan sonra eksen mumları çerçevelemiyorsa görünüm yeniden kurulur, aralıklar loglanır). Fiyat çizgileri otomatik ölçeğe hiç katılmaz (LWC); eksi milyarlar ancak seri verisi ya da bir primitive'den gelebilir. Diğer maddeler önceki turda tamamdı. |
+| 2 Çizim araçları | Yayında (`d97092d`), canlı kontrol 30/30 (ücretsiz ve Premium) |
+| 3 Pencere sistemi | Sürüyor: `bt-desk.js` (bt-dock.js'in yerine) |
+| 4 Bekleyen emirler | Önceki turda yayında; pencere sistemiyle "Bekleyen emirler" penceresi olacak |
+
+- Smoke'ta gerçek fare/klavye: `run.mjs` sayfaya `window.__pp({ op })` verir (puppeteer `page.mouse` / `page.keyboard`). Senaryolar `draw-real-pro`, `draw-real-free`.
+- Bu makinede araçlar: puppeteer `PP_DIR`, gerçek BTC verisi `CTDATA`, PGlite `PGLITE_DIR` önceki oturumun scratchpad'inde; Chrome `C:/Program Files/Google/Chrome/Application/chrome.exe`.
