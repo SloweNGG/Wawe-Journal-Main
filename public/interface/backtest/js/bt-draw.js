@@ -7,6 +7,8 @@
 // (public.backtest_drawings: points + style jsonb; the style keeps color, lock, text, width, dash, fill, opacity, fib levels and
 // text size). Undo/redo works on committed changes (create, move, resize, settings, delete, clear). The pure helpers at the top
 // are unit tested.
+// Every drawing belongs to the chart it was drawn on (`pane`: 'main' or the window id 'chart2'..'chart4', kept in the style;
+// missing = 'main', so older drawings stay on the main chart). A chart's layer shows, selects and edits only its own drawings.
 (function (global) {
   'use strict';
 
@@ -63,7 +65,7 @@
   }
 
   // ---------------------------------------------------------------- model (pure)
-  // { id, tool, pts: [{ t, p }], color (#rrggbb | null = theme), text, locked, width (1-4), dash, fill, opacity, levels, size }
+  // { id, tool, pts: [{ t, p }], color (#rrggbb | null = theme), text, locked, width (1-4), dash, fill, opacity, levels, size, pane }
   // Style fields at their default are left out (old rows and new defaults look the same).
   function cleanLevels(list) {
     if (!Array.isArray(list)) return null;
@@ -100,9 +102,12 @@
       var op = num(d.opacity); if (op >= 0 && op <= 1) { op = Math.round(op * 100) / 100; if (op !== DEF_OPACITY[d.tool]) out.opacity = op; }
     }
     if (d.tool === 'fib' && d.levels != null) { var lv = cleanLevels(d.levels); if (lv && lv.join() !== FIB_LEVELS.join()) out.levels = lv; }
+    if (typeof d.pane === 'string' && PANE_RE.test(d.pane)) out.pane = d.pane;
     return out;
   }
-  var STYLE_KEYS = ['width', 'dash', 'fill', 'opacity', 'levels', 'size'];
+  var PANE_RE = /^chart[2-9]$/;                            // the extra charts; the main chart is the default and is left out
+  function paneOf(d) { return d.pane || 'main'; }
+  var STYLE_KEYS = ['width', 'dash', 'fill', 'opacity', 'levels', 'size', 'pane'];
   function toRow(d, userId, accountId) {
     var style = { color: d.color || null, locked: !!d.locked };
     if (d.tool === 'text') style.text = d.text;
@@ -252,9 +257,12 @@
 
   // ---------------------------------------------------------------- chart layer (browser)
   // opts: { chart, series, el (the chart element), bars() (revealed candles in prices), tfSec(), set, ctl (controller below),
-  //         fmt(price) -> text, t(key, fb, params), quote(diff, price) -> { dist, money } | null (position tool labels) }
+  //         fmt(price) -> text, t(key, fb, params), quote(diff, price) -> { dist, money } | null (position tool labels),
+  //         pane ('main' | 'chart2'..'chart4': the drawings this layer shows and creates) }
   function createLayer(opts) {
-    var chart = opts.chart, series = opts.series, el = opts.el, set = opts.set, ctl = opts.ctl;
+    var chart = opts.chart, series = opts.series, el = opts.el, set = opts.set, ctl = opts.ctl, pane = opts.pane || 'main';
+    function own() { return set.list().filter(function (d) { return paneOf(d) === pane; }); }
+    function mark(d) { if (pane !== 'main') d.pane = pane; return d; }   // a new drawing belongs to this chart
     var api = null, create = null, drag = null, editor = null, boxes = {}, unsub = null, interactive = true, saved = null, last = null;
     function css(name, fb) { var v = getComputedStyle(document.body).getPropertyValue(name).trim(); return v || fb; }
     function light() { return document.body.classList.contains('light-theme'); }
@@ -381,7 +389,7 @@
         target.useMediaCoordinateSpace(function (scope) {
           var ctx = scope.context; boxes = {};
           ctx.save();
-          if (!set.hidden()) set.list().forEach(function (d) { drawOne(ctx, d, m, d.id === set.selected()); });
+          if (!set.hidden()) own().forEach(function (d) { drawOne(ctx, d, m, d.id === set.selected()); });
           if (create) drawOne(ctx, create.d, m, true);
           ctx.restore();
         });
@@ -391,7 +399,7 @@
     // price axis labels of horizontal lines
     function axisViews() {
       if (set.hidden()) return [];
-      return set.list().filter(function (d) { return d.tool === 'hline'; }).map(function (d) {
+      return own().filter(function (d) { return d.tool === 'hline'; }).map(function (d) {
         var y = isFinite(d.pts[0].p) ? series.priceToCoordinate(d.pts[0].p) : null, c = colorOf(d);
         return { coordinate: function () { return y === null ? -100 : y; }, text: function () { return opts.fmt(d.pts[0].p); },
           textColor: function () { return '#ffffff'; }, backColor: function () { return c; }, visible: function () { return y !== null; }, tickVisible: function () { return true; } };
@@ -413,7 +421,7 @@
     // --- hit test (media px). touch: larger targets.
     function hitTest(x, y, touch) {
       var m = mapper(); if (!m || set.hidden()) return null;
-      var list = set.list(), selId = set.selected(), order = list.slice().reverse(), hr = touch ? TOUCH_HIT : HANDLE_HIT, tol = touch ? 12 : HIT_PX;
+      var list = own(), selId = set.selected(), order = list.slice().reverse(), hr = touch ? TOUCH_HIT : HANDLE_HIT, tol = touch ? 12 : HIT_PX;
       if (selId) order.sort(function (a, b2) { return (b2.id === selId) - (a.id === selId); });
       for (var k = 0; k < order.length; k++) {
         var d = order[k];
@@ -497,13 +505,13 @@
         consume(e);
         if (!ctl.allowed(tool)) { ctl.denied(tool); return; }
         var q = model(pt, m, true), id = ctl.newId();
-        if (tool === 'hline') { create = { d: { id: id, tool: tool, pts: [q], color: null } }; finishCreate(); return; }
+        if (tool === 'hline') { create = { d: mark({ id: id, tool: tool, pts: [q], color: null }) }; finishCreate(); return; }
         if (tool === 'text') { openEditor({ id: null, newId: id, at: q, text: '' }); return; }
         if (tool === 'long' || tool === 'short') {
           var unit = Math.abs(m.p(0) - m.p(m.h)) * 0.06 || Math.abs(q.p) * 0.002;
-          create = { d: { id: id, tool: tool, pts: newPosition(tool, q.t, q.p, unit, m.tf), color: null } }; finishCreate(); return;
+          create = { d: mark({ id: id, tool: tool, pts: newPosition(tool, q.t, q.p, unit, m.tf), color: null }) }; finishCreate(); return;
         }
-        create = { d: { id: id, tool: tool, pts: [q, { t: q.t, p: q.p }], color: null }, down: pt, dragging: true, pid: e.pointerId };
+        create = { d: mark({ id: id, tool: tool, pts: [q, { t: q.t, p: q.p }], color: null }), down: pt, dragging: true, pid: e.pointerId };
         capture(e); refresh(); return;
       }
       if (set.hidden()) return;
@@ -645,7 +653,7 @@
       if (ed.input.parentNode) ed.input.parentNode.removeChild(ed.input);
       setInteractive(ctl.tool() === 'cursor' && !drag);
       if (keep) {
-        if (!ed.id) { if (txt) ctl.created({ id: ed.newId, tool: 'text', pts: [ed.at], text: txt, color: null }); else ctl.setTool('cursor'); }
+        if (!ed.id) { if (txt) ctl.created(mark({ id: ed.newId, tool: 'text', pts: [ed.at], text: txt, color: null })); else ctl.setTool('cursor'); }
         else { var cur = set.get(ed.id); if (cur && txt && txt !== cur.text) { var n = clone(cur); n.text = txt; set.put(n); } else if (cur && !txt) set.remove(cur.id); }
       } else if (!ed.id) ctl.setTool('cursor');
       refresh();
@@ -662,6 +670,7 @@
     window.addEventListener('keyup', onKey, true);
 
     return {
+      pane: pane,
       refresh: refresh,
       toolChanged: function () {
         if (create) { release(create.pid); create = null; refresh(); }
@@ -870,7 +879,7 @@
     // next frame, not inside the observer callback (changing the width there would loop the observer)
     if (opts.bar && global.ResizeObserver) { ro = new global.ResizeObserver(function () { cancelAnimationFrame(roFrame); roFrame = requestAnimationFrame(fitBar); }); ro.observe(opts.bar); }
     function sep() { var s = document.createElement('span'); s.className = 'bt-draw-sep'; s.setAttribute('aria-hidden', 'true'); return s; }
-    function editTextOf(d) { var l = layers[0]; if (l) l.editText(d.id); }
+    function editTextOf(d) { var l = layers.filter(function (x) { return x.pane === paneOf(d); })[0]; if (l) l.editText(d.id); }
     function onBarClick(e) {
       var b = e.target.closest('button'); if (!b || !opts.bar.contains(b)) return;
       var t = b.getAttribute('data-tool');
@@ -1076,7 +1085,7 @@
     TOOLS: TOOLS, FREE_TOOLS: FREE_TOOLS, NPTS: NPTS, ICONS: ICONS, FIB_LEVELS: FIB_LEVELS, COLORS: COLORS, MAX_TEXT: MAX_TEXT, MAX_DRAWINGS: MAX_DRAWINGS,
     TEXT_SIZES: TEXT_SIZES, MAX_LEVELS: MAX_LEVELS,
     timeToLogical: timeToLogical, logicalToTime: logicalToTime, magnet: magnet,
-    sanitize: sanitize, toRow: toRow, fromRow: fromRow, fibLevels: fibLevels, newPosition: newPosition, positionStats: positionStats,
+    sanitize: sanitize, toRow: toRow, fromRow: fromRow, paneOf: paneOf, fibLevels: fibLevels, newPosition: newPosition, positionStats: positionStats,
     measureStats: measureStats, moveBy: moveBy, setHandle: setHandle, resizeRect: resizeRect, distSeg: distSeg, rayEnd: rayEnd, inBox: inBox,
     lockAngle: lockAngle, squareBox: squareBox, rectHandles: rectHandles, parseLevels: parseLevels, cleanLevels: cleanLevels, fillOf: fillOf, widthOf: widthOf,
     createSet: createSet, createHistory: createHistory, createLayer: createLayer, createController: createController

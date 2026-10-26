@@ -309,7 +309,7 @@
     await drag(fsm, { x: fsm.x + 30, y: fsm.y + 10 });
     ok('full screen: the line can be moved', J(T().draw().set.get(tm.id).pts) !== J(tr3.pts));
     if (pro) {
-      // ---------------- multi-chart: draw on the second chart (own 15m timeframe), the same drawing is on the main chart
+      // ---------------- multi-chart: draw on the second chart (own 15m timeframe); the drawing stays on that chart only (owner, 2026-10-26)
       await press('Escape'); await sleep(300);
       $('bt-layout-btn').click(); $('bt-layout-pop').querySelector('[data-layout="2h"]').click(); await sleep(700);
       var ex = T().R().extra[0], er = ex.el.getBoundingClientRect(), ets = ex.chart.timeScale(), eh = ex.el.clientHeight - ets.height();
@@ -319,15 +319,15 @@
       ok('while drawing on chart 2 the main chart has no draft', T().draw().busy());
       await pp({ op: 'up' }); await sleep(150);
       var mr = lastD();
-      ok('rect drawn on chart 2 is in the shared set, selected', list().length === cnt + 1 && mr.tool === 'rect' && sel() === mr.id && !T().draw().busy());
+      ok('rect drawn on chart 2 belongs to chart 2, selected', list().length === cnt + 1 && mr.tool === 'rect' && mr.pane === 'chart2' && sel() === mr.id && !T().draw().busy());
       var ea = ex.series.priceToCoordinate(mr.pts[0].p);
       ok('chart 2: the rectangle sits where the mouse went down', Math.abs(er.top + ea - Q1.y) <= 2, (er.top + ea) + ' vs ' + Q1.y);
       T().chart().timeScale().setVisibleLogicalRange({ from: D.timeToLogical(T().bars(), 3600, mr.pts[0].t) - 15, to: D.timeToLogical(T().bars(), 3600, mr.pts[1].t) + 15 }); await sleep(250);
       await click(P(0.02, 0.05));
       var mb2 = box(mr); await click({ x: (mb2.l + mb2.r) / 2, y: (mb2.t + mb2.b) / 2 });
-      ok('main chart (1h): the same rectangle is under its time/price and selectable', sel() === mr.id, sel());
+      ok('main chart (1h): nothing to select under its time/price (not drawn there)', sel() !== mr.id, sel());
       await chord(['Control'], 'z');
-      ok('undo removes it from both charts', !T().draw().set.get(mr.id));
+      ok('undo removes it', !T().draw().set.get(mr.id));
       $('bt-layout-btn').click(); $('bt-layout-pop').querySelector('[data-layout="1"]').click(); await sleep(500);
     }
     await press('Escape'); await press('Escape'); await sleep(300);

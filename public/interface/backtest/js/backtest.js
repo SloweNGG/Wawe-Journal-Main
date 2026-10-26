@@ -1761,7 +1761,7 @@
     v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (v === R) updateNowBtn(); });
     bindOrderDrag(v);
     var dg = R.sym.digits;
-    v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; },
+    v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; }, pane: v === R ? 'main' : v.pane,   // drawings stay on their own chart
       tfSec: function () { return v.tfMin * 60; }, fmt: function (p) { return Number(p).toFixed(dg); } });
     if (!v.chart.autoSizeActive || !v.chart.autoSizeActive()) installResizeFallback();
   }
@@ -2065,7 +2065,7 @@
     head.appendChild(cellGrip()); head.appendChild(sel); cell.appendChild(head);
     var host = el('div', 'bt-chart'); cell.appendChild(host);
     cellHost(i).appendChild(cell);
-    var v = { el: host, cell: cell, tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1 };
+    var v = { el: host, cell: cell, pane: 'chart' + (i + 2), tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1 };
     sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); });
     return v;
   }

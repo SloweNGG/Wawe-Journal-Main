@@ -86,6 +86,30 @@
     ok('pointer over the main chart: crosshair on the main chart only', mainInk > 20 && otherInk.every(function (n) { return n === 0; }), JSON.stringify([mainInk, otherInk]));
     // drawings show on every chart (one shared set, one layer per chart)
     ok('drawing layers on every chart', [R()].concat(ex).every(function (v) { return !!v.layer; }));
+    // a drawing stays on the chart it was drawn on (owner, 2026-10-26): a horizontal line on the 2nd chart, nothing on the others
+    var dset = T().draw().set, before = dset.list().length, v2 = ex[0], r2 = v2.el.getBoundingClientRect();
+    function ptr2(type, x, y, buttons) {
+      var tgt = document.elementFromPoint(x, y) || v2.el;
+      tgt.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', button: 0, buttons: buttons == null ? 1 : buttons, isPrimary: true }));
+    }
+    // top-canvas ink along one row of a chart (the drawings and the crosshair are drawn there)
+    function inkRow(v, y) {
+      var c = v.el.querySelectorAll('table td canvas')[1]; if (!c || !isFinite(y) || y < 0) return -1;
+      var k = c.width / c.clientWidth, row = c.getContext('2d').getImageData(0, Math.round(y * k), c.width, 1).data, n = 0;
+      for (var q = 3; q < row.length; q += 4) if (row[q] > 0) n++;
+      return n;
+    }
+    var hx = r2.left + r2.width * 0.4, hy = r2.top + r2.height * 0.4, price = v2.series.coordinateToPrice(hy - r2.top);
+    var others = [R()].concat(ex.slice(1)), ys = others.map(function (v) { return v.series.priceToCoordinate(price); });
+    var inkBefore = others.map(function (v, k) { return inkRow(v, ys[k]); }), ink2Before = inkRow(v2, hy - r2.top);
+    T().draw().setTool('hline'); await sleep(50);
+    ptr2('pointerdown', hx, hy); await sleep(20); ptr2('pointerup', hx, hy, 0); await sleep(150);
+    var made = dset.list()[dset.list().length - 1];
+    ok('line drawn on the 2nd chart belongs to it', dset.list().length === before + 1 && made && made.tool === 'hline' && made.pane === 'chart2', JSON.stringify(made));
+    ok('layers: main, chart2, chart3, chart4', [R()].concat(ex).map(function (v) { return v.layer.pane; }).join() === 'main,chart2,chart3,chart4');
+    var inkAfter = others.map(function (v, k) { return inkRow(v, ys[k]); }), ink2After = inkRow(v2, v2.series.priceToCoordinate(made.pts[0].p));
+    ok('the 2nd chart draws the line, the other charts draw nothing new', ink2After > ink2Before + 50 && inkAfter.join() === inkBefore.join(), JSON.stringify([ink2Before, ink2After, inkBefore, inkAfter]));
+    T().draw().set.remove(made.id); T().draw().setTool('cursor'); await sleep(50);
     // 1+3
     pick('1+3'); await sleep(500);
     var b1 = wr('chart'), b2 = wr('chart2'), b4 = wr('chart4');

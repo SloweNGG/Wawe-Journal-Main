@@ -50,6 +50,15 @@ describe('bt-draw', () => {
     assert.deepEqual(D.fromRow(row), d);
     assert.equal(D.fromRow({ id: 'z', tool: 'trend', points: 'nope', style: null }), null);
   });
+  it('every drawing belongs to one chart: pane kept in the style, main chart by default', () => {
+    const d = D.sanitize({ id: 'p1', tool: 'trend', pts: [{ t: 1, p: 1 }, { t: 2, p: 2 }], pane: 'chart3' });
+    assert.equal(d.pane, 'chart3'); assert.equal(D.paneOf(d), 'chart3');
+    const row = D.toRow(d, 'u', 'a');
+    assert.equal(row.style.pane, 'chart3'); assert.deepEqual(D.fromRow(row), d);
+    const old = D.fromRow({ id: 'p0', tool: 'hline', points: [{ t: 1, p: 1 }], style: { color: null, locked: false } });
+    assert.equal(old.pane, undefined); assert.equal(D.paneOf(old), 'main', 'drawings saved before panes stay on the main chart');
+    for (const bad of ['main', 'chart1', 'chart', 'x', 5, null]) assert.equal(D.sanitize({ id: 'q', tool: 'hline', pts: [{ t: 1, p: 1 }], pane: bad }).pane, undefined, String(bad));
+  });
   it('fib levels run from the first point (1) to the second (0)', () => {
     const lv = D.fibLevels({ pts: [{ t: 0, p: 100 }, { t: 1, p: 200 }] });
     assert.deepEqual(lv.map((x) => x.level), D.FIB_LEVELS);

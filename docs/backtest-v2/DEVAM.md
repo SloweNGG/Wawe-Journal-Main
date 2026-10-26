@@ -58,6 +58,12 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
 - Doğrulama `supabase/tests/backtest_plan_usage_verify.sql` (ROLLBACK, 9/9), rollback `supabase/rollbacks/202610260001_backtest_plan_usage.down.sql`.
 - Not: `backtest_drawings_verify.sql` tablonun boş olduğunu varsayıyor (tüm satırları sayar); canlıda gerçek çizim olunca "FAIL RLS delete" verir.
 
+## Çoklu grafik: bağımsız grafikler (2026-10-26)
+
+- Grafikler birbirini kaydırmaz, yakınlaştırmaz, imleçlerini paylaşmaz (`syncFrom` ve `crossFrom` kaldırıldı; sahip isteği).
+- Her çizim çizildiği grafiğe aittir: `pane` = `main` | `chart2`..`chart4` (pencere kimliği), `style.pane` içinde saklanır (DB değişikliği yok);
+  alan yoksa ana grafik. Grafik kapatılınca çizimleri silinmez, grafik geri gelince görünür. "Tüm çizimleri sil" hesabın tüm çizimlerini siler.
+
 ## Yayın notu
 
 - Her aşamada değişen backtest dosyalarının `?v=` numarası artırılır (sayfa `backtest.astro`). Yeni çeviri anahtarı eklenince
