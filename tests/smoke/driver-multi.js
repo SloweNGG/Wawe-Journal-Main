@@ -67,7 +67,7 @@
     ex[0].chart.timeScale().setVisibleLogicalRange({ from: er.from - 40, to: er.to - 40 }); await sleep(250);
     var mr2 = ts.getVisibleLogicalRange();
     ok('moving an extra chart leaves the main chart where it is', Math.abs(mr2.from - mr.from) < 0.5 && Math.abs(mr2.to - mr.to) < 0.5);
-    // crosshair sync: the main chart's crosshair (time + price) is drawn on the other charts (read back from their top canvas)
+    // no crosshair sync (owner, 2026-10-26): the pointer over the main chart draws a crosshair there only (read back from the top canvases)
     function topInk(v) {
       var cs = v.el.querySelectorAll('table td canvas'), top = cs[1]; if (!top) return -1;
       var d = top.getContext('2d').getImageData(0, 0, top.width, top.height).data, n = 0;
@@ -76,12 +76,14 @@
     }
     // every chart centred on the cursor first (R), so the crosshair time lies inside the narrowest chart's range
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true })); await sleep(250);
-    var mb = R().bars, pt = { x: 100, y: R().series.priceToCoordinate(mb[mb.length - 3].close) };
-    T().cross({ time: mb[mb.length - 3].time, point: pt, logical: mb.length - 3 }); await sleep(150);
-    var inked = ex.map(topInk);
-    T().cross({ time: undefined, point: undefined }); await sleep(150);
-    var cleared = ex.map(topInk);
-    ok('crosshair sync: drawn on every other chart, cleared when the pointer leaves', inked.every(function (n) { return n > 20; }) && cleared.every(function (n) { return n === 0; }), JSON.stringify([inked, cleared]));
+    // mouse events on the main chart's pane canvas (setCrosshairPosition does not fire the crosshair-move event the old sync used)
+    var pane = R().el.querySelectorAll('table td')[1].querySelectorAll('canvas')[1], pr = pane.getBoundingClientRect();
+    var mo = { bubbles: true, view: window, clientX: pr.left + pr.width * 0.5, clientY: pr.top + 40 };
+    ['mouseenter', 'mouseover', 'mousemove'].forEach(function (type) { pane.dispatchEvent(new MouseEvent(type, mo)); });
+    await sleep(250);
+    var mainInk = topInk(R()), otherInk = ex.map(topInk);
+    pane.dispatchEvent(new MouseEvent('mouseleave', mo));
+    ok('pointer over the main chart: crosshair on the main chart only', mainInk > 20 && otherInk.every(function (n) { return n === 0; }), JSON.stringify([mainInk, otherInk]));
     // drawings show on every chart (one shared set, one layer per chart)
     ok('drawing layers on every chart', [R()].concat(ex).every(function (v) { return !!v.layer; }));
     // 1+3

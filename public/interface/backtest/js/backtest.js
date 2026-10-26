@@ -1680,7 +1680,7 @@
   // of a multi-chart layout (Premium), each with its own timeframe over the same replay cursor. A view has: el, tfMin, chart,
   // series, vol, sessions, layer, candles, builder, bars, ha, dirtyFrom, lines, askLine, bidLine, look, tickSeen, tickHide.
   var LAYOUTS = { '1': 1, '2h': 2, '2v': 2, '2x2': 4, '1+3': 4 }, LAYOUT_IDS = ['1', '2h', '2v', '2x2', '1+3'];
-  var EXTRA_TFS = ['15m', '4h', '1d'], crossing = false;
+  var EXTRA_TFS = ['15m', '4h', '1d'];
   function views() { return R ? [R].concat(R.extra || []) : []; }
   function colors() { return window.WwChart.colors(); }
   // The chart clips a label whose centre is closer to the left edge than half its width ("30 Jun" showed as "0 Jun").
@@ -1754,10 +1754,10 @@
     v.sessions = LK.createSessionPrimitive({ bars: function () { return v.bars || []; }, tfMin: function () { return v.tfMin; } });
     v.series.attachPrimitive(v.sessions); v.sessions.setVisible(lk.showSessions);
     if (v === R) v.chart.subscribeCrosshairMove(renderLegend);
-    v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); markTip(v, p); });
+    v.chart.subscribeCrosshairMove(function (p) { markTip(v, p); });
     v.tlines = LK.createTradeLinePrimitive({ segments: function () { return v.tlSegs || []; }, colors: function () { return { up: v.look.up, down: v.look.down }; } });
     v.series.attachPrimitive(v.tlines); v.tlines.setVisible(lk.tradeLines);
-    // every chart scrolls and zooms on its own (owner, 2026-10-26: moving one chart must not move the others); only the crosshair is shared
+    // every chart scrolls, zooms and shows its crosshair on its own (owner, 2026-10-26: the charts are fully independent)
     v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (v === R) updateNowBtn(); });
     bindOrderDrag(v);
     var dg = R.sym.digits;
@@ -2117,26 +2117,6 @@
     centerView(v);
     LAY.setCharts(LAY.prefs().charts, R.extra.map(function (x) { return x.tfId; }));
     if (R.histMonths < historyNeed()) loadHistory(R.token);
-  }
-  // crosshair sync: the same time (the candle that contains it) and price on every other chart
-  function barAtOrBefore(bars, t) {
-    var lo = 0, hi = bars.length - 1, ans = -1;
-    while (lo <= hi) { var mid = (lo + hi) >> 1; if (bars[mid].time <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
-    return ans < 0 ? null : bars[ans].time;
-  }
-  function crossFrom(src, p) {
-    if (crossing || !R || !R.extra || !R.extra.length) return;
-    crossing = true;
-    try {
-      var price = p && p.point && src.series ? src.series.coordinateToPrice(p.point.y) : null;
-      views().forEach(function (v) {
-        if (v === src || !v.chart) return;
-        var t = p && p.time && price !== null ? barAtOrBefore(v.bars || [], p.time) : null;
-        // a time the chart cannot place yet (data being rebuilt) throws in Lightweight Charts: no crosshair there then
-        if (t !== null) { try { v.chart.setCrosshairPosition(price, t, v.series); return; } catch (e) { /* fall through */ } }
-        v.chart.clearCrosshairPosition();
-      });
-    } finally { crossing = false; }
   }
   function renderLayoutPicker() {
     var box = $('bt-layout-pop'); if (!box) return;
@@ -2835,8 +2815,7 @@
   PAGE.onLeave(cleanup);
   // browser smoke tests only (tests/smoke/make.py sets __BT_TEST__): read access to the chart and the drawings
   if (window.__BT_TEST__) PAGE.expose('__btTest', { chart: function () { return R && R.chart; }, series: function () { return R && R.series; },
-    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, desk: function () { return DESK; }, openWin: showWin, stats: function () { return STATS; },
-    cross: function (p) { crossFrom(R, p); } });
+    bars: function () { return R && R.bars; }, tfSec: function () { return R && R.tfMin * 60; }, draw: function () { return DRAW; }, R: function () { return R; }, desk: function () { return DESK; }, openWin: showWin, stats: function () { return STATS; } });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
