@@ -930,7 +930,7 @@
         cov: null, win: null, winMonths: [], k: 0, candles: [], builder: null, eng: eng, token: 0, playing: false, rafId: 0, lastTs: null,
         accum: 0, buffering: false, busy: false, loadingNext: null, nextState: null, dirtyFrom: -1, closedQueue: [], gap: null,
         chart: null, series: null, askLine: null, lines: {}, dirty: false, lastSavedReplaySec: acc.replaySec, lastSaveAt: 0, lastLiveAt: 0,
-        src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0, userAt: 0,
+        src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0,
         fillQueue: [], inserting: {}, dropped: {} };
       setPageState('replay');
       $('bt-view-replay').setAttribute('data-replay', 'loading');
@@ -939,7 +939,7 @@
       try { var u = new URL(location.href); u.searchParams.set('account', id); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
       overlay(_t('backtest.chart.loading', 'Mum verisi yükleniyor…'));
       DRAW.setAccount(acc.id);
-      buildChart(R); markUser(R);
+      buildChart(R);
       R.cov = await R.src.coverage(sym.id);
       if (!PAGE.alive || !R) return;
       var replaySec = acc.replaySec || R.cov.firstT + 60;
@@ -1680,7 +1680,7 @@
   // of a multi-chart layout (Premium), each with its own timeframe over the same replay cursor. A view has: el, tfMin, chart,
   // series, vol, sessions, layer, candles, builder, bars, ha, dirtyFrom, lines, askLine, bidLine, look, tickSeen, tickHide.
   var LAYOUTS = { '1': 1, '2h': 2, '2v': 2, '2x2': 4, '1+3': 4 }, LAYOUT_IDS = ['1', '2h', '2v', '2x2', '1+3'];
-  var EXTRA_TFS = ['15m', '4h', '1d'], syncing = false, crossing = false;
+  var EXTRA_TFS = ['15m', '4h', '1d'], crossing = false;
   function views() { return R ? [R].concat(R.extra || []) : []; }
   function colors() { return window.WwChart.colors(); }
   // The chart clips a label whose centre is closer to the left edge than half its width ("30 Jun" showed as "0 Jun").
@@ -1757,7 +1757,8 @@
     v.chart.subscribeCrosshairMove(function (p) { crossFrom(v, p); markTip(v, p); });
     v.tlines = LK.createTradeLinePrimitive({ segments: function () { return v.tlSegs || []; }, colors: function () { return { up: v.look.up, down: v.look.down }; } });
     v.series.attachPrimitive(v.tlines); v.tlines.setVisible(lk.tradeLines);
-    v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (!syncing && Date.now() - (v.userAt || 0) < 500) syncFrom(v); if (v === R) updateNowBtn(); });
+    // every chart scrolls and zooms on its own (owner, 2026-10-26: moving one chart must not move the others); only the crosshair is shared
+    v.chart.timeScale().subscribeVisibleLogicalRangeChange(function () { refreshClippedTicks(v); if (v === R) updateNowBtn(); });
     bindOrderDrag(v);
     var dg = R.sym.digits;
     v.layer = DRAW.attach({ chart: v.chart, series: v.series, el: v.el, bars: function () { return v.bars || []; },
@@ -1968,11 +1969,9 @@
   // scale. After going to a date, a section, a timeframe change, opening the account and full screen; the button and R do the same.
   function centerView(v) {
     if (!v || !v.chart) return;
-    v.userAt = 0;                                          // not a user scroll: the range event must not re-sync the other charts
     try { v.chart.priceScale('right').applyOptions({ autoScale: true }); } catch (e) { /* ignore */ }
     var n = v.bars ? v.bars.length : 0; if (!n) return;
-    syncing = true;
-    try { v.chart.timeScale().setVisibleLogicalRange({ from: n - CENTER_BARS, to: n - 1 + RIGHT_OFFSET }); } finally { syncing = false; }
+    v.chart.timeScale().setVisibleLogicalRange({ from: n - CENTER_BARS, to: n - 1 + RIGHT_OFFSET });
     if (v === R) updateNowBtn();
     later(function () { checkScale(v); }, 150);
   }
@@ -1997,7 +1996,7 @@
     rebuildMarkers(); syncPriceLines(); updateAskLine();
     later(function () { checkScale(v, true); }, 150);
   }
-  function centerAll() { views().forEach(function (v) { v.userAt = 0; }); views().forEach(centerView); updateNowBtn(); }
+  function centerAll() { views().forEach(centerView); updateNowBtn(); }
   // "Back to the current candle": shown while the cursor's candle is scrolled out of the main chart
   function updateNowBtn() {
     var b = $('bt-now-btn'); if (!b) return;
@@ -2066,15 +2065,9 @@
     head.appendChild(cellGrip()); head.appendChild(sel); cell.appendChild(head);
     var host = el('div', 'bt-chart'); cell.appendChild(host);
     cellHost(i).appendChild(cell);
-    var v = { el: host, cell: cell, tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1, userAt: 0 };
+    var v = { el: host, cell: cell, tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1 };
     sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); });
-    markUser(v);
     return v;
-  }
-  function markUser(v) {
-    var on = function () { v.userAt = Date.now(); };
-    ['pointerdown', 'wheel', 'touchstart'].forEach(function (ev) { v.el.addEventListener(ev, on, { capture: true, passive: true }); });
-    ['pointermove'].forEach(function (ev) { v.el.addEventListener(ev, function (e) { if (e.buttons) on(); }, { capture: true, passive: true }); });
   }
   // where an extra chart's cell goes: its own window on the free desk, the shared grid otherwise (full screen)
   function freeDesk() { return !!DESK && DESK.kind() === 'free'; }
@@ -2105,8 +2098,9 @@
     while (R.extra.length < need) {
       var i = R.extra.length, v = newView(i, tfs[i]);
       R.extra.push(v); buildChart(v); viewCandles(v); renderChartData(v); added = true;
+      centerView(v);                                       // a new chart starts at the replay cursor; the others keep their view
     }
-    if (added) { rebuildMarkers(); syncPriceLines(); updateAskLine(); syncFrom(R); }
+    if (added) { rebuildMarkers(); syncPriceLines(); updateAskLine(); }
     renderLayoutPicker();
     if (DESK) DESK.apply();
     placeCells();
@@ -2123,21 +2117,6 @@
     centerView(v);
     LAY.setCharts(LAY.prefs().charts, R.extra.map(function (x) { return x.tfId; }));
     if (R.histMonths < historyNeed()) loadHistory(R.token);
-  }
-  // time sync: the other charts keep their zoom and are scrolled to the same centre time
-  function syncFrom(src) {
-    var others = views().filter(function (x) { return x !== src && x.chart && x.bars && x.bars.length; });
-    if (!others.length || !src.chart || !src.bars || !src.bars.length) return;
-    var r = src.chart.timeScale().getVisibleLogicalRange(); if (!r) return;
-    var D = window.WwBtDraw, tC = D.logicalToTime(src.bars, src.tfMin * 60, (r.from + r.to) / 2);
-    syncing = true;
-    try {
-      others.forEach(function (v) {
-        var vr = v.chart.timeScale().getVisibleLogicalRange(); if (!vr) return;
-        var w = vr.to - vr.from, c = D.timeToLogical(v.bars, v.tfMin * 60, tC);
-        v.chart.timeScale().setVisibleLogicalRange({ from: c - w / 2, to: c + w / 2 });
-      });
-    } finally { syncing = false; }
   }
   // crosshair sync: the same time (the candle that contains it) and price on every other chart
   function barAtOrBefore(bars, t) {

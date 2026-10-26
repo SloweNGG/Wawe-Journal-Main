@@ -55,12 +55,18 @@
     setv(ex[0].tfSel, '5m'); await sleep(400);
     ok('extra chart timeframe changes to M5 (candles rebuilt, stored)', ex[0].tfMin === 5 && (ex[0].bars[1].time - ex[0].bars[0].time) % 300 === 0 && prefs().tfs[0] === '5m', JSON.stringify(prefs().tfs));
     ok('M5 chart still not ahead of the cursor', lastT(ex[0]) < replaySec());
-    // time sync: scroll the main chart, the others centre on the same time
-    var ts = R().chart.timeScale(), vr = ts.getVisibleLogicalRange();
-    R().userAt = Date.now(); ts.setVisibleLogicalRange({ from: vr.from - 60, to: vr.to - 60 }); await sleep(250);
-    var r0 = ts.getVisibleLogicalRange(), tc = D.logicalToTime(R().bars, R().tfMin * 60, (r0.from + r0.to) / 2);
-    var synced = ex.every(function (v) { var r = v.chart.timeScale().getVisibleLogicalRange(); var c = D.logicalToTime(v.bars, v.tfMin * 60, (r.from + r.to) / 2); return Math.abs(c - tc) <= v.tfMin * 60 * 1.5; });
-    ok('time sync: the other charts show the same centre time', synced, ex.map(function (v) { var r = v.chart.timeScale().getVisibleLogicalRange(); return Math.round((D.logicalToTime(v.bars, v.tfMin * 60, (r.from + r.to) / 2) - tc) / 60) + 'min'; }).join(' '));
+    // no time sync (owner, 2026-10-26): scrolling or zooming one chart, with the mouse, leaves the others where they are
+    function ranges() { return ex.map(function (v) { var r = v.chart.timeScale().getVisibleLogicalRange(); return Math.round(r.from) + ':' + Math.round(r.to); }).join(' '); }
+    var before = ranges(), ts = R().chart.timeScale(), vr = ts.getVisibleLogicalRange(), box = R().el.getBoundingClientRect();
+    var mx = box.left + box.width / 2, my = box.top + box.height / 2, tgt = document.elementFromPoint(mx, my);
+    tgt.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, clientX: mx, clientY: my, deltaY: -300 })); await sleep(150);
+    ts.setVisibleLogicalRange({ from: vr.from - 60, to: vr.to - 60 }); await sleep(250);
+    var r1 = ts.getVisibleLogicalRange();
+    ok('main chart moved, the other charts did not', Math.abs(r1.from - vr.from) > 10 && ranges() === before, before + ' -> ' + ranges());
+    var er = ex[0].chart.timeScale().getVisibleLogicalRange(), mr = ts.getVisibleLogicalRange();
+    ex[0].chart.timeScale().setVisibleLogicalRange({ from: er.from - 40, to: er.to - 40 }); await sleep(250);
+    var mr2 = ts.getVisibleLogicalRange();
+    ok('moving an extra chart leaves the main chart where it is', Math.abs(mr2.from - mr.from) < 0.5 && Math.abs(mr2.to - mr.to) < 0.5);
     // crosshair sync: the main chart's crosshair (time + price) is drawn on the other charts (read back from their top canvas)
     function topInk(v) {
       var cs = v.el.querySelectorAll('table td canvas'), top = cs[1]; if (!top) return -1;

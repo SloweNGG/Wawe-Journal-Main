@@ -61,7 +61,7 @@
     closeBtn().click(); await sleep(400);
     // scroll away -> "back to the current candle"
     ok('button hidden while the cursor candle is visible', !vis('bt-now-btn'));
-    R().userAt = Date.now(); R().chart.timeScale().scrollToPosition(-400, false); await sleep(200);
+    R().chart.timeScale().scrollToPosition(-400, false); await sleep(200);
     ok('scrolled away: "Back to the current candle" shown', vis('bt-now-btn'));
     $('bt-now-btn').click(); await sleep(200);
     ok('back: centered again, button hidden', centered(view()) && !vis('bt-now-btn'), txt(view()));

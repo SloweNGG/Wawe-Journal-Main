@@ -1356,7 +1356,10 @@ function updateNavbarI18n() {
 
   document.querySelectorAll('[data-i18n]').forEach(function(el) {
     var key = el.getAttribute('data-i18n');
-    var translation = i18n.t(key);
+    // same as i18n.js: {n}-style placeholders come from data-i18n-params (without them "Grafik 2" became "Chart {n}")
+    var params;
+    try { params = JSON.parse(el.getAttribute('data-i18n-params') || 'null') || undefined; } catch (e) { params = undefined; }
+    var translation = i18n.t(key, params);
     if (translation && translation !== key && el.textContent !== translation) {
       textUpdates.push({ el: el, translation: translation });
     }
@@ -1372,7 +1375,9 @@ function updateNavbarI18n() {
 
   document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
     var key = el.getAttribute('data-i18n-html');
-    var translation = i18n.t(key);
+    var params;
+    try { params = JSON.parse(el.getAttribute('data-i18n-params') || 'null') || undefined; } catch (e) { params = undefined; }
+    var translation = i18n.t(key, params);
     if (translation && translation !== key && el.innerHTML !== translation) {
       htmlUpdates.push({ el: el, translation: sanitizeHTML(translation) });
     }
