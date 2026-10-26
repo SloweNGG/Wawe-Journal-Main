@@ -146,8 +146,9 @@
     ok('reset date in the user\'s time zone + UTC note', tc2.textContent.indexOf(TX.resets) >= 0 && /20\d\d/.test(tc2.textContent) && q('.bt-plan-utc', tc2).textContent.indexOf(TX.utc) >= 0, tc2.textContent);
     ok('synthetic: unlimited', val('syn_trades') === TX.unlimited);
     var fr2 = document.querySelectorAll('#bt-plan-panel .bt-plan-feat');
-    ok('features: five rows, locked with a lock icon and PRO tag, drawing tools 3 / 9', fr2.length === 5 && Array.prototype.every.call(fr2, function (f) {
-      return f.getAttribute('data-on') === 'false' && q('.bt-pro', f) && q('.bt-plan-feat-state svg', f); }) && /3 \/ 9/.test(fr2[0].textContent));
+    ok('features: drawing tools 9 / 9 and saved drawings on (free for every plan); themes, stats, multi locked with a lock and PRO tag', fr2.length === 5 &&
+      Array.prototype.slice.call(fr2, 0, 2).every(function (f) { return f.getAttribute('data-on') === 'true' && f.textContent.indexOf(TX.on) >= 0 && !q('.bt-pro', f); }) &&
+      Array.prototype.slice.call(fr2, 2).every(function (f) { return f.getAttribute('data-on') === 'false' && q('.bt-pro', f) && q('.bt-plan-feat-state svg', f); }) && /9 \/ 9/.test(fr2[0].textContent));
     ok('icons rendered (lucide)', document.querySelectorAll('#bt-plan-panel svg').length >= 10 && !document.querySelector('#bt-plan-panel i[data-lucide]'), document.querySelectorAll('#bt-plan-panel i[data-lucide]').length);
     // keyboard
     $('bt-acc-tab-plan').focus();

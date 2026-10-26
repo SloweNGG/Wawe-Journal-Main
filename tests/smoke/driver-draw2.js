@@ -140,8 +140,8 @@
     await click({ x: rb.r - 2, y: (rb.t + rb.b) / 2 });
     ok('rectangle without fill: a click on its border selects it', sel() === r1.id, sel());
 
-    // ---------------- trend line and ray (free: trend; premium: both)
-    var lines = pro ? ['trend', 'ray'] : ['trend'];
+    // ---------------- trend line and ray (every plan: the drawing tools are free since 2026-10-26)
+    var lines = ['trend', 'ray'];
     for (var li = 0; li < lines.length; li++) {
       var tl = lines[li];
       await tool(tl); var L1 = P(0.2, 0.5), L2 = P(0.45, 0.53);
@@ -204,8 +204,8 @@
     ok('settings change is undoable (color back)', T().draw().set.get(tm.id).color === null && T().draw().set.get(tm.id).dash === 'dashed');
     await press('Escape');
     ok('Esc closes the settings window', !document.querySelector('.bt-dset'));
-    if (pro) {
-      // ---------------- fibonacci
+    {
+      // ---------------- fibonacci (every plan)
       await tool('fib'); var F1 = P(0.3, 0.75), F2 = P(0.55, 0.25);
       await drag(F1, F2);
       var fb = lastD();
@@ -332,11 +332,10 @@
     }
     await press('Escape'); await press('Escape'); await sleep(300);
     ok('no gesture or draft left behind', !T().draw().busy() && !document.querySelector('.bt-draw-edit') && !document.querySelector('.bt-dset'));
-    // free: premium tools stay locked
-    if (!pro) {
-      window.__upgrade = false; await tool('fib');
-      ok('free: fib opens the upgrade window, tool stays the cursor', window.__upgrade === true && T().draw().tool() === 'cursor');
-    }
+    // every plan: no tool is locked, none opens the upgrade window
+    window.__upgrade = false; await tool('fib');
+    ok((pro ? 'premium' : 'free') + ': fib is a normal tool, no upgrade window', window.__upgrade !== true && T().draw().tool() === 'fib', T().draw().tool());
+    await tool('cursor');
   } catch (e) { out.push('EXCEPTION ' + (e && e.stack || e)); }
   finally { CanvasRenderingContext2D.prototype.fillText = ft; $('bt-smoke-result').textContent = out.join('\n') + '\nDONE'; }
 })();

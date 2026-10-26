@@ -32,7 +32,6 @@
     if (sb) return (window.__db.tables.backtest_drawings || []);
     try { return JSON.parse(localStorage.getItem('ww-bt-drawings-test') || '[]'); } catch (e) { return []; }
   }
-  function session(acc) { try { return JSON.parse(sessionStorage.getItem('ww_bt_draw:' + acc) || '[]'); } catch (e) { return []; } }
   window.addEventListener('error', function (e) { out.push('JSERROR ' + e.message + ' @' + e.filename + ':' + e.lineno); });
   try {
     await waitFor(function () { return $('bt-root').getAttribute('data-mode') && (!sb || window.__db); }, 15000, 'list');
@@ -45,8 +44,8 @@
     document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(150);
     var bar = $('bt-draw-bar');
     ok('advanced: drawing toolbar with cursor + 9 tools', bar.querySelectorAll('[data-tool]').length === 10 && bar.getBoundingClientRect().width > 20);
-    var tags = bar.querySelectorAll('.bt-pro').length;
-    ok(pro ? 'premium: no PRO tags on tools' : 'free: PRO tags on the 6 premium tools', pro ? tags === 0 : tags === 6, tags);
+    var tags = bar.querySelectorAll('.bt-pro').length, plan = pro ? 'premium' : 'free';
+    ok(plan + ': no PRO tags on the tools (drawings are free for every plan)', tags === 0, tags);
     // a trend line by dragging
     var bars = T().bars(), n = bars.length, r = rect();
     var A = xy(bars[n - 30].time, bars[n - 30].low), B = xy(bars[n - 8].time, bars[n - 8].high);
@@ -59,8 +58,7 @@
     ok('stored with time and price: the start sits inside its candle', d.pts[0].t >= bars[n - 30].time && d.pts[0].t < bars[n - 29].time && Math.abs(d.pts[0].p - bars[n - 30].low) < Math.abs(bars[n - 30].high - bars[n - 30].low) / 10 + 1e-9, JSON.stringify(d.pts[0]) + ' bar ' + bars[n - 30].time);
     ok('drawing did not add or reveal candles', T().bars().length === n0 && lastBarTime() < replaySec());
     await sleep(600);
-    if (pro) ok('premium: saved to the account', saved().filter(function (x) { return x.id === d.id; }).length === 1, JSON.stringify(saved()).slice(0, 200));
-    else ok('free: kept in the session only, nothing written to the account', session(acc).length === 1 && saved().length === 0);
+    ok(plan + ': saved to the account', saved().filter(function (x) { return x.id === d.id; }).length === 1, JSON.stringify(saved()).slice(0, 200));
     // click elsewhere deselects, click on the line selects
     await click({ x: r.left + 40, y: r.top + 20 }); ok('click on empty chart deselects', T().draw().set.selected() === null);
     await click(mid(d)); ok('click on the line selects it', T().draw().set.selected() === d.id);
@@ -107,14 +105,11 @@
     var hl = list().filter(function (x) { return x.tool === 'hline'; })[0];
     ok('magnet: the horizontal line sits on an open/high/low/close of the candle', !!hl && [b2[k2].open, b2[k2].high, b2[k2].low, b2[k2].close].some(function (v) { return Math.abs(v - hl.pts[0].p) < 1e-9; }), hl ? JSON.stringify({ p: hl.pts[0].p, t: hl.pts[0].t, bar: b2[k2] }) : 'tool ' + T().draw().tool() + ' list ' + list().map(function (x) { return x.tool; }) + ' at ' + JSON.stringify([pm.x - rect().left, pm.y - rect().top, rect().width, rect().height]) + ' el ' + (document.elementFromPoint(pm.x, pm.y) || {}).tagName + ' modal ' + !!document.querySelector('.bt-modal.active'));
     key('m'); await sleep(30);
-    // premium tools
+    // the other tools (every plan)
     var before = list().length;
     key('3'); await sleep(30);
-    if (!pro) {
-      ok('free: premium tool key opens the upgrade window, tool stays the cursor', window.__upgrade === true && T().draw().tool() === 'cursor');
-      window.__upgrade = false; bar.querySelector('[data-tool="fib"]').click(); await sleep(50);
-      ok('free: premium tool button opens the upgrade window', window.__upgrade === true && T().draw().tool() === 'cursor');
-    } else {
+    ok(plan + ': key 3 picks the ray, no upgrade window', T().draw().tool() === 'ray' && window.__upgrade !== true);
+    {
       k2 = visIdx(0.9);
       var P1 = xy(b2[k2 - 20].time, b2[k2 - 20].close), P2 = xy(b2[k2 - 5].time, b2[k2 - 5].high);
       await drag(P1, P2);                                                          // ray
@@ -127,31 +122,31 @@
       var te = document.querySelector('#bt-chart .bt-draw-edit'); te.value = 'Destek';
       te.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); await sleep(100);
       var tools = list().map(function (x) { return x.tool; }).sort().join(',');
-      ok('premium: ray, fib, long, short, measure and text drawn', list().length === before + 6 && /fib/.test(tools) && /long/.test(tools) && /short/.test(tools) && /measure/.test(tools) && /ray/.test(tools) && /text/.test(tools), tools);
+      ok(plan + ': ray, fib, long, short, measure and text drawn', list().length === before + 6 && /fib/.test(tools) && /long/.test(tools) && /short/.test(tools) && /measure/.test(tools) && /ray/.test(tools) && /text/.test(tools), tools);
       var lg = list().filter(function (x) { return x.tool === 'long'; })[0];
       ok('long position tool: target above, stop below the entry', lg.pts[1].p > lg.pts[0].p && lg.pts[2].p < lg.pts[0].p);
       ok('text stored', list().filter(function (x) { return x.tool === 'text'; })[0].text === 'Destek');
       await sleep(600);
-      ok('premium: every drawing saved to the account', saved().filter(function (x) { return x.backtest_account_id === acc; }).length === list().length, saved().length + ' vs ' + list().length);
+      ok(plan + ': every drawing saved to the account', saved().filter(function (x) { return x.backtest_account_id === acc; }).length === list().length, saved().length + ' vs ' + list().length);
     }
     // delete with the key
     var cnt = list().length, tl = list().filter(function (x) { return x.tool === 'trend'; })[0];
     T().chart().timeScale().setVisibleLogicalRange({ from: D.timeToLogical(T().bars(), 3600, tl.pts[0].t) - 10, to: D.timeToLogical(T().bars(), 3600, tl.pts[1].t) + 10 }); await sleep(200);
     await click({ x: r.left + 40, y: r.top + 20 }); await click(mid(tl)); key('Delete'); await sleep(700);
     ok('Del removes the selected drawing', list().length === cnt - 1);
-    if (pro) ok('premium: the delete reached the account', saved().filter(function (x) { return x.backtest_account_id === acc; }).length === cnt - 1);
-    // reopen: free from the session, premium from the account
+    ok(plan + ': the delete reached the account', saved().filter(function (x) { return x.backtest_account_id === acc; }).length === cnt - 1);
+    // reopen: the drawings come from the account
     var keep = list().length;
     $('bt-back-btn').click(); await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'list'; }, 5000, 'list');
     document.querySelector('.bt-account-card[data-id]').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && list().length === keep; }, 30000, 'reopen with drawings');
     ok('reopened account shows its drawings', list().length === keep, list().length + ' / ' + keep);
-    if (pro) {
+    {
       sessionStorage.removeItem('ww_bt_draw:' + acc);
       $('bt-back-btn').click(); await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'list'; }, 5000, 'list');
       document.querySelector('.bt-account-card[data-id]').click();
       await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && list().length === keep; }, 30000, 'reopen from the account');
-      ok('premium: drawings come back from the account alone (no session copy)', list().length === keep);
+      ok(plan + ': drawings come back from the account alone (no session copy)', list().length === keep);
     }
     // simple mode: no toolbar, the cursor tool
     document.querySelector('[data-bt-mode="simple"]').click(); await sleep(100);

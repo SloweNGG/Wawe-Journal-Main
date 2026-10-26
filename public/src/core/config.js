@@ -38,10 +38,10 @@ export const FEATURES = {
     trades: true,
     strategies: true,
     basicCharts: true,
-    // Backtest (backtest.js reads them with hasFeature): appearance beyond the two free themes, every drawing tool with saved drawings,
-    // the extended statistics, multi-chart layouts, unlimited trades on cTrader-data accounts (the database enforces the limit too)
+    // Backtest (backtest.js reads them with hasFeature): appearance beyond the two free themes, the extended statistics,
+    // multi-chart layouts, unlimited trades on cTrader-data accounts (the database enforces the limit too).
+    // The drawing tools and saved drawings are free for every plan (2026-10-26), so they have no flag.
     backtestThemes: false,
-    backtestDrawings: false,
     backtestStats: false,
     backtestMultiChart: false,
     backtestUnlimitedTrades: false
@@ -73,7 +73,6 @@ export const FEATURES = {
     strategies: true,
     basicCharts: true,
     backtestThemes: true,
-    backtestDrawings: true,
     backtestStats: true,
     backtestMultiChart: true,
     backtestUnlimitedTrades: true

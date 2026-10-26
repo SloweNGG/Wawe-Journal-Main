@@ -37,13 +37,13 @@ describe('bt-plan', () => {
     assert.deepEqual(P.badge(P.normalize(rpc({ trades: { used: 100, limit: 100 } }))), { level: 'full', used: 100, limit: 100 });
     assert.equal(P.badge(P.normalize(rpc({ premium: true, trades: { used: 500, limit: 100 } }))), null);
   });
-  it('features: drawing tools 3 / 9 free, 9 / 9 Premium; the counts match bt-draw.js', () => {
-    assert.equal(P.DRAW_TOOLS, globalThis.WwBtDraw.TOOLS.length); assert.equal(P.DRAW_FREE, globalThis.WwBtDraw.FREE_TOOLS.length);
+  it('features: drawing tools (9 / 9) and saved drawings on for every plan; the rest by plan; the count matches bt-draw.js', () => {
+    assert.equal(P.DRAW_TOOLS, globalThis.WwBtDraw.TOOLS.length);
     const free = P.features({});
     assert.deepEqual(free.map((f) => f.id), ['drawing_tools', 'saved_drawings', 'themes', 'stats', 'multi']);
-    assert.ok(free.every((f) => !f.on)); assert.equal(free[0].value, '3 / 9');
-    const pro = P.features({ backtestDrawings: true, backtestThemes: true, backtestStats: true, backtestMultiChart: true });
+    assert.deepEqual(free.map((f) => f.on), [true, true, false, false, false]); assert.equal(free[0].value, '9 / 9');
+    const pro = P.features({ backtestThemes: true, backtestStats: true, backtestMultiChart: true });
     assert.ok(pro.every((f) => f.on)); assert.equal(pro[0].value, '9 / 9');
-    assert.deepEqual(P.features({ backtestStats: true }).map((f) => f.on), [false, false, false, true, false]);
+    assert.deepEqual(P.features({ backtestStats: true }).map((f) => f.on), [true, true, false, true, false]);
   });
 });

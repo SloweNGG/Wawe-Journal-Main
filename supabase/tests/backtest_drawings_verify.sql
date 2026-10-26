@@ -1,5 +1,6 @@
 -- ============================================================
--- Verification of 202610240001_backtest_drawings.sql. Runs in ONE transaction and ends with ROLLBACK: it creates two
+-- Verification of 202610240001_backtest_drawings.sql + 202610260002_backtest_drawings_free.sql (drawings free for every plan).
+-- Runs in ONE transaction and ends with ROLLBACK: it creates two
 -- throw-away users (auth.users -> handle_new_user creates their profiles), a backtest account and drawings, checks the
 -- rules as the API role `authenticated` with JWT claims, and leaves nothing behind. Safe on the live database.
 -- Run: psql -v ON_ERROR_STOP=1 -f supabase/tests/backtest_drawings_verify.sql   (every check prints PASS; a failure aborts)
@@ -37,23 +38,15 @@ BEGIN
 END $$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated;
 
--- 1. free plan cannot write drawings
-SELECT pg_temp.as_user('a');
-SET LOCAL ROLE authenticated;
-SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (id, user_id, backtest_account_id, tool, points) VALUES (%L, %L, %L, 'trend', '[{"t":1,"p":1.1},{"t":2,"p":1.2}]')$q$,
-  (SELECT id FROM _v WHERE k = 'd1'), (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc')), 'BACKTEST_DRAWINGS_PREMIUM', 'free plan: insert refused');
-RESET ROLE;
-
--- 2. premium writes, updates, reads; immutables, ownership, account of another user
-UPDATE public.user_profiles SET plan = 'premium', plan_expires_at = now() + interval '30 days' WHERE id = (SELECT id FROM _v WHERE k = 'a');
+-- 1-2. the free plan writes, updates, reads (202610260002); immutables, ownership, account of another user
 SELECT pg_temp.as_user('a');
 SET LOCAL ROLE authenticated;
 INSERT INTO public.backtest_drawings (id, user_id, backtest_account_id, tool, points, style)
 SELECT (SELECT id FROM _v WHERE k = 'd1'), (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc'), 'long',
        '[{"t":1,"p":1.1},{"t":5,"p":1.2},{"t":5,"p":1.05}]', '{"color":"#22c55e","locked":false}';
-DO $$ BEGIN IF (SELECT count(*) FROM public.backtest_drawings) <> 1 THEN RAISE EXCEPTION 'FAIL premium insert'; END IF; RAISE NOTICE 'PASS premium: insert and read own drawing'; END $$;
+DO $$ BEGIN IF (SELECT count(*) FROM public.backtest_drawings) <> 1 THEN RAISE EXCEPTION 'FAIL free insert'; END IF; RAISE NOTICE 'PASS free plan: insert and read own drawing'; END $$;
 UPDATE public.backtest_drawings SET style = '{"color":"#ef4444","locked":true}' WHERE id = (SELECT id FROM _v WHERE k = 'd1');
-DO $$ BEGIN IF (SELECT style->>'color' FROM public.backtest_drawings) <> '#ef4444' THEN RAISE EXCEPTION 'FAIL premium update'; END IF; RAISE NOTICE 'PASS premium: update'; END $$;
+DO $$ BEGIN IF (SELECT style->>'color' FROM public.backtest_drawings) <> '#ef4444' THEN RAISE EXCEPTION 'FAIL free update'; END IF; RAISE NOTICE 'PASS free plan: update'; END $$;
 SELECT pg_temp.expect_error(format($q$UPDATE public.backtest_drawings SET backtest_account_id = %L WHERE id = %L$q$, (SELECT id FROM _v WHERE k = 'accb'), (SELECT id FROM _v WHERE k = 'd1')),
   'BACKTEST_DRAWING_IMMUTABLE', 'account of a drawing cannot change');
 SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user_id, backtest_account_id, tool, points) VALUES (%L, %L, 'hline', '[{"t":1,"p":1.1}]')$q$,
@@ -74,7 +67,7 @@ SET LOCAL ROLE authenticated;
 DO $$ BEGIN IF (SELECT count(*) FROM public.backtest_drawings) <> 0 THEN RAISE EXCEPTION 'FAIL RLS select'; END IF; RAISE NOTICE 'PASS RLS: another user reads no drawings'; END $$;
 DELETE FROM public.backtest_drawings;   -- RLS: deletes nothing of user a
 RESET ROLE;
-DO $$ BEGIN IF (SELECT count(*) FROM public.backtest_drawings) <> 1 THEN RAISE EXCEPTION 'FAIL RLS delete'; END IF; RAISE NOTICE 'PASS RLS: another user deletes nothing'; END $$;
+DO $$ BEGIN IF (SELECT count(*) FROM public.backtest_drawings WHERE user_id = (SELECT id FROM _v WHERE k = 'a')) <> 1 THEN RAISE EXCEPTION 'FAIL RLS delete'; END IF; RAISE NOTICE 'PASS RLS: another user deletes nothing'; END $$;
 
 -- 4. 500 per account
 SELECT pg_temp.as_user('a');
@@ -85,13 +78,15 @@ SELECT pg_temp.expect_error(format($q$INSERT INTO public.backtest_drawings (user
   (SELECT id FROM _v WHERE k = 'a'), (SELECT id FROM _v WHERE k = 'acc')), 'BACKTEST_DRAWINGS_LIMIT', 'the 501st drawing of an account is refused');
 RESET ROLE;
 
--- 5. lapsed premium: no writes, delete still works; account deletion cascades
-UPDATE public.user_profiles SET plan_expires_at = now() - interval '1 day' WHERE id = (SELECT id FROM _v WHERE k = 'a');
+-- 5. a lapsed Premium plan changes nothing (no plan check any more); delete works; account deletion cascades
+UPDATE public.user_profiles SET plan = 'premium', plan_expires_at = now() - interval '1 day' WHERE id = (SELECT id FROM _v WHERE k = 'a');
 SELECT pg_temp.as_user('a');
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.expect_error(format($q$UPDATE public.backtest_drawings SET style = '{}' WHERE id = %L$q$, (SELECT id FROM _v WHERE k = 'd1')), 'BACKTEST_DRAWINGS_PREMIUM', 'lapsed premium: update refused');
+UPDATE public.backtest_drawings SET style = '{"pane":"chart2"}' WHERE id = (SELECT id FROM _v WHERE k = 'd1');
+DO $$ BEGIN IF (SELECT style->>'pane' FROM public.backtest_drawings WHERE id = (SELECT id FROM _v WHERE k = 'd1')) IS DISTINCT FROM 'chart2' THEN RAISE EXCEPTION 'FAIL lapsed update'; END IF;
+  RAISE NOTICE 'PASS lapsed premium: update allowed (pane kept in the style)'; END $$;
 DELETE FROM public.backtest_drawings WHERE id = (SELECT id FROM _v WHERE k = 'd1');
-DO $$ BEGIN IF EXISTS (SELECT 1 FROM public.backtest_drawings WHERE id = (SELECT id FROM _v WHERE k = 'd1')) THEN RAISE EXCEPTION 'FAIL delete'; END IF; RAISE NOTICE 'PASS lapsed premium: delete allowed'; END $$;
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM public.backtest_drawings WHERE id = (SELECT id FROM _v WHERE k = 'd1')) THEN RAISE EXCEPTION 'FAIL delete'; END IF; RAISE NOTICE 'PASS delete allowed'; END $$;
 RESET ROLE;
 DELETE FROM public.backtest_accounts WHERE id = (SELECT id FROM _v WHERE k = 'acc');
 DO $$ BEGIN IF EXISTS (SELECT 1 FROM public.backtest_drawings WHERE backtest_account_id = (SELECT id FROM _v WHERE k = 'acc')) THEN RAISE EXCEPTION 'FAIL cascade'; END IF; RAISE NOTICE 'PASS account deletion removes its drawings'; END $$;

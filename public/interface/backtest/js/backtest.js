@@ -36,7 +36,7 @@
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
-  var FEATURES = ['backtestThemes', 'backtestDrawings', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];
+  var FEATURES = ['backtestThemes', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];   // drawings are free for everyone (2026-10-26)
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
   var planSeq = 0, planTimer = 0;                // "Plan and usage" tab: the newest answer wins, refreshes are debounced
@@ -168,7 +168,8 @@
     // Journals are only needed to link cTrader-data accounts (synthetic accounts cannot be linked: database CHECK); loaded on demand (ensureJournals).
     L.look = window.WwBtLook.load(safeStorage());
     DRAW = window.WwBtDraw.createController({
-      bar: $('bt-draw-bar'), t: _t, pro: function () { return can('backtestDrawings'); }, saveable: function () { return can('backtestDrawings'); },
+      // every tool, drawings saved to the account: free for every plan (owner, 2026-10-26; migration 202610260002)
+      bar: $('bt-draw-bar'), t: _t, pro: function () { return true; }, saveable: function () { return true; },
       upgrade: function () { openUpgrade('backtest_drawings'); }, toast: toast, newId: newId, confirm: function (txt) { return askConfirm(txt); },
       icons: icons, local: safeStorage(), session: safeSession(), db: drawingsDb(), userId: function () { return L.user && L.user.id; }, quote: drawQuote
     });
@@ -187,14 +188,14 @@
   }
   function safeStorage() { try { return window.localStorage; } catch (e) { return null; } }
   function safeSession() { try { return window.sessionStorage; } catch (e) { return null; } }
-  // Premium drawings: public.backtest_drawings (RLS: own rows; the database also checks the plan). Smoke tests (local backend): localStorage.
+  // Drawings: public.backtest_drawings (RLS: own rows, every plan). Smoke tests (local backend): localStorage.
   function drawingsDb() {
     if (BACKEND !== 'supabase') {
       var K = 'ww-bt-drawings-test', all = function () { try { return JSON.parse(localStorage.getItem(K) || '[]'); } catch (e) { return []; } };
       var put = function (rows) { localStorage.setItem(K, JSON.stringify(rows)); };
       return {
         load: function (acc) { return Promise.resolve({ data: all().filter(function (r) { return r.backtest_account_id === acc; }), error: null }); },
-        save: function (row) { if (!can('backtestDrawings')) return Promise.resolve({ error: { message: 'BACKTEST_DRAWINGS_PREMIUM' } }); var a = all().filter(function (r) { return r.id !== row.id; }); a.push(row); put(a); return Promise.resolve({ error: null }); },
+        save: function (row) { var a = all().filter(function (r) { return r.id !== row.id; }); a.push(row); put(a); return Promise.resolve({ error: null }); },
         remove: function (id) { put(all().filter(function (r) { return r.id !== id; })); return Promise.resolve({ error: null }); }
       };
     }

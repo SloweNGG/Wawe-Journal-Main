@@ -99,7 +99,7 @@ export class FakeDb {
   // Off by default so the sync-library tests can keep linking accounts, which stays valid for 'ctrader' accounts.
   // migration09: emulate Migration 09 on top of 08 (data_source 'synthetic'|'ctrader', source_* columns and their CHECK, immutable source,
   // cTrader account must be connected by the same user = `ctrader.accounts`). `ctrader` also feeds the get_ctrader_status RPC.
-  // drawings: emulate 202610240001 (backtest_drawings: own account, Premium writes only, upsert by id); plan: 'free' | 'premium'.
+  // drawings: emulate 202610240001 + 202610260002 (backtest_drawings: own account, every plan writes, upsert by id); plan: 'free' | 'premium'.
   // tradeLimit: emulate 202610240002 (monthly limit on cTrader-data accounts for the free plan, counter never decremented);
   // null = migration not applied (the RPC is missing).
   // planUsage: emulate 202610260001 (get_backtest_plan_usage); planExpires: the plan end date it returns (ISO string or null).
@@ -243,7 +243,6 @@ export class FakeDb {
   drawingWrite(call) {
     const t = this.tables.backtest_drawings, rows = Array.isArray(call.payload) ? call.payload : [call.payload];
     for (const src of rows) {
-      if (this.plan !== 'premium') return { data: null, error: { code: 'P0001', message: 'BACKTEST_DRAWINGS_PREMIUM' }, status: 400 };
       if (!this.tables.backtest_accounts.some((a) => a.id === src.backtest_account_id && a.user_id === src.user_id)) return { data: null, error: { code: 'P0001', message: 'INVALID_BACKTEST_ACCOUNT' }, status: 400 };
       if (!['trend', 'hline', 'ray', 'rect', 'fib', 'long', 'short', 'text', 'measure'].includes(src.tool)) return { data: null, error: { code: '23514', message: 'chk_backtest_drawings_tool' }, status: 400 };
       const old = t.find((r) => r.id === src.id);
