@@ -29,7 +29,6 @@
   border: 1px solid var(--border); color: var(--muted); font-size: 13px; }
 .bt-banner svg { width: 16px; height: 16px; flex: none; }
 .bt-banner-error { color: var(--red); border-color: rgba(239, 68, 68, 0.4); }
-.bt-banner-test { color: var(--accent3); border-color: var(--border2); }
 
 /* liste */
 .bt-list-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

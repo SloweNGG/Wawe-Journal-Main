@@ -87,8 +87,8 @@ describe('bt-i18n', () => {
     assert.match(page, /id="bt-source-label"[^>]*data-i18n="backtest\.source\.synthetic"/, 'chart label');
     assert.match(ctl, /sourceBadge\(a\)/, 'account card label');
     assert.ok(!/bt-view-soon|'soon'|backtest\.gate\./.test(page + ctl), 'no "soon" gate for non-admins');
-    assert.ok(!/storage|saved in this browser|bu tarayıcıda saklan/i.test(loc.tr['backtest.list_banner'] + loc.en['backtest.list_banner'] + loc.de['backtest.list_banner']), 'old browser-storage warning gone');
-    for (const l of LANGS) for (const k of ['backtest.source.synthetic', 'backtest.source.option_synthetic', 'backtest.source.option_ctrader', 'backtest.list_banner']) {
+    assert.ok(!/bt-banner-test|backtest\.list_banner/.test(page) && !('backtest.list_banner' in loc.tr), 'no list banner (owner removed it, 2026-10-26); the chart and card labels say synthetic');
+    for (const l of LANGS) for (const k of ['backtest.source.synthetic', 'backtest.source.option_synthetic', 'backtest.source.option_ctrader']) {
       assert.ok(/./.test(loc[l][k]), `${l} ${k}`);
     }
     assert.match(loc.tr['backtest.source.synthetic'], /gerçek piyasa verisi değildir/);

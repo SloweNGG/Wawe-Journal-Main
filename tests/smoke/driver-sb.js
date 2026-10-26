@@ -19,7 +19,7 @@
     await waitFor(function () { return window.__db && $('bt-root').getAttribute('data-state') === 'list'; }, 15000, 'list state');
     db = window.__db;
     ok(role + ': sees the list (no "soon" gate)', vis('bt-view-list') && !document.getElementById('bt-view-soon'));
-    ok('list banner: synthetic, stored in the user account, no browser-storage claim', /entetik|ynthetic|ynthetisch/.test($('bt-view-list').querySelector('.bt-banner-test').textContent) && !/tarayıcıda saklan|in this browser/i.test($('bt-view-list').querySelector('.bt-banner-test').textContent), $('bt-view-list').querySelector('.bt-banner-test').textContent);
+    ok('no list banner (removed 2026-10-26)', !$('bt-view-list').querySelector('.bt-banner-test'));
     ok('journals were not requested (synthetic accounts cannot be linked)', !db.client.calls.some(function (c) { return c.table === 'journals'; }));
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');

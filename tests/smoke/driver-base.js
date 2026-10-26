@@ -15,7 +15,7 @@
     ok(role + ' sees the list', vis('bt-view-list') && !document.getElementById('bt-view-soon'));
     ok('empty state shown', vis('bt-accounts-empty'));
     ok('quota label', /1\/|0\/|Hesap/.test($('bt-quota').textContent), $('bt-quota').textContent);
-    ok('list banner says synthetic, not the old browser-storage claim', /entetik|ynthetic|ynthetisch/.test(document.querySelector('.bt-banner-test').textContent) && !/tarayıcıda saklan|in this browser/i.test(document.querySelector('.bt-banner-test').textContent));
+    ok('no list banner (removed 2026-10-26)', !document.querySelector('.bt-banner-test'));
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal + default start');
     ok('create window: tabs (no danger zone), General first, footer only Cancel + Create', !$('bt-acc-tab-danger').offsetParent && $('bt-acc-tab-general').getAttribute('aria-selected') === 'true' && document.querySelectorAll('#bt-account-modal .modal-footer button').length === 2);

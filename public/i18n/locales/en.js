@@ -1731,7 +1731,6 @@ export default {
   "nav.backtest": "Backtest",
   "backtest.title": "Backtest",
   "backtest.subtitle": "Practice trading candle by candle on historical market data.",
-  "backtest.list_banner": "Synthetic accounts use candles that are not real market data; cTrader-data accounts use your own broker's data. Your accounts are saved in your user account.",
   "backtest.storage_unavailable": "Browser storage is unavailable: accounts are not saved and are lost when the page closes.",
   "backtest.new_account": "New account",
   "backtest.quota.label": "Accounts {n}/{max}",

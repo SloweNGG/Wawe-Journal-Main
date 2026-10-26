@@ -1698,7 +1698,6 @@ export default {
   "nav.backtest": "Backtest",
   "backtest.title": "Backtest",
   "backtest.subtitle": "Übe den Handel Kerze für Kerze mit historischen Marktdaten.",
-  "backtest.list_banner": "Synthetische Konten nutzen Kerzen, die keine echten Marktdaten sind; Konten mit cTrader-Daten nutzen die Daten Ihres eigenen Brokers. Ihre Konten werden in Ihrem Benutzerkonto gespeichert.",
   "backtest.storage_unavailable": "Browser-Speicher nicht verfügbar: Konten werden nicht gespeichert und gehen beim Schließen der Seite verloren.",
   "backtest.new_account": "Neues Konto",
   "backtest.quota.label": "Konten {n}/{max}",

@@ -1678,7 +1678,6 @@ export default {
   "nav.backtest": "Backtest",
   "backtest.title": "Backtest",
   "backtest.subtitle": "Geçmiş piyasa verisinde mum mum işlem pratiği yap.",
-  "backtest.list_banner": "Sentetik hesapların mumları gerçek piyasa verisi değildir; cTrader verili hesaplar kendi broker verini kullanır. Hesapların kullanıcı hesabında kayıtlıdır.",
   "backtest.storage_unavailable": "Tarayıcı depolaması kullanılamıyor: hesaplar kaydedilmiyor, sayfa kapanınca kaybolur.",
   "backtest.new_account": "Yeni hesap",
   "backtest.quota.label": "Hesap {n}/{max}",
