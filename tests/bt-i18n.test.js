@@ -31,8 +31,8 @@ describe('bt-i18n', () => {
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
     for (const g of ['forex', 'gold', 'crypto']) for (const l of LANGS) assert.ok(`backtest.group.${g}` in loc[l]);
   });
-  it('the new modules (layout, look, drawings, stats, charts) only use existing keys', async () => {
-    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|desk|look|draw|stats|multi)/.test(f));
+  it('the new modules (layout, look, drawings, stats, charts, plan) only use existing keys', async () => {
+    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|desk|look|draw|stats|multi|plan)/.test(f));
     const used = new Set();
     for (const f of files) {
       const src = fs.readFileSync('public/interface/backtest/js/' + f, 'utf8');
@@ -54,6 +54,8 @@ describe('bt-i18n', () => {
     await import('../public/interface/backtest/js/bt-desk.js');
     for (const id of globalThis.WwBtDesk.PRESET_IDS) used.add('backtest.win.preset_' + id);
     for (const id of ['chart', 'balance', 'order']) used.add('backtest.dock.panel_' + id);
+    await import('../public/interface/backtest/js/bt-plan.js');
+    for (const f of globalThis.WwBtPlan.FEATURES) used.add('backtest.plan.feat_' + f.id);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
   });
   it('lock icons only on values that cannot be changed (owner: never for Premium gating; read-only values asked for one, 2026-10-25)', () => {
@@ -64,6 +66,11 @@ describe('bt-i18n', () => {
     const fn = ctl.slice(ctl.indexOf('function roLock('), ctl.indexOf('function roLock(') + 400);
     assert.ok(fn.indexOf("'data-lucide', 'lock'") > 0, 'and it is roLock (read-only values)');
     assert.ok(!/roLock\([^)]*(pro|PRO|upgrade)/.test(ctl), 'never for plan gating');
+    // the one exception the owner asked for (2026-10-26): the feature list of the "Plan and usage" tab, a lock next to the PRO tag
+    const plan = fs.readFileSync('public/interface/backtest/js/bt-plan.js', 'utf8');
+    const planLocks = plan.split('\n').filter((l) => /icon\('(lock|shield-lock|key)'\)/.test(l));
+    assert.equal(planLocks.length, 1, 'bt-plan.js: one lock');
+    assert.ok(/'bt-pro', 'PRO'/.test(plan.slice(plan.indexOf("icon('lock')"), plan.indexOf("icon('lock')") + 200)), 'and it sits next to the PRO tag of the feature list');
   });
   it('practice mode: synthetic label and source choice exist, no admin gate left in the page', () => {
     const page = fs.readFileSync('src/pages/backtest.astro', 'utf8');

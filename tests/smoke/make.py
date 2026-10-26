@@ -70,7 +70,7 @@ window.openUpgradeModal=function(){window.__upgrade=true};
 <pre id="bt-smoke-result" style="display:none"></pre>
 <script type="module">
 var qp=new URLSearchParams(location.search);
-if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0',migration09:qp.get('m09')!=='0',ctrader:window.__ctFixture,drawings:qp.get('m10')!=='0',plan:qp.get('plan')||'premium',tradeLimit:qp.get('m11')==='0'?null:+(qp.get('tlimit')||100),tradeUsed:+(qp.get('tused')||0)});window.sb=window.__db.client;window.sb.auth={getSession:async function(){return {data:{session:{access_token:'jwt-stub'}}}}};}
+if(qp.get('backend')==='supabase'){var m=await import('/__fakedb.mjs');window.__db=new m.FakeDb({userId:'u-'+(qp.get('role')||'admin'),journals:window.__journals,migration08:qp.get('m08')!=='0',migration09:qp.get('m09')!=='0',ctrader:window.__ctFixture,drawings:qp.get('m10')!=='0',plan:qp.get('plan')||'premium',tradeLimit:qp.get('m11')==='0'?null:+(qp.get('tlimit')||100),tradeUsed:+(qp.get('tused')||0),planUsage:qp.get('m12')!=='0',planExpires:qp.get('pexp')||null});window.sb=window.__db.client;window.sb.auth={getSession:async function(){return {data:{session:{access_token:'jwt-stub'}}}}};}
 var d=document.createElement('script');d.src=qp.get('driver')||'/__driver.js';document.body.appendChild(d);
 </script>
 </body></html>'''

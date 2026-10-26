@@ -28,7 +28,7 @@
   var SYNC = null;                              // window.WwBtSync, only with the supabase backend
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
   var syncToastShown = false;
-  var L = { user: null, plan: 'free', feat: {}, look: null, usage: null, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
+  var L = { user: null, plan: 'free', feat: {}, look: null, usage: null, pu: null, puErr: false, puLoading: false, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
   var R = null;
   var LAY = null;                               // window.WwBtLayout controller (mode, full screen, shortcut sheet)
@@ -39,6 +39,7 @@
   var FEATURES = ['backtestThemes', 'backtestDrawings', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
+  var planSeq = 0, planTimer = 0;                // "Plan and usage" tab: the newest answer wins, refreshes are debounced
 
   // ---------------------------------------------------------------- helpers
   function $(id) { return document.getElementById(id); }
@@ -125,7 +126,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtDraw && window.WwBtStats &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtDraw && window.WwBtStats && window.WwBtPlan &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -239,6 +240,63 @@
     box.classList.toggle('bt-limit-full', full);
     show($('bt-limit-full'), full);
   }
+  // "Plan and usage" tab of the account window and the header badge (bt-plan.js). get_backtest_plan_usage (migration 202610260001)
+  // returns the plan, the active accounts and this month's cTrader-data trades with their limits; read when the tab opens, after a
+  // trade is opened and whenever the account list is reloaded. No numbers without the database: a failed call shows an error.
+  function loadPlanUsage() {
+    var seq = ++planSeq;
+    if (BACKEND !== 'supabase' || !window.sb || typeof window.sb.rpc !== 'function') { L.puErr = true; renderPlan(); return Promise.resolve(null); }
+    L.puLoading = true; if (planTabOpen()) renderPlanPanel();
+    return Promise.resolve(window.sb.rpc('get_backtest_plan_usage')).then(function (r) { return r && !r.error ? window.WwBtPlan.normalize(r.data) : null; }, function () { return null; })
+      .then(function (d) {
+        if (seq !== planSeq || !PAGE.alive) return d;
+        L.puLoading = false; L.puErr = !d;
+        if (d) {
+          L.pu = d;
+          // the order panel's limit indicator follows the same database numbers
+          if (L.usage && !L.usage.premium) { L.usage.used = d.trades.used; L.usage.limit = d.trades.limit; renderLimit(); updateControls(); }
+        }
+        renderPlan();
+        return d;
+      });
+  }
+  function refreshPlanSoon() { clearTimeout(planTimer); planTimer = later(loadPlanUsage, 400); }
+  function planTabOpen() { return $('bt-account-modal').classList.contains('active') && !$('bt-acc-pane-plan').hidden; }
+  function renderPlan() { renderPlanBadges(); if (planTabOpen()) renderPlanPanel(); }
+  function renderPlanPanel() {
+    window.WwBtPlan.render($('bt-plan-panel'), {
+      data: L.pu, error: L.puErr, loading: L.puLoading, feat: L.feat, t: _t,
+      fmtDate: function (ms) { return dtf('pday', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(ms)); },
+      fmtDateTime: function (ms) { return dtf('pdt', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); },
+      upgrade: function () { closeModal('bt-account-modal'); openUpgrade('backtest_pro'); },
+      retry: loadPlanUsage
+    });
+    icons();
+  }
+  // free plan, monthly cTrader trades from 80 %: a small badge next to the title (list and replay); it opens the tab
+  function renderPlanBadges() {
+    var b = window.WwBtPlan.badge(L.pu);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-bt-plan-badge]'), function (btn) {
+      btn.hidden = !b;
+      if (!b) return;
+      btn.setAttribute('data-level', b.level);
+      btn.querySelector('.bt-plan-badge-text').textContent = _t('backtest.plan.badge', '{used}/{limit} işlem', { used: b.used, limit: b.limit });
+      var lab = b.level === 'full' ? _t('backtest.plan.badge_reached', 'Bu ayın işlem sınırına ulaştın ({used} / {limit}). Plan ve kullanımı aç.', { used: b.used, limit: b.limit })
+        : _t('backtest.plan.badge_near', 'Bu ayın işlem sınırına yaklaşıyorsun ({used} / {limit}). Plan ve kullanımı aç.', { used: b.used, limit: b.limit });
+      btn.title = lab; btn.setAttribute('aria-label', lab);
+    });
+  }
+  // the badge: the account window on the plan tab (replay), or the tab on its own (list view: no account to edit)
+  function openPlanTab(opener) {
+    if (R && $('bt-root').getAttribute('data-state') === 'replay') return openAccountModal('edit', R.acc, opener, 'plan');
+    editing = null;
+    $('bt-account-modal').setAttribute('data-mode', 'plan');
+    $('bt-account-modal-title').textContent = _t('backtest.acc.tab_plan', 'Plan ve kullanım');
+    show($('bt-account-error'), false);
+    openModal('bt-account-modal', opener);
+    selectAccTab('plan');
+    $('bt-account-close').focus();
+  }
   function whenActivated() {
     return document.prerendering ? new Promise(function (r) { document.addEventListener('prerenderingchange', r, { once: true }); }) : Promise.resolve();
   }
@@ -262,6 +320,7 @@
       L.accounts = accounts; L.summaries = summaries;
       if (!PAGE.alive) return false;
       syncOnList();
+      refreshPlanSoon();                                          // account count (create, delete) and this month's trades
       return true;
     } catch (e) {
       wwLogWarn(e);
@@ -493,7 +552,7 @@
   }
 
   // ---------------------------------------------------------------- account window: tabs (Genel, Veri, İşlem koşulları, Defter, Tehlikeli bölge)
-  var ACC_TABS = ['general', 'data', 'trading', 'journal', 'danger'], accSnap = null;
+  var ACC_TABS = ['general', 'data', 'trading', 'journal', 'plan', 'danger'], accSnap = null;
   function accTabs() { return ACC_TABS.filter(function (id) { return !$('bt-acc-tab-' + id).hidden; }); }
   function selectAccTab(id, focus) {
     if (accTabs().indexOf(id) < 0) id = 'general';
@@ -502,7 +561,9 @@
       b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
       $('bt-acc-pane-' + t).hidden = !on;
     });
+    $('bt-account-modal').setAttribute('data-tab', id);
     if (focus) try { $('bt-acc-tab-' + id).focus(); } catch (e) { /* ignore */ }
+    if (id === 'plan' && $('bt-account-modal').classList.contains('active')) { renderPlanPanel(); loadPlanUsage(); }   // numbers from the database on every open
   }
   // the explanation of a small "i" (hover / focus) follows the language
   function refreshTips(box) {
@@ -544,7 +605,8 @@
   // edit: Save stays off until something changed
   function accDirty() { if (!editing) return; $('bt-account-submit').disabled = accValues() === accSnap; }
 
-  async function openAccountModal(mode, acc, opener) {
+  // tab: the tab to open on ('plan' from the header badge); default 'general'
+  async function openAccountModal(mode, acc, opener, tab) {
     fillSymbolSelect();
     editing = mode === 'edit' ? acc : null;
     var edit = mode === 'edit', modal = $('bt-account-modal');
@@ -595,7 +657,7 @@
       if (cov && PAGE.alive) $('bt-f-start').value = toLocalInput(defaultStart(cov));
     }
     accSnap = edit ? accValues() : null; accDirty();
-    $('bt-f-name').focus();
+    if (tab === 'plan') selectAccTab('plan', true); else $('bt-f-name').focus();
   }
 
   // ---------------------------------------------------------------- cTrader data source (Phase 2)
@@ -1457,6 +1519,7 @@
     persist('open', function () {
       return L.store.insertTrade(row).then(function (r) {
         if (acc.dataSource === 'ctrader' && L.usage) { L.usage.used++; renderLimit(); updateControls(); }
+        refreshPlanSoon();
         done(); return r;
       });
     }, function () { done(); pos.unsaved = true; renderTables(); }, function (e) {
@@ -1475,6 +1538,7 @@
       if (pos.fromOrder) toast(_t('backtest.orders.rejected_limit', 'Emir tetiklendi ama bu ayın işlem sınırına ulaştın; emir iptal edildi.'), 'warning');
       orderError(_t('backtest.limit.reached', 'Bu ayın işlem sınırına ulaştın. Sınırsız işlem Premium\'da.'));
       openUpgrade('backtest_trades');
+      refreshPlanSoon();
       return true;
     });
   }
@@ -2398,6 +2462,9 @@
       if (next === null) return;
       e.preventDefault(); selectAccTab(list[(next + list.length) % list.length], true);
     });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-bt-plan-badge]'), function (b) {
+      b.addEventListener('click', function (e) { openPlanTab(e.currentTarget); });
+    });
     $('bt-account-form').addEventListener('input', accDirty);
     $('bt-account-form').addEventListener('change', accDirty);
     // timeframe: changed in the replay toolbar, not here
@@ -2763,6 +2830,7 @@
           views().forEach(function (v) { if (v.chart) v.chart.applyOptions({ localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) }, timeScale: { tickMarkFormatter: tickLabelFor(v) } }); });
           rebuildMarkers(); renderLayoutPicker();
         } else if (L.store) renderList();
+        if (L.store) renderPlan();
       });
     });
   }
@@ -2770,7 +2838,7 @@
   // ---------------------------------------------------------------- teardown
   function cleanup() {
     if (cleaned) return; cleaned = true;
-    clearTimeout(bootTimer); clearTimeout(resizeTimer); clearTimeout(chipTimer);
+    clearTimeout(bootTimer); clearTimeout(resizeTimer); clearTimeout(chipTimer); clearTimeout(planTimer); planSeq++;
     if (SYNC) { try { SYNC.cancelPending(); } catch (e) { /* ignore */ } }
     if (confirmResolve) { var cr = confirmResolve; confirmResolve = null; cr(false); }
     if (backResolve) { var br = backResolve; backResolve = null; br('cancel'); }

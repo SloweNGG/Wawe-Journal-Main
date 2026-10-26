@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=19" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=20" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -20,7 +20,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793500007" is:inline defer></script>
+  <script src="/i18n.js?v=1793500008" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
@@ -36,7 +36,8 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-look.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=5" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=23" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-plan.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=24" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -45,7 +46,10 @@ import Layout from '../layouts/Layout.astro';
     <section id="bt-view-list" class="bt-view" aria-labelledby="bt-title" hidden>
       <div class="page-header">
         <div>
-          <h1 id="bt-title" data-i18n="backtest.title">Backtest</h1>
+          <div class="bt-title-row">
+            <h1 id="bt-title" data-i18n="backtest.title">Backtest</h1>
+            <button type="button" class="bt-plan-badge" data-bt-plan-badge hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><span class="bt-plan-badge-text bt-num"></span></button>
+          </div>
           <p class="subtitle" data-i18n="backtest.subtitle">Geçmiş piyasa verisinde mum mum işlem pratiği yap.</p>
         </div>
         <div class="bt-list-actions">
@@ -97,6 +101,7 @@ import Layout from '../layouts/Layout.astro';
           <h2 id="bt-acc-name"></h2>
           <span id="bt-acc-symbol" class="bt-chip"></span>
           <span id="bt-acc-section" class="bt-chip bt-chip-muted" hidden></span>
+          <button type="button" class="bt-plan-badge" data-bt-plan-badge hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><span class="bt-plan-badge-text bt-num"></span></button>
         </div>
         <div class="bt-head-tools">
           <div class="bt-seg" role="group" data-i18n-title="backtest.mode.label" title="Görünüm">
@@ -587,6 +592,7 @@ import Layout from '../layouts/Layout.astro';
           <button type="button" role="tab" id="bt-acc-tab-data" data-acc-tab="data" aria-controls="bt-acc-pane-data" aria-selected="false" tabindex="-1"><i data-lucide="database" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_data">Veri</span></button>
           <button type="button" role="tab" id="bt-acc-tab-trading" data-acc-tab="trading" aria-controls="bt-acc-pane-trading" aria-selected="false" tabindex="-1"><i data-lucide="sliders-horizontal" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_trading">İşlem koşulları</span></button>
           <button type="button" role="tab" id="bt-acc-tab-journal" data-acc-tab="journal" aria-controls="bt-acc-pane-journal" aria-selected="false" tabindex="-1"><i data-lucide="book-open" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_journal">Defter bağlantısı</span></button>
+          <button type="button" role="tab" id="bt-acc-tab-plan" data-acc-tab="plan" aria-controls="bt-acc-pane-plan" aria-selected="false" tabindex="-1"><i data-lucide="gauge" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_plan">Plan ve kullanım</span></button>
           <button type="button" role="tab" id="bt-acc-tab-danger" data-acc-tab="danger" aria-controls="bt-acc-pane-danger" aria-selected="false" tabindex="-1" class="bt-acc-tab-danger"><i data-lucide="triangle-alert" aria-hidden="true"></i><span data-i18n="backtest.acc.tab_danger">Tehlikeli bölge</span></button>
         </div>
         <form id="bt-account-form" class="bt-acc-panes" novalidate autocomplete="off">
@@ -656,6 +662,11 @@ import Layout from '../layouts/Layout.astro';
               <button type="button" class="bt-info" data-tip-key="" data-tip="" aria-label="">i</button></label>
               <select id="bt-f-journal" class="bt-select"><option value="" data-i18n="backtest.field.journal_none">Bağlantı yok</option></select></div>
             <p id="bt-f-journal-off" class="bt-acc-note" hidden></p>
+          </section>
+
+          <!-- plan and usage (bt-plan.js renders it from get_backtest_plan_usage) -->
+          <section class="bt-acc-pane" id="bt-acc-pane-plan" role="tabpanel" aria-labelledby="bt-acc-tab-plan" data-acc-pane="plan" hidden>
+            <div id="bt-plan-panel" class="bt-plan" aria-busy="false"></div>
           </section>
 
           <section class="bt-acc-pane" id="bt-acc-pane-danger" role="tabpanel" aria-labelledby="bt-acc-tab-danger" data-acc-pane="danger" hidden>

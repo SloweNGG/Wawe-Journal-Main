@@ -797,3 +797,65 @@ html.bt-stfs-lock, html.bt-stfs-lock body { overflow: hidden !important; }
   .bt-acc-danger { flex-direction: column; align-items: stretch; }
   .bt-info::after, .bt-ro-lock::after { left: auto; right: -8px; transform: none; max-width: 220px; }
 }
+
+/* ---------------------------------------------------------------- Hesap penceresi: Plan ve kullanım sekmesi (bt-plan.js) */
+body { --bt-orange: #fb923c; }
+body.light-theme, .light-theme body { --bt-orange: #c2410c; }
+/* alt çubuk hesap formuna ait; plan sekmesinde gizli. data-mode="plan": başlıktaki rozetten tek başına açılan sekme */
+#bt-account-modal:is([data-tab="plan"], [data-mode="plan"]) .modal-footer { display: none; }
+#bt-account-modal[data-mode="plan"] .bt-acc-tabs { display: none; }
+#bt-account-modal[data-mode="plan"] .bt-acc-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+
+.bt-plan { display: flex; flex-direction: column; gap: 16px; }
+.bt-plan-card { border: 1px solid var(--modal-line); border-radius: 12px; padding: 12px 14px; box-sizing: border-box; min-width: 0; }
+.bt-plan-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.bt-plan-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bt-plan-k { color: var(--muted); font-size: 12px; }
+.bt-plan-name { font-size: 18px; font-weight: 700; color: var(--text); }
+.bt-plan-name[data-plan="premium"] { color: var(--accent3, var(--accent)); }
+.bt-plan-upgrade { display: inline-flex; align-items: center; gap: 6px; }
+.bt-plan-upgrade svg { width: 15px; height: 15px; }
+.bt-plan-sec { display: flex; flex-direction: column; gap: 10px; }
+.bt-plan-h { margin: 0; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 0.01em; }
+.bt-plan-note { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--modal-hover); color: var(--muted); font-size: 12.5px; }
+.bt-plan-note svg { width: 15px; height: 15px; flex: none; margin-top: 1px; color: var(--accent3, var(--accent)); }
+.bt-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.bt-plan-meter { display: flex; flex-direction: column; gap: 8px; }
+.bt-plan-meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.bt-plan-meter-label { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.bt-plan-meter-val { font-size: 16px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.bt-plan-bar { height: 8px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+.bt-plan-bar span { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.25s; }
+.bt-plan-meter[data-level="warn"] { border-color: color-mix(in srgb, var(--bt-orange) 55%, transparent); }
+.bt-plan-meter[data-level="warn"] .bt-plan-bar span { background: var(--bt-orange); }
+.bt-plan-meter[data-level="full"] { border-color: color-mix(in srgb, var(--red) 55%, transparent); }
+.bt-plan-meter[data-level="full"] .bt-plan-bar span { background: var(--red); }
+.bt-plan-status { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12.5px; font-weight: 700; }
+.bt-plan-status svg { width: 15px; height: 15px; flex: none; }
+.bt-plan-meter[data-level="warn"] .bt-plan-status { color: var(--bt-orange); }
+.bt-plan-meter[data-level="full"] .bt-plan-status { color: var(--red); }
+.bt-plan-sub { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.bt-plan-utc { font-size: 11.5px; }
+.bt-plan-feats { list-style: none; margin: 0; padding: 0; border: 1px solid var(--modal-line); border-radius: 12px; }
+.bt-plan-feat { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13.5px; }
+.bt-plan-feat + .bt-plan-feat { border-top: 1px solid var(--modal-line); }
+.bt-plan-feat > svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+.bt-plan-feat-name { flex: 1; min-width: 0; color: var(--text); }
+.bt-plan-feat-val { color: var(--muted); font-weight: 600; }
+.bt-plan-feat-state { display: inline-flex; align-items: center; gap: 5px; min-width: 64px; justify-content: flex-end; font-size: 12.5px; font-weight: 700; }
+.bt-plan-feat-state svg { width: 15px; height: 15px; }
+.bt-plan-feat[data-on="true"] .bt-plan-feat-state { color: var(--green); }
+.bt-plan-feat[data-on="false"] .bt-plan-feat-state { color: var(--muted); }
+.bt-plan-feat[data-on="false"] .bt-pro { margin-left: 0; }
+:root:not(.light-theme) body:not(.light-theme) .bt-plan-bar { background: rgba(255, 255, 255, 0.08); }
+
+/* başlıktaki uyarı rozeti (ücretsiz plan, aylık işlem sınırının %80'i) */
+.bt-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bt-title-row h1 { margin-bottom: 0.2rem; }
+.bt-plan-badge { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor;
+  background: none; color: var(--bt-orange); font: inherit; font-size: 12px; font-weight: 700; line-height: 1.6; cursor: pointer; }
+.bt-plan-badge[hidden] { display: none; }
+.bt-plan-badge svg { width: 13px; height: 13px; }
+.bt-plan-badge[data-level="full"] { color: var(--red); }
+.bt-plan-badge:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.bt-plan-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

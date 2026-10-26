@@ -46,6 +46,18 @@ Bu dosya yarıda kalan işin devamı içindir. Her aşama bitince güncellenir.
   `supabase/tests/backtest_replay_sections_verify.sql` (11/11), rollback `supabase/rollbacks/202610240003_backtest_replay_sections.down.sql`
   (birden çok bölümlü hesap varsa durur; eski fonksiyon gövdesini md5 ile birebir geri yükler).
 
+## Plan ve kullanım sekmesi (2026-10-26)
+
+- Hesap penceresinde "Plan ve kullanım" sekmesi (Defter bağlantısı ile Tehlikeli bölge arasında; `ACC_TABS`). Plan sekmesinde alt çubuk gizli;
+  listedeki rozetten açılınca sekme tek başına (`data-mode="plan"`). Modül `bt-plan.js` (`WwBtPlan`).
+- Sayılar tek RPC'den: `get_backtest_plan_usage()` (migration 202610260001): plan, bitiş tarihi, aktif hesap sayısı + kota (free 1 / Premium 10,
+  `check_backtest_account_limit()` ile aynı; doğrulama betiği ikisinin uyuştuğunu denetler), bu ayın cTrader işlemleri + `system_settings` sınırı.
+  Sekme açılınca, işlem açılınca ve hesap listesi yenilenince okunur; RPC yoksa sekme hata gösterir, tahmin göstermez.
+- Renk: %80'den turuncu, sınırda kırmızı, yanında yazı. Ücretsiz kullanıcıda aylık cTrader işlemleri %80'e gelince başlıkta rozet (hesap kotası 1/1 tek başına rozet açmaz).
+- Kayıtlı pencere düzeni kartı yok: düzen yalnız tarayıcıda tek kayıt (`ww_bt_layout_v1`), veritabanında sayı ya da sınır yok.
+- Doğrulama `supabase/tests/backtest_plan_usage_verify.sql` (ROLLBACK, 9/9), rollback `supabase/rollbacks/202610260001_backtest_plan_usage.down.sql`.
+- Not: `backtest_drawings_verify.sql` tablonun boş olduğunu varsayıyor (tüm satırları sayar); canlıda gerçek çizim olunca "FAIL RLS delete" verir.
+
 ## Yayın notu
 
 - Her aşamada değişen backtest dosyalarının `?v=` numarası artırılır (sayfa `backtest.astro`). Yeni çeviri anahtarı eklenince

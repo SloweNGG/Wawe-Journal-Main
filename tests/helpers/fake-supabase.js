@@ -102,8 +102,10 @@ export class FakeDb {
   // drawings: emulate 202610240001 (backtest_drawings: own account, Premium writes only, upsert by id); plan: 'free' | 'premium'.
   // tradeLimit: emulate 202610240002 (monthly limit on cTrader-data accounts for the free plan, counter never decremented);
   // null = migration not applied (the RPC is missing).
-  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null, drawings = false, plan = 'free', tradeLimit = null, tradeUsed = 0 }) {
-    this.plan = plan; this.tradeLimit = tradeLimit; this.tradeUsed = tradeUsed;
+  // planUsage: emulate 202610260001 (get_backtest_plan_usage); planExpires: the plan end date it returns (ISO string or null).
+  constructor({ userId, journals, migration08 = false, migration09 = false, ctrader = null, drawings = false, plan = 'free', tradeLimit = null, tradeUsed = 0,
+    planUsage = true, planExpires = null }) {
+    this.plan = plan; this.tradeLimit = tradeLimit; this.tradeUsed = tradeUsed; this.planUsage = planUsage; this.planExpires = planExpires;
     this.userId = userId;
     this.migration08 = migration08 || migration09;
     this.migration09 = migration09;
@@ -119,6 +121,15 @@ export class FakeDb {
       if (name === 'get_backtest_trade_usage') {
         if (this.tradeLimit == null) return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.get_backtest_trade_usage' } };
         return { data: { used: this.tradeUsed, limit: this.tradeLimit, premium: this.plan === 'premium', month: new Date().toISOString().slice(0, 7), resets_at: null }, error: null };
+      }
+      if (name === 'get_backtest_plan_usage') {
+        if (!this.planUsage) return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.get_backtest_plan_usage' } };
+        const prem = this.plan === 'premium', now = new Date(), iso = (d) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+        const used = this.tables.backtest_accounts.filter((a) => a.user_id === this.userId && a.is_active !== false).length;
+        return { data: { premium: prem, plan: this.plan, plan_expires_at: this.planExpires,
+          accounts: { used, limit: prem ? 10 : 1 },
+          trades: { used: this.tradeUsed, limit: this.tradeLimit == null ? 100 : this.tradeLimit, month: iso(now).slice(0, 7), resets_at: iso(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))) },
+          server_now: iso(now) }, error: null };
       }
       if (name !== 'get_ctrader_status') return { data: null, error: { message: 'unknown function ' + name } };
       const c = this.ctrader, has = c.token_status && c.token_status !== 'none';
