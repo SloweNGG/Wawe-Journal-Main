@@ -641,16 +641,16 @@ body.light-theme .bell-badge {
   position: absolute;
   top: 46px;
   right: 0;
-  width: 400px;
+  width: 360px;
   max-width: calc(100vw - 20px);
-  max-height: 560px;
+  max-height: 460px;
   display: flex;
   flex-direction: column;
   background: rgba(13, 14, 24, 0.90);
   backdrop-filter: blur(28px) saturate(200%);
   -webkit-backdrop-filter: blur(28px) saturate(200%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
+  border-radius: 14px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -687,7 +687,7 @@ body.light-theme .bell-panel {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 12px 16px;
+  padding: 10px 12px 9px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
   flex-shrink: 0;
@@ -712,7 +712,7 @@ body.light-theme .bell-panel-header {
 
 .bell-panel-header h3 {
   font-family: var(--font-display);
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text);
   margin: 0;
@@ -720,6 +720,7 @@ body.light-theme .bell-panel-header {
 }
 
 .bell-unread-pill {
+  white-space: nowrap;
   font-family: var(--font);
   font-size: 10.5px;
   font-weight: 700;
@@ -738,19 +739,28 @@ body.light-theme .bell-panel-header {
 }
 
 .bell-mark-read-btn {
+  /* icon only (the panel is narrow); the label stays for screen readers and as the tooltip (title) */
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.25);
   color: #22c55e;
-  font-family: var(--font);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bell-mark-read-btn span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .bell-mark-read-btn svg {
@@ -770,9 +780,9 @@ body.light-theme .bell-panel-header {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--muted);
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -797,8 +807,8 @@ body.light-theme .bell-panel-header {
 .bell-filter-tabs {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 14px 10px 14px;
+  gap: 2px;
+  padding: 6px 8px 7px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.015);
   flex-shrink: 0;
@@ -817,14 +827,14 @@ body.light-theme .bell-filter-tabs {
 .bell-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--muted);
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
-  padding: 5px 10px;
+  padding: 4px 7px;
   border-radius: 99px;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -874,8 +884,8 @@ body.light-theme .bell-tab-btn.active {
 .bell-panel-body {
   flex: 1;
   overflow-y: auto;
-  max-height: 380px;
-  padding: 10px 12px;
+  max-height: 320px;
+  padding: 8px;
 }
 
 .bell-panel-body::-webkit-scrollbar {
@@ -900,7 +910,7 @@ body.light-theme .bell-panel-body::-webkit-scrollbar-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 16px;
+  padding: 6px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(0, 0, 0, 0.22);
   flex-shrink: 0;
@@ -942,17 +952,17 @@ body.light-theme .bell-panel-footer {
 .bell-panel-empty {
   font-family: var(--font);
   text-align: center;
-  padding: 2.2rem 1rem;
+  padding: 1.6rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .bell-empty-icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(99, 102, 241, 0.05));
   border: 1px solid rgba(139, 92, 246, 0.2);
   display: flex;
@@ -963,8 +973,8 @@ body.light-theme .bell-panel-footer {
 }
 
 .bell-empty-icon-wrap svg {
-  width: 22px;
-  height: 22px;
+  width: 19px;
+  height: 19px;
 }
 
 .bell-empty-title {
@@ -1829,7 +1839,8 @@ body.light-theme .nav-menu {
     min-height: 32px;
     min-width: 32px;
   }
-  .bell-panel-close {
+  .bell-panel-close,
+  .bell-mark-read-btn {
     min-height: 36px;
     min-width: 36px;
   }
@@ -2684,10 +2695,10 @@ body.light-theme .journal-manage-link:hover {
    ============================================================ */
 .noti-item {
   display: flex;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  margin-bottom: 8px;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  margin-bottom: 6px;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -2731,8 +2742,8 @@ body.light-theme .noti-item.unread {
   content: '';
   position: absolute;
   left: 0;
-  top: 10px;
-  bottom: 10px;
+  top: 9px;
+  bottom: 9px;
   width: 3px;
   border-radius: 0 4px 4px 0;
   background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
@@ -2741,8 +2752,8 @@ body.light-theme .noti-item.unread {
 
 .noti-unread-dot {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -2751,9 +2762,9 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2767,8 +2778,8 @@ body.light-theme .noti-item.unread {
 }
 
 .noti-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   stroke-width: 2.2;
 }
 
@@ -2874,7 +2885,7 @@ body.light-theme .noti-item.unread {
 
 .noti-title {
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
   margin: 0;
@@ -2883,10 +2894,10 @@ body.light-theme .noti-item.unread {
 
 .noti-desc {
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--muted);
-  line-height: 1.45;
-  margin: 3px 0 0 0;
+  line-height: 1.4;
+  margin: 2px 0 0 0;
   word-break: break-word;
 }
 
@@ -2894,8 +2905,8 @@ body.light-theme .noti-item.unread {
 .noti-ot-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 5px;
+  margin-top: 5px;
   flex-wrap: wrap;
 }
 
@@ -2905,10 +2916,10 @@ body.light-theme .noti-item.unread {
   gap: 5px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 3px 8px;
-  border-radius: 7px;
+  padding: 2px 6px;
+  border-radius: 6px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   letter-spacing: -0.01em;
   color: var(--text);
 }
@@ -2936,13 +2947,13 @@ body.light-theme .noti-stat-chip.limit-danger {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 7px;
-  font-size: 10.5px;
+  margin-top: 4px;
+  font-size: 10px;
 }
 
 .noti-time {
   font-family: var(--font);
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--muted);
   opacity: 0.75;
   display: flex;

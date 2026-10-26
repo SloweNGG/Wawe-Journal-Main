@@ -1147,7 +1147,7 @@ function getNavbarHTML(translations) {
                 </div>
               </div>
               <div class="bell-panel-header-actions">
-                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" onclick="window.wwMarkAllAsRead()" title="Tümünü Okundu İşaretle">
+                <button class="bell-mark-read-btn" id="bell-mark-read-btn" style="display:none;" onclick="window.wwMarkAllAsRead()" title="${tt('nav.mark_read', 'Tümünü Oku')}" data-i18n-title="nav.mark_read">
                   <i data-lucide="check-check"></i>
                   <span data-i18n="nav.mark_read">${tt('nav.mark_read', 'Tümünü Oku')}</span>
                 </button>
