@@ -7,8 +7,8 @@
       </svg>
     </div>
     <div>
-      <h2 data-i18n="settings.theme">Görünüm</h2>
-      <p data-i18n="settings.theme_desc">Arayüz tercihleri, tema ve bölgesel yapılandırma</p>
+      <h2 data-i18n="settings.appearance">Görünüm</h2>
+      <p data-i18n="settings.appearance_desc">Tema, arka plan ışığı ve renkler</p>
     </div>
   </div>
 
@@ -17,8 +17,8 @@
     <!-- 1. TEMA MODU SEÇİMİ (GÖRSEL KARTLAR) -->
     <div class="appearance-section">
       <div class="appearance-section-header">
-        <span class="appearance-section-title" data-i18n="settings.interface_theme">Arayüz Modu</span>
-        <span class="appearance-section-subtitle">Tercih ettiğiniz çalışma alanını belirleyin</span>
+        <span class="appearance-section-title" data-i18n="settings.interface_theme">Arayüz modu</span>
+        <span class="appearance-section-subtitle" data-i18n="settings.theme_mode_subtitle">Çalışma alanının görünümünü seç</span>
       </div>
 
       <div class="theme-mode-cards">
@@ -91,81 +91,9 @@
       <input type="checkbox" id="theme-toggle" onchange="toggleTheme()" style="display:none;" />
     </div>
 
-    <!-- 2. BÖLGESEL VE TRADING AYARLARI -->
+    <!-- 2. ARKA PLAN AMBİYANSI -->
     <div class="appearance-section">
-      <div class="appearance-section-header">
-        <span class="appearance-section-title">Bölgesel ve Hesap Tercihleri</span>
-        <span class="appearance-section-subtitle">Dil, para birimi ve işlem maliyeti yapılandırması</span>
-      </div>
-
       <div class="settings-group-card">
-        <!-- DİL -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
-            </div>
-            <div>
-              <div class="pref-title" data-i18n="language.title">Uygulama Dili</div>
-              <div class="pref-desc" data-i18n="language.select">Arayüzde görüntülenecek dil</div>
-            </div>
-          </div>
-          <div class="lang-selector-compact" id="settings-lang-selector">
-            <button type="button" class="lang-compact-btn" data-lang="tr" title="Türkçe">🇹🇷 TR</button>
-            <button type="button" class="lang-compact-btn" data-lang="en" title="English">🇬🇧 EN</button>
-            <button type="button" class="lang-compact-btn" data-lang="de" title="Deutsch">🇩🇪 DE</button>
-          </div>
-        </div>
-
-        <div class="pref-divider"></div>
-
-        <!-- PARA BİRİMİ -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-              </svg>
-            </div>
-            <div>
-              <div class="pref-title" data-i18n="settings.currency">Para Birimi</div>
-              <div class="pref-desc" data-i18n="settings.currency_desc">Bakiye ve kâr/zarar gösterim birimi</div>
-            </div>
-          </div>
-          <div class="currency-selector-compact" id="settings-currency-selector">
-            <button type="button" class="currency-btn" data-currency="$" title="USD">$ USD</button>
-            <button type="button" class="currency-btn" data-currency="€" title="Euro">€ EUR</button>
-            <button type="button" class="currency-btn" data-currency="₺" title="Türk Lirası">₺ TRY</button>
-            <button type="button" class="currency-btn" data-currency="£" title="Sterlin">£ GBP</button>
-            <button type="button" class="currency-btn" data-currency="₿" title="Bitcoin">₿ BTC</button>
-          </div>
-        </div>
-
-        <div class="pref-divider"></div>
-
-        <!-- LOT BAŞINA KOMİSYON -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/>
-              </svg>
-            </div>
-            <div>
-              <div class="pref-title">Lot Başına Komisyon</div>
-              <div class="pref-desc">Trade eklerken otomatik doldurulacak varsayılan maliyet</div>
-            </div>
-          </div>
-          <div class="commission-input-wrapper">
-            <input type="text" inputmode="decimal" id="settings-commission-per-lot" placeholder="0.00" class="commission-input" />
-            <span class="commission-suffix">$ / Lot</span>
-          </div>
-        </div>
-
-        <div class="pref-divider"></div>
-
         <!-- DİNAMİK ARKA PLAN AMBİYANSI (PnL GLOW) -->
         <div class="pref-row ambient-pref-row">
           <div class="pref-left">
@@ -177,155 +105,51 @@
             </div>
             <div>
               <div class="pref-title" style="display:flex; align-items:center; gap:8px;">
-                <span>Dinamik Performans Ambiyansı</span>
+                <span data-i18n="settings.ambient_title">Arka plan ambiyansı</span>
                 <span class="ambient-indicator-dot" id="ambient-current-indicator"></span>
               </div>
-              <div class="pref-desc">Kârdayken yeşil, zarardayken kırmızı, nötrken mor arka plan aurası</div>
+              <div class="pref-desc" data-i18n="settings.ambient_desc">Kârda yeşil, zararda kırmızı, nötrde mor ışık</div>
             </div>
           </div>
           <div class="ambient-selector-compact" id="settings-ambient-selector">
-            <button type="button" class="ambient-mode-btn" data-mode="dynamic" title="Kâr/Zarar durumuna göre otomatik renk">Dinamik PnL</button>
-            <button type="button" class="ambient-mode-btn" data-mode="classic" title="Her zaman sabit klasik mor ışık">Klasik Mor</button>
-            <button type="button" class="ambient-mode-btn" data-mode="off" title="Efekti kapat">Kapalı</button>
+            <button type="button" class="ambient-mode-btn" data-mode="dynamic" data-i18n="settings.ambient_dynamic">Dinamik PnL</button>
+            <button type="button" class="ambient-mode-btn" data-mode="classic" data-i18n="settings.ambient_classic">Klasik mor</button>
+            <button type="button" class="ambient-mode-btn" data-mode="off" data-i18n="settings.ambient_off">Kapalı</button>
           </div>
         </div>
 
         <!-- AMBIYANS ANLIK CANLI TEST ŞERİDİ -->
         <div class="ambient-test-row" id="ambient-test-row">
-          <span class="ambient-test-label">Canlı Atmosfer Testi:</span>
+          <span class="ambient-test-label" data-i18n="settings.ambient_test">Önizle:</span>
           <div class="ambient-test-chips">
-            <button type="button" class="ambient-test-chip profit" onclick="window.testAmbientState('profit')" title="Kâr atmosferini anlık gör">
-              <span class="chip-dot"></span> Kâr (+ Yeşil)
+            <button type="button" class="ambient-test-chip profit" onclick="window.testAmbientState('profit')">
+              <span class="chip-dot"></span> <span data-i18n="settings.ambient_profit">Kâr</span>
             </button>
-            <button type="button" class="ambient-test-chip loss" onclick="window.testAmbientState('loss')" title="Zarar atmosferini anlık gör">
-              <span class="chip-dot"></span> Zarar (- Kırmızı)
+            <button type="button" class="ambient-test-chip loss" onclick="window.testAmbientState('loss')">
+              <span class="chip-dot"></span> <span data-i18n="settings.ambient_loss">Zarar</span>
             </button>
-            <button type="button" class="ambient-test-chip neutral" onclick="window.testAmbientState('neutral')" title="Nötr atmosferini anlık gör">
-              <span class="chip-dot"></span> Nötr (● Mor)
+            <button type="button" class="ambient-test-chip neutral" onclick="window.testAmbientState('neutral')">
+              <span class="chip-dot"></span> <span data-i18n="settings.ambient_neutral">Nötr</span>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 2b. SAAT VE GÜN AYARLARI -->
-    <div class="appearance-section" id="time-settings-section">
-      <div class="appearance-section-header">
-        <span class="appearance-section-title" data-i18n="settings.time_title">Saat ve Gün</span>
-        <span class="appearance-section-subtitle" data-i18n="settings.time_subtitle">İşlemlerinizin hangi gün ve saate yazılacağını belirleyin</span>
-      </div>
-
-      <div class="settings-group-card">
-
-        <!-- CANLI ÖNİZLEME -->
-        <div class="time-preview" id="time-preview" aria-live="polite">
-          <div class="time-preview-row">
-            <span class="time-preview-label" data-i18n="settings.time_preview_now">Şu an</span>
-            <span class="time-preview-value" id="time-preview-now">—</span>
-          </div>
-          <div class="time-preview-row">
-            <span class="time-preview-label" data-i18n="settings.time_preview_day">Bugünün işlem günü</span>
-            <span class="time-preview-value" id="time-preview-day">—</span>
-          </div>
-          <div class="time-preview-row">
-            <span class="time-preview-label" data-i18n="settings.time_preview_example">Örnek</span>
-            <span class="time-preview-value time-preview-example" id="time-preview-example">—</span>
-          </div>
-        </div>
-
-        <div class="pref-divider"></div>
-
-        <!-- SAAT DİLİMİ -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div>
-              <div class="pref-title" data-i18n="settings.time_tz_title">Saat diliminiz</div>
-              <div class="pref-desc" data-i18n="settings.time_tz_desc">İşlem saatleri ve günler bu saat dilimine göre gösterilir</div>
-            </div>
-          </div>
-          <select id="time-tz" class="time-select" aria-label="Saat dilimi"></select>
-        </div>
-
-        <div class="pref-divider"></div>
-
-        <!-- GÜN BAŞLANGICI -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/></svg>
-            </div>
-            <div>
-              <div class="pref-title" data-i18n="settings.time_daystart_title">Yeni gün saat kaçta başlasın?</div>
-              <div class="pref-desc" data-i18n="settings.time_daystart_desc">Çoğu kişi için 00:00. Gece geç işlem yapıyorsanız ileri alın: bu saatten önceki işlemler bir önceki güne yazılır.</div>
-            </div>
-          </div>
-          <div class="time-control-stack">
-            <select id="time-day-start" class="time-select" aria-label="Gün başlangıç saati"></select>
-            <button type="button" id="time-day-forex-btn" class="time-mini-btn" data-i18n="settings.time_daystart_forex_btn">Forex gününe ayarla</button>
-          </div>
-        </div>
-        <div class="time-hint" id="time-day-forex-hint"></div>
-
-        <div class="pref-divider"></div>
-
-        <!-- İÇE AKTARILAN DOSYALARDAKİ SAATLER -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
-            <div>
-              <div class="pref-title" data-i18n="settings.time_import_title">İçe aktarılan dosyalardaki saatler</div>
-              <div class="pref-desc" data-i18n="settings.time_import_desc">CSV/Excel'deki saatler hangi saat diliminde? Çoğu MT4/MT5 brokeri GMT+2 veya GMT+3 kullanır. Emin değilseniz değiştirmeyin.</div>
-            </div>
-          </div>
-          <select id="time-import-tz" class="time-select" aria-label="İçe aktarma saat dilimi"></select>
-        </div>
-
-        <div class="pref-divider"></div>
-
-        <!-- SAAT BİÇİMİ -->
-        <div class="pref-row">
-          <div class="pref-left">
-            <div class="pref-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div>
-              <div class="pref-title" data-i18n="settings.time_format_title">Saat biçimi</div>
-              <div class="pref-desc" data-i18n="settings.time_format_desc">İşlem saatlerinin gösterimi</div>
-            </div>
-          </div>
-          <div class="lang-selector-compact" id="time-format-selector">
-            <button type="button" class="lang-compact-btn" data-hour12="0" data-i18n="settings.time_format_24">24 saat</button>
-            <button type="button" class="lang-compact-btn" data-hour12="1" data-i18n="settings.time_format_12">12 saat (AM/PM)</button>
-          </div>
-        </div>
-
-        <div class="pref-divider"></div>
-
-        <div class="time-footer">
-          <span class="time-footer-note" data-i18n="settings.time_prop_note">Prop hesaplarının gün sıfırlama saati her hesapta ayrıca ayarlanır; bu ayarlar onları değiştirmez.</span>
-          <button type="button" id="time-reset-btn" class="time-mini-btn ghost" data-i18n="settings.time_reset">Varsayılana dön</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. TEMA ÖZELLEŞTİRME (PRO STÜDYO) -->
-    <div class="appearance-section theme-customization-section" id="theme-customization-section">
-      <div class="appearance-section-header">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="appearance-section-title" data-i18n="settings.theme_customization">Tema Özelleştirme Stüdyosu</span>
-          <span class="pro-badge">PRO</span>
-        </div>
-        <span class="appearance-section-subtitle" data-i18n="settings.theme_customization_desc">
-          Çalışma alanınızın renk paletini, kenarlıklarını ve font ölçeğini kişiselleştirin
+    <!-- 3. TEMA STÜDYOSU (PRO): varsayılan kapalı, açık/kapalı durumu hatırlanır -->
+    <details class="appearance-section studio-disclosure" id="theme-customization-section">
+      <summary class="studio-summary">
+        <span class="studio-summary-text">
+          <span class="studio-summary-title">
+            <span data-i18n="settings.theme_studio">Tema stüdyosu</span>
+            <span class="pro-badge">PRO</span>
+          </span>
+          <span class="appearance-section-subtitle" data-i18n="settings.theme_studio_desc">Renk paleti, özel renkler ve yazı boyutu</span>
         </span>
-      </div>
-      <div id="theme-customization-container"></div>
-    </div>
+        <svg class="studio-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div class="studio-body" id="theme-customization-container"></div>
+    </details>
 
   </div>
 </div>
@@ -382,12 +206,12 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
-      <span>Renk ve font ayarları anlık önizlenir ve Koyu Tema üzerinde saklanır.</span>
+      <span data-i18n="settings.studio_notice">Renk ve yazı ayarları anında önizlenir ve koyu temada saklanır.</span>
     </div>
 
     <!-- Küratörlü Hazır Paletler (Sitenin renk dünyasına sadık) -->
     <div class="theme-subblock">
-      <div class="theme-subblock-title">Hazır Renk Paletleri</div>
+      <div class="theme-subblock-title" data-i18n="settings.studio_presets">Hazır paletler</div>
       <div class="theme-preset-grid">
         <button type="button" class="preset-card active" data-preset="obsidian" title="Wawe Varsayılan Paleti">
           <div class="preset-swatches">
@@ -396,7 +220,7 @@
             <span style="background: #1a1a28;"></span>
             <span style="background: #8b5cf6;"></span>
           </div>
-          <span class="preset-name">Obsidian (Varsayılan)</span>
+          <span class="preset-name">Obsidian <span data-i18n="settings.studio_default_tag">(varsayılan)</span></span>
         </button>
 
         <button type="button" class="preset-card" data-preset="violet" title="Derin Mor & Neon">
@@ -433,7 +257,7 @@
 
     <!-- Özel Renk Ayarları -->
     <div class="theme-subblock">
-      <div class="theme-subblock-title">Özel Renk Tonları</div>
+      <div class="theme-subblock-title" data-i18n="settings.studio_custom">Özel renkler</div>
       <div class="color-grid">
         <div class="color-field">
           <label data-i18n="settings.theme_bg_color">Arka Plan Rengi</label>
@@ -485,9 +309,9 @@
           <span id="font-size-display" class="font-badge">16px</span>
         </label>
         <div class="font-quick-pills">
-          <button type="button" class="font-pill" data-size="14">Kompakt (14px)</button>
-          <button type="button" class="font-pill active" data-size="16">Standart (16px)</button>
-          <button type="button" class="font-pill" data-size="18">Geniş (18px)</button>
+          <button type="button" class="font-pill" data-size="14" data-i18n="settings.font_compact">Kompakt (14px)</button>
+          <button type="button" class="font-pill active" data-size="16" data-i18n="settings.font_standard">Standart (16px)</button>
+          <button type="button" class="font-pill" data-size="18" data-i18n="settings.font_large">Geniş (18px)</button>
         </div>
       </div>
       <div class="slider-wrapper">
@@ -500,7 +324,7 @@
 
     <!-- Canlı Önizleme: Gerçek Mini Trade Kartı -->
     <div class="theme-subblock">
-      <div class="theme-subblock-title">Canlı Arayüz Önizlemesi</div>
+      <div class="theme-subblock-title" data-i18n="settings.studio_preview">Önizleme</div>
       <div id="theme-preview-box" class="theme-preview-box">
         <div class="mini-trade-preview">
           <div class="mini-trade-header">
@@ -511,9 +335,9 @@
             <div class="mini-trade-pnl positive">+$420.00 (+2.1R)</div>
           </div>
           <div class="mini-trade-details">
-            <span>Giriş: <strong class="preview-text-contrast">1.0845</strong></span>
-            <span>Çıkış: <strong class="preview-text-contrast">1.0887</strong></span>
-            <span>Strateji: <strong class="preview-text-contrast">Breakout V2</strong></span>
+            <span><span data-i18n="settings.preview_entry">Giriş:</span> <strong class="preview-text-contrast">1.0845</strong></span>
+            <span><span data-i18n="settings.preview_exit">Çıkış:</span> <strong class="preview-text-contrast">1.0887</strong></span>
+            <span><span data-i18n="settings.preview_strategy">Strateji:</span> <strong class="preview-text-contrast">Breakout V2</strong></span>
           </div>
         </div>
       </div>

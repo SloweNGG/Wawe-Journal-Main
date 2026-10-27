@@ -429,6 +429,7 @@ var PANEL_URLS = {
   'panel-plan': '/settings/panels/plan.html',
   'panel-password': '/settings/panels/password-change.html',
   'panel-appearance': '/settings/panels/appearance.html',
+  'panel-region': '/settings/panels/region.html',
   'panel-overtrade': '/settings/panels/overtrade.html',
   'panel-advanced': '/settings/panels/advanced.html',
   'panel-danger': '/settings/panels/danger-area.html'
@@ -582,6 +583,7 @@ window.switchPanel = function(panelId) {
       'panel-profile': 'profile-glow',
       'panel-password': 'password-glow',
       'panel-appearance': 'appearance-glow',
+      'panel-region': 'appearance-glow',
       'panel-danger': 'danger-glow',
       'panel-plan': 'plan-glow',
       'panel-overtrade': 'overtrade-glow',
@@ -630,6 +632,7 @@ function initPanel(panelId) {
   if (panelId === 'panel-password') initPassword();
   if (panelId === 'panel-danger') initDanger();
   if (panelId === 'panel-appearance') initAppearance();
+  if (panelId === 'panel-region') initRegion();
   if (panelId === 'panel-overtrade') initOvertrade();
   if (panelId === 'panel-advanced') initAdvanced();
 }
@@ -2536,10 +2539,8 @@ async function deactivateAccount() {
 // ============================================================
 function initAppearance() {
   wwLog.log('🎨 Görünüm paneli başlatılıyor...');
-  initLanguageSelector();
-  initCurrencySelector();
-  initTimeSettings();
   initAmbientSelector();
+  initStudioDisclosure();
   if (typeof window.updateThemeModeCards === 'function') {
     window.updateThemeModeCards();
   }
@@ -2560,6 +2561,24 @@ function initAppearance() {
     wwLog.warn('⚠️ loadThemeCustomization fonksiyonu bulunamadı, fallback UI kullanılıyor...');
     loadThemeCustomizationFallback();
   }
+}
+
+// Bölge ve Saat paneli: dil, para birimi, komisyon ve saat ayarları
+function initRegion() {
+  initLanguageSelector();
+  initCurrencySelector();
+  initTimeSettings();
+}
+
+// Tema stüdyosu varsayılan kapalı; kullanıcı açtıysa sonraki ziyarette de açık gelir
+function initStudioDisclosure() {
+  var studio = safeEl('theme-customization-section');
+  if (!studio || studio._bound) return;
+  studio._bound = true;
+  try { studio.open = localStorage.getItem('ww_theme_studio_open') === '1'; } catch (e) {}
+  studio.addEventListener('toggle', function() {
+    try { localStorage.setItem('ww_theme_studio_open', studio.open ? '1' : '0'); } catch (e) {}
+  });
 }
 
 function loadThemeCustomizationFallback() {
@@ -3036,11 +3055,11 @@ function initCurrencySelector() {
         var val = parseFloat(this.value.replace(',', '.'));
         if (!isNaN(val) && val >= 0) {
           localStorage.setItem('ww_commission_per_lot', String(val));
-          showMsg('Lot başına komisyon kaydedildi!', 'success');
+          showMsg(t('settings.commission_saved', {}, 'Lot başına komisyon kaydedildi.'), 'success');
         } else {
           localStorage.removeItem('ww_commission_per_lot');
           this.value = '';
-          showMsg('Lot başına komisyon sıfırlandı.', 'info');
+          showMsg(t('settings.commission_cleared', {}, 'Lot başına komisyon sıfırlandı.'), 'info');
         }
       });
     }
@@ -3050,7 +3069,7 @@ function initCurrencySelector() {
 }
 
 // ============================================================
-// ⭐ SAAT VE GÜN AYARLARI (Görünüm paneli)
+// ⭐ SAAT VE GÜN AYARLARI (Bölge ve Saat paneli)
 // Mantık: /interface/shared/time-settings.js (window.WwTime)
 // ============================================================
 var TIME_POPULAR_TZ = [
@@ -3807,6 +3826,7 @@ async function bootSettings() {
           'panel-profile': 'profile-glow',
           'panel-password': 'password-glow',
           'panel-appearance': 'appearance-glow',
+      'panel-region': 'appearance-glow',
           'panel-danger': 'danger-glow',
           'panel-plan': 'plan-glow',
           'panel-overtrade': 'overtrade-glow',
