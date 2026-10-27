@@ -1071,13 +1071,6 @@
     }
   };
 
-  function detectLang() {
-    const b = (navigator.language || 'en').toLowerCase();
-    if (b.startsWith('tr')) return 'tr';
-    if (b.startsWith('de')) return 'de';
-    return 'en';
-  }
-
   function getSavedLang() {
     try {
       return localStorage.getItem(STORAGE_KEY) || localStorage.getItem(ALT_STORAGE_KEY);
@@ -1086,7 +1079,8 @@
     }
   }
 
-  let currentLang = (getSavedLang() || detectLang());
+  // first visit is always English; only a language the visitor picked is remembered
+  let currentLang = getSavedLang() || 'en';
   if (!translations[currentLang]) currentLang = 'en';
   const listeners = [];
 
