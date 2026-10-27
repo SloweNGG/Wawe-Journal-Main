@@ -1069,6 +1069,7 @@ async function renderPlan() {
   try {
     var user = await getCurrentUser();
     if (!user) {
+      delete container.dataset.renderKey;
       container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">' + t('settings.plan_load_error') + '</div>';
       return;
     }
@@ -1121,9 +1122,15 @@ async function renderPlan() {
     var lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
     var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
 
+    // Plan, süre, dil ve fiyat aynıysa paneli yeniden kurma: sekmeye her dönüşte (ve arka planda
+    // hazırlandıktan sonraki ilk tıklamada) sihirbaz silinip animasyonu ikinci kez oynamasın
+    var renderKey = JSON.stringify([isPro, data && data.plan_expires_at, lang, window.getMonthlyPrice(), window.getYearlyPrice()]);
+    if (container.dataset.renderKey === renderKey && container.hasChildNodes()) return;
+
     var tplId = isPro ? 'tpl-plan-pro' : 'tpl-plan-free';
     var tpl = document.getElementById(tplId);
     if (!tpl) {
+      delete container.dataset.renderKey;
       container.innerHTML = '<div style="padding:1rem;color:var(--red);">Template not found: ' + tplId + '</div>';
       return;
     }
@@ -1238,9 +1245,11 @@ async function renderPlan() {
     if (window.i18n && typeof window.i18n.apply === 'function') {
       try { window.i18n.apply(); } catch(e) {}
     }
+    container.dataset.renderKey = renderKey;
 
   } catch (e) {
     console.error('Plan hatası:', e);
+    delete container.dataset.renderKey;
     container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">' + sanitizeHTML(e.message) + '</div>';
   }
 }
