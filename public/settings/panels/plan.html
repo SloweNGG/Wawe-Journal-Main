@@ -327,9 +327,20 @@
           <!-- Sağ Kart: Kripto Para Seçimi -->
           <div class="checkout-method-card">
             <h4 class="box-title" data-i18n="settings.plan_payment_method">Ödeme Yöntemi</h4>
-            <p class="box-subtitle" data-i18n="settings.plan_select_crypto_subtitle">Ödemeyi gerçekleştirmek istediğiniz kripto para birimini seçin:</p>
+            <p class="box-subtitle" data-i18n="settings.plan_select_method_subtitle">Ödeme yönteminizi seçin:</p>
 
             <div class="crypto-methods-grid" id="wizard-payment-methods">
+              <!-- Kart (Creem) -->
+              <div class="crypto-chip" data-method="CARD" id="crypto-chip-card">
+                <div class="crypto-badge-icon" style="background: var(--accent); color: #fff;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div class="crypto-details">
+                  <span class="crypto-symbol" data-i18n="settings.plan_method_card">Kredi / Banka Kartı</span>
+                </div>
+                <div class="crypto-check-circle">✓</div>
+              </div>
+
               <!-- LTC -->
               <div class="crypto-chip active" data-method="LTC">
                 <div class="crypto-badge-icon ltc">Ł</div>
@@ -352,6 +363,11 @@
             <div class="crypto-discount-notice" id="crypto-btc-notice" style="display:none;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span id="crypto-btc-notice-text" data-i18n="settings.plan_btc_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.</span>
+            </div>
+
+            <div class="crypto-discount-notice" id="crypto-card-notice" style="display:none;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span data-i18n="settings.plan_card_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Kart ile ödemede standart tutar uygulanır.</span>
             </div>
 
             <div class="ssl-guarantee-note">

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v35'; // ayarlar: Bölge ve Saat paneli (yeni çeviri anahtarları)
+const CACHE_VERSION = 'wawe-v36'; // ayarlar: kart ile ödeme (yeni çeviri anahtarları)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

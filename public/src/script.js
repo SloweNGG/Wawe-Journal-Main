@@ -102,7 +102,8 @@ import {
   selectPayMethod, 
   getSystemSettings, 
   createNowPaymentInvoice, 
-  upgradeToPro, 
+  upgradeToPro,
+  startCardCheckout,
   cancelPro,
   checkAndSyncPaymentStatus
 } from './services/payment.js';
@@ -216,6 +217,7 @@ window.selectPayMethod = selectPayMethod;
 window.getSystemSettings = getSystemSettings;
 window.createNowPaymentInvoice = createNowPaymentInvoice;
 window.upgradeToPro = upgradeToPro;
+window.startCardCheckout = startCardCheckout;
 window.cancelPro = cancelPro;
 window.checkAndSyncPaymentStatus = checkAndSyncPaymentStatus;
 

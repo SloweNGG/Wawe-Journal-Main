@@ -3914,15 +3914,23 @@ body.light-theme .qr-zoom-big-frame,
 }
 
 .pro-badge-pill {
+  font-family: var(--font);
   font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 2px 8px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  padding: 5px 10px;
   border-radius: 99px;
-  background: var(--accent);
-  color: #fff;
+  background: #050507;
+  border: 1px solid rgba(139, 92, 246, 0.55);
+  color: #c4b5fd;
   margin-left: 6px;
   vertical-align: middle;
+}
+
+body.light-theme .pro-badge-pill {
+  background: #0b0b10;
+  color: #ddd6fe;
 }
 
 /* GÖRSEL SAYAÇ KARTI */

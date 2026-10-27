@@ -34,6 +34,7 @@
   var LAY = null;                               // window.WwBtLayout controller (mode, full screen, shortcut sheet)
   var DESK = null, statsFs = false;             // window.WwBtDesk controller (windows, layouts, full-screen multi-chart grid, stats widgets)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
+  var booted = false;                           // init drew the page once (plan changes are applied from then on)
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
   var FEATURES = ['backtestThemes', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];   // drawings are free for everyone (2026-10-26)
@@ -146,13 +147,9 @@
     if (gate !== 'member') return;
     L.user = user;
     setPageState('list');                                     // skeleton cards while the account list loads
-    // plan and the backtest features through user.js (isPro / hasFeature); any failure counts as the free plan
-    var planReady = Promise.all([Promise.resolve().then(function () { return window.isPro(); })].concat(FEATURES.map(function (f) {
-      return Promise.resolve().then(function () { return window.hasFeature(f); });
-    }))).then(function (r) {
-      L.plan = r[0] === true ? 'premium' : 'free';
-      FEATURES.forEach(function (f, i) { L.feat[f] = r[i + 1] === true; });
-    }, function () { L.plan = 'free'; L.feat = {}; });
+    var planReady = loadPlan();
+    // Pro bought while the page is open (payment.js: realtime / payment check): the features unlock without a reload
+    PAGE.on(window, 'ww-plan-changed', function () { loadPlan().then(function () { if (PAGE.alive) applyPlan(); }); });
     Promise.resolve().then(function () { return window.journal.ensureActiveJournal(user.id); }).catch(function () { /* navbar consistency only */ });
     L.src = window.WwBtData.createSyntheticSource({ seed: 1 });
     // cTrader candles: Edge Function client + per-user IndexedDB cache (entries of other user ids are removed)
@@ -182,7 +179,7 @@
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
-    LAY.setMode(planMode(), true); DESK.apply(); placeCells(); placeStatsHost();
+    LAY.setMode(planMode(), true); DESK.apply(); placeCells(); placeStatsHost(); booted = true;
     var deep = new URLSearchParams(location.search).get('account');
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
   }
@@ -215,6 +212,27 @@
     var dist = crypto ? _t('backtest.draw.points', '{n} puan', { n: ad.toFixed(s.digits) }) : _t('backtest.draw.pips', '{n} pip', { n: (ad / s.pipSize).toFixed(1) });
     var usd = diff / s.pipSize * S.pipValueUsd(s.id, lot, price > 0 ? price : 1);
     return { dist: dist, money: (usd >= 0 ? '+' : '-') + Math.abs(usd).toFixed(2) + ' $', lot: _t('backtest.draw.lot', '{n} lot', { n: lot.toFixed(s.lotDigits) }) };
+  }
+  // plan and the backtest features through user.js (isPro / hasFeature); any failure counts as the free plan
+  function loadPlan() {
+    return Promise.all([Promise.resolve().then(function () { return window.isPro(); })].concat(FEATURES.map(function (f) {
+      return Promise.resolve().then(function () { return window.hasFeature(f); });
+    }))).then(function (r) {
+      L.plan = r[0] === true ? 'premium' : 'free';
+      L.feat = {}; FEATURES.forEach(function (f, i) { L.feat[f] = r[i + 1] === true; });
+    }, function () { L.plan = 'free'; L.feat = {}; });
+  }
+  // the plan changed on an open page: every plan-dependent control is drawn again (before the first load, init draws them)
+  function applyPlan() {
+    if (!booted) return;
+    LAY.setMode(planMode());                                  // the view follows the plan (Premium: advanced, free: simple)
+    DESK.apply(); placeCells(); placeStatsHost(); renderPlan();
+    if (R) {
+      applyLook(); applyChartLayout(); renderStats(); renderLimit(); updateControls();
+      if (R.acc.dataSource === 'ctrader') loadUsage().then(function () { if (R) { renderLimit(); updateControls(); } });
+    } else renderList();
+    renderLayoutPicker();
+    if (DRAWER && !$('bt-look-drawer').hidden) DRAWER.render();
   }
   function isPro() { return L.plan === 'premium'; }
   // The view follows the plan (owner, 2026-10-27): Premium always gets the advanced view, the free plan the simple one; there is no

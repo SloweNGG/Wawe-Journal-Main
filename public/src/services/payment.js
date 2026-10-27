@@ -146,6 +146,106 @@ export async function upgradeToPro(planType, amount, currency, payMethod, referr
   }
 }
 
+// Creem'in gömülü ödeme betiği (window.Creem): yalnızca kart ödemesi başlatılırken yüklenir
+let creemEmbedPromise = null;
+function loadCreemEmbed() {
+  if (window.Creem && window.Creem.__loaded) return Promise.resolve(window.Creem);
+  if (!creemEmbedPromise) {
+    creemEmbedPromise = new Promise(function(resolve, reject) {
+      const s = document.createElement('script');
+      s.src = 'https://www.creem.io/embed.js';
+      s.async = true;
+      s.onload = function() {
+        if (window.Creem && window.Creem.__loaded) resolve(window.Creem);
+        else { creemEmbedPromise = null; reject(new Error('Creem embed yüklenemedi')); }
+      };
+      s.onerror = function() { creemEmbedPromise = null; reject(new Error('Creem embed yüklenemedi')); };
+      document.head.appendChild(s);
+    });
+  }
+  return creemEmbedPromise;
+}
+
+function clearPendingPaymentFlags() {
+  try {
+    sessionStorage.removeItem('ww_pending_payment');
+    sessionStorage.removeItem('ww_pending_payment_time');
+    localStorage.removeItem('ww_pending_payment');
+    localStorage.removeItem('ww_pending_payment_time');
+  } catch(e) {}
+}
+
+// ⭐ Kart ile ödeme (Creem): sunucu planın ürününü seçip ödeme sayfası oluşturur.
+// opts.embed: sayfa site içinde pencere (overlay) olarak açılır; onComplete/onClose yalnızca arayüz içindir.
+// Betik yüklenemezse ya da embed istenmezse Creem sayfasına yönlendirilir.
+// Pro her durumda creem-webhook ile açılır (tarayıcıdaki "tamamlandı" olayı taklit edilebilir, erişim vermez).
+export async function startCardCheckout(planType, opts) {
+  opts = opts || {};
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      showToast(t('payment.session_expired', {}, 'Oturumunuz sona ermiş, lütfen tekrar giriş yapın.'), 'error');
+      return null;
+    }
+
+    const response = await fetch(
+      'https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/creem-checkout',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        },
+        body: JSON.stringify({ planType: planType })
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.checkoutUrl) {
+      console.error('❌ creem-checkout API hatası:', response.status, data);
+      throw new Error(data.error || t('payment.link_failed', {}, 'Ödeme başlatılamadı'));
+    }
+
+    try {
+      sessionStorage.setItem('ww_pending_payment', 'true');
+      sessionStorage.setItem('ww_pending_payment_time', String(Date.now()));
+      localStorage.setItem('ww_pending_payment', 'true');
+      localStorage.setItem('ww_pending_payment_time', String(Date.now()));
+    } catch(e) {}
+
+    if (opts.embed) {
+      try {
+        const Creem = await loadCreemEmbed();
+        const lang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+        Creem.openCheckout({
+          checkoutUrl: data.checkoutUrl,
+          theme: document.body.classList.contains('light-theme') ? 'light' : 'dark',
+          locale: lang,
+          onComplete: function(detail) {
+            // close() başarı sonrası Creem'in sayfayı dönüş adresine yönlendirmesini de iptal eder
+            Creem.close();
+            if (typeof opts.onComplete === 'function') opts.onComplete(detail);
+          },
+          onClose: function() {
+            clearPendingPaymentFlags();
+            if (typeof opts.onClose === 'function') opts.onClose();
+          }
+        });
+        return { embedded: true };
+      } catch (embedErr) {
+        console.warn('Creem embed açılamadı, ödeme sayfasına yönlendiriliyor:', embedErr);
+      }
+    }
+
+    window.location.href = data.checkoutUrl;
+    return data;
+  } catch (error) {
+    console.error('❌ startCardCheckout hatası:', error);
+    showToast(t('payment.link_failed', {}, 'Ödeme başlatılamadı') + ': ' + error.message, 'error');
+    return null;
+  }
+}
+
 // ⭐⭐⭐ CANCEL PRO - GERÇEKTEN İPTAL EDEN VERSİYON ⭐⭐⭐
 export async function cancelPro() {
   wwLog.log('💎 [cancelPro] ÇAĞRILDI!');
@@ -422,12 +522,23 @@ function applyLivePro(profile, shouldNotify = false) {
       try { localStorage.setItem('ww_user_plan_expires_at', profile.plan_expires_at); } catch(e) {}
     }
     sessionStorage.setItem('ww_user_plan_time', String(Date.now()));
+    // getUserPlan() önbelleği bitiş tarihini ww_user_plan_exp'ten, profili ww_cached_profile'dan okur: ikisi de
+    // güncellenmezse eski (free/süresi geçmiş) profil birkaç dakika daha okunur, özellikler kilitli kalırdı
+    sessionStorage.setItem('ww_user_plan_exp', profile.plan_expires_at || '');
+    sessionStorage.removeItem('ww_cached_profile');
+    sessionStorage.removeItem('ww_cached_profile_time');
+    if (window.__wwUserProfile) {
+      window.__wwUserProfile = Object.assign({}, window.__wwUserProfile, { plan: 'premium', plan_expires_at: profile.plan_expires_at || null });
+    }
     sessionStorage.removeItem('ww_pending_payment');
     sessionStorage.removeItem('ww_pending_payment_time');
     try {
       localStorage.removeItem('ww_pending_payment');
       localStorage.removeItem('ww_pending_payment_time');
     } catch(e) {}
+
+    // Açık sayfalar (ör. backtest) planı yalnızca açılışta okur: yeni planı uygulasınlar
+    try { window.dispatchEvent(new CustomEvent('ww-plan-changed', { detail: { plan: 'premium' } })); } catch(e) {}
 
     // URL'deki ?payment=success parametresini temizle
     if (window.location.search.includes('payment=success')) {

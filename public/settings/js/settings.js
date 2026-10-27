@@ -1367,7 +1367,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
   var minStep = isExtending ? 2 : 1;
   var currentStep = minStep;
   var selectedPeriod = 'yearly';
-  var selectedPayMethod = 'LTC';
+  var selectedPayMethod = 'CARD';
   var appliedReferralCode = null;
   var appliedDiscount = 0;
 
@@ -1378,10 +1378,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (savedState.period === 'monthly' || savedState.period === 'yearly' || savedState.period === 'test') {
       selectedPeriod = savedState.period;
     }
-    if (savedState.payMethod === 'BTC' || savedState.payMethod === 'LTC') {
+    if (savedState.payMethod === 'BTC' || savedState.payMethod === 'LTC' || savedState.payMethod === 'CARD') {
       selectedPayMethod = savedState.payMethod;
     } else {
-      selectedPayMethod = 'LTC';
+      selectedPayMethod = 'CARD';
     }
     if (savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
       appliedReferralCode = savedState.code;
@@ -1724,8 +1724,23 @@ function setupPlanWizard(wizardRoot, isExtending) {
   function updateCryptoMethodsUI() {
     var btcChip = wizardRoot.querySelector('.crypto-chip[data-method="BTC"]');
     var ltcChip = wizardRoot.querySelector('.crypto-chip[data-method="LTC"]');
+    var cardChip = wizardRoot.querySelector('.crypto-chip[data-method="CARD"]');
     var btcNotice = wizardRoot.querySelector('#crypto-btc-notice');
+    var cardNotice = wizardRoot.querySelector('#crypto-card-notice');
     var isYearly = (selectedPeriod === 'yearly');
+
+    // 🔒 0. Kart (Creem) yalnızca aylık/yıllık planda: test planı Creem'de ürün olarak yok
+    if (cardChip) {
+      if (selectedPeriod === 'test') {
+        cardChip.style.display = 'none';
+        if (selectedPayMethod === 'CARD') {
+          selectedPayMethod = 'LTC';
+          saveWizardState();
+        }
+      } else {
+        cardChip.style.display = 'flex';
+      }
+    }
 
     // 🔒 1. BTC yalnızca Yıllık abonelikte gösterilir, diğer dönemlerde gizlenir
     if (btcChip) {
@@ -1776,6 +1791,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
       } else {
         btcNotice.style.display = 'none';
       }
+    }
+    if (cardNotice) {
+      cardNotice.style.display = (selectedPayMethod === 'CARD' && appliedDiscount > 0) ? 'flex' : 'none';
     }
   }
 
@@ -1862,19 +1880,36 @@ function setupPlanWizard(wizardRoot, isExtending) {
       btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_preparing_payment', {}, 'Ödeme Sayfası Hazırlanıyor...') + '</span>';
 
       try {
-        if (window.upgradeToPro) {
-          // Ödeme onayı için referans: ödeme başlamadan önceki pro bitiş zamanı (aktif pro yoksa 0)
-          var baselineExpiryMs = 0;
-          try {
-            var sbBase = window.sb || window.supabase;
-            var userBase = window.SETTINGS_STATE.currentUser;
-            if (!userBase && typeof getCurrentUser === 'function') userBase = await getCurrentUser();
-            if (sbBase && userBase) {
-              var { data: profBase } = await sbBase.from('user_profiles').select('plan, plan_expires_at').eq('id', userBase.id).single();
-              baselineExpiryMs = planActiveExpiryMs(profBase);
-            }
-          } catch (baseErr) {}
+        // Ödeme onayı için referans: ödeme başlamadan önceki pro bitiş zamanı (aktif pro yoksa 0)
+        var baselineExpiryMs = 0;
+        try {
+          var sbBase = window.sb || window.supabase;
+          var userBase = window.SETTINGS_STATE.currentUser;
+          if (!userBase && typeof getCurrentUser === 'function') userBase = await getCurrentUser();
+          if (sbBase && userBase) {
+            var { data: profBase } = await sbBase.from('user_profiles').select('plan, plan_expires_at').eq('id', userBase.id).single();
+            baselineExpiryMs = planActiveExpiryMs(profBase);
+          }
+        } catch (baseErr) {}
 
+        if (selectedPayMethod === 'CARD') {
+          // Kart: Creem ödeme penceresi site içinde açılır; tutar ve ürün sunucuda seçilir, kupon uygulanmaz.
+          // Pencere kapanınca kripto ödemesindeki yoklama Pro'nun webhook ile açılmasını bekler.
+          var restoreBtn = function() {
+            btnSubmitPayment.disabled = false;
+            btnSubmitPayment.innerHTML = origContent;
+          };
+          var started = window.startCardCheckout && await window.startCardCheckout(selectedPeriod, {
+            embed: true,
+            onComplete: function() {
+              currentPaymentData = { baselineExpiryMs: baselineExpiryMs, period: selectedPeriod, payCurrency: 'CARD' };
+              btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_card_confirming', {}, 'Ödeme onaylanıyor, Pro birkaç saniye içinde açılacak...') + '</span>';
+              startDirectPaymentWatch();
+            },
+            onClose: restoreBtn
+          });
+          if (!started) restoreBtn();
+        } else if (window.upgradeToPro) {
           var result = await window.upgradeToPro(selectedPeriod, netTotal, 'USD', selectedPayMethod, codeToSend);
           if (result && result.payAddress) {
             // ⭐ DOĞRUDAN ÖDEME (Direct Payment): Site içi ekrana geç!

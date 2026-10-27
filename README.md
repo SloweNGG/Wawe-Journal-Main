@@ -42,8 +42,8 @@ Out of the box the app points at the hosted Wawe Journal backend. To run your ow
    ```bash
    npx supabase functions deploy <name> --project-ref <ref> --use-api
    ```
-   `nowpayment-webhook` and the `ctrader-*` functions must be deployed with `--no-verify-jwt`; they do their own authentication.
-5. Set the function secrets (`supabase secrets set ...`): `CTRADER_CLIENT_ID`, `CTRADER_CLIENT_SECRET`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `TURNSTILE_SECRET_KEY`, plus the optional `NOWPAYMENTS_*`, `RATE_LIMIT_*` and `TELEGRAM_*` settings listed in the function sources.
+   `nowpayment-webhook`, `creem-checkout`, `creem-webhook` and the `ctrader-*` functions must be deployed with `--no-verify-jwt`; they do their own authentication.
+5. Set the function secrets (`supabase secrets set ...`): `CTRADER_CLIENT_ID`, `CTRADER_CLIENT_SECRET`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`, `CREEM_PRODUCT_MONTHLY`, `CREEM_PRODUCT_YEARLY`, `TURNSTILE_SECRET_KEY`, plus the optional `NOWPAYMENTS_*`, `RATE_LIMIT_*` and `TELEGRAM_*` settings listed in the function sources.
 
 Never commit real keys. Only the Supabase anon (publishable) key and the Turnstile site key belong in client code; the service role key and all secrets above stay on the server.
 
