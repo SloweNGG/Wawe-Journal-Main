@@ -19,7 +19,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="/landing-glass.css?v=2" />
+  <link rel="stylesheet" href="/landing-glass.css?v=3" />
 
   <!-- Google Site Name, Brand Entity & WebSite Schema -->
   <script type="application/ld+json" is:inline>
@@ -292,7 +292,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
         </div>
         <div class="plans">
           <div class="g plan">
-            <div><div class="mono plan-name" data-i18n="lp.pr.free_name">STARTER</div><div class="plan-price">$0</div><div class="plan-note" data-i18n="lp.pr.free_d">Everything you need to start journaling.</div></div>
+            <div><div class="plan-top"><span class="mono plan-name" data-i18n="lp.pr.free_name">STARTER</span></div><div class="plan-price">$0</div><div class="plan-note" data-i18n="lp.pr.free_d">Everything you need to start journaling.</div></div>
             <div class="feats">
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f1">Unlimited trade logging &amp; calendar</span></div>
               <div class="feat"><span class="tick" aria-hidden="true">✓</span><span data-i18n="lp.pr.f2">CSV &amp; broker import</span></div>
@@ -452,7 +452,6 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
       if (e.key && e.key.startsWith('ww_')) updateHomePrices();
     });
     document.addEventListener('DOMContentLoaded', updateHomePrices);
-    if (typeof i18n !== 'undefined' && i18n.onChange) i18n.onChange(updateHomePrices);
 
     // PRO BUTTON (follows the selected billing period)
     var upPro = document.getElementById('upgrade-pro-home');
@@ -501,7 +500,11 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
     document.addEventListener('click', function(e) {
       if (langCurrent && langDropdown && !langCurrent.contains(e.target) && !langDropdown.contains(e.target)) closeDD();
     });
-    updateLanguageUI(i18n.getCurrentLanguage());
-    i18n.onChange(function(l) { updateLanguageUI(l); });
+    // index-i18n.js is deferred: it only exists once the document has been parsed
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof i18n === 'undefined') return;
+      updateLanguageUI(i18n.getCurrentLanguage());
+      i18n.onChange(function(l) { updateLanguageUI(l); updateHomePrices(); });
+    });
   </script>
 </Layout>
