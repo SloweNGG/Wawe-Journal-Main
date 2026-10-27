@@ -182,7 +182,7 @@
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
-    LAY.decideMode(L.accounts.length); DESK.apply(); placeCells(); placeStatsHost();
+    LAY.setMode(planMode(), true); DESK.apply(); placeCells(); placeStatsHost();
     var deep = new URLSearchParams(location.search).get('account');
     if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
   }
@@ -217,6 +217,9 @@
     return { dist: dist, money: (usd >= 0 ? '+' : '-') + Math.abs(usd).toFixed(2) + ' $', lot: _t('backtest.draw.lot', '{n} lot', { n: lot.toFixed(s.lotDigits) }) };
   }
   function isPro() { return L.plan === 'premium'; }
+  // The view follows the plan (owner, 2026-10-27): Premium always gets the advanced view, the free plan the simple one; there is no
+  // switch. The drawing tools work in both (they are free for every plan).
+  function planMode() { return isPro() ? 'advanced' : 'simple'; }
   function can(f) { return L.feat[f] === true; }
   // free user on a Premium control: the upgrade window (the control shows a small PRO tag)
   function openUpgrade(feature) { if (typeof window.openUpgradeModal === 'function') window.openUpgradeModal({ feature: feature || 'backtest_pro' }); }
@@ -2483,9 +2486,6 @@
       });
     });
     // layout: mode switch, full screen, shortcut sheet
-    Array.prototype.forEach.call(document.querySelectorAll('[data-bt-mode]'), function (b) {
-      b.addEventListener('click', function () { LAY.setMode(b.getAttribute('data-bt-mode')); });
-    });
     Array.prototype.forEach.call(document.querySelectorAll('[data-bt-fs]'), function (b) {
       b.addEventListener('click', function () { LAY.setFullscreen(!LAY.isFullscreen()); });
     });
@@ -2560,14 +2560,13 @@
       if (e.key === 'Escape') { if (escapeChain()) e.preventDefault(); return; }
       var tg = e.target && e.target.tagName;
       if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
-      if ((e.ctrlKey || e.metaKey) && DRAW && LAY.mode() === 'advanced' && DRAW.undoKey(e)) { e.preventDefault(); return; }
+      if ((e.ctrlKey || e.metaKey) && DRAW && DRAW.undoKey(e)) { e.preventDefault(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === ' ') { e.preventDefault(); if (R.playing) pause(); else play(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) stepMinute(); else stepCandle(); }
       else if (e.key === '?') { e.preventDefault(); openKeys(null); }
       else if (e.shiftKey && (e.key === 'B' || e.key === 'b')) { e.preventDefault(); if (!$('bt-buy-btn').disabled) submitOrder(1); }
       else if (e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); if (!$('bt-sell-btn').disabled) submitOrder(-1); }
-      else if (e.shiftKey && (e.key === 'M' || e.key === 'm')) { e.preventDefault(); LAY.toggleMode(); }
       else if (!e.shiftKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); LAY.setFullscreen(!LAY.isFullscreen()); }
       else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); centerAll(); }
       else if (handleToolKey(e)) e.preventDefault();
@@ -2584,8 +2583,8 @@
     if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(false); return true; }
     return false;
   }
-  // drawing keys (1-9 tools, V cursor, M magnet, Del) in advanced mode, where the toolbar is
-  function handleToolKey(e) { return !!DRAW && LAY.mode() === 'advanced' && DRAW.key(e); }
+  // drawing keys (1-9 tools, V cursor, M magnet, Del): the toolbar is there in both views
+  function handleToolKey(e) { return !!DRAW && DRAW.key(e); }
   function toggleLayoutPop(on) {
     var p = $('bt-layout-pop'); if (!p) return;
     if (on === undefined) on = p.hidden;
@@ -2605,7 +2604,6 @@
   function onLayoutChange(prefs, what) {
     if ((what === 'mode' || what === 'fullscreen') && DESK) { DESK.apply(); placeCells(); placeStatsHost(); }
     if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
-    if (what === 'mode' && prefs.mode !== 'advanced' && DRAW) DRAW.setTool('cursor');
     if (what === 'mode' && R) applyChartLayout();
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } if (R) centerAll(); }, 80); }
   }

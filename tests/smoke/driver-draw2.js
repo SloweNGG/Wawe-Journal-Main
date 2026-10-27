@@ -47,7 +47,7 @@
     setv('bt-f-name', 'Draw real'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && T() && T().bars() && T().bars().length > 50; }, 40000, 'replay ready');
     for (var i = 0; i < 10; i++) { $('bt-step-btn').click(); await sleep(20); }
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(400);
+    await sleep(400);
     T().chart().timeScale().setVisibleLogicalRange({ from: T().bars().length - 80, to: T().bars().length + 5 }); await sleep(250);
 
     // ---------------- rectangle
@@ -59,11 +59,11 @@
     ok('rect: drawn from the bottom-right corner to the top-left', list().length === 1 && r1.tool === 'rect' && sel() === r1.id && T().draw().tool() === 'cursor', J(r1));
     var b1 = box(r1);
     ok('rect: corners where the mouse went down and up', near(b1.l, B.x, 2) && near(b1.r, A.x, 2) && near(b1.t, B.y, 2) && near(b1.b, A.y, 2), J(b1) + ' A ' + J(A) + ' B ' + J(B));
-    await tool('rect'); var C1 = P(0.70, 0.25), C2 = P(0.85, 0.6);
+    await tool('rect'); var C1 = P(0.80, 0.25), C2 = P(0.92, 0.6);   // clear of the first rectangle after its handles widen it
     await click(C1); await move(C2, 5); await click(C2);                // two clicks, top-left -> bottom-right
     var r2 = lastD(), b2 = box(r2);
     ok('rect: two clicks (click, move, click)', list().length === 2 && r2.tool === 'rect' && near(b2.l, C1.x, 2) && near(b2.b, C2.y, 2), J(b2));
-    await tool('rect'); var S1 = P(0.15, 0.2), S2 = P(0.3, 0.75);
+    await tool('rect'); var S1 = P(0.12, 0.2), S2 = P(0.24, 0.42);   // small: it must not cover the first rectangle in the taller simple view either
     await keyDown('Shift'); await drag(S1, S2); await keyUp('Shift');
     var r3 = lastD(), b3 = box(r3);
     ok('rect + Shift: a square on screen', near(b3.r - b3.l, b3.b - b3.t, 1.5) && b3.r - b3.l > 40, J(b3));

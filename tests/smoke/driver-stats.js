@@ -15,7 +15,12 @@
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
     setv('bt-f-name', 'Stats'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready'; }, 40000, 'replay ready');
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(100);
+    await sleep(100);
+    if (!pro) {
+      var sw = document.querySelector('.bt-win[data-win="stats"]');
+      ok('free: simple view without the statistics window (Premium)', $('bt-root').getAttribute('data-mode') === 'simple' && (!sw || sw.getBoundingClientRect().width === 0));
+      throw 'done';
+    }
     // trades: two with a stop loss, one without, closed by hand after a few candles
     for (var n = 0; n < 4; n++) {
       var bid = parseFloat($('bt-bid').textContent), ask = parseFloat($('bt-ask').textContent);
@@ -62,6 +67,6 @@
     ok('closing a trade refreshes the tab', q('.bt-st-kpi:nth-child(4) .bt-st-value').textContent !== before, before + ' -> ' + q('.bt-st-kpi:nth-child(4) .bt-st-value').textContent);
     if (qp.get('big') === '1') { $('bt-root').style.setProperty('--bt-bottom-h', (window.innerHeight - 420) + 'px'); await sleep(600); }
     if (qp.get('phone') === '1') ok('phone: no horizontal page scroll with the stats open', document.documentElement.scrollWidth <= window.innerWidth + 1, document.documentElement.scrollWidth);
-  } catch (e) { out.push('EXCEPTION ' + (e && e.stack || e)); }
+  } catch (e) { if (e !== 'done') out.push('EXCEPTION ' + (e && e.stack || e)); }
   finally { $('bt-smoke-result').textContent = out.join('\n') + '\nDONE'; }
 })();

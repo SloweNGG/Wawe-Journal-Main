@@ -1,7 +1,8 @@
-// Layout scenario (local backend): simple / advanced mode, resizable panels, full screen, shortcut sheet, keyboard orders.
-// ?phone=1 runs at phone width (no splitters, no horizontal scroll). ?plan=free|premium.
+// Layout scenario (local backend): the view follows the plan (free: simple, Premium: advanced; no switch, 2026-10-27), windows,
+// full screen, shortcut sheet, keyboard orders. ?phone=1 runs at phone width (no splitters, no horizontal scroll). ?plan=free|premium.
 (async function () {
-  var out = [], qp = new URLSearchParams(location.search), phone = qp.get('phone') === '1';
+  var out = [], qp = new URLSearchParams(location.search), phone = qp.get('phone') === '1', pro = (qp.get('plan') || 'premium') === 'premium';
+  var view = pro ? 'advanced' : 'simple';
   function ok(name, cond, extra) { out.push((cond ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? ' :: ' + extra : '')); }
   function $(id) { return document.getElementById(id); }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
@@ -13,29 +14,31 @@
   window.addEventListener('error', function (e) { out.push('JSERROR ' + e.message + ' @' + e.filename + ':' + e.lineno); });
   try {
     await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'list' && $('bt-root').getAttribute('data-mode'); }, 10000, 'list');
-    ok('new user (no account): simple mode decided and stored', $('bt-root').getAttribute('data-mode') === 'simple' && JSON.parse(localStorage.getItem('ww_bt_layout_v1')).mode === 'simple');
+    ok('the plan decides the view (' + view + '), there is no view switch', $('bt-root').getAttribute('data-mode') === view && !document.querySelector('[data-bt-mode]'));
     if (phone) ok('phone: list without horizontal scroll', noHScroll(), document.documentElement.scrollWidth + ' > ' + window.innerWidth);
     $('bt-new-account-btn').click();
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
     setv('bt-f-name', 'Layout'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready'; }, 40000, 'replay ready');
-    // simple mode: chart, replay controls, order panel; no bottom tabs
-    ok('simple: chart, toolbar and order panel visible', vis('bt-chart') && vis(document.querySelector('.bt-toolbar')) && vis('bt-order-form'));
-    ok('simple: bottom tabs hidden, compact positions shown', !vis(document.querySelector('.bt-tables')) && vis('bt-mini-pos'));
-    ok('mode switch shows simple pressed', document.querySelector('[data-bt-mode="simple"]').getAttribute('aria-pressed') === 'true');
-    // keyboard order (Shift+B) and close from the compact list
-    key('B', { shiftKey: true }); await sleep(200);
-    ok('Shift+B opens a BUY position', $('bt-mini-pos-count').textContent === '1' && $('bt-mini-pos-list').children.length === 1, $('bt-mini-pos-count').textContent);
-    $('bt-mini-pos-list').querySelector('button[data-act="close"]').click(); await sleep(200);
-    ok('position closed from the compact list', $('bt-mini-pos-count').textContent === '0' && $('bt-history-count').textContent === '1');
-    // advanced mode
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(150);
-    ok('advanced: open positions window visible, compact list hidden', vis(document.querySelector('.bt-win[data-win="open"]')) && !vis('bt-mini-pos'));
-    ok('advanced stored', JSON.parse(localStorage.getItem('ww_bt_layout_v1')).mode === 'advanced');
+    ok('chart, replay toolbar, order panel and drawing toolbar visible', vis('bt-chart') && vis(document.querySelector('.bt-toolbar')) && vis('bt-order-form') && vis('bt-draw-bar'));
     key('M', { shiftKey: true }); await sleep(100);
-    ok('Shift+M toggles back to simple', $('bt-root').getAttribute('data-mode') === 'simple');
-    key('M', { shiftKey: true }); await sleep(100);
-    if (!phone) {
+    ok('Shift+M does not change the view', $('bt-root').getAttribute('data-mode') === view);
+    if (!pro) {
+      // free: the simple view only (chart, replay, order panel, drawings); no windows, tables, statistics or multi-chart
+      ok('free: no windows / tables / layout and panel buttons, compact positions shown', !vis(document.querySelector('.bt-win[data-win="open"]')) && !vis('bt-layout-btn') && vis('bt-mini-pos'));
+      key('B', { shiftKey: true }); await sleep(200);
+      ok('Shift+B opens a BUY position', $('bt-mini-pos-count').textContent === '1' && $('bt-mini-pos-list').children.length === 1, $('bt-mini-pos-count').textContent);
+      $('bt-mini-pos-list').querySelector('button[data-act="close"]').click(); await sleep(200);
+      ok('position closed from the compact list', $('bt-mini-pos-count').textContent === '0' && $('bt-history-count').textContent === '1');
+    } else {
+      ok('premium: open positions window visible, compact list hidden', vis(document.querySelector('.bt-win[data-win="open"]')) && !vis('bt-mini-pos'));
+      key('B', { shiftKey: true }); await sleep(200);
+      ok('Shift+B opens a BUY position', $('bt-open-count').textContent === '1', $('bt-open-count').textContent);
+      $('bt-open-body').querySelector('button[data-act="close"]').click(); await sleep(200);
+      ok('position closed from the positions window', $('bt-open-count').textContent === '0' && $('bt-history-count').textContent === '1');
+    }
+    if (!pro) { /* no windows in the simple view */ }
+    else if (!phone) {
       // windows (bt-desk.js; moving and resizing with the real mouse: smoke desk-*)
       ok('desktop: free windows with title bars', $('bt-desk').getAttribute('data-desk') === 'free' && vis(document.querySelector('.bt-win[data-win="order"] .bt-win-head')));
       await sleep(200);
@@ -54,7 +57,7 @@
     if (phone) ok('phone full screen: no horizontal scroll', noHScroll());
     $('bt-buy-btn').click(); await sleep(200);
     ok('quick order works in full screen', $('bt-open-count').textContent === '1');
-    $('bt-open-body').querySelector('button[data-act="close"]').click(); await sleep(150);
+    $(pro ? 'bt-open-body' : 'bt-mini-pos-list').querySelector('button[data-act="close"]').click(); await sleep(150);
     key('Escape'); await sleep(200);
     ok('Esc leaves full screen', !$('bt-root').classList.contains('bt-fs') && !document.documentElement.classList.contains('bt-fs-lock'));
     $('bt-fs-btn').click(); await sleep(150);
@@ -64,14 +67,14 @@
     // shortcut sheet
     key('?'); await sleep(150);
     ok('? opens the shortcut sheet', $('bt-keys-modal').classList.contains('active') && $('bt-keys-list').querySelectorAll('.bt-keys-row').length >= 9, $('bt-keys-list').querySelectorAll('.bt-keys-row').length);
-    ok('shortcut sheet lists drawing keys in advanced mode', /M/.test($('bt-keys-list').textContent) && $('bt-keys-list').querySelectorAll('kbd').length > 10);
+    ok('shortcut sheet lists the drawing keys in every view', /M/.test($('bt-keys-list').textContent) && $('bt-keys-list').querySelectorAll('kbd').length > 10);
     key('Escape'); await sleep(100);
     ok('Esc closes the sheet', !$('bt-keys-modal').classList.contains('active'));
-    // persisted across a visit: leave and come back
+    // leave and come back: still the plan's view
     $('bt-back-btn').click(); await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'list'; }, 5000, 'list');
     document.querySelector('.bt-account-card[data-id]').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready'; }, 30000, 'reopen');
-    ok('mode kept after reopening', $('bt-root').getAttribute('data-mode') === 'advanced');
+    ok('view still follows the plan after reopening', $('bt-root').getAttribute('data-mode') === view);
   } catch (e) { out.push('EXCEPTION ' + (e && e.stack || e)); }
   finally { $('bt-smoke-result').textContent = out.join('\n') + '\nDONE'; }
 })();

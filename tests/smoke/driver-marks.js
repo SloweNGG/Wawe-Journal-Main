@@ -19,7 +19,7 @@
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
     setv('bt-f-name', 'Marks'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && T() && R() && R().bars && R().bars.length > 50; }, 40000, 'ready');
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(400);
+    await sleep(400);
     // 80 trades: three buys on one candle, two trades with a stop loss, the rest without
     var groupT = null;
     for (var i = 0; i < 77; i++) {
@@ -74,6 +74,7 @@
     // statistics: the balance curve uses the whole width, axis #10, #20 ...
     var texts = [], ft = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function (s) { texts.push(String(s)); return ft.apply(this, arguments); };
+    if (!pro) { ok('free: no statistics window in the simple view', !document.querySelector('.bt-win[data-win="stats"]') || document.querySelector('.bt-win[data-win="stats"]').getBoundingClientRect().width === 0); throw 'shot'; }
     T().openWin('stats'); await waitFor(function () { return document.querySelectorAll('#bt-stats-view .bt-st-w').length >= 2; }, 8000, 'stats');
     if (qp.get('max') === '1') T().desk().act('stats', 'max');
     await sleep(900);

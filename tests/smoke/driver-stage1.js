@@ -35,7 +35,7 @@
     setv('bt-f-start', toInput(start));
     $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && R() && R().hist; }, 40000, 'replay ready');
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(400);
+    await sleep(400);
     ok('account opened: centered on the cursor, auto scale', centered(view()), txt(view()));
     ok('price axis: double click resets the price scale (option on)', R().chart.options().handleScale.axisDoubleClickReset.price === true);
     for (var i = 0; i < 60; i++) { $('bt-step-btn').click(); await sleep(15); }

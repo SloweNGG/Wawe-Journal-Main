@@ -104,11 +104,11 @@ const SCENARIOS = {
   'shot-dock-stats-fs': ['driver=/__driver-shot.js&shot=dock-stats-fs&plan=premium&i18n=tr', { width: 1440, height: 1100 }, true],
   'shot-limit': ['backend=supabase&driver=/__driver-limit.js&role=user&plan=free&ct=ready&tlimit=100&tused=37&race=1&i18n=tr', DESKTOP, true],
   'shot-drawer-free': ['driver=/__driver-shot.js&shot=drawer&plan=free&i18n=en', DESKTOP, true],
-  'shot-simple': ['driver=/__driver-shot.js&shot=simple', DESKTOP, true],
+  'shot-simple': ['driver=/__driver-shot.js&shot=simple&plan=free', DESKTOP, true],
   'shot-advanced': ['driver=/__driver-shot.js&shot=advanced&plan=premium', DESKTOP, true],
   'shot-fs': ['driver=/__driver-shot.js&shot=fs&plan=premium', DESKTOP, true],
   'shot-light': ['driver=/__driver-shot.js&shot=advanced&light=1', DESKTOP, true],
-  'shot-phone': ['driver=/__driver-shot.js&shot=simple', PHONE, true],
+  'shot-phone': ['driver=/__driver-shot.js&shot=simple&plan=free', PHONE, true],
   'shot-phone-fs': ['driver=/__driver-shot.js&shot=fs', PHONE, true]
 };
 

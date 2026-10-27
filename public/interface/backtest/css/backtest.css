@@ -54,7 +54,7 @@
 
 /* replay */
 .bt-replay-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-.bt-replay-title { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.bt-replay-title { display: flex; align-items: center; gap: 10px; flex: 1 1 180px; min-width: 0; overflow: hidden; }   /* the basis: on a narrow screen the tools wrap instead of covering the name */
 .bt-replay-title h2 { margin: 0; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bt-toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 8px 14px; margin-bottom: 10px;
   border: 1px solid var(--border); border-radius: var(--radius); }

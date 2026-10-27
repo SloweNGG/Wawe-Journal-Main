@@ -16,7 +16,7 @@
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; });
     setv('bt-f-name', 'Shot'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && T() && T().bars() && T().bars().length > 50; }, 40000);
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(400);
+    await sleep(400);
     T().chart().timeScale().setVisibleLogicalRange({ from: T().bars().length - 90, to: T().bars().length + 5 }); await sleep(250);
     await tool('fib'); await drag(P(0.08, 0.8), P(0.3, 0.2));
     await tool('long'); await pp({ op: 'click', x: P(0.45, 0.5).x, y: P(0.45, 0.5).y }); await sleep(150);

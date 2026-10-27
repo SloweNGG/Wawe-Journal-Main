@@ -30,7 +30,7 @@
     }
     setv('bt-f-name', 'Orders'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready'; }, 40000, 'replay ready');
-    q('[data-bt-mode="advanced"]').click(); await sleep(300);
+    await sleep(300);
     for (var i = 0; i < 10; i++) { $('bt-step-btn').click(); await sleep(15); }
     if (mode === 'limit') {
       // used 1 of 2: two orders that both fill at once (a buy limit and a buy stop one point away)
@@ -127,9 +127,6 @@
     ok('reopened: pending orders and their lines are back', R().eng.orders.map(function (x) { return x.id; }).join() === left && R().eng.orders.every(function (x) { return !!R().lines['o:' + x.id]; }), left);
     // simple mode: compact list with cancel
     q('#bt-ordtype [data-ordtype="limit"]').click(); setv('bt-ord-price', px(quote().ask - 30)); $('bt-buy-btn').click(); await sleep(100);
-    q('[data-bt-mode="simple"]').click(); await sleep(200);
-    ok('simple mode: compact pending list', vis('bt-mini-ord') && $('bt-mini-ord-list').children.length === R().eng.orders.length);
-    q('[data-bt-mode="advanced"]').click(); await sleep(200);
     // going to another date cancels them
     var n0 = R().eng.orders.length, tnow = R().win.t[R().k] + 60;
     var pp = function (x) { return (x < 10 ? '0' : '') + x; }, z = window.WwTime.partsInTz((tnow + 3 * 86400) * 1000, window.WwTime.getTz());

@@ -41,9 +41,9 @@
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && T() && T().bars() && T().bars().length > 50; }, 40000, 'replay ready');
     var acc = T().R().acc.id;
     for (var i = 0; i < 10; i++) { $('bt-step-btn').click(); await sleep(30); }
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(150);
+    await sleep(150);
     var bar = $('bt-draw-bar');
-    ok('advanced: drawing toolbar with cursor + 9 tools', bar.querySelectorAll('[data-tool]').length === 10 && bar.getBoundingClientRect().width > 20);
+    ok('drawing toolbar with cursor + 9 tools in the ' + (pro ? 'advanced' : 'simple') + ' view (the plan decides the view)', $('bt-root').getAttribute('data-mode') === (pro ? 'advanced' : 'simple') && bar.querySelectorAll('[data-tool]').length === 10 && bar.getBoundingClientRect().width > 20);
     var tags = bar.querySelectorAll('.bt-pro').length, plan = pro ? 'premium' : 'free';
     ok(plan + ': no PRO tags on the tools (drawings are free for every plan)', tags === 0, tags);
     // a trend line by dragging
@@ -148,9 +148,7 @@
       await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && list().length === keep; }, 30000, 'reopen from the account');
       ok(plan + ': drawings come back from the account alone (no session copy)', list().length === keep);
     }
-    // simple mode: no toolbar, the cursor tool
-    document.querySelector('[data-bt-mode="simple"]').click(); await sleep(100);
-    ok('simple mode hides the drawing toolbar', bar.getBoundingClientRect().width === 0 && T().draw().tool() === 'cursor');
+    ok('the toolbar stays in the view', bar.getBoundingClientRect().width > 20);
   } catch (e) { out.push('EXCEPTION ' + (e && e.stack || e)); }
   finally { $('bt-smoke-result').textContent = out.join('\n') + '\nDONE'; }
 })();

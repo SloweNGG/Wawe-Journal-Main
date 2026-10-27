@@ -37,15 +37,17 @@
     await waitFor(function () { return $('bt-account-modal').classList.contains('active') && $('bt-f-start').value; }, 15000, 'modal');
     setv('bt-f-name', 'Desk'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && T() && T().bars() && T().bars().length > 50; }, 40000, 'replay ready');
-    // Simple mode first: fixed layout without frames
-    document.querySelector('[data-bt-mode="simple"]').click(); await sleep(300);
-    if (!phone) {
+    // the plan decides the view: free = the simple view (fixed layout without frames), Premium = windows
+    await sleep(300);
+    if (!pro) {
       ok('simple: fixed layout, no title bars, no taskbar', $('bt-desk').getAttribute('data-desk') === 'simple' && !vis(q('.bt-win-head')) && !vis(q('.bt-taskbar')));
       ok('simple: replay, chart, balance and order shown; the tables are not', ['replay', 'chart', 'balance', 'order'].every(function (id) { return vis(win(id)); }) && !vis(win('open')) && !vis(win('history')));
       var cs = abs('chart'), os = abs('order');
       ok('simple: chart left, order panel right', cs.right <= os.left + 1 && cs.width > os.width);
+      ok('free: no window menu, no multi-chart button, no view switch', !vis('bt-panels-btn') && !vis('bt-layout-btn') && !q('[data-bt-mode]'));
+      throw 'done';
     }
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(500);
+    await sleep(200);
     if (phone) {
       ok('phone: windows stacked at full width', $('bt-desk').getAttribute('data-desk') === 'stack' && ['chart', 'order', 'open', 'history'].every(function (id) { return vis(win(id)) && near(abs(id).width, deskR().width, 2); }));
       var c0 = J(box('order'));
@@ -200,6 +202,6 @@
     setv('bt-ord-price', Eo.ptsToStr(qo.ask - 40, Ro.sym.digits)); $('bt-buy-btn').click(); await sleep(200);
     ok('a limit order shows in the pending orders window', $('bt-orders-body').children.length === 1 && $('bt-orders-count').textContent === '1' && vis(win('orders')));
     document.querySelector('#bt-ordtype [data-ordtype="market"]').click();
-  } catch (e) { out.push('EXCEPTION ' + (e && e.stack || e)); }
+  } catch (e) { if (e !== 'done') out.push('EXCEPTION ' + (e && e.stack || e)); }
   finally { $('bt-smoke-result').textContent = out.join('\n') + '\nDONE'; }
 })();

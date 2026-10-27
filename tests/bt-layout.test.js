@@ -35,10 +35,10 @@ describe('bt-layout', () => {
     assert.equal(L.fitBottom(600, 700), 500);         // chart keeps 200 px
     assert.equal(L.fitBottom(10, 900), L.BOTTOM.min);
   });
-  it('shortcut list: unique ids, drawing keys marked advanced', () => {
+  it('shortcut list: unique ids; the drawing keys work in both views; no view switch (the plan decides the view)', () => {
     const ids = L.SHORTCUTS.map((s) => s.id);
     assert.equal(new Set(ids).size, ids.length);
-    for (const id of ['tools', 'cursor', 'magnet', 'delete_drawing']) assert.ok(L.SHORTCUTS.find((s) => s.id === id).advanced);
-    for (const id of ['play', 'step', 'fullscreen', 'exit', 'sheet']) assert.ok(!L.SHORTCUTS.find((s) => s.id === id).advanced);
+    for (const id of ['tools', 'cursor', 'magnet', 'delete_drawing', 'play', 'step', 'fullscreen', 'exit', 'sheet']) assert.ok(!L.SHORTCUTS.find((s) => s.id === id).advanced, id);
+    assert.ok(!ids.includes('mode'), 'no Shift+M view switch');
   });
 });

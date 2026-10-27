@@ -49,15 +49,14 @@
     { id: 'fullscreen', keys: ['F'] },
     { id: 'center', keys: ['R'] },
     { id: 'exit', keys: ['Esc'] },
-    { id: 'mode', keys: ['Shift', 'M'] },
-    { id: 'tools', keys: ['1', '…', '9'], advanced: true },
-    { id: 'cursor', keys: ['V'], advanced: true },
-    { id: 'magnet', keys: ['M'], advanced: true },
-    { id: 'delete_drawing', keys: ['Del'], advanced: true },
-    { id: 'undo', keys: ['@mod', 'Z'], advanced: true },
-    { id: 'redo', keys: ['@mod', 'Shift', 'Z'], advanced: true },
-    { id: 'draw_shift', keys: ['Shift'], advanced: true },
-    { id: 'draw_settings', keys: ['@dblclick'], advanced: true },
+    { id: 'tools', keys: ['1', '…', '9'] },
+    { id: 'cursor', keys: ['V'] },
+    { id: 'magnet', keys: ['M'] },
+    { id: 'delete_drawing', keys: ['Del'] },
+    { id: 'undo', keys: ['@mod', 'Z'] },
+    { id: 'redo', keys: ['@mod', 'Shift', 'Z'] },
+    { id: 'draw_shift', keys: ['Shift'] },
+    { id: 'draw_settings', keys: ['@dblclick'] },
     { id: 'sheet', keys: ['?'] }
   ];
 

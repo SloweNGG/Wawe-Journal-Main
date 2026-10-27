@@ -20,16 +20,15 @@
     setv($('bt-f-name'), 'Multi'); $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && T() && R().bars && R().bars.length; }, 40000, 'replay ready');
     for (var i = 0; i < 6; i++) { $('bt-step-btn').click(); await sleep(30); }
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(150);
+    await sleep(150);
+    if (!pro) {
+      var lb = $('bt-layout-btn').getBoundingClientRect();
+      ok('free: simple view, no multi-chart button, one chart', $('bt-root').getAttribute('data-mode') === 'simple' && lb.width === 0 && document.querySelectorAll('.bt-cell').length === 1);
+      throw 'done';
+    }
     $('bt-layout-btn').click(); await sleep(50);
     var opts = $('bt-layout-pop').querySelectorAll('[data-layout]');
     ok('layout picker: five layouts', opts.length === 5 && !$('bt-layout-pop').hidden);
-    if (!pro) {
-      ok('free: PRO on the four multi-chart layouts', $('bt-layout-pop').querySelectorAll('.bt-pro').length === 4);
-      $('bt-layout-pop').querySelector('[data-layout="2x2"]').click(); await sleep(100);
-      ok('free: choosing 2x2 opens the upgrade window, one chart stays', window.__upgrade === true && $('bt-charts').getAttribute('data-layout') === '1' && document.querySelectorAll('.bt-cell').length === 1);
-      throw 'done';
-    }
     $('bt-layout-btn').click(); await sleep(30);
     pick('2x2'); await sleep(900);
     if (phone) {
@@ -121,11 +120,6 @@
     ok('out of full screen: the charts are back in their windows', ex.every(function (v, i) { return document.querySelector('.bt-win[data-win="chart' + (i + 2) + '"]').contains(v.el); }));
     pick('2h'); await sleep(400);
     ok('2 side by side: two charts', document.querySelectorAll('.bt-cell').length === 2 && R().extra.length === 1);
-    // simple mode: one chart; back to advanced: the layout returns
-    document.querySelector('[data-bt-mode="simple"]').click(); await sleep(300);
-    ok('simple mode shows one chart', document.querySelectorAll('.bt-cell').length === 1 && $('bt-charts').getAttribute('data-layout') === '1');
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(400);
-    ok('advanced again: the stored layout returns', document.querySelectorAll('.bt-cell').length === 2);
     // reopen
     $('bt-back-btn').click(); await waitFor(function () { return $('bt-root').getAttribute('data-state') === 'list'; }, 5000, 'list');
     ok('back to the list removes the extra charts', document.querySelectorAll('.bt-cell').length === 1);

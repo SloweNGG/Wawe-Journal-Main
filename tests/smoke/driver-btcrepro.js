@@ -38,7 +38,7 @@
     setv('bt-f-start', toInput(Date.UTC(2026, 7, 3, 10) / 1000));
     $('bt-account-submit').click();
     await waitFor(function () { return $('bt-view-replay').getAttribute('data-replay') === 'ready' && R(); }, 60000, 'replay ready'); await sleep(1500);
-    document.querySelector('[data-bt-mode="advanced"]').click(); await sleep(300);
+    await sleep(300);
     var qp = new URLSearchParams(location.search);
     if (qp.get('style') || qp.get('vol')) {
       $('bt-look-btn').click(); await sleep(200);
