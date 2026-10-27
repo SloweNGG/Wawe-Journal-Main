@@ -424,12 +424,74 @@ async function getSession() {
 // ============================================================
 // PANEL LOADER
 // ============================================================
+var PANEL_URLS = {
+  'panel-profile': '/settings/panels/profile-info.html',
+  'panel-plan': '/settings/panels/plan.html',
+  'panel-password': '/settings/panels/password-change.html',
+  'panel-appearance': '/settings/panels/appearance.html',
+  'panel-overtrade': '/settings/panels/overtrade.html',
+  'panel-advanced': '/settings/panels/advanced.html',
+  'panel-danger': '/settings/panels/danger-area.html'
+};
+
+// Panel HTML'leri script çalışır çalışmaz paralel indirilir; sekmeye tıklayınca ağ beklenmez
+var panelHtmlCache = {};
+function fetchPanelHtml(url) {
+  if (!panelHtmlCache[url]) {
+    panelHtmlCache[url] = fetch(url).then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    });
+    // Başarısız indirme önbellekte kalmasın, sonraki deneme yeniden çeksin
+    panelHtmlCache[url].catch(function() { delete panelHtmlCache[url]; });
+  }
+  return panelHtmlCache[url];
+}
+Object.keys(PANEL_URLS).forEach(function(id) { fetchPanelHtml(PANEL_URLS[id]); });
+
+// Aynı panel arka planda hazırlanırken tıklanırsa ikinci kez yüklenmesin
+var panelMounts = {};
+function mountPanel(panelId) {
+  var el = document.getElementById(panelId);
+  if (!el || el.dataset.loaded) return Promise.resolve(true);
+  if (!panelMounts[panelId]) {
+    panelMounts[panelId] = loadPanelContent(panelId, PANEL_URLS[panelId]).then(function(ok) {
+      if (ok) el.dataset.loaded = 'true';
+      delete panelMounts[panelId];
+      return ok;
+    });
+  }
+  return panelMounts[panelId];
+}
+
+// İlk panel açıldıktan sonra kalanlar tarayıcı boştayken görünmeden hazırlanır
+// (HTML + verisi); kullanıcı sekmeye tıkladığında içerik zaten yerinde olur.
+function preloadPanels() {
+  var ids = Object.keys(PANEL_URLS);
+  var idle = window.requestIdleCallback
+    ? function(cb) { window.requestIdleCallback(cb, { timeout: 1000 }); }
+    : function(cb) { setTimeout(cb, 50); };
+  (function next() {
+    if (!SETTINGS_PAGE.alive) return;
+    var id = ids.shift();
+    if (!id) return;
+    var el = document.getElementById(id);
+    if (!el || el.dataset.loaded) return next();
+    idle(function() {
+      if (!SETTINGS_PAGE.alive) return;
+      mountPanel(id).then(function(ok) {
+        // Bu arada tıklanıp açıldıysa initPanel'i switchPanel zaten çağırıyor
+        if (ok && SETTINGS_PAGE.alive && !el.classList.contains('active')) initPanel(id);
+        next();
+      });
+    });
+  })();
+}
+
 async function loadPanelContent(panelId, url) {
   try {
     wwLog.log('📄 Panel yükleniyor: ' + panelId + ' -> ' + url);
-    var res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var html = await res.text();
+    var html = await fetchPanelHtml(url);
     var panel = document.getElementById(panelId);
     if (panel) {
       panel.innerHTML = html;
@@ -536,22 +598,7 @@ window.switchPanel = function(panelId) {
   }
 
   if (!target.dataset.loaded) {
-    var map2 = {
-      'panel-profile': '/settings/panels/profile-info.html',
-      'panel-plan': '/settings/panels/plan.html',
-      'panel-password': '/settings/panels/password-change.html',
-      'panel-appearance': '/settings/panels/appearance.html',
-      'panel-overtrade': '/settings/panels/overtrade.html',
-      'panel-advanced': '/settings/panels/advanced.html',
-      'panel-danger': '/settings/panels/danger-area.html'
-    };
-    var url = map2[panelId];
-    if (url) {
-      loadPanelContent(panelId, url).then(function() {
-        target.dataset.loaded = 'true';
-        finishPanelSwitch();
-      });
-    }
+    if (PANEL_URLS[panelId]) mountPanel(panelId).then(finishPanelSwitch);
   } else {
     finishPanelSwitch();
   }
@@ -3759,21 +3806,11 @@ async function bootSettings() {
         if (map[targetPanelId]) glow.classList.add(map[targetPanelId]);
       }
 
-      var map2 = {
-        'panel-profile': '/settings/panels/profile-info.html',
-        'panel-plan': '/settings/panels/plan.html',
-        'panel-password': '/settings/panels/password-change.html',
-        'panel-appearance': '/settings/panels/appearance.html',
-        'panel-overtrade': '/settings/panels/overtrade.html',
-      'panel-advanced': '/settings/panels/advanced.html',
-        'panel-danger': '/settings/panels/danger-area.html'
-      };
-      var url = map2[targetPanelId];
-      if (url) {
-        await loadPanelContent(targetPanelId, url);
-        firstPanel.dataset.loaded = 'true';
+      if (PANEL_URLS[targetPanelId]) {
+        await mountPanel(targetPanelId);
         initPanel(targetPanelId);
       }
+      preloadPanels();
 
       // Tarayıcının hash yüzünden aşağı kaymasını kesin olarak engelle, tepeye hizala
       window.scrollTo({ top: 0, behavior: 'instant' });
