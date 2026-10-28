@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=26" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=34" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -32,12 +32,14 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-store.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-layout.js?v=5" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-desk.js?v=4" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-desk.js?v=7" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=7" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=5" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-plan.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=33" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-plan.js?v=3" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-range.js?v=1" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-fsedit.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=38" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -94,9 +96,6 @@ import Layout from '../layouts/Layout.astro';
           <i data-lucide="arrow-left" aria-hidden="true"></i><span data-i18n="backtest.back">Hesaplar</span>
         </button>
         <div class="bt-replay-title">
-          <h2 id="bt-acc-name"></h2>
-          <span id="bt-acc-symbol" class="bt-chip"></span>
-          <span id="bt-acc-section" class="bt-chip bt-chip-muted" hidden></span>
           <button type="button" class="bt-plan-badge" data-bt-plan-badge hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><span class="bt-plan-badge-text bt-num"></span></button>
         </div>
         <div class="bt-head-tools">
@@ -144,6 +143,11 @@ import Layout from '../layouts/Layout.astro';
           </header>
           <div class="bt-win-body">
       <div class="bt-toolbar" role="toolbar">
+        <div class="bt-acc-info">
+          <h2 id="bt-acc-name"></h2>
+          <span id="bt-acc-symbol" class="bt-chip"></span>
+          <span id="bt-acc-section" class="bt-chip bt-chip-muted" hidden></span>
+        </div>
         <label class="bt-sr" for="bt-tf" data-i18n="backtest.field.timeframe">Zaman dilimi</label>
         <select id="bt-tf" class="bt-select bt-num">
           <option value="1m">M1</option><option value="5m">M5</option><option value="15m">M15</option>
@@ -151,9 +155,12 @@ import Layout from '../layouts/Layout.astro';
         </select>
 
         <div class="bt-goto">
-          <label class="bt-sr" for="bt-goto-input" data-i18n="backtest.goto.label">Tarihe git</label>
-          <input id="bt-goto-input" class="bt-input bt-num" type="datetime-local" step="60" />
-          <button type="button" id="bt-goto-btn" class="btn btn-ghost"><span data-i18n="backtest.goto.button">Git</span></button>
+          <!-- the value holder of the start; the button opens the date and range panel (bt-range.js) -->
+          <input id="bt-goto-input" type="datetime-local" step="60" hidden />
+          <button type="button" id="bt-goto-btn" hidden></button>
+          <button type="button" id="bt-range-btn" class="bt-input bt-num bt-rg-trigger" data-i18n-title="backtest.range.open" title="Tarih ve aralık seç">
+            <i data-lucide="calendar-range" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.goto.label">Tarihe git</span><span class="bt-rg-label">—</span>
+          </button>
         </div>
 
         <div class="bt-transport">
@@ -225,9 +232,14 @@ import Layout from '../layouts/Layout.astro';
               <span id="bt-data-banner-text"></span>
               <button type="button" id="bt-data-banner-btn" class="btn btn-ghost" hidden></button>
             </div>
-            <button type="button" id="bt-fs-exit" class="bt-fs-exit" data-bt-fs aria-pressed="false">
-              <i data-lucide="minimize-2" aria-hidden="true"></i><span data-i18n="backtest.fs.exit">Tam ekrandan çık (Esc)</span>
-            </button>
+            <div class="bt-fs-ctl">
+              <button type="button" id="bt-fs-edit" class="bt-fs-exit bt-fs-edit" aria-pressed="false" data-i18n-title="backtest.fsedit.title" title="Tam ekranı düzenle">
+                <i data-lucide="move" aria-hidden="true"></i><span data-i18n="backtest.fsedit.button">Düzenle</span>
+              </button>
+              <button type="button" id="bt-fs-exit" class="bt-fs-exit" data-bt-fs aria-pressed="false">
+                <i data-lucide="minimize-2" aria-hidden="true"></i><span data-i18n="backtest.fs.exit">Tam ekrandan çık (Esc)</span>
+              </button>
+            </div>
             <footer class="bt-chart-foot">
               <span id="bt-gap-note" class="bt-hint"></span>
               <p class="bt-attribution">

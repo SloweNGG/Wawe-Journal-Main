@@ -32,7 +32,7 @@ describe('bt-i18n', () => {
     for (const g of ['forex', 'gold', 'crypto']) for (const l of LANGS) assert.ok(`backtest.group.${g}` in loc[l]);
   });
   it('the new modules (layout, look, drawings, stats, charts, plan) only use existing keys', async () => {
-    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|desk|look|draw|stats|multi|plan)/.test(f));
+    const files = fs.readdirSync('public/interface/backtest/js').filter((f) => /^bt-(layout|desk|look|draw|stats|multi|plan|range|fsedit)/.test(f));
     const used = new Set();
     for (const f of files) {
       const src = fs.readFileSync('public/interface/backtest/js/' + f, 'utf8');
@@ -56,6 +56,11 @@ describe('bt-i18n', () => {
     for (const id of ['chart', 'balance', 'order']) used.add('backtest.dock.panel_' + id);
     await import('../public/interface/backtest/js/bt-plan.js');
     for (const f of globalThis.WwBtPlan.FEATURES) used.add('backtest.plan.feat_' + f.id);
+    await import('../public/interface/backtest/js/bt-range.js');
+    for (const p of globalThis.WwBtRange.PRESETS) used.add('backtest.range.preset_' + p.id);
+    for (const f of ['start', 'end']) used.add('backtest.range.' + f);
+    await import('../public/interface/backtest/js/bt-fsedit.js');
+    for (const it of globalThis.WwBtFsEdit.ITEMS) used.add('backtest.fsedit.item_' + it.id);
     for (const k of used) for (const l of LANGS) assert.ok(k in loc[l], `${k} missing in ${l}`);
   });
   it('lock icons only on values that cannot be changed (owner: never for Premium gating; read-only values asked for one, 2026-10-25)', () => {

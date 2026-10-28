@@ -37,6 +37,8 @@
   var booted = false;                           // init drew the page once (plan changes are applied from then on)
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
+  var RANGE = null;                             // date and range panel of the toolbar (WwBtRange.create)
+  var FSEDIT = null;                            // arranging the boxes of the full-screen chart (WwBtFsEdit.create)
   var FEATURES = ['backtestThemes', 'backtestStats', 'backtestMultiChart', 'backtestUnlimitedTrades'];   // drawings are free for everyone (2026-10-26)
   var bootTimer = 0, tries = 0, themeObserver = null, resizeTimer = 0, chipTimer = 0, cleaned = false;
   var failedJobs = [], editing = null, modalOpener = null;
@@ -127,7 +129,7 @@
     if (!PAGE.alive) return;
     var ok = window.LightweightCharts && window.sb && typeof window.requireAuth === 'function' && window.journal &&
       window.WwBtSymbols && window.WwBtCandles && window.WwBtEngine && window.WwBtSynthetic && window.WwBtData && window.WwBtCTrader &&
-      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtDraw && window.WwBtStats && window.WwBtPlan &&
+      window.WwBtStore && window.WwBtGate && window.WwTime && window.WwChart && window.WwBtLayout && window.WwBtDesk && window.WwBtLook && window.WwBtDraw && window.WwBtStats && window.WwBtPlan && window.WwBtRange && window.WwBtFsEdit &&
       (BACKEND !== 'supabase' || (window.WwBtSync && window.WwTrades));
     if (!ok) {
       if (++tries >= BOOT_MAX_TRIES) return setPageState('fatal');
@@ -172,10 +174,15 @@
     });
     STATS = window.WwBtStats.createView();
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
+    FSEDIT = window.WwBtFsEdit.create({ root: $('bt-root'), host: document.body, t: _t, storage: safeStorage(),
+      isOn: function () { return !!LAY && LAY.isFullscreen(); },
+      onChange: function (on) { $('bt-fs-edit').setAttribute('aria-pressed', on ? 'true' : 'false'); },
+      onVisibility: function () { if (DESK) DESK.apply(); else FSEDIT.apply(); if (R) { renderTables(); renderOrders(true); renderStats(); } } });
     DESK = window.WwBtDesk.mount({ page: PAGE, desk: $('bt-desk'), storage: safeStorage(), userId: user.id, t: _t, mode: function () { return LAY.mode(); },
       wide: wideScreen, fullscreen: function () { return LAY.isFullscreen(); }, pro: function () { return can('backtestMultiChart'); }, present: chartPresent,
       charts: function () { return shownLayout(); }, setCharts: setChartsFromDesk, upgrade: function () { openUpgrade('backtest_multichart'); }, toast: toast,
-      onChange: onDeskChange, placed: placeDrawBar });
+      onChange: onDeskChange, icons: icons, placed: function (kind) { placeDrawBar(kind); if (FSEDIT) FSEDIT.apply(); },
+      fsShown: function (id) { return !!FSEDIT && FSEDIT.shownWin(id); } });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
@@ -953,7 +960,7 @@
         accum: 0, buffering: false, busy: false, loadingNext: null, nextState: null, dirtyFrom: -1, closedQueue: [], gap: null,
         chart: null, series: null, askLine: null, lines: {}, dirty: false, lastSavedReplaySec: acc.replaySec, lastSaveAt: 0, lastLiveAt: 0,
         src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0,
-        fillQueue: [], inserting: {}, dropped: {} };
+        fillQueue: [], inserting: {}, dropped: {}, endSec: loadRangeEnd(acc.id) };
       setPageState('replay');
       $('bt-view-replay').setAttribute('data-replay', 'loading');
       setText('bt-acc-name', acc.name); setText('bt-acc-symbol', sym.name); setSourceLabel(acc);
@@ -1058,6 +1065,7 @@
     centerAll();
     var gi = $('bt-goto-input');
     gi.min = toLocalInput(cov.firstT); gi.max = toLocalInput(cov.lastT); gi.value = toLocalInput(R.win.t[R.k] + 60);
+    if (RANGE) RANGE.refresh();
     loadHistory(tok); maybePrefetch();
   }
   function dataFailed(e) {
@@ -1135,6 +1143,11 @@
   }
   function play() {
     if (!R || R.playing || R.busy || anyModalOpen()) return;
+    // the end of the range is behind the replay time (stepped or went past it): it no longer applies
+    if (R.endSec && R.win.t[R.k] + 60 >= R.endSec) {
+      setRangeEnd(null);
+      toast(_t('backtest.range.end_cleared', 'Bitiş zamanı geçildiği için kaldırıldı.'), 'info');
+    }
     if (R.k + 1 >= R.win.n) {
       loadNext(R.token).then(function (ok) { if (!PAGE.alive || !R) return; if (ok) play(); else showDataBanner(R.nextState); });
       return;
@@ -1152,13 +1165,19 @@
     if (R) R.rafId = 0;
     if (!PAGE.alive || !R || !R.playing) return;
     var dt = R.lastTs === null ? 16 : ts - R.lastTs; R.lastTs = ts;
-    var plan = C.framePlan(R.accum, dt, R.speed, R.tfMin, MAX_BARS_PER_FRAME);
+    var plan = C.framePlan(R.accum, dt, R.speed, R.tfMin, MAX_BARS_PER_FRAME), atEnd = false;
     R.accum = plan.acc;
     for (var i = 0; i < plan.n; i++) {
+      if (R.endSec && R.win.t[R.k] + 60 >= R.endSec) { atEnd = true; break; }
       if (R.k + 1 >= R.win.n) { needMore(); break; }
       advance1();
     }
     afterFrame();
+    if (atEnd) {
+      pause();
+      toast(_t('backtest.range.end_reached', 'Aralığın sonuna gelindi: {date}.', { date: RANGE ? RANGE.fmt(toLocalInput(R.endSec), true) : toLocalInput(R.endSec) }), 'info');
+      return;
+    }
     if (R && R.playing && !R.buffering) R.rafId = requestAnimationFrame(tick);
   }
   function needMore() {
@@ -1457,6 +1476,41 @@
     } catch (e) { /* storage full or blocked: the orders stay for this visit */ }
   }
   function dropOrders(accId) { try { localStorage.removeItem(ordersKey(accId)); } catch (e) { /* ignore */ } }
+
+  // ---------------------------------------------------------------- date range (end of the replay)
+  // The end is a viewer convenience: kept in this browser per user and account; the replay pauses when it reaches it.
+  var RANGE_KEY = 'ww_bt_range_end_v1';
+  function rangeKey(accId) { return RANGE_KEY + ':' + (L.user ? L.user.id : '') + ':' + accId; }
+  function loadRangeEnd(accId) {
+    try { var v = parseInt(localStorage.getItem(rangeKey(accId)), 10); return v > 0 ? v : null; } catch (e) { return null; }
+  }
+  function setRangeEnd(sec) {
+    if (!R) return;
+    R.endSec = sec || null;
+    try {
+      if (R.endSec) localStorage.setItem(rangeKey(R.acc.id), String(R.endSec));
+      else localStorage.removeItem(rangeKey(R.acc.id));
+    } catch (e) { /* storage blocked: the end stays for this visit */ }
+    if (RANGE) RANGE.refresh();
+  }
+  function setupRange() {
+    RANGE = window.WwBtRange.create({
+      trigger: $('bt-range-btn'),
+      t: _t,
+      locale: localeTag,
+      toLocal: toLocalInput,
+      fromLocal: fromLocalInput,
+      bounds: function () { return R && R.cov ? { min: R.cov.firstT, max: R.cov.lastT } : { min: 0, max: 0 }; },
+      start: function () { return fromLocalInput($('bt-goto-input').value); },
+      now: function () { return R && R.win ? R.win.t[R.k] + 60 : fromLocalInput($('bt-goto-input').value); },
+      end: function () { return R ? R.endSec : null; },
+      apply: function (startSec, endSec, startChanged) {
+        if (!R) return;
+        setRangeEnd(endSec);
+        if (startChanged) goTo(startSec);                     // only the end changed: the replay stays where it is
+      }
+    });
+  }
   function findOrder(id) { var list = (R && R.eng.orders) || []; for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
   function ordType() { return L.ordType || 'market'; }
   // "AL LİMİT", "SAT STOP"
@@ -1586,9 +1640,9 @@
         tr.appendChild(td(o.sl == null ? '—' : E.ptsToStr(o.sl, s.digits), 'bt-num')); tr.appendChild(td(o.tp == null ? '—' : E.ptsToStr(o.tp, s.digits), 'bt-num'));
         tr.appendChild(td('—', 'bt-num bt-live-dist')); tr.appendChild(td(fmtShort(o.placedT), 'bt-num'));
         var act = el('td', 'bt-actions');
-        var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit-order'); b1.setAttribute('data-id', o.id);
-        var b2 = el('button', 'btn btn-ghost', _t('backtest.orders.cancel_short', 'İptal')); b2.type = 'button'; b2.setAttribute('data-act', 'cancel-order'); b2.setAttribute('data-id', o.id);
-        act.appendChild(b1); act.appendChild(b2); tr.appendChild(act); body.appendChild(tr);
+        act.appendChild(rowBtn('edit-order', o.id, _t('backtest.pos.edit', 'Düzenle'), 'edit'));
+        act.appendChild(rowBtn('cancel-order', o.id, _t('backtest.orders.cancel_short', 'İptal'), 'close'));
+        tr.appendChild(act); body.appendChild(tr);
         var li = el('li'); li.setAttribute('data-id', o.id);
         li.appendChild(el('span', 'bt-num ' + (o.dir > 0 ? 'bt-up' : 'bt-down'), ordLabel(o.dir, o.type) + ' ' + E.stepsToStr(o.steps, s.lotDigits)));
         li.appendChild(el('span', 'bt-mini-meta bt-num', '@ ' + E.ptsToStr(o.price, s.digits)));
@@ -2272,6 +2326,18 @@
   }
 
   function td(text, cls) { return el('td', cls || '', text); }
+  // a row button of the live tables: icon + label; in a narrow window only the icon shows (the label stays as title / aria-label)
+  var ROW_ICONS = {
+    edit: '<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/>',
+    close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+  };
+  function rowBtn(act, id, label, icon) {
+    var b = el('button', 'btn btn-ghost bt-row-btn'); b.type = 'button';
+    b.setAttribute('data-act', act); b.setAttribute('data-id', id); b.title = label; b.setAttribute('aria-label', label);
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ROW_ICONS[icon] + '</svg>';
+    b.appendChild(el('span', 'bt-row-btn-t', label));
+    return b;
+  }
   // Open positions: the rows are built when the set of positions (or a stop, target, saved state) changes; while the replay runs only
   // the live cells (price, P&L) get new text, so the buttons stay where they are and can be clicked during play.
   function posKey(p) { return p.id + ':' + p.sl + ':' + p.tp + ':' + (p.unsaved ? 1 : 0); }
@@ -2287,9 +2353,8 @@
         tr.appendChild(td(p.sl == null ? '—' : E.ptsToStr(p.sl, s.digits), 'bt-num')); tr.appendChild(td(p.tp == null ? '—' : E.ptsToStr(p.tp, s.digits), 'bt-num'));
         tr.appendChild(td('—', 'bt-num bt-live-mark')); tr.appendChild(td('—', 'bt-num bt-live-pnl'));
         var act = el('td', 'bt-actions');
-        var b1 = el('button', 'btn btn-ghost', _t('backtest.pos.edit', 'Düzenle')); b1.type = 'button'; b1.setAttribute('data-act', 'edit'); b1.setAttribute('data-id', p.id);
-        var b2 = el('button', 'btn btn-ghost', _t('backtest.pos.close', 'Kapat')); b2.type = 'button'; b2.setAttribute('data-act', 'close'); b2.setAttribute('data-id', p.id);
-        act.appendChild(b1); act.appendChild(b2);
+        act.appendChild(rowBtn('edit', p.id, _t('backtest.pos.edit', 'Düzenle'), 'edit'));
+        act.appendChild(rowBtn('close', p.id, _t('backtest.pos.close', 'Kapat'), 'close'));
         if (p.unsaved) act.appendChild(el('span', 'bt-chip bt-chip-warn', _t('backtest.pos.unsaved', 'Kaydedilmedi')));
         tr.appendChild(act); body.appendChild(tr);
       });
@@ -2496,10 +2561,10 @@
     $('bt-play-btn').addEventListener('click', function () { if (R && R.playing) pause(); else play(); });
     $('bt-step-btn').addEventListener('click', stepCandle);
     $('bt-step1m-btn').addEventListener('click', stepMinute);
-    $('bt-goto-btn').addEventListener('click', function () { goTo(fromLocalInput($('bt-goto-input').value)); });
+    setupRange();
+    $('bt-goto-btn').addEventListener('click', function () { goTo(fromLocalInput($('bt-goto-input').value)); });   // hidden; the smoke drivers use it
     $('bt-center-btn').addEventListener('click', function () { centerAll(); });
     $('bt-now-btn').addEventListener('click', function () { centerAll(); });
-    $('bt-goto-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); goTo(fromLocalInput(this.value)); } });
     // orders
     $('bt-buy-btn').addEventListener('click', function () { submitOrder(1); });
     $('bt-sell-btn').addEventListener('click', function () { submitOrder(-1); });
@@ -2515,6 +2580,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-bt-fs]'), function (b) {
       b.addEventListener('click', function () { LAY.setFullscreen(!LAY.isFullscreen()); });
     });
+    $('bt-fs-edit').addEventListener('click', function () { FSEDIT.setEditing(!FSEDIT.isEditing()); });
     $('bt-keys-btn').addEventListener('click', function (e) { openKeys(e.currentTarget); });
     $('bt-keys-link').addEventListener('click', function (e) { openKeys(e.currentTarget); });
     $('bt-keys-close').addEventListener('click', function () { closeModal('bt-keys-modal'); });
@@ -2586,6 +2652,8 @@
       if (e.key === 'Escape') { if (escapeChain()) e.preventDefault(); return; }
       var tg = e.target && e.target.tagName;
       if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+      if (RANGE && RANGE.isOpen()) return;                     // the date panel is open: Space / arrows belong to it
+      if (FSEDIT && FSEDIT.isEditing()) return;                // arranging the full screen: arrows move the boxes
       if ((e.ctrlKey || e.metaKey) && DRAW && DRAW.undoKey(e)) { e.preventDefault(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === ' ') { e.preventDefault(); if (R.playing) pause(); else play(); }
@@ -2600,6 +2668,7 @@
   }
   // Esc: the innermost thing first (drawing in progress / selection, then full screen). true when something was closed.
   function escapeChain() {
+    if (FSEDIT && FSEDIT.isEditing()) { FSEDIT.setEditing(false); return true; }
     if (statsFs) { openStatsFs(false); return true; }
     if (!$('bt-panels-pop').hidden) { togglePop('bt-panels', false); return true; }
     if (!$('bt-widgets-pop').hidden) { togglePop('bt-widgets', false); return true; }
@@ -2631,6 +2700,8 @@
     if ((what === 'mode' || what === 'fullscreen') && DESK) { DESK.apply(); placeCells(); placeStatsHost(); }
     if (what === 'mode' && R) { renderTables(); renderLive(true); renderStats(); }
     if (what === 'mode' && R) applyChartLayout();
+    if (what === 'fullscreen' && FSEDIT && !LAY.isFullscreen()) FSEDIT.setEditing(false);
+    if ((what === 'mode' || what === 'fullscreen') && FSEDIT) later(function () { if (FSEDIT) FSEDIT.apply(); }, 100);   // the stored places of the full-screen boxes
     if (what === 'fullscreen') { icons(); if (R && R.chart) later(function () { if (R && R.chart && !(R.chart.autoSizeActive && R.chart.autoSizeActive())) { var w = $('bt-chart'); R.chart.applyOptions({ width: w.clientWidth, height: w.clientHeight }); } if (R) centerAll(); }, 80); }
   }
   // ---------------------------------------------------------------- windows (bt-desk.js), statistics placement, widgets
@@ -2813,6 +2884,7 @@
           renderLive(true); renderTables(); renderStats(); setPlayUi(R.playing);
           views().forEach(function (v) { if (v.chart) v.chart.applyOptions({ localization: { locale: localeTag(), timeFormatter: crosshairTimeFor(v) }, timeScale: { tickMarkFormatter: tickLabelFor(v) } }); });
           rebuildMarkers(); renderLayoutPicker();
+        if (FSEDIT) FSEDIT.relabel();
         } else if (L.store) renderList();
         if (L.store) renderPlan();
       });
@@ -2835,6 +2907,8 @@
     if (DRAW) { try { DRAW.destroy(); } catch (e) { /* ignore */ } }
     clearTimeout(statsTimer);
     if (STATS) { try { STATS.destroy(); } catch (e) { /* ignore */ } }
+    if (RANGE) { try { RANGE.destroy(); } catch (e) { /* ignore */ } RANGE = null; }
+    if (FSEDIT) { try { FSEDIT.destroy(); } catch (e) { /* ignore */ } FSEDIT = null; }
     R = null; L.accounts = []; L.summaries = {}; L.cov = {}; L.srcs = {}; L.ct = null; L.brokerSyms = {}; L.ctForm = null; L.ctFormAccts = {}; ctSeq++;
   }
   PAGE.onLeave(cleanup);

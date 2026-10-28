@@ -330,7 +330,8 @@
   // ---------------------------------------------------------------- DOM controller
   // opts: { page (wwPage), desk (#bt-desk), storage, userId, t(key, fb, params), mode() -> 'simple'|'advanced', wide() -> bool,
   //         fullscreen() -> bool, pro() -> bool, present(id) -> bool (chart2..4 only while the chart layout has them), charts() -> layout id,
-  //         setCharts(id) -> bool (false: not allowed), upgrade(), toast(msg, type), onChange(what), icons(), placed(kind) after each apply }
+  //         setCharts(id) -> bool (false: not allowed), upgrade(), toast(msg, type), onChange(what), icons(), placed(kind) after each apply,
+  //         fsShown(id) -> bool (full screen also shows this window) }
   //   windows: .bt-win[data-win] inside the desk with .bt-win-head (title bar), [data-win-act] buttons, .bt-win-rz[data-rz] handles
   function mount(opts) {
     var PAGE = opts.page, desk = opts.desk, t = opts.t;
@@ -359,7 +360,7 @@
         var w = lay.wins[id], on;
         if (FREE_ONLY.indexOf(id) >= 0 && kind !== 'free') on = false;
         else if (kind === 'simple' || (kind === 'stack' && opts.mode() !== 'advanced')) on = SIMPLE.indexOf(id) >= 0;
-        else if (kind === 'fs') on = CHARTS.indexOf(id) >= 0 ? present(id) : SIMPLE.indexOf(id) >= 0;
+        else if (kind === 'fs') on = CHARTS.indexOf(id) >= 0 ? present(id) : SIMPLE.indexOf(id) >= 0 || (!!opts.fsShown && opts.fsShown(id));   // + the windows added to full screen (bt-fsedit.js)
         else on = shown.indexOf(id) >= 0 && (kind === 'stack' || w.st !== 'min');
         el.hidden = !on;
         el.setAttribute('data-st', kind === 'free' ? w.st : 'normal');
@@ -515,17 +516,26 @@
         Object.keys(attrs || {}).forEach(function (k) { b.setAttribute(k, attrs[k]); });
         return b;
       }
+      function ico(name) { var i = document.createElement('i'); i.setAttribute('data-lucide', name); i.setAttribute('aria-hidden', 'true'); return i; }
       h(t('backtest.win.windows', 'Pencereler'));
+      // a row per window: icon, name, count (open positions, orders, history) and a switch
       CLOSABLE.forEach(function (id) {
-        var l = document.createElement('label'); l.className = 'bt-pop-check';
-        var i = document.createElement('input'); i.type = 'checkbox'; i.checked = !lay.wins[id].closed; i.setAttribute('data-win-toggle', id);
-        l.appendChild(i); var s = document.createElement('span'); s.textContent = title(id); l.appendChild(s); box.appendChild(l);
+        var l = document.createElement('label'); l.className = 'bt-pop-check bt-desk-win';
+        var tEl = winEl[id] && winEl[id].querySelector('.bt-win-title'), nm = tEl && tEl.firstElementChild ? tEl.firstElementChild.textContent.trim() : title(id);
+        var cnt = tEl && tEl.querySelector('.bt-count');
+        l.appendChild(ico(TASK_ICON[id] || 'square'));
+        var s = document.createElement('span'); s.className = 'bt-desk-win-name'; s.textContent = nm; l.appendChild(s);
+        if (cnt) { var c = document.createElement('span'); c.className = 'bt-count bt-num'; c.textContent = cnt.textContent; l.appendChild(c); }
+        var i = document.createElement('input'); i.type = 'checkbox'; i.className = 'bt-dw-switch'; i.setAttribute('role', 'switch');
+        i.checked = !lay.wins[id].closed; i.setAttribute('data-win-toggle', id); i.setAttribute('aria-label', nm);
+        l.appendChild(i); box.appendChild(l);
       });
       box.appendChild(sep());
       h(t('backtest.win.layouts', 'Düzenler'));
       var row = document.createElement('div'); row.className = 'bt-desk-presets';
       PRESET_IDS.forEach(function (id) {
-        var b = btn('bt-pop-btn bt-desk-preset', 'preset', t('backtest.win.preset_' + id, id), { 'data-preset': id, 'aria-pressed': lay.preset === id ? 'true' : 'false' });
+        var b = btn('bt-desk-preset', 'preset', '', { 'data-preset': id, 'aria-pressed': lay.preset === id ? 'true' : 'false' });
+        var nm2 = document.createElement('span'); nm2.textContent = t('backtest.win.preset_' + id, id); b.appendChild(nm2);
         if (PRESETS[id].pro && !opts.pro()) { var tag = document.createElement('span'); tag.className = 'bt-pro'; tag.textContent = 'PRO'; b.appendChild(tag); }
         row.appendChild(b);
       });
@@ -551,11 +561,13 @@
         : t('backtest.win.saved_free', 'Ücretsiz planda 1 kayıtlı düzen; daha fazlası Premium\'da. Düzenler bu tarayıcıda saklanır.');
       box.appendChild(hint);
       box.appendChild(sep());
-      var rs = btn('bt-pop-btn', 'reset', t('backtest.win.reset', 'Düzeni sıfırla')); box.appendChild(rs);
+      var rs = btn('bt-pop-btn bt-desk-reset', 'reset', ''); rs.appendChild(ico('rotate-ccw'));
+      var rt = document.createElement('span'); rt.textContent = t('backtest.win.reset', 'Düzeni sıfırla'); rs.appendChild(rt); box.appendChild(rs);
       var p = document.createElement('p'); p.className = 'bt-hint';
       p.textContent = opts.wide() ? t('backtest.win.hint', 'Başlıktan sürükle; kenara bırakınca yarım, üste bırakınca tam ekran, köşeye bırakınca çeyrek olur. Kenarlardan boyutlandır.')
         : t('backtest.win.narrow', 'Dar ekranda pencereler alt alta dizilir; taşıma geniş ekranda.');
       box.appendChild(p);
+      if (opts.icons) opts.icons();
     }
     function sep() { var s = document.createElement('div'); s.className = 'bt-pop-sep'; return s; }
     function onMenu(e, box) {

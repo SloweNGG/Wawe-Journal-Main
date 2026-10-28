@@ -100,7 +100,7 @@ function signedColor(v) {
 }
 
 // ⭐ KURAL MODELİ — dört kuralın değer, rozet, çubuk ve alt bilgileri (tek kart ve ayrı kartlar ortak kullanır)
-// tone: 'ok' | 'warn' | 'bad' | 'info' — değer yalnızca uyarı/ihlalde renklenir (sade görünüm)
+// tone: 'ok' | 'warn' | 'bad' | 'info' — değer yalnızca ihlalde renklenir; uyarı sadece çubukta (sade görünüm)
 function ruleModels(s) {
   var d = s.daily, m = s.maxLoss, g = s.target, days = s.days;
   var dailyTone = d.remaining <= 0 ? 'bad' : (d.consumedPct > 75 ? 'warn' : 'ok');
@@ -164,7 +164,7 @@ function ruleModels(s) {
 }
 
 function toneColor(tone) {
-  return tone === 'bad' ? RED : (tone === 'warn' ? AMBER : 'var(--text)');
+  return tone === 'bad' ? RED : 'var(--text)';
 }
 
 function barHtml(r) {
@@ -231,9 +231,8 @@ function identityHtml(s) {
   var parts = [];
   if (s.phaseName) parts.push(esc(s.phaseName));
   if (!s.invalid && s.startBalance) parts.push(money(s.startBalance) + ' ' + esc(_t('prop.account_short', 'Hesap')));
-  return '<img class="ps-logo" src="' + esc(s.firm.logo) + '" alt="" width="18" height="18" />' +
-    '<span class="ps-firm" style="color:' + esc(s.firm.color) + '">' + esc(s.firm.name) + '</span>' +
-    parts.map(function(p) { return '<span class="ps-sep">·</span><span class="ps-id-part">' + p + '</span>'; }).join('');
+  return '<img class="ps-logo" src="' + esc(s.firm.logo) + '" alt="' + esc(s.firm.name) + '" title="' + esc(s.firm.name) + '" width="20" height="20" />' +
+    parts.map(function(p, i) { return (i ? '<span class="ps-sep">·</span>' : '') + '<span class="ps-id-part">' + p + '</span>'; }).join('');
 }
 
 // ⭐ BİRLEŞİK KART: kimlik + bilgi satırı + durum/aksiyonlar, altında dört kural sütunu

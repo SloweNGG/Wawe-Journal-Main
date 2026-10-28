@@ -80,7 +80,7 @@
     var head = el('section', 'bt-plan-card bt-plan-head');
     var who = el('div', 'bt-plan-who');
     who.appendChild(el('span', 'bt-plan-k', t('backtest.plan.current', 'Mevcut plan')));
-    var name = el('strong', 'bt-plan-name', p.premium ? t('backtest.plan.premium', 'Premium') : t('backtest.plan.free', 'Ücretsiz'));
+    var name = el('strong', 'bt-plan-name', p.premium ? t('backtest.plan.premium', 'Pro') : t('backtest.plan.free', 'Ücretsiz'));
     name.setAttribute('data-plan', p.premium ? 'premium' : 'free');
     who.appendChild(name);
     if (p.premium) who.appendChild(el('span', 'bt-plan-sub bt-num', p.expiresMs ? t('backtest.plan.ends', 'Bitiş: {date}', { date: opts.fmtDate(p.expiresMs) }) : t('backtest.plan.no_end', 'Süresiz')));

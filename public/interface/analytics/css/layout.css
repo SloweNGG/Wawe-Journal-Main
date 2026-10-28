@@ -50,7 +50,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: grab;
   position: relative;
-  height: var(--row-h);
+  /* Satırdaki en uzun kutuya (ör. prop kartı) kadar uzar; tek başına --row-h */
   min-height: var(--row-h);
   display: flex;
   flex-direction: column;
@@ -64,7 +64,6 @@
 .grid-item.size-full { grid-column: span 4; }
 .grid-item.h-tall {
   grid-row: span 2;
-  height: calc(var(--row-h) * 2 + var(--grid-gap));
   min-height: calc(var(--row-h) * 2 + var(--grid-gap));
 }
 .grid-item:hover {
@@ -206,6 +205,7 @@
    Eski min-height: clamp(...) kuralları KALDIRILDI */
 .grid-item .chart-wrap {
   min-height: 0;
+  contain: size;           /* grafik kutuyu büyütemez; kutu satıra göre uzar (feedback loop kırıcı) */
 }
 
 .grid-item .chart-wrap--doughnut {
