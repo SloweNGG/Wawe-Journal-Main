@@ -31,7 +31,14 @@
   async function press(k) { await pp({ op: 'key', key: k }); await sleep(60); }
   async function chord(mods, k) { for (var i = 0; i < mods.length; i++) await keyDown(mods[i]); await press(k); for (i = mods.length - 1; i >= 0; i--) await keyUp(mods[i]); await sleep(80); }
   // pick a tool (the toolbar button toggles, so it is only clicked when another tool is active)
-  async function tool(id) { if (T().draw().tool() !== id) document.querySelector('#bt-draw-bar [data-tool="' + id + '"]').click(); await sleep(60); }
+  // a tool's button, or the menu of the group it is in (the toolbar groups lines and positions on one button each)
+  function pickTool(id) {
+    var b = document.querySelector('#bt-draw-bar [data-tool="' + id + '"]');
+    if (b) return b.click();
+    document.querySelector('#bt-draw-bar [data-tools~="' + id + '"] [data-more]').click();
+    document.querySelector('.bt-draw-fly [data-fly-tool="' + id + '"]').click();
+  }
+  async function tool(id) { if (T().draw().tool() !== id) pickTool(id); await sleep(60); }
   async function type(s) { await pp({ op: 'type', text: s }); await sleep(60); }
   function cursorAt(a) { var e = document.elementFromPoint(a.x, a.y); return e ? getComputedStyle(e).cursor : ''; }
   function J(x) { return JSON.stringify(x); }

@@ -53,7 +53,7 @@
 #bt-root[data-state="fatal"] #bt-view-list > :not(#bt-fatal) { display: none !important; }
 
 /* replay */
-.bt-replay-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.bt-replay-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .bt-replay-title { display: flex; align-items: center; gap: 10px; flex: 1 1 180px; min-width: 0; overflow: hidden; }   /* the basis: on a narrow screen the tools wrap instead of covering the name */
 .bt-replay-title h2 { margin: 0; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bt-toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 8px 14px; margin-bottom: 10px;
@@ -87,6 +87,29 @@
 .bt-chart-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px;
   background: rgba(0, 0, 0, 0.55); border-radius: 12px; color: #fff; z-index: 5; }
 .bt-chart-overlay.bt-soft { inset: auto 12px 12px auto; padding: 6px 12px; background: rgba(0, 0, 0, 0.7); font-size: 12.5px; }
+/* yükleniyor: yükselip alçalan mumlar; büyük katmanda yazı yalnız ekran okuyucuya, köşedeki ilerlemede (n/m, sonraki ay) görünür */
+.bt-chart-overlay { gap: 10px; }
+.bt-chart-overlay:not(.bt-soft) #bt-overlay-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bt-loader { display: inline-flex; align-items: center; gap: 7px; height: 48px; }
+/* ortada bir kartın içinde, grafikteki mumlarla karışmasın */
+.bt-chart-overlay:not(.bt-soft) .bt-loader { height: auto; padding: 22px 26px; border-radius: 16px; background: rgba(12, 12, 18, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+body.light-theme .bt-chart-overlay:not(.bt-soft) .bt-loader { background: rgba(255, 255, 255, 0.96); border-color: rgba(15, 23, 42, 0.1); box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15); }
+.bt-chart-overlay:not(.bt-soft) .bt-loader i { margin: 13px 0; }
+.bt-loader i { position: relative; width: 9px; height: 22px; border-radius: 2px; background: var(--green, #22c55e); animation: bt-candle 1.2s ease-in-out infinite; }
+.bt-loader i::before { content: ''; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; border-radius: 1px; background: inherit; }
+.bt-loader i:nth-child(2n) { background: var(--red, #ef4444); }
+.bt-loader i:nth-child(2) { animation-delay: 0.15s; }
+.bt-loader i:nth-child(3) { animation-delay: 0.3s; }
+.bt-loader i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes bt-candle { 0%, 100% { transform: translateY(7px) scaleY(0.45); } 50% { transform: translateY(-7px) scaleY(1); } }
+.bt-soft .bt-loader { gap: 3px; height: 16px; }
+.bt-soft .bt-loader i { width: 4px; height: 9px; animation-name: bt-candle-sm; }
+.bt-soft .bt-loader i::before { top: -2px; bottom: -2px; width: 1px; margin-left: -0.5px; }
+@keyframes bt-candle-sm { 0%, 100% { transform: translateY(2px) scaleY(0.5); } 50% { transform: translateY(-2px) scaleY(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .bt-loader i, .bt-soft .bt-loader i { animation: bt-pulse 1.6s ease-in-out infinite; }
+}
 .bt-chart-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 6px; }
 .bt-attribution { margin: 0; font-size: 11px; color: var(--muted); }
 .bt-attribution a { color: var(--muted); text-decoration: underline; }
@@ -150,7 +173,7 @@ body.light-theme .bt-chart-overlay.bt-soft { background: rgba(255, 255, 255, 0.9
 
 /* geniş ekran: tam ekran replay (navbar 64px); pencereler (bt-desk.js) kalan alanı kullanır */
 @media (min-width: 1025px) {
-  #bt-root[data-state="replay"] { max-width: none; height: calc(100vh - 64px); height: calc(100dvh - 64px); min-height: 620px; padding: 10px 16px 12px;
+  #bt-root[data-state="replay"] { max-width: none; height: calc(100vh - 64px); height: calc(100dvh - 64px); min-height: 620px; padding: 0 16px 12px;
     display: flex; flex-direction: column; }
   #bt-root[data-state="replay"] #bt-view-replay { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .bt-replay-head { flex: none; }
@@ -326,6 +349,32 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
 /* cursor of the drawing layer wins over the chart's own (move, resize, grab) */
 .bt-draw-cur, .bt-draw-cur * { cursor: var(--bt-draw-cursor, default) !important; }
 .bt-draw-btn:disabled { opacity: 0.35; cursor: default; }
+/* gruplu düğme: köşedeki üçgen gruptaki diğer araçları açar; açılan menü, sürükle-bırak */
+.bt-draw-more { position: absolute; right: 0; bottom: 0; width: 13px; height: 13px; cursor: pointer; }
+.bt-draw-more::after { content: ''; position: absolute; right: 2px; bottom: 2px; border-left: 5px solid transparent; border-bottom: 5px solid currentColor; opacity: 0.45; }
+.bt-draw-btn:hover .bt-draw-more::after, .bt-draw-btn[aria-expanded="true"] .bt-draw-more::after { opacity: 1; }
+.bt-draw-fly { position: fixed; z-index: 1006; min-width: 196px; max-width: 250px; box-sizing: border-box; padding: 5px; font-size: 13px; color: var(--text);
+  background: var(--modal-bg, var(--surface)); border: 1px solid var(--modal-line, var(--border)); border-radius: 12px; box-shadow: var(--modal-shadow, 0 12px 32px rgba(0, 0, 0, 0.3)); }
+:root:not(.light-theme) body:not(.light-theme) .bt-draw-fly { background: #000; border-color: rgba(255, 255, 255, 0.14); }
+.bt-draw-fly-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bt-draw-fly-item svg { flex: none; width: 17px; height: 17px; }
+.bt-draw-fly-item:hover, .bt-draw-fly-item:focus-visible { background: var(--surface2); outline: none; }
+:root:not(.light-theme) body:not(.light-theme) .bt-draw-fly-item:hover, :root:not(.light-theme) body:not(.light-theme) .bt-draw-fly-item:focus-visible { background: rgba(255, 255, 255, 0.07); }
+.bt-draw-fly-item[aria-checked="true"] { color: var(--accent3); }
+.bt-draw-fly-item kbd { margin-left: auto; font: inherit; font-size: 11.5px; color: var(--muted); }
+.bt-draw-fly-item .bt-pro { margin-left: 4px; }
+.bt-draw-fly-item:disabled { opacity: 0.4; cursor: default; background: none; }
+.bt-draw-fly-reset { height: 30px; font-size: 12.5px; color: var(--muted); }
+.bt-draw-fly-sep { height: 1px; margin: 5px 4px; background: var(--border); }
+.bt-draw-fly-hint { margin: 4px 10px 5px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+.bt-draw-ghost { position: fixed; z-index: 2000; width: 34px; height: 32px; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%);
+  border: 1px solid var(--accent); border-radius: 8px; background: var(--surface2); color: var(--text); opacity: 0.92; pointer-events: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3); }
+.bt-draw-ghost svg { width: 17px; height: 17px; }
+.bt-draw-drop-line { position: fixed; z-index: 1999; border-radius: 2px; background: var(--accent); pointer-events: none; }
+.bt-draw-drop-line[hidden] { display: none; }
+.bt-draw-btn.bt-draw-drop-into { outline: 2px dashed var(--accent); outline-offset: -2px; background: var(--accent-bg, rgba(139, 92, 246, 0.12)); }
+body.bt-draw-dragging, body.bt-draw-dragging * { cursor: grabbing !important; user-select: none; }
 .bt-draw-btn:disabled:hover { background: none; color: inherit; }
 /* text drawing edited in place */
 .bt-draw-edit { position: absolute; z-index: 5; min-width: 140px; max-width: 60%; padding: 3px 4px; margin: 0; box-sizing: border-box;
@@ -560,6 +609,7 @@ html.bt-stfs-lock, html.bt-stfs-lock body { overflow: hidden !important; }
 .bt-win[data-win="order"] .bt-shortcuts { margin: 8px 0 0; }
 .bt-win-chart .bt-win-body > .bt-cell { flex: 1 1 auto; min-height: 0; }
 .bt-win-chart .bt-win-body > .bt-cell .bt-cell-grip { display: none; }
+.bt-win-grip { display: none; }
 
 @media (min-width: 1025px) {
   .bt-desk { flex: 1 1 auto; min-height: 0; }
@@ -593,6 +643,15 @@ html.bt-stfs-lock, html.bt-stfs-lock body { overflow: hidden !important; }
   .bt-desk[data-desk="free"] .bt-win-chart .bt-chart-wrap { height: auto; }
   .bt-desk[data-desk="free"] .bt-win-chart .bt-win-body > .bt-cell { border: 0; }
   .bt-desk[data-desk="free"] .bt-win[data-win="stats"] .bt-win-body { padding-top: 8px; }
+  /* çizim araçları penceresi: dar başlık (tutamaç ve kapat); düğmeler pencerenin genişliğine göre sütunlara dağılır (bt-draw.js fitBar) */
+  .bt-desk[data-desk="free"] .bt-win-draw { border-radius: 12px; }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-win-head { height: 26px; gap: 2px; padding: 0 2px 0 6px; }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-win-grip { display: block; flex: none; width: 16px; height: 16px; color: var(--muted); }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-win-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-win-btns { margin-left: auto; }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-win-btn { width: 22px; height: 20px; }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-win-body { padding: 4px; }
+  .bt-desk[data-desk="free"] .bt-win-draw .bt-draw-bar { width: 100%; justify-content: center; }
   /* kenar ve köşe tutamaçları (pencerenin içinde, 6 px) */
   .bt-desk[data-desk="free"] .bt-win-rz { display: block; position: absolute; z-index: 6; touch-action: none; }
   .bt-win-rz[data-rz="n"] { top: 0; left: 12px; right: 12px; height: 6px; cursor: ns-resize; }
@@ -613,8 +672,10 @@ html.bt-stfs-lock, html.bt-stfs-lock body { overflow: hidden !important; }
   .bt-desk[data-desk="free"] .bt-taskbar { display: flex; align-items: center; gap: 6px; position: absolute; left: 4px; right: 4px; bottom: 2px; height: 32px; overflow-x: auto;
     scrollbar-width: none; }
   .bt-taskbar::-webkit-scrollbar { display: none; }
-  .bt-task { flex: none; height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); font: inherit; font-size: 12px;
-    font-weight: 600; cursor: pointer; white-space: nowrap; text-transform: none; }
+  .bt-task { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 34px; height: 28px; padding: 0 8px; border-radius: 8px;
+    border: 1px solid var(--border); background: none; color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; text-transform: none; }
+  .bt-task svg { width: 16px; height: 16px; }
+  .bt-task-n { line-height: 1; }
   .bt-task:hover { color: var(--text); border-color: var(--border2); }
   .bt-task[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
   .bt-task.bt-task-min { border-style: dashed; }

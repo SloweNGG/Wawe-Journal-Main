@@ -118,3 +118,19 @@ describe('renderStandard grafikleri', () => {
     assert.doesNotMatch(positive, /class="zero"/);
   });
 });
+
+describe('render kapsam notu', () => {
+  const propCtx = (extra) => ({
+    t: (k) => k, esc, fmtPlain: String, fmtDelta: String, fmtPct: String,
+    firmName: 'FTMO', phaseName: 'Phase 1', startBal: 5000, balNow: 5026, ...extra
+  });
+
+  it('scopeNote verilince kartın altına küçük not yazar', () => {
+    const html = load().render(propCtx({ scopeNote: 'Yalnızca normal işlemler sayılır' }));
+    assert.match(html, /<p class="pc2-scope-note">Yalnızca normal işlemler sayılır<\/p>/);
+  });
+
+  it('scopeNote yoksa not çizmez', () => {
+    assert.doesNotMatch(load().render(propCtx({})), /pc2-scope-note/);
+  });
+});

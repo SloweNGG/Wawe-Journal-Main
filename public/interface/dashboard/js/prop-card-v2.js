@@ -90,7 +90,9 @@
         '<span class="pc2-chip' + (dayMin > 0 && dayCount >= dayMin ? ' done' : '') + '"><em>' + esc(t('prop.day')) + '</em> ' + dayCount + (dayMin > 0 ? ' / ' + dayMin : '') + '</span>' +
         '<span class="pc2-chip"><em>' + esc(t('prop.win_rate')) + '</em> ' + esc(c.fmtPct(c.wrPct)) + '</span>' +
         '<span class="pc2-chip"><em>' + esc(c.tradesLabel) + '</em> ' + (Number(c.totalTrades) || 0) + '</span>' +
-      '</div>';
+      '</div>' +
+      /* prop rules count normal trades only; say so when the dashboard also shows backtest */
+      (c.scopeNote ? '<p class="pc2-scope-note">' + esc(c.scopeNote) + '</p>' : '');
 
     return '' +
       '<div class="pc2">' +

@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=22" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=26" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -20,7 +20,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1793500008" is:inline defer></script>
+  <script src="/i18n.js?v=1793500009" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <script src="/interface/backtest/js/bt-symbols.js?v=2" is:inline defer></script>
@@ -32,12 +32,12 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-store.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-layout.js?v=5" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-desk.js?v=2" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-desk.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=4" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-draw.js?v=4" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-draw.js?v=7" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-plan.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=31" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=33" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -121,8 +121,8 @@ import Layout from '../layouts/Layout.astro';
           <button type="button" id="bt-fs-btn" class="bt-icon-btn" data-bt-fs aria-pressed="false" data-i18n-title="backtest.fs.enter" title="Tam ekran (F)">
             <i data-lucide="maximize-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.fs.enter">Tam ekran (F)</span>
           </button>
-          <button type="button" id="bt-acc-settings-btn" class="btn btn-ghost">
-            <i data-lucide="settings-2" aria-hidden="true"></i><span data-i18n="backtest.card.settings">Ayarlar</span>
+          <button type="button" id="bt-acc-settings-btn" class="bt-icon-btn" data-i18n-title="backtest.card.settings" title="Ayarlar">
+            <i data-lucide="settings-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.card.settings">Ayarlar</span>
           </button>
         </div>
       </header>
@@ -215,7 +215,8 @@ import Layout from '../layouts/Layout.astro';
               <button type="button" id="bt-now-btn" class="bt-now-btn" hidden data-i18n-title="backtest.chart.now" title="Şimdiki muma dön">
                 <span data-i18n="backtest.chart.now">Şimdiki muma dön</span><i data-lucide="chevrons-right" aria-hidden="true"></i>
               </button>
-              <div id="bt-chart-overlay" class="bt-chart-overlay" hidden>
+              <div id="bt-chart-overlay" class="bt-chart-overlay" role="status" hidden>
+                <span class="bt-loader" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
                 <span id="bt-overlay-text">Mum verisi yükleniyor…</span>
               </div>
             </div>
@@ -300,6 +301,24 @@ import Layout from '../layouts/Layout.astro';
           <div class="bt-win-body">
 
           </div>
+          <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="w" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="ne" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="nw" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="se" aria-hidden="true"></span>
+          <span class="bt-win-rz" data-rz="sw" aria-hidden="true"></span>
+        </section>
+        <section class="bt-win bt-win-draw" data-win="draw" aria-labelledby="bt-wt-draw">
+          <header class="bt-win-head" tabindex="0" data-i18n-title="backtest.win.head_hint" title="Başlıktan sürükle: taşı · Çift tık: ekranı kapla · Ok tuşları: taşı, Shift + ok: boyutlandır">
+            <i data-lucide="grip-horizontal" class="bt-win-grip" aria-hidden="true"></i>
+            <span class="bt-win-title" id="bt-wt-draw"><span data-i18n="backtest.draw.toolbar">Çizim araçları</span></span>
+            <span class="bt-win-btns">
+              <button type="button" class="bt-win-btn bt-win-close" data-win-act="close" data-i18n-title="backtest.win.close" title="Kapat"><i data-lucide="x" aria-hidden="true"></i></button>
+            </span>
+          </header>
+          <div class="bt-win-body" id="bt-draw-win-body"></div>
           <span class="bt-win-rz" data-rz="n" aria-hidden="true"></span>
           <span class="bt-win-rz" data-rz="s" aria-hidden="true"></span>
           <span class="bt-win-rz" data-rz="e" aria-hidden="true"></span>

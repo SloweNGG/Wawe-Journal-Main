@@ -4,14 +4,14 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="en" bodyClass="journals-page" spa={true}>
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/journals/css/journals.css?v=1792800100" />
+  <link rel="stylesheet" href="/interface/journals/css/journals.css?v=1793800004" />
   <title data-i18n="journal.title">Hesaplarım – Wawe Journal</title>
     
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js" is:inline defer></script>
-  <script src="/i18n.js?v=1792300000" is:inline defer></script>
+  <script src="/i18n.js?v=1793800003" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 </Fragment>
 
@@ -256,6 +256,10 @@ import Layout from '../layouts/Layout.astro';
               <label data-i18n="prop.start_date">Başlangıç Tarihi</label>
               <input type="date" id="prop-start-date" class="journal-prop-input">
               <div class="journal-field-hint" style="font-size:0.75rem;color:var(--muted);margin-top:4px;" data-i18n="prop.start_date_hint">Challenge'a başladığın günü gir (öncesindeki işlemler sayılmaz).</div>
+              <div class="journal-start-note" id="prop-start-date-note" role="status" hidden>
+                <span id="prop-start-date-note-text"></span>
+                <button type="button" class="journal-start-note-btn" id="prop-start-date-note-btn"></button>
+              </div>
             </div>
           </div>
 
@@ -759,6 +763,59 @@ import Layout from '../layouts/Layout.astro';
     updateTimeShiftPreview();
   }
 
+  // Başlangıç tarihi notu: prop kartı start_date'ten önceki işlemleri saymaz (prop-calculator.js).
+  // Düzenlemede bu hesapta kaç işlemin dışarıda kaldığını söyler ve ilk işlem tarihine tek tıkla çeker.
+  var startNoteTrades = { jid: null, list: null };
+  var startNoteSeq = 0;
+  async function updateStartDateNote(journalId) {
+    var note = document.getElementById('prop-start-date-note');
+    var textEl = document.getElementById('prop-start-date-note-text');
+    var btn = document.getElementById('prop-start-date-note-btn');
+    if (!note || !textEl || !btn) return;
+    var seq = ++startNoteSeq;
+    var jId = journalId || (document.getElementById('journal-id') ? document.getElementById('journal-id').value : null);
+    var startDate = (document.getElementById('prop-start-date') || {}).value || '';
+    if (!jId || !startDate || !window.WwTrades || !window.PropCalculator) { note.hidden = true; return; }
+
+    if (startNoteTrades.jid !== jId) {
+      try {
+        var res = await window.WwTrades.fetchAll({ journalId: jId, columns: 'trade_date,exit_price', scope: 'live', ascending: true });
+        if (seq !== startNoteSeq) return;
+        // Prop yalnızca kapanmış işlemleri sayar (prop-service.js ile aynı tanım)
+        startNoteTrades = {
+          jid: jId,
+          list: res.error ? [] : (res.data || []).filter(function (t) { return t.exit_price !== null && t.exit_price !== undefined && t.exit_price !== ''; })
+        };
+      } catch (e) {
+        if (seq === startNoteSeq) note.hidden = true;
+        return;
+      }
+    }
+
+    var parsedShift = parseFloat((document.getElementById('prop-time-shift-num') || {}).value);
+    var shift = isNaN(parsedShift) ? 0 : Math.min(14, Math.max(-14, parsedShift));
+    var tz = (document.getElementById('prop-reset-tz-select') || {}).value || 'UTC';
+    var before = 0, first = null;
+    startNoteTrades.list.forEach(function (t) {
+      var d = null;
+      try { d = window.PropCalculator.getPropTradeDate(t, shift, tz); } catch (e) { }
+      if (!d || d >= startDate) return;
+      before++;
+      if (!first || d < first) first = d;
+    });
+    if (seq !== startNoteSeq) return;
+    if (!before) { note.hidden = true; return; }
+
+    textEl.textContent = jt('prop.start_date_note', 'Bu tarihten önce bu hesapta {count} işlem var, prop takibinde sayılmıyor.', { count: before });
+    var firstText = first;
+    try {
+      firstText = new Intl.DateTimeFormat(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(first + 'T00:00:00Z'));
+    } catch (e) { }
+    btn.textContent = jt('prop.start_date_note_btn', 'İlk işlem tarihinden başlat ({date})', { date: firstText });
+    btn.setAttribute('data-date', first);
+    note.hidden = false;
+  }
+
   async function updateTimeShiftPreview(journalId) {
     var previewList = document.getElementById('prop-time-shift-preview-list');
     var shiftEl = document.getElementById('prop-time-shift-num');
@@ -879,7 +936,22 @@ import Layout from '../layouts/Layout.astro';
 
     var tzSel = document.getElementById('prop-reset-tz-select');
     if (tzSel) {
-      tzSel.addEventListener('change', function() { updateTimeShiftPreview(); });
+      tzSel.addEventListener('change', function() { updateTimeShiftPreview(); updateStartDateNote(); });
+    }
+
+    var startDateEl = document.getElementById('prop-start-date');
+    if (startDateEl) {
+      if (window.WwDatePicker) window.WwDatePicker.attach(startDateEl);
+      startDateEl.addEventListener('change', function() { updateStartDateNote(); });
+    }
+    var startNoteBtn = document.getElementById('prop-start-date-note-btn');
+    if (startNoteBtn) {
+      startNoteBtn.addEventListener('click', function() {
+        var d = startNoteBtn.getAttribute('data-date');
+        if (!d || !startDateEl) return;
+        startDateEl.value = d;
+        startDateEl.dispatchEvent(new Event('change', { bubbles: true }));
+      });
     }
 
     var timeSlider = document.getElementById('prop-time-shift');
@@ -895,6 +967,7 @@ import Layout from '../layouts/Layout.astro';
         timeNum.value = v;
         if (timeDisplay) timeDisplay.textContent = hoursText(v);
         updateTimeShiftPreview();
+        updateStartDateNote();
       }
       timeSlider.addEventListener('input', function() { onTimeShiftInput(timeSlider.value); });
       timeNum.addEventListener('input', function() { onTimeShiftInput(timeNum.value); });
@@ -1238,6 +1311,12 @@ import Layout from '../layouts/Layout.astro';
     var linkedBanner = document.getElementById('wizard-already-linked-banner');
     var brokerSec = document.getElementById('wizard-broker-selection-section');
 
+    // Senkron sonrası işlemler değişmiş olabilir: not her açılışta yeniden hesaplanır
+    startNoteTrades = { jid: null, list: null };
+    startNoteSeq++;
+    var startNoteEl = document.getElementById('prop-start-date-note');
+    if (startNoteEl) startNoteEl.hidden = true;
+
     if (mode === 'create') {
       titleEl.textContent = i18n.t('journal.create_title');
       titleEl.setAttribute('data-i18n', 'journal.create_title');
@@ -1366,6 +1445,7 @@ import Layout from '../layouts/Layout.astro';
               }
               checkIsCustomized();
               updateTimeShiftPreview(j.id);
+              updateStartDateNote(j.id);
             } else {
               if (inactiveCard) inactiveCard.style.display = 'block';
               if (propToggle) propToggle.checked = false;
@@ -1575,11 +1655,6 @@ import Layout from '../layouts/Layout.astro';
           </div>
         `;
 
-        card.classList.add('is-prop-account');
-        if (propInfo.accentColor) {
-          card.style.setProperty('--prop-brand-color', propInfo.accentColor);
-          card.style.setProperty('--prop-brand-glow', propInfo.accentColor + '35');
-        }
       }
       
       var safeName = escapeHtml(j.name);

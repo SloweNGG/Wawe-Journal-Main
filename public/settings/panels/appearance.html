@@ -158,6 +158,77 @@
      TEMPLATE: LOCKED
      ============================================================ -->
 <template id="tpl-theme-locked">
+  <div class="pro-teaser">
+  <!-- Bulanık önizleme: stüdyonun id'siz, etkileşimsiz kopyası -->
+  <div class="pro-teaser-preview" aria-hidden="true" inert>
+    <div class="theme-form">
+      <div class="theme-subblock">
+        <div class="theme-subblock-title" data-i18n="settings.studio_presets">Hazır paletler</div>
+        <div class="theme-preset-grid">
+          <div class="preset-card active">
+            <div class="preset-swatches">
+              <span style="background: #07070c;"></span><span style="background: #0e0e16;"></span><span style="background: #1a1a28;"></span><span style="background: #8b5cf6;"></span>
+            </div>
+            <span class="preset-name">Obsidian</span>
+          </div>
+          <div class="preset-card">
+            <div class="preset-swatches">
+              <span style="background: #080612;"></span><span style="background: #120e24;"></span><span style="background: #261e47;"></span><span style="background: #a855f7;"></span>
+            </div>
+            <span class="preset-name">Deep Violet</span>
+          </div>
+          <div class="preset-card">
+            <div class="preset-swatches">
+              <span style="background: #090d14;"></span><span style="background: #0f172a;"></span><span style="background: #1e293b;"></span><span style="background: #38bdf8;"></span>
+            </div>
+            <span class="preset-name">Midnight Slate</span>
+          </div>
+          <div class="preset-card">
+            <div class="preset-swatches">
+              <span style="background: #000000;"></span><span style="background: #0c0c0e;"></span><span style="background: #242428;"></span><span style="background: #ffffff;"></span>
+            </div>
+            <span class="preset-name">Pure Stealth</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-subblock">
+        <div class="theme-subblock-title" data-i18n="settings.studio_custom">Özel renkler</div>
+        <div class="color-grid">
+          <div class="color-field">
+            <label data-i18n="settings.theme_bg_color">Arka Plan Rengi</label>
+            <div class="color-input-group">
+              <div class="color-chip" style="background:#080612;"></div>
+              <span class="color-input-text">#080612</span>
+            </div>
+          </div>
+          <div class="color-field">
+            <label data-i18n="settings.theme_surface_color">Kart Arka Planı</label>
+            <div class="color-input-group">
+              <div class="color-chip" style="background:#120e24;"></div>
+              <span class="color-input-text">#120e24</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-subblock">
+        <div class="theme-preview-box">
+          <div class="mini-trade-preview">
+            <div class="mini-trade-header">
+              <div class="mini-trade-pair">
+                <span class="mini-trade-symbol">EURUSD</span>
+                <span class="mini-trade-dir long">BUY · 1.00 Lot</span>
+              </div>
+              <div class="mini-trade-pnl positive">+$420.00 (+2.1R)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pro-teaser-overlay">
   <div class="theme-pro-locked-card">
     <div class="locked-icon-halo">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -173,6 +244,8 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       <span>Pro'ya Geç →</span>
     </a>
+  </div>
+  </div>
   </div>
 </template>
 

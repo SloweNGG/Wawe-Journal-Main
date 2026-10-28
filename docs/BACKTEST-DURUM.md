@@ -38,8 +38,10 @@ Bu turda dört aşama yayına alındı:
 | Araç | Ne yapar |
 |---|---|
 | Hepsi | Sürükleyerek ya da iki tıklamayla çizim; seç, taşı, tutamaçtan boyutlandır, Del ile sil; Esc çizimi veya sürüklemeyi iptal eder (hayalet kalmaz); imleç duruma göre değişir (artı, taşı, kenar oku, tut). Seçim araç çubuğunun genişliğini değiştirmez (önceden grafik seçimde daralıyor, çizimler yana kayıyordu) |
+| Araç çubuğu | Benzer araçlar tek düğmede: Çizgiler (trend, ışın, yatay) ve Pozisyonlar (long, short). Düğme son kullanılan aracı gösterir; köşedeki üçgen, sağ tık veya sağ/aşağı ok gruptaki araçları açar; 1–9 tuşları her aracı seçer. Fareyle sürükle-bırak: düğme sırası, bir düğmeyi başka birinin ortasına bırakınca gruplar birleşir, menüdeki bir araç grup içinde sıralanır, başka gruba girer ya da çubukta boş yere bırakılınca tek başına düğme olur; Esc sürüklemeyi iptal eder. Düzen tarayıcıda (`ww_bt_draw_ui.groups`); menüden varsayılana dönülür. Dokunmatikte sürükleme yok (çubuk kaydırılır) |
 | Dikdörtgen | Herhangi bir köşeden herhangi bir yöne; 8 tutamaç; Shift ile ekranda tam kare; dolgusuz kutu yalnız kenarından tutulur |
 | Trend çizgisi, ışın | Shift ile yatay, dikey veya 45° (uç sürüklerken de); iki uç ayrı ayrı |
+| Yatay çizgi | Ayar penceresinde uzunluk: Tam (grafiğin tamamı, varsayılan), Sağa (başladığı yerden sağa ışın), Parça (iki uç; uçtan sürükleyerek uzunluk, baştan sürükleyerek fiyat). Parça modunda sürükleyerek veya iki tıkla çizilir, ilk açılışta 20 mum. Son seçilen mod yeni çizgilerde kullanılır (`ww_bt_draw_ui.hline`); `style.extend`, parçanın ikinci noktası `points` içinde |
 | Fibonacci | İki uç ayrı ayrı; seviyeler ayar penceresinden (en fazla 12) |
 | Long / short | Giriş, TP, SL ve genişlik tutamaçları; grafikte R:R, pip (kriptoda puan) ve emir panelindeki lota göre tutar |
 | Metin | Grafikte yerinde yazılır ve düzenlenir (çift tık); Enter kaydeder, Esc bırakır |
@@ -64,6 +66,7 @@ Stil alanları `backtest_drawings.style` (jsonb) içinde; veritabanı değişikl
 | Basit mod | Çerçevesiz sabit düzen (replay üstte, grafik solda, bakiye ve emir sağda) |
 | Telefon | Pencereler alt alta tam genişlikte, sürükleme ve boyutlama yok |
 | Tam ekran (F) | Eskisi gibi: grafik ekranı kaplar, bakiye, replay ve hızlı emir yüzer |
+| Çizim araçları penceresi | Gelişmiş modda araç çubuğu ayrı pencere (`draw`): başlıktan taşınır, kenarlardan boyutlanır, kapanır (Pencereler menüsünden geri açılır); ekranı kaplamaz, kenara yapışmaz. Düğmeler pencerenin genişliğine göre sütunlara dağılır (geniş pencerede tek satır). Varsayılan ve eski kayıtlı düzenlerde grafik bloğunun solunda, eski yerinde açılır. Basit modda, telefonda ve tam ekranda çubuk grafiğin yanında kalır |
 
 Kütüphane kararı: kendi kodumuz (`bt-desk.js`, bağımlılık yok). WinBox.js (Apache-2.0) pencereleri sayfanın gövdesine sabitliyor, masaüstü
 alanı, görev çubuğu ve yapıştırma önizlemesi için ağır değişiklik gerekiyordu; interact.js (MIT) yalnız sürükleme/boyutlama veriyor,

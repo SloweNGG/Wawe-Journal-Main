@@ -1,5 +1,5 @@
 // Backtest v2: the replay screen as a desktop (window.WwBtDesk). In advanced mode on a wide screen every part is a window: the chart
-// (in multi-chart every chart), replay controls, order panel, balance, open positions, pending orders, history and statistics. A window
+// (in multi-chart every chart), drawing tools, replay controls, order panel, balance, open positions, pending orders, history and statistics. A window
 // moves by its title bar, resizes from its four edges and corners (minimum sizes), minimizes to the taskbar, maximizes (also by a
 // double click on the title) and restores, closes (the "Windows" menu opens it again) and comes to the front when clicked. Dragged to
 // the left or right edge it takes that half, to the top the whole desk, to a corner a quarter (a preview shows where); near other
@@ -12,10 +12,16 @@
   'use strict';
 
   var VERSION = 1, KEY = 'ww_bt_desk_v1', OLD_KEY = 'ww_bt_dock_v1';
-  var WINS = ['replay', 'chart', 'chart2', 'chart3', 'chart4', 'balance', 'order', 'open', 'orders', 'history', 'stats'];
+  var WINS = ['replay', 'chart', 'chart2', 'chart3', 'chart4', 'draw', 'balance', 'order', 'open', 'orders', 'history', 'stats'];
   var CHARTS = ['chart', 'chart2', 'chart3', 'chart4'];
-  var CLOSABLE = ['replay', 'balance', 'order', 'open', 'orders', 'history', 'stats'];   // charts follow the chart layout: minimize only
-  var MIN = { replay: [380, 84], chart: [320, 260], chart2: [240, 150], chart3: [240, 150], chart4: [240, 150], balance: [220, 110],
+  var CLOSABLE = ['replay', 'draw', 'balance', 'order', 'open', 'orders', 'history', 'stats'];   // charts follow the chart layout: minimize only
+  // taskbar icons (lucide names); the window's title stays as the tooltip and the accessible name
+  var TASK_ICON = { replay: 'circle-play', chart: 'chart-candlestick', chart2: 'chart-candlestick', chart3: 'chart-candlestick', chart4: 'chart-candlestick',
+    draw: 'pencil-ruler', balance: 'wallet', order: 'arrow-left-right', open: 'briefcase', orders: 'hourglass', history: 'history', stats: 'chart-pie' };
+  // the drawing tools are a window on the free desk only (elsewhere the toolbar sits next to the main chart); it never maximizes or snaps
+  var FREE_ONLY = ['draw'], NO_MAX = ['draw'];
+  var DRAW_W = 82;                                       // px: two toolbar columns (2 x 34 + 3) with the window's padding and border
+  var MIN = { replay: [380, 84], chart: [320, 260], chart2: [240, 150], chart3: [240, 150], chart4: [240, 150], draw: [46, 100], balance: [220, 110],
     order: [250, 220], open: [300, 130], orders: [300, 130], history: [300, 130], stats: [340, 220] };
   var STACK = ['replay', 'chart', 'chart2', 'chart3', 'chart4', 'order', 'balance', 'open', 'orders', 'history', 'stats'];   // phone order
   var SIMPLE = ['replay', 'chart', 'balance', 'order'];
@@ -141,6 +147,22 @@
     var w = Math.min(desk.w - GAP, Math.max(area.w, need.w)), h = Math.min(desk.h - GAP, Math.max(area.h, need.h));
     return { x: clamp(area.x, GAP / 2, desk.w - GAP / 2 - w), y: clamp(area.y, GAP / 2, desk.h - GAP / 2 - h), w: w, h: h };
   }
+  // the drawing tools window takes the left edge of the chart block, where the toolbar used to be inside the chart window; the charts
+  // of the block (the main chart and the charts right of / under it) shrink in proportion, so a grid keeps equal columns and a layout
+  // from before the window looks the same. `ids`: the chart windows the layout places.
+  function carveDraw(wins, desk, ids) {
+    var c = wins.chart, x0 = c.x, dw = r4(DRAW_W / desk.w), step = r4((DRAW_W + GAP) / desk.w);
+    var block = CHARTS.filter(function (id) { return ids.indexOf(id) >= 0 && wins[id].x >= x0 - 0.001; });
+    var right = Math.max.apply(null, block.map(function (id) { return wins[id].x + wins[id].w; }).concat([x0 + c.w])), k = (right - x0 - step) / (right - x0);
+    if (c.w * k < 3 * step) block = [];                    // a chart too narrow to share: the window goes over its edge
+    var y1 = c.y, y2 = c.y + c.h;
+    block.forEach(function (id) {
+      var w = wins[id];
+      if (Math.abs(w.x - x0) < 0.001) { y1 = Math.min(y1, w.y); y2 = Math.max(y2, w.y + w.h); }
+      w.x = r4(x0 + step + (w.x - x0) * k); w.w = r4(w.w * k);
+    });
+    wins.draw = { x: x0, y: y1, w: dw, h: r4(y2 - y1), st: 'normal', closed: false };
+  }
   function bbox(rs) {
     var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
     rs.forEach(function (r) { x1 = Math.min(x1, r.x); y1 = Math.min(y1, r.y); x2 = Math.max(x2, r.x + r.w); y2 = Math.max(y2, r.y + r.h); });
@@ -154,6 +176,7 @@
     var p = PRESETS[id] || PRESETS.classic, wins = {};
     WINS.forEach(function (w) {
       var f = p.wins[w];
+      if (w === 'draw') return;
       if (!f) {
         // closed in this preset; a chart window gets a place for when the chart layout asks for it
         var fb = CHARTS.indexOf(w) > 0 ? [0.2 + 0.05 * CHARTS.indexOf(w), 0.2, 0.4, 0.4] : (FIRST_OPEN[w] || [0.25, 0.25, 0.4, 0.4]);
@@ -162,6 +185,7 @@
       }
       wins[w] = Object.assign(toFrac(inset(f, desk), desk), { st: f[4] === 'min' ? 'min' : 'normal', closed: false });
     });
+    carveDraw(wins, desk, Object.keys(p.wins));
     return { wins: wins, z: WINS.slice(), charts: p.charts };
   }
   function defaults(desk) {
@@ -175,9 +199,11 @@
     if (w.prev && typeof w.prev === 'object') out.prev = { x: clamp(num(w.prev.x, out.x), 0, 0.98), y: clamp(num(w.prev.y, out.y), 0, 0.98), w: clamp(num(w.prev.w, out.w), 0.02, 1), h: clamp(num(w.prev.h, out.h), 0.02, 1) };
     return out;
   }
+  // a layout stored before the drawing tools window gets one at the left edge of its chart (see carveDraw)
   function cleanWins(src, d) {
     var out = {};
     WINS.forEach(function (id) { out[id] = cleanWin(src && src[id], d.wins[id]); if (CLOSABLE.indexOf(id) < 0) out[id].closed = false; });
+    if (src && src.chart && !src.draw) carveDraw(out, { w: 1400, h: 800 }, CHARTS.filter(function (id) { return src[id]; }));
     return out;
   }
   function cleanZ(z) {
@@ -205,7 +231,7 @@
   function setWin(lay, id, patch) { var n = clone(lay); n.wins[id] = Object.assign(n.wins[id], patch); n.preset = null; return n; }
   // maximize keeps the size before it in `prev`; restore takes it back
   function maximize(lay, id) {
-    var w = lay.wins[id]; if (!w) return lay;
+    var w = lay.wins[id]; if (!w || NO_MAX.indexOf(id) >= 0) return lay;
     if (w.st === 'max') return restore(lay, id);
     return front(setWin(lay, id, { st: 'max', prev: w.prev && w.st !== 'normal' ? w.prev : { x: w.x, y: w.y, w: w.w, h: w.h } }), id);
   }
@@ -304,7 +330,7 @@
   // ---------------------------------------------------------------- DOM controller
   // opts: { page (wwPage), desk (#bt-desk), storage, userId, t(key, fb, params), mode() -> 'simple'|'advanced', wide() -> bool,
   //         fullscreen() -> bool, pro() -> bool, present(id) -> bool (chart2..4 only while the chart layout has them), charts() -> layout id,
-  //         setCharts(id) -> bool (false: not allowed), upgrade(), toast(msg, type), onChange(what), icons() }
+  //         setCharts(id) -> bool (false: not allowed), upgrade(), toast(msg, type), onChange(what), icons(), placed(kind) after each apply }
   //   windows: .bt-win[data-win] inside the desk with .bt-win-head (title bar), [data-win-act] buttons, .bt-win-rz[data-rz] handles
   function mount(opts) {
     var PAGE = opts.page, desk = opts.desk, t = opts.t;
@@ -331,7 +357,8 @@
       WINS.forEach(function (id) {
         var el = winEl[id]; if (!el) return;
         var w = lay.wins[id], on;
-        if (kind === 'simple' || (kind === 'stack' && opts.mode() !== 'advanced')) on = SIMPLE.indexOf(id) >= 0;
+        if (FREE_ONLY.indexOf(id) >= 0 && kind !== 'free') on = false;
+        else if (kind === 'simple' || (kind === 'stack' && opts.mode() !== 'advanced')) on = SIMPLE.indexOf(id) >= 0;
         else if (kind === 'fs') on = CHARTS.indexOf(id) >= 0 ? present(id) : SIMPLE.indexOf(id) >= 0;
         else on = shown.indexOf(id) >= 0 && (kind === 'stack' || w.st !== 'min');
         el.hidden = !on;
@@ -349,6 +376,7 @@
         var cl = el.querySelector('[data-win-act="close"]'); if (cl) cl.hidden = CLOSABLE.indexOf(id) < 0;
       });
       renderTaskbar();
+      if (opts.placed) opts.placed(kind);
     }
     function title(id) { var h = winEl[id] && winEl[id].querySelector('.bt-win-title'); return h ? h.textContent.replace(/\s+/g, ' ').trim() : id; }
     function renderTaskbar() {
@@ -361,10 +389,21 @@
         b.type = 'button'; b.className = 'bt-task'; b.setAttribute('data-task', id);
         b.setAttribute('aria-pressed', w.st !== 'min' && id === top ? 'true' : 'false');
         if (w.st === 'min') b.classList.add('bt-task-min');
-        var lab = title(id); b.textContent = lab;
+        var lab = title(id), ic = taskIcon(TASK_ICON[id] || 'app-window'); if (ic) b.appendChild(ic);
+        var n = CHARTS.indexOf(id); if (n > 0) { var k = document.createElement('span'); k.className = 'bt-task-n'; k.setAttribute('aria-hidden', 'true'); k.textContent = String(n + 1); b.appendChild(k); }
+        b.setAttribute('aria-label', lab);
         b.title = w.st === 'min' ? t('backtest.win.task_restore', '{name}: geri getir', { name: lab }) : lab;
         bar.appendChild(b);
       });
+    }
+    // the svg straight from lucide: createIcons() would redraw every icon on the page, also the one under a pointer about to click
+    function taskIcon(name) {
+      try {
+        var L = window.lucide, node = L && L.icons && L.icons[name.replace(/(^|-)(\w)/g, function (m, d, c) { return c.toUpperCase(); })];
+        if (!node) return null;
+        var svg = L.createElement(node); svg.setAttribute('class', 'lucide lucide-' + name); svg.setAttribute('aria-hidden', 'true');
+        return svg;
+      } catch (e) { return null; }
     }
 
     // --- move by the title bar (snap zones and magnet), resize by the edges
@@ -411,7 +450,7 @@
       e.preventDefault();
       var r;
       if (g.kind === 'move') {
-        g.zone = snapZone(p, d);
+        g.zone = NO_MAX.indexOf(id) >= 0 ? null : snapZone(p, d);
         r = fit({ x: g.r0.x + dx, y: g.r0.y + dy, w: g.r0.w, h: g.r0.h }, d, id);
         if (!g.zone) r = fit(magnetMove(r, others(id), d), d, id);
         showPreview(g.zone ? (g.zone === 'top' ? { x: GAP / 2, y: GAP / 2, w: d.w - GAP, h: d.h - GAP } : zoneRect(g.zone, d)) : null);
@@ -591,10 +630,10 @@
   }
 
   global.WwBtDesk = {
-    VERSION: VERSION, KEY: KEY, WINS: WINS, CHARTS: CHARTS, CLOSABLE: CLOSABLE, MIN: MIN, STACK: STACK, SIMPLE: SIMPLE, PRESETS: PRESETS, PRESET_IDS: PRESET_IDS,
+    VERSION: VERSION, KEY: KEY, WINS: WINS, CHARTS: CHARTS, CLOSABLE: CLOSABLE, FREE_ONLY: FREE_ONLY, NO_MAX: NO_MAX, DRAW_W: DRAW_W, MIN: MIN, STACK: STACK, SIMPLE: SIMPLE, PRESETS: PRESETS, PRESET_IDS: PRESET_IDS,
     GAP: GAP, EDGE: EDGE, CORNER: CORNER, MAGNET: MAGNET, TASKBAR: TASKBAR, MAX_SAVED: MAX_SAVED, GRID: GRID, MULTI_IDS: MULTI_IDS,
     toPx: toPx, toFrac: toFrac, fit: fit, inset: inset, snapZone: snapZone, zoneRect: zoneRect, magnetMove: magnetMove, magnetResize: magnetResize,
-    resizeBy: resizeBy, tile: tile, tileArea: tileArea, bbox: bbox, fromPreset: fromPreset, defaults: defaults, normalize: normalize, front: front, maximize: maximize,
+    resizeBy: resizeBy, tile: tile, tileArea: tileArea, carveDraw: carveDraw, bbox: bbox, fromPreset: fromPreset, defaults: defaults, normalize: normalize, front: front, maximize: maximize,
     restore: restore, minimize: minimize, close: close, open: open, snapTo: snapTo, applyPreset: applyPreset, saveNamed: saveNamed, loadNamed: loadNamed,
     deleteNamed: deleteNamed, visibleWins: visibleWins, multiDefault: multiDefault, normalizeMulti: normalizeMulti, multiOf: multiOf, swapViews: swapViews,
     cellArea: cellArea, template: template, resizeTracks: resizeTracks, storageKey: storageKey, load: load, save: save, mount: mount

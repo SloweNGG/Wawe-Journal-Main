@@ -175,7 +175,7 @@
     DESK = window.WwBtDesk.mount({ page: PAGE, desk: $('bt-desk'), storage: safeStorage(), userId: user.id, t: _t, mode: function () { return LAY.mode(); },
       wide: wideScreen, fullscreen: function () { return LAY.isFullscreen(); }, pro: function () { return can('backtestMultiChart'); }, present: chartPresent,
       charts: function () { return shownLayout(); }, setCharts: setChartsFromDesk, upgrade: function () { openUpgrade('backtest_multichart'); }, toast: toast,
-      onChange: onDeskChange });
+      onChange: onDeskChange, placed: placeDrawBar });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
     if (!PAGE.alive || !ok) return;
@@ -1657,7 +1657,8 @@
       e.preventDefault(); e.stopPropagation();
       var o = findOrder(h.id);
       drag = { v: v, id: h.id, key: h.key, orig: { price: o.price, sl: o.sl, tp: o.tp }, pid: e.pointerId, moved: false };
-      var op = v.chart.options(); saved = { handleScroll: op.handleScroll, handleScale: op.handleScale };
+      // a copy: chart.options() hands out the chart's own objects, which applyOptions(false) then turns off in place
+      var op = v.chart.options(); saved = JSON.parse(JSON.stringify({ handleScroll: op.handleScroll, handleScale: op.handleScale }));
       v.chart.applyOptions({ handleScroll: false, handleScale: false });
       try { host.setPointerCapture(e.pointerId); } catch (x) { /* synthetic event */ }
     }, true);
@@ -2090,6 +2091,13 @@
     var v = { el: host, cell: cell, pane: 'chart' + (i + 2), tfSel: sel, tfId: sel.value, tfMin: C.TF_MIN[sel.value], candles: [], bars: [], lines: {}, dirtyFrom: -1 };
     sel.addEventListener('change', function () { setViewTimeframe(v, sel.value); });
     return v;
+  }
+  // the drawing toolbar: its own window on the free desk (sized by that window's width), next to the main chart otherwise
+  function placeDrawBar(kind) {
+    var bar = $('bt-draw-bar'), free = kind === 'free', home = free ? $('bt-draw-win-body') : document.querySelector('#bt-chart-card .bt-chart-body');
+    if (!bar || !home) return;
+    if (free) bar.setAttribute('data-fit', 'width'); else bar.removeAttribute('data-fit');
+    if (bar.parentNode !== home) home.insertBefore(bar, home.firstChild);
   }
   // where an extra chart's cell goes: its own window on the free desk, the shared grid otherwise (full screen)
   function freeDesk() { return !!DESK && DESK.kind() === 'free'; }

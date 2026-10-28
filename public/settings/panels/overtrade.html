@@ -15,11 +15,55 @@
 </div>
 
 <template id="tpl-overtrade-locked">
-  <div class="ot-pro-locked">
-    <div class="lock-icon">💎</div>
-    <h3 data-i18n="overtrade.title">Over Trade Uyarıları</h3>
-    <p data-i18n="overtrade.pro_required_desc">Bu özellik sadece Pro üyelere özeldir.</p>
-    <a href="settings.html#panel-plan" class="btn-pro-cta" data-i18n="overtrade.go_pro">Pro'ya Geç →</a>
+  <div class="pro-teaser">
+    <!-- Bulanık önizleme: gerçek formun id'siz, etkileşimsiz kopyası -->
+    <div class="pro-teaser-preview" aria-hidden="true" inert>
+      <div class="ot-form">
+        <label class="ot-toggle-row">
+          <input type="checkbox" class="ot-checkbox" checked tabindex="-1">
+          <span data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</span>
+        </label>
+        <div class="ot-field">
+          <label class="ot-label" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</label>
+          <div class="ot-input-row">
+            <input type="number" class="ot-input" value="5" tabindex="-1">
+            <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+          </div>
+        </div>
+        <div class="ot-field">
+          <label class="ot-label" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</label>
+          <div class="ot-input-row">
+            <input type="number" class="ot-input" value="20" tabindex="-1">
+            <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+          </div>
+        </div>
+        <div class="ot-field">
+          <label class="ot-label" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</label>
+          <div class="ot-input-row">
+            <span class="ot-currency">$</span>
+            <input type="number" class="ot-input" value="250" tabindex="-1">
+          </div>
+        </div>
+        <div class="ot-field">
+          <label class="ot-label" data-i18n="overtrade.warning_level_label">Uyarı Seviyesi</label>
+          <select class="ot-select" tabindex="-1">
+            <option data-i18n="overtrade.level_warning">Uyarı</option>
+          </select>
+        </div>
+        <button type="button" class="btn-save-ot" tabindex="-1">
+          <span data-i18n="overtrade.save_settings">Ayarları Kaydet</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pro-teaser-overlay">
+      <div class="ot-pro-locked">
+        <div class="lock-icon">💎</div>
+        <h3 data-i18n="overtrade.title">Over Trade Uyarıları</h3>
+        <p data-i18n="overtrade.pro_required_desc">Bu özellik sadece Pro üyelere özeldir.</p>
+        <a href="settings.html#panel-plan" class="btn-pro-cta" data-i18n="overtrade.go_pro">Pro'ya Geç →</a>
+      </div>
+    </div>
   </div>
 </template>
 

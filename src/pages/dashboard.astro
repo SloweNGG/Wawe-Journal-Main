@@ -6,7 +6,7 @@ import Layout from '../layouts/Layout.astro';
   <title data-i18n="dashboard.title">Dashboard - Wawe Journal</title>
 
   <link rel="stylesheet" href="/interface/dashboard/css/dashboard.css?v=1792800100" />
-  <link rel="stylesheet" href="/interface/dashboard/css/prop-card-v2.css?v=7" />
+  <link rel="stylesheet" href="/interface/dashboard/css/prop-card-v2.css?v=8" />
   <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css?v=1792800100" />
   <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css?v=1792800100" />
 
@@ -444,7 +444,7 @@ import Layout from '../layouts/Layout.astro';
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
 
     <script src="/config.js" is:inline defer></script>
-    <script src="/i18n.js?v=1790432600" is:inline defer></script>
+    <script src="/i18n.js?v=1793800003" is:inline defer></script>
 
     <!-- ⭐ ParserV2 -->
     <script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
@@ -457,7 +457,7 @@ import Layout from '../layouts/Layout.astro';
     <script src="/interface/quick-add/js/quick-modal-i18n.js?v=1791383000" is:inline defer></script>
     <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
 
-    <script src="/interface/dashboard/js/prop-card-v2.js?v=6" is:inline defer></script>
+    <script src="/interface/dashboard/js/prop-card-v2.js?v=7" is:inline defer></script>
     <script src="/interface/dashboard/js/dashboard.js?v=1792300000" is:inline defer data-page-script></script>
   </Fragment>
 
@@ -544,6 +544,8 @@ import Layout from '../layouts/Layout.astro';
           return (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
         };
         var curLang = (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
+        var tradeScope = 'live';
+        try { if (window.WwTrades) tradeScope = await window.WwTrades.resolveJournalScope(activeId); } catch (e) {}
         var localeStr = curLang === 'tr' ? 'tr-TR' : (curLang === 'de' ? 'de-DE' : 'en-US');
 
         function localizePhaseName(rawPhase) {
@@ -789,7 +791,8 @@ import Layout from '../layouts/Layout.astro';
             dailyLimit: dailyLimit, dailyRem: dailyRem, dailyToday: dailyToday,
             dayCount: dayCount, dayMin: dayMin,
             totalPnl: totalPnl, totalTrades: totalTrades, wrPct: wrPct,
-            tradesLabel: t('journal.trades_label')
+            tradesLabel: t('journal.trades_label'),
+            scopeNote: tradeScope !== 'live' ? t('prop.scope_live_only') : ''
           };
           propCardEl.innerHTML = window.WWPropCardV2 ? window.WWPropCardV2.render(cardCtx) : legacyHtml;
 

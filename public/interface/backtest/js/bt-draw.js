@@ -7,6 +7,8 @@
 // (public.backtest_drawings: points + style jsonb; the style keeps color, lock, text, width, dash, fill, opacity, fib levels and
 // text size). Undo/redo works on committed changes (create, move, resize, settings, delete, clear). The pure helpers at the top
 // are unit tested.
+// The toolbar groups related tools on one button (lines, positions): the button shows the last tool used, its corner (or a right click)
+// opens the others. The user reorders buttons and moves tools between groups by drag and drop (kept per browser, reset to default).
 // Every drawing belongs to the chart it was drawn on (`pane`: 'main' or the window id 'chart2'..'chart4', kept in the style;
 // missing = 'main', so older drawings stay on the main chart). A chart's layer shows, selects and edits only its own drawings.
 (function (global) {
@@ -21,10 +23,11 @@
   var COLORS = { trend: '#8b5cf6', hline: '#f59e0b', ray: '#38bdf8', rect: '#8b5cf6', fib: '#a78bfa', long: '#22c55e', short: '#ef4444', text: null, measure: '#38bdf8' };
   var SWATCHES = ['#8b5cf6', '#38bdf8', '#22c55e', '#f59e0b', '#ef4444', '#f472b6', '#e8e8f0', '#64748b'];
   var DASHES = ['solid', 'dashed', 'dotted'];
+  var EXTENDS = ['both', 'right', 'none'];                  // horizontal line: across the chart, a ray to the right, a segment (two ends)
   var AREA = { rect: true, fib: true, long: true, short: true, measure: true };              // tools with a fill
   var DEF_OPACITY = { rect: 0.14, fib: 0.1, long: 0.16, short: 0.16, measure: 0.15 };
   var TEXT_SIZES = [11, 13, 16, 20, 24, 32];
-  var MAX_TEXT = 200, MAX_DRAWINGS = 500, MAX_LEVELS = 12, MAX_HISTORY = 100;
+  var MAX_TEXT = 200, MAX_DRAWINGS = 500, MAX_LEVELS = 12, MAX_HISTORY = 100, SEG_BARS = 20;
   var HIT_PX = 7, HANDLE_R = 5, HANDLE_HIT = 9, TOUCH_HIT = 16;
   var RECT_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
   var CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize' };
@@ -65,7 +68,8 @@
   }
 
   // ---------------------------------------------------------------- model (pure)
-  // { id, tool, pts: [{ t, p }], color (#rrggbb | null = theme), text, locked, width (1-4), dash, fill, opacity, levels, size, pane }
+  // { id, tool, pts: [{ t, p }], color (#rrggbb | null = theme), text, locked, width (1-4), dash, fill, opacity, levels, size, pane, extend }
+  // A horizontal line has one point, or two as a segment (extend 'none'; the second point keeps the first one's price).
   // Style fields at their default are left out (old rows and new defaults look the same).
   function cleanLevels(list) {
     if (!Array.isArray(list)) return null;
@@ -87,8 +91,10 @@
   }
   function sanitize(d) {
     if (!d || typeof d !== 'object' || TOOLS.indexOf(d.tool) < 0 || typeof d.id !== 'string' || !Array.isArray(d.pts)) return null;
-    var pts = d.pts.slice(0, NPTS[d.tool]).map(function (x) { return { t: num(x && x.t), p: num(x && x.p) }; });
-    if (pts.length !== NPTS[d.tool] || pts.some(function (x) { return !isFinite(x.t) || !isFinite(x.p); })) return null;
+    var seg = d.tool === 'hline' && d.extend === 'none' && d.pts.length >= 2, n = seg ? 2 : NPTS[d.tool];
+    var pts = d.pts.slice(0, n).map(function (x) { return { t: num(x && x.t), p: num(x && x.p) }; });
+    if (pts.length !== n || pts.some(function (x) { return !isFinite(x.t) || !isFinite(x.p); })) return null;
+    if (seg) pts[1].p = pts[0].p;
     var out = { id: d.id, tool: d.tool, pts: pts, color: isColor(d.color) ? d.color.toLowerCase() : null, locked: d.locked === true };
     if (d.tool === 'text') {
       out.text = String(d.text || '').slice(0, MAX_TEXT); if (!out.text.trim()) return null;
@@ -101,13 +107,14 @@
       if (d.fill === false) out.fill = false;
       var op = num(d.opacity); if (op >= 0 && op <= 1) { op = Math.round(op * 100) / 100; if (op !== DEF_OPACITY[d.tool]) out.opacity = op; }
     }
+    if (d.tool === 'hline' && EXTENDS.indexOf(d.extend) > 0 && (d.extend !== 'none' || seg)) out.extend = d.extend;
     if (d.tool === 'fib' && d.levels != null) { var lv = cleanLevels(d.levels); if (lv && lv.join() !== FIB_LEVELS.join()) out.levels = lv; }
     if (typeof d.pane === 'string' && PANE_RE.test(d.pane)) out.pane = d.pane;
     return out;
   }
   var PANE_RE = /^chart[2-9]$/;                            // the extra charts; the main chart is the default and is left out
   function paneOf(d) { return d.pane || 'main'; }
-  var STYLE_KEYS = ['width', 'dash', 'fill', 'opacity', 'levels', 'size', 'pane'];
+  var STYLE_KEYS = ['width', 'dash', 'fill', 'opacity', 'levels', 'size', 'pane', 'extend'];
   function toRow(d, userId, accountId) {
     var style = { color: d.color || null, locked: !!d.locked };
     if (d.tool === 'text') style.text = d.text;
@@ -124,6 +131,12 @@
   function widthOf(d) { return d.width || defWidth(d.tool); }
   function fillOf(d) { return AREA[d.tool] ? (d.fill === false ? 0 : (d.opacity != null ? d.opacity : DEF_OPACITY[d.tool])) : 0; }
   // fib levels from the first point (level 1) to the second point (level 0)
+  // the x range a horizontal line covers on screen (xs: its points' x, w: pane width)
+  function hlineSpan(d, xs, w) {
+    if (d.extend === 'right') return [xs[0], w];
+    if (d.extend === 'none') return [Math.min(xs[0], xs[1]), Math.max(xs[0], xs[1])];
+    return [0, w];
+  }
   function fibLevels(d) {
     var a = d.pts[0].p, b = d.pts[1].p;
     return (d.levels || FIB_LEVELS).map(function (lv) { return { level: lv, price: b + (a - b) * lv }; });
@@ -161,7 +174,8 @@
   function setHandle(d, idx, t, p, tfSec) {
     if (typeof idx === 'string') return resizeRect(d, idx, t, p);
     var out = clone(d), P = out.pts;
-    if (d.tool === 'hline') { P[0] = { t: t, p: p }; return out; }
+    // horizontal line: the start sets the time and the price (a segment's end follows the price), a segment's end only its length
+    if (d.tool === 'hline') { if (idx === 1 && P[1]) P[1].t = t; else { P[0] = { t: t, p: p }; if (P[1]) P[1].p = p; } return out; }
     if (d.tool === 'long' || d.tool === 'short') {
       var dir = d.tool === 'long' ? 1 : -1, e = P[0].p, eps = Math.abs(e) * 1e-6 || 1e-9;
       if (idx === 0) { var de = p - e; P[0] = { t: Math.min(t, P[1].t - tfSec), p: p }; P[1].p += de; P[2].p += de; }
@@ -255,6 +269,55 @@
     };
   }
 
+  // ---------------------------------------------------------------- toolbar groups (pure)
+  // [{ t: [tool ids], c: the tool the button shows }]; every tool in exactly one group
+  var DEFAULT_GROUPS = [['trend', 'ray', 'hline'], ['rect'], ['fib'], ['long', 'short'], ['text'], ['measure']];
+  function defaultGroups() { return DEFAULT_GROUPS.map(function (g) { return { t: g.slice(), c: g[0] }; }); }
+  // anything stored is checked: unknown and repeated tools dropped, empty groups dropped, a missing tool gets its own button at the end
+  function normalizeGroups(src) {
+    if (!Array.isArray(src)) return defaultGroups();
+    var seen = {}, out = [];
+    src.forEach(function (g) {
+      var t = (g && Array.isArray(g.t) ? g.t : []).filter(function (id) { if (TOOLS.indexOf(id) < 0 || seen[id]) return false; seen[id] = true; return true; });
+      if (t.length) out.push({ t: t, c: t.indexOf(g.c) >= 0 ? g.c : t[0] });
+    });
+    TOOLS.forEach(function (id) { if (!seen[id]) out.push({ t: [id], c: id }); });
+    return out;
+  }
+  function isDefaultGroups(groups) { return JSON.stringify(groups.map(function (g) { return g.t; })) === JSON.stringify(DEFAULT_GROUPS); }
+  function groupOf(groups, tool) { for (var i = 0; i < groups.length; i++) if (groups[i].t.indexOf(tool) >= 0) return i; return -1; }
+  // drag and drop. Positions are counted in the list before the move (what the user sees while dragging).
+  // a button to another place: `to` = the button it goes before (groups.length = the end)
+  function moveGroup(groups, from, to) {
+    var n = clone(groups); if (from < 0 || from >= n.length) return n;
+    var g = n.splice(from, 1)[0]; if (to > from) to--;
+    n.splice(Math.max(0, Math.min(n.length, to)), 0, g);
+    return n;
+  }
+  // a button dropped on another one: its tools join that group at the end (the target keeps the tool it shows)
+  function mergeGroup(groups, from, into) {
+    if (from === into || !groups[from] || !groups[into]) return clone(groups);
+    var n = clone(groups); n[into].t = n[into].t.concat(n[from].t); n.splice(from, 1);
+    return n;
+  }
+  // one tool of a group: dest { group, at } = into that group before position `at`; dest { at } = its own button before button `at`
+  function moveTool(groups, tool, dest) {
+    var gi = groupOf(groups, tool); if (gi < 0) return clone(groups);
+    var n = clone(groups), src = n[gi], pos = src.t.indexOf(tool), at = dest.at;
+    src.t.splice(pos, 1); if (src.c === tool) src.c = src.t[0];
+    if (dest.group != null) {
+      var target = n[dest.group]; if (!target) return clone(groups);
+      if (dest.group === gi && at > pos) at--;
+      target.t.splice(Math.max(0, Math.min(target.t.length, at)), 0, tool);
+      if (dest.group === gi) src.c = groups[gi].c;
+    } else {
+      n.splice(Math.max(0, Math.min(n.length, at)), 0, { t: [tool], c: tool });
+      if (at <= gi) gi++;
+    }
+    if (!src.t.length) n.splice(gi, 1);
+    return n;
+  }
+
   // ---------------------------------------------------------------- chart layer (browser)
   // opts: { chart, series, el (the chart element), bars() (revealed candles in prices), tfSec(), set, ctl (controller below),
   //         fmt(price) -> text, t(key, fb, params), quote(diff, price) -> { dist, money } | null (position tool labels),
@@ -303,7 +366,10 @@
     }
     function handlesOf(d, m) {
       var P = d.pts, xs = P.map(function (q) { return m.x(q.t); }), ys = P.map(function (q) { return m.y(q.p); });
-      if (d.tool === 'hline') return [{ i: 0, x: Math.max(24, Math.min(m.w - 24, xs[0])), y: ys[0] }];
+      if (d.tool === 'hline') {
+        if (d.extend === 'none') return [{ i: 0, x: xs[0], y: ys[0] }, { i: 1, x: xs[1], y: ys[0] }];
+        return [{ i: 0, x: d.extend === 'right' ? xs[0] : Math.max(24, Math.min(m.w - 24, xs[0])), y: ys[0] }];
+      }
       if (d.tool === 'text') return [];
       if (d.tool === 'rect') return rectHandles(xs[0], ys[0], xs[1], ys[1]);
       if (d.tool === 'long' || d.tool === 'short') return [{ i: 0, x: xs[0], y: ys[0] }, { i: 1, x: xs[1], y: ys[1] }, { i: 2, x: xs[2], y: ys[2] }, { i: 3, x: xs[1], y: ys[0] }];
@@ -322,7 +388,7 @@
       switch (d.tool) {
         case 'trend': line(ctx, x[0], y[0], x[1], y[1]); break;
         case 'ray': var e = rayEnd(x[0], y[0], x[1], y[1], m.w, m.h); line(ctx, x[0], y[0], e.x, e.y); break;
-        case 'hline': line(ctx, 0, y[0], m.w, y[0]); break;
+        case 'hline': var hs = hlineSpan(d, x, m.w); line(ctx, hs[0], y[0], hs[1], y[0]); break;
         case 'rect':
           if (fa) { ctx.fillStyle = withAlpha(cc, fa); ctx.fillRect(Math.min(x[0], x[1]), Math.min(y[0], y[1]), Math.abs(x[1] - x[0]), Math.abs(y[1] - y[0])); }
           ctx.strokeRect(Math.min(x[0], x[1]), Math.min(y[0], y[1]), Math.abs(x[1] - x[0]), Math.abs(y[1] - y[0])); break;
@@ -438,7 +504,7 @@
       switch (d.tool) {
         case 'trend': return distSeg(x, y, xs[0], ys[0], xs[1], ys[1]) <= tol;
         case 'ray': var e = rayEnd(xs[0], ys[0], xs[1], ys[1], m.w, m.h); return distSeg(x, y, xs[0], ys[0], e.x, e.y) <= tol;
-        case 'hline': return Math.abs(y - ys[0]) <= tol;
+        case 'hline': var hs = hlineSpan(d, xs, m.w); return Math.abs(y - ys[0]) <= tol && x >= hs[0] - tol && x <= hs[1] + tol;
         case 'rect': case 'fib':
           // a filled box is grabbed anywhere inside; an empty one on its outline
           if (fillOf(d) > 0) return inBox(x, y, xs[0], ys[0], xs[1], ys[1], tol);
@@ -466,6 +532,7 @@
         if (lk.kind === 'v') return { t: anchor.t, p: m.p(lk.y) };
         return { t: m.t(lk.x), p: m.p(lk.y) };
       }
+      if (tool === 'hline') return { t: model(pt, m, true).t, p: anchor.p };
       if (shift && tool === 'rect') {
         var sq = squareBox(m.x(anchor.t), m.y(anchor.p), pt.x, pt.y);
         return { t: m.t(sq.x), p: m.p(sq.y) };
@@ -475,7 +542,8 @@
     function setInteractive(on) {
       if (on === interactive) return;
       interactive = on;
-      if (!on) { var o = chart.options(); saved = { handleScroll: o.handleScroll, handleScale: o.handleScale }; chart.applyOptions({ handleScroll: false, handleScale: false }); }
+      // a copy: chart.options() hands out the chart's own objects, which applyOptions(false) then turns off in place
+      if (!on) { var o = chart.options(); saved = clone({ handleScroll: o.handleScroll, handleScale: o.handleScale }); chart.applyOptions({ handleScroll: false, handleScale: false }); }
       else if (saved) chart.applyOptions(saved);
     }
     function setCursor(c) {
@@ -505,13 +573,14 @@
         consume(e);
         if (!ctl.allowed(tool)) { ctl.denied(tool); return; }
         var q = model(pt, m, true), id = ctl.newId();
-        if (tool === 'hline') { create = { d: mark({ id: id, tool: tool, pts: [q], color: null }) }; finishCreate(); return; }
+        var ext = tool === 'hline' ? ctl.hlineMode() : null;
+        if (tool === 'hline' && ext !== 'none') { create = { d: mark({ id: id, tool: tool, pts: [q], color: null, extend: ext }) }; finishCreate(); return; }
         if (tool === 'text') { openEditor({ id: null, newId: id, at: q, text: '' }); return; }
         if (tool === 'long' || tool === 'short') {
           var unit = Math.abs(m.p(0) - m.p(m.h)) * 0.06 || Math.abs(q.p) * 0.002;
           create = { d: mark({ id: id, tool: tool, pts: newPosition(tool, q.t, q.p, unit, m.tf), color: null }) }; finishCreate(); return;
         }
-        create = { d: mark({ id: id, tool: tool, pts: [q, { t: q.t, p: q.p }], color: null }), down: pt, dragging: true, pid: e.pointerId };
+        create = { d: mark({ id: id, tool: tool, pts: [q, { t: q.t, p: q.p }], color: null, extend: ext || undefined }), down: pt, dragging: true, pid: e.pointerId };
         capture(e); refresh(); return;
       }
       if (set.hidden()) return;
@@ -680,6 +749,8 @@
       cancel: cancel,
       busy: function () { return !!(create || drag || editor); },
       editText: editText,
+      // the time `n` bars after `t` on this chart (NaN without candles)
+      later: function (t, n) { var m = mapper(); return m ? logicalToTime(m.bars, m.tf, timeToLogical(m.bars, m.tf, t) + n) : NaN; },
       hasDraft: function () { return !!create; },
       destroy: function () {
         if (drag) { var dd = drag; drag = null; set.put(dd.orig, true); }     // a chart rebuilt mid-drag leaves no half-moved drawing
@@ -746,8 +817,13 @@
   var UI_KEY = 'ww_bt_draw_ui', SESSION_PREFIX = 'ww_bt_draw:';
   function createController(opts) {
     var set = createSet(), hist = createHistory(set), layers = [], tool = 'cursor', acc = null, timers = {}, failShown = false, loadSeq = 0, pop = null;
-    var ui = { magnet: false, hidden: false, lockAll: false };
-    try { var u = JSON.parse((opts.local && opts.local.getItem(UI_KEY)) || '{}'); ui.magnet = u.magnet === true; ui.hidden = u.hidden === true; ui.lockAll = u.lockAll === true; } catch (e) { /* defaults */ }
+    // hline: the length mode a new horizontal line gets (the last one chosen); groups: the toolbar buttons (see normalizeGroups)
+    var ui = { magnet: false, hidden: false, lockAll: false, hline: 'both', groups: defaultGroups() };
+    try {
+      var u = JSON.parse((opts.local && opts.local.getItem(UI_KEY)) || '{}'); ui.magnet = u.magnet === true; ui.hidden = u.hidden === true; ui.lockAll = u.lockAll === true;
+      if (EXTENDS.indexOf(u.hline) >= 0) ui.hline = u.hline;
+      ui.groups = normalizeGroups(u.groups);
+    } catch (e) { /* defaults */ }
     set.setHidden(ui.hidden); set.setLockAll(ui.lockAll);
     function saveUi() { try { if (opts.local) opts.local.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ignore */ } }
     function allowed(id) { return id === 'cursor' || FREE_TOOLS.indexOf(id) >= 0 || opts.pro(); }
@@ -813,7 +889,8 @@
       if (TOOLS.indexOf(id) < 0) id = 'cursor';
       if (!allowed(id)) { opts.upgrade(); return; }
       tool = id;
-      if (id !== 'cursor') closePop();
+      if (id !== 'cursor') { closePop(); var gi = groupOf(ui.groups, id); if (gi >= 0 && ui.groups[gi].c !== id) { ui.groups[gi].c = id; saveUi(); } }
+      closeFly();
       layers.forEach(function (l) { l.toolChanged(); });
       renderBar();
     }
@@ -840,14 +917,20 @@
       Object.keys(attrs || {}).forEach(function (k) { b.setAttribute(k, attrs[k]); });
       return b;
     }
+    function toolName(id) { return opts.t('backtest.draw.tool_' + id, id) + ' (' + (TOOLS.indexOf(id) + 1) + ')'; }
     function mod() { return /Mac|iPhone|iPad/.test((global.navigator && global.navigator.platform) || '') ? '⌘' : 'Ctrl+'; }
     function renderBar() {
       var bar = opts.bar; if (!bar) return;
       bar.textContent = '';
       bar.appendChild(btn('', 'mouse-pointer-2', opts.t('backtest.draw.cursor', 'İmleç') + ' (V)', { 'data-tool': 'cursor', 'aria-pressed': tool === 'cursor' ? 'true' : 'false' }));
-      TOOLS.forEach(function (id, k) {
-        var b = btn('', ICONS[id], opts.t('backtest.draw.tool_' + id, id) + ' (' + (k + 1) + ')', { 'data-tool': id, 'aria-pressed': tool === id ? 'true' : 'false' });
+      ui.groups.forEach(function (g, gi) {
+        var id = g.t.indexOf(tool) >= 0 ? tool : g.c;
+        var b = btn('', ICONS[id], toolName(id), { 'data-tool': id, 'data-group': gi, 'data-tools': g.t.join(' '), 'aria-pressed': g.t.indexOf(tool) >= 0 ? 'true' : 'false' });
         if (!allowed(id)) { var s = document.createElement('span'); s.className = 'bt-pro bt-draw-pro'; s.textContent = 'PRO'; b.appendChild(s); b.setAttribute('data-pro', '1'); }
+        if (g.t.length > 1) {
+          var mo = document.createElement('span'); mo.className = 'bt-draw-more'; mo.setAttribute('data-more', gi); mo.setAttribute('aria-hidden', 'true'); b.appendChild(mo);
+          b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', fly && fly.gi === gi ? 'true' : 'false');
+        }
         bar.appendChild(b);
       });
       bar.appendChild(sep());
@@ -868,20 +951,40 @@
       fitBar();
     }
     // vertical bar: as many 32 px rows as the chart height allows, the rest wraps into another column (explicit rows, so the
-    // grid's width follows the real column count)
+    // grid's width follows the real column count). In its own window (data-fit="width") the window's width sets the columns instead.
     function fitBar() {
       var bar = opts.bar; if (!bar || getComputedStyle(bar).display !== 'grid') { if (bar) bar.style.gridTemplateRows = ''; return; }
-      var h = bar.clientHeight; if (!h) return;
-      var v = 'repeat(' + Math.max(1, Math.floor((h - 4 + 2) / 34)) + ', 32px)';
+      var v;
+      if (bar.getAttribute('data-fit') === 'width') {
+        var w = bar.clientWidth; if (!w) return;
+        v = 'repeat(' + Math.ceil(bar.children.length / Math.max(1, Math.floor((w + 3) / 37))) + ', 32px)';
+      } else {
+        var h = bar.clientHeight; if (!h) return;
+        v = 'repeat(' + Math.max(1, Math.floor((h - 4 + 2) / 34)) + ', 32px)';
+      }
       if (bar.style.gridTemplateRows !== v) bar.style.gridTemplateRows = v;
     }
     var ro = null, roFrame = 0;
     // next frame, not inside the observer callback (changing the width there would loop the observer)
     if (opts.bar && global.ResizeObserver) { ro = new global.ResizeObserver(function () { cancelAnimationFrame(roFrame); roFrame = requestAnimationFrame(fitBar); }); ro.observe(opts.bar); }
     function sep() { var s = document.createElement('span'); s.className = 'bt-draw-sep'; s.setAttribute('aria-hidden', 'true'); return s; }
-    function editTextOf(d) { var l = layers.filter(function (x) { return x.pane === paneOf(d); })[0]; if (l) l.editText(d.id); }
+    function layerOf(d) { return layers.filter(function (x) { return x.pane === paneOf(d); })[0] || null; }
+    function editTextOf(d) { var l = layerOf(d); if (l) l.editText(d.id); }
+    // length mode of a horizontal line; a segment ends SEG_BARS bars after its start until its end handle is dragged
+    function setHlineMode(d, mode) {
+      if (EXTENDS.indexOf(mode) < 0) return;
+      var patch = { extend: mode === 'both' ? undefined : mode };
+      if (mode === 'none' && d.pts.length < 2) {
+        var l = layerOf(d), t1 = l ? l.later(d.pts[0].t, SEG_BARS) : NaN; if (!isFinite(t1)) return;
+        patch.pts = [d.pts[0], { t: t1, p: d.pts[0].p }];
+      }
+      ui.hline = mode; saveUi();
+      edit(d, patch);
+    }
     function onBarClick(e) {
+      if (dnd && dnd.done) { dnd = null; return; }                 // the click that ends a drag
       var b = e.target.closest('button'); if (!b || !opts.bar.contains(b)) return;
+      if (e.target.closest('[data-more]')) return toggleFly(+b.getAttribute('data-group'), b);
       var t = b.getAttribute('data-tool');
       if (t) return setTool(tool === t && t !== 'cursor' ? 'cursor' : t);
       var a = b.getAttribute('data-act'), d = selected();
@@ -896,6 +999,174 @@
       else if (a === 'clear') opts.confirm(opts.t('backtest.draw.clear_confirm', 'Bu hesaptaki tüm çizimler silinsin mi?')).then(function (ok) { if (ok) set.clear(); });
     }
     if (opts.bar) opts.bar.addEventListener('click', onBarClick);
+
+    // ---- group menu: the tools of a button (corner, right click, arrow keys), reset of the toolbar, a hint about drag and drop
+    var fly = null, dnd = null;
+    function setGroups(g) { ui.groups = normalizeGroups(g); saveUi(); renderBar(); }
+    function closeFly(focusBack) {
+      if (!fly) return;
+      var f = fly; fly = null;
+      if (f.el.parentNode) f.el.parentNode.removeChild(f.el);
+      document.removeEventListener('pointerdown', f.outside, true);
+      var b = opts.bar && opts.bar.querySelector('[data-group="' + f.gi + '"]');
+      if (b && b.hasAttribute('aria-expanded')) b.setAttribute('aria-expanded', 'false');
+      if (focusBack && b) try { b.focus(); } catch (e) { /* ignore */ }
+    }
+    function toggleFly(gi, anchor) { if (fly && fly.gi === gi) closeFly(); else openFly(gi, anchor); }
+    function openFly(gi, anchor, focusFirst) {
+      closeFly();
+      var g = ui.groups[gi]; if (!g || !anchor) return;
+      var box = document.createElement('div'); box.className = 'bt-draw-fly'; box.setAttribute('role', 'menu');
+      box.setAttribute('aria-label', opts.t('backtest.draw.toolbar', 'Çizim araçları'));
+      g.t.forEach(function (id) {
+        var it = document.createElement('button'); it.type = 'button'; it.className = 'bt-draw-fly-item'; it.setAttribute('role', 'menuitemradio');
+        it.setAttribute('data-fly-tool', id); it.setAttribute('aria-checked', tool === id ? 'true' : 'false');
+        var ic = document.createElement('i'); ic.setAttribute('data-lucide', ICONS[id]); ic.setAttribute('aria-hidden', 'true'); it.appendChild(ic);
+        var lb = document.createElement('span'); lb.textContent = opts.t('backtest.draw.tool_' + id, id); it.appendChild(lb);
+        if (!allowed(id)) { var pro = document.createElement('span'); pro.className = 'bt-pro'; pro.textContent = 'PRO'; it.appendChild(pro); }
+        var kb = document.createElement('kbd'); kb.textContent = String(TOOLS.indexOf(id) + 1); it.appendChild(kb);
+        box.appendChild(it);
+      });
+      var sp = document.createElement('div'); sp.className = 'bt-draw-fly-sep'; box.appendChild(sp);
+      var rs = document.createElement('button'); rs.type = 'button'; rs.className = 'bt-draw-fly-item bt-draw-fly-reset'; rs.setAttribute('role', 'menuitem'); rs.setAttribute('data-fly-act', 'reset');
+      rs.textContent = opts.t('backtest.draw.bar_reset', 'Araç çubuğunu varsayılana döndür'); rs.disabled = isDefaultGroups(ui.groups); box.appendChild(rs);
+      var hint = document.createElement('p'); hint.className = 'bt-draw-fly-hint';
+      hint.textContent = opts.t('backtest.draw.bar_hint', 'Sürükleyerek sırala. Bir aracı başka bir düğmenin üstüne bırakınca o gruba girer, çubukta boş bir yere bırakınca tek başına düğme olur.');
+      box.appendChild(hint);
+      document.body.appendChild(box);
+      opts.icons();
+      fly = { gi: gi, el: box, outside: function (e) { if (fly && !box.contains(e.target) && !(opts.bar && opts.bar.contains(e.target))) closeFly(); } };
+      document.addEventListener('pointerdown', fly.outside, true);
+      if (anchor.hasAttribute('aria-expanded')) anchor.setAttribute('aria-expanded', 'true');
+      // next to the button: to its right on a vertical bar, under it on a horizontal one; inside the viewport
+      var r = anchor.getBoundingClientRect(), vw = global.innerWidth || 1200, vh = global.innerHeight || 800, bw = box.offsetWidth, bh = box.offsetHeight;
+      var x = r.right + 6, y = r.top;
+      if (x + bw > vw - 8) { x = Math.max(8, Math.min(vw - bw - 8, r.left)); y = r.bottom + 6; }
+      box.style.left = Math.round(x) + 'px'; box.style.top = Math.round(Math.max(8, Math.min(vh - bh - 8, y))) + 'px';
+      box.addEventListener('click', onFlyClick);
+      box.addEventListener('keydown', onFlyKey);
+      if (focusFirst) { var first = box.querySelector('.bt-draw-fly-item'); if (first) try { first.focus(); } catch (e) { /* ignore */ } }
+    }
+    function onFlyClick(e) {
+      if (dnd && dnd.done) { dnd = null; return; }
+      var b = e.target.closest('button'); if (!b || !fly) return;
+      var t = b.getAttribute('data-fly-tool');
+      if (t) { closeFly(); setTool(t); return; }
+      if (b.getAttribute('data-fly-act') === 'reset') { closeFly(); setGroups(defaultGroups()); }
+    }
+    function onFlyKey(e) {
+      var items = [].slice.call(fly.el.querySelectorAll('.bt-draw-fly-item:not(:disabled)')), i = items.indexOf(document.activeElement);
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeFly(true); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); var n = items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]; if (n) n.focus(); }
+      else if (e.key === 'Tab') closeFly();
+    }
+    function onBarKey(e) {
+      var b = e.target.closest && e.target.closest('[data-group]'); if (!b || !b.querySelector('[data-more]')) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); openFly(+b.getAttribute('data-group'), b, true); }
+    }
+    function onBarContext(e) {
+      var b = e.target.closest && e.target.closest('[data-group]'); if (!b || !opts.bar.contains(b)) return;
+      e.preventDefault(); openFly(+b.getAttribute('data-group'), b);
+    }
+
+    // ---- drag and drop (mouse and pen; a touch keeps scrolling the bar): a button moves or joins another group, a tool from the menu
+    // moves inside its group, joins another one or becomes its own button
+    function onDragDown(e) {
+      if (e.button !== 0 || e.pointerType === 'touch') return;
+      if (dnd && dnd.done) dnd = null;
+      var it = fly && e.target.closest && e.target.closest('.bt-draw-fly [data-fly-tool]');
+      var b = !it && opts.bar && e.target.closest && e.target.closest('[data-group]');
+      if (it) dnd = { kind: 'tool', tool: it.getAttribute('data-fly-tool'), from: fly.gi, src: it };
+      else if (b && opts.bar.contains(b) && !e.target.closest('[data-more]')) dnd = { kind: 'group', tool: b.getAttribute('data-tool'), from: +b.getAttribute('data-group'), src: b };
+      else return;
+      dnd.x = e.clientX; dnd.y = e.clientY; dnd.on = false;
+    }
+    function onDragMove(e) {
+      if (!dnd || dnd.done) return;
+      if (!dnd.on) {
+        if (Math.abs(e.clientX - dnd.x) + Math.abs(e.clientY - dnd.y) < 6) return;
+        dnd.on = true;
+        var gh = document.createElement('div'); gh.className = 'bt-draw-ghost'; gh.setAttribute('aria-hidden', 'true');
+        var svg = dnd.src.querySelector('svg'); if (svg) gh.appendChild(svg.cloneNode(true));
+        document.body.appendChild(gh); dnd.ghost = gh;
+        var ln = document.createElement('div'); ln.className = 'bt-draw-drop-line'; ln.hidden = true; document.body.appendChild(ln); dnd.line = ln;
+        document.body.classList.add('bt-draw-dragging');
+        if (dnd.kind === 'group') closeFly();
+      }
+      e.preventDefault();
+      dnd.ghost.style.left = e.clientX + 'px'; dnd.ghost.style.top = e.clientY + 'px';
+      showDrop(dnd.target = dropAt(e.clientX, e.clientY));
+    }
+    function onDragUp() {
+      if (!dnd) return;
+      if (!dnd.on) { dnd = null; return; }
+      var d = dnd, t = d.target, g = null;
+      endDrag();
+      dnd = { done: true };                                  // swallows the click that follows
+      setTimeout(function () { if (dnd && dnd.done) dnd = null; }, 0);
+      if (!t) return;
+      if (d.kind === 'group') g = t.into != null ? mergeGroup(ui.groups, d.from, t.into) : moveGroup(ui.groups, d.from, t.at);
+      else if (t.into != null) g = t.into === d.from ? null : moveTool(ui.groups, d.tool, { group: t.into, at: ui.groups[t.into].t.length });
+      else g = moveTool(ui.groups, d.tool, t.group != null ? { group: t.group, at: t.at } : { at: t.at });
+      if (!g) return;
+      var wasFly = fly && d.kind === 'tool' && t.group != null, anchorGi = null;
+      setGroups(g);
+      if (wasFly) { anchorGi = groupOf(ui.groups, d.tool); var a = opts.bar.querySelector('[data-group="' + anchorGi + '"]'); if (a) openFly(anchorGi, a); }
+      else closeFly();
+    }
+    function endDrag() {
+      if (!dnd) return;
+      if (dnd.ghost && dnd.ghost.parentNode) dnd.ghost.parentNode.removeChild(dnd.ghost);
+      if (dnd.line && dnd.line.parentNode) dnd.line.parentNode.removeChild(dnd.line);
+      [].forEach.call(document.querySelectorAll('.bt-draw-drop-into'), function (x) { x.classList.remove('bt-draw-drop-into'); });
+      document.body.classList.remove('bt-draw-dragging');
+      dnd = null;
+    }
+    // where the pointer drops: { group, at } in the open menu; on the bar { into: button } (its middle) or { at: button } (its ends)
+    function dropAt(x, y) {
+      function inside(r, pad) { return x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad; }
+      if (fly && dnd.kind === 'tool' && dnd.from === fly.gi && inside(fly.el.getBoundingClientRect(), 4)) {
+        var its = [].slice.call(fly.el.querySelectorAll('[data-fly-tool]')), at = its.length;
+        for (var k = 0; k < its.length; k++) { var ri = its[k].getBoundingClientRect(); if (y < ri.top + ri.height / 2) { at = k; break; } }
+        var ref = its[Math.min(at, its.length - 1)].getBoundingClientRect();
+        return { group: fly.gi, at: at, line: { x: ref.left + 4, y: at < its.length ? ref.top : ref.bottom, w: ref.width - 8, h: 2 } };
+      }
+      if (!opts.bar || !inside(opts.bar.getBoundingClientRect(), 6)) return null;
+      var bs = [].slice.call(opts.bar.querySelectorAll('[data-group]')); if (!bs.length) return null;
+      var rs = bs.map(function (b) { return b.getBoundingClientRect(); });
+      var vert = rs.length < 2 || Math.abs(rs[1].left - rs[0].left) < 2;      // flow down a column (the vertical bar) or along a row
+      function edge(i, after) {
+        var r = rs[Math.min(i, rs.length - 1)], end = after || i >= rs.length;
+        return vert ? { x: r.left + 3, y: end ? r.bottom : r.top - 2, w: r.width - 6, h: 2 } : { x: end ? r.right : r.left - 2, y: r.top + 3, w: 2, h: r.height - 6 };
+      }
+      for (var i = 0; i < rs.length; i++) {
+        if (!inside(rs[i], 1)) continue;
+        var f = vert ? (y - rs[i].top) / rs[i].height : (x - rs[i].left) / rs[i].width;
+        if (f < 0.28) return { at: i, line: edge(i) };
+        if (f > 0.72) return { at: i + 1, line: edge(i, true) };
+        if (dnd.kind === 'group' && i === dnd.from) return null;
+        return { into: i, el: bs[i] };
+      }
+      // between or after the buttons: the closest one decides
+      var best = 0, bd = Infinity;
+      rs.forEach(function (r, k) { var d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2)); if (d < bd) { bd = d; best = k; } });
+      var rb = rs[best], after = vert ? y > rb.top + rb.height / 2 : x > rb.left + rb.width / 2;
+      return { at: best + (after ? 1 : 0), line: edge(best, after) };
+    }
+    function showDrop(t) {
+      [].forEach.call(document.querySelectorAll('.bt-draw-drop-into'), function (x) { x.classList.remove('bt-draw-drop-into'); });
+      var ln = dnd.line;
+      if (t && t.el) t.el.classList.add('bt-draw-drop-into');
+      if (!t || !t.line) { ln.hidden = true; return; }
+      ln.hidden = false; ln.style.left = Math.round(t.line.x) + 'px'; ln.style.top = Math.round(t.line.y) + 'px'; ln.style.width = Math.round(t.line.w) + 'px'; ln.style.height = Math.round(t.line.h) + 'px';
+    }
+    function onDragKey(e) { if (e.key === 'Escape' && dnd && dnd.on) { e.preventDefault(); e.stopPropagation(); endDrag(); } }
+    var doc0 = global.document || null;
+    if (opts.bar) { opts.bar.addEventListener('keydown', onBarKey); opts.bar.addEventListener('contextmenu', onBarContext); }
+    if (doc0) {
+      doc0.addEventListener('pointerdown', onDragDown, true); doc0.addEventListener('pointermove', onDragMove, true);
+      doc0.addEventListener('pointerup', onDragUp, true); doc0.addEventListener('pointercancel', endDrag, true); doc0.addEventListener('keydown', onDragKey, true);
+    }
 
     // ---- settings popover: color, width, line style, fill and opacity (+ fib levels, text size), lock and delete
     function closePop() {
@@ -951,6 +1222,10 @@
           { v: 'solid', title: t('backtest.draw.solid', 'Düz'), html: '<i class="bt-dset-ln"></i>' },
           { v: 'dashed', title: t('backtest.draw.dashed', 'Kesik'), html: '<i class="bt-dset-ln bt-dset-dashed"></i>' },
           { v: 'dotted', title: t('backtest.draw.dotted', 'Noktalı'), html: '<i class="bt-dset-ln bt-dset-dotted"></i>' }], d.dash || 'solid', 'data-dash'));
+        if (d.tool === 'hline') box.appendChild(seg(t('backtest.draw.extend', 'Uzunluk'), [
+          { v: 'both', label: t('backtest.draw.extend_both', 'Tam'), title: t('backtest.draw.extend_both_hint', 'Grafiğin bir ucundan öbürüne') },
+          { v: 'right', label: t('backtest.draw.extend_right', 'Sağa'), title: t('backtest.draw.extend_right_hint', 'Başladığı yerden sağa doğru') },
+          { v: 'none', label: t('backtest.draw.extend_none', 'Parça'), title: t('backtest.draw.extend_none_hint', 'İki ucu var; uçlarından sürükleyerek uzat veya kısalt') }], d.extend || 'both', 'data-extend'));
       } else {
         box.appendChild(seg(t('backtest.draw.font_size', 'Yazı boyutu'), TEXT_SIZES.map(function (n) { return { v: String(n), label: String(n) }; }), String(d.size || 13), 'data-size'));
       }
@@ -999,6 +1274,7 @@
       if (b.hasAttribute('data-width')) return edit(d, { width: +b.getAttribute('data-width') });
       if (b.hasAttribute('data-dash')) return edit(d, { dash: b.getAttribute('data-dash') });
       if (b.hasAttribute('data-size')) return edit(d, { size: +b.getAttribute('data-size') });
+      if (b.hasAttribute('data-extend')) return setHlineMode(d, b.getAttribute('data-extend'));
       if (k === 'levels-reset') return edit(d, { levels: undefined });
       if (k === 'lock') return edit(d, { locked: !d.locked });
       if (k === 'edit-text') { closePop(); return editTextOf(d); }
@@ -1024,6 +1300,7 @@
     var ctl = {
       tool: function () { return tool; },
       magnet: function () { return ui.magnet; },
+      hlineMode: function () { return ui.hline; },
       allowed: allowed,
       denied: function () { opts.upgrade(); },
       newId: opts.newId,
@@ -1064,6 +1341,8 @@
         return false;
       },
       escape: function () {
+        if (dnd && dnd.on) { endDrag(); return true; }
+        if (fly) { closeFly(true); return true; }
         if (pop) { closePop(); return true; }
         if (cancelAll()) return true;
         if (tool !== 'cursor') { setTool('cursor'); return true; }
@@ -1071,7 +1350,12 @@
         return false;
       },
       destroy: function () {
-        flush(); closePop();
+        flush(); closePop(); closeFly(); endDrag();
+        if (doc0) {
+          doc0.removeEventListener('pointerdown', onDragDown, true); doc0.removeEventListener('pointermove', onDragMove, true);
+          doc0.removeEventListener('pointerup', onDragUp, true); doc0.removeEventListener('pointercancel', endDrag, true); doc0.removeEventListener('keydown', onDragKey, true);
+        }
+        if (opts.bar) { opts.bar.removeEventListener('keydown', onBarKey); opts.bar.removeEventListener('contextmenu', onBarContext); }
         if (ro) { ro.disconnect(); ro = null; cancelAnimationFrame(roFrame); }
         layers.forEach(function (l) { l.destroy(); }); layers = [];
         hist.destroy();
@@ -1083,7 +1367,9 @@
 
   global.WwBtDraw = {
     TOOLS: TOOLS, FREE_TOOLS: FREE_TOOLS, NPTS: NPTS, ICONS: ICONS, FIB_LEVELS: FIB_LEVELS, COLORS: COLORS, MAX_TEXT: MAX_TEXT, MAX_DRAWINGS: MAX_DRAWINGS,
-    TEXT_SIZES: TEXT_SIZES, MAX_LEVELS: MAX_LEVELS,
+    TEXT_SIZES: TEXT_SIZES, MAX_LEVELS: MAX_LEVELS, EXTENDS: EXTENDS, SEG_BARS: SEG_BARS, hlineSpan: hlineSpan,
+    DEFAULT_GROUPS: DEFAULT_GROUPS, defaultGroups: defaultGroups, normalizeGroups: normalizeGroups, isDefaultGroups: isDefaultGroups, groupOf: groupOf,
+    moveGroup: moveGroup, mergeGroup: mergeGroup, moveTool: moveTool,
     timeToLogical: timeToLogical, logicalToTime: logicalToTime, magnet: magnet,
     sanitize: sanitize, toRow: toRow, fromRow: fromRow, paneOf: paneOf, fibLevels: fibLevels, newPosition: newPosition, positionStats: positionStats,
     measureStats: measureStats, moveBy: moveBy, setHandle: setHandle, resizeRect: resizeRect, distSeg: distSeg, rayEnd: rayEnd, inBox: inBox,

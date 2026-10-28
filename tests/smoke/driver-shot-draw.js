@@ -8,7 +8,14 @@
   function setv(id, v) { var e = $(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }
   var T = function () { return window.__btTest; }, pp = window.__pp;
   function P(fx, fy) { var e = $('bt-chart'), r = e.getBoundingClientRect(), ts = T().chart().timeScale(); return { x: Math.round(r.left + ts.width() * fx), y: Math.round(r.top + (e.clientHeight - ts.height()) * fy) }; }
-  async function tool(id) { if (T().draw().tool() !== id) document.querySelector('#bt-draw-bar [data-tool="' + id + '"]').click(); await sleep(60); }
+  // a tool's button, or the menu of the group it is in (the toolbar groups lines and positions on one button each)
+  function pickTool(id) {
+    var b = document.querySelector('#bt-draw-bar [data-tool="' + id + '"]');
+    if (b) return b.click();
+    document.querySelector('#bt-draw-bar [data-tools~="' + id + '"] [data-more]').click();
+    document.querySelector('.bt-draw-fly [data-fly-tool="' + id + '"]').click();
+  }
+  async function tool(id) { if (T().draw().tool() !== id) pickTool(id); await sleep(60); }
   async function drag(a, b) { await pp({ op: 'move', x: a.x, y: a.y }); await pp({ op: 'down' }); await pp({ op: 'move', x: b.x, y: b.y, steps: 6 }); await pp({ op: 'up' }); await sleep(120); }
   try {
     await waitFor(function () { return $('bt-root').getAttribute('data-mode'); });

@@ -85,6 +85,7 @@
 }
 .pc2-chip em { font-style: normal; font-family: var(--font); font-weight: 500; color: var(--muted); }
 .pc2-chip.done { color: var(--pc-ok); }
+.pc2-scope-note { margin: -4px 0 0; font-size: 11px; line-height: 1.4; color: var(--muted); }
 
 /* standard account card */
 .pc2 .pc2-btn {

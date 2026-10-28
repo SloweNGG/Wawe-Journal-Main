@@ -24,7 +24,9 @@ describe('bt-desk layout model', () => {
     const n = D.normalize({ v: 1, wins: { chart: { x: -1, y: 'a', w: 9, h: 0.5, st: 'weird', closed: true }, order: { x: 0.1, y: 0.1, w: 0.2, h: 0.3, st: 'max', closed: true,
       prev: { x: 0.5, y: 0.5, w: 0.3, h: 0.3 } } }, z: ['order', 'nope', 'order'], saved: [{ name: '  Mine  ', wins: {} }, { name: 'mine' }, { name: '' }], preset: 'x',
       multi: { '2x2': { cols: [1, 99], rows: [1], order: [0, 1, 2, 2] } } });
-    assert.deepEqual(n.wins.chart, { x: 0, y: D.defaults().wins.chart.y, w: 1, h: 0.5, st: 'normal', closed: false });
+    const step = Math.round((D.DRAW_W + D.GAP) / 1400 * 10000) / 10000;   // a layout from before the drawing tools window: it takes the chart's left edge
+    assert.deepEqual(n.wins.chart, { x: step, y: D.defaults().wins.chart.y, w: Math.round((1 - step) * 10000) / 10000, h: 0.5, st: 'normal', closed: false });
+    assert.deepEqual(n.wins.draw, { x: 0, y: n.wins.chart.y, w: Math.round(D.DRAW_W / 1400 * 10000) / 10000, h: 0.5, st: 'normal', closed: false });
     assert.equal(n.wins.order.st, 'max'); assert.equal(n.wins.order.closed, true); assert.deepEqual(n.wins.order.prev, { x: 0.5, y: 0.5, w: 0.3, h: 0.3 });
     assert.equal(n.z[n.z.length - 1], 'order'); assert.equal(n.z.length, D.WINS.length);
     assert.deepEqual(n.saved.map((s) => s.name), ['Mine'], 'trimmed, case-insensitive unique, no empty name');
@@ -133,8 +135,25 @@ describe('bt-desk layout model', () => {
   });
   it('visible windows: closed ones and charts the layout does not have are left out', () => {
     const l = D.defaults(desk);
-    assert.deepEqual(D.visibleWins(l, (id) => D.CHARTS.indexOf(id) <= 0), ['replay', 'chart', 'balance', 'order', 'open', 'orders', 'history']);
+    assert.deepEqual(D.visibleWins(l, (id) => D.CHARTS.indexOf(id) <= 0), ['replay', 'chart', 'draw', 'balance', 'order', 'open', 'orders', 'history']);
     assert.ok(D.visibleWins(l, () => true).includes('chart4'));
+  });
+  it('drawing tools window: left of the chart column in every preset (no overlap), closable, never maximized; a stored one is kept', () => {
+    D.PRESET_IDS.forEach((id) => {
+      const w = D.applyPreset(D.defaults(desk), id, desk).wins, dr = D.toPx(w.draw, desk), ch = D.toPx(w.chart, desk);
+      assert.equal(w.draw.closed, false, id);
+      assert.ok(Math.abs(dr.w - D.DRAW_W) <= 1, id + ' two toolbar columns wide');
+      assert.ok(dr.x + dr.w + D.GAP - 1 <= ch.x && ch.x <= dr.x + dr.w + D.GAP + 1, id + ' the chart starts one gap to the right');
+      assert.ok(dr.y <= ch.y + 1 && dr.y + dr.h >= ch.y + ch.h - 1, id + ' as tall as the chart column');
+      if (id === 'multi') { const c3 = D.toPx(w.chart3, desk); assert.ok(Math.abs(c3.x - ch.x) <= 1 && dr.y + dr.h >= c3.y + c3.h - 1, 'multi: the chart under it moves too'); }
+    });
+    assert.ok(D.CLOSABLE.includes('draw') && D.FREE_ONLY.includes('draw'));
+    let l = D.defaults(desk); l = D.maximize(l, 'draw'); assert.equal(l.wins.draw.st, 'normal', 'no maximize');
+    l = D.close(l, 'draw'); assert.equal(l.wins.draw.closed, true); l = D.open(l, 'draw'); assert.equal(l.wins.draw.closed, false);
+    const kept = D.normalize({ v: 1, wins: { chart: { x: 0.2, y: 0.2, w: 0.5, h: 0.5 }, draw: { x: 0.8, y: 0.1, w: 0.2, h: 0.05 } } });
+    assert.deepEqual([kept.wins.chart.x, kept.wins.draw.x, kept.wins.draw.h], [0.2, 0.8, 0.05], 'a stored drawing window and its chart stay where they are');
+    const narrow = D.normalize({ v: 1, wins: { chart: { x: 0.5, y: 0.2, w: 0.1, h: 0.5 } } });
+    assert.equal(narrow.wins.chart.x, 0.5, 'a chart too narrow to share is not shrunk');
   });
 });
 

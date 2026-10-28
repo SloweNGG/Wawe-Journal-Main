@@ -918,6 +918,35 @@ body.light-theme .journal-prop-section {
   box-sizing: border-box;
 }
 
+/* Başlangıç tarihinden önce kalan işlemler notu (journals.astro updateStartDateNote) */
+.journal-start-note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  background: rgba(251, 191, 36, 0.07);
+  color: var(--yellow, #fbbf24);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.journal-start-note[hidden] { display: none; }
+.journal-start-note-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.journal-start-note-btn:hover { color: var(--yellow, #fbbf24); }
+
 .journal-prop-input::-webkit-calendar-picker-indicator {
   filter: invert(0.8) sepia(1) saturate(5) hue-rotate(220deg);
   cursor: pointer;
@@ -1271,11 +1300,6 @@ body.light-theme .journal-prop-section {
 }
 .journal-card-prop-badge.prop-custom .prop-badge-firm {
   color: #c084fc;
-}
-
-.journal-card.is-prop-account:hover {
-  border-color: var(--prop-brand-color, rgba(139, 92, 246, 0.5));
-  box-shadow: 0 12px 32px -8px var(--prop-brand-glow, rgba(139, 92, 246, 0.25));
 }
 
 /* Tablet & Mobil Responsive */

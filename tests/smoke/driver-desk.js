@@ -62,7 +62,7 @@
       ['replay', 'chart', 'balance', 'order', 'open', 'orders'].every(function (id) { return vis(win(id)); }) && !vis(win('history')) && !vis(win('stats')));
     ok('each window has a title bar; the chart has no close button', vis(win('order').querySelector('.bt-win-head')) && vis(win('order').querySelector('[data-win-act="close"]')) && !vis(win('chart').querySelector('[data-win-act="close"]')));
     var tasks = [].map.call(document.querySelectorAll('.bt-taskbar .bt-task'), function (b) { return b.getAttribute('data-task'); });
-    ok('taskbar lists the open windows, history marked as minimized', tasks.join() === 'replay,chart,balance,order,open,orders,history' && q('.bt-task[data-task="history"]').classList.contains('bt-task-min'), tasks.join());
+    ok('taskbar lists the open windows, history marked as minimized', tasks.join() === 'replay,chart,draw,balance,order,open,orders,history' && q('.bt-task[data-task="history"]').classList.contains('bt-task-min'), tasks.join());
 
     // --- move by the title bar
     var b0 = box('balance'), h0 = headPt('balance');

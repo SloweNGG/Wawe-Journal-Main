@@ -1461,6 +1461,54 @@ body.light-theme .panel-glow.overtrade-glow {
   line-height: 1.5;
 }
 
+/* ⭐ PRO TEASER — kilitli özelliğin bulanık önizlemesi + üstte CTA */
+.pro-teaser {
+  position: relative;
+  min-height: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 12px);
+  overflow: hidden;
+  isolation: isolate;
+}
+.pro-teaser-preview {
+  padding: clamp(1rem, 2vw, 1.5rem);
+  filter: blur(3px);
+  pointer-events: none;
+  user-select: none;
+}
+.pro-teaser-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(14, 14, 22, 0.2);
+  background: radial-gradient(ellipse at center,
+    color-mix(in srgb, var(--surface) 45%, transparent),
+    color-mix(in srgb, var(--surface) 10%, transparent) 75%);
+}
+.pro-teaser-overlay .ot-pro-locked,
+.pro-teaser-overlay .theme-pro-locked-card {
+  width: 100%;
+  max-width: 440px;
+  padding: clamp(1.25rem, 2.5vw, 1.75rem) clamp(1rem, 2vw, 1.5rem);
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.03) inset;
+}
+body.light-theme .pro-teaser-overlay .ot-pro-locked,
+body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
+  box-shadow: 0 12px 32px rgba(76,29,149,0.12);
+}
+.pro-teaser-overlay .ot-pro-locked .lock-icon {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+}
+
 @media (max-width: 640px) {
   .theme-mode-cards {
     grid-template-columns: 1fr;

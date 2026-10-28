@@ -151,6 +151,60 @@ describe('bt-draw', () => {
     assert.ok(JSON.stringify(D.toRow(fib, 'u', 'a1').style).length < 2048, 'fits the 2 KB style check');
     assert.equal(D.fillOf(r), 0); assert.equal(D.fillOf(D.sanitize(base)), 0.14); assert.equal(D.widthOf(fib), 1); assert.equal(D.widthOf(r), 3);
   });
+  it('horizontal line length: full (default), ray to the right, segment with two ends on one price; row round trip', () => {
+    const base = { id: 'h', tool: 'hline', pts: [{ t: 10, p: 1.5 }] };
+    assert.equal(D.sanitize(base).extend, undefined, 'full is the default and left out');
+    assert.equal(D.sanitize({ ...base, extend: 'right' }).extend, 'right');
+    assert.equal(D.sanitize({ ...base, extend: 'odd' }).extend, undefined);
+    assert.equal(D.sanitize({ ...base, extend: 'none' }).extend, undefined, 'a segment needs its second point');
+    const seg = D.sanitize({ ...base, extend: 'none', pts: [{ t: 10, p: 1.5 }, { t: 90, p: 9 }] });
+    assert.deepEqual(seg.pts, [{ t: 10, p: 1.5 }, { t: 90, p: 1.5 }], 'the end keeps the start price');
+    assert.equal(D.sanitize({ ...base, pts: [{ t: 10, p: 1.5 }, { t: 90, p: 1.5 }] }).pts.length, 1, 'not a segment: one point');
+    assert.deepEqual(D.fromRow(D.toRow(seg, 'u', 'a')), seg);
+    assert.deepEqual(D.hlineSpan(D.sanitize(base), [300], 800), [0, 800]);
+    assert.deepEqual(D.hlineSpan({ extend: 'right' }, [300], 800), [300, 800]);
+    assert.deepEqual(D.hlineSpan(seg, [500, 200], 800), [200, 500]);
+    // handles: the start moves time and price (the end follows the price), the end changes only the length
+    let m = D.setHandle(seg, 0, 20, 2, H); assert.deepEqual(m.pts, [{ t: 20, p: 2 }, { t: 90, p: 2 }]);
+    m = D.setHandle(seg, 1, 150, 7, H); assert.deepEqual(m.pts, [{ t: 10, p: 1.5 }, { t: 150, p: 1.5 }]);
+    assert.deepEqual(D.setHandle(D.sanitize(base), 0, 30, 3, H).pts, [{ t: 30, p: 3 }]);
+    assert.deepEqual(D.EXTENDS, ['both', 'right', 'none']);
+  });
+  it('toolbar groups: lines and positions share a button by default; stored groups are checked', () => {
+    const ts = (g) => g.map((x) => x.t);
+    assert.deepEqual(ts(D.defaultGroups()), [['trend', 'ray', 'hline'], ['rect'], ['fib'], ['long', 'short'], ['text'], ['measure']]);
+    assert.deepEqual(D.defaultGroups().map((x) => x.c), ['trend', 'rect', 'fib', 'long', 'text', 'measure'], 'a button shows its first tool');
+    assert.ok(D.isDefaultGroups(D.defaultGroups()));
+    assert.deepEqual(D.normalizeGroups('x'), D.defaultGroups());
+    const n = D.normalizeGroups([{ t: ['ray', 'nope', 'ray', 'fib'], c: 'fib' }, { t: [] }, null, { t: ['trend'], c: 'zzz' }]);
+    assert.deepEqual(ts(n), [['ray', 'fib'], ['trend'], ['hline'], ['rect'], ['long'], ['short'], ['text'], ['measure']], 'unknown and repeated dropped, missing ones at the end');
+    assert.deepEqual(n.map((x) => x.c).slice(0, 2), ['fib', 'trend'], 'the shown tool kept when valid, else the first');
+    assert.equal(D.groupOf(D.defaultGroups(), 'short'), 3); assert.equal(D.groupOf(D.defaultGroups(), 'x'), -1);
+  });
+  it('toolbar drag and drop: reorder buttons, merge, a tool into another group, out to its own button, inside its group', () => {
+    const g = D.defaultGroups(), ts = (x) => x.map((y) => y.t);
+    assert.deepEqual(ts(D.moveGroup(g, 0, 3)), [['rect'], ['fib'], ['trend', 'ray', 'hline'], ['long', 'short'], ['text'], ['measure']], 'before the 4th button');
+    assert.deepEqual(ts(D.moveGroup(g, 5, 0))[0], ['measure']);
+    assert.deepEqual(ts(D.moveGroup(g, 2, 6))[5], ['fib'], 'to the end');
+    assert.deepEqual(ts(D.mergeGroup(g, 2, 0)).slice(0, 2), [['trend', 'ray', 'hline', 'fib'], ['rect']], 'a button dropped on another joins it');
+    assert.equal(D.mergeGroup(g, 2, 0)[0].c, 'trend', 'the target keeps what it shows');
+    assert.deepEqual(ts(D.mergeGroup(g, 1, 1)), ts(g), 'on itself: nothing');
+    let m = D.moveTool(g, 'ray', { at: 1 });
+    assert.deepEqual(ts(m).slice(0, 3), [['trend', 'hline'], ['ray'], ['rect']], 'out of the group: its own button');
+    m = D.moveTool(g, 'trend', { at: 6 });
+    assert.deepEqual(m[0], { t: ['ray', 'hline'], c: 'ray' }, 'the group shows another tool when its shown one leaves');
+    assert.deepEqual(ts(m)[6], ['trend']);
+    m = D.moveTool(g, 'rect', { group: 0, at: 1 });
+    assert.deepEqual(ts(m).slice(0, 2), [['trend', 'rect', 'ray', 'hline'], ['fib']], 'into another group; the emptied button disappears');
+    m = D.moveTool(g, 'fib', { at: 0 });
+    assert.deepEqual(ts(m).slice(0, 3), [['fib'], ['trend', 'ray', 'hline'], ['rect']], 'a single tool to the front');
+    m = D.moveTool(g, 'rect', { at: 3 });
+    assert.deepEqual(ts(m).slice(0, 4), [['trend', 'ray', 'hline'], ['fib'], ['rect'], ['long', 'short']], 'before the 4th button (counted before the move)');
+    m = D.moveTool(g, 'trend', { group: 0, at: 3 });
+    assert.deepEqual(m[0], { t: ['ray', 'hline', 'trend'], c: 'trend' }, 'inside its group: reordered, the shown tool stays');
+    m = D.moveTool(g, 'hline', { group: 0, at: 0 }); assert.deepEqual(m[0].t, ['hline', 'trend', 'ray']);
+    assert.deepEqual(D.normalizeGroups(m), m, 'results stay valid');
+  });
   it('fib levels from text: separators, percent sign, limits', () => {
     assert.deepEqual(D.parseLevels('0, 0.5; 0.618 1'), [0, 0.5, 0.618, 1]);
     assert.deepEqual(D.parseLevels('1.618%, -0.272'), [-0.272, 1.618]);
