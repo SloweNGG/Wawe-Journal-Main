@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v42'; // backtest: tam ekrana pencere ekleme, göster/gizle (yeni çeviri anahtarları)
+const CACHE_VERSION = 'wawe-v43'; // backtest: aynı mumda SL ve TP her zaman kötümser (SL), exit_rule (yeni bildirim metinleri)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

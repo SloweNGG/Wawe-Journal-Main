@@ -8,6 +8,10 @@
 
   var MAX_POSITIONS = 20, MAX_ORDERS = 50;
   var ORDER_TYPES = ['limit', 'stop'];
+  // which rule decided an ambiguous exit (trade.exitRule, column exit_rule; the same values as its CHECK in 202610290001):
+  //   pessimistic: SL and TP both reached inside one 1m bar (after the fill, for an order filled in that bar) -> SL
+  //   bar_path:    an order filled and closed inside one 1m bar with only one level reached; the bar path put the fill first
+  var RULE_PESSIMISTIC = 'pessimistic', RULE_BAR_PATH = 'bar_path', EXIT_RULES = [RULE_PESSIMISTIC, RULE_BAR_PATH];
 
   function S() { return global.WwBtSymbols; }
   function sym(x) { return typeof x === 'string' ? S().get(x) : x; }
@@ -130,7 +134,8 @@
   function closeFill(dir, bid, sp) { return dir > 0 ? bid : bid + sp; }        // close LONG at bid, SHORT at ask
 
   // pos: { dir, sl, tp } in points; bar = [t, o, h, l, c] BID points; sp = spread points.
-  // Returns null or { reason: 'sl'|'tp', pts, ambiguous }. TP and SL inside ONE 1m bar: SL first, flagged.
+  // Returns null or { reason: 'sl'|'tp', pts, ambiguous }. TP and SL inside ONE 1m bar: SL first, flagged (rule 'pessimistic';
+  // exitOnPath applies the same rule after an order filled inside the bar).
   function exitOnBar(pos, bar, sp) {
     var adj = pos.dir > 0 ? 0 : sp;                 // LONG triggers on BID, SHORT on ASK = BID + sp
     var o = bar[1] + adj, h = bar[2] + adj, l = bar[3] + adj, slHit, tpHit, slGap, tpGap;
@@ -180,6 +185,7 @@
         p.exit = toPts(r.exit_price, s.digits); p.exitT = exitT; p.reason = r.exit_reason;
         p.exitBarT = r.exit_reason === 'manual' ? exitT - 60 : exitT;
         p.ambiguous = !!r.exit_ambiguous;
+        p.exitRule = p.ambiguous && EXIT_RULES.indexOf(r.exit_rule) >= 0 ? r.exit_rule : null;   // null on rows from before the column
         p.net = net;
         p.gross = r.gross_pnl != null ? toCents(r.gross_pnl) : net + p.comm;
         real += net; closed.push(p);
@@ -274,12 +280,14 @@
     return p;
   }
 
-  function settle(st, i, exit, exitT, exitBarT, reason, ambiguous) {
+  // rule: which rule decided an ambiguous exit (EXIT_RULES), kept so a later tick-data pass can resolve it again; null otherwise
+  function settle(st, i, exit, exitT, exitBarT, reason, ambiguous, rule) {
     var p = st.open.splice(i, 1)[0];
     var gross = grossCents(st.sym, p.dir, p.entry, exit, p.steps);
     var t = {};
     Object.keys(p).forEach(function (k) { t[k] = p[k]; });
     t.exit = exit; t.exitT = exitT; t.exitBarT = exitBarT; t.reason = reason; t.ambiguous = !!ambiguous;
+    t.exitRule = ambiguous && EXIT_RULES.indexOf(rule) >= 0 ? rule : null;
     t.gross = gross; t.net = gross - p.comm;
     st.closed.push(t); st.realizedCents += t.net;
     return t;
@@ -299,7 +307,7 @@
       var p = st.open[i];
       if (p.entryBarT < bar[0]) {
         var hit = exitOnBar(p, bar, st.sp);
-        if (hit) { out.push(settle(st, i, hit.pts, bar[0], bar[0], hit.reason, hit.ambiguous)); continue; }
+        if (hit) { out.push(settle(st, i, hit.pts, bar[0], bar[0], hit.reason, hit.ambiguous, hit.ambiguous ? RULE_PESSIMISTIC : null)); continue; }
       }
       i++;
     }
@@ -361,7 +369,8 @@
     return i < 0 ? null : st.orders.splice(i, 1)[0];
   }
   // The price path inside one 1m bar (BID points): a rising bar goes open -> low -> high -> close, a falling one open -> high -> low
-  // -> close. It decides the order of events inside a single minute (an order and the SL/TP of the position it opens).
+  // -> close. It decides whether and where a pending order fills inside a single minute, and that the fill comes before the SL/TP
+  // of the position it opens; it never picks between SL and TP (exitOnPath: pessimistic).
   function barPath(bar) { return bar[4] >= bar[1] ? [bar[1], bar[3], bar[2], bar[4]] : [bar[1], bar[2], bar[3], bar[4]]; }
   // the first point of the path (from `from`, default the open) where the bid reaches `thr` falling ('le') or rising ('ge'):
   // { seg (segment index), bid, atStart (already there at `from`) } or null
@@ -385,18 +394,16 @@
     if (x.atStart) return { fill: path[0] + adj, seg: 0, bid: path[0], gap: path[0] !== thr };
     return { fill: ord.price, seg: x.seg, bid: x.bid, gap: false };
   }
-  // SL / TP of a position on the rest of the bar path after `from` (its fill point): { reason, pts } or null; the earlier one wins
+  // SL / TP of a position on the rest of the bar path after `from` (its fill point): { reason, pts, both } or null.
+  // The path only decides that the order filled BEFORE the exit; between SL and TP the same-bar rule of exitOnBar applies:
+  // both reached on the rest of the path -> SL (pessimistic, `both`), whichever comes first on the path.
   function exitOnPath(pos, path, from, sp) {
-    var adj = pos.dir > 0 ? 0 : sp, best = null;
-    function test(level, reason, cond) {
-      if (level == null) return;
-      var x = firstCross(path, level - adj, cond, from);
-      if (!x) return;
-      var at = x.atStart ? x.seg - 0.5 : x.seg;
-      if (!best || at < best.at) best = { reason: reason, pts: level, at: at };
-    }
-    if (pos.dir > 0) { test(pos.sl, 'sl', 'le'); test(pos.tp, 'tp', 'ge'); } else { test(pos.sl, 'sl', 'ge'); test(pos.tp, 'tp', 'le'); }
-    return best ? { reason: best.reason, pts: best.pts } : null;
+    var adj = pos.dir > 0 ? 0 : sp;
+    function reached(level, cond) { return level != null && !!firstCross(path, level - adj, cond, from); }
+    var slX = reached(pos.sl, pos.dir > 0 ? 'le' : 'ge'), tpX = reached(pos.tp, pos.dir > 0 ? 'ge' : 'le');
+    if (slX) return { reason: 'sl', pts: pos.sl, both: tpX };
+    if (tpX) return { reason: 'tp', pts: pos.tp, both: false };
+    return null;
   }
   // pending orders against one bar. A filled order becomes a position (entry inside this bar, entry time = the bar's open) and may
   // close again on the rest of the bar path. The position limit (20), the equity and the page's guard (monthly trade limit) can
@@ -419,8 +426,9 @@
       st.events.push({ kind: 'fill', order: ord, position: p, gap: f.gap, t: bar[0] });
       var ex = exitOnPath(p, barPath(bar), { seg: f.seg, bid: f.bid }, st.sp);
       if (ex) {
-        var t = settle(st, st.open.length - 1, ex.pts, bar[0], bar[0], ex.reason, true);
-        t.intrabar = true;                                     // entry and exit inside one 1m bar: the bar path decided the order
+        // entry and exit inside one 1m bar: the bar path put the fill first; SL and TP both reached after it -> SL (pessimistic)
+        var t = settle(st, st.open.length - 1, ex.pts, bar[0], bar[0], ex.reason, true, ex.both ? RULE_PESSIMISTIC : RULE_BAR_PATH);
+        t.intrabar = true;
         out.push(t);
       }
     });
@@ -528,6 +536,7 @@
   function tradeClosePatch(st, t, opts) {
     var p = { exit_price: ptsToStr(t.exit, st.sym.digits), exit_time: secToIso(t.exitT), exit_reason: t.reason, pnl: centsToStr(t.net) };
     if (opts && opts.extraColumns) { p.gross_pnl = centsToStr(t.gross); p.exit_ambiguous = !!t.ambiguous; }
+    if (opts && opts.exitRule) p.exit_rule = t.exitRule || null;           // column of migration 202610290001
     return p;
   }
   function tradeModifyPatch(st, pos) {
@@ -544,7 +553,7 @@
   }
 
   global.WwBtEngine = {
-    MAX_POSITIONS: MAX_POSITIONS, MAX_ORDERS: MAX_ORDERS, ORDER_TYPES: ORDER_TYPES,
+    MAX_POSITIONS: MAX_POSITIONS, MAX_ORDERS: MAX_ORDERS, ORDER_TYPES: ORDER_TYPES, EXIT_RULES: EXIT_RULES,
     roundDiv: roundDiv, toPlainDecimalString: toPlainDecimalString, parseScaled: parseScaled,
     scaledToStr: scaledToStr, centsToStr: centsToStr, ptsToStr: ptsToStr, stepsToStr: stepsToStr, hundredthsToStr: hundredthsToStr,
     toCents: toCents, toPts: toPts, toSteps: toSteps, toHundredths: toHundredths,

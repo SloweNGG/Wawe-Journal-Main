@@ -112,6 +112,8 @@
       if (t.pnl != null && t.gross_pnl != null && Math.round(num(t.pnl) * 100) !== Math.round(num(t.gross_pnl) * 100) - Math.round(num(t.commission) * 100)) {
         throw fail('chk_backtest_account_trades_gross_pnl', '23514');
       }
+      // 202610290001: the rule of an ambiguous exit only
+      if (t.exit_rule != null && (['pessimistic', 'bar_path'].indexOf(t.exit_rule) < 0 || !t.exit_ambiguous)) throw fail('chk_backtest_account_trades_exit_rule', '23514');
     }
 
     function p(fn) {
@@ -214,7 +216,8 @@
           entry_time: row.entry_time, exit_time: row.exit_time == null ? null : row.exit_time,
           pnl: row.pnl == null ? null : row.pnl, commission: row.commission == null ? '0.00' : row.commission,
           rr_ratio: row.rr_ratio == null ? null : row.rr_ratio, exit_reason: row.exit_reason == null ? null : row.exit_reason,
-          gross_pnl: row.gross_pnl == null ? null : row.gross_pnl, exit_ambiguous: !!row.exit_ambiguous, created_at: nowIso(),
+          gross_pnl: row.gross_pnl == null ? null : row.gross_pnl, exit_ambiguous: !!row.exit_ambiguous,
+          exit_rule: row.exit_rule == null ? null : row.exit_rule, created_at: nowIso(),
           section_no: acc.section_no || 1                                            // trg_backtest_trade_section
         };
         for (var i = 0; i < data.trades.length; i++) if (data.trades[i].id === t.id) throw fail('duplicate key value violates unique constraint', '23505');

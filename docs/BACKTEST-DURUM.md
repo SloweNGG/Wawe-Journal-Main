@@ -28,7 +28,7 @@ Bu turda dört aşama yayına alındı:
 | Arayüz | Basit mod | ✅ | Çerçevesiz sabit düzen |
 | Arayüz | Telefon | ✅ | Pencereler alt alta, sürükleme yok |
 | Arayüz | Canlı sayılar | ✅ | Sabit genişlik; tam ekrandaki yüzen kutular da kaymıyor (yeni test) |
-| Motor | Piyasa / limit / stop emirleri | ✅ | Gap'te açılıştan dolum, 1 dakikalık mum içinde mum yolu, ileriye bakmaz |
+| Motor | Piyasa / limit / stop emirleri | ✅ | Gap'te açılıştan dolum, 1 dakikalık mum içinde dolum mum yoluyla, SL/TP aynı mumdaysa SL (kötümser), ileriye bakmaz |
 | İstatistik | Widget'lar (taşı, boyutlandır, gizle, büyüt) | ✅ | İstatistikler penceresinde |
 | Plan | Ayda 100 işlem (cTrader verili, ücretsiz) | ✅ | Tetiklenen emirlerde de |
 | Dil | tr/en/de | ✅ | Eşitlik testi geçiyor |
@@ -102,7 +102,7 @@ Kurallar değişmedi (`public/src/core/config.js` FEATURES).
 | BTCUSD eksi milyarlar | Lightweight Charts'ta fiyat çizgileri otomatik ölçeğe hiç katılmaz; eksen ancak seri verisi ya da bir primitive'in autoscaleInfo'su ile kayabilir. Seriye geçersiz mum ulaşmıyor, çizim ve seans primitive'leri ölçeğe katılmıyor. Yine de olursa: ortalamadan sonra eksen mumları çerçevelemiyorsa görünüm yeniden kurulur ve `[bt] price scale off the candles: axis [..] candles [..]` uyarısı loglanır. Hatayı kullanıcının hesabında görmek için bu satır gerekir. cTrader hesabına bu makineden erişim yok. |
 | Bekleyen emirler cihazlar arası | Tarayıcıda (`ww_bt_orders_v1:<kullanıcı>:<hesap>`). Veritabanına taşımak için tablo (migration + rollback) gerekir; canlı veritabanına bu makineden erişim yok. |
 | Pencere düzeni ve adlı düzenler cihazlar arası | Kullanıcıya özel, tarayıcıda (`ww_bt_desk_v1:<kullanıcı>`); aynı sebeple veritabanında değil. Eski panel düzeninin istatistik widget'ları ve çoklu grafik ızgarası ilk açılışta alınır. |
-| Bir dakika içindeki sıra | 1m mumun içi bilinmez; emir ile SL/TP aynı mumdaysa mum yolu varsayılır ve işlem "belirsiz" sayılır. |
+| Bir dakika içindeki sıra | 1m mumun içi bilinmez. SL ve TP aynı mumdaysa SL sayılır (kötümser kural; önceden açık pozisyonda da, mum içinde dolan emirde de). Mum yolu yalnızca bekleyen emrin dolup dolmadığına ve dolumun çıkıştan önce olduğuna karar verir. İşlem "belirsiz" sayılır; hangi kuralın karar verdiği `exit_rule` sütununda (`pessimistic` / `bar_path`, migration 202610290001) tick verisiyle yeniden çözmek için saklanır. Migration canlıya uygulanana kadar sayfa sütunu göndermez (`EXIT_RULE_LIVE = false`, backtest.js). |
 | Safari | Testler Windows'ta Chrome ile koştu; macOS Safari ve Chrome elle denenmeli (aşağıdaki adımlar). |
 
 ## 4. Teknik durum

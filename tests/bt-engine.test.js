@@ -138,7 +138,21 @@ describe('bt-engine: scenarios', () => {
     E.openPosition(st, { id: 'a', dir: 1, steps: 100, sl: 108200, tp: 108500 });
     const closed = E.onBar(st, [T0 + 60, 108300, 108550, 108150, 108300]);
     assert.equal(closed[0].reason, 'sl'); assert.equal(closed[0].ambiguous, true); assert.equal(closed[0].gross, -10200);
+    assert.equal(closed[0].exitRule, 'pessimistic', 'the rule that decided it is kept (tick data can resolve it again)');
     assert.equal(E.summary(st).ambiguous, 1);
+  });
+  it('exit rule: only on an ambiguous exit; a gap or a single level has none', () => {
+    assert.deepEqual(plain(E.EXIT_RULES), ['pessimistic', 'bar_path']);
+    const st = eurState({ cplCents: 0 });
+    E.setQuote(st, [T0, 108300, 108300, 108300, 108300]);
+    E.openPosition(st, { id: 'a', dir: 1, steps: 100, sl: 108200, tp: 108500 });
+    E.openPosition(st, { id: 'b', dir: 1, steps: 100, sl: 108250, tp: 108900 });
+    const closed = E.onBar(st, [T0 + 60, 108240, 108600, 108230, 108300]);       // opens below b's SL (gap), a reaches only its TP
+    const by = (id) => closed.find((t) => t.id === id);
+    assert.equal(by('a').reason, 'tp'); assert.equal(by('a').ambiguous, false); assert.equal(by('a').exitRule, null);
+    assert.equal(by('b').reason, 'sl'); assert.equal(by('b').exit, 108240); assert.equal(by('b').ambiguous, false); assert.equal(by('b').exitRule, null);
+    const m = E.openPosition(st, { id: 'm', dir: 1, steps: 10 });
+    assert.equal(E.closePosition(st, m.id).exitRule, null, 'manual close');
   });
   it('SHORT gap after a weekend fills at the ask open', () => {
     const st = eurState();
@@ -208,6 +222,9 @@ describe('bt-engine: DB mapping', () => {
     assert.deepEqual(plain(E.tradeClosePatch(st, t, { extraColumns: true })),
       { exit_price: '1.08423', exit_time: new Date((T0 + 120) * 1000).toISOString(), exit_reason: 'manual', pnl: '38.85', gross_pnl: '41.44', exit_ambiguous: false });
     assert.equal(E.tradeClosePatch(st, t, {}).gross_pnl, undefined);
+    assert.equal('exit_rule' in E.tradeClosePatch(st, t, { extraColumns: true }), false, 'exit_rule only when the column exists (exitRule)');
+    assert.equal(E.tradeClosePatch(st, t, { extraColumns: true, exitRule: true }).exit_rule, null);
+    assert.equal(E.tradeClosePatch(st, Object.assign({}, t, { ambiguous: true, exitRule: 'pessimistic', reason: 'sl' }), { extraColumns: true, exitRule: true }).exit_rule, 'pessimistic');
     // PostgREST-style numbers
     const st2 = E.createState({ sym: 'EURUSD', startCents: 1000000, spreadPts: 2, cplCents: 700 });
     E.restore(st2, [{ id: 'a', direction: 'LONG', lot: 0.37, entry_price: 1.08311, stop_loss: 1.08111, take_profit: 1.08711,
@@ -216,6 +233,16 @@ describe('bt-engine: DB mapping', () => {
     const c = st2.closed[0];
     assert.equal(c.steps, 37); assert.equal(c.entry, 108311); assert.equal(c.net, 3885); assert.equal(c.gross, 4144); assert.equal(c.exitBarT, T0 + 60);
     assert.equal(st2.realizedCents, 3885);
+    assert.equal(c.exitRule, null);
+    // exit_rule back from the database; rows from before the column (or an invalid value) have none
+    const st3 = E.createState({ sym: 'EURUSD', startCents: 1000000, spreadPts: 2, cplCents: 700 });
+    const base = { direction: 'LONG', lot: 0.37, entry_price: 1.08311, stop_loss: 1.08111, take_profit: 1.08711, entry_time: new Date((T0 + 60) * 1000).toISOString(),
+      exit_time: new Date((T0 + 120) * 1000).toISOString(), exit_price: 1.08111, exit_reason: 'sl', pnl: -76.59, gross_pnl: -74, commission: 2.59, rr_ratio: 2 };
+    E.restore(st3, [Object.assign({ id: 'p', exit_ambiguous: true, exit_rule: 'pessimistic', created_at: '2026-09-01T00:00:01Z' }, base),
+      Object.assign({ id: 'q', exit_ambiguous: true, created_at: '2026-09-01T00:00:02Z' }, base),
+      Object.assign({ id: 'r', exit_ambiguous: false, exit_rule: 'pessimistic', created_at: '2026-09-01T00:00:03Z' }, base),
+      Object.assign({ id: 's', exit_ambiguous: true, exit_rule: 'guess', created_at: '2026-09-01T00:00:04Z' }, base)]);
+    assert.deepEqual(plain(st3.closed.map((x) => [x.id, x.exitRule])), [['p', 'pessimistic'], ['q', null], ['r', null], ['s', null]]);
   });
   it('sections: closed trades follow the opening order (created_at), not the market time; drawdown too', () => {
     const st = E.createState({ sym: 'EURUSD', startCents: 1000000, spreadPts: 0, cplCents: 0 });

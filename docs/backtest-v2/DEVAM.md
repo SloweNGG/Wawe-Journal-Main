@@ -120,6 +120,9 @@ Aşama 3 notları:
   Alış emirleri ASK, satış emirleri BID seviyesinde. Gap: açılış seviyenin ötesindeyse dolum açılıştan (limit daha iyi, stop kayar).
   Bir dakikalık mum içinde sıra mumun yolu: yükselen O→L→H→C, düşen O→H→L→C; emrin açtığı pozisyonun SL/TP'si yolun kalanında
   aranır (`intrabar`, `ambiguous`). Emir verildiği mumu ve öncesini asla görmez (`placedBarT < bar[0]`).
+  2026-10-29: yolun kalanında SL ve TP ikisine de ulaşılırsa SL sayılır (kötümser, önceden açık pozisyonlarla aynı kural); mum yolu
+  yalnızca dolumun yerini ve çıkıştan önce olduğunu belirler. `exitRule` / `exit_rule`: `pessimistic` (SL+TP aynı mumda) veya
+  `bar_path` (aynı mumda dolup tek seviyeyle kapandı); migration 202610290001, sayfa `EXIT_RULE_LIVE` açılınca gönderir.
 - Ret: 20 açık pozisyon, özsermaye yok, sayfa koruması (`allowFill`: aylık sınır doluysa). Veritabanı tetikleyicisi yine son karar
   (`insertPosition` reddi geri alır, dolup kapanmış işlemi de). Sınırdayken emir verilemez (butonlar kapalı).
 - Saklama: veritabanı değişikliği yok. Bekleyen emirler tarayıcıda `ww_bt_orders_v1:<user>:<account>`; dolan emir normal işlem

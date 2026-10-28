@@ -1,5 +1,6 @@
 // Backtest v2: pending orders (limit / stop) in the engine (bt-engine.js): placement rules, fills with gaps, the order of events
-// inside one 1m bar (the bar path), SL/TP of a position opened inside a bar, no look-ahead, refusals (positions, equity, page guard).
+// inside one 1m bar (the bar path decides the fill; between SL and TP the pessimistic rule), SL/TP of a position opened inside a bar,
+// no look-ahead, refusals (positions, equity, page guard).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBt, plain } from './helpers/bt-env.js';
@@ -117,12 +118,13 @@ describe('bt-orders: inside one 1m bar', () => {
     assert.deepEqual(plain(E.barPath([0, 10, 15, 5, 12])), [10, 5, 15, 12]);
     assert.deepEqual(plain(E.barPath([0, 10, 15, 5, 8])), [10, 15, 5, 8]);
   });
-  it('fill and SL in the same bar: closed at the SL, flagged as decided by the bar path', () => {
+  it('fill and SL in the same bar: closed at the SL, flagged as decided by the bar path (only one level reached)', () => {
     const st = st0(); E.placeOrder(st, ord({ dir: 1, type: 'limit', price: 108300, sl: 108280 }));
     const closed = E.onBar(st, bar(1, 108320, 108322, 108270, 108275));               // falls through the limit and the stop
     assert.equal(closed.length, 1); assert.equal(st.open.length, 0);
     const t = closed[0];
     assert.equal(t.reason, 'sl'); assert.equal(t.exit, 108280); assert.equal(t.entry, 108300); assert.equal(t.intrabar, true); assert.equal(t.ambiguous, true);
+    assert.equal(t.exitRule, 'bar_path');
     assert.equal(t.entryT, T0 + 60); assert.equal(t.exitT, T0 + 60);
     assert.equal(st.realizedCents, t.net);
     assert.deepEqual(plain(E.takeEvents(st).map((e) => e.kind)), ['fill']);
@@ -131,11 +133,35 @@ describe('bt-orders: inside one 1m bar', () => {
     const st = st0(); E.placeOrder(st, ord({ dir: 1, type: 'stop', price: 108320, sl: 108300, tp: 108340 }));
     const closed = E.onBar(st, bar(1, 108310, 108345, 108295, 108344));               // o -> low 108295 (< SL) -> high -> close
     assert.equal(closed.length, 1); assert.equal(closed[0].reason, 'tp'); assert.equal(closed[0].entry, 108320); assert.equal(closed[0].exit, 108340);
+    assert.equal(closed[0].exitRule, 'bar_path'); assert.equal(closed[0].ambiguous, true); assert.equal(closed[0].intrabar, true);
   });
   it('fill on the way down, TP on the way up (rising bar)', () => {
     const st = st0(); E.placeOrder(st, ord({ dir: 1, type: 'limit', price: 108300, sl: 108280, tp: 108330 }));
     const closed = E.onBar(st, bar(1, 108305, 108340, 108290, 108338));
-    assert.equal(closed.length, 1); assert.equal(closed[0].reason, 'tp');
+    assert.equal(closed.length, 1); assert.equal(closed[0].reason, 'tp'); assert.equal(closed[0].exitRule, 'bar_path');
+  });
+  // Before 2026-10-29 the bar path also picked between SL and TP (the earlier one on the path won): these closed at the TP.
+  it('after the fill the bar reaches TP and then SL: SL (pessimistic), like a position opened before the bar', () => {
+    const st = st0(); E.placeOrder(st, ord({ dir: 1, type: 'stop', price: 108320, sl: 108300, tp: 108340 }));
+    const closed = E.onBar(st, bar(1, 108310, 108345, 108295, 108298));               // falling: o -> high 108345 (TP) -> low 108295 (SL) -> close
+    assert.equal(closed.length, 1); assert.equal(st.open.length, 0);
+    const t = closed[0];
+    assert.equal(t.entry, 108320); assert.equal(t.reason, 'sl'); assert.equal(t.exit, 108300);
+    assert.equal(t.ambiguous, true); assert.equal(t.intrabar, true); assert.equal(t.exitRule, 'pessimistic');
+    assert.equal(st.realizedCents, t.net); assert.ok(t.net < 0);
+  });
+  it('a short: TP and then SL after the fill: SL (pessimistic)', () => {
+    const st = st0(); E.placeOrder(st, ord({ dir: -1, type: 'stop', price: 108300, sl: 108330, tp: 108280 }));
+    // rising: o 108305 -> low 108270 (fill at bid 108300 on the way down, then TP: ask 108272 <= 108280) -> high 108340 (SL: ask 108342 >= 108330)
+    const closed = E.onBar(st, bar(1, 108305, 108340, 108270, 108338));
+    assert.equal(closed.length, 1);
+    const t = closed[0];
+    assert.equal(t.entry, 108300); assert.equal(t.reason, 'sl'); assert.equal(t.exit, 108330); assert.equal(t.exitRule, 'pessimistic');
+  });
+  it('the same bar with only the TP reached after the fill: still the TP (bar_path)', () => {
+    const st = st0(); E.placeOrder(st, ord({ dir: 1, type: 'stop', price: 108320, sl: 108290, tp: 108340 }));
+    const closed = E.onBar(st, bar(1, 108310, 108345, 108295, 108298));               // the low 108295 stays above the SL 108290
+    assert.equal(closed.length, 1); assert.equal(closed[0].reason, 'tp'); assert.equal(closed[0].exit, 108340); assert.equal(closed[0].exitRule, 'bar_path');
   });
   it('a short: its SL and TP are ask levels (bid + spread)', () => {
     let st = st0(); E.placeOrder(st, ord({ dir: -1, type: 'limit', price: 108330, sl: 108350 }));
@@ -148,7 +174,7 @@ describe('bt-orders: inside one 1m bar', () => {
   it('a gap fill can still close at the TP later in the same bar', () => {
     const st = st0(); E.placeOrder(st, ord({ dir: 1, type: 'stop', price: 108330, tp: 108360 }));
     const closed = E.onBar(st, bar(1, 108340, 108365, 108338, 108362));               // gap fill at ask 108342, then up to 108365
-    assert.equal(closed.length, 1); assert.equal(closed[0].entry, 108342); assert.equal(closed[0].reason, 'tp');
+    assert.equal(closed.length, 1); assert.equal(closed[0].entry, 108342); assert.equal(closed[0].reason, 'tp'); assert.equal(closed[0].exitRule, 'bar_path');
   });
   it('two orders in one bar both fill, in the order they were placed', () => {
     const st = st0();

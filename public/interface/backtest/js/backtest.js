@@ -16,6 +16,9 @@
   var CENTER_BARS = 100, RIGHT_OFFSET = 6;          // "center the chart": about 100 candles, the cursor candle on the right
   var FREE_LIMIT = 1, PRO_LIMIT = 10;
   var EXTRA_COLUMNS = true;
+  // exit_rule (migration 202610290001): set to true once that migration runs on the live database. Until then the close patch leaves
+  // the column out, because an unknown column fails the whole close and the trade would stay open in the database.
+  var EXIT_RULE_LIVE = false;
   var MONTHS = {
     tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
     en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -1344,7 +1347,7 @@
   function ctx() { return { userId: L.user.id, accountId: R.acc.id }; }
   function persistClose(t) {
     if (R.dropped[t.id]) return;
-    var patch = E.tradeClosePatch(R.eng, t, { extraColumns: EXTRA_COLUMNS }), id = t.id, acc = R.acc, wait = R.inserting[t.id], dropped = R.dropped;
+    var patch = E.tradeClosePatch(R.eng, t, { extraColumns: EXTRA_COLUMNS, exitRule: EXIT_RULE_LIVE || BACKEND === 'local' }), id = t.id, acc = R.acc, wait = R.inserting[t.id], dropped = R.dropped;
     persist('close', function () {
       return Promise.resolve(wait).then(function () { return dropped[id] ? [] : L.store.updateTrade(id, patch, { onlyOpen: true }); }).then(function (rows) {
         if (dropped[id]) return;
@@ -1452,8 +1455,9 @@
       var t = trades[0];
       toast(_t('backtest.toast.closed', '{dir} kapandı ({reason}): {pnl}', { dir: dirLabel(t.dir), reason: reasonLabel(t.reason), pnl: fmtUsd(t.net, true) }), sum >= 0 ? 'success' : 'info');
     } else toast(_t('backtest.toast.closed_many', '{n} işlem kapandı: {pnl}', { n: trades.length, pnl: fmtUsd(sum, true) }), sum >= 0 ? 'success' : 'info');
-    if (trades.some(function (t) { return t.ambiguous && !t.intrabar; })) toast(_t('backtest.toast.ambiguous', 'TP ve SL aynı 1 dakikalık mumda: SL sayıldı.'), 'warning');
-    if (trades.some(function (t) { return t.intrabar; })) toast(_t('backtest.toast.intrabar', 'Emir ve SL/TP aynı 1 dakikalık mumda: sıra mumun yoluna (açılış, dip/tepe, kapanış) göre belirlendi.'), 'info');
+    // ambiguous exits: SL and TP in one 1m bar (also after an order filled in it) -> SL; an order filled and closed in one bar
+    if (trades.some(function (t) { return t.exitRule === 'pessimistic'; })) toast(_t('backtest.toast.ambiguous', 'TP ve SL aynı 1 dakikalık mumda: kötümser kural uygulandı, SL sayıldı.'), 'warning');
+    if (trades.some(function (t) { return t.intrabar && t.exitRule === 'bar_path'; })) toast(_t('backtest.toast.intrabar', 'Emir aynı 1 dakikalık mumda doldu ve kapandı: emrin önce dolduğu mumun yoluna (açılış, dip/tepe, kapanış) göre kabul edildi.'), 'info');
   }
   function dirLabel(dir) { return dir > 0 ? _t('backtest.order.buy', 'AL') : _t('backtest.order.sell', 'SAT'); }
   function reasonLabel(r) {
@@ -2484,7 +2488,7 @@
         sessionsAt: window.WwBtLook.sessionsAt } });
     var sm = E.summary(eng);
     setText('bt-stats-extra', _t('backtest.stat.commission', 'Toplam komisyon') + ': ' + fmtUsd(sm.commissionCents) + ' · ' +
-      _t('backtest.stat.ambiguous', 'Belirsiz çıkış (TP+SL aynı mumda)') + ': ' + sm.ambiguous + ' ·');
+      _t('backtest.stat.ambiguous', 'Belirsiz çıkış (aynı 1 dk mumda)') + ': ' + sm.ambiguous + ' ·');
   }
   // open positions, pending orders, history and statistics are windows: open one and bring it to the front
   function showWin(name) { if (DESK) DESK.show(name); if (name === 'stats') { renderStats(); icons(); } }
