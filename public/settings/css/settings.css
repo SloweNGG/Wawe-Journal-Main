@@ -2095,6 +2095,105 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   font-family: var(--font);
 }
 
+/* Görselli Pro kartları: çizim + ad + açıklama (settings.js → PRO_FEATURE_VISUALS) */
+.plan-perks-box .perks-grid.perks-showcase {
+  /* en fazla 4 sütun (8 kart = 2 düzgün satır), dar ekranda 190px altına inmez */
+  grid-template-columns: repeat(auto-fit, minmax(max(190px, calc((100% - 1.8rem) / 4)), 1fr));
+  gap: 0.6rem;
+}
+.perks-showcase .perk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.perks-showcase .perk-card:hover {
+  border-color: rgba(139, 92, 246, 0.35);
+  transform: translateY(-2px);
+}
+.perks-showcase .perk-visual {
+  height: 96px;
+  margin-bottom: 0.45rem;
+  padding: 0.5rem;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 90% at 85% 0%, rgba(139, 92, 246, 0.16), transparent 60%),
+    var(--surface2);
+}
+.perks-showcase .perk-visual svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.perks-showcase .perk-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font);
+  padding: 0 0.15rem;
+}
+.perks-showcase .perk-desc {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  font-family: var(--font);
+  padding: 0 0.15rem;
+}
+
+/* Çizim parçaları: renkler tema değişkenlerinden gelir */
+.perks-showcase svg * { vector-effect: non-scaling-stroke; }
+.perks-showcase .pv-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
+.perks-showcase .pv-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.perks-showcase .pv-thin { stroke-width: 1.5; }
+.perks-showcase .pv-area { fill: var(--accent); opacity: 0.18; }
+.perks-showcase .pv-dot, .perks-showcase .pv-solid { fill: var(--accent); }
+.perks-showcase .pv-chip { fill: var(--muted); opacity: 0.28; }
+.perks-showcase .pv-chip--green { fill: var(--green); opacity: 0.7; }
+.perks-showcase .pv-chip--red { fill: var(--red); opacity: 0.7; }
+.perks-showcase .pv-chip--accent { fill: var(--accent); opacity: 0.85; }
+.perks-showcase .pv-tile { fill: var(--surface); stroke: var(--border); stroke-width: 1; }
+.perks-showcase .pv-tile--active { stroke: var(--accent); stroke-width: 1.5; filter: drop-shadow(0 4px 8px rgba(139, 92, 246, 0.35)); }
+.perks-showcase .pv-slot { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.6; }
+.perks-showcase .pv-bar { fill: var(--green); opacity: 0.75; }
+.perks-showcase .pv-bar--red { fill: var(--red); }
+.perks-showcase .pv-cursor { fill: var(--text); stroke: var(--surface); stroke-width: 1; }
+.perks-showcase .pv-page { fill: var(--surface); stroke: var(--border); stroke-width: 1; }
+.perks-showcase .pv-page--back { opacity: 0.55; }
+.perks-showcase .pv-text { stroke: var(--muted); stroke-width: 2; stroke-linecap: round; opacity: 0.35; }
+.perks-showcase .pv-text-fill { fill: var(--muted); opacity: 0.5; }
+.perks-showcase .pv-badge { fill: var(--red); }
+.perks-showcase .pv-badge-text { fill: #fff; font: 700 7px var(--font); text-anchor: middle; letter-spacing: 0.04em; }
+.perks-showcase .pv-swatch-bg { fill: var(--surface2); }
+.perks-showcase .pv-ring { fill: none; stroke: var(--text); stroke-width: 1.5; }
+.perks-showcase .pv-alert { fill: var(--red); stroke: var(--surface2); stroke-width: 2; }
+.perks-showcase .pv-trade { fill: var(--accent); opacity: 0.75; }
+.perks-showcase .pv-trade--over { fill: var(--red); opacity: 1; }
+.perks-showcase .pv-track { fill: var(--muted); opacity: 0.2; }
+.perks-showcase .pv-meter { fill: var(--red); opacity: 0.85; }
+.perks-showcase .pv-meter--green { fill: var(--green); }
+.perks-showcase .pv-meter--red { fill: var(--red); }
+.perks-showcase .pv-limit { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.perks-showcase .pv-limit--green { stroke: var(--green); }
+.perks-showcase .pv-target { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.55; }
+.perks-showcase .pv-wick { stroke: var(--muted); stroke-width: 1; }
+.perks-showcase .pv-up { fill: var(--green); }
+.perks-showcase .pv-down { fill: var(--red); }
+
+/* Hover'da kart hafifçe canlanır */
+.perks-showcase .pv-lift, .perks-showcase .pv-bell { transition: transform 0.3s ease; transform-box: fill-box; }
+.perks-showcase .perk-card:hover .pv-lift { transform: translate(-3px, -3px); }
+.perks-showcase .perk-card:hover .pv-bell { transform: rotate(-10deg); transform-origin: 50% 0; }
+@media (prefers-reduced-motion: reduce) {
+  .perks-showcase .perk-card, .perks-showcase .pv-lift, .perks-showcase .pv-bell { transition: none; }
+  .perks-showcase .perk-card:hover, .perks-showcase .perk-card:hover .pv-lift, .perks-showcase .perk-card:hover .pv-bell { transform: none; }
+}
+
 /* ⭐ ABONELİK SÜRESİ */
 .subscription-timer {
   margin-top: 0.5rem;
@@ -2154,8 +2253,8 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: clamp(1.25rem, 2.5vw, 2.25rem);
-  padding-bottom: 1.25rem;
+  margin-bottom: clamp(0.85rem, 1.6vw, 1.25rem);
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border);
   position: relative;
 }
@@ -2185,8 +2284,8 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 
 .step-circle {
   font-family: var(--font);
-  width: clamp(26px, 3.5vw, 32px);
-  height: clamp(26px, 3.5vw, 32px);
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--surface2);
   border: 2px solid var(--border);
@@ -2272,6 +2371,71 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   animation: wizardStepIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Tüm adımların içeriği ortada aynı genişlikte bir sütunda; iki sütunlu adımlar (özet, kripto transferi) yan yana
+   kalabilsin ve her adım kaydırmadan tek ekrana sığsın diye 880px */
+.checkout-wizard-card {
+  --wizard-col: 880px;
+}
+.checkout-wizard-card .plans-tier-grid,
+.checkout-wizard-card .durations-grid.two-cards-grid,
+.checkout-wizard-card .coupon-interactive-card,
+.checkout-wizard-card .checkout-split-layout,
+.checkout-wizard-card .direct-pay-card,
+.checkout-wizard-card .direct-pay-success-card {
+  width: 100%;
+  max-width: var(--wizard-col);
+  margin-left: auto;
+  margin-right: auto;
+}
+/* Butonlar adım değişince yer değiştirmesin (masaüstü): tüm adımlar aynı hücrede üst üste durur, kutu en uzun
+   adım kadar olur, alt buton çubuğu hep en altta ve aynı yükseklikte. Görünmeyen adımlar tıklanamaz, odaklanamaz.
+   Geçiş animasyonu yalnızca içeriği kaydırır, buton çubuğu yerinde kalır. */
+@media (min-width: 769px) {
+  .checkout-wizard-card .wizard-panels-viewport {
+    display: grid;
+  }
+  .checkout-wizard-card .wizard-step-panel {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .checkout-wizard-card .wizard-step-panel.active {
+    display: flex;
+    visibility: visible;
+    pointer-events: auto;
+    animation: none;
+  }
+  .checkout-wizard-card .wizard-step-panel.active > :not(.wizard-nav-bar) {
+    animation: wizardStepIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .checkout-wizard-card .wizard-step-panel > .wizard-nav-bar {
+    margin-top: auto;
+    min-height: 4.75rem;
+  }
+}
+
+/* kupon kartı geniş, giriş alanı ve sonuç kutusu eski dar boyunda ortada */
+.checkout-wizard-card .coupon-field-row,
+.checkout-wizard-card .coupon-status-box {
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* 5. adım tek ekrana sığsın: daha küçük QR (tıklayınca büyür) ve daha az iç boşluk */
+.checkout-wizard-card .direct-pay-card {
+  margin-top: 0;
+  padding: 1.25rem;
+}
+.checkout-wizard-card .direct-qr-frame img {
+  width: 150px;
+  height: 150px;
+}
+.checkout-wizard-card .direct-qr-hint {
+  margin-bottom: 0.6rem;
+}
+
 @keyframes wizardStepIn {
   from {
     opacity: 0;
@@ -2284,15 +2448,15 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 }
 
 .step-headline {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.9rem;
 }
 
 .step-main-title {
   font-family: var(--font);
-  font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+  font-size: clamp(1.1rem, 1.5vw, 1.25rem);
   font-weight: 700;
   color: var(--text);
-  margin: 0 0 0.35rem 0;
+  margin: 0 0 0.2rem 0;
   letter-spacing: -0.02em;
 }
 
@@ -2309,8 +2473,8 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 .plans-tier-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(1rem, 1.5vw, 1.5rem);
-  margin-bottom: 1.5rem;
+  gap: clamp(0.75rem, 1.2vw, 1.1rem);
+  margin-bottom: 0.25rem;
 }
 
 @media (max-width: 768px) {
@@ -2323,7 +2487,7 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: clamp(1.1rem, 1.6vw, 1.6rem);
+  padding: clamp(0.9rem, 1.3vw, 1.2rem) clamp(1rem, 1.5vw, 1.35rem);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2362,7 +2526,7 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
   width: fit-content;
-  margin-bottom: 0.85rem;
+  margin: 0;
 }
 
 .plan-top-badge.pro-badge-glow {
@@ -2399,7 +2563,8 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   display: flex;
   align-items: baseline;
   gap: 3px;
-  margin: 0.65rem 0 0.2rem 0;
+  flex-wrap: wrap;
+  margin: 0.4rem 0 0.15rem 0;
 }
 
 .tier-price-from {
@@ -2417,7 +2582,7 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 }
 
 .tier-price-amount {
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(1.7rem, 2.4vw, 2rem);
   font-weight: 800;
   font-family: var(--font);
   color: var(--text);
@@ -2435,33 +2600,37 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   font-size: 0.82rem;
   font-weight: 600;
   color: #a78bfa;
-  margin-top: 0.15rem;
-  margin-bottom: 0.85rem;
+  margin-left: 0.6rem;
   font-family: var(--font);
 }
 
 .tier-desc {
   font-size: 0.84rem;
   color: var(--muted);
-  margin: 0 0 1.25rem 0;
-  line-height: 1.45;
+  margin: 0 0 0.8rem 0;
+  line-height: 1.4;
 }
 
 .tier-features-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 1.5rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  margin: 0 0 0.9rem 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.9rem;
+}
+
+@media (max-width: 1100px) and (min-width: 769px), (max-width: 420px) {
+  .tier-features-list { grid-template-columns: 1fr; }
 }
 
 .tier-features-list li {
-  font-size: 0.84rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
   color: var(--text);
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .tier-features-list li.feat-exc {
@@ -2474,10 +2643,10 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 }
 
 .feat-icon {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2506,7 +2675,7 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 
 .tier-btn {
   width: 100%;
-  padding: 0.85rem 1rem;
+  padding: 0.65rem 1rem;
   border-radius: 12px;
   font-size: 0.92rem;
   font-weight: 600;
@@ -2920,6 +3089,15 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   padding: clamp(1.1rem, 1.5vw, 1.5rem);
 }
 
+/* koyu tema: sipariş özeti siyah, arkasında mor ışıma (ödeme yöntemi kartı styles.css'teki siyah kart kuralından gelir) */
+:root:not(.light-theme) body:not(.light-theme) .checkout-summary-card {
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(139, 92, 246, 0.24), transparent 60%),
+    radial-gradient(90% 70% at 0% 100%, rgba(124, 58, 237, 0.14), transparent 65%),
+    #000;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
 .box-title {
   font-family: var(--font);
   font-size: 1.15rem;
@@ -3034,45 +3212,53 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 
 .crypto-methods-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.6rem;
   margin-bottom: 1.25rem;
 }
 
+/* Ödeme yöntemi butonları: ortak buton stili gibi siyah zemin + mor çerçeveli hap (buttons.css, UpgradeModal) */
 .crypto-chip {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.1rem;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 12px;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1.1rem 0.5rem 0.5rem;
+  background: #000;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 999px;
+  color: #8b8e9f;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
   position: relative;
 }
 
 .crypto-chip:hover {
-  border-color: rgba(139, 92, 246, 0.4);
-  transform: translateY(-2px);
+  color: #e4e4ec;
+  border-color: rgba(124, 58, 237, 0.7);
 }
 
 .crypto-chip.active {
-  border-color: var(--accent);
-  background: rgba(139, 92, 246, 0.08);
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+  color: #fff;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 1px #7c3aed inset, 0 0 14px rgba(124, 58, 237, 0.35);
 }
 
 .crypto-badge-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 13px;
   flex-shrink: 0;
+}
+
+.crypto-badge-icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 .crypto-badge-icon.ltc {
@@ -3102,24 +3288,10 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
 }
 
 .crypto-symbol {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: inherit;
   white-space: nowrap;
-}
-
-.crypto-check-circle {
-  margin-left: auto;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--accent);
-  opacity: 0;
-  transition: opacity 0.2s;
-  flex-shrink: 0;
-}
-
-.crypto-chip.active .crypto-check-circle {
-  opacity: 1;
 }
 
 .crypto-chip .chip-discount-tag {
@@ -3138,24 +3310,85 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   pointer-events: none;
 }
 
-.crypto-discount-notice {
+/* Başlığın sağındaki "i" butonu: kupon yalnızca LTC'de geçerli uyarısı içindeki balonda */
+.method-title-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.65rem 0.85rem;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 10px;
-  font-size: 0.78rem;
-  color: #f59e0b;
-  line-height: 1.35;
-  margin-top: 0.25rem;
-  animation: fadeIn 0.2s ease;
+  margin-bottom: 0.35rem;
 }
 
-.crypto-discount-notice svg {
+.method-title-row .box-title {
+  margin: 0;
+}
+
+.method-info-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  cursor: pointer;
   flex-shrink: 0;
-  stroke: #f59e0b;
+}
+
+.method-info-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(280px, 75vw);
+  padding: 0.6rem 0.75rem;
+  background: #120d05;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  color: #f59e0b;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
+  pointer-events: none;
+}
+
+.method-info-tip:hover .method-info-pop,
+.method-info-tip:focus-visible .method-info-pop,
+.method-info-tip.open .method-info-pop {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+/* Yöntem değişirken tutar bulanıklaşıp yenisiyle netleşir (settings.js → renderSummaryAnimated) */
+.total-highlight-row .rc-val-total,
+#summary-discount-row {
+  transition: filter 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+}
+
+.total-highlight-row .rc-val-total.price-swap,
+#summary-discount-row.price-swap {
+  filter: blur(6px);
+  opacity: 0.35;
+  transform: scale(0.97);
+}
+
+.ssl-guarantee-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .ssl-guarantee-note {
@@ -3431,6 +3664,12 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   border-color: rgba(139, 92, 246, 0.4);
 }
 
+/* koyu tema: QR paneli ve tutar/adres kutuları da kart gibi saf siyah (gri --surface2 yok), çerçeveleri ayırır */
+:root:not(.light-theme) body:not(.light-theme) .direct-pay-qr-side,
+:root:not(.light-theme) body:not(.light-theme) .direct-copy-field {
+  background: #000;
+}
+
 .dcf-header {
   display: flex;
   justify-content: space-between;
@@ -3691,31 +3930,33 @@ body.light-theme .total-highlight-row,
 body.light-theme .crypto-chip,
 [data-theme="light"] .crypto-chip {
   background: #ffffff;
-  border-color: #cbd5e1;
+  color: #6b6b7b;
+}
+
+body.light-theme .crypto-chip:hover,
+[data-theme="light"] .crypto-chip:hover {
+  color: #1a1033;
 }
 
 body.light-theme .crypto-chip.active,
 [data-theme="light"] .crypto-chip.active {
-  border-color: #7c3aed;
-  background: rgba(124, 58, 237, 0.05);
-  box-shadow: none;
+  color: #1a1033;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #7c3aed inset, 0 0 12px rgba(124, 58, 237, 0.18);
 }
 
-body.light-theme .crypto-chip .crypto-symbol,
-[data-theme="light"] .crypto-chip .crypto-symbol {
-  color: #0f172a;
-}
-
-body.light-theme .crypto-discount-notice,
-[data-theme="light"] .crypto-discount-notice {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(217, 119, 6, 0.3);
+body.light-theme .method-info-tip,
+[data-theme="light"] .method-info-tip {
   color: #b45309;
+  border-color: rgba(217, 119, 6, 0.35);
 }
 
-body.light-theme .crypto-discount-notice svg,
-[data-theme="light"] .crypto-discount-notice svg {
-  stroke: #b45309;
+body.light-theme .method-info-pop,
+[data-theme="light"] .method-info-pop {
+  background: #fffbeb;
+  border-color: rgba(217, 119, 6, 0.35);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  color: #b45309;
 }
 
 /* ⭐ Adım 5: Doğrudan Ödeme Kartı (Light Theme) */

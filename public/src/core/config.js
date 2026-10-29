@@ -111,8 +111,6 @@ export const WW_CONFIG = {
   },
   DEFAULT_PRICES: {
     monthly: 12.00,
-    yearly: 99.00,
-    basic_monthly: 6.00,
-    basic_yearly: 49.00
+    yearly: 99.00
   }
 };

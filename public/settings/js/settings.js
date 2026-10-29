@@ -344,17 +344,72 @@ if (!window.SETTINGS_STATE) {
 // ============================================================
 // PRO FEATURES
 // ============================================================
-var PRO_FEATURES = [
-  { iconName: 'bar-chart-3', key: 'pro_features.dashboard' },
-  { iconName: 'refresh-cw', key: 'pro_features.drag_drop' },
-  { iconName: 'trending-up', key: 'pro_features.advanced_charts' },
-  { iconName: 'palette', key: 'pro_features.theme_customization' },
-  { iconName: 'file-text', key: 'pro_features.detailed_pdf' },
-  { iconName: 'newspaper', key: 'pro_features.news' },
-  { iconName: 'bell', key: 'pro_features.overtrade' },
-  { iconName: 'gem', key: 'pro_features.priority_support' },
-  { iconName: 'rocket', key: 'pro_features.no_ads' }
-];
+// Her özellik bir kart: üstte ne yaptığını gösteren küçük çizim, altta ad ve kısa açıklama.
+// Çizimler tema renklerini CSS sınıflarından alır (settings.css → .perks-showcase), açık temada da çalışır.
+function perkCandle(x, open, close, high, low) {
+  var up = close < open;
+  return '<line class="pv-wick" x1="' + x + '" y1="' + high + '" x2="' + x + '" y2="' + low + '"/>' +
+    '<rect class="' + (up ? 'pv-up' : 'pv-down') + '" x="' + (x - 3) + '" y="' + Math.min(open, close) + '" width="6" height="' + Math.max(2, Math.abs(open - close)) + '" rx="1"/>';
+}
+
+var PRO_FEATURE_VISUALS = {
+  analytics:
+    '<line class="pv-grid" x1="6" y1="22" x2="114" y2="22"/><line class="pv-grid" x1="6" y1="40" x2="114" y2="40"/>' +
+    '<path class="pv-area" d="M6 52 L22 44 L38 47 L54 32 L70 36 L86 22 L102 26 L114 12 L114 58 L6 58Z"/>' +
+    '<path class="pv-line" d="M6 52 L22 44 L38 47 L54 32 L70 36 L86 22 L102 26 L114 12"/>' +
+    '<circle class="pv-dot" cx="114" cy="12" r="3"/>' +
+    '<rect class="pv-chip" x="6" y="5" width="30" height="9" rx="4.5"/><rect class="pv-chip pv-chip--green" x="40" y="5" width="20" height="9" rx="4.5"/>',
+  custom_layout:
+    '<rect class="pv-tile" x="8" y="6" width="48" height="24" rx="4"/><path class="pv-line pv-thin" d="M14 24 L22 18 L30 21 L38 13 L48 16"/>' +
+    '<rect class="pv-slot" x="64" y="6" width="48" height="24" rx="4"/>' +
+    '<rect class="pv-tile" x="8" y="36" width="104" height="22" rx="4"/>' +
+    '<rect class="pv-bar" x="16" y="46" width="8" height="7" rx="1"/><rect class="pv-bar" x="28" y="42" width="8" height="11" rx="1"/><rect class="pv-bar" x="40" y="44" width="8" height="9" rx="1"/>' +
+    '<g class="pv-lift"><rect class="pv-tile pv-tile--active" x="70" y="11" width="44" height="22" rx="4"/>' +
+    '<circle class="pv-dot" cx="80" cy="22" r="4"/><rect class="pv-chip" x="88" y="19" width="18" height="6" rx="3"/>' +
+    '<path class="pv-cursor" d="M103 27 L103 41 L106.5 37.5 L109 43 L111.5 42 L109 36.5 L113.5 36.5Z"/></g>',
+  detailed_pdf:
+    '<rect class="pv-page pv-page--back" x="48" y="9" width="40" height="50" rx="3"/>' +
+    '<rect class="pv-page" x="34" y="5" width="40" height="50" rx="3"/>' +
+    '<rect class="pv-solid" x="39" y="10" width="16" height="3" rx="1.5"/>' +
+    '<rect class="pv-chip" x="39" y="17" width="7" height="5" rx="1"/><rect class="pv-chip" x="48" y="17" width="7" height="5" rx="1"/><rect class="pv-chip" x="57" y="17" width="7" height="5" rx="1"/><rect class="pv-chip pv-chip--green" x="66" y="17" width="4" height="5" rx="1"/>' +
+    '<path class="pv-line pv-thin" d="M39 36 L46 32 L52 34 L59 27 L69 25"/>' +
+    '<line class="pv-text" x1="39" y1="42" x2="69" y2="42"/><line class="pv-text" x1="39" y1="46" x2="64" y2="46"/><line class="pv-text" x1="39" y1="50" x2="67" y2="50"/>' +
+    '<rect class="pv-badge" x="78" y="40" width="22" height="12" rx="3"/><text class="pv-badge-text" x="89" y="48.5">PDF</text>',
+  theme_studio:
+    '<rect class="pv-tile" x="8" y="6" width="68" height="52" rx="5"/>' +
+    '<rect class="pv-swatch-bg" x="8" y="6" width="68" height="10" rx="5"/>' +
+    '<circle class="pv-text-fill" cx="15" cy="11" r="1.6"/><circle class="pv-text-fill" cx="20" cy="11" r="1.6"/><circle class="pv-text-fill" cx="25" cy="11" r="1.6"/>' +
+    '<rect class="pv-chip" x="14" y="22" width="56" height="13" rx="3"/><rect class="pv-chip" x="14" y="39" width="26" height="13" rx="3"/><rect class="pv-chip pv-chip--accent" x="44" y="39" width="26" height="13" rx="3"/>' +
+    '<circle cx="93" cy="17" r="7" fill="#8b5cf6"/><circle cx="108" cy="17" r="7" fill="#22c55e"/>' +
+    '<circle cx="93" cy="35" r="7" fill="#f59e0b"/><circle cx="108" cy="35" r="7" fill="#38bdf8"/>' +
+    '<circle class="pv-ring" cx="93" cy="17" r="10"/>' +
+    '<rect class="pv-chip" x="86" y="48" width="29" height="7" rx="3.5"/>',
+  overtrade:
+    '<g class="pv-bell"><path class="pv-line" d="M30 24a10 10 0 0 0-20 0c0 11-4.5 14-4.5 14h29s-4.5-3-4.5-14"/><path class="pv-line" d="M23 43a3.5 3.5 0 0 1-6 0"/></g>' +
+    '<circle class="pv-alert" cx="30" cy="15" r="5"/>' +
+    '<circle class="pv-trade" cx="54" cy="18" r="4"/><circle class="pv-trade" cx="66" cy="18" r="4"/><circle class="pv-trade" cx="78" cy="18" r="4"/><circle class="pv-trade" cx="90" cy="18" r="4"/><circle class="pv-trade pv-trade--over" cx="102" cy="18" r="4"/>' +
+    '<rect class="pv-track" x="50" y="32" width="58" height="7" rx="3.5"/><rect class="pv-meter" x="50" y="32" width="50" height="7" rx="3.5"/>' +
+    '<line class="pv-limit" x1="96" y1="28" x2="96" y2="43"/>' +
+    '<line class="pv-text" x1="50" y1="51" x2="80" y2="51"/>',
+  journals:
+    '<rect class="pv-tile" x="14" y="5" width="92" height="14" rx="4"/><circle cx="23" cy="12" r="3.2" fill="#8b5cf6"/><line class="pv-text" x1="31" y1="12" x2="68" y2="12"/><rect class="pv-chip pv-chip--green" x="84" y="9" width="16" height="6" rx="3"/>' +
+    '<rect class="pv-tile" x="14" y="24" width="92" height="14" rx="4"/><circle cx="23" cy="31" r="3.2" fill="#22c55e"/><line class="pv-text" x1="31" y1="31" x2="60" y2="31"/><rect class="pv-chip pv-chip--red" x="84" y="28" width="16" height="6" rx="3"/>' +
+    '<rect class="pv-tile" x="14" y="43" width="92" height="14" rx="4"/><circle cx="23" cy="50" r="3.2" fill="#f59e0b"/><line class="pv-text" x1="31" y1="50" x2="72" y2="50"/><rect class="pv-chip pv-chip--green" x="84" y="47" width="16" height="6" rx="3"/>',
+  prop_accounts:
+    '<circle class="pv-target" cx="94" cy="30" r="20"/><circle class="pv-target" cx="94" cy="30" r="13"/><circle class="pv-solid" cx="94" cy="30" r="5"/>' +
+    '<line class="pv-text" x1="8" y1="13" x2="34" y2="13"/>' +
+    '<rect class="pv-track" x="8" y="18" width="60" height="7" rx="3.5"/><rect class="pv-meter pv-meter--green" x="8" y="18" width="44" height="7" rx="3.5"/>' +
+    '<line class="pv-text" x1="8" y1="37" x2="28" y2="37"/>' +
+    '<rect class="pv-track" x="8" y="42" width="60" height="7" rx="3.5"/><rect class="pv-meter pv-meter--red" x="8" y="42" width="17" height="7" rx="3.5"/>',
+  backtest:
+    '<rect class="pv-tile" x="6" y="5" width="52" height="54" rx="4"/><rect class="pv-tile" x="62" y="5" width="52" height="25" rx="4"/><rect class="pv-tile" x="62" y="34" width="52" height="25" rx="4"/>' +
+    perkCandle(14, 44, 36, 32, 48) + perkCandle(23, 37, 40, 33, 44) + perkCandle(32, 40, 28, 24, 42) + perkCandle(41, 29, 20, 15, 31) + perkCandle(50, 21, 25, 17, 30) +
+    '<line class="pv-limit pv-limit--green" x1="10" y1="14" x2="54" y2="14"/>' +
+    '<path class="pv-line pv-thin" d="M68 24 L76 19 L84 21 L92 14 L100 16 L108 10"/>' +
+    '<rect class="pv-bar" x="70" y="47" width="6" height="7" rx="1"/><rect class="pv-bar" x="80" y="43" width="6" height="11" rx="1"/><rect class="pv-bar pv-bar--red" x="90" y="49" width="6" height="5" rx="1"/><rect class="pv-bar" x="100" y="40" width="6" height="14" rx="1"/>'
+};
+
+var PRO_FEATURES = ['analytics', 'custom_layout', 'detailed_pdf', 'theme_studio', 'overtrade', 'journals', 'prop_accounts', 'backtest'];
 
 // ============================================================
 // HELPER FONKSİYONLAR
@@ -1159,18 +1214,24 @@ async function renderPlan() {
 
       var perksGrid = clone.querySelector('#plan-perks-grid');
       if (perksGrid) {
-        PRO_FEATURES.forEach(function(f) {
-          var item = document.createElement('div');
-          item.className = 'perk-item';
-          var iconSpan = document.createElement('span');
-          iconSpan.className = 'perk-icon';
-          iconSpan.innerHTML = getLucideIcon(f.iconName, 16);
-          var textSpan = document.createElement('span');
-          textSpan.className = 'perk-text';
-          textSpan.setAttribute('data-i18n', f.key);
-          item.appendChild(iconSpan);
-          item.appendChild(textSpan);
-          perksGrid.appendChild(item);
+        perksGrid.classList.add('perks-showcase');
+        PRO_FEATURES.forEach(function(key) {
+          var card = document.createElement('div');
+          card.className = 'perk-card';
+          var visual = document.createElement('div');
+          visual.className = 'perk-visual';
+          visual.setAttribute('aria-hidden', 'true');
+          visual.innerHTML = '<svg viewBox="0 0 120 64" preserveAspectRatio="xMidYMid meet">' + PRO_FEATURE_VISUALS[key] + '</svg>';
+          var name = document.createElement('div');
+          name.className = 'perk-name';
+          name.setAttribute('data-i18n', 'pro_features.' + key);
+          var desc = document.createElement('div');
+          desc.className = 'perk-desc';
+          desc.setAttribute('data-i18n', 'pro_features.' + key + '_desc');
+          card.appendChild(visual);
+          card.appendChild(name);
+          card.appendChild(desc);
+          perksGrid.appendChild(card);
         });
       }
 
@@ -1470,15 +1531,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
       if (stepConn4) stepConn4.style.display = 'none';
     }
 
+    // Görünürlük yalnızca .active sınıfıyla: masaüstünde tüm adımlar aynı yükseklikte üst üste durur (settings.css)
     var panels = wizardRoot.querySelectorAll('.wizard-step-panel');
     panels.forEach(function(panel) {
       panel.classList.remove('active');
-      panel.style.display = 'none';
     });
     var targetPanel = wizardRoot.querySelector('#wizard-step-' + step);
     if (targetPanel) {
       targetPanel.classList.add('active');
-      targetPanel.style.display = 'block';
     }
 
     var stepNodes = wizardRoot.querySelectorAll('.step-node');
@@ -1784,17 +1844,17 @@ function setupPlanWizard(wizardRoot, isExtending) {
       }
     });
 
-    // 🔒 4. BTC seçildiğinde ve indirim kuponu varsa "İndirim sadece LTC'de geçerli" uyarısı göster
-    if (btcNotice) {
-      if (selectedPayMethod === 'BTC' && appliedDiscount > 0) {
-        btcNotice.style.display = 'flex';
-      } else {
-        btcNotice.style.display = 'none';
-      }
-    }
-    if (cardNotice) {
-      cardNotice.style.display = (selectedPayMethod === 'CARD' && appliedDiscount > 0) ? 'flex' : 'none';
-    }
+    // 🔒 3b. "Blockchain'de onaylanınca açılır" notu kartta geçerli değil: kart seçiliyken gizle
+    var activationNote = wizardRoot.querySelector('#activation-guarantee');
+    if (activationNote) activationNote.style.display = (selectedPayMethod === 'CARD') ? 'none' : '';
+
+    // 🔒 4. BTC/kart seçildiğinde ve indirim kuponu varsa "İndirim sadece LTC'de geçerli" i butonunu göster
+    [[btcNotice, 'BTC'], [cardNotice, 'CARD']].forEach(function(pair) {
+      if (!pair[0]) return;
+      var show = selectedPayMethod === pair[1] && appliedDiscount > 0;
+      pair[0].style.display = show ? 'inline-flex' : 'none';
+      if (!show) pair[0].classList.remove('open');
+    });
   }
 
   function renderSummary() {
@@ -1835,6 +1895,21 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
   }
 
+  // Yöntem değişince tutar bulanıklaşıp yenisiyle netleşir; hızlı tıklamalarda son seçim geçerlidir
+  var priceSwapTimer = null;
+  function renderSummaryAnimated() {
+    var swapEls = wizardRoot.querySelectorAll('.total-highlight-row .rc-val-total, #summary-discount-row');
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || !swapEls.length) { renderSummary(); return; }
+    updateCryptoMethodsUI();   // seçili buton beklemeden değişsin
+    swapEls.forEach(function(el) { el.classList.add('price-swap'); });
+    clearTimeout(priceSwapTimer);
+    priceSwapTimer = setTimeout(function() {
+      renderSummary();
+      swapEls.forEach(function(el) { el.classList.remove('price-swap'); });
+    }, 180);
+  }
+
   var cryptoChips = wizardRoot.querySelectorAll('.crypto-chip');
   cryptoChips.forEach(function(chip) {
     chip.addEventListener('click', function() {
@@ -1843,12 +1918,28 @@ function setupPlanWizard(wizardRoot, isExtending) {
       if (m === 'BTC' && selectedPeriod === 'monthly') {
         return;
       }
+      if (m === selectedPayMethod) return;
       selectedPayMethod = m;
       saveWizardState();
       if (window.selectPayMethod) window.selectPayMethod(selectedPayMethod);
-      renderSummary(); // Fiyatı, rozetleri ve BTC uyarısını ANINDA güncelle!
+      renderSummaryAnimated(); // Fiyatı, rozetleri ve BTC uyarısını güncelle
     });
   });
+
+  // "i" butonu: masaüstünde üzerine gelince (CSS), dokunmatikte tıklayınca açılır; dışarı tıklayınca kapanır
+  var methodInfoTips = wizardRoot.querySelectorAll('.method-info-tip');
+  methodInfoTips.forEach(function(tip) {
+    tip.addEventListener('click', function(e) {
+      e.stopPropagation();
+      tip.classList.toggle('open');
+    });
+  });
+  if (methodInfoTips.length && !window.__wwMethodInfoTipClose) {
+    window.__wwMethodInfoTipClose = true;   // sihirbaz yeniden kurulsa da tek dinleyici
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.method-info-tip.open').forEach(function(tip) { tip.classList.remove('open'); });
+    });
+  }
 
   var btnBackTo3 = wizardRoot.querySelector('#btn-back-to-step3');
   if (btnBackTo3) {

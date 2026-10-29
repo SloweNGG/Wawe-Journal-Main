@@ -83,31 +83,31 @@
         </div>
 
         <div class="plans-tier-grid">
-          <!-- Free Plan -->
+          <!-- Free Plan (lists: what each plan really includes, same as the upgrade modal) -->
           <div class="plan-tier-card free-tier">
-            <div class="plan-top-badge" data-i18n="settings.plan_current_plan">Mevcut Planınız</div>
             <div class="tier-head">
-              <h4 class="tier-title" data-i18n="settings.plan_free_name">Ücretsiz (Free)</h4>
+              <div class="tier-title-wrap">
+                <h4 class="tier-title" data-i18n="settings.plan_free_name">Ücretsiz (Free)</h4>
+                <div class="plan-top-badge" data-i18n="settings.plan_current_plan">Mevcut Planınız</div>
+              </div>
               <div class="tier-price-box">
                 <span class="tier-price-currency">$</span><span class="tier-price-amount">0</span>
-                <span class="tier-price-sub" data-i18n="settings.plan_forever">/ sonsuza kadar</span>
+                <span class="tier-price-sub" data-i18n="settings.plan_forever">/ süresiz</span>
               </div>
-              <div class="tier-price-alt-note" data-i18n="settings.plan_free_always">Her zaman ücretsiz</div>
-              <p class="tier-desc" data-i18n="settings.plan_free_desc">Günlük trade kaydı ve temel istatistik takibi için harika başlangıç.</p>
+              <p class="tier-desc" data-i18n="settings.plan_free_desc"></p>
             </div>
-            
+
             <ul class="tier-features-list">
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f1">Sınırsız Trade</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f2">Sınırsız Strateji</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f3">Takvim Görünümü</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f4">Aylık Hedef</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f5">CSV İçe/Dışa Aktarım</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_free_f6">PDF Rapor</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_pro_f6">Reklamsız Deneyim (Ad-Free)</span></li>
-              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_pro_f1">Analiz</span></li>
-              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_pro_f2">Tema Özelleştirme</span></li>
-              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_pro_f3">Over Trade Uyarısı</span></li>
-              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_pro_f4">Gelişmiş Grafikler</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_1"></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_2"></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_3"></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_4"></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_5"></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_6"></span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_free_7"></span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_tier_pro_1"></span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_tier_pro_5"></span></li>
+              <li class="feat-exc"><span class="feat-icon dash">–</span><span data-i18n="settings.plan_tier_pro_4"></span></li>
             </ul>
 
             <div class="tier-footer">
@@ -126,21 +126,20 @@
               <div class="tier-price-box">
                 <span class="tier-price-currency">$</span><span class="tier-price-amount" id="step1-monthly-val">12</span>
                 <span class="tier-price-sub" data-i18n="settings.plan_per_month">/ ay</span>
+                <span class="tier-price-alt-note" id="step1-yearly-hint" data-i18n="settings.plan_or_yearly_price">veya Yıllık $99 (aylık $8.25)</span>
               </div>
-              <div class="tier-price-alt-note" id="step1-yearly-hint" data-i18n="settings.plan_or_yearly_price">veya Yıllık $99 (aylık $8.25)</div>
-              <p class="tier-desc" data-i18n="settings.plan_pro_tier_desc">Tüm gelişmiş analitik, risk, otomasyon ve özel tema araçlarına sınırsız erişim.</p>
+              <p class="tier-desc" data-i18n="settings.plan_pro_tier_desc"></p>
             </div>
 
             <ul class="tier-features-list">
-              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_drag_drop">Özelleştirilebilir Drag & Drop Dashboard</span></li>
-              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_adv_charts">Gelişmiş Grafikler & Derin Metrikler</span></li>
-              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_auto_sync">cTrader & Broker Otomatik Senkronizasyon</span></li>
-              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_reports">Detaylı Profesyonel PDF & Excel Raporları</span></li>
-              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_feat_overtrade">Gerçek Zamanlı Over-Trade & Risk Uyarısı</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_pro_f2">Tema ve Renk Özelleştirme</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_pro_f5">Çoklu Para Birimi</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_pro_f6">Reklamsız Deneyim (Ad-Free)</span></li>
-              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_priority_support">Öncelikli Destek</span></li>
+              <li class="feat-inc"><span class="feat-icon check">✓</span><span data-i18n="settings.plan_tier_pro_all"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_1"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_2"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_3"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_4"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_5"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_6"></span></li>
+              <li class="feat-inc pro-feat"><span class="feat-icon spark">✦</span><span data-i18n="settings.plan_tier_pro_7"></span></li>
             </ul>
 
             <div class="tier-footer">
@@ -318,7 +317,8 @@
               </div>
             </div>
 
-            <div class="activation-guarantee">
+            <!-- Kart seçiliyken gizlenir (blockchain onayı yalnızca kripto için): settings.js → updateCryptoMethodsUI -->
+            <div class="activation-guarantee" id="activation-guarantee">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               <span data-i18n="settings.plan_activation_guarantee">Ödeme blockchain üzerinde onaylandığı an üyeliğiniz anında otomatik olarak aktive edilir.</span>
             </div>
@@ -326,7 +326,18 @@
 
           <!-- Sağ Kart: Kripto Para Seçimi -->
           <div class="checkout-method-card">
-            <h4 class="box-title" data-i18n="settings.plan_payment_method">Ödeme Yöntemi</h4>
+            <div class="method-title-row">
+              <h4 class="box-title" data-i18n="settings.plan_payment_method">Ödeme Yöntemi</h4>
+              <!-- Kupon yalnızca LTC'de geçerli: kart/BTC seçiliyken kupon varsa "i" butonu görünür, metin üzerine gelince/dokununca açılır -->
+              <button type="button" class="method-info-tip" id="crypto-btc-notice" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span class="method-info-pop" role="tooltip" id="crypto-btc-notice-text" data-i18n="settings.plan_btc_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.</span>
+              </button>
+              <button type="button" class="method-info-tip" id="crypto-card-notice" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span class="method-info-pop" role="tooltip" data-i18n="settings.plan_card_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Kart ile ödemede standart tutar uygulanır.</span>
+              </button>
+            </div>
             <p class="box-subtitle" data-i18n="settings.plan_select_method_subtitle">Ödeme yönteminizi seçin:</p>
 
             <div class="crypto-methods-grid" id="wizard-payment-methods">
@@ -338,7 +349,6 @@
                 <div class="crypto-details">
                   <span class="crypto-symbol" data-i18n="settings.plan_method_card">Kredi / Banka Kartı</span>
                 </div>
-                <div class="crypto-check-circle">✓</div>
               </div>
 
               <!-- LTC -->
@@ -347,7 +357,6 @@
                 <div class="crypto-details">
                   <span class="crypto-symbol">Litecoin (LTC)</span>
                 </div>
-                <div class="crypto-check-circle">✓</div>
               </div>
 
               <!-- BTC -->
@@ -356,23 +365,18 @@
                 <div class="crypto-details">
                   <span class="crypto-symbol">Bitcoin (BTC)</span>
                 </div>
-                <div class="crypto-check-circle">✓</div>
               </div>
             </div>
 
-            <div class="crypto-discount-notice" id="crypto-btc-notice" style="display:none;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span id="crypto-btc-notice-text" data-i18n="settings.plan_btc_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Bitcoin (BTC) seçiminde standart tutar uygulanır.</span>
-            </div>
-
-            <div class="crypto-discount-notice" id="crypto-card-notice" style="display:none;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span data-i18n="settings.plan_card_discount_notice">Kupon indirimi yalnızca Litecoin (LTC) için geçerlidir. Kart ile ödemede standart tutar uygulanır.</span>
-            </div>
-
-            <div class="ssl-guarantee-note">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span data-i18n="settings.plan_ssl_note">256-Bit SSL NOWPayments Resmi Ağ Altyapısı</span>
+            <div class="ssl-guarantee-notes">
+              <div class="ssl-guarantee-note">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span data-i18n="settings.plan_ssl_note">256-Bit SSL NOWPayments Resmi Ağ Altyapısı</span>
+              </div>
+              <div class="ssl-guarantee-note">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                <span data-i18n="settings.plan_card_ssl_note">Kredi ve banka kartı ödemeleri Creem.io güvenli ödeme altyapısı ile işlenir</span>
+              </div>
             </div>
           </div>
         </div>

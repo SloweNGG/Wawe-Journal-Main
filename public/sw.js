@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v43'; // backtest: aynı mumda SL ve TP her zaman kötümser (SL), exit_rule (yeni bildirim metinleri)
+const CACHE_VERSION = 'wawe-v44'; // ayarlar: Pro özellikleri listesi gerçek özelliklere göre yenilendi
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
