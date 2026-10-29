@@ -38,6 +38,7 @@
   var DESK = null, statsFs = false;             // window.WwBtDesk controller (windows, layouts, full-screen multi-chart grid, stats widgets)
   var DRAWER = null;                            // appearance drawer (WwBtLook.mountDrawer)
   var booted = false;                           // init drew the page once (plan changes are applied from then on)
+  var SKELETON_HTML = '';                       // the skeleton cards of the page, restored while the list reloads
   var DRAW = null;                              // drawing tools controller (WwBtDraw.createController)
   var STATS = null, statsTimer = 0;             // statistics tab view (WwBtStats.createView)
   var RANGE = null;                             // date and range panel of the toolbar (WwBtRange.create)
@@ -151,6 +152,7 @@
     if (gate === 'demo') return setPageState('demo');         // nothing is generated, loaded or stored for the ?test=1 fake user
     if (gate !== 'member') return;
     L.user = user;
+    SKELETON_HTML = $('bt-accounts').innerHTML;
     setPageState('list');                                     // skeleton cards while the account list loads
     var planReady = loadPlan();
     // Pro bought while the page is open (payment.js: realtime / payment check): the features unlock without a reload
@@ -356,7 +358,7 @@
       return true;
     } catch (e) {
       wwLogWarn(e);
-      show($('bt-list-error'), true); show($('bt-accounts'), false);
+      show($('bt-list-error'), true); show($('bt-accounts'), false); $('bt-accounts').setAttribute('aria-busy', 'false');
       return false;
     }
   }
@@ -419,6 +421,11 @@
     if (R) closeReplayState();
     setPageState('list'); renderList();
     try { var u = new URL(location.href); u.searchParams.delete('account'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
+  }
+  // the skeleton cards of the page (backtest.astro) again while the list reloads (retry after an error)
+  function showSkeleton() {
+    var box = $('bt-accounts'); box.innerHTML = SKELETON_HTML; box.setAttribute('aria-busy', 'true');
+    show(box, true); show($('bt-accounts-empty'), false); show($('bt-list-error'), false);
   }
   function quotaLimit() { return L.plan === 'premium' ? PRO_LIMIT : FREE_LIMIT; }
   function renderList() {
@@ -2501,7 +2508,7 @@
     });
     $('bt-new-account-btn').addEventListener('click', function (e) { newAccountClicked(e.currentTarget); });
     $('bt-empty-create-btn').addEventListener('click', function (e) { newAccountClicked(e.currentTarget); });
-    $('bt-list-retry-btn').addEventListener('click', async function () { if (await loadList()) { setPageState('list'); renderList(); } });
+    $('bt-list-retry-btn').addEventListener('click', async function () { showSkeleton(); if (await loadList()) { setPageState('list'); renderList(); } });
     $('bt-back-btn').addEventListener('click', backToList);
     $('bt-acc-settings-btn').addEventListener('click', function (e) { if (R) openAccountModal('edit', R.acc, e.currentTarget); });
     // account modal

@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=34" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=36" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -39,13 +39,14 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-plan.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-range.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-fsedit.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=39" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=40" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
 
     <!-- ================= LIST VIEW ================= -->
-    <section id="bt-view-list" class="bt-view" aria-labelledby="bt-title" hidden>
+    <!-- the list (with skeleton cards) is visible from the first paint; setPageState hides it for the replay -->
+    <section id="bt-view-list" class="bt-view" aria-labelledby="bt-title">
       <div class="page-header">
         <div>
           <div class="bt-title-row">
@@ -68,10 +69,47 @@ import Layout from '../layouts/Layout.astro';
       <p id="bt-storage-warning" class="bt-banner bt-banner-error" role="status" hidden data-i18n="backtest.storage_unavailable">Tarayıcı depolaması kullanılamıyor: hesaplar kaydedilmiyor, sayfa kapanınca kaybolur.</p>
       <p id="bt-quota-note" class="bt-hint" data-i18n="backtest.quota.over_limit" hidden>Plan limitinin üzerindesiniz; mevcut hesaplar çalışmaya devam eder.</p>
 
+      <!-- skeleton cards in the shape of a real account card (renderList replaces them; the retry button restores them) -->
       <div id="bt-accounts" class="bt-accounts" aria-busy="true">
-        <div class="bt-account-card bt-skeleton"></div>
-        <div class="bt-account-card bt-skeleton"></div>
-        <div class="bt-account-card bt-skeleton"></div>
+        <div class="bt-account-card bt-skeleton" aria-hidden="true">
+          <div class="bt-card-head"><span class="bt-sk bt-sk-title"></span><span class="bt-sk bt-sk-chip"></span></div>
+          <div class="bt-card-meta">
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+          </div>
+          <span class="bt-sk bt-sk-source"></span>
+          <div class="bt-card-actions"><span class="bt-sk bt-sk-btn"></span><span class="bt-sk bt-sk-btn"></span><span class="bt-sk bt-sk-btn"></span></div>
+        </div>
+        <div class="bt-account-card bt-skeleton" aria-hidden="true">
+          <div class="bt-card-head"><span class="bt-sk bt-sk-title"></span><span class="bt-sk bt-sk-chip"></span></div>
+          <div class="bt-card-meta">
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+          </div>
+          <span class="bt-sk bt-sk-source"></span>
+          <div class="bt-card-actions"><span class="bt-sk bt-sk-btn"></span><span class="bt-sk bt-sk-btn"></span><span class="bt-sk bt-sk-btn"></span></div>
+        </div>
+        <div class="bt-account-card bt-skeleton" aria-hidden="true">
+          <div class="bt-card-head"><span class="bt-sk bt-sk-title"></span><span class="bt-sk bt-sk-chip"></span></div>
+          <div class="bt-card-meta">
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+          </div>
+          <span class="bt-sk bt-sk-source"></span>
+          <div class="bt-card-actions"><span class="bt-sk bt-sk-btn"></span><span class="bt-sk bt-sk-btn"></span><span class="bt-sk bt-sk-btn"></span></div>
+        </div>
       </div>
 
       <div id="bt-accounts-empty" class="bt-empty" hidden>

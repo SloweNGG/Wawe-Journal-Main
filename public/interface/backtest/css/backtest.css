@@ -36,7 +36,26 @@
 .bt-accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 16px; }
 .bt-account-card { padding: 18px; cursor: pointer; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s, transform 0.2s; }
 .bt-account-card:hover, .bt-account-card:focus-visible { border-color: var(--border2); transform: translateY(-2px); outline: none; }
-.bt-skeleton { min-height: 170px; opacity: 0.4; animation: bt-pulse 1.4s ease-in-out infinite; cursor: default; }
+/* iskelet: gerçek hesap kartının şekli (başlık + çip, 3 satır bilgi, kaynak etiketi, butonlar); yükleme bitince yerinde kart açılır, sayfa zıplamaz */
+.bt-skeleton { pointer-events: none; --bt-sk-a: rgba(15, 23, 42, 0.06); --bt-sk-b: rgba(15, 23, 42, 0.12); }
+:root:not(.light-theme) body:not(.light-theme) .bt-skeleton { --bt-sk-a: rgba(255, 255, 255, 0.065); --bt-sk-b: rgba(255, 255, 255, 0.14); }
+.bt-sk { display: block; border-radius: 6px; background: linear-gradient(90deg, var(--bt-sk-a) 30%, var(--bt-sk-b) 50%, var(--bt-sk-a) 70%);
+  background-size: 300% 100%; animation: bt-shimmer 1.6s ease-in-out infinite; }
+@keyframes bt-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.bt-sk-title { width: 45%; height: 18px; margin: 3px 0; }
+.bt-sk-chip { width: 64px; height: 25px; border-radius: 999px; flex: none; }
+.bt-sk-dt { width: 48%; height: 10px; margin: 4px 0 0; }
+.bt-sk-dd { width: 70%; height: 16px; margin: 9px 0 4px; }
+.bt-sk-source { width: 62%; height: 25px; border-radius: 999px; margin-top: 2px; }
+.bt-sk-btn { width: 46px; height: 38px; border-radius: 999px; }
+.bt-sk-btn:nth-child(2) { width: 74px; }
+@media (max-width: 767px) { .bt-sk-btn { height: 44px; } }   /* styles.css: 44px touch targets */
+/* yüklenirken hesap sayısı yerinde kısa bir çubuk, "Yeni hesap" pasif (tıklama bağlanmadan önce hiçbir şey yapmazdı) */
+.bt-quota:empty { display: inline-block; width: 110px; height: 14px; border-radius: 6px; vertical-align: middle;
+  --bt-sk-a: rgba(127, 127, 140, 0.12); --bt-sk-b: rgba(127, 127, 140, 0.22);
+  background: linear-gradient(90deg, var(--bt-sk-a) 30%, var(--bt-sk-b) 50%, var(--bt-sk-a) 70%); background-size: 300% 100%; animation: bt-shimmer 1.6s ease-in-out infinite; }
+#bt-view-list:has(#bt-accounts[aria-busy="true"]) #bt-new-account-btn { opacity: 0.5; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .bt-sk, .bt-quota:empty { animation: none; background-position: 50% 0; } }
 @keyframes bt-pulse { 50% { opacity: 0.2; } }
 .bt-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .bt-card-head h3 { margin: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -406,8 +425,9 @@ html.bt-fs-lock :is(.quick-add-fab, #quick-add-fab, .ww-fab) { display: none !im
 }
 
 /* ---------------------------------------------------------------- Görünüm çekmecesi (bt-look.js) */
-.bt-pro { display: inline-flex; align-items: center; padding: 1px 6px; margin-left: 6px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em;
-  color: #fff; background: var(--gradient-accent, var(--accent)); vertical-align: middle; line-height: 1.5; }
+/* PRO etiketi: siyah zemin, mor kenar (gradyansız); kenar 1px olduğu için dolgu 1px az, boyut aynı kalır */
+.bt-pro { display: inline-flex; align-items: center; padding: 0 5px; margin-left: 6px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em;
+  color: #fff; background: #000; border: 1px solid var(--accent); vertical-align: middle; line-height: 1.5; }
 .bt-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-modal-overlay, 1000); width: min(380px, 100vw); display: flex; flex-direction: column;
   background: var(--modal-bg); border-left: 1px solid var(--modal-line); box-shadow: var(--modal-shadow); animation: bt-drawer-in 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
 .bt-drawer[hidden] { display: none !important; }
