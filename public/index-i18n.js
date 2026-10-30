@@ -21,13 +21,31 @@
         "hero": {
           "new": "NEW",
           "new_text": "Backtest is live →",
-          "title_h": "The trading journal<br>with built-in <span class=\"shine\">backtest replay.</span>",
-          "sub": "Log every trade, find your mistakes and test your strategy.",
+          "title_h": "Never make the same<br><span class=\"shine\">mistake twice.</span>",
+          "sub": "Journal, analytics, prop firm tracking and backtest replay. All in one place.",
           "start": "Start for free",
           "signin": "Sign in"
         },
         "plat": {
-          "label": "IMPORT FROM YOUR BROKER OR PLATFORM"
+          "label": "IMPORT FROM YOUR BROKER OR PLATFORM",
+          "note": "cTrader syncs automatically. For the others, import a statement or CSV.",
+          "auto": "AUTO-SYNC",
+          "soon": "AUTO-SYNC SOON"
+        },
+        "sc": {
+          "sub": "Journal, analytics, strategies and backtest in one app.",
+          "cap_dashboard": "Your whole account <span class=\"dim\">at a glance.</span>",
+          "tab_dashboard": "Dashboard",
+          "cap_trades": "Every trade, <span class=\"dim\">logged and sorted.</span>",
+          "tab_trades": "Trades",
+          "cap_strategies": "See which strategy <span class=\"dim\">actually pays.</span>",
+          "tab_strategies": "Strategies",
+          "cap_calendar": "Your month, <span class=\"dim\">day by day.</span>",
+          "tab_calendar": "Calendar",
+          "cap_backtest": "Replay the market, <span class=\"dim\">candle by candle.</span>",
+          "tab_backtest": "Backtest",
+          "cap_analytics": "Know your edge, <span class=\"dim\">in numbers.</span>",
+          "tab_analytics": "Analytics"
         },
         "j": {
           "title_h": "An easy way to journal your trades. <span class=\"dim\">Import a statement or connect cTrader and you're done.</span>",
@@ -141,7 +159,7 @@
           "a6_link": "Read our privacy policy →"
         },
         "cta": {
-          "title_h": "You deserve the best.<br><span class=\"soft\">Create your journal now.</span>",
+          "title_h": "Rewrite your destiny.<br><span class=\"soft\">Create your journal now.</span>",
           "btn": "Start for free →"
         },
         "ft": {
@@ -379,13 +397,31 @@
         "hero": {
           "new": "YENİ",
           "new_text": "Backtest yayında →",
-          "title_h": "Dahili <span class=\"shine\">backtest replay</span><br>özellikli trading günlüğü.",
-          "sub": "Her işlemi kaydet, hatalarını bul ve stratejini test et.",
+          "title_h": "Aynı hatayı<br><span class=\"shine\">bir daha asla yapma.</span>",
+          "sub": "Günlük, analiz, prop firm takibi ve backtest replay. Hepsi tek bir yerde.",
           "start": "Ücretsiz başla",
           "signin": "Giriş yap"
         },
         "plat": {
-          "label": "BROKER VEYA PLATFORMUNDAN İÇE AKTAR"
+          "label": "BROKER VEYA PLATFORMUNDAN İÇE AKTAR",
+          "note": "cTrader otomatik senkronize olur. Diğerleri için ekstre veya CSV içe aktar.",
+          "auto": "OTOMATİK",
+          "soon": "OTO SENK YAKINDA"
+        },
+        "sc": {
+          "sub": "Günlük, analiz, stratejiler ve backtest tek uygulamada.",
+          "cap_dashboard": "Hesabının tamamı <span class=\"dim\">tek bakışta.</span>",
+          "tab_dashboard": "Panel",
+          "cap_trades": "Her işlem <span class=\"dim\">kayıtlı ve düzenli.</span>",
+          "tab_trades": "İşlemler",
+          "cap_strategies": "Hangi strateji <span class=\"dim\">gerçekten kazandırıyor, gör.</span>",
+          "tab_strategies": "Stratejiler",
+          "cap_calendar": "Ayın, <span class=\"dim\">gün gün.</span>",
+          "tab_calendar": "Takvim",
+          "cap_backtest": "Piyasayı <span class=\"dim\">mum mum yeniden oynat.</span>",
+          "tab_backtest": "Backtest",
+          "cap_analytics": "Avantajını <span class=\"dim\">rakamlarla gör.</span>",
+          "tab_analytics": "Analiz"
         },
         "j": {
           "title_h": "İşlemlerini günlüğe almanın kolay yolu. <span class=\"dim\">Bir ekstre içe aktar ya da cTrader'ı bağla, gerisi tamam.</span>",
@@ -499,7 +535,7 @@
           "a6_link": "Gizlilik politikamızı oku →"
         },
         "cta": {
-          "title_h": "En iyisini hak ediyorsun.<br><span class=\"soft\">Günlüğünü şimdi oluştur.</span>",
+          "title_h": "Kaderini yeniden yaz.<br><span class=\"soft\">Günlüğünü şimdi oluştur.</span>",
           "btn": "Ücretsiz başla →"
         },
         "ft": {
@@ -731,13 +767,31 @@
         "hero": {
           "new": "NEU",
           "new_text": "Backtest ist live →",
-          "title_h": "Das Trading-Journal<br>mit integriertem <span class=\"shine\">Backtest-Replay.</span>",
-          "sub": "Erfasse jeden Trade, finde deine Fehler und teste deine Strategie.",
+          "title_h": "Mach denselben Fehler<br><span class=\"shine\">nie wieder.</span>",
+          "sub": "Journal, Analyse, Prop-Firm-Tracking und Backtest-Replay. Alles an einem Ort.",
           "start": "Kostenlos starten",
           "signin": "Anmelden"
         },
         "plat": {
-          "label": "IMPORT VON DEINEM BROKER ODER DEINER PLATTFORM"
+          "label": "IMPORT VON DEINEM BROKER ODER DEINER PLATTFORM",
+          "note": "cTrader synchronisiert automatisch. Für alle anderen importierst du einen Kontoauszug oder eine CSV.",
+          "auto": "AUTO-SYNC",
+          "soon": "AUTO-SYNC BALD"
+        },
+        "sc": {
+          "sub": "Journal, Analyse, Strategien und Backtest in einer App.",
+          "cap_dashboard": "Dein ganzes Konto <span class=\"dim\">auf einen Blick.</span>",
+          "tab_dashboard": "Dashboard",
+          "cap_trades": "Jeder Trade, <span class=\"dim\">erfasst und sortiert.</span>",
+          "tab_trades": "Trades",
+          "cap_strategies": "Sieh, welche Strategie <span class=\"dim\">wirklich zahlt.</span>",
+          "tab_strategies": "Strategien",
+          "cap_calendar": "Dein Monat, <span class=\"dim\">Tag für Tag.</span>",
+          "tab_calendar": "Kalender",
+          "cap_backtest": "Spiel den Markt ab, <span class=\"dim\">Kerze für Kerze.</span>",
+          "tab_backtest": "Backtest",
+          "cap_analytics": "Kenne deinen Edge, <span class=\"dim\">in Zahlen.</span>",
+          "tab_analytics": "Analyse"
         },
         "j": {
           "title_h": "Der einfache Weg, deine Trades zu journalen. <span class=\"dim\">Kontoauszug importieren oder cTrader verbinden, fertig.</span>",
@@ -851,7 +905,7 @@
           "a6_link": "Lies unsere Datenschutzerklärung →"
         },
         "cta": {
-          "title_h": "Du verdienst das Beste.<br><span class=\"soft\">Erstelle jetzt dein Journal.</span>",
+          "title_h": "Schreib dein Schicksal neu.<br><span class=\"soft\">Erstelle jetzt dein Journal.</span>",
           "btn": "Kostenlos starten →"
         },
         "ft": {

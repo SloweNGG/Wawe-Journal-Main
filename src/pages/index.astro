@@ -19,7 +19,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="/landing-glass.css?v=3" />
+  <link rel="stylesheet" href="/landing-glass.css?v=4" />
 
   <!-- Google Site Name, Brand Entity & WebSite Schema -->
   <script type="application/ld+json" is:inline>
@@ -95,7 +95,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
   <script src="/config.js?v=8" is:inline defer></script>
-  <script src="/index-i18n.js?v=9" is:inline defer></script>
+  <script src="/index-i18n.js?v=10" is:inline defer></script>
   <script type="module" src="/src/bundle.js?v=8" is:inline defer></script>
 </Fragment>
 
@@ -146,11 +146,66 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <span class="mono tag-new" data-i18n="lp.hero.new">NEW</span>
           <span data-i18n="lp.hero.new_text">Backtest is live →</span>
         </a>
-        <h1 data-i18n-html="lp.hero.title_h">The trading journal<br>with built-in <span class="shine">backtest replay.</span></h1>
-        <p class="hero-sub" data-i18n="lp.hero.sub">Log every trade, find your mistakes and test your strategy.</p>
+        <h1 data-i18n-html="lp.hero.title_h">Never make the same<br><span class="shine">mistake twice.</span></h1>
+        <p class="hero-sub" data-i18n="lp.hero.sub">Journal, analytics, prop firm tracking and backtest replay. All in one place.</p>
         <div class="hero-actions">
           <a href="register.html" class="b bp b-lg" data-i18n="lp.hero.start">Start for free</a>
           <a href="login.html" class="b b-lg" data-i18n="lp.hero.signin">Sign in</a>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- SHOWCASE: laptop mockup; lid opens on scroll, then the app screens change as you keep scrolling -->
+    <section class="showcase" aria-label="Product preview">
+      <div class="showcase-pin">
+        <div class="showcase-copy">
+          <div class="sc-caps">
+            <h2 class="sc-cap is-on" data-i18n-html="lp.sc.cap_dashboard">Your whole account <span class="dim">at a glance.</span></h2>
+            <h2 class="sc-cap" data-i18n-html="lp.sc.cap_trades">Every trade, <span class="dim">logged and sorted.</span></h2>
+            <h2 class="sc-cap" data-i18n-html="lp.sc.cap_strategies">See which strategy <span class="dim">actually pays.</span></h2>
+            <h2 class="sc-cap" data-i18n-html="lp.sc.cap_calendar">Your month, <span class="dim">day by day.</span></h2>
+            <h2 class="sc-cap" data-i18n-html="lp.sc.cap_backtest">Replay the market, <span class="dim">candle by candle.</span></h2>
+            <h2 class="sc-cap" data-i18n-html="lp.sc.cap_analytics">Know your edge, <span class="dim">in numbers.</span></h2>
+          </div>
+          <p data-i18n="lp.sc.sub">Journal, analytics, strategies and backtest in one app.</p>
+        </div>
+        <div class="hero-device">
+          <div class="mbp">
+            <div class="mbp-lid">
+              <div class="mbp-screen">
+                <div class="br" aria-hidden="true">
+                  <div class="br-tabs">
+                    <span class="br-dots"><i></i><i></i><i></i></span>
+                    <span class="br-tab"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Wawe Journal<b>×</b></span>
+                    <span class="br-plus">+</span>
+                  </div>
+                  <div class="br-bar">
+                    <span class="br-nav">‹&nbsp;&nbsp;›&nbsp;&nbsp;↻</span>
+                    <span class="br-url"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg><span><span class="br-host">wawejournal.com</span><span class="br-path">/dashboard</span></span></span>
+                  </div>
+                </div>
+                <div class="sc-view">
+                  <img class="sc-shot is-on" data-path="/dashboard" src="/images/landing/screen-dashboard.webp" alt="Wawe Journal Dashboard screen" width="1800" height="947" loading="lazy" decoding="async" />
+                  <img class="sc-shot" data-path="/trades" src="/images/landing/screen-trades.webp" alt="Wawe Journal Trades screen" width="1800" height="947" loading="lazy" decoding="async" />
+                  <img class="sc-shot" data-path="/strategies" src="/images/landing/screen-strategies.webp" alt="Wawe Journal Strategies screen" width="1800" height="947" loading="lazy" decoding="async" />
+                  <img class="sc-shot" data-path="/calendar" src="/images/landing/screen-calendar.webp" alt="Wawe Journal Calendar screen" width="1800" height="947" loading="lazy" decoding="async" />
+                  <img class="sc-shot" data-path="/backtest" src="/images/landing/screen-backtest.webp" alt="Wawe Journal Backtest screen" width="1800" height="947" loading="lazy" decoding="async" />
+                  <img class="sc-shot" data-path="/analytics" src="/images/landing/screen-analytics.webp" alt="Wawe Journal Analytics screen" width="1800" height="947" loading="lazy" decoding="async" />
+                </div>
+              </div>
+              <img class="mbp-frame" src="/images/landing/mba-lid.webp" alt="" width="2080" height="1192" aria-hidden="true" />
+            </div>
+            <img class="mbp-base" src="/images/landing/mba-base.webp" alt="" width="2080" height="63" aria-hidden="true" />
+          </div>
+        </div>
+        <div class="sc-tabs" role="tablist" aria-label="App screens">
+          <button type="button" class="sc-tab is-on" data-i="0" data-i18n="lp.sc.tab_dashboard">Dashboard</button>
+          <button type="button" class="sc-tab" data-i="1" data-i18n="lp.sc.tab_trades">Trades</button>
+          <button type="button" class="sc-tab" data-i="2" data-i18n="lp.sc.tab_strategies">Strategies</button>
+          <button type="button" class="sc-tab" data-i="3" data-i18n="lp.sc.tab_calendar">Calendar</button>
+          <button type="button" class="sc-tab" data-i="4" data-i18n="lp.sc.tab_backtest">Backtest</button>
+          <button type="button" class="sc-tab" data-i="5" data-i18n="lp.sc.tab_analytics">Analytics</button>
         </div>
       </div>
     </section>
@@ -160,8 +215,9 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
       <div class="g platforms-box">
         <div class="mono eyebrow" data-i18n="lp.plat.label">IMPORT FROM YOUR BROKER OR PLATFORM</div>
         <div class="chips">
-          <span class="chip">MetaTrader 5</span><span class="chip">MetaTrader 4</span><span class="chip">cTrader</span><span class="chip">TradingView</span><span class="chip">Binance</span><span class="chip">Bybit</span><span class="chip">Interactive Brokers</span><span class="chip">XTB</span><span class="chip">OANDA</span><span class="chip">CSV &amp; Excel</span>
+          <span class="chip chip-soon">MetaTrader 4/5 <span class="mono chip-tag" data-i18n="lp.plat.soon">AUTO-SYNC SOON</span></span><span class="chip chip-live"><span class="dot-live" aria-hidden="true"></span>cTrader <span class="mono chip-tag" data-i18n="lp.plat.auto">AUTO-SYNC</span></span><span class="chip">Binance</span><span class="chip">Bybit</span><span class="chip">Interactive Brokers</span><span class="chip">XTB</span><span class="chip">OANDA</span><span class="chip">CSV &amp; Excel</span>
         </div>
+        <p class="platforms-note" data-i18n="lp.plat.note">cTrader syncs automatically. For the others, import a statement or CSV.</p>
       </div>
     </section>
 
@@ -179,7 +235,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
               <h3 data-i18n="lp.j.dash_t">Your whole trading month on one screen.</h3>
               <p data-i18n="lp.j.dash_d">Total P&amp;L, win rate, cumulative curve, best and worst trades, and your monthly goal.</p>
             </div>
-            <img src="/images/landing/dashboard.webp" alt="Wawe Journal dashboard with total P&amp;L, win rate, cumulative P&amp;L curve and performance edge" width="1600" height="1059" loading="lazy" decoding="async" />
+            <img src="/images/landing/screen-dashboard.webp" alt="Wawe Journal dashboard with total P&amp;L, win rate, cumulative P&amp;L curve and performance edge" width="1800" height="947" loading="lazy" decoding="async" />
           </div>
           <div class="g sync-card">
             <div class="mono tag" data-i18n="lp.j.ct_tag">CTRADER SYNC</div>
@@ -203,9 +259,9 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <h2 data-i18n-html="lp.a.title_h">Analytics to understand what works. <span class="dim">And to drop what only feels right.</span></h2>
           <a href="register.html" class="b" data-i18n="lp.a.cta">View all metrics</a>
         </div>
-        <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/analytics.webp" alt="Performance analytics with profit factor, Sharpe ratio, insights, cumulative P&amp;L and strategy comparison" width="1600" height="783" loading="lazy" decoding="async" /></div></div>
+        <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/screen-analytics.webp" alt="Performance analytics with profit factor, Sharpe ratio, prop firm rules, insights and cumulative P&amp;L" width="1800" height="947" loading="lazy" decoding="async" /></div></div>
         <div class="analytics-row">
-          <div class="g frame frame-md"><div class="frame-in"><img src="/images/landing/strategies.webp" alt="Strategy panel comparing win rate and P&amp;L of ICT, Scalping, Smart Money and SMT" width="1600" height="1059" loading="lazy" decoding="async" /></div></div>
+          <div class="g frame frame-md"><div class="frame-in"><img src="/images/landing/screen-strategies.webp" alt="Strategy panel comparing win rate and P&amp;L of ICT, Pullback Trading, SMT and Support-Resistance" width="1800" height="947" loading="lazy" decoding="async" /></div></div>
           <div class="metrics">
             <div class="g metric"><div class="metric-k" data-i18n="lp.a.m1">Win rate</div><div class="mono metric-v">68.7%</div></div>
             <div class="g metric"><div class="metric-k" data-i18n="lp.a.m2">Profit factor</div><div class="mono metric-v">8.71</div></div>
@@ -231,7 +287,7 @@ import LegalDisclosures from '../components/LegalDisclosures.astro';
           <h2 class="wide" data-i18n-html="lp.b.title_h">Go back in time, candle by candle. <span class="dim">Practice on synthetic data or replay your own cTrader charts.</span></h2>
           <a href="register.html" class="b bp" data-i18n="lp.b.cta">Try a backtest</a>
         </div>
-        <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/backtest.webp" alt="Wawe backtest workspace replaying EURUSD H1 candles from cTrader with balance, equity and buy/sell panel" width="1600" height="1059" loading="lazy" decoding="async" /></div></div>
+        <div class="g frame frame-lg"><div class="frame-in"><img src="/images/landing/screen-backtest.webp" alt="Wawe backtest workspace replaying EURUSD H1 candles from cTrader with balance, equity and buy/sell panel" width="1800" height="947" loading="lazy" decoding="async" /></div></div>
         <div class="steps">
           <div class="g stepcard"><span class="mono num">01</span><div class="step-t" data-i18n="lp.b.s1_t">Pick your data</div><div class="step-d" data-i18n="lp.b.s1_d">Start instantly on Wawe’s synthetic data, or connect cTrader for real candles up to the previous day.</div></div>
           <div class="g stepcard"><span class="mono num">02</span><div class="step-t" data-i18n="lp.b.s2_t">Replay and trade</div><div class="step-d" data-i18n="lp.b.s2_d">Step candle by candle or play at up to 10×. Place simulated buy and sell orders with lot size, stop loss and take profit. Nothing is sent to your broker.</div></div>
@@ -343,7 +399,7 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
     <!-- CTA -->
     <section class="sec sec-cta">
       <div class="g cta">
-        <h2 data-i18n-html="lp.cta.title_h">You deserve the best.<br><span class="soft">Create your journal now.</span></h2>
+        <h2 data-i18n-html="lp.cta.title_h">Rewrite your destiny.<br><span class="soft">Create your journal now.</span></h2>
         <a href="register.html" class="b bp b-xl" data-i18n="lp.cta.btn">Start for free →</a>
       </div>
     </section>
@@ -418,6 +474,52 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
       function onScroll() { nav.classList.toggle('is-compact', (window.scrollY || document.documentElement.scrollTop || 0) > 80); }
       window.addEventListener('scroll', onScroll, { passive: true });
       onScroll();
+    })();
+
+    // SHOWCASE LAPTOP: önce kapak açılır, sonra kaydırdıkça uygulama ekranları sırayla değişir
+    (function() {
+      var sec = document.querySelector('.showcase');
+      if (!sec) return;
+      var shots = sec.querySelectorAll('.sc-shot'), caps = sec.querySelectorAll('.sc-cap'), tabs = sec.querySelectorAll('.sc-tab');
+      var n = shots.length, cur = 0, raf = 0, pathEl = sec.querySelector('.br-path');
+      var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // ilerleme: kapak açılır (0–LID) → ekranlar değişir (FIRST–LAST) → son ekrandan sonra kapak kapanır (CLOSE–1)
+      var LID = 0.12, FIRST = 0.15, LAST = 0.84, CLOSE = 0.87;
+      function ease(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+      function show(i) {
+        if (i === cur) return; cur = i;
+        if (pathEl) pathEl.textContent = shots[i].getAttribute('data-path') || '';
+        for (var k = 0; k < n; k++) {
+          var on = k === i;
+          shots[k].classList.toggle('is-on', on); caps[k].classList.toggle('is-on', on);
+          tabs[k].classList.toggle('is-on', on); tabs[k].setAttribute('aria-selected', on ? 'true' : 'false');
+        }
+      }
+      function geo() {
+        var sr = sec.getBoundingClientRect(), vh = window.innerHeight || 800, lead = vh * 0.45;
+        return { sr: sr, vh: vh, lead: lead, span: Math.max(1, sr.height - vh + lead) };
+      }
+      function update() {
+        raf = 0;
+        var g = geo();
+        var p = Math.max(0, Math.min(1, (g.lead - g.sr.top) / g.span));
+        var lid = p < CLOSE ? Math.min(1, p / LID) : 1 - Math.min(1, (p - CLOSE) / (1 - CLOSE));
+        sec.style.setProperty('--lid', ease(lid).toFixed(3));
+        show(p < FIRST ? 0 : Math.min(n - 1, Math.floor((p - FIRST) / (LAST - FIRST) * n)));
+      }
+      function req() { if (!raf) raf = requestAnimationFrame(update); }
+      tabs.forEach(function(b, i) {
+        b.addEventListener('click', function() {
+          if (still) { show(i); return; }
+          var g = geo(), y = window.scrollY + g.sr.top - g.lead;
+          var p = FIRST + (i + 0.5) / n * (LAST - FIRST);
+          window.scrollTo({ top: y + p * g.span, behavior: 'smooth' });
+        });
+      });
+      if (still) return;
+      window.addEventListener('scroll', req, { passive: true });
+      window.addEventListener('resize', req);
+      update();
     })();
 
     // BILLING PERIOD TOGGLE

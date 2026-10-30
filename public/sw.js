@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v44'; // ayarlar: Pro özellikleri listesi gerçek özelliklere göre yenilendi
+const CACHE_VERSION = 'wawe-v45'; // landing: yeni hero, MacBook sahnesi, dağ görselleri
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
