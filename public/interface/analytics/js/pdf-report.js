@@ -114,7 +114,8 @@ function groupBy(closed, keyFn) {
 
 /* Raporu oluşturup indirir.
    trades: dönemin işlemleri (açık olanlar rapora girmez)
-   meta: { startKey, endKey, journalName } — startKey null ise ilk işlemden başlar */
+   meta: { startKey, endKey, journalName, strategies } — startKey null ise ilk işlemden başlar;
+   strategies ({ id: ad }) verilir ve en az bir işlemde strateji varsa strateji kırılımı ve kolonu eklenir */
 export async function buildPerformanceReport(trades, meta) {
   meta = meta || {};
   if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF.API.autoTable) {
@@ -139,6 +140,9 @@ export async function buildPerformanceReport(trades, meta) {
   var startKey = meta.startKey || firstKey;
   var endKey = meta.endKey || lastKey;
   var periodText = fmtDay(startKey, lang) + ' – ' + fmtDay(endKey, lang);
+  var stratNames = meta.strategies || {};
+  var stratOf = function (t) { return t.strategy_id && stratNames[t.strategy_id] ? stratNames[t.strategy_id] : null; };
+  var hasStrategies = closed.some(stratOf);
 
   function fill(c) { doc.setFillColor(c[0], c[1], c[2]); }
   function color(c) { doc.setTextColor(c[0], c[1], c[2]); }
@@ -321,19 +325,37 @@ export async function buildPerformanceReport(trades, meta) {
     }) + 10;
   }
 
+  if (hasStrategies) {
+    if (H - 16 - y < 40) y = newPage();
+    sectionTitle(_t('analytics_dash.report.by_strategy', 'Strateji Bazında'), M, y);
+    var noStrat = _t('analytics_dash.report.no_strategy', 'Stratejisiz');
+    var byStrat = groupBy(closed, function (t) { return stratOf(t) || noStrat; }).sort(function (p, q) { return q.pnl - p.pnl; });
+    y = table({
+      startY: y + 3,
+      head: groupHead(_t('analytics_dash.report.col.strategy', 'Strateji')),
+      body: byStrat.map(function (g) { return groupRow(g, g.key === noStrat ? { content: g.key, styles: { textColor: C.muted } } : g.key); }),
+      columnStyles: { 0: { fontStyle: 'bold' } },
+      didParseCell: function (d) { if (d.section === 'head' && headAlign[d.column.index]) d.cell.styles.halign = 'right'; }
+    }) + 10;
+  }
+
   // ---------- işlem listesi ----------
   // başlık + en az ~6 satır sığmıyorsa liste yeni sayfadan başlar (sayfa sonunda 1-2 satır kalmasın)
   if (H - 16 - y < 62) y = newPage();
   sectionTitle(_t('analytics_dash.report.trade_list', 'İşlemler') + ' (' + closed.length + ')', M, y);
   var tradeHead = [['#', _t('csv.date', 'Tarih'), _t('csv.symbol', 'Sembol'), _t('csv.direction', 'Yön'), _t('csv.lot', 'Lot'),
     _t('csv.entry', 'Giriş'), _t('csv.exit', 'Çıkış'), _t('csv.rr', 'R:R'), _t('csv.pnl', 'K/Z')]];
+  // strateji kolonu Yön'den sonra (indeks 4); sağa hizalı sayı kolonları bir kayar
+  if (hasStrategies) tradeHead[0].splice(4, 0, _t('analytics_dash.report.col.strategy', 'Strateji'));
+  var numFrom = hasStrategies ? 5 : 4;
   table({
     startY: y + 3,
     head: tradeHead,
+    columnStyles: hasStrategies ? { 4: { cellWidth: 30, overflow: 'ellipsize' } } : {},
     body: closed.map(function (t, i) {
       var pnl = pnls[i];
       var dir = String(t.direction || '').toLowerCase() === 'short' ? 'SHORT' : (t.direction ? 'LONG' : '—');
-      return [
+      var row = [
         { content: String(i + 1), styles: { textColor: C.muted } },
         window.WwTime.formatDateTime ? window.WwTime.formatDateTime(t.trade_date, lang, { day: '2-digit', month: '2-digit', year: 'numeric' }) : fmtDay(window.WwMetrics.dateKey(t), lang),
         { content: (t.symbol || '—').toUpperCase(), styles: { fontStyle: 'bold' } },
@@ -344,8 +366,10 @@ export async function buildPerformanceReport(trades, meta) {
         rightCell(t.rr_ratio ? Number(t.rr_ratio).toFixed(2) : '—'),
         pnlCell(pnl)
       ];
+      if (hasStrategies) row.splice(4, 0, stratOf(t) || { content: '—', styles: { textColor: C.muted } });
+      return row;
     }),
-    didParseCell: function (d) { if (d.section === 'head' && d.column.index >= 4) d.cell.styles.halign = 'right'; }
+    didParseCell: function (d) { if (d.section === 'head' && d.column.index >= numFrom) d.cell.styles.halign = 'right'; }
   });
 
   // ---------- sayfa altı ----------

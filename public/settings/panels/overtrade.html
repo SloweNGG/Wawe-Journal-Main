@@ -19,40 +19,31 @@
     <!-- Bulanık önizleme: gerçek formun id'siz, etkileşimsiz kopyası -->
     <div class="pro-teaser-preview" aria-hidden="true" inert>
       <div class="ot-form">
-        <label class="ot-toggle-row">
-          <input type="checkbox" class="ot-checkbox" checked tabindex="-1">
-          <span data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</span>
-        </label>
-        <div class="ot-field">
-          <label class="ot-label" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</label>
-          <div class="ot-input-row">
-            <input type="number" class="ot-input" value="5" tabindex="-1">
-            <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+        <div class="settings-group-card">
+          <div class="pref-row">
+            <div class="pref-left">
+              <div class="pref-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+              <div><div class="pref-title" data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</div></div>
+            </div>
+            <span class="ot-switch"><input type="checkbox" checked tabindex="-1"><span class="ot-switch-track"></span></span>
           </div>
         </div>
-        <div class="ot-field">
-          <label class="ot-label" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</label>
-          <div class="ot-input-row">
-            <input type="number" class="ot-input" value="20" tabindex="-1">
-            <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+        <div class="settings-group-card ot-limits">
+          <div class="pref-row">
+            <div class="pref-left"><div><div class="pref-title" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</div></div></div>
+            <span class="ot-num"><input type="number" class="ot-num-input" value="5" tabindex="-1"><span class="ot-num-affix" data-i18n="overtrade.trades_unit">işlem</span></span>
+          </div>
+          <div class="pref-divider"></div>
+          <div class="pref-row">
+            <div class="pref-left"><div><div class="pref-title" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</div></div></div>
+            <span class="ot-num"><input type="number" class="ot-num-input" value="20" tabindex="-1"><span class="ot-num-affix" data-i18n="overtrade.trades_unit">işlem</span></span>
+          </div>
+          <div class="pref-divider"></div>
+          <div class="pref-row">
+            <div class="pref-left"><div><div class="pref-title" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</div></div></div>
+            <span class="ot-num"><span class="ot-num-affix">$</span><input type="number" class="ot-num-input" value="250" tabindex="-1"></span>
           </div>
         </div>
-        <div class="ot-field">
-          <label class="ot-label" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</label>
-          <div class="ot-input-row">
-            <span class="ot-currency">$</span>
-            <input type="number" class="ot-input" value="250" tabindex="-1">
-          </div>
-        </div>
-        <div class="ot-field">
-          <label class="ot-label" data-i18n="overtrade.warning_level_label">Uyarı Seviyesi</label>
-          <select class="ot-select" tabindex="-1">
-            <option data-i18n="overtrade.level_warning">Uyarı</option>
-          </select>
-        </div>
-        <button type="button" class="btn-save-ot" tabindex="-1">
-          <span data-i18n="overtrade.save_settings">Ayarları Kaydet</span>
-        </button>
       </div>
     </div>
 
@@ -69,55 +60,117 @@
 
 <template id="tpl-overtrade-pro">
   <div class="ot-form">
-    <label class="ot-toggle-row">
-      <input type="checkbox" id="ot-enabled" class="ot-checkbox">
-      <span data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</span>
-    </label>
+    <!-- 1. AÇ / KAPA -->
+    <div class="settings-group-card">
+      <label class="pref-row ot-enable-row" for="ot-enabled">
+        <span class="pref-left">
+          <span class="pref-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          </span>
+          <span>
+            <span class="pref-title" data-i18n="overtrade.enable_alerts">OverTrade Uyarılarını Aktif Et</span>
+            <span class="pref-desc" data-i18n="overtrade.enable_desc">Bir limiti aştığında bildirimlerde uyarı al</span>
+          </span>
+        </span>
+        <span class="ot-switch">
+          <input type="checkbox" id="ot-enabled" role="switch">
+          <span class="ot-switch-track" aria-hidden="true"></span>
+        </span>
+      </label>
+    </div>
 
-    <div class="ot-field">
-      <label class="ot-label" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</label>
-      <div class="ot-input-row">
-        <input type="number" id="ot-daily-limit" min="1" max="100" class="ot-input">
-        <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+    <!-- 2. LİMİTLER (uyarılar kapalıyken soluklaşır) -->
+    <div class="appearance-section ot-limits">
+      <div class="appearance-section-header">
+        <span class="appearance-section-title" data-i18n="overtrade.limits_title">Limitler</span>
+        <span class="appearance-section-subtitle" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</span>
       </div>
-      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
-    </div>
 
-    <div class="ot-field">
-      <label class="ot-label" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</label>
-      <div class="ot-input-row">
-        <input type="number" id="ot-weekly-limit" min="1" max="500" class="ot-input">
-        <span class="ot-unit" data-i18n="overtrade.trades_unit">işlem</span>
+      <div class="settings-group-card">
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <label class="pref-title" for="ot-daily-limit" data-i18n="overtrade.daily_limit_label">Günlük İşlem Limiti</label>
+              <div class="pref-desc" data-i18n="overtrade.daily_limit_desc">Bugün kapanan işlem sayısı</div>
+            </div>
+          </div>
+          <span class="ot-num">
+            <input type="number" id="ot-daily-limit" min="1" max="100" step="1" inputmode="numeric" class="ot-num-input">
+            <span class="ot-num-affix" data-i18n="overtrade.trades_unit">işlem</span>
+          </span>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M7 14h10M7 18h6"/></svg>
+            </div>
+            <div>
+              <label class="pref-title" for="ot-weekly-limit" data-i18n="overtrade.weekly_limit_label">Haftalık İşlem Limiti</label>
+              <div class="pref-desc" data-i18n="overtrade.weekly_limit_desc">Son 7 günde kapanan işlem sayısı</div>
+            </div>
+          </div>
+          <span class="ot-num">
+            <input type="number" id="ot-weekly-limit" min="1" max="500" step="1" inputmode="numeric" class="ot-num-input">
+            <span class="ot-num-affix" data-i18n="overtrade.trades_unit">işlem</span>
+          </span>
+        </div>
+
+        <div class="pref-divider"></div>
+
+        <div class="pref-row">
+          <div class="pref-left">
+            <div class="pref-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+            </div>
+            <div>
+              <label class="pref-title" for="ot-loss-limit" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</label>
+              <div class="pref-desc" data-i18n="overtrade.loss_limit_desc">Bugün kapanan işlemlerin net zararı</div>
+            </div>
+          </div>
+          <span class="ot-num">
+            <span class="ot-num-affix ot-currency">$</span>
+            <input type="number" id="ot-loss-limit" min="1" max="999999" step="any" inputmode="decimal" class="ot-num-input ot-num-wide">
+          </span>
+        </div>
       </div>
-      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
     </div>
 
-    <div class="ot-field">
-      <label class="ot-label" data-i18n="overtrade.loss_limit_label">Günlük Kayıp Limiti</label>
-      <div class="ot-input-row">
-        <span class="ot-currency">$</span>
-        <input type="number" id="ot-loss-limit" min="1" max="999999" class="ot-input">
+    <!-- 3. UYARI SEVİYESİ -->
+    <div class="settings-group-card ot-limits">
+      <div class="pref-row">
+        <div class="pref-left">
+          <div class="pref-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <div class="pref-title" id="ot-level-title" data-i18n="overtrade.warning_level_label">Uyarı Seviyesi</div>
+            <div class="pref-desc" data-i18n="overtrade.warning_level_desc">İşlem sayısı uyarılarının rengi; kayıp limiti her zaman kritik</div>
+          </div>
+        </div>
+        <div class="ot-level-seg" id="ot-warning-level" role="radiogroup" aria-labelledby="ot-level-title">
+          <label class="ot-level-opt" data-level="info"><input type="radio" name="ot-warning-level" value="info"><span class="ot-level-dot"></span><span data-i18n="overtrade.level_info">Bilgi</span></label>
+          <label class="ot-level-opt" data-level="warning"><input type="radio" name="ot-warning-level" value="warning"><span class="ot-level-dot"></span><span data-i18n="overtrade.level_warning">Uyarı</span></label>
+          <label class="ot-level-opt" data-level="danger"><input type="radio" name="ot-warning-level" value="danger"><span class="ot-level-dot"></span><span data-i18n="overtrade.level_danger">Tehlike</span></label>
+        </div>
       </div>
-      <p class="ot-hint" data-i18n="overtrade.limit_hint">Bu limiti aştığında uyarı alırsın.</p>
     </div>
 
-    <div class="ot-field">
-      <label class="ot-label" data-i18n="overtrade.warning_level_label">Uyarı Seviyesi</label>
-      <select id="ot-warning-level" class="ot-select">
-        <option value="info" data-i18n="overtrade.level_info">Bilgi</option>
-        <option value="warning" data-i18n="overtrade.level_warning">Uyarı</option>
-        <option value="danger" data-i18n="overtrade.level_danger">Tehlike</option>
-      </select>
-    </div>
-
-    <button id="ot-save-settings" class="btn-save-ot">
-      <span data-icon="check"></span>
-      <span data-i18n="overtrade.save_settings">Ayarları Kaydet</span>
-    </button>
-
-    <div class="ot-secondary-actions">
-      <button id="ot-clear-dismissed" class="btn-ot-ghost" data-i18n="overtrade.clear_dismissed_btn">Kapatılan Uyarıları Temizle</button>
-      <button id="ot-reset-defaults" class="btn-ot-ghost" data-i18n="overtrade.reset_defaults_btn">Varsayılana Dön</button>
+    <!-- 4. EYLEMLER -->
+    <div class="ot-actions">
+      <div class="ot-secondary-actions">
+        <button type="button" id="ot-clear-dismissed" class="btn-ot-ghost" data-i18n="overtrade.clear_dismissed_btn">Kapatılan Uyarıları Temizle</button>
+        <button type="button" id="ot-reset-defaults" class="btn-ot-ghost" data-i18n="overtrade.reset_defaults_btn">Varsayılana Dön</button>
+      </div>
+      <button type="button" id="ot-save-settings" class="btn-save-ot">
+        <span data-icon="check"></span>
+        <span data-i18n="overtrade.save_settings">Ayarları Kaydet</span>
+      </button>
     </div>
   </div>
 </template>

@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=36" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=39" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -39,7 +39,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-plan.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-range.js?v=1" is:inline defer></script>
   <script src="/interface/backtest/js/bt-fsedit.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=40" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/backtest.js?v=41" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
@@ -47,13 +47,12 @@ import Layout from '../layouts/Layout.astro';
     <!-- ================= LIST VIEW ================= -->
     <!-- the list (with skeleton cards) is visible from the first paint; setPageState hides it for the replay -->
     <section id="bt-view-list" class="bt-view" aria-labelledby="bt-title">
-      <div class="page-header">
+      <div class="page-header page-header-row">
         <div>
           <div class="bt-title-row">
             <h1 id="bt-title" data-i18n="backtest.title">Backtest</h1>
             <button type="button" class="bt-plan-badge" data-bt-plan-badge hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><span class="bt-plan-badge-text bt-num"></span></button>
           </div>
-          <p class="subtitle" data-i18n="backtest.subtitle">Geçmiş piyasa verisinde mum mum işlem pratiği yap.</p>
         </div>
         <div class="bt-list-actions">
           <span id="bt-quota" class="bt-quota bt-num" aria-live="polite"></span>
@@ -181,7 +180,7 @@ import Layout from '../layouts/Layout.astro';
           </header>
           <div class="bt-win-body">
       <div class="bt-toolbar" role="toolbar">
-        <div class="bt-acc-info">
+        <div class="bt-tb-acc">
           <h2 id="bt-acc-name"></h2>
           <span id="bt-acc-symbol" class="bt-chip"></span>
           <span id="bt-acc-section" class="bt-chip bt-chip-muted" hidden></span>

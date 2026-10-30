@@ -314,6 +314,14 @@ body.light-theme h4, body.light-theme h5 {
   font-size: clamp(0.7rem, 1.2vw, 0.85rem);
   margin: 0;
 }
+/* alt başlıksız tek satır başlık (Strateji, Takvim, Backtest): başlık Dashboard'daki gibi üstte; sabit satır yüksekliği
+   sayesinde sağdaki kontrol (filtreler, buton, link) ne olursa olsun altındaki içerik aynı yerden başlar */
+.page-header.page-header-row h1 { margin-bottom: 0; }
+@media (min-width: 769px) {
+  .page-header.page-header-row { min-height: 40px; }
+}
+/* zaman filtresi grubu (Dashboard, Strateji, Analitik: Tümü / Bu hafta / ... / Özel): koyu temada gri değil saf siyah */
+:root:not(.light-theme) body:not(.light-theme) :is(.date-filter-group, .time-filter-group) { background: #000; }
 
 /* ============================================================
    DASHBOARD SAYFASI

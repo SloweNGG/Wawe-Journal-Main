@@ -789,7 +789,7 @@
       if (seq !== ctSeq || !PAGE.alive) return;
       L.ctForm.cov = cov;
       $('bt-f-start').min = toLocalInput(cov.firstT); $('bt-f-start').max = toLocalInput(cov.lastT);
-      ctDepth(_t('backtest.ctrader.depth', 'Bu hesapta bu sembolün verisi: {from} – {to}', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }), 'data');
+      ctDepth(_t('backtest.ctrader.depth', 'Bu hesapta bu sembolün verisi: {from} – {to}', { from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) }));
       $('bt-f-start-hint').textContent = _t('backtest.field.start_hint', 'Saat dilimin: {tz}. Veri: {from} – {to}', { tz: tz(), from: fmtDay(cov.firstT), to: fmtDay(cov.lastT) });
       if (reloadSymbols !== 'keepStart') $('bt-f-start').value = toLocalInput(defaultStart(cov));
     } catch (e) {

@@ -2608,7 +2608,6 @@ body.light-theme .expand-summary-empty {
 
   .dashboard-main .page-header h1,
   .page-header h1 {
-    font-size: clamp(1.25rem, 4.5vw, 1.45rem);
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.2;

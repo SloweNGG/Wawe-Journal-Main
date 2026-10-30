@@ -18,7 +18,7 @@
    ============================================================ */
 
 .pro-main {
-  padding: 0.9rem 2rem 5rem;
+  padding: 0.9rem clamp(0.75rem, 2vw, 2rem) 5rem;
   max-width: 100%;
   margin: 0 auto;
   width: 100%;
@@ -277,7 +277,7 @@
     grid-column: span 1;
   }
   .pro-main {
-    padding: 0.9rem 1rem 5rem;
+    padding: 0.9rem 0.75rem 5rem;
   }
   .page-header {
     flex-direction: column;

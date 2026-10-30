@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v45'; // landing: yeni hero, MacBook sahnesi, dağ görselleri
+const CACHE_VERSION = 'wawe-v46'; // settings: Over Trade paneli yeniden tasarlandı
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

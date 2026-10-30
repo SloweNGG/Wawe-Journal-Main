@@ -2508,237 +2508,205 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     }
   }
 
-  async function generatePDF(lang) {
+  // PDF: sade işlem raporu (standart plan): başlık, 5 özet kart ve dönemin tüm işlemleri. Tablo sayfa genişliğindedir,
+  // sayfalara bölünür ve başlık satırı her sayfada tekrarlanır. Türkçe karakterler için DM Sans gömülür (/fonts/pdf);
+  // yüklenemezse Helvetica'ya düşülür ve ş/ğ/ı sadeleştirilir. Grafikli, kırılımlı performans raporu Premium'a özeldir
+  // (interface/analytics/js/pdf-report.js) ve burada kullanılmaz.
+  var PDF_LABELS = {
+    tr: { title: 'İşlem Raporu', period: 'Dönem', created: 'Oluşturulma', total: 'Toplam İşlem', pnl: 'Toplam K/Z', wr: 'Win Rate',
+      wins: 'Kazanan', losses: 'Kaybeden', list: 'İşlemler', date: 'Tarih', symbol: 'Sembol', dir: 'Yön', lot: 'Lot', entry: 'Giriş',
+      exit: 'Çıkış', pnlCol: 'K/Z', strategy: 'Strateji', open: 'Açık', page: 'Sayfa', trades: 'işlem',
+      ranges: { all: 'Tüm Zamanlar', week: 'Bu Hafta', month: 'Bu Ay', year: 'Bu Yıl', custom: 'Özel Aralık' } },
+    en: { title: 'Trading Report', period: 'Period', created: 'Created', total: 'Total Trades', pnl: 'Total P&L', wr: 'Win Rate',
+      wins: 'Wins', losses: 'Losses', list: 'Trades', date: 'Date', symbol: 'Symbol', dir: 'Side', lot: 'Lot', entry: 'Entry',
+      exit: 'Exit', pnlCol: 'P&L', strategy: 'Strategy', open: 'Open', page: 'Page', trades: 'trades',
+      ranges: { all: 'All Time', week: 'This Week', month: 'This Month', year: 'This Year', custom: 'Custom Range' } },
+    de: { title: 'Handelsbericht', period: 'Zeitraum', created: 'Erstellt', total: 'Trades gesamt', pnl: 'Gesamt P&L', wr: 'Win-Rate',
+      wins: 'Gewinner', losses: 'Verlierer', list: 'Trades', date: 'Datum', symbol: 'Symbol', dir: 'Richtung', lot: 'Lot', entry: 'Einstieg',
+      exit: 'Ausstieg', pnlCol: 'P&L', strategy: 'Strategie', open: 'Offen', page: 'Seite', trades: 'Trades',
+      ranges: { all: 'Alle Zeiten', week: 'Diese Woche', month: 'Dieser Monat', year: 'Dieses Jahr', custom: 'Benutzerdefiniert' } }
+  };
+  var pdfFontCache = null;   // [regular, bold] base64; false = yüklenemedi
+
+  async function loadPdfFonts() {
+    if (pdfFontCache !== null) return pdfFontCache;
+    try {
+      var bufs = await Promise.all(['Regular', 'Bold'].map(function (w) {
+        return fetch('/fonts/pdf/DMSans-' + w + '.ttf').then(function (r) { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); });
+      }));
+      pdfFontCache = bufs.map(function (buf) {
+        var bytes = new Uint8Array(buf), bin = '';
+        for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        return btoa(bin);
+      });
+    } catch (e) {
+      pdfFontCache = false;
+    }
+    return pdfFontCache;
+  }
+
+  async function generatePDF() {
+    var tt = function (key, fallback) { var v = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : null; return v && v !== key ? v : fallback; };
     try {
       var trades = filterByDate(allTrades, currentRange);
       if (!trades.length) {
-        showToast('Dışa aktarılacak işlem yok.', 'error');
+        showToast(tt('toast.no_trades_export', 'Dışa aktarılacak işlem yok.'), 'error');
+        return;
+      }
+      if ((typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') && typeof window.loadJsPDF === 'function') {
+        await window.loadJsPDF(false);
+      }
+      if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+        showToast(tt('toast.pdf_lib_error', 'PDF kütüphanesi yüklenemedi.'), 'error');
         return;
       }
 
-      if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-        if (typeof window.loadJsPDF === 'function') {
-          await window.loadJsPDF(false);
-        }
+      var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'en';
+      var L = PDF_LABELS[lang] || PDF_LABELS.en;
+      var WM = window.WwMetrics, WT = window.WwTime;
+      var fonts = await loadPdfFonts();
+      var strategies = typeof window.getStrategiesMap === 'function' ? await window.getStrategiesMap() : {};
+
+      var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
+      var FONT = 'helvetica';
+      if (fonts) {
+        doc.addFileToVFS('DMSans-Regular.ttf', fonts[0]); doc.addFont('DMSans-Regular.ttf', 'DMSans', 'normal');
+        doc.addFileToVFS('DMSans-Bold.ttf', fonts[1]); doc.addFont('DMSans-Bold.ttf', 'DMSans', 'bold');
+        FONT = 'DMSans';
       }
-
-      if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-        showToast('PDF kütüphanesi yüklenemedi.', 'error');
-        return;
+      var plain = { 'ş': 's', 'Ş': 'S', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I' };
+      // DM Sans'ta ₺ yok; Helvetica'da ş/ğ/ı/İ yok
+      function T(str) {
+        str = String(str === null || str === undefined ? '' : str).replace(/₺/g, 'TL ').replace(/−/g, '-');
+        return fonts ? str : str.replace(/[şŞğĞıİ]/g, function (ch) { return plain[ch]; });
       }
-
-      var { jsPDF } = window.jspdf;
-      var doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      var W = doc.internal.pageSize.getWidth();
-      var H = doc.internal.pageSize.getHeight();
-
-      var isTurkish = lang === 'tr';
-      var isGerman = lang === 'de';
-
-      var globalStrategiesMap = {};
-      if (typeof window.getStrategiesMap === 'function') {
-        globalStrategiesMap = await window.getStrategiesMap();
+      var C = { bg: [0, 0, 0], card: [10, 10, 12], row: [8, 8, 10], line: [34, 34, 40], text: [232, 232, 240], muted: [138, 138, 154],
+        accent: [139, 92, 246], up: [34, 197, 94], down: [239, 68, 68] };
+      function fill(c) { doc.setFillColor(c[0], c[1], c[2]); }
+      function color(c) { doc.setTextColor(c[0], c[1], c[2]); }
+      function font(style, size) { doc.setFont(FONT, style); doc.setFontSize(size); }
+      function text(str, x, y, opts) { doc.text(T(str), x, y, opts); }
+      function fit(str, w) {                       // hücreye sığmayan metin "…" ile kısalır
+        str = T(str);
+        if (doc.getTextWidth(str) <= w) return str;
+        var dots = fonts ? '…' : '...';
+        while (str.length > 1 && doc.getTextWidth(str + dots) > w) str = str.slice(0, -1);
+        return str + dots;
       }
+      function paintPage() { fill(C.bg); doc.rect(0, 0, W, H, 'F'); fill(C.accent); doc.rect(0, 0, W, 2.5, 'F'); }
+      function day(key) { return key ? WT.formatDate(key, lang, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
 
-      var strategyNamesCache = {};
-      for (var i = 0; i < trades.slice(0, 50).length; i++) {
-        var t = trades.slice(0, 50)[i];
-        if (t.strategy_id && globalStrategiesMap[t.strategy_id]) {
-          strategyNamesCache[t.strategy_id] = globalStrategiesMap[t.strategy_id];
-        }
+      // dönem: araç çubuğundaki seçim + tarih aralığı; liste en yeni işlemden başlar
+      var rows = trades.slice().sort(function (a, b) { return String(b.trade_date || '').localeCompare(String(a.trade_date || '')); });
+      var startKey, endKey;
+      if (currentRange === 'custom' && window._customRangeStart && window._customRangeEnd) {
+        startKey = String(window._customRangeStart).slice(0, 10); endKey = String(window._customRangeEnd).slice(0, 10);
+      } else if (currentRange !== 'all') {
+        startKey = WT.rangeStartKey(currentRange); endKey = WT.todayKey();
+      } else {
+        startKey = WM.dateKey(rows[rows.length - 1]); endKey = WM.dateKey(rows[0]);
       }
+      var s = WM.summarize(WM.closedTrades(trades));
 
-      var totalPnL = 0, wins = 0, losses = 0;
-      trades.forEach(function (t) {
-        var pnl = calcTradePnL(t);
-        totalPnL += pnl;
-        if (pnl > 0) wins++;
-        else if (pnl < 0) losses++;
-      });
-      var total = trades.length;
-      var wr = total ? (wins / total) * 100 : 0;
+      // ---------- başlık ----------
+      paintPage();
+      font('bold', 14); color(C.text); text('WAWE JOURNAL', M, 15);
+      font('normal', 9); color(C.muted); text(L.title, M, 21);
+      font('bold', 9); color(C.accent); text(currentUsername || 'Trader', W - M, 15, { align: 'right' });
+      font('normal', 7.5); color(C.muted);
+      text(L.period + ': ' + (L.ranges[currentRange] || L.ranges.all) + '  ·  ' + day(startKey) + ' – ' + day(endKey), W - M, 21, { align: 'right' });
+      text(L.created + ': ' + day(WT.todayKey()), W - M, 26, { align: 'right' });
 
-      doc.setFillColor(10, 10, 15);
-      doc.rect(0, 0, W, H, 'F');
-      doc.setFillColor(139, 92, 246);
-      doc.rect(0, 0, W, 3, 'F');
-      doc.setTextColor(232, 232, 240);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('WAWE JOURNAL', 12, 12);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(107, 107, 128);
-
-      var reportTitle = isTurkish ? 'Ticari Islem Raporu' : (isGerman ? 'Handelsbericht' : 'Trading Report');
-      doc.text(reportTitle, 12, 18);
-
-      doc.setTextColor(139, 92, 246);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text(currentUsername || 'Trader', W - 12, 12, { align: 'right' });
-      doc.setTextColor(107, 107, 128);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-
-      var periodLabel = isTurkish ? 'Donem: ' : (isGerman ? 'Zeitraum: ' : 'Period: ');
-      var rangeNames = {
-        all: isTurkish ? 'Tum Zamanlar' : (isGerman ? 'Alle Zeiten' : 'All Time'),
-        week: isTurkish ? 'Bu Hafta' : (isGerman ? 'Diese Woche' : 'This Week'),
-        month: isTurkish ? 'Bu Ay' : (isGerman ? 'Diesen Monat' : 'This Month'),
-        year: isTurkish ? 'Bu Yil' : (isGerman ? 'Dieses Jahr' : 'This Year'),
-        custom: isTurkish ? 'Özel Aralık' : (isGerman ? 'Benutzerdefiniert' : 'Custom Range')
-      };
-      doc.text(periodLabel + (rangeNames[currentRange] || rangeNames.all), W - 12, 18, { align: 'right' });
-
-      var dateLabel = isTurkish ? 'Tarih: ' : (isGerman ? 'Datum: ' : 'Date: ');
-      doc.text(dateLabel + new Date().toLocaleDateString(isTurkish ? 'tr-TR' : (isGerman ? 'de-DE' : 'en-US')), W - 12, 24, { align: 'right' });
-
-      var yPos = 32;
+      // ---------- özet kartları ----------
       var stats = [
-        { label: isTurkish ? 'Toplam Islem' : (isGerman ? 'Gesamt Trades' : 'Total Trades'), value: total.toString(), color: [139, 92, 246] },
-        { label: isTurkish ? 'Toplam K/Z' : (isGerman ? 'Gesamt P&L' : 'Total P&L'), value: formatCurrencyPDF(totalPnL), color: totalPnL >= 0 ? [34, 197, 94] : [239, 68, 68] },
-        { label: isTurkish ? 'Win Rate' : (isGerman ? 'Win-Rate' : 'Win Rate'), value: wr.toFixed(1) + '%', color: wr >= 50 ? [34, 197, 94] : [239, 68, 68] },
-        { label: isTurkish ? 'Kazanan' : (isGerman ? 'Gewinner' : 'Wins'), value: wins.toString(), color: [34, 197, 94] },
-        { label: isTurkish ? 'Kaybeden' : (isGerman ? 'Verlierer' : 'Losses'), value: losses.toString(), color: [239, 68, 68] },
+        { label: L.total, value: String(trades.length), c: C.text },
+        { label: L.pnl, value: formatCurrencyPDF(s.totalPnL), c: s.totalPnL > 0 ? C.up : (s.totalPnL < 0 ? C.down : C.text) },
+        { label: L.wr, value: s.winRate.toFixed(1) + '%', c: C.text },
+        { label: L.wins, value: String(s.wins), c: C.up },
+        { label: L.losses, value: String(s.losses), c: C.down }
       ];
-
-      var cellW = (W - 24) / 5;
-      stats.forEach(function (s, idx) {
-        var cx = 12 + idx * cellW;
-        doc.setFillColor(17, 17, 24);
-        doc.roundedRect(cx, yPos, cellW - 2, 15, 2, 2, 'F');
-        doc.setFillColor(30, 30, 46);
-        doc.roundedRect(cx, yPos, cellW - 2, 15, 2, 2, 'S');
-        doc.setTextColor(107, 107, 128);
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
-        doc.text(s.label, cx + (cellW - 2) / 2, yPos + 5.5, { align: 'center' });
-        doc.setTextColor(s.color[0], s.color[1], s.color[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text(s.value, cx + (cellW - 2) / 2, yPos + 12.5, { align: 'center' });
+      var gap = 3, cw = (W - 2 * M - 4 * gap) / 5, y = 32;
+      stats.forEach(function (st, i) {
+        var x = M + i * (cw + gap);
+        fill(C.card); doc.setDrawColor(C.line[0], C.line[1], C.line[2]); doc.setLineWidth(0.25);
+        doc.roundedRect(x, y, cw, 16, 2, 2, 'FD');
+        font('normal', 6.8); color(C.muted); text(st.label, x + cw / 2, y + 6, { align: 'center' });
+        font('bold', 11.5); color(st.c); text(st.value, x + cw / 2, y + 12.6, { align: 'center' });
       });
+      y += 25;
 
-      yPos += 22;
-      doc.setTextColor(139, 92, 246);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-
-      var detailsLabel = isTurkish ? 'Islem Detaylari' : (isGerman ? 'Handelsdetails' : 'Trade Details');
-      doc.text(detailsLabel, 12, yPos);
-      yPos += 5;
-
-      var colDefs = [
-        { label: isTurkish ? 'Sembol' : (isGerman ? 'Symbol' : 'Symbol'), w: 28 },
-        { label: isTurkish ? 'Lot' : (isGerman ? 'Lot' : 'Lot'), w: 16 },
-        { label: isTurkish ? 'Giris' : (isGerman ? 'Einstieg' : 'Entry'), w: 28 },
-        { label: isTurkish ? 'Cikis' : (isGerman ? 'Ausstieg' : 'Exit'), w: 28 },
-        { label: isTurkish ? 'K/Z' : (isGerman ? 'P&L' : 'P&L'), w: 28 },
-        { label: isTurkish ? 'Strateji' : (isGerman ? 'Strategie' : 'Strategy'), w: 40 },
-        { label: isTurkish ? 'Tarih' : (isGerman ? 'Datum' : 'Date'), w: 28 },
+      // ---------- işlem tablosu ----------
+      var hasStrategy = rows.some(function (t) { return t.strategy_id && strategies[t.strategy_id]; });
+      var cols = [
+        { label: '#', w: 8 }, { label: L.date, w: 22 }, { label: L.symbol, w: 22 }, { label: L.dir, w: 15 },
+        { label: L.lot, w: 13, right: true }, { label: L.entry, w: 22, right: true }, { label: L.exit, w: 22, right: true },
+        { label: L.pnlCol, w: 24, right: true }
       ];
-      var totalW = colDefs.reduce(function (s, c) { return s + c.w; }, 0);
-      var startX = (W - totalW) / 2;
-
-      doc.setFillColor(30, 30, 46);
-      doc.rect(startX, yPos, totalW, 7, 'F');
-      doc.setTextColor(107, 107, 128);
-      doc.setFontSize(6);
-      doc.setFont('helvetica', 'bold');
-      var hx = startX + 2;
-      colDefs.forEach(function (col) {
-        doc.text(col.label, hx, yPos + 4.5);
-        hx += col.w;
-      });
-      yPos += 7;
-
-      var rowH = 5.5;
-      var maxRows = Math.floor((H - yPos - 15) / rowH);
-      var displayTrades = trades.slice(-maxRows).reverse();
-
-      displayTrades.forEach(function (t, idx) {
-        var pnl = calcTradePnL(t);
-        var isEven = idx % 2 === 0;
-        var stratName = t.strategy_id ? (strategyNamesCache[t.strategy_id] || '—') : '—';
-        var dateStr = t.trade_date ? window.WwTime.formatDate(t.trade_date, isTurkish ? 'tr' : (isGerman ? 'de' : 'en'), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
-
-        doc.setFillColor(isEven ? 17 : 10, isEven ? 17 : 10, isEven ? 24 : 15);
-        doc.rect(startX, yPos, totalW, rowH, 'F');
-
-        var cx2 = startX + 2;
-        doc.setTextColor(232, 232, 240);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7);
-        doc.text((t.symbol || '—').toUpperCase(), cx2, yPos + 4);
-        cx2 += colDefs[0].w;
-        doc.setTextColor(107, 107, 128);
-        doc.setFont('helvetica', 'normal');
-        doc.text(String(t.lot || '—'), cx2, yPos + 4);
-        cx2 += colDefs[1].w;
-        doc.text(String(t.entry_price || '—'), cx2, yPos + 4);
-        cx2 += colDefs[2].w;
-        if (t.exit_price) {
-          doc.text(String(t.exit_price), cx2, yPos + 4);
-        } else {
-          doc.setTextColor(139, 92, 246);
-          var openLabel = isTurkish ? 'Acik' : (isGerman ? 'Offen' : 'Open');
-          doc.text(openLabel, cx2, yPos + 4);
-          doc.setTextColor(107, 107, 128);
-        }
-        cx2 += colDefs[3].w;
-        if (t.exit_price) {
-          doc.setTextColor(pnl >= 0 ? 34 : 239, pnl >= 0 ? 197 : 68, pnl >= 0 ? 94 : 68);
-          doc.setFont('helvetica', 'bold');
-          doc.text(formatCurrencyPDF(pnl), cx2, yPos + 4);
-          doc.setTextColor(107, 107, 128);
-          doc.setFont('helvetica', 'normal');
-        } else {
-          doc.text('—', cx2, yPos + 4);
-        }
-        cx2 += colDefs[4].w;
-        doc.setTextColor(139, 92, 246);
-        doc.text(stratName.length > 18 ? stratName.slice(0, 15) + '..' : stratName, cx2, yPos + 4);
-        doc.setTextColor(107, 107, 128);
-        cx2 += colDefs[5].w;
-        doc.text(dateStr, cx2, yPos + 4);
-
-        yPos += rowH;
-      });
-
-      doc.setDrawColor(30, 30, 46);
-      doc.setLineWidth(0.3);
-      doc.rect(startX, yPos - displayTrades.length * rowH - 7, totalW, displayTrades.length * rowH + 7, 'S');
-
-      if (trades.length > maxRows) {
-        yPos += 3;
-        doc.setTextColor(107, 107, 128);
-        doc.setFontSize(6);
-        var noteText = '* ' + trades.length + ' ' + (isTurkish ? 'islemden ilk' : (isGerman ? 'Trades, zeige erste' : 'trades, showing first')) + ' ' + maxRows + ' ' + (isTurkish ? 'tanesi gosteriliyor' : (isGerman ? 'Ergebnisse' : 'results'));
-        doc.text(noteText, startX, yPos);
+      if (hasStrategy) cols.push({ label: L.strategy, w: 40 });
+      var scale = (W - 2 * M) / cols.reduce(function (a, c) { return a + c.w; }, 0);   // tablo sayfa genişliğini doldurur
+      var x0 = M;
+      cols.forEach(function (c) { c.x = x0; c.w *= scale; x0 += c.w; });
+      var rowH = 6.2, headH = 7, bottom = H - 16;
+      function cell(c, str, yy) {
+        if (c.right) text(str, c.x + c.w - 2.5, yy, { align: 'right' });
+        else doc.text(fit(str, c.w - 5), c.x + 2.5, yy);
+      }
+      function tableHead(yy) {
+        fill(C.card); doc.rect(M, yy, W - 2 * M, headH, 'F');
+        font('bold', 6.8); color(C.muted);
+        cols.forEach(function (c) { cell(c, c.label, yy + 4.6); });
+        return yy + headH;
       }
 
-      doc.setFillColor(17, 17, 24);
-      doc.rect(0, H - 10, W, 10, 'F');
-      doc.setDrawColor(30, 30, 46);
-      doc.line(0, H - 10, W, H - 10);
-      doc.setTextColor(139, 92, 246);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Wawe Journal', 10, H - 4);
-      doc.setTextColor(107, 107, 128);
-      doc.setFontSize(6);
-      doc.setFont('helvetica', 'normal');
-      doc.text('wawejournal.com', 10, H - 1.5);
+      font('bold', 10); color(C.text); text(L.list + ' (' + trades.length + ')', M, y);
+      y = tableHead(y + 3);
+      rows.forEach(function (t, i) {
+        if (y + rowH > bottom) {                    // yeni sayfa: başlık satırı tekrarlanır
+          doc.addPage(); paintPage();
+          font('bold', 7); color(C.muted); text('WAWE JOURNAL  ·  ' + L.title, M, 11);
+          y = tableHead(15);
+        }
+        if (i % 2) { fill(C.row); doc.rect(M, y, W - 2 * M, rowH, 'F'); }
+        var ty = y + 4.1, isOpen = !WM.isClosed(t), pnl = isOpen ? 0 : WM.tradePnL(t);
+        var dir = String(t.direction || '').toLowerCase();
+        font('normal', 7.5); color(C.muted); cell(cols[0], String(i + 1), ty);
+        color(C.text); cell(cols[1], day(WM.dateKey(t)), ty);
+        font('bold', 7.5); cell(cols[2], (t.symbol || '—').toUpperCase(), ty);
+        font('normal', 7.5); color(C.muted); cell(cols[3], dir === 'short' ? 'SHORT' : (dir ? 'LONG' : '—'), ty);
+        color(C.text);
+        cell(cols[4], t.lot !== null && t.lot !== undefined && t.lot !== '' ? String(t.lot) : '—', ty);
+        cell(cols[5], t.entry_price ? String(t.entry_price) : '—', ty);
+        if (isOpen) {
+          color(C.accent); cell(cols[6], L.open, ty);
+          color(C.muted); cell(cols[7], '—', ty);
+        } else {
+          cell(cols[6], String(t.exit_price), ty);
+          font('bold', 7.5); color(pnl > 0 ? C.up : (pnl < 0 ? C.down : C.text)); cell(cols[7], formatCurrencyPDF(pnl), ty);
+        }
+        if (hasStrategy) {
+          var sn = t.strategy_id && strategies[t.strategy_id];
+          font('normal', 7.5); color(sn ? C.text : C.muted); cell(cols[8], sn || '—', ty);
+        }
+        y += rowH;
+      });
 
-      var pageLabel = 'Page 1/1  |  ' + total + ' ' + (isTurkish ? 'islem' : (isGerman ? 'Trades' : 'trades'));
-      doc.text(pageLabel, W / 2, H - 3, { align: 'center' });
+      // ---------- sayfa altı ----------
+      var pages = doc.internal.getNumberOfPages();
+      for (var p = 1; p <= pages; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(C.line[0], C.line[1], C.line[2]); doc.setLineWidth(0.2); doc.line(M, H - 11, W - M, H - 11);
+        font('bold', 7); color(C.accent); text('Wawe Journal', M, H - 6);
+        var brandW = doc.getTextWidth('Wawe Journal');
+        font('normal', 6.8); color(C.muted); text('wawejournal.com', M + brandW + 3, H - 6);
+        text(L.page + ' ' + p + ' / ' + pages + '  ·  ' + trades.length + ' ' + L.trades, W - M, H - 6, { align: 'right' });
+      }
 
-      doc.save('wawe-journal-rapor-' + new Date().toISOString().split('T')[0] + '.pdf');
-      showToast('PDF indirildi!');
+      doc.save('wawe-journal-rapor-' + WT.todayKey() + '.pdf');
+      showToast(tt('toast.pdf_exported', 'PDF indirildi!'));
     } catch (e) {
       console.error('PDF export hatası:', e);
-      showToast('PDF oluşturulamadı', 'error');
+      showToast(tt('toast.pdf_export_error', 'PDF oluşturulamadı'), 'error');
     }
   }
 
@@ -2914,8 +2882,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     ['export-pdf', 'export-pdf-desktop'].forEach(function (id) {
       var btn = safeEl(id);
       if (btn) btn.addEventListener('click', function () {
-        var lang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'en';
-        generatePDF(lang);
+        generatePDF();
       });
     });
   }

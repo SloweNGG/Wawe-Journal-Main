@@ -4,10 +4,10 @@
    ============================================================ */
 
 /* ⭐ LAYOUT (Grid, Flex, Pozisyon, Responsive) */
-@import url("layout.css?v=3");
+@import url("layout.css?v=4");
 
 /* ⭐ COMPONENTS (Kartlar, Grafikler, Butonlar, Skeleton) */
-@import url("components.css?v=3");
+@import url("components.css?v=4");
 
 /* Chart cards open large on click (js/chart-expand.js → shared WwChartViewer) */
 .grid-item:is([data-widget="cumulative"], [data-widget="winloss"], [data-widget="daily"], [data-widget="symbol"],

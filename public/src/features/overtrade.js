@@ -449,9 +449,14 @@ export async function loadOvertradeSettingsUI(containerId) {
     const lossEl = clone.querySelector('#ot-loss-limit');
     if (lossEl) lossEl.value = settings.dailyLossLimit || 1000;
     
-    const levelEl = clone.querySelector('#ot-warning-level');
-    if (levelEl) levelEl.value = settings.warningLevel || 'warning';
-    
+    const levelEl = clone.querySelector('input[name="ot-warning-level"][value="' + (settings.warningLevel || 'warning') + '"]')
+      || clone.querySelector('input[name="ot-warning-level"][value="warning"]');
+    if (levelEl) levelEl.checked = true;
+
+    // kayıp limiti uyarısı kullanıcının para birimiyle yazılıyor; kutu da aynı sembolü göstersin
+    const currencyEl = clone.querySelector('.ot-currency');
+    if (currencyEl) currencyEl.textContent = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : (window.currencySymbol || '$');
+
     // data-icon placeholder'ları doldur
     clone.querySelectorAll('[data-icon]').forEach(function(el) {
       const name = el.getAttribute('data-icon');
@@ -471,7 +476,7 @@ export async function loadOvertradeSettingsUI(containerId) {
     const dailyLimitInput = document.getElementById('ot-daily-limit');
     const weeklyLimitInput = document.getElementById('ot-weekly-limit');
     const lossLimitInput = document.getElementById('ot-loss-limit');
-    const warningLevelSelect = document.getElementById('ot-warning-level');
+    const levelGroup = document.getElementById('ot-warning-level');
     const saveBtn = document.getElementById('ot-save-settings');
     const clearBtn = document.getElementById('ot-clear-dismissed');
     const resetBtn = document.getElementById('ot-reset-defaults');
@@ -484,7 +489,7 @@ export async function loadOvertradeSettingsUI(containerId) {
           dailyLimit: Math.max(1, parseInt(dailyLimitInput?.value) || 5),
           weeklyLimit: Math.max(1, parseInt(weeklyLimitInput?.value) || 20),
           dailyLossLimit: Math.abs(parseFloat(lossLimitInput?.value)) || 1000,
-          warningLevel: warningLevelSelect?.value || 'warning'
+          warningLevel: levelGroup?.querySelector('input[name="ot-warning-level"]:checked')?.value || 'warning'
         };
         saveOvertradeSettings(newSettings);
         showToast(t('overtrade.settings_saved'), 'success');

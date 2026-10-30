@@ -944,7 +944,8 @@ export async function exportPDF(trades, meta) {
   }
   try {
     var jName = (document.querySelector('.nav-journal-switcher .journal-name') || {}).textContent || '';
-    await buildPerformanceReport(closed, Object.assign({ journalName: jName.trim() }, meta || {}));
+    var strategies = typeof window.getStrategiesMap === 'function' ? await window.getStrategiesMap() : {};
+    await buildPerformanceReport(closed, Object.assign({ journalName: jName.trim(), strategies: strategies }, meta || {}));
     if (typeof showToast === 'function') showToast(_t('toast.pdf_exported', 'PDF indirildi!'), 'success');
   } catch(e) {
     console.error('PDF hatası:', e);

@@ -1,5 +1,6 @@
 /* Backtest v2 (Faz A). Tüm sınıflar bt- önekli. Karanlık modda yüzeyler saf siyah, sayılar Geist (--font) + tabular-nums. */
-.bt-main { width: 100%; max-width: 1920px; margin: 0 auto; padding: clamp(1rem, 2.5vw, 2rem); box-sizing: border-box; flex: 0 0 auto; }
+/* sayfa boşluğu Dashboard, İşlemler, Strateji, Takvim ve Analitik ile aynı: başlık her sayfada aynı yerde durur */
+.bt-main { width: 100%; margin: 0 auto; padding: 0.9rem clamp(0.75rem, 2vw, 2rem) 2rem; box-sizing: border-box; flex: 0 0 auto; }
 /* [hidden] her yerde geçerli olmalı: modallar .bt-main dışındadır ve .bt-field { display: flex } özniteliği eziyordu */
 .bt-view[hidden], .bt-main [hidden], .bt-modal [hidden] { display: none !important; }
 .bt-num { font-family: var(--font); font-variant-numeric: tabular-nums; }
@@ -81,10 +82,10 @@
   border-radius: var(--radius-sm); }   /* renk/çerçeve buttons.css'ten (siyah + mor) */
 .bt-replay-head .bt-back svg { width: 14px; height: 14px; }
 /* hesap adı + sembol + bölüm: replay araç çubuğunun başında, ayraçla */
-.bt-acc-info { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 12px; border-right: 1px solid var(--border); }
-.bt-acc-info h2 { margin: 0; font-size: 13px; font-weight: 700; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bt-acc-info .bt-chip { padding: 1px 7px; font-size: 10.5px; white-space: nowrap; }
-:root:not(.light-theme) body:not(.light-theme) .bt-acc-info { border-right-color: rgba(255, 255, 255, 0.12); }
+.bt-tb-acc { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 12px; border-right: 1px solid var(--border); }
+.bt-tb-acc h2 { margin: 0; font-size: 13px; font-weight: 700; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-tb-acc .bt-chip { padding: 1px 7px; font-size: 10.5px; white-space: nowrap; }
+:root:not(.light-theme) body:not(.light-theme) .bt-tb-acc { border-right-color: rgba(255, 255, 255, 0.12); }
 .bt-replay-head .bt-icon-btn { min-width: 30px; height: 30px; padding: 0 7px; }
 .bt-replay-head .bt-icon-btn svg { width: 15px; height: 15px; }
 .bt-toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 8px 14px; margin-bottom: 10px;
@@ -277,7 +278,7 @@ body.light-theme .bt-chart-overlay.bt-soft { background: rgba(255, 255, 255, 0.9
 
 @media (max-width: 1024px) { .bt-clock { margin-left: 0; } }
 @media (max-width: 560px) {
-  .bt-main { padding: 12px 16px; }
+  .bt-main { padding: 0.9rem 0.75rem 12px; }
   .bt-toolbar { padding: 10px; gap: 10px; }
   .bt-goto { flex: 1 1 100%; }
   .bt-goto .bt-input { flex: 1 1 auto; }
@@ -335,7 +336,7 @@ body.light-theme .bt-chart-overlay.bt-soft { background: rgba(255, 255, 255, 0.9
 html.bt-fs-lock, html.bt-fs-lock body { overflow: hidden !important; }
 #bt-root.bt-fs #bt-view-replay { position: fixed; inset: 0; z-index: 990; display: block !important; margin: 0; padding: 0; background: var(--bg); }
 :root:not(.light-theme) body:not(.light-theme) #bt-root.bt-fs #bt-view-replay { background: #000; }
-#bt-root.bt-fs :is(.bt-replay-head, .bt-split, .bt-tables, .bt-shortcuts, #bt-mini-pos, .bt-chart-foot, .bt-goto, #bt-tf, .bt-legend, .bt-acc-info) { display: none !important; }
+#bt-root.bt-fs :is(.bt-replay-head, .bt-split, .bt-tables, .bt-shortcuts, #bt-mini-pos, .bt-chart-foot, .bt-goto, #bt-tf, .bt-legend, .bt-tb-acc) { display: none !important; }
 #bt-root.bt-fs .bt-layout { display: block; }
 #bt-root.bt-fs .bt-chart-card { position: absolute; inset: 0; border: 0; border-radius: 0; padding: 0; background: transparent; }
 #bt-root.bt-fs .bt-chart-top { position: absolute; top: 12px; right: 12px; z-index: 6; min-height: 0; }

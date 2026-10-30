@@ -8,7 +8,7 @@
    ============================================================ */
 
 .strategies-main {
-  padding: 1rem clamp(1rem, 2vw, 2.5rem) 5rem;
+  padding: 0.9rem clamp(0.75rem, 2vw, 2rem) 5rem;
   max-width: 100%;
   margin: 0 auto;
   width: 100%;

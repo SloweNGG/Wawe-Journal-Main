@@ -8,40 +8,14 @@
    ============================================================ */
 
 .calendar-page-main {
-  padding: 1rem clamp(1rem, 2vw, 2.5rem) 5rem;
+  padding: 0.9rem clamp(0.75rem, 2vw, 2rem) 5rem;
   max-width: 100%;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
 }
 
-.calendar-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.calendar-page-header h1 {
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 4vw, 1.8rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin-bottom: 0.2rem;
-  background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.calendar-page-header .subtitle {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 0;
-}
-
+/* başlık düzeni ve boyutu styles.css .page-header'dan gelir (Strateji ve Backtest ile aynı) */
 .calendar-page-header .back-link {
   color: var(--accent);
   text-decoration: none;
@@ -51,7 +25,6 @@
   align-items: center;
   gap: 4px;
   transition: all 0.2s;
-  padding-top: 0.3rem;
 }
 
 .calendar-page-header .back-link:hover {
@@ -1059,6 +1032,7 @@ body.light-theme .cal-day.color-neg4 .day-bg {
   .calendar-page-main {
     padding: 0.75rem 0.5rem calc(5.5rem + env(safe-area-inset-bottom, 20px));
   }
+  .calendar-page-header { padding: 0.15rem calc(0.75rem - 0.5rem) 0; }   /* başlık diğer sayfalarla aynı hizada (0.9rem / 0.75rem) */
 
   .calendar-main-card {
     padding: 1rem 0.6rem;
@@ -1188,6 +1162,7 @@ body.light-theme .cal-day.color-neg4 .day-bg {
   .calendar-page-main {
     padding: 0.5rem 0.35rem calc(5.5rem + env(safe-area-inset-bottom, 20px));
   }
+  .calendar-page-header { padding: 0.4rem calc(0.75rem - 0.35rem) 0; }   /* başlık diğer sayfalarla aynı hizada (0.9rem / 0.75rem) */
 
   .calendar-main-card {
     padding: 0.75rem 0.35rem;
