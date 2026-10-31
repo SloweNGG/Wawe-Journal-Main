@@ -9,6 +9,10 @@
 // Güvenlik: creem-signature başlığı = ham gövdenin CREEM_WEBHOOK_SECRET ile HMAC-SHA256'sı (hex). Secret yoksa 503.
 // Kullanıcı ve plan yalnızca imzalı olaydan okunur: kullanıcı creem-checkout'un yazdığı metadata.user_id,
 // plan ise ürün ID'sinin CREEM_PRODUCT_* ile eşleşmesidir.
+// Partner payı yalnızca ilk satışta yazılır (abonelik yenilemelerinde yazılmaz). Kod önce creem-checkout'un
+// doğrulayıp yazdığı metadata.referral_code'dan, yoksa ödemedeki Creem indiriminin kodundan okunur (müşteri kodu
+// Creem sayfasına kendisi yazmış olabilir); yalnızca referral_codes'ta olan kodlar sayılır. Kendi koduyla
+// ödeyen partnere pay yazılmaz (process_payment_finished).
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -17,6 +21,9 @@ const CREEM_WEBHOOK_SECRET = Deno.env.get('CREEM_WEBHOOK_SECRET') || '';
 const PRODUCT_PLANS: Record<string, string> = {};
 if (Deno.env.get('CREEM_PRODUCT_MONTHLY')) PRODUCT_PLANS[Deno.env.get('CREEM_PRODUCT_MONTHLY')!] = 'monthly';
 if (Deno.env.get('CREEM_PRODUCT_YEARLY')) PRODUCT_PLANS[Deno.env.get('CREEM_PRODUCT_YEARLY')!] = 'yearly';
+
+const CREEM_API_KEY = Deno.env.get('CREEM_API_KEY') || '';
+const CREEM_API_BASE = CREEM_API_KEY.startsWith('creem_test_') ? 'https://test-api.creem.io' : 'https://api.creem.io';
 
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID') || '';
@@ -83,6 +90,48 @@ async function subscriptionDays(userId: string, sub: any): Promise<number> {
   return Math.max(1, Math.ceil((end + RENEWAL_GRACE_MS - base) / DAY_MS));
 }
 
+// Ödemenin partner kodu. Çözülemezse (Creem API'ye ulaşılamadı) 'unresolved' döner: Pro yine açılır,
+// partner payı yöneticiye bildirilip elle yazılır.
+async function resolveReferral(obj: any): Promise<string | null | 'unresolved'> {
+  let code = String(obj.metadata?.referral_code || '').trim().toUpperCase();
+
+  if (!code) {
+    const d = obj.discount ?? obj.order?.discount;
+    if (!d) return null;
+    // Abonelik/checkout nesnesinde indirim { id, discountCode, ... } olarak gelir; order.discount yalnızca ID'dir
+    code = String((typeof d === 'object' && (d.discountCode || d.code)) || '').trim().toUpperCase();
+    const discountId = typeof d === 'string' ? d : d.id;
+    if (!code && discountId && CREEM_API_KEY) {
+      try {
+        const res = await fetch(CREEM_API_BASE + '/v1/discounts?discount_id=' + encodeURIComponent(discountId), {
+          headers: { 'x-api-key': CREEM_API_KEY },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        code = String((await res.json())?.code || '').trim().toUpperCase();
+      } catch (err) {
+        console.error(`❌ Creem indirimi (${discountId}) okunamadı:`, err);
+        return 'unresolved';
+      }
+    }
+    if (!code) return 'unresolved';
+  }
+
+  // Creem panelinden açılmış, partnere ait olmayan bir indirim kodu da olabilir
+  const { data: row, error } = await supabase.from('referral_codes').select('code').eq('code', code).maybeSingle();
+  if (error) throw new Error(`referral_codes okunamadı: ${error.message}`);
+  return row ? code : null;
+}
+
+// Abonelikte yalnızca ilk ödeme partner payı alır: aynı abonelik (order_id = abonelik ID'si) için daha önce
+// tamamlanmış bir ödeme varsa bu bir yenilemedir.
+async function isRenewal(subscriptionId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('payments').select('id')
+    .eq('order_id', subscriptionId).eq('payment_status', 'finished').limit(1);
+  if (error) throw new Error(`payments okunamadı: ${error.message}`);
+  return (data || []).length > 0;
+}
+
 interface Grant {
   userId: string;
   planType: string;
@@ -92,6 +141,7 @@ interface Grant {
   currency: string;
   paidAmount: number;
   durationDays: number;
+  referralCode: string | null;
 }
 
 async function grantPro(g: Grant): Promise<'ok' | 'duplicate' | 'user_not_found'> {
@@ -105,7 +155,7 @@ async function grantPro(g: Grant): Promise<'ok' | 'duplicate' | 'user_not_found'
     p_paid_amount: g.paidAmount,
     p_paid_currency: g.currency,
     p_pay_address: null,
-    p_referral_code: null,
+    p_referral_code: g.referralCode,
     p_duration_days: g.durationDays,
   });
 
@@ -142,7 +192,8 @@ async function grantPro(g: Grant): Promise<'ok' | 'duplicate' | 'user_not_found'
 👤 Kullanıcı ID: ${g.userId}
 📧 Email: ${result.email || 'Bilinmiyor'}
 📅 Plan: ${g.planType}
-💳 Tutar: ${g.paidAmount} ${g.currency}
+💳 Tutar: ${g.paidAmount} ${g.currency}${g.referralCode ? `
+🤝 Partner kodu: ${g.referralCode}` : ''}
 🗓️ Bitiş Tarihi: ${expiresAt.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}`);
 
   return 'ok';
@@ -201,7 +252,14 @@ Müşteri: ${obj.customer?.email || '-'}`);
       }
 
       const cents = Number((isCheckout ? obj.order?.amount : product.price) ?? 0);
-      const paidCents = Number((isCheckout ? (obj.order?.amount_paid ?? obj.order?.amount) : product.price) ?? 0);
+      const paidCents = Number((isCheckout
+        ? (obj.order?.amount_paid ?? obj.order?.amount)
+        : (obj.last_transaction?.amount_paid ?? product.price)) ?? 0);
+
+      // Partner payı: tek seferlik üründe her checkout ilk satıştır; abonelikte yalnızca ilk subscription.paid
+      const firstSale = isCheckout || !(await isRenewal(String(obj.id || '')));
+      const referral = firstSale ? await resolveReferral(obj) : null;
+
       const outcome = await grantPro({
         userId,
         planType,
@@ -211,8 +269,15 @@ Müşteri: ${obj.customer?.email || '-'}`);
         currency: String((isCheckout ? obj.order?.currency : product.currency) || 'USD').toUpperCase(),
         paidAmount: paidCents / 100,
         durationDays: isCheckout ? planDays(planType) : await subscriptionDays(userId, obj),
+        referralCode: referral === 'unresolved' ? null : referral,
       });
 
+      if (outcome === 'ok' && referral === 'unresolved') {
+        await sendTelegram(`⚠️ Creem ödemesinde indirim kodu var ama partneri çözülemedi; partner payını elle kontrol edin.
+Olay: ${type} (${event?.id})
+Kullanıcı: ${userId}
+İndirim: ${JSON.stringify(obj.discount ?? obj.order?.discount ?? null)}`);
+      }
       if (outcome === 'user_not_found') {
         await sendTelegram(`⚠️ Creem ödemesi geldi ama kullanıcı bulunamadı: ${userId} (${obj.customer?.email || '-'})`);
       }

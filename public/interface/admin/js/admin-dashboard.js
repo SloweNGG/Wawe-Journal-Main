@@ -1302,7 +1302,7 @@ function adminStatCard(label, valueHtml, valueClass) {
 
 function adminSearchBox(id, value, placeholder, width) {
   return '<div class="search-wrap">' + adminSvg('search', '', 14) +
-    '<input type="text" id="' + id + '" class="search-input" placeholder="' + escapeHtml(placeholder) + '" value="' + escapeHtml(value) + '" aria-label="' + escapeHtml(placeholder) + '" style="width:' + (width || 230) + 'px" /></div>';
+    '<input type="text" id="' + id + '" class="search-input" placeholder="' + escapeHtml(placeholder) + '" value="' + escapeHtml(value) + '" aria-label="' + escapeHtml(placeholder) + '" style="--search-w:' + (width || 230) + 'px" /></div>';
 }
 
 // Arama kutusu yazarken panel yeniden çizilir; odak ve imleç korunur

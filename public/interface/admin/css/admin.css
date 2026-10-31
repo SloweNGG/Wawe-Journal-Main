@@ -802,7 +802,7 @@ body.light-theme .period-pill-btn.active { color: var(--accent); background: #ff
 .search-wrap { position: relative; display: inline-flex; align-items: center; }
 .search-wrap svg { position: absolute; left: 12px; width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
 .search-input {
-  width: 220px;
+  width: var(--search-w, 220px);
   padding: 0.5rem 1rem 0.5rem 2.25rem;
   background: var(--adm-field);
   border: 1px solid var(--border2);
@@ -1292,14 +1292,124 @@ body.light-theme .field input[type="date"] { color-scheme: light; }
   .overview-user-row { padding: 0.65rem 1rem; }
   .user-mini-date { display: none; }
   .search-wrap, .search-input { width: 100%; }
+  .s-card-header .header-actions .search-wrap { flex: 1; min-width: 0; }
   .chart-wrap { height: 240px; min-height: 240px; }
   .preview-cards-container { grid-template-columns: 1fr; }
+
+  /* iOS odaklanınca 16px altındaki alanlarda sayfayı yakınlaştırır */
+  .field input, .field select, .field textarea,
+  .ww-input, .ww-select, .search-input,
+  .modal-body .field input, .modal-body .field select, .modal-body .field textarea { font-size: 16px; }
+
+  /* Genel bakış başlığı: dönem seçici tam genişlik */
+  .overview-header-bar { flex-direction: column; align-items: stretch; }
+  .period-switcher-pill { display: flex; }
+  .period-pill-btn { flex: 1; min-height: 36px; }
+
+  /* Araç çubuğu: filtreler yatay kaydırılır, arama alta tam genişlik */
+  .toolbar,
+  .toolbar-group { flex-direction: column; align-items: stretch; }
+  .toolbar > *,
+  .toolbar-group > * { min-width: 0; }
+  .filter-group,
+  .subtabs {
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-group::-webkit-scrollbar,
+  .subtabs::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; min-height: 36px; white-space: nowrap; }
+
+  .admin-tab-btn { min-height: 40px; }
+
+  /* Hata bildirimleri ve formlar */
+  .report-head { flex-direction: column; }
+  .report-actions { width: 100%; }
+  .report-actions .btn { flex: 1 1 auto; }
+  .ban-form-grid .btn,
+  .pricing-form-actions .btn { width: 100%; }
+  .ban-reason { max-width: none; }
+  .toggle-card { align-items: flex-start; }
+
+  /* ---------- MOBİL TABLO: her satır bir kart ----------
+     Hücre etiketleri admin-core.js labelAdminTables() ile thead'den yazılır. */
+  .table-wrap { overflow: visible; border: none; border-radius: 0; }
+  .table-scroll { overflow: visible; }
+  .ww-table,
+  .ww-table tbody,
+  .ww-table tr,
+  .ww-table td { display: block; width: 100%; }
+  .ww-table thead { display: none; }
+  .ww-table tbody { display: flex; flex-direction: column; gap: 0.6rem; }
+  .s-card-body.flush .ww-table tbody { padding: 0.75rem; }
+  .ww-table tbody tr {
+    padding: 0.2rem 0.9rem;
+    background: var(--adm-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--adm-radius-sm);
+  }
+  .ww-table tbody tr:hover { background: var(--adm-soft); }
+  .ww-table td {
+    position: relative;
+    min-height: 2.5rem;
+    padding: 0.6rem 0 0.6rem 38%;
+    text-align: right;
+    word-break: break-word;
+  }
+  .ww-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 0.75rem;
+    left: 0;
+    width: 36%;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--muted);
+  }
+  .ww-table td.nowrap { white-space: normal; }
+  .ww-table td.clip { max-width: none; white-space: normal; }
+  .ww-table td .cell-user,
+  .ww-table td .social-icons { justify-content: flex-end; }
+  .ww-table td .coupon-code-wrap,
+  .ww-table td .usage-progress-wrap { align-items: flex-end; }
+  .ww-table td .usage-progress-wrap { min-width: 0; }
+  .ww-table td .usage-track { width: 100%; max-width: 160px; }
+  .ww-table td .mini-avatar { margin-left: auto; }
+  .ww-table td .address-chip { max-width: 100%; }
+
+  /* İşlem hücresi: etiketsiz, düğmeler alt satırda tam genişlik */
+  .ww-table td.right { padding: 0.75rem 0; }
+  .ww-table td.right::before { display: none; }
+  .ww-table td.right > .btn { width: 100%; min-height: 38px; }
+  .table-action-btns { max-width: none; }
+  .table-action-btns .btn { flex: 1 1 auto; min-height: 38px; }
+  .table-action-btns .inline-note { flex: 1 1 100%; justify-content: center; }
+
+  /* Boş durum satırı kart çerçevesi almaz */
+  .ww-table tbody tr:has(td.empty-cell) { padding: 0; background: transparent; border: none; }
+  .ww-table td.empty-cell { padding: 0; min-height: 0; text-align: center; }
+  .ww-table td.empty-cell::before { display: none; }
 }
 
 @media (max-width: 560px) {
   .overview-kpi-grid { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats-grid,
+  .stats-grid.stats-grid-lg { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .admin-main .stat-card { padding: 0.75rem 0.85rem; }
+  .admin-main .stat-card .stat-value { font-size: 1.3rem; }
+  .ref-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .ref-stat-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .s-card-body { padding: 0.85rem; }
+  .chart-card { padding: 1rem; }
+  .recent-pro-card { flex-wrap: wrap; gap: 0.75rem; }
+  .avatar-upload { flex-direction: column; align-items: flex-start; }
   .toast-container { right: 1rem; left: 1rem; bottom: 1rem; }
   .toast { max-width: none; }
   .report-card { padding: 1rem; }

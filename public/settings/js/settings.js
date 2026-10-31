@@ -1815,23 +1815,24 @@ function setupPlanWizard(wizardRoot, isExtending) {
       }
     }
 
-    // 🔒 2. İndirim kuponu rozeti yalnızca LTC üzerinde gösterilir
-    if (ltcChip) {
-      var existingTag = ltcChip.querySelector('.chip-discount-tag');
+    // 🔒 2. İndirim kuponu rozeti LTC ve kart üzerinde gösterilir (BTC'de indirim yok)
+    [ltcChip, cardChip].forEach(function(chip) {
+      if (!chip) return;
+      var existingTag = chip.querySelector('.chip-discount-tag');
       if (appliedDiscount > 0) {
         var discountTagText = t('settings.plan_discount_off', { pct: appliedDiscount }, '%' + appliedDiscount + ' indirim');
         if (!existingTag) {
           var tag = document.createElement('span');
           tag.className = 'chip-discount-tag';
           tag.textContent = discountTagText;
-          ltcChip.appendChild(tag);
+          chip.appendChild(tag);
         } else {
           existingTag.textContent = discountTagText;
         }
       } else if (existingTag) {
         existingTag.remove();
       }
-    }
+    });
 
     // 🔒 3. Chip active durumlarını güncelle
     var chips = wizardRoot.querySelectorAll('.crypto-chip');
@@ -1848,7 +1849,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var activationNote = wizardRoot.querySelector('#activation-guarantee');
     if (activationNote) activationNote.style.display = (selectedPayMethod === 'CARD') ? 'none' : '';
 
-    // 🔒 4. BTC/kart seçildiğinde ve indirim kuponu varsa "İndirim sadece LTC'de geçerli" i butonunu göster
+    // 🔒 4. İndirim kuponu varken BTC'de "indirim yok", kartta "indirim yalnızca ilk ödemede" i butonunu göster
     [[btcNotice, 'BTC'], [cardNotice, 'CARD']].forEach(function(pair) {
       if (!pair[0]) return;
       var show = selectedPayMethod === pair[1] && appliedDiscount > 0;
@@ -1863,10 +1864,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var prices = getPlanPrices();
     var planInfo = prices[selectedPeriod] || prices.yearly;
     var basePrice = planInfo.base;
-    var isLtc = (selectedPayMethod === 'LTC') && selectedPeriod !== 'test';   // test planında indirim yok
+    // test planında indirim yok
+    var isDiscountable = (selectedPayMethod === 'LTC' || selectedPayMethod === 'CARD') && selectedPeriod !== 'test';
 
-    // 🔒 İndirim YALNIZCA LTC ödemelerinde uygulanır! BTC veya diğerlerinde indirim 0'dır
-    var discountAmount = (isLtc && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
+    // 🔒 İndirim LTC ve kart ödemelerinde uygulanır (kartta Creem'de yalnızca ilk ödemeye); BTC'de indirim 0'dır
+    var discountAmount = (isDiscountable && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
     var netTotal = Math.max(0, basePrice - discountAmount);
     // 2 ondalık basamağa yuvarla
     netTotal = Number(netTotal.toFixed(2));
@@ -1881,7 +1883,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (periodNameEl) periodNameEl.textContent = planInfo.name + ' (' + planInfo.days + ' ' + t('settings.plan_days', {}, 'Gün') + ')';
     if (baseAmountEl) baseAmountEl.textContent = '$' + basePrice.toFixed(2);
 
-    if (appliedDiscount > 0 && isLtc) {
+    if (appliedDiscount > 0 && isDiscountable) {
       if (discountRow) discountRow.style.display = 'flex';
       if (discountAmountEl) discountAmountEl.textContent = '-$' + discountAmount.toFixed(2) + ' (-' + appliedDiscount + '%)';
     } else {
@@ -1957,14 +1959,15 @@ function setupPlanWizard(wizardRoot, isExtending) {
       var prices = getPlanPrices();
       var planInfo = prices[selectedPeriod] || prices.yearly;
       var basePrice = planInfo.base;
-      var isLtc = (selectedPayMethod === 'LTC') && selectedPeriod !== 'test';   // test planında indirim/kupon yok
+      // test planında indirim/kupon yok
+      var isDiscountable = (selectedPayMethod === 'LTC' || selectedPayMethod === 'CARD') && selectedPeriod !== 'test';
 
       // En son ekranda yazan net tutar
-      var discountAmount = (isLtc && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
+      var discountAmount = (isDiscountable && appliedDiscount > 0) ? (basePrice * (appliedDiscount / 100)) : 0;
       var netTotal = Number(Math.max(0, basePrice - discountAmount).toFixed(2));
 
-      // Kupon kodu SADECE LTC ödemesinde geçerli ve backend'e gönderilir
-      var codeToSend = (isLtc && appliedDiscount > 0) ? appliedReferralCode : null;
+      // Kupon kodu LTC ve kart ödemesinde backend'e gönderilir (BTC'de indirim yok)
+      var codeToSend = (isDiscountable && appliedDiscount > 0) ? appliedReferralCode : null;
 
       btnSubmitPayment.disabled = true;
       var origContent = btnSubmitPayment.innerHTML;
@@ -1984,7 +1987,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
         } catch (baseErr) {}
 
         if (selectedPayMethod === 'CARD') {
-          // Kart: Creem ödeme penceresi site içinde açılır; tutar ve ürün sunucuda seçilir, kupon uygulanmaz.
+          // Kart: Creem ödeme penceresi site içinde açılır; tutar, ürün ve kupon indirimi sunucuda belirlenir.
           // Pencere kapanınca kripto ödemesindeki yoklama Pro'nun webhook ile açılmasını bekler.
           var restoreBtn = function() {
             btnSubmitPayment.disabled = false;
@@ -1992,6 +1995,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
           };
           var started = window.startCardCheckout && await window.startCardCheckout(selectedPeriod, {
             embed: true,
+            referralCode: codeToSend,
             onComplete: function() {
               currentPaymentData = { baselineExpiryMs: baselineExpiryMs, period: selectedPeriod, payCurrency: 'CARD' };
               btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_card_confirming', {}, 'Ödeme onaylanıyor, Pro birkaç saniye içinde açılacak...') + '</span>';
@@ -3198,14 +3202,7 @@ function initCurrencySelector() {
 // ⭐ SAAT VE GÜN AYARLARI (Bölge ve Saat paneli)
 // Mantık: /interface/shared/time-settings.js (window.WwTime)
 // ============================================================
-var TIME_POPULAR_TZ = [
-  ['Europe/Istanbul', 'İstanbul'], ['UTC', 'UTC'], ['Europe/London', 'London'],
-  ['Europe/Berlin', 'Berlin / Frankfurt'], ['Europe/Moscow', 'Moscow'], ['Asia/Dubai', 'Dubai'],
-  ['Asia/Kolkata', 'Mumbai / Delhi'], ['Asia/Singapore', 'Singapore'], ['Asia/Hong_Kong', 'Hong Kong'],
-  ['Asia/Tokyo', 'Tokyo'], ['Australia/Sydney', 'Sydney'], ['Pacific/Auckland', 'Auckland'],
-  ['America/New_York', 'New York'], ['America/Chicago', 'Chicago'], ['America/Denver', 'Denver'],
-  ['America/Los_Angeles', 'Los Angeles'], ['America/Sao_Paulo', 'São Paulo'], ['Africa/Johannesburg', 'Johannesburg']
-];
+var TIME_POPULAR_TZ = (window.WwTime && window.WwTime.POPULAR_TZ) || [];
 // Broker/dosya saatleri için sabit farklar (dakika): tam saatler + yaygın yarım/çeyrek saatler
 var TIME_IMPORT_OFFSETS = (function () {
   var list = [];

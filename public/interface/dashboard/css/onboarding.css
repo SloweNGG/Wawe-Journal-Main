@@ -31,10 +31,10 @@
   position: relative;
   width: 100%;
   max-width: 640px;
-  background: #0e0e16;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 24px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(124, 109, 250, 0.15);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
   overflow: hidden;
   transform: scale(0.94) translateY(12px);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -101,38 +101,43 @@ body.light-theme .wj-wizard-progress-bar {
 /* Close/Skip button */
 .wj-onboarding-skip-btn {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
+  top: 1.1rem;
+  right: 1.1rem;
   z-index: 10;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.4rem 0.8rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.45);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.wj-onboarding-skip-btn svg {
+  transition: transform 0.2s ease;
 }
 
 .wj-onboarding-skip-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.wj-onboarding-skip-btn:hover svg {
+  transform: translateX(2px);
 }
 
 body.light-theme .wj-onboarding-skip-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
   color: #64748b;
 }
 
 body.light-theme .wj-onboarding-skip-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
   color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Card Body */
@@ -179,6 +184,7 @@ body.light-theme .wj-onboarding-skip-btn:hover {
    2. STEP 0: ANIMATED 3-LANGUAGE HERO WELCOME
    ------------------------------------------------------------ */
 .wj-welcome-hero {
+  position: relative;
   text-align: center;
   margin: auto 0;
   display: flex;
@@ -187,34 +193,50 @@ body.light-theme .wj-onboarding-skip-btn:hover {
   justify-content: center;
 }
 
-/* Original Wawe Journal Brand Logo in Hero */
+/* Mountain scene behind the welcome step (same art as the landing hero).
+   The photo's sky is pure black, so it melts into the card; the top fade
+   keeps the title area clean. */
+.wj-welcome-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 74%;
+  z-index: 0;
+  background: url('/images/brand/hero-peak.webp') center bottom / cover no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 38%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 38%);
+  opacity: 0;
+  transform: scale(1.06);
+  transition: opacity 0.6s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.wj-onboarding-card.is-welcome .wj-welcome-scene {
+  opacity: 0.62;
+  transform: scale(1);
+}
+
+/* Black-sky art doesn't belong on the white light-theme card */
+body.light-theme .wj-welcome-scene {
+  display: none;
+}
+
+/* Brand mark */
 .wj-welcome-brand-logo {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 0.45rem 1.15rem 0.45rem 0.55rem;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 999px;
-  margin-bottom: 1.35rem;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 18px rgba(139, 92, 246, 0.18);
+  margin-bottom: 1.75rem;
   user-select: none;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-}
-
-.wj-welcome-brand-logo:hover {
-  transform: translateY(-1px);
-  border-color: rgba(168, 85, 247, 0.5);
-  box-shadow: 0 6px 22px rgba(168, 85, 247, 0.28);
 }
 
 .wj-welcome-logo-icon {
-  width: 32px;
-  height: 32px;
-  background: rgba(139, 92, 246, 0.16);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  border-radius: 9px;
+  width: 34px;
+  height: 34px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,20 +253,20 @@ body.light-theme .wj-onboarding-skip-btn:hover {
   font-size: 1.05rem;
   font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   display: inline-flex;
   align-items: center;
 }
 
 .wj-welcome-logo-accent {
-  color: #a855f7;
+  color: #a78bfa;
+  font-weight: 500;
   margin-left: 1px;
 }
 
-body.light-theme .wj-welcome-brand-logo {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: rgba(139, 92, 246, 0.22);
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.1);
+body.light-theme .wj-welcome-logo-icon {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 body.light-theme .wj-welcome-logo-text {
@@ -252,62 +274,84 @@ body.light-theme .wj-welcome-logo-text {
 }
 
 body.light-theme .wj-welcome-logo-accent {
-  color: #8b5cf6;
+  color: #7c3aed;
 }
 
 /* 3-Language Animated Greeting Text */
 .wj-polyglot-title-wrapper {
-  height: 60px;
-  min-height: 60px;
-  max-height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.75rem;
   overflow: hidden;
 }
 
 .wj-polyglot-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #ffffff 30%, #a78bfa 70%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-family: var(--font-display);
+  font-size: 2.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #fff;
   display: inline-block;
   transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
   will-change: opacity, transform, filter;
 }
 
 body.light-theme .wj-polyglot-title {
-  background: linear-gradient(135deg, #0f172a 30%, #6366f1 70%, #0284c7 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #0f172a;
+}
+
+/* EN · TR · DE ticker, synced with the greeting */
+.wj-polyglot-langs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.6rem 0 1.1rem;
+}
+
+.wj-polyglot-lang {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.3);
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.wj-polyglot-lang.active {
+  color: #c4b5fd;
+  border-color: rgba(167, 139, 250, 0.45);
+}
+
+body.light-theme .wj-polyglot-lang {
+  color: #94a3b8;
+}
+
+body.light-theme .wj-polyglot-lang.active {
+  color: #6d28d9;
+  border-color: rgba(124, 58, 237, 0.4);
 }
 
 /* Fixed-height subtitle container to PREVENT button position shift */
 .wj-welcome-subtitle {
-  max-width: 520px;
+  max-width: 470px;
   width: 100%;
   height: 76px;
-  min-height: 76px;
-  max-height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
-  position: relative;
+  margin-bottom: 1.75rem;
   overflow: hidden;
-  box-sizing: border-box;
 }
 
 .wj-welcome-subtitle-text {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.6);
   text-align: center;
   transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
   will-change: opacity, transform, filter;
@@ -317,16 +361,121 @@ body.light-theme .wj-welcome-subtitle-text {
   color: #475569;
 }
 
-#wj-hero-start-btn {
-  flex-shrink: 0;
-  min-width: 170px;
-  box-shadow: 0 10px 28px rgba(124, 109, 250, 0.35);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* What the wizard will set up */
+.wj-welcome-steps {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+  max-width: 540px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-#wj-hero-start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 34px rgba(124, 109, 250, 0.5);
+body.light-theme .wj-welcome-steps {
+  background: #fff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.wj-welcome-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.wj-welcome-step + .wj-welcome-step {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wj-welcome-step-icon {
+  display: flex;
+  color: #a78bfa;
+}
+
+.wj-welcome-step-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.9;
+}
+
+body.light-theme .wj-welcome-steps,
+body.light-theme .wj-welcome-step + .wj-welcome-step {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .wj-welcome-step {
+  color: #334155;
+}
+
+body.light-theme .wj-welcome-step-icon {
+  color: #7c3aed;
+}
+
+#wj-hero-start-btn {
+  flex-shrink: 0;
+  min-width: 200px;
+  justify-content: center;
+  padding: 0.85rem 2.25rem;
+  font-size: 1rem;
+}
+
+.wj-welcome-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.wj-welcome-time svg {
+  width: 13px;
+  height: 13px;
+}
+
+body.light-theme .wj-welcome-time {
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .wj-polyglot-title {
+    font-size: 2.2rem;
+  }
+
+  .wj-welcome-subtitle {
+    height: 96px;
+  }
+
+  .wj-welcome-step {
+    padding: 0.75rem 0.2rem;
+    font-size: 0.7rem;
+    line-height: 1.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wj-polyglot-title,
+  .wj-welcome-subtitle-text,
+  .wj-welcome-scene {
+    transition: none;
+  }
+
+  .wj-welcome-scene {
+    transform: none;
+  }
 }
 
 /* ------------------------------------------------------------
@@ -611,6 +760,485 @@ body.light-theme .wj-option-sub {
 }
 
 /* ------------------------------------------------------------
+   STEP 3: TIMEZONE (live clock + device / list choice)
+   ------------------------------------------------------------ */
+.wj-tz-clock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  background: #000;
+}
+
+/* Geist (UI font), not the wide display face: digits stay even and don't jump */
+.wj-tz-clock-time {
+  font-family: var(--font);
+  font-size: 2.6rem;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: #fff;
+}
+
+.wj-tz-clock-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  text-align: right;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.wj-tz-clock-zone {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #c4b5fd;
+  font-variant-numeric: tabular-nums;
+}
+
+body.light-theme .wj-tz-clock {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .wj-tz-clock-time {
+  color: #0f172a;
+}
+
+body.light-theme .wj-tz-clock-meta {
+  color: #475569;
+}
+
+body.light-theme .wj-tz-clock-zone {
+  color: #6d28d9;
+}
+
+.wj-tz-auto {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.1rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.wj-tz-auto:hover {
+  border-color: rgba(124, 109, 250, 0.4);
+}
+
+.wj-tz-auto:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+.wj-tz-auto.active {
+  border-color: #7c6dfa;
+  background: rgba(124, 109, 250, 0.08);
+}
+
+.wj-tz-auto-icon {
+  display: flex;
+  color: #a78bfa;
+}
+
+.wj-tz-auto-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.wj-tz-auto-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.wj-tz-auto-text .wj-option-name {
+  margin-bottom: 0.1rem;
+}
+
+.wj-tz-auto-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #7c6dfa;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wj-tz-auto-check svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+.wj-tz-auto.active .wj-tz-auto-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+body.light-theme .wj-tz-auto {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .wj-tz-auto.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.06);
+}
+
+body.light-theme .wj-tz-auto-icon {
+  color: #6366f1;
+}
+
+/* Timezone picker trigger (opens the custom list below) */
+.wj-tz-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.95rem;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wj-tz-trigger > svg:first-child,
+.wj-tz-trigger > i:first-child {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: #a78bfa;
+}
+
+.wj-tz-trigger:hover {
+  border-color: rgba(167, 139, 250, 0.5);
+}
+
+.wj-tz-trigger:focus-visible,
+.wj-tz-trigger.open {
+  outline: none;
+  border-color: #7c6dfa;
+  box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.18);
+}
+
+.wj-tz-trigger.has-value {
+  color: #fff;
+  border-color: #7c6dfa;
+}
+
+.wj-tz-trigger-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wj-tz-trigger .wj-tz-offset-pill:empty {
+  display: none;
+}
+
+.wj-tz-chevron {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.45);
+  transition: transform 0.2s ease;
+}
+
+.wj-tz-trigger.open .wj-tz-chevron {
+  transform: rotate(180deg);
+}
+
+body.light-theme .wj-tz-trigger {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+body.light-theme .wj-tz-trigger.has-value {
+  color: #0f172a;
+  border-color: #6366f1;
+}
+
+body.light-theme .wj-tz-trigger:focus-visible,
+body.light-theme .wj-tz-trigger.open {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+body.light-theme .wj-tz-trigger > svg:first-child,
+body.light-theme .wj-tz-trigger > i:first-child {
+  color: #6366f1;
+}
+
+/* UTC offset pill (trigger + list rows) */
+.wj-tz-offset-pill {
+  flex-shrink: 0;
+  padding: 0.12rem 0.5rem;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #c4b5fd;
+  white-space: nowrap;
+}
+
+body.light-theme .wj-tz-offset-pill {
+  border-color: rgba(124, 58, 237, 0.3);
+  color: #6d28d9;
+}
+
+/* Dropdown panel: appended to <body>, positioned under the trigger */
+.wj-tz-panel {
+  position: fixed;
+  z-index: 100001;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  font-family: var(--font);
+  color: #f4f4f5;
+  opacity: 0;
+  transform: translateY(-6px);
+  transform-origin: top center;
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wj-tz-panel.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wj-tz-search {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.wj-tz-search svg {
+  flex-shrink: 0;
+}
+
+.wj-tz-search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.wj-tz-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.wj-tz-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.35rem;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.wj-tz-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.wj-tz-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  border: 2px solid #000;
+}
+
+.wj-tz-group + .wj-tz-group {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wj-tz-group-label {
+  padding: 0.45rem 0.65rem 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.wj-tz-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.wj-tz-option.highlighted {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.wj-tz-option.selected {
+  background: rgba(124, 109, 250, 0.14);
+}
+
+.wj-tz-option-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.wj-tz-option-city {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #f4f4f5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wj-tz-option-region {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wj-tz-option-check {
+  width: 14px;
+  display: flex;
+  flex-shrink: 0;
+  color: #a78bfa;
+  visibility: hidden;
+}
+
+.wj-tz-option.selected .wj-tz-option-check {
+  visibility: visible;
+}
+
+.wj-tz-empty {
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+body.light-theme .wj-tz-panel {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+body.light-theme .wj-tz-search {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  color: #94a3b8;
+}
+
+body.light-theme .wj-tz-search-input {
+  color: #0f172a;
+}
+
+body.light-theme .wj-tz-search-input::placeholder {
+  color: #94a3b8;
+}
+
+body.light-theme .wj-tz-list {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+body.light-theme .wj-tz-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: #fff;
+}
+
+body.light-theme .wj-tz-group + .wj-tz-group {
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .wj-tz-group-label,
+body.light-theme .wj-tz-option-region,
+body.light-theme .wj-tz-empty {
+  color: #94a3b8;
+}
+
+body.light-theme .wj-tz-option.highlighted {
+  background: #f1f5f9;
+}
+
+body.light-theme .wj-tz-option.selected {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+body.light-theme .wj-tz-option-city {
+  color: #0f172a;
+}
+
+body.light-theme .wj-tz-option-check {
+  color: #6366f1;
+}
+
+.wj-tz-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: -0.25rem 0 1.5rem;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.wj-tz-hint svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+body.light-theme .wj-tz-hint {
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .wj-tz-clock-time {
+    font-size: 2rem;
+  }
+}
+
+/* ------------------------------------------------------------
    4. STEP 4: FIRST JOURNAL CREATION FORM
    ------------------------------------------------------------ */
 .wj-form-group {
@@ -811,147 +1439,334 @@ body.light-theme .wj-btn-back:hover {
 /* ------------------------------------------------------------
    6. INTERACTIVE SPOTLIGHT TOUR OVERLAY & CARD
    ------------------------------------------------------------ */
+/* Click-catcher only: the dimming comes from the highlight's cutout shadow,
+   so the highlighted element itself stays fully bright */
 .wj-tour-backdrop {
   position: fixed;
   inset: 0;
   z-index: 99990;
-  background: rgba(5, 5, 12, 0.75);
+  background: transparent;
   pointer-events: auto;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.wj-tour-backdrop.active {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Highlight target element cutout outline */
+/* Spotlight cutout: glides between targets */
 .wj-tour-target-highlight {
-  position: absolute;
+  position: fixed;
   z-index: 99992;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
   border-radius: 14px;
-  border: 2px solid #7c6dfa;
-  box-shadow: 0 0 0 9999px rgba(4, 4, 10, 0.8), 0 0 25px rgba(124, 109, 250, 0.75);
+  box-shadow: 0 0 0 1.5px rgba(167, 139, 250, 0.9), 0 0 0 9999px rgba(0, 0, 0, 0.72);
   pointer-events: none;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transition:
+    top 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    left 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 0.45s ease,
+    opacity 0.3s ease;
 }
 
-/* Floating Tour Tooltip Card */
-.wj-tour-tooltip {
+.wj-tour-target-highlight.active {
+  opacity: 1;
+}
+
+/* Soft pulse ring around the target */
+.wj-tour-target-highlight::after {
+  content: '';
   position: absolute;
-  z-index: 99995;
-  width: 320px;
-  background: #141420;
-  border: 1px solid rgba(124, 109, 250, 0.3);
-  border-radius: 18px;
-  padding: 1.25rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  color: #fff;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: inherit;
+  inset: -1.5px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(167, 139, 250, 0.7);
+  animation: wjTourPulse 2s ease-out infinite;
 }
 
-body.light-theme .wj-tour-tooltip {
-  background: #ffffff;
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.15);
-  color: #0f172a;
+@keyframes wjTourPulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(1.06); }
+}
+
+/* Tour card */
+.wj-tour-tooltip {
+  position: fixed;
+  z-index: 99995;
+  top: 0;
+  left: 0;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1.1rem 1.15rem 1rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+  color: #f4f4f5;
+  font-family: var(--font);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wj-tour-tooltip.visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Arrow pointing at the target */
+.wj-tour-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transform: rotate(45deg);
+  display: none;
+}
+
+.wj-tour-tooltip[data-placement="bottom"] .wj-tour-arrow {
+  display: block;
+  top: -7px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.wj-tour-tooltip[data-placement="top"] .wj-tour-arrow {
+  display: block;
+  bottom: -7px;
+  border-left: none;
+  border-top: none;
+}
+
+.wj-tour-tooltip[data-placement="right"] .wj-tour-arrow {
+  display: block;
+  left: -7px;
+  border-top: none;
+  border-right: none;
+}
+
+.wj-tour-tooltip[data-placement="left"] .wj-tour-arrow {
+  display: block;
+  right: -7px;
+  border-bottom: none;
+  border-left: none;
+}
+
+.wj-tour-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
 }
 
 .wj-tour-step-badge {
-  display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: #a78bfa;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 0.35rem;
+  color: #a78bfa;
+  font-variant-numeric: tabular-nums;
+}
+
+.wj-tour-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px -6px -4px 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.wj-tour-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .wj-tour-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 0.4rem 0;
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.35rem 0;
+  color: #fff;
 }
 
 .wj-tour-desc {
-  font-size: 0.88rem;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 1.25rem 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0 0 1rem 0;
 }
 
-body.light-theme .wj-tour-desc {
-  color: #475569;
+/* Segmented progress */
+.wj-tour-progress {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 0.95rem;
+}
+
+.wj-tour-seg {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.3s ease;
+}
+
+.wj-tour-seg.done {
+  background: rgba(167, 139, 250, 0.5);
+}
+
+.wj-tour-seg.active {
+  background: #a78bfa;
 }
 
 .wj-tour-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.wj-tour-dots {
-  display: flex;
-  gap: 5px;
-}
-
-.wj-tour-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transition: all 0.2s ease;
-}
-
-.wj-tour-dot.active {
-  width: 16px;
-  border-radius: 999px;
-  background: #7c6dfa;
+  gap: 0.5rem;
 }
 
 .wj-tour-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.wj-tour-btn-skip,
+.wj-tour-btn-back {
+  padding: 0.45rem 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.5);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .wj-tour-btn-skip {
-  padding: 0.4rem 0.75rem;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.82rem;
-  cursor: pointer;
-  border-radius: 8px;
+  margin-left: -0.7rem;
 }
 
-.wj-tour-btn-skip:hover {
+.wj-tour-btn-skip:hover,
+.wj-tour-btn-back:hover {
   color: #fff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-body.light-theme .wj-tour-btn-skip {
-  color: #64748b;
-}
-
-body.light-theme .wj-tour-btn-skip:hover {
-  color: #0f172a;
-}
-
+/* Same look as the app's primary buttons: black fill, purple ring */
 .wj-tour-btn-next {
-  padding: 0.45rem 1rem;
-  background: #7c6dfa;
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 0.85rem;
+  padding: 0.5rem 1.05rem;
+  background: #000;
+  border: 1px solid #7c3aed;
+  border-radius: 999px;
+  color: #f4f4f5;
+  font: inherit;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .wj-tour-btn-next:hover {
-  background: #6366f1;
+  background: #0d0618;
+  border-color: #a78bfa;
+}
+
+.wj-tour-btn-next:focus-visible,
+.wj-tour-btn-back:focus-visible,
+.wj-tour-btn-skip:focus-visible,
+.wj-tour-close:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+/* Light theme */
+body.light-theme .wj-tour-target-highlight {
+  box-shadow: 0 0 0 1.5px rgba(124, 58, 237, 0.85), 0 0 0 9999px rgba(15, 23, 42, 0.55);
+}
+
+body.light-theme .wj-tour-tooltip,
+body.light-theme .wj-tour-arrow {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .wj-tour-tooltip {
+  color: #0f172a;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+
+body.light-theme .wj-tour-title {
+  color: #0f172a;
+}
+
+body.light-theme .wj-tour-desc {
+  color: #475569;
+}
+
+body.light-theme .wj-tour-step-badge {
+  color: #6d28d9;
+}
+
+body.light-theme .wj-tour-seg {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .wj-tour-seg.done {
+  background: rgba(124, 58, 237, 0.4);
+}
+
+body.light-theme .wj-tour-seg.active {
+  background: #7c3aed;
+}
+
+body.light-theme .wj-tour-close,
+body.light-theme .wj-tour-btn-skip,
+body.light-theme .wj-tour-btn-back {
+  color: #64748b;
+}
+
+body.light-theme .wj-tour-close:hover,
+body.light-theme .wj-tour-btn-skip:hover,
+body.light-theme .wj-tour-btn-back:hover {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .wj-tour-btn-next {
+  background: #fff;
+  color: #1a1033;
+}
+
+body.light-theme .wj-tour-btn-next:hover {
+  background: #f5f0ff;
+  border-color: #6d28d9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wj-tour-target-highlight,
+  .wj-tour-tooltip {
+    transition: opacity 0.2s ease;
+  }
+
+  .wj-tour-target-highlight::after {
+    animation: none;
+  }
 }
 
 /* ------------------------------------------------------------
@@ -999,13 +1814,13 @@ body.light-theme .wj-tour-btn-skip:hover {
   align-items: center;
   gap: 0.55rem;
   padding: 0.65rem 1.15rem;
-  background: linear-gradient(135deg, rgba(28, 28, 44, 0.95), rgba(16, 16, 28, 0.98));
-  border: 1.5px solid rgba(124, 109, 250, 0.45);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   color: #fff;
   font-size: 0.86rem;
   font-weight: 600;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(124, 109, 250, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   cursor: grab;
   touch-action: none;
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
@@ -1018,8 +1833,7 @@ body.light-theme .wj-tour-btn-skip:hover {
 
 .wj-tasks-min-pill:hover {
   transform: translateY(-2px);
-  border-color: #7c6dfa;
-  box-shadow: 0 12px 35px rgba(124, 109, 250, 0.45);
+  border-color: rgba(167, 139, 250, 0.6);
 }
 
 .wj-tasks-min-pill:active,
@@ -1049,20 +1863,18 @@ body.light-theme .wj-tasks-min-pill {
   position: relative;
   width: 100%;
   padding: 1.15rem 1.25rem;
-  background: linear-gradient(135deg, rgba(20, 20, 32, 0.96), rgba(12, 12, 22, 0.98));
-  border: 1px solid rgba(124, 109, 250, 0.35);
-  border-radius: 20px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
   color: #fff;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
 body.light-theme .wj-tasks-widget {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 252, 0.98));
-  border-color: rgba(99, 102, 241, 0.35);
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.1);
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
   color: #0f172a;
 }
@@ -1104,8 +1916,8 @@ body.light-theme .wj-tasks-widget {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: rgba(124, 109, 250, 0.15);
-  border: 1px solid rgba(124, 109, 250, 0.35);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #a78bfa;
   display: flex;
   align-items: center;
@@ -1113,8 +1925,9 @@ body.light-theme .wj-tasks-widget {
 }
 
 .wj-tasks-title {
-  font-size: 0.96rem;
-  font-weight: 700;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 650;
   margin: 0;
   line-height: 1.2;
 }
@@ -1139,10 +1952,11 @@ body.light-theme .wj-tasks-subtitle {
   font-size: 0.74rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;
-  background: rgba(124, 109, 250, 0.18);
-  border: 1px solid rgba(124, 109, 250, 0.35);
+  background: transparent;
+  border: 1px solid rgba(167, 139, 250, 0.4);
   border-radius: 999px;
-  color: #a78bfa;
+  color: #c4b5fd;
+  font-variant-numeric: tabular-nums;
 }
 
 .wj-tasks-min-btn,
@@ -1193,10 +2007,9 @@ body.light-theme .wj-tasks-bar {
 .wj-tasks-bar-fill {
   height: 100%;
   width: 50%;
-  background: linear-gradient(90deg, #7c6dfa, #38bdf8);
+  background: #a78bfa;
   border-radius: 999px;
   transition: width 0.4s ease;
-  box-shadow: 0 0 8px rgba(124, 109, 250, 0.5);
 }
 
 /* Tasks List - Clean Vertical Stack */
@@ -1211,8 +2024,8 @@ body.light-theme .wj-tasks-bar {
   align-items: center;
   gap: 0.65rem;
   padding: 0.6rem 0.8rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 11px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1220,13 +2033,13 @@ body.light-theme .wj-tasks-bar {
 }
 
 .wj-task-item:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(124, 109, 250, 0.35);
+  background: #000;
+  border-color: rgba(167, 139, 250, 0.45);
   transform: translateX(2px);
 }
 
 body.light-theme .wj-task-item {
-  background: #f8fafc;
+  background: #fff;
   border-color: rgba(0, 0, 0, 0.06);
 }
 
@@ -1256,8 +2069,7 @@ body.light-theme .wj-task-check {
 .wj-task-item.completed .wj-task-check {
   background: #10b981;
   border-color: #10b981;
-  color: #fff;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  color: #000;
 }
 
 .wj-task-name {
@@ -1270,8 +2082,12 @@ body.light-theme .wj-task-name {
   color: #1e293b;
 }
 
+.wj-task-item.completed {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
 .wj-task-item.completed .wj-task-name {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.38);
   text-decoration: line-through;
 }
 
@@ -1283,14 +2099,56 @@ body.light-theme .wj-task-item.completed .wj-task-name {
   margin-left: auto;
   font-size: 0.74rem;
   font-weight: 600;
-  color: #a78bfa;
-  padding: 2px 6px;
-  background: rgba(124, 109, 250, 0.15);
-  border-radius: 6px;
+  color: #c4b5fd;
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 999px;
 }
 
 .wj-task-item.completed .wj-task-action-icon {
   display: none;
+}
+
+/* "Görevleri atla": hides the card for good */
+.wj-tasks-skip-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.45);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.wj-tasks-skip-btn span {
+  display: inline-block;
+  padding-top: 0.35rem;
+}
+
+.wj-tasks-skip-btn:hover {
+  color: #fff;
+}
+
+.wj-tasks-skip-btn:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+body.light-theme .wj-tasks-skip-btn {
+  border-top-color: rgba(0, 0, 0, 0.07);
+  color: #64748b;
+}
+
+body.light-theme .wj-tasks-skip-btn:hover {
+  color: #0f172a;
 }
 
 /* ------------------------------------------------------------

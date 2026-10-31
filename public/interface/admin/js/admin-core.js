@@ -501,6 +501,38 @@ function closeAdminModals() {
   });
 })();
 
+// Mobilde tablolar satır başına bir karta dönüşür (admin.css "MOBİL TABLO"); her hücre
+// sütun başlığını data-label olarak taşır. Tablolar birçok render fonksiyonunda yeniden
+// çizildiği için etiketleme tek bir gözlemciden yapılır.
+function labelAdminTables(root) {
+  root.querySelectorAll('table.ww-table').forEach(function(table) {
+    var heads = Array.prototype.map.call(table.querySelectorAll('thead th'), function(th) {
+      return th.textContent.trim();
+    });
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      Array.prototype.forEach.call(tr.children, function(td, i) {
+        if (heads[i] && !td.hasAttribute('data-label')) td.setAttribute('data-label', heads[i]);
+      });
+    });
+  });
+}
+
+function observeAdminTables(main) {
+  if (typeof MutationObserver === 'undefined') return;
+  var queued = false;
+  var observer = new MutationObserver(function() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function() {
+      queued = false;
+      labelAdminTables(main);
+    });
+  });
+  observer.observe(main, { childList: true, subtree: true });
+  ADMIN_PAGE.onLeave(function() { observer.disconnect(); });
+  labelAdminTables(main);
+}
+
 function renderAdminPanel() {
   var main = document.getElementById('main-content');
   if (!main) {
@@ -517,6 +549,7 @@ function renderAdminPanel() {
     '<div class="admin-wrap">' + adminSidebarMarkup() + adminPanelsMarkup() + '</div>';
 
   mountAdminModals();
+  observeAdminTables(main);
 
   [
     ['initReferralModal'], ['initReferenceModal'], ['renderReferralCodesTable'], ['renderPaymentSettingsUI']

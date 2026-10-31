@@ -39,10 +39,11 @@
   var state = {
     user: null,
     currentStep: 0,
-    totalSteps: 4,
+    totalSteps: 5,
     selectedLang: 'tr',
     selectedCurrency: '$',
     selectedTheme: 'dark',
+    selectedTz: 'auto',
     journalName: 'Ana Portföy',
     hasCustomJournalName: false,
     journalIcon: 'trending-up',
@@ -88,6 +89,7 @@
     state.selectedLang = currentSavedLang;
     var currentSavedCurr = localStorage.getItem('ww_currency') || '$';
     state.selectedCurrency = currentSavedCurr;
+    state.selectedTz = window.WwTime ? window.WwTime.getSettings().tz : 'auto';
 
     if (!state.hasCustomJournalName) {
       state.journalName = defaultJournalNames[currentSavedLang] || 'Ana Portföy';
@@ -95,7 +97,8 @@
 
     var modalHtml = `
       <div class="wj-onboarding-overlay" id="wj-onboarding-modal">
-        <div class="wj-onboarding-card">
+        <div class="wj-onboarding-card is-welcome">
+          <div class="wj-welcome-scene" aria-hidden="true"></div>
           <div class="wj-wizard-progress-bar">
             <div class="wj-wizard-progress-fill" id="wj-progress-fill" style="width: 0%;"></div>
           </div>
@@ -112,30 +115,48 @@
                 <div class="wj-welcome-brand-logo">
                   <div class="wj-welcome-logo-icon">
                     <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                      <polyline points="2,16 7,9 12,13 19,4" stroke="#8b5cf6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                      <polyline points="2,16 7,9 12,13 19,4" stroke="#a78bfa" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
                   <span class="wj-welcome-logo-text">Wawe<span class="wj-welcome-logo-accent">Journal</span></span>
                 </div>
-                
+
                 <div class="wj-polyglot-title-wrapper">
-                  <span class="wj-polyglot-title" id="wj-polyglot-text">Welcome</span>
+                  <span class="wj-polyglot-title" id="wj-polyglot-text">${getPolyglotStart().title}</span>
+                </div>
+
+                <div class="wj-polyglot-langs" id="wj-polyglot-langs" aria-hidden="true">
+                  ${polyglotGreetings.map(function (g) {
+                    return '<span class="wj-polyglot-lang" data-lang="' + g.lang + '">' + g.lang.toUpperCase() + '</span>';
+                  }).join('')}
                 </div>
 
                 <div class="wj-welcome-subtitle">
-                  <p class="wj-welcome-subtitle-text" id="wj-polyglot-subtitle">Ready to elevate your trading discipline? We'll ask a few quick questions to personalize your workspace.</p>
+                  <p class="wj-welcome-subtitle-text" id="wj-polyglot-subtitle">${getPolyglotStart().subtitle}</p>
                 </div>
 
-                <button class="wj-btn-primary" id="wj-hero-start-btn" style="padding: 0.9rem 2.5rem; font-size: 1.05rem;">
-                  <span>Get Started →</span>
+                <ol class="wj-welcome-steps">
+                  <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="languages"></i></span><span>${t('onboarding.preview_lang', 'Dil')}</span></li>
+                  <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="coins"></i></span><span>${t('onboarding.preview_curr', 'Para birimi')}</span></li>
+                  <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="clock"></i></span><span>${t('onboarding.preview_tz', 'Saat dilimi')}</span></li>
+                  <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="sun-moon"></i></span><span>${t('onboarding.preview_theme', 'Tema')}</span></li>
+                  <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="notebook-pen"></i></span><span>${t('onboarding.preview_journal', 'Defter')}</span></li>
+                </ol>
+
+                <button class="wj-btn-primary" id="wj-hero-start-btn">
+                  <span data-i18n="onboarding.btn_start">${t('onboarding.btn_start', 'Başlayalım →')}</span>
                 </button>
+                <p class="wj-welcome-time">
+                  <i data-lucide="clock-3"></i>
+                  <span data-i18n="onboarding.setup_time">${t('onboarding.setup_time', 'Yaklaşık 1 dakika sürer')}</span>
+                </p>
               </div>
             </div>
 
             <!-- STEP 1: DİL SEÇİMİ -->
             <div class="wj-wizard-step" id="wj-step-1">
               <div class="wj-step-meta">
-                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım 1 / 4').replace('{step}', '1').replace('{total}', '4')}</span>
+                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım {step} / {total}').replace('{step}', '1').replace('{total}', state.totalSteps)}</span>
               </div>
               <h2 class="wj-step-title" data-i18n="onboarding.step_lang_title">${t('onboarding.step_lang_title', 'Dil Tercihi')}</h2>
               <p class="wj-step-desc" data-i18n="onboarding.step_lang_desc">${t('onboarding.step_lang_desc', 'Platformu hangi dilde kullanmak istersiniz?')}</p>
@@ -194,7 +215,7 @@
             <!-- STEP 2: PARA BİRİMİ SEÇİMİ -->
             <div class="wj-wizard-step" id="wj-step-2">
               <div class="wj-step-meta">
-                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım 2 / 4').replace('{step}', '2').replace('{total}', '4')}</span>
+                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım {step} / {total}').replace('{step}', '2').replace('{total}', state.totalSteps)}</span>
               </div>
               <h2 class="wj-step-title" data-i18n="onboarding.step_curr_title">${t('onboarding.step_curr_title', 'Para Birimi')}</h2>
               <p class="wj-step-desc" data-i18n="onboarding.step_curr_desc">${t('onboarding.step_curr_desc', 'K/Z ve hesap bakiyeniz için ana para birimini seçin.')}</p>
@@ -232,10 +253,56 @@
               </div>
             </div>
 
-            <!-- STEP 3: TEMA SEÇİMİ (DARK / LIGHT) -->
+            <!-- STEP 3: SAAT DİLİMİ (işlem saatleri, takvim günü, günlük K/Z) -->
             <div class="wj-wizard-step" id="wj-step-3">
               <div class="wj-step-meta">
-                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım 3 / 4').replace('{step}', '3').replace('{total}', '4')}</span>
+                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım {step} / {total}').replace('{step}', '3').replace('{total}', state.totalSteps)}</span>
+              </div>
+              <h2 class="wj-step-title" data-i18n="onboarding.step_tz_title">${t('onboarding.step_tz_title', 'Saat Dilimi')}</h2>
+              <p class="wj-step-desc" data-i18n="onboarding.step_tz_desc">${t('onboarding.step_tz_desc', 'İşlem saatlerin, takvim günlerin ve günlük K/Z bu saat dilimine göre hesaplanır.')}</p>
+
+              <div class="wj-tz-clock">
+                <div class="wj-tz-clock-time" id="wj-tz-clock-time">--:--</div>
+                <div class="wj-tz-clock-meta">
+                  <span id="wj-tz-clock-date"></span>
+                  <span class="wj-tz-clock-zone" id="wj-tz-clock-zone"></span>
+                </div>
+              </div>
+
+              <div class="wj-tz-auto ${state.selectedTz === 'auto' ? 'active' : ''}" id="wj-tz-auto" role="button" tabindex="0">
+                <span class="wj-tz-auto-icon"><i data-lucide="locate-fixed"></i></span>
+                <span class="wj-tz-auto-text">
+                  <span class="wj-option-name" data-i18n="onboarding.tz_auto">${t('onboarding.tz_auto', 'Cihazımla aynı')}</span>
+                  <span class="wj-option-sub" id="wj-tz-auto-sub"></span>
+                </span>
+                <span class="wj-tz-auto-check"><i data-lucide="check"></i></span>
+              </div>
+
+              <div class="wj-form-group">
+                <label class="wj-form-label" id="wj-tz-label" data-i18n="onboarding.tz_other">${t('onboarding.tz_other', 'Ya da listeden seç')}</label>
+                <button type="button" class="wj-tz-trigger" id="wj-tz-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="wj-tz-label">
+                  <i data-lucide="globe"></i>
+                  <span class="wj-tz-trigger-text" id="wj-tz-trigger-text"></span>
+                  <span class="wj-tz-offset-pill" id="wj-tz-trigger-offset"></span>
+                  <svg class="wj-tz-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
+
+              <p class="wj-tz-hint">
+                <i data-lucide="info"></i>
+                <span data-i18n="onboarding.tz_hint">${t('onboarding.tz_hint', 'İstediğin zaman Ayarlar › Bölge ve Saat bölümünden değiştirebilirsin.')}</span>
+              </p>
+
+              <div class="wj-wizard-footer">
+                <button class="wj-btn-back" data-goto="2">${t('onboarding.btn_back', '← Geri')}</button>
+                <button class="wj-btn-primary" data-goto="4">${t('onboarding.btn_next', 'Devam Et →')}</button>
+              </div>
+            </div>
+
+            <!-- STEP 4: TEMA SEÇİMİ (DARK / LIGHT) -->
+            <div class="wj-wizard-step" id="wj-step-4">
+              <div class="wj-step-meta">
+                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım {step} / {total}').replace('{step}', '4').replace('{total}', state.totalSteps)}</span>
               </div>
               <h2 class="wj-step-title" data-i18n="onboarding.step_theme_title">${t('onboarding.step_theme_title', 'Görünüm ve Tema')}</h2>
               <p class="wj-step-desc" data-i18n="onboarding.step_theme_desc">${t('onboarding.step_theme_desc', 'Size en uygun çalışma ortamını belirleyin.')}</p>
@@ -283,15 +350,15 @@
               </div>
 
               <div class="wj-wizard-footer">
-                <button class="wj-btn-back" data-goto="2">${t('onboarding.btn_back', '← Geri')}</button>
-                <button class="wj-btn-primary" data-goto="4">${t('onboarding.btn_next', 'Devam Et →')}</button>
+                <button class="wj-btn-back" data-goto="3">${t('onboarding.btn_back', '← Geri')}</button>
+                <button class="wj-btn-primary" data-goto="5">${t('onboarding.btn_next', 'Devam Et →')}</button>
               </div>
             </div>
 
-            <!-- STEP 4: İLK DEFTER (JOURNAL) KURULUMU -->
-            <div class="wj-wizard-step" id="wj-step-4">
+            <!-- STEP 5: İLK DEFTER (JOURNAL) KURULUMU -->
+            <div class="wj-wizard-step" id="wj-step-5">
               <div class="wj-step-meta">
-                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım 4 / 4').replace('{step}', '4').replace('{total}', '4')}</span>
+                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım {step} / {total}').replace('{step}', '5').replace('{total}', state.totalSteps)}</span>
               </div>
               <h2 class="wj-step-title" data-i18n="onboarding.step_journal_title">${t('onboarding.step_journal_title', 'İlk İşlem Günlüğünüz')}</h2>
               <p class="wj-step-desc" data-i18n="onboarding.step_journal_desc">${t('onboarding.step_journal_desc', 'İşlemlerinizi kaydedeceğiniz ilk defterinizi oluşturun.')}</p>
@@ -330,7 +397,7 @@
               </div>
 
               <div class="wj-wizard-footer">
-                <button class="wj-btn-back" data-goto="3">${t('onboarding.btn_back', '← Geri')}</button>
+                <button class="wj-btn-back" data-goto="4">${t('onboarding.btn_back', '← Geri')}</button>
                 <button class="wj-btn-primary" id="wj-wizard-finish-btn">
                   <span data-i18n="onboarding.btn_finish">${t('onboarding.btn_finish', 'Kurulumu Tamamla')}</span>
                 </button>
@@ -356,14 +423,17 @@
 
   var polyglotGreetings = [
     {
+      lang: 'en',
       title: 'Welcome',
       subtitle: "Ready to elevate your trading discipline? We'll ask you a few quick questions to personalize your workspace."
     },
     {
+      lang: 'tr',
       title: 'Hoş Geldiniz',
       subtitle: 'Trading disiplininizi zirveye taşımaya hazır mısınız? Alanınızı kişiselleştirmek için birkaç soru soracağız.'
     },
     {
+      lang: 'de',
       title: 'Willkommen',
       subtitle: 'Bereit, Ihre Trading-Disziplin auf ein neues Level zu heben? Wir stellen Ihnen ein paar kurze Fragen, um Ihren Bereich zu personalisieren.'
     }
@@ -381,10 +451,28 @@
     }
   }
 
+  // Döngü kullanıcının mevcut diliyle başlar
+  function getPolyglotStartIndex() {
+    for (var i = 0; i < polyglotGreetings.length; i++) {
+      if (polyglotGreetings[i].lang === state.selectedLang) return i;
+    }
+    return 0;
+  }
+
+  function getPolyglotStart() {
+    return polyglotGreetings[getPolyglotStartIndex()];
+  }
+
+  function markPolyglotLang(lang) {
+    document.querySelectorAll('#wj-polyglot-langs .wj-polyglot-lang').forEach(function (el) {
+      el.classList.toggle('active', el.getAttribute('data-lang') === lang);
+    });
+  }
+
   function startAnimatedPolyglotGreeting() {
     stopPolyglotCycle();
     polyglotActive = true;
-    showPolyglotSlide(0);
+    showPolyglotSlide(getPolyglotStartIndex());
   }
 
   function showPolyglotSlide(index) {
@@ -395,6 +483,7 @@
     if (!titleEl || !subtitleEl) return;
 
     var item = polyglotGreetings[index % polyglotGreetings.length];
+    markPolyglotLang(item.lang);
 
     // Önceki metinlerin yumuşakça yukarı süzülerek kaybolması (Fade & Slide Out)
     titleEl.style.opacity = '0';
@@ -444,6 +533,342 @@
     }, 320);
   }
 
+  // ------------------------------------------------------------
+  // SAAT DİLİMİ ADIMI
+  // Seçim doğrudan WwTime ayarına yazılır (Ayarlar > Bölge ve Saat ile aynı kaynak);
+  // 'auto' = cihazın saat dilimi.
+  // ------------------------------------------------------------
+  var tzClockTimer = null;
+
+  function resolvedTz() {
+    var WT = window.WwTime;
+    if (!WT) return 'UTC';
+    return state.selectedTz === 'auto' ? WT.deviceTz() : state.selectedTz;
+  }
+
+  function tzLocale() {
+    return state.selectedLang === 'tr' ? 'tr-TR' : (state.selectedLang === 'de' ? 'de-DE' : 'en-US');
+  }
+
+  function tzCity(tz) {
+    return String(tz).split('/').pop().replace(/_/g, ' ');
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  // 'America/Argentina/Buenos_Aires' -> 'America / Argentina'
+  function tzRegion(tz) {
+    var parts = String(tz).split('/');
+    parts.pop();
+    return parts.join(' / ').replace(/_/g, ' ');
+  }
+
+  // Aramada aksan/Türkçe karakter farkını yok say ('istanbul' -> 'İstanbul')
+  function tzFold(s) {
+    return String(s).toLocaleLowerCase('tr').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Saat dilimi -> ülke kodu eşlemesi (IANA zone.tab'dan üretildi; eski adlar dahil).
+  // Yalnızca liste açılırken bir kez yüklenir; yüklenemezse liste ülkesiz çalışır.
+  var tzCountriesPromise = null;
+  function loadTzCountries() {
+    if (!tzCountriesPromise) {
+      tzCountriesPromise = fetch('/interface/shared/tz-countries.json?v=1')
+        .then(function (r) { return r.ok ? r.json() : {}; })
+        .catch(function () { return {}; });
+    }
+    return tzCountriesPromise;
+  }
+
+  function regionNamer(lang) {
+    try { return new Intl.DisplayNames([lang], { type: 'region' }); } catch (e) { return null; }
+  }
+
+  // Popüler + tüm saat dilimleri: [{ label, items: [{ tz, city, country, region, offset, search }] }]
+  function getTzGroups(countries) {
+    var WT = window.WwTime;
+    var local = regionNamer(state.selectedLang);
+    var en = regionNamer('en');
+    countries = countries || {};
+
+    function item(tz, city) {
+      var cc = countries[tz];
+      var country = '';
+      var countryEn = '';
+      if (cc) {
+        try { country = local ? local.of(cc) : ''; } catch (e) { }
+        try { countryEn = en ? en.of(cc) : ''; } catch (e) { }
+      }
+      var region = tzRegion(tz);
+      var offset = WT.offsetLabel(tz);
+      return {
+        tz: tz, city: city, country: country, region: region, offset: offset,
+        search: tzFold([city, country, countryEn, cc || '', region, tz, offset].join(' '))
+      };
+    }
+
+    var seen = {};
+    var popular = (WT.POPULAR_TZ || []).map(function (z) {
+      seen[z[0]] = true;
+      return item(z[0], z[1]);
+    });
+
+    var all = [];
+    try { if (typeof Intl.supportedValuesOf === 'function') all = Intl.supportedValuesOf('timeZone').slice(); } catch (e) { }
+    if (state.selectedTz !== 'auto' && !seen[state.selectedTz] && all.indexOf(state.selectedTz) < 0) all.push(state.selectedTz);
+    var rest = all.filter(function (z) { return !seen[z]; }).map(function (z) {
+      return item(z, tzCity(z));
+    });
+
+    var groups = [{ label: t('onboarding.tz_popular', 'Popüler'), items: popular }];
+    if (rest.length) groups.push({ label: t('onboarding.tz_all', 'Tüm saat dilimleri'), items: rest });
+    return groups;
+  }
+
+  function tzDisplayName(tz) {
+    var WT = window.WwTime;
+    var hit = (WT && WT.POPULAR_TZ || []).filter(function (z) { return z[0] === tz; })[0];
+    return hit ? hit[1] : tzCity(tz);
+  }
+
+  function updateTzTrigger() {
+    var trigger = document.getElementById('wj-tz-trigger');
+    if (!trigger || !window.WwTime) return;
+    var explicit = state.selectedTz !== 'auto';
+    trigger.classList.toggle('has-value', explicit);
+    setText('wj-tz-trigger-text', explicit ? tzDisplayName(state.selectedTz) : t('onboarding.tz_pick', 'Saat dilimi seç…'));
+    setText('wj-tz-trigger-offset', explicit ? window.WwTime.offsetLabel(state.selectedTz) : '');
+  }
+
+  // ------------------------------------------------------------
+  // Özel açılır liste: kart overflow:hidden + transform taşıdığı için panel body'ye
+  // eklenir ve tetikleyicinin hemen ALTINA konumlanır (her zaman aşağı açılır).
+  // ------------------------------------------------------------
+  var tzPanel = null;
+  var tzPanelCleanup = null;
+
+  var TZ_CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var TZ_SEARCH_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+
+  function positionTzPanel() {
+    var trigger = document.getElementById('wj-tz-trigger');
+    if (!tzPanel || !trigger) return;
+    var r = trigger.getBoundingClientRect();
+    var gap = 6;
+    var room = window.innerHeight - r.bottom - gap - 12;
+    tzPanel.style.left = r.left + 'px';
+    tzPanel.style.top = (r.bottom + gap) + 'px';
+    tzPanel.style.width = r.width + 'px';
+    tzPanel.style.maxHeight = Math.max(220, Math.min(360, room)) + 'px';
+  }
+
+  function tzVisibleOptions() {
+    return tzPanel ? Array.prototype.slice.call(tzPanel.querySelectorAll('.wj-tz-option:not([hidden])')) : [];
+  }
+
+  function highlightTzOption(el) {
+    if (!tzPanel) return;
+    tzPanel.querySelectorAll('.wj-tz-option.highlighted').forEach(function (o) { o.classList.remove('highlighted'); });
+    if (el) {
+      el.classList.add('highlighted');
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function filterTzOptions(query) {
+    var q = tzFold(query.trim());
+    tzPanel.querySelectorAll('.wj-tz-group').forEach(function (group) {
+      var any = false;
+      group.querySelectorAll('.wj-tz-option').forEach(function (o) {
+        var match = !q || o.getAttribute('data-search').indexOf(q) >= 0;
+        o.hidden = !match;
+        if (match) any = true;
+      });
+      group.hidden = !any;
+    });
+    var visible = tzVisibleOptions();
+    tzPanel.querySelector('.wj-tz-empty').hidden = visible.length > 0;
+    highlightTzOption(q ? visible[0] : null);
+  }
+
+  var tzPanelOpening = false;
+
+  function openTzPanel() {
+    if (tzPanel || tzPanelOpening) return;
+    tzPanelOpening = true;
+    loadTzCountries().then(function (countries) {
+      tzPanelOpening = false;
+      // Bu arada adım değiştiyse ya da sihirbaz kapandıysa açma
+      if (state.currentStep !== 3) return;
+      renderTzPanel(countries);
+    });
+  }
+
+  function renderTzPanel(countries) {
+    var WT = window.WwTime;
+    var trigger = document.getElementById('wj-tz-trigger');
+    if (tzPanel || !WT || !trigger) return;
+
+    var html = '<div class="wj-tz-search">' + TZ_SEARCH_SVG +
+      '<input type="text" class="wj-tz-search-input" autocomplete="off" spellcheck="false" placeholder="' +
+      escHtml(t('onboarding.tz_search', 'Ülke, şehir ya da UTC+3 ara…')) + '" /></div>' +
+      '<div class="wj-tz-list" role="listbox">';
+    getTzGroups(countries).forEach(function (g) {
+      html += '<div class="wj-tz-group"><div class="wj-tz-group-label">' + escHtml(g.label) + '</div>';
+      g.items.forEach(function (it) {
+        var selected = it.tz === state.selectedTz;
+        var sub = it.country || it.region;
+        html += '<div class="wj-tz-option' + (selected ? ' selected' : '') + '" role="option" aria-selected="' + selected + '"' +
+          ' data-tz="' + escHtml(it.tz) + '" data-search="' + escHtml(it.search) + '">' +
+          '<span class="wj-tz-option-main"><span class="wj-tz-option-city">' + escHtml(it.city) + '</span>' +
+          (sub ? '<span class="wj-tz-option-region">' + escHtml(sub) + '</span>' : '') + '</span>' +
+          '<span class="wj-tz-offset-pill">' + it.offset + '</span>' +
+          '<span class="wj-tz-option-check">' + TZ_CHECK_SVG + '</span></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div><div class="wj-tz-empty" hidden>' + escHtml(t('onboarding.tz_no_results', 'Sonuç bulunamadı')) + '</div>';
+
+    tzPanel = document.createElement('div');
+    tzPanel.className = 'wj-tz-panel';
+    tzPanel.innerHTML = html;
+    document.body.appendChild(tzPanel);
+    positionTzPanel();
+
+    trigger.classList.add('open');
+    trigger.setAttribute('aria-expanded', 'true');
+
+    var input = tzPanel.querySelector('.wj-tz-search-input');
+    var list = tzPanel.querySelector('.wj-tz-list');
+
+    input.addEventListener('input', function () { filterTzOptions(this.value); });
+    input.addEventListener('keydown', function (e) {
+      var visible = tzVisibleOptions();
+      var cur = tzPanel.querySelector('.wj-tz-option.highlighted');
+      var idx = visible.indexOf(cur);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlightTzOption(visible[Math.min(visible.length - 1, idx + 1)]);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlightTzOption(visible[Math.max(0, idx - 1)]);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (cur) {
+          selectTz(cur.getAttribute('data-tz'));
+          closeTzPanel(true);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeTzPanel(true);
+      } else if (e.key === 'Tab') {
+        closeTzPanel(false);
+      }
+    });
+
+    list.addEventListener('mousemove', function (e) {
+      var o = e.target.closest('.wj-tz-option');
+      if (o && !o.classList.contains('highlighted')) {
+        tzPanel.querySelectorAll('.wj-tz-option.highlighted').forEach(function (h) { h.classList.remove('highlighted'); });
+        o.classList.add('highlighted');
+      }
+    });
+    list.addEventListener('click', function (e) {
+      var o = e.target.closest('.wj-tz-option');
+      if (!o) return;
+      selectTz(o.getAttribute('data-tz'));
+      closeTzPanel(true);
+    });
+
+    function onOutside(e) {
+      if (tzPanel && !tzPanel.contains(e.target) && !trigger.contains(e.target)) closeTzPanel(false);
+    }
+    document.addEventListener('mousedown', onOutside, true);
+    window.addEventListener('resize', positionTzPanel);
+    tzPanelCleanup = function () {
+      document.removeEventListener('mousedown', onOutside, true);
+      window.removeEventListener('resize', positionTzPanel);
+    };
+
+    // Seçili satır görünür olsun, sonra açılış animasyonu
+    var sel = tzPanel.querySelector('.wj-tz-option.selected');
+    if (sel) list.scrollTop = sel.offsetTop - list.clientHeight / 2 + sel.offsetHeight / 2;
+    requestAnimationFrame(function () {
+      if (tzPanel) tzPanel.classList.add('open');
+    });
+    input.focus();
+  }
+
+  function closeTzPanel(refocus) {
+    if (!tzPanel) return;
+    if (tzPanelCleanup) tzPanelCleanup();
+    tzPanelCleanup = null;
+    tzPanel.remove();
+    tzPanel = null;
+    var trigger = document.getElementById('wj-tz-trigger');
+    if (trigger) {
+      trigger.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      if (refocus) trigger.focus();
+    }
+  }
+
+  function renderTzClock() {
+    var WT = window.WwTime;
+    var tz = resolvedTz();
+    var now = new Date();
+    var loc = tzLocale();
+    try {
+      setText('wj-tz-clock-time', new Intl.DateTimeFormat(loc, {
+        timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: WT ? WT.getSettings().hour12 : false
+      }).format(now));
+      setText('wj-tz-clock-date', new Intl.DateTimeFormat(loc, {
+        timeZone: tz, weekday: 'long', day: 'numeric', month: 'long'
+      }).format(now));
+      if (WT) {
+        setText('wj-tz-clock-zone', tzCity(tz) + ' · ' + WT.offsetLabel(tz));
+        setText('wj-tz-auto-sub', tzCity(WT.deviceTz()) + ' · ' + WT.offsetLabel(WT.deviceTz()));
+      }
+    } catch (e) {
+      wwLog.warn('Saat dilimi önizlemesi hesaplanamadı:', e);
+    }
+  }
+
+  function selectTz(value) {
+    state.selectedTz = value || 'auto';
+    if (window.WwTime) window.WwTime.setSettings({ tz: state.selectedTz });
+
+    var autoEl = document.getElementById('wj-tz-auto');
+    if (autoEl) autoEl.classList.toggle('active', state.selectedTz === 'auto');
+    updateTzTrigger();
+    renderTzClock();
+  }
+
+  function startTzClock() {
+    stopTzClock();
+    loadTzCountries();
+    updateTzTrigger();
+    renderTzClock();
+    tzClockTimer = setInterval(renderTzClock, 1000);
+  }
+
+  function stopTzClock() {
+    if (tzClockTimer) {
+      clearInterval(tzClockTimer);
+      tzClockTimer = null;
+    }
+  }
+
   function goToStep(stepIndex) {
     state.currentStep = stepIndex;
     var steps = document.querySelectorAll('.wj-wizard-step');
@@ -461,13 +886,24 @@
       progressFill.style.width = pct + '%';
     }
 
+    // Dağ sahnesi yalnızca karşılama adımında görünür
+    var card = document.querySelector('#wj-onboarding-modal .wj-onboarding-card');
+    if (card) card.classList.toggle('is-welcome', stepIndex === 0);
+
     if (stepIndex === 0) {
       startAnimatedPolyglotGreeting();
     } else {
       stopPolyglotCycle();
     }
 
-    if (stepIndex === 4 && !state.hasCustomJournalName) {
+    if (stepIndex === 3) {
+      startTzClock();
+    } else {
+      stopTzClock();
+      closeTzPanel(false);
+    }
+
+    if (stepIndex === 5 && !state.hasCustomJournalName) {
       state.journalName = defaultJournalNames[state.selectedLang] || defaultJournalNames.tr;
       var nameInput = document.getElementById('wj-journal-name-input');
       if (nameInput) {
@@ -557,6 +993,31 @@
         } catch (e) { }
       });
     });
+
+    // Saat dilimi seçimi
+    var tzAuto = document.getElementById('wj-tz-auto');
+    if (tzAuto) {
+      tzAuto.addEventListener('click', function () { selectTz('auto'); });
+      tzAuto.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectTz('auto');
+        }
+      });
+    }
+    var tzTrigger = document.getElementById('wj-tz-trigger');
+    if (tzTrigger) {
+      tzTrigger.addEventListener('click', function () {
+        if (tzPanel) closeTzPanel(false);
+        else openTzPanel();
+      });
+      tzTrigger.addEventListener('keydown', function (e) {
+        if ((e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') && !tzPanel) {
+          e.preventDefault();
+          openTzPanel();
+        }
+      });
+    }
 
     // Tema seçimi
     overlay.querySelectorAll('.wj-theme-card[data-theme]').forEach(function (card) {
@@ -648,6 +1109,8 @@
       }, 400);
     }
     stopPolyglotCycle();
+    stopTzClock();
+    closeTzPanel(false);
   }
 
   // Sihirbaz tamamlandığında hem localStorage'a hem DB'ye yaz
@@ -739,40 +1202,85 @@
   // ------------------------------------------------------------
   // 2. FAZ 2: İNTERAKTİF REHBER TURU (GUIDED SPOTLIGHT TOUR)
   // ------------------------------------------------------------
+  // Her adımın hedefleri ÖNCELİK sırasıyla denenir (virgüllü tek seçici DOM sırasına
+  // göre ilk eşleşeni döndürdüğü için yanlış öğeyi gösterebiliyordu).
   function getTourSteps() {
     return [
       {
-        targetSelector: '.nav-links, #nav-links, .nav-menu, #navbar-container',
-        fallbackSelector: '#navbar-container, nav, .nav',
+        targets: ['#navbar-container .nav-links', '.nav-links'],
         title: t('onboarding.tour_step1_title', 'Ana Menü & Sayfalar'),
         desc: t('onboarding.tour_step1_desc', 'Dashboard, İşlemler (Trades), Stratejiler ve Takvim sayfalarınıza buradan kolayca ulaşabilirsiniz.'),
-        position: 'bottom'
+        placement: 'bottom'
       },
       {
-        targetSelector: '#nav-journal-switcher, .journal-switcher, #journal-select',
-        fallbackSelector: '.nav-right, #navbar-container',
+        targets: ['#nav-journal-switcher'],
         title: t('onboarding.tour_step2_title', 'İşlem Günlüğü Seçici'),
         desc: t('onboarding.tour_step2_desc', 'Farklı stratejileriniz veya portföyleriniz için ayrı defterler oluşturabilir, buradan tek tıkla aralarında geçiş yapabilirsiniz.'),
-        position: 'bottom'
+        placement: 'bottom'
       },
       {
-        targetSelector: '#stats-grid, .stats-grid, .stat-grid, #stats-skeleton, .page-header-actions, .time-filter-group, .calendar-main-card',
-        fallbackSelector: '.page-header, main',
+        targets: ['#dashboard-toolbar', '#date-filter-group'],
+        title: t('onboarding.tour_filter_title', 'Tarih Aralığı & Dışa Aktarma'),
+        desc: t('onboarding.tour_filter_desc', 'Tüm istatistik ve grafikleri hafta, ay, yıl ya da özel bir aralığa göre süz; sonuçları CSV veya PDF olarak dışa aktar.'),
+        placement: 'bottom'
+      },
+      {
+        targets: ['#stats-grid', '#stats-skeleton'],
         title: t('onboarding.tour_step3_title', 'Performans & İstatistikler'),
         desc: t('onboarding.tour_step3_desc', 'Toplam Kâr/Zarar (P&L), Win Rate oranınız ve işlem sonuçlarınız gerçek zamanlı olarak burada listelenir.'),
-        position: 'bottom'
+        placement: 'bottom'
       },
       {
-        targetSelector: '#quick-add-fab, .quick-add-fab, #btn-new-journal, .btn-new-journal, #add-trade-btn, .header-actions',
-        fallbackSelector: 'body',
+        targets: ['#charts-top-grid .chart-card', '#chart-cumulative'],
+        title: t('onboarding.tour_chart_title', 'Kümülatif K/Z'),
+        desc: t('onboarding.tour_chart_desc', 'Hesabının zaman içindeki büyümesini işlem işlem izle; düşüşleri ve toparlanmaları burada görürsün.'),
+        placement: 'right'
+      },
+      {
+        targets: ['#user-avatar'],
+        title: t('onboarding.tour_settings_title', 'Profil & Ayarlar'),
+        desc: t('onboarding.tour_settings_desc', 'Saat dilimi, para birimi, tema ve aboneliğini buradan yönetebilirsin.'),
+        placement: 'bottom',
+        radius: 999
+      },
+      {
+        targets: ['#quick-add-fab'],
         title: t('onboarding.tour_step4_title', 'Hızlı İşlem Ekleme (+)'),
         desc: t('onboarding.tour_step4_desc', 'Bu butona tıklayarak manuel yeni trade ekleyebilir ya da borsa CSV dosyanızı sürükleyip anında içeri aktarabilirsiniz.'),
-        position: 'top-left'
+        placement: 'top',
+        radius: 999
       }
     ];
   }
 
+  function isTourTargetVisible(el) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return false;
+    var cs = window.getComputedStyle(el);
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.05;
+  }
+
+  function resolveTourTarget(step) {
+    for (var i = 0; i < step.targets.length; i++) {
+      var el = document.querySelector(step.targets[i]);
+      if (isTourTargetVisible(el)) return el;
+    }
+    return null;
+  }
+
+  var tourSteps = [];
+  var tourTarget = null;
+  var tourRaf = null;
+  var tourMoveTimer = null;
+
   function startSpotlightTour() {
+    // Bu sayfada bulunan adımlar (sayaç ve ilerleme gerçek adım sayısını göstersin)
+    tourSteps = getTourSteps().filter(function (s) { return !!resolveTourTarget(s); });
+    if (!tourSteps.length) {
+      endTour();
+      return;
+    }
     state.tourIndex = 0;
     state.isTourActive = true;
     renderTourDom();
@@ -780,142 +1288,230 @@
   }
 
   function renderTourDom() {
-    var existingBackdrop = document.getElementById('wj-tour-backdrop');
-    if (existingBackdrop) existingBackdrop.remove();
-    var existingHighlight = document.getElementById('wj-tour-highlight');
-    if (existingHighlight) existingHighlight.remove();
-    var existingTooltip = document.getElementById('wj-tour-tooltip');
-    if (existingTooltip) existingTooltip.remove();
+    ['wj-tour-backdrop', 'wj-tour-highlight', 'wj-tour-tooltip'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.remove();
+    });
 
     var tourHtml = `
       <div class="wj-tour-backdrop" id="wj-tour-backdrop"></div>
-      <div class="wj-tour-target-highlight" id="wj-tour-highlight" style="display:none;"></div>
-      <div class="wj-tour-tooltip" id="wj-tour-tooltip" style="display:none;">
-        <span class="wj-tour-step-badge" id="wj-tour-badge"></span>
+      <div class="wj-tour-target-highlight" id="wj-tour-highlight"></div>
+      <div class="wj-tour-tooltip" id="wj-tour-tooltip" role="dialog" aria-live="polite">
+        <span class="wj-tour-arrow" id="wj-tour-arrow"></span>
+        <div class="wj-tour-head">
+          <span class="wj-tour-step-badge" id="wj-tour-badge"></span>
+          <button class="wj-tour-close" id="wj-tour-close-btn" aria-label="${t('onboarding.tour_btn_skip', 'Geç')}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
         <h4 class="wj-tour-title" id="wj-tour-title"></h4>
         <p class="wj-tour-desc" id="wj-tour-desc"></p>
+        <div class="wj-tour-progress" id="wj-tour-progress"></div>
         <div class="wj-tour-footer">
-          <div class="wj-tour-dots" id="wj-tour-dots"></div>
+          <button class="wj-tour-btn-skip" id="wj-tour-skip-btn">${t('onboarding.tour_btn_skip', 'Geç')}</button>
           <div class="wj-tour-actions">
-            <button class="wj-tour-btn-skip" id="wj-tour-skip-btn">${t('onboarding.tour_btn_skip', 'Geç')}</button>
+            <button class="wj-tour-btn-back" id="wj-tour-back-btn">${t('onboarding.tour_btn_back', '← Geri')}</button>
             <button class="wj-tour-btn-next" id="wj-tour-next-btn">${t('onboarding.tour_btn_next', 'Sonraki →')}</button>
           </div>
         </div>
       </div>
     `;
-
     document.body.insertAdjacentHTML('beforeend', tourHtml);
 
     document.getElementById('wj-tour-skip-btn').addEventListener('click', endTour);
-    document.getElementById('wj-tour-next-btn').addEventListener('click', function () {
-      var steps = getTourSteps();
-      if (state.tourIndex < steps.length - 1) {
-        showTourStep(state.tourIndex + 1);
-      } else {
-        endTour();
-      }
-    });
+    document.getElementById('wj-tour-close-btn').addEventListener('click', endTour);
+    document.getElementById('wj-tour-back-btn').addEventListener('click', tourPrev);
+    document.getElementById('wj-tour-next-btn').addEventListener('click', tourNext);
 
-    document.getElementById('wj-tour-backdrop').addEventListener('click', function (e) {
-      if (e.target.id === 'wj-tour-backdrop') {
-        endTour();
-      }
+    document.addEventListener('keydown', onTourKey, true);
+    window.addEventListener('resize', scheduleTourLayout);
+    window.addEventListener('scroll', scheduleTourLayout, true);
+
+    requestAnimationFrame(function () {
+      var backdrop = document.getElementById('wj-tour-backdrop');
+      if (backdrop) backdrop.classList.add('active');
+    });
+  }
+
+  function tourNext() {
+    if (state.tourIndex < tourSteps.length - 1) showTourStep(state.tourIndex + 1);
+    else endTour();
+  }
+
+  function tourPrev() {
+    if (state.tourIndex > 0) showTourStep(state.tourIndex - 1);
+  }
+
+  function onTourKey(e) {
+    if (!state.isTourActive) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      endTour();
+    } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+      e.preventDefault();
+      tourNext();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      tourPrev();
+    }
+  }
+
+  function scheduleTourLayout() {
+    if (tourRaf) return;
+    tourRaf = requestAnimationFrame(function () {
+      tourRaf = null;
+      layoutTour();
     });
   }
 
   function showTourStep(index) {
-    var steps = getTourSteps();
-    state.tourIndex = index;
-    var step = steps[index];
+    var step = tourSteps[index];
     if (!step) return;
+    state.tourIndex = index;
 
-    var backdrop = document.getElementById('wj-tour-backdrop');
-    var highlight = document.getElementById('wj-tour-highlight');
-    var tooltip = document.getElementById('wj-tour-tooltip');
-
-    if (!backdrop || !highlight || !tooltip) return;
-
-    backdrop.classList.add('active');
-
-    var targetEl = document.querySelector(step.targetSelector) || document.querySelector(step.fallbackSelector);
-
-    if (!targetEl || targetEl.offsetParent === null) {
-      if (index < steps.length - 1) {
-        showTourStep(index + 1);
-      } else {
-        endTour();
-      }
+    var target = resolveTourTarget(step);
+    if (!target) {
+      // Hedef bu arada kaybolduysa sonraki adıma geç
+      if (index < tourSteps.length - 1) showTourStep(index + 1);
+      else endTour();
       return;
     }
+    tourTarget = target;
 
-    targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var tooltip = document.getElementById('wj-tour-tooltip');
+    if (!tooltip) return;
 
-    setTimeout(function () {
-      var rect = targetEl.getBoundingClientRect();
-      var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-      var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    // İçerik
+    document.getElementById('wj-tour-badge').textContent = t('onboarding.step_indicator', 'Adım {step} / {total}')
+      .replace('{step}', index + 1)
+      .replace('{total}', tourSteps.length);
+    document.getElementById('wj-tour-title').textContent = step.title;
+    document.getElementById('wj-tour-desc').textContent = step.desc;
 
-      var padding = 8;
-      highlight.style.display = 'block';
-      highlight.style.top = (rect.top + scrollY - padding) + 'px';
-      highlight.style.left = (rect.left + scrollX - padding) + 'px';
-      highlight.style.width = (rect.width + padding * 2) + 'px';
-      highlight.style.height = (rect.height + padding * 2) + 'px';
+    var isLast = index === tourSteps.length - 1;
+    document.getElementById('wj-tour-next-btn').textContent = isLast
+      ? t('onboarding.tour_btn_finish', 'Turu Bitir')
+      : t('onboarding.tour_btn_next', 'Sonraki →');
+    var backBtn = document.getElementById('wj-tour-back-btn');
+    backBtn.style.visibility = index === 0 ? 'hidden' : 'visible';
+    document.getElementById('wj-tour-skip-btn').style.visibility = isLast ? 'hidden' : 'visible';
 
-      tooltip.style.display = 'block';
-      var tooltipRect = tooltip.getBoundingClientRect();
+    var progress = document.getElementById('wj-tour-progress');
+    progress.innerHTML = '';
+    for (var d = 0; d < tourSteps.length; d++) {
+      var seg = document.createElement('span');
+      seg.className = 'wj-tour-seg' + (d < index ? ' done' : (d === index ? ' active' : ''));
+      progress.appendChild(seg);
+    }
 
-      var tTop = rect.bottom + scrollY + 16;
-      var tLeft = rect.left + scrollX;
+    // Hedef ekranda değilse önce kaydır, sonra konumlandır
+    var r = target.getBoundingClientRect();
+    var offscreen = r.top < 70 || r.bottom > window.innerHeight - 20;
+    var fixedTarget = window.getComputedStyle(target).position === 'fixed';
+    tooltip.classList.remove('visible');
+    if (tourMoveTimer) clearTimeout(tourMoveTimer);
+    if (offscreen && !fixedTarget) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      tourMoveTimer = setTimeout(revealTourStep, 420);
+    } else {
+      tourMoveTimer = setTimeout(revealTourStep, 60);
+    }
+  }
 
-      if (step.position === 'top-left' || tTop + tooltipRect.height > scrollY + window.innerHeight) {
-        tTop = rect.top + scrollY - tooltipRect.height - 16;
+  function revealTourStep() {
+    tourMoveTimer = null;
+    layoutTour();
+    var tooltip = document.getElementById('wj-tour-tooltip');
+    if (tooltip) tooltip.classList.add('visible');
+    var next = document.getElementById('wj-tour-next-btn');
+    if (next) next.focus({ preventScroll: true });
+  }
+
+  // Vurgu kutusu ve kartı hedefe göre (viewport koordinatlarıyla) yerleştir
+  function layoutTour() {
+    var step = tourSteps[state.tourIndex];
+    var highlight = document.getElementById('wj-tour-highlight');
+    var tooltip = document.getElementById('wj-tour-tooltip');
+    var arrow = document.getElementById('wj-tour-arrow');
+    if (!step || !tourTarget || !highlight || !tooltip) return;
+
+    var r = tourTarget.getBoundingClientRect();
+    var pad = 8;
+    var hl = { top: r.top - pad, left: r.left - pad, width: r.width + pad * 2, height: r.height + pad * 2 };
+    highlight.style.top = hl.top + 'px';
+    highlight.style.left = hl.left + 'px';
+    highlight.style.width = hl.width + 'px';
+    highlight.style.height = hl.height + 'px';
+    highlight.style.borderRadius = (step.radius || 14) + 'px';
+    highlight.classList.add('active');
+
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var margin = 16;
+    var gap = 14;
+    var tw = tooltip.offsetWidth;
+    var th = tooltip.offsetHeight;
+
+    var fits = {
+      bottom: hl.top + hl.height + gap + th <= vh - margin,
+      top: hl.top - gap - th >= margin,
+      right: hl.left + hl.width + gap + tw <= vw - margin,
+      left: hl.left - gap - tw >= margin
+    };
+    var order = [step.placement || 'bottom', 'bottom', 'top', 'right', 'left'];
+    var placement = null;
+    for (var i = 0; i < order.length; i++) {
+      if (fits[order[i]]) { placement = order[i]; break; }
+    }
+
+    var top;
+    var left;
+    var clamp = function (v, min, max) { return Math.min(Math.max(v, min), Math.max(min, max)); };
+    if (placement === 'bottom' || placement === 'top') {
+      top = placement === 'bottom' ? hl.top + hl.height + gap : hl.top - gap - th;
+      left = clamp(hl.left + hl.width / 2 - tw / 2, margin, vw - tw - margin);
+    } else if (placement === 'right' || placement === 'left') {
+      left = placement === 'right' ? hl.left + hl.width + gap : hl.left - gap - tw;
+      top = clamp(hl.top + hl.height / 2 - th / 2, margin, vh - th - margin);
+    } else {
+      // Hiçbir tarafa sığmıyorsa (çok büyük hedef) ekranın altına ortala
+      placement = 'none';
+      top = vh - th - margin;
+      left = (vw - tw) / 2;
+    }
+
+    tooltip.style.top = Math.round(top) + 'px';
+    tooltip.style.left = Math.round(left) + 'px';
+    tooltip.setAttribute('data-placement', placement);
+
+    // Ok, hedefin ortasını göstersin (kart kenarlarına taşmadan)
+    if (arrow) {
+      if (placement === 'bottom' || placement === 'top') {
+        arrow.style.left = clamp(hl.left + hl.width / 2 - left - 6, 18, tw - 30) + 'px';
+        arrow.style.top = '';
+      } else if (placement === 'right' || placement === 'left') {
+        arrow.style.top = clamp(hl.top + hl.height / 2 - top - 6, 18, th - 30) + 'px';
+        arrow.style.left = '';
       }
-      if (tLeft + tooltipRect.width > window.innerWidth - 20) {
-        tLeft = window.innerWidth - tooltipRect.width - 20;
-      }
-      if (tLeft < 20) tLeft = 20;
-
-      tooltip.style.top = Math.max(20, tTop) + 'px';
-      tooltip.style.left = tLeft + 'px';
-
-      document.getElementById('wj-tour-badge').textContent = t('onboarding.step_indicator', 'Adım {step} / {total}')
-        .replace('{step}', index + 1)
-        .replace('{total}', steps.length);
-      document.getElementById('wj-tour-title').textContent = step.title;
-      document.getElementById('wj-tour-desc').textContent = step.desc;
-
-      var nextBtn = document.getElementById('wj-tour-next-btn');
-      if (index === steps.length - 1) {
-        nextBtn.textContent = t('onboarding.tour_btn_finish', 'Turu Bitir');
-      } else {
-        nextBtn.textContent = t('onboarding.tour_btn_next', 'Sonraki →');
-      }
-
-      var skipBtn = document.getElementById('wj-tour-skip-btn');
-      if (skipBtn) {
-        skipBtn.textContent = t('onboarding.tour_btn_skip', 'Geç');
-      }
-
-      var dotsContainer = document.getElementById('wj-tour-dots');
-      dotsContainer.innerHTML = '';
-      for (var d = 0; d < steps.length; d++) {
-        var dot = document.createElement('div');
-        dot.className = 'wj-tour-dot' + (d === index ? ' active' : '');
-        dotsContainer.appendChild(dot);
-      }
-    }, 180);
+    }
   }
 
   async function endTour() {
     state.isTourActive = false;
+    document.removeEventListener('keydown', onTourKey, true);
+    window.removeEventListener('resize', scheduleTourLayout);
+    window.removeEventListener('scroll', scheduleTourLayout, true);
+    if (tourMoveTimer) clearTimeout(tourMoveTimer);
+    tourMoveTimer = null;
+    tourTarget = null;
+
     var backdrop = document.getElementById('wj-tour-backdrop');
     var highlight = document.getElementById('wj-tour-highlight');
     var tooltip = document.getElementById('wj-tour-tooltip');
 
     if (backdrop) backdrop.classList.remove('active');
-    if (highlight) highlight.style.display = 'none';
-    if (tooltip) tooltip.style.display = 'none';
+    if (highlight) highlight.classList.remove('active');
+    if (tooltip) tooltip.classList.remove('visible');
 
     setTimeout(function () {
       if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
@@ -1141,6 +1737,10 @@
             ${!isStrategyDone ? `<span class="wj-task-action-icon" data-i18n="onboarding.btn_add_action">${t('onboarding.btn_add_action', '+ Ekle')}</span>` : ''}
           </div>
         </div>
+
+        <button class="wj-tasks-skip-btn" id="wj-tasks-skip-btn" type="button">
+          <span data-i18n="onboarding.tasks_skip">${t('onboarding.tasks_skip', 'Görevleri atla')}</span>
+        </button>
       </div>
     `;
 
@@ -1199,6 +1799,15 @@
       dismissBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         dismissTasksWidget();
+      });
+    }
+
+    // Görevleri atla: kartı kalıcı olarak kaldır
+    var skipTasksBtn = document.getElementById('wj-tasks-skip-btn');
+    if (skipTasksBtn) {
+      skipTasksBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        skipTasksWidget();
       });
     }
 
@@ -1453,6 +2062,31 @@
       // Görevler henüz bitmedi: Sağ altta mini Pill (Hap) durumuna küçült
       floatingWrapper.classList.add('minimized');
       localStorage.setItem('wj_tasks_minimized_' + uid, 'true');
+    }
+  }
+
+  // Kullanıcı görevleri atladı: tamamlanmış gibi kalıcı gizle (diğer cihazlarda da çıkmasın
+  // diye user_metadata'ya da yazılır; tasks_skipped atlandığını ayırt etmek için).
+  function skipTasksWidget() {
+    var floatingWrapper = document.getElementById('wj-tasks-floating-container');
+    if (!state.user) return;
+    var uid = state.user.id;
+
+    try {
+      localStorage.setItem('wj_tasks_dismissed_' + uid, 'true');
+      localStorage.setItem('ww_tasks_dismissed', 'true');
+    } catch (e) {}
+    if (window.sb && window.sb.auth && typeof window.sb.auth.updateUser === 'function') {
+      window.sb.auth.updateUser({ data: { tasks_completed: true, tasks_skipped: true } }).catch(function () {});
+    }
+
+    if (floatingWrapper) {
+      floatingWrapper.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      floatingWrapper.style.opacity = '0';
+      floatingWrapper.style.transform = 'translateY(16px)';
+      setTimeout(function () {
+        if (floatingWrapper.parentNode) floatingWrapper.parentNode.removeChild(floatingWrapper);
+      }, 300);
     }
   }
 

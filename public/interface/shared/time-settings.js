@@ -20,6 +20,16 @@
 
   var STORAGE_KEY = 'ww_time_settings';
   var DEFAULTS = { tz: 'auto', dayStart: 0, importTz: 'same', hour12: false };
+
+  // Seçicilerde üstte gösterilen saat dilimleri (Ayarlar ve onboarding ortak kullanır)
+  var POPULAR_TZ = [
+    ['Europe/Istanbul', 'İstanbul'], ['UTC', 'UTC'], ['Europe/London', 'London'],
+    ['Europe/Berlin', 'Berlin / Frankfurt'], ['Europe/Moscow', 'Moscow'], ['Asia/Dubai', 'Dubai'],
+    ['Asia/Kolkata', 'Mumbai / Delhi'], ['Asia/Singapore', 'Singapore'], ['Asia/Hong_Kong', 'Hong Kong'],
+    ['Asia/Tokyo', 'Tokyo'], ['Australia/Sydney', 'Sydney'], ['Pacific/Auckland', 'Auckland'],
+    ['America/New_York', 'New York'], ['America/Chicago', 'Chicago'], ['America/Denver', 'Denver'],
+    ['America/Los_Angeles', 'Los Angeles'], ['America/Sao_Paulo', 'São Paulo'], ['Africa/Johannesburg', 'Johannesburg']
+  ];
   var DAY_MS = 86400000;
 
   // ------------------------------------------------------------
@@ -410,6 +420,7 @@
     importWallTimeToIso: importWallTimeToIso,
     localWallTimeToIso: localWallTimeToIso,
     STORAGE_KEY: STORAGE_KEY,
-    DEFAULTS: DEFAULTS
+    DEFAULTS: DEFAULTS,
+    POPULAR_TZ: POPULAR_TZ
   };
 })(typeof window !== 'undefined' ? window : this);

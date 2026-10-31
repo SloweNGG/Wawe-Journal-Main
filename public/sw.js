@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v46'; // settings: Over Trade paneli yeniden tasarlandı
+const CACHE_VERSION = 'wawe-v48'; // kazançlarım: yeni kazanç görünümü (çeviri metinleri değişti)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

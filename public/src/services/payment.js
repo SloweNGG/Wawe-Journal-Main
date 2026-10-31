@@ -177,6 +177,7 @@ function clearPendingPaymentFlags() {
 
 // ⭐ Kart ile ödeme (Creem): sunucu planın ürününü seçip ödeme sayfası oluşturur.
 // opts.embed: sayfa site içinde pencere (overlay) olarak açılır; onComplete/onClose yalnızca arayüz içindir.
+// opts.referralCode: partner kodu; sunucu doğrular ve Creem'de ilk ödemeye indirim olarak uygular.
 // Betik yüklenemezse ya da embed istenmezse Creem sayfasına yönlendirilir.
 // Pro her durumda creem-webhook ile açılır (tarayıcıdaki "tamamlandı" olayı taklit edilebilir, erişim vermez).
 export async function startCardCheckout(planType, opts) {
@@ -196,7 +197,7 @@ export async function startCardCheckout(planType, opts) {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + session.access_token
         },
-        body: JSON.stringify({ planType: planType })
+        body: JSON.stringify(opts.referralCode ? { planType: planType, referralCode: opts.referralCode } : { planType: planType })
       }
     );
 
