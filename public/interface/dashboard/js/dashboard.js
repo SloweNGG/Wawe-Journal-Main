@@ -3148,6 +3148,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         return;
       }
 
+      // Admin: ?demo=seed | ?demo=remove -> reklam kaydı için "Wawe Demo" defteri (interface/shared/demo-data.js)
+      var demoMode = new URLSearchParams(location.search).get('demo');
+      if (demoMode && typeof isAdmin === 'function' && isAdmin(user)) {
+        var demoScript = document.createElement('script');
+        demoScript.src = '/interface/shared/demo-data.js?v=1';
+        demoScript.onload = function () { window.WwDemoData.run(demoMode); };
+        document.head.appendChild(demoScript);
+        return;
+      }
+
       var activeJournalId = null;
       if (window.journal && typeof window.journal.ensureActiveJournal === 'function') {
         activeJournalId = await window.journal.ensureActiveJournal(user.id);
