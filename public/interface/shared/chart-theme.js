@@ -59,6 +59,19 @@
     return out + '</div>';
   }
 
+  /* Short money label for value axes: $0, $250, -$500, $1.5K, $2M. Long "+$1.000,00" ticks
+     overlapped on small widgets; tooltips and data labels keep the full amount. */
+  function money(value) {
+    var num = Number(value) || 0, abs = Math.abs(num);
+    var sym = typeof global.getCurrencySymbol === 'function' ? global.getCurrencySymbol() : '$';
+    var txt;
+    if (abs >= 999.5e3) txt = (abs / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    else if (abs >= 999.5) txt = (abs / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    else if (abs < 100 && abs % 1 !== 0) txt = abs.toFixed(1).replace(/\.0$/, '');
+    else txt = String(Math.round(abs));
+    return (num < 0 && txt !== '0' ? '-' : '') + sym + txt;
+  }
+
   // ApexCharts axis label style ({ style: WwChart.axisLabels() } inside xaxis.labels / yaxis.labels).
   // 12px in a lighter gray than other muted text, so tick labels stay crisp on black.
   function axisLabels() {
@@ -185,6 +198,7 @@
     colors: colors,
     esc: esc,
     tipHtml: tipHtml,
+    money: money,
     axisLabels: axisLabels,
     apexBase: apexBase,
     apex: apex,

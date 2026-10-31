@@ -831,49 +831,93 @@ export function renderDowChart(trades) {
   renderOrUpdateApex('dow', containerId, metricBarOptions(metric, dayNames, data, display));
 }
 
+// ⭐ SÜREKLİ DEĞER KOVALARI (lot, R:R)
+// Farklı değer sayısı maxCount'u aşarsa değerler eşit genişlikte en fazla maxCount kovaya bölünür;
+// aşmazsa her değer kendi çubuğunu korur. Eskiden her farklı lot ayrı çubuktu ve etiketler üst üste biniyordu.
+function rangeBuckets(values, maxCount, steps) {
+  var seen = {};
+  values.forEach(function(v) { seen[v] = true; });
+  var keys = Object.keys(seen).map(Number).sort(function(a, b) { return a - b; });
+  if (keys.length <= maxCount) return { exact: true, keys: keys };
+  var min = keys[0], max = keys[keys.length - 1];
+  for (var i = 0; i < steps.length; i++) {
+    var step = steps[i];
+    var start = Math.floor(min / step + 1e-9) * step;
+    // Son kova üst sınırı da kapsar (1.5 lot "1.25–1.5"e düşer, tek başına "1.5–1.75" kovası açmaz)
+    var count = Math.max(1, Math.ceil((max - start) / step - 1e-9));
+    if (count <= maxCount || i === steps.length - 1) return { exact: false, step: step, start: start, count: count };
+  }
+}
+
+function bucketOf(b, v) {
+  return b.exact ? b.keys.indexOf(v) : Math.min(b.count - 1, Math.floor((v - b.start) / b.step + 1e-9));
+}
+
+function bucketFrom(b, i) { return b.exact ? b.keys[i] : b.start + i * b.step; }
+
+function shortNum(v) { return String(parseFloat(v.toFixed(2))); }
+
 // ⭐ 7. RR CHART
+// Renk planlanan R:R'nin kalitesini anlatır: 1'in altı kırmızı, 1-2 turuncu, 2 ve üstü yeşil
 export function renderRRChart(trades) {
   var containerId = 'chart-rr';
   var container = document.getElementById(containerId);
   if (!container) return;
 
-  var rrData = {};
+  var values = [];
   trades.forEach(function(t) {
-    if (t.exit_price && t.rr_ratio) {
-      var key = parseFloat(t.rr_ratio).toFixed(1);
-      rrData[key] = (rrData[key] || 0) + 1;
-    }
+    if (t.exit_price && t.rr_ratio) values.push(Math.round(parseFloat(t.rr_ratio) * 10) / 10);
   });
 
-  var keys = Object.keys(rrData).sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
-  if (keys.length === 0) {
+  if (values.length === 0) {
     showEmptyChart(containerId, 'empty.no_rr');
     clearApexChart('rr');
     return;
   }
 
-  var labels = keys;
-  var data = keys.map(function(k) { return rrData[k]; });
+  // 0.1'lik etiketler sığdığı sürece korunur; sığmazsa kova başlangıcı yazılır, aralık ipucunda görünür
+  var width = container.clientWidth || 400;
+  var b = rangeBuckets(values, Math.max(6, Math.floor(width / 26)), [0.1]);
+  if (!b.exact) b = rangeBuckets(values, Math.max(4, Math.floor(width / 36)), [0.25, 0.5, 1, 2, 5]);
+  var n = b.exact ? b.keys.length : b.count;
+  var data = [], labels = [], colors = [];
+  for (var i = 0; i < n; i++) {
+    var from = bucketFrom(b, i);
+    data.push(0);
+    labels.push(b.exact ? from.toFixed(1) : shortNum(from));
+    colors.push(from < 1 ? CHART_THEME.red : (from < 2 ? CHART_THEME.orange : CHART_THEME.green));
+  }
+  values.forEach(function(v) { data[bucketOf(b, v)]++; });
 
   renderOrUpdateApex('rr', containerId, {
     chart: { type: 'bar' },
     series: [{ name: _t('analytics_dash.trade_count', 'İşlem Sayısı'), data: data }],
-    colors: [CHART_THEME.purple],
+    colors: colors,
+    legend: { show: false },
     xaxis: {
       categories: labels,
       labels: {
         style: axisStyle(),
+        rotate: 0,
       }
     },
     yaxis: {
       labels: {
         style: axisStyle(),
+        formatter: function(v) { return v === null || v === undefined ? '' : String(Math.round(v)); }
       }
     },
     plotOptions: {
-      bar: {}
+      bar: { distributed: true }
     },
     tooltip: {
+      x: {
+        formatter: function(val, opts) {
+          if (b.exact) return 'R:R ' + val;
+          var from = bucketFrom(b, opts.dataPointIndex);
+          return 'R:R ' + shortNum(from) + '–' + shortNum(from + b.step);
+        }
+      },
       y: { formatter: function(val) { return val + ' ' + _t('dashboard.trades_count_suffix', 'işlem'); } }
     }
   });
@@ -886,23 +930,28 @@ export function renderLotChart(trades) {
   if (!container) return;
 
   var metric = widgetOpt('lot', 'metric');
-  var lotMap = {};
-  trades.forEach(function(t) {
-    if (t.exit_price) {
-      var key = parseFloat(t.lot || 0).toFixed(2);
-      (lotMap[key] = lotMap[key] || []).push(calcTradePnL(t));
-    }
-  });
+  var closed = trades.filter(function(t) { return t.exit_price; });
 
-  var lots = Object.keys(lotMap).sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
-
-  if (lots.length === 0) {
+  if (closed.length === 0) {
     showEmptyChart(containerId, 'empty.no_lot');
     clearApexChart('lot');
     return;
   }
 
-  var data = lots.map(function(l) { return metricValue(lotMap[l], metric); });
+  var lotOf = function(t) { return Math.round(parseFloat(t.lot || 0) * 100) / 100; };
+  // Aralık etiketi ("0.25–0.5") ~64px: kutuya sığacak kadar kova
+  var b = rangeBuckets(closed.map(lotOf), Math.max(4, Math.min(8, Math.floor((container.clientWidth || 400) / 64))),
+    [0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 25, 50, 100]);
+  var n = b.exact ? b.keys.length : b.count;
+  var groups = [], lots = [];
+  for (var i = 0; i < n; i++) {
+    var from = bucketFrom(b, i);
+    groups.push([]);
+    lots.push(b.exact ? from.toFixed(2) : shortNum(from) + '–' + shortNum(from + b.step));
+  }
+  closed.forEach(function(t) { groups[bucketOf(b, lotOf(t))].push(calcTradePnL(t)); });
+
+  var data = groups.map(function(g) { return metricValue(g, metric); });
   // ⭐ Outlier koruması - en büyük değer korunur (sadece K/Z metriklerinde)
   var display = isMoneyMetric(metric) ? capOutliers(data) : data;
 

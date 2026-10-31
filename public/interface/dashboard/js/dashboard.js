@@ -1457,7 +1457,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (!container) return null;
 
     var colors = getApexColors();
-    var days = {};
+    var days = {}, counts = {};
     // Son 30 gün penceresi bugünün anahtarından (kullanıcının saat dilimi) kurulur
     var windowToday = window.WwTime.todayKey();
     for (var i = 29; i >= 0; i--) {
@@ -1469,6 +1469,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       // Grafik "son 30 gün": pencere dışındaki işlemler çubuk üretmez (eskiden sona eklenip sırayı bozuyordu)
       if (dStr && days[dStr] !== undefined) {
         days[dStr] += calcTradePnL(t);
+        counts[dStr] = (counts[dStr] || 0) + 1;
       }
     });
 
@@ -1518,7 +1519,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         borderVisible: false,
         scaleMargins: { top: 0.2, bottom: 0.2 },
         alignLabels: true,
-        autoScale: true
+        autoScale: true,
+        entireTextOnly: true   // üst/alt köşedeki yarısı kesik etiket çizilmez
       },
       timeScale: {
         borderVisible: false,
@@ -1542,16 +1544,43 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       }
     }));
 
+    // Eksen kısa etiketli ($500, $1K); son değer rozeti ve fiyat çizgisi gizli (sağda gri "+$0,00" kalıyordu)
     var histSeries = chart.addHistogramSeries({
+      lastValueVisible: false,
+      priceLineVisible: false,
       priceFormat: {
         type: 'custom',
+        minMove: 0.01,
         formatter: function (price) {
-          return formatCurrency(price);
+          return window.WwChart ? window.WwChart.money(price) : formatCompactCurrency(price);
         }
       }
     });
 
     histSeries.setData(dailyData);
+
+    // hover card (kümülatif grafikle aynı .ww-tip): gün, günün K/Z'si, işlem sayısı
+    if (window.getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    var tip = document.createElement('div');
+    tip.className = 'cum-tip';
+    tip.style.display = 'none';
+    container.appendChild(tip);
+    chart.subscribeCrosshairMove(function (p) {
+      var bar = p && p.point && p.point.x >= 0 && p.point.y >= 0 && typeof p.logical === 'number' ? dailyData[Math.round(p.logical)] : null;
+      if (!bar || !counts[bar.time]) { tip.style.display = 'none'; return; }
+      var when = new Date(bar.time + 'T00:00:00Z').toLocaleDateString(getChartLocale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+      tip.innerHTML = wwTipHtml({
+        title: when,
+        value: formatCurrency(bar.value),
+        valueCls: bar.value >= 0 ? 'up' : 'down',
+        rows: [{ label: counts[bar.time] + ' ' + (i18n.t('dashboard.trades_count_suffix') || 'işlem') }]
+      });
+      tip.style.display = 'block';
+      var tw = tip.offsetWidth || 130;
+      var left = p.point.x + 16;
+      if (left + tw > container.clientWidth - 8) left = p.point.x - tw - 16;
+      tip.style.left = Math.max(4, left) + 'px';
+    });
 
     if (dailyData.length >= 2) {
       chart.timeScale().setVisibleLogicalRange({
@@ -1920,6 +1949,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           horizontal: true,
           barHeight: wwBarSize(plotHeight, sortedSymbols.length, '60%'),
           distributed: false,
+          // Etiket çubuğun ucunda, dışarıda (negatifte solda): ortaya yazınca kısa çubukta taşıp okunmuyordu
+          dataLabels: { position: 'top' },
           colors: {
             ranges: [
               { from: 0, to: 0.01, color: colors.mutedColor },
@@ -1932,17 +1963,15 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       dataLabels: {
         enabled: !isMobile,
         formatter: function (value, { dataPointIndex }) {
-          var realValue = sortedSymbols[dataPointIndex][1];
-          return formatCurrency(realValue);
+          return formatCompactCurrency(sortedSymbols[dataPointIndex][1]);
         },
         style: {
           fontSize: '11px',
           fontFamily: "'Geist', system-ui, sans-serif",
           fontWeight: 600,
-          colors: ['#ffffff']
+          colors: [colors.textColor]
         },
-        offsetX: 0,
-        textAnchor: 'middle'
+        offsetX: 32
       },
       grid: {
         show: !isMobile,
@@ -1951,7 +1980,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           top: 10,
           bottom: 10,
           left: isMobile ? 4 : 16,
-          right: isMobile ? 4 : 16
+          right: isMobile ? 4 : 40
         }
       },
       xaxis: {
@@ -3152,7 +3181,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var demoMode = new URLSearchParams(location.search).get('demo');
       if (demoMode && typeof isAdmin === 'function' && isAdmin(user)) {
         var demoScript = document.createElement('script');
-        demoScript.src = '/interface/shared/demo-data.js?v=1';
+        demoScript.src = '/interface/shared/demo-data.js?v=2';
         demoScript.onload = function () { window.WwDemoData.run(demoMode); };
         document.head.appendChild(demoScript);
         return;

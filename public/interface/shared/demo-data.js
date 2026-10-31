@@ -8,7 +8,8 @@
 //   /dashboard?demo=remove  -> "Wawe Demo" defteri işlemleri ve stratejileriyle silinir
 // dashboard.js bu dosyayı yalnızca ?demo= varken ve kullanıcı admin ise yükler.
 //
-// İşlemler import_hash 'demo-<gün>-<n>' taşır: aynı ay içinde tekrar seed çift kayıt üretmez.
+// İşlemler import_hash 'demo-<gün>-<n>' taşır. Tekrar seed eski demo işlemlerini silip baştan üretir
+// (kullanıcının o deftere elle eklediği işlemlere dokunmaz).
 // Bu ayın kalan iş günleri de doldurulur (ileri tarihli) ki takvim içinde bulunulan ayda boş görünmesin.
 // Defterde demo olmayan işlem varsa remove defteri silmez, yalnızca demo satırlarını siler.
 // ============================================================
@@ -49,13 +50,13 @@
 
   // instrument/çarpan uygulamadaki INSTRUMENT_MULTIPLIERS ile aynı (public/src/core/config.js)
   var SYMBOLS = {
-    EURUSD: { instrument: 'forex',  mult: 100000, price: 1.1620, vol: 0.0045, dec: 5, lot: [0.5, 1.5], comm: 7 },
-    GBPUSD: { instrument: 'forex',  mult: 100000, price: 1.3350, vol: 0.0055, dec: 5, lot: [0.5, 1.5], comm: 7 },
-    AUDUSD: { instrument: 'forex',  mult: 100000, price: 0.6560, vol: 0.0040, dec: 5, lot: [0.5, 1.5], comm: 7 },
-    XAUUSD: { instrument: 'gold',   mult: 100,    price: 4150,   vol: 0.0110, dec: 2, lot: [0.1, 0.4], comm: 7 },
-    NAS100: { instrument: 'index',  mult: 10,     price: 25100,  vol: 0.0120, dec: 1, lot: [0.2, 0.6], comm: 0 },
-    US30:   { instrument: 'index',  mult: 10,     price: 47200,  vol: 0.0090, dec: 1, lot: [0.2, 0.5], comm: 0 },
-    BTCUSD: { instrument: 'crypto', mult: 1,      price: 108000, vol: 0.0250, dec: 1, lot: [0.1, 0.3], comm: 0 }
+    EURUSD: { instrument: 'forex',  mult: 100000, price: 1.1620, vol: 0.0045, dec: 5, lots: [0.5, 0.6, 0.75, 0.8, 1, 1.2, 1.25, 1.5], comm: 7 },
+    GBPUSD: { instrument: 'forex',  mult: 100000, price: 1.3350, vol: 0.0055, dec: 5, lots: [0.5, 0.6, 0.75, 0.8, 1, 1.2, 1.25, 1.5], comm: 7 },
+    AUDUSD: { instrument: 'forex',  mult: 100000, price: 0.6560, vol: 0.0040, dec: 5, lots: [0.5, 0.6, 0.75, 0.8, 1, 1.2, 1.25, 1.5], comm: 7 },
+    XAUUSD: { instrument: 'gold',   mult: 100,    price: 4150,   vol: 0.0110, dec: 2, lots: [0.1, 0.15, 0.2, 0.25, 0.3, 0.4], comm: 7 },
+    NAS100: { instrument: 'index',  mult: 10,     price: 25100,  vol: 0.0120, dec: 1, lots: [0.2, 0.25, 0.3, 0.4, 0.5, 0.6], comm: 0 },
+    US30:   { instrument: 'index',  mult: 10,     price: 47200,  vol: 0.0090, dec: 1, lots: [0.2, 0.25, 0.3, 0.4, 0.5], comm: 0 },
+    BTCUSD: { instrument: 'crypto', mult: 1,      price: 108000, vol: 0.0250, dec: 1, lots: [0.1, 0.15, 0.2, 0.25, 0.3], comm: 0 }
   };
 
   var NOTES = {
@@ -197,7 +198,7 @@
         used[H * 60 + Mi] = true;
 
         // Lot ve risk -> stop mesafesi (fiyat birimi)
-        var lot = round(r.between(sym.lot[0], sym.lot[1]), 2);
+        var lot = r.pick(sym.lots); // gerçek hesaplardaki gibi yuvarlak lotlar
         var risk = RISK_PER_TRADE * r.between(0.85, 1.15);
         var stopDist = Math.max(Math.pow(10, -sym.dec) * 10, round(risk / (lot * sym.mult), sym.dec));
         var entry = round(level[symKey] * (1 + r.gauss() * sym.vol * 0.25), sym.dec);
@@ -300,6 +301,10 @@
       ins.data.forEach(function (s) { stratId[s.name] = s.id; });
     }
 
+    // Önceki demo işlemleri silinir: tekrar seed her zaman güncel üreticiyle baştan doldurur
+    var old = await sb.from('trades').delete().eq('user_id', uid).eq('journal_id', demo.id).like('import_hash', HASH_PREFIX + '%');
+    if (old.error) throw old.error;
+
     var rows = buildTrades(uid, demo.id, NOTES[L]).map(function (p) {
       p.row.strategy_id = stratId[p.stratName] || null;
       return p.row;
@@ -367,7 +372,7 @@
           : (rm.keptJournal ? 'Demo işlemleri silindi (defterde senin işlemlerin olduğu için defter korundu).' : 'Demo defteri silindi.');
       } else {
         var res = await seed();
-        msg = res.inserted + ' demo işlemi eklendi' + (res.total > res.inserted ? ' (' + (res.total - res.inserted) + ' zaten vardı)' : '') + '.';
+        msg = res.inserted + ' demo işlemi eklendi.';
       }
       try { if (global.wwCache) global.wwCache.invalidate(); } catch (e) {}
       overlay(msg);
