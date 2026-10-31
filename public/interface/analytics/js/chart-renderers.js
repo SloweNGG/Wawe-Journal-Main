@@ -1830,7 +1830,8 @@ export function renderRecentTradesWidget(trades) {
     var closed = window.WwMetrics.isClosed(t);
     var pnl = closed ? calcTradePnL(t) : 0;
     var isLong = t.direction === 'LONG' || t.direction === 'BUY';
-    var when = t.trade_date ? window.WwTime.formatDate(t.trade_date, lang, { day: 'numeric', month: 'short' }) : '—';
+    // year: undefined -> formatDate'in varsayılan yılı düşer ("27 Kas"); "Nov 27, 2026" tarih sütunundan taşıp sembolün üstüne biniyordu
+    var when = t.trade_date ? window.WwTime.formatDate(t.trade_date, lang, { day: 'numeric', month: 'short', year: undefined }) : '—';
     var pnlHtml = closed
       ? '<span class="rt-pnl ' + (pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '')) + '">' + formatCurrency(pnl) + '</span>'
       : '<span class="rt-open">' + _t('analytics_dash.recent.open', 'Açık') + '</span>';

@@ -2095,14 +2095,22 @@ body.light-theme .wwd-replace-opt { background: #f8fafc; }
   height: 100%;
   font-family: var(--font);
 }
+/* Satırlar listenin sütunlarını paylaşır (subgrid): K/Z genişliği satırdan satıra değişince
+   yön rozeti ve lot her satırda başka yere kayıyordu */
 .rt-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-content: start;
+  column-gap: 0.6rem;
 }
 .rt-row {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 52px 40px auto;
+  grid-column: 1 / -1;
+  grid-template-columns: 56px minmax(0, 1fr) 52px 40px 88px;
+  grid-template-columns: subgrid;
   align-items: center;
   gap: 0.6rem;
   padding: 0.42rem 0.4rem;
@@ -2152,7 +2160,8 @@ body.light-theme .wwd-replace-opt { background: #f8fafc; }
 .rt-all:hover { text-decoration: underline; }
 .grid-item[data-widget="recent"] .chart-wrap { container-type: inline-size; }
 @container (max-width: 340px) {
-  .rt-row { grid-template-columns: 48px minmax(0, 1fr) auto; }
+  .rt-list { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .rt-row { grid-template-columns: 48px minmax(0, 1fr) auto; grid-template-columns: subgrid; }
   .rt-dir, .rt-lot { display: none; }
 }
 

@@ -7,7 +7,7 @@
 @import url("layout.css?v=4");
 
 /* ⭐ COMPONENTS (Kartlar, Grafikler, Butonlar, Skeleton) */
-@import url("components.css?v=4");
+@import url("components.css?v=5");
 
 /* Chart cards open large on click (js/chart-expand.js → shared WwChartViewer) */
 .grid-item:is([data-widget="cumulative"], [data-widget="winloss"], [data-widget="daily"], [data-widget="symbol"],
