@@ -1748,6 +1748,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
             else if (data.error === 'usage_limit_reached') errMsg = t('settings.plan_referral_limit', 'Bu kodun kullanım limiti dolmuş.');
             else if (data.error === 'inactive_code') errMsg = t('settings.plan_referral_inactive', 'Bu kod aktif değil.');
             else if (data.error === 'self_referral_not_allowed') errMsg = t('settings.plan_referral_self', 'Kendi referans kodunuzu kullanamazsınız.');
+            else if (data.error === 'already_used') errMsg = t('settings.plan_referral_used', 'Bu kodu daha önce kullandınız; indirim yalnızca ilk alımda geçerlidir.');
           }
           throw new Error(errMsg);
         }

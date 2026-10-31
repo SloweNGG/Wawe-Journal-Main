@@ -706,6 +706,7 @@ export default {
   "settings.plan_referral_inactive": "Bu referans kodu şu anda aktif değil.",
   "settings.plan_referral_invalid": "Geçersiz referans kodu.",
   "settings.plan_referral_self": "Kendi referans kodunuzu kullanamazsınız.",
+  "settings.plan_referral_used": "Bu kodu daha önce kullandınız; indirim yalnızca ilk alımda geçerlidir.",
   "settings.plan_referral_error": "Kod doğrulanamadı.",
   "settings.plan_monthly_label": "Aylık",
   "settings.plan_yearly_label": "Yıllık",

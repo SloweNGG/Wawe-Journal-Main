@@ -651,12 +651,42 @@ async function loadReferralCodes() {
   }
 }
 
+function referralCodeById(id) {
+  var row = (adminState.referralCodes || []).find(function(c) { return String(c.id) === String(id); });
+  return row ? row.code : null;
+}
+
+// Kart ödemesi (Creem) indirimini koda eşitler: kod pasif/silinmişse Creem'deki indirim kaldırılır, aksi halde
+// yüzde ve son kullanma tarihi güncellenir (creem-discount-sync). Başarısız olursa kod işlemi geri alınmaz, admin uyarılır.
+async function syncCreemDiscounts(codes) {
+  codes = (codes || []).map(function(c) { return String(c || '').trim().toUpperCase(); }).filter(Boolean);
+  if (!codes.length) return;
+  try {
+    var client = getSbClient();
+    var sessionRes = client ? await client.auth.getSession() : null;
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if (!session || !window.SUPABASE_URL) throw new Error('oturum yok');
+    var res = await fetch(window.SUPABASE_URL + '/functions/v1/creem-discount-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': window.SUPABASE_ANON_KEY || '' },
+      body: JSON.stringify({ codes: codes })
+    });
+    var data = await res.json().catch(function() { return null; });
+    if (!res.ok || !data || !data.ok) throw new Error((data && (data.error || JSON.stringify(data.results))) || ('HTTP ' + res.status));
+  } catch (e) {
+    console.warn('Creem indirimi eşitlenemedi:', codes, e);
+    if (typeof showToast === 'function') showToast('Kod kaydedildi ama kart (Creem) indirimi eşitlenemedi: ' + (e.message || e), 'warning');
+  }
+}
+
 async function deleteReferralCode(id) {
   var client = getSbClient();
   if (!client) return false;
   try {
+    var code = referralCodeById(id);
     var { error } = await client.from('referral_codes').delete().eq('id', id);
     if (error) throw error;
+    await syncCreemDiscounts([code]);
     await loadReferralCodes();
     return true;
   } catch (e) {
@@ -672,6 +702,7 @@ async function toggleReferralCodeStatus(id, newStatus) {
   try {
     var { error } = await client.from('referral_codes').update({ is_active: newStatus }).eq('id', id);
     if (error) throw error;
+    await syncCreemDiscounts([referralCodeById(id)]);
     await loadReferralCodes();
     return true;
   } catch (e) {
@@ -685,6 +716,7 @@ async function saveReferralCode(id, payload) {
   var client = getSbClient();
   if (!client) return false;
   try {
+    var previousCode = id ? referralCodeById(id) : null;
     if (id) {
       var { error } = await client.from('referral_codes').update(payload).eq('id', id);
       if (error) throw error;
@@ -694,6 +726,8 @@ async function saveReferralCode(id, payload) {
       if (e2) throw e2;
       if (typeof showToast === 'function') showToast('Kod eklendi', 'success');
     }
+    // Kodun adı değiştiyse eski adın Creem indirimi de kaldırılır
+    await syncCreemDiscounts([payload && payload.code, previousCode]);
     await loadReferralCodes();
     return true;
   } catch (e) {
@@ -1116,6 +1150,7 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
     if (typeof showToast === 'function') {
       showToast(status === 'approved' ? 'Başvuru onaylandı, kod oluşturuldu ve bildirim gönderildi!' : 'Başvuru reddedildi ve kullanıcıya bildirildi.', 'success');
     }
+    if (status === 'approved' && code) await syncCreemDiscounts([code]);
 
     await loadPartnerApplications();
     if (typeof renderPartnerApplicationsTable === 'function') renderPartnerApplicationsTable();
@@ -1184,6 +1219,12 @@ async function deletePartnerApplication(appId, userId) {
 
     if (typeof showToast === 'function') {
       showToast('Başvuru ve kazanç kaydı silindi. Kullanıcı yeniden başvuru yapabilir.', 'success');
+    }
+    // Silinen kodların kart (Creem) indirimleri de kaldırılır
+    if (userId) {
+      await syncCreemDiscounts((adminState.referralCodes || [])
+        .filter(function(c) { return String(c.influencer_user_id) === String(userId); })
+        .map(function(c) { return c.code; }));
     }
 
     await loadPartnerApplications();

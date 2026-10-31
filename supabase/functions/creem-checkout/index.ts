@@ -7,7 +7,7 @@
 //   - Kullanıcı kimliği checkout metadata'sına yazılır; creem-webhook erişimi buna göre verir.
 //   - Test anahtarıyla (creem_test_) yalnızca admin kullanıcılar ödeme sayfası açabilir.
 //   - Partner (referral) kodu: kripto akışındaki gibi validate_referral_code ile doğrulanır (aktif, süresi/limiti
-//     dolmamış, kendi kodu değil). Geçerliyse Creem'de aynı adlı indirim kodu yoksa açılır (yalnızca ilk ödeme,
+//     dolmamış, kendi kodu değil, bu kullanıcı daha önce kullanmamış). Geçerliyse Creem'de aynı adlı indirim kodu yoksa açılır (yalnızca ilk ödeme,
 //     duration=once) ve ödeme sayfasına önceden uygulanır; kod metadata.referral_code ile webhook'a taşınır.
 //     Kod gönderilmiş ama uygulanamıyorsa ödeme sayfası açılmaz: kullanıcı indirimli tutarı görüp tam fiyat ödemesin.
 // Ortam: CREEM_API_KEY (creem_test_ ile başlıyorsa test API'si kullanılır), CREEM_PRODUCT_MONTHLY, CREEM_PRODUCT_YEARLY,
@@ -16,16 +16,11 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
+import { CREEM_API_BASE, CREEM_API_KEY, CREEM_PRODUCTS as PRODUCTS, ensureCreemDiscount } from '../_shared/creem.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const CREEM_API_KEY = Deno.env.get('CREEM_API_KEY') || '';
-const CREEM_API_BASE = CREEM_API_KEY.startsWith('creem_test_') ? 'https://test-api.creem.io' : 'https://api.creem.io';
-const PRODUCTS: Record<string, string> = {
-  monthly: Deno.env.get('CREEM_PRODUCT_MONTHLY') || '',
-  yearly: Deno.env.get('CREEM_PRODUCT_YEARLY') || '',
-};
 const DEFAULT_RETURN_ORIGIN = 'https://wawejournal.com';
 
 const MAX_BODY_BYTES = 1024;
@@ -40,63 +35,6 @@ function rateOk(userId: string): boolean {
   if (arr.length >= RATE_PER_MIN) { hits.set(userId, arr); return false; }
   arr.push(now); hits.set(userId, arr);
   return true;
-}
-
-// Partner kodu için Creem indirimi: kod adı referral koduyla birebir aynıdır (webhook, müşteri kodu Creem sayfasına
-// kendisi yazsa da indirimin kodundan partneri bulur). Yüzde değişmişse ya da ürünler eksikse eskisi silinip
-// yeniden açılır: Creem'de indirim düzenleme ucu yok.
-async function creemApi(path: string, init: RequestInit = {}): Promise<{ status: number; data: any }> {
-  const res = await fetch(CREEM_API_BASE + path, {
-    ...init,
-    headers: { 'x-api-key': CREEM_API_KEY, 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(10000),
-  });
-  return { status: res.status, data: await res.json().catch(() => null) };
-}
-
-function discountFits(d: any, percent: number): boolean {
-  const products: string[] = Array.isArray(d?.applies_to_products) ? d.applies_to_products : [];
-  return d?.status === 'active' && d?.type === 'percentage' && Number(d?.percentage) === percent &&
-    d?.duration === 'once' && Object.values(PRODUCTS).every((id) => !id || products.includes(id));
-}
-
-async function ensureCreemDiscount(code: string, percent: number, expiresAt: string | null): Promise<boolean> {
-  const found = await creemApi('/v1/discounts?discount_code=' + encodeURIComponent(code));
-  if (found.status === 200 && found.data?.id) {
-    if (discountFits(found.data, percent)) return true;
-    if (found.data.status !== 'deleted') {
-      const del = await creemApi(`/v1/discounts/${encodeURIComponent(found.data.id)}/delete`, { method: 'DELETE' });
-      if (del.status >= 300) {
-        console.error('❌ Creem indirimi silinemedi:', code, del.status, JSON.stringify(del.data));
-        return false;
-      }
-    }
-  } else if (found.status !== 404) {
-    console.error('❌ Creem indirimi sorgulanamadı:', code, found.status, JSON.stringify(found.data));
-    return false;
-  }
-
-  const created = await creemApi('/v1/discounts', {
-    method: 'POST',
-    body: JSON.stringify({
-      name: 'Partner ' + code,
-      code,
-      type: 'percentage',
-      percentage: percent,
-      duration: 'once',
-      applies_to_products: Object.values(PRODUCTS).filter(Boolean),
-      expiry_date: expiresAt || undefined,
-    }),
-  });
-  if (created.status === 200 || created.status === 201) {
-    console.log(`🏷️ Creem indirimi açıldı: ${code} %${percent} (${created.data?.id})`);
-    return true;
-  }
-  // Aynı anda iki ödeme sayfası aynı kodu açmaya çalıştıysa diğeri açmış olabilir
-  const again = await creemApi('/v1/discounts?discount_code=' + encodeURIComponent(code));
-  if (again.status === 200 && discountFits(again.data, percent)) return true;
-  console.error('❌ Creem indirimi açılamadı:', code, created.status, JSON.stringify(created.data));
-  return false;
 }
 
 function fail(code: string, message: string, status: number, cors: Record<string, string>) {
