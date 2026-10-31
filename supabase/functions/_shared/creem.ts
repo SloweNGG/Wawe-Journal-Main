@@ -90,6 +90,33 @@ export async function removeCreemDiscount(code: string): Promise<boolean> {
   return removeDiscount(found.discount, code);
 }
 
+// Her dönem kendiliğinden ücret çeken abonelik durumları (scheduled_cancel / canceled yenilenmez)
+export const RENEWING_STATUSES = ['active', 'trialing', 'past_due', 'unpaid'];
+
+// Kullanıcının Creem abonelikleri. Abonelik kimlikleri ödemelerden okunur (creem-webhook abonelik ödemesinde
+// order_id = abonelik ID'si yazar), güncel durumları Creem'den alınır. Okunamayan abonelikler `failed` sayılır.
+export async function userCreemSubscriptions(admin: any, userId: string): Promise<{ subs: any[]; failed: number }> {
+  const { data, error } = await admin.from('payments').select('order_id')
+    .eq('user_id', userId).eq('payment_status', 'finished').like('order_id', 'sub_%')
+    .order('created_at', { ascending: false }).limit(50);
+  if (error) throw new Error('payments okunamadı: ' + error.message);
+
+  const ids: string[] = [...new Set<string>((data || []).map((r: any) => String(r.order_id)))];
+  const subs: any[] = [];
+  let failed = 0;
+  for (const id of ids) {
+    const r = await creemApi('/v1/subscriptions?subscription_id=' + encodeURIComponent(id));
+    if (r.status === 200 && r.data?.id) {
+      // Başka bir kullanıcının aboneliği olamaz ama metadata varsa yine de doğrulanır
+      if (!r.data.metadata?.user_id || r.data.metadata.user_id === userId) subs.push(r.data);
+    } else if (r.status !== 404) {
+      console.error('❌ Creem aboneliği okunamadı:', id, r.status, JSON.stringify(r.data));
+      failed++;
+    }
+  }
+  return { subs, failed };
+}
+
 // referral_codes satırı Creem'de indirim olarak kullanılabilir mi (validate_referral_code'daki kurallar, alıcıdan bağımsız)
 export function codeUsable(row: any): boolean {
   if (!row || row.is_active === false) return false;

@@ -556,23 +556,22 @@ Auto-sync for NinjaTrader, the MetaTrader series and more is on the way. We add 
     document.addEventListener('DOMContentLoaded', updateHomePrices);
 
     // PRO BUTTON (follows the selected billing period)
+    // Logged in: the payment wizard (card / crypto / partner code) opens with that period selected.
+    // Logged out: sign up first; register forwards ?plan to the same wizard.
     var upPro = document.getElementById('upgrade-pro-home');
     if (upPro) upPro.addEventListener('click', function(e) {
       e.preventDefault(); e.stopPropagation();
       var period = pricing && pricing.getAttribute('data-period') === 'yearly' ? 'yearly' : 'monthly';
       (async function() {
+        var dest = 'register.html?plan=' + period;
         try {
           var sb = window.sb || window.supabase;
-          if (!sb) { window.location.href = 'register.html?plan=' + period; return; }
-          var { data: { session } } = await sb.auth.getSession();
-          if (!session) { window.location.href = 'register.html?plan=' + period; return; }
-          var price = period === 'yearly'
-            ? (window.getYearlyPrice ? window.getYearlyPrice() : 99)
-            : (window.getMonthlyPrice ? window.getMonthlyPrice() : 12);
-          // BTC yalnızca yıllık planda geçerli (sunucu aylıkta reddeder)
-          if (window.upgradeToPro) await window.upgradeToPro(period, price, 'USD', period === 'yearly' ? 'BTC' : 'LTC');
-          else window.showToast && window.showToast('System preparing.', 'error');
-        } catch (err) { console.error(err); window.showToast && window.showToast('Error.', 'error'); }
+          if (sb && sb.auth) {
+            var res = await sb.auth.getSession();
+            if (res && res.data && res.data.session) dest = 'settings.html?plan=' + period + '#panel-plan';
+          }
+        } catch (err) { console.error(err); }
+        window.location.href = dest;
       })();
     });
 

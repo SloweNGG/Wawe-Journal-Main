@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v50'; // partner: standart komisyon $2.40 / $20 (çeviri metinleri değişti)
+const CACHE_VERSION = 'wawe-v51'; // ödeme: abonelik iptali Creem'de, çift abonelik engeli, www yönlendirmesi
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {

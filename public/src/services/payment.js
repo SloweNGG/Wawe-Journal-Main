@@ -202,6 +202,11 @@ export async function startCardCheckout(planType, opts) {
     );
 
     const data = await response.json().catch(() => ({}));
+    if (data.code === 'ALREADY_SUBSCRIBED') {
+      // İkinci abonelik açılmaz: mevcut kart aboneliği her dönem kendiliğinden yenilenir
+      showToast(t('payment.already_subscribed', {}, 'Zaten otomatik yenilenen bir kart aboneliğiniz var; Pro süreniz her dönem kendiliğinden uzar.'), 'info');
+      return null;
+    }
     if (!response.ok || !data.checkoutUrl) {
       console.error('❌ creem-checkout API hatası:', response.status, data);
       throw new Error(data.error || t('payment.link_failed', {}, 'Ödeme başlatılamadı'));
@@ -247,120 +252,82 @@ export async function startCardCheckout(planType, opts) {
   }
 }
 
-// ⭐⭐⭐ CANCEL PRO - GERÇEKTEN İPTAL EDEN VERSİYON ⭐⭐⭐
+// ⭐ PRO İPTALİ: kart (Creem) aboneliğinin otomatik yenilemesini dönem sonunda durdurur (creem-subscription).
+// Ödenmiş süre korunur, Pro bitiş tarihine kadar açık kalır; sonraki dönem ücret çekilmez.
+// Kripto ödemeler tek seferliktir ve kendiliğinden yenilenmez: iptal edilecek bir şey yoktur, kullanıcı bilgilendirilir.
+// Plan alanları sunucuya aittir (protect_user_profile_privileges): tarayıcı planı değiştirmez.
+// Dönüş: yenileme gerçekten durdurulduysa true.
 export async function cancelPro() {
-  wwLog.log('💎 [cancelPro] ÇAĞRILDI!');
-  
   try {
     const user = await requireAuth();
     if (!user) {
       showToast(t('payment.login_required', {}, 'Lütfen önce giriş yapın.'), 'error');
       return false;
     }
-    
-    // Kullanıcının plan bilgisini al
+
     const { data: profile, error: profileError } = await sb
       .from('user_profiles')
       .select('plan, plan_expires_at')
       .eq('id', user.id)
       .single();
-    
+
     if (profileError) {
       console.error('❌ Profil sorgusu hatası:', profileError);
       showToast(t('settings.profile_fetch_error', {}, 'Profil bilgileri alınamadı.'), 'error');
       return false;
     }
-    
-    wwLog.log('📊 Mevcut plan:', profile ? profile.plan : 'yok');
-    
-    // Zaten pro değilse
+
     if (!profile || profile.plan !== 'premium') {
       showToast(t('settings.cancel_no_pro', {}, 'Zaten Pro aboneliğiniz yok.'), 'info');
-      return true;
+      return false;
     }
-    
+
     var lang = (typeof window !== 'undefined' && window.i18n && typeof window.i18n.getCurrentLanguage === 'function') ? window.i18n.getCurrentLanguage() : 'tr';
     var locale = lang === 'tr' ? 'tr-TR' : (lang === 'de' ? 'de-DE' : 'en-US');
+    const fmtDate = function(v) {
+      return v ? new Date(v).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+    };
+    const expiryDate = fmtDate(profile.plan_expires_at);
 
-    // Onay mesajı
-    const expiryDate = profile.plan_expires_at ? 
-      new Date(profile.plan_expires_at).toLocaleDateString(locale, { 
-        day: '2-digit', 
-        month: 'long', 
-        year: 'numeric' 
-      }) : '—';
-    
-    const confirmTitle = t('settings.cancel_pro_title', {}, 'Pro Aboneliğini İptal Et');
-    const confirmMessage = t('settings.cancel_pro_message', {}, 'Pro aboneliğinizi iptal etmek istediğinize emin misiniz?');
-    const confirmWarning = t('settings.cancel_pro_warning', { date: expiryDate }, 'Bitiş tarihi: ' + expiryDate + '\n\nBu işlem geri alınamaz!');
-    
-    // Confirm modal'ı göster
     const confirmed = await new Promise(function(resolve) {
-      // showConfirmModal zaten window'da tanımlı
+      const title = t('settings.cancel_pro_title', {}, 'Pro Aboneliğini İptal Et');
+      const message = t('settings.cancel_pro_message', {}, 'Kart aboneliğinizin otomatik yenilemesi durdurulsun mu?');
+      const warning = t('settings.cancel_pro_warning', { date: expiryDate }, 'Pro erişiminiz ' + expiryDate + ' tarihine kadar devam eder; sonraki dönem için ücret alınmaz.');
       if (typeof window.showConfirmModal === 'function') {
-        window.showConfirmModal(
-          confirmTitle,
-          confirmMessage,
-          confirmWarning,
-          function() { resolve(true); },
-          function() { resolve(false); }
-        );
+        window.showConfirmModal(title, message, warning, function() { resolve(true); }, function() { resolve(false); });
       } else {
-        // Fallback
-        resolve(confirm(confirmTitle + '\n\n' + confirmMessage + '\n\n' + confirmWarning));
+        resolve(confirm(title + '\n\n' + message + '\n\n' + warning));
       }
     });
-    
-    if (!confirmed) {
-      wwLog.log('❌ İptal işlemi kullanıcı tarafından iptal edildi.');
+    if (!confirmed) return false;
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      showToast(t('payment.session_expired', {}, 'Oturumunuz sona ermiş, lütfen tekrar giriş yapın.'), 'error');
       return false;
     }
-    
-    // ⭐⭐⭐ PLANI ÜCRETSİZ YAP - ASIL İPTAL BURADA! ⭐⭐⭐
-    wwLog.log('🔄 Plan free\'e düşürülüyor...');
-    
-    const { error: updateError } = await sb
-      .from('user_profiles')
-      .update({ 
-        plan: 'free',
-        plan_expires_at: null
-      })
-      .eq('id', user.id);
-    
-    if (updateError) {
-      console.error('❌ Plan güncelleme hatası:', updateError);
-      showToast(t('settings.cancel_error', {}, 'Abonelik iptal edilemedi: ') + updateError.message, 'error');
-      return false;
+
+    const response = await fetch('https://odasapyhtdopbnlfhwde.supabase.co/functions/v1/creem-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ action: 'cancel' })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (data && data.canceled > 0) {
+      showToast(t('settings.cancel_subscription_success_date', { date: fmtDate(data.period_end || profile.plan_expires_at) },
+        'Otomatik yenileme durduruldu. Pro erişiminiz ' + fmtDate(data.period_end || profile.plan_expires_at) + ' tarihine kadar devam eder.'), 'success');
+      return true;
     }
-    
-    wwLog.log('✅ Abonelik iptal edildi!');
-    
-    // Storage'ı temizle
-    try {
-      localStorage.removeItem('ww_user_plan');
-      sessionStorage.removeItem('ww_user_plan');
-      sessionStorage.removeItem('ww_user_plan_time');
-      sessionStorage.removeItem('ww_cached_profile');
-      sessionStorage.removeItem('ww_cached_profile_time');
-      window.__wwUserProfile = null;
-    } catch(e) {}
-    
-    showToast(t('settings.cancel_subscription_success', {}, 'Pro aboneliğiniz iptal edildi.'), 'success');
-    
-    // ⭐ Plan panelini yenile (settings.js'deki renderPlan fonksiyonunu çağır)
-    setTimeout(function() {
-      if (typeof window.renderPlan === 'function') {
-        window.renderPlan();
-      }
-      if (typeof window.updateBadge === 'function') {
-        window.updateBadge();
-      }
-      // Sayfayı yenile
-      location.reload();
-    }, 500);
-    
-    return true;
-    
+    if (!response.ok || !data || data.ok === false) {
+      throw new Error((data && data.error) || ('HTTP ' + response.status));
+    }
+
+    // Yenilenen kart aboneliği yok (kripto ödeme ya da daha önce iptal edilmiş)
+    showToast(t('settings.cancel_no_subscription', { date: expiryDate },
+      'Otomatik yenilenen bir kart aboneliğiniz yok. Pro süreniz ' + expiryDate + ' tarihinde kendiliğinden sona erer; ek ücret alınmaz.'), 'info');
+    return false;
+
   } catch (error) {
     console.error('❌ Abonelik iptal hatası:', error);
     showToast(t('settings.cancel_error', {}, 'Abonelik iptal edilemedi: ') + error.message, 'error');

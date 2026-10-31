@@ -660,6 +660,23 @@ import Layout from '../layouts/Layout.astro';
     })();
 
     // ─── Güvenli Yardımcılar ─────────────────────────────────
+    // "Pro'ya geç"ten gelen plan seçimi (?plan=monthly|yearly): kayıt / giriş sonrası ödeme ekranı açılır.
+    // Giriş ↔ kayıt arasında geçilse de kaybolmasın diye sekme oturumunda saklanır.
+    (function capturePlanIntent() {
+      try {
+        var p = new URLSearchParams(window.location.search).get('plan');
+        if (p === 'monthly' || p === 'yearly') sessionStorage.setItem('ww_plan_intent', p);
+      } catch (e) {}
+    })();
+    function afterAuthUrl() {
+      var plan = null;
+      try {
+        plan = sessionStorage.getItem('ww_plan_intent');
+        sessionStorage.removeItem('ww_plan_intent');
+      } catch (e) {}
+      return (plan === 'monthly' || plan === 'yearly') ? 'settings.html?plan=' + plan + '#panel-plan' : 'dashboard.html';
+    }
+
     function getSupabase() {
       if (typeof window.sb !== 'undefined' && window.sb) return window.sb;
       if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
@@ -809,7 +826,7 @@ import Layout from '../layouts/Layout.astro';
           if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) {
             var raw = localStorage.getItem(k);
             if (raw && (raw.indexOf('access_token') !== -1 || raw.indexOf('currentSession') !== -1)) {
-              window.location.replace('dashboard.html');
+              window.location.replace(afterAuthUrl());
               return;
             }
           }
@@ -820,7 +837,7 @@ import Layout from '../layouts/Layout.astro';
       if (client && client.auth) {
         client.auth.getSession().then(function(res) {
           if (res && res.data && res.data.session) {
-            window.location.replace('dashboard.html');
+            window.location.replace(afterAuthUrl());
           }
         }).catch(function() {});
       }
@@ -956,7 +973,7 @@ import Layout from '../layouts/Layout.astro';
 
         btn.textContent = authT('login.done');
         toast(authT('login.welcome'), 'success');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 180);
+        setTimeout(() => { window.location.href = afterAuthUrl(); }, 180);
 
       } catch (err) {
         console.error('Login error:', err);

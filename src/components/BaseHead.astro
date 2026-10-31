@@ -22,6 +22,12 @@ const {
 } = Astro.props;
 ---
 
+<!-- www → ana alan adı: oturum (localStorage), giriş yönlendirmeleri ve Edge Function CORS listeleri
+     wawejournal.com'a göre kurulu; www'da kripto ödemesi CORS'a takılıyordu. Kalıcı çözüm Cloudflare'de 301 kuralı. -->
+<script is:inline>
+if (location.hostname === 'www.wawejournal.com') location.replace('https://wawejournal.com' + location.pathname + location.search + location.hash);
+</script>
+
 <!-- ⭐ GLOBAL LOGGER — production'da debug log'ları susturur -->
 <!-- Kullanım: wwLog.log(...) / wwLog.warn(...) / wwLog.error(...) -->
 <!-- Debug'ı açmak için tarayıcıda: localStorage.setItem('ww_debug', 'true') + yenile -->

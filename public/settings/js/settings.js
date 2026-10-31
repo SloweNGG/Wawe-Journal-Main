@@ -1245,9 +1245,9 @@ async function renderPlan() {
           e.preventDefault();
           e.stopPropagation();
           if (window.cancelPro) {
+            // Sonuç mesajını cancelPro gösterir (yenileme durduruldu / yenilenen abonelik yok / hata)
             var success = await window.cancelPro();
             if (success) {
-              showMsg(t('settings.cancel_subscription_success', {}, 'Abonelik iptal edildi.'), 'success');
               await renderPlan();
               if (typeof window.updateNavbarBadge === 'function') await window.updateNavbarBadge();
               if (typeof window.updateBadge === 'function') await window.updateBadge();
@@ -1448,6 +1448,14 @@ function setupPlanWizard(wizardRoot, isExtending) {
       appliedReferralCode = savedState.code;
       appliedDiscount = savedState.discount;
     }
+  }
+
+  // Ana sayfadaki "Pro'ya geç" ya da kayıt sonrası "?plan=monthly|yearly" ile gelindiyse o dönem seçili açılır
+  if (!isExtending) {
+    try {
+      var urlPlan = new URLSearchParams(window.location.search).get('plan');
+      if (urlPlan === 'monthly' || urlPlan === 'yearly') selectedPeriod = urlPlan;
+    } catch (e) {}
   }
 
   // 🔒 Aktif ve süresi bitmemiş bir kripto ödeme oturumu varsa doğrudan Adım 5'e geç

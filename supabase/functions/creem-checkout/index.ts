@@ -6,6 +6,7 @@
 //     panelindeki üründe tanımlıdır, istemciden gelen tutar hiçbir yerde kullanılmaz.
 //   - Kullanıcı kimliği checkout metadata'sına yazılır; creem-webhook erişimi buna göre verir.
 //   - Test anahtarıyla (creem_test_) yalnızca admin kullanıcılar ödeme sayfası açabilir.
+//   - Hâlâ yenilenen bir kart aboneliği olan kullanıcıya ikinci abonelik açılmaz (ALREADY_SUBSCRIBED).
 //   - Partner (referral) kodu: kripto akışındaki gibi validate_referral_code ile doğrulanır (aktif, süresi/limiti
 //     dolmamış, kendi kodu değil, bu kullanıcı daha önce kullanmamış). Geçerliyse Creem'de aynı adlı indirim kodu yoksa açılır (yalnızca ilk ödeme,
 //     duration=once) ve ödeme sayfasına önceden uygulanır; kod metadata.referral_code ile webhook'a taşınır.
@@ -16,7 +17,9 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
-import { CREEM_API_BASE, CREEM_API_KEY, CREEM_PRODUCTS as PRODUCTS, ensureCreemDiscount } from '../_shared/creem.ts';
+import {
+  CREEM_API_BASE, CREEM_API_KEY, CREEM_PRODUCTS as PRODUCTS, RENEWING_STATUSES, ensureCreemDiscount, userCreemSubscriptions,
+} from '../_shared/creem.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -85,13 +88,25 @@ serve(async (req: Request) => {
 
   if (!rateOk(user.id)) return fail('RATE', 'Çok sık istek. Bir dakika bekleyip tekrar deneyin.', 429, cors);
 
-  // 3) Partner kodu (isteğe bağlı)
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+
+  // 3) Hâlâ yenilenen bir kart aboneliği varken ikincisi açılmaz (müşteriden her dönem iki kez çekilirdi).
+  //    Dönem sonunda iptal edilmiş abonelik engel değildir. Creem'e ulaşılamazsa satış engellenmez.
+  try {
+    const { subs } = await userCreemSubscriptions(admin, user.id);
+    if (subs.some((s) => RENEWING_STATUSES.includes(s.status))) {
+      return fail('ALREADY_SUBSCRIBED', 'Zaten otomatik yenilenen bir kart aboneliğiniz var; Pro süreniz her dönem kendiliğinden uzar.', 409, cors);
+    }
+  } catch (err) {
+    console.warn('⚠️ Mevcut abonelik kontrol edilemedi, ödeme sayfası açılıyor:', err);
+  }
+
+  // 4) Partner kodu (isteğe bağlı)
   const rawCode = String(body?.referralCode || '').trim().toUpperCase();
   let referralCode: string | null = null;
   if (rawCode) {
     if (rawCode.length > 64) return fail('INVALID_CODE', 'Geçersiz kupon kodu.', 400, cors);
     try {
-      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
       const { data: v, error: vErr } = await admin.rpc('validate_referral_code', { p_code: rawCode, p_user_id: user.id });
       if (vErr) throw vErr;
       const percent = Number(v?.discount_percent);
@@ -110,10 +125,10 @@ serve(async (req: Request) => {
     }
   }
 
-  // 4) Dönüş adresi: yalnızca izin verilen bir kökenden çağrıldıysa o köken, aksi halde canlı site
+  // 5) Dönüş adresi: yalnızca izin verilen bir kökenden çağrıldıysa o köken, aksi halde canlı site
   const returnOrigin = (origin && cors['Access-Control-Allow-Origin'] === origin) ? origin : DEFAULT_RETURN_ORIGIN;
 
-  // 5) Creem ödeme sayfası
+  // 6) Creem ödeme sayfası
   try {
     const res = await fetch(CREEM_API_BASE + '/v1/checkouts', {
       method: 'POST',
