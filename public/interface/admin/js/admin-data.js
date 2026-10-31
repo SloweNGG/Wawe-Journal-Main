@@ -1040,8 +1040,8 @@ async function reviewPartnerApplication(appId, status, adminNote, code, discount
     if (!client) throw new Error('Veritabanı bağlantısı yok');
 
     var discountPct = adminNumOr(discount, 10, 0, 100);
-    var commMonthly = adminNumOr(commission, 4, 0);
-    var commYearly = adminNumOr(commissionYearly, 25, 0);
+    var commMonthly = adminNumOr(commission, 2.4, 0);
+    var commYearly = adminNumOr(commissionYearly, 20, 0);
 
     // Yıllık komisyonu da alan güncel RPC: review_partner_application (parametre adı p_app_id).
     // (Eskiden olmayan "admin_review_partner_application(p_application_id, ..., p_commission_yearly)" çağrılıyordu;

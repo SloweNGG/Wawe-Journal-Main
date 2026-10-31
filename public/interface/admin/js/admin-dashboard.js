@@ -1477,8 +1477,8 @@ function openPartnerAppModal(appId, actionType) {
   if (approving) {
     document.getElementById('pa-code-input').value = handle.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8) + '10';
     document.getElementById('pa-discount-input').value = '10';
-    document.getElementById('pa-commission-input').value = '4';
-    document.getElementById('pa-commission-yearly-input').value = '25';
+    document.getElementById('pa-commission-input').value = '2.4';
+    document.getElementById('pa-commission-yearly-input').value = '20';
   }
 
   modal.classList.add('open');
@@ -1503,8 +1503,8 @@ async function confirmPartnerAppAction() {
     code = document.getElementById('pa-code-input').value.trim().toUpperCase();
     // 0 geçerli bir değerdir (ör. komisyonsuz promosyon kodu); yalnızca boş/geçersizse varsayılan kullanılır
     discount = window.adminNumOr(document.getElementById('pa-discount-input').value, 10, 0, 100);
-    commission = window.adminNumOr(document.getElementById('pa-commission-input').value, 4, 0);
-    commissionYearly = window.adminNumOr(document.getElementById('pa-commission-yearly-input').value, 25, 0);
+    commission = window.adminNumOr(document.getElementById('pa-commission-input').value, 2.4, 0);
+    commissionYearly = window.adminNumOr(document.getElementById('pa-commission-yearly-input').value, 20, 0);
 
     if (!code) {
       showToast('Lütfen referans kodu girin.', 'error');

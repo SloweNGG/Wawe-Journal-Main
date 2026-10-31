@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wawe-v49'; // ödeme: partner kodu yalnızca ilk alımda (çeviri metinleri değişti)
+const CACHE_VERSION = 'wawe-v50'; // partner: standart komisyon $2.40 / $20 (çeviri metinleri değişti)
 const PRECACHE_URLS = ['/'];
 
 self.addEventListener('install', (event) => {
