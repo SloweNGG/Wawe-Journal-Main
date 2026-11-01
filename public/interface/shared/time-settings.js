@@ -35,17 +35,35 @@
   // ------------------------------------------------------------
   // Intl yardımcıları
   // ------------------------------------------------------------
+  // Intl.DateTimeFormat kurmak pahalı (~0.5 ms); getTz() her gün anahtarı / saat hesabında
+  // çağrıldığı için sonuçlar önbellekte tutulur. Eskiden 400 işlemlik analiz sayfası açılırken
+  // yalnızca saat dilimi doğrulaması ~700 ms sürüp sayfayı donduruyordu.
   var dtfCache = {};
+  var validTzCache = {};
   function isValidTz(tz) {
     if (!tz || typeof tz !== 'string') return false;
-    try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (e) { return false; }
+    if (Object.prototype.hasOwnProperty.call(validTzCache, tz)) return validTzCache[tz];
+    var ok;
+    try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); ok = true; } catch (e) { ok = false; }
+    validTzCache[tz] = ok;
+    return ok;
   }
 
+  // Cihaz saat dilimi açık sekmede de değişebilir (seyahat, sistem ayarı): bir dakikada bir yeniden okunur
+  var DEVICE_TZ_TTL_MS = 60000;
+  var deviceTzValue = null;
+  var deviceTzAt = 0;
   function deviceTz() {
+    var now = Date.now();
+    if (deviceTzValue && now - deviceTzAt < DEVICE_TZ_TTL_MS) return deviceTzValue;
+    var tz;
     try {
-      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      return isValidTz(tz) ? tz : 'UTC';
-    } catch (e) { return 'UTC'; }
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      tz = isValidTz(tz) ? tz : 'UTC';
+    } catch (e) { tz = 'UTC'; }
+    deviceTzValue = tz;
+    deviceTzAt = now;
+    return tz;
   }
 
   function dtf(tz) {

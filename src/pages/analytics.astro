@@ -6,7 +6,12 @@ import Layout from '../layouts/Layout.astro';
   <title data-i18n="analytics_dash.title">Analiz</title>
   
   <!-- PRO DASHBOARD CSS -->
-  <link rel="stylesheet" href="/interface/analytics/css/analytics.css?v=9" />
+  <!-- @import yerine ayrı link: SPA geçişinde router sadece <head>'deki stilleri önceden
+       yükleyip bekliyor; @import'lu dosyalar geç inince kartlar bir an stilsiz çiziliyor
+       ve kenarlık beyazdan koyuya geçiş yaparak (transition: border-color) parlıyordu -->
+  <link rel="stylesheet" href="/interface/analytics/css/layout.css?v=4" />
+  <link rel="stylesheet" href="/interface/analytics/css/components.css?v=6" />
+  <link rel="stylesheet" href="/interface/analytics/css/analytics.css?v=10" />
   <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css" />
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
@@ -163,7 +168,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
 
   <!-- 6. ⭐ PRO DASHBOARD - MODÜLER JS (ES Module) -->
-  <script type="module" src="/interface/analytics/js/analytics.js?v=1793900002" is:inline defer></script>
+  <script type="module" src="/interface/analytics/js/analytics.js?v=1794000000" is:inline defer></script>
 
   <!-- 7. ⭐ QUICK ADD MANUEL BAŞLATICI (dashboard.html'den alındı) -->
   <script is:inline>

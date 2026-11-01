@@ -2652,6 +2652,8 @@ body.light-theme .goal-form { background: #ffffff; }
    (#main-content.is-loading; veri gelince kaldırılır, düzen kaymaz)
    Prop kartları işlem verisini beklemez (son bilinen durumla hemen çizilir);
    yalnızca bilgi satırı işlemlere bağlı olduğu için parıldar.
+   .chart-pending: ilk açılışta kartlar sırayla çizilir; sırası gelmeyen kart parıltıda bekler
+   (chart-renderers.js → renderChartsProgressive).
    ============================================================ */
 #main-content.is-loading .pstat-value,
 #main-content.is-loading .pstat-sub,
@@ -2659,6 +2661,7 @@ body.light-theme .goal-form { background: #ffffff; }
 #main-content.is-loading #pro-header-meta,
 #main-content.is-loading #ps-meta,
 #main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-wrap,
+.grid-item.chart-pending .chart-wrap,
 .pw-skeleton {
   color: transparent !important;
   -webkit-text-fill-color: transparent;
@@ -2676,11 +2679,13 @@ body.light-theme .goal-form { background: #ffffff; }
 #main-content.is-loading #pro-header-meta > *,
 #main-content.is-loading #ps-meta > *,
 #main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-wrap > *,
+.grid-item.chart-pending .chart-wrap > *,
 #main-content.is-loading .pstat-value > *,
 #main-content.is-loading .kpi-value > * { visibility: hidden; }
 #main-content.is-loading .pstat-bar span { width: 0 !important; }
 #main-content.is-loading .pstat-delta,
-#main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-badge { visibility: hidden; }
+#main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-badge,
+.grid-item.chart-pending .chart-badge { visibility: hidden; }
 
 /* Prop durumu hiç bilinmiyorsa (ilk ziyaret): kartın gerçek boyunda iskelet */
 .pw-skeleton { width: 100%; height: 100%; min-height: 96px; }
@@ -2692,6 +2697,7 @@ body.light-theme #main-content.is-loading .kpi-value,
 body.light-theme #main-content.is-loading #pro-header-meta,
 body.light-theme #main-content.is-loading #ps-meta,
 body.light-theme #main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-wrap,
+body.light-theme .grid-item.chart-pending .chart-wrap,
 body.light-theme .pw-skeleton {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 75%);
   background-size: 200% 100%;
@@ -2703,5 +2709,6 @@ body.light-theme .pw-skeleton {
   #main-content.is-loading #pro-header-meta,
   #main-content.is-loading #ps-meta,
   #main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-wrap,
+  .grid-item.chart-pending .chart-wrap,
   .pw-skeleton { animation: none; }
 }

@@ -1,13 +1,8 @@
 /* ============================================================
    PRO DASHBOARD - ANA DOSYA
-   Tüm stilleri içe aktarır.
+   layout.css ve components.css analytics.astro'da ayrı <link> ile yüklenir
+   (@import kullanma: SPA geçişinde router içe aktarılan dosyaları beklemiyor).
    ============================================================ */
-
-/* ⭐ LAYOUT (Grid, Flex, Pozisyon, Responsive) */
-@import url("layout.css?v=4");
-
-/* ⭐ COMPONENTS (Kartlar, Grafikler, Butonlar, Skeleton) */
-@import url("components.css?v=5");
 
 /* Chart cards open large on click (js/chart-expand.js → shared WwChartViewer) */
 .grid-item:is([data-widget="cumulative"], [data-widget="winloss"], [data-widget="daily"], [data-widget="symbol"],

@@ -115,12 +115,16 @@ function onWindowResize() {
 // Eskiden iskeleti kaldıran çağrı tek bir zamanlayıcının içindeydi; o zamanlayıcı başka bir
 // güncellemeyle (taze veri, prop durumu, plan, filtre) iptal edilince iskelet ekranda kalıyordu.
 // Artık her çizimden sonra (hata olsa bile) veri hazırsa iskelet kaldırılır.
+// İlk açılışta (iskelet görünürken) kartlar karelere yayılarak çizilir; sonraki çizimler tek seferde.
+var chartsShown = false;
 function scheduleCharts() {
   if (chartRafId) cancelAnimationFrame(chartRafId);
   chartRafId = requestAnimationFrame(function() {
     chartRafId = null;
+    var progressive = !chartsShown && isDataReady;
+    if (isDataReady) chartsShown = true;
     try {
-      renderCharts(currentFilteredTrades);
+      renderCharts(currentFilteredTrades, { progressive: progressive });
     } catch (e) {
       console.error('[Analiz] Grafik çizim hatası:', e);
     } finally {
@@ -795,6 +799,7 @@ function mount(scope) {
   isPageVisible = true;
   isDashboardDomRendered = false;
   isDataReady = false;
+  chartsShown = false;
   lastLightTheme = document.body.classList.contains('light-theme');
   resetChartAnimations();
 

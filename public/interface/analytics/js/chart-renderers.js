@@ -153,6 +153,7 @@ export function clearApexChart(key) {
 }
 
 export function clearAllApexCharts() {
+  cancelProgressiveRender();   // kartlar silinip yeniden kurulurken (çıkış, düzen değişimi) yarım kalan ilk çizim durur
   Object.keys(charts.apex).forEach(function(k) {
     try { charts.apex[k].destroy(); } catch(e) {}
     delete charts.apex[k];
@@ -1956,8 +1957,66 @@ export function renderGoalWidget() {
 }
 
 // ⭐ RENDER ALL CHARTS
-export function renderCharts(trades) {
+// ⭐ KADEMELİ İLK ÇİZİM — sayfa açılışında tüm kartlar tek karede çizilince ana iş parçacığı
+// ~0,5 sn (yavaş cihazda saniyeler) kilitleniyor, parıltı ve geçiş animasyonu takılıyordu.
+// Kartlar ızgaradaki sırayla, her karede ~8 ms'lik dilimlerle çizilir; sırası gelmeyen kart
+// .chart-pending ile parıltıda bekler. Başka bir çizim (filtre, taze veri, tema) işi iptal eder.
+var PROGRESSIVE_SLICE_MS = 8;
+var progressiveJob = null;
+
+function cancelProgressiveRender() {
+  if (!progressiveJob) return;
+  cancelAnimationFrame(progressiveJob.raf);
+  progressiveJob = null;
+  document.querySelectorAll('#dashboard-grid .grid-item.chart-pending').forEach(function(el) {
+    el.classList.remove('chart-pending');
+  });
+}
+
+function renderChartsProgressive(trades) {
+  // İşlem verisine bağlı kartlar, ekrandaki sırayla (önce görünenler)
+  var items = [];
+  document.querySelectorAll('#dashboard-grid .grid-item[data-widget]').forEach(function(el) {
+    var key = el.dataset.widget;
+    if (TRADE_CHART_KEYS.indexOf(key) !== -1) items.push({ key: key, el: el });
+  });
+  items.forEach(function(it) { it.el.classList.add('chart-pending'); });
+
+  var job = { raf: 0 };
+  progressiveJob = job;
+  var i = 0;
+  function step() {
+    if (progressiveJob !== job) return;
+    var start = performance.now();
+    while (i < items.length) {
+      var it = items[i++];
+      try {
+        CHART_RENDERERS[it.key](trades);
+      } catch (e) {
+        console.error('[Analiz] ' + it.key + ' çizim hatası:', e);
+      }
+      it.el.classList.remove('chart-pending');
+      if (performance.now() - start >= PROGRESSIVE_SLICE_MS) break;
+    }
+    if (i < items.length) {
+      job.raf = requestAnimationFrame(step);
+      return;
+    }
+    progressiveJob = null;
+    renderGoalWidget();
+    renderPropWidgets();
+  }
+  step();
+}
+
+// opts.progressive: ilk açılış — kartlar karelere yayılarak çizilir (bkz. renderChartsProgressive)
+export function renderCharts(trades, opts) {
+  cancelProgressiveRender();
   updateChartTheme();   // renkler çizim anında temadan okunur (açık/koyu)
+  if (trades && trades.length && opts && opts.progressive) {
+    renderChartsProgressive(trades);
+    return;
+  }
   if (!trades || !trades.length) {
     var chartIds = ['chart-cumulative', 'chart-winloss', 'chart-daily', 'chart-symbol',
                     'chart-direction', 'chart-hourly', 'chart-dow', 'chart-rr', 'chart-lot',
@@ -2012,6 +2071,9 @@ var CHART_RENDERERS = {
   goal: renderGoalWidget
 };
 PROP_WIDGET_KEYS.forEach(function(k) { CHART_RENDERERS[k] = function() { renderPropWidget(k); }; });
+// İşlem listesinden çizilen kartlar (hedef ve prop kartları hariç) — renderCharts'taki sırayla aynı küme
+var TRADE_CHART_KEYS = ['cumulative', 'winloss', 'daily', 'symbol', 'direction', 'hourly', 'dow', 'rr', 'lot',
+  'drawdown', 'monthly', 'streaks', 'calendar', 'insights', 'recent'];
 
 export function renderChartFor(key, trades) {
   var fn = CHART_RENDERERS[key];
