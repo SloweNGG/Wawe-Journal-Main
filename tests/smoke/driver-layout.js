@@ -47,21 +47,65 @@
       ok('phone: windows stacked without frames (no title bar buttons, no resize handles)', $('bt-desk').getAttribute('data-desk') === 'stack' && !vis(document.querySelector('.bt-win-btns')) && !vis(document.querySelector('.bt-win-rz')));
       ok('phone: replay without horizontal scroll', noHScroll(), document.documentElement.scrollWidth + ' > ' + window.innerWidth);
     }
-    // full screen
+    // full screen, in the page first: the view covers the page under the navbar
     key('f'); await sleep(250);
-    ok('F: full screen on', $('bt-root').classList.contains('bt-fs') && document.documentElement.classList.contains('bt-fs-lock'));
+    ok('F: full screen on, in the page', $('bt-root').classList.contains('bt-fs') && $('bt-root').classList.contains('bt-fs-page') && document.documentElement.classList.contains('bt-fs-lock'));
+    var nav = $('navbar-container'), navB = nav && nav.getBoundingClientRect().height > 0 ? Math.round(nav.getBoundingClientRect().bottom) : 0;
     var cr = $('bt-chart').getBoundingClientRect();
-    ok('full screen: chart covers the window', cr.width >= window.innerWidth - 2 && cr.height >= window.innerHeight - 2, cr.width + 'x' + cr.height);
+    ok('in the page: chart covers the page under the navbar', Math.abs(cr.top - navB) <= 2 && cr.width >= window.innerWidth - 2 && cr.bottom >= window.innerHeight - 2, navB + ' / ' + cr.top + ' ' + cr.width + 'x' + cr.height);
+    ok('in the page: balance and controls start under the navbar', $('bt-stats').getBoundingClientRect().top >= navB && document.querySelector('.bt-fs-ctl').getBoundingClientRect().top >= navB);
+    ok('in the page: the button offers real full screen', vis(document.querySelector('#bt-fs-real .bt-fs-to-real')) && !vis(document.querySelector('#bt-fs-real .bt-fs-to-page')));
+    $('bt-fs-real').click(); await sleep(250);
+    ok('real full screen: no longer in the page', $('bt-root').classList.contains('bt-fs') && !$('bt-root').classList.contains('bt-fs-page') && $('bt-fs-real').getAttribute('aria-pressed') === 'true');
+    cr = $('bt-chart').getBoundingClientRect();
+    ok('real full screen: chart covers the window', cr.top <= 1 && cr.width >= window.innerWidth - 2 && cr.height >= window.innerHeight - 2, cr.width + 'x' + cr.height);
+    ok('real full screen: the button offers the page view', vis(document.querySelector('#bt-fs-real .bt-fs-to-page')) && !vis(document.querySelector('#bt-fs-real .bt-fs-to-real')));
+    key('Escape'); await sleep(250);
+    ok('Esc in real full screen: back to the page view', $('bt-root').classList.contains('bt-fs') && $('bt-root').classList.contains('bt-fs-page'));
+    key('F', { shiftKey: true }); await sleep(250);
+    ok('Shift+F: real full screen', $('bt-root').classList.contains('bt-fs') && !$('bt-root').classList.contains('bt-fs-page'));
+    key('F', { shiftKey: true }); await sleep(250);
+    ok('Shift+F again: back to the page view', $('bt-root').classList.contains('bt-fs-page'));
     ok('full screen: balance, replay controls and quick order float', vis('bt-stats') && vis('bt-play-btn') && vis('bt-buy-btn') && getComputedStyle($('bt-order-form')).position === 'fixed');
-    ok('full screen: header and tables hidden, exit button shown', !vis(document.querySelector('.bt-replay-head')) && !vis(document.querySelector('.bt-win[data-win="open"]')) && vis('bt-fs-exit'));
-    if (phone) ok('phone full screen: no horizontal scroll', noHScroll());
+    ok('full screen: header hidden, exit button shown', !vis(document.querySelector('.bt-replay-head')) && vis('bt-fs-exit'));
+    var ow = document.querySelector('.bt-win[data-win="open"]');
+    if (!phone) {
+      // open positions: there from the start, bottom left next to the drawing bar, clear of the replay controls
+      var owr = ow.getBoundingClientRect(), dbr = $('bt-draw-bar').getBoundingClientRect(), tbr = document.querySelector('#bt-view-replay .bt-toolbar').getBoundingClientRect();
+      ok('full screen: open positions float at the bottom left without being added', vis(ow) && ow.classList.contains('bt-fs-float') && owr.bottom >= window.innerHeight - 12 && owr.left >= dbr.right - 2, JSON.stringify([owr.left, owr.bottom, dbr.right, window.innerHeight]));
+      ok('full screen: open positions leave the replay controls free', owr.right <= tbr.left + 1, owr.right + ' > ' + tbr.left);
+    } else {
+      ok('phone full screen: open positions not shown by default (the order panel needs the room)', !vis(ow));
+      ok('phone full screen: no horizontal scroll', noHScroll());
+    }
     $('bt-buy-btn').click(); await sleep(200);
     ok('quick order works in full screen', $('bt-open-count').textContent === '1');
-    $(pro ? 'bt-open-body' : 'bt-mini-pos-list').querySelector('button[data-act="close"]').click(); await sleep(150);
+    if (!phone) ok('full screen: the new position is listed in the open positions window', $('bt-open-body').querySelectorAll('button[data-act="close"]').length === 1);
+    $(pro || !phone ? 'bt-open-body' : 'bt-mini-pos-list').querySelector('button[data-act="close"]').click(); await sleep(150);
+    var fsStats = null;
+    if (!phone) {
+      // boxes move straight away, from a spot that is not a control (real mouse); a click alone moves nothing
+      var sb = $('bt-stats').getBoundingClientRect();
+      await window.__pp({ op: 'click', x: sb.left + 8, y: sb.top + 8 }); await sleep(100);
+      var sb1 = $('bt-stats').getBoundingClientRect();
+      ok('full screen: a click on a box does not move it', Math.abs(sb1.left - sb.left) < 1 && Math.abs(sb1.top - sb.top) < 1);
+      await window.__pp({ op: 'move', x: sb.left + 8, y: sb.top + 8 });
+      await window.__pp({ op: 'down' });
+      await window.__pp({ op: 'move', x: sb.left + 168, y: sb.top + 128, steps: 8 });
+      await window.__pp({ op: 'up' }); await sleep(100);
+      fsStats = $('bt-stats').getBoundingClientRect();
+      ok('full screen: the balance box is dragged without arrange mode', Math.abs(fsStats.left - sb.left - 160) <= 2 && Math.abs(fsStats.top - sb.top - 120) <= 2, JSON.stringify([sb.left, sb.top, fsStats.left, fsStats.top]));
+      var of0 = $('bt-order-form').getBoundingClientRect(), bb = $('bt-buy-btn').getBoundingClientRect();
+      await window.__pp({ op: 'click', x: bb.left + bb.width / 2, y: bb.top + bb.height / 2 }); await sleep(200);
+      var of1 = $('bt-order-form').getBoundingClientRect();
+      ok('full screen: the buttons in a box still work and do not drag it', $('bt-open-count').textContent === '1' && Math.abs(of1.left - of0.left) < 1 && Math.abs(of1.top - of0.top) < 1);
+      $('bt-open-body').querySelector('button[data-act="close"]').click(); await sleep(150);
+    }
     key('Escape'); await sleep(200);
     ok('Esc leaves full screen', !$('bt-root').classList.contains('bt-fs') && !document.documentElement.classList.contains('bt-fs-lock'));
     $('bt-fs-btn').click(); await sleep(150);
     ok('header button enters full screen', $('bt-root').classList.contains('bt-fs'));
+    if (fsStats) { await sleep(150); var sb3 = $('bt-stats').getBoundingClientRect(); ok('full screen: a dragged box keeps its place next time', Math.abs(sb3.left - fsStats.left) <= 2 && Math.abs(sb3.top - fsStats.top) <= 2, JSON.stringify([fsStats.left, fsStats.top, sb3.left, sb3.top])); }
     $('bt-fs-exit').click(); await sleep(150);
     ok('exit button leaves full screen', !$('bt-root').classList.contains('bt-fs'));
     // shortcut sheet

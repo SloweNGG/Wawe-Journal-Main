@@ -30,6 +30,8 @@
   var BACKEND = window.WW_BT_BACKEND === 'local' ? 'local' : 'supabase';
   var SYNC = null;                              // window.WwBtSync, only with the supabase backend
   var SWEEP_KEY = 'ww_bt_sweep_at', SWEEP_EVERY_MS = 10 * 60 * 1000;
+  // the account the replay was last open in ({ u: user id, a: account id }); backtest.astro reads it before the first paint
+  var RESUME_KEY = 'ww_bt_resume';
   var syncToastShown = false;
   var L = { user: null, plan: 'free', feat: {}, look: null, usage: null, pu: null, puErr: false, puLoading: false, accounts: [], summaries: {}, src: null, store: null, cov: {}, journals: [], journalsLoaded: false,
     srcs: {}, ct: null, ctApi: null, ctCache: null, brokerSyms: {}, ctForm: null, ctFormAccts: {} };
@@ -116,10 +118,12 @@
   }
 
   // ---------------------------------------------------------------- page state
+  // one soft entrance (styles.css .ww-reveal); the class goes away afterwards so a later show does not play it again
+  function reveal(e) { if (!e) return; e.classList.add('ww-reveal'); setTimeout(function () { e.classList.remove('ww-reveal'); }, 700); }
   function setPageState(state) {
     var root = $('bt-root'); if (root) root.setAttribute('data-state', state);
     show($('bt-view-list'), state === 'list' || state === 'demo' || state === 'fatal');
-    show($('bt-view-replay'), state === 'replay');
+    show($('bt-view-replay'), state === 'replay');               // 'resume' (an account is reopened): CSS shows #bt-replay-skel, not the list
     show($('bt-demo'), state === 'demo');
     show($('bt-fatal'), state === 'fatal');
     if (state === 'list') {
@@ -153,7 +157,10 @@
     if (gate !== 'member') return;
     L.user = user;
     SKELETON_HTML = $('bt-accounts').innerHTML;
-    setPageState('list');                                     // skeleton cards while the account list loads
+    // A refresh or coming back to Backtest reopens the account that was open (?account= or the remembered one): the replay
+    // skeleton while it loads. Otherwise the list's skeleton cards while the account list loads.
+    var resume = new URLSearchParams(location.search).get('account') || rememberedAccount();
+    setPageState(resume ? 'resume' : 'list');
     var planReady = loadPlan();
     // Pro bought while the page is open (payment.js: realtime / payment check): the features unlock without a reload
     PAGE.on(window, 'ww-plan-changed', function () { loadPlan().then(function () { if (PAGE.alive) applyPlan(); }); });
@@ -180,7 +187,7 @@
     STATS = window.WwBtStats.createView();
     LAY = window.WwBtLayout.mount({ page: PAGE, root: $('bt-root'), view: $('bt-view-replay'), t: _t, storage: safeStorage(), onChange: onLayoutChange });
     FSEDIT = window.WwBtFsEdit.create({ root: $('bt-root'), host: document.body, t: _t, storage: safeStorage(),
-      isOn: function () { return !!LAY && LAY.isFullscreen(); },
+      isOn: function () { return !!LAY && LAY.isFullscreen(); }, frame: function () { return LAY ? LAY.fsFrame() : null; },
       onChange: function (on) { $('bt-fs-edit').setAttribute('aria-pressed', on ? 'true' : 'false'); },
       onVisibility: function () { if (DESK) DESK.apply(); else FSEDIT.apply(); if (R) { renderTables(); renderOrders(true); renderStats(); } } });
     DESK = window.WwBtDesk.mount({ page: PAGE, desk: $('bt-desk'), storage: safeStorage(), userId: user.id, t: _t, mode: function () { return LAY.mode(); },
@@ -190,11 +197,20 @@
       fsShown: function (id) { return !!FSEDIT && FSEDIT.shownWin(id); } });
     bindStaticUi(); setupThemeObserver(); setupI18n(); setupKeyboard(); setupVisibility();
     var ok = (await Promise.all([loadList(), planReady]))[0];
-    if (!PAGE.alive || !ok) return;
+    if (!PAGE.alive) return;
+    if (!ok) { setPageState('list'); return; }                 // the list's error banner and retry button
     LAY.setMode(planMode(), true); DESK.apply(); placeCells(); placeStatsHost(); booted = true;
-    var deep = new URLSearchParams(location.search).get('account');
-    if (deep && findAccount(deep)) { await whenActivated(); if (PAGE.alive) openAccount(deep); } else showList();
+    if (resume && findAccount(resume)) { await whenActivated(); if (PAGE.alive) openAccount(resume); } else showList();
   }
+  // the remembered account of this user (another user on the same browser starts on the list)
+  function rememberedAccount() {
+    try {
+      var r = JSON.parse(localStorage.getItem(RESUME_KEY) || 'null');
+      return r && L.user && r.u === L.user.id && typeof r.a === 'string' ? r.a : null;
+    } catch (e) { return null; }
+  }
+  function rememberAccount(id) { try { localStorage.setItem(RESUME_KEY, JSON.stringify({ u: L.user.id, a: id })); } catch (e) { /* storage blocked: the address still has ?account= */ } }
+  function forgetAccount() { try { localStorage.removeItem(RESUME_KEY); } catch (e) { /* ignore */ } }
   function safeStorage() { try { return window.localStorage; } catch (e) { return null; } }
   function safeSession() { try { return window.sessionStorage; } catch (e) { return null; } }
   // Drawings: public.backtest_drawings (RLS: own rows, every plan). Smoke tests (local backend): localStorage.
@@ -417,8 +433,10 @@
   }
   // list banner "cTrader connection required" (the account's candles cannot be loaded; nothing else is lost)
   function showCtNeeded(on) { show($('bt-ctrader-needed'), !!on); }
+  // the list on purpose ("Accounts", a deleted account, an account that cannot open): the next visit starts here too
   function showList() {
     if (R) closeReplayState();
+    forgetAccount();
     setPageState('list'); renderList();
     try { var u = new URL(location.href); u.searchParams.delete('account'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
   }
@@ -971,8 +989,11 @@
         chart: null, series: null, askLine: null, lines: {}, dirty: false, lastSavedReplaySec: acc.replaySec, lastSaveAt: 0, lastLiveAt: 0,
         src: srcFor(acc), abort: new AbortController(), el: $('bt-chart'), extra: [], hist: null, histMonths: 0,
         fillQueue: [], inserting: {}, dropped: {}, endSec: loadRangeEnd(acc.id) };
+      var fromSkeleton = $('bt-root').getAttribute('data-state') === 'resume';
       setPageState('replay');
+      rememberAccount(id);
       $('bt-view-replay').setAttribute('data-replay', 'loading');
+      if (fromSkeleton) reveal($('bt-view-replay'));            // the skeleton gives way softly (styles.css .ww-reveal)
       setText('bt-acc-name', acc.name); setText('bt-acc-symbol', sym.name); setSourceLabel(acc);
       $('bt-tf').value = acc.tf; $('bt-speed').value = String(spd);
       try { var u = new URL(location.href); u.searchParams.set('account', id); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) { /* ignore */ }
@@ -1122,10 +1143,12 @@
     if (R.nextState) return Promise.resolve(false);
     var lastKey = R.winMonths[R.winMonths.length - 1], nk = C.nextMonth(lastKey);
     if (R.cov.months.indexOf(nk) < 0) { R.nextState = { kind: 'end' }; return Promise.resolve(false); }
+    // stale: the replay was closed (R is null) or reset meanwhile (resetLoads already cleared loadingNext; a newer load may own it)
     R.loadingNext = monthMinutes(nk, tok).then(function (m) {
-      R.loadingNext = null; if (stale(tok) || !m) return false;
+      if (stale(tok)) return false;
+      R.loadingNext = null; if (!m) return false;
       R.win = C.concatMinutes(R.win, m); R.winMonths.push(nk); return true;
-    }, function (e) { if (R) R.loadingNext = null; if (!stale(tok)) R.nextState = { kind: 'error', err: e }; return false; });
+    }, function (e) { if (stale(tok)) return false; R.loadingNext = null; R.nextState = { kind: 'error', err: e }; return false; });
     return R.loadingNext;
   }
   function maybeTrim() {
@@ -2589,7 +2612,11 @@
     });
     // layout: mode switch, full screen, shortcut sheet
     Array.prototype.forEach.call(document.querySelectorAll('[data-bt-fs]'), function (b) {
-      b.addEventListener('click', function () { LAY.setFullscreen(!LAY.isFullscreen()); });
+      b.addEventListener('click', function () { LAY.setFullscreen(!LAY.isFullscreen()); });   // opens in the page (under the navbar)
+    });
+    // in the full-screen view: page ⇄ real full screen
+    Array.prototype.forEach.call(document.querySelectorAll('[data-bt-fs-real]'), function (b) {
+      b.addEventListener('click', function () { LAY.setFullscreen(true, !LAY.isRealFullscreen()); });
     });
     $('bt-fs-edit').addEventListener('click', function () { FSEDIT.setEditing(!FSEDIT.isEditing()); });
     $('bt-keys-btn').addEventListener('click', function (e) { openKeys(e.currentTarget); });
@@ -2672,6 +2699,7 @@
       else if (e.key === '?') { e.preventDefault(); openKeys(null); }
       else if (e.shiftKey && (e.key === 'B' || e.key === 'b')) { e.preventDefault(); if (!$('bt-buy-btn').disabled) submitOrder(1); }
       else if (e.shiftKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); if (!$('bt-sell-btn').disabled) submitOrder(-1); }
+      else if (e.shiftKey && (e.key === 'F' || e.key === 'f')) { e.preventDefault(); LAY.setFullscreen(true, !LAY.isRealFullscreen()); }
       else if (!e.shiftKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); LAY.setFullscreen(!LAY.isFullscreen()); }
       else if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); centerAll(); }
       else if (handleToolKey(e)) e.preventDefault();
@@ -2686,7 +2714,8 @@
     if (!$('bt-layout-pop').hidden) { toggleLayoutPop(false); return true; }
     if (!$('bt-look-drawer').hidden) { toggleDrawer(false); return true; }
     if (DRAW && DRAW.escape()) return true;
-    if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(false); return true; }
+    // real full screen → back to the page view → closed (the browser usually takes Esc itself in real full screen: bt-layout.js)
+    if (LAY && LAY.isFullscreen()) { LAY.setFullscreen(LAY.isRealFullscreen(), false); return true; }
     return false;
   }
   // drawing keys (1-9 tools, V cursor, M magnet, Del): the toolbar is there in both views

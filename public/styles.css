@@ -2093,6 +2093,28 @@ body.light-theme .skeleton-doughnut::before {
 .skeleton-table .skeleton-cell:nth-child(6) { flex: 0.8; }
 .skeleton-table .skeleton-cell:nth-child(7) { flex: 0.6; }
 
+/* İskelet → gerçek içerik geçişi: içerik bir anda "pat" diye gelmez, hafifçe yükselip belirir.
+   JS (dashboard.js / trades.js → revealIn) bölüme .ww-reveal, sıralı gelmesi gereken kart dizisine .ww-reveal-stagger koyar;
+   gecikme --ww-d, kart sırası --ww-i ile verilir. fill-mode "backwards": animasyon bitince
+   hover transform'larını ezmez. Yalnızca opacity/transform → compositor'da akar, ana iş parçacığı
+   grafik çizerken bile takılmaz. */
+@keyframes wwRevealRise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.ww-reveal {
+  animation: wwRevealRise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--ww-d, 0ms);
+}
+.ww-reveal-stagger > * {
+  animation: wwRevealRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--ww-d, 0ms) + var(--ww-i, 0) * 60ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ww-reveal,
+  .ww-reveal-stagger > * { animation: none !important; }
+}
+
 .skeleton-calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

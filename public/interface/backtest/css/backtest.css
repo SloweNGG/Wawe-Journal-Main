@@ -1134,3 +1134,105 @@ body.light-theme, .light-theme body { --bt-orange: #c2410c; }
 .bt-plan-badge[data-level="full"] { color: var(--red); }
 .bt-plan-badge:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 .bt-plan-badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- Sayfa içi tam ekran (bt-layout.js, varsayılan; F / Büyüt)
+   Görünüm navbar'ın altını kaplar, navbar kullanılabilir kalır. --bt-fs-top: navbar'ın alt kenarı (JS ölçer).
+   Gerçek tam ekranda (.bt-fs-page yok) yukarıdaki kurallar aynen geçerli: pencerenin tamamı + tarayıcı tam ekranı. */
+#bt-root.bt-fs.bt-fs-page #bt-view-replay { top: var(--bt-fs-top, 64px); }
+#bt-root.bt-fs.bt-fs-page :is(#bt-stats, .bt-fs-ctl) { top: calc(var(--bt-fs-top, 64px) + 12px); }
+#bt-root.bt-fs.bt-fs-page :is(#bt-data-banner, #bt-save-banner) { top: calc(var(--bt-fs-top, 64px) + 64px); }
+#bt-root.bt-fs.bt-fs-page .bt-draw-bar { top: calc(var(--bt-fs-top, 64px) + 120px); }
+@media (max-width: 1024px) { #bt-root.bt-fs.bt-fs-page .bt-draw-bar { top: calc(var(--bt-fs-top, 64px) + 84px); } }
+html.bt-fs-inpage .bt-fs-editbar { top: calc(var(--bt-fs-top, 64px) + 12px); }
+/* navbar menüleri (profil, bildirim) grafiğin ve yüzen kutuların (990–996) üstünde açılsın; modallar (1000+) yine en üstte */
+html.bt-fs-inpage #navbar-container { z-index: 997; }
+/* Tam ekran ⇄ Sayfaya dön: düğmede o an geçerli olan etiket görünür. Özgüllük, telefondaki
+   "#bt-root.bt-fs .bt-fs-exit span { display: none }" kuralını geçer: orada yalnızca yazı gizlenir, ikon kalır */
+#bt-root.bt-fs .bt-fs-real > :is(.bt-fs-to-real, .bt-fs-to-page) { display: inline-flex; align-items: center; gap: 6px; }
+#bt-root.bt-fs.bt-fs-page .bt-fs-real .bt-fs-to-page,
+#bt-root.bt-fs:not(.bt-fs-page) .bt-fs-real .bt-fs-to-real { display: none; }
+#bt-root.bt-fs .bt-fs-real:hover { border-color: var(--accent); }
+
+/* ---------------------------------------------------------------- Replay iskeleti (yenileme / geri dönüş: açık kalan hesap yüklenirken)
+   backtest.astro'daki ön kontrol ve backtest.js data-state="resume" koyar; liste (menü) bu sırada hiç görünmez.
+   Görünürlük [hidden] ile değil burada: .bt-main [hidden] !important olduğu için ilk karede CSS karar verir. */
+.bt-replay-skel { display: none; }
+#bt-root[data-state="resume"] #bt-view-list { display: none; }
+#bt-root[data-state="resume"] .bt-replay-skel { display: flex; flex-direction: column; gap: 10px; }
+.bt-rs-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bt-rs-back { width: 96px; height: 28px; border-radius: 999px; }
+.bt-rs-icons { display: flex; gap: 8px; }
+.bt-rs-icon { width: 30px; height: 30px; border-radius: 9px; }
+.bt-rs-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; min-height: 56px; }
+.bt-rs-name { width: 118px; height: 14px; }
+.bt-rs-chip { width: 62px; height: 20px; border-radius: 999px; }
+.bt-rs-ctl { width: 40px; height: 34px; border-radius: 10px; }
+.bt-rs-ctl-tf { width: 72px; margin-left: 8px; }
+.bt-rs-ctl-date { width: 168px; }
+.bt-rs-clock { width: 190px; height: 14px; margin-left: auto; }
+.bt-rs-body { display: grid; grid-template-columns: minmax(0, 1fr) var(--bt-side-w, 340px); gap: 12px; flex: 1 1 auto; min-height: 0; }
+.bt-rs-chart { display: flex; gap: 12px; padding: 14px; min-height: 420px; }
+.bt-rs-tools { display: flex; flex-direction: column; gap: 14px; padding-top: 34px; }
+.bt-rs-tools .bt-sk { width: 22px; height: 22px; border-radius: 7px; }
+.bt-rs-plot { position: relative; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.bt-rs-ohlc { width: 240px; max-width: 70%; height: 12px; }
+.bt-rs-candles { position: relative; flex: 1 1 auto; display: flex; gap: 3px; margin-right: 64px; min-height: 0; animation: bt-rs-breathe 2.4s ease-in-out infinite; }
+@keyframes bt-rs-breathe { 50% { opacity: 0.55; } }
+.bt-rs-candles i { position: relative; flex: 1 1 0; }
+.bt-rs-candles i::before { content: ''; position: absolute; left: 18%; right: 18%; top: var(--t); height: var(--h); border-radius: 2px; background: var(--bt-sk-b); }
+.bt-rs-candles i::after { content: ''; position: absolute; left: calc(50% - 0.5px); width: 1px; top: calc(var(--t) - 2%); height: calc(var(--h) + 4%); background: var(--bt-sk-a); }
+.bt-rs-axis { position: absolute; top: 34px; right: 0; bottom: 24px; display: flex; flex-direction: column; justify-content: space-between; }
+.bt-rs-axis .bt-sk { width: 48px; height: 10px; }
+.bt-rs-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.bt-rs-box { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.bt-rs-balance { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+.bt-rs-tabs { height: 32px; border-radius: 10px; }
+.bt-rs-trade { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bt-rs-trade .bt-sk { height: 50px; border-radius: 10px; }
+.bt-rs-field { height: 30px; border-radius: 10px; }
+@media (min-width: 1025px) {
+  /* replay ile aynı tam yükseklik: iskeletten ekrana geçerken sayfa zıplamaz */
+  #bt-root[data-state="resume"] { max-width: none; height: calc(100vh - 64px); height: calc(100dvh - 64px); min-height: 620px; padding: 0 16px 12px;
+    display: flex; flex-direction: column; }
+  #bt-root[data-state="resume"] .bt-replay-skel { flex: 1 1 auto; min-height: 0; }
+  .bt-rs-chart { min-height: 0; }
+}
+@media (max-width: 1024px) {
+  .bt-rs-body { grid-template-columns: 1fr; }
+  .bt-rs-chart { flex-direction: column; min-height: 460px; }
+  .bt-rs-tools { flex-direction: row; padding-top: 0; overflow: hidden; }
+  .bt-rs-side .bt-rs-box:not(.bt-rs-balance) { display: none; }
+  .bt-rs-clock { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .bt-rs-candles { animation: none; } }
+
+/* ---------------------------------------------------------------- Tam ekranda kutular doğrudan sürüklenir (bt-fsedit.js)
+   Kontrol olmayan bir yerden tut, taşı (4 px'ten sonra başlar; tıklama tıklama kalır). Yer bu tarayıcıda saklanır. */
+#bt-root.bt-fs:not(.bt-fs-editing) :is(#bt-stats, #bt-order-form, #bt-view-replay .bt-toolbar, #bt-draw-bar, #bt-chart-card .bt-chart-top) { cursor: grab; }
+#bt-root.bt-fs:not(.bt-fs-editing) :is(#bt-stats, #bt-order-form, #bt-view-replay .bt-toolbar, #bt-draw-bar, #bt-chart-card .bt-chart-top) :is(button, select, a, label, [role="button"], [role="tab"]) { cursor: pointer; }
+#bt-root.bt-fs :is(#bt-stats, #bt-order-form, #bt-view-replay .bt-toolbar, #bt-draw-bar, #bt-chart-card .bt-chart-top).is-dragging { cursor: grabbing; user-select: none; }
+/* dokunmatik: parmakla sürükleme sayfayı kaydırmaya gitmesin (çizim çubuğu hariç: telefonda yatay kayar) */
+#bt-root.bt-fs :is(#bt-stats, #bt-order-form, #bt-view-replay .bt-toolbar, #bt-chart-card .bt-chart-top) { touch-action: none; }
+
+/* Açık pozisyonlar dar pencerede: sütunlar gizlendikçe kalanlar tabloyu doldurur (yüzdeler tablo genişliğine göre; eskiden
+   gizlenenlerin payı butonların sütununa gidiyordu: yön ve K/Z "…" ile kesilirken butonların önünde boşluk kalıyordu).
+   Yazılı butonlar ("Düzenle" + "Kapat") için ~150 px bırakılır, ikonlu butonlar için 58 px; kalan pay buton sütununa gider. */
+@container (max-width: 760px) {
+  #bt-panel-open .bt-c-dir, #bt-panel-open .bt-c-lot { width: 8%; }
+  #bt-panel-open .bt-c-px { width: 11%; }
+  #bt-panel-open .bt-c-pnl { width: 15%; }
+}
+@container (max-width: 620px) {
+  #bt-panel-open .bt-c-dir, #bt-panel-open .bt-c-lot { width: 11%; }
+  #bt-panel-open .bt-c-px { width: 15%; }
+  #bt-panel-open .bt-c-pnl { width: 18%; }
+}
+@container (max-width: 500px) {
+  #bt-panel-open .bt-c-dir, #bt-panel-open .bt-c-lot { width: 18%; }
+  #bt-panel-open .bt-c-px { width: 24%; }
+  #bt-panel-open .bt-c-pnl { width: 25%; }
+}
+@container (max-width: 380px) {
+  #bt-panel-open .bt-c-dir, #bt-panel-open .bt-c-lot { width: 25%; }
+  #bt-panel-open .bt-c-pnl { width: 30%; }
+}

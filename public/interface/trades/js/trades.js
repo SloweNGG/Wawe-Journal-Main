@@ -236,18 +236,40 @@
     if (el5) el5.style.display = 'none';
   }
 
+  // İskelet gidince içerik bir anda belirmesin: hafifçe yükselerek gelsin (styles.css → .ww-reveal).
+  // stagger: doğrudan çocuklar (kartlar) sırayla gelir. Bitince sınıf kaldırılır.
+  function revealIn(el, delayMs, stagger) {
+    if (!el) return;
+    var cls = stagger ? 'ww-reveal-stagger' : 'ww-reveal';
+    el.style.setProperty('--ww-d', delayMs + 'ms');
+    if (stagger) {
+      Array.prototype.forEach.call(el.children, function (child, i) { child.style.setProperty('--ww-i', i); });
+    }
+    el.classList.add(cls);
+    var total = delayMs + (stagger ? el.children.length * 60 : 0) + 700;
+    setTimeout(function () { el.classList.remove(cls); }, total);
+  }
+
   function hideTableSkeleton() {
     var el1 = safeEl('stat-skeleton');
     var el2 = safeEl('stat-grid');
     var el3 = safeEl('table-skeleton');
     var el4 = safeEl('table-wrap');
     var el5 = safeEl('pagination-wrap');
-    
+    // renderTable her sayfa/filtre değişiminde burayı çağırır; animasyon yalnızca iskeletten ilk geçişte
+    var wasLoading = !!(el3 && el3.style.display !== 'none');
+
     if (el1) el1.style.display = 'none';
     if (el2) el2.style.display = 'grid';
     if (el3) el3.style.display = 'none';
     if (el4) el4.style.display = 'block';
     if (el5) el5.style.display = 'flex';
+
+    if (wasLoading) {
+      revealIn(el2, 0, true);       // 4 stat kartı sırayla
+      revealIn(el4, 140, false);    // tablo
+      revealIn(el5, 220, false);    // sayfalama
+    }
   }
 
   // ============================================================

@@ -1,7 +1,8 @@
 // Backtest v2: arranging the full-screen chart (window.WwBtFsEdit). In full screen the replay controls, balance, order panel, drawing
 // tools and legend float over the chart; open positions, pending orders, history and statistics can be added as floating windows
-// (title bar to drag, corner to resize, × to hide). "Arrange" shows a handle over each box (drag, or arrow keys on a focused handle)
-// and a list to show or hide every box. Kept in this browser: positions as fractions of the free room (0 = left / top edge, 1 = right
+// (title bar to drag, corner to resize, × to hide); open positions is there from the start on a wide screen. Every box can also be
+// dragged straight away from a spot that is not a control. "Arrange" shows a handle over each box (drag, or arrow keys on a focused
+// handle) and a list to show or hide every box. Kept in this browser: positions as fractions of the free room (0 = left / top edge, 1 = right
 // / bottom edge, so a box keeps its side of the screen when the window changes size), window sizes in px, and what is shown.
 // The desk (bt-desk.js) asks shownWin() which extra windows full screen shows. Pure helpers are unit tested; create() needs the DOM.
 (function (global) {
@@ -11,13 +12,15 @@
   // box: an element that floats in full screen anyway (shown by default) · win: a desk window, hidden until added
   // keepSize: the box keeps the width / height it had in place (the drawing bar lays out its buttons from its height)
   // size / at: a window's first size (px) and place (fractions)
+  // wide: the window is shown without being added on a wide screen (open positions, bottom left next to the drawing bar);
+  // fit: its first width also leaves room for the replay controls centred at the bottom (half the screen minus this, 340 px at least)
   var ITEMS = [
     { id: 'toolbar', sel: '#bt-view-replay .bt-toolbar' },
     { id: 'stats', sel: '#bt-stats' },
     { id: 'order', sel: '#bt-order-form' },
     { id: 'draw', sel: '#bt-draw-bar', keepSize: true },
     { id: 'legend', sel: '#bt-chart-card .bt-chart-top' },
-    { id: 'open', win: 'open', size: [560, 220], at: { x: 0.03, y: 0.82 } },
+    { id: 'open', win: 'open', size: [560, 220], at: { x: 0.05, y: 1 }, wide: true, fit: 336 },
     { id: 'orders', win: 'orders', size: [600, 210], at: { x: 0.5, y: 0.82 } },
     { id: 'history', win: 'history', size: [720, 300], at: { x: 0.3, y: 0.45 } },
     { id: 'statsw', win: 'stats', size: [560, 460], at: { x: 0.55, y: 0.3 } }
@@ -38,7 +41,8 @@
   }
   // a window's size on this screen: the stored or first size, at least the minimum, never larger than the screen
   function winSize(it, p, vw, vh) {
-    var w = p && p.w ? p.w : it.size[0], h = p && p.h ? p.h : it.size[1];
+    var w0 = it.fit ? clamp(Math.round(vw / 2 - it.fit), 340, it.size[0]) : it.size[0];
+    var w = p && p.w ? p.w : w0, h = p && p.h ? p.h : it.size[1];
     return { w: Math.round(clamp(w, Math.min(MIN_W, vw - 2 * M), vw - 2 * M)), h: Math.round(clamp(h, Math.min(MIN_H, vh - 2 * M), vh - 2 * M)) };
   }
   function num(v) { return typeof v === 'number' && isFinite(v); }
@@ -58,19 +62,27 @@
     });
     return out;
   }
-  // shown in full screen: the boxes unless hidden, the windows once added
-  function isShown(state, id) { var it = item(id); return !!it && (typeof state.vis[id] === 'boolean' ? state.vis[id] : !it.win); }
+  // shown in full screen: the boxes unless hidden, the windows once added (open positions from the start on a wide screen)
+  function isShown(state, id, wide) { var it = item(id); return !!it && (typeof state.vis[id] === 'boolean' ? state.vis[id] : !it.win || (!!it.wide && !!wide)); }
   function load(storage) { try { return sanitize(JSON.parse((storage && storage.getItem(KEY)) || '{}')); } catch (e) { return sanitize(null); } }
   function save(storage, state) { try { if (storage) storage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked: kept for this visit */ } }
 
   var X_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 
   // opts: { root (#bt-root), host (element the layer and the bar go into), t(key, fallback, vars), storage, isOn() -> full screen?,
-  //         onChange(editing), onVisibility() (a window was added or hidden: the desk shows / hides it, then calls apply()) }
+  //         onChange(editing), onVisibility() (a window was added or hidden: the desk shows / hides it, then calls apply()),
+  //         frame() -> { x, y, w, h } the room full screen covers (in the page it starts under the navbar; default: the window) }
   function create(opts) {
     var t = opts.t, state = load(opts.storage), editing = false, layer = null, bar = null, list = null, drag = null, grips = {};
     var ro = global.ResizeObserver ? new global.ResizeObserver(onSized) : null, sizeT = 0, observed = {};
 
+    // stored places are fractions of this room, so a box keeps its side of the screen in both full-screen levels
+    function frame() {
+      var f = opts.frame && opts.frame();
+      return f && f.w > 0 && f.h > 0 ? f : { x: 0, y: 0, w: innerWidth, h: innerHeight };
+    }
+
+    function shown(id) { return isShown(state, id, innerWidth > 1024); }
     function el(it) { return document.querySelector(it.win ? '#bt-desk .bt-win[data-win="' + it.win + '"]' : it.sel); }
     function visible(e) { return !!e && e.getClientRects().length > 0 && e.offsetWidth > 0; }
     function clear(e) { PROPS.forEach(function (p) { e.style[p] = ''; }); }
@@ -96,26 +108,26 @@
     // the stored places and what is shown, on the boxes (full screen only). Outside full screen the boxes go back to their own CSS and
     // the windows to the desk (which owns their inline size and place there).
     function apply() {
-      var on = opts.isOn(), vw = innerWidth, vh = innerHeight;
+      var on = opts.isOn(), f = frame(), vw = f.w, vh = f.h;
       ITEMS.forEach(function (it) {
         var e = el(it); if (!e) return;
-        var shown = isShown(state, it.id);
+        var vis = shown(it.id);
         if (it.win) {
-          var fl = on && shown && !e.hidden;
+          var fl = on && vis && !e.hidden;
           e.classList.toggle('bt-fs-float', fl);
           if (!fl) { e.removeAttribute('data-fs-placed'); if (ro && observed[it.id]) { ro.unobserve(e); observed[it.id] = false; } return; }
           var s = winSize(it, state.pos[it.id], vw, vh), p = fromRatio(state.pos[it.id] || it.at, s.w, s.h, vw, vh);
-          place(it, e, p.left, p.top, s);
+          place(it, e, f.x + p.left, f.y + p.top, s);
           headX(it, e);
           if (ro && !observed[it.id]) { ro.observe(e); observed[it.id] = true; }
           return;
         }
-        e.classList.toggle('bt-fs-off', on && !shown);
+        e.classList.toggle('bt-fs-off', on && !vis);
         if (e.hasAttribute('data-fs-placed')) { clear(e); e.removeAttribute('data-fs-placed'); }
-        if (!on || !shown || !state.pos[it.id] || !visible(e)) return;
+        if (!on || !vis || !state.pos[it.id] || !visible(e)) return;
         var r = e.getBoundingClientRect(), size = { w: Math.round(r.width), h: Math.round(r.height) };
         var q = fromRatio(state.pos[it.id], size.w, size.h, vw, vh);
-        place(it, e, q.left, q.top, it.keepSize ? size : null);
+        place(it, e, f.x + q.left, f.y + q.top, it.keepSize ? size : null);
       });
       if (editing) { syncGrips(); renderList(); }
     }
@@ -127,7 +139,7 @@
       sizeT = setTimeout(function () {
         entries.forEach(function (en) {
           var e = en.target, it = item(fsId(e)); if (!it || !floating(e)) return;
-          var r = e.getBoundingClientRect(), p = state.pos[it.id] || toRatio(r.left, r.top, r.width, r.height, innerWidth, innerHeight);
+          var r = e.getBoundingClientRect(), f = frame(), p = state.pos[it.id] || toRatio(r.left - f.x, r.top - f.y, r.width, r.height, f.w, f.h);
           p.w = Math.round(r.width); p.h = Math.round(r.height); state.pos[it.id] = p;
         });
         persist(); if (editing) syncGrips();
@@ -145,7 +157,7 @@
     function syncGrips() {
       ITEMS.forEach(function (it) {
         var g = grips[it.id], e = el(it); if (!g) return;
-        if (!isShown(state, it.id) || !visible(e)) { g.hidden = true; return; }
+        if (!shown(it.id) || !visible(e)) { g.hidden = true; return; }
         var r = e.getBoundingClientRect();
         g.hidden = false;
         g.style.left = r.left + 'px'; g.style.top = r.top + 'px'; g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
@@ -183,7 +195,7 @@
       list.textContent = '';
       ITEMS.forEach(function (it) {
         var lab = document.createElement('label'); lab.className = 'bt-fs-list-row';
-        var c = document.createElement('input'); c.type = 'checkbox'; c.checked = isShown(state, it.id); c.setAttribute('data-fs-vis', it.id);
+        var c = document.createElement('input'); c.type = 'checkbox'; c.checked = shown(it.id); c.setAttribute('data-fs-vis', it.id);
         lab.appendChild(c); lab.appendChild(document.createTextNode(name(it)));
         list.appendChild(lab);
       });
@@ -220,21 +232,23 @@
     }
 
     function moveTo(it, e, left, top) {
-      var r = e.getBoundingClientRect(), w = r.width, h = r.height;
-      left = clamp(left, M, Math.max(M, innerWidth - w - M)); top = clamp(top, M, Math.max(M, innerHeight - h - M));
+      var r = e.getBoundingClientRect(), w = r.width, h = r.height, f = frame();
+      left = clamp(left, f.x + M, Math.max(f.x + M, f.x + f.w - w - M)); top = clamp(top, f.y + M, Math.max(f.y + M, f.y + f.h - h - M));
       place(it, e, Math.round(left), Math.round(top), it.keepSize ? { w: Math.round(w), h: Math.round(h) } : null);
-      var p = toRatio(left, top, w, h, innerWidth, innerHeight), old = state.pos[it.id];
+      var p = toRatio(left - f.x, top - f.y, w, h, f.w, f.h), old = state.pos[it.id];
       if (it.win) { p.w = Math.round(w); p.h = Math.round(h); } else if (old && old.w) { p.w = old.w; p.h = old.h; }
       state.pos[it.id] = p;
       if (editing) syncGrips();
     }
 
-    // dragging: a handle (arrange mode) or the title bar of a floating window (any time)
-    function startDrag(e, it, target, handle) {
+    // dragging: a handle (arrange mode), the title bar of a floating window, or a box itself (any time in full screen). A box is
+    // held at a spot that is not a control and moves once the pointer went 4 px (pending until then), so a click stays a click.
+    var CONTROLS = 'button, select, input, textarea, a, label, [contenteditable], [role="button"], [role="tab"], [data-fs-hide]';
+    function startDrag(e, it, target, handle, pending) {
       var r = target.getBoundingClientRect();
-      drag = { it: it, el: target, h: handle, dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId };
+      drag = { it: it, el: target, h: handle, dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId, pend: !!pending, sx: e.clientX, sy: e.clientY };
       try { handle.setPointerCapture(e.pointerId); } catch (x) { /* synthetic event */ }
-      handle.classList.add('is-dragging');
+      if (!pending) handle.classList.add('is-dragging');
       handle.addEventListener('pointermove', onMove); handle.addEventListener('pointerup', onUp); handle.addEventListener('pointercancel', onUp);
     }
     function onDown(e) {
@@ -243,19 +257,38 @@
       e.preventDefault(); g.focus();
       startDrag(e, it, target, g);
     }
-    function onHeadDown(e) {
-      if (editing || e.button > 0 || !opts.isOn()) return;
-      var head = e.target.closest && e.target.closest('.bt-fs-float > .bt-win-head'); if (!head || e.target.closest('button, select, input, a')) return;
-      var w = head.parentNode, it = item(fsId(w)); if (!it) return;
-      e.preventDefault();
-      startDrag(e, it, w, head);
+    // outside arrange mode: a floating window by its title bar, a box anywhere but on its controls
+    function onFreeDown(e) {
+      if (editing || drag || e.button > 0 || !opts.isOn() || !e.target.closest || e.target.closest(CONTROLS)) return;
+      var head = e.target.closest('.bt-fs-float > .bt-win-head');
+      if (head) {
+        var w = head.parentNode, wi = item(fsId(w)); if (!wi) return;
+        e.preventDefault();
+        startDrag(e, wi, w, head);
+        return;
+      }
+      for (var i = 0; i < ITEMS.length; i++) {
+        var it = ITEMS[i], box = !it.win && el(it);
+        if (box && box.contains(e.target) && visible(box) && !box.classList.contains('bt-fs-off')) {
+          e.preventDefault();                                   // no text selection while it moves
+          startDrag(e, it, box, box, true);
+          return;
+        }
+      }
     }
-    function onMove(e) { if (drag && e.pointerId === drag.id) moveTo(drag.it, drag.el, e.clientX - drag.dx, e.clientY - drag.dy); }
+    function onMove(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (drag.pend) {
+        if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 4) return;
+        drag.pend = false; drag.h.classList.add('is-dragging');
+      }
+      moveTo(drag.it, drag.el, e.clientX - drag.dx, e.clientY - drag.dy);
+    }
     function onUp(e) {
       if (!drag || e.pointerId !== drag.id) return;
-      var h = drag.h; h.classList.remove('is-dragging');
+      var h = drag.h, moved = !drag.pend; h.classList.remove('is-dragging');
       h.removeEventListener('pointermove', onMove); h.removeEventListener('pointerup', onUp); h.removeEventListener('pointercancel', onUp);
-      drag = null; persist();
+      drag = null; if (moved) persist();
     }
     // arrows: 10 px, with Shift 1 px
     function onKey(e) {
@@ -273,11 +306,11 @@
     var resizeT = 0;
     function onResize() { clearTimeout(resizeT); resizeT = setTimeout(apply, 60); }
     window.addEventListener('resize', onResize);
-    document.addEventListener('pointerdown', onHeadDown, true);
+    document.addEventListener('pointerdown', onFreeDown, true);
 
     function destroy() {
       setEditing(false);
-      window.removeEventListener('resize', onResize); document.removeEventListener('pointerdown', onHeadDown, true);
+      window.removeEventListener('resize', onResize); document.removeEventListener('pointerdown', onFreeDown, true);
       clearTimeout(resizeT); clearTimeout(sizeT); if (ro) ro.disconnect();
       ITEMS.forEach(function (it) {
         var e = el(it); if (!e) return;
@@ -292,7 +325,7 @@
     return {
       apply: apply, setEditing: setEditing, isEditing: function () { return editing; }, reset: reset, destroy: destroy, relabel: texts,
       // the desk: does full screen show this window? (only the windows that can be added)
-      shownWin: function (win) { for (var i = 0; i < ITEMS.length; i++) if (ITEMS[i].win === win) return isShown(state, ITEMS[i].id); return false; }
+      shownWin: function (win) { for (var i = 0; i < ITEMS.length; i++) if (ITEMS[i].win === win) return shown(ITEMS[i].id); return false; }
     };
   }
 

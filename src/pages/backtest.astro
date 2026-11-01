@@ -9,10 +9,25 @@
 // Lightweight Charts adresi dashboard.astro ile birebir aynı olmalı (SpaRouter kimlik kontrolü).
 // ============================================================
 import Layout from '../layouts/Layout.astro';
+
+// Replay iskeletindeki mumlar: sabit tohumlu rastgele yürüyüş (her derlemede aynı şekil), grafik alanının %14–86'sına
+// yayılır. top / h: grafik yüksekliğinin %'si (fiyat yukarı = top küçülür)
+const skelCandles = (() => {
+  let seed = 11, p = 0;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const bars = Array.from({ length: 48 }, (_, i) => {
+    const open = p;
+    p += (rnd() - 0.5) * 4 + Math.sin(i / 7) * 1.6;
+    return { hi: Math.max(open, p), lo: Math.min(open, p) };
+  });
+  const max = Math.max(...bars.map((b) => b.hi)), min = Math.min(...bars.map((b) => b.lo)), span = max - min || 1;
+  const y = (v: number) => 14 + ((max - v) / span) * 72;
+  return bars.map((b) => ({ top: y(b.hi).toFixed(1), h: Math.max(1.6, y(b.lo) - y(b.hi)).toFixed(1) }));
+})();
 ---
 <Layout lang="tr" spa={true} title="Backtest – Wawe Journal" bodyClass="backtest-page">
 <Fragment slot="head">
-  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=39" />
+  <link rel="stylesheet" href="/interface/backtest/css/backtest.css?v=42" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" as="script" />
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
@@ -31,18 +46,27 @@ import Layout from '../layouts/Layout.astro';
   <script src="/interface/backtest/js/bt-ctrader.js?v=2" is:inline defer></script>
   <script src="/interface/backtest/js/bt-store.js?v=6" is:inline defer></script>
   <script src="/interface/backtest/js/bt-sync.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-layout.js?v=5" is:inline defer></script>
+  <script src="/interface/backtest/js/bt-layout.js?v=6" is:inline defer></script>
   <script src="/interface/backtest/js/bt-desk.js?v=7" is:inline defer></script>
   <script src="/interface/backtest/js/bt-look.js?v=4" is:inline defer></script>
   <script src="/interface/backtest/js/bt-draw.js?v=7" is:inline defer></script>
   <script src="/interface/backtest/js/bt-stats.js?v=5" is:inline defer></script>
   <script src="/interface/backtest/js/bt-plan.js?v=3" is:inline defer></script>
   <script src="/interface/backtest/js/bt-range.js?v=1" is:inline defer></script>
-  <script src="/interface/backtest/js/bt-fsedit.js?v=2" is:inline defer></script>
-  <script src="/interface/backtest/js/backtest.js?v=41" is:inline defer data-page-script></script>
+  <script src="/interface/backtest/js/bt-fsedit.js?v=4" is:inline defer></script>
+  <script src="/interface/backtest/js/backtest.js?v=43" is:inline defer data-page-script></script>
 </Fragment>
 
   <main class="bt-main" id="bt-root" data-state="boot">
+    <!-- İlk boyamadan önce: açık kalan bir hesap (?account= ya da hatırlanan, backtest.js RESUME_KEY) yeniden açılacaksa
+         hesap listesi yerine replay iskeleti görünsün. Kullanıcı / hesap kontrolünü backtest.js yapar; tutmazsa listeye geçer. -->
+    <script is:inline data-bt-preflight>
+      (function () {
+        try {
+          if (new URLSearchParams(location.search).get('account') || localStorage.getItem('ww_bt_resume')) document.getElementById('bt-root').setAttribute('data-state', 'resume');
+        } catch (e) { /* storage blocked: the list */ }
+      })();
+    </script>
 
     <!-- ================= LIST VIEW ================= -->
     <!-- the list (with skeleton cards) is visible from the first paint; setPageState hides it for the replay -->
@@ -126,6 +150,48 @@ import Layout from '../layouts/Layout.astro';
       <p id="bt-fatal" class="bt-banner bt-banner-error" role="alert" data-i18n="backtest.deps_error" hidden>Sayfa bileşenleri yüklenemedi. Lütfen sayfayı yenileyin.</p>
     </section>
 
+    <!-- ================= REPLAY SKELETON ================= -->
+    <!-- yenileme / geri dönüşte açık kalan hesap yüklenirken (data-state="resume"; görünürlük CSS'te, [hidden] değil):
+         sade replay ekranının şekli — üst çubuk, kontrol satırı, çizim araçlı grafik, bakiye / emir / pozisyon kutuları -->
+    <section id="bt-replay-skel" class="bt-replay-skel bt-skeleton" aria-busy="true" aria-label="Backtest">
+      <div class="bt-rs-head">
+        <span class="bt-sk bt-rs-back"></span>
+        <span class="bt-rs-icons"><span class="bt-sk bt-rs-icon"></span><span class="bt-sk bt-rs-icon"></span><span class="bt-sk bt-rs-icon"></span><span class="bt-sk bt-rs-icon"></span></span>
+      </div>
+      <div class="bt-card bt-rs-bar">
+        <span class="bt-sk bt-rs-name"></span><span class="bt-sk bt-rs-chip"></span>
+        <span class="bt-sk bt-rs-ctl bt-rs-ctl-tf"></span><span class="bt-sk bt-rs-ctl bt-rs-ctl-date"></span>
+        <span class="bt-sk bt-rs-ctl"></span><span class="bt-sk bt-rs-ctl"></span><span class="bt-sk bt-rs-ctl"></span><span class="bt-sk bt-rs-ctl"></span>
+        <span class="bt-sk bt-rs-clock"></span>
+      </div>
+      <div class="bt-rs-body">
+        <div class="bt-card bt-rs-chart">
+          <div class="bt-rs-tools">
+            <span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span>
+          </div>
+          <div class="bt-rs-plot" aria-hidden="true">
+            <span class="bt-sk bt-rs-ohlc"></span>
+            <div class="bt-rs-candles">{skelCandles.map((c) => <i style={`--t:${c.top}%;--h:${c.h}%`}></i>)}</div>
+            <div class="bt-rs-axis"><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span><span class="bt-sk"></span></div>
+          </div>
+        </div>
+        <div class="bt-rs-side">
+          <div class="bt-card bt-rs-box bt-rs-balance">
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+            <div><span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-sk-dd"></span></div>
+          </div>
+          <div class="bt-card bt-rs-box bt-rs-order">
+            <span class="bt-sk bt-rs-tabs"></span>
+            <div class="bt-rs-trade"><span class="bt-sk"></span><span class="bt-sk"></span></div>
+            <span class="bt-sk bt-sk-dt"></span><span class="bt-sk bt-rs-field"></span>
+          </div>
+          <div class="bt-card bt-rs-box"><span class="bt-sk bt-sk-title"></span><span class="bt-sk bt-rs-field"></span></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ================= REPLAY VIEW ================= -->
     <section id="bt-view-replay" class="bt-view" data-replay="idle" hidden>
       <header class="bt-replay-head">
@@ -154,8 +220,8 @@ import Layout from '../layouts/Layout.astro';
           <button type="button" id="bt-keys-btn" class="bt-icon-btn" data-i18n-title="backtest.keys.title" title="Klavye kısayolları">
             <i data-lucide="keyboard" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.keys.title">Klavye kısayolları</span>
           </button>
-          <button type="button" id="bt-fs-btn" class="bt-icon-btn" data-bt-fs aria-pressed="false" data-i18n-title="backtest.fs.enter" title="Tam ekran (F)">
-            <i data-lucide="maximize-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.fs.enter">Tam ekran (F)</span>
+          <button type="button" id="bt-fs-btn" class="bt-icon-btn" data-bt-fs aria-pressed="false" data-i18n-title="backtest.fs.enter" title="Büyüt (F)">
+            <i data-lucide="maximize-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.fs.enter">Büyüt (F)</span>
           </button>
           <button type="button" id="bt-acc-settings-btn" class="bt-icon-btn" data-i18n-title="backtest.card.settings" title="Ayarlar">
             <i data-lucide="settings-2" aria-hidden="true"></i><span class="bt-sr" data-i18n="backtest.card.settings">Ayarlar</span>
@@ -273,8 +339,13 @@ import Layout from '../layouts/Layout.astro';
               <button type="button" id="bt-fs-edit" class="bt-fs-exit bt-fs-edit" aria-pressed="false" data-i18n-title="backtest.fsedit.title" title="Tam ekranı düzenle">
                 <i data-lucide="move" aria-hidden="true"></i><span data-i18n="backtest.fsedit.button">Düzenle</span>
               </button>
+              <!-- sayfa içi görünüm ⇄ gerçek tam ekran (bt-layout.js; Shift+F). İki etiketten hangisi görünür: .bt-fs-page sınıfı -->
+              <button type="button" id="bt-fs-real" class="bt-fs-exit bt-fs-real" data-bt-fs-real aria-pressed="false" data-i18n-title="backtest.fs.real_title" title="Tam ekran / sayfa içi (Shift+F)">
+                <span class="bt-fs-to-real"><i data-lucide="maximize" aria-hidden="true"></i><span data-i18n="backtest.fs.real">Tam ekran</span></span>
+                <span class="bt-fs-to-page"><i data-lucide="minimize" aria-hidden="true"></i><span data-i18n="backtest.fs.page">Sayfaya dön</span></span>
+              </button>
               <button type="button" id="bt-fs-exit" class="bt-fs-exit" data-bt-fs aria-pressed="false">
-                <i data-lucide="minimize-2" aria-hidden="true"></i><span data-i18n="backtest.fs.exit">Tam ekrandan çık (Esc)</span>
+                <i data-lucide="x" aria-hidden="true"></i><span data-i18n="backtest.fs.exit">Kapat (Esc)</span>
               </button>
             </div>
             <footer class="bt-chart-foot">

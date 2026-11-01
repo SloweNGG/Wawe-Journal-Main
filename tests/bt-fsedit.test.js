@@ -13,9 +13,11 @@ describe('bt-fsedit', () => {
     assert.deepEqual(FE.ITEMS.filter((i) => i.win).map((i) => i.win), ['open', 'orders', 'history', 'stats'], 'desk window ids');
     assert.ok(it_('draw').keepSize, 'the drawing bar keeps its size (its buttons follow its height)');
   });
-  it('shown: boxes unless hidden, windows once added', () => {
+  it('shown: boxes unless hidden, windows once added; open positions from the start on a wide screen', () => {
     const st = FE.sanitize(null);
     assert.ok(FE.isShown(st, 'order') && !FE.isShown(st, 'open'));
+    assert.ok(FE.isShown(st, 'open', true) && !FE.isShown(st, 'orders', true) && !FE.isShown(st, 'history', true), 'wide screen: open positions only');
+    assert.ok(!FE.isShown(FE.sanitize({ vis: { open: false } }), 'open', true), 'closed with × it stays closed');
     const st2 = FE.sanitize({ vis: { order: false, open: true, foo: true, history: 'yes' } });
     assert.deepEqual(st2.vis, { order: false, open: true });
     assert.ok(!FE.isShown(st2, 'order') && FE.isShown(st2, 'open') && !FE.isShown(st2, 'history') && !FE.isShown(st2, 'foo'));
@@ -35,7 +37,11 @@ describe('bt-fsedit', () => {
     assert.deepEqual(FE.fromRatio({ x: 0.7, y: 0.7 }, 1200, 900, 1000, 800), { left: M, top: M });
   });
   it('window size: stored or first size, at least the minimum, at most the screen', () => {
-    assert.deepEqual(FE.winSize(it_('open'), null, 1600, 900), { w: 560, h: 220 });
+    // open positions: first width leaves room for the replay controls centred at the bottom (half the screen - 336, 340..560)
+    assert.deepEqual(FE.winSize(it_('open'), null, 1920, 1000), { w: 560, h: 220 });
+    assert.deepEqual(FE.winSize(it_('open'), null, 1440, 900), { w: 384, h: 220 });
+    assert.deepEqual(FE.winSize(it_('open'), null, 1100, 800), { w: 340, h: 220 });
+    assert.deepEqual(FE.winSize(it_('history'), null, 1100, 800), { w: 720, h: 300 });
     assert.deepEqual(FE.winSize(it_('open'), { x: 0, y: 0, w: 700, h: 300 }, 1600, 900), { w: 700, h: 300 });
     assert.deepEqual(FE.winSize(it_('open'), { x: 0, y: 0, w: 50, h: 20 }, 1600, 900), { w: 240, h: 110 });
     assert.deepEqual(FE.winSize(it_('history'), { x: 0, y: 0, w: 3000, h: 3000 }, 1000, 600), { w: 1000 - 2 * M, h: 600 - 2 * M });

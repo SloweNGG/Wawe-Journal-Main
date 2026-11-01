@@ -12,7 +12,8 @@ links = '\n'.join('<link rel="stylesheet" href="%s">' % h for h in css)
 shared.append('https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js')
 scripts = '\n'.join('<script src="%s"></script>' % s for s in shared + own)
 body = html[html.index('<body'):]
-body = re.sub(r'<script\b[^>]*>.*?</script>', '', body, flags=re.S)
+# the page's pre-paint check (data-bt-preflight: replay skeleton instead of the list when an account is reopened) stays
+body = re.sub(r'<script\b(?![^>]*data-bt-preflight)[^>]*>.*?</script>', '', body, flags=re.S)
 body = body.replace('</body>', '').replace('</html>', '')
 body = re.sub(r'<body[^>]*>', '<body class="backtest-page">', body, count=1)
 page = '''<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,7 +28,7 @@ window.__warns=[];console.warn=function(){window.__warns.push([].slice.call(argu
 window.__cacheInv=[];window.wwCache={invalidate:function(p){window.__cacheInv.push(p)}};
 window.__events=[];window.addEventListener('trade-saved',function(e){window.__events.push(e.detail)});
 if(qp.get('backend')!=='supabase')window.sb={};window.wwLog=console;
-window.requireAuth=async function(){return {id:'u-'+role,app_metadata:{role:role}}};
+window.requireAuth=async function(){var d=+(sessionStorage.getItem('bt-smoke-slowauth')||0);if(d)await new Promise(function(r){setTimeout(r,d)});return {id:'u-'+role,app_metadata:{role:role}}};
 window.__journals=[{id:'11111111-1111-4111-8111-111111111111',user_id:'u-'+role,name:'Ana Hesap',is_default:true},{id:'22222222-2222-4222-8222-222222222222',user_id:'u-'+role,name:'Ikinci Hesap',is_default:false}];
 window.journal={ensureActiveJournal:async function(){},listJournals:async function(){return window.__journals}};
 window.getUserPlanSilent=async function(){return {plan:qp.get('plan')||'premium'}};window.isPro=async function(){return (qp.get('plan')||'premium')==='premium'};window.hasFeature=async function(f){return /^backtest/.test(f)&&(qp.get('plan')||'premium')==='premium'};

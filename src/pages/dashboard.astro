@@ -458,7 +458,7 @@ import Layout from '../layouts/Layout.astro';
     <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
 
     <script src="/interface/dashboard/js/prop-card-v2.js?v=7" is:inline defer></script>
-    <script src="/interface/dashboard/js/dashboard.js?v=1793900001" is:inline defer data-page-script></script>
+    <script src="/interface/dashboard/js/dashboard.js?v=1793900200" is:inline defer data-page-script></script>
   </Fragment>
 
   <script is:inline>
@@ -980,7 +980,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="prop-card-phase-banner-top">
             <span class="prop-card-phase-desc" style="display:inline-flex;align-items:center;gap:6px;">
               <i data-lucide="target" style="color:#818cf8;flex-shrink:0;"></i>
-              <span>${t('dashboard.card.monthly_target') || 'Aylık Hedef'}: <strong style="color:var(--text);">${fmtPnl(totalPnL)}</strong> / ${fmtTarget(monthlyTarget)}</span>
+              <span>${t('dashboard.card.monthly_target') || 'Aylık Hedef'}: <strong style="color:var(--text);">${fmtPnl(goalMonthPnL)}</strong> / ${fmtTarget(monthlyTarget)}</span>
             </span>
             <span class="prop-card-phase-pct" style="color:${goalPctColor};">${goalPctText}</span>
           </div>
@@ -1047,7 +1047,7 @@ import Layout from '../layouts/Layout.astro';
         goalBtnLabel: t('dashboard.card.set_goal') || 'Hedef Belirle',
         goalBtnTitle: t('dashboard.goal.title') || 'Aylık Hedef Belirle',
         goalLabel: t('dashboard.card.monthly_target') || 'Aylık Hedef',
-        pnlText: fmtPnl(totalPnL),
+        pnlText: fmtPnl(goalMonthPnL),
         targetText: fmtTarget(monthlyTarget),
         goalPct: rawGoalPct,
         goalPctText: goalPctText,

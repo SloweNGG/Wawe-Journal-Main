@@ -47,6 +47,7 @@
     { id: 'buy', keys: ['Shift', 'B'] },
     { id: 'sell', keys: ['Shift', 'S'] },
     { id: 'fullscreen', keys: ['F'] },
+    { id: 'fullscreen_real', keys: ['Shift', 'F'] },
     { id: 'center', keys: ['R'] },
     { id: 'exit', keys: ['Esc'] },
     { id: 'tools', keys: ['1', '…', '9'] },
@@ -65,7 +66,7 @@
   function mount(opts) {
     var PAGE = opts.page, root = opts.root, view = opts.view, storage = opts.storage;
     var prefs = load(storage);
-    var fs = false, drag = null;
+    var fs = false, fsReal = false, drag = null;
 
     function persist() { save(storage, prefs); }
     function applySizes() {
@@ -131,25 +132,50 @@
       var box = view.getBoundingClientRect();
       root.style.setProperty('--bt-side-w', fitSide(prefs.sideW, box.width) + 'px');
       root.style.setProperty('--bt-bottom-h', fitBottom(prefs.bottomH, box.height - 120) + 'px');
+      if (fs && !fsReal) syncFsTop();   // the navbar is shorter on narrow screens
     });
 
-    // full screen: the replay view covers the window (CSS .bt-fs), the browser full-screen API when it is available
-    function setFullscreen(on) {
-      on = !!on;
-      if (on === fs) return;
-      fs = on;
+    // Full screen has two levels (CSS .bt-fs for both):
+    //  - in the page (F, the header button): the replay view covers the page under the navbar, which stays usable (.bt-fs-page);
+    //  - real (the button in the view, Shift+F): it covers the whole window and asks the browser for full screen when it can.
+    // --bt-fs-top on <html>: where the view starts (the navbar's bottom edge); the floating boxes and the arrange bar sit below it.
+    function navBottom() {
+      var n = document.getElementById('navbar-container');
+      if (!n) return 0;
+      var r = n.getBoundingClientRect();
+      return r.height > 0 && r.bottom > 0 ? Math.round(r.bottom) : 0;
+    }
+    function syncFsTop() {
+      var html = document.documentElement;
+      if (fs && !fsReal) html.style.setProperty('--bt-fs-top', navBottom() + 'px');
+      else html.style.removeProperty('--bt-fs-top');
+    }
+    // the room the full-screen boxes may use (bt-fsedit.js places them inside it)
+    function fsFrame() {
+      var top = fs && !fsReal ? navBottom() : 0;
+      return { x: 0, y: top, w: global.innerWidth, h: Math.max(0, global.innerHeight - top) };
+    }
+    function setFullscreen(on, real) {
+      on = !!on; real = on && !!real;
+      if (on === fs && real === fsReal) return;
+      fs = on; fsReal = real;
+      var html = document.documentElement;
       root.classList.toggle('bt-fs', on);
-      document.documentElement.classList.toggle('bt-fs-lock', on);
-      var b = document.querySelectorAll('[data-bt-fs]');
-      for (var i = 0; i < b.length; i++) b[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+      root.classList.toggle('bt-fs-page', on && !real);
+      html.classList.toggle('bt-fs-lock', on);
+      html.classList.toggle('bt-fs-inpage', on && !real);
+      syncFsTop();
+      var b = document.querySelectorAll('[data-bt-fs]'), r = document.querySelectorAll('[data-bt-fs-real]'), i;
+      for (i = 0; i < b.length; i++) b[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+      for (i = 0; i < r.length; i++) r[i].setAttribute('aria-pressed', real ? 'true' : 'false');
       try {
-        if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(function () { /* CSS mode is enough */ });
-        if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () { /* ignore */ });
+        if (real && html.requestFullscreen && !document.fullscreenElement) html.requestFullscreen().catch(function () { /* CSS mode is enough */ });
+        if (!real && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () { /* ignore */ });
       } catch (e) { /* CSS mode only */ }
       if (opts.onChange) opts.onChange(prefs, 'fullscreen');
     }
-    // Esc in browser full screen is taken by the browser: leave our mode with it
-    PAGE.on(document, 'fullscreenchange', function () { if (!document.fullscreenElement && fs) setFullscreen(false); });
+    // Esc in browser full screen is taken by the browser: step back to the page view with it (a second Esc closes that)
+    PAGE.on(document, 'fullscreenchange', function () { if (!document.fullscreenElement && fsReal) setFullscreen(true, false); });
 
     // shortcut sheet
     function renderSheet(box) {
@@ -177,7 +203,9 @@
       mode: function () { return prefs.mode || 'simple'; },
       toggleMode: function () { setMode(prefs.mode === 'advanced' ? 'simple' : 'advanced'); },
       isFullscreen: function () { return fs; },
+      isRealFullscreen: function () { return fs && fsReal; },
       setFullscreen: setFullscreen,
+      fsFrame: fsFrame,
       renderSheet: renderSheet,
       setCharts: function (charts, tfs) { prefs.charts = charts; if (tfs) prefs.tfs = tfs.slice(0, 4); persist(); },
       destroy: function () { if (fs) setFullscreen(false); root.classList.remove('bt-resizing'); }

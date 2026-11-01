@@ -108,7 +108,22 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (el8) el8.style.display = 'none';
   }
 
-  function hideSkeletons() {
+  // İskelet gidince içerik bir anda belirmesin: hafifçe yükselerek gelsin (styles.css → .ww-reveal).
+  // stagger: doğrudan çocuklar (kartlar) sırayla gelir. Bitince sınıf kaldırılır ki ileride
+  // display:none → görünür geçişinde animasyon tekrar oynamasın.
+  function revealIn(el, delayMs, stagger) {
+    if (!el) return;
+    var cls = stagger ? 'ww-reveal-stagger' : 'ww-reveal';
+    el.style.setProperty('--ww-d', delayMs + 'ms');
+    if (stagger) {
+      Array.prototype.forEach.call(el.children, function (child, i) { child.style.setProperty('--ww-i', i); });
+    }
+    el.classList.add(cls);
+    var total = delayMs + (stagger ? el.children.length * 60 : 0) + 700;
+    setTimeout(function () { el.classList.remove(cls); }, total);
+  }
+
+  function hideSkeletons(reveal) {
     var el1 = safeEl('stats-skeleton');
     var el2 = safeEl('stats-grid');
     var el3 = safeEl('charts-top-skeleton');
@@ -126,6 +141,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (el6) el6.style.display = 'grid';
     if (el7) el7.style.display = 'none';
     if (el8) el8.style.display = 'block';
+
+    if (reveal) {
+      revealIn(el2, 0, true);      // 5 stat kartı soldan sağa
+      revealIn(el4, 120, true);    // kümülatif + hesap kartı
+      revealIn(el6, 220, true);    // günlük / sembol / dağılım
+      revealIn(el8, 340, false);   // son işlemler
+    }
 
     return new Promise(function (resolve) {
       requestAnimationFrame(function () {
@@ -228,7 +250,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   var chartRafId = null;
   var isPageVisible = true;
   var chartsInitialized = false;
-  var chartsBusy = false;
+  var chartRenderGen = 0;   // her destroy/render'da artar; sıradaki (kare kare) grafik çizimleri eskiyse durur
   var chartsRenderedOnce = false;
   var refreshToken = 0;
 
@@ -723,7 +745,8 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       function update(currentTime) {
         var elapsed = currentTime - startTime;
         var progress = Math.min(elapsed / duration, 1);
-        var current = startValue + (targetValue - startValue) * progress;
+        var eased = 1 - Math.pow(1 - progress, 3);   // ease-out: hızlı başlar, hedefe yumuşak oturur
+        var current = startValue + (targetValue - startValue) * eased;
         if (isCurrency) el.textContent = formatCurrency(current);
         else if (isPercentage) el.textContent = current.toFixed(1) + '%';
         else el.textContent = Math.floor(current);
@@ -1144,6 +1167,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // ============================================================
 
   function destroyAllCharts() {
+    chartRenderGen++;   // henüz çizilmemiş, sırada bekleyen grafikler iptal
     for (var lwcId in lwcCharts) {
       if (lwcCharts[lwcId]) {
         try {
@@ -2090,6 +2114,35 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // ⭐ SORUN 7: mobil donut container seçimi
   // ============================================================
 
+  // Grafik çizilince boş kutudan "pat" diye gelmesin, yumuşakça belirsin (yalnızca opacity: ölçüye dokunmaz)
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fadeInChart(el) {
+    if (!el || reduceMotion || typeof el.animate !== 'function') return;
+    try { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }); } catch (e) { }
+  }
+
+  function mountApex(id, options) {
+    if (!options) return;
+    var el = safeEl(id);
+    if (!el) return;
+    var chart = new ApexCharts(el, options);
+    chart.render();
+    apexCharts[id] = chart;
+    setupResizeObserver(id, chart);
+    fadeInChart(el);
+  }
+
+  function mountLwc(id, renderFn, trades) {
+    var el = safeEl(id);
+    if (!el) return;
+    el.innerHTML = '';
+    var chart = renderFn(trades, el);
+    if (!chart) return;
+    lwcCharts[id] = chart;
+    setupResizeObserver(id, chart);
+    fadeInChart(el);
+  }
+
   var renderAttempts = 0;
   function renderCharts(trades) {
     if (!isPageVisible) return;
@@ -2098,25 +2151,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       return;
     }
 
-    if (chartsBusy) return;
-    chartsBusy = true;
-
-    try {
-      var winlossTargetId = 'chart-winloss';
-      var directionTargetId = 'chart-direction';
-      var containerIds = ['chart-cumulative', 'chart-daily', 'chart-symbol', winlossTargetId, directionTargetId];
-      var allContainersExist = true;
-
-      for (var c = 0; c < containerIds.length; c++) {
-        var container = safeEl(containerIds[c]);
-        if (!container) {
-          allContainersExist = false;
-          break;
-        }
-      }
-
-      if (!allContainersExist) {
-        chartsBusy = false;
+    var winlossTargetId = 'chart-winloss';
+    var directionTargetId = 'chart-direction';
+    var containerIds = ['chart-cumulative', 'chart-daily', 'chart-symbol', winlossTargetId, directionTargetId];
+    for (var c = 0; c < containerIds.length; c++) {
+      if (!safeEl(containerIds[c])) {
         renderAttempts++;
         if (renderAttempts > 5) {
           renderAttempts = 0;
@@ -2128,91 +2167,42 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
         }, 150);
         return;
       }
-      renderAttempts = 0;
-
-      destroyAllCharts();
-
-      try {
-        var cumContainer = safeEl('chart-cumulative');
-        if (cumContainer) {
-          cumContainer.innerHTML = '';
-          var chart = renderCumulativeLwc(trades, cumContainer);
-          if (chart) {
-            lwcCharts['chart-cumulative'] = chart;
-            setupResizeObserver('chart-cumulative', chart);
-          }
-        }
-      } catch (e) {
-        console.error('Cumulative chart render hatası:', e);
-      }
-
-      try {
-        var wlOptions = renderWinLossChart(trades);
-        if (wlOptions) {
-          var wlContainer = safeEl(winlossTargetId);
-          if (wlContainer) {
-            var chart2 = new ApexCharts(wlContainer, wlOptions);
-            chart2.render();
-            apexCharts[winlossTargetId] = chart2;
-            setupResizeObserver(winlossTargetId, chart2);
-          }
-        }
-      } catch (e) {
-        console.error('Win/Loss chart render hatası:', e);
-      }
-
-      try {
-        var dailyContainer = safeEl('chart-daily');
-        if (dailyContainer) {
-          dailyContainer.innerHTML = '';
-          var chart3 = renderDailyLwc(trades, dailyContainer);
-          if (chart3) {
-            lwcCharts['chart-daily'] = chart3;
-            setupResizeObserver('chart-daily', chart3);
-          }
-        }
-      } catch (e) {
-        console.error('Daily chart render hatası:', e);
-      }
-
-      try {
-        var symbolOptions = renderSymbolChart(trades);
-        if (symbolOptions) {
-          var symbolContainer = safeEl('chart-symbol');
-          if (symbolContainer) {
-            var chart4 = new ApexCharts(symbolContainer, symbolOptions);
-            chart4.render();
-            apexCharts['chart-symbol'] = chart4;
-            setupResizeObserver('chart-symbol', chart4);
-          }
-        }
-      } catch (e) {
-        console.error('Symbol chart render hatası:', e);
-      }
-
-      try {
-        var dirOptions = renderDirectionChart(trades);
-        if (dirOptions) {
-          var dirContainer = safeEl(directionTargetId);
-          if (dirContainer) {
-            var chart5 = new ApexCharts(dirContainer, dirOptions);
-            chart5.render();
-            apexCharts[directionTargetId] = chart5;
-            setupResizeObserver(directionTargetId, chart5);
-          }
-        }
-      } catch (e) {
-        console.error('Direction chart render hatası:', e);
-      }
-
-      chartsInitialized = true;
-      chartsRenderedOnce = true;
-
-    } catch (e) {
-      console.error('ApexCharts render error:', e);
-    } finally {
-      chartsBusy = false;
     }
+    renderAttempts = 0;
+
+    destroyAllCharts();             // önceki çizimi ve sırada bekleyenleri iptal eder
+    var gen = chartRenderGen;
+
+    // Beş grafiği tek seferde çizmek ana iş parçacığını yüzlerce ms kilitliyordu (sayfa "kasıp"
+    // her şey birden geliyordu). Şimdi her grafik kendi karesinde çizilir, aralarda tarayıcı ekranı
+    // boyar ve animasyonlar akmaya devam eder. Sıra: göze ilk çarpandan gizli slayta.
+    var tasks = [
+      ['Cumulative', function () { mountLwc('chart-cumulative', renderCumulativeLwc, trades); }],
+      ['Win/Loss', function () { mountApex(winlossTargetId, renderWinLossChart(trades)); }],
+      ['Daily', function () { mountLwc('chart-daily', renderDailyLwc, trades); }],
+      ['Symbol', function () { mountApex('chart-symbol', renderSymbolChart(trades)); }],
+      ['Direction', function () { mountApex(directionTargetId, renderDirectionChart(trades)); }]
+    ];
+
+    // Hepsi sıraya alındı: bu arada gelen resize yalnızca çizilmiş olanları boyutlar (updateCharts)
+    chartsInitialized = true;
+    chartsRenderedOnce = true;
+
+    var i = 0;
+    function runNext() {
+      if (gen !== chartRenderGen || !PAGE.alive) return;
+      var task = tasks[i++];
+      try {
+        task[1]();
+      } catch (e) {
+        console.error(task[0] + ' chart render hatası:', e);
+      }
+      if (i < tasks.length) {
+        // bir sonraki kare boyandıktan sonra devam et
+        requestAnimationFrame(function () { setTimeout(runNext, 0); });
+      }
+    }
+    runNext();   // kümülatif hemen (prop seviye çizgileri lwcCharts['chart-cumulative']'i bekler)
   }
 
   // ============================================================
@@ -2998,7 +2988,6 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       if (myToken !== refreshToken) return;
 
-      renderStats(filtered, previous, true);
       await renderRecentTrades(filtered);
 
       if (myToken !== refreshToken) return;
@@ -3009,12 +2998,15 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
       loadMiniCalendar(allTrades);
 
-      try {
-        await updatePlanBadge();
-      } catch (e) { }
+      // Sayılar kartlar görünür olurken saymaya başlasın (eskiden strateji isteği beklenirken
+      // iskeletin arkasında sayıyordu, kart açılınca sayım yarılanmış oluyordu)
+      renderStats(filtered, previous, true);
+
+      // Navbar plan rozeti panel içeriğiyle ilgisiz: beklenirse iskelet bir ağ isteği kadar fazla kalıyordu
+      try { updatePlanBadge().catch(function () { }); } catch (e) { }
 
       if (isInitial) {
-        await hideSkeletons();
+        await hideSkeletons(true);
       }
 
       if (myToken !== refreshToken) return;
