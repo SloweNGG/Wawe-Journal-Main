@@ -582,7 +582,7 @@
   var tzCountriesPromise = null;
   function loadTzCountries() {
     if (!tzCountriesPromise) {
-      tzCountriesPromise = fetch('/interface/shared/tz-countries.json?v=1')
+      tzCountriesPromise = fetch('/interface/shared/tz-countries.json?v=__WW_BUILD_ID__')
         .then(function (r) { return r.ok ? r.json() : {}; })
         .catch(function () { return {}; });
     }

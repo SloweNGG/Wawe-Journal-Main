@@ -2551,7 +2551,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (pdfFontCache !== null) return pdfFontCache;
     try {
       var bufs = await Promise.all(['Regular', 'Bold'].map(function (w) {
-        return fetch('/fonts/pdf/DMSans-' + w + '.ttf').then(function (r) { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); });
+        return fetch('/fonts/pdf/DMSans-' + w + '.ttf?v=__WW_BUILD_ID__').then(function (r) { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); });
       }));
       pdfFontCache = bufs.map(function (buf) {
         var bytes = new Uint8Array(buf), bin = '';
@@ -3173,7 +3173,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var demoMode = new URLSearchParams(location.search).get('demo');
       if (demoMode && typeof isAdmin === 'function' && isAdmin(user)) {
         var demoScript = document.createElement('script');
-        demoScript.src = '/interface/shared/demo-data.js?v=2';
+        demoScript.src = '/interface/shared/demo-data.js?v=__WW_BUILD_ID__';
         demoScript.onload = function () { window.WwDemoData.run(demoMode); };
         document.head.appendChild(demoScript);
         return;

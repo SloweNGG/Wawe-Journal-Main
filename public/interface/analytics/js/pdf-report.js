@@ -53,7 +53,7 @@ async function loadFonts() {
   if (fontCache !== null) return fontCache;
   try {
     var bufs = await Promise.all(['Regular', 'Bold'].map(function (w) {
-      return fetch('/fonts/pdf/DMSans-' + w + '.ttf').then(function (r) {
+      return fetch('/fonts/pdf/DMSans-' + w + '.ttf?v=__WW_BUILD_ID__').then(function (r) {
         if (!r.ok) throw new Error('font ' + r.status);
         return r.arrayBuffer();
       });
