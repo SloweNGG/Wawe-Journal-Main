@@ -16,7 +16,8 @@ import {
   getVisibleWidgetKeys,
   isAnalysisWidget,
   widgetLayoutClasses,
-  forceResizeAllCharts
+  forceResizeAllCharts,
+  loadDragDrop
 } from './dashboard-manager.js';
 import {
   getWidgetPrefs,
@@ -363,6 +364,7 @@ function ensureDrawer() {
 
 function openDrawer(returnFocusEl) {
   closePopover();
+  loadDragDrop();   // "Özelleştir" = düzen modu: kartları sürüklemek için SortableJS hazır olsun (perf 2c)
   ensureDrawer();
   drawerReturnFocus = returnFocusEl || null;
   renderDrawer();

@@ -34,7 +34,7 @@ describe('lazy chart libraries', () => {
     const { WwLazy } = loadLazy();
     assert.equal(WwLazy.LIBS.apexcharts.url, APEX);
     assert.equal(WwLazy.LIBS['lightweight-charts'].url, LWC);
-    assert.ok(read('src/pages/backtest.astro').includes(WwLazy.LIBS.sortablejs.url));
+    assert.ok(read('tests/smoke/make.py').includes(WwLazy.LIBS.sortablejs.url), 'smoke harness loads the same SortableJS');
   });
 
   it('loadLib resolves without loading when the global already exists', async () => {
@@ -69,5 +69,25 @@ describe('lazy chart libraries', () => {
     assert.ok(!js.includes('_apexReadyPoller'));
     assert.match(js, /window\.WwLazy\.loadLib\('apexcharts'\)/);
     assert.match(js, /_apexWatchCancels\.forEach/);
+  });
+});
+
+describe('lazy SortableJS (perf 2c)', () => {
+  it('analytics and backtest have no eager SortableJS tag', () => {
+    for (const p of ['analytics', 'backtest']) assert.ok(!/<script[^>]+sortablejs/.test(read(`src/pages/${p}.astro`)), p);
+  });
+
+  it('analytics loads it on drag intent or when the customizer opens', () => {
+    const dm = read('public/interface/analytics/js/dashboard-manager.js');
+    assert.match(dm, /export function loadDragDrop\(\)/);
+    assert.match(dm, /closest\('\.widget-tools'\)/);
+    for (const ev of ['pointerover', 'focusin', 'pointerdown', 'touchstart']) assert.ok(dm.includes("addEventListener('" + ev + "'"), ev);
+    assert.match(read('public/interface/analytics/js/widget-customizer.js'), /function openDrawer\(returnFocusEl\) \{\s*closePopover\(\);\s*loadDragDrop\(\);/);
+  });
+
+  it('backtest stats attach SortableJS after loading it for a draggable render', () => {
+    const js = read('public/interface/backtest/js/bt-stats.js');
+    assert.match(js, /if \(opts\.drag && !global\.Sortable && global\.WwLazy\) \{\s*global\.WwLazy\.loadLib\('sortablejs'\)/);
+    assert.match(js, /grid\.isConnected && !sortable/);
   });
 });

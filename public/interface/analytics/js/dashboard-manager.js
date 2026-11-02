@@ -155,6 +155,23 @@ export function widgetLayoutClasses(key, w) {
 }
 
 // ⭐ DRAG DROP
+// SortableJS sayfa açılışında inmez (perf 2c). Bu sayfada ayrı bir düzen modu yok (tutamaçlar hep görünür);
+// kütüphane düzenleme niyeti görülünce yüklenir: kartın araç köşesine (.widget-tools: ayar + tutamaç) fare
+// gelince / odaklanınca, tutamaca basınca / dokununca ya da "Özelleştir" paneli açılınca (loadDragDrop).
+function createSortable(grid) {
+  return new Sortable(grid, {
+    animation: 300,
+    handle: '.drag-handle',
+    ghostClass: 'sortable-ghost',
+    onStart: function() { isDragging = true; },
+    onEnd: function() {
+      isDragging = false;
+      setTimeout(forceResizeAllCharts, 300);
+      saveLayoutOrder();
+    }
+  });
+}
+
 export function initDragDrop() {
   var grid = document.getElementById('dashboard-grid');
   if (!grid) return;
@@ -165,18 +182,37 @@ export function initDragDrop() {
   }
 
   if (typeof Sortable !== 'undefined') {
-    sortableInstance = new Sortable(grid, {
-      animation: 300,
-      handle: '.drag-handle',
-      ghostClass: 'sortable-ghost',
-      onStart: function() { isDragging = true; },
-      onEnd: function() {
-        isDragging = false;
-        setTimeout(forceResizeAllCharts, 300);
-        saveLayoutOrder();
-      }
-    });
+    sortableInstance = createSortable(grid);
+    return;
   }
+  armDragIntent(grid);
+}
+
+// Düzenleme niyeti: SortableJS'i yükle ve ızgaraya bağla (tekrar çağrılabilir)
+export function loadDragDrop() {
+  if (typeof window === 'undefined' || !window.WwLazy) return Promise.resolve();
+  return window.WwLazy.loadLib('sortablejs').then(function() {
+    var grid = document.getElementById('dashboard-grid');
+    if (grid && !sortableInstance) sortableInstance = createSortable(grid);
+  }, function(err) {
+    console.error('[Analiz] SortableJS yüklenemedi:', err);
+  });
+}
+
+// Izgara öğesi innerHTML ile yeniden çizilse de ızgaranın kendisi kalır; dinleyiciler bir kez eklenir
+function armDragIntent(grid) {
+  if (grid.__wwDragArmed) return;
+  grid.__wwDragArmed = true;
+  function onIntent(e) {
+    if (sortableInstance) return;
+    var t = e.target;
+    if (!t || !t.closest || !t.closest('.widget-tools')) return;
+    loadDragDrop();
+  }
+  grid.addEventListener('pointerover', onIntent, true);
+  grid.addEventListener('focusin', onIntent, true);
+  grid.addEventListener('pointerdown', onIntent, true);
+  grid.addEventListener('touchstart', onIntent, { capture: true, passive: true });
 }
 
 // SPA: sayfadan çıkarken sürükle-bırak örneğini kaldır (document'a eklediği dinleyiciler dahil)
