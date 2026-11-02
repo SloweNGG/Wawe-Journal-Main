@@ -1,7 +1,10 @@
 // Hızlı ekleme bu sayfada kullanılabilir mi? SPA geçişinde pencere body'de kalıyor ama
 // quick-add kullanmayan sayfada gizli (bkz. SpaRouter.astro, body[data-quick-add])
 function wwQuickAddReady() {
-  if (typeof window.quickAddOpen !== 'function' || !document.getElementById('quick-add-overlay')) return false;
+  var open = window.quickAddOpen;
+  if (typeof open !== 'function') return false;
+  // Gecikmeli yüklemede (quick-add-boot.js) pencere ilk açılışta kurulur; o ana kadar overlay yoktur
+  if (!open.__wwLazy && !document.getElementById('quick-add-overlay')) return false;
   var spa = !!document.querySelector('meta[name="astro-view-transitions-enabled"]');
   return !spa || document.body.hasAttribute('data-quick-add');
 }

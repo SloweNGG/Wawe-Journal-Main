@@ -159,13 +159,8 @@ import Layout from '../layouts/Layout.astro';
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <!-- 5. QUICK ADD (ES5) -->
-  <!-- ⭐ ParserV2 -->
-  <script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-add.js" is:inline defer></script>
+  <!-- HIZLI EKLE: yalnızca ön yükleyici (FAB + tema); asıl modül ilk açılışta iner (perf 2a) -->
+  <script src="/interface/quick-add/js/quick-add-boot.js" is:inline defer></script>
 
   <!-- 6. ⭐ PRO DASHBOARD - MODÜLER JS (ES Module) -->
   <script type="module" src="/interface/analytics/js/analytics.js" is:inline defer></script>
