@@ -3,8 +3,8 @@
 Dal: `perf/tonight` (kaynak: `master`, 252c2db). Not: `origin/main`, `master` ile ortak geçmişi olmayan eski (Eylül 2026) bir
 daldır; aktif kod `master`'da olduğu için iş `master`'dan açıldı.
 
-**Durum:** `Parça 1 tamamlandı` (önbellek: tek build ID ile sürümleme, immutable `_headers`, cache-first service worker).
-Sıradaki: parça 2.
+**Durum:** `Parça 2 tamamlandı` (parça 1: önbellek — tek build ID, immutable `_headers`, cache-first SW; parça 2:
+sayfalar önce ağ + Hızlı Ekle / grafik kütüphaneleri / SortableJS gecikmeli yükleme). Sıradaki: parça 3.
 
 ## Başlangıç ölçümü
 
@@ -196,19 +196,53 @@ Canlıya almadan önce (Cloudflare `perf/tonight` için önizleme adresi üretiy
 - [ ] Onboarding saat dilimi listesi doluyor (`tz-countries.json`).
 - [ ] Admin: `/dashboard?demo=seed` demo verisini yüklüyor (`demo-data.js`); admin paneli açılıyor.
 - [ ] Quick-add: işlem ekleme penceresi ve broker metni yapıştırma/çözümleme çalışıyor.
-- [ ] DevTools → Application → Service Workers: aktif SW; Cache Storage'da yalnızca `wawe-v52-<ID>`.
+- [ ] DevTools → Application → Service Workers: aktif SW; Cache Storage'da yalnızca `wawe-v53-<ID>` (parça 2'den beri v53).
 - [ ] Network sekmesinde normal yenileme (F5): JS/CSS satırları "(ServiceWorker)" ya da "(disk cache)"; 304 yok.
 - [ ] İkinci bir deploy sonrası: açık sekmede bir sayfaya geçince tam yükleme oluyor, yeni `?v=` geliyor, Cache
-      Storage'da yeni `wawe-v52-<yeni ID>` var, eskisi silinmiş.
+      Storage'da yeni `wawe-v53-<yeni ID>` var, eskisi silinmiş.
 - [x] Risk 2 (uzantısız HTML'in SW'de önbelleklenmesi) için karar: önce ağ (parça 2, 2-pre).
 
 ---
 
 # Parça 2 — Gecikmeli yükleme
 
-**Durum:** devam ediyor.
+**Durum:** `Parça 2 tamamlandı`. Her adımdan sonra `npm run build` ve `npm test` geçti (sonda 556 test, 0 hata;
+parça 1 sonunda 527).
 
-## 2-pre — Sayfalar için "önce ağ" (risk 2'nin kapanışı)
+## Ölçüm (giriş yapılmış hâl, sahte oturum)
+
+Yöntem: `scripts/perf/` (aşağıda "Sonraki parça için notlar"). Supabase istekleri yerelde cevaplandı (40 işlem,
+1 defter, 3 strateji); sunucu `scripts/perf/cf-serve.mjs` (Cloudflare benzeri, gzip). "Önce" = parça 1 sonu (da7b650),
+"sonra" = parça 2 sonu.
+
+İlk açılışta inen (kaydırma yok, Supabase hariç):
+
+| Sayfa | Ekran | Önce: istek / toplam / JS | Sonra: istek / toplam / JS |
+|---|---|---|---|
+| dashboard | mobil 390×844 | 56 / 1086 KB / 644 KB | **50 / 792 KB / 350 KB** |
+| analytics | mobil | 67 / 1130 KB / 693 KB | **60 / 821 KB / 384 KB** |
+| strategies | mobil | 53 / 1018 KB / 584 KB | 49 / 985 KB / 550 KB (kartlar ilk ekranda → ApexCharts iner) |
+| trades | mobil | 52 / 807 KB / 370 KB | 48 / 772 KB / 336 KB |
+| calendar | mobil | 51 / 788 KB / 368 KB | 47 / 754 KB / 334 KB |
+| backtest | mobil | 62 / 941 KB / 508 KB | 62 / 928 KB / 494 KB |
+| dashboard | masaüstü 1440×900 | 56 / 1086 KB / 644 KB | 52 / 1053 KB / 611 KB (grafikler ilk ekranda → kütüphaneler iner) |
+| analytics | masaüstü | 66 / 1116 KB / 694 KB | 61 / 1067 KB / 645 KB |
+
+Lighthouse (mobil, simüle yavaş 4G, sahte oturum; dashboard 3–4 çalıştırma, analytics 1–2):
+
+| Sayfa | Önce: puan / LCP / CLS / TBT | Sonra: puan / LCP / CLS / TBT |
+|---|---|---|
+| dashboard | 53–58 / 9.88–10.07 s / 0.000 / 280–415 ms | **55–62 / 7.69–7.77 s** / 0.000–0.006 / 203–399 ms |
+| analytics | 43 / 11.23 s / 0.048 / 746 ms | **57–59 / 8.47–8.63 s** / 0.031–0.048 / 275–340 ms |
+
+Son görünüm (grafikler yüklendikten sonra, 1440×900) baseline ile piksel piksel karşılaştırıldı: dashboard 32,
+strategies 20, analytics 64 piksel fark. Hepsi zamanla oynayan öğeler: navbar'daki "Pro" rozetinin animasyonlu noktası
+(6×6) ve analytics'teki içgörü kartının zamanlı ilerleme çubuğu. Aynı build'in iki çalıştırması arasında da 44 piksel
+fark var. Düzen farkı yok.
+
+## Yapılanlar
+
+### 2-pre — Sayfalar için "önce ağ" (risk 2'nin kapanışı) · `bb545f4`
 
 - `public/sw.js`: tarayıcı gezintileri (`mode === 'navigate'` / `destination === 'document'`) ve uzantısız sayfa
   yolları (`/dashboard`; Cloudflare `.html` adresini buraya yönlendiriyor, SPA router da HTML'i bu adresle `fetch`
@@ -230,3 +264,200 @@ Canlıya almadan önce (Cloudflare `perf/tonight` için önizleme adresi üretiy
   istek, gzip ~21–29 KB). Karşılığı: deploy sonrası ilk açılışta da yeni sürüm.
 - Dosyalar: `public/sw.js`, `tests/sw.test.js` (önce ağ, çevrimdışı kopya, `/x` ↔ `/x.html`, 3 sn zaman aşımı,
   yönlendirmenin önbelleğe yazılmaması, panellerin SW dışında kalması).
+
+### 2.0 — Yükleyici `public/interface/shared/lazy-load.js` · `1f29ee6` (2a ile birlikte)
+- `BaseHead.astro`'ya `defer` ile girdi (uygulama sayfaları). `window.WwLazy`:
+  - `loadScriptOnce(url, { test })`: aynı adres (sorgu yok sayılarak) bir kez eklenir, aynı anda gelen çağrılar aynı
+    Promise'i paylaşır; `test()` true ise (kütüphane zaten sayfada) hiç yüklemez; hata olursa kayıt silinir, yeniden
+    denenir. `window.loadScriptOnce` olarak da açık.
+  - `loadScriptsInOrder([...])`: paralel indirir, sırayla çalıştırır (`async=false`).
+  - `whenVisible(el | [el], fn, { rootMargin: '300px' })` (IntersectionObserver; yoksa hemen), iptal fonksiyonu döner.
+  - `busy(el, promise)`: yükleme 120 ms'den uzun sürerse tetikleyiciye `aria-busy` + `.ww-lazy-busy` (ilerleme imleci,
+    %72 opaklık, tıklama kapalı). Kısa (önbellekten) yüklemede hiç görünmez.
+  - `LIBS` / `loadLib(name)` / `loadLibs([...])` / `libReady(name)` (2b'de eklendi): apexcharts 8.2.0,
+    lightweight-charts 4.1.3, sortablejs 1.15.0 adresleri **tek yerde**.
+- Test: `tests/lazy-load.test.js`.
+
+### 2a — Hızlı Ekle ilk kullanımda · `1f29ee6`
+- dashboard, analytics, calendar, strategies, trades: 6 dosya (~210 KB ham: broker-dictionary, broker-detector,
+  fill-pairing, parser-v2, quick-modal-i18n, quick-add) yerine yalnızca yeni `quick-add-boot.js` (~8 KB) yükleniyor.
+- `quick-add-boot.js`:
+  - Sağ alttaki **+ (FAB)** butonunu eskisiyle aynı anda (DOMContentLoaded + 100 ms), aynı id/sınıf/ikon/etiketle oluşturur.
+  - `quick-add.js`'in en üstündeki sayfa açılışı tema kodu (body teması, yazı boyutu, özel renkler, `storage` /
+    `themeChanged` dinleyicileri) **birebir** buraya taşındı (görünüm aynı kalsın; iki kez çalışmasın diye
+    quick-add.js'ten çıkarıldı).
+  - `window.quickAddOpen` bir vekil (`__wwLazy`): ilk çağrıda 6 dosyayı sırayla yükler, `quickAddInit()` ile modalı
+    kurar, sonra açar; yükleme sırasında tetikleyicide bekleme durumu; hata olursa toast ("Quick Add yüklenemedi").
+    quick-add.js yüklenince gerçek `quickAddOpen` / `quickAddClose` vekilin üzerine yazar. `window.quickAddLoad()` → Promise.
+  - FAB'ın üstüne gelince / dokununca / odaklanınca indirme önden başlar.
+- `quick-add.js`: tema bloğu çıkarıldı, `window.quickAddInit` eklendi (100 ms'lik init beklemeden modalı kurmak için).
+- `navbar.js` `wwQuickAddReady()`: vekili hazır sayıyor (yoksa "N" kısayolu / navbar "+" Hızlı Ekle yerine
+  `/add-trade.html`'e giderdi).
+- Tarayıcıda (5 sayfa): ilk yüklemede 6 dosyanın hiçbiri inmiyor; FAB tıklanınca iniyor ve modal açılıyor (yavaş ağda
+  FAB'da bekleme durumu görüldü, bitince temizlendi); işlem kaydı (EURUSD, lot 1) sahte arka uca gitti, modal kapandı;
+  ikinci açılışta yeniden yükleme yok; aynı anda iki çağrı tek yükleme; "N" kısayolu (bilinen engel kaldırılınca) ve
+  boş liste butonu açıyor; SPA geçişlerinde (dashboard → analytics → strategies → dashboard → trades) her sayfada
+  açılıyor, tam sayfa yüklemesi yok.
+- Dosyalar: `public/interface/quick-add/js/quick-add-boot.js` (yeni), `quick-add.js`, `public/components/navbar/navbar.js`,
+  5 sayfa, `src/components/BaseHead.astro`, `tests/quick-add-lazy.test.js` (yeni).
+
+### 2b — ApexCharts ve lightweight-charts kapsayıcı ekrana yaklaşınca · `6204b6f`
+- **dashboard:** `startDashboard` artık iki kütüphaneyi beklemiyor (önceden istatistikler dahil her şey kütüphaneleri
+  bekliyordu). İstatistikler ve son işlemler hemen çiziliyor; `renderCharts` kütüphane yoksa son veriyi saklıyor, 5
+  grafik kapsayıcısından biri 300 px yaklaşınca ikisini yükleyip çiziyor (her grafik mevcut `fadeInChart` ile beliriyor).
+  Prop seviye çizgileri (`_wwCumLevels`) geç oluşturulan grafiğe de uygulanıyor. Büyütme yalnızca çizilmiş grafikten.
+- **analytics:** `renderCharts` / `renderChartFor` / `renderChartInto` kapıdan geçiyor. Kütüphane yokken grafik dışı
+  kartlar (seriler, takvim, içgörüler, son işlemler, hedef, prop) hemen çiziliyor; 11 grafik kartı (= `EXPANDABLE_CHARTS`)
+  mevcut `.chart-pending` parıltısında bekliyor, biri yaklaşınca yüklenip en son çizim tekrar çalışıyor. SPA'da sayfa
+  değiştiyse bekleyen çizim atılıyor (dashboard aynı `chart-*` id'lerini kullanıyor).
+- **strategies:** mevcut `whenApexReady(cb)` yoklayıcısı `whenApexReady(cb, el)` oldu: kart / karşılaştırma kapsayıcısı
+  yaklaşınca yükler; equity modalında hemen. Sayfadan çıkışta izleyiciler iptal ediliyor.
+- Tarayıcıda: mobilde dashboard ve analytics ilk anda kütüphane indirmiyor, kaydırınca indiriyor ve aynı sayıda grafik
+  çiziyor (dashboard 3 Apex + lightweight-charts, analytics 7 + 7, strategies 5). Masaüstünde grafikler ilk ekranda
+  olduğu için hemen iniyor (açılıştan ~0.8–1.3 sn sonra; önceden sayfa açılışında). Admin ve backtest'e dokunulmadı.
+- Test sırasında bulunup commit'ten önce düzeltilen hata: strategies'ten çıkışta, kaldırılan yoklayıcı değişkenine
+  erişen temizlik satırı `ReferenceError` verip grafik temizliğini atlıyordu.
+- Dosyalar: `public/interface/shared/lazy-load.js`, `public/interface/dashboard/js/dashboard.js`,
+  `public/interface/analytics/js/chart-renderers.js`, `public/interface/strategies/js/strategies.js`, 3 sayfa,
+  `tests/lazy-charts.test.js` (yeni).
+
+### 2c — SortableJS yalnızca düzenlemede · `0833d4a`
+- **analytics:** sayfada ayrı bir düzen modu yok (tutamaçlar her kartta hep görünür). Bu yüzden düzenleme niyetinde
+  yükleniyor: kartın araç köşesine (`.widget-tools`: ayar + tutamaç) fare gelince / odaklanınca, tutamaca basınca /
+  dokununca ya da "Özelleştir" paneli açılınca. Yüklenince ızgaraya eskisiyle aynı ayarlarla bağlanıyor. Gerçek fare
+  sürüklemesiyle sıra değişti ve kaydedildi; sonuç baseline ile aynı.
+- **backtest:** istatistik paneli sürüklenebilir çizilince (geniş ekran + istatistik sekmesi açık; `drag: wideScreen()`)
+  yükleniyor ve o ızgara hâlâ yerindeyse bağlanıyor. Backtest'teki lightweight-charts etiketi aynen duruyor.
+- Dosyalar: `public/interface/analytics/js/dashboard-manager.js`, `widget-customizer.js`,
+  `public/interface/backtest/js/bt-stats.js`, `src/pages/analytics.astro`, `src/pages/backtest.astro`, test.
+
+### 2d — xlsx (inceleme, değişiklik yok) · `7d429ba`
+- SheetJS zaten yalnızca `quick-add.js` içindeki `loadXLSX()` ile, .xlsx / .xls içe aktarılırken iniyor (bir kez, vaat
+  paylaşımlı). Hızlı Ekle artık kendisi gecikmeli yüklendiği için uçtan uca denendi: açılışta yok, Hızlı Ekle açıkken
+  de yok, `loadXLSX()` çağrılınca iniyor; bellekte üretilen bir .xlsx CSV'ye çevrildi, ParserV2 doğru satırı çıkardı.
+- Örnekten farkı: hata olursa `_xlsxLoading` reddedilmiş kalıyor, aynı sayfada yeniden deneme yok (WwLazy yeniden
+  dener). Bozmamak için değiştirilmedi. Desen bir testle sabitlendi.
+
+### 2e — Ölçüm araçları `scripts/perf/` · `5dae16d`
+- `cf-serve.mjs`, `mock-session.mjs`, `lighthouse.mjs` (yayına girmez). Kullanım "Sonraki parça için notlar"da.
+
+## Bulunan bağımlılıklar (Hızlı Ekle, grep ile)
+
+`window`'a açılanlar: `BrokerDictionary` (broker-dictionary), `BrokerDetector` (broker-detector), `FillPairing`
+(fill-pairing), `ParserV2` (parser-v2), `quickI18n` + üst düzey `const quickTranslations / quickI18n` (quick-modal-i18n),
+`quickAddOpen`, `quickAddClose`, `parseCsvByBroker` (yalnızca yoksa), üst düzey `loadXLSX` / `fileToCsvText` (quick-add).
+
+Dışarıdan kullananlar:
+
+| Yer | Kullanım | Çözüm |
+|---|---|---|
+| `public/components/navbar/navbar.js` `wwQuickAddReady` / `wwOpenAddTrade` | `quickAddOpen` + `#quick-add-overlay` varsa açar, yoksa `/add-trade.html` | vekil hazır sayılıyor |
+| `navbar.js` "N" kısayolu (`keydown`) | `wwOpenAddTrade` | vekil üzerinden; ama bkz. bilinen hata: kısayol hep engelli |
+| `navbar.js` `#nav-add-trade` tıklaması | `wwOpenAddTrade` | bu id'li buton şu an hiçbir yerde oluşturulmuyor (ölü dinleyici) |
+| `public/interface/dashboard/js/dashboard.js:994` boş liste butonu | `onclick="quickAddOpen()"` | vekil |
+| `public/interface/analytics/js/helpers.js:220` boş kart butonu | `onclick="quickAddOpen()"` | vekil |
+| `public/interface/trades/js/trades.js:843` boş liste butonu | `onclick="quickAddOpen()"` | vekil |
+| `public/interface/dashboard/js/onboarding.js:1247` tur adımı | hedef `#quick-add-fab` | FAB ön yükleyicide, aynı anda oluşuyor |
+| `onboarding.js:1818` "işlem ekle" görevi | `#quick-add-fab` `.click()` | vekil |
+| analytics / calendar / strategies / trades satır içi `createManualFAB` | 1.5 sn sonra `quickAddOpen` tanımsızsa yedek FAB + alert | vekil tanımlı → yedek FAB çıkmaz (önceki gibi) |
+| `public/src/features/csv-parsers.js` (bundle.js) | `parseCsvByBroker` / `detectBroker` çağrı anında `ParserV2` / `BrokerDetector` kullanır | yalnızca Hızlı Ekle içinden çağrılıyor; o an yüklü |
+| `src/pages/add-trade.astro` | `BrokerDictionary` | kendi `broker-dictionary.js` etiketini yüklüyor, değişmedi |
+| `src/components/SpaRouter.astro` | `#quick-add-fab` / `#quick-add-container` gizleme CSS'i | değişmedi |
+| `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | kendi `quickAddOpen`'larını tanımlar | hiçbir sayfada kullanılmıyor (ölü kod) |
+
+Grafik kütüphaneleri: ApexCharts → dashboard.js (`mountApex`, `renderExpandedChart`), analytics `chart-renderers.js`
+(`renderOrUpdateApex` + 11 grafik), strategies.js (sparkline, karşılaştırma, equity, büyütme); `public/src/features/theme.js`
+yalnızca `typeof ApexCharts` kontrolü (zararsız). lightweight-charts → dashboard (kümülatif, günlük), analytics
+(kümülatif). SortableJS → analytics `dashboard-manager.js` `initDragDrop`, backtest `bt-stats.js`.
+
+## Atlananlar / riskler
+
+1. **Analytics'te "düzen modu" yok.** SortableJS düzenleme niyetinde (araç köşesine fare / odak, tutamağa basma /
+   dokunma, Özelleştir) yükleniyor. İlk kez gelen bir kullanıcı **hiç üstüne gelmeden doğrudan tutamağa dokunursa**
+   (dokunmatik) kütüphane o dokunuşta iniyor ve ilk sürükleme başlamayabilir; ikinci deneme çalışır. Fareyle üzerine
+   gelme basmadan önce olduğu için masaüstünde sorun görülmedi.
+2. **Masaüstünde grafik kütüphaneleri yine ilk ekranda iniyor** (kapsayıcılar görünür; istenen davranış). Kazanç orada
+   Hızlı Ekle'den ve kütüphanelerin sayfa script'lerini artık bloklamamasından geliyor (istatistikler önce çiziliyor).
+3. **Grafikler artık istatistiklerden sonra beliriyor** (önceden hepsi birlikte). Son görünüm aynı; arada grafik kartı
+   dashboard'da boş, analytics'te mevcut parıltı durumunda.
+4. **Analytics'te seyrek, küçük bir yerleşim kayması:** 21 denemenin 2'sinde ilk yüklemede KPI kartları 23 px kaydı
+   (CLS 0.009; "iyi" eşiği 0.1). Baseline'da 6 denemede görülmedi. Olası neden: modül artık 3 CDN dosyasını beklemeden
+   daha erken çalışıyor ve başlık satırı web fontu (Google Fonts) gelmeden çizilebiliyor. Kendi barındırılan font
+   (parça 3) bunu kapatmalı. Lighthouse'ta analytics CLS önce de sonra da 0.03–0.05.
+5. **Sayfalar önce ağ (2-pre):** tekrar açılışta HTML her seferinde ağa soruluyor (sayfa başına bir istek). Ağ 3 sn'de
+   cevap vermezse eski kopya gösterilir.
+6. **"N" kısayolu ve calendar'da ikinci açılış:** iş dışı, önceden de var (bkz. "Bilinen hatalar"); düzeltilmedi.
+7. Test ortamı sınırı: tarayıcı denemeleri sahte oturumla yapıldı (gerçek Supabase gecikmesi yok). Gerçek hesapla
+   ölçüm parça 3'te.
+
+## Sonraki parça için notlar
+
+- **Yeni gecikmeli yükleme:** `WwLazy` kullanın; CDN kütüphanesiyse `WwLazy.LIBS`'e ekleyin (sürüm tek yerde). Yerel
+  dosya adreslerine `?v=__WW_BUILD_ID__` yazın (parça 1 kuralı; yoksa derleme hata verir).
+- **Hızlı Ekle'ye yeni dosya** gerekiyorsa `quick-add-boot.js` içindeki `FILES` listesine sırasıyla ekleyin (test
+  listeyi ve dosyaların varlığını kontrol ediyor). Sayfaya `<script>` olarak eklemeyin.
+- `quickAddOpen()` artık Promise dönebilir (vekil); senkron açılmayı bekleyen yeni kod yazmayın, `quickAddLoad()`'u bekleyin.
+- Dashboard / analytics'e yeni grafik eklerseniz `chartLibsReady()` kapısından geçirin (dashboard: `renderCharts`;
+  analytics: `LIB_CHART_KEYS` + `EXPANDABLE_CHARTS`; test ikisinin aynı olduğunu kontrol ediyor).
+- Analytics modülü SPA'da yaşamaya devam eder; bekleyen işleri `#dashboard-grid` varlığına bağlayın.
+- Fontlar: risk 4 nedeniyle Google Fonts'u `/fonts/` altına taşımak hem indirmeyi hem kaymayı iyileştirir; `/fonts/*`
+  immutable kuralı ve CSS `url(/fonts/...)` damgalaması parça 1'den hazır.
+- **Giriş yapılmış ölçüm (parça 3'te şart).** İki yol var, ikisi de `scripts/perf/` ile. Araçlar repo dışına bir kez kurulur:
+  ```bash
+  mkdir ../perf-tools && cd ../perf-tools && npm init -y && npm i lighthouse@12.2.1 puppeteer-core@23.11.1 && cd -
+  ```
+  1. **Gerçek test hesabı (son ölçüm için önerilen).** Canlıda ya da Cloudflare önizleme adresinde, gerçekçi verisi olan
+     ayrı bir test hesabı kullanılır. Login sayfasında Cloudflare Turnstile olduğu için giriş otomatik yapılamaz: bir kez
+     görünür tarayıcıda elle giriş yapılır, oturum bir Chrome profil klasöründe kalır. DevTools'tan çerez / localStorage
+     kopyalamak gerekmez.
+     ```bash
+     PERF_DIR=../perf-tools node scripts/perf/lighthouse.mjs --base https://<önizleme> --profile ../perf-profile --login
+     PERF_DIR=../perf-tools node scripts/perf/lighthouse.mjs --base https://<önizleme> --profile ../perf-profile --pages dashboard,analytics,index --runs 3
+     ```
+     Her ölçümden önce HTTP önbelleği, Cache Storage ve service worker temizlenir, localStorage (oturum) korunur. Yani
+     ölçüm "soğuk ama girişli" olur. Sayfa açmak veri yazmaz; ölçüm sırasında işlem eklemeyin. Test hesabı açmak ve ona
+     veri girmek canlı DB'ye yazmak demek; hesabı siz açın ya da önce onay verin.
+     ⚠️ `--login` modu bu oturumda gerçek hesap olmadığı için **denenmedi**; `--mock` modu denendi.
+  2. **Sahte oturum (yerelde tekrarlanabilir karşılaştırma).** Supabase'e hiç istek gitmez; yukarıdaki parça 2 tabloları
+     bununla alındı:
+     ```bash
+     node scripts/perf/cf-serve.mjs dist 8788
+     PERF_DIR=../perf-tools node scripts/perf/lighthouse.mjs --base http://127.0.0.1:8788 --mock --pages dashboard,analytics --runs 3
+     ```
+     Ayrıca `scripts/demo/` (Playwright + yerel sahte Supabase + gerçekçi seed verisi) de giriş yapılmış sayfa açmak
+     için kullanılabilir.
+- Lighthouse oynaklığı yüksek: her sayfa için en az 3 çalıştırma yapıp ortanca değeri alın.
+
+## Elle kontrol listesine eklenenler
+
+- [ ] Network sekmesi (önbellek kapalı, mobil görünüm): dashboard açılışında `quick-add.js`, `parser-v2.js`,
+      `apexcharts`, `lightweight-charts` YOK; aşağı kaydırınca grafik kütüphaneleri iniyor ve grafikler çiziliyor.
+- [ ] Hızlı Ekle: dashboard, analytics, calendar, strategies, trades'te + butonu ilk tıkta açılıyor (yavaş 3G'de
+      butonda kısa bekleme görünür), gerçek bir işlem ekleniyor, liste / istatistik yenileniyor; ikinci açılış anında.
+- [ ] Boş hesapta (0 işlem) dashboard ve trades'teki "işlem ekle" bağlantısı Hızlı Ekle'yi açıyor.
+- [ ] Hızlı Ekle'de Excel (.xlsx) ve CSV içe aktarma çalışıyor.
+- [ ] Analytics: grafik kartlarının hepsi çiziliyor; kart sürükleme (fareyle ve telefonda) çalışıyor, sıra kayıtlı
+      kalıyor; "Özelleştir" ile kart ekleme / çıkarma, grafik tipi değiştirme, grafik büyütme çalışıyor.
+- [ ] Strategies: kart mini grafikleri, karşılaştırma grafikleri ve equity modalı çiziliyor.
+- [ ] Backtest (geniş ekran): istatistik sekmesinde widget sürükleme ve boyutlandırma çalışıyor; ana grafik değişmedi.
+- [ ] SPA geçişleri (dashboard ↔ analytics ↔ strategies ↔ trades): konsolda hata yok, kütüphaneler bir kez iniyor.
+- [ ] Açık tema ve özel tema renkleri, Hızlı Ekle olan sayfalarda öncekiyle aynı (tema kodu ön yükleyiciye taşındı).
+- [ ] Çevrimdışı (DevTools → Offline): daha önce açılmış bir sayfa yenilenince önbellekteki kopya geliyor; deploy
+      sonrası ilk açılışta yeni sürüm geliyor.
+
+# Bilinen, bu işten bağımsız hatalar
+
+Düzeltilmedi, yalnızca listelendi. Kaynak: parça 1 tarayıcı taraması (oturumsuz 8 sayfa: index, login, register,
+dashboard, analytics, trades, settings, backtest), parça 1 statik referans kontrolü ve parça 2 sahte oturumlu denemeler.
+Hepsi baseline'da (parça 1 öncesi ya da parça 1 sonu) da aynı.
+
+| Sayfa | Ne | Nerede |
+|---|---|---|
+| `/quick-add-modal.html` | **404** `/js/quick-modal.js` | `src/pages/quick-add-modal.astro:26` (dosya repoda hiç yok) |
+| `/login.html`, `/register.html` (ve login'e yönlenen dashboard, analytics, trades, backtest) | 2 konsol hatası: `%c%d font-size:0;color:transparent NaN` ve `%c%o font-size:0;color:transparent [object]` | Cloudflare Turnstile iframe'i (`challenges.cloudflare.com/.../turnstile/...`); üçüncü taraf, repo kodu değil |
+| index, settings (oturumsuz → index) | temiz | — |
+| Uygulama sayfaları (sahte oturum: dashboard, analytics, calendar, strategies, trades, backtest) | 404 / konsol hatası yok | — |
+| Hızlı Ekle olan tüm sayfalar | **"N" kısayolu hiç çalışmıyor.** Kısayol, sayfada `[role="dialog"][aria-modal="true"]:not([hidden])` varsa çıkıyor; kapalı yükseltme penceresi `.ww-up-modal` bu öznitelikleri taşıyor ve `hidden` değil. Önceden quick-add'in kendi tarih seçicisi (`qa-date-picker`) de aynı nedenle engelliyordu | kısayol: `public/components/navbar/navbar.js`; pencere: `src/components/UpgradeModal.astro:5` |
+| `/calendar.html` | Hızlı Ekle ile işlem kaydedildikten sonra + butonuna tekrar basınca pencere açılmıyor (testte; baseline'da da aynı) | nedeni araştırılmadı |
+| navbar | `#nav-add-trade` tıklama dinleyicisi var ama bu id'li buton hiçbir yerde oluşturulmuyor | `navbar.js` |
+| — | Kullanılmayan bileşenler: `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | ölü kod |
