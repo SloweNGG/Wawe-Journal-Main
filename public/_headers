@@ -7,12 +7,12 @@
 # her sayfa geçişinde tüm JS/CSS'i baştan indirir.
 # Ayrıca "*.js" gibi uzantı kalıpları burada çalışmaz; yol bazlı yazın.
 #
-# Kural tanımlanmayan her şey (HTML sayfaları, JS, CSS) Cloudflare
-# varsayılanını alır:
+# Kural tanımlanmayan her şey (HTML sayfaları, settings panelleri, görseller
+# dışındakiler) Cloudflare varsayılanını alır:
 #   Cache-Control: public, max-age=0, must-revalidate   (+ ETag)
 # Yani tarayıcı dosyayı saklar ve her açılışta "değişti mi?" diye sorar.
-# Değişmediyse 304 döner, dosya tekrar indirilmez. Deploy sonrası herkes
-# yeni sürümü anında alır.
+# Değişmediyse 304 döner, dosya tekrar indirilmez. HTML'e kural YAZMAYIN:
+# deploy sonrası herkes yeni sayfayı (ve onun yeni ?v= adreslerini) anında almalı.
 # ============================================================
 
 # Astro derlenmiş ve hash'lenmiş statik varlıklar (asla değişmez)
@@ -29,3 +29,78 @@
 # Üçüncü parti CSS
 /vendor/*
   Cache-Control: public, max-age=86400
+
+# ============================================================
+# Sürümlü yerel JS/CSS/font/ikon: 1 yıl, "immutable" (tarayıcı hiç sormaz)
+# ============================================================
+# GÜVENLİ ÇÜNKÜ: derleme (scripts/asset-version.mjs) bu dosyalara yapılan her
+# referansa ?v=<buildId> yazar; her deploy yeni ID = yeni adres. Sürümsüz bir
+# referans kalırsa derleme hata verir. Buraya yalnızca HER dosyası sürümlü
+# yüklenen klasörleri ekleyin. Sürümsüz fetch edilen dosyalar (ör.
+# /settings/panels/*.html) bu kuralların DIŞINDA kalmalı; bu yüzden /settings/*
+# değil /settings/js/* ve /settings/css/* yazıldı. /sw.js ASLA buraya girmez.
+/interface/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/components/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/src/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/settings/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/settings/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/i18n/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icons/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Kökteki JS/CSS — tek tek (kök için "/*" yazılamaz; sw.js listede YOK).
+# Köke yeni bir .js/.css eklerseniz buraya da ekleyin (eklemezseniz yalnızca
+# varsayılan "değişti mi?" davranışında kalır, bozulmaz).
+/auth-i18n.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/auth-spa.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/buttons.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/cache.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/config.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/i18n.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/index-i18n.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/index.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/landing-glass.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/landing-preview.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/page-chrome.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/pages.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles.css
+  Cache-Control: public, max-age=31536000, immutable
