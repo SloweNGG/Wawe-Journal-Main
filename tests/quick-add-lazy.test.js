@@ -77,3 +77,14 @@ describe('quick-add lazy loading', () => {
     assert.match(nav, /if \(!open\.__wwLazy && !document\.getElementById\('quick-add-overlay'\)\) return false;/);
   });
 });
+
+describe('xlsx stays on demand (perf 2d, reference pattern)', () => {
+  it('no page loads SheetJS; quick-add loads it only inside loadXLSX(), once, for .xlsx/.xls files', () => {
+    for (const p of fs.readdirSync('src/pages')) assert.ok(!fs.readFileSync('src/pages/' + p, 'utf8').includes('xlsx.full.min.js'), p);
+    const loader = qa.slice(qa.indexOf('function loadXLSX()'), qa.indexOf('async function fileToCsvText'));
+    assert.match(loader, /if \(typeof XLSX !== 'undefined'\) return Promise\.resolve\(\);/);
+    assert.match(loader, /if \(_xlsxLoading\) return _xlsxLoading;/);
+    assert.equal((qa.match(/xlsx\.full\.min\.js/g) || []).length, 1);
+    assert.match(qa, /if \(lowerName\.endsWith\('\.xlsx'\) \|\| lowerName\.endsWith\('\.xls'\)\) \{\s*await loadXLSX\(\);/);
+  });
+});
