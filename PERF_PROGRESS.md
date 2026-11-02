@@ -129,7 +129,8 @@ uygulayan, ETag/304 ve gzip yapan küçük bir Node sunucusu; puppeteer-core ile
 1. **`/settings/*` yerine `/settings/js/*` + `/settings/css/*`.** `settings.js`, `/settings/panels/*.html` parçalarını
    sürümsüz `fetch` ediyor; `/settings/*` immutable olsaydı deploy sonrası paneller 1 yıl eski kalabilirdi ve HTML'e
    dokunulmuş olurdu.
-2. **Uzantısız sayfa adresleri SW'de stale-while-revalidate (DEĞİŞTİRİLMEDİ, karar sizde).** Linkler `/dashboard.html`;
+2. **✅ KAPANDI (parça 2, `perf(2-pre)`): sayfalar artık "önce ağ".** Ayrıntı ve ölçüm: Parça 2 → 2-pre.
+   Eski not: **Uzantısız sayfa adresleri SW'de stale-while-revalidate (DEĞİŞTİRİLMEDİ, karar sizde).** Linkler `/dashboard.html`;
    Cloudflare bunu `/dashboard`'a yönlendiriyor. `sw.js` yalnızca `.html` ile biten adresi atlıyor, uzantısız `/dashboard`
    (ve SPA router'ın `fetch('/dashboard')`'u) bugün de SW önbelleğinden önce eski kopya, arkada yenisi olarak geliyor.
    Görevde "HTML ağdan gelmeye devam etsin" yazıyordu; mevcut davranış tam olarak öyle değil. Değiştirmedim çünkü
@@ -199,4 +200,33 @@ Canlıya almadan önce (Cloudflare `perf/tonight` için önizleme adresi üretiy
 - [ ] Network sekmesinde normal yenileme (F5): JS/CSS satırları "(ServiceWorker)" ya da "(disk cache)"; 304 yok.
 - [ ] İkinci bir deploy sonrası: açık sekmede bir sayfaya geçince tam yükleme oluyor, yeni `?v=` geliyor, Cache
       Storage'da yeni `wawe-v52-<yeni ID>` var, eskisi silinmiş.
-- [ ] Risk 2 (uzantısız HTML'in SW'de önbelleklenmesi) için karar.
+- [x] Risk 2 (uzantısız HTML'in SW'de önbelleklenmesi) için karar: önce ağ (parça 2, 2-pre).
+
+---
+
+# Parça 2 — Gecikmeli yükleme
+
+**Durum:** devam ediyor.
+
+## 2-pre — Sayfalar için "önce ağ" (risk 2'nin kapanışı)
+
+- `public/sw.js`: tarayıcı gezintileri (`mode === 'navigate'` / `destination === 'document'`) ve uzantısız sayfa
+  yolları (`/dashboard`; Cloudflare `.html` adresini buraya yönlendiriyor, SPA router da HTML'i bu adresle `fetch`
+  ediyor) **önce ağdan** geliyor. Başarılı (200, yönlendirme olmayan) cevap önbelleğe yazılıyor. Ağ **3 sn** içinde
+  cevap vermezse ya da hata verirse (çevrimdışı) son başarılı kopya gösteriliyor; `/x` ile `/x.html` aynı sayfa sayılıyor.
+  Kopya yoksa ağ beklenir / tarayıcının kendi hata sayfası çıkar (SW yokken olduğu gibi).
+- Gezinti olmayan `.html` fetch'leri (settings panelleri, `auth-spa.js`) önceki gibi doğrudan ağdan. Admin, `/api/`,
+  Supabase ve diğer origin'ler değişmedi. Önbellek adı `wawe-v53-<ID>` (her deploy'da eski siliniyor).
+- Sonuç (gerçek Chrome, sunucu tarafında gecikme/kesinti verilerek):
+
+  | Durum | Sonuç | Süre |
+  |---|---|---|
+  | Sunucudaki sayfa değişti (deploy) | yeni sayfa geldi | 48 ms |
+  | Sunucu 4.5 sn gecikmeli | önbellekteki kopya | 3.05 sn |
+  | Sunucu kapalı, sayfa önceden açılmış | önbellekteki kopya | 36 ms |
+  | Sunucu kapalı, sayfa hiç açılmamış | tarayıcının hata sayfası (`ERR_FAILED`) | — |
+
+- Bedeli: tekrar açılışta HTML artık SW önbelleğinden 0 RTT gelmiyor, her seferinde ağa soruluyor (sayfa başına bir
+  istek, gzip ~21–29 KB). Karşılığı: deploy sonrası ilk açılışta da yeni sürüm.
+- Dosyalar: `public/sw.js`, `tests/sw.test.js` (önce ağ, çevrimdışı kopya, `/x` ↔ `/x.html`, 3 sn zaman aşımı,
+  yönlendirmenin önbelleğe yazılmaması, panellerin SW dışında kalması).
