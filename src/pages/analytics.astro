@@ -21,11 +21,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- SORTABLEJS -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
   
-  <!-- APEXCHARTS -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" is:inline defer></script>
-  
-  <!-- LIGHTWEIGHT CHARTS -->
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
+  <!-- APEXCHARTS + LIGHTWEIGHT CHARTS: grafik kartı ekrana yaklaşınca yüklenir (chart-renderers.js → WwLazy, perf 2b) -->
 
   <script is:inline>
     (function() {

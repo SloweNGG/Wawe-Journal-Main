@@ -126,7 +126,43 @@
     return promise;
   }
 
+  // CDN kütüphaneleri tek yerde (sürüm değişirse yalnızca burası). Admin ve backtest kendi <script>
+  // etiketleriyle aynı adresleri yükler; test() sayfada zaten varsa ikinci kez yüklemeyi önler.
+  var LIBS = {
+    apexcharts: {
+      url: 'https://cdn.jsdelivr.net/npm/apexcharts@8.2.0',
+      test: function () { return typeof global.ApexCharts !== 'undefined'; }
+    },
+    'lightweight-charts': {
+      url: 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js',
+      test: function () { return typeof global.LightweightCharts !== 'undefined'; }
+    },
+    sortablejs: {
+      url: 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js',
+      test: function () { return typeof global.Sortable !== 'undefined'; }
+    }
+  };
+
+  function loadLib(name) {
+    var lib = LIBS[name];
+    if (!lib) return Promise.reject(new Error('[WwLazy] bilinmeyen kütüphane: ' + name));
+    return loadScriptOnce(lib.url, { test: lib.test });
+  }
+
+  function loadLibs(names) {
+    return Promise.all(names.map(loadLib));
+  }
+
+  function libReady(name) {
+    var lib = LIBS[name];
+    return !!(lib && lib.test());
+  }
+
   global.WwLazy = {
+    LIBS: LIBS,
+    loadLib: loadLib,
+    loadLibs: loadLibs,
+    libReady: libReady,
     loadScriptOnce: loadScriptOnce,
     loadScriptsInOrder: loadScriptsInOrder,
     whenVisible: whenVisible,
