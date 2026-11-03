@@ -1684,7 +1684,16 @@ import Layout from '../layouts/Layout.astro';
     // ============================================================
     // INIT
     // ============================================================
-    (async function() {
+    // requireAuth, applyDecimalFix … bundle.js'ten (defer modül) gelir; bu satır içi betik ondan ÖNCE çalışır. Doğrudan
+    // açılışta DOMContentLoaded beklenir (modüller ondan önce çalışır), SPA geçişinde olay çoktan geçtiği için hemen başlanır.
+    // (f0e153e'den beri init doğrudan açılışta requireAuth'u tanımsız bulup sessizce duruyordu: oturum, defter, tarih ve
+    // strateji listesi hiç yüklenmiyor, CSV / toplu ekleme "currentUser null" hatası veriyordu.)
+    function whenAppReady(fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+      else fn();
+    }
+
+    whenAppReady(async function() {
       try {
         currentUser = await requireAuth();
         if (!currentUser) return;
@@ -1706,15 +1715,16 @@ import Layout from '../layouts/Layout.astro';
         }
 
         await loadStrategyGrid();
-      } catch(e) {}
-    })();
+      } catch(e) {
+        if (typeof wwLog !== 'undefined') wwLog.error('add-trade init hatası:', e);
+      }
+    });
 
     // ============================================================
     // DECIMAL FIX
     // ============================================================
-    // applyDecimalFix bundle.js'ten (defer modül) gelir; bu inline script ondan önce
-    // çalıştığı için DOMContentLoaded'ı bekle (önceden "applyDecimalFix is not defined")
-    document.addEventListener('DOMContentLoaded', function() {
+    // applyDecimalFix de bundle.js'ten gelir (önceden "applyDecimalFix is not defined"); SPA geçişinde de uygulanır
+    whenAppReady(function() {
       applyDecimalFix(['lot','entry','exit','sl','tp','custom-multiplier']);
     });
 
