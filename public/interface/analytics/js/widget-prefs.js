@@ -5,15 +5,7 @@
 // dashboard-manager.js ve chart-renderers.js ikisi de buradan okur (döngüsel import olmasın diye ayrı modül).
 // ============================================================
 
-function _t(key, fallback) {
-  try {
-    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
-      var val = window.i18n.t(key);
-      if (val && val !== key) return val;
-    }
-  } catch (e) {}
-  return fallback !== undefined ? fallback : key;
-}
+import { _t } from './i18n-t.js';
 
 // ⭐ PLAN — 'pro' tüm kartlar sınırsız; 'free' analiz kartlarında kota (kilit gösterilmez, seçim yaptırılır)
 export var FREE_ANALYSIS_QUOTA = 3;

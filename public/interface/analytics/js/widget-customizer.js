@@ -32,16 +32,7 @@ import {
   setKpiDensity
 } from './widget-prefs.js';
 import { isPropActive } from './prop-widgets.js';
-
-function _t(key, fallback) {
-  try {
-    if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.t === 'function') {
-      var val = window.i18n.t(key);
-      if (val && val !== key) return val;
-    }
-  } catch (e) {}
-  return fallback !== undefined ? fallback : key;
-}
+import { _t } from './i18n-t.js';
 
 var ctx = null;          // { getTrades, rerenderAll }
 var popover = null;      // kart ⚙ menüsü (tek paylaşılan eleman)
