@@ -138,61 +138,6 @@ export async function requireAuth() {
   }
 }
 
-export async function requireAuthSilent() {
-  try {
-    let session = null;
-    const hasOAuthParams = typeof window !== 'undefined' && (
-      window.location.hash.includes('access_token') ||
-      window.location.search.includes('code=') ||
-      window.location.hash.includes('type=recovery')
-    );
-
-    if (hasOAuthParams) {
-      for (let i = 0; i < 20; i++) {
-        const { data } = await sb.auth.getSession();
-        if (data?.session) {
-          session = data.session;
-          break;
-        }
-        await new Promise(r => setTimeout(r, 150));
-      }
-      if (session && window.history && window.history.replaceState) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
-    }
-
-    if (!session) {
-      const { data } = await sb.auth.getSession();
-      session = data?.session;
-    }
-
-    if (!session) return null;
-    
-    const profile = await getUserProfileCached(session.user.id);
-    
-    if (profile && profile.is_active === false) {
-      await sb.auth.signOut();
-      safeLocalStorageRemove('ww_last_active_push');
-      return null;
-    }
-    
-    throttledUpdateLastActive(session.user).catch(() => {});
-    return session.user;
-  } catch (error) {
-    return null;
-  }
-}
-
-export async function requireAdmin() {
-  const user = await requireAuth();
-  if (!user) return null;
-  if (!isAdmin(user)) {
-    window.location.href = 'dashboard.html';
-    return null;
-  }
-  return user;
-}
-
 export function isAdmin(user) {
   return user?.app_metadata?.role === 'admin';
 }

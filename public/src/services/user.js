@@ -260,40 +260,6 @@ export async function updateStrategy(strategyId, updates) {
   return true;
 }
 
-export function calculateStrategyPerformance(trades, strategyId) {
-  const strategyTrades = trades.filter(function(t) { 
-    return t.strategy_id === strategyId && t.exit_price; 
-  });
-  if (strategyTrades.length === 0) return null;
-  
-  let totalPnL = 0;
-  let wins = 0;
-  let losses = 0;
-  
-  strategyTrades.forEach(function(t) {
-    let pnl = parseFloat(t.pnl);
-    if (t.pnl === null || t.pnl === undefined || isNaN(pnl)) {
-      const mult = t.multiplier || INSTRUMENT_MULTIPLIERS[t.instrument] || 100000;
-      pnl = calcPnL(t.entry_price, t.exit_price, t.lot, t.direction, 'other', mult);
-    }
-    totalPnL += pnl;
-    if (pnl > 0) wins++;
-    else if (pnl < 0) losses++;
-  });
-  
-  const total = strategyTrades.length;
-  const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
-  
-  return {
-    totalTrades: total,
-    wins: wins,
-    losses: losses,
-    totalPnL: totalPnL,
-    winRate: parseFloat(winRate),
-    avgPnL: total > 0 ? totalPnL / total : 0
-  };
-}
-
 export async function getStrategiesMap() {
   const strategies = await getUserStrategies();
   const map = {};

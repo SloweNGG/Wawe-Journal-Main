@@ -36,7 +36,6 @@ import './services/stats.js';
 // ── Features ─────────────────────────────────────────────────
 import './features/theme.js';
 import './features/overtrade.js';
-import './features/notifications.js';
 import './features/csv-parsers.js';
 
 // ── Pricing ──────────────────────────────────────────────────
@@ -64,7 +63,6 @@ import {
 import { 
   showToast, 
   destroyChart, 
-  directionBadge, 
   fixDecimalInput, 
   applyDecimalFix 
 } from './utils/ui.js';
@@ -75,8 +73,6 @@ import { isValidEmail } from './utils/validation.js';
 // Services - auth (supabase.js'den)
 import { 
   requireAuth, 
-  requireAuthSilent, 
-  requireAdmin, 
   isAdmin, 
   throttledUpdateLastActive 
 } from './core/supabase.js';
@@ -93,7 +89,6 @@ import {
   addStrategy,
   deleteStrategy,
   updateStrategy,
-  calculateStrategyPerformance,
   getStrategiesMap
 } from './services/user.js';
 
@@ -111,8 +106,6 @@ import {
 // Services - stats
 import { 
   loadPlatformStats, 
-  loadReferencesToPage, 
-  uploadReferenceImage 
 } from './services/stats.js';
 
 // Features - theme
@@ -141,15 +134,8 @@ import {
   setDismissedOvertradeWarnings
 } from './features/overtrade.js';
 
-// Features - notifications
-import { 
-  NotificationManager, 
-  NOTIFICATION_TYPES, 
-  dismissNotification, 
-  clearAllNotifications, 
-  toggleNotificationPanel, 
-  updateNotificationUI 
-} from './features/notifications.js';
+// Features - notifications (NOTIFICATION_TYPES; eski NotificationManager arayüzü kaldırıldı — CLEANUP.md)
+import { NOTIFICATION_TYPES } from './core/config.js';
 
 // Pricing
 import { 
@@ -184,7 +170,6 @@ window.loadJsPDF = loadJsPDF;
 // Utils - ui (showToast BURADA!)
 window.showToast = showToast;
 window.destroyChart = destroyChart;
-window.directionBadge = directionBadge;
 window.fixDecimalInput = fixDecimalInput;
 window.applyDecimalFix = applyDecimalFix;
 
@@ -193,8 +178,6 @@ window.isValidEmail = isValidEmail;
 
 // Services - auth (requireAuth BURADA!)
 window.requireAuth = requireAuth;
-window.requireAuthSilent = requireAuthSilent;
-window.requireAdmin = requireAdmin;
 window.isAdmin = isAdmin;
 window.throttledUpdateLastActive = throttledUpdateLastActive;
 
@@ -209,7 +192,6 @@ window.clearStrategiesCache = clearStrategiesCache;
 window.addStrategy = addStrategy;
 window.deleteStrategy = deleteStrategy;
 window.updateStrategy = updateStrategy;
-window.calculateStrategyPerformance = calculateStrategyPerformance;
 window.getStrategiesMap = getStrategiesMap;
 
 // Services - payment
@@ -223,8 +205,6 @@ window.checkAndSyncPaymentStatus = checkAndSyncPaymentStatus;
 
 // Services - stats
 window.loadPlatformStats = loadPlatformStats;
-window.loadReferencesToPage = loadReferencesToPage;
-window.uploadReferenceImage = uploadReferenceImage;
 
 // Features - theme
 window.getThemeSettings = getThemeSettings;
@@ -249,12 +229,7 @@ window.getDismissedOvertradeWarnings = getDismissedOvertradeWarnings;
 window.setDismissedOvertradeWarnings = setDismissedOvertradeWarnings;
 
 // Features - notifications
-window.NotificationManager = NotificationManager;
 window.NOTIFICATION_TYPES = NOTIFICATION_TYPES;
-window.dismissNotification = dismissNotification;
-window.clearAllNotifications = clearAllNotifications;
-window.toggleNotificationPanel = toggleNotificationPanel;
-window.updateNotificationUI = updateNotificationUI;
 
 // Pricing
 window.getMonthlyPrice = getMonthlyPrice;

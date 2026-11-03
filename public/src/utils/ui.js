@@ -83,14 +83,6 @@ export function destroyChart(id) {
   if (existing) existing.destroy();
 }
 
-export function directionBadge(direction) {
-  if (!direction) return '';
-  const up = direction.toUpperCase() === 'LONG' || direction.toUpperCase() === 'BUY';
-  return up
-    ? `<span class="badge badge-long">${direction.toUpperCase()}</span>`
-    : `<span class="badge badge-short">${direction.toUpperCase()}</span>`;
-}
-
 export function fixDecimalInput(el) {
   el.addEventListener('input', () => {
     const pos = el.selectionStart;
