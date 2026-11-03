@@ -448,6 +448,8 @@ export default {
   "addtrade.no_strategies": "Henüz strateji eklenmemiş.",
   "addtrade.create_strategy": "Strateji oluştur →",
   "addtrade.bulk_import": "📋 Toplu Ekle",
+  "addtrade.bulk_today_tag": "bugün",
+  "addtrade.bulk_today_hint": "{count} satırda tarih yok, bugünün tarihiyle ({date}) eklenecek: {rows}",
   "login.no_account": "Hesabın yok mu? ",
   "auth.too_many_attempts": "Çok fazla deneme. Lütfen daha sonra tekrar deneyin.",
   "auth.verification_required": "Lütfen doğrulamayı tamamlayın.",

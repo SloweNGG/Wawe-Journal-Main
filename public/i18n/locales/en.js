@@ -485,6 +485,8 @@ export default {
   "addtrade.no_strategies": "No strategies added yet.",
   "addtrade.create_strategy": "Create a strategy →",
   "addtrade.bulk_import": "📋 Bulk Add",
+  "addtrade.bulk_today_tag": "today",
+  "addtrade.bulk_today_hint": "{count} line(s) have no date and will use today's date ({date}): {rows}",
 
   // Login
   "login.no_account": "Don't have an account? ",

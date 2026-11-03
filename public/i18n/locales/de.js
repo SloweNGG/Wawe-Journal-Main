@@ -466,6 +466,8 @@ export default {
   "addtrade.no_strategies": "Noch keine Strategien hinzugefügt.",
   "addtrade.create_strategy": "Strategie erstellen →",
   "addtrade.bulk_import": "📋 Massen hinzufügen",
+  "addtrade.bulk_today_tag": "heute",
+  "addtrade.bulk_today_hint": "{count} Zeile(n) ohne Datum, es wird das heutige Datum ({date}) verwendet: {rows}",
 
   "login.no_account": "Noch kein Konto? ",
   "auth.too_many_attempts": "Zu viele Versuche. Bitte später erneut versuchen.",

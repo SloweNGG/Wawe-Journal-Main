@@ -105,6 +105,8 @@ const quickTranslations = {
     "quickmodal.bulk_error": "{{success}} added, {{failed}} errors!",
     "quickmodal.bulk_required": "Please enter at least one trade!",
     "quickmodal.bulk_invalid_format": "Invalid format in line {{line}}: {{error}}",
+    "quickmodal.bulk_today_tag": "today",
+    "quickmodal.bulk_today_hint": "{{count}} line(s) have no date and will use today's date ({{date}}): {{rows}}",
 
     // Validation
     "quickmodal.error_symbol_required": "Please enter a symbol!",
@@ -240,6 +242,8 @@ const quickTranslations = {
     "quickmodal.bulk_error": "{{success}} eklendi, {{failed}} hata!",
     "quickmodal.bulk_required": "Lütfen en az bir işlem girin!",
     "quickmodal.bulk_invalid_format": "{{line}}. satırda geçersiz format: {{error}}",
+    "quickmodal.bulk_today_tag": "bugün",
+    "quickmodal.bulk_today_hint": "{{count}} satırda tarih yok, bugünün tarihiyle ({{date}}) eklenecek: {{rows}}",
 
     "quickmodal.error_symbol_required": "Lütfen bir sembol girin!",
     "quickmodal.error_pnl_required": "Lütfen geçerli bir K/Z girin!",
@@ -372,6 +376,8 @@ const quickTranslations = {
     "quickmodal.bulk_error": "{{success}} hinzugefügt, {{failed}} Fehler!",
     "quickmodal.bulk_required": "Bitte geben Sie mindestens einen Trade ein!",
     "quickmodal.bulk_invalid_format": "Ungültiges Format in Zeile {{line}}: {{error}}",
+    "quickmodal.bulk_today_tag": "heute",
+    "quickmodal.bulk_today_hint": "{{count}} Zeile(n) ohne Datum, es wird das heutige Datum ({{date}}) verwendet: {{rows}}",
 
     "quickmodal.error_symbol_required": "Bitte geben Sie ein Symbol ein!",
     "quickmodal.error_pnl_required": "Bitte geben Sie ein gültiges P&L ein!",

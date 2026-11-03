@@ -923,6 +923,7 @@ async function fileToCsvText(file) {
                   <span data-quick-i18n="quickmodal.bulk_example">EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem</span>
                 </div>
                 <textarea id="quick-bulk-textarea" rows="6" data-quick-i18n-placeholder="quickmodal.bulk_placeholder" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem"></textarea>
+                <div id="quick-bulk-today" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--muted);"></div>
                 <div class="quick-bulk-progress" id="quick-bulk-progress" style="display:none;">
                   <span id="quick-bulk-status"></span>
                   <div class="quick-bulk-bar"><div class="quick-bulk-fill" id="quick-bulk-fill"></div></div>
@@ -1559,6 +1560,7 @@ async function fileToCsvText(file) {
 
     const bulkText = el('quick-bulk-textarea');
     if (bulkText) bulkText.value = '';
+    renderBulkTodayHint();
 
     const error = el('quick-add-error');
     if (error) error.classList.remove('active');
@@ -2134,6 +2136,29 @@ async function fileToCsvText(file) {
   // BULK IMPORT
   // ============================================================
 
+  // Toplu metin: tarih alanı boş satırlar bugünün tarihiyle eklenir (handleBulkImport). Yazarken metin kutusunun altında
+  // soluk bir "bugün" etiketiyle hangi satırlar olduğu gösterilir; numaralar handleBulkImport'unkiyle aynı (boş satırlar sayılmaz)
+  function bulkRowsWithoutDate(text) {
+    const rows = [];
+    String(text || '').split('\n').filter(function(l) { return l.trim(); }).forEach(function(line, i) {
+      const parts = line.split(',').map(function(p) { return p.trim(); });
+      if (parts.length >= 5 && parts[0] && !parts[5]) rows.push(i + 1);
+    });
+    return rows;
+  }
+
+  function renderBulkTodayHint() {
+    const hint = el('quick-bulk-today');
+    const textarea = el('quick-bulk-textarea');
+    if (!hint) return;
+    const rows = textarea ? bulkRowsWithoutDate(textarea.value) : [];
+    if (!rows.length) { hint.style.display = 'none'; hint.innerHTML = ''; return; }
+    hint.style.display = 'flex';
+    hint.innerHTML = '<span style="padding:1px 7px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:10px;letter-spacing:0.02em;">' +
+      escapeHtml(t('quickmodal.bulk_today_tag')) + '</span><span>' +
+      escapeHtml(t('quickmodal.bulk_today_hint', { count: rows.length, date: formatDateDisplay(todayIso()), rows: rows.map(function(n) { return '#' + n; }).join(', ') })) + '</span>';
+  }
+
   async function handleBulkImport() {
     if (isSubmitting) return;
 
@@ -2644,6 +2669,8 @@ async function fileToCsvText(file) {
 
     const bulkBtn = document.getElementById('quick-bulk-btn');
     if (bulkBtn) bulkBtn.addEventListener('click', handleBulkImport);
+    const bulkTextarea = document.getElementById('quick-bulk-textarea');
+    if (bulkTextarea) bulkTextarea.addEventListener('input', renderBulkTodayHint);
 
     const csvSelectBtn = document.getElementById('quick-csv-select');
     const csvFileInput = document.getElementById('quick-csv-file');
@@ -2670,6 +2697,7 @@ async function fileToCsvText(file) {
           if (iso) di.value = formatDateDisplay(iso);
         }
         if (datePickerState.isOpen) renderDatePicker();
+        renderBulkTodayHint();
         renderCommChips();
       });
     }

@@ -726,6 +726,7 @@ import Layout from '../layouts/Layout.astro';
         EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem
       </p>
       <textarea id="bulk-textarea" placeholder="EURUSD,LONG,0.10,1.08500,1.09000,2026-01-15,İlk işlem&#10;XAUUSD,SHORT,0.05,2450.00,2440.00,2026-01-15,Altın işlemi"></textarea>
+      <div id="bulk-today" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--muted);"></div>
       <div class="bulk-progress" id="bulk-progress" style="display:none;">
         <span id="bulk-status">İşleniyor...</span>
         <div class="bulk-bar"><div class="bulk-fill" id="bulk-fill"></div></div>
@@ -1295,12 +1296,42 @@ import Layout from '../layouts/Layout.astro';
     var bulkFill = document.getElementById('bulk-fill');
     var bulkStatus = document.getElementById('bulk-status');
 
+    // Tarih alanı boş satırlar bugünün tarihiyle eklenir (aşağıda defaultDate). Yazarken kutunun altında soluk bir "bugün"
+    // etiketiyle hangi satırlar olduğu gösterilir; numaralar hata mesajlarındakiyle aynı (boş satırlar sayılmaz)
+    var bulkToday = document.getElementById('bulk-today');
+    function renderBulkTodayHint() {
+      if (!bulkToday) return;
+      var rows = [];
+      String(bulkTextarea ? bulkTextarea.value : '').split('\n').filter(function(l) { return l.trim(); }).forEach(function(line, i) {
+        var parts = line.split(',').map(function(p) { return p.trim(); });
+        if (parts.length >= 5 && parts[0] && !parts[5]) rows.push(i + 1);
+      });
+      if (!rows.length) { bulkToday.style.display = 'none'; bulkToday.innerHTML = ''; return; }
+      var tr = function(key, params, fallback) {
+        var v = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key, params) : key;
+        return v && v !== key ? v : fallback;
+      };
+      var key = window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().split('T')[0];
+      var lang = (window.i18n && window.i18n.getCurrentLanguage) ? window.i18n.getCurrentLanguage() : 'tr';
+      var day = window.WwTime && window.WwTime.formatDate ? window.WwTime.formatDate(key, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : key;
+      var list = rows.map(function(n) { return '#' + n; }).join(', ');
+      bulkToday.style.display = 'flex';
+      bulkToday.innerHTML = '<span style="padding:1px 7px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:10px;letter-spacing:0.02em;">' +
+        sanitizeHTML(tr('addtrade.bulk_today_tag', {}, 'bugün')) + '</span><span>' +
+        sanitizeHTML(tr('addtrade.bulk_today_hint', { count: rows.length, date: day, rows: list }, rows.length + ' satırda tarih yok, bugünün tarihiyle (' + day + ') eklenecek: ' + list)) + '</span>';
+    }
+    if (bulkTextarea) bulkTextarea.addEventListener('input', renderBulkTodayHint);
+    whenAppReady(function() {   // i18n.js de defer: dinleyici sayfa ayrıştırılırken değil, betikler yüklenince eklenir
+      if (window.i18n && typeof window.i18n.onChange === 'function') window.i18n.onChange(renderBulkTodayHint);
+    });
+
     var bulkImportBtn = document.getElementById('bulk-import-btn');
     if (bulkImportBtn) {
       bulkImportBtn.addEventListener('click', function() {
         if (bulkOverlay) bulkOverlay.classList.add('active');
         if (bulkTextarea) bulkTextarea.value = '';
         if (bulkProgress) bulkProgress.style.display = 'none';
+        renderBulkTodayHint();
       });
     }
 
