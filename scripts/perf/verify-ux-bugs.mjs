@@ -116,6 +116,49 @@ try {
       await ctx.close();
     }
   }
+  // ── B ──────────────────────────────────────────────────────
+  if (want('B')) {
+    const be = createMockBackend();
+    be.fulfilled = backend.fulfilled;   // canlı trafik sayacı tek kümeye bakar (SW istekleri ortak arka uçtan)
+    const now = new Date().toISOString();
+    be.state.notifications.push({ id: 'n1', user_id: be.user.id, type: 'info', title: 'A', message: 'a', is_read: false, created_at: now },
+      { id: 'n2', user_id: be.user.id, type: 'info', title: 'B', message: 'b', is_read: false, created_at: now });
+    const ctx = await browser.createBrowserContext();
+    const page = await ctx.newPage();
+    await page.setViewport({ width: 1440, height: 900 });
+    await mockSession(page, { backend: be });
+    const notifWrites = () => be.state.writes.filter((w) => w.table === 'notifications').length + be.log.filter((l) => /rpc\/mark_notification/.test(l)).length;
+    const badge = () => page.evaluate(() => { const b = document.getElementById('bell-badge'); return b && b.style.display !== 'none' ? b.textContent.trim() : '0'; });
+    const go = async (n) => { await page.goto(base + '/' + n + '.html', { waitUntil: 'load' }); await page.waitForNetworkIdle({ idleTime: 600, timeout: 15000 }).catch(() => {}); await sleep(2000); };
+    await go('dashboard');
+    const b1 = await badge(), w1 = notifWrites();
+    check('B1', 'dashboard açılışında bildirimler okundu işaretlenmiyor, zil okunmamış sayısını gösteriyor', w1 === 0 && b1 === '2', `bildirim yazması ${w1}, zil "${b1}"`);
+    await page.reload({ waitUntil: 'load' }); await page.waitForNetworkIdle({ idleTime: 600 }).catch(() => {}); await sleep(2000);
+    const b2 = await badge(), w2 = notifWrites();
+    check('B2', 'sayfa yenilenince okunmamışlar okunmamış', w2 === 0 && b2 === '2', `bildirim yazması ${w2}, zil "${b2}"`);
+    await page.click('#overtrade-bell-btn'); await sleep(1200);
+    const listed = await page.evaluate(() => { const p = document.getElementById('bell-panel'); return { open: !!p && p.classList.contains('open'), items: document.querySelectorAll('#bell-panel-body [onclick*="wwMarkAsRead"], #bell-panel-body .noti-mark-read').length }; });
+    await page.click('#bell-mark-read-btn').catch(() => {}); await sleep(1500);
+    const w3 = notifWrites();
+    be.state.notifications.forEach((n) => { n.is_read = true; });   // sunucu tarafı (sahte arka uç RPC'yi bellekte uygulamaz)
+    await page.reload({ waitUntil: 'load' }); await page.waitForNetworkIdle({ idleTime: 600 }).catch(() => {}); await sleep(2000);
+    const b3 = await badge();
+    check('B3', 'zil açılıp "Tümünü okundu" seçilince okundu yazılıyor; yenilemede 0', listed.open && listed.items >= 2 && w3 >= 1 && b3 === '0', `panel açık ${listed.open}, listede ${listed.items} okunmamış, okundu yazması ${w3}, yenileme sonrası zil "${b3}"`);
+    // user_profiles açılış yazması: last_active her seferinde, email/username yalnızca ilk seferde ve değişince
+    const prof = () => be.state.writes.filter((w) => w.table === 'user_profiles').map((w) => Object.keys(w.body || {}).sort().join('+'));
+    const p0 = prof().length;
+    await page.evaluate(() => localStorage.removeItem('ww_last_active_push'));   // 5 dk kısıtını geç (yeni ziyaret gibi)
+    await go('trades');
+    const second = prof().slice(p0);
+    await page.evaluate(() => { localStorage.removeItem('ww_last_active_push'); localStorage.setItem('ww_profile_identity_00000000-0000-4000-8000-000000000001', 'eski@adres|eski'); });
+    await go('dashboard');
+    const changed = prof().slice(p0 + second.length);
+    const first = prof()[0] || '';
+    check('B4', 'user_profiles açılış yazması: email/username yalnızca ilk seferde ve değişince, last_active her seferinde',
+      first === 'email+last_active+username' && second.length === 1 && second[0] === 'last_active' && changed[0] === 'email+last_active+username',
+      `ilk: ${first} | sonraki: ${second.join(', ') || '—'} | kimlik değişince: ${changed.join(', ') || '—'}`);
+    await ctx.close();
+  }
 } finally {
   const m = live.summary();
   await closeBrowser(browser);

@@ -25,3 +25,35 @@ describe('1 — Calendar: Quick Add reopens right after saving; saved trades sho
     assert.match(cal, /async function initCalendar\(\) \{\s*if \(isCalendarInitialized\) return;\s*isCalendarInitialized = true;/);
   });
 });
+
+describe('2 — notifications are not marked read on page open; profile heartbeat writes only what changed', () => {
+  it('mark-read functions run only from user clicks (onclick), never programmatically', () => {
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(d + '/' + e.name) : [d + '/' + e.name]));
+    const files = [...walk('public'), ...walk('src')].filter((f) => /\.(m?js|astro|html)$/.test(f) && !f.endsWith('bundle.js'));
+    const calls = [];
+    for (const f of files) {
+      for (const m of read(f).matchAll(/(.{0,40})\b(wwMarkAllAsRead|wwMarkAsRead)\s*\(/g)) {
+        if (/function\s*$/.test(m[1]) || /window\.\w+\s*=\s*async\s*$/.test(m[1])) continue;
+        if (/onclick=/.test(m[1]) || /&&\s*window\.$/.test(m[1])) continue;   // onclick="window.wwMarkAllAsRead && window.wwMarkAllAsRead()"
+        calls.push(f + ': ' + m[0].trim());
+      }
+    }
+    assert.deepEqual(calls, []);
+    assert.match(read('public/components/navbar/navbar.js'), /if \(willOpen\) wwMarkBellSeen\(\);/);   // zil açılınca yalnızca "görüldü"
+  });
+
+  it('throttledUpdateLastActive: last_active every time, email/username only first time or when changed', async () => {
+    const src = read('public/src/core/supabase.js');
+    const fn = src.slice(src.indexOf('export async function throttledUpdateLastActive'), src.indexOf('// ── LOGOUT'));
+    const store = {}, writes = [];
+    const sb = { from: () => ({ update: (d) => ({ eq: () => ({ select: async () => { writes.push(Object.keys(d).sort().join('+')); return { data: [{ id: 'u1' }], error: null }; } }) }), insert: () => ({ catch() {} }) }) };
+    const run = new Function('sb', 'safeLocalStorageGet', 'safeLocalStorageSet', 'ACTIVE_THROTTLE_MS', fn.replace('export async function', 'return async function'))(
+      sb, (k, d) => (k in store ? store[k] : d), (k, v) => { store[k] = v; }, 5 * 60 * 1000);
+    const user = { id: 'u1', email: 'a@b.c', user_metadata: { username: 'ali' } };
+    await run(user); delete store.ww_last_active_push;
+    await run(user); delete store.ww_last_active_push;
+    await run({ ...user, user_metadata: { username: 'veli' } });
+    await run(user);   // 5 dk içinde: hiç yazmaz
+    assert.deepEqual(writes, ['email+last_active+username', 'last_active', 'email+last_active+username']);
+  });
+});

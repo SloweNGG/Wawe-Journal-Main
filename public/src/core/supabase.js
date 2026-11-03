@@ -209,11 +209,19 @@ export async function throttledUpdateLastActive(userOrId) {
   if (now - lastPush < ACTIVE_THROTTLE_MS) return;
   safeLocalStorageSet(key, String(now));
 
+  // last_active her seferinde (admin "çevrimiçi" göstergesi). email / username kayıtta boş kalan alanları onarmak için
+  // (f4dd487) eklenmişti ama değişmeseler de her 5 dakikada bir yeniden yazılıyordu: artık yalnızca bu tarayıcıda en son
+  // yazılandan farklıysa gönderilir (ilk seferde ve değişince) — fix/ux-bugs 2
   const updateData = { last_active: new Date().toISOString() };
+  const identityKey = 'ww_profile_identity_' + userId;
+  let identity = null;
   if (user && user.email) {
-    updateData.email = user.email;
     const metaUsername = user.user_metadata?.username || user.user_metadata?.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : null);
-    if (metaUsername) updateData.username = metaUsername;
+    identity = user.email + '|' + (metaUsername || '');
+    if (safeLocalStorageGet(identityKey, '') !== identity) {
+      updateData.email = user.email;
+      if (metaUsername) updateData.username = metaUsername;
+    }
   }
 
   try {
@@ -222,6 +230,7 @@ export async function throttledUpdateLastActive(userOrId) {
       .update(updateData)
       .eq('id', userId)
       .select('id');
+    if (!error && data && data.length && updateData.email && identity) safeLocalStorageSet(identityKey, identity);
 
     if (!error && (!data || data.length === 0) && user) {
       const username = user.user_metadata?.username || user.user_metadata?.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'trader');
