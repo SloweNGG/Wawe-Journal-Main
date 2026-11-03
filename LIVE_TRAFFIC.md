@@ -69,7 +69,7 @@ Supabase panosundaki günlük "Cached Egress" grafiğine bakmak gerekiyor (bkz. 
   `?t=` / `Date.now()` / `Math.random()` sorgusu eklenemez (eski kodda 2 test başarısız oluyor, denendi).
 - `npm run build` ✓, `npm test` ✓ (520 test).
 
-### 1c — Tipik oturumda Storage baytı: önce / sonra · `<1c>`
+### 1c — Tipik oturumda Storage baytı: önce / sonra · `398961c`
 
 Yöntem: `scripts/perf/storage-session.mjs` (yeni). Sahte oturum (canlıya istek yok), tek tarayıcı profili (HTTP önbelleği ve
 service worker adımlar arasında kalır, gerçek kullanıcı gibi). 1. gün: dashboard aç → backtest'e geç → hesaba gir → sayfayı
@@ -99,3 +99,17 @@ Storage kalır), aynı tur. Avatar sahte arka uçtan, `ETag` ile (304 destekleni
 - Komut: `node scripts/perf/cf-serve.mjs dist 8788` ve
   `PERF_DIR=<araçlar> node scripts/perf/storage-session.mjs --base http://127.0.0.1:8788 [--avatar-kb 1500] [--avatar-cache max-age=3600]`.
 - `npm run build` ✓, `npm test` ✓ (520 test).
+
+### 1d — Parça 1–3 ölçümleri ve testler canlı Storage'a gitti mi? · `<1d>`
+
+| Kaynak | Canlı Storage | Not |
+|---|---|---|
+| `npm test` (`tests/*.test.js`) | **0** | Ağ yok; URL'ler yalnızca dizgi, `fetch` sahte (vm). |
+| `tests/smoke/` (backtest) | **0** | Sayfa gövdesi `__bt.html`; `window.sb = {}` ya da yerel `FakeDb` (`make.py`). |
+| `scripts/demo/` | **0** | Playwright `context.route` (REST/Auth/Storage) + `routeWebSocket` (Realtime) yerelde. |
+| Parça 1 (oturumsuz Lighthouse, login sayfası) | **0** | Oturum yok → avatar yok. |
+| Parça 2 ve 3, **sahte oturum** (`mock-session.mjs`) | **0** | Supabase'e giden tüm HTTP (Storage dahil) yakalanıp yerelde cevaplandı; sahte profilde avatar yok. **Ama Realtime WebSocket'leri yakalanmadı** → canlı Realtime'a sahte JWT ile bağlandı (Sorun 2). |
+| Parça 3, **gerçek test hesabı** (3e) | **≈ 4 MB** | Test hesabının avatarı 24.7 KB ve her sayfa açılışında `?t=` ile ~2–3 kez indi. Kayıtlı 20 Lighthouse raporunda 63 indirme = 1.55 MB (ölçüldü). Kaydedilmeyenler (tahmin): 12 Lighthouse çalıştırması ≈ 0.9 MB, 22 `cls.mjs --profile` sayfası ≈ 1.1–1.6 MB, 4 LCP gözlemi ≈ 0.2 MB, giriş penceresindeki canlı dashboard ≈ 0.1 MB. |
+
+Toplam ≈ **4 MB**, 5.2 GB'ın ~%0.08'i. Ölçüm araçları Storage kotasının nedeni değil. Gerçek hesap ölçümleri REST'e de gitti
+(okuma; 20 raporda ~800 istek, ~780 KB) ama o "cached egress" değil.
