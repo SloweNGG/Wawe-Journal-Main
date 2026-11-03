@@ -2,7 +2,7 @@
 
 Dal: `fix/live-traffic` (kaynak: `master`, 252c2db). `perf/tonight` bu dala birleştirilmedi.
 
-**Durum:** `sürüyor` (Sorun 1: Supabase Storage cached egress 5,2 / 5 GB; Sorun 2: Realtime `JwtSignatureError` döngüsü;
+**Durum:** `tamamlandı` (Sorun 1: Supabase Storage cached egress 5,2 / 5 GB; Sorun 2: Realtime `JwtSignatureError` döngüsü;
 ortak kural: ölçüm / test araçlarından canlıya kaçak trafik).
 
 ## Sorun 1 — Storage egress
@@ -154,7 +154,7 @@ Yeniden üretme (canlıya gitmeden): `scripts/perf/realtime-check.mjs` — sahte
   `mock-session.mjs`: `auth: 'refresh-fails'` (yenileme 400, `/auth/v1/user` 401), `expired`, `withSession`, `/auth/v1/token` geçerli
   oturum döner.
 
-### 2b — Geçersiz token'la sonsuz deneme yok · `<2b>`
+### 2b — Geçersiz token'la sonsuz deneme yok · `ae25459`
 
 - Yeni `public/interface/shared/realtime-guard.js` (`window.WwRealtime.subscribe(sb, ad, kur)`), `BaseHead.astro` uygulama
   sayfalarında navbar ve bundle'dan önce yükleniyor. İki kanal da (navbar bildirimleri, payment.js plan dinleyicisi) bunu
@@ -190,3 +190,58 @@ Tarayıcıda (`realtime-check.mjs`, dashboard, 45 sn; sahte sunucu; canlıya git
   en çok 3 kez; iki uygulama kanalı + BaseHead + bundle). `tests/bundle-sync.test.js` (yeni).
 - Admin paneli kanallarına (`admin-data.js`) dokunulmadı: zaten durum geri çağrıları var ve yalnızca admin açıyor.
 - `npm run build` ✓, `npm test` ✓ (532 test).
+
+## Ortak kural — canlıya kaçak trafik (3) · `<3>`
+
+- Yeni `scripts/perf/live-guard.mjs`:
+  - `watchLive(browser, { fulfilled })`: tarayıcının her hedefinde (sayfa, service worker, diğer worker'lar) CDP Network
+    olaylarıyla `*.supabase.co`'ya giden HER isteği (REST, Auth, Storage, Edge Function) ve gerçek WebSocket açılışını
+    (Realtime) sayar: **sahte** (mock cevapladı), **önbellek/SW**, **CANLI** (ağa çıktı / çıkmaya çalıştı), **WebSocket**.
+    Bitmemiş istek güvenli tarafta "canlı" sayılır; CORS ön istekleri asıl istekle sayılır; WebSocket adresindeki `apikey`
+    yazdırılmaz. `assertNoLive()`: canlı + WebSocket > 0 ise hata.
+  - `closeBrowser(browser[, profilKlasörü])`: kapatır, ana süreç ve aynı profil klasörünü kullanan tüm Chrome süreçleri bitene
+    kadar bekler (8 sn); kalan varsa öldürür ve hata fırlatır.
+- Sahte modda tüm araçlar Chrome'u `--host-resolver-rules=MAP *.supabase.co ~NOTFOUND` ile açıyor (güvenlik ağı: sayaç
+  bir şeyi kaçırsa bile bağlantı kurulamaz).
+
+| Araç | Sahte modda | Gerçek hesap modunda |
+|---|---|---|
+| `scripts/perf/lighthouse.mjs --mock` | her çalıştırmada sayım; kaçak varsa **hata (çıkış kodu ≠ 0)**; süreç kontrolü | sayım raporlanır (salt okuma koruması zaten yazmaları engelliyor); süreç kontrolü; giriş penceresinde profil klasörüyle süreç kontrolü |
+| `scripts/perf/cls.mjs --mock` | tüm denemeler tek sayaçta; kaçak → hata; süreç kontrolü | sayım raporlanır |
+| `scripts/perf/storage-session.mjs`, `realtime-check.mjs` | yalnızca sahte; kaçak → hata; süreç kontrolü | — |
+| `tests/smoke/run.mjs` (backtest) | sayfa ağ değil `window.sb` sahtesiyle çalışır: **herhangi** bir supabase.co isteği → senaryo başarısız; süreç kontrolü | — |
+| `scripts/demo/browser.mjs` (Playwright) | `route` ile yerelde cevaplananlar "yerel"; başka yoldan ağa çıkan / DNS'e takılan supabase isteği ya da CDP'de görülen gerçek WebSocket → `close()` hata; `close()` bu çalıştırmanın açtığı Chrome süreçlerinin bittiğini doğrular. `CHROME=` ile sistem Chrome'u kullanılabilir | — |
+| `npm test` | ağa çıkmıyor (vm + sahte fetch) | — |
+
+Doğrulama (bu makinede):
+
+| Çalıştırma | supabase.co istekleri | canlı | gerçek WebSocket | süreçler |
+|---|---|---|---|---|
+| `realtime-check.mjs` (15 sn) | 60 (hepsi sahte) | 0 | 0 | kapandı |
+| `storage-session.mjs` | 394 (387 sahte, 7 SW önbelleği) | 0 | 0 | kapandı |
+| `cls.mjs --mock` (2 deneme) | 148 (sahte) | 0 | 0 | kapandı |
+| `lighthouse.mjs --mock` (1) | 68 (sahte) | 0 | 0 | kapandı |
+| `tests/smoke/run.mjs sb ct` | 0 | 0 | 0 | kapandı, senaryolar geçti |
+| demo (`launch` + giriş + dashboard) | 31 (yerel) | 0 | 0 | kapandı |
+| **kasıtlı kaçak** (sahte Realtime'sız sayfa + yakalanmayan sekmeden fetch) | 62 | **1** | **3** | → `assertNoLive()` **hata verdi** (beklenen) |
+
+Her çalıştırmadan sonra `pgrep -f puppeteer_dev_chrome_profile` / `playwright_chromiumdev_profile` → 0 süreç.
+
+- Test: `tests/live-guard.test.js` (yeni, 11 test: sınıflandırma, bitmemiş istek, `apikey` gizleme, `assertNoLive`, `closeBrowser`;
+  her aracın DNS engeli + sayaç + süreç kontrolü kullandığı; mock-session'ın Puppeteer yakalaması yerine CDP Fetch kullandığı).
+- `npm run build` ✓, `npm test` ✓ (543 test).
+
+## Sizden gerekenler (bu oturumda yapılamadı)
+
+1. **Supabase panosu → Usage → Cached Egress, günlük grafik.** 10–23 Ekim arasında (landing videoları) mı yoksa her gün eşit
+   (avatar `?t=`) mı yükseldiğini gösterir. İkisi de mümkün; kod tarafında ikisi de kapandı.
+2. **Storage içeriği** (salt okuma; bu oturumda canlı DB okumasına izin verilmedi). SQL Editor'da:
+   ```sql
+   select bucket_id, count(*) as dosya, round(sum((metadata->>'size')::bigint)/1048576.0, 2) as mb,
+          max((metadata->>'size')::bigint)/1024 as en_buyuk_kb, string_agg(distinct metadata->>'cacheControl', ', ') as cache
+   from storage.objects group by 1 order by 3 desc;
+   ```
+   Avatarlar büyükse (yüzlerce KB – 2 MB), kullanıcılar yeniden yükleyene kadar SW önbelleği tekrar indirmeyi zaten kesiyor;
+   istenirse mevcut avatarlar küçültülüp yeniden yüklenebilir (canlıya yazma: ayrıca onay).
+3. **Realtime logları:** bu dal yayına girdikten sonra `JwtSignatureError` sayısının (sahte oturumlu ölçümler de artık canlıya
+   gitmediği için) sıfıra inmesi beklenir.

@@ -15,6 +15,7 @@ import { createRequire } from 'node:module';
 import { chromePath } from './chrome-path.mjs';
 import { createMockBackend, mockSession, watchWorkers, MOCK_CHROME_ARGS } from './mock-session.mjs';
 import { installFakeRealtime } from './fake-realtime.mjs';
+import { watchLive, closeBrowser } from './live-guard.mjs';
 
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i < 0 ? d : (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true); };
@@ -27,10 +28,12 @@ const req = createRequire(path.join(path.resolve(process.env.PERF_DIR || '.'), '
 const puppeteer = req('puppeteer-core');
 
 const browser = await puppeteer.launch({ executablePath: chromePath(), headless: 'new', args: MOCK_CHROME_ARGS });
-let out;
+let out, live;
 try {
   const backend = createMockBackend({ auth: sessionMode === 'expired' ? 'refresh-fails' : 'ok' });
   await watchWorkers(browser, backend);
+  live = watchLive(browser, { fulfilled: backend.fulfilled });
+  await live.ready;
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
   if (sessionMode === 'none') {
@@ -45,7 +48,7 @@ try {
   out = await page.evaluate(() => ({ url: location.pathname, log: window.__wwRealtime || { sockets: 0, frames: [] } })).catch((e) => ({ url: '?', log: { sockets: 0, frames: [] }, err: e.message }));
   out.auth = backend.log.filter((l) => l.includes('/auth/v1/token')).length;
 } finally {
-  await browser.close();
+  await closeBrowser(browser);
 }
 const f = out.log.frames;
 const joins = f.filter((x) => x.dir === 'out' && x.msg[3] === 'phx_join');
@@ -58,3 +61,5 @@ const topics = {};
 for (const j of joins) { const k = j.msg[2].replace(/[0-9a-f-]{8,}/g, '…'); topics[k] = (topics[k] || 0) + 1; }
 console.log('kanal başına join:', JSON.stringify(topics));
 console.log('join zamanları (sn) ve aralıklar:', joins.slice(0, 40).map((j) => { const t = (j.t / 1000).toFixed(1); const d = prev == null ? '' : '+' + ((j.t - prev) / 1000).toFixed(1); prev = j.t; return t + d; }).join('  '));
+console.log(live.line() + ' | tarayıcı süreçleri kapandı');
+live.assertNoLive();

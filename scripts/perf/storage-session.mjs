@@ -12,6 +12,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { chromePath } from './chrome-path.mjs';
 import { createMockBackend, mockSession, watchWorkers, MOCK_CHROME_ARGS } from './mock-session.mjs';
+import { watchLive, closeBrowser } from './live-guard.mjs';
 
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i < 0 ? d : (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true); };
@@ -41,6 +42,8 @@ try {
 
   const backend = createMockBackend({ avatar: { bytes: jpeg, cacheControl: avatarCache }, backtest: true });
   await watchWorkers(browser, backend);
+  var live = watchLive(browser, { fulfilled: backend.fulfilled });
+  await live.ready;
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
   await mockSession(page, { backend });
@@ -89,6 +92,9 @@ try {
   const tot = rows.reduce((s, r) => ({ requests: s.requests + r.requests, bytes: s.bytes + r.bytes, nm: s.nm + r.notModified }), { requests: 0, bytes: 0, nm: 0 });
   console.log('TOPLAM'.padEnd(34), String(tot.requests).padStart(2), 'istek |', (tot.bytes / 1024).toFixed(1).padStart(8), 'KB 200 |', tot.nm, '× 304');
   console.log('SW:', JSON.stringify(sw));
+  console.log(live.line());
+  live.assertNoLive();
 } finally {
-  await browser.close();
+  await closeBrowser(browser);
+  console.log('tarayıcı süreçleri kapandı');
 }

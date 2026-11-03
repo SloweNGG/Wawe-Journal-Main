@@ -14,7 +14,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { mockSession } from './mock-session.mjs';
+import { createMockBackend, mockSession, watchWorkers, MOCK_CHROME_ARGS } from './mock-session.mjs';
+import { watchLive, closeBrowser } from './live-guard.mjs';
 import { chromePath } from './chrome-path.mjs';
 import { guardReadOnly } from './readonly-guard.mjs';
 
@@ -28,13 +29,18 @@ const profile = opt('profile', null);
 const req = createRequire(path.join(path.resolve(process.env.PERF_DIR || '.'), 'noop.js'));
 const puppeteer = req('puppeteer-core');
 
-const browser = await puppeteer.launch({ executablePath: chromePath(), headless: 'new', userDataDir: profile ? path.resolve(profile) : undefined });
+const mock = !!opt('mock', false);
+const browser = await puppeteer.launch({ executablePath: chromePath(), headless: 'new', userDataDir: profile ? path.resolve(profile) : undefined, args: mock ? MOCK_CHROME_ARGS : [] });
+const backend = mock ? createMockBackend() : null;   // tüm denemeler tek sahte arka uç + tek sayaç
+if (backend) await watchWorkers(browser, backend);
+const live = watchLive(browser, { fulfilled: backend ? backend.fulfilled : null });
+await live.ready;
 const results = [];
 for (let i = 0; i < runs; i++) {
   const ctx = profile ? browser.defaultBrowserContext() : await browser.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport(opt('desktop', false) ? { width: 1440, height: 900 } : { width: 412, height: 823, deviceScaleFactor: 1.75, isMobile: true, hasTouch: true });
-  if (opt('mock', false)) await mockSession(page);
+  if (mock) await mockSession(page, { backend });
   const guard = profile ? await guardReadOnly(page) : null;
   const cdp = await page.createCDPSession();
   if (profile) {
@@ -67,7 +73,10 @@ for (let i = 0; i < runs; i++) {
   await page.close();
   if (!profile) await ctx.close();
 }
-await browser.close();
+console.log(live.line());
+await closeBrowser(browser);
+console.log('tarayıcı süreçleri kapandı');
+if (mock) live.assertNoLive();
 const vals = results.map((r) => r.cls).sort((a, b) => a - b);
 const withShift = results.filter((r) => r.cls > 0.0005).length;
 console.log(`\n${name}: ${runs} deneme | kaymalı: ${withShift} | CLS ortanca ${vals[Math.floor(vals.length / 2)].toFixed(4)} | en yüksek ${vals[vals.length - 1].toFixed(4)} | ortalama ${(vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(4)}`);
