@@ -37,7 +37,9 @@ function sampleTrades(n, strats) {
 
 /**
  * Sahte arka uç (sayfa ve service worker ortak kullanır).
- * opts.avatar: { bytes: Buffer, cacheControl } → profilde Storage avatarı; opts.backtest: true → bir sentetik backtest hesabı;
+ * opts.avatar: { bytes: Buffer, cacheControl, serveFrom? } → profilde Storage avatarı. serveFrom: 'http://127.0.0.1:<port>/a.jpg' verilirse
+ *   istek o (gerçek) yerel sunucuya yönlendirilir: CDP ile doldurulan yanıtlar Chrome'un HTTP önbelleğine YAZILMAZ, önbellek
+ *   ölçümleri ancak gerçek bir sunucuyla doğru çıkar (yönlendirme sayfaya görünmez; adres yine *.supabase.co); opts.backtest: true → bir sentetik backtest hesabı;
  * opts.auth: 'ok' | 'refresh-fails' (token yenileme 400 invalid_grant, /auth/v1/user 401: süresi dolmuş / iptal edilmiş oturum).
  * Dönen: { answer(req) → { status, headers, body: Buffer }, inserted, log, storage: { requests, bytes, notModified } }
  */
@@ -58,6 +60,8 @@ export function createMockBackend({ plan = 'premium', trades = 40, avatar = null
   const log = [];
   const storage = { requests: 0, bytes: 0, notModified: 0 };
   const fulfilled = new Set();   // sahte arka ucun cevapladığı isteklerin Network requestId'leri (live-guard.mjs sınıflandırır)
+  // Değiştirilebilir durum (kontroller için): bildirimler, profil, Storage yüklemeleri ve tablo yazmaları
+  const state = { notifications: [], profile, uploads: [], writes: [] };
   const etag = '"perf-avatar-1"';
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*', 'access-control-expose-headers': 'content-range' };
 
@@ -71,9 +75,18 @@ export function createMockBackend({ plan = 'premium', trades = 40, avatar = null
     };
     if (method === 'OPTIONS') return json({});
     log.push(method + ' ' + u.pathname);
+    // Storage yükleme / listeleme / silme (yalnızca bellekte; içerik sayfada yakalanır, bkz. state.uploads)
+    if (u.pathname.startsWith('/storage/v1/object/list/')) return json([]);
+    if (method === 'DELETE' && u.pathname.startsWith('/storage/v1/object/')) return json([]);
+    if ((method === 'POST' || method === 'PUT') && u.pathname.startsWith('/storage/v1/object/') && !u.pathname.startsWith('/storage/v1/object/public/')) {
+      const key = u.pathname.replace('/storage/v1/object/', '');
+      state.uploads.push({ key, contentType: h['content-type'] || '', cacheControl: h['cache-control'] || h['x-cache-control'] || '' });
+      return json({ Key: key, Id: 'ffff0000-0000-4000-8000-' + String(state.uploads.length).padStart(12, '0') });
+    }
     if (u.pathname.startsWith('/storage/v1/object/public/')) {
       storage.requests++;
       if (!avatar || u.pathname !== AVATAR_PATH) return { status: 400, headers: { ...cors, 'content-type': 'application/json' }, body: Buffer.from('{"statusCode":"404","error":"not_found"}') };
+      if (avatar.serveFrom) return { continueUrl: avatar.serveFrom };
       const base = { ...cors, 'content-type': 'image/jpeg', 'cache-control': avatar.cacheControl || 'max-age=3600', etag, 'last-modified': 'Mon, 02 Nov 2026 10:00:00 GMT' };
       if (h['if-none-match'] === etag) { storage.notModified++; return { status: 304, headers: base, body: Buffer.alloc(0) }; }
       storage.bytes += avatar.bytes.length;
@@ -92,7 +105,14 @@ export function createMockBackend({ plan = 'premium', trades = 40, avatar = null
       inserted.push(...add);
       return json(one ? add[0] : add, 201);
     }
-    if (table === 'profiles' || table === 'user_profiles') return json(one ? profile : [profile]);
+    if (method !== 'GET' && method !== 'HEAD' && u.pathname.startsWith('/rest/v1/') && !u.pathname.startsWith('/rest/v1/rpc/')) {
+      let body = null; try { body = JSON.parse(postData || 'null'); } catch (e) {}
+      state.writes.push({ method, table, body });
+      if (table === 'user_profiles' && body && !Array.isArray(body)) Object.assign(state.profile, body);
+      return json(one ? (Array.isArray(body) ? body[0] : body) : (Array.isArray(body) ? body : body ? [body] : []), method === 'POST' ? 201 : 200);
+    }
+    if (table === 'notifications') return json(state.notifications);
+    if (table === 'profiles' || table === 'user_profiles') return json(one ? state.profile : [state.profile]);
     if (table === 'trades') return json(one ? rows[0] : rows.concat(inserted));
     if (u.pathname === '/rest/v1/rpc/list_journals') return json([journal]);
     if (table === 'journals') return json(one ? journal : [journal]);
@@ -104,7 +124,7 @@ export function createMockBackend({ plan = 'premium', trades = 40, avatar = null
   }
   const expiredSession = { ...session, expires_at: Math.floor(Date.now() / 1000) - 3600,
     access_token: b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: USER_ID, exp: Math.floor(Date.now() / 1000) - 3600, role: 'authenticated' }) + '.sig' };
-  return { answer, inserted, log, storage, fulfilled, session, expiredSession, user, journalId: JID };
+  return { answer, inserted, log, storage, fulfilled, state, session, expiredSession, user, journalId: JID };
 }
 
 /**
@@ -138,6 +158,7 @@ async function fulfillFrom(session, backend, from = 'page') {
       if (process.env.MOCK_TRACE && e.request.url.includes('/storage/')) console.error('[mock]', from, e.request.method, (e.request.headers || {})['Sec-Fetch-Dest'] || '', (e.request.headers || {})['Sec-Fetch-Mode'] || '', e.request.url.slice(-30));
       const r = backend.answer({ method: e.request.method, url: e.request.url, headers: e.request.headers || {}, postData: e.request.postData || '' });
       if (e.networkId) backend.fulfilled.add(e.networkId);
+      if (r.continueUrl) return await session.send('Fetch.continueRequest', { requestId: e.requestId, url: r.continueUrl });
       await session.send('Fetch.fulfillRequest', { requestId: e.requestId, responseCode: r.status,
         responseHeaders: Object.entries(r.headers).map(([name, value]) => ({ name, value: String(value) })), body: r.body.toString('base64') });
     } catch (err) { /* hedef kapandıysa */ }

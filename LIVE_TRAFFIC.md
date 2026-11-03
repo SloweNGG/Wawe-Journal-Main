@@ -245,3 +245,29 @@ Her çalıştırmadan sonra `pgrep -f puppeteer_dev_chrome_profile` / `playwrigh
    istenirse mevcut avatarlar küçültülüp yeniden yüklenebilir (canlıya yazma: ayrıca onay).
 3. **Realtime logları:** bu dal yayına girdikten sonra `JwtSignatureError` sayısının (sahte oturumlu ölçümler de artık canlıya
    gitmediği için) sıfıra inmesi beklenir.
+
+## Canlıya alma öncesi otomatik kontroller (2026-11-03) · `scripts/perf/verify-live-traffic.mjs`
+
+Sahte oturum + taklit Realtime + canlı trafik sayacı açık. **13/13 geçti**, canlıya 0 istek / 0 WebSocket, tarayıcı süreçleri kapandı.
+
+| # | Kontrol | Sonuç |
+|---|---|---|
+| A1 | avatar adresinde `?t=` yok | 8 `<img>`, hepsi düz adres |
+| A2 | ikinci açılıştan itibaren avatar SW / disk önbelleğinden | 4 sayfada Storage'dan 1 tam indirme (ilk), sonrası SW |
+| A3 | Cache Storage'da `wawe-storage-v1` | var, avatar içinde |
+| B1 | JPEG 1600×1600 yüklemesi | 250 KB → WebP 256×256 12.4 KB, `cacheControl 31536000`, `.webp` |
+| B2 | GIF | olduğu gibi (`image/gif`, aynı boyut, `.gif`) |
+| B3 | profil `avatar_url` | iki yüklemede de yeni adres |
+| C1 | bildirim olayı (taklit Realtime INSERT) | sayfa yenilenmeden zil "1" |
+| C2 | plan değişikliği olayı (UPDATE free → premium) | sayfa yenilenmeden `ww_user_plan=premium`, `ww-plan-changed`, rozet "Pro", `html.is-pro` |
+| D1 | geçerli oturum WS (30 sn) | 1 soket, 2 katılma, tekrar yok |
+| D2 | geçersiz imza WS (40 sn) | 2 katılma (0.7 sn'de), sonra sessiz |
+| E1 | hata raporu ekran görüntüsü | 1280 px JPEG'e sıkıştırılıp `bug-reports/screenshots/`'a, `cacheControl 31536000` |
+| E2 | rapor kaydı | `screenshot_url` ile insert, form bitti |
+| L | canlı trafik sayacı | 400 supabase.co isteği (392 sahte, 8 SW), canlı 0, WebSocket 0 |
+
+- Ölçüm notu: CDP `Fetch.fulfillRequest` ile verilen yanıtlar Chrome'un HTTP önbelleğine yazılmıyor (kontrol deneyi: SW yokken aynı
+  adres 3 kez → 3 istek). Bu yüzden avatar gerçek bir yerel HTTP sunucusundan (Storage gibi `max-age=3600`, `ETag`, 304, CORS)
+  veriliyor; istek yine sahte arka uçta yakalanıp sayfaya görünmeden o sunucuya yönlendiriliyor (`avatar.serveFrom`).
+- `mock-session.mjs`: değiştirilebilir durum (`state.notifications / profile / uploads / writes`), Storage yükleme / listeleme /
+  silme cevapları, tablo yazmaları bellekte. `fake-realtime.mjs`: `window.__wwRealtimePush(tablo, tür, kayıt, eski)`.

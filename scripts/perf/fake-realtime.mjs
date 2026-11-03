@@ -9,10 +9,25 @@
 //   mode 'jwt-expired'  : phx_join → error {reason: 'Token has expired …'}
 //   closeAfterError     : hata cevabından sonra soketi kapatır (sunucunun bağlantıyı düşürdüğü durum)
 // Sayfada window.__wwRealtime = { sockets, frames: [{ t, dir, msg }] } kayıt tutar (ritim analizi için).
+// window.__wwRealtimePush(table, type, record, oldRecord): katılmış ve o tabloyu dinleyen kanallara postgres_changes olayı
+// gönderir (sunucudan değişiklik gelmiş gibi); kaç kanala gittiğini döner.
 // ============================================================
 export const REALTIME_INIT = function (opts) {
   var log = { sockets: 0, frames: [] };
   window.__wwRealtime = log;
+  var live = [];   // [{ socket, topic, joinRef, bindings: [{ id, table, event }] }]
+  window.__wwRealtimePush = function (table, type, record, oldRecord) {
+    var n = 0;
+    live.forEach(function (j) {
+      if (j.socket.readyState !== 1) return;
+      var ids = j.bindings.filter(function (b) { return b.table === table && (b.event === '*' || String(b.event).toUpperCase() === type); }).map(function (b) { return b.id; });
+      if (!ids.length) return;
+      n++;
+      j.socket._reply([j.joinRef, null, j.topic, 'postgres_changes', { ids: ids, data: { schema: 'public', table: table, commit_timestamp: new Date().toISOString(), type: type,
+        columns: Object.keys(record || oldRecord || {}).map(function (k) { return { name: k, type: 'text' }; }), record: record || {}, old_record: oldRecord || {}, errors: null } }]);
+    });
+    return n;
+  };
   var Native = window.WebSocket;
   function now() { return Math.round(performance.now()); }
   function FakeSocket(url) {
@@ -41,11 +56,13 @@ export const REALTIME_INIT = function (opts) {
     log.frames.push({ t: now(), dir: 'out', msg: [m[0], m[1], m[2], m[3]] });
     var joinRef = m[0], ref = m[1], topic = m[2], event = m[3], payload = m[4] || {};
     if (event === 'heartbeat') return this._reply([null, ref, 'phoenix', 'phx_reply', { status: 'ok', response: {} }]);
-    if (event === 'phx_leave') return this._reply([joinRef, ref, topic, 'phx_reply', { status: 'ok', response: {} }]);
+    if (event === 'phx_leave') { live = live.filter(function (j) { return j.topic !== topic; }); return this._reply([joinRef, ref, topic, 'phx_reply', { status: 'ok', response: {} }]); }
     if (event === 'access_token') return;
     if (event !== 'phx_join') return;
     if (opts.mode === 'ok') {
-      var pc = ((payload.config || {}).postgres_changes || []).map(function (c, i) { return Object.assign({}, c, { id: 1000 + i }); });
+      var pc = ((payload.config || {}).postgres_changes || []).map(function (c, i) { return Object.assign({}, c, { id: 1000 + log.frames.length * 10 + i }); });
+      live = live.filter(function (j) { return j.topic !== topic; });
+      live.push({ socket: this, topic: topic, joinRef: joinRef, bindings: pc.map(function (c) { return { id: c.id, table: c.table, event: c.event }; }) });
       return this._reply([joinRef, ref, topic, 'phx_reply', { status: 'ok', response: { postgres_changes: pc } }]);
     }
     var reason = opts.mode === 'jwt-expired' ? 'Token has expired 0 seconds ago' : 'JwtSignatureError: Failed to validate JWT signature';
