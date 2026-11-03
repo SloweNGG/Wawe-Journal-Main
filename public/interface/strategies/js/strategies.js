@@ -1403,6 +1403,43 @@ function exportAllStrategiesCSV() {
   } catch(e) { showToast(i18n.t('toast.csv_export_error'), 'error'); }
 }
 
+// PDF: Türkçe karakterler için DM Sans gömülür (/fonts/pdf, dashboard.js ve pdf-report.js ile aynı yöntem);
+// yüklenemezse Helvetica'ya düşülür ve ş/ğ/ı/İ sadeleştirilir.
+var pdfFontCache = null;   // [regular, bold] base64; false = yüklenemedi
+
+async function loadPdfFonts() {
+  if (pdfFontCache !== null) return pdfFontCache;
+  try {
+    var bufs = await Promise.all(['Regular', 'Bold'].map(function (w) {
+      return fetch('/fonts/pdf/DMSans-' + w + '.ttf?v=__WW_BUILD_ID__').then(function (r) { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); });
+    }));
+    pdfFontCache = bufs.map(function (buf) {
+      var bytes = new Uint8Array(buf), bin = '';
+      for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    });
+  } catch (e) {
+    pdfFontCache = false;
+  }
+  return pdfFontCache;
+}
+
+function usePdfFonts(doc, fonts) {
+  if (!fonts) return 'helvetica';
+  doc.addFileToVFS('DMSans-Regular.ttf', fonts[0]); doc.addFont('DMSans-Regular.ttf', 'DMSans', 'normal');
+  doc.addFileToVFS('DMSans-Bold.ttf', fonts[1]); doc.addFont('DMSans-Bold.ttf', 'DMSans', 'bold');
+  return 'DMSans';
+}
+
+// DM Sans'ta ₺ yok; Helvetica'da ş/ğ/ı/İ yok
+function pdfText(fonts) {
+  var plain = { 'ş': 's', 'Ş': 'S', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I' };
+  return function (str) {
+    str = String(str === null || str === undefined ? '' : str).replace(/₺/g, 'TL ').replace(/−/g, '-');
+    return fonts ? str : str.replace(/[şŞğĞıİ]/g, function (ch) { return plain[ch]; });
+  };
+}
+
 async function exportStrategyPDF(strategyId) {
   try {
     if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
@@ -1418,6 +1455,8 @@ async function exportStrategyPDF(strategyId) {
     var s = strategiesList.find(function(x) { return x.id === strategyId; });
     var perf = getStrategyPerformance(strategyId);
     var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
+    var fonts = await loadPdfFonts();
+    var FONT = usePdfFonts(doc, fonts), T = pdfText(fonts);
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 12;
     var y = margin + 5;
@@ -1428,13 +1467,13 @@ async function exportStrategyPDF(strategyId) {
     doc.rect(0, 0, pageW, 3, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(i18n.t('strategies.title') + ': ' + sanitizeHTML(s.name), margin, y);
+    doc.setFont(FONT, 'bold');
+    doc.text(T(i18n.t('strategies.title') + ': ' + sanitizeHTML(s.name)), margin, y);
     y += 4;
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(FONT, 'normal');
     doc.setTextColor(107, 107, 128);
-    doc.text('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US')), margin, y);
+    doc.text(T('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US'))), margin, y);
     y += 10;
 
     var trades = allTradesForStats.filter(function(t) { return t.strategy_id === strategyId && t.exit_price; });
@@ -1461,14 +1500,14 @@ async function exportStrategyPDF(strategyId) {
         i18n.t('trades.table.exit'),
         i18n.t('trades.table.pnl'),
         'R:R'
-      ]],
-      body: tableData,
+      ].map(T)],
+      body: tableData.map(function(r) { return r.map(T); }),
       theme: 'plain',
       headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 5 },
       bodyStyles: { textColor: [232, 232, 240], fontSize: 5 },
       columnStyles: { 5: { textColor: function(cell) { return cell.raw >= 0 ? [34,197,94] : [239,68,68]; } } },
       margin: { left: margin, right: margin },
-      styles: { cellPadding: 1.5 }
+      styles: { font: FONT, cellPadding: 1.5 }
     });
     doc.save((s ? sanitizeHTML(s.name) : 'strateji') + '_rapor.pdf');
     showToast(i18n.t('toast.pdf_exported'));
@@ -1488,6 +1527,8 @@ async function exportAllStrategiesPDF() {
       return;
     }
     var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
+    var fonts = await loadPdfFonts();
+    var FONT = usePdfFonts(doc, fonts), T = pdfText(fonts);
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 12;
     var y = margin + 5;
@@ -1498,13 +1539,13 @@ async function exportAllStrategiesPDF() {
     doc.rect(0, 0, pageW, 3, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(i18n.t('strategies.title'), margin, y);
+    doc.setFont(FONT, 'bold');
+    doc.text(T(i18n.t('strategies.title')), margin, y);
     y += 4;
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(FONT, 'normal');
     doc.setTextColor(107, 107, 128);
-    doc.text('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US')), margin, y);
+    doc.text(T('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US'))), margin, y);
     y += 10;
 
     var tableData = strategiesList.map(function(s) {
@@ -1524,14 +1565,14 @@ async function exportAllStrategiesPDF() {
         i18n.t('trades.th_strategy'), i18n.t('strategies.detail.trades'),
         i18n.t('strategies.detail.win_rate'), i18n.t('strategies.detail.pnl'),
         i18n.t('strategies.detail.profit_factor')
-      ]],
-      body: tableData,
+      ].map(T)],
+      body: tableData.map(function(r) { return r.map(T); }),
       theme: 'dark',
       headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 6 },
       bodyStyles: { textColor: [232, 232, 240], fontSize: 6 },
       columnStyles: { 3: { textColor: function(cell) { return cell.raw.startsWith('-') ? [239,68,68] : [34,197,94]; } } },
       margin: { left: margin, right: margin },
-      styles: { cellPadding: 2 }
+      styles: { font: FONT, cellPadding: 2 }
     });
     doc.save('tum_stratejiler_ozet.pdf');
     showToast(i18n.t('toast.pdf_exported'));
