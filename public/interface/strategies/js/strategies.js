@@ -1440,6 +1440,74 @@ function pdfText(fonts) {
   };
 }
 
+// Dashboard PDF'iyle aynı görünüm (dashboard.js generatePDF): siyah sayfa, mor üst şerit, kart renginde başlık satırı,
+// zebra satırlar, K/Z yeşil / kırmızı, her sayfada alt bilgi. Tablo autoTable ile çizilir; yeni sayfalar willDrawPage'de boyanır.
+var PDF_COLORS = { bg: [0, 0, 0], card: [10, 10, 12], row: [8, 8, 10], line: [34, 34, 40], text: [232, 232, 240], muted: [138, 138, 154],
+  accent: [139, 92, 246], up: [34, 197, 94], down: [239, 68, 68] };
+
+function strategyPdfLayout(doc, FONT, T) {
+  var C = PDF_COLORS, W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
+  var lang = i18n.getCurrentLanguage();
+  function fill(c) { doc.setFillColor(c[0], c[1], c[2]); }
+  function color(c) { doc.setTextColor(c[0], c[1], c[2]); }
+  function font(style, size) { doc.setFont(FONT, style); doc.setFontSize(size); }
+  function paintPage() { fill(C.bg); doc.rect(0, 0, W, H, 'F'); fill(C.accent); doc.rect(0, 0, W, 2.5, 'F'); }
+  function day(key) { return key ? window.WwTime.formatDate(key, lang, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
+  var title = '';
+  return {
+    day: day,
+    // başlık: sol üstte marka ve rapor adı, sağda oluşturulma tarihi; tablonun başlayacağı y döner
+    header: function (reportTitle) {
+      title = reportTitle;
+      paintPage();
+      font('bold', 14); color(C.text); doc.text('WAWE JOURNAL', M, 15);
+      font('normal', 9); color(C.muted); doc.text(T(reportTitle), M, 21);
+      font('normal', 7.5);
+      doc.text(T(i18n.t('analytics_dash.report.generated') + ': ' + day(window.WwTime.todayKey())), W - M, 15, { align: 'right' });
+      return 30;
+    },
+    // pnl: gövde satırı başına K/Z değeri (renk için), right: sağa yaslı sütunlar
+    table: function (startY, head, body, opts) {
+      var columnStyles = {};
+      (opts.right || []).forEach(function (i) { columnStyles[i] = { halign: 'right' }; });
+      doc.autoTable({
+        startY: startY,
+        head: [head.map(T)],
+        body: body.map(function (r) { return r.map(T); }),
+        theme: 'plain',
+        margin: { left: M, right: M, top: 15, bottom: 16 },
+        styles: { font: FONT, fontSize: 7.5, textColor: C.text, cellPadding: { top: 1.8, right: 2.5, bottom: 1.8, left: 2.5 } },
+        headStyles: { fillColor: C.card, textColor: C.muted, fontStyle: 'bold', fontSize: 6.8 },
+        alternateRowStyles: { fillColor: C.row },
+        columnStyles: columnStyles,
+        willDrawPage: function (data) {                 // yeni sayfa: zemin boyanır, üstte küçük başlık
+          if (data.pageNumber === 1) return;
+          paintPage();
+          font('bold', 7); color(C.muted); doc.text(T('WAWE JOURNAL  ·  ' + title), M, 11);
+        },
+        didParseCell: function (data) {
+          if (data.section === 'head' && columnStyles[data.column.index]) data.cell.styles.halign = 'right';   // columnStyles yalnızca gövdeye uygulanır
+          if (data.section !== 'body' || data.column.index !== opts.pnlCol) return;
+          var v = opts.pnl[data.row.index];
+          data.cell.styles.textColor = v > 0 ? C.up : (v < 0 ? C.down : C.text);
+          data.cell.styles.fontStyle = 'bold';
+        }
+      });
+    },
+    footer: function () {
+      var pages = doc.internal.getNumberOfPages();
+      for (var p = 1; p <= pages; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(C.line[0], C.line[1], C.line[2]); doc.setLineWidth(0.2); doc.line(M, H - 11, W - M, H - 11);
+        font('bold', 7); color(C.accent); doc.text('Wawe Journal', M, H - 6);
+        var brandW = doc.getTextWidth('Wawe Journal');
+        font('normal', 6.8); color(C.muted); doc.text('wawejournal.com', M + brandW + 3, H - 6);
+        doc.text(T(i18n.t('analytics_dash.report.page').replace('{x}', p).replace('{y}', pages)), W - M, H - 6, { align: 'right' });
+      }
+    }
+  };
+}
+
 async function exportStrategyPDF(strategyId) {
   try {
     if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
@@ -1457,58 +1525,33 @@ async function exportStrategyPDF(strategyId) {
     var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
     var fonts = await loadPdfFonts();
     var FONT = usePdfFonts(doc, fonts), T = pdfText(fonts);
-    var pageW = doc.internal.pageSize.getWidth();
-    var margin = 12;
-    var y = margin + 5;
+    var pdf = strategyPdfLayout(doc, FONT, T);
+    var y = pdf.header(i18n.t('strategies.title') + ': ' + sanitizeHTML(s.name));
 
-    doc.setFillColor(10, 10, 15);
-    doc.rect(0, 0, pageW, 6, 'F');
-    doc.setFillColor(139, 92, 246);
-    doc.rect(0, 0, pageW, 3, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
-    doc.setFont(FONT, 'bold');
-    doc.text(T(i18n.t('strategies.title') + ': ' + sanitizeHTML(s.name)), margin, y);
-    y += 4;
-    doc.setFontSize(8);
-    doc.setFont(FONT, 'normal');
-    doc.setTextColor(107, 107, 128);
-    doc.text(T('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US'))), margin, y);
-    y += 10;
-
-    var trades = allTradesForStats.filter(function(t) { return t.strategy_id === strategyId && t.exit_price; });
-    var tableData = trades.slice(0, 30).map(function(t) {
-      var pnl = getTradePnL(t);
+    var trades = allTradesForStats.filter(function(t) { return t.strategy_id === strategyId && t.exit_price; }).slice(0, 30);
+    var pnls = trades.map(getTradePnL);
+    var tableData = trades.map(function(t, i) {
       return [
-        t.trade_date || '-',
+        pdf.day(window.WwMetrics.dateKey(t)),
         t.symbol || '-',
         (t.direction || '-').toUpperCase(),
         t.entry_price || '-',
         t.exit_price || '-',
-        formatCurrency(pnl),
+        formatCurrency(pnls[i]),
         t.rr_ratio ? t.rr_ratio + 'R' : '-'
       ];
     });
 
-    doc.autoTable({
-      startY: y,
-      head: [[
-        i18n.t('trades.table.date'),
-        i18n.t('trades.table.symbol'),
-        i18n.t('trades.table.direction'),
-        i18n.t('trades.table.entry'),
-        i18n.t('trades.table.exit'),
-        i18n.t('trades.table.pnl'),
-        'R:R'
-      ].map(T)],
-      body: tableData.map(function(r) { return r.map(T); }),
-      theme: 'plain',
-      headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 5 },
-      bodyStyles: { textColor: [232, 232, 240], fontSize: 5 },
-      columnStyles: { 5: { textColor: function(cell) { return cell.raw >= 0 ? [34,197,94] : [239,68,68]; } } },
-      margin: { left: margin, right: margin },
-      styles: { font: FONT, cellPadding: 1.5 }
-    });
+    pdf.table(y, [
+      i18n.t('trades.table.date'),
+      i18n.t('trades.table.symbol'),
+      i18n.t('trades.table.direction'),
+      i18n.t('trades.table.entry'),
+      i18n.t('trades.table.exit'),
+      i18n.t('trades.table.pnl'),
+      'R:R'
+    ], tableData, { right: [3, 4, 5, 6], pnlCol: 5, pnl: pnls });
+    pdf.footer();
     doc.save((s ? sanitizeHTML(s.name) : 'strateji') + '_rapor.pdf');
     showToast(i18n.t('toast.pdf_exported'));
   } catch(e) { showToast(i18n.t('toast.pdf_export_error'), 'error'); }
@@ -1529,27 +1572,12 @@ async function exportAllStrategiesPDF() {
     var doc = new PDFConstructor({ unit: 'mm', format: 'a4' });
     var fonts = await loadPdfFonts();
     var FONT = usePdfFonts(doc, fonts), T = pdfText(fonts);
-    var pageW = doc.internal.pageSize.getWidth();
-    var margin = 12;
-    var y = margin + 5;
+    var pdf = strategyPdfLayout(doc, FONT, T);
+    var y = pdf.header(i18n.t('strategies.title'));
 
-    doc.setFillColor(10, 10, 15);
-    doc.rect(0, 0, pageW, 6, 'F');
-    doc.setFillColor(139, 92, 246);
-    doc.rect(0, 0, pageW, 3, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(FONT, 'bold');
-    doc.text(T(i18n.t('strategies.title')), margin, y);
-    y += 4;
-    doc.setFontSize(8);
-    doc.setFont(FONT, 'normal');
-    doc.setTextColor(107, 107, 128);
-    doc.text(T('Wawe Journal · ' + new Date().toLocaleDateString(i18n.getCurrentLanguage() === 'tr' ? 'tr-TR' : (i18n.getCurrentLanguage() === 'de' ? 'de-DE' : 'en-US'))), margin, y);
-    y += 10;
-
-    var tableData = strategiesList.map(function(s) {
-      var perf = getStrategyPerformance(s.id);
+    var perfs = strategiesList.map(function(s) { return getStrategyPerformance(s.id); });
+    var tableData = strategiesList.map(function(s, i) {
+      var perf = perfs[i];
       return [
         sanitizeHTML(s.name),
         perf.totalTradesWithOpen,
@@ -1559,21 +1587,12 @@ async function exportAllStrategiesPDF() {
       ];
     });
 
-    doc.autoTable({
-      startY: y,
-      head: [[
-        i18n.t('trades.th_strategy'), i18n.t('strategies.detail.trades'),
-        i18n.t('strategies.detail.win_rate'), i18n.t('strategies.detail.pnl'),
-        i18n.t('strategies.detail.profit_factor')
-      ].map(T)],
-      body: tableData.map(function(r) { return r.map(T); }),
-      theme: 'plain',
-      headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 6 },
-      bodyStyles: { textColor: [232, 232, 240], fontSize: 6 },
-      columnStyles: { 3: { textColor: function(cell) { return cell.raw.startsWith('-') ? [239,68,68] : [34,197,94]; } } },
-      margin: { left: margin, right: margin },
-      styles: { font: FONT, cellPadding: 2 }
-    });
+    pdf.table(y, [
+      i18n.t('trades.th_strategy'), i18n.t('strategies.detail.trades'),
+      i18n.t('strategies.detail.win_rate'), i18n.t('strategies.detail.pnl'),
+      i18n.t('strategies.detail.profit_factor')
+    ], tableData, { right: [1, 2, 3, 4], pnlCol: 3, pnl: perfs.map(function(p) { return p.totalPnL; }) });
+    pdf.footer();
     doc.save('tum_stratejiler_ozet.pdf');
     showToast(i18n.t('toast.pdf_exported'));
   } catch(e) { showToast(i18n.t('toast.pdf_export_error'), 'error'); }
