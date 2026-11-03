@@ -264,7 +264,7 @@ export default {
   "bug_report.btn_back_dashboard": "Back to Dashboard",
   "bug_report.btn_new_report": "Submit Another Report",
   "bug_report.err_required": "Please fill in both the subject and description fields.",
-  "bug_report.err_filesize": "The file can be at most 10MB.",
+  "bug_report.err_filesize": "The file can be at most 5MB.",
   "bug_report.new_title": "Create New Report",
   "bug_report.replies_title": "Responses & Ticket History",
   "bug_report.status_answered": "Answered",

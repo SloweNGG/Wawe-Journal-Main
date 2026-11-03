@@ -250,7 +250,7 @@ export default {
   "bug_report.btn_back_dashboard": "Zurück zum Dashboard",
   "bug_report.btn_new_report": "Neuen Bericht Senden",
   "bug_report.err_required": "Bitte füllen Sie Betreff und Beschreibung aus.",
-  "bug_report.err_filesize": "Die Datei darf maximal 10MB groß sein.",
+  "bug_report.err_filesize": "Die Datei darf maximal 5MB groß sein.",
   "bug_report.new_title": "Neuen Bericht Erstellen",
   "bug_report.replies_title": "Antworten & Tickethistorie",
   "bug_report.status_answered": "Beantwortet",

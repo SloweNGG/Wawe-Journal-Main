@@ -1521,8 +1521,8 @@ import Layout from '../layouts/Layout.astro';
 
     function handleFile(file) {
       if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        var msg = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.err_filesize') : 'Dosya boyutu maksimum 10MB olabilir.';
+      if (file.size > 5 * 1024 * 1024) {
+        var msg = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.err_filesize') : 'Dosya boyutu maksimum 5MB olabilir.';
         if (typeof showToast === 'function') showToast(msg, 'error');
         else alert(msg);
         return;

@@ -237,7 +237,7 @@ export default {
   "bug_report.btn_back_dashboard": "Dashboard'a Dön",
   "bug_report.btn_new_report": "Yeni Rapor Gönder",
   "bug_report.err_required": "Lütfen konu başlığı ve açıklama alanlarını doldurunuz.",
-  "bug_report.err_filesize": "Dosya boyutu maksimum 10MB olabilir.",
+  "bug_report.err_filesize": "Dosya boyutu maksimum 5MB olabilir.",
   "bug_report.new_title": "Yeni Bildirim Oluştur",
   "bug_report.replies_title": "Gelen Cevaplar & Bildirim Geçmişi",
   "bug_report.status_answered": "Yanıtlandı",
