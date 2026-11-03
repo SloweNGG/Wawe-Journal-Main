@@ -569,7 +569,7 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   beklemesi, ızgara yokken yükleme yok, tek planlama, çıkışta iptal).
 - `npm run build` ✓, `npm test` ✓ (578 test).
 
-### 3c — "N" kısayolu · `<3c>`
+### 3c — "N" kısayolu · `0ddb769`
 
 - Neden: kısayol sayfada `[role="dialog"][aria-modal="true"]:not([hidden])` varsa çıkıyordu. Kapalı pencereler DOM'da
   kalıyor ve bu öznitelikleri taşıyor: yükseltme penceresi `.ww-up-modal` (kapsayıcısı `display:none`) **ve** Hızlı Ekle bir
@@ -596,6 +596,20 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   yolu, aday seçici aynı, kısayolun kontrolü kullandığı ve yükseltme penceresi işaretlemesi / Esc kodunun değişmediği).
 - `npm run build` ✓, `npm test` ✓ (584 test).
 
+### 3d — `/js/quick-modal.js` 404 · `<3d>`
+
+- İstek nereden: `src/pages/quick-add-modal.astro:26` → `/quick-add-modal.html`, "Quick Add — Önizleme" adlı statik bir
+  önizleme sayfası (FAB + sabit pencere işaretlemesi). Sayfaya uygulamada, sitemap'te ya da `_redirects`'te bağlantı yok.
+- Dosya: `git log --all` ile tüm geçmişte `quick-modal.js` diye bir dosya **hiç olmamış** (eski `main` dalında yalnızca
+  `public/js/quick-add.js` vardı, Ağustos 2026'da modüllere bölünüp silindi). Yani istek ilk günden 404; sayfa hiçbir
+  zaman o dosyadan bir şey almadı. Gerçek Hızlı Ekle (`quick-add.js`) kendi penceresini kurduğu için onu bağlamak sayfada
+  ikinci bir pencere çıkarırdı.
+- Yapılan: referans kaldırıldı (sayfa önceki gibi statik önizleme; görünümü değişmedi). Sayfa: önce `404 /js/quick-modal.js`
+  + konsol hatası, sonra 404 / konsol hatası yok.
+- Test: `tests/local-refs.test.js` (yeni): `.astro` dosyalarındaki her yerel `<script src>` / `<link href>` (`.js` / `.css`)
+  `public/`'te var olmalı. Eski hâlde bu test başarısız oluyor (denendi).
+- `npm run build` ✓, `npm test` ✓ (586 test).
+
 # Bilinen, bu işten bağımsız hatalar
 
 Düzeltilmedi, yalnızca listelendi. Kaynak: parça 1 tarayıcı taraması (oturumsuz 8 sayfa: index, login, register,
@@ -604,7 +618,7 @@ Hepsi baseline'da (parça 1 öncesi ya da parça 1 sonu) da aynı.
 
 | Sayfa | Ne | Nerede |
 |---|---|---|
-| `/quick-add-modal.html` | **404** `/js/quick-modal.js` | `src/pages/quick-add-modal.astro:26` (dosya repoda hiç yok) |
+| `/quick-add-modal.html` | ✅ **KAPANDI (parça 3d).** **404** `/js/quick-modal.js` | `src/pages/quick-add-modal.astro:26` (dosya repoda hiç yok) |
 | `/login.html`, `/register.html` (ve login'e yönlenen dashboard, analytics, trades, backtest) | 2 konsol hatası: `%c%d font-size:0;color:transparent NaN` ve `%c%o font-size:0;color:transparent [object]` | Cloudflare Turnstile iframe'i (`challenges.cloudflare.com/.../turnstile/...`); üçüncü taraf, repo kodu değil |
 | index, settings (oturumsuz → index) | temiz | — |
 | Uygulama sayfaları (sahte oturum: dashboard, analytics, calendar, strategies, trades, backtest) | 404 / konsol hatası yok | — |
