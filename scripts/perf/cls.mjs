@@ -8,7 +8,8 @@
 //   PERF_DIR=<araç klasörü> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --mock --page analytics --runs 20
 // --mock: scripts/perf/mock-session.mjs (Supabase yerelde cevaplanır). --profile <klasör>: gerçek oturumlu profil
 // (salt okuma koruması açık; yazan istekler engellenir, sonda listelenir).
-// --desktop: 1440×900 fare (varsayılan mobil). --json <dosya>: tüm sonuçları dosyaya yazar. Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre)
+// --desktop: 1440×900 fare (varsayılan mobil). --fast: ağ / CPU kısıtı yok (Lighthouse "simulate" CLS'si kısıtsız
+// yüklemeden gelir; onu tekrarlamak için). --json <dosya>: tüm sonuçları dosyaya yazar. Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre)
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
@@ -41,8 +42,10 @@ for (let i = 0; i < runs; i++) {
     await cdp.send('Storage.clearDataForOrigin', { origin: new URL(base).origin, storageTypes: 'cache_storage,service_workers' }).catch(() => {});
   }
   await cdp.send('Network.enable');
-  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1.6 * 1024 * 1024 / 8, uploadThroughput: 750 * 1024 / 8 });
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  if (!opt('fast', false)) {
+    await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1.6 * 1024 * 1024 / 8, uploadThroughput: 750 * 1024 / 8 });
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  }
   await page.evaluateOnNewDocument(() => {
     window.__shifts = [];
     const sel = (n) => !n || !n.tagName ? '?' : n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + (n.className && typeof n.className === 'string' ? '.' + n.className.trim().split(/\s+/).slice(0, 2).join('.') : '');

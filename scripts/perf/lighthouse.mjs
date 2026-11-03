@@ -14,9 +14,13 @@
 //    --profile ile (gerçek hesap) hem giriş penceresinde hem ölçümde salt okuma koruması açıktır (readonly-guard.mjs):
 //    Supabase'e yazan her istek engellenir ve sonda listelenir. --base http://127.0.0.1:<port> de olur (yerel dist + canlı Supabase);
 //    oturum yalnızca o adres + port için geçerlidir. Profil klasörü (ör. .perf-profile/) .gitignore'da; commit'lemeyin.
+// --save <klasör>: her çalıştırmanın Lighthouse raporunu JSON olarak kaydeder.
+//    Turnstile 127.0.0.1'de geçmediği için yerel adrese giriş: --login --from https://wawejournal.com (oturum taşınır).
 // Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre, scripts/perf/chrome-path.mjs)
 // ============================================================
+import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { mockSession } from './mock-session.mjs';
 import { chromePath } from './chrome-path.mjs';
@@ -35,15 +39,51 @@ const lighthouse = (await import('file:///' + req.resolve('lighthouse').replace(
 
 if (opt('login', false)) {
   if (!profile) throw new Error('--login için --profile <klasör> gerekli');
-  const browser = await puppeteer.launch({ executablePath: chrome, headless: false, userDataDir: path.resolve(profile), defaultViewport: null });
+  // --from <adres>: giriş orada yapılır (ör. https://wawejournal.com; Turnstile 127.0.0.1'de geçmiyor), son sekme
+  // kapanınca oturum kaydı aynı profil içinde --base adresine TAŞINIR ve kaynaktaki kopya silinir (iki yer aynı yenileme
+  // token'ını kullanıp oturumu düşürmesin). Token yazdırılmaz, dosyaya yazılmaz; yalnızca Chrome profilinde kalır.
+  const from = opt('from', null) ? String(opt('from')).replace(/\/$/, '') : base;
+  // Chrome puppeteer.launch ile değil doğrudan açılır: launch'ın --enable-automation bayrağı (navigator.webdriver)
+  // yüzünden Turnstile girişi reddediyordu. Araç yalnızca hata ayıklama portundan bağlanır.
+  const port = +opt('port', 9333);
+  spawn(chrome, ['--user-data-dir=' + path.resolve(profile), '--remote-debugging-port=' + port, '--no-first-run', '--no-default-browser-check',
+    from + '/login' + (from === base ? '.html' : '')], { stdio: 'ignore', detached: true }).unref();
+  let browser = null;
+  for (let i = 0; i < 100 && !browser; i++) {
+    browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:' + port, defaultViewport: null }).catch(() => null);
+    if (!browser) await new Promise((r) => setTimeout(r, 200));
+  }
+  if (!browser) throw new Error('Chrome hata ayıklama portuna bağlanılamadı: ' + port);
   const blocked = [];
-  const guard = async (p) => { if (p) blocked.push((await guardReadOnly(p)).blocked); };
+  const guard = async (p) => { if (p) blocked.push((await guardReadOnly(p, { allowLogin: true })).blocked); };
   browser.on('targetcreated', async (t) => { if (t.type() === 'page') guard(await t.page()); });
-  const page = (await browser.pages())[0] || (await browser.newPage());
-  await guard(page);
-  await page.goto(base + '/login.html');
+  for (const p of await browser.pages()) await guard(p);
   console.log('Tarayıcıda test hesabıyla giriş yapın, dashboard açılınca pencereyi kapatın.');
-  await new Promise((r) => browser.on('disconnected', r));
+  // macOS'ta son pencereyi kapatmak Chrome'u kapatmaz: son sekme kapanınca devam edilir
+  await new Promise((r) => {
+    browser.on('targetdestroyed', async () => { if (!(await browser.pages().catch(() => [])).length) r(); });
+    browser.on('disconnected', r);
+  });
+  const KEY = /^sb-[a-z0-9]+-auth-token$/;
+  // Uygulama kodu çalışmasın diye oturum işlemleri /robots.txt üzerinde yapılır
+  const onOrigin = async (origin, fn, arg) => {
+    const p = await browser.newPage();
+    try { await p.goto(origin + '/robots.txt'); return await p.evaluate(fn, KEY.source, arg); } finally { await p.close(); }
+  };
+  let moved = false, hasSession = false;
+  if (browser.connected) {
+    if (from !== base) {
+      const entry = await onOrigin(from, (re) => { const k = Object.keys(localStorage).find((x) => new RegExp(re).test(x)); return k ? [k, localStorage.getItem(k)] : null; });
+      if (entry) {
+        await onOrigin(base, (re, e) => localStorage.setItem(e[0], e[1]), entry);
+        await onOrigin(from, (re, e) => localStorage.removeItem(e[0]), entry);
+        moved = true;
+      }
+    }
+    hasSession = await onOrigin(base, (re) => Object.keys(localStorage).some((x) => new RegExp(re).test(x)));
+    await browser.close();
+  }
+  console.log('Oturum: ' + (hasSession ? 'var (' + base + (moved ? ', ' + from + ' adresinden taşındı' : '') + ')' : 'YOK — giriş tamamlanmadı'));
   console.log('Engellenen yazma istekleri: ' + (blocked.flat().join(', ') || 'yok'));
   process.exit(0);
 }
@@ -63,6 +103,8 @@ for (const name of pages) {
       screenEmulation: { mobile: true, width: 412, height: 823, deviceScaleFactor: 1.75, disabled: false }, disableStorageReset: true,
     }, undefined, page);
     const r = res.lhr, a = r.audits;
+    // --save <klasör>: tam raporu JSON olarak yazar (LCP öğesi, zamanlama dökümü vb. için)
+    if (opt('save', null)) { fs.mkdirSync(String(opt('save')), { recursive: true }); fs.writeFileSync(path.join(String(opt('save')), name + '-' + (i + 1) + '.json'), JSON.stringify(r)); }
     const items = (a['network-requests'].details && a['network-requests'].details.items) || [];
     const own = items.filter((x) => !x.url.includes('.supabase.co'));
     console.log([name, Math.round(r.categories.performance.score * 100), (a['largest-contentful-paint'].numericValue / 1000).toFixed(2) + ' s',

@@ -3,7 +3,7 @@
 Dal: `perf/tonight` (kaynak: `master`, 252c2db). Not: `origin/main`, `master` ile ortak geçmişi olmayan eski (Eylül 2026) bir
 daldır; aktif kod `master`'da olduğu için iş `master`'dan açıldı.
 
-**Durum:** `Parça 3 sürüyor` (parça 1: önbellek — tek build ID, immutable `_headers`, cache-first SW; parça 2:
+**Durum:** `Parça 3 tamamlandı` (parça 1: önbellek — tek build ID, immutable `_headers`, cache-first SW; parça 2:
 sayfalar önce ağ + Hızlı Ekle / grafik kütüphaneleri / SortableJS gecikmeli yükleme; parça 3: kendi fontlarımız, KPI
 kayması, dokunmatikte SortableJS, "N" kısayolu, quick-modal 404, gerçek hesapla ölçüm).
 
@@ -596,7 +596,7 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   yolu, aday seçici aynı, kısayolun kontrolü kullandığı ve yükseltme penceresi işaretlemesi / Esc kodunun değişmediği).
 - `npm run build` ✓, `npm test` ✓ (584 test).
 
-### 3d — `/js/quick-modal.js` 404 · `<3d>`
+### 3d — `/js/quick-modal.js` 404 · `f473811`
 
 - İstek nereden: `src/pages/quick-add-modal.astro:26` → `/quick-add-modal.html`, "Quick Add — Önizleme" adlı statik bir
   önizleme sayfası (FAB + sabit pencere işaretlemesi). Sayfaya uygulamada, sitemap'te ya da `_redirects`'te bağlantı yok.
@@ -609,6 +609,110 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
 - Test: `tests/local-refs.test.js` (yeni): `.astro` dosyalarındaki her yerel `<script src>` / `<link href>` (`.js` / `.css`)
   `public/`'te var olmalı. Eski hâlde bu test başarısız oluyor (denendi).
 - `npm run build` ✓, `npm test` ✓ (586 test).
+
+### 3e — Son ölçüm: sahte oturum ve gerçek test hesabı · `<3e>`
+
+**Gerçek hesapla nasıl ölçüldü.** Bu daldaki kod hiçbir yerde yayında değil (`perf-tonight.wawe-journal.pages.dev` bu
+ağdan çözülmüyor: `pages.dev` DNS zaman aşımı). Bu yüzden `dist` yerelde `cf-serve.mjs` ile (`http://127.0.0.1:8799`)
+sunuldu, sayfalar **canlı Supabase'teki test hesabının verisini** okudu. Turnstile `127.0.0.1`'de geçmediği (ve
+puppeteer'ın `--enable-automation` bayrağıyla açılan Chrome'u reddettiği) için giriş şöyle yapıldı:
+
+```bash
+PERF_DIR=<araçlar> node scripts/perf/lighthouse.mjs --base http://127.0.0.1:8799 --from https://wawejournal.com --profile .perf-profile --login
+PERF_DIR=<araçlar> node scripts/perf/lighthouse.mjs --base http://127.0.0.1:8799 --profile .perf-profile --pages dashboard,analytics --runs 5
+```
+
+- `--login` Chrome'u otomasyon bayrağı olmadan normal açar (araç yalnızca hata ayıklama portundan bağlanır). Giriş
+  canlı sitede elle yapıldı; son sekme kapanınca oturum kaydı **aynı profil içinde** `127.0.0.1:8799`'a taşındı ve
+  canlı sitedeki kopyası silindi (iki yer aynı yenileme token'ını kullanıp oturumu düşürmesin). Şifre istenmedi; token
+  hiçbir yere yazdırılmadı ya da dosyaya yazılmadı, yalnızca `.perf-profile/`'da (`.gitignore`'da, commit'lenmedi).
+- **Salt okuma koruması** (`scripts/perf/readonly-guard.mjs`): Supabase'e giden her istek süzülüyor; yalnızca
+  GET/HEAD/OPTIONS, `POST /auth/v1/token` ve `get_` / `list_` RPC'leri geçiyor. Giriş penceresinde ek olarak yalnızca
+  `POST /functions/v1/verify-auth` `{action:"login"}` (sunucu her girişte olduğu gibi `login_attempts`'e bir satır yazar).
+  Engellenen yazmalar: giriş sonrası canlı dashboard'un `PATCH /rest/v1/user_profiles`, `POST rpc/mark_notifications_as_read`,
+  `PATCH /rest/v1/notifications` istekleri; ölçümler sırasında birkaç kez `PATCH /rest/v1/user_profiles`. Yani test
+  hesabında **hiçbir veri değişmedi** (tek yazma: giriş kaydı).
+- "Önce" = parça 2 sonu (`df53812`), "sonra" = parça 3 (`f473811`); ikisi de aynı portta, aynı oturumla, sırayla.
+  Test hesabı prop defteri ("C Trader 5K"); analytics'te prop kartı açık olduğu için başlıktaki bilgi satırı gizli.
+
+**Lighthouse** (mobil 412×823, simüle yavaş 4G, 4× CPU; sahte oturum 3'er, gerçek hesap 5'er çalıştırma; transfer
+Supabase hariç):
+
+| Sayfa | Oturum | Önce: puan / FCP / LCP / CLS | Sonra: puan / FCP / LCP / CLS | Transfer önce → sonra |
+|---|---|---|---|---|
+| dashboard | sahte | 67–72 / — / 7.22–7.82 s / 0.000 | **73** / — / 7.29–7.35 s / 0.000 | 1058 → 1058 KB, 50 istek |
+| dashboard | **gerçek** | 72–74 / 2.93–3.00 s / **5.61–5.88 s** / 0.000–0.002 | **75** / **2.42–2.43 s** / 6.03–6.09 s / 0.002 | 1019 → 1019 KB, 51 istek |
+| analytics | sahte | 64–70 / — / 6.99–8.19 s / 0.000–0.029 | **73** / — / **6.37–6.41 s** / 0.000 | 1087 → 1102 KB, 60 → 61 |
+| analytics | **gerçek** | 72–76 / 2.12–3.00 s / 5.83–6.26 s / 0.000–0.002 | **73–78** / **1.97–2.64 s** / **5.45–5.77 s** / 0.002–0.010 | 1033 → 1049 KB, 60 → 61 |
+
+(Parça 2 tablosundaki Windows sayıları — dashboard 55–62 / 7.69 s — bu makineyle karşılaştırılmamalı; bu tablo aynı
+makinede alındı. Sahte oturumun FCP'si kaydedilmedi.)
+
+- **Dashboard LCP neden 0.3 s geç?** Gerileme değil, LCP adayının değişmesi. `PerformanceObserver` ile (gerçek hesap,
+  aynı kısıt): önce başlık "Dashboard" Syne gelince **3.4 sn**'de çiziliyor (alan 2645 px²) ve LCP o. Sonra aynı başlık
+  yedek fontla **1.7 sn**'de çiziliyor (alan 2553, gerçek fonttan %3.5 küçük); Chrome font gelince aynı öğe için yeni
+  aday üretmiyor, veri gelince 5.0 sn'de çizilen K/Z değeri (`#stat-pnl`, 2575) en büyük öğe olup LCP sayılıyor. Kullanıcı
+  başlığı yarı sürede görüyor; FCP 0.5 sn erken, puan 72–74 → 75. Metriği "düzeltmek" için yedek fontu büyütmedim.
+- **analytics +16 KB / +1 istek:** Lighthouse mobil emülasyonu dokunmatik; 3b gereği SortableJS (~15 KB gzip) sayfa
+  boştayken iniyor. Masaüstü farede inmiyor.
+- **Fontlar:** önce Google CSS (ayrı origin) + 5–6 woff2 (`fonts.gstatic.com`), sonra aynı origin'den 4–5 woff2 + 1 KB CSS;
+  toplam transfer neredeyse aynı (font dosyaları aynı).
+- **CLS, gerçek hesap, tekrarlı (`cls.mjs --profile`, analytics, mobil, yavaş 4G, 8'er deneme):** önce 0.0049 (8/8),
+  sonra 0.0017–0.0049 (ortalama 0.0041). İkisinde de aynı küçük yatay kaymalar: tarih filtresi butonları ve KPI değerleri
+  (4 px). Kısıtsız (`--fast`, 6 deneme): 0–0.0017. Lighthouse'taki 0.002–0.010'un kaynağı (rapor içindeki kayma denetimi
+  bu ortamda hata veriyor) bulunamadı; tekrarlı ölçümde yazı fontu kaynaklı kayma görülmedi. Hepsi "iyi" eşiğinin (0.1)
+  çok altında. 3-çalıştırmalık ilk sette bir kez 0.055 çıktı, 5'lik sette tekrar etmedi.
+- Araçlar: `lighthouse.mjs` `--from` (oturum taşıma), `--save <klasör>` (tam rapor), otomasyon bayraksız giriş penceresi,
+  macOS'ta son sekme kapanınca devam; `readonly-guard.mjs` `allowLogin`; `cls.mjs` `--fast`.
+- `npm run build` ✓, `npm test` ✓ (586 test).
+
+## Parça 3 — Atlananlar / riskler
+
+1. **`font-display: swap` (önce uygulama sayfalarında `block`).** Metin artık font gelmeden yedek fontla görünüyor;
+   yedek metrikler yerleşimi koruyor (ölçüldü) ama ilk ziyarette çok kısa süre Arial'e benzer bir yazı görülebilir (FOUT).
+   Font dosyaları preload + immutable + SW cache-first olduğu için tekrar ziyarette görünmez. İstenirse `fonts.css`'te
+   `block`'a dönmek tek kelime; o zaman FCP kazancı (~0.5 sn) gider.
+2. **Yedek font genişliği yaklaşık.** `size-adjust` TR/EN/DE arayüz metni ortalaması; tek tek kelimelerde %±3–4 fark
+   kalabiliyor (ör. Syne'deki "Dashboard" başlığı). Mobil index'te bir başlık (`.sc-cap`) fontsuz hâlde bir satır farklı
+   kırılıyor (önce de kırılıyordu). Android'de Roboto'ya göre ölçülmedi (Arial oranı kullanılıyor, fark %0.5).
+3. **3a-2'nin sınırı:** hiç işlemi olmayan hesapta analytics bilgi satırı telefonda yükleniyorken iki satır yer tutar,
+   sonra tek satıra iner (≈23 px yukarı). İşlemi olan hesaplarda kayma kalktı.
+4. **3b:** dokunmatik ekranlı dizüstüler de "dokunmatik" sayılır; onlarda da SortableJS boşta önden iner.
+5. **Gerçek hesap ölçümü yerel sunucudan.** Canlı Supabase gecikmesi gerçek, ama HTML/JS/CSS Cloudflare yerine yerel
+   `cf-serve.mjs`'ten (gzip, brotli yok, CDN yok). Önizleme adresi bu ağdan açılmadığı için Cloudflare üzerinde ölçülemedi.
+6. **Lighthouse'un LCP öğesi ve kayma denetimleri bu ortamda hata veriyor** (puppeteer sayfasında istek süzme açıkken);
+   LCP öğesi ayrıca `PerformanceObserver` ile bulundu.
+
+## Parça 3 — Sonraki iş için notlar
+
+- **Yeni font / ağırlık:** dosyayı `public/fonts/`'a koyun, `fonts.css`'e `@font-face` ekleyin (`url(/fonts/x.woff2)`
+  sürümsüz yazılır, derleme damgalar). Yeni aile ya da ağırlık aralığı eklerseniz yedek yüzünü de ölçün (yöntem 3a;
+  `tests/fonts.test.js` yüzlerin, preload'ların ve yığınların tutarlılığını kontrol ediyor). Google Fonts'a bağlantı
+  eklenirse test başarısız olur.
+- **Font yığını** yazarken yedek aileyi web fontunun hemen arkasına koyun: `'Geist', 'Geist Fallback', system-ui, …`.
+- **Modal pencere** yazıyorsanız ve kapalıyken DOM'da kalıyorsa sorun yok: "N" kısayolu yalnızca görünen
+  `[role="dialog"][aria-modal="true"]`'ye bakıyor (`wwOpenModalDialog`).
+- **Yerel script/CSS adresi** `.astro`'da var olmayan bir dosyayı gösterirse `tests/local-refs.test.js` başarısız olur.
+- **Gerçek hesapla ölçüm:** komutlar yukarıda (3e). Oturum yalnızca `127.0.0.1:8799` için geçerli; port değişirse
+  `--login --from https://wawejournal.com` tekrar. `.perf-profile/` asla commit'lenmez. Ölçüm sırasında işlem eklemeyin;
+  koruma zaten engeller ve sonda listeler.
+- **CLS:** tek Lighthouse çalıştırması seyrek kaymaları kaçırır; `scripts/perf/cls.mjs --runs 20` (kısıtlı) ve `--fast`.
+
+## Parça 3 — Elle kontrol listesine eklenenler
+
+- [ ] Network sekmesi: hiçbir sayfada `fonts.googleapis.com` / `fonts.gstatic.com` isteği yok; `/fonts/geist-latin.woff2?v=…`
+      ve `geist-latin-ext.woff2` en başta (preload), `Cache-Control: public, max-age=31536000, immutable`.
+- [ ] Türkçe (ğ ş İ ı), Almanca (ä ö ü ß) metin; TR → DE → EN dil değiştirme; tüm sayfalarda yazılar Geist / Syne / Geist Mono.
+- [ ] DevTools → Network → "Slow 4G", önbellek kapalı: ilk açılışta yazı kısa süre yedek fontla görünüp aynı yerde Geist'e
+      dönüyor (zıplama yok). Kabul edilmezse risk 1.
+- [ ] Telefonda (gerçek cihaz) analytics: yüklenirken başlık altındaki bilgi satırı ve KPI kartları yerinde duruyor; ilk
+      dokunuşta kart sürükleme çalışıyor, sıra kayıtlı kalıyor.
+- [ ] Masaüstünde analytics kart sürükleme fareyle çalışıyor (değişmedi).
+- [ ] "N": dashboard, analytics, trades, calendar, strategies'te Hızlı Ekle'yi açıyor; Hızlı Ekle kapatılıp tekrar "N" ile
+      açılıyor; yazı alanındayken "N" harf olarak yazılıyor; yükseltme penceresi açıkken "N" bir şey yapmıyor.
+- [ ] Yükseltme penceresi: Pro olmayan hesapla Analiz linki → açılıyor; Esc, × ve arka plana tıklama kapatıyor.
+- [ ] Canlıda `/quick-add-modal.html` konsolda 404 vermiyor.
+- [ ] PDF raporları (dashboard + analytics): DM Sans fontu değişmedi (ayrı dosya, `/fonts/pdf/`).
 
 # Bilinen, bu işten bağımsız hatalar
 
@@ -627,4 +731,4 @@ Hepsi baseline'da (parça 1 öncesi ya da parça 1 sonu) da aynı.
 | navbar | `#nav-add-trade` tıklama dinleyicisi var ama bu id'li buton hiçbir yerde oluşturulmuyor | `navbar.js` |
 | — | Kullanılmayan bileşenler: `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | ölü kod |
 | Yükseltme penceresi (`UpgradeModal.astro`) | Açıkken odak pencereye taşınmıyor, Tab arkadaki navbar'a gidiyor (odak tuzağı yok); kapsayıcı açıkken de `aria-hidden="true"` (ekran okuyucu pencereyi görmeyebilir). Parça 3c denemesinde görüldü; önce de aynı | `src/components/UpgradeModal.astro:4`, `openUpgradeModal` |
-| Analiz (mobil) | Hiç işlemi olmayan hesapta bilgi satırı yükleniyorken iki satır yer tutar, sonra tek satıra iner (≈23 px yukarı). 3a-2'nin bilinçli sınırı; işlemi olan hesaplarda kayma kalktı | `analytics.js` `updateHeaderMeta` |
+| Canlı dashboard (giriş sonrası) | Sayfa açılışında `PATCH /rest/v1/user_profiles`, `rpc/mark_notifications_as_read` ve `PATCH /rest/v1/notifications` istekleri atıyor (3e'de salt okuma koruması engelledi). Hata değil olabilir ama "sayfayı açmak veri yazmaz" varsayımı doğru değil | canlı `master` build'i |
