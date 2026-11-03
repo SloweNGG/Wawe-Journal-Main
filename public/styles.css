@@ -65,9 +65,9 @@
      --font-mono    Geist Mono : sembol, kod, küçük sayısal rozetler
      Font adını elle yazma, bu değişkenleri kullan. İstisna: grafik (ApexCharts) ve canvas yazıları
      CSS değişkeni okuyamaz; orada düz "'Geist', system-ui, sans-serif" yazılır. */
-  --font: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-display: 'Syne', 'Geist', system-ui, sans-serif;
+  --font: 'Geist', 'Geist Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: 'Syne', 'Syne Fallback', 'Geist', system-ui, sans-serif;
 
   /* ⭐ FAZ 2.1: Z-INDEX SKALASI - TEK KAYNAK */
   --z-backdrop: 150;

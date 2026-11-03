@@ -11,8 +11,8 @@
   --v-l: #a78bfa;
   --v-xl: #c4b5fd;
   --v-tag: #b49cfc;
-  --sans: 'Geist', system-ui, sans-serif;
-  --mono: 'Geist Mono', monospace;
+  --sans: 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
   --wrap: 1120px;
   color: var(--ink);
   font-family: var(--sans);

@@ -3,8 +3,9 @@
 Dal: `perf/tonight` (kaynak: `master`, 252c2db). Not: `origin/main`, `master` ile ortak geçmişi olmayan eski (Eylül 2026) bir
 daldır; aktif kod `master`'da olduğu için iş `master`'dan açıldı.
 
-**Durum:** `Parça 2 tamamlandı` (parça 1: önbellek — tek build ID, immutable `_headers`, cache-first SW; parça 2:
-sayfalar önce ağ + Hızlı Ekle / grafik kütüphaneleri / SortableJS gecikmeli yükleme). Sıradaki: parça 3.
+**Durum:** `Parça 3 sürüyor` (parça 1: önbellek — tek build ID, immutable `_headers`, cache-first SW; parça 2:
+sayfalar önce ağ + Hızlı Ekle / grafik kütüphaneleri / SortableJS gecikmeli yükleme; parça 3: kendi fontlarımız, KPI
+kayması, dokunmatikte SortableJS, "N" kısayolu, quick-modal 404, gerçek hesapla ölçüm).
 
 ## Başlangıç ölçümü
 
@@ -444,6 +445,89 @@ yalnızca `typeof ApexCharts` kontrolü (zararsız). lightweight-charts → dash
 - [ ] Açık tema ve özel tema renkleri, Hızlı Ekle olan sayfalarda öncekiyle aynı (tema kodu ön yükleyiciye taşındı).
 - [ ] Çevrimdışı (DevTools → Offline): daha önce açılmış bir sayfa yenilenince önbellekteki kopya geliyor; deploy
       sonrası ilk açılışta yeni sürüm geliyor.
+
+# Parça 3 — Fontlar, küçük hatalar, gerçek hesapla ölçüm
+
+Ortam: macOS 14 (Darwin 23.5), Chrome (headless, puppeteer-core 23.11.1), Lighthouse 12.2.1, Node 24. Araçlar repo
+dışında (`PERF_DIR` = oturum scratchpad'i). Parça 1–2 Windows'ta ölçülmüştü: mutlak sayılar makineler arasında
+karşılaştırılmamalı; her önce/sonra çifti aynı makinede, aynı koşulda alındı.
+
+## CLS ölçüm yöntemi (3a'dan itibaren)
+
+`scripts/perf/cls.mjs` (yeni): aynı sayfayı N kez **soğuk** açar (her denemede boş tarayıcı bağlamı: HTTP önbelleği, SW,
+Cache Storage yok), **gerçek** ağ kısıtı (CDP: 150 ms RTT, 1.6 Mbps indirme, 750 Kbps yükleme) + 4× CPU, mobil ekran
+(412×823, DPR 1.75, dokunmatik), sahte oturum. `layout-shift` girdileri kaynak öğe ve dikey kayma (px) ile yazılır;
+sayfa açıldıktan sonra 9 sn izlenir. Parça 2'deki 21 deneme kısıtsız ağdaydı (kayma 2/21); kısıtlı ağda aynı kayma
+**her denemede** çıkıyor, bu yüzden ölçüm artık kısıtlı ağda.
+
+```bash
+node scripts/perf/cf-serve.mjs dist 8788
+PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --mock --page analytics --runs 20
+```
+
+## Yapılanlar
+
+### 3a — Fontlar kendi sunucumuzdan · `<3a>`
+
+- **Dosyalar** (`public/fonts/`): Google Fonts'un sunduğu dosyaların **aynısı** (Geist v5, Geist Mono v6, Syne v24;
+  değişken font, SIL OFL 1.1 — lisans metinleri `OFL-*.txt`), yalnızca **latin + latin-ext** (6 dosya, toplam 130 KB;
+  cyrillic / vietnamese / greek / symbols2 alınmadı). `unicode-range` Google'ınkiyle aynı; Türkçe (ç ğ ı İ ö ş ü) ve
+  Almanca (ä ö ü ß ẞ) kapsanıyor (test ediliyor). `₺` ve `→` Google'ın dosyalarında da yoktu, eskisi gibi sistem fontuyla çizilir.
+- **`/fonts/fonts.css`**: 6 `@font-face`, `font-display: swap`, ağırlıklar önceki istekle aynı (Geist 400–800, Mono
+  400–700, Syne 600–800). `BaseHead.astro`'dan **her sayfaya** normal stylesheet olarak (aynı origin, ~1.5 KB gzip,
+  immutable). `url()`'lere derleme `?v=<build>` ekliyor (parça 1 kuralı).
+  - Önceden: uygulama sayfaları `display=block` + engelleyen Google CSS'i; giriş/tanıtım sayfaları engellemeyen
+    (`media=print`) Google CSS'i; index ve about/contact/privacy/terms buna ek olarak ikinci bir Google CSS'i
+    (400/500/600) yüklüyordu. İkisi birlikte 400–800 aralığına eşdeğer olduğu için tek dosya son görünümü değiştirmiyor.
+  - `fonts.googleapis.com` / `fonts.gstatic.com` preconnect'leri ve tüm bağlantıları kaldırıldı (test: kaynakta hiç geçmiyor).
+- **Preload** (BaseHead, her sayfa): `geist-latin.woff2` ve `geist-latin-ext.woff2` (gövde metni; sayfaların sabit
+  metni Türkçe olduğu için latin-ext İngilizcede de kullanılıyor — "kullanılmayan preload" uyarısı yok). Syne ve Geist
+  Mono preload edilmedi: yavaş ağda 4 fontu önden çekmek CSS/JS ile yarışır; geç gelseler de yedek metrikler sayesinde
+  yerleşim kaymaz.
+- **Yedek font metrikleri:** `Geist Fallback` (4 yüz: 100–449 / 450–549 Arial, 550–649 / 650–900 Arial Bold),
+  `Geist Mono Fallback` (Courier New), `Syne Fallback` (2 yüz, Arial Bold); Android için aynı yüzlerde `local('Roboto')`.
+  `size-adjust` Chrome'da TR/EN/DE arayüz metniyle ağırlık başına ölçüldü (ör. Geist 400 ÷ Arial = %101.92, Syne 700 ÷
+  Arial Bold = %114.59); `ascent/descent/line-gap-override` font tablolarından (Geist 1005/295/0, Syne 925/275/0, ÷
+  size-adjust). Yedek yüzlerin `unicode-range`'i yalnızca web fontunda gerçekten bulunan karakterler: olmayanlar
+  (`→`, `₺`) eskisi gibi sistem fontuna düşer, son görünüm değişmez. Font değişkenlerine yedek aile web fontunun hemen
+  arkasına eklendi (`styles.css` `--font/--font-mono/--font-display`, giriş sayfaları, `landing-glass/preview`,
+  `page-chrome`). Grafiklerdeki sabit `'Geist', system-ui` yazıları (ApexCharts/canvas) değişmedi.
+- **Yedek metriklerin etkisi** (font dosyaları engellenmiş hâl ↔ fontlu hâl, aynı sayfa; ">2 px kayan öğe / en büyük dy"):
+
+  | Sayfa | Önce (sistem fontu) | Sonra (ayarlı yedek) |
+  |---|---|---|
+  | masaüstü trades | 364 öğe / 16 px | **0 / 0** |
+  | masaüstü index | 7 / 5 px | **0 / 0** |
+  | masaüstü about | 19 öğe kayıyor | **0 / 0** |
+  | dashboard (mobil / masaüstü) | 0 / 2 px · 0 / 1 px | **0 / 0** |
+  | analytics (mobil / masaüstü) | 0 / 1 px | **0 / 0** |
+  | mobil index | 1 / 39 px | 2 / 32 px (`.sc-cap` başlığı bir satır farklı kırılıyor) |
+
+- **CLS (analytics, mobil, yavaş 4G, 20'şer deneme):**
+
+  | | kaymalı deneme | CLS ortanca / en yüksek | kayma |
+  |---|---|---|---|
+  | Önce (parça 2 sonu) | 20 / 20 | 0.0315 / 0.0315 | ~3.6 sn'de KPI'lar + başlık araçları 23 px |
+  | 3a sonrası | 20 / 20 | 0.0315 / 0.0315 | ~3.2 sn'de aynı 23 px |
+
+  **Kaymanın nedeni font değil.** Zaman çizelgesi (yavaş 4G): fontların hepsi 3.05 sn'de yüklenmiş, başlık 3.5 sn'de
+  çiziliyor; kayan şey başlıktaki bilgi satırı `#pro-header-meta`. Yükleniyorken "Ana Hesap · Tümü · 0 kapanmış işlem"
+  (21 px, 300 px genişlikte parıltı) yazıyor, veri gelince "· Son işlem 30 Eki 2026" ekleniyor ve satır telefonda iki
+  satıra (44 px) çıkıp altındaki KPI kartlarını 23 px itiyor. Düzeltme ayrı adımda (3a-2).
+- **Görünüm:** 12 sayfa × (1440×900, 390×844) son hâl ekran görüntüsü, önce/sonra piksel karşılaştırması: 22/24 görüntü
+  **0 piksel fark**. analytics (masaüstü) aynı build'in iki çalıştırması arasında da 699–1726 piksel oynuyor (zamanla
+  değişen içgörü kartı), backtest 19 piksel (ikisinde de aynı). strategies (masaüstü) 218 piksel: karşılaştırma
+  grafiğinin y ekseni ~3 px dar; ApexCharts eksen genişliğini çizim anında ölçüyor, baseline'da Google fontu henüz
+  gelmemişken ölçülüyordu. Fontlar önbellekteyken (ikinci açılış) baseline ile yeni build **6/6 görüntüde 0 piksel fark**:
+  yeni build her seferinde "font yüklü" sonucunu veriyor.
+- Ölçüm araçları: `scripts/perf/cls.mjs` (yeni), `scripts/perf/chrome-path.mjs` (macOS/Windows/Linux Chrome yolu;
+  `lighthouse.mjs` artık bunu kullanıyor), `scripts/perf/readonly-guard.mjs` (3e için: gerçek hesapla açılan sayfada
+  Supabase'e yazan istekleri engeller; ayrıntı 3e). `.gitignore`: `.perf-profile/` (gerçek oturumlu Chrome profili).
+- Dosyalar: `public/fonts/{fonts.css, 6 × woff2, OFL-Geist.txt, OFL-GeistMono.txt, OFL-Syne.txt}`,
+  `src/components/BaseHead.astro`, `src/pages/index.astro`, `src/layouts/PageLayout.astro`, `public/styles.css`,
+  `public/{landing-glass,landing-preview,page-chrome}.css`, `src/pages/{login,register,forgot-password,update-password}.astro`,
+  `tests/fonts.test.js` (yeni, 12 test), `scripts/perf/*`, `.gitignore`.
+- `npm run build` ✓, `npm test` ✓ (568 test, 0 hata; parça 2 sonunda 556).
 
 # Bilinen, bu işten bağımsız hatalar
 

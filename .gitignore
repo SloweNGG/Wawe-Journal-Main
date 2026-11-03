@@ -30,3 +30,6 @@ __pycache__/
 # Yerel demo / tanıtım çekimleri (scripts/seed-demo.mjs, scripts/demo/*)
 .demo-data/
 promo-captures/
+
+# Gerçek test hesabıyla ölçüm için Chrome profili (oturum burada kalır; scripts/perf/lighthouse.mjs --login). ASLA commit etmeyin.
+.perf-profile/

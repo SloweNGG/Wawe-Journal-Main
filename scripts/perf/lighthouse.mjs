@@ -11,11 +11,16 @@
 //      PERF_DIR=../perf-tools node scripts/perf/lighthouse.mjs --base https://<önizleme> --profile ../perf-profile --login
 //      PERF_DIR=../perf-tools node scripts/perf/lighthouse.mjs --base https://<önizleme> --profile ../perf-profile --pages dashboard,analytics --runs 3
 //    Her ölçümden önce HTTP önbelleği, Cache Storage ve service worker temizlenir; localStorage (oturum) korunur → "soğuk ama girişli".
-// Chrome yolu: CHROME=... (varsayılan Windows yolu)
+//    --profile ile (gerçek hesap) hem giriş penceresinde hem ölçümde salt okuma koruması açıktır (readonly-guard.mjs):
+//    Supabase'e yazan her istek engellenir ve sonda listelenir. --base http://127.0.0.1:<port> de olur (yerel dist + canlı Supabase);
+//    oturum yalnızca o adres + port için geçerlidir. Profil klasörü (ör. .perf-profile/) .gitignore'da; commit'lemeyin.
+// Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre, scripts/perf/chrome-path.mjs)
 // ============================================================
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { mockSession } from './mock-session.mjs';
+import { chromePath } from './chrome-path.mjs';
+import { guardReadOnly } from './readonly-guard.mjs';
 
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i < 0 ? d : (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true); };
@@ -23,7 +28,7 @@ const base = String(opt('base', 'http://127.0.0.1:8788')).replace(/\/$/, '');
 const pages = String(opt('pages', 'dashboard,analytics,index')).split(',');
 const runs = +opt('runs', 1);
 const profile = opt('profile', null);
-const chrome = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const chrome = chromePath();
 const req = createRequire(path.join(path.resolve(process.env.PERF_DIR || '.'), 'noop.js'));
 const puppeteer = req('puppeteer-core');
 const lighthouse = (await import('file:///' + req.resolve('lighthouse').replace(/\\/g, '/'))).default;
@@ -31,10 +36,15 @@ const lighthouse = (await import('file:///' + req.resolve('lighthouse').replace(
 if (opt('login', false)) {
   if (!profile) throw new Error('--login için --profile <klasör> gerekli');
   const browser = await puppeteer.launch({ executablePath: chrome, headless: false, userDataDir: path.resolve(profile), defaultViewport: null });
+  const blocked = [];
+  const guard = async (p) => { if (p) blocked.push((await guardReadOnly(p)).blocked); };
+  browser.on('targetcreated', async (t) => { if (t.type() === 'page') guard(await t.page()); });
   const page = (await browser.pages())[0] || (await browser.newPage());
+  await guard(page);
   await page.goto(base + '/login.html');
   console.log('Tarayıcıda test hesabıyla giriş yapın, dashboard açılınca pencereyi kapatın.');
   await new Promise((r) => browser.on('disconnected', r));
+  console.log('Engellenen yazma istekleri: ' + (blocked.flat().join(', ') || 'yok'));
   process.exit(0);
 }
 
@@ -44,6 +54,7 @@ for (const name of pages) {
     const browser = await puppeteer.launch({ executablePath: chrome, headless: 'new', userDataDir: profile ? path.resolve(profile) : undefined });
     const page = await browser.newPage();
     if (opt('mock', false)) await mockSession(page);
+    const guard = profile ? await guardReadOnly(page) : null;
     const cdp = await page.createCDPSession();
     await cdp.send('Network.clearBrowserCache');
     await cdp.send('Storage.clearDataForOrigin', { origin: new URL(base).origin, storageTypes: 'cache_storage,service_workers' }).catch(() => {});
@@ -56,7 +67,8 @@ for (const name of pages) {
     const own = items.filter((x) => !x.url.includes('.supabase.co'));
     console.log([name, Math.round(r.categories.performance.score * 100), (a['largest-contentful-paint'].numericValue / 1000).toFixed(2) + ' s',
       a['cumulative-layout-shift'].numericValue.toFixed(3), Math.round(a['total-blocking-time'].numericValue) + ' ms',
-      (own.reduce((s, x) => s + (x.transferSize || 0), 0) / 1024).toFixed(0) + ' KB', own.length, r.finalDisplayedUrl.replace(base, '')].join(' | '));
+      (own.reduce((s, x) => s + (x.transferSize || 0), 0) / 1024).toFixed(0) + ' KB', own.length, r.finalDisplayedUrl.replace(base, '')].join(' | ')
+      + (guard && guard.blocked.length ? ' | ENGELLENEN YAZMA: ' + guard.blocked.join(', ') : ''));
     await browser.close();
   }
 }
