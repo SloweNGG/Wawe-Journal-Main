@@ -1295,7 +1295,7 @@ import Layout from '../layouts/Layout.astro';
             <div class="diagnostics-subtle">
               <label class="diag-toggle-label">
                 <input type="checkbox" id="include-system-info" checked />
-                <span id="diag-summary-text">✓ Sistem Tanısı Dahil (Tarayıcı & OS)</span>
+                <span id="diag-summary-text" data-i18n="bug_report.diag_included" data-i18n-params='{"details":"Tarayıcı & OS"}'>✓ Sistem Tanısı Dahil (Tarayıcı & OS)</span>
               </label>
             </div>
           </div>
@@ -1384,15 +1384,32 @@ import Layout from '../layouts/Layout.astro';
 
       var res = window.screen.width + 'x' + window.screen.height;
 
-      var summaryEl = document.getElementById('diag-summary-text');
-      if (summaryEl) {
-        summaryEl.textContent = '✓ Sistem Tanısı Dahil (' + os + ' • ' + browser + ')';
-      }
-
       return { browser: browser, os: os, resolution: res, url: window.location.href };
     }
 
     var sysInfo = detectSystemInfo();
+
+    // Özet satırı ("✓ Sistem Tanısı Dahil (macOS • Chrome)") kullanıcının dilinde; rapora giden değerler değişmez.
+    // data-i18n-params da güncellenir ki dil değişince i18n.apply aynı ayrıntıyla yeniden yazsın.
+    function renderDiagSummary() {
+      var summaryEl = document.getElementById('diag-summary-text');
+      if (!summaryEl) return;
+      var tr = function (key, fallback) {
+        var v = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t(key) : key;
+        return v && v !== key ? v : fallback;
+      };
+      var shown = function (v) {
+        if (v === 'Diğer') return tr('bug_report.diag_other', v);
+        if (v === 'Bilinmiyor') return tr('bug_report.diag_unknown', v);
+        return v;
+      };
+      var details = shown(sysInfo.os) + ' • ' + shown(sysInfo.browser);
+      summaryEl.setAttribute('data-i18n-params', JSON.stringify({ details: details }));
+      summaryEl.textContent = tr('bug_report.diag_included', '✓ Sistem Tanısı Dahil ({details})').replace(/\{+details\}+/g, details);
+    }
+    renderDiagSummary();
+    if (window.i18nReady && typeof window.i18nReady.then === 'function') window.i18nReady.then(renderDiagSummary, function () {});
+    if (window.i18n && typeof window.i18n.onChange === 'function') window.i18n.onChange(renderDiagSummary);
 
     // 2. Tab Switcher (Sekme Yönetimi)
     var tabBtnCompose = document.getElementById('tab-btn-compose');
