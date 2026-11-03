@@ -8,7 +8,7 @@
 //   PERF_DIR=<araç klasörü> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --mock --page analytics --runs 20
 // --mock: scripts/perf/mock-session.mjs (Supabase yerelde cevaplanır). --profile <klasör>: gerçek oturumlu profil
 // (salt okuma koruması açık; yazan istekler engellenir, sonda listelenir).
-// --json <dosya>: tüm sonuçları dosyaya yazar. Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre)
+// --desktop: 1440×900 fare (varsayılan mobil). --json <dosya>: tüm sonuçları dosyaya yazar. Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre)
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,7 +32,7 @@ const results = [];
 for (let i = 0; i < runs; i++) {
   const ctx = profile ? browser.defaultBrowserContext() : await browser.createBrowserContext();
   const page = await ctx.newPage();
-  await page.setViewport({ width: 412, height: 823, deviceScaleFactor: 1.75, isMobile: true, hasTouch: true });
+  await page.setViewport(opt('desktop', false) ? { width: 1440, height: 900 } : { width: 412, height: 823, deviceScaleFactor: 1.75, isMobile: true, hasTouch: true });
   if (opt('mock', false)) await mockSession(page);
   const guard = profile ? await guardReadOnly(page) : null;
   const cdp = await page.createCDPSession();

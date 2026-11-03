@@ -342,10 +342,13 @@ function updateHeaderMeta() {
   }
   if (rangeText) parts.push({ text: rangeText });
 
+  // Veri gelmeden (parıltı; metin görünmez) sayı ve son işlem yerine benzer uzunlukta yer tutucu yazılır: satır veri
+  // gelince de aynı yerden kırılır, telefonda bilgi satırı 1 → 2 satıra çıkıp KPI'ları itmez (perf 3a-2)
+  var loading = !isDataReady;
   var closed = currentFilteredTrades.filter(function(t) { return window.WwMetrics.isClosed(t); });
-  parts.push({ text: _t('analytics_dash.meta.trades', '{n} kapanmış işlem').replace('{n}', closed.length) });
+  parts.push({ text: _t('analytics_dash.meta.trades', '{n} kapanmış işlem').replace('{n}', loading ? '00' : closed.length) });
 
-  var last = '';
+  var last = loading ? new Date().toISOString().slice(0, 8) + '28' : '';
   currentFilteredTrades.forEach(function(t) {
     var d = String(t.trade_date || '');
     if (d > last) last = d;

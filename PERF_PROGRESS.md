@@ -467,7 +467,7 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
 
 ## Yapılanlar
 
-### 3a — Fontlar kendi sunucumuzdan · `<3a>`
+### 3a — Fontlar kendi sunucumuzdan · `7a7f68b`
 
 - **Dosyalar** (`public/fonts/`): Google Fonts'un sunduğu dosyaların **aynısı** (Geist v5, Geist Mono v6, Syne v24;
   değişken font, SIL OFL 1.1 — lisans metinleri `OFL-*.txt`), yalnızca **latin + latin-ext** (6 dosya, toplam 130 KB;
@@ -528,6 +528,25 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   `public/{landing-glass,landing-preview,page-chrome}.css`, `src/pages/{login,register,forgot-password,update-password}.astro`,
   `tests/fonts.test.js` (yeni, 12 test), `scripts/perf/*`, `.gitignore`.
 - `npm run build` ✓, `npm test` ✓ (568 test, 0 hata; parça 2 sonunda 556).
+
+### 3a-2 — Analiz KPI kayması: bilgi satırı yükleniyorken de son hâliyle aynı · `<3a2>`
+
+- Neden (3a ölçümü): `#pro-header-meta` yükleniyorken "Ana Hesap · Tümü · 0 kapanmış işlem" (300 px'lik parıltı, tek satır),
+  veri gelince "· Son işlem 30 Eki 2026" eklenince telefonda 2 satır → altındaki KPI kartları ve başlık araçları 23 px aşağı.
+- Düzeltme (`analytics.js` `updateHeaderMeta`): veri gelmeden (`!isDataReady`) sayı yerine `00`, son işlem yerine bu ayın
+  28'i yazılır (metin parıltıda görünmez, yalnızca yer tutar). Yükleniyorken parıltının genişliği `300px` yerine
+  `fit-content` (`components.css`): satır veri gelince de aynı yerden kırılıyor. Son görünüm aynı (yalnızca yükleniyor
+  hâlindeki parıltı telefonda iki satır yüksekliğinde, masaüstünde metin genişliğinde).
+- Hiç işlemi olmayan hesapta son hâlde "Son işlem" parçası yok; telefonda bu hesaplarda satır 2 → 1'e iner (23 px
+  yukarı). Önceki davranışın tersi; işlemi olan hesaplar için kayma kalktı.
+- **CLS (analytics, mobil, yavaş 4G, 20 deneme):** kaymalı deneme **20/20 → 0/20**, CLS **0.0315 → 0.0004** (kalan
+  0.0004: KPI değerinin parıltı genişliğinden gerçek genişliğe geçişi, dikey kayma 0 px). Masaüstü (5'er deneme) önce/sonra
+  aynı: 0.0002, dikey kayma yok.
+- Görünüm: analytics son hâl, 3a ↔ 3a-2 iki tur (ikinci açılış): mobil 0 piksel; masaüstü 1295 / 1726 piksel (aynı
+  build'in iki turu arasında da 3021 piksel: içgörü kartı zamanla değişiyor).
+- Test: `tests/analytics-header-meta.test.js` (yeni; yükleniyor / veri var / işlem yok hâlleri, parıltı genişliği).
+- `scripts/perf/cls.mjs`: `--desktop` seçeneği.
+- `npm run build` ✓, `npm test` ✓ (572 test).
 
 # Bilinen, bu işten bağımsız hatalar
 
