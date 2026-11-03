@@ -158,6 +158,7 @@ export function widgetLayoutClasses(key, w) {
 // SortableJS sayfa açılışında inmez (perf 2c). Bu sayfada ayrı bir düzen modu yok (tutamaçlar hep görünür);
 // kütüphane düzenleme niyeti görülünce yüklenir: kartın araç köşesine (.widget-tools: ayar + tutamaç) fare
 // gelince / odaklanınca, tutamaca basınca / dokununca ya da "Özelleştir" paneli açılınca (loadDragDrop).
+// Dokunmatik cihazda ayrıca sayfa yüklendikten sonra boşta önden iner (preloadOnTouch).
 function createSortable(grid) {
   return new Sortable(grid, {
     animation: 300,
@@ -186,6 +187,37 @@ export function initDragDrop() {
     return;
   }
   armDragIntent(grid);
+  preloadOnTouch(grid);
+}
+
+// Dokunmatikte üzerine gelme yok: kütüphane ilk dokunuşta inerse o dokunuş sürüklemeyi başlatamıyordu. Bu yüzden
+// dokunmatik cihazda sayfa yüklendikten sonra, tarayıcı boşta kalınca (requestIdleCallback; yoksa setTimeout) önden
+// yüklenir. Fareli masaüstünde davranış aynı: yalnızca düzenleme niyetinde (perf 3b).
+var touchPreloadTimer = null;
+function isTouchDevice() {
+  if (typeof window === 'undefined') return false;
+  var coarse = typeof window.matchMedia === 'function' && window.matchMedia('(any-pointer: coarse)').matches;
+  return coarse || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
+}
+
+function preloadOnTouch(grid) {
+  if (touchPreloadTimer || !isTouchDevice()) return;
+  function idle() {
+    var ric = window.requestIdleCallback;
+    touchPreloadTimer = ric
+      ? { cancel: window.cancelIdleCallback.bind(window), id: ric.call(window, run, { timeout: 3000 }) }
+      : { cancel: clearTimeout, id: setTimeout(run, 1500) };
+  }
+  function run() {
+    touchPreloadTimer = null;
+    // SPA ile sayfadan çıkıldıysa ızgara DOM'da değildir: yükleme yapılmaz (çıkışta zamanlayıcı zaten iptal edilir)
+    if (grid.isConnected && !sortableInstance) loadDragDrop();
+  }
+  if (document.readyState === 'complete') idle();
+  else {
+    touchPreloadTimer = { cancel: function() { window.removeEventListener('load', idle); }, id: null };
+    window.addEventListener('load', idle, { once: true });
+  }
 }
 
 // Düzenleme niyeti: SortableJS'i yükle ve ızgaraya bağla (tekrar çağrılabilir)
@@ -217,6 +249,10 @@ function armDragIntent(grid) {
 
 // SPA: sayfadan çıkarken sürükle-bırak örneğini kaldır (document'a eklediği dinleyiciler dahil)
 export function destroyDragDrop() {
+  if (touchPreloadTimer) {
+    touchPreloadTimer.cancel(touchPreloadTimer.id);
+    touchPreloadTimer = null;
+  }
   if (sortableInstance) {
     try { sortableInstance.destroy(); } catch(e) {}
     sortableInstance = null;

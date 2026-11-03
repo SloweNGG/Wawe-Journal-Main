@@ -529,7 +529,7 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   `tests/fonts.test.js` (yeni, 12 test), `scripts/perf/*`, `.gitignore`.
 - `npm run build` ✓, `npm test` ✓ (568 test, 0 hata; parça 2 sonunda 556).
 
-### 3a-2 — Analiz KPI kayması: bilgi satırı yükleniyorken de son hâliyle aynı · `<3a2>`
+### 3a-2 — Analiz KPI kayması: bilgi satırı yükleniyorken de son hâliyle aynı · `c2482ed`
 
 - Neden (3a ölçümü): `#pro-header-meta` yükleniyorken "Ana Hesap · Tümü · 0 kapanmış işlem" (300 px'lik parıltı, tek satır),
   veri gelince "· Son işlem 30 Eki 2026" eklenince telefonda 2 satır → altındaki KPI kartları ve başlık araçları 23 px aşağı.
@@ -547,6 +547,27 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
 - Test: `tests/analytics-header-meta.test.js` (yeni; yükleniyor / veri var / işlem yok hâlleri, parıltı genişliği).
 - `scripts/perf/cls.mjs`: `--desktop` seçeneği.
 - `npm run build` ✓, `npm test` ✓ (572 test).
+
+### 3b — Telefonda Analiz'de ilk sürükleme · `<3b>`
+
+- `dashboard-manager.js`: `initDragDrop` kütüphane yoksa düzenleme niyeti dinleyicilerine (2c, değişmedi) ek olarak
+  `preloadOnTouch(grid)` çağırıyor. Dokunmatik cihazda (`(any-pointer: coarse)` ya da `navigator.maxTouchPoints > 0`)
+  sayfanın `load` olayından sonra `requestIdleCallback` (en geç 3 sn) — yoksa `setTimeout` 1.5 sn — ile `loadDragDrop()`.
+  Bir kez planlanır; SPA ile sayfadan çıkılırsa `destroyDragDrop` bekleyen planı iptal eder; ızgara DOM'da değilse yüklenmez.
+- Fareli masaüstünde hiçbir şey değişmedi (dokunmatik değilse plan yapılmaz). Dokunmatik ekranlı dizüstüler de dokunmatik
+  sayılır: onlarda da kütüphane (~45 KB) boşta önden iner.
+- Tarayıcıda (analytics, sahte oturum; dokunmatik = 390×844 `hasTouch`, CDP `Input.dispatchTouchEvent` ile tutamaçtan
+  bir sonraki kartın üstüne sürükleme; fare = 1440×900):
+
+  | | 5 sn sonra Sortable yüklü mü | İlk hareketle sıra değişti mi | Sıra kaydedildi mi |
+  |---|---|---|---|
+  | Önce, dokunmatik | hayır | **hayır** (dokunuş yalnızca kütüphaneyi indirdi) | — |
+  | Sonra, dokunmatik | evet (boşta indi) | **evet** (`insights, cumulative` → `cumulative, insights`) | evet (`ww_premium_layout_*`) |
+  | Önce / sonra, fare | hayır / hayır (üzerine gelince iniyor) | evet / evet | evet / evet |
+
+- Test: `tests/sortable-touch.test.js` (yeni; masaüstünde plan yok, dokunmatikte idle + 3 sn, setTimeout yedeği, `load`
+  beklemesi, ızgara yokken yükleme yok, tek planlama, çıkışta iptal).
+- `npm run build` ✓, `npm test` ✓ (578 test).
 
 # Bilinen, bu işten bağımsız hatalar
 
