@@ -1006,11 +1006,9 @@ import Layout from '../layouts/Layout.astro';
       });
     }
 
-    function validateAndFormatDate(dateString, rowNumber) {
-      if (!dateString || !dateString.trim()) {
-        importLogs.push('⚠️ Satır ' + (rowNumber || '?') + ': Tarih boş, bugün kullanıldı.');
-        return new Date().toISOString();
-      }
+    // Boş / okunamayan tarih için null döner: satır hatalı sayılır, bugünün tarihi asla varsayılmaz
+    function validateAndFormatDate(dateString) {
+      if (!dateString || !dateString.trim()) return null;
       dateString = dateString.trim();
 
       // Açık saat dilimi ofseti kontrolü (Z veya +03:00 / -05:00 vs.)
@@ -1069,8 +1067,7 @@ import Layout from '../layouts/Layout.astro';
         return d.toISOString();
       }
 
-      importLogs.push('❌ Satır ' + (rowNumber || '?') + ': Geçersiz tarih "' + dateString + '", bugün kullanıldı.');
-      return new Date().toISOString();
+      return null;
     }
 
     function renderImportLog() {
@@ -1176,7 +1173,11 @@ import Layout from '../layouts/Layout.astro';
           var entry = parseFloat(row.entry || row.giris || row.entry_price || 0);
           var exit = parseFloat(row.exit || row.cikis || row.exit_price);
           var rawDate = row.tarih || row.date || '';
-          var tradeDate = validateAndFormatDate(rawDate, i);
+          var tradeDate = validateAndFormatDate(rawDate);
+          if (!tradeDate) {
+            importLogs.push('❌ Satır ' + i + ': ' + (String(rawDate).trim() ? 'Geçersiz tarih "' + String(rawDate).trim() + '"' : 'Tarih boş') + ', atlandı.');
+            failed++; continue;
+          }
 
           if (!symbol || !direction || !lot || !entry) {
             importLogs.push('❌ Satır ' + i + ': Zorunlu alan eksik, atlandı.');
@@ -1398,8 +1399,13 @@ import Layout from '../layouts/Layout.astro';
           var lot = parseFloat(parts[2]);
           var entry = parseFloat(parts[3]);
           var exit = parseFloat(parts[4]);
-          var date = parts[5] ? validateAndFormatDate(parts[5], lineIdx+1) : defaultDate;
+          // Elle yazılan toplu satırda tarih isteğe bağlıdır (boşsa bugün); yazılmış ama okunamayan tarih hatadır
+          var date = parts[5] ? validateAndFormatDate(parts[5]) : defaultDate;
           var notes = parts[6] || 'Toplu ekleme - ' + new Date().toLocaleString('tr-TR');
+          if (!date) {
+            errors.push('Satır ' + (lineIdx+1) + ': Geçersiz tarih "' + parts[5] + '"');
+            continue;
+          }
 
           if (!symbol || !direction || isNaN(lot) || lot <= 0 || isNaN(entry) || isNaN(exit)) {
             errors.push('Satır ' + (lineIdx+1) + ': Zorunlu alanlar eksik (sembol, yön, lot, giriş, çıkış). Yalnızca kapanmış işlemler eklenir.');

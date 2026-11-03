@@ -106,4 +106,11 @@ describe('csv-import dates', () => {
     const src = fs.readFileSync('public/src/features/csv-parsers.js', 'utf8');
     assert.ok(!/todayKey|bugünün tarihiyle/.test(src));
   });
+
+  it('add-trade CSV import skips rows with an empty or unreadable date instead of using now', () => {
+    const src = fs.readFileSync('src/pages/add-trade.astro', 'utf8');
+    const fn = src.slice(src.indexOf('function validateAndFormatDate'), src.indexOf('function renderImportLog'));
+    assert.ok(fn.length > 0 && !/new Date\(\)\.toISOString\(\)|bugün kullanıldı/.test(fn));
+    assert.ok(src.includes("var tradeDate = validateAndFormatDate(rawDate);\n          if (!tradeDate) {"));
+  });
 });
