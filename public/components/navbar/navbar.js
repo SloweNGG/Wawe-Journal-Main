@@ -20,6 +20,24 @@ function wwOpenAddTrade() {
 }
 window.wwOpenAddTrade = wwOpenAddTrade;
 
+// Sayfada açık (görünür) bir pencere var mı? Kapalı pencereler DOM'da kalır ve role="dialog" aria-modal="true"
+// taşır: yükseltme penceresi (.ww-up-modal, display:none kapsayıcıda) ve Hızlı Ekle'nin tarih seçicisi
+// (#qa-date-picker, visibility:hidden + opacity:0) "N" kısayolunu hep engelliyordu. Yalnızca görünen pencere sayılır.
+function wwDialogVisible(el) {
+  if (typeof el.checkVisibility === 'function') return el.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+  if (!el.getClientRects().length) return false;
+  var cs = window.getComputedStyle(el);
+  return cs.visibility !== 'hidden' && cs.opacity !== '0';
+}
+
+function wwOpenModalDialog() {
+  var list = document.querySelectorAll('.quick-add-overlay.active, [role="dialog"][aria-modal="true"]:not([hidden])');
+  for (var i = 0; i < list.length; i++) {
+    if (wwDialogVisible(list[i])) return list[i];
+  }
+  return null;
+}
+
 function wwIsProCached() {
   var plan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
   return plan === 'premium' || (window.__wwUserProfile && window.__wwUserProfile.plan === 'premium') ||
@@ -1853,7 +1871,7 @@ function initNavEvents() {
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       var t = e.target;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      if (document.querySelector('.quick-add-overlay.active, [role="dialog"][aria-modal="true"]:not([hidden])')) return;
+      if (wwOpenModalDialog()) return;
       if (!wwQuickAddReady()) return;
       e.preventDefault();
       wwOpenAddTrade();

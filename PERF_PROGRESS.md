@@ -548,7 +548,7 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
 - `scripts/perf/cls.mjs`: `--desktop` seçeneği.
 - `npm run build` ✓, `npm test` ✓ (572 test).
 
-### 3b — Telefonda Analiz'de ilk sürükleme · `<3b>`
+### 3b — Telefonda Analiz'de ilk sürükleme · `d490b96`
 
 - `dashboard-manager.js`: `initDragDrop` kütüphane yoksa düzenleme niyeti dinleyicilerine (2c, değişmedi) ek olarak
   `preloadOnTouch(grid)` çağırıyor. Dokunmatik cihazda (`(any-pointer: coarse)` ya da `navigator.maxTouchPoints > 0`)
@@ -569,6 +569,33 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   beklemesi, ızgara yokken yükleme yok, tek planlama, çıkışta iptal).
 - `npm run build` ✓, `npm test` ✓ (578 test).
 
+### 3c — "N" kısayolu · `<3c>`
+
+- Neden: kısayol sayfada `[role="dialog"][aria-modal="true"]:not([hidden])` varsa çıkıyordu. Kapalı pencereler DOM'da
+  kalıyor ve bu öznitelikleri taşıyor: yükseltme penceresi `.ww-up-modal` (kapsayıcısı `display:none`) **ve** Hızlı Ekle bir
+  kez açıldıktan sonra onun tarih seçicisi `#qa-date-picker` (`visibility:hidden; opacity:0`). Yalnızca ilkini düzeltmek
+  yetmiyordu: kısayol bir kez çalışıp sonra yine engelleniyordu (tarayıcıda görüldü, aynı commit'te düzeltildi).
+- Seçilen çözüm: **görünürlük kontrolü** (`navbar.js` `wwOpenModalDialog` / `wwDialogVisible`): aynı adaylar, ama yalnızca
+  ekranda görünen pencere sayılıyor (`checkVisibility({ visibilityProperty: true, opacityProperty: true })`; desteklemeyen
+  tarayıcıda `getClientRects` + hesaplanmış `visibility` / `opacity`). `inert` ya da dinleyiciyi açılışta eklemek pencere
+  koduna (UpgradeModal, quick-add) dokunmayı gerektirirdi ve sonraki her kapalı pencere için aynı hata tekrar ederdi;
+  bu çözüm tek yerde ve pencerelerin kendisine dokunmuyor. Yükseltme penceresi kodu **değişmedi**.
+- Tarayıcıda (dashboard, sahte oturum, masaüstü; önce = 3a build'i, sonra = bu adım):
+
+  | Adım | Önce | Sonra |
+  |---|---|---|
+  | "N" (pencere kapalı) | Hızlı Ekle açılmıyor | **açılıyor**, odak sembol alanında |
+  | Hızlı Ekle kapat → "N" (Esc / kapat butonu / `quickAddClose`, 3 tur) | — | her seferinde açılıyor |
+  | `openUpgradeModal()` | açık, `body` overflow hidden | aynı |
+  | "N" (yükseltme penceresi açık) | engelli | engelli |
+  | Tab (pencere açık) | odak `a.nav-logo` (pencerenin arkası) | aynı |
+  | Esc / kapat butonu / arka plana tıklama | kapanıyor, overflow geri geliyor | aynı |
+
+  analytics, trades, calendar, strategies'te de "N" açıyor, pencere açıkken engelli, Esc kapatıyor. Konsol hatası yok.
+- Test: `tests/shortcut-n.test.js` (yeni; kapalı yükseltme penceresi, gizli tarih seçicisi, görünen pencere, eski tarayıcı
+  yolu, aday seçici aynı, kısayolun kontrolü kullandığı ve yükseltme penceresi işaretlemesi / Esc kodunun değişmediği).
+- `npm run build` ✓, `npm test` ✓ (584 test).
+
 # Bilinen, bu işten bağımsız hatalar
 
 Düzeltilmedi, yalnızca listelendi. Kaynak: parça 1 tarayıcı taraması (oturumsuz 8 sayfa: index, login, register,
@@ -581,7 +608,9 @@ Hepsi baseline'da (parça 1 öncesi ya da parça 1 sonu) da aynı.
 | `/login.html`, `/register.html` (ve login'e yönlenen dashboard, analytics, trades, backtest) | 2 konsol hatası: `%c%d font-size:0;color:transparent NaN` ve `%c%o font-size:0;color:transparent [object]` | Cloudflare Turnstile iframe'i (`challenges.cloudflare.com/.../turnstile/...`); üçüncü taraf, repo kodu değil |
 | index, settings (oturumsuz → index) | temiz | — |
 | Uygulama sayfaları (sahte oturum: dashboard, analytics, calendar, strategies, trades, backtest) | 404 / konsol hatası yok | — |
-| Hızlı Ekle olan tüm sayfalar | **"N" kısayolu hiç çalışmıyor.** Kısayol, sayfada `[role="dialog"][aria-modal="true"]:not([hidden])` varsa çıkıyor; kapalı yükseltme penceresi `.ww-up-modal` bu öznitelikleri taşıyor ve `hidden` değil. Önceden quick-add'in kendi tarih seçicisi (`qa-date-picker`) de aynı nedenle engelliyordu | kısayol: `public/components/navbar/navbar.js`; pencere: `src/components/UpgradeModal.astro:5` |
+| Hızlı Ekle olan tüm sayfalar | ✅ **KAPANDI (parça 3c).** **"N" kısayolu hiç çalışmıyor.** Kısayol, sayfada `[role="dialog"][aria-modal="true"]:not([hidden])` varsa çıkıyor; kapalı yükseltme penceresi `.ww-up-modal` bu öznitelikleri taşıyor ve `hidden` değil. Önceden quick-add'in kendi tarih seçicisi (`qa-date-picker`) de aynı nedenle engelliyordu | kısayol: `public/components/navbar/navbar.js`; pencere: `src/components/UpgradeModal.astro:5` |
 | `/calendar.html` | Hızlı Ekle ile işlem kaydedildikten sonra + butonuna tekrar basınca pencere açılmıyor (testte; baseline'da da aynı) | nedeni araştırılmadı |
 | navbar | `#nav-add-trade` tıklama dinleyicisi var ama bu id'li buton hiçbir yerde oluşturulmuyor | `navbar.js` |
 | — | Kullanılmayan bileşenler: `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | ölü kod |
+| Yükseltme penceresi (`UpgradeModal.astro`) | Açıkken odak pencereye taşınmıyor, Tab arkadaki navbar'a gidiyor (odak tuzağı yok); kapsayıcı açıkken de `aria-hidden="true"` (ekran okuyucu pencereyi görmeyebilir). Parça 3c denemesinde görüldü; önce de aynı | `src/components/UpgradeModal.astro:4`, `openUpgradeModal` |
+| Analiz (mobil) | Hiç işlemi olmayan hesapta bilgi satırı yükleniyorken iki satır yer tutar, sonra tek satıra iner (≈23 px yukarı). 3a-2'nin bilinçli sınırı; işlemi olan hesaplarda kayma kalktı | `analytics.js` `updateHeaderMeta` |
