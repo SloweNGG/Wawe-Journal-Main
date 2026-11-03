@@ -902,20 +902,6 @@ async function fileToCsvText(file) {
                 <div class="quick-import-icon">${ICONS.fileLarge}</div>
                 <p data-quick-i18n="quickmodal.csv_import_desc">MT4/MT5, cTrader, Binance veya Excel dışa aktarım dosyanızı yükleyin</p>
 
-                <div class="quick-add-field" style="text-align:left; margin-top:0.9rem; margin-bottom:0.75rem;">
-                  <label data-quick-i18n="quickmodal.broker_format">Broker Formatı</label>
-                  <select id="quick-csv-broker">
-                    <option value="auto" data-quick-i18n="quickmodal.broker_auto">🔍 Otomatik Algıla</option>
-                    <option value="turkish" data-quick-i18n="quickmodal.broker_turkish">Türkçe Broker</option>
-                    <option value="mt5">MetaTrader 4/5</option>
-                    <option value="ctrader">cTrader</option>
-                    <option value="binance">Binance</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="coinbase">Coinbase</option>
-                    <option value="generic" data-quick-i18n="quickmodal.broker_generic">Genel Format</option>
-                  </select>
-                </div>
-
                 <button class="quick-import-btn" id="quick-csv-select">${ICONS.upload}<span data-quick-i18n="quickmodal.csv_choose_file">Dosya Seç</span></button>
                 <input type="file" id="quick-csv-file" accept=".csv,.xlsx,.xls,.htm,.html,.txt" style="display:none;">
 
@@ -1584,8 +1570,6 @@ async function fileToCsvText(file) {
     if (csvLog) { csvLog.style.display = 'none'; csvLog.innerHTML = ''; }
     const csvStatus = el('quick-csv-status');
     if (csvStatus) csvStatus.style.display = 'none';
-    const brokerSelect = el('quick-csv-broker');
-    if (brokerSelect) brokerSelect.value = 'auto';
 
     const bulkLog = el('quick-bulk-log');
     if (bulkLog) { bulkLog.style.display = 'none'; bulkLog.innerHTML = ''; }
@@ -1852,12 +1836,10 @@ async function fileToCsvText(file) {
         return;
       }
 
-      const brokerSelect = el('quick-csv-broker');
-      const selectedBroker = brokerSelect ? brokerSelect.value : 'auto';
-
+      // Format her zaman otomatik algılanır (ParserV2 / broker-detector.js)
       if (typeof window.parseCsvByBroker === 'function') {
-        const parsed = window.parseCsvByBroker(csvText, selectedBroker);
-        const detected = parsed.detected || selectedBroker;
+        const parsed = window.parseCsvByBroker(csvText);
+        const detected = parsed.detected || 'generic';
 
         if (!parsed.rows || parsed.rows.length === 0) {
           showToast(t('quickmodal.csv_no_data'), 'error');
@@ -2669,13 +2651,6 @@ async function fileToCsvText(file) {
       csvSelectBtn.addEventListener('click', function() { csvFileInput.click(); });
       csvFileInput.addEventListener('change', function() {
         if (this.files && this.files[0]) handleCsvFileSelect(this.files[0]);
-      });
-    }
-
-    const brokerSelect = document.getElementById('quick-csv-broker');
-    if (brokerSelect) {
-      brokerSelect.addEventListener('change', function() {
-        if (csvFile) handleCsvFileSelect(csvFile);
       });
     }
 
