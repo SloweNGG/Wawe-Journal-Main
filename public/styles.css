@@ -1655,6 +1655,14 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   }
 }
 
+/* Hızlı Ekle (+) butonu olan sayfalarda toast butonun ÜSTÜNDE: ikisi aynı köşedeydi ve toast (z 9999) butonu (z 999)
+   örtüyordu; kaydetmeden sonra çıkan "işlem kaydedildi" toast'ı + butonunun ilk tıklamasını alıyor, pencere "açılmıyordu"
+   (fix/ux-bugs 1). Ölçüler quick-add.css .quick-add-fab ile aynı (masaüstü 2rem + 54px, ≤768px 1.25rem + 48px). */
+body[data-quick-add] .ww-toast-container { bottom: calc(2rem + 54px + 0.75rem); }
+@media (max-width: 768px) {
+  body[data-quick-add] .ww-toast-container { bottom: calc(1.25rem + 48px + 0.5rem); }
+}
+
 .ww-toast {
   pointer-events: all;
   background: var(--surface2, #14141e);

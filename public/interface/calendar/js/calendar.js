@@ -1136,6 +1136,16 @@ async function initCalendar() {
     var tradesData = await loadCalendarTradesFromDB(user.id);
     loadCalendarTrades(tradesData || []);
 
+    // Hızlı Ekle ile kaydedilen işlem takvimde sayfa yenilenmeden görünsün (dashboard / trades / analytics gibi). Eskiden
+    // takvim 'trade-saved' olayını hiç dinlemiyordu: kayıt yalnızca yenilemeden sonra görünüyordu (fix/ux-bugs 1).
+    // initCalendar sayfa başına bir kez çalışır; CAL_PAGE dinleyiciyi sayfadan çıkışta kaldırır (çift dinleyici yok).
+    CAL_PAGE.on(window, 'trade-saved', function () {
+      var savedJid = (window.journal && typeof window.journal.getActiveJournalId === 'function')
+        ? window.journal.getActiveJournalId()
+        : (localStorage.getItem('ww_active_journal_id') || localStorage.getItem('activeJournalId'));
+      if (savedJid && CAL_PAGE.alive) fetchFreshCalendarTrades(user.id, savedJid, false);
+    });
+
     // Sözlük ilk yüklemede dinleyicileri tetiklemez; takvim ondan önce çizildiyse metinler yedekte kalırdı
     if (window.i18nReady && typeof window.i18nReady.then === 'function') {
       window.i18nReady.then(function () { if (CAL_PAGE.alive) renderCalendar(); });
