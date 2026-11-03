@@ -123,7 +123,7 @@
     if (SUPPORTED_LANGS.indexOf(lang) === -1) return null;
 
     try {
-      var url = I18N_PATH + lang + '.js?v=1793900200';
+      var url = I18N_PATH + lang + '.js?v=__WW_BUILD_ID__'; // build ID derlemede yazılır (scripts/asset-version.mjs)
       var mod = await import(/* @vite-ignore */ url);
       var dict = (mod && mod.default) ? mod.default : mod;
 

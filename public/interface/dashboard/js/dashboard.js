@@ -2143,6 +2143,47 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     fadeInChart(el);
   }
 
+  // ============================================================
+  // ⭐ GECİKMELİ GRAFİK KÜTÜPHANELERİ (perf 2b)
+  // ============================================================
+  // ApexCharts + lightweight-charts sayfa açılışında inmez. İstatistikler ve son işlemler hemen çizilir;
+  // grafik kapsayıcılarından biri ekrana 300px yaklaşınca kütüphaneler yüklenir ve bekleyen son veriyle
+  // grafikler çizilir (her biri fadeInChart ile belirir). Adresler: shared/lazy-load.js (WwLazy.LIBS).
+  var CHART_CONTAINER_IDS = ['chart-cumulative', 'chart-daily', 'chart-symbol', 'chart-winloss', 'chart-direction'];
+  var pendingChartTrades = null;
+  var chartLibsState = 'idle';   // idle → armed (kapsayıcı izleniyor) → loading → ready
+  var cancelChartWatch = null;
+
+  function chartLibsReady() {
+    return typeof window.ApexCharts !== 'undefined' && typeof window.LightweightCharts !== 'undefined';
+  }
+
+  function loadChartLibsNow() {
+    if (chartLibsState === 'loading' || chartLibsState === 'ready') return;
+    chartLibsState = 'loading';
+    window.WwLazy.loadLibs(['apexcharts', 'lightweight-charts']).then(function () {
+      chartLibsState = 'ready';
+      if (!PAGE.alive) return;
+      var pending = pendingChartTrades;
+      pendingChartTrades = null;
+      if (pending) renderCharts(pending);
+    }, function (err) {
+      chartLibsState = 'idle';
+      wwLog.warn('⚠️ [Dashboard] Grafik kütüphaneleri yüklenemedi:', err);
+    });
+  }
+
+  function watchChartContainers() {
+    if (chartLibsState !== 'idle') return;
+    chartLibsState = 'armed';
+    var els = CHART_CONTAINER_IDS.map(safeEl).filter(Boolean);
+    cancelChartWatch = window.WwLazy.whenVisible(els, loadChartLibsNow, { rootMargin: '300px' });
+  }
+
+  PAGE.onLeave(function () {
+    if (cancelChartWatch) cancelChartWatch();
+  });
+
   var renderAttempts = 0;
   function renderCharts(trades) {
     if (!isPageVisible) return;
@@ -2169,6 +2210,13 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       }
     }
     renderAttempts = 0;
+
+    // Kütüphaneler henüz yok: en son veriyi sakla, kapsayıcı görününce yükle ve çiz (perf 2b)
+    if (!chartLibsReady()) {
+      pendingChartTrades = trades;
+      watchChartContainers();
+      return;
+    }
 
     destroyAllCharts();             // önceki çizimi ve sırada bekleyenleri iptal eder
     var gen = chartRenderGen;
@@ -2341,6 +2389,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   // Draws one chart into the viewer and returns a handle it can resize and remove.
   function renderExpandedChart(type, filtered, container, height) {
+    if (!chartLibsReady()) return null;   // büyütme yalnızca çizilmiş grafikten açılır; kütüphane o an yüklüdür
     if (type === 'cumulative' || type === 'daily') {
       var lwc = type === 'cumulative'
         ? renderCumulativeLwc(filtered, container, height, { showAxis: true })
@@ -2551,7 +2600,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
     if (pdfFontCache !== null) return pdfFontCache;
     try {
       var bufs = await Promise.all(['Regular', 'Bold'].map(function (w) {
-        return fetch('/fonts/pdf/DMSans-' + w + '.ttf').then(function (r) { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); });
+        return fetch('/fonts/pdf/DMSans-' + w + '.ttf?v=__WW_BUILD_ID__').then(function (r) { if (!r.ok) throw new Error('font'); return r.arrayBuffer(); });
       }));
       pdfFontCache = bufs.map(function (buf) {
         var bytes = new Uint8Array(buf), bin = '';
@@ -3173,7 +3222,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var demoMode = new URLSearchParams(location.search).get('demo');
       if (demoMode && typeof isAdmin === 'function' && isAdmin(user)) {
         var demoScript = document.createElement('script');
-        demoScript.src = '/interface/shared/demo-data.js?v=2';
+        demoScript.src = '/interface/shared/demo-data.js?v=__WW_BUILD_ID__';
         demoScript.onload = function () { window.WwDemoData.run(demoMode); };
         document.head.appendChild(demoScript);
         return;
@@ -3277,19 +3326,16 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   function startDashboard() {
     if (!PAGE.alive) return;
-    var isApexReady = typeof window.ApexCharts !== 'undefined';
-    var isLwcReady = typeof window.LightweightCharts !== 'undefined';
+    // Grafik kütüphaneleri artık beklenmez: kapsayıcı görününce yüklenir (bkz. GECİKMELİ GRAFİK KÜTÜPHANELERİ)
     var isSbReady = typeof window.sb !== 'undefined';
     var isAuthReady = typeof window.requireAuth === 'function';
     var isJournalReady = typeof window.journal !== 'undefined';
 
-    if (!isApexReady || !isLwcReady || !isSbReady || !isAuthReady || !isJournalReady) {
+    if (!isSbReady || !isAuthReady || !isJournalReady) {
       dashboardCheckAttempts++;
       if (dashboardCheckAttempts >= MAX_DASHBOARD_CHECK_ATTEMPTS) {
         if (typeof wwLog !== 'undefined') {
           wwLog.warn('⚠️ [Dashboard] Bağımlılıklar zaman aşımına uğradı:', {
-            ApexCharts: isApexReady,
-            LightweightCharts: isLwcReady,
             sb: isSbReady,
             requireAuth: isAuthReady,
             journal: isJournalReady

@@ -159,7 +159,7 @@ describe('both app channels go through WwRealtime', () => {
     assert.match(nav, /window\.WwRealtime\.subscribe\(sb, 'realtime_user_notifications_' \+ user\.id,/);
     assert.match(pay, /window\.WwRealtime\.subscribe\(sb, channelName,/);
     for (const f of [nav, pay]) assert.doesNotMatch(f, /\.subscribe\(\);/);
-    assert.match(fs.readFileSync('src/components/BaseHead.astro', 'utf8'), /<script src="\/interface\/shared\/realtime-guard\.js\?v=\d+" is:inline><\/script>/);
+    assert.match(fs.readFileSync('src/components/BaseHead.astro', 'utf8'), /<script src="\/interface\/shared\/realtime-guard\.js" is:inline><\/script>/);
     assert.match(fs.readFileSync('public/src/bundle.js', 'utf8'), /WwRealtime\.subscribe\(\w+,\w+,/);
   });
 });

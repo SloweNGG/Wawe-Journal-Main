@@ -368,8 +368,14 @@
       });
       if (!grid.children.length) grid.appendChild(el('p', 'bt-hint', opts.t('backtest.st.w_none', 'Tüm widget\'lar gizli. «Widget\'lar» menüsünden geri açabilirsin.')));
       if (global.lucide) try { global.lucide.createIcons(); } catch (e) { /* optional */ }
-      // reorder like the Premium dashboard (SortableJS, handle, ghost, animation); pointer fallback so touch and mouse behave the same
-      if (opts.drag && global.Sortable) {
+      // reorder like the Premium dashboard (SortableJS, handle, ghost, animation); pointer fallback so touch and mouse behave the same.
+      // SortableJS is not on the page at load (perf 2b/2c): the first draggable render loads it (WwLazy) and attaches then,
+      // unless this grid was re-rendered or removed meanwhile.
+      if (opts.drag && !global.Sortable && global.WwLazy) {
+        global.WwLazy.loadLib('sortablejs').then(function () { if (grid.isConnected && !sortable) attachSortable(); }, function () { /* drag stays off */ });
+      }
+      if (opts.drag && global.Sortable) attachSortable();
+      function attachSortable() {
         sortable = new global.Sortable(grid, { animation: 300, handle: '.bt-st-grip', ghostClass: 'sortable-ghost', draggable: '.bt-st-w', forceFallback: true, fallbackOnBody: true,
           onEnd: function () {
             var shown = Array.prototype.map.call(grid.querySelectorAll('.bt-st-w'), function (x) { return x.getAttribute('data-w'); });

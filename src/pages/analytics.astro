@@ -9,23 +9,18 @@ import Layout from '../layouts/Layout.astro';
   <!-- @import yerine ayrı link: SPA geçişinde router sadece <head>'deki stilleri önceden
        yükleyip bekliyor; @import'lu dosyalar geç inince kartlar bir an stilsiz çiziliyor
        ve kenarlık beyazdan koyuya geçiş yaparak (transition: border-color) parlıyordu -->
-  <link rel="stylesheet" href="/interface/analytics/css/layout.css?v=4" />
-  <link rel="stylesheet" href="/interface/analytics/css/components.css?v=6" />
-  <link rel="stylesheet" href="/interface/analytics/css/analytics.css?v=10" />
+  <link rel="stylesheet" href="/interface/analytics/css/layout.css" />
+  <link rel="stylesheet" href="/interface/analytics/css/components.css" />
+  <link rel="stylesheet" href="/interface/analytics/css/analytics.css" />
   <link rel="stylesheet" href="/interface/dashboard/css/prop-banner.css" />
   
   <!-- ⭐ QUICK ADD MODAL CSS -->
-  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css?v=1792800100" />
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
   
   
-  <!-- SORTABLEJS -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline defer></script>
+  <!-- SORTABLEJS: kart düzenleme niyetinde yüklenir (dashboard-manager.js loadDragDrop → WwLazy, perf 2c) -->
   
-  <!-- APEXCHARTS -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" is:inline defer></script>
-  
-  <!-- LIGHTWEIGHT CHARTS -->
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" is:inline defer></script>
+  <!-- APEXCHARTS + LIGHTWEIGHT CHARTS: grafik kartı ekrana yaklaşınca yüklenir (chart-renderers.js → WwLazy, perf 2b) -->
 
   <script is:inline>
     (function() {
@@ -159,16 +154,11 @@ import Layout from '../layouts/Layout.astro';
   <script type="module" src="/src/bundle.js" is:inline defer></script>
 
   <!-- 5. QUICK ADD (ES5) -->
-  <!-- ⭐ ParserV2 -->
-  <script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
+  <!-- HIZLI EKLE: yalnızca ön yükleyici (FAB + tema); asıl modül ilk açılışta iner (perf 2a) -->
+  <script src="/interface/quick-add/js/quick-add-boot.js" is:inline defer></script>
 
   <!-- 6. ⭐ PRO DASHBOARD - MODÜLER JS (ES Module) -->
-  <script type="module" src="/interface/analytics/js/analytics.js?v=1794000000" is:inline defer></script>
+  <script type="module" src="/interface/analytics/js/analytics.js" is:inline defer></script>
 
   <!-- 7. ⭐ QUICK ADD MANUEL BAŞLATICI (dashboard.html'den alındı) -->
   <script is:inline>

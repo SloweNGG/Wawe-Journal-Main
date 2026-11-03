@@ -1,7 +1,7 @@
 // Backtest v2: symbol config and market hours (window.WwBtSymbols). Pure, no DOM, no network.
 // Phase A runs on synthetic data only (bt-synthetic.js), so every symbol is offered. `enabled` and `source`
 // describe the licensed REAL archive (Phase E) and are not used by the page yet.
-// Browser: <script src="/interface/backtest/js/bt-symbols.js?v=1" is:inline defer></script> -> window.WwBtSymbols
+// Browser: <script src="/interface/backtest/js/bt-symbols.js" is:inline defer></script> -> window.WwBtSymbols
 // Node:    import '<path>/bt-symbols.js' (side effect, globalThis.WwBtSymbols)  or  vm.runInNewContext (tests)
 (function (global) {
   'use strict';

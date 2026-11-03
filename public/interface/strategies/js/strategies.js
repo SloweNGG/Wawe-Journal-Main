@@ -500,35 +500,44 @@ function fmtDate(dateStr) {
 }
 
 // ============================================================
-// APEXCHARTS READY HELPER (Non-blocking)
+// APEXCHARTS READY HELPER (Non-blocking) — gecikmeli yükleme (perf 2b)
 // ============================================================
+// ApexCharts sayfa açılışında inmez. whenApexReady(cb, el): kütüphane varsa cb hemen çalışır; yoksa
+// cb sıraya alınır ve `el` (grafik kapsayıcısı / listesi) ekrana 300px yaklaşınca kütüphane yüklenir.
+// `el` verilmezse (ör. kullanıcının açtığı equity modalı) hemen yüklenir. Adres: shared/lazy-load.js.
 var _apexReadyCallbacks = [];
-var _apexReadyPoller = null;
+var _apexLoading = false;
+var _apexWatchCancels = [];   // bekleyen görünürlük izleyicileri (sayfadan çıkınca iptal)
 
-function whenApexReady(callback) {
+function _flushApexCallbacks() {
+  var cbs = _apexReadyCallbacks.slice();
+  _apexReadyCallbacks = [];
+  cbs.forEach(function(cb) {
+    try { cb(); } catch(e) { console.error('whenApexReady callback error:', e); }
+  });
+}
+
+function _loadApexNow() {
+  if (_apexLoading) return;
+  _apexLoading = true;
+  window.WwLazy.loadLib('apexcharts').then(function() {
+    _apexLoading = false;
+    _flushApexCallbacks();
+  }, function(err) {
+    _apexLoading = false;
+    console.error('ApexCharts yüklenemedi:', err);
+  });
+}
+
+function whenApexReady(callback, el) {
   if (typeof window.ApexCharts !== 'undefined') {
     callback();
     return;
   }
   _apexReadyCallbacks.push(callback);
-  if (!_apexReadyPoller) {
-    var attempts = 0;
-    _apexReadyPoller = setInterval(function() {
-      attempts++;
-      if (typeof window.ApexCharts !== 'undefined') {
-        clearInterval(_apexReadyPoller);
-        _apexReadyPoller = null;
-        var cbs = _apexReadyCallbacks.slice();
-        _apexReadyCallbacks = [];
-        cbs.forEach(function(cb) {
-          try { cb(); } catch(e) { console.error('whenApexReady callback error:', e); }
-        });
-      } else if (attempts >= 150) {
-        clearInterval(_apexReadyPoller);
-        _apexReadyPoller = null;
-      }
-    }, 30);
-  }
+  var els = (Array.isArray(el) ? el : [el]).filter(Boolean);
+  if (els.length) _apexWatchCancels.push(window.WwLazy.whenVisible(els, _loadApexNow, { rootMargin: '300px' }));
+  else _loadApexNow();
 }
 
 // ============================================================
@@ -586,7 +595,7 @@ function drawSparkline(containerId, data, color) {
     } catch(e) {
       console.warn('drawSparkline error:', e);
     }
-  });
+  }, document.getElementById(containerId));   // kart ekrana yaklaşınca ApexCharts yüklenir
 }
 
 // ============================================================
@@ -770,7 +779,7 @@ function renderStrategiesGrid() {
 function renderComparisonCharts() {
   whenApexReady(function() {
     _renderComparisonChartsActual();
-  });
+  }, [document.getElementById('winrate-comparison-chart'), document.getElementById('pnl-comparison-chart')]);
 }
 
 // Karşılaştırma verisi (son çizimden): kart grafikleri ve büyütülmüş görünüm aynı ayarları kullanır
@@ -1915,7 +1924,8 @@ function startStrategies() {
 
 // Sayfadan çıkarken zamanlayıcı ve grafikleri temizle
 STRAT_PAGE.onLeave(function() {
-  if (_apexReadyPoller) { clearInterval(_apexReadyPoller); _apexReadyPoller = null; }
+  _apexWatchCancels.forEach(function(cancel) { try { cancel(); } catch(e) {} });
+  _apexWatchCancels = [];
   _apexReadyCallbacks = [];
   Object.keys(sparkCharts).forEach(function(id) {
     try { sparkCharts[id].destroy(); } catch(e) {}

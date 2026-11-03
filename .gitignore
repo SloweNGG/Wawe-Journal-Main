@@ -31,5 +31,5 @@ __pycache__/
 .demo-data/
 promo-captures/
 
-# Gerçek test hesabıyla ölçüm için Chrome profili (scripts/perf/lighthouse.mjs --login). ASLA commit etmeyin.
+# Gerçek test hesabıyla ölçüm için Chrome profili (oturum burada kalır; scripts/perf/lighthouse.mjs --login). ASLA commit etmeyin.
 .perf-profile/

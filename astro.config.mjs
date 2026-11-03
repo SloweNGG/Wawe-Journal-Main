@@ -4,6 +4,14 @@ import esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assetVersionIntegration } from './scripts/asset-version.mjs';
+
+// Her derlemeye özel TEK kimlik. Kullanıldığı yerler:
+//  - SpaRouter <meta name="ww-build">: açık sekmede deploy sonrası eski/yeni script karışmasın diye tam yükleme
+//  - dist'teki her yerel JS/CSS referansının ?v= değeri (bkz. scripts/asset-version.mjs) → _headers'ta immutable önbellek
+//  - sw.js önbellek adı (her deploy'da eski SW önbelleği silinir)
+// Yalnızca rakam olmalı. WW_BUILD_ID ortam değişkeni ile sabitlenebilir (ör. aynı commit'i yeniden derlerken).
+const BUILD_ID = process.env.WW_BUILD_ID || String(Date.now());
 
 function minifyDistAssets() {
   return {
@@ -94,12 +102,13 @@ export default defineConfig({
   outDir: 'dist',
   // Geliştirme araç çubuğu localhost'ta alt paneldeki tabloların üstünü kapatıyordu
   devToolbar: { enabled: false },
-  integrations: [react(), bundleAppScript(), minifyDistAssets()],
+  // asset-version minify'dan SONRA çalışmalı (build:done kancaları sırayla çalışır)
+  integrations: [react(), bundleAppScript(), minifyDistAssets(), assetVersionIntegration(BUILD_ID)],
   vite: {
     define: {
-      // Her derlemeye özel kimlik: SPA router, açık sekmede deploy sonrası eski ve yeni
+      // Derleme kimliği (yukarıdaki BUILD_ID): SPA router, açık sekmede deploy sonrası eski ve yeni
       // sürüm script'lerinin karışmaması için sürüm değişince tam sayfa yüklemesi yapar
-      __WW_BUILD_ID__: JSON.stringify(String(Date.now())),
+      __WW_BUILD_ID__: JSON.stringify(BUILD_ID),
     },
   },
   build: {

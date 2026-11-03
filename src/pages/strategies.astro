@@ -6,30 +6,24 @@ import Layout from '../layouts/Layout.astro';
   <title data-i18n="strategies.title">Stratejiler – Wawe Journal</title>
 
   <!-- QUICK ADD MODAL CSS -->
-  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css?v=1792800100" />
+  <link rel="stylesheet" href="/interface/quick-add/css/quick-add.css" />
 
   <!-- STRATEGIES CSS -->
-  <link rel="stylesheet" href="/interface/strategies/css/strategies.css?v=1792800101" />
+  <link rel="stylesheet" href="/interface/strategies/css/strategies.css" />
 
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" as="script" />
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3" is:inline defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.2.0" is:inline defer></script>
+  <!-- ApexCharts: grafik kapsayıcısı ekrana yaklaşınca yüklenir (strategies.js whenApexReady → WwLazy, perf 2b) -->
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
 
-<!-- ⭐ ParserV2 -->
-<script src="/interface/quick-add/js/broker-dictionary.js" is:inline defer></script>
-<script src="/interface/quick-add/js/broker-detector.js" is:inline defer></script>
-<script src="/interface/quick-add/js/fill-pairing.js" is:inline defer></script>
-<script src="/interface/quick-add/js/parser-v2.js" is:inline defer></script>
 
 <script type="module" src="/src/bundle.js" is:inline defer></script>
 
 
-  <script src="/interface/quick-add/js/quick-modal-i18n.js" is:inline defer></script>
-  <script src="/interface/quick-add/js/quick-add.js?v=1792300000" is:inline defer></script>
-  <script src="/interface/strategies/js/strategies.js?v=1792900000" is:inline defer data-page-script></script>
+  <!-- HIZLI EKLE: yalnızca ön yükleyici (FAB + tema); asıl modül ilk açılışta iner (perf 2a) -->
+  <script src="/interface/quick-add/js/quick-add-boot.js" is:inline defer></script>
+  <script src="/interface/strategies/js/strategies.js" is:inline defer data-page-script></script>
 </Fragment>
   <!-- NAVBAR CONTAINER -->
 

@@ -253,92 +253,10 @@ function ensureCsvParsers() {
 }
 
 // ============================================================
-// TEMA BAŞLATMA
+// TEMA BAŞLATMA / TEMA DEĞİŞİMİNİ DİNLE → quick-add-boot.js
+// (perf parça 2a: bu dosya artık ilk açılışta yükleniyor; sayfa açılışında çalışması gereken
+// tema kodu her zaman yüklenen quick-add-boot.js'e taşındı)
 // ============================================================
-
-(function initQuickAddTheme() {
-  try {
-    var savedTheme = localStorage.getItem('ww_theme');
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    var customTheme = localStorage.getItem('ww_custom_theme');
-
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
-
-    if (savedFontSize) {
-      document.body.style.fontSize = savedFontSize + 'px';
-    }
-
-    if (savedTheme !== 'light' && customTheme) {
-      try {
-        var settings = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-        if (settings.surfaceColor) {
-          root.style.setProperty('--surface', settings.surfaceColor);
-          root.style.setProperty('--surface2', settings.surfaceColor);
-        }
-        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-      } catch (e) {}
-    }
-  } catch (e) {}
-})();
-
-// ============================================================
-// TEMA DEĞİŞİMİNİ DİNLE
-// ============================================================
-
-(function listenQuickAddThemeChanges() {
-  function applyThemeFromStorage() {
-    try {
-      var savedTheme = localStorage.getItem('ww_theme');
-      var isLight = savedTheme === 'light';
-      document.body.classList.toggle('light-theme', isLight);
-
-      var customTheme = localStorage.getItem('ww_custom_theme');
-      if (customTheme && !isLight) {
-        try {
-          var settings = JSON.parse(customTheme);
-          var root = document.documentElement;
-          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-          if (settings.surfaceColor) {
-            root.style.setProperty('--surface', settings.surfaceColor);
-            root.style.setProperty('--surface2', settings.surfaceColor);
-          }
-          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-        } catch (e) {}
-      }
-    } catch (e) {}
-  }
-
-  window.addEventListener('storage', function(e) {
-    if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
-      applyThemeFromStorage();
-    }
-  });
-
-  document.addEventListener('themeChanged', function(e) {
-    if (e.detail && e.detail.settings) {
-      var settings = e.detail.settings;
-      var root = document.documentElement;
-      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-      if (settings.surfaceColor) {
-        root.style.setProperty('--surface', settings.surfaceColor);
-        root.style.setProperty('--surface2', settings.surfaceColor);
-      }
-      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-    }
-  });
-})();
 
 // ============================================================
 // DATE PICKER STİLLERİ - HEAD'E INJECT EDİLİR
@@ -2896,6 +2814,8 @@ async function fileToCsvText(file) {
 
   window.quickAddOpen = openModal;
   window.quickAddClose = closeModal;
+  // quick-add-boot.js ilk açılışta dosyayı yükleyip modalı hemen kurar (100 ms'lik init beklemeden)
+  window.quickAddInit = function() { initQuickAdd(); };
 
   let initialized = false;
 

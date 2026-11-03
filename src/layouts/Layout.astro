@@ -41,10 +41,10 @@ const {
   <BaseHead title={title} description={description} canonical={canonical} noIndex={noIndex} isAppPage={isAppPage} />
   <slot name="head" />
   {isAppPage && (
-    <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css?v=1793447000" />
-    <script src="/src/core/prop-templates.js?v=1791480000" is:inline defer></script>
-    <script src="/src/utils/prop-calculator.js?v=1791480000" is:inline defer></script>
-    <script src="/src/services/prop-service.js?v=1792500000" is:inline defer></script>
+    <link rel="stylesheet" href="/interface/dashboard/css/onboarding.css" />
+    <script src="/src/core/prop-templates.js" is:inline defer></script>
+    <script src="/src/utils/prop-calculator.js" is:inline defer></script>
+    <script src="/src/services/prop-service.js" is:inline defer></script>
   )}
   {spa && <SpaRouter />}
 </head>
@@ -70,11 +70,11 @@ const {
   <UpgradeModal />
 
   {isAppPage && (
-    <script src="/interface/dashboard/js/onboarding.js?v=1793447000" is:inline defer></script>
+    <script src="/interface/dashboard/js/onboarding.js" is:inline defer></script>
   )}
   {showNavbar && (
-    <script src="/components/navbar/navbar.js?v=1793610000" is:inline defer></script>
-    <script src="/components/navbar/page-transition.js?v=1791480041" is:inline defer></script>
+    <script src="/components/navbar/navbar.js" is:inline defer></script>
+    <script src="/components/navbar/page-transition.js" is:inline defer></script>
   )}
 </body>
 </html>

@@ -155,6 +155,24 @@ export function widgetLayoutClasses(key, w) {
 }
 
 // ⭐ DRAG DROP
+// SortableJS sayfa açılışında inmez (perf 2c). Bu sayfada ayrı bir düzen modu yok (tutamaçlar hep görünür);
+// kütüphane düzenleme niyeti görülünce yüklenir: kartın araç köşesine (.widget-tools: ayar + tutamaç) fare
+// gelince / odaklanınca, tutamaca basınca / dokununca ya da "Özelleştir" paneli açılınca (loadDragDrop).
+// Dokunmatik cihazda ayrıca sayfa yüklendikten sonra boşta önden iner (preloadOnTouch).
+function createSortable(grid) {
+  return new Sortable(grid, {
+    animation: 300,
+    handle: '.drag-handle',
+    ghostClass: 'sortable-ghost',
+    onStart: function() { isDragging = true; },
+    onEnd: function() {
+      isDragging = false;
+      setTimeout(forceResizeAllCharts, 300);
+      saveLayoutOrder();
+    }
+  });
+}
+
 export function initDragDrop() {
   var grid = document.getElementById('dashboard-grid');
   if (!grid) return;
@@ -165,22 +183,76 @@ export function initDragDrop() {
   }
 
   if (typeof Sortable !== 'undefined') {
-    sortableInstance = new Sortable(grid, {
-      animation: 300,
-      handle: '.drag-handle',
-      ghostClass: 'sortable-ghost',
-      onStart: function() { isDragging = true; },
-      onEnd: function() {
-        isDragging = false;
-        setTimeout(forceResizeAllCharts, 300);
-        saveLayoutOrder();
-      }
-    });
+    sortableInstance = createSortable(grid);
+    return;
   }
+  armDragIntent(grid);
+  preloadOnTouch(grid);
+}
+
+// Dokunmatikte üzerine gelme yok: kütüphane ilk dokunuşta inerse o dokunuş sürüklemeyi başlatamıyordu. Bu yüzden
+// dokunmatik cihazda sayfa yüklendikten sonra, tarayıcı boşta kalınca (requestIdleCallback; yoksa setTimeout) önden
+// yüklenir. Fareli masaüstünde davranış aynı: yalnızca düzenleme niyetinde (perf 3b).
+var touchPreloadTimer = null;
+function isTouchDevice() {
+  if (typeof window === 'undefined') return false;
+  var coarse = typeof window.matchMedia === 'function' && window.matchMedia('(any-pointer: coarse)').matches;
+  return coarse || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
+}
+
+function preloadOnTouch(grid) {
+  if (touchPreloadTimer || !isTouchDevice()) return;
+  function idle() {
+    var ric = window.requestIdleCallback;
+    touchPreloadTimer = ric
+      ? { cancel: window.cancelIdleCallback.bind(window), id: ric.call(window, run, { timeout: 3000 }) }
+      : { cancel: clearTimeout, id: setTimeout(run, 1500) };
+  }
+  function run() {
+    touchPreloadTimer = null;
+    // SPA ile sayfadan çıkıldıysa ızgara DOM'da değildir: yükleme yapılmaz (çıkışta zamanlayıcı zaten iptal edilir)
+    if (grid.isConnected && !sortableInstance) loadDragDrop();
+  }
+  if (document.readyState === 'complete') idle();
+  else {
+    touchPreloadTimer = { cancel: function() { window.removeEventListener('load', idle); }, id: null };
+    window.addEventListener('load', idle, { once: true });
+  }
+}
+
+// Düzenleme niyeti: SortableJS'i yükle ve ızgaraya bağla (tekrar çağrılabilir)
+export function loadDragDrop() {
+  if (typeof window === 'undefined' || !window.WwLazy) return Promise.resolve();
+  return window.WwLazy.loadLib('sortablejs').then(function() {
+    var grid = document.getElementById('dashboard-grid');
+    if (grid && !sortableInstance) sortableInstance = createSortable(grid);
+  }, function(err) {
+    console.error('[Analiz] SortableJS yüklenemedi:', err);
+  });
+}
+
+// Izgara öğesi innerHTML ile yeniden çizilse de ızgaranın kendisi kalır; dinleyiciler bir kez eklenir
+function armDragIntent(grid) {
+  if (grid.__wwDragArmed) return;
+  grid.__wwDragArmed = true;
+  function onIntent(e) {
+    if (sortableInstance) return;
+    var t = e.target;
+    if (!t || !t.closest || !t.closest('.widget-tools')) return;
+    loadDragDrop();
+  }
+  grid.addEventListener('pointerover', onIntent, true);
+  grid.addEventListener('focusin', onIntent, true);
+  grid.addEventListener('pointerdown', onIntent, true);
+  grid.addEventListener('touchstart', onIntent, { capture: true, passive: true });
 }
 
 // SPA: sayfadan çıkarken sürükle-bırak örneğini kaldır (document'a eklediği dinleyiciler dahil)
 export function destroyDragDrop() {
+  if (touchPreloadTimer) {
+    touchPreloadTimer.cancel(touchPreloadTimer.id);
+    touchPreloadTimer = null;
+  }
   if (sortableInstance) {
     try { sortableInstance.destroy(); } catch(e) {}
     sortableInstance = null;

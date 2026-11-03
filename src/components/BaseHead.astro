@@ -158,65 +158,60 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
 <meta name="apple-mobile-web-app-title" content="Wawe Journal" />
 <link rel="manifest" href="/site.webmanifest" />
 
-<!-- FONTS & CDNS -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- FONTS (kendi sunucumuzdan: /fonts/fonts.css; Geist / Geist Mono / Syne, latin + latin-ext, font-display: swap +
+     ölçülmüş yedek font metrikleri → yazı fontu gelmeden de aynı yerleşim). Kritik dosyalar önden iner. -->
+<link rel="preload" href="/fonts/geist-latin.woff2?v=__WW_BUILD_ID__" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/geist-latin-ext.woff2?v=__WW_BUILD_ID__" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/fonts/fonts.css" />
+
+<!-- CDNS -->
 <link rel="preconnect" href="https://odasapyhtdopbnlfhwde.supabase.co" crossorigin />
 <link rel="dns-prefetch" href="https://odasapyhtdopbnlfhwde.supabase.co" />
-{isAppPage ? (
+{isAppPage && (
   <>
-    <!-- APP FONTS: render-blocking with display=block to eliminate FOUT / layout shift -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Geist+Mono:wght@400..700&family=Syne:wght@600..800&display=block" />
-
     <!-- CORE CSS FOR APP -->
-    <link rel="stylesheet" href="/styles.css?v=1793900200" />
-    <link rel="stylesheet" href="/components/navbar/navbar.css?v=1793610000" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/components/navbar/navbar.css" />
 
     <!-- CLIENT SWR CACHE ('trades' / 'trades_<sayfa>' = yalnızca canlı satır; kapsamlı listeler 'trades@all') -->
-    <script src="/cache.js?v=1792700000" is:inline></script>
+    <script src="/cache.js" is:inline></script>
 
     <!-- SAAT & GÜN AYARLARI (saat dilimi, gün başlangıcı, import saati; Ayarlar > Görünüm) -->
-    <script src="/interface/shared/time-settings.js?v=1794000000" is:inline></script>
+    <script src="/interface/shared/time-settings.js" is:inline></script>
 
     <!-- ORTAK İŞLEM METRİKLERİ (PnL, win rate, kapalı işlem tanımı, gün anahtarı) -->
-    <script src="/interface/shared/trade-metrics.js?v=1791642000" is:inline></script>
+    <script src="/interface/shared/trade-metrics.js" is:inline></script>
 
     <!-- İŞLEM KAYNAĞI KAPSAMI (WwTrades: canlı / backtest / tümü; canlı istatistikler backtest'i ASLA içermez) -->
-    <script src="/interface/shared/trades-source.js?v=1792700000" is:inline></script>
+    <script src="/interface/shared/trades-source.js" is:inline></script>
 
     <!-- REALTIME KANALLARI (WwRealtime: yalnızca geçerli oturumla, token reddedilirse sonsuz deneme yok; navbar + payment.js) -->
-    <script src="/interface/shared/realtime-guard.js?v=1793700000" is:inline></script>
+    <script src="/interface/shared/realtime-guard.js" is:inline></script>
 
     <!-- ORTAK GRAFİK GÖRÜNÜMÜ (font, eksen yazıları, ızgara, tooltip; tüm grafikler aynı) -->
-    <link rel="stylesheet" href="/interface/shared/chart-theme.css?v=6" />
-    <script src="/interface/shared/chart-theme.js?v=3" is:inline></script>
-    <script src="/interface/shared/chart-viewer.js?v=3" is:inline></script>
+    <link rel="stylesheet" href="/interface/shared/chart-theme.css" />
+    <script src="/interface/shared/chart-theme.js" is:inline></script>
+    <script src="/interface/shared/chart-viewer.js" is:inline></script>
 
     <!-- HESAP İŞARETİ (renk noktası; prop firma / broker bağlıysa onun logosu) -->
-    <script src="/interface/shared/journal-mark.js?v=1791743200" is:inline></script>
+    <script src="/interface/shared/journal-mark.js" is:inline></script>
 
     <!-- TARİH SEÇİCİ (tarayıcının beyaz takvimi yerine temaya uyan takvim; WwDatePicker.attach(input)) -->
-    <script src="/interface/shared/ww-date-picker.js?v=1" is:inline></script>
+    <script src="/interface/shared/ww-date-picker.js" is:inline></script>
     <!-- TARİH ARALIĞI (Dashboard / Strateji / Analitik "Özel" filtresi: iki aylık aralık takvimi + hazır aralıklar) -->
-    <script src="/interface/shared/ww-range-picker.js?v=1" is:inline></script>
+    <script src="/interface/shared/ww-range-picker.js" is:inline></script>
+    <!-- GECİKMELİ YÜKLEYİCİ (WwLazy.loadScriptOnce / whenVisible): quick-add, grafik kütüphaneleri ve SortableJS ilk ihtiyaçta iner -->
+    <script src="/interface/shared/lazy-load.js" is:inline defer></script>
 
     <!-- LUCIDE ICONS (Sadece panel sayfalarında) -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js" as="script" />
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js" is:inline defer></script>
   </>
-) : (
-  <!-- PUBLIC MARKETING & AUTH FONTS: non-render-blocking, display=swap -->
-  <>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Geist+Mono:wght@400..700&family=Syne:wght@600..800&display=swap" media="print" onload="this.media='all'" />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Geist+Mono:wght@400..700&family=Syne:wght@600..800&display=swap" />
-    </noscript>
-  </>
 )}
 
 <!-- SHARED BUTTON STYLE (black fill, purple outline) -->
-<link rel="stylesheet" href="/buttons.css?v=4" />
+<link rel="stylesheet" href="/buttons.css" />
 
 <!-- ⭐ ZERO-FLASH TEMA & AMBİYANS ÖN YÜKLEME — Sayfa render olmadan önce senkron çalışır -->
 <script is:inline>

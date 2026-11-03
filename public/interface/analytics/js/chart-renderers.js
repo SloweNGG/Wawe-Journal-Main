@@ -1957,6 +1957,74 @@ export function renderGoalWidget() {
 }
 
 // ⭐ RENDER ALL CHARTS
+// ⭐ GECİKMELİ GRAFİK KÜTÜPHANELERİ (perf 2b)
+// ApexCharts + lightweight-charts sayfa açılışında inmez. Kütüphane yokken gelen çizim:
+//   - grafik dışı kartlar (seriler, takvim, içgörüler, son işlemler, hedef, prop) hemen çizilir
+//   - grafik kartları .chart-pending parıltısında bekler; biri ekrana 300px yaklaşınca kütüphaneler
+//     yüklenir ve bekleyen SON çizim (renderCharts / renderChartFor) tekrar çalıştırılır
+// Adresler: shared/lazy-load.js (WwLazy.LIBS). Kütüphane kullanan kartlar = EXPANDABLE_CHARTS ile aynı küme.
+var LIB_CHART_KEYS = ['cumulative', 'winloss', 'daily', 'symbol', 'direction', 'hourly', 'dow', 'rr', 'lot', 'drawdown', 'monthly'];
+var chartLibState = 'idle';   // idle → armed (kartlar izleniyor) → loading → ready
+var pendingFullRender = null;
+var pendingKeyRenders = {};
+var cancelLibWatch = null;
+
+function chartLibsReady() {
+  return typeof window.ApexCharts !== 'undefined' && typeof window.LightweightCharts !== 'undefined';
+}
+
+function libGridItems() {
+  return Array.prototype.filter.call(document.querySelectorAll('#dashboard-grid .grid-item[data-widget]'), function(el) {
+    return LIB_CHART_KEYS.indexOf(el.dataset.widget) !== -1;
+  });
+}
+
+function markLibItemsPending(on) {
+  libGridItems().forEach(function(el) { el.classList.toggle('chart-pending', on); });
+}
+
+function loadChartLibsNow() {
+  if (chartLibState === 'loading' || chartLibState === 'ready') return;
+  chartLibState = 'loading';
+  if (cancelLibWatch) { cancelLibWatch(); cancelLibWatch = null; }
+  window.WwLazy.loadLibs(['apexcharts', 'lightweight-charts']).then(function() {
+    chartLibState = 'ready';
+    var full = pendingFullRender;
+    var keys = pendingKeyRenders;
+    pendingFullRender = null;
+    pendingKeyRenders = {};
+    // SPA: bu modül sayfalar arasında yaşar; analiz ızgarası artık sayfada değilse bekleyen çizim atılır
+    // (dashboard da chart-cumulative gibi aynı id'leri kullanıyor). Sayfaya dönülünce zaten yeniden çizilir.
+    if (!document.getElementById('dashboard-grid')) return;
+    markLibItemsPending(false);
+    if (full) full();
+    Object.keys(keys).forEach(function(k) { keys[k](); });
+  }, function(err) {
+    chartLibState = 'idle';
+    markLibItemsPending(false);
+    console.error('[Analiz] grafik kütüphaneleri yüklenemedi:', err);
+  });
+}
+
+// Kart listesi özelleştirmeyle değişebilir; her bekleyen çizimde güncel kartlar izlenir
+function watchLibItems() {
+  if (chartLibState === 'loading' || chartLibState === 'ready') return;
+  if (cancelLibWatch) cancelLibWatch();
+  cancelLibWatch = null;
+  var els = libGridItems();
+  if (!els.length) { chartLibState = 'idle'; return; }
+  chartLibState = 'armed';
+  cancelLibWatch = window.WwLazy.whenVisible(els, loadChartLibsNow, { rootMargin: '300px' });
+}
+
+function renderNonLibWidgets(trades) {
+  [renderStreaksWidget, renderCalendarWidget, renderInsightsWidget, renderRecentTradesWidget].forEach(function(fn) {
+    try { fn(trades); } catch (e) { console.error('[Analiz] çizim hatası:', e); }
+  });
+  renderGoalWidget();
+  renderPropWidgets();
+}
+
 // ⭐ KADEMELİ İLK ÇİZİM — sayfa açılışında tüm kartlar tek karede çizilince ana iş parçacığı
 // ~0,5 sn (yavaş cihazda saniyeler) kilitleniyor, parıltı ve geçiş animasyonu takılıyordu.
 // Kartlar ızgaradaki sırayla, her karede ~8 ms'lik dilimlerle çizilir; sırası gelmeyen kart
@@ -2013,6 +2081,16 @@ function renderChartsProgressive(trades) {
 export function renderCharts(trades, opts) {
   cancelProgressiveRender();
   updateChartTheme();   // renkler çizim anında temadan okunur (açık/koyu)
+  if (trades && trades.length && !chartLibsReady()) {
+    renderNonLibWidgets(trades);
+    if (libGridItems().length) {
+      pendingFullRender = function() { renderCharts(trades, opts); };
+      pendingKeyRenders = {};   // tam çizim tek tek bekleyenleri de kapsar
+      markLibItemsPending(true);
+      watchLibItems();
+    }
+    return;
+  }
   if (trades && trades.length && opts && opts.progressive) {
     renderChartsProgressive(trades);
     return;
@@ -2078,6 +2156,13 @@ var TRADE_CHART_KEYS = ['cumulative', 'winloss', 'daily', 'symbol', 'direction',
 export function renderChartFor(key, trades) {
   var fn = CHART_RENDERERS[key];
   if (!fn) return;
+  if (LIB_CHART_KEYS.indexOf(key) !== -1 && trades && trades.length && !chartLibsReady()) {
+    pendingKeyRenders[key] = function() { renderChartFor(key, trades); };
+    var item = document.querySelector('#dashboard-grid .grid-item[data-widget="' + key + '"]');
+    if (item) item.classList.add('chart-pending');
+    watchLibItems();
+    return;
+  }
   updateChartTheme();
   if (key === 'cumulative') clearLightweightChart();
   else clearApexChart(key);
@@ -2102,6 +2187,7 @@ export var EXPANDABLE_CHARTS = ['cumulative', 'winloss', 'daily', 'symbol', 'dir
 export function renderChartInto(key, trades, target) {
   var fn = CHART_RENDERERS[key];
   if (!fn || !target || EXPANDABLE_CHARTS.indexOf(key) === -1) return null;
+  if (!chartLibsReady()) { loadChartLibsNow(); return null; }   // büyütme çizilmiş karttan açılır; normalde yüklüdür
   updateChartTheme();
 
   var id = 'chart-' + key;

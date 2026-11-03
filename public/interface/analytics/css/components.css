@@ -2675,7 +2675,7 @@ body.light-theme .goal-form { background: #ffffff; }
 #main-content.is-loading .pstat-sub { width: 75%; }
 #main-content.is-loading .kpi-value { width: 64px; }
 #main-content.is-loading #pro-header-meta,
-#main-content.is-loading #ps-meta { width: 300px; max-width: 100%; min-height: 14px; }
+#main-content.is-loading #ps-meta { width: fit-content; max-width: 100%; min-height: 14px; }   /* yer tutucu metin kadar: veri gelince satır sayısı değişmez */
 #main-content.is-loading #pro-header-meta > *,
 #main-content.is-loading #ps-meta > *,
 #main-content.is-loading .grid-item:not([data-widget^="prop-"]) .chart-wrap > *,

@@ -10,8 +10,8 @@
   --line: rgba(255,255,255,.08);
   --line2: rgba(255,255,255,.16);
   --accent: #8b7bff;
-  --sans: 'Geist', 'DM Sans', system-ui, sans-serif;
-  --mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --sans: 'Geist', 'Geist Fallback', 'DM Sans', system-ui, sans-serif;
+  --mono: 'Geist Mono', 'Geist Mono Fallback', 'JetBrains Mono', ui-monospace, monospace;
   --wrap: 1160px;
   --gutter: clamp(18px, 4vw, 32px);
   --r: 18px;

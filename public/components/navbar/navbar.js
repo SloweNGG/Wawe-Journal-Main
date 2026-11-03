@@ -1,7 +1,10 @@
 // Hızlı ekleme bu sayfada kullanılabilir mi? SPA geçişinde pencere body'de kalıyor ama
 // quick-add kullanmayan sayfada gizli (bkz. SpaRouter.astro, body[data-quick-add])
 function wwQuickAddReady() {
-  if (typeof window.quickAddOpen !== 'function' || !document.getElementById('quick-add-overlay')) return false;
+  var open = window.quickAddOpen;
+  if (typeof open !== 'function') return false;
+  // Gecikmeli yüklemede (quick-add-boot.js) pencere ilk açılışta kurulur; o ana kadar overlay yoktur
+  if (!open.__wwLazy && !document.getElementById('quick-add-overlay')) return false;
   var spa = !!document.querySelector('meta[name="astro-view-transitions-enabled"]');
   return !spa || document.body.hasAttribute('data-quick-add');
 }
@@ -16,6 +19,24 @@ function wwOpenAddTrade() {
   else window.location.href = '/add-trade.html';
 }
 window.wwOpenAddTrade = wwOpenAddTrade;
+
+// Sayfada açık (görünür) bir pencere var mı? Kapalı pencereler DOM'da kalır ve role="dialog" aria-modal="true"
+// taşır: yükseltme penceresi (.ww-up-modal, display:none kapsayıcıda) ve Hızlı Ekle'nin tarih seçicisi
+// (#qa-date-picker, visibility:hidden + opacity:0) "N" kısayolunu hep engelliyordu. Yalnızca görünen pencere sayılır.
+function wwDialogVisible(el) {
+  if (typeof el.checkVisibility === 'function') return el.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+  if (!el.getClientRects().length) return false;
+  var cs = window.getComputedStyle(el);
+  return cs.visibility !== 'hidden' && cs.opacity !== '0';
+}
+
+function wwOpenModalDialog() {
+  var list = document.querySelectorAll('.quick-add-overlay.active, [role="dialog"][aria-modal="true"]:not([hidden])');
+  for (var i = 0; i < list.length; i++) {
+    if (wwDialogVisible(list[i])) return list[i];
+  }
+  return null;
+}
 
 function wwIsProCached() {
   var plan = sessionStorage.getItem('ww_user_plan') || localStorage.getItem('ww_user_plan') || localStorage.getItem('ww_cached_plan');
@@ -1851,7 +1872,7 @@ function initNavEvents() {
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       var t = e.target;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      if (document.querySelector('.quick-add-overlay.active, [role="dialog"][aria-modal="true"]:not([hidden])')) return;
+      if (wwOpenModalDialog()) return;
       if (!wwQuickAddReady()) return;
       e.preventDefault();
       wwOpenAddTrade();
