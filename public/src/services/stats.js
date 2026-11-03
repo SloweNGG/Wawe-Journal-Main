@@ -7,8 +7,6 @@
 // ============================================================
 
 import { sb } from '../core/supabase.js';
-import { escapeHtml } from '../utils/helpers.js';
-import { showToast } from '../utils/ui.js';
 
 // ⭐ PERFORMANS: Stats cache
 var statsCache = null;

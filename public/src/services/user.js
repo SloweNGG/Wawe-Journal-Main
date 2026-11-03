@@ -4,8 +4,6 @@
 
 import { sb, requireAuth } from '../core/supabase.js';
 import { FEATURES, STRATEGIES_CACHE_TTL, INSTRUMENT_MULTIPLIERS } from '../core/config.js';
-import { safeLocalStorageGet } from '../core/storage.js';
-import { calcPnL } from '../utils/helpers.js';
 import { showToast } from '../utils/ui.js';
 
 // ── PLAN & PRO ──────────────────────────────────────────
