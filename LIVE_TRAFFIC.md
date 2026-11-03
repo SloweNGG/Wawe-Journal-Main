@@ -100,7 +100,7 @@ Storage kalır), aynı tur. Avatar sahte arka uçtan, `ETag` ile (304 destekleni
   `PERF_DIR=<araçlar> node scripts/perf/storage-session.mjs --base http://127.0.0.1:8788 [--avatar-kb 1500] [--avatar-cache max-age=3600]`.
 - `npm run build` ✓, `npm test` ✓ (520 test).
 
-### 1d — Parça 1–3 ölçümleri ve testler canlı Storage'a gitti mi? · `<1d>`
+### 1d — Parça 1–3 ölçümleri ve testler canlı Storage'a gitti mi? · `fe19b42`
 
 | Kaynak | Canlı Storage | Not |
 |---|---|---|
@@ -113,3 +113,43 @@ Storage kalır), aynı tur. Avatar sahte arka uçtan, `ETag` ile (304 destekleni
 
 Toplam ≈ **4 MB**, 5.2 GB'ın ~%0.08'i. Ölçüm araçları Storage kotasının nedeni değil. Gerçek hesap ölçümleri REST'e de gitti
 (okuma; 20 raporda ~800 istek, ~780 KB) ama o "cached egress" değil.
+
+## Sorun 2 — Realtime `JwtSignatureError` döngüsü
+
+### 2a — Realtime'a bağlanan yerler ve ritmi üreten mantık · `<2a>`
+
+| Yer | Kanal | Ne zaman | Hata ele alınıyor mu |
+|---|---|---|---|
+| `public/components/navbar/navbar.js:597` `loadNotifications` | `realtime_user_notifications_<uid>` (`notifications`, `user_id=eq.<uid>`) | navbar olan her sayfada, `getSession()` bir kullanıcı döndürünce | **Hayır**: `.subscribe()` geri çağrısız |
+| `public/src/services/payment.js:400` `checkAndSyncPaymentStatus` (bundle.js) | `ww_plan_listener_<uid[0..8]>` (`user_profiles` UPDATE) | bundle olan her sayfada (index dahil) | **Hayır** |
+| `public/interface/admin/js/admin-data.js:140, 197` | `admin-user-profiles-live`, `admin-payments-live` | yalnızca admin paneli | durum geri çağrısı var, döngü durdurma yok |
+
+Yeniden üretme (canlıya gitmeden): `scripts/perf/realtime-check.mjs` — sahte oturum + sayfa içinde sahte Phoenix sunucusu
+(`fake-realtime.mjs`), dashboard 60 sn, `master` build'i:
+
+| Sunucunun `phx_join` cevabı | 60 sn'de katılma | Ritim |
+|---|---|---|
+| ok | 2 | iki kanal bir kez katılır |
+| **error `JwtSignatureError: Failed to validate JWT signature`** | **18, durmuyor** | iki kanal × supabase-js / Phoenix `rejoinAfterMs` = 1 s, 2 s, 5 s, sonra **her 10 s** → kararlı durumda **dakikada 12** |
+| aynı hata + sunucu soketi kapatır | **117** | her saniye yeni soket (`reconnectAfterMs` 1 s'den başlar, kanal katılınca sıfırlanıyor) |
+| error `Token has expired` | 18 | aynı |
+
+- **Ritmi üreten:** supabase-js'in varsayılanı (`@supabase/phoenix` `Channel.rejoinTimer` + realtime-js `RECONNECT_INTERVALS
+  [1000, 2000, 5000, 10000]`, sınırsız). **Durmamasının nedeni bizim kod:** iki kanal da hata durumunu dinlemeden açılıyor;
+  token hiç değişmediği (yenilenmediği) için her deneme aynı token'la reddediliyor ve sonsuza kadar sürüyor.
+- Gözlenen "dakikada 12" oranı birebir aynı (2 kanal × her 10 s). Log'daki "4.0 s arayla 3 deneme, ~7 s bekleme" gruplanması
+  bizim ölçümümüzde "0.3 s arayla 2 deneme, ~10 s bekleme"; oran aynı, gruplama sunucu log zaman damgalarından olabilir.
+- **Kaynak (büyük olasılıkla):** Parça 2 ve 3'ün **sahte oturumu**. Sahte JWT'nin imzası `.sig` (geçersiz); HTTP istekleri
+  yakalanıyordu ama Puppeteer istek yakalaması WebSocket'leri görmez → her sahte oturumlu sayfa canlı Realtime'a bu token'la
+  bağlandı. 2026-11-03 06:00–06:08 UTC (09:00–09:08 yerel) = sıralı 20 denemelik CLS ölçümleri (her sayfa ~70 sn açık, tek
+  istemci), 06:09–06:26 UTC = paralel ekran görüntüsü / sürükleme / "N" denemeleri (birden çok istemci). 05:42 UTC'den beri
+  sürüyordu; Parça 2 (Windows, önceki günler) da aynı şeyi yapmış olmalı. Gerçek kullanıcıda imza hatası ancak başka projenin /
+  dönmüş bir JWT anahtarının token'ı localStorage'da kalırsa olur; ama süresi dolmuş token (`Token has expired`) aynı döngüyü
+  kurar.
+- Ek bulgu (araçta, uygulamada değil): sahte oturum her yeni sayfada oturumu yeniden yazıyordu. Süresi dolmuş + yenilenemeyen
+  oturum senaryosunda bu, login ↔ dashboard yönlendirme döngüsü kuruyordu (15 sn'de 645 geçiş); oturum artık sekme başına bir
+  kez yazılıyor. Gerçek tarayıcıda (oturum silinince geri gelmez) 1 yenileme denemesi + login'e yönlendirme, Realtime'a hiç
+  bağlanma yok — master'da da.
+- Araç: `scripts/perf/realtime-check.mjs` (`--rt ok|jwt-error|jwt-expired [--close] --session valid|expired|none`);
+  `mock-session.mjs`: `auth: 'refresh-fails'` (yenileme 400, `/auth/v1/user` 401), `expired`, `withSession`, `/auth/v1/token` geçerli
+  oturum döner.

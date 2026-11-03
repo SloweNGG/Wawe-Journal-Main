@@ -37,10 +37,11 @@ function sampleTrades(n, strats) {
 
 /**
  * Sahte arka uç (sayfa ve service worker ortak kullanır).
- * opts.avatar: { bytes: Buffer, cacheControl } → profilde Storage avatarı; opts.backtest: true → bir sentetik backtest hesabı.
+ * opts.avatar: { bytes: Buffer, cacheControl } → profilde Storage avatarı; opts.backtest: true → bir sentetik backtest hesabı;
+ * opts.auth: 'ok' | 'refresh-fails' (token yenileme 400 invalid_grant, /auth/v1/user 401: süresi dolmuş / iptal edilmiş oturum).
  * Dönen: { answer(req) → { status, headers, body: Buffer }, inserted, log, storage: { requests, bytes, notModified } }
  */
-export function createMockBackend({ plan = 'premium', trades = 40, avatar = null, backtest = false } = {}) {
+export function createMockBackend({ plan = 'premium', trades = 40, avatar = null, backtest = false, auth = 'ok' } = {}) {
   const exp = Math.floor(Date.now() / 1000) + 3600 * 24 * 30;
   const user = { id: USER_ID, email: 'perf@test.local', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: { tasks_completed: true }, created_at: '2026-01-01T00:00:00Z' };
   const session = { access_token: b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: USER_ID, exp, role: 'authenticated' }) + '.sig', refresh_token: 'r', expires_in: 3600 * 24 * 30, expires_at: exp, token_type: 'bearer', user };
@@ -77,6 +78,9 @@ export function createMockBackend({ plan = 'premium', trades = 40, avatar = null
       storage.bytes += avatar.bytes.length;
       return { status: 200, headers: { ...base, 'content-length': String(avatar.bytes.length) }, body: avatar.bytes };
     }
+    if (auth === 'refresh-fails' && u.pathname === '/auth/v1/token') return json({ code: 400, error_code: 'refresh_token_not_found', msg: 'Invalid Refresh Token: Refresh Token Not Found' }, 400);
+    if (auth === 'refresh-fails' && u.pathname.startsWith('/auth/v1/user')) return json({ code: 401, error_code: 'bad_jwt', msg: 'invalid JWT: token is expired' }, 401);
+    if (u.pathname === '/auth/v1/token') return json(session);   // giriş / yenileme: aynı (geçerli) oturum
     if (u.pathname.startsWith('/auth/v1/user')) return json(user);
     if (u.pathname.startsWith('/auth/v1/')) return json({});
     const table = (u.pathname.match(/^\/rest\/v1\/(?:rpc\/)?([a-z_]+)/) || [])[1] || '';
@@ -97,22 +101,29 @@ export function createMockBackend({ plan = 'premium', trades = 40, avatar = null
     if (u.pathname.startsWith('/functions/v1/')) return json({});
     return json(one ? null : []);
   }
-  return { answer, inserted, log, storage, session, user, journalId: JID };
+  const expiredSession = { ...session, expires_at: Math.floor(Date.now() / 1000) - 3600,
+    access_token: b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: USER_ID, exp: Math.floor(Date.now() / 1000) - 3600, role: 'authenticated' }) + '.sig' };
+  return { answer, inserted, log, storage, session, expiredSession, user, journalId: JID };
 }
 
-/** page: Puppeteer sayfası. Dönen { inserted, log, storage, backend } ölçüm sonrası kontrol için. */
-export async function mockSession(page, { plan = 'premium', trades = 40, lang = 'tr', avatar = null, backtest = false, realtime = 'ok', backend = null } = {}) {
+/**
+ * page: Puppeteer sayfası. realtime: 'ok' | 'jwt-error' | … | null (sahte Realtime kurma). withSession: false → localStorage'a
+ * oturum yazılmaz; expired: true → süresi dolmuş oturum yazılır. Dönen { inserted, log, storage, backend } ölçüm sonrası kontrol için.
+ */
+export async function mockSession(page, { plan = 'premium', trades = 40, lang = 'tr', avatar = null, backtest = false, realtime = 'ok', backend = null, withSession = true, expired = false } = {}) {
   const be = backend || createMockBackend({ plan, trades, avatar, backtest });
   await page.evaluateOnNewDocument((key, s, plan, lang, jid) => {
     try {
-      if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(s));
+      // Oturum sekme başına BİR kez yazılır: supabase-js oturumu silerse (ör. yenileme reddedildi) sonraki sayfada geri
+      // yazılmasın (yoksa login ↔ dashboard yönlendirme döngüsü kurulur; gerçek tarayıcıda olmayan bir durum)
+      if (s && !sessionStorage.getItem('__ww_mock_seeded')) { localStorage.setItem(key, JSON.stringify(s)); sessionStorage.setItem('__ww_mock_seeded', '1'); }
       localStorage.setItem('ww_user_plan', plan);
       localStorage.setItem('ww_language', lang);
       localStorage.setItem('ww_active_journal_id', jid);
-      localStorage.setItem('wj_wizard_done_' + s.user.id, 'true');
-      localStorage.setItem('wj_tour_done_' + s.user.id, 'true');
+      localStorage.setItem('wj_wizard_done_00000000-0000-4000-8000-000000000001', 'true');
+      localStorage.setItem('wj_tour_done_00000000-0000-4000-8000-000000000001', 'true');
     } catch (e) {}
-  }, 'sb-' + REF + '-auth-token', be.session, plan, lang, be.journalId);
+  }, 'sb-' + REF + '-auth-token', withSession ? (expired ? be.expiredSession : be.session) : null, plan, lang, be.journalId);
   if (realtime) await installFakeRealtime(page, { mode: realtime });
 
   await fulfillFrom(await page.createCDPSession(), be);
