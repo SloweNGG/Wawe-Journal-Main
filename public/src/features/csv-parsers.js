@@ -124,6 +124,4 @@ if (typeof window !== 'undefined') {
 
     return null;
   }
-
-  console.log('✅ csv-parsers.js (wrapper) yüklendi — ParserV2 aktif');
 }

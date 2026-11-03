@@ -609,8 +609,6 @@ window.loadNotifications = async function() {
     }
 
     if (user && user.id) {
-      console.log('🔔 [loadNotifications] Oturum açık kullanıcı ID:', user.id);
-
       // Gerçek zamanlı bildirim dinleyicisi (Supabase Realtime). WwRealtime (interface/shared/realtime-guard.js) kanalı
       // yalnızca geçerli oturumla açar ve token reddedilirse sonsuz yeniden denemeyi durdurur; yoksa kanal açılmaz.
       if (!window._wwNotifSubscribed && window.WwRealtime) {
@@ -623,7 +621,6 @@ window.loadNotifications = async function() {
               table: 'notifications',
               filter: 'user_id=eq.' + user.id
             }, function(payload) {
-              console.log('🔔 [loadNotifications Realtime] Veritabanından bildirim değişikliği:', payload);
               if (typeof window.loadNotifications === 'function') {
                 window.loadNotifications();
               }
@@ -758,8 +755,6 @@ window.loadNotifications = async function() {
 
       if (error) {
         console.warn('⚠️ [loadNotifications] notifications tablosu sorgu hatası:', error);
-      } else {
-        console.log('✅ [loadNotifications] notifications tablosundan çekilen kayıt sayısı:', notis ? notis.length : 0);
       }
 
       if (!error && Array.isArray(notis)) {
@@ -967,34 +962,6 @@ window.loadNotifications = async function() {
     window.renderNotifications();
   } catch (err) {
     console.error('Load notifications error:', err);
-  }
-};
-
-// Doğrulama ve test için konsoldan çağrılabilir yardımcı
-window.testSendNotification = async function(type, title, message) {
-  var sb = window.sb || window.supabase;
-  var user = window.SETTINGS_STATE?.currentUser;
-  if (!user || !user.id) {
-    var s = await sb?.auth?.getSession();
-    user = s?.data?.session?.user;
-  }
-  if (!sb || !user || !user.id) {
-    console.error('❌ Oturum açmış kullanıcı bulunamadı! Lütfen önce giriş yapın.');
-    return;
-  }
-  var { data, error } = await sb.from('notifications').insert([{
-    user_id: user.id,
-    type: type || 'info',
-    title_key: title || 'Test Bildirimi',
-    message_key: message || 'Bu bir test sistem bildirimidir.',
-    meta_data: {},
-    is_read: false
-  }]).select();
-  if (error) {
-    console.error('❌ Bildirim eklenirken hata oluştu:', error);
-  } else {
-    console.log('✅ Bildirim veritabanına eklendi:', data);
-    await window.loadNotifications();
   }
 };
 

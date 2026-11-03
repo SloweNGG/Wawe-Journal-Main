@@ -247,7 +247,6 @@ function ensureCsvParsers() {
     window.parseCsvByBroker = function(text, broker) {
       return _qaInlineParse(text, broker);
     };
-    console.log('✅ Inline CSV parser hazır');
   }
   return Promise.resolve();
 }
