@@ -296,6 +296,11 @@
   // =========================================================================
   // Row builders
   // =========================================================================
+  function dateError(raw) {
+    var v = raw == null ? '' : String(raw).trim();
+    return v ? 'tarih okunamadı ("' + v + '"), atlandı.' : 'tarih bulunamadı, atlandı.';
+  }
+
   function buildClosedTradeRows(rawHeaders, dataRows, mapping) {
     var rows = [];
     var errors = [];
@@ -343,6 +348,11 @@
         errors.push('Satır ' + lineNo + ': sembol/giriş/çıkış fiyatı eksik ya da geçersiz, atlandı.');
         return;
       }
+      // Tarihsiz satır asla "bugün" sayılmaz: hatalı satır olarak önizlemede gösterilir, içe aktarılmaz
+      if (!date) {
+        errors.push('Satır ' + lineNo + ': ' + dateError(get(row, 'date')));
+        return;
+      }
 
       if (pnl === null && lot !== null) {
         var mult = (Dict && typeof Dict.getMultiplier === 'function') ? Dict.getMultiplier(symbol) : 1;
@@ -360,7 +370,7 @@
         sl: sl, tp: tp,
         comment: comment ? String(comment).trim() : null,
         ticket: ticket ? String(ticket).trim() : null,
-        partial: false, warnings: rowWarnings
+        partial: false, warnings: rowWarnings, line: lineNo
       });
     });
 
@@ -395,6 +405,10 @@
 
       if (!symbol || price === null || qty === null || side === null) {
         errors.push('Satır ' + lineNo + ': eksik/geçersiz fill verisi, atlandı.');
+        return;
+      }
+      if (!date) {
+        errors.push('Satır ' + lineNo + ': ' + dateError(get(row, 'date')));
         return;
       }
       fills.push({ symbol: symbol, side: side, price: price, qty: qty, date: date, fee: fee, rowIndex: lineNo });
@@ -494,6 +508,9 @@
       warnings = warnings.concat(built.pairingWarnings);
     } else {
       built = buildClosedTradeRows(rawHeaders, dataRows, mapping);
+    }
+    if (mapping.date == null || mapping.date < 0) {
+      built.errors.unshift('Dosyada tarih sütunu bulunamadı; tarihi olmayan satırlar içe aktarılmaz.');
     }
 
     return {

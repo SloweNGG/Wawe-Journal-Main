@@ -1871,7 +1871,7 @@ async function fileToCsvText(file) {
           return;
         }
 
-        // Parser uyarıları (ör. tarihi okunamayan satırlar) hata listesinin sonunda gösterilir
+        // Atlanan satırlar (ör. tarihi olmayan / okunamayan) ve parser uyarıları önizlemede listelenir
         const previewNotes = (parsed.errors || []).concat(parsed.warnings || []);
         showBrokerPreview(parsed.rows, detected, previewNotes);
         if (badgeEl) badgeEl.innerHTML = badgeIcon('success');

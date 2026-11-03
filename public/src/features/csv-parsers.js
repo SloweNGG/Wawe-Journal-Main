@@ -34,8 +34,17 @@ if (typeof window !== 'undefined') {
       };
     }
 
+    // Tarihi okunamayan satır asla "bugün" sayılmaz (ParserV2 bunları zaten atlar; bu son kontrol): hatalı satır olarak
+    // önizlemede gösterilir, içe aktarılmaz
+    var errors = (result.errors || []).slice();
+    var dated = (result.rows || []).filter(function (r) {
+      if (formatDateISO(r.date)) return true;
+      errors.push('Satır ' + (r.line || '?') + ': tarih okunamadı, atlandı.');
+      return false;
+    });
+
     return {
-      rows: (result.rows || []).map(function(r) {
+      rows: dated.map(function(r) {
         var note = (r.comment && String(r.comment).trim()) ? String(r.comment).trim() : (r.notes || 'CSV Import');
         return {
           symbol: r.symbol,
@@ -45,8 +54,7 @@ if (typeof window !== 'undefined') {
           exit_price: r.exit,
           stop_loss: r.sl,
           take_profit: r.tp,
-          // Tarih yoksa/okunamazsa bugünün tarihi (DB NOT NULL için); kullanıcıya uyarı verilir (aşağıda)
-          trade_date: formatDateISO(r.date) || (window.WwTime ? window.WwTime.todayKey() : new Date().toISOString().split('T')[0]),
+          trade_date: formatDateISO(r.date),
           notes: note,
           pnl: r.pnl,
           gross_pnl: r.gross_pnl != null ? r.gross_pnl : null,
@@ -55,16 +63,8 @@ if (typeof window !== 'undefined') {
           ticket: r.ticket || null
         };
       }),
-      errors: result.errors || [],
-      warnings: (function () {
-        var w = (result.warnings || []).slice();
-        // Tarihsiz/okunamayan satırlar sessizce "bugün" olmasın: kullanıcı bilsin
-        var missing = (result.rows || []).filter(function (r) { return !formatDateISO(r.date); }).length;
-        if (missing > 0) {
-          w.push(missing + ' satırda tarih bulunamadı veya okunamadı; bu satırlar bugünün tarihiyle eklenecek. Dosyanızın tarih sütununu kontrol edin.');
-        }
-        return w;
-      })(),
+      errors: errors,
+      warnings: result.warnings || [],
       detected: result.detected || 'generic',
       confidence: result.confidence || 0,
       needsManualMapping: result.needsManualMapping || false,

@@ -23,7 +23,8 @@
 
   // Each signature lists NORMALIZED header tokens that, together, identify
   // the format. `required` tokens must ALL be present for the signature to
-  // even be considered; `weight` tokens contribute to the confidence score.
+  // even be considered (and at least one of `requireAny`, when given);
+  // `weight` tokens contribute to the confidence score.
   var SIGNATURES = [
     {
       broker: 'mt4',
@@ -53,6 +54,9 @@
     {
       broker: 'mt5',
       required: ['symbol', 'volume'],
+      // "Symbol" + "Volume" alone also fits generic exports (Date,Symbol,Side,Volume,…): at least one header only MT5
+      // writes (Time / Open Time / Close Time, Position, Deal, Swap, S / L, T / P) is required as well
+      requireAny: ['time', 'opentime', 'closetime', 'position', 'positionid', 'deal', 'swap', 'sl', 'tp'],
       weight: ['time', 'price', 'sl', 'tp', 'profit', 'position', 'commission', 'swap', 'positionid', 'totalpnl', 'positionpnl', 'comment'],
       isFillBased: false,
       explicitMap: function (rawHeaders) {
@@ -88,6 +92,11 @@
           map.dateOpen = timeIdx[0];
         } else if (timeIdx.length === 1) {
           map.date = timeIdx[0];
+        } else {
+          map.date = firstIndexOf(n, function(h) { return h === 'closedate' || h === 'date'; });
+          var openDateIdx = firstIndexOf(n, 'opendate');
+          if (map.date < 0) map.date = openDateIdx;
+          else if (openDateIdx >= 0) map.dateOpen = openDateIdx;
         }
 
         // PnL & Gross PnL
@@ -235,6 +244,7 @@
       var sig = SIGNATURES[i];
       var hasAllRequired = sig.required.every(function (tok) { return headerSet[tok]; });
       if (!hasAllRequired) continue;
+      if (sig.requireAny && !sig.requireAny.some(function (tok) { return headerSet[tok]; })) continue;
 
       var matchedWeight = sig.weight.filter(function (tok) { return headerSet[tok]; }).length;
       var totalWeight = sig.weight.length || 1;
