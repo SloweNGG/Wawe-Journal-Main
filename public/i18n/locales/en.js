@@ -272,6 +272,8 @@ export default {
   "bug_report.reply_placeholder": "Write a reply as Admin...",
   "bug_report.btn_send_reply": "Send Reply",
   "bug_report.filter_all": "All",
+  "bug_report.filter_answered": "Answered",
+  "bug_report.filter_pending": "In Review",
   "bug_report.support_online": "Tech Support: Active & Online",
   "bug_report.support_busy": "Tech Support: Busy (Delayed Response)",
   "bug_report.support_offline": "Tech Support: Offline",

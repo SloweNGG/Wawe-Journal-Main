@@ -101,7 +101,7 @@ yer alır; kanıtlanamayanlar **emin değilim** başlığında ve silinmedi.
 ## Ön sürümden kalan (temizlikle ilgisiz, dokunulmadı)
 
 - ✅ Düzeltildi (ayrı commit): `nav.menu_general`, `nav.menu_pro`, `nav.menu_account` hiçbir dilde yoktu; menü bölüm başlıkları üç dilde de Türkçe yedek metinle (GENEL / PRO / HESAP) görünüyordu. Eklendi — TR Genel / Pro / Hesap, EN General / Pro / Account, DE Allgemein / Pro / Konto (CSS büyük harf: TR'de görünüm aynı).
-- `bug_report.filter_answered`, `bug_report.filter_pending` EN / DE'de eksik.
+- ✅ Düzeltildi (ayrı commit): `bug_report.filter_answered`, `bug_report.filter_pending` EN / DE'de eksikti (EN'de ikisi, DE'de `filter_pending`). TR "Yanıtlananlar / İncelenenler"; "İncelenenler" filtresi rozetinde "İnceleniyor" yazan biletleri gösterdiği için rozetle aynı çeviri kullanıldı: EN Answered / In Review, DE (Beantwortet zaten vardı) / In Prüfung.
 
 ## Sonuç (uygulandı)
 

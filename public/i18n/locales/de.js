@@ -259,6 +259,7 @@ export default {
   "bug_report.btn_send_reply": "Antwort Senden",
   "bug_report.filter_all": "Alle",
   "bug_report.filter_answered": "Beantwortet",
+  "bug_report.filter_pending": "In Prüfung",
   "bug_report.support_online": "Technischer Support: Aktiv & Online",
   "bug_report.support_busy": "Technischer Support: Hohe Auslastung",
   "bug_report.support_offline": "Technischer Support: Offline",
