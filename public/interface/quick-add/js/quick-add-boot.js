@@ -172,6 +172,20 @@
     load().catch(function () {});
   }
 
+  // Ekran okuyucu etiketi ve ipucu nav.quick_add'den: hemen, i18n hazır olunca ve dil değişince yeniden yazılır
+  function labelFab(fab) {
+    function set() {
+      var label = global.i18n && typeof global.i18n.t === 'function' ? global.i18n.t('nav.quick_add') : '';
+      if (!label || label === 'nav.quick_add') label = 'Hızlı İşlem Ekle';
+      fab.setAttribute('aria-label', label);
+      fab.title = label;
+    }
+    set();
+    if (global.i18nReady && typeof global.i18nReady.then === 'function') global.i18nReady.then(set, function () {});
+    if (global.i18n && typeof global.i18n.onChange === 'function') global.i18n.onChange(set);
+  }
+  global.wwLabelQuickAddFab = labelFab;
+
   // quick-add.js'teki createFab ile aynı buton, aynı anda (DOMContentLoaded + 100 ms)
   function createFab() {
     if (document.getElementById('quick-add-fab')) return;
@@ -179,8 +193,7 @@
       var fab = document.createElement('button');
       fab.id = 'quick-add-fab';
       fab.className = 'quick-add-fab';
-      fab.setAttribute('aria-label', 'Add Trade');
-      fab.title = 'Add Trade';
+      labelFab(fab);
       fab.innerHTML = PLUS_ICON;
       fab.addEventListener('click', function () { global.quickAddOpen(); });
       fab.addEventListener('pointerenter', prefetch, { once: true });

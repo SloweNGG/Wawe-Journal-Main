@@ -2483,8 +2483,8 @@ async function fileToCsvText(file) {
       const fab = document.createElement('button');
       fab.id = 'quick-add-fab';
       fab.className = 'quick-add-fab';
-      fab.setAttribute('aria-label', 'Add Trade');
-      fab.title = 'Add Trade';
+      if (typeof window.wwLabelQuickAddFab === 'function') window.wwLabelQuickAddFab(fab);   // quick-add-boot.js
+      else fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
       fab.innerHTML = ICONS.plus;
       fab.addEventListener('click', openModal);
       document.body.appendChild(fab);

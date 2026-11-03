@@ -30,9 +30,17 @@ describe('quick-add lazy loading', () => {
   it('the FAB looks exactly like the one quick-add.js used to create', () => {
     const plus = qa.match(/plus: '([^']+)'/)[1];
     assert.ok(boot.includes("var PLUS_ICON = '" + plus + "'"));
-    for (const s of ["fab.id = 'quick-add-fab'", "fab.className = 'quick-add-fab'", "fab.setAttribute('aria-label', 'Add Trade')", "fab.title = 'Add Trade'"]) {
+    for (const s of ["fab.id = 'quick-add-fab'", "fab.className = 'quick-add-fab'", 'labelFab(fab);']) {
       assert.ok(boot.includes(s), s);
     }
+  });
+
+  it('the FAB label (aria-label + title) comes from nav.quick_add and follows language changes', () => {
+    for (const s of ["global.i18n.t('nav.quick_add')", "fab.setAttribute('aria-label', label)", 'fab.title = label', 'global.i18nReady.then(set', 'global.i18n.onChange(set)']) {
+      assert.ok(boot.includes(s), s);
+    }
+    assert.ok(qa.includes('window.wwLabelQuickAddFab(fab)'));   // quick-add.js creates the same button only if boot did not
+    assert.ok(!boot.includes("'Add Trade'") && !qa.includes("'Add Trade'"));
   });
 
   it('page-load theme code moved to the boot file (runs once, not twice)', () => {
