@@ -610,7 +610,7 @@ PERF_DIR=<araçlar> node scripts/perf/cls.mjs --base http://127.0.0.1:8788 --moc
   `public/`'te var olmalı. Eski hâlde bu test başarısız oluyor (denendi).
 - `npm run build` ✓, `npm test` ✓ (586 test).
 
-### 3e — Son ölçüm: sahte oturum ve gerçek test hesabı · `<3e>`
+### 3e — Son ölçüm: sahte oturum ve gerçek test hesabı · `22eb035`
 
 **Gerçek hesapla nasıl ölçüldü.** Bu daldaki kod hiçbir yerde yayında değil (`perf-tonight.wawe-journal.pages.dev` bu
 ağdan çözülmüyor: `pages.dev` DNS zaman aşımı). Bu yüzden `dist` yerelde `cf-serve.mjs` ile (`http://127.0.0.1:8799`)
