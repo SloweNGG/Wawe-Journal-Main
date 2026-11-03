@@ -46,7 +46,7 @@ yer alır; kanıtlanamayanlar **emin değilim** başlığında ve silinmedi.
 | `directionBadge` | `public/src/utils/ui.js` | hiç çağrılmıyor |
 | `NotificationManager`, `updateNotificationUI`, `dismissNotification`, `clearAllNotifications`, `toggleNotificationPanel`, `getTimeAgoSimple` | `public/src/features/notifications.js` | hiç çağrılmıyor; çağrılsalar tanımsız `window.notificationManager` yüzünden hata verirlerdi; kullandıkları `#notifBadge/#notifBell/#notifPanel` yalnızca ölü `notification-bell.html`'de |
 | `window.testSendNotification` | `public/components/navbar/navbar.js:974` | konsoldan deneme bildirimi yazan debug yardımcısı; hiçbir yerden çağrılmıyor |
-| 306 i18n anahtarı (TR / EN / DE) | `public/i18n/locales/*.js` | sınırlı eşleşmeyle kaynakta yok, dinamik önekle başlamıyor. Gruplar: plans 45, backtest 44, settings 38, register 21, dashboard 19, login 13, earnings 13, analytics_dash 12, addtrade 11, hero 10, journal 10, feature 8, prop 8, footer 7, onboarding 7, overtrade 6, language 5, stats 4, trades 4, features 3, references 3, cta 3, admin 3, strategies 3, calendar 3, nav 1 (`nav.pro_features`), `quotes`, `quote_authors` (diziler). Tam liste commit mesajında / betikte |
+| 311 i18n anahtarı (TR / EN / DE; 306 + silinen ölü dosyaların tek kullandığı 5: `nav.clear_all`, `nav.confirm_clear_all`, `references.empty`, `references.error`, `toast.upload_error`) | `public/i18n/locales/*.js` | sınırlı eşleşmeyle kaynakta yok, dinamik önekle başlamıyor. Gruplar: plans 45, backtest 44, settings 38, register 21, dashboard 19, login 13, earnings 13, analytics_dash 12, addtrade 11, hero 10, journal 10, feature 8, prop 8, footer 7, onboarding 7, overtrade 6, language 5, stats 4, trades 4, features 3, references 3, cta 3, admin 3, strategies 3, calendar 3, nav 1 (`nav.pro_features`), `quotes`, `quote_authors` (diziler). Tam liste commit mesajında / betikte |
 
 ## c) Tekrar eden kod
 
@@ -102,3 +102,27 @@ yer alır; kanıtlanamayanlar **emin değilim** başlığında ve silinmedi.
 
 - `nav.menu_general`, `nav.menu_pro`, `nav.menu_account` navbar'da `data-i18n` ile kullanılıyor ama hiçbir dilde yok (yedek metin görünüyor).
 - `bug_report.filter_answered`, `bug_report.filter_pending` EN / DE'de eksik.
+
+## Sonuç (uygulandı)
+
+Commit'ler: `19620b8` envanter · `73f72a9` 36 ölü görsel · `84b513a` ölü bileşen / dosyalar · `72f584a` bundle'daki kullanılmayan
+export'lar + eski bildirim yöneticisi · `7f61954` debug `console.log` + `testSendNotification` · `531b1ea` 311 i18n anahtarı ·
+`6d680f5` analytics `_t` birleştirme · `f88b10e` kullanılmayan import'lar. Her commit'ten sonra `npm run build` ve `npm test` (631) geçti;
+`bundle.js` her seferinde kaynaktan üretildi, `tests/bundle-sync.test.js` geçti.
+
+| Ölçü | Önce | Sonra |
+|---|---|---|
+| Silinen / eklenen dosya | — | 47 silindi; 2 eklendi (`i18n-t.js`, `CLEANUP.md`) + doğrulama aracı |
+| Kod / metin satırı (belge ve araç hariç) | — | **−4.654**, +35 |
+| Build çıktısı (`dist`) | 8.072 KB, 251 dosya | **7.680 KB, 210 dosya** (−392 KB) |
+| `dist` JS / görsel (webp+png+svg) | 2.143 / 2.066 KB | 2.057 / 1.520 KB |
+| `bundle.js` (ham) | 81.8 KB | 71.2 KB |
+| Dil dosyaları (tr / en / de, ham) | 138.3 / 138.2 / 146.0 KB | 120.1 / 120.2 / 126.7 KB |
+| İlk açılışta inen yerel JS, 8 sayfa toplamı (gzip) | 1.646,6 KB | **1.552,2 KB** (−94 KB; uygulama sayfası başına ~13 KB) |
+| İlk açılışta inen yerel CSS | 379,0 KB | 379,0 KB (silinen CSS hiçbir sayfada yüklenmiyordu) |
+
+Doğrulama (sahte oturum, canlı trafik sayacı; canlıya 0 istek, 0 WebSocket):
+- `verify-live-traffic` 13/13, `verify-release` 22/22, `verify-ux-bugs` 24/24.
+- Ekran görüntüleri 12 sayfa × 1440 / 390 px: 23 / 24 görüntü **0 piksel** fark. `1440-analytics` 1726 piksel: yalnızca zamanla dönen
+  İçgörüler kartı (aynı build'in kendi kendisiyle karşılaştırmasında da 1726 / 3021 / 3227 piksel; önce ↔ sonra çiftlerinden biri 0).
+- TR / EN / DE × 12 sayfa: konsol / sayfa hatası 0; yeni eksik anahtar yok (yalnızca önceden de eksik olan `nav.menu_*`, bkz. yukarı).

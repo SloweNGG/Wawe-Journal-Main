@@ -18,7 +18,7 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i < 0 ? d : (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true); };
 const req = createRequire(path.join(path.resolve(process.env.PERF_DIR || '.'), 'noop.js'));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const PAGES = ['index', 'dashboard', 'trades', 'strategies', 'calendar', 'backtest', 'analytics', 'settings', 'about', 'privacy', 'terms', 'contact'];
+const PAGES = opt('pages', null) ? String(opt('pages')).split(',') : ['index', 'dashboard', 'trades', 'strategies', 'calendar', 'backtest', 'analytics', 'settings', 'about', 'privacy', 'terms', 'contact'];
 const PUBLIC = new Set(['index', 'about', 'privacy', 'terms', 'contact']);
 
 if (opt('diff', null)) {
