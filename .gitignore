@@ -33,3 +33,6 @@ promo-captures/
 
 # Gerçek test hesabıyla ölçüm için Chrome profili (oturum burada kalır; scripts/perf/lighthouse.mjs --login). ASLA commit etmeyin.
 .perf-profile/
+
+# scripts/perf/verify-strategy-pdf.mjs --out verilmezse üretilen PDF / PNG çıktıları
+pdf-check/
