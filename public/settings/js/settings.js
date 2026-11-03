@@ -780,6 +780,35 @@ window.getPaymentMethods = function() {
 // ============================================================
 // ⭐ AVATAR FONKSİYONLARI
 // ============================================================
+// Avatar en çok ~96 px gösteriliyor; orijinal (2 MB'a kadar) yerine en uzun kenarı 256 px WebP (yoksa JPEG) yüklenir.
+// Dosya adı her yüklemede yeni olduğu için içerik hiç değişmez: 1 yıl önbellek (eskiden 1 saat, sonra yeniden iniyordu).
+var AVATAR_MAX_PX = 256;
+var AVATAR_CACHE_SECONDS = '31536000';
+
+function shrinkAvatar(file) {
+  // GIF (hareketli olabilir) ve SVG olduğu gibi kalır
+  if (!/^image\/(png|jpe?g|webp|bmp)$/i.test(file.type) || typeof document === 'undefined') return Promise.resolve(file);
+  return new Promise(function(resolve) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var scale = Math.min(1, AVATAR_MAX_PX / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      var done = function(blob) { resolve(blob && blob.size < file.size ? blob : file); };
+      canvas.toBlob(function(webp) {
+        if (webp && webp.type === 'image/webp') return done(webp);
+        canvas.toBlob(done, 'image/jpeg', 0.86);
+      }, 'image/webp', 0.86);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function uploadAvatar(file) {
   if (!file || !file.type.startsWith('image/')) {
     showMsg(t('toast.invalid_image'), 'error');
@@ -806,7 +835,9 @@ async function uploadAvatar(file) {
     return null;
   }
 
-  var ext = file.name.split('.').pop();
+  file = await shrinkAvatar(file);
+  // küçültülmüş dosya Blob'dur (adı yok): uzantı türünden; küçültülmediyse orijinal adın uzantısı
+  var ext = file.name ? file.name.split('.').pop() : (file.type === 'image/webp' ? 'webp' : 'jpg');
   var fileName = 'avatars/' + user.id + '_' + Date.now() + '.' + ext;
 
   wwLog.log('📤 Avatar yükleniyor:', fileName);
@@ -827,7 +858,8 @@ async function uploadAvatar(file) {
   }
 
   var uploadResult = await sb.storage.from('avatars').upload(fileName, file, {
-    cacheControl: '3600',
+    cacheControl: AVATAR_CACHE_SECONDS,
+    contentType: file.type || undefined,
     upsert: true
   });
 

@@ -1940,7 +1940,7 @@ import Layout from '../layouts/Layout.astro';
                   var bucket = buckets[b];
                   var { error: upErr } = await sb.storage.from(bucket).upload(storagePath, blobToUpload, {
                     contentType: 'image/jpeg',
-                    cacheControl: '3600',
+                    cacheControl: '31536000',   // adı benzersiz, içerik değişmez: 1 yıl (eskiden 1 saat)
                     upsert: true
                   });
                   if (!upErr) {

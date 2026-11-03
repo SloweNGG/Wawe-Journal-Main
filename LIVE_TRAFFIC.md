@@ -39,3 +39,20 @@ Supabase panosundaki günlük "Cached Egress" grafiğine bakmak gerekiyor (bkz. 
 
 - Test: `tests/no-storage-media.test.js` (yeni): `src/` ve `public/` içinde Supabase Storage adresi (`supabase.co/storage`)
   yazılamaz; büyük / herkese açık medya `public/` altından (Cloudflare) verilmeli.
+
+### 1b — Tekrarlanan indirmeler · `<1b>`
+
+| Madde | Durum / yapılan |
+|---|---|
+| Değişmeyen dosyalara uzun `Cache-Control` | Avatar ve hata raporu görüntüsü yüklemesi `cacheControl: '3600'` → **`'31536000'`** (1 yıl). İkisinin de adı her yüklemede yeni, içerik hiç değişmiyor. (`settings.js`, `report-bug.astro`) |
+| Mevcut dosyalar (1 saatlik önbellekle yüklenmiş) | Storage meta verisine yazmak canlıya yazma olduğu için **dokunulmadı**. Bunun yerine service worker (`public/sw.js`) `…/storage/v1/object/public/avatars/…` adreslerini **önce önbellekten** veriyor: ayrı, deploy'da silinmeyen `wawe-storage-v1` önbelleği, en çok 40 dosya, CORS ile (Storage `access-control-allow-origin: *` döner; opak yanıt yok). Sorgu dizgili adresler, diğer bucket'lar, imzalı adresler ve REST'e dokunulmuyor. `CACHE_VERSION` `wawe-v51` → `wawe-v52`. |
+| Orijinal boyutta avatar (≤ 2 MB, ~32 px gösteriliyor) | Yüklemeden önce tarayıcıda en uzun kenar **256 px**, WebP (desteklenmezse JPEG) 0.86; sonuç büyükse orijinal. GIF / SVG olduğu gibi. Chrome'da: 1600×1600 JPEG 578 KB → 256×256 WebP 37 KB; 3000×2000 PNG 381 KB → 47 KB. Mevcut avatarlar kullanıcı yeniden yükleyene kadar eski boyutunda kalır. |
+| Her açılışta yeniden üretilen imzalı URL | Kodda imzalı URL yok (1a). |
+| Aynı oturumda aynı dosyayı bir kez indir | Aynı adres: tarayıcı önbelleği + artık SW önbelleği. |
+| Büyük ve değişmeyen veri için IndexedDB / Cache Storage | Backtest cTrader ayları zaten IndexedDB'de (1a, satır 7). Avatarlar artık Cache Storage'da. |
+| Kullanıcının görmediği veriyi önden indirme | Landing videoları (`preload="auto"`) 23 Ekim'de kalkmıştı; `tests/no-storage-media.test.js` geri gelmesini engelliyor. Admin avatarları ve hata raporu görüntüleri zaten `loading="lazy"`. |
+
+- Test: `tests/sw-storage.test.js` (yeni; ilk istek ağdan CORS ile, ikincisi önbellekten; başka bucket / sorgu / REST dokunulmuyor;
+  40 dosya sınırı; `activate` avatar önbelleğini silmiyor; yükleme 256 px + 1 yıl + benzersiz ad).
+- `.gitignore`: `.perf-profile/` (perf/tonight'taki satır bu dalda yoktu).
+- `npm run build` ✓, `npm test` ✓ (514 test).
