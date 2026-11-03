@@ -282,8 +282,11 @@ fark var. Düzen farkı yok.
 ### 2a — Hızlı Ekle ilk kullanımda · `1f29ee6`
 - dashboard, analytics, calendar, strategies, trades: 6 dosya (~210 KB ham: broker-dictionary, broker-detector,
   fill-pairing, parser-v2, quick-modal-i18n, quick-add) yerine yalnızca yeni `quick-add-boot.js` (~8 KB) yükleniyor.
+  Güncel boyut (chore/cleanup, `d10dfeb` sonrası): **9,1 KB ham / 2,7 KB gzip** — + düğmesinin etiketi artık `nav.quick_add`'den
+  geliyor ve dil değişince yenileniyor (`labelFab`).
 - `quick-add-boot.js`:
   - Sağ alttaki **+ (FAB)** butonunu eskisiyle aynı anda (DOMContentLoaded + 100 ms), aynı id/sınıf/ikon/etiketle oluşturur.
+    (`d10dfeb`'den beri etiket ve ipucu sabit "Add Trade" yerine üç dilde `nav.quick_add`.)
   - `quick-add.js`'in en üstündeki sayfa açılışı tema kodu (body teması, yazı boyutu, özel renkler, `storage` /
     `themeChanged` dinleyicileri) **birebir** buraya taşındı (görünüm aynı kalsın; iki kez çalışmasın diye
     quick-add.js'ten çıkarıldı).
@@ -364,7 +367,7 @@ Dışarıdan kullananlar:
 | `public/src/features/csv-parsers.js` (bundle.js) | `parseCsvByBroker` / `detectBroker` çağrı anında `ParserV2` / `BrokerDetector` kullanır | yalnızca Hızlı Ekle içinden çağrılıyor; o an yüklü |
 | `src/pages/add-trade.astro` | `BrokerDictionary` | kendi `broker-dictionary.js` etiketini yüklüyor, değişmedi |
 | `src/components/SpaRouter.astro` | `#quick-add-fab` / `#quick-add-container` gizleme CSS'i | değişmedi |
-| `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | kendi `quickAddOpen`'larını tanımlar | hiçbir sayfada kullanılmıyor (ölü kod) |
+| `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | kendi `quickAddOpen`'larını tanımlar | hiçbir sayfada kullanılmıyor (ölü kod) — ✅ silindi (chore/cleanup `84b513a`) |
 
 Grafik kütüphaneleri: ApexCharts → dashboard.js (`mountApex`, `renderExpandedChart`), analytics `chart-renderers.js`
 (`renderOrUpdateApex` + 11 grafik), strategies.js (sparkline, karşılaştırma, equity, büyütme); `public/src/features/theme.js`
@@ -714,6 +717,17 @@ makinede alındı. Sahte oturumun FCP'si kaydedilmedi.)
 - [ ] Canlıda `/quick-add-modal.html` konsolda 404 vermiyor.
 - [ ] PDF raporları (dashboard + analytics): DM Sans fontu değişmedi (ayrı dosya, `/fonts/pdf/`).
 
+# Kullanıcı hataları (fix/ux-bugs)
+
+Dal: `fix/ux-bugs` (kaynak: `release/combined`, 868974c). Üç commit; her birinden sonra `npm run build` ve `npm test` geçti.
+Tarayıcı kontrolü: `scripts/perf/verify-ux-bugs.mjs` (sahte oturum + taklit Realtime + canlı trafik sayacı), **24/24**, canlıya 0 istek.
+
+| # | Hata | Neden | Düzeltme | Commit | Kontrol |
+|---|---|---|---|---|---|
+| 1 | Takvimde Hızlı Ekle ile kaydettikten hemen sonra + butonu pencereyi açmıyor; kaydedilen işlem takvimde sayfa yenilenmeden görünmüyor | "işlem kaydedildi" toast'ı (z 9999) + butonuyla (z 999) aynı köşedeydi ve ilk tıklamayı alıyordu; takvim `trade-saved` olayını dinlemiyordu | Hızlı Ekle olan sayfalarda toast butonun üstünde (`body[data-quick-add] .ww-toast-container`); takvim her kayıtta bir kez yeniden çekiyor | `f1e7b99` | K1–K6 (masaüstü + mobil), `tests/ux-bugs.test.js` |
+| 2 | Bildirimler dashboard açılınca okundu oluyor (rapor) | Yeniden üretilemedi: açılışta okundu yazan kod yok; görülen yazmalar elle "Tümünü okundu"dan. Aynı yerdeki `user_profiles` PATCH'i 5 dk'lık `last_active` sinyali; değişmemiş e-posta / kullanıcı adını da her seferinde yeniden yazıyordu | Açılışta / yenilemede okundu yazılmadığı, rozetin kaldığı ve düğmenin okundu yazdığı testle sabitlendi; e-posta / kullanıcı adı yalnızca ilk seferde ve değişince gönderiliyor (`supabase.js`, bundle yeniden üretildi) | `62ba20e` | B1–B4 |
+| 3 | Yükseltme penceresi: açıkken `aria-hidden="true"`, odak tuzağı yok, Tab arkadaki navbar'a gidiyor | Kapsayıcı açılınca `aria-hidden` kaldırılmıyordu; odak yönetimi yoktu | Açıkken `aria-hidden` yok, pencere dışı `inert`, odak "Yükselt" düğmesine (görünürlük geçişinden sonra), Tab / Shift+Tab içeride döner; kapanınca `inert` kalkar, odak açan öğeye döner, `aria-hidden` geri gelir. Esc / × / arka plan / "N" önceki gibi | `30f86ca` | M1–M7 (önce 2/8, sonra 8/8) |
+
 # Bilinen, bu işten bağımsız hatalar
 
 Düzeltilmedi, yalnızca listelendi. Kaynak: parça 1 tarayıcı taraması (oturumsuz 8 sayfa: index, login, register,
@@ -727,8 +741,8 @@ Hepsi baseline'da (parça 1 öncesi ya da parça 1 sonu) da aynı.
 | index, settings (oturumsuz → index) | temiz | — |
 | Uygulama sayfaları (sahte oturum: dashboard, analytics, calendar, strategies, trades, backtest) | 404 / konsol hatası yok | — |
 | Hızlı Ekle olan tüm sayfalar | ✅ **KAPANDI (parça 3c).** **"N" kısayolu hiç çalışmıyor.** Kısayol, sayfada `[role="dialog"][aria-modal="true"]:not([hidden])` varsa çıkıyor; kapalı yükseltme penceresi `.ww-up-modal` bu öznitelikleri taşıyor ve `hidden` değil. Önceden quick-add'in kendi tarih seçicisi (`qa-date-picker`) de aynı nedenle engelliyordu | kısayol: `public/components/navbar/navbar.js`; pencere: `src/components/UpgradeModal.astro:5` |
-| `/calendar.html` | Hızlı Ekle ile işlem kaydedildikten sonra + butonuna tekrar basınca pencere açılmıyor (testte; baseline'da da aynı) | nedeni araştırılmadı |
+| `/calendar.html` | ✅ **KAPANDI (fix/ux-bugs `f1e7b99`).** Hızlı Ekle ile işlem kaydedildikten sonra + butonuna tekrar basınca pencere açılmıyor (testte; baseline'da da aynı). Neden: "işlem kaydedildi" toast'ı + butonunun üstündeydi ve ilk tıklamayı alıyordu | `public/styles.css`, `calendar.js` (aşağıda "Kullanıcı hataları") |
 | navbar | `#nav-add-trade` tıklama dinleyicisi var ama bu id'li buton hiçbir yerde oluşturulmuyor | `navbar.js` |
-| — | Kullanılmayan bileşenler: `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | ölü kod |
-| Yükseltme penceresi (`UpgradeModal.astro`) | Açıkken odak pencereye taşınmıyor, Tab arkadaki navbar'a gidiyor (odak tuzağı yok); kapsayıcı açıkken de `aria-hidden="true"` (ekran okuyucu pencereyi görmeyebilir). Parça 3c denemesinde görüldü; önce de aynı | `src/components/UpgradeModal.astro:4`, `openUpgradeModal` |
-| Canlı dashboard (giriş sonrası) | Sayfa açılışında `PATCH /rest/v1/user_profiles`, `rpc/mark_notifications_as_read` ve `PATCH /rest/v1/notifications` istekleri atıyor (3e'de salt okuma koruması engelledi). Hata değil olabilir ama "sayfayı açmak veri yazmaz" varsayımı doğru değil | canlı `master` build'i |
+| — | ✅ **KAPANDI (chore/cleanup `84b513a`, silindi).** Kullanılmayan bileşenler: `src/components/quick-add/*.tsx`, `QuickAddFAB.tsx`, `QuickAddModal.astro` | ölü kod |
+| Yükseltme penceresi (`UpgradeModal.astro`) | ✅ **KAPANDI (fix/ux-bugs `30f86ca`).** Açıkken odak pencereye taşınmıyor, Tab arkadaki navbar'a gidiyor (odak tuzağı yok); kapsayıcı açıkken de `aria-hidden="true"` (ekran okuyucu pencereyi görmeyebilir). Parça 3c denemesinde görüldü; önce de aynı | `src/components/UpgradeModal.astro:4`, `openUpgradeModal` |
+| Canlı dashboard (giriş sonrası) | ✅ **KAPANDI (fix/ux-bugs `62ba20e`).** Bildirim yazmaları sayfa açılışından değil, elle kullanılan pencerede "Tümünü okundu"dan geliyordu (açılışta okundu yazılmadığı testle sabitlendi); `user_profiles` PATCH'i 5 dakikalık `last_active` sinyali (gerekli), e-posta / kullanıcı adı artık yalnızca değişince yazılıyor. Eski not: Sayfa açılışında `PATCH /rest/v1/user_profiles`, `rpc/mark_notifications_as_read` ve `PATCH /rest/v1/notifications` istekleri atıyor (3e'de salt okuma koruması engelledi). Hata değil olabilir ama "sayfayı açmak veri yazmaz" varsayımı doğru değil | canlı `master` build'i |

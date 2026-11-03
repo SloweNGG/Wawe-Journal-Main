@@ -126,3 +126,40 @@ Doğrulama (sahte oturum, canlı trafik sayacı; canlıya 0 istek, 0 WebSocket):
 - Ekran görüntüleri 12 sayfa × 1440 / 390 px: 23 / 24 görüntü **0 piksel** fark. `1440-analytics` 1726 piksel: yalnızca zamanla dönen
   İçgörüler kartı (aynı build'in kendi kendisiyle karşılaştırmasında da 1726 / 3021 / 3227 piksel; önce ↔ sonra çiftlerinden biri 0).
 - TR / EN / DE × 12 sayfa: konsol / sayfa hatası 0; yeni eksik anahtar yok (yalnızca önceden de eksik olan `nav.menu_*`, bkz. yukarı).
+
+## Sonraki commit'ler (chore/cleanup, temizlik sonrası düzeltmeler)
+
+Temizlikten sonra aynı dala eklenen, davranış değiştiren düzeltmeler (her biri ayrı commit; her commit'ten sonra `npm run build`
+ve `npm test` geçti; tarayıcı kontrolleri sahte oturumla, canlı trafik sayacı 0).
+
+| Commit | Ne | Kontrol |
+|---|---|---|
+| `13aba1f` | `nav.menu_general / menu_pro / menu_account` üç dilde (menü başlıkları her dilde Türkçeydi) | tarayıcı TR / EN / DE |
+| `eeec479` | `bug_report.filter_answered / filter_pending` EN / DE | tarayıcı |
+| `828a904` | Hiçbir dilde olmayan 14 ana sözlük anahtarı (`trades.table.*`, `common.previous/next`, `toast.load_error`, …) + Hızlı Ekle'de TR'de eksik 8 anahtar; üç dilin anahtar setlerini karşılaştıran test | `tests/i18n-keys.test.js` |
+| `0361865` | Strateji PDF'leri Helvetica yerine gömülü DM Sans (ş ğ ı İ bozuluyordu) | `scripts/perf/verify-strategy-pdf.mjs` |
+| `29f4fdc` | "Tüm stratejiler" PDF'i hep hata veriyordu (`theme: 'dark'` autoTable'da yok) | aynı |
+| `0e3e544` | Strateji PDF'leri dashboard PDF'iyle aynı görünüm (yazılar beyaz sayfada beyazdı): siyah zemin her sayfada, kart başlık, zebra, yeşil / kırmızı K/Z, alt bilgi | aynı: her sayfa boyalı, metin kontrastı ≥ 3:1 (60/60) |
+| `ae44e4b` | Hata bildirimi eki sınırı 10 MB → 5 MB (ipucuyla aynı), mesaj üç dilde | tarayıcı (6 MB ret, 4 MB kabul) |
+| `d10dfeb` | Hızlı Ekle + düğmesinin ekran okuyucu etiketi / ipucu `nav.quick_add` ile üç dilde, dil değişince yenileniyor | `tests/quick-add-lazy.test.js` |
+| `ae1efd3` | Kodda sabit kullanılan ama hiçbir dilde olmayan anahtarları yakalayan test (ana, landing, giriş, Hızlı Ekle sözlükleri; dinamik önekler hariç) | `tests/i18n-keys.test.js` |
+| `72d8a3c` | CSV: `Date,Symbol,Side,Volume,…` genel dosyası MT5 sanılmıyor (MT5'e özgü başlık şartı); tarihi olmayan / okunamayan satır **asla bugün sayılmıyor**, önizlemede hata satırı olarak gösterilip içe aktarılmıyor | `tests/csv-import-dates.test.js` |
+| `cd5ed9f` | `tests/fixtures/csv-import/` örnek dosyaları (Türk formatı, genel formatın 5 varyasyonu, MT5, hatalı tarih, tarih sütunu yok); iki saat diliminde tarihler dosyadakiyle birebir | aynı |
+| `749a65e` | Kullanılmayan CSV broker seçicisi ve 4 anahtarı kaldırıldı (ayrıştırıcı seçimi hiç almıyordu; algılama hep otomatikti) | tarayıcı |
+| `d26ae36` | Hata bildiriminde "PNG, JPG, WEBP (Maksimum 5MB)" ipucu dosya alanının altında, üç dilde | tarayıcı |
+| `92e9896` | add-trade CSV içe aktarması tarihi boş / okunamayan satıra "şimdi" yazmıyor, atlıyor | `tests/csv-import-dates.test.js` |
+| `1fdfe1c` | `supabase/tests/csv_import_today_dates_check.sql`: bu hatadan etkilenen işlemleri bulan salt okunur sorgu | yerel PG17'de denendi |
+| `48d408b` | add-trade doğrudan açılışta (yenileme, yer imi) çalışmıyordu: init `requireAuth`'u bundle.js yüklenmeden çağırıyordu (`f0e153e`, 2026-09-18'den beri). `whenAppReady` ile başlıyor; ondalık düzeltmesi SPA geçişinde de uygulanıyor | `tests/add-trade-init.test.js`, `scripts/perf/verify-add-trade.mjs` (doğrudan + SPA × tek işlem, toplu, CSV: 15/15; eski kodda 10/15) |
+| `d844a6f` | Hata bildirimindeki "✓ Sistem Tanısı Dahil (…)" üç dilde, dil değişince yenileniyor | tarayıcı |
+| `90a42b0` | Toplu yapıştırmada (Hızlı Ekle ve add-trade) tarihsiz satırlar için metin kutusunun altında soluk "bugün / today / heute" etiketi, satır numaralarıyla | tarayıcı |
+| `0b70503` | MT5 "Open Time … Close Time" dosyası XTB değil MT5 olarak algılanıyor (XTB'ye özgü sütun şartı); XTB örnek dosyası eklendi | `tests/csv-import-dates.test.js` |
+| `381961f` | `.gitignore`: `pdf-check/` (verify-strategy-pdf varsayılan çıktısı) | — |
+
+**Güncel test sayısı: 665** (temizlik sonunda 631).
+
+**CSV tarih kontrolü (canlı):** `supabase/tests/csv_import_today_dates_check.sql` 1. sorgusu kullanıcı tarafından canlıda (Supabase SQL
+Editor) çalıştırıldı; sonuç **boş** — tarihi içe aktarma günü / anı olarak kaydedilmiş işlem yok, bu hatadan etkilenen kullanıcı yok.
+
+Kalan, bilinen: XTB dışa aktarımındaki "Gross P/L" sütunu ayrıştırıcıda tanınmıyor, K/Z fiyatlar / lot / komisyon / swap'tan
+hesaplanıyor (örnekte doğru net K/Z); add-trade toplu ekleme penceresinin kendi metinleri (başlık, açıklama, düğmeler) hâlâ
+yalnızca Türkçe; `.gitignore`'da `.perf-profile/` iki kez geçiyor (zararsız).

@@ -15,6 +15,7 @@
 -- İki sorgu var; SQL Editor yalnızca son sorgunun sonucunu gösterdiği için birini seçip (işaretleyip) çalıştırın.
 -- İkisi de yalnızca SELECT'tir: hiçbir şey yazmaz, silmez, kilitlemez.
 -- "Parti" = aynı kullanıcı + defter + aynı dakika içinde eklenen işlemler (bir içe aktarma).
+-- Sonuç (2026-11-03, canlı, kullanıcı çalıştırdı): 1. sorgu boş — etkilenen kullanıcı / işlem yok.
 -- ============================================================
 
 
