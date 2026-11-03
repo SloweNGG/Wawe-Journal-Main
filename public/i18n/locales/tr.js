@@ -8,6 +8,9 @@ export default {
 
   // ⭐ NAVIGATION - TÜRKÇE
   "nav.pro": "Pro",
+  "nav.menu_general": "Genel",
+  "nav.menu_pro": "Pro",
+  "nav.menu_account": "Hesap",
   "nav.current_account": "Aktif Hesap",
   "nav.analytics_dashboard": "Analiz",
   "nav.theme_customization": "Tema Özelleştirme",

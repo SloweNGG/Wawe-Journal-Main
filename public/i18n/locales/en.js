@@ -8,6 +8,9 @@ export default {
 
   // ⭐ NAVIGATION
   "nav.pro": "Pro",
+  "nav.menu_general": "General",
+  "nav.menu_pro": "Pro",
+  "nav.menu_account": "Account",
   "nav.current_account": "Current Account",
   "nav.analytics_dashboard": "Analytics",
   "nav.theme_customization": "Theme Customization",

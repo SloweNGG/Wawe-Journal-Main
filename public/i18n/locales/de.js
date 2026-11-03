@@ -8,6 +8,9 @@ export default {
 
   // ⭐ NAVIGATION - ALMANCA
   "nav.pro": "Pro",
+  "nav.menu_general": "Allgemein",
+  "nav.menu_pro": "Pro",
+  "nav.menu_account": "Konto",
   "nav.current_account": "Aktives Konto",
   "nav.analytics_dashboard": "Analyse",
   "nav.theme_customization": "Theme-Anpassung",

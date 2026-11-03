@@ -100,7 +100,7 @@ yer alır; kanıtlanamayanlar **emin değilim** başlığında ve silinmedi.
 
 ## Ön sürümden kalan (temizlikle ilgisiz, dokunulmadı)
 
-- `nav.menu_general`, `nav.menu_pro`, `nav.menu_account` navbar'da `data-i18n` ile kullanılıyor ama hiçbir dilde yok (yedek metin görünüyor).
+- ✅ Düzeltildi (ayrı commit): `nav.menu_general`, `nav.menu_pro`, `nav.menu_account` hiçbir dilde yoktu; menü bölüm başlıkları üç dilde de Türkçe yedek metinle (GENEL / PRO / HESAP) görünüyordu. Eklendi — TR Genel / Pro / Hesap, EN General / Pro / Account, DE Allgemein / Pro / Konto (CSS büyük harf: TR'de görünüm aynı).
 - `bug_report.filter_answered`, `bug_report.filter_pending` EN / DE'de eksik.
 
 ## Sonuç (uygulandı)
