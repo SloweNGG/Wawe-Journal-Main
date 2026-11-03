@@ -191,7 +191,7 @@ Tarayıcıda (`realtime-check.mjs`, dashboard, 45 sn; sahte sunucu; canlıya git
 - Admin paneli kanallarına (`admin-data.js`) dokunulmadı: zaten durum geri çağrıları var ve yalnızca admin açıyor.
 - `npm run build` ✓, `npm test` ✓ (532 test).
 
-## Ortak kural — canlıya kaçak trafik (3) · `<3>`
+## Ortak kural — canlıya kaçak trafik (3) · `1f00e64`
 
 - Yeni `scripts/perf/live-guard.mjs`:
   - `watchLive(browser, { fulfilled })`: tarayıcının her hedefinde (sayfa, service worker, diğer worker'lar) CDP Network
