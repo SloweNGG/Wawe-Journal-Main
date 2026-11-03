@@ -57,3 +57,32 @@ describe('2 — notifications are not marked read on page open; profile heartbea
     assert.deepEqual(writes, ['email+last_active+username', 'last_active', 'email+last_active+username']);
   });
 });
+
+describe('3 — upgrade modal accessibility', () => {
+  const src = read('src/components/UpgradeModal.astro');
+  // fonksiyon gövdesi: tanımdan bir sonraki "\n  };\n" (2 boşluk girintili kapanış) satırına kadar
+  const fn = (name) => { const a = src.indexOf('window.' + name + ' = function'); return src.slice(a, src.indexOf('\n  };\n', a)); };
+  it('closed markup unchanged: backdrop aria-hidden="true", dialog role / aria-modal / aria-labelledby → title', () => {
+    assert.match(src, /<div id="ww-upgrade-modal-backdrop" class="ww-up-backdrop" aria-hidden="true" style="display:none;">\s*<div class="ww-up-modal" role="dialog" aria-modal="true" aria-labelledby="ww-up-notice-title">/);
+    assert.match(src, /id="ww-up-notice-title"/);
+  });
+  it('open: remembers the opener, removes aria-hidden, makes the background inert, focuses the primary button after activation', () => {
+    const o = fn('openUpgradeModal');
+    assert.match(o, /a11y\.opener = active && active !== document\.body && !backdrop\.contains\(active\) \? active : null;/);
+    assert.match(o, /backdrop\.removeAttribute\('aria-hidden'\);/);
+    assert.match(o, /if \(!wasOpen\) setBackgroundInert\(backdrop, true\);/);
+    assert.match(o, /getElementById\('ww-up-btn-upgrade'\)/);
+    assert.match(o, /backdrop\.classList\.add\('active'\);\s*requestAnimationFrame\(focusFirst\);\s*setTimeout\(focusFirst, 260\);/);
+  });
+  it('close: removes inert, returns focus to the opener, restores aria-hidden', () => {
+    const c = fn('closeUpgradeModal');
+    assert.match(c, /setBackgroundInert\(backdrop, false\);[\s\S]*opener\.focus\(\{ preventScroll: true \}\)[\s\S]*backdrop\.setAttribute\('aria-hidden', 'true'\);/);
+  });
+  it('Tab / Shift+Tab are trapped inside; Esc / × / backdrop handlers kept', () => {
+    assert.match(src, /backdrop\.addEventListener\('keydown', function\(e\) \{\s*if \(e\.key !== 'Tab' \|\| backdrop\.hasAttribute\('aria-hidden'\)\) return;/);
+    assert.match(src, /if \(e\.shiftKey && i <= 0\) \{ e\.preventDefault\(\); list\[list\.length - 1\]\.focus\(\); \}/);
+    assert.match(src, /e\.key === 'Escape' && backdrop && backdrop\.classList\.contains\('active'\)/);
+    assert.match(src, /closeBtn\.addEventListener\('click', function\(e\) \{\s*e\.stopPropagation\(\);\s*window\.closeUpgradeModal\(\);/);
+    assert.match(src, /if \(e\.target === backdrop\) \{\s*window\.closeUpgradeModal\(\);/);
+  });
+});

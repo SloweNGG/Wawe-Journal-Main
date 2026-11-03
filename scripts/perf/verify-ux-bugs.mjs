@@ -113,6 +113,7 @@ try {
       }
       check('K5-' + label, 'gün penceresi 3 farklı günde açılıp kapanıyor', dm.length === 3 && dm.every((x) => x.shown && x.hidden), dm.map((x) => `${x.d} ${x.how}: ${x.shown ? 'açıldı' : '✗'}/${x.hidden ? 'kapandı' : '✗'}`).join(' | '));
       check('K6-' + label, 'sayfa hatası yok', errors.length === 0, errors[0] || '0');
+      await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});
       await ctx.close();
     }
   }
@@ -157,12 +158,61 @@ try {
     check('B4', 'user_profiles açılış yazması: email/username yalnızca ilk seferde ve değişince, last_active her seferinde',
       first === 'email+last_active+username' && second.length === 1 && second[0] === 'last_active' && changed[0] === 'email+last_active+username',
       `ilk: ${first} | sonraki: ${second.join(', ') || '—'} | kimlik değişince: ${changed.join(', ') || '—'}`);
+    await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});   // bitmemiş istek sayaçta "canlı" sayılmasın
+    await ctx.close();
+  }
+  // ── M ──────────────────────────────────────────────────────
+  if (want('M')) {
+    const { ctx, page, errors } = await open('dashboard');
+    // pencereyi açan gerçek bir düğme (klavyeyle odaklanıp Enter): odak geri dönüşü ona göre ölçülür
+    await page.evaluate(() => { const b = document.createElement('button'); b.id = '__opener'; b.textContent = 'Yükselt'; b.onclick = () => window.openUpgradeModal({ feature: 'analytics_dashboard' }); document.querySelector('main, #app-scroll-container, body').prepend(b); });
+    const st = () => page.evaluate(() => {
+      const bd = document.getElementById('ww-upgrade-modal-backdrop'), dlg = bd && bd.querySelector('[role="dialog"]'), a = document.activeElement;
+      const lbl = dlg && dlg.getAttribute('aria-labelledby'), title = lbl && document.getElementById(lbl);
+      const outside = [...document.body.children].filter((c) => c !== bd && !c.contains(bd) && !['SCRIPT', 'STYLE', 'LINK'].includes(c.tagName));
+      const isInert = (el) => !!el.closest('[inert]');
+      return { state: bd.classList.contains('active') ? 'açık' : bd.style.display === 'none' ? 'kapalı' : 'kapanıyor', ariaHidden: bd.getAttribute('aria-hidden'), role: dlg && dlg.getAttribute('role'), modal: dlg && dlg.getAttribute('aria-modal'),
+        title: title ? title.textContent.trim() : null, focusIn: !!(dlg && dlg.contains(a)), focus: a ? (a.id || a.className || a.tagName) : null,
+        inertOutside: outside.length ? outside.filter(isInert).length + '/' + outside.length : '0/0', openerInert: isInert(document.getElementById('__opener')), qa: !!document.querySelector('.quick-add-overlay.active') };
+    });
+    const openVia = async () => { await page.focus('#__opener'); await page.keyboard.press('Enter'); await sleep(600); };
+    await openVia();
+    const o = await st();
+    check('M1', 'açıkken aria-hidden yok; role=dialog, aria-modal=true, aria-labelledby başlığa bağlı', o.state === 'açık' && o.ariaHidden === null && o.role === 'dialog' && o.modal === 'true' && !!o.title, JSON.stringify({ aria_hidden: o.ariaHidden, role: o.role, aria_modal: o.modal, başlık: o.title }));
+    check('M2', 'odak pencerenin içindeki ilk anlamlı öğede', o.focusIn && o.focus !== 'ww-up-close-btn', 'odak: ' + o.focus);
+    check('M3', 'arka plan inert', o.inertOutside.split('/')[0] === o.inertOutside.split('/')[1] && o.openerInert, 'pencere dışındaki body öğeleri inert: ' + o.inertOutside + ', açan düğme inert ' + o.openerInert);
+    // Tab / Shift+Tab döngüsü
+    const n = await page.evaluate(() => document.querySelectorAll('#ww-upgrade-modal-backdrop .ww-up-modal button:not([disabled]), #ww-upgrade-modal-backdrop .ww-up-modal a[href], #ww-upgrade-modal-backdrop .ww-up-modal [tabindex]:not([tabindex="-1"])').length);
+    let outTab = 0, outShift = 0;
+    for (let i = 0; i < n + 3; i++) { await page.keyboard.press('Tab'); if (!(await st()).focusIn) outTab++; }
+    await page.keyboard.down('Shift'); for (let i = 0; i < n + 3; i++) { await page.keyboard.press('Tab'); if (!(await st()).focusIn) outShift++; } await page.keyboard.up('Shift');
+    check('M4', 'Tab ve Shift+Tab pencerenin içinde dönüyor', outTab === 0 && outShift === 0, `${n} odaklanabilir öğe; ${n + 3} Tab'da dışarı çıkış ${outTab}, ${n + 3} Shift+Tab'da ${outShift}`);
+    await page.keyboard.press('n'); await sleep(800);
+    const blocked = !(await st()).qa;
+    // kapanma yolları + odak geri dönüşü + aria-hidden geri
+    const closes = [];
+    for (const how of ['×', 'Esc', 'arka plan']) {
+      if (how !== '×') await openVia();
+      if (how === '×') await page.click('#ww-up-close-btn'); else if (how === 'Esc') await page.keyboard.press('Escape'); else await page.mouse.click(8, 450);
+      await sleep(700);
+      const c = await st();
+      closes.push({ how, ...c });
+    }
+    check('M5', 'kapanınca aria-hidden="true" geri, odak açan düğmeye, arka plan inert değil', closes.every((c) => c.state === 'kapalı' && c.ariaHidden === 'true' && c.focus === '__opener' && c.inertOutside.startsWith('0/') && !c.openerInert),
+      closes.map((c) => `${c.how}: ${c.state}, aria-hidden=${c.ariaHidden}, odak ${c.focus}, inert ${c.inertOutside}`).join(' | '));
+    await page.evaluate(() => document.activeElement && document.activeElement.blur());
+    await page.keyboard.press('n');
+    await page.waitForFunction(() => !!document.querySelector('.quick-add-overlay.active'), { timeout: 8000 }).catch(() => {});
+    const worksClosed = (await st()).qa;
+    check('M6', '"N" pencere açıkken etkisiz, kapalıyken Hızlı Ekle\'yi açıyor', blocked && worksClosed, `açıkken engellendi ${blocked}, kapalıyken açtı ${worksClosed}`);
+    check('M7', 'sayfa hatası yok', errors.length === 0, errors[0] || '0');
+    await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});   // bitmemiş istek sayaçta "canlı" sayılmasın
     await ctx.close();
   }
 } finally {
   const m = live.summary();
   await closeBrowser(browser);
-  check('L', 'canlı trafik sayacı 0', m.live === 0 && m.ws === 0, `supabase.co ${m.total} istek (sahte ${m.mock}, önbellek/SW ${m.cache}, canlı ${m.live}), gerçek WebSocket ${m.ws}; tarayıcı süreçleri kapandı`);
+  check('L', 'canlı trafik sayacı 0', m.live === 0 && m.ws === 0, `supabase.co ${m.total} istek (sahte ${m.mock}, önbellek/SW ${m.cache}, canlı ${m.live}), gerçek WebSocket ${m.ws}${m.liveUrls.length ? " — " + m.liveUrls.join(", ") : ""}; tarayıcı süreçleri kapandı`);
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} kontrol geçti` + (failed.length ? ' | KALAN: ' + failed.map((r) => r.id).join(', ') : ''));
   process.exitCode = failed.length ? 1 : 0;

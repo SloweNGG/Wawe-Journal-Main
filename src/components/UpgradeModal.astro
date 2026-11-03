@@ -825,6 +825,34 @@
     });
   }
 
+  // ERİŞİLEBİLİRLİK (fix/ux-bugs 3): açıkken kapsayıcıdaki aria-hidden kalkar, pencere dışı inert olur, odak pencerenin
+  // ilk anlamlı öğesine (ana "Upgrade" düğmesi; görünmüyorsa ilk odaklanabilir öğe) gider ve Tab / Shift+Tab içeride döner.
+  // Kapanınca inert kalkar, odak pencereyi açan öğeye döner, aria-hidden="true" geri gelir. Önceden kapsayıcı açıkken de
+  // aria-hidden="true" taşıyordu (ekran okuyucu pencereyi görmüyordu) ve Tab odağı arkadaki sayfaya kaçıyordu.
+  var a11y = { opener: null, inerted: [] };
+  var FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function upFocusables(root) {
+    // kendi stili gizli (display:none) olanlar dışarıda; kapsayıcının açılış geçişindeki visibility'ye bakılmaz
+    return Array.prototype.filter.call(root.querySelectorAll(FOCUSABLE), function(el) {
+      return el.getClientRects().length > 0;
+    });
+  }
+  function setBackgroundInert(backdrop, on) {
+    if (!on) {
+      a11y.inerted.forEach(function(el) { el.removeAttribute('inert'); });
+      a11y.inerted = [];
+      return;
+    }
+    // pencereden body'ye kadar her düzeyde kardeş öğeler inert (önceden inert olanlara dokunulmaz)
+    for (var node = backdrop; node && node.parentElement && node !== document.body; node = node.parentElement) {
+      Array.prototype.forEach.call(node.parentElement.children, function(sib) {
+        if (sib === node || sib.hasAttribute('inert') || /^(SCRIPT|STYLE|LINK|TEMPLATE|NOSCRIPT)$/.test(sib.tagName)) return;
+        sib.setAttribute('inert', '');
+        a11y.inerted.push(sib);
+      });
+    }
+  }
+
   // GLOBAL OPEN & CLOSE METHODS
   window.openUpgradeModal = function(opts) {
     opts = opts || {};
@@ -836,9 +864,27 @@
 
     var backdrop = document.getElementById('ww-upgrade-modal-backdrop');
     if (backdrop) {
+      var modal = backdrop.querySelector('.ww-up-modal');
+      var wasOpen = backdrop.style.display !== 'none' && !backdrop.hasAttribute('aria-hidden');
+      if (!wasOpen) {
+        var active = document.activeElement;
+        a11y.opener = active && active !== document.body && !backdrop.contains(active) ? active : null;
+      }
       backdrop.style.display = 'flex';
+      backdrop.removeAttribute('aria-hidden');
+      if (!wasOpen) setBackgroundInert(backdrop, true);
+      // odak 'active' sonrası: kapalıyken pencere visibility:hidden (geçişli); görünür olmadan öğeler odak alamaz.
+      // Bir sonraki karede, olmazsa geçiş bitince (240 ms) bir kez daha denenir.
+      function focusFirst() {
+        if (!modal || backdrop.hasAttribute('aria-hidden') || modal.contains(document.activeElement)) return;
+        var list = upFocusables(modal), primary = document.getElementById('ww-up-btn-upgrade');
+        var target = primary && list.indexOf(primary) !== -1 ? primary : list[0];
+        if (target) target.focus({ preventScroll: true });
+      }
       requestAnimationFrame(function() {
         backdrop.classList.add('active');
+        requestAnimationFrame(focusFirst);
+        setTimeout(focusFirst, 260);
       });
       document.body.style.overflow = 'hidden';
     }
@@ -848,6 +894,14 @@
     var backdrop = document.getElementById('ww-upgrade-modal-backdrop');
     if (backdrop) {
       backdrop.classList.remove('active');
+      if (!backdrop.hasAttribute('aria-hidden')) {
+        setBackgroundInert(backdrop, false);
+        var opener = a11y.opener;
+        a11y.opener = null;
+        if (opener && document.contains(opener) && typeof opener.focus === 'function') opener.focus({ preventScroll: true });
+        else if (backdrop.contains(document.activeElement)) document.activeElement.blur();
+        backdrop.setAttribute('aria-hidden', 'true');
+      }
       setTimeout(function() {
         backdrop.style.display = 'none';
         document.body.style.overflow = '';
@@ -880,6 +934,19 @@
         window.closeUpgradeModal();
       }
     });
+
+    // Odak tuzağı: pencere açıkken Tab / Shift+Tab yalnızca penceredeki öğeler arasında döner
+    if (backdrop) {
+      backdrop.addEventListener('keydown', function(e) {
+        if (e.key !== 'Tab' || backdrop.hasAttribute('aria-hidden')) return;
+        var modal = backdrop.querySelector('.ww-up-modal');
+        var list = modal ? upFocusables(modal) : [];
+        if (!list.length) { e.preventDefault(); return; }
+        var i = list.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); list[list.length - 1].focus(); }
+        else if (!e.shiftKey && (i === -1 || i === list.length - 1)) { e.preventDefault(); list[0].focus(); }
+      });
+    }
 
     // Tier Switcher
     document.querySelectorAll('#ww-up-tier-switch .ww-up-pill-btn').forEach(function(btn) {
