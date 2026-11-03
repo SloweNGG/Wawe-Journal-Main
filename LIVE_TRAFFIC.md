@@ -116,7 +116,7 @@ Toplam ≈ **4 MB**, 5.2 GB'ın ~%0.08'i. Ölçüm araçları Storage kotasını
 
 ## Sorun 2 — Realtime `JwtSignatureError` döngüsü
 
-### 2a — Realtime'a bağlanan yerler ve ritmi üreten mantık · `<2a>`
+### 2a — Realtime'a bağlanan yerler ve ritmi üreten mantık · `59667cd`
 
 | Yer | Kanal | Ne zaman | Hata ele alınıyor mu |
 |---|---|---|---|
@@ -153,3 +153,40 @@ Yeniden üretme (canlıya gitmeden): `scripts/perf/realtime-check.mjs` — sahte
 - Araç: `scripts/perf/realtime-check.mjs` (`--rt ok|jwt-error|jwt-expired [--close] --session valid|expired|none`);
   `mock-session.mjs`: `auth: 'refresh-fails'` (yenileme 400, `/auth/v1/user` 401), `expired`, `withSession`, `/auth/v1/token` geçerli
   oturum döner.
+
+### 2b — Geçersiz token'la sonsuz deneme yok · `<2b>`
+
+- Yeni `public/interface/shared/realtime-guard.js` (`window.WwRealtime.subscribe(sb, ad, kur)`), `BaseHead.astro` uygulama
+  sayfalarında navbar ve bundle'dan önce yükleniyor. İki kanal da (navbar bildirimleri, payment.js plan dinleyicisi) bunu
+  kullanıyor; yardımcı yüklü değilse (landing) kanal **açılmıyor** (eski sonsuz denemeye düşülmesin).
+  - Kanal yalnızca **geçerli (süresi dolmamış) oturum** varken açılır; yoksa `SIGNED_IN` / `TOKEN_REFRESHED` beklenir.
+  - Açmadan önce ve her token yenilemesinde **`realtime.setAuth(token)`**.
+  - Katılma token hatasıyla (`jwt|token|signature|expired|unauthorized…`) reddedilirse kanal **hemen kaldırılır** (supabase-js'in
+    yeniden deneme zamanlayıcısı durur), oturum **bir kez** `refreshSession()` ile yenilenir; yeni token farklıysa kanal bir kez
+    yeniden açılır, değilse ya da yine reddedilirse **kapalı kalır** (konsola bir uyarı). Durmuş kanal yalnızca reddedilenden
+    farklı yeni bir token gelirse, sayfa başına en çok 3 kez yeniden açılır. Ağ hatası gibi diğer hatalarda supabase-js'in
+    normal yeniden bağlanması sürer. Çıkışta (`SIGNED_OUT`) kanallar kaldırılır.
+- `public/src/bundle.js` yeniden üretildi (`esbuild public/src/script.js --bundle --format=esm --minify`; mevcut kaynaklardan
+  üretilen çıktının repodakiyle bayt bayt aynı olduğu önce doğrulandı, fark yalnızca payment.js). `tests/bundle-sync.test.js`
+  bundle'ın kaynakla aynı kaldığını kontrol ediyor.
+- İlk sürümde bir döngü vardı (tarayıcı testinde yakalandı, commit'ten önce düzeltildi): `refreshSession()`'ın yaydığı
+  `TOKEN_REFRESHED` olayı durmuş kanalı yeniden açıyordu → 45 sn'de 6.733 katılma, 3.367 yenileme. Şimdi yalnızca farklı token +
+  üst sınır.
+
+Tarayıcıda (`realtime-check.mjs`, dashboard, 45 sn; sahte sunucu; canlıya gitmez):
+
+| Senaryo | Önce (master): katılma / yenileme | Sonra: katılma / yenileme |
+|---|---|---|
+| geçerli oturum, sunucu ok | 2 / 0 | 2 / 0 |
+| **imza geçersiz** (`JwtSignatureError`) | **14 / 0, sürüyor** (dakikada ~12) | **2 / 2, sonra sessiz** |
+| imza geçersiz + sunucu soketi kapatır | **87 / 0** (44 soket) | 2 / 2 (3 soket) |
+| sunucu "token süresi dolmuş" der | 14 / 0, sürüyor | 2 / 2, sonra sessiz |
+| süresi dolmuş + yenilenemeyen oturum | 0 / 1 → login | 0 / 1 → login |
+| hiç oturum yok | 0 / 0 (login) | 0 / 0 (login) |
+
+- Test: `tests/realtime-guard.test.js` (yeni, 11 test: geçerli oturum; imza hatası → bir yenileme, bir tekrar, dur; yenileme
+  başarılı → yeni token'la katılım; yenileme başarısız → tek deneme; süresi dolmuş → yeni token gelene kadar kanal yok;
+  oturum yok; çıkış; ağ hatası supabase-js'e bırakılır; `TOKEN_REFRESHED` yayan yenileme döngü kurmaz; durmuş kanal yeni token'la
+  en çok 3 kez; iki uygulama kanalı + BaseHead + bundle). `tests/bundle-sync.test.js` (yeni).
+- Admin paneli kanallarına (`admin-data.js`) dokunulmadı: zaten durum geri çağrıları var ve yalnızca admin açıyor.
+- `npm run build` ✓, `npm test` ✓ (532 test).

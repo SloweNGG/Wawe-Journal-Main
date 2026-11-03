@@ -392,12 +392,14 @@ export async function checkAndSyncPaymentStatus() {
     const user = session?.user;
     if (!user) return;
 
-    // Realtime Postgres Changes dinleyicisi başlat (her kullanıcı için arka planda çalışır)
-    if (!_planSyncStarted && sb && typeof sb.channel === 'function') {
+    // Realtime Postgres Changes dinleyicisi başlat (her kullanıcı için arka planda çalışır). WwRealtime
+    // (interface/shared/realtime-guard.js) kanalı yalnızca geçerli oturumla açar, token reddedilirse sonsuz denemeyi durdurur;
+    // yardımcı yüklü değilse (ör. landing) kanal açılmaz.
+    if (!_planSyncStarted && sb && typeof sb.channel === 'function' && window.WwRealtime) {
       _planSyncStarted = true;
       try {
         const channelName = 'ww_plan_listener_' + user.id.slice(0, 8);
-        sb.channel(channelName)
+        window.WwRealtime.subscribe(sb, channelName, (ch) => ch
           .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
@@ -414,8 +416,7 @@ export async function checkAndSyncPaymentStatus() {
             // Eğer kullanıcı zaten pro ise sadece UI/cache sessizce güncellenir, ASLA tebrik toast'ı gösterilmez!
             const shouldNotify = !oldPlanWasPrem;
             applyLivePro(payload.new, shouldNotify);
-          })
-          .subscribe();
+          }));
       } catch(chanErr) {
         console.warn('Realtime plan channel warning:', chanErr);
       }

@@ -590,12 +590,13 @@ window.loadNotifications = async function() {
     if (user && user.id) {
       console.log('🔔 [loadNotifications] Oturum açık kullanıcı ID:', user.id);
 
-      // Gerçek zamanlı bildirim dinleyicisi (Supabase Realtime)
-      if (!window._wwNotifSubscribed) {
+      // Gerçek zamanlı bildirim dinleyicisi (Supabase Realtime). WwRealtime (interface/shared/realtime-guard.js) kanalı
+      // yalnızca geçerli oturumla açar ve token reddedilirse sonsuz yeniden denemeyi durdurur; yoksa kanal açılmaz.
+      if (!window._wwNotifSubscribed && window.WwRealtime) {
         window._wwNotifSubscribed = true;
         try {
-          sb.channel('realtime_user_notifications_' + user.id)
-            .on('postgres_changes', {
+          window.WwRealtime.subscribe(sb, 'realtime_user_notifications_' + user.id, function(ch) {
+            return ch.on('postgres_changes', {
               event: '*',
               schema: 'public',
               table: 'notifications',
@@ -605,8 +606,8 @@ window.loadNotifications = async function() {
               if (typeof window.loadNotifications === 'function') {
                 window.loadNotifications();
               }
-            })
-            .subscribe();
+            });
+          });
         } catch (rtErr) {
           console.warn('🔔 [loadNotifications] Realtime dinleyici hatası:', rtErr);
         }

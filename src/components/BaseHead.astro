@@ -184,6 +184,9 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
     <!-- İŞLEM KAYNAĞI KAPSAMI (WwTrades: canlı / backtest / tümü; canlı istatistikler backtest'i ASLA içermez) -->
     <script src="/interface/shared/trades-source.js?v=1792700000" is:inline></script>
 
+    <!-- REALTIME KANALLARI (WwRealtime: yalnızca geçerli oturumla, token reddedilirse sonsuz deneme yok; navbar + payment.js) -->
+    <script src="/interface/shared/realtime-guard.js?v=1793700000" is:inline></script>
+
     <!-- ORTAK GRAFİK GÖRÜNÜMÜ (font, eksen yazıları, ızgara, tooltip; tüm grafikler aynı) -->
     <link rel="stylesheet" href="/interface/shared/chart-theme.css?v=6" />
     <script src="/interface/shared/chart-theme.js?v=3" is:inline></script>
