@@ -1567,7 +1567,7 @@ async function exportAllStrategiesPDF() {
         i18n.t('strategies.detail.profit_factor')
       ].map(T)],
       body: tableData.map(function(r) { return r.map(T); }),
-      theme: 'dark',
+      theme: 'plain',
       headStyles: { fillColor: [30, 30, 46], textColor: [107, 107, 128], fontSize: 6 },
       bodyStyles: { textColor: [232, 232, 240], fontSize: 6 },
       columnStyles: { 3: { textColor: function(cell) { return cell.raw.startsWith('-') ? [239,68,68] : [34,197,94]; } } },
