@@ -138,6 +138,9 @@
     {
       broker: 'xtb',
       required: ['openprice', 'closeprice'],
+      // Open price / Close price + Open time / Close time alone also fits MT5 "Open Time … Close Time" exports (which then
+      // won with a perfect weight score): one column only xStation writes is required as well
+      requireAny: ['openorigin', 'closeorigin', 'purchasevalue', 'salevalue', 'rollover', 'margin', 'grosspl', 'netpl', 'netprofit'],
       weight: ['symbol', 'type', 'volume', 'opentime', 'closetime', 'profit'],
       isFillBased: false,
       explicitMap: null

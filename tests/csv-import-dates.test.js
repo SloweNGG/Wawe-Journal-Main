@@ -53,9 +53,11 @@ const SAMPLES = {
   'generic-2-side-volume.csv': { detected: 'generic', date: 0, symbol: 1, pnl: 6 },
   'generic-3-direction-lot.csv': { detected: 'generic', date: 0, symbol: 1, pnl: 6 },
   'generic-4-snake-case.csv': { detected: 'generic', date: 0, symbol: 1, pnl: 6 },
-  'generic-5-type-size.csv': { date: 0, symbol: 1, pnl: 6 },
+  'generic-5-type-size.csv': { detected: 'generic', date: 0, symbol: 1, pnl: 6 },
   'mt5-positions.csv': { detected: 'mt5', date: 8, symbol: 2, pnl: 12 },
-  'mt5-open-close.csv': { date: 8, symbol: 2, pnl: 12 },   // Open Time / Close Time layout: read with the XTB map, same columns
+  'mt5-open-close.csv': { detected: 'mt5', date: 8, symbol: 2, pnl: 12 },   // Open Time / Close Time layout (was read as XTB)
+  // xStation closed positions: the date is the close time; "Gross P/L" is not read, P&L is computed from the prices
+  'xtb-closed-positions.csv': { detected: 'xtb', date: 6, symbol: 1, pnl: null },
 };
 const num = (s) => Number(String(s).replace(',', '.'));
 
@@ -73,16 +75,18 @@ describe('csv-import dates', () => {
         assert.equal(r.rows.length, lines.length);
         r.rows.forEach((row, i) => {
           assert.equal(row.symbol, lines[i][exp.symbol]);
-          assert.equal(row.pnl, num(lines[i][exp.pnl]));
+          if (exp.pnl !== null) assert.equal(row.pnl, num(lines[i][exp.pnl]));
           assert.deepEqual(importedDate(row.trade_date, tz), fileDate(lines[i][exp.date]), `${file} row ${i + 2}: ${row.trade_date}`);
         });
       });
     }
   }
 
-  it('MT5 files are still detected as MT5 (positions report with repeated Time / Price)', () => {
+  it('MT5 files are detected as MT5 (repeated Time / Price and Open Time / Close Time), XTB exports as XTB', () => {
     const ctx = load('Europe/Istanbul');
     assert.equal(parse(ctx, 'mt5-positions.csv').detected, 'mt5');
+    assert.equal(parse(ctx, 'mt5-open-close.csv').detected, 'mt5');
+    assert.equal(parse(ctx, 'xtb-closed-positions.csv').detected, 'xtb');
   });
 
   it('rows with a missing or unreadable date are error rows, never today, and are not imported', () => {
