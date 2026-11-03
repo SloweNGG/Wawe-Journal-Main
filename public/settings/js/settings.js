@@ -948,7 +948,7 @@ function updateAvatarElements(url) {
   var navAvatar = safeEl('user-avatar');
   if (navAvatar) {
     if (url) {
-      navAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      navAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
       navAvatar.style.background = 'transparent';
     } else {
       navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
@@ -959,7 +959,7 @@ function updateAvatarElements(url) {
   var sbAvatar = safeEl('sb-avatar');
   if (sbAvatar) {
     if (url) {
-      sbAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">';
+      sbAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">';
     } else {
       sbAvatar.innerHTML = '<span class="no-avatar" id="sb-avatar-text">' + sanitizeHTML(initial) + '</span>';
     }
@@ -973,7 +973,7 @@ function updateAvatarElements(url) {
       if (placeholder) placeholder.style.display = 'none';
       if (img) {
         img.style.display = 'block';
-        img.src = sanitizeHTML(url) + '?t=' + Date.now();
+        img.src = sanitizeHTML(url);
       }
     } else {
       if (placeholder) {
@@ -990,7 +990,7 @@ function updateAvatarElements(url) {
     if (popupPlaceholder) popupPlaceholder.style.display = 'none';
     if (popupImg) {
       popupImg.style.display = 'block';
-      popupImg.src = sanitizeHTML(url) + '?t=' + Date.now();
+      popupImg.src = sanitizeHTML(url);
     }
   } else {
     if (popupPlaceholder) {

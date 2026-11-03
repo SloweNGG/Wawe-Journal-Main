@@ -40,7 +40,7 @@ Supabase panosundaki günlük "Cached Egress" grafiğine bakmak gerekiyor (bkz. 
 - Test: `tests/no-storage-media.test.js` (yeni): `src/` ve `public/` içinde Supabase Storage adresi (`supabase.co/storage`)
   yazılamaz; büyük / herkese açık medya `public/` altından (Cloudflare) verilmeli.
 
-### 1b — Tekrarlanan indirmeler · `<1b>`
+### 1b — Tekrarlanan indirmeler · `3228a2c`
 
 | Madde | Durum / yapılan |
 |---|---|
@@ -56,3 +56,15 @@ Supabase panosundaki günlük "Cached Egress" grafiğine bakmak gerekiyor (bkz. 
   40 dosya sınırı; `activate` avatar önbelleğini silmiyor; yükleme 256 px + 1 yıl + benzersiz ad).
 - `.gitignore`: `.perf-profile/` (perf/tonight'taki satır bu dalda yoktu).
 - `npm run build` ✓, `npm test` ✓ (514 test).
+
+### 1b-2 — Kök neden: avatar adresine her çizimde `?t=Date.now()` · `f3f57d7`
+
+- 1c ölçümünde bulundu: `navbar.js` `applyAvatarToNav` navbar avatarına ve menü avatarına, `settings.js` dört yerde
+  (`user-avatar`, `sb-avatar`, `avatar-img`, `popup-avatar-img`) her çizimde `?t=' + Date.now()` ekliyordu. Her tam sayfa
+  açılışında adres yeni → tarayıcı önbelleği, CDN önbelleği ve (1b'deki) SW önbelleği hiç işlemiyor; avatar **sayfa başına iki
+  kez, orijinal boyutunda (≤ 2 MB)** Storage'dan iniyordu. Örnek: 1.5 MB avatar × 2 × ~1.700 sayfa görüntüleme ≈ 5 GB.
+  7 kullanıcı için bu, landing videolarından bağımsız olarak kotayı tek başına aşabilecek bir miktar.
+- Gereksizdi: dosya adı her yüklemede yeni (`<uid>_<Date.now()>.<uzantı>`), yeni avatarın adresi zaten farklı.
+- Düzeltme: 6 yerde `?t=` kaldırıldı. Test (`tests/sw-storage.test.js`): avatar gösteren 6 dosyada görsel adresine
+  `?t=` / `Date.now()` / `Math.random()` sorgusu eklenemez (eski kodda 2 test başarısız oluyor, denendi).
+- `npm run build` ✓, `npm test` ✓ (520 test).

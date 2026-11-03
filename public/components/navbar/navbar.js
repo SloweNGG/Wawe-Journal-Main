@@ -1434,7 +1434,7 @@ function applyAvatarToNav(url) {
     if (url) {
       var safeUrl = sanitizeURL(url);
       if (safeUrl) {
-        navAvatar.innerHTML = '<img src="' + safeUrl + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        navAvatar.innerHTML = '<img src="' + safeUrl + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
         navAvatar.style.background = 'transparent';
       } else {
         navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
@@ -1450,7 +1450,7 @@ function applyAvatarToNav(url) {
     if (url) {
       var safeUrl2 = sanitizeURL(url);
       if (safeUrl2) {
-        menuAvatar.innerHTML = '<img src="' + safeUrl2 + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        menuAvatar.innerHTML = '<img src="' + safeUrl2 + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
         menuAvatar.style.background = 'transparent';
       } else {
         menuAvatar.innerHTML = '<span id="menu-avatar-text" style="font-size:20px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';

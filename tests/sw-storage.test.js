@@ -93,3 +93,16 @@ describe('settings.js: avatar upload', () => {
     assert.match(src, /var fileName = 'avatars\/' \+ user\.id \+ '_' \+ Date\.now\(\) \+ '\.' \+ ext;/);
   });
 });
+
+describe('avatar URLs are not cache-busted', () => {
+  // Kök neden (fix/live-traffic 1b-2): navbar ve ayarlar avatarına her çizimde ?t=Date.now() ekleniyordu → her tam sayfa
+  // açılışında avatar (orijinal, ≤ 2 MB) iki kez Storage'dan yeniden iniyordu; tarayıcı ve SW önbelleği hiç işlemiyordu.
+  for (const f of ['public/components/navbar/navbar.js', 'public/settings/js/settings.js', 'src/components/Navbar.astro',
+    'public/interface/strategies/js/strategies.js', 'public/interface/analytics/js/dashboard-manager.js', 'public/interface/admin/js/admin-core.js']) {
+    it(f + ': no ?t= / Date.now() query on image sources', () => {
+      const src = fs.readFileSync(f, 'utf8');
+      assert.doesNotMatch(src, /\?t=['"]?\s*\+\s*Date\.now\(\)/);
+      assert.doesNotMatch(src, /src="'\s*\+[^;]*\+\s*'\?[a-z_]+='\s*\+\s*(?:Date\.now|Math\.random)/);
+    });
+  }
+});
