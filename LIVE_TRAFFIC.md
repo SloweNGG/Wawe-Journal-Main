@@ -57,7 +57,7 @@ Supabase panosundaki günlük "Cached Egress" grafiğine bakmak gerekiyor (bkz. 
 - `.gitignore`: `.perf-profile/` (perf/tonight'taki satır bu dalda yoktu).
 - `npm run build` ✓, `npm test` ✓ (514 test).
 
-### 1b-2 — Kök neden: avatar adresine her çizimde `?t=Date.now()` · `f3f57d7`
+### 1b-2 — Kök neden: avatar adresine her çizimde `?t=Date.now()` · `ed2b0a0`
 
 - 1c ölçümünde bulundu: `navbar.js` `applyAvatarToNav` navbar avatarına ve menü avatarına, `settings.js` dört yerde
   (`user-avatar`, `sb-avatar`, `avatar-img`, `popup-avatar-img`) her çizimde `?t=' + Date.now()` ekliyordu. Her tam sayfa
@@ -67,4 +67,35 @@ Supabase panosundaki günlük "Cached Egress" grafiğine bakmak gerekiyor (bkz. 
 - Gereksizdi: dosya adı her yüklemede yeni (`<uid>_<Date.now()>.<uzantı>`), yeni avatarın adresi zaten farklı.
 - Düzeltme: 6 yerde `?t=` kaldırıldı. Test (`tests/sw-storage.test.js`): avatar gösteren 6 dosyada görsel adresine
   `?t=` / `Date.now()` / `Math.random()` sorgusu eklenemez (eski kodda 2 test başarısız oluyor, denendi).
+- `npm run build` ✓, `npm test` ✓ (520 test).
+
+### 1c — Tipik oturumda Storage baytı: önce / sonra · `<1c>`
+
+Yöntem: `scripts/perf/storage-session.mjs` (yeni). Sahte oturum (canlıya istek yok), tek tarayıcı profili (HTTP önbelleği ve
+service worker adımlar arasında kalır, gerçek kullanıcı gibi). 1. gün: dashboard aç → backtest'e geç → hesaba gir → sayfayı
+yenile → dashboard'a dön. 2. gün: HTTP önbelleği temizlenir (1 saatlik önbelleğin bayatlaması / tarayıcı temizliği; SW ve Cache
+Storage kalır), aynı tur. Avatar sahte arka uçtan, `ETag` ile (304 desteklenir). "Önce" = `master` (252c2db) build'i,
+"sonra" = bu dal.
+
+| Senaryo | Storage'dan inen (200) | 304 |
+|---|---|---|
+| **Önce**, 1.5 MB avatar (`max-age=3600`) | **14 indirme, 21.4 MB** (1. gün 9.2 MB, 2. gün 12.2 MB; adım başına 1–3 indirme) | 0 |
+| Sonra, **aynı eski avatar** (yeniden yüklenmemiş, 1.5 MB, `max-age=3600`) | **2 indirme, 3.0 MB** (ilk dashboard: SW henüz sayfayı kontrol etmiyor; ilk backtest: SW önbelleğe alıyor), sonra 0 | 0 |
+| Sonra, **yeni yüklenen avatar** (256 px, 55 KB, `max-age=31536000`) | 2 indirme, 0.11 MB, sonra 0 | 0 |
+
+- "Önce"de hiç 304 yok: her istek yeni bir `?t=` adresi olduğu için koşullu istek bile yapılmıyor (1b-2).
+- Hesap: master'da bu oturum ≈ 21 MB; 7 kullanıcı × günde ~1 böyle oturum × 30 gün ≈ 4.5 GB. Avatarı olan her kullanıcıda
+  sayfa açılışı başına ~2 × avatar boyutu. Avatarı olmayan kullanıcı Storage'dan hiç indirmez.
+- Ölçüm yöntemi düzeltmesi (araçlarda): Puppeteer'ın `setRequestInterception` açıkken Chrome **HTTP önbelleğini kapatıyor ve
+  service worker'ı atlıyor**; önbellek ölçümleri bu yüzden yanlış çıkıyordu. `mock-session.mjs` artık sahte cevapları CDP
+  `Fetch` ile veriyor (önbellek ve SW gerçek tarayıcıdaki gibi çalışır), service worker'ın kendi isteklerini de
+  `watchWorkers(browser, backend)` ile cevaplıyor (sayfa oturumu bunları görmez; olmasa SW canlıya giderdi), Realtime
+  WebSocket'lerini sayfa içinde sahte bir Phoenix sunucusuyla cevaplıyor (`fake-realtime.mjs`; bkz. Sorun 2) ve güvenlik ağı
+  olarak sahte modda Chrome'a `*.supabase.co`'yu çözümletmiyor (`MOCK_CHROME_ARGS`; `storage-session.mjs` kullanıyor, diğer
+  araçlar adım 3'te).
+- `scripts/perf/` bu dala `perf/tonight`'tan (a317f4b) alındı: `cf-serve`, `chrome-path`, `cls`, `lighthouse`, `readonly-guard`
+  aynı; `mock-session` yukarıdaki gibi değişti; `fake-realtime`, `storage-session` yeni. İki dal birleşirken `scripts/perf/`'te
+  bu dalın sürümü alınmalı.
+- Komut: `node scripts/perf/cf-serve.mjs dist 8788` ve
+  `PERF_DIR=<araçlar> node scripts/perf/storage-session.mjs --base http://127.0.0.1:8788 [--avatar-kb 1500] [--avatar-cache max-age=3600]`.
 - `npm run build` ✓, `npm test` ✓ (520 test).
