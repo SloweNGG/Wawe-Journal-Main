@@ -1505,6 +1505,8 @@ export default {
   "earnings.toast_address_copied": "Cüzdan adresi kopyalandı!",
   "earnings.balance_ready": "Çekime hazır",
   "earnings.balance_to_min": "Minimum çekime ${amount} kaldı",
+  "earnings.hero_badge_growing": "Birikiyor",
+  "earnings.hero_rate_hint": "Yıllık abone başına +${yearly}, aylık abone başına +${monthly}",
   "earnings.monthly": "aylık",
   "earnings.yearly": "yıllık",
   "earnings.code_discount": "%{pct} kullanıcı indirimi",

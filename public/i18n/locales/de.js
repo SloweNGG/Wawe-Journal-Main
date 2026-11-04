@@ -1525,6 +1525,8 @@ export default {
   "earnings.toast_address_copied": "Wallet-Adresse kopiert!",
   "earnings.balance_ready": "Bereit zur Auszahlung",
   "earnings.balance_to_min": "Noch ${amount} bis zur Mindestauszahlung",
+  "earnings.hero_badge_growing": "Wird aufgebaut",
+  "earnings.hero_rate_hint": "+${yearly} pro Jahresabo, +${monthly} pro Monatsabo",
   "earnings.monthly": "monatlich",
   "earnings.yearly": "jährlich",
   "earnings.code_discount": "{pct}% Rabatt für Nutzer",
