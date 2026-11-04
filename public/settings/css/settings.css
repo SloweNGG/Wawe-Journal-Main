@@ -2335,6 +2335,13 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
     pointer-events: auto;
     animation: none;
   }
+  /* "transition: all" olan kartlar/butonlar visibility'yi de geçişle değiştirir; görünmeyen adımda geçiş
+     kapatılmazsa eski adımın kartları ve gölgeleri yeni adımın üstünde bir süre kalır */
+  .checkout-wizard-card .wizard-step-panel:not(.active) *,
+  .checkout-wizard-card .wizard-step-panel:not(.active) *::before,
+  .checkout-wizard-card .wizard-step-panel:not(.active) *::after {
+    transition: none !important;
+  }
   .checkout-wizard-card .wizard-step-panel.active > :not(.wizard-nav-bar) {
     animation: wizardStepIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -3731,6 +3738,15 @@ body.light-theme .pro-teaser-overlay .theme-pro-locked-card {
   box-shadow: none;
   margin-top: 1rem;
   animation: wizardStepIn 0.35s ease;
+}
+
+.direct-pay-expired-card {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: #f59e0b;
+}
+
+.direct-pay-success-card.direct-pay-expired-card h3 {
+  color: var(--text);
 }
 
 .direct-pay-success-card .success-icon-sparkle {

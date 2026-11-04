@@ -237,11 +237,17 @@
           <div class="coupon-field-row">
             <input 
               type="text" 
-              id="wizard-coupon-input" 
-              placeholder="KUPON VEYA REFERANS KODU" 
+              id="wizard-coupon-input"
+              name="promo-code"
+              placeholder="KUPON VEYA REFERANS KODU"
               data-i18n-placeholder="settings.plan_coupon_placeholder"
-              autocomplete="off" 
+              autocomplete="off"
+              autocapitalize="characters"
               spellcheck="false"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
+              data-form-type="other"
             />
             <button class="coupon-submit-btn" id="btn-wizard-apply-coupon" data-i18n="settings.plan_apply_coupon">
               Uygula
@@ -468,6 +474,13 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Süre Doldu: adres ve QR gizlenir, geç gelen transfer yine de dinlenir -->
+        <div class="direct-pay-success-card direct-pay-expired-card" id="direct-pay-expired-box" style="display:none;">
+          <h3 data-i18n="settings.plan_payment_expired_title">Ödeme süresi doldu</h3>
+          <p data-i18n="settings.plan_payment_expired_desc">Bu adrese artık para göndermeyin. Transferi zaten yaptıysanız bekleyin: ağda onaylanınca Pro otomatik açılır. Yapmadıysanız yeni bir ödeme oluşturun.</p>
+          <button type="button" class="btn-success-dashboard" id="btn-new-payment-after-expiry" data-i18n="settings.plan_payment_expired_new">Yeni Ödeme Oluştur →</button>
         </div>
 
         <!-- Başarı Durumu (Tebrikler Ekranı) -->

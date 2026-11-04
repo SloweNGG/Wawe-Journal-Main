@@ -38,10 +38,11 @@
               <div class="pref-desc" data-i18n="settings.devtest_code_desc">Yönetici tarafından belirlenen kodu girin. Kod doğrulanınca 24 saat geçerli olur.</div>
             </div>
           </div>
-          <div class="time-control-stack">
-            <input type="password" id="dev-test-code-input" class="time-select" autocomplete="off" maxlength="128" placeholder="••••••••" />
+          <!-- Ayrı form: tarayıcı bu alanı şifre sanıp kupon kutusunu kullanıcı adı olarak eşlemesin -->
+          <form class="time-control-stack" autocomplete="off" onsubmit="return false;">
+            <input type="password" id="dev-test-code-input" class="time-select" autocomplete="off" maxlength="128" placeholder="••••••••" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
             <button type="button" id="dev-test-activate-btn" class="time-mini-btn" data-i18n="settings.devtest_activate">Etkinleştir</button>
-          </div>
+          </form>
         </div>
 
         <!-- AKTİFKEN -->

@@ -1364,6 +1364,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
   var STORAGE_KEY = isExtending ? 'ww_plan_extend_state' : 'ww_plan_checkout_state';
 
+  function getWizardUserId() {
+    var u = window.SETTINGS_STATE && window.SETTINGS_STATE.currentUser;
+    return u && u.id ? u.id : null;
+  }
+
   function saveWizardState() {
     try {
       var state = {
@@ -1372,6 +1377,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
         payMethod: selectedPayMethod,
         code: appliedReferralCode,
         discount: appliedDiscount,
+        userId: getWizardUserId(),
         updatedAt: Date.now()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1476,7 +1482,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
     } else {
       selectedPayMethod = 'CARD';
     }
-    if (savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
+    // Kupon yalnızca onu uygulayan hesaba geri yüklenir (aynı tarayıcıda başka hesap/eski test kodu görünmesin)
+    var sameUser = !!savedState.userId && savedState.userId === getWizardUserId();
+    if (sameUser && savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
       appliedReferralCode = savedState.code;
       appliedDiscount = savedState.discount;
     }
@@ -1551,6 +1559,15 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (directPayTimerInterval) { clearInterval(directPayTimerInterval); directPayTimerInterval = null; }
     if (directPayPollInterval) { clearInterval(directPayPollInterval); directPayPollInterval = null; }
     closeQrModal();
+    endDirectPaymentWatch(false);
+  }
+
+  // Yoklama bitince (süre aşımı ya da adım değişimi) çağıran akışın arayüzü toparlanır (kartta: ödeme butonu)
+  var directPayWatchEnd = null;
+  function endDirectPaymentWatch(timedOut) {
+    var cb = directPayWatchEnd;
+    directPayWatchEnd = null;
+    if (cb) cb(timedOut);
   }
 
   function goToStep(step, isInitial) {
@@ -1705,6 +1722,31 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
     if (btnTo4) btnTo4.style.display = 'inline-flex';
     if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', 'İndirimle Devam Et →');
+    revalidateRestoredCoupon(appliedReferralCode);
+  }
+
+  // Geri yüklenen kodun süresi dolmuş/limiti bitmiş/kullanılmış olabilir: sessizce yeniden doğrula, geçersizse kaldır
+  async function revalidateRestoredCoupon(code) {
+    try {
+      var sb = window.sb || window.supabase;
+      var userId = getWizardUserId();
+      if (!sb || !userId) return;
+      var res = await sb.rpc('validate_referral_code', { p_code: code, p_user_id: userId });
+      if (!res || res.error || appliedReferralCode !== code) return;
+      if (res.data && res.data.valid) return;
+      appliedReferralCode = null;
+      appliedDiscount = 0;
+      saveWizardState();
+      if (couponInput) couponInput.value = '';
+      if (couponStatus) {
+        couponStatus.style.display = 'none';
+        couponStatus.className = 'coupon-status-box';
+        couponStatus.textContent = '';
+      }
+      if (btnTo4) btnTo4.style.display = 'none';
+      if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_skip_coupon', 'Kuponum Yok, Bu Adımı Atla →');
+      if (currentStep === 4) renderSummary();
+    } catch (e) {}
   }
 
   if (btnBackTo2) {
@@ -2040,7 +2082,13 @@ function setupPlanWizard(wizardRoot, isExtending) {
             onComplete: function() {
               currentPaymentData = { baselineExpiryMs: baselineExpiryMs, period: selectedPeriod, payCurrency: 'CARD' };
               btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_card_confirming', {}, 'Ödeme onaylanıyor, Pro birkaç saniye içinde açılacak...') + '</span>';
-              startDirectPaymentWatch();
+              // 20 dk içinde onay gelmezse buton kilitli kalmasın; Pro yine webhook ile açılır
+              startDirectPaymentWatch(function(timedOut) {
+                restoreBtn();
+                if (timedOut) {
+                  showMsg(t('settings.plan_card_confirm_timeout', {}, 'Ödeme onayı gecikiyor. Kartınızdan ücret çekildiyse Pro birkaç dakika içinde otomatik açılır; sayfayı daha sonra yenileyin. Tekrar ödeme yapmayın.'), 'info');
+                }
+              });
             },
             onClose: restoreBtn
           });
@@ -2056,6 +2104,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
             currentPaymentData = result;
             saveActiveDirectPayment(result);
             goToStep(5);
+            btnSubmitPayment.disabled = false;
+            btnSubmitPayment.innerHTML = origContent;
+          } else if (!(result && result.invoiceUrl)) {
+            // upgradeToPro hata durumunda fırlatmaz, null döner (hata mesajını kendisi gösterir): buton kilitli kalmasın.
+            // invoiceUrl varsa sayfa NowPayments'a yönleniyor, buton kapalı kalabilir.
             btnSubmitPayment.disabled = false;
             btnSubmitPayment.innerHTML = origContent;
           }
@@ -2087,8 +2140,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var timerEl = wizardRoot.querySelector('#direct-pay-countdown');
     var successBox = wizardRoot.querySelector('#direct-pay-success-box');
     var directCard = wizardRoot.querySelector('.direct-pay-card');
+    var expiredBox = wizardRoot.querySelector('#direct-pay-expired-box');
 
     if (successBox) successBox.style.display = 'none';
+    if (expiredBox) expiredBox.style.display = 'none';
     if (directCard) directCard.style.display = 'grid';
 
     var payCur = (currentPaymentData.payCurrency || 'LTC').toUpperCase();
@@ -2150,6 +2205,12 @@ function setupPlanWizard(wizardRoot, isExtending) {
         directPayTimerInterval = null;
         clearActiveDirectPayment();
         if (timerEl) timerEl.textContent = '00:00 ' + t('settings.plan_expired_time', {}, '(Süre Doldu)');
+        // Süresi geçmiş adrese para gönderilmesin: tutar/adres/QR gizlenir
+        closeQrModal();
+        if (directCard) directCard.style.display = 'none';
+        if (expiredBox) expiredBox.style.display = 'block';
+        // Son dakikada gönderilmiş transferin onayı birkaç dakika sürebilir: yoklama 20 dk daha sürer
+        startDirectPaymentWatch();
         return;
       }
       var m = Math.floor(rem / 60);
@@ -2166,20 +2227,23 @@ function setupPlanWizard(wizardRoot, isExtending) {
     startDirectPaymentWatch();
   }
 
-  function startDirectPaymentWatch() {
+  function startDirectPaymentWatch(onEnd) {
     if (directPayPollInterval) clearInterval(directPayPollInterval);
+    directPayWatchEnd = onEnd || null;
 
     var attempts = 0;
     directPayPollInterval = setInterval(async function() {
       if (!document.body.contains(wizardRoot)) {
         clearInterval(directPayPollInterval);
         directPayPollInterval = null;
+        directPayWatchEnd = null;
         return;
       }
       attempts++;
       if (attempts > 240) {
         clearInterval(directPayPollInterval);
         directPayPollInterval = null;
+        endDirectPaymentWatch(true);
         return;
       }
 
@@ -2207,15 +2271,18 @@ function setupPlanWizard(wizardRoot, isExtending) {
   }
 
   function handleDirectPaymentSuccess() {
+    directPayWatchEnd = null;   // yönlendirme beklenirken ödeme butonu yeniden açılmasın
     stopDirectPaymentWatch();
     clearActiveDirectPayment();
 
     var successBox = wizardRoot.querySelector('#direct-pay-success-box');
     var directCard = wizardRoot.querySelector('.direct-pay-card');
+    var expiredBox = wizardRoot.querySelector('#direct-pay-expired-box');
     var statusText = wizardRoot.querySelector('#direct-pay-status-text');
 
     if (statusText) statusText.textContent = t('settings.plan_status_confirmed', {}, 'Ödeme onaylandı! Pro aktif.');
     if (directCard) directCard.style.display = 'none';
+    if (expiredBox) expiredBox.style.display = 'none';
     if (successBox) successBox.style.display = 'block';
 
     showMsg(t('settings.plan_upgraded_success', {}, '💎 Tebrikler! Pro üyeliğiniz başarıyla aktif edildi.'), 'success');
@@ -2309,6 +2376,17 @@ function setupPlanWizard(wizardRoot, isExtending) {
         btnManualCheck.disabled = false;
         btnManualCheck.innerHTML = origBtn;
       }
+    });
+  }
+
+  // Süre dolunca: yeni ödeme için özet adımına dönülür (yeni adres/tutar alınır)
+  var btnNewPayment = wizardRoot.querySelector('#btn-new-payment-after-expiry');
+  if (btnNewPayment) {
+    btnNewPayment.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearActiveDirectPayment();
+      currentPaymentData = null;
+      goToStep(4);
     });
   }
 
@@ -2448,6 +2526,11 @@ function startTimer(expiresAt) {
 // ============================================================
 function initPassword() {
   wwLog.log('🔐 Şifre paneli başlatılıyor...');
+
+  // Şifre yöneticisi yeni şifreyi doğru hesaba kaydetsin diye formdaki gizli kullanıcı adı alanı
+  var usernameField = safeEl('password-username');
+  var pwUser = window.SETTINGS_STATE.currentUser;
+  if (usernameField && pwUser && pwUser.email) usernameField.value = pwUser.email;
 
   var btn = safeEl('change-password-btn');
   if (btn && !btn._passwordBound) {

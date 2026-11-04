@@ -385,21 +385,11 @@ serve(async (req: Request) => {
             refErr = rpc2.error;
           }
 
-          // Eğer RPC hala hata verirse doğrudan referral_codes tablosunu kontrol et
-          if ((refErr || !refData) && adminClient) {
-            const { data: directCode } = await adminClient
-              .from('referral_codes')
-              .select('discount_percent, is_active, influencer_user_id')
-              .eq('code', cleanRefCode)
-              .maybeSingle();
-
-            if (directCode && directCode.is_active && (!directCode.influencer_user_id || directCode.influencer_user_id !== userId)) {
-              refData = { valid: true, discount_percent: directCode.discount_percent || 10 };
-              refErr = null;
-            }
-          }
-
-          if (refData && refData.valid) {
+          // RPC hata verirse indirim uygulanmaz: tabloya doğrudan bakmak süre/limit/"daha önce kullandı"
+          // kontrollerini atlıyordu (kart akışı creem-checkout da aynı şekilde yalnızca RPC'ye güvenir)
+          if (refErr) {
+            console.warn(`⚠️ Referral code ${cleanRefCode} could not be validated, no discount applied:`, refErr);
+          } else if (refData && refData.valid) {
             const discountPct = Number(refData.discount_percent) || 0;
             if (discountPct > 0 && discountPct <= 100) {
               finalAmount = Number((baseAmount * (1 - (discountPct / 100))).toFixed(2));
