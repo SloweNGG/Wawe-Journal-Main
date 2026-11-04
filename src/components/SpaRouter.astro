@@ -491,8 +491,11 @@ const buildId = __WW_BUILD_ID__;
           ev.preventDefault(); // tam sayfa yüklemesi
           return;
         }
+        // Süresi geçmiş kopya da anında kullanılır (HTML statik; başka derlemeden geldiyse isNewDeploy tam
+        // yükler), arka planda tazelenir. Ağı beklemek her tıklamaya 200-650 ms ekliyordu.
         const hit = htmlCache.get(cacheKey(ev.to));
-        const html = hit && Date.now() - hit.at < HTML_CACHE_TTL_MS ? await hit.html : null;
+        if (hit && Date.now() - hit.at >= HTML_CACHE_TTL_MS) prefetch(ev.to.href);
+        const html = hit ? await hit.html : null;
         if (!html) {
           await defaultLoader();
           if (!ev.defaultPrevented && ev.newDocument !== document) {
@@ -539,6 +542,23 @@ const buildId = __WW_BUILD_ID__;
       pendingScripts = null;
       if (scripts) runPageScripts(scripts);
     });
+
+    // Navbar'daki sayfaların HTML'i boşta önceden çekilir: üzerine gelince başlayan çekme çoğu zaman
+    // tıklamaya yetişmiyordu (SW sayfaları önce ağdan alıyor)
+    function warmNavLinks() {
+      const here = pathKey(new URL(location.href));
+      for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>('.nav-links a[href]'))) {
+        const url = toUrl(a.href);
+        if (url && pathKey(url) !== here) prefetch(a.href);
+      }
+    }
+    function warmWhenIdle() {
+      if ('requestIdleCallback' in window) requestIdleCallback(warmNavLinks, { timeout: 3000 });
+      else setTimeout(warmNavLinks, 1500);
+    }
+    if (document.readyState === 'complete') warmWhenIdle();
+    else window.addEventListener('load', warmWhenIdle, { once: true });
+    document.addEventListener('ww:page-load', warmWhenIdle);
 
     w.wwSpa = {
       canHandle,
