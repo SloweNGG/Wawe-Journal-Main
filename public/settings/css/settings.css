@@ -3828,6 +3828,12 @@ body.light-theme .step-node .step-text,
   color: #475569;
 }
 
+/* aktif adım numarası açık zeminde beyaz kalıp görünmüyordu */
+body.light-theme .step-node.active .step-circle,
+[data-theme="light"] .step-node.active .step-circle {
+  color: var(--accent);
+}
+
 body.light-theme .step-node.active .step-text,
 [data-theme="light"] .step-node.active .step-text {
   color: #7c3aed;
