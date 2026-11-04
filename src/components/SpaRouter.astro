@@ -543,13 +543,34 @@ const buildId = __WW_BUILD_ID__;
       if (scripts) runPageScripts(scripts);
     });
 
-    // Navbar'daki sayfaların HTML'i boşta önceden çekilir: üzerine gelince başlayan çekme çoğu zaman
-    // tıklamaya yetişmiyordu (SW sayfaları önce ağdan alıyor)
+    // Navbar'daki sayfaların HTML'i ve yerel stil dosyaları boşta önceden çekilir: üzerine gelince başlayan
+    // çekme çoğu zaman tıklamaya yetişmiyordu (SW sayfaları önce ağdan alıyor) ve geçiş, preloadStyles'ta
+    // sayfanın CSS'ini ağdan bekliyordu. Stiller SW'nin sürümlü önbelleğine düşer.
+    const warmedEntries = new WeakSet<object>();
+    const warmedStyles = new Set<string>();
+    function warmStyles(html: string | null) {
+      if (!html) return;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      for (const el of Array.from(doc.querySelectorAll('head link[rel=stylesheet]'))) {
+        const href = el.getAttribute('href');
+        const url = href ? toUrl(href) : null;
+        if (!href || !url || url.origin !== location.origin || warmedStyles.has(href)) continue;
+        if (document.querySelector(`link[rel=stylesheet][href="${CSS.escape(href)}"]`)) continue;
+        warmedStyles.add(href);
+        fetch(href, { credentials: 'same-origin' }).catch(() => {});
+      }
+    }
     function warmNavLinks() {
       const here = pathKey(new URL(location.href));
       for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>('.nav-links a[href]'))) {
         const url = toUrl(a.href);
-        if (url && pathKey(url) !== here) prefetch(a.href);
+        if (!url || pathKey(url) === here) continue;
+        prefetch(a.href);
+        const entry = htmlCache.get(cacheKey(url));
+        if (entry && !warmedEntries.has(entry)) {
+          warmedEntries.add(entry);
+          entry.html.then(warmStyles);
+        }
       }
     }
     function warmWhenIdle() {
