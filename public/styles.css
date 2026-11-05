@@ -24,13 +24,16 @@
   --bg2: #0d0d14;
   --surface: #0e0e16;
   --surface2: #161620;
-  --border: rgba(123,110,246,0.12);
-  --border2: rgba(123,110,246,0.2);
+  /* Koyu temada kutuların rengi: varsayılan saf siyah. Özel tema bir kutu rengi seçince
+     BaseHead.astro bunu <html> üzerinde temanın --surface rengine çeker. */
+  --card-bg: #000;
+  --border: rgba(var(--ac-b2-rgb), 0.12);
+  --border2: rgba(var(--ac-b2-rgb), 0.2);
 
-  --accent: #8b5cf6;
-  --accent2: #c084fc;
-  --accent3: #a78bfa;
-  --accent-glow: rgba(139,92,246,0.4);
+  --accent: var(--ac);
+  --accent2: var(--ac-p1);
+  --accent3: var(--ac-l1);
+  --accent-glow: rgba(var(--ac-rgb), 0.4);
 
   --accent-secondary: #fa6d9b;
   --accent-secondary-bg: rgba(250,109,155,0.12);
@@ -83,10 +86,10 @@
   --z-toast: 9999;
 
   /* PANEL (MODAL) TASARIM TOKEN'LARI — tüm paneller bu değerleri kullanır */
-  --modal-bg: #000;
+  --modal-bg: var(--card-bg);         /* koyu tema: kutularla aynı (varsayılan siyah, özel temada tema rengi) */
   --modal-line: rgba(255, 255, 255, 0.08);
   --modal-line-strong: rgba(255, 255, 255, 0.14);
-  --modal-field-bg: #000;
+  --modal-field-bg: var(--card-bg);
   --modal-field-line: rgba(255, 255, 255, 0.12);
   --modal-hover: rgba(255, 255, 255, 0.06);
   --modal-backdrop: rgba(4, 2, 10, 0.78);
@@ -106,13 +109,14 @@ body.light-theme {
   --bg2: #ececf2;
   --surface: #ffffff;
   --surface2: #f1f1f6;
+  --card-bg: #000; /* açık temada koyu tema özel kutu rengi devralınmasın */
   --border: #e2e2ea;
-  --border2: rgba(139,92,246,0.35);
+  --border2: rgba(var(--ac-rgb), 0.35);
 
-  --accent: #6c5ce7;
-  --accent2: #6b5bd6;
-  --accent3: #c084fc;
-  --accent-glow: rgba(124,109,250,0.1);
+  --accent: var(--ac-b5);
+  --accent2: var(--ac-b6);
+  --accent3: var(--ac-p1);
+  --accent-glow: rgba(var(--ac-b1-rgb), 0.1);
 
   --accent-secondary: #e0558a;
   --accent-secondary-bg: rgba(224,85,138,0.08);
@@ -241,16 +245,16 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(139,92,246,0.08) 0%, transparent 60%),
-              radial-gradient(ellipse 50% 30% at 80% 70%, rgba(192,132,252,0.05) 0%, transparent 60%);
+  background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(var(--ac-rgb), 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 30% at 80% 70%, rgba(var(--ac-p1-rgb), 0.05) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
   transform: translateZ(0);
   will-change: transform;
 }
 body.light-theme::before {
-  background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(139,92,246,0.04) 0%, transparent 50%),
-              radial-gradient(ellipse 50% 30% at 80% 70%, rgba(192,132,252,0.02) 0%, transparent 50%);
+  background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(var(--ac-rgb), 0.04) 0%, transparent 50%),
+              radial-gradient(ellipse 50% 30% at 80% 70%, rgba(var(--ac-p1-rgb), 0.02) 0%, transparent 50%);
 }
 
 /* ============================================================
@@ -269,7 +273,7 @@ h1, h2, h3, h4, h5, .h1, .h2, .h3, .h4, .h5 {
 }
 body.light-theme h1, body.light-theme h2, body.light-theme h3,
 body.light-theme h4, body.light-theme h5 {
-  background: linear-gradient(135deg, #1e1b4b 0%, #3b0764 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, var(--ac-d5) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -321,7 +325,7 @@ body.light-theme h4, body.light-theme h5 {
   .page-header.page-header-row { min-height: 40px; }
 }
 /* zaman filtresi grubu (Dashboard, Strateji, Analitik: Tümü / Bu hafta / ... / Özel): koyu temada gri değil saf siyah */
-:root:not(.light-theme) body:not(.light-theme) :is(.date-filter-group, .time-filter-group) { background: #000; }
+:root:not(.light-theme) body:not(.light-theme) :is(.date-filter-group, .time-filter-group) { background: var(--card-bg); }
 
 /* ============================================================
    DASHBOARD SAYFASI
@@ -355,7 +359,7 @@ body.light-theme h4, body.light-theme h5 {
 .stat-card:hover {
   border-color: var(--accent2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(139,92,246,0.15);
+  box-shadow: 0 8px 24px rgba(var(--ac-rgb), 0.15);
 }
 /* ⭐ FIX 4.3: accent-color kullanılıyor (fallback ile) */
 .stat-card::before {
@@ -478,8 +482,8 @@ body.light-theme h4, body.light-theme h5 {
   contain: paint;
 }
 .chart-card:hover {
-  border-color: rgba(139,92,246,0.3);
-  box-shadow: 0 4px 16px rgba(139,92,246,0.08);
+  border-color: rgba(var(--ac-rgb), 0.3);
+  box-shadow: 0 4px 16px rgba(var(--ac-rgb), 0.08);
 }
 .chart-header {
   display: flex;
@@ -519,7 +523,7 @@ body.light-theme h4, body.light-theme h5 {
   padding: clamp(0.6rem, 1vw, 1rem);
 }
 .streak-card:hover, .strategy-tags-card:hover {
-  border-color: rgba(139,92,246,0.3);
+  border-color: rgba(var(--ac-rgb), 0.3);
 }
 .streak-title, .strategy-tags-title {
   font-size: clamp(8px, 0.7vw, 9px);
@@ -806,8 +810,8 @@ body.light-theme h4, body.light-theme h5 {
   width: clamp(26px, 4vw, 38px);
   height: clamp(26px, 4vw, 38px);
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(192,132,252,0.1));
-  border: 1px solid rgba(139,92,246,0.25);
+  background: linear-gradient(135deg, rgba(var(--ac-rgb), 0.25), rgba(var(--ac-p1-rgb), 0.1));
+  border: 1px solid rgba(var(--ac-rgb), 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -844,7 +848,7 @@ body.light-theme h4, body.light-theme h5 {
 }
 .cal-nav-btn:hover {
   color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  background: rgba(var(--ac-rgb), 0.06);
 }
 .cal-nav-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -865,13 +869,13 @@ body.light-theme h4, body.light-theme h5 {
   color: var(--text);
 }
 .cal-nav-btn.today-btn {
-  background: rgba(139,92,246,0.08);
+  background: rgba(var(--ac-rgb), 0.08);
   color: var(--accent);
   font-size: clamp(8px, 0.7vw, 10px);
   padding: clamp(0.1rem, 0.2vw, 0.2rem) clamp(0.4rem, 0.6vw, 0.7rem);
 }
 .cal-nav-btn.today-btn:hover {
-  background: rgba(139,92,246,0.15);
+  background: rgba(var(--ac-rgb), 0.15);
 }
 
 /* Gün Başlıkları */
@@ -913,7 +917,7 @@ body.light-theme h4, body.light-theme h5 {
   border-color: var(--accent);
   transform: scale(1.02);
   z-index: 2;
-  box-shadow: 0 6px 20px rgba(139,92,246,0.15);
+  box-shadow: 0 6px 20px rgba(var(--ac-rgb), 0.15);
 }
 .cal-day .day-bg {
   position: absolute;
@@ -1018,7 +1022,7 @@ body.light-theme h4, body.light-theme h5 {
   position: absolute;
   inset: clamp(-2px, -0.3vw, -4px);
   border-radius: clamp(10px, 1.2vw, 14px);
-  background: rgba(139,92,246,0.12);
+  background: rgba(var(--ac-rgb), 0.12);
   animation: pulseRing 2s ease-in-out infinite;
   z-index: -2;
   pointer-events: none;
@@ -1115,7 +1119,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   flex-shrink: 0;
 }
 .summary-mini-card .s-icon.trades {
-  background: rgba(139,92,246,0.12);
+  background: rgba(var(--ac-rgb), 0.12);
   color: var(--accent2);
 }
 .summary-mini-card .s-icon.pnl {
@@ -1162,13 +1166,13 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--surface);
-  border: 1px solid rgba(139,92,246,0.3);
+  border: 1px solid rgba(var(--ac-rgb), 0.3);
   border-radius: 16px;
   padding: clamp(0.75rem, 1.5vw, 1.25rem);
   min-width: min(280px, 85vw);
   max-width: min(380px, 92vw);
   z-index: var(--z-popover);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(139,92,246,0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(var(--ac-rgb), 0.08);
   backdrop-filter: blur(16px);
 }
 .calendar-day-popup.active {
@@ -1324,7 +1328,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 }
 .ww-table tr:last-child td { border-bottom: none; }
 .ww-table tbody tr { transition: all 0.15s; }
-.ww-table tbody tr:hover td { background: rgba(139,92,246,0.04); }
+.ww-table tbody tr:hover td { background: rgba(var(--ac-rgb), 0.04); }
 
 /* Tablo scroll indicator */
 .ww-table-wrapper {
@@ -1369,7 +1373,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(0.3rem, 0.6vw, 0.6rem) clamp(0.6rem, 1vw, 1.2rem);
   margin-bottom: 0.75rem;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 20px rgba(139,92,246,0.06);
+  box-shadow: 0 4px 20px rgba(var(--ac-rgb), 0.06);
   flex-wrap: wrap;
 }
 .sel-bar.visible { display: flex; }
@@ -1380,7 +1384,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   font-weight: 600;
   color: var(--text);
   padding: 0.2rem 0.4rem;
-  background: rgba(139,92,246,0.08);
+  background: rgba(var(--ac-rgb), 0.08);
   border-radius: 6px;
   min-width: 20px;
   text-align: center;
@@ -1413,7 +1417,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .sel-bar .sel-clear:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139,92,246,0.05);
+  background: rgba(var(--ac-rgb), 0.05);
 }
 
 .btn-bulk-delete {
@@ -1459,7 +1463,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   padding: clamp(1rem, 2vw, 1.75rem);
   width: 100%;
   max-width: min(420px, 92vw);
-  box-shadow: 0 8px 32px rgba(139,92,246,0.1);
+  box-shadow: 0 8px 32px rgba(var(--ac-rgb), 0.1);
 }
 .auth-box .auth-title {
   font-size: clamp(1.1rem, 2.5vw, 1.4rem);
@@ -1539,11 +1543,11 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn:active { transform: scale(0.97); }
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  background: linear-gradient(135deg, var(--accent), var(--ac-d1));
   color: #fff;
-  box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+  box-shadow: 0 4px 12px rgba(var(--ac-rgb), 0.3);
 }
-.btn-primary:hover { box-shadow: 0 6px 20px rgba(139,92,246,0.5); }
+.btn-primary:hover { box-shadow: 0 6px 20px rgba(var(--ac-rgb), 0.5); }
 .btn-danger {
   background: linear-gradient(135deg, var(--red), #dc2626);
   color: #fff;
@@ -1558,7 +1562,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .btn-ghost:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139,92,246,0.05);
+  background: rgba(var(--ac-rgb), 0.05);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 .btn-login {
@@ -1579,7 +1583,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .btn-login:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139,92,246,0.05);
+  background: rgba(var(--ac-rgb), 0.05);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 .btn-register {
@@ -1744,10 +1748,10 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 }
 
 .ww-toast--info {
-  border-left: 3px solid var(--accent, #7c6dfa);
+  border-left: 3px solid var(--accent, var(--ac-b1));
 }
 .ww-toast--info .ww-toast-icon {
-  color: var(--accent, #7c6dfa);
+  color: var(--accent, var(--ac-b1));
 }
 
 /* Light mode support */
@@ -1883,7 +1887,7 @@ body.light-theme .ww-toast-close:hover {
 .confirm-modal-footer .btn-modal-cancel:hover {
   border-color: var(--accent);
   color: var(--text);
-  background: rgba(139,92,246,0.05);
+  background: rgba(var(--ac-rgb), 0.05);
 }
 .confirm-modal-footer .btn-modal-danger {
   background: #dc2626;
@@ -2208,7 +2212,7 @@ body.light-theme .skeleton-stat::after {
 }
 .nav-dropdown-btn:hover {
   color: var(--accent);
-  background: rgba(139,92,246,0.06);
+  background: rgba(var(--ac-rgb), 0.06);
 }
 .nav-dropdown-btn .dropdown-arrow {
   font-size: 7px;
@@ -2261,7 +2265,7 @@ body.light-theme .skeleton-stat::after {
   font-weight: 500;
 }
 .nav-dropdown-menu a:hover {
-  background: rgba(139,92,246,0.06);
+  background: rgba(var(--ac-rgb), 0.06);
   color: var(--accent);
 }
 .nav-dropdown-menu a .pro-icon {
@@ -2303,8 +2307,8 @@ body.light-theme .skeleton-stat::after {
   border: 1px solid var(--border);
 }
 .plan-perks-box:hover {
-  border-color: rgba(139, 92, 246, 0.2);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.06);
+  border-color: rgba(var(--ac-rgb), 0.2);
+  box-shadow: 0 4px 20px rgba(var(--ac-rgb), 0.06);
 }
 .plan-perks-box .perks-title {
   font-size: clamp(11px, 1vw, 13px);
@@ -2340,8 +2344,8 @@ body.light-theme .skeleton-stat::after {
   border: 1px solid var(--border);
 }
 .plan-perks-box .perk-item:hover {
-  border-color: rgba(139, 92, 246, 0.25);
-  background: rgba(139, 92, 246, 0.03);
+  border-color: rgba(var(--ac-rgb), 0.25);
+  background: rgba(var(--ac-rgb), 0.03);
   transform: translateX(3px);
 }
 .plan-perks-box .perk-item .perk-icon {
@@ -2376,8 +2380,8 @@ body.light-theme .skeleton-stat::after {
   white-space: nowrap;
 }
 .plan-badge.pro {
-  background: rgba(139,92,246,0.12);
-  border: 1px solid rgba(139,92,246,0.25);
+  background: rgba(var(--ac-rgb), 0.12);
+  border: 1px solid rgba(var(--ac-rgb), 0.25);
   color: var(--accent2);
 }
 .plan-badge .plan-dot {
@@ -2391,7 +2395,7 @@ body.light-theme .skeleton-stat::after {
 }
 .plan-badge.pro .plan-dot {
   background: var(--accent2);
-  box-shadow: 0 0 8px rgba(139,92,246,0.4);
+  box-shadow: 0 0 8px rgba(var(--ac-rgb), 0.4);
 }
 .plan-badge .plan-text {
   font-size: clamp(8px, 0.7vw, 10px);
@@ -2847,7 +2851,7 @@ body {
 .modal-body .modal-field input[type="text"]:focus,
 .modal-body .modal-field textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+  box-shadow: 0 0 0 3px rgba(var(--ac-rgb), 0.18);
 }
 .modal-body .field select option { background: var(--modal-bg); color: var(--text); }
 .modal-body :disabled { opacity: 0.55; cursor: not-allowed; }
@@ -2864,10 +2868,10 @@ body {
    ⭐ DYNAMIC AMBIENT BACKDROP (PnL Adaptive Glow)
    ============================================================ */
 :root {
-  --ambient-mesh-glow: radial-gradient(ellipse 90% 55% at 50% -8%, rgba(139, 92, 246, 0.22) 0%, transparent 72%);
-  --ambient-color-1: rgba(139, 92, 246, 0.45); /* Wawe Purple */
-  --ambient-color-2: rgba(99, 102, 241, 0.32);  /* Deep Indigo */
-  --ambient-panel-glow: rgba(139, 92, 246, 0.50);
+  --ambient-mesh-glow: radial-gradient(ellipse 90% 55% at 50% -8%, rgba(var(--ac-rgb), 0.22) 0%, transparent 72%);
+  --ambient-color-1: rgba(var(--ac-rgb), 0.45); /* Wawe Purple */
+  --ambient-color-2: rgba(var(--ac-i1-rgb), 0.32);  /* Deep Indigo */
+  --ambient-panel-glow: rgba(var(--ac-rgb), 0.50);
 }
 
 /* KÂR (Profit): Emerald Green Glow */
@@ -2891,10 +2895,10 @@ html[data-ambient-state="loss"] {
 /* NÖTR (Neutral): Signature Purple Glow */
 body[data-ambient-state="neutral"],
 html[data-ambient-state="neutral"] {
-  --ambient-mesh-glow: radial-gradient(ellipse 90% 55% at 50% -8%, rgba(139, 92, 246, 0.22) 0%, transparent 72%);
-  --ambient-color-1: rgba(139, 92, 246, 0.45);
-  --ambient-color-2: rgba(168, 85, 247, 0.32);
-  --ambient-panel-glow: rgba(139, 92, 246, 0.50);
+  --ambient-mesh-glow: radial-gradient(ellipse 90% 55% at 50% -8%, rgba(var(--ac-rgb), 0.22) 0%, transparent 72%);
+  --ambient-color-1: rgba(var(--ac-rgb), 0.45);
+  --ambient-color-2: rgba(var(--ac-p2-rgb), 0.32);
+  --ambient-panel-glow: rgba(var(--ac-rgb), 0.50);
 }
 
 .wj-ambient-backdrop {
@@ -2989,8 +2993,10 @@ html.light-theme .wj-ambient-backdrop {
 }
 
 /* ============================================================
-   KARTLAR — koyu temada saf siyah (tüm uygulama sayfaları)
-   Özel tema --surface rengi ya da ortam ışığı kartların içine yansımaz.
+   KARTLAR — koyu temada --card-bg (tüm uygulama sayfaları)
+   Varsayılan saf siyah; ayarlardan özel tema seçilince temanın kutu rengi
+   (BaseHead.astro --card-bg'yi --surface'ten türetir). Ortam ışığı kartların
+   içine yansımaz (renk her zaman opak).
    Yalnızca ana kart/panel yüzeyleri; durum renkleri (kâr/zarar günleri,
    seçili kartlar, rozetler), modallar, menüler ve form alanları hariç.
    Açık tema kendi --surface rengini korur. Ana dashboard kartları
@@ -3023,7 +3029,7 @@ html.light-theme .wj-ambient-backdrop {
   /* hata bildir */
   .bug-card, .ticket-card, .tickets-empty
 ) {
-  background: #000;
+  background: var(--card-bg);
 }
 
 /* ============================================================
@@ -3041,10 +3047,10 @@ html.light-theme .wj-ambient-backdrop {
 ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border2, rgba(139, 92, 246, 0.35));
+  background: var(--border2, rgba(var(--ac-rgb), 0.35));
   border-radius: 99px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.6); }
+::-webkit-scrollbar-thumb:hover { background: rgba(var(--ac-rgb), 0.6); }
 
 /* Chromium/Safari: eski scrollbar-width: thin / scrollbar-color tanımları özel çubuğu ezmesin */
 @supports selector(::-webkit-scrollbar) {
@@ -3063,7 +3069,7 @@ html.light-theme .wj-ambient-backdrop {
 
 /* Firefox: ince çubuk, aynı renk */
 @supports not selector(::-webkit-scrollbar) {
-  * { scrollbar-width: thin; scrollbar-color: var(--border2, rgba(139, 92, 246, 0.35)) transparent; }
+  * { scrollbar-width: thin; scrollbar-color: var(--border2, rgba(var(--ac-rgb), 0.35)) transparent; }
 }
 
 /* Defter kapsamı rozeti (dashboard / pro analitik): "Backtest dahil" / "Sadece backtest" (amber, .badge-backtest ile aynı dil) */

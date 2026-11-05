@@ -34,7 +34,7 @@ import Layout from '../layouts/Layout.astro';
       padding: 1.6rem 1.75rem 1.5rem;
       overflow: hidden;
       isolation: isolate;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.09);
       border-radius: 18px;
     }
@@ -584,7 +584,7 @@ import Layout from '../layouts/Layout.astro';
       font-family: var(--font);
       position: relative;
       overflow: hidden;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.09);
       border-radius: 18px;
       padding: 3rem 3rem 3.25rem;
@@ -625,17 +625,17 @@ import Layout from '../layouts/Layout.astro';
       align-items: center;
       gap: 6px;
       padding: 5px 12px;
-      border: 1px solid rgba(167, 139, 250, 0.4);
+      border: 1px solid rgba(var(--ac-l1-rgb), 0.4);
       border-radius: 99px;
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.08em;
-      color: #c4b5fd;
+      color: var(--ac-l2);
       margin-bottom: 1.25rem;
     }
     body.light-theme .partner-hero-badge {
-      border-color: rgba(124, 58, 237, 0.3);
-      color: #6d28d9;
+      border-color: rgba(var(--ac-d1-rgb), 0.3);
+      color: var(--ac-d2);
     }
     .partner-hero-title {
       font-family: var(--font) !important;
@@ -689,7 +689,7 @@ import Layout from '../layouts/Layout.astro';
     .partner-preview-card {
       width: 100%;
       max-width: 360px;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 18px;
       padding: 1.35rem 1.4rem;
@@ -721,7 +721,7 @@ import Layout from '../layouts/Layout.astro';
       align-items: center;
       justify-content: space-between;
       padding: 0.8rem 1rem;
-      border: 1px dashed rgba(167, 139, 250, 0.5);
+      border: 1px dashed rgba(var(--ac-l1-rgb), 0.5);
       border-radius: 12px;
       font-family: var(--font);
       font-size: 1.35rem;
@@ -732,7 +732,7 @@ import Layout from '../layouts/Layout.astro';
     }
     .partner-preview-code i,
     .partner-preview-code svg {
-      color: #a78bfa;
+      color: var(--ac-l1);
     }
     .partner-preview-rows {
       display: flex;
@@ -787,7 +787,7 @@ import Layout from '../layouts/Layout.astro';
       display: block;
       height: 100%;
       border-radius: 99px;
-      background: #a78bfa;
+      background: var(--ac-l1);
     }
     .partner-preview-toast {
       position: absolute;
@@ -797,7 +797,7 @@ import Layout from '../layouts/Layout.astro';
       align-items: center;
       gap: 8px;
       padding: 0.5rem 0.85rem;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(34, 197, 94, 0.35);
       border-radius: 99px;
       font-size: 12px;
@@ -833,7 +833,7 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .partner-preview-code {
       color: #0f172a;
-      border-color: rgba(124, 58, 237, 0.4);
+      border-color: rgba(var(--ac-d1-rgb), 0.4);
     }
     body.light-theme .partner-preview-tag {
       border-color: var(--border);
@@ -845,7 +845,7 @@ import Layout from '../layouts/Layout.astro';
       background: rgba(0, 0, 0, 0.06);
     }
     body.light-theme .partner-preview-bar span {
-      background: #7c3aed;
+      background: var(--ac-d1);
     }
 
     /* Nasıl çalışır */
@@ -869,21 +869,21 @@ import Layout from '../layouts/Layout.astro';
       margin-bottom: 1rem;
     }
     .partner-step-card {
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.09);
       border-radius: 14px;
       padding: 1.35rem 1.4rem 1.4rem;
       transition: border-color 0.2s ease;
     }
     .partner-step-card:hover {
-      border-color: rgba(167, 139, 250, 0.45);
+      border-color: rgba(var(--ac-l1-rgb), 0.45);
     }
     body.light-theme .partner-step-card {
       background: #fff;
       border-color: var(--border);
     }
     body.light-theme .partner-step-card:hover {
-      border-color: rgba(124, 58, 237, 0.4);
+      border-color: rgba(var(--ac-d1-rgb), 0.4);
     }
     .partner-step-top {
       display: flex;
@@ -905,17 +905,17 @@ import Layout from '../layouts/Layout.astro';
       width: 38px;
       height: 38px;
       border-radius: 10px;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.12);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #a78bfa;
+      color: var(--ac-l1);
     }
     body.light-theme .step-icon-wrap {
       background: #fff;
       border-color: var(--border);
-      color: #7c3aed;
+      color: var(--ac-d1);
     }
     .step-title {
       font-family: var(--font) !important;
@@ -941,7 +941,7 @@ import Layout from '../layouts/Layout.astro';
       grid-template-columns: repeat(4, minmax(0, 1fr));
       border: 1px solid rgba(255, 255, 255, 0.09);
       border-radius: 14px;
-      background: #000;
+      background: var(--card-bg);
       margin-bottom: 2rem;
       overflow: hidden;
     }
@@ -960,7 +960,7 @@ import Layout from '../layouts/Layout.astro';
       height: 18px;
       flex-shrink: 0;
       margin-top: 1px;
-      color: #a78bfa;
+      color: var(--ac-l1);
     }
     .partner-fact div {
       display: flex;
@@ -987,7 +987,7 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .partner-fact > i,
     body.light-theme .partner-fact > svg {
-      color: #7c3aed;
+      color: var(--ac-d1);
     }
 
     @media (max-width: 960px) {
@@ -1079,11 +1079,11 @@ import Layout from '../layouts/Layout.astro';
     }
     .crypto-radio-card.active {
       border-color: var(--accent);
-      background: rgba(139, 92, 246, 0.12);
+      background: rgba(var(--ac-rgb), 0.12);
       color: var(--text);
     }
     body.light-theme .crypto-radio-card.active {
-      background: rgba(108, 92, 231, 0.08);
+      background: rgba(var(--ac-b5-rgb), 0.08);
       border-color: var(--accent);
     }
 
@@ -1166,7 +1166,7 @@ import Layout from '../layouts/Layout.astro';
     /* Partner başvuru formu */
     .apply-card {
       max-width: 500px;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 18px;
     }
@@ -1186,7 +1186,7 @@ import Layout from '../layouts/Layout.astro';
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #a78bfa;
+      color: var(--ac-l1);
     }
     .apply-head-text {
       flex: 1;
@@ -1275,7 +1275,7 @@ import Layout from '../layouts/Layout.astro';
       width: 100%;
       box-sizing: border-box;
       padding: 0.7rem 0.85rem;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 10px;
       color: var(--text);
@@ -1291,8 +1291,8 @@ import Layout from '../layouts/Layout.astro';
       color: rgba(255, 255, 255, 0.3);
     }
     .apply-input:focus {
-      border-color: #7c6dfa;
-      box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.16);
+      border-color: var(--ac-b1);
+      box-shadow: 0 0 0 3px rgba(var(--ac-b1-rgb), 0.16);
     }
     .apply-textarea {
       resize: vertical;
@@ -1313,7 +1313,7 @@ import Layout from '../layouts/Layout.astro';
     }
     .apply-chip {
       padding: 0.6rem 0.4rem;
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 10px;
       color: var(--muted);
@@ -1327,12 +1327,12 @@ import Layout from '../layouts/Layout.astro';
     }
     .apply-chip:hover {
       color: var(--text);
-      border-color: rgba(167, 139, 250, 0.5);
+      border-color: rgba(var(--ac-l1-rgb), 0.5);
     }
     .apply-chip.active {
       color: #fff;
-      border-color: #7c6dfa;
-      background: rgba(124, 109, 250, 0.12);
+      border-color: var(--ac-b1);
+      background: rgba(var(--ac-b1-rgb), 0.12);
     }
     .apply-choices {
       display: grid;
@@ -1340,7 +1340,7 @@ import Layout from '../layouts/Layout.astro';
       gap: 0.6rem;
     }
     .apply-choice.crypto-radio-card {
-      background: #000;
+      background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 10px;
       padding: 0.75rem 0.85rem;
@@ -1350,12 +1350,12 @@ import Layout from '../layouts/Layout.astro';
       color: var(--muted);
     }
     .apply-choice.crypto-radio-card:hover {
-      border-color: rgba(167, 139, 250, 0.5);
+      border-color: rgba(var(--ac-l1-rgb), 0.5);
       color: var(--text);
     }
     .apply-choice.crypto-radio-card.active {
-      border-color: #7c6dfa;
-      background: rgba(124, 109, 250, 0.12);
+      border-color: var(--ac-b1);
+      background: rgba(var(--ac-b1-rgb), 0.12);
       color: #fff;
     }
     .apply-radio {
@@ -1368,11 +1368,11 @@ import Layout from '../layouts/Layout.astro';
       transition: border 0.15s ease;
     }
     .apply-choice.active .apply-radio {
-      border: 5px solid #a78bfa;
+      border: 5px solid var(--ac-l1);
     }
     .apply-chip:focus-visible,
     .apply-close:focus-visible {
-      outline: 2px solid #a78bfa;
+      outline: 2px solid var(--ac-l1);
       outline-offset: 2px;
     }
     .apply-footer {
@@ -1394,7 +1394,7 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .apply-head-icon {
       border-color: var(--border);
-      color: #7c3aed;
+      color: var(--ac-d1);
     }
     body.light-theme .apply-close:hover {
       background: rgba(0, 0, 0, 0.05);
@@ -1403,20 +1403,20 @@ import Layout from '../layouts/Layout.astro';
       color: #94a3b8;
     }
     body.light-theme .apply-input:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+      border-color: var(--ac-i1);
+      box-shadow: 0 0 0 3px rgba(var(--ac-i1-rgb), 0.14);
     }
     body.light-theme .apply-chip.active,
     body.light-theme .apply-choice.crypto-radio-card.active {
       color: #1a1033;
-      border-color: #7c3aed;
-      background: rgba(124, 58, 237, 0.06);
+      border-color: var(--ac-d1);
+      background: rgba(var(--ac-d1-rgb), 0.06);
     }
     body.light-theme .apply-radio {
       border-color: #cbd5e1;
     }
     body.light-theme .apply-choice.active .apply-radio {
-      border-color: #7c3aed;
+      border-color: var(--ac-d1);
     }
 
     @media (max-width: 520px) {
@@ -1818,7 +1818,7 @@ import Layout from '../layouts/Layout.astro';
     <div class="earnings-modal-card">
       <div class="earnings-modal-header">
         <div style="display:flex; align-items:center; gap:8px;">
-          <div style="width:32px; height:32px; border-radius:8px; background:rgba(124,109,250,0.12); display:flex; align-items:center; justify-content:center; color:var(--accent);">
+          <div style="width:32px; height:32px; border-radius:8px; background:rgba(var(--ac-b1-rgb), 0.12); display:flex; align-items:center; justify-content:center; color:var(--accent);">
             <i data-lucide="wallet" style="width:18px; height:18px;"></i>
           </div>
           <h3 data-i18n="earnings.modal_wallets_title">Kayıtlı Cüzdan Adreslerim</h3>

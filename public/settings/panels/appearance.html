@@ -250,134 +250,87 @@
 </template>
 
 <!-- ============================================================
-     TEMPLATE: LIGHT LOCKED
-     ============================================================ -->
-<template id="tpl-theme-light-locked">
-  <div class="theme-pro-locked-card">
-    <div class="locked-icon-halo" style="background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.25); color: #f59e0b;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-      </svg>
-    </div>
-    <h3 data-i18n="settings.theme_light_active">Açık Tema Aktif</h3>
-    <p data-i18n="settings.theme_light_active_desc">
-      Renk stüdyosu Koyu Tema üzerinde çalışır. Koyu temaya geçerek tüm renkleri kişiselleştirebilirsiniz.
-    </p>
-    <button type="button" id="theme-switch-to-dark-btn" class="btn-pro-cta" data-i18n="settings.theme_switch_to_dark">
-      <span>Koyu Temaya Geç</span>
-    </button>
-  </div>
-</template>
-
-<!-- ============================================================
      TEMPLATE: FORM
      ============================================================ -->
 <template id="tpl-theme-form">
-  <div class="theme-form">
-    <!-- Bilgi Şeridi -->
-    <div class="theme-notice-minimal">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <span data-i18n="settings.studio_notice">Renk ve yazı ayarları anında önizlenir ve koyu temada saklanır.</span>
+  <div class="theme-form ts">
+    <!-- Bilgi şeridi: hangi modun paleti düzenleniyor + hesapla eşitleme -->
+    <div class="theme-notice-minimal ts-notice">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>
+        <strong class="ts-mode-label" data-ts-mode-label></strong>
+        <span data-i18n="settings.studio_notice">Renkler anında uygulanır ve otomatik kaydedilir; hesabına da kaydedildiği için tüm cihazlarında aynı görünür.</span>
+        <span class="ts-mode-hint" data-i18n="settings.studio_mode_hint">Koyu ve açık temanın paleti ayrı saklanır; diğerini düzenlemek için yukarıdan arayüz modunu değiştir.</span>
+      </span>
     </div>
 
-    <!-- Küratörlü Hazır Paletler (Sitenin renk dünyasına sadık) -->
+    <!-- Hazır temalar (JS doldurur: WWTheme.PRESETS) -->
     <div class="theme-subblock">
-      <div class="theme-subblock-title" data-i18n="settings.studio_presets">Hazır paletler</div>
-      <div class="theme-preset-grid">
-        <button type="button" class="preset-card active" data-preset="obsidian" title="Wawe Varsayılan Paleti">
-          <div class="preset-swatches">
-            <span style="background: #07070c;"></span>
-            <span style="background: #0e0e16;"></span>
-            <span style="background: #1a1a28;"></span>
-            <span style="background: #8b5cf6;"></span>
-          </div>
-          <span class="preset-name">Obsidian <span data-i18n="settings.studio_default_tag">(varsayılan)</span></span>
-        </button>
+      <div class="theme-subblock-title" data-i18n="settings.studio_presets">Hazır temalar</div>
+      <div class="ts-preset-grid" data-ts-presets role="radiogroup" aria-labelledby="ts-presets-title"></div>
+    </div>
 
-        <button type="button" class="preset-card" data-preset="violet" title="Derin Mor & Neon">
-          <div class="preset-swatches">
-            <span style="background: #080612;"></span>
-            <span style="background: #120e24;"></span>
-            <span style="background: #261e47;"></span>
-            <span style="background: #a855f7;"></span>
-          </div>
-          <span class="preset-name">Deep Violet</span>
-        </button>
-
-        <button type="button" class="preset-card" data-preset="slate" title="Gece Mavisi & Grafit">
-          <div class="preset-swatches">
-            <span style="background: #090d14;"></span>
-            <span style="background: #0f172a;"></span>
-            <span style="background: #1e293b;"></span>
-            <span style="background: #38bdf8;"></span>
-          </div>
-          <span class="preset-name">Midnight Slate</span>
-        </button>
-
-        <button type="button" class="preset-card" data-preset="stealth" title="Monokrom Siyah & Beyaz">
-          <div class="preset-swatches">
-            <span style="background: #000000;"></span>
-            <span style="background: #0c0c0e;"></span>
-            <span style="background: #242428;"></span>
-            <span style="background: #ffffff;"></span>
-          </div>
-          <span class="preset-name">Pure Stealth</span>
-        </button>
+    <!-- Özel renkler -->
+    <div class="theme-subblock">
+      <div class="ts-subhead">
+        <div class="theme-subblock-title" data-i18n="settings.studio_custom">Özel renkler</div>
+        <span class="ts-custom-badge" data-ts-custom hidden data-i18n="settings.studio_custom_badge">Özel</span>
       </div>
-    </div>
-
-    <!-- Özel Renk Ayarları -->
-    <div class="theme-subblock">
-      <div class="theme-subblock-title" data-i18n="settings.studio_custom">Özel renkler</div>
-      <div class="color-grid">
+      <div class="color-grid ts-color-grid">
         <div class="color-field">
-          <label data-i18n="settings.theme_bg_color">Arka Plan Rengi</label>
+          <label for="ts-bg-text" data-i18n="settings.theme_bg_color">Arka Plan Rengi</label>
           <div class="color-input-group">
-            <div class="color-chip" id="chip-bg" style="background:#07070c;" title="Rengi Seç">
-              <input type="color" id="custom-bg-color" class="color-input-picker" value="#07070c">
+            <div class="color-chip" data-ts-chip="bg">
+              <input type="color" data-ts-field="bg" class="color-input-picker" aria-haspopup="dialog" aria-expanded="false" data-swatches="">
             </div>
-            <input type="text" id="custom-bg-color-text" class="color-input-text" value="#07070c" spellcheck="false" maxlength="7">
+            <input type="text" id="ts-bg-text" data-ts-text="bg" class="color-input-text" spellcheck="false" maxlength="7" autocomplete="off">
           </div>
         </div>
-
         <div class="color-field">
-          <label data-i18n="settings.theme_surface_color">Kart Arka Planı</label>
+          <label for="ts-surface-text" data-i18n="settings.theme_surface_color">Kart Arka Plan Rengi</label>
           <div class="color-input-group">
-            <div class="color-chip" id="chip-surface" style="background:#0e0e16;" title="Rengi Seç">
-              <input type="color" id="custom-surface-color" class="color-input-picker" value="#0e0e16">
+            <div class="color-chip" data-ts-chip="surface">
+              <input type="color" data-ts-field="surface" class="color-input-picker" aria-haspopup="dialog" aria-expanded="false" data-swatches="">
             </div>
-            <input type="text" id="custom-surface-color-text" class="color-input-text" value="#0e0e16" spellcheck="false" maxlength="7">
+            <input type="text" id="ts-surface-text" data-ts-text="surface" class="color-input-text" spellcheck="false" maxlength="7" autocomplete="off">
           </div>
         </div>
-
         <div class="color-field">
-          <label data-i18n="settings.theme_border_color">Kenarlık Rengi</label>
+          <label for="ts-border-text" data-i18n="settings.theme_border_color">Kenarlık Rengi</label>
           <div class="color-input-group">
-            <div class="color-chip" id="chip-border" style="background:#1a1a28;" title="Rengi Seç">
-              <input type="color" id="custom-border-color" class="color-input-picker" value="#1a1a28">
+            <div class="color-chip" data-ts-chip="border">
+              <input type="color" data-ts-field="border" class="color-input-picker" aria-haspopup="dialog" aria-expanded="false" data-swatches="">
             </div>
-            <input type="text" id="custom-border-color-text" class="color-input-text" value="#1a1a28" spellcheck="false" maxlength="7">
+            <input type="text" id="ts-border-text" data-ts-text="border" class="color-input-text" spellcheck="false" maxlength="7" autocomplete="off">
           </div>
         </div>
-
         <div class="color-field">
-          <label data-i18n="settings.theme_text_color">Metin Rengi</label>
+          <label for="ts-text-text" data-i18n="settings.theme_text_color">Metin Rengi</label>
           <div class="color-input-group">
-            <div class="color-chip" id="chip-text" style="background:#f0f0f8;" title="Rengi Seç">
-              <input type="color" id="custom-text-color" class="color-input-picker" value="#f0f0f8">
+            <div class="color-chip" data-ts-chip="text">
+              <input type="color" data-ts-field="text" class="color-input-picker" aria-haspopup="dialog" aria-expanded="false" data-swatches="">
             </div>
-            <input type="text" id="custom-text-color-text" class="color-input-text" value="#f0f0f8" spellcheck="false" maxlength="7">
+            <input type="text" id="ts-text-text" data-ts-text="text" class="color-input-text" spellcheck="false" maxlength="7" autocomplete="off">
+          </div>
+        </div>
+        <div class="color-field">
+          <label for="ts-accent-text" data-i18n="settings.theme_accent_color">Vurgu Rengi</label>
+          <div class="color-input-group">
+            <div class="color-chip" data-ts-chip="accent">
+              <input type="color" data-ts-field="accent" class="color-input-picker" aria-haspopup="dialog" aria-expanded="false" data-swatches="#8b5cf6,#a855f7,#6366f1,#3b82f6,#0891b2,#d97706,#db2777,#64748b">
+            </div>
+            <input type="text" id="ts-accent-text" data-ts-text="accent" class="color-input-text" spellcheck="false" maxlength="7" autocomplete="off">
           </div>
         </div>
       </div>
+      <!-- Okunabilirlik kontrolü (JS doldurur) -->
+      <ul class="ts-contrast" data-ts-contrast aria-live="polite"></ul>
     </div>
 
     <!-- Font Boyutu -->
     <div class="theme-subblock">
       <div class="font-size-header-row">
-        <label>
+        <label for="custom-font-size">
           <span data-i18n="settings.theme_font_size">Font Ölçeği</span>:
           <span id="font-size-display" class="font-badge">16px</span>
         </label>
@@ -395,37 +348,65 @@
       </div>
     </div>
 
-    <!-- Canlı Önizleme: Gerçek Mini Trade Kartı -->
+    <!-- Canlı önizleme: önizleme sayfanın kendisine uygulanır; burada vurgu ve metin bir arada görülür -->
     <div class="theme-subblock">
       <div class="theme-subblock-title" data-i18n="settings.studio_preview">Önizleme</div>
-      <div id="theme-preview-box" class="theme-preview-box">
+      <div class="theme-preview-box ts-preview">
         <div class="mini-trade-preview">
           <div class="mini-trade-header">
             <div class="mini-trade-pair">
               <span class="mini-trade-symbol">EURUSD</span>
               <span class="mini-trade-dir long">BUY · 1.00 Lot</span>
+              <span class="ts-preview-tag">Breakout V2</span>
             </div>
             <div class="mini-trade-pnl positive">+$420.00 (+2.1R)</div>
           </div>
           <div class="mini-trade-details">
-            <span><span data-i18n="settings.preview_entry">Giriş:</span> <strong class="preview-text-contrast">1.0845</strong></span>
-            <span><span data-i18n="settings.preview_exit">Çıkış:</span> <strong class="preview-text-contrast">1.0887</strong></span>
-            <span><span data-i18n="settings.preview_strategy">Strateji:</span> <strong class="preview-text-contrast">Breakout V2</strong></span>
+            <span><span data-i18n="settings.preview_entry">Giriş:</span> <strong>1.0845</strong></span>
+            <span><span data-i18n="settings.preview_exit">Çıkış:</span> <strong>1.0887</strong></span>
+            <span><span data-i18n="settings.preview_strategy">Strateji:</span> <strong>Breakout V2</strong></span>
+          </div>
+          <div class="ts-preview-row">
+            <span class="ts-preview-btn" data-i18n="settings.studio_preview_btn">Ana buton</span>
+            <span class="ts-preview-ghost" data-i18n="settings.studio_preview_ghost">İkincil</span>
+            <span class="ts-preview-link" data-i18n="settings.studio_preview_link">Bağlantı</span>
+            <span class="ts-preview-bar"><i></i></span>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Tema kodu: paylaş / içe aktar -->
+    <div class="theme-subblock">
+      <div class="theme-subblock-title" data-i18n="settings.studio_share_title">Tema kodu</div>
+      <div class="ts-share">
+        <code class="ts-share-code" data-ts-code></code>
+        <button type="button" class="btn-theme-ghost" data-ts-copy>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span data-i18n="settings.studio_share_copy">Kodu kopyala</span>
+        </button>
+        <button type="button" class="btn-theme-ghost" data-ts-paste-toggle aria-expanded="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+          <span data-i18n="settings.studio_share_paste">Kod yapıştır</span>
+        </button>
+      </div>
+      <div class="ts-paste-row" data-ts-paste-row hidden>
+        <input type="text" class="ts-paste-input" data-ts-paste-input spellcheck="false" autocomplete="off" maxlength="40" placeholder="WAWE-D-…" aria-label="Tema kodu" aria-describedby="ts-paste-msg">
+        <button type="button" class="btn-theme-primary" data-ts-paste-apply data-i18n="settings.studio_share_apply">Uygula</button>
+      </div>
+      <p class="ts-paste-msg" id="ts-paste-msg" data-ts-paste-msg role="alert" hidden></p>
+    </div>
+
     <!-- Aksiyon Butonları -->
     <div class="theme-actions">
-      <button type="button" class="btn-theme-primary" id="save-custom-theme-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
-        <span data-i18n="settings.theme_save">Temayı Kaydet</span>
-      </button>
       <button type="button" class="btn-theme-ghost" id="reset-custom-theme-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
         <span data-i18n="settings.theme_reset">Varsayılana Dön</span>
       </button>
+      <span class="ts-status" data-ts-status data-state="saved" role="status" aria-live="polite">
+        <span data-i18n="settings.studio_autosave">Değişiklikler otomatik kaydedilir.</span>
+        <span class="ts-status-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg><span data-ts-status-text data-i18n="settings.studio_saved">Kaydedildi</span></span>
+      </span>
     </div>
   </div>
 </template>

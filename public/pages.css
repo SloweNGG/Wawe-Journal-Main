@@ -19,7 +19,7 @@
 .prose a,.card a.text-link{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .prose a:hover,.card a.text-link:hover{color:var(--ink)}
 .prose strong,.card strong{color:var(--ink);font-weight:500}
-.prose .callout{margin-top:14px;padding:16px 18px;border:1px solid rgba(124,58,237,.35);border-radius:14px;background:linear-gradient(165deg,#1d0e3a 0%,#0d0818 70%);color:#cdbff2}
+.prose .callout{margin-top:14px;padding:16px 18px;border:1px solid rgba(var(--ac-d1-rgb), .35);border-radius:14px;background:linear-gradient(165deg,#1d0e3a 0%,#0d0818 70%);color:#cdbff2}
 
 /* cards without media (about, contact) */
 .page-body .bento{max-width:980px;margin:0 auto}
@@ -31,7 +31,7 @@
 .card-body .prose-list li{position:relative;padding:12px 0 12px 24px;font-size:15px;color:var(--muted);border-bottom:1px solid var(--line)}
 .card-body .prose-list li:last-child{border-bottom:0}
 .card-body .prose-list li::before{content:'';position:absolute;left:2px;top:20px;width:8px;height:4px;border-left:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);transform:rotate(-45deg)}
-.card.featured{background:linear-gradient(165deg,#1d0e3a 0%,#0d0818 55%,#07040d 100%);border-color:rgba(124,58,237,.3)}
+.card.featured{background:linear-gradient(165deg,#1d0e3a 0%,#0d0818 55%,#07040d 100%);border-color:rgba(var(--ac-d1-rgb), .3)}
 .card.featured .card-desc{color:#9d90bd}
 .card-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 

@@ -9,6 +9,11 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 // ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
 // ============================================================
 
+// Grafiklerin vurgu rengi: tema stüdyosunda seçilen renk (varsayılan #8b5cf6). Canvas CSS değişkeni okuyamaz.
+function wwAccent() {
+  return (window.WWTheme && typeof window.WWTheme.accent === 'function') ? window.WWTheme.accent() : '#8b5cf6';
+}
+
 (function initTheme() {
   try {
     var savedTheme = localStorage.getItem('ww_theme');
@@ -287,7 +292,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       mutedColor: c ? c.muted : (isLight ? '#64748b' : '#a8a8c0'),
       gridColor: c ? c.grid : (isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'),
       zeroColor: c ? c.zero : (isLight ? 'rgba(100,116,139,0.35)' : 'rgba(168,168,192,0.28)'),
-      accent: '#8b5cf6',
+      accent: wwAccent(),
       green: isLight ? '#10b981' : '#22c55e',
       red: isLight ? '#dc2626' : '#ef4444',
       surface: c ? c.surface : (isLight ? '#ffffff' : '#000000')
@@ -1393,7 +1398,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var reach = Math.max(dMax - dMin, 1) * 1.5;
       if (typeof lv.targetAhead === 'number' && lv.targetAhead > 0 && (series._last + lv.targetAhead) - dMax <= reach) {
         conv.target = series._last + lv.targetAhead;
-        series._lines.push(series.createPriceLine({ price: conv.target, color: '#8b5cf6', lineWidth: 1, lineStyle: 2, axisLabelVisible: false }));
+        series._lines.push(series.createPriceLine({ price: conv.target, color: wwAccent(), lineWidth: 1, lineStyle: 2, axisLabelVisible: false }));
         addChip(conv.target, lv.targetLabel, 'target');
       }
       if (typeof lv.stopBehind === 'number' && lv.stopBehind >= 0 && dMin - (series._last - lv.stopBehind) <= reach) {
@@ -1679,7 +1684,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           speed: 400
         }
       },
-      colors: ['#8b5cf6'],
+      colors: [wwAccent()],
       fill: {
         type: 'gradient',
         gradient: {
@@ -1873,7 +1878,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           speed: 400
         }
       },
-      colors: ['#8b5cf6'],
+      colors: [wwAccent()],
       plotOptions: {
         bar: {
           borderRadius: 4,
@@ -2060,7 +2065,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           speed: 400
         }
       },
-      colors: ['#8b5cf6', '#f97316'],
+      colors: [wwAccent(), '#f97316'],
       labels: [
         (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.chart.long') || 'Long') : 'Long',
         (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.chart.short') || 'Short') : 'Short'

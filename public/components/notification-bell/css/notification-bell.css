@@ -36,7 +36,7 @@
 .notif-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(var(--ac-rgb), 0.08);
   transform: scale(1.05);
 }
 
@@ -98,7 +98,7 @@
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.06);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(var(--ac-rgb), 0.06);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px) scale(0.97);
@@ -184,7 +184,7 @@
 }
 
 .notif-item:hover {
-  background: rgba(139, 92, 246, 0.04);
+  background: rgba(var(--ac-rgb), 0.04);
 }
 
 .notif-item .notif-icon {

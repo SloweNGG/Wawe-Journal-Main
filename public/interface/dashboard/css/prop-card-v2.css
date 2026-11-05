@@ -4,7 +4,7 @@
   --pc-ok: #34d399;
   --pc-warn: #fbbf24;
   --pc-bad: #f87171;
-  --pc-brand: #8b5cf6;
+  --pc-brand: var(--ac);
   --pc-line: rgba(255, 255, 255, 0.1);
   --pc-track: rgba(255, 255, 255, 0.09);
   --pc-surface: #10101a;
@@ -19,7 +19,7 @@
   --pc-ok: #16a34a;
   --pc-warn: #d97706;
   --pc-bad: #dc2626;
-  --pc-brand: #7c3aed;
+  --pc-brand: var(--ac-d1);
   --pc-line: rgba(15, 23, 42, 0.1);
   --pc-track: rgba(15, 23, 42, 0.09);
   --pc-surface: #ffffff;

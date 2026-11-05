@@ -66,7 +66,7 @@
 
 .btn-new-journal:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 6px 20px rgba(var(--ac-rgb), 0.3);
 }
 
 .btn-new-journal:disabled {
@@ -111,7 +111,7 @@
 .journal-card:hover {
   transform: translateY(-2px);
   border-color: var(--accent);
-  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.12);
+  box-shadow: 0 8px 24px rgba(var(--ac-rgb), 0.12);
 }
 
 /* İkon */
@@ -218,14 +218,14 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(var(--ac-rgb), 0.12);
   color: var(--accent2);
   padding: 4px 9px;
   border-radius: 20px;
   font-family: var(--font);
   font-size: 0.68rem;
   font-weight: 600;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(var(--ac-rgb), 0.2);
   pointer-events: none;
   white-space: nowrap;
 }
@@ -272,7 +272,7 @@
 
 .journal-menu-btn.active {
   opacity: 1;
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(var(--ac-rgb), 0.15);
   color: var(--accent2);
 }
 
@@ -327,7 +327,7 @@
 }
 
 .journal-menu-item:hover {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(var(--ac-rgb), 0.1);
 }
 
 .journal-menu-item.danger {
@@ -515,7 +515,7 @@
 .journal-field input[type="text"]:focus,
 .journal-field textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--ac-rgb), 0.15);
 }
 
 /* Renk seçici */
@@ -591,7 +591,7 @@
 }
 
 .journal-icon-btn.active {
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(var(--ac-rgb), 0.12);
   border-color: var(--accent);
   color: var(--accent2);
 }
@@ -609,8 +609,8 @@
 
 /* Standart Hesap Bilgilendirme Kartı (Prop Kapalıyken) */
 .journal-prop-inactive-box {
-  background: linear-gradient(145deg, rgba(124, 109, 250, 0.05), rgba(168, 85, 247, 0.02));
-  border: 1px dashed rgba(139, 92, 246, 0.28);
+  background: linear-gradient(145deg, rgba(var(--ac-b1-rgb), 0.05), rgba(var(--ac-p2-rgb), 0.02));
+  border: 1px dashed rgba(var(--ac-rgb), 0.28);
   border-radius: 12px;
   padding: 1.35rem 1.1rem;
   text-align: center;
@@ -622,8 +622,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(124, 109, 250, 0.12);
-  border: 1px solid rgba(124, 109, 250, 0.25);
+  background: rgba(var(--ac-b1-rgb), 0.12);
+  border: 1px solid rgba(var(--ac-b1-rgb), 0.25);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -656,11 +656,11 @@
 .journal-prop-inactive-tip {
   font-family: var(--font);
   font-size: 0.76rem;
-  color: #c4b5fd;
-  background: rgba(124, 109, 250, 0.08);
+  color: var(--ac-l2);
+  background: rgba(var(--ac-b1-rgb), 0.08);
   padding: 0.55rem 0.8rem;
   border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(var(--ac-rgb), 0.2);
   line-height: 1.45;
   text-align: left;
 }
@@ -696,7 +696,7 @@
 
 .journal-btn-save:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--ac-rgb), 0.3);
 }
 
 .journal-btn-save:disabled {
@@ -736,7 +736,7 @@ body.light-theme .journal-modal {
 }
 
 body.light-theme .journal-prop-toggle-card {
-  background: rgba(124, 109, 250, 0.06);
+  background: rgba(var(--ac-b1-rgb), 0.06);
 }
 
 body.light-theme .journal-prop-section {
@@ -753,8 +753,8 @@ body.light-theme .journal-prop-section {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.15rem;
-  background: linear-gradient(135deg, rgba(124, 109, 250, 0.16) 0%, rgba(168, 85, 247, 0.08) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: linear-gradient(135deg, rgba(var(--ac-b1-rgb), 0.16) 0%, rgba(var(--ac-p2-rgb), 0.08) 100%);
+  border: 1px solid rgba(var(--ac-rgb), 0.35);
   border-radius: 12px;
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
@@ -763,8 +763,8 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-prop-toggle-card:hover {
-  border-color: #8b5cf6;
-  box-shadow: 0 6px 24px rgba(124, 109, 250, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: var(--ac);
+  box-shadow: 0 6px 24px rgba(var(--ac-b1-rgb), 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .journal-prop-toggle-info {
@@ -788,9 +788,9 @@ body.light-theme .journal-prop-section {
   font-size: 9px;
   padding: 2px 7px;
   border-radius: 4px;
-  background: rgba(139, 92, 246, 0.28);
-  color: #e9d5ff;
-  border: 1px solid rgba(139, 92, 246, 0.45);
+  background: rgba(var(--ac-rgb), 0.28);
+  color: var(--ac-l4);
+  border: 1px solid rgba(var(--ac-rgb), 0.45);
   letter-spacing: 0.06em;
   font-weight: 700;
 }
@@ -798,7 +798,7 @@ body.light-theme .journal-prop-section {
 .journal-prop-toggle-sub {
   font-family: var(--font);
   font-size: 0.78rem;
-  color: #c4b5fd;
+  color: var(--ac-l2);
   opacity: 0.85;
   margin-top: 2px;
 }
@@ -823,7 +823,7 @@ body.light-theme .journal-prop-section {
   cursor: pointer;
   inset: 0;
   background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(var(--ac-rgb), 0.3);
   transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 24px;
 }
@@ -835,15 +835,15 @@ body.light-theme .journal-prop-section {
   width: 16px;
   left: 3px;
   bottom: 3px;
-  background-color: #c4b5fd;
+  background-color: var(--ac-l2);
   transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 50%;
 }
 
 .journal-switch input:checked+.journal-slider {
-  background: linear-gradient(135deg, #7c6dfa, #9333ea);
-  border-color: #a855f7;
-  box-shadow: 0 0 14px rgba(124, 109, 250, 0.45);
+  background: linear-gradient(135deg, var(--ac-b1), var(--ac-p4));
+  border-color: var(--ac-p2);
+  box-shadow: 0 0 14px rgba(var(--ac-b1-rgb), 0.45);
 }
 
 .journal-switch input:checked+.journal-slider:before {
@@ -855,11 +855,11 @@ body.light-theme .journal-prop-section {
 .journal-prop-section {
   display: none;
   background: linear-gradient(180deg, rgba(22, 18, 42, 0.95) 0%, rgba(14, 12, 24, 0.98) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.32);
+  border: 1px solid rgba(var(--ac-rgb), 0.32);
   border-radius: 14px;
   padding: 1.25rem;
   margin-top: 0.75rem;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(139, 92, 246, 0.2);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(var(--ac-rgb), 0.2);
   animation: fadeIn 0.2s ease-in-out;
 }
 
@@ -887,7 +887,7 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-prop-section .journal-field label {
-  color: #c4b5fd;
+  color: var(--ac-l2);
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 0.02em;
@@ -897,7 +897,7 @@ body.light-theme .journal-prop-section {
 
 .journal-prop-section .journal-field-hint {
   font-size: 0.75rem;
-  color: #a78bfa;
+  color: var(--ac-l1);
   opacity: 0.85;
   margin-top: 4px;
 }
@@ -907,7 +907,7 @@ body.light-theme .journal-prop-section {
 .journal-prop-input {
   width: 100%;
   background: rgba(10, 8, 18, 0.85);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(var(--ac-rgb), 0.25);
   border-radius: 9px;
   padding: 0.65rem 0.85rem;
   color: #f8fafc;
@@ -955,12 +955,12 @@ body.light-theme .journal-prop-section {
 .journal-field select:focus,
 .journal-prop-select:focus,
 .journal-prop-input:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.22);
+  border-color: var(--ac);
+  box-shadow: 0 0 0 3px rgba(var(--ac-rgb), 0.22);
 }
 
 .journal-prop-slider {
-  accent-color: #8b5cf6;
+  accent-color: var(--ac);
   cursor: pointer;
 }
 
@@ -968,15 +968,15 @@ body.light-theme .journal-prop-section {
 .journal-prop-time-preview {
   margin-top: 0.6rem;
   padding: 0.65rem 0.85rem;
-  background: rgba(139, 92, 246, 0.06);
-  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(var(--ac-rgb), 0.06);
+  border: 1px solid rgba(var(--ac-rgb), 0.22);
   border-radius: 8px;
   font-size: 0.78rem;
 }
 
 .journal-prop-time-preview-title {
   font-weight: 600;
-  color: #e9d5ff;
+  color: var(--ac-l4);
   margin-bottom: 0.35rem;
 }
 
@@ -984,7 +984,7 @@ body.light-theme .journal-prop-section {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  color: #c4b5fd;
+  color: var(--ac-l2);
   opacity: 0.85;
 }
 
@@ -1002,15 +1002,15 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-prop-alert.warning {
-  background: rgba(139, 92, 246, 0.12);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  color: #e9d5ff;
+  background: rgba(var(--ac-rgb), 0.12);
+  border: 1px solid rgba(var(--ac-rgb), 0.35);
+  color: var(--ac-l4);
 }
 
 .journal-prop-alert.info {
-  background: rgba(124, 109, 250, 0.1);
-  border: 1px solid rgba(124, 109, 250, 0.3);
-  color: #ddd6fe;
+  background: rgba(var(--ac-b1-rgb), 0.1);
+  border: 1px solid rgba(var(--ac-b1-rgb), 0.3);
+  color: var(--ac-l3);
 }
 
 .journal-prop-alert.danger {
@@ -1021,8 +1021,8 @@ body.light-theme .journal-prop-section {
 
 /* Custom Rules Grid - Purple Harmonized */
 .journal-custom-rules-box {
-  background: rgba(139, 92, 246, 0.05);
-  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(var(--ac-rgb), 0.05);
+  border: 1px solid rgba(var(--ac-rgb), 0.22);
   border-radius: 10px;
   padding: 0.95rem;
   margin-top: 0.85rem;
@@ -1030,15 +1030,15 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-custom-rules-box[open] {
-  border-color: rgba(168, 85, 247, 0.45);
-  box-shadow: 0 4px 16px rgba(124, 109, 250, 0.15);
+  border-color: rgba(var(--ac-p2-rgb), 0.45);
+  box-shadow: 0 4px 16px rgba(var(--ac-b1-rgb), 0.15);
 }
 
 .journal-custom-rules-header {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  color: #c4b5fd;
+  color: var(--ac-l2);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 0.75rem;
@@ -1069,9 +1069,9 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-icon-wrap.has-prop-logo.prop-fundednext {
-  background: rgba(217, 70, 239, 0.12) !important;
-  border: 1px solid rgba(217, 70, 239, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(217, 70, 239, 0.25) !important;
+  background: rgba(var(--ac-p3-rgb), 0.12) !important;
+  border: 1px solid rgba(var(--ac-p3-rgb), 0.4) !important;
+  box-shadow: 0 4px 14px rgba(var(--ac-p3-rgb), 0.25) !important;
 }
 
 .journal-icon-wrap.has-prop-logo.prop-fundingpips {
@@ -1111,9 +1111,9 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-icon-wrap.has-prop-logo.prop-custom {
-  background: rgba(168, 85, 247, 0.12) !important;
-  border: 1px solid rgba(168, 85, 247, 0.4) !important;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.25) !important;
+  background: rgba(var(--ac-p2-rgb), 0.12) !important;
+  border: 1px solid rgba(var(--ac-p2-rgb), 0.4) !important;
+  box-shadow: 0 4px 14px rgba(var(--ac-p2-rgb), 0.25) !important;
 }
 
 .prop-card-logo-img {
@@ -1133,7 +1133,7 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-card:hover .journal-icon-wrap.has-prop-logo.prop-fundednext {
-  box-shadow: 0 6px 20px rgba(217, 70, 239, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(var(--ac-p3-rgb), 0.4) !important;
 }
 
 .journal-card:hover .journal-icon-wrap.has-prop-logo.prop-fundingpips {
@@ -1161,7 +1161,7 @@ body.light-theme .journal-prop-section {
 }
 
 .journal-card:hover .journal-icon-wrap.has-prop-logo.prop-custom {
-  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(var(--ac-p2-rgb), 0.4) !important;
 }
 
 /* Prop Badge on Card - Branded Pill with Official Logo */
@@ -1224,9 +1224,9 @@ body.light-theme .journal-prop-section {
 
 /* FundedNext */
 .journal-card-prop-badge.prop-fundednext {
-  border-color: rgba(217, 70, 239, 0.35);
+  border-color: rgba(var(--ac-p3-rgb), 0.35);
   background: linear-gradient(135deg, rgba(20, 10, 43, 0.92), rgba(30, 12, 56, 0.82));
-  box-shadow: 0 4px 16px -2px rgba(217, 70, 239, 0.2);
+  box-shadow: 0 4px 16px -2px rgba(var(--ac-p3-rgb), 0.2);
 }
 .journal-card-prop-badge.prop-fundednext .prop-badge-firm {
   color: #f472b6;
@@ -1294,12 +1294,12 @@ body.light-theme .journal-prop-section {
 
 /* Custom */
 .journal-card-prop-badge.prop-custom {
-  border-color: rgba(139, 92, 246, 0.35);
+  border-color: rgba(var(--ac-rgb), 0.35);
   background: linear-gradient(135deg, rgba(22, 18, 45, 0.92), rgba(16, 12, 34, 0.82));
-  box-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 16px -2px rgba(var(--ac-rgb), 0.2);
 }
 .journal-card-prop-badge.prop-custom .prop-badge-firm {
-  color: #c084fc;
+  color: var(--ac-p1);
 }
 
 /* Tablet & Mobil Responsive */
@@ -1370,13 +1370,13 @@ body.light-theme .journal-col-heading {
   border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 body.light-theme .journal-prop-inactive-box {
-  background: rgba(124, 109, 250, 0.04);
-  border-color: rgba(124, 109, 250, 0.22);
+  background: rgba(var(--ac-b1-rgb), 0.04);
+  border-color: rgba(var(--ac-b1-rgb), 0.22);
 }
 body.light-theme .journal-prop-inactive-tip {
-  background: rgba(124, 109, 250, 0.06);
-  color: #6366f1;
-  border-color: rgba(124, 109, 250, 0.15);
+  background: rgba(var(--ac-b1-rgb), 0.06);
+  color: var(--ac-i1);
+  border-color: rgba(var(--ac-b1-rgb), 0.15);
 }
 
 /* ============================================================
@@ -1425,10 +1425,10 @@ body.light-theme .journal-prop-inactive-tip {
 }
 
 .wizard-step-item.active .step-num {
-  background: linear-gradient(135deg, var(--accent, #8B5CF6), #06B6D4);
+  background: linear-gradient(135deg, var(--accent, var(--ac)), #06B6D4);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 12px rgba(var(--ac-rgb), 0.4);
 }
 
 .wizard-step-item.completed .step-num {
@@ -1453,7 +1453,7 @@ body.light-theme .journal-prop-inactive-tip {
 }
 
 .wizard-step-line.active {
-  background: linear-gradient(90deg, #8B5CF6, #06B6D4);
+  background: linear-gradient(90deg, var(--ac), #06B6D4);
 }
 
 .wizard-step-panel {
@@ -1492,14 +1492,14 @@ body.light-theme .journal-prop-inactive-tip {
 }
 
 .broker-choice-card:hover:not(.disabled) {
-  border-color: rgba(139, 92, 246, 0.5);
-  background: rgba(139, 92, 246, 0.04);
+  border-color: rgba(var(--ac-rgb), 0.5);
+  background: rgba(var(--ac-rgb), 0.04);
 }
 
 .broker-choice-card.active {
-  border-color: #8B5CF6;
-  background: rgba(139, 92, 246, 0.08);
-  box-shadow: 0 0 0 1px #8B5CF6, 0 4px 16px rgba(139, 92, 246, 0.15);
+  border-color: var(--ac);
+  background: rgba(var(--ac-rgb), 0.08);
+  box-shadow: 0 0 0 1px var(--ac), 0 4px 16px rgba(var(--ac-rgb), 0.15);
 }
 
 .broker-choice-card.disabled {
@@ -1549,8 +1549,8 @@ body.light-theme .journal-prop-inactive-tip {
 }
 
 .broker-choice-card.active .broker-choice-radio {
-  border-color: #8B5CF6;
-  background: #8B5CF6;
+  border-color: var(--ac);
+  background: var(--ac);
 }
 
 .broker-choice-card.active .broker-choice-radio::after {
@@ -1578,7 +1578,7 @@ body.light-theme .journal-prop-inactive-tip {
 .journal-card:hover {
   transform: translateY(-2px);
   border-color: var(--accent);
-  box-shadow: 0 14px 34px -14px color-mix(in srgb, var(--accent, #8b5cf6) 45%, transparent);
+  box-shadow: 0 14px 34px -14px color-mix(in srgb, var(--accent, var(--ac)) 45%, transparent);
 }
 
 /* the icon tile carries the account color instead */
@@ -1601,8 +1601,8 @@ body.light-theme .journal-prop-inactive-tip {
 .journal-card-desc { font-size: 0.8rem; margin-bottom: 0.6rem; min-height: 0; }
 
 .journal-card-badge {
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 14%, transparent);
-  border-color: color-mix(in srgb, var(--accent, #8b5cf6) 38%, transparent);
+  background: color-mix(in srgb, var(--accent, var(--ac)) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent, var(--ac)) 38%, transparent);
 }
 
 .journal-card-prop-badge { margin-top: 0.15rem; margin-bottom: 0.25rem; box-shadow: none; }
@@ -1640,7 +1640,7 @@ body.light-theme .journal-prop-inactive-tip {
   margin-top: 0.85rem;
   padding: 0.55rem 0.6rem 0.55rem 0.7rem;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 7%, transparent);
+  background: color-mix(in srgb, var(--accent, var(--ac)) 7%, transparent);
   border: 1px solid var(--border);
 }
 .journal-card-ctrader-bar .ct-logo { width: 22px; height: 22px; border-radius: 6px; object-fit: contain; flex-shrink: 0; }
@@ -1654,8 +1654,8 @@ body.light-theme .journal-prop-inactive-tip {
   text-transform: uppercase;
   padding: 1px 6px;
   border-radius: 999px;
-  color: var(--accent2, #c084fc);
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 14%, transparent);
+  color: var(--accent2, var(--ac-p1));
+  background: color-mix(in srgb, var(--accent, var(--ac)) 14%, transparent);
 }
 .journal-card-ctrader-bar .ct-env.live { color: #4ade80; background: rgba(34, 197, 94, 0.14); }
 .journal-card-ctrader-bar .ct-login {
@@ -1719,9 +1719,9 @@ body.light-theme .journal-prop-inactive-tip {
 /* ---- broker step ---- */
 .broker-choice-card { padding: 1rem 1.15rem; border-radius: 14px; }
 .broker-choice-card.active {
-  border-color: var(--accent, #8b5cf6);
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 9%, transparent);
-  box-shadow: 0 0 0 1px var(--accent, #8b5cf6), 0 6px 20px -8px color-mix(in srgb, var(--accent, #8b5cf6) 50%, transparent);
+  border-color: var(--accent, var(--ac));
+  background: color-mix(in srgb, var(--accent, var(--ac)) 9%, transparent);
+  box-shadow: 0 0 0 1px var(--accent, var(--ac)), 0 6px 20px -8px color-mix(in srgb, var(--accent, var(--ac)) 50%, transparent);
 }
 .broker-choice-card.disabled { opacity: 0.6; }
 .broker-choice-card.disabled .broker-logo { filter: grayscale(1); opacity: 0.7; }
@@ -1749,7 +1749,7 @@ body.light-theme .journal-prop-inactive-tip {
 }
 .broker-choice-soon { font-size: 0.7rem; font-weight: 600; color: var(--muted); }
 .broker-choice-radio { border-color: var(--border2, var(--border)); }
-.broker-choice-card.active .broker-choice-radio { border-color: var(--accent, #8b5cf6); background: var(--accent, #8b5cf6); }
+.broker-choice-card.active .broker-choice-radio { border-color: var(--accent, var(--ac)); background: var(--accent, var(--ac)); }
 
 /* ---- stepper: purple end to end ---- */
 .wizard-step-item .step-num {
@@ -1758,21 +1758,21 @@ body.light-theme .journal-prop-inactive-tip {
   color: var(--muted);
 }
 .wizard-step-item.active .step-num {
-  background: var(--accent, #8b5cf6);
-  border-color: var(--accent, #8b5cf6);
+  background: var(--accent, var(--ac));
+  border-color: var(--accent, var(--ac));
   color: #fff;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #8b5cf6) 28%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--ac)) 28%, transparent);
 }
 .wizard-step-item.completed .step-num {
-  background: var(--accent, #8b5cf6);
-  border-color: var(--accent, #8b5cf6);
+  background: var(--accent, var(--ac));
+  border-color: var(--accent, var(--ac));
   color: #fff;
   font-size: 0;                      /* the number gives way to a check mark */
 }
 .wizard-step-item.completed .step-num::before { content: '\2713'; font-size: 0.8rem; font-weight: 800; }
 .wizard-step-item.completed { opacity: 1; }
 .wizard-step-line { height: 2px; border-radius: 2px; }
-.wizard-step-line.active { background: var(--accent, #8b5cf6); }
+.wizard-step-line.active { background: var(--accent, var(--ac)); }
 
 /* ---- light theme fixes ---- */
 .light-theme .journal-wizard-steps { background: var(--surface2); }
@@ -1826,14 +1826,14 @@ body.light-theme .journal-prop-inactive-tip {
   background: var(--surface2); border: 1px solid var(--border);
   transition: border-color 0.15s, background 0.15s;
 }
-.journal-scope-opt input { margin: 3px 0 0; accent-color: var(--accent, #8b5cf6); flex-shrink: 0; }
+.journal-scope-opt input { margin: 3px 0 0; accent-color: var(--accent, var(--ac)); flex-shrink: 0; }
 .journal-scope-opt-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .journal-scope-opt-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
 .journal-scope-opt-desc { font-size: 11.5px; font-weight: 400; color: var(--muted); line-height: 1.4; }
 .journal-field label.journal-scope-opt:hover { border-color: var(--border2, var(--border)); }
 .journal-field label.journal-scope-opt:has(input:checked) {
-  border-color: var(--accent, #8b5cf6);
-  background: color-mix(in srgb, var(--accent, #8b5cf6) 8%, transparent);
+  border-color: var(--accent, var(--ac));
+  background: color-mix(in srgb, var(--accent, var(--ac)) 8%, transparent);
 }
 .journal-scope-field .journal-field-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.55rem; line-height: 1.45; }
 @media (max-width: 720px) { .journal-scope-options { grid-template-columns: 1fr; } }
@@ -1842,7 +1842,7 @@ body.light-theme .journal-prop-inactive-tip {
 
 .journal-linked-banner {
   margin-bottom: 1.25rem; border-radius: 12px; padding: 0.9rem 1.1rem;
-  background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(var(--ac-rgb), 0.08); border: 1px solid rgba(var(--ac-rgb), 0.3);
 }
 .journal-linked-banner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .journal-linked-banner-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -1864,12 +1864,12 @@ body.light-theme .journal-prop-inactive-tip {
    Açık temaya dokunulmaz (yalnızca body:not(.light-theme)).
    ============================================================ */
 /* adım çubuğu */
-body:not(.light-theme) #journal-modal .journal-wizard-steps { background: #000; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-body:not(.light-theme) #journal-modal .wizard-step-item .step-num { background: #000; border-color: rgba(255, 255, 255, 0.18); }
+body:not(.light-theme) #journal-modal .journal-wizard-steps { background: var(--card-bg); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+body:not(.light-theme) #journal-modal .wizard-step-item .step-num { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.18); }
 body:not(.light-theme) #journal-modal .wizard-step-item.active .step-num,
-body:not(.light-theme) #journal-modal .wizard-step-item.completed .step-num { background: var(--accent, #8b5cf6); border-color: var(--accent, #8b5cf6); }
+body:not(.light-theme) #journal-modal .wizard-step-item.completed .step-num { background: var(--accent, var(--ac)); border-color: var(--accent, var(--ac)); }
 body:not(.light-theme) #journal-modal .wizard-step-line { background: rgba(255, 255, 255, 0.1); }
-body:not(.light-theme) #journal-modal .wizard-step-line.active { background: var(--accent, #8b5cf6); }
+body:not(.light-theme) #journal-modal .wizard-step-line.active { background: var(--accent, var(--ac)); }
 
 /* giriş alanları */
 body:not(.light-theme) #journal-modal .journal-field input[type="text"],
@@ -1878,7 +1878,7 @@ body:not(.light-theme) #journal-modal .journal-field select,
 body:not(.light-theme) #journal-modal .journal-prop-select,
 body:not(.light-theme) #journal-modal .journal-prop-input,
 body:not(.light-theme) #journal-modal .journal-ct-select {
-  background: #000;
+  background: var(--card-bg);
   border-color: rgba(255, 255, 255, 0.12);
   color: var(--text);
 }
@@ -1890,7 +1890,7 @@ body:not(.light-theme) #journal-modal .journal-prop-input:focus {
   border-color: rgba(255, 255, 255, 0.4);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
 }
-body:not(.light-theme) #journal-modal .journal-field select option { background: #000; color: #fff; }
+body:not(.light-theme) #journal-modal .journal-field select option { background: var(--card-bg); color: #fff; }
 body:not(.light-theme) #journal-modal .journal-color-btn { border-color: rgba(255, 255, 255, 0.12); }
 body:not(.light-theme) #journal-modal .journal-color-btn.active { border-color: #fff; }
 
@@ -1902,28 +1902,28 @@ body:not(.light-theme) #journal-modal .journal-custom-rules-box,
 body:not(.light-theme) #journal-modal .journal-prop-time-preview,
 body:not(.light-theme) #journal-modal .journal-prop-inactive-box,
 body:not(.light-theme) #journal-modal .journal-prop-inactive-tip {
-  background: #000;
+  background: var(--card-bg);
   border-color: rgba(255, 255, 255, 0.1);
 }
 body:not(.light-theme) #journal-modal .journal-field label.journal-scope-opt:has(input:checked),
 body:not(.light-theme) #journal-modal .broker-choice-card.active {
-  background: #000;
-  border-color: var(--accent, #8b5cf6);
+  background: var(--card-bg);
+  border-color: var(--accent, var(--ac));
 }
 body:not(.light-theme) #journal-modal .journal-field label.journal-scope-opt:hover,
-body:not(.light-theme) #journal-modal .broker-choice-card:hover:not(.disabled) { background: #000; border-color: rgba(255, 255, 255, 0.25); }
-body:not(.light-theme) #journal-modal .broker-choice-icon { background: #000; border-color: rgba(255, 255, 255, 0.1); }
+body:not(.light-theme) #journal-modal .broker-choice-card:hover:not(.disabled) { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.25); }
+body:not(.light-theme) #journal-modal .broker-choice-icon { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.1); }
 body:not(.light-theme) #journal-modal .broker-choice-radio { border-color: rgba(255, 255, 255, 0.25); }
 body:not(.light-theme) #journal-modal .journal-prop-toggle-card {
-  background: #000; border-color: rgba(255, 255, 255, 0.1); box-shadow: none;
+  background: var(--card-bg); border-color: rgba(255, 255, 255, 0.1); box-shadow: none;
 }
 body:not(.light-theme) #journal-modal .journal-prop-toggle-card:hover { border-color: rgba(255, 255, 255, 0.25); box-shadow: none; }
-body:not(.light-theme) #journal-modal .journal-prop-section { background: #000; border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
+body:not(.light-theme) #journal-modal .journal-prop-section { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
 body:not(.light-theme) #journal-modal .journal-slider { background-color: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); }
 body:not(.light-theme) #journal-modal .journal-prop-section .journal-field label,
 body:not(.light-theme) #journal-modal .journal-prop-section .journal-field-hint { color: var(--muted); opacity: 1; }
 body:not(.light-theme) #journal-modal .journal-prop-alert.warning,
-body:not(.light-theme) #journal-modal .journal-prop-alert.info { background: #000; border-color: rgba(255, 255, 255, 0.14); }
-body:not(.light-theme) #journal-modal .journal-linked-banner { background: #000; border-color: rgba(255, 255, 255, 0.12); }
+body:not(.light-theme) #journal-modal .journal-prop-alert.info { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.14); }
+body:not(.light-theme) #journal-modal .journal-linked-banner { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.12); }
 body:not(.light-theme) #journal-modal .journal-btn-cancel { border-color: rgba(255, 255, 255, 0.14); }
 body:not(.light-theme) #journal-modal .journal-btn-cancel:hover { border-color: rgba(255, 255, 255, 0.35); }

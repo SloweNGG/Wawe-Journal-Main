@@ -45,9 +45,9 @@
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(124, 109, 250, 0.15);
-  color: #c4b5fd;
-  border: 1px solid rgba(124, 109, 250, 0.25);
+  background: rgba(var(--ac-b1-rgb), 0.15);
+  color: var(--ac-l2);
+  border: 1px solid rgba(var(--ac-b1-rgb), 0.25);
 }
 
 .prop-hud-sep {
@@ -149,10 +149,10 @@
 }
 
 .prop-header-btn.advance {
-  background: linear-gradient(135deg, #7c6dfa, #6366f1);
+  background: linear-gradient(135deg, var(--ac-b1), var(--ac-i1));
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(124, 109, 250, 0.35);
+  box-shadow: 0 2px 8px rgba(var(--ac-b1-rgb), 0.35);
 }
 
 .prop-header-btn.advance:hover {
@@ -286,9 +286,9 @@
   font-weight: 600;
   padding: 2.5px 9px;
   border-radius: 999px;
-  background: rgba(139, 92, 246, 0.15);
-  color: #c4b5fd;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(var(--ac-rgb), 0.15);
+  color: var(--ac-l2);
+  border: 1px solid rgba(var(--ac-rgb), 0.3);
 }
 
 .prop-cockpit-balance-pill {
@@ -625,7 +625,7 @@ html.light-theme .prop-cockpit-col-val {
 }
 
 .prop-morph-card:hover {
-  border-color: rgba(124, 109, 250, 0.35);
+  border-color: rgba(var(--ac-b1-rgb), 0.35);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -637,7 +637,7 @@ html.light-theme .prop-cockpit-col-val {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--card-accent, #7c6dfa);
+  background: var(--card-accent, var(--ac-b1));
 }
 
 .prop-morph-card .stat-label {

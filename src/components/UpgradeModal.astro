@@ -121,7 +121,7 @@
     box-shadow: 
       0 32px 80px -16px rgba(0, 0, 0, 0.85),
       0 0 0 1px rgba(255, 255, 255, 0.04),
-      0 0 45px -10px rgba(139, 92, 246, 0.12);
+      0 0 45px -10px rgba(var(--ac-rgb), 0.12);
     color: #f1f2f6;
     /* Modal landing/yasal sayfalarda da render edilir; orada styles.css (--font) yüklenmez, yedek gerekli */
     font-family: var(--font, 'Geist', system-ui, sans-serif);
@@ -163,7 +163,7 @@
     width: 40px;
     height: auto;
     display: block;
-    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.45));
+    filter: drop-shadow(0 0 10px rgba(var(--ac-rgb), 0.45));
   }
 
   .ww-up-close-btn {
@@ -310,7 +310,7 @@
   .ww-up-pill-btn {
     flex: 1;
     background: #000;
-    border: 1px solid rgba(124, 58, 237, 0.35);
+    border: 1px solid rgba(var(--ac-d1-rgb), 0.35);
     color: #8b8e9f;
     font-family: inherit;
     font-size: 12.5px;
@@ -324,13 +324,13 @@
 
   .ww-up-pill-btn:hover {
     color: #e4e4ec;
-    border-color: rgba(124, 58, 237, 0.7);
+    border-color: rgba(var(--ac-d1-rgb), 0.7);
   }
 
   .ww-up-pill-btn.active {
     color: #ffffff;
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 1px #7c3aed inset, 0 0 14px rgba(124, 58, 237, 0.35);
+    border-color: var(--ac-d1);
+    box-shadow: 0 0 0 1px var(--ac-d1) inset, 0 0 14px rgba(var(--ac-d1-rgb), 0.35);
   }
 
   /* Notice Box */
@@ -450,24 +450,24 @@
   [data-theme="light"] .ww-up-pill-btn {
     background: #fff;
     color: #64748b;
-    border-color: rgba(124, 58, 237, 0.35);
+    border-color: rgba(var(--ac-d1-rgb), 0.35);
   }
   body.light-theme .ww-up-pill-btn.active,
   [data-theme="light"] .ww-up-pill-btn.active {
     background: #f5f0ff;
     color: #1a1033;
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 1px #7c3aed inset;
+    border-color: var(--ac-d1);
+    box-shadow: 0 0 0 1px var(--ac-d1) inset;
   }
   body.light-theme .ww-up-btn-primary,
   [data-theme="light"] .ww-up-btn-primary {
-    background: #7c3aed;
+    background: var(--ac-d1);
     color: #ffffff;
   }
   body.light-theme .ww-up-btn-primary:hover,
   [data-theme="light"] .ww-up-btn-primary:hover {
-    background: #6d28d9;
-    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.3);
+    background: var(--ac-d2);
+    box-shadow: 0 6px 18px rgba(var(--ac-d1-rgb), 0.3);
   }
   body.light-theme .ww-up-btn-secondary,
   [data-theme="light"] .ww-up-btn-secondary {

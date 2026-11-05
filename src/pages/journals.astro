@@ -64,7 +64,7 @@ import Layout from '../layouts/Layout.astro';
                 var safeName = (j.name || '').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
                 var safeDesc = (j.description || '').replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
                 var trades = (j.trade_count || 0) + ' işlem';
-                return '<div class="journal-card" data-id="' + j.id + '" style="--journal-color:' + (j.color || '#7c6dfa') + '">' +
+                return '<div class="journal-card" data-id="' + j.id + '" style="--journal-color:' + (j.color || 'var(--ac-b1)') + '">' +
                   '<div class="journal-card-top">' +
                     '<div class="journal-icon-wrap">' + (window.WwJournalMark ? window.WwJournalMark.forJournal(j, { dotSize: 14 }) : '') + '</div>' +
                     '<div class="journal-card-actions">' + defaultBadge + '</div>' +
@@ -139,7 +139,7 @@ import Layout from '../layouts/Layout.astro';
             <!-- JS fills -->
           </div>
           <div class="journal-color-hint" id="color-hint">
-            <span class="ww-mark ww-mark--dot" id="color-hint-dot" style="--mk-size:9px;--mk:#7c6dfa;--mk-ring:#7c6dfa40"><span class="ww-mark-dot"></span></span>
+            <span class="ww-mark ww-mark--dot" id="color-hint-dot" style="--mk-size:9px;--mk:var(--ac-b1);--mk-ring:rgba(var(--ac-b1-rgb), 0.251)"><span class="ww-mark-dot"></span></span>
             <span data-i18n="journal.wiz.color_hint">Hesabın listelerde görünen noktası. Prop firma veya broker bağlı hesapların noktası yanıp söner.</span>
           </div>
         </div>
@@ -313,7 +313,7 @@ import Layout from '../layouts/Layout.astro';
           <details id="prop-advanced-rules-box" class="journal-custom-rules-box" style="margin-top:0.75rem;cursor:pointer;">
             <summary class="journal-custom-rules-header" style="display:flex;justify-content:space-between;align-items:center;user-select:none;">
               <span data-i18n="prop.advanced_rules">Gelişmiş Kural Ayarları</span>
-              <span id="prop-customized-badge" style="display:none;font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.2);color:var(--accent);border:1px solid rgba(124,109,250,0.3);" data-i18n="prop.customized">Özelleştirildi</span>
+              <span id="prop-customized-badge" style="display:none;font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:12px;background:rgba(var(--ac-b1-rgb), 0.2);color:var(--accent);border:1px solid rgba(var(--ac-b1-rgb), 0.3);" data-i18n="prop.customized">Özelleştirildi</span>
             </summary>
             <div class="journal-custom-grid" style="margin-top:0.75rem;cursor:default;">
               <div class="journal-field" style="margin-bottom:0;">
@@ -495,8 +495,8 @@ import Layout from '../layouts/Layout.astro';
 
       <!-- Broker Kartları -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem;">
-        <div style="border:2px solid #8B5CF6;background:rgba(139,92,246,0.08);border-radius:12px;padding:0.9rem;text-align:center;">
-          <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:#fff;font-weight:700;font-size:0.85rem;">cT</div>
+        <div style="border:2px solid var(--ac);background:rgba(var(--ac-rgb), 0.08);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--ac),#06B6D4);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:#fff;font-weight:700;font-size:0.85rem;">cT</div>
           <div style="font-weight:700;font-size:0.92rem;color:var(--text);">cTrader</div>
           <div style="font-size:0.75rem;color:#4ade80;margin-top:2px;">● Otomatik Senkron</div>
         </div>
@@ -512,7 +512,7 @@ import Layout from '../layouts/Layout.astro';
       <div id="existing-ctrader-wrap" style="display:none;margin-bottom:1.25rem;background:var(--surface2);padding:1rem;border-radius:12px;border:1px solid var(--border);">
         <label style="font-size:0.8rem;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
         <select id="existing-ctrader-select" style="width:100%;padding:0.6rem 0.8rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:0.88rem;"></select>
-        <button type="button" class="btn-save-ot" id="btn-link-existing-ctrader" style="width:100%;margin-top:10px;padding:0.6rem;background:#8B5CF6;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;">Bu Hesabı Deftere Bağla</button>
+        <button type="button" class="btn-save-ot" id="btn-link-existing-ctrader" style="width:100%;margin-top:10px;padding:0.6rem;background:var(--ac);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;">Bu Hesabı Deftere Bağla</button>
         <div style="text-align:center;margin:10px 0 4px;font-size:0.75rem;color:var(--muted);">— veya yeni hesap yetkilendirin —</div>
       </div>
 
@@ -521,7 +521,7 @@ import Layout from '../layouts/Layout.astro';
         🔒 <strong>Güvenlik Garantisi:</strong> Yalnızca kapanmış işlem geçmişiniz okunur. Adınıza işlem açılamaz, paranıza erişilemez.
       </div>
 
-      <button type="button" id="btn-oauth-ctrader" style="width:100%;padding:0.85rem;border-radius:10px;font-weight:700;background:linear-gradient(90deg,#8B5CF6,#06B6D4);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s;">
+      <button type="button" id="btn-oauth-ctrader" style="width:100%;padding:0.85rem;border-radius:10px;font-weight:700;background:linear-gradient(90deg,var(--ac),#06B6D4);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.2s;">
         <i data-lucide="external-link"></i>
         <span>cTrader ile Yetkilendir & Bağla</span>
       </button>

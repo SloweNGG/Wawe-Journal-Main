@@ -25,36 +25,11 @@ var SETTINGS_PAGE = window.wwPage.current();
 // ============================================================
 
 (function() {
-  var savedTheme = localStorage.getItem('ww_theme');
+  // Renkler: tema motoru (BaseHead → window.WWTheme). Yazı boyutu eski anahtardan.
+  if (window.WWTheme) window.WWTheme.apply();
   var savedFontSize = localStorage.getItem('ww_font_size');
-  var customTheme = localStorage.getItem('ww_custom_theme');
-
-  if (savedTheme === 'light') {
-    document.body.classList.add('light-theme');
-  } else {
-    document.body.classList.remove('light-theme');
-  }
-
-  if (savedFontSize) {
-    document.body.style.fontSize = savedFontSize + 'px';
-  }
-
-  if (savedTheme !== 'light' && customTheme) {
-    try {
-      var settings = JSON.parse(customTheme);
-      var root = document.documentElement;
-      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-      if (settings.surfaceColor) {
-        root.style.setProperty('--surface', settings.surfaceColor);
-        root.style.setProperty('--surface2', settings.surfaceColor);
-      }
-      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-    } catch(e) {}
-  }
-
-  wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
+  if (savedFontSize) document.body.style.fontSize = savedFontSize + 'px';
+  wwLog.log('🎨 [settings] Tema ayarlandı:', localStorage.getItem('ww_theme') || 'dark');
 })();
 
 // Aktif pro: plan 'premium' VE süresi dolmamış (bitiş tarihi boş = süresiz/manuel). DB'de süresi dolan
@@ -149,41 +124,8 @@ function themeDesc(isLight) {
       if (label) label.textContent = themeLabel(isLight);
       if (desc) desc.textContent = themeDesc(isLight);
 
-      if (!isLight) {
-        var ct = localStorage.getItem('ww_custom_theme');
-        if (ct) {
-          try {
-            var s = JSON.parse(ct);
-            var root = document.documentElement;
-            if (s.backgroundColor) root.style.setProperty('--bg', s.backgroundColor);
-            if (s.surfaceColor) {
-              root.style.setProperty('--surface', s.surfaceColor);
-              root.style.setProperty('--surface2', s.surfaceColor);
-            }
-            if (s.borderColor) root.style.setProperty('--border', s.borderColor);
-            if (s.textColor) root.style.setProperty('--text', s.textColor);
-            if (s.fontSize) document.body.style.fontSize = s.fontSize + 'px';
-          } catch(e) {}
-        }
-      }
-    }
-  });
-
-  SETTINGS_PAGE.on(document, 'themeChanged', function(e) {
-    if (e.detail && e.detail.settings) {
-      var isLight = document.body.classList.contains('light-theme');
-      if (!isLight) {
-        var s = e.detail.settings;
-        var root = document.documentElement;
-        if (s.backgroundColor) root.style.setProperty('--bg', s.backgroundColor);
-        if (s.surfaceColor) {
-          root.style.setProperty('--surface', s.surfaceColor);
-          root.style.setProperty('--surface2', s.surfaceColor);
-        }
-        if (s.borderColor) root.style.setProperty('--border', s.borderColor);
-        if (s.textColor) root.style.setProperty('--text', s.textColor);
-        if (s.fontSize) document.body.style.fontSize = s.fontSize + 'px';
-      }
+      if (window.WWTheme) window.WWTheme.apply();
+      if (typeof window.updateThemeModeCards === 'function') window.updateThemeModeCards();
     }
   });
 
@@ -213,13 +155,8 @@ window.selectThemeMode = function(mode) {
       window.toggleTheme();
     }
   } else {
-    document.body.classList.toggle('light-theme', isLight);
     localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
-    try {
-      window.dispatchEvent(new CustomEvent('themeChanged', {
-        detail: { settings: { isLight: isLight } }
-      }));
-    } catch(e) {}
+    if (window.WWTheme) window.WWTheme.apply();
   }
   window.updateThemeModeCards();
 };
@@ -230,8 +167,12 @@ window.toggleTheme = function() {
 
   var isLight = cb.checked;
 
-  document.body.classList.toggle('light-theme', isLight);
+  // Tema stüdyosunda bekleyen otomatik kayıt eski moda ait: önce tamamla
+  if (window.WWThemeStudio) window.WWThemeStudio.flush();
   localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
+  // sınıflar (<html> ve <body>) + yeni modun paleti
+  if (window.WWTheme) window.WWTheme.apply();
+  else document.body.classList.toggle('light-theme', isLight);
   window.updateThemeModeCards();
 
   var icon = document.getElementById('theme-icon');
@@ -246,28 +187,9 @@ window.toggleTheme = function() {
   if (label) label.textContent = themeLabel(isLight);
   if (desc) desc.textContent = themeDesc(isLight);
 
-  if (!isLight) {
-    var customTheme = localStorage.getItem('ww_custom_theme');
-    if (customTheme) {
-      try {
-        var settings = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-        if (settings.surfaceColor) {
-          root.style.setProperty('--surface', settings.surfaceColor);
-          root.style.setProperty('--surface2', settings.surfaceColor);
-        }
-        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-      } catch(e) {}
-    }
-  } else {
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    if (savedFontSize) {
-      document.body.style.fontSize = savedFontSize + 'px';
-    }
-  }
+  // Tema stüdyosu etkin modun paletini düzenler: yeni moda göre yeniden kur
+  var studioBox = document.getElementById('theme-customization-container');
+  if (studioBox && window.WWThemeStudio) window.WWThemeStudio.mount(studioBox);
 
   try {
     window.dispatchEvent(new CustomEvent('themeChanged', {
@@ -591,6 +513,7 @@ async function loadPanelContent(panelId, url) {
 // ============================================================
 window.switchPanel = function(panelId) {
   wwLog.log('🔄 switchPanel: ' + panelId);
+  if (panelId !== 'panel-appearance' && window.WWThemeStudio) window.WWThemeStudio.flush();
 
   if (!panelId) {
     wwLog.warn('Panel ID boş!');
@@ -2805,15 +2728,10 @@ function initAppearance() {
     return;
   }
 
-  if (typeof window.loadThemeCustomization === 'function') {
-    wwLog.log('✅ loadThemeCustomization fonksiyonu bulundu, çağrılıyor...');
-    window.loadThemeCustomization();
-  } else if (typeof loadThemeCustomization === 'function') {
-    wwLog.log('✅ loadThemeCustomization (global) çağrılıyor...');
-    loadThemeCustomization();
+  if (window.WWThemeStudio) {
+    window.WWThemeStudio.mount(container);
   } else {
-    wwLog.warn('⚠️ loadThemeCustomization fonksiyonu bulunamadı, fallback UI kullanılıyor...');
-    loadThemeCustomizationFallback();
+    wwLog.warn('⚠️ theme-studio.js yüklenmedi');
   }
 }
 
@@ -2833,290 +2751,6 @@ function initStudioDisclosure() {
   studio.addEventListener('toggle', function() {
     try { localStorage.setItem('ww_theme_studio_open', studio.open ? '1' : '0'); } catch (e) {}
   });
-}
-
-function loadThemeCustomizationFallback() {
-  var container = document.getElementById('theme-customization-container');
-  if (!container) return;
-
-  var isLight = document.body.classList.contains('light-theme');
-
-  if (isLight) {
-    var tplLight = document.getElementById('tpl-theme-light-locked');
-    if (!tplLight) return;
-    var cloneLight = tplLight.content.cloneNode(true);
-    container.innerHTML = '';
-    container.appendChild(cloneLight);
-    if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-
-    var switchBtn = container.querySelector('#theme-switch-to-dark-btn');
-    if (switchBtn) {
-      switchBtn.addEventListener('click', function() {
-        var toggle = document.getElementById('theme-toggle');
-        if (toggle && !toggle.checked) toggle.click();
-      });
-    }
-    return;
-  }
-
-  getUserPlanSilent().then(function(result) {
-    var isPro = result.plan === 'premium';
-
-    if (!isPro) {
-      var tplLocked = document.getElementById('tpl-theme-locked');
-      if (!tplLocked) return;
-      container.innerHTML = '';
-      container.appendChild(tplLocked.content.cloneNode(true));
-      if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-      return;
-    }
-
-    var tplForm = document.getElementById('tpl-theme-form');
-    if (!tplForm) return;
-    var cloneForm = tplForm.content.cloneNode(true);
-
-    var settings = typeof getThemeSettings === 'function' ? getThemeSettings() : {
-      backgroundColor: '#07070c', surfaceColor: '#0e0e16', borderColor: '#1a1a28', textColor: '#f0f0f8', fontSize: 16
-    };
-
-    var bgInput = cloneForm.querySelector('#custom-bg-color');
-    var bgText = cloneForm.querySelector('#custom-bg-color-text');
-    var surfInput = cloneForm.querySelector('#custom-surface-color');
-    var surfText = cloneForm.querySelector('#custom-surface-color-text');
-    var borderInput = cloneForm.querySelector('#custom-border-color');
-    var borderText = cloneForm.querySelector('#custom-border-color-text');
-    var textInput = cloneForm.querySelector('#custom-text-color');
-    var textText = cloneForm.querySelector('#custom-text-color-text');
-    var fontSize = cloneForm.querySelector('#custom-font-size');
-    var fontSizeDisplay = cloneForm.querySelector('#font-size-display');
-
-    if (bgInput) bgInput.value = settings.backgroundColor || '#07070c';
-    if (bgText) bgText.value = settings.backgroundColor || '#07070c';
-    if (surfInput) surfInput.value = settings.surfaceColor || '#0e0e16';
-    if (surfText) surfText.value = settings.surfaceColor || '#0e0e16';
-    if (borderInput) borderInput.value = settings.borderColor || '#1a1a28';
-    if (borderText) borderText.value = settings.borderColor || '#1a1a28';
-    if (textInput) textInput.value = settings.textColor || '#f0f0f8';
-    if (textText) textText.value = settings.textColor || '#f0f0f8';
-    if (fontSize) fontSize.value = settings.fontSize || 16;
-    if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
-
-    cloneForm.querySelectorAll('[data-icon]').forEach(function(el) {
-      el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
-    });
-
-    container.innerHTML = '';
-    container.appendChild(cloneForm);
-
-    if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-
-    setupThemeEventsFallback();
-
-  }).catch(function(err) {
-    console.error('❌ Pro kontrol hatası:', err);
-    container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ ' + t('settings.theme_load_error') + '</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 ' + t('overtrade.retry') + '</button></div>';
-  });
-}
-
-function setupThemeEventsFallback() {
-  var bgColor = document.getElementById('custom-bg-color');
-  var surfaceColor = document.getElementById('custom-surface-color');
-  var borderColor = document.getElementById('custom-border-color');
-  var textColor = document.getElementById('custom-text-color');
-  var fontSize = document.getElementById('custom-font-size');
-  var fontSizeDisplay = document.getElementById('font-size-display');
-  var previewBox = document.getElementById('theme-preview-box');
-
-  function updateChips() {
-    var chipBg = document.getElementById('chip-bg');
-    var chipSurf = document.getElementById('chip-surface');
-    var chipBorder = document.getElementById('chip-border');
-    var chipText = document.getElementById('chip-text');
-    if (chipBg && bgColor) chipBg.style.background = bgColor.value;
-    if (chipSurf && surfaceColor) chipSurf.style.background = surfaceColor.value;
-    if (chipBorder && borderColor) chipBorder.style.background = borderColor.value;
-    if (chipText && textColor) chipText.style.background = textColor.value;
-  }
-
-  function updateFontPills(val) {
-    document.querySelectorAll('.font-pill').forEach(function(pill) {
-      pill.classList.toggle('active', pill.dataset.size === String(val));
-    });
-  }
-
-  function updatePreview(applyToRoot) {
-    updateChips();
-    if (fontSize) updateFontPills(fontSize.value);
-
-    if (applyToRoot) {
-      var root = document.documentElement;
-      if (bgColor) root.style.setProperty('--bg', bgColor.value);
-      if (surfaceColor) {
-        root.style.setProperty('--surface', surfaceColor.value);
-        root.style.setProperty('--surface2', surfaceColor.value);
-      }
-      if (borderColor) root.style.setProperty('--border', borderColor.value);
-      if (textColor) root.style.setProperty('--text', textColor.value);
-      if (fontSize) {
-        var size = fontSize.value + 'px';
-        document.body.style.fontSize = size;
-        if (fontSizeDisplay) fontSizeDisplay.textContent = size;
-      }
-    } else {
-      if (fontSize && fontSizeDisplay) {
-        fontSizeDisplay.textContent = fontSize.value + 'px';
-      }
-    }
-    if (previewBox) {
-      if (surfaceColor) previewBox.style.background = surfaceColor.value;
-      if (borderColor) previewBox.style.borderColor = borderColor.value;
-      if (textColor) {
-        previewBox.style.color = textColor.value;
-        previewBox.querySelectorAll('.preview-text-contrast').forEach(function(el) {
-          el.style.color = textColor.value;
-        });
-      }
-    }
-  }
-
-  var PRESETS = {
-    obsidian: { bg: '#07070c', surface: '#0e0e16', border: '#1a1a28', text: '#f0f0f8' },
-    violet:   { bg: '#080612', surface: '#120e24', border: '#261e47', text: '#f0f0f8' },
-    slate:    { bg: '#090d14', surface: '#0f172a', border: '#1e293b', text: '#f1f5f9' },
-    stealth:  { bg: '#000000', surface: '#0c0c0e', border: '#242428', text: '#ffffff' }
-  };
-
-  document.querySelectorAll('.preset-card').forEach(function(btn) {
-    if (btn._presetBound) return;
-    btn._presetBound = true;
-    btn.addEventListener('click', function() {
-      var p = PRESETS[this.dataset.preset];
-      if (!p) return;
-      document.querySelectorAll('.preset-card').forEach(function(b) { b.classList.remove('active'); });
-      this.classList.add('active');
-
-      if (bgColor) bgColor.value = p.bg;
-      if (surfaceColor) surfaceColor.value = p.surface;
-      if (borderColor) borderColor.value = p.border;
-      if (textColor) textColor.value = p.text;
-
-      var bgText = document.getElementById('custom-bg-color-text');
-      var surfText = document.getElementById('custom-surface-color-text');
-      var borderText = document.getElementById('custom-border-color-text');
-      var textText = document.getElementById('custom-text-color-text');
-      if (bgText) bgText.value = p.bg;
-      if (surfText) surfText.value = p.surface;
-      if (borderText) borderText.value = p.border;
-      if (textText) textText.value = p.text;
-
-      updatePreview(true);
-    });
-  });
-
-  document.querySelectorAll('.font-pill').forEach(function(pill) {
-    if (pill._pillBound) return;
-    pill._pillBound = true;
-    pill.addEventListener('click', function() {
-      var size = parseInt(this.dataset.size, 10);
-      if (size && fontSize) {
-        fontSize.value = size;
-        updatePreview(true);
-      }
-    });
-  });
-
-  function saveTheme() {
-    var isLight = document.body.classList.contains('light-theme');
-
-    if (isLight) {
-      var fontOnly = { fontSize: parseInt(fontSize.value) };
-      if (typeof saveThemeSettings === 'function') {
-        saveThemeSettings(fontOnly);
-      } else if (typeof window.saveThemeSettings === 'function') {
-        window.saveThemeSettings(fontOnly);
-      }
-      showMsg('✅ ' + t('settings.font_updated_light'), 'success');
-      return;
-    }
-
-    var settings = {
-      backgroundColor: bgColor ? bgColor.value : '#07070c',
-      surfaceColor: surfaceColor ? surfaceColor.value : '#0e0e16',
-      borderColor: borderColor ? borderColor.value : '#1a1a28',
-      textColor: textColor ? textColor.value : '#f0f0f8',
-      fontSize: fontSize ? parseInt(fontSize.value) : 16
-    };
-    if (typeof saveThemeSettings === 'function') {
-      saveThemeSettings(settings);
-    } else if (typeof window.saveThemeSettings === 'function') {
-      window.saveThemeSettings(settings);
-    }
-    showMsg('✅ ' + t('settings.theme_saved'), 'success');
-  }
-
-  function resetTheme() {
-    var defaultSettings = {
-      backgroundColor: '#07070c',
-      surfaceColor: '#0e0e16',
-      borderColor: '#1a1a28',
-      textColor: '#f0f0f8',
-      fontSize: 16
-    };
-    if (bgColor) bgColor.value = defaultSettings.backgroundColor;
-    if (surfaceColor) surfaceColor.value = defaultSettings.surfaceColor;
-    if (borderColor) borderColor.value = defaultSettings.borderColor;
-    if (textColor) textColor.value = defaultSettings.textColor;
-    if (fontSize) fontSize.value = defaultSettings.fontSize;
-    document.querySelectorAll('.preset-card').forEach(function(b) {
-      b.classList.toggle('active', b.dataset.preset === 'obsidian');
-    });
-    updatePreview(false);
-    try { localStorage.removeItem('ww_custom_theme'); } catch(e) {}
-    var root = document.documentElement;
-    root.style.removeProperty('--bg');
-    root.style.removeProperty('--surface');
-    root.style.removeProperty('--surface2');
-    root.style.removeProperty('--border');
-    root.style.removeProperty('--text');
-    document.body.style.fontSize = '';
-    showMsg('↺ ' + t('settings.theme_reset_done'), 'success');
-  }
-
-  if (bgColor && !bgColor._themeBound) {
-    bgColor._themeBound = true;
-    bgColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (surfaceColor && !surfaceColor._themeBound) {
-    surfaceColor._themeBound = true;
-    surfaceColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (borderColor && !borderColor._themeBound) {
-    borderColor._themeBound = true;
-    borderColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (textColor && !textColor._themeBound) {
-    textColor._themeBound = true;
-    textColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (fontSize && !fontSize._themeBound) {
-    fontSize._themeBound = true;
-    fontSize.addEventListener('input', function() { updatePreview(true); });
-  }
-
-  var saveBtn = document.getElementById('save-custom-theme-btn');
-  if (saveBtn && !saveBtn._themeBound) {
-    saveBtn._themeBound = true;
-    saveBtn.addEventListener('click', saveTheme);
-  }
-
-  var resetBtn = document.getElementById('reset-custom-theme-btn');
-  if (resetBtn && !resetBtn._themeBound) {
-    resetBtn._themeBound = true;
-    resetBtn.addEventListener('click', resetTheme);
-  }
-
-  // İlk açılışta :root'u değiştirme, sadece preview kutusunu güncelle
-  updatePreview(false);
 }
 
 // ============================================================
@@ -4137,6 +3771,8 @@ if (document.readyState === 'loading') {
 
 // Sayfadan çıkarken plan geri sayımını durdur
 SETTINGS_PAGE.onLeave(function() {
+  // Tema stüdyosunda bekleyen otomatik kaydı hemen yap (seçim diğer sayfalarda da geçerli olsun)
+  if (window.WWThemeStudio) window.WWThemeStudio.flush();
   if (window.SETTINGS_STATE && window.SETTINGS_STATE.timerInterval) {
     clearInterval(window.SETTINGS_STATE.timerInterval);
     window.SETTINGS_STATE.timerInterval = null;

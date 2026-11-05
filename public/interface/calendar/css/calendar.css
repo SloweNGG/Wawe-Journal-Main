@@ -66,8 +66,8 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(192, 132, 252, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: linear-gradient(135deg, rgba(var(--ac-rgb), 0.25), rgba(var(--ac-p1-rgb), 0.1));
+  border: 1px solid rgba(var(--ac-rgb), 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,7 +95,7 @@
 }
 
 .cal-title-btn:hover {
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(var(--ac-rgb), 0.08);
 }
 
 .cal-title-btn .cal-title-caret {
@@ -183,7 +183,7 @@
 .cal-jump-popover .jump-month-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(var(--ac-rgb), 0.08);
 }
 
 .cal-jump-popover .jump-month-btn.current {
@@ -219,7 +219,7 @@
 
 .cal-nav-btn:hover {
   color: var(--accent);
-  background: rgba(139, 92, 246, 0.06);
+  background: rgba(var(--ac-rgb), 0.06);
 }
 
 .cal-nav-btn.active {
@@ -229,14 +229,14 @@
 }
 
 .cal-nav-btn.today-btn {
-  background: rgba(139, 92, 246, 0.08);
+  background: rgba(var(--ac-rgb), 0.08);
   color: var(--accent);
   font-size: 11px;
   padding: 0.25rem 0.75rem;
 }
 
 .cal-nav-btn.today-btn:hover {
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(var(--ac-rgb), 0.15);
 }
 
 .cal-day-names {
@@ -362,7 +362,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
   border-color: var(--accent);
   transform: translateY(-2px) scale(1.02);
   z-index: 2;
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.18);
+  box-shadow: 0 6px 20px rgba(var(--ac-rgb), 0.18);
 }
 
 .cal-day:focus-visible {
@@ -477,7 +477,7 @@ body.light-theme .cal-grid-skeleton .skeleton-day::after {
 
 .cal-day.today {
   border: 2px solid var(--accent);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.25), inset 0 0 15px rgba(139, 92, 246, 0.05);
+  box-shadow: 0 0 20px rgba(var(--ac-rgb), 0.25), inset 0 0 15px rgba(var(--ac-rgb), 0.05);
   position: relative;
   z-index: 3;
 }
@@ -698,7 +698,7 @@ body.light-theme .calendar-summary-skeleton .skeleton-stat::after {
 }
 
 .summary-mini-card .s-icon.trades {
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(var(--ac-rgb), 0.12);
   color: var(--accent2);
 }
 
@@ -912,7 +912,7 @@ table.detail-table tbody tr:last-child td {
 }
 
 table.detail-table tbody tr:hover {
-  background: rgba(139, 92, 246, 0.05);
+  background: rgba(var(--ac-rgb), 0.05);
 }
 
 table.detail-table td.pos {

@@ -104,6 +104,13 @@ export function updateChartTheme() {
   } catch(e) {}
 }
 
+// Alan grafiği gradyanı: tema vurgu rengi (--ac, varsayılan 139,92,246) saydam tonlarla
+function accentRgba(alpha) {
+  var h = (window.WWTheme && typeof window.WWTheme.accent === 'function') ? window.WWTheme.accent() : '#8b5cf6';
+  var n = parseInt(h.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+}
+
 // ⭐ MOBIL KONTROL
 function isMobile() {
   return window.innerWidth < 768;
@@ -1092,8 +1099,8 @@ export function renderCumulativeChart(trades) {
   } else {
     series = chart.addAreaSeries({
       lineColor: CHART_THEME.purple,
-      topColor: 'rgba(139,92,246,0.35)',
-      bottomColor: 'rgba(139,92,246,0.0)',
+      topColor: accentRgba(0.35),
+      bottomColor: accentRgba(0.0),
       lineWidth: 2.5,
       priceFormat: priceFormat,
     });

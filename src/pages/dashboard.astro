@@ -964,7 +964,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="prop-card-firm-title">
             <span class="prop-card-firm-name">${t('dashboard.card.performance_edge') || 'Performans & Edge'}</span>
           </div>
-          <button type="button" class="prop-card-btn-notices" id="standard-edit-goal-btn" title="${t('dashboard.goal.title') || 'Aylık Hedef Belirle'}" style="background:rgba(124,109,250,0.12);color:#c4b5fd;border-color:rgba(124,109,250,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;">
+          <button type="button" class="prop-card-btn-notices" id="standard-edit-goal-btn" title="${t('dashboard.goal.title') || 'Aylık Hedef Belirle'}" style="background:rgba(var(--ac-b1-rgb), 0.12);color:var(--ac-l2);border-color:rgba(var(--ac-b1-rgb), 0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;">
             <i data-lucide="target"></i>
             <span>${t('dashboard.card.set_goal') || 'Hedef Belirle'}</span>
           </button>
