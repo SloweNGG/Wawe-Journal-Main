@@ -572,7 +572,7 @@ body.light-theme .wj-option-card.active {
   height: 18px;
   border-radius: 50%;
   background: var(--ac-b1);
-  color: #fff;
+  color: var(--ac-on, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -873,7 +873,7 @@ body.light-theme .wj-tz-clock-zone {
   height: 20px;
   border-radius: 50%;
   background: var(--ac-b1);
-  color: #fff;
+  color: var(--ac-on, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1419,7 +1419,7 @@ body.light-theme .wj-btn-back:hover {
   background: linear-gradient(135deg, var(--ac-b1) 0%, var(--ac-i1) 100%);
   border: none;
   border-radius: 12px;
-  color: #fff;
+  color: var(--ac-on, #fff);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;

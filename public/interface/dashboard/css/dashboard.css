@@ -593,7 +593,7 @@
   border-radius: 10px;
   border: none;
   background: linear-gradient(135deg, var(--ac) 0%, var(--ac-d1) 100%);
-  color: #ffffff;
+  color: var(--ac-on, #fff);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -2069,7 +2069,7 @@ body.light-theme .expand-summary-empty {
   border-radius: 999px;
   cursor: pointer;
   background: linear-gradient(135deg, var(--ac-b1), var(--ac-i1));
-  color: #ffffff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 2px 8px rgba(var(--ac-b1-rgb), 0.35);
   transition: transform 0.15s ease, filter 0.15s ease;
 }
@@ -2491,7 +2491,7 @@ body.light-theme .expand-summary-empty {
 
 .custom-range-apply {
   background: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
   border: none;
   border-radius: 20px;
   padding: 4px 12px;
@@ -2530,7 +2530,7 @@ body.light-theme .expand-summary-empty {
 
 .date-filter-option.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
 }
 
 .export-btn {

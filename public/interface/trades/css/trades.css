@@ -576,7 +576,7 @@
 .page-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border-color: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 2px 8px rgba(var(--ac-rgb), 0.25);
 }
 .page-btn:disabled {

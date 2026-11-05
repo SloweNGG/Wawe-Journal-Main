@@ -188,7 +188,7 @@
 
 .cal-jump-popover .jump-month-btn.current {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
+  color: var(--ac-on, #fff);
   border-color: transparent;
 }
 
@@ -224,7 +224,7 @@
 
 .cal-nav-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 2px 8px var(--accent-glow);
 }
 

@@ -2,7 +2,7 @@
 // src/components/BaseHead.astro
 // Her sayfada tekrar eden ortak <head> içeriği burada.
 // Sayfaya özel CSS/script'ler sayfanın kendi <head> slot'unda kalır.
-import themeEngine from '../scripts/theme-engine.js?raw';
+import themeEngine from '../scripts/theme-engine-inline.mjs';
 
 export interface Props {
   title: string;
@@ -219,9 +219,9 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
      Varsayılanlar eski sabit renklerle birebir aynı; özel tema (Ayarlar > Tema stüdyosu) bu tonları seçilen
      vurgu renginden türetip #ww-theme-vars stiliyle üstüne yazar. Liste BaseHead'deki WWTheme.RAMP ile aynı olmalı
      (tests/theme-engine.test.js kontrol eder). -->
-<style is:inline id="ww-accent-defaults">:root{--ac:#8b5cf6;--ac-rgb:139,92,246;--ac-l1:#a78bfa;--ac-l1-rgb:167,139,250;--ac-l2:#c4b5fd;--ac-l2-rgb:196,181,253;--ac-l3:#ddd6fe;--ac-l3-rgb:221,214,254;--ac-l4:#e9d5ff;--ac-l4-rgb:233,213,255;--ac-d1:#7c3aed;--ac-d1-rgb:124,58,237;--ac-d2:#6d28d9;--ac-d2-rgb:109,40,217;--ac-d3:#5b21b6;--ac-d3-rgb:91,33,182;--ac-d4:#4c1d95;--ac-d4-rgb:76,29,149;--ac-d5:#3b0764;--ac-d5-rgb:59,7,100;--ac-b1:#7c6dfa;--ac-b1-rgb:124,109,250;--ac-b2:#7b6ef6;--ac-b2-rgb:123,110,246;--ac-b3:#9b8bfa;--ac-b3-rgb:155,139,250;--ac-b4:#6d5ce0;--ac-b4-rgb:109,92,224;--ac-b5:#6c5ce7;--ac-b5-rgb:108,92,231;--ac-b6:#6b5bd6;--ac-b6-rgb:107,91,214;--ac-p1:#c084fc;--ac-p1-rgb:192,132,252;--ac-p2:#a855f7;--ac-p2-rgb:168,85,247;--ac-p3:#d946ef;--ac-p3-rgb:217,70,239;--ac-p4:#9333ea;--ac-p4-rgb:147,51,234;--ac-i1:#6366f1;--ac-i1-rgb:99,102,241;--ac-i2:#4f46e5;--ac-i2-rgb:79,70,229;--ac-i3:#4338ca;--ac-i3-rgb:67,56,202;}</style>
+<style is:inline id="ww-accent-defaults">:root{--ac:#8b5cf6;--ac-rgb:139,92,246;--ac-on:#fff;--ac-on-rgb:255,255,255;--ac-l1:#a78bfa;--ac-l1-rgb:167,139,250;--ac-l2:#c4b5fd;--ac-l2-rgb:196,181,253;--ac-l3:#ddd6fe;--ac-l3-rgb:221,214,254;--ac-l4:#e9d5ff;--ac-l4-rgb:233,213,255;--ac-d1:#7c3aed;--ac-d1-rgb:124,58,237;--ac-d2:#6d28d9;--ac-d2-rgb:109,40,217;--ac-d3:#5b21b6;--ac-d3-rgb:91,33,182;--ac-d4:#4c1d95;--ac-d4-rgb:76,29,149;--ac-d5:#3b0764;--ac-d5-rgb:59,7,100;--ac-b1:#7c6dfa;--ac-b1-rgb:124,109,250;--ac-b2:#7b6ef6;--ac-b2-rgb:123,110,246;--ac-b3:#9b8bfa;--ac-b3-rgb:155,139,250;--ac-b4:#6d5ce0;--ac-b4-rgb:109,92,224;--ac-b5:#6c5ce7;--ac-b5-rgb:108,92,231;--ac-b6:#6b5bd6;--ac-b6-rgb:107,91,214;--ac-p1:#c084fc;--ac-p1-rgb:192,132,252;--ac-p2:#a855f7;--ac-p2-rgb:168,85,247;--ac-p3:#d946ef;--ac-p3-rgb:217,70,239;--ac-p4:#9333ea;--ac-p4-rgb:147,51,234;--ac-i1:#6366f1;--ac-i1-rgb:99,102,241;--ac-i2:#4f46e5;--ac-i2-rgb:79,70,229;--ac-i3:#4338ca;--ac-i3-rgb:67,56,202;}</style>
 
-<!-- TEMA MOTORU (src/scripts/theme-engine.js, derlemede satır içi): kayıtlı özel temayı sayfa çizilmeden uygular,
+<!-- TEMA MOTORU (src/scripts/theme-engine.js, derlemede küçültülüp satır içi: theme-engine-inline.mjs): kayıtlı özel temayı sayfa çizilmeden uygular,
      window.WWTheme'u kurar (Ayarlar > Tema stüdyosu, hesapla eşitleme, grafiklerin vurgu rengi). -->
 <script is:inline set:html={themeEngine}></script>
 {isAppPage && <script is:inline>window.WWTheme && window.WWTheme.syncSoon();</script>}
@@ -266,11 +266,7 @@ if (location.hostname === 'www.wawejournal.com') location.replace('https://wawej
       }
     }
 
-    // 4. Font Boyutu
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    if (savedFontSize) {
-      root.style.fontSize = savedFontSize + 'px';
-    }
+    // 4. Font boyutu: tema motoru uygular (WWTheme.applyFont, <html> + <body>)
 
     // 5. Plan Durumu (Pro vs Free — Upgrade butonlarını 0ms gizler)
     var userPlan = localStorage.getItem('ww_user_plan') || sessionStorage.getItem('ww_user_plan');

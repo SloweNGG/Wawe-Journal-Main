@@ -56,7 +56,7 @@
 .time-filter-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
 .time-filter-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 2px 8px rgba(var(--ac-rgb), 0.35);
 }
 .custom-range-panel {
@@ -82,7 +82,7 @@
 }
 .custom-range-apply {
   background: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
   border: none;
   border-radius: 20px;
   padding: 4px 12px;
@@ -610,7 +610,7 @@
   align-items: center;
   gap: 0.45rem;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
+  color: var(--ac-on, #fff);
   font-family: var(--font);
   font-weight: 600;
   font-size: 13px;

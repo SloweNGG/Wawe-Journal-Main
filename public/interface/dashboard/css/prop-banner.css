@@ -150,7 +150,7 @@
 
 .prop-header-btn.advance {
   background: linear-gradient(135deg, var(--ac-b1), var(--ac-i1));
-  color: #ffffff;
+  color: var(--ac-on, #fff);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 2px 8px rgba(var(--ac-b1-rgb), 0.35);
 }

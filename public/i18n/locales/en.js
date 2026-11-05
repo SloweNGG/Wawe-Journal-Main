@@ -974,7 +974,7 @@ export default {
   "settings.studio_custom_badge": "Custom",
   "settings.studio_contrast_ok": "Good readability · text contrast {ratio}:1",
   "settings.studio_contrast_text": "Low contrast between text and card color ({ratio}:1); text will be hard to read.",
-  "settings.studio_contrast_on_accent": "The accent color is too light; white text on buttons will be hard to read ({ratio}:1).",
+  "settings.studio_contrast_on_accent": "The accent color is a mid tone; button text is hard to read in white or dark ({ratio}:1).",
   "settings.studio_contrast_accent": "The accent color is too close to the card color ({ratio}:1); selected items and links will not stand out.",
   "settings.studio_contrast_border": "The border is almost the same as the card color; box edges will not be visible.",
   "settings.studio_preview_btn": "Primary button",

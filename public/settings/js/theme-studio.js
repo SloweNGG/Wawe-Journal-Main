@@ -41,10 +41,7 @@
     var def = T().PRESETS.dark[0];
     return mode === 'dark' && p.surface === def.surface ? '#000000' : p.surface;
   }
-  function currentFont() {
-    var f = parseInt((function () { try { return window.localStorage.getItem('ww_font_size'); } catch (e) { return null; } })(), 10);
-    return f >= 12 && f <= 22 ? f : 16;
-  }
+  function currentFont() { return T().fontSize() || 16; }
 
   // ---------- kilit (Pro) ----------
   function isPro() {
@@ -209,7 +206,7 @@
 
     if (live) {
       T().preview(draft, mode);
-      document.body.style.fontSize = font + 'px';
+      T().applyFont(font);
       scheduleCommit();
     }
   }
@@ -218,10 +215,10 @@
     var ul = $('[data-ts-contrast]');
     if (!ul) return;
     var card = cardColor(draft), C = T().contrast, out = [];
-    var rText = C(draft.text, card), rOn = C('#ffffff', draft.accent), rAcc = C(draft.accent, card), rBorder = C(draft.border, card);
+    var rText = C(draft.text, card), rOn = C(T().onAccent(draft.accent) || '#ffffff', draft.accent), rAcc = C(draft.accent, card), rBorder = C(draft.border, card);
     var f = function (r) { return (Math.round(r * 10) / 10).toFixed(1); };
     if (rText < CONTRAST_TEXT) out.push(tr('settings.studio_contrast_text', 'Metin ile kart rengi arasındaki kontrast düşük ({ratio}:1); yazılar zor okunur.', { ratio: f(rText) }));
-    if (rOn < CONTRAST_ON_ACCENT) out.push(tr('settings.studio_contrast_on_accent', 'Vurgu rengi çok açık; butonlardaki beyaz yazı zor okunur ({ratio}:1).', { ratio: f(rOn) }));
+    if (rOn < CONTRAST_ON_ACCENT) out.push(tr('settings.studio_contrast_on_accent', 'Vurgu rengi orta tonda; butonlardaki yazı ne beyazla ne koyuyla iyi okunur ({ratio}:1).', { ratio: f(rOn) }));
     if (rAcc < CONTRAST_ACCENT) out.push(tr('settings.studio_contrast_accent', 'Vurgu rengi kart rengine çok yakın ({ratio}:1); seçili öğeler ve bağlantılar seçilmez.', { ratio: f(rAcc) }));
     if (rBorder < CONTRAST_BORDER) out.push(tr('settings.studio_contrast_border', 'Kenarlık kart rengiyle neredeyse aynı; kutuların sınırı görünmez.'));
     var warnIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
@@ -253,12 +250,7 @@
     var p = copy(draft); p.preset = T().matchPreset(p, mode);
     delete p.id; delete p.name;
     st[mode] = T().isDefault(p, mode) ? null : p;
-    st.fontSize = font === 16 ? null : font;
-    try {
-      if (font === 16) window.localStorage.removeItem('ww_font_size');
-      else window.localStorage.setItem('ww_font_size', String(font));
-    } catch (e) {}
-    document.body.style.fontSize = font === 16 ? '' : font + 'px';
+    st.fontSize = T().setFont(font);
     T().save(st, { local: true });
     clearTimeout(pushTimer);
     pushTimer = setTimeout(pushNow, PUSH_DELAY);
@@ -278,10 +270,7 @@
   function reset() {
     clearTimeout(commitTimer); commitTimer = 0; clearTimeout(pushTimer); pushTimer = 0;
     var st = T().read();
-    st[mode] = null; st.fontSize = null;
-    try { window.localStorage.removeItem('ww_font_size'); } catch (e) {}
-    document.body.style.fontSize = '';
-    document.documentElement.style.fontSize = '';
+    st[mode] = null; st.fontSize = T().setFont(null);
     T().save(st);
     saved = copy(T().PRESETS[mode][0]); saved.preset = saved.id; delete saved.id; delete saved.name;
     draft = copy(saved); savedFont = font = 16;

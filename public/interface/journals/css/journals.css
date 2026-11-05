@@ -52,7 +52,7 @@
   align-items: center;
   gap: 6px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
+  color: var(--ac-on, #fff);
   border: none;
   padding: 0.65rem 1.25rem;
   border-radius: 10px;
@@ -685,7 +685,7 @@
 .journal-btn-save {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
-  color: #fff;
+  color: var(--ac-on, #fff);
   padding: 0.55rem 1.25rem;
   border-radius: 8px;
   font-family: var(--font);
@@ -1427,7 +1427,7 @@ body.light-theme .journal-prop-inactive-tip {
 .wizard-step-item.active .step-num {
   background: linear-gradient(135deg, var(--accent, var(--ac)), #06B6D4);
   border-color: transparent;
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 0 12px rgba(var(--ac-rgb), 0.4);
 }
 
@@ -1760,13 +1760,13 @@ body.light-theme .journal-prop-inactive-tip {
 .wizard-step-item.active .step-num {
   background: var(--accent, var(--ac));
   border-color: var(--accent, var(--ac));
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--ac)) 28%, transparent);
 }
 .wizard-step-item.completed .step-num {
   background: var(--accent, var(--ac));
   border-color: var(--accent, var(--ac));
-  color: #fff;
+  color: var(--ac-on, #fff);
   font-size: 0;                      /* the number gives way to a check mark */
 }
 .wizard-step-item.completed .step-num::before { content: '\2713'; font-size: 0.8rem; font-weight: 800; }

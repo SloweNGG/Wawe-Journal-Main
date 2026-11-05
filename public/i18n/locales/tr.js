@@ -919,7 +919,7 @@ export default {
   "settings.studio_custom_badge": "Özel",
   "settings.studio_contrast_ok": "Okunabilirlik iyi · metin kontrastı {ratio}:1",
   "settings.studio_contrast_text": "Metin ile kart rengi arasındaki kontrast düşük ({ratio}:1); yazılar zor okunur.",
-  "settings.studio_contrast_on_accent": "Vurgu rengi çok açık; butonlardaki beyaz yazı zor okunur ({ratio}:1).",
+  "settings.studio_contrast_on_accent": "Vurgu rengi orta tonda; butonlardaki yazı ne beyazla ne koyuyla iyi okunur ({ratio}:1).",
   "settings.studio_contrast_accent": "Vurgu rengi kart rengine çok yakın ({ratio}:1); seçili öğeler ve bağlantılar seçilmez.",
   "settings.studio_contrast_border": "Kenarlık kart rengiyle neredeyse aynı; kutuların sınırı görünmez.",
   "settings.studio_preview_btn": "Ana buton",

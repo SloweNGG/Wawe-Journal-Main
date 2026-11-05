@@ -123,7 +123,7 @@
   border: 1px solid var(--border);
 }
 .sc-rank--top {
-  color: #fff;
+  color: var(--ac-on, #fff);
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -323,7 +323,7 @@ body.light-theme .sc-head {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
-  color: #fff;
+  color: var(--ac-on, #fff);
   font-size: 24px;
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(var(--ac-rgb), 0.4);
@@ -756,7 +756,7 @@ body.light-theme .sc-head {
 
 .date-filter-option.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
 }
 .date-filter-option:focus-visible {
   outline: 2px solid var(--accent2);
@@ -802,7 +802,7 @@ body.light-theme .custom-range-input {
 
 .custom-range-apply {
   background: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
   border: none;
   border-radius: 7px;
   padding: 4px 10px;
@@ -1070,7 +1070,7 @@ body.light-theme .chart-badge.negative {
 }
 .ww-widget-popover .wwp-seg button.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
 }
 .ww-widget-popover .wwp-seg button:focus-visible {
   outline: 2px solid var(--accent2, var(--ac-l1));
@@ -1239,7 +1239,7 @@ body.light-theme .ww-widget-popover .wwp-seg {
 .wwd-chip.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
 }
 .wwd-chip-n {
   font-size: 10.5px;
@@ -1363,7 +1363,7 @@ body.light-theme .ww-widget-popover .wwp-seg {
 .wwd-btn--add {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--ac-on, #fff);
   padding: 0.45rem 0.85rem;
 }
 .wwd-btn--add:hover { filter: brightness(1.12); }
@@ -2302,7 +2302,7 @@ body.light-theme .wwd-replace-opt { background: #f8fafc; }
   cursor: pointer;
 }
 .goal-cancel { border: 1px solid var(--border); background: transparent; color: var(--muted); }
-.goal-save { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+.goal-save { border: 1px solid var(--accent); background: var(--accent); color: var(--ac-on, #fff); }
 body.light-theme .goal-form { background: #ffffff; }
 
 /* ============================================================
@@ -2644,7 +2644,7 @@ body.light-theme .goal-form { background: #ffffff; }
   transition: background 0.15s ease, color 0.15s ease;
 }
 .wwd-view-seg button:hover { color: var(--text); }
-.wwd-view-seg button.active { background: var(--accent); color: #fff; }
+.wwd-view-seg button.active { background: var(--accent); color: var(--ac-on, #fff); }
 .wwd-view-seg button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 1px; }
 
 /* ============================================================

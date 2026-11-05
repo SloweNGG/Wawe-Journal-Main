@@ -110,20 +110,54 @@
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   }
 
-  // Varsayılan morun tonlarını yeni vurgu rengine taşı: ton farkı, doygunluk oranı, açıklık farkı korunur
-  function ramp(accent) {
+  // Varsayılan morun tonlarını yeni vurgu rengine taşı: ton farkı, doygunluk oranı, açıklık farkı korunur.
+  // Açık temada ana renk --ac-b5'tir (styles.css body.light-theme --accent): orada çapa b5 olur ve ton farkı
+  // uygulanmaz, böylece seçilen renk birebir görünür, diğer tonlar yalnızca açıklık / doygunlukta ayrışır.
+  function rampIndex(name) { for (var i = 0; i < RAMP.length; i++) if (RAMP[i][0] === name) return i; return 0; }
+  var ANCHOR = { dark: 0, light: rampIndex('ac-b5') };
+  function ramp(accent, m) {
     accent = norm(accent);
     var out = {};
     if (!accent || accent === BASE) return out;
-    var b = toHsl(BASE), a = toHsl(accent);
+    var light = m === 'light', ai = ANCHOR[light ? 'light' : 'dark'];
+    var b = toHsl(RAMP[ai][1]), a = toHsl(accent);
     for (var i = 0; i < RAMP.length; i++) {
       var d = toHsl(RAMP[i][1]);
-      var col = i === 0 ? accent : fromHsl(a[0] + (d[0] - b[0]), clamp(a[1] * (d[1] / b[1]), 0, 1), clamp(a[2] + (d[2] - b[2]), 0.02, 0.98));
+      var col = i === ai ? accent : fromHsl(a[0] + (light ? 0 : d[0] - b[0]), clamp(a[1] * (d[1] / b[1]), 0, 1), clamp(a[2] + (d[2] - b[2]), 0.02, 0.98));
       var c = rgb(col);
       out['--' + RAMP[i][0]] = col;
       out['--' + RAMP[i][0] + '-rgb'] = c.join(',');
     }
+    var on = onAccent(accent);
+    if (on) { out['--ac-on'] = on; out['--ac-on-rgb'] = rgb(on).join(','); }
     return out;
+  }
+  // Vurgu zeminli butonların yazısı: beyaz yeterince okunmuyorsa koyu yazı (varsayılan --ac-on beyaz)
+  function onAccent(accent) {
+    var dark = '#0b0b12';
+    return contrast('#ffffff', accent) < 3 && contrast(dark, accent) > contrast('#ffffff', accent) ? dark : null;
+  }
+
+  // ---------- yazı boyutu (ww_font_size, 12-22 px; 16 = varsayılan) ----------
+  // Hem <html> (rem kullanan öğeler) hem <body> (miras alan yazılar) aynı değeri alır; önizleme ile kayıt aynı.
+  function fontSize() {
+    try { var f = parseInt(window.localStorage.getItem('ww_font_size'), 10); return f >= 12 && f <= 22 ? f : null; } catch (e) { return null; }
+  }
+  function applyFont(px) {
+    if (px === undefined) px = fontSize();
+    var v = px && px !== 16 ? px + 'px' : '';
+    try {
+      document.documentElement.style.fontSize = v;
+      if (document.body) document.body.style.fontSize = v;
+      else document.addEventListener('DOMContentLoaded', function () { applyFont(); }, { once: true });
+    } catch (e) {}
+  }
+  function setFont(px) {
+    px = parseInt(px, 10);
+    if (!(px >= 12 && px <= 22) || px === 16) px = null;
+    try { if (px) window.localStorage.setItem('ww_font_size', String(px)); else window.localStorage.removeItem('ww_font_size'); } catch (e) {}
+    applyFont(px);
+    return px;
   }
 
   // ---------- kayıt ----------
@@ -208,7 +242,7 @@
         out['--text-muted'] = mix(p.text, p.surface, 0.88);
       }
     }
-    var r = ramp(p.accent);
+    var r = ramp(p.accent, m);
     for (var k in r) out[k] = r[k];
     return out;
   }
@@ -322,7 +356,7 @@
         var local = read();
         if (remote && remote.ts > (local.ts || 0)) {
           store(remote); apply(remote); emit(remote);
-          if (remote.fontSize) { try { window.localStorage.setItem('ww_font_size', String(remote.fontSize)); document.body.style.fontSize = remote.fontSize + 'px'; } catch (e) {} }
+          if (remote.fontSize) setFont(remote.fontSize);
           return 'pulled';
         }
         if (local.ts && (!remote || local.ts > remote.ts)) { push(serialize(local)); return 'pushed'; }
@@ -352,6 +386,7 @@
   // başka sekmede tema ya da mod değişirse
   window.addEventListener('storage', function (e) {
     if (e.key === KEY || e.key === 'ww_theme') apply();
+    if (e.key === 'ww_font_size') applyFont();
   });
 
   window.WWTheme = {
@@ -360,8 +395,10 @@
     apply: apply, preview: preview, save: save, vars: vars, cssFor: cssFor, ramp: ramp,
     isDefault: isDefault, matchPreset: matchPreset, presetById: presetById, cleanPalette: cleanPalette,
     encode: encode, decode: decode, contrast: contrast, mix: mix, norm: norm,
-    pull: pull, push: push, syncSoon: syncSoon, accent: accent
+    pull: pull, push: push, syncSoon: syncSoon, accent: accent,
+    fontSize: fontSize, applyFont: applyFont, setFont: setFont, onAccent: onAccent
   };
 
   apply();
+  applyFont();
 })(window);

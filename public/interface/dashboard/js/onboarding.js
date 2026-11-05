@@ -115,7 +115,7 @@
                 <div class="wj-welcome-brand-logo">
                   <div class="wj-welcome-logo-icon">
                     <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                      <polyline points="2,16 7,9 12,13 19,4" stroke="#a78bfa" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                      <polyline points="2,16 7,9 12,13 19,4" style="stroke:var(--ac-l1)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
                   <span class="wj-welcome-logo-text">Wawe<span class="wj-welcome-logo-accent">Journal</span></span>
@@ -320,7 +320,7 @@
                     </div>
                   </div>
                   <div class="wj-theme-card-info" style="display:flex;align-items:center;gap:0.6rem;">
-                    <i data-lucide="moon" style="width:20px;height:20px;color:#a78bfa;flex-shrink:0;"></i>
+                    <i data-lucide="moon" style="width:20px;height:20px;color:var(--ac-l1);flex-shrink:0;"></i>
                     <div>
                       <div class="wj-theme-card-title" data-i18n="onboarding.theme_dark">${t('onboarding.theme_dark', 'Koyu Tema')}</div>
                       <div class="wj-option-sub" data-i18n="onboarding.theme_dark_desc">${t('onboarding.theme_dark_desc', 'Göz yormayan obsidian ve neon')}</div>

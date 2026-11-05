@@ -25,10 +25,8 @@ var SETTINGS_PAGE = window.wwPage.current();
 // ============================================================
 
 (function() {
-  // Renkler: tema motoru (BaseHead → window.WWTheme). Yazı boyutu eski anahtardan.
-  if (window.WWTheme) window.WWTheme.apply();
-  var savedFontSize = localStorage.getItem('ww_font_size');
-  if (savedFontSize) document.body.style.fontSize = savedFontSize + 'px';
+  // Renkler ve yazı boyutu: tema motoru (BaseHead → window.WWTheme).
+  if (window.WWTheme) { window.WWTheme.apply(); window.WWTheme.applyFont(); }
   wwLog.log('🎨 [settings] Tema ayarlandı:', localStorage.getItem('ww_theme') || 'dark');
 })();
 
@@ -302,7 +300,7 @@ var PRO_FEATURE_VISUALS = {
     '<rect class="pv-swatch-bg" x="8" y="6" width="68" height="10" rx="5"/>' +
     '<circle class="pv-text-fill" cx="15" cy="11" r="1.6"/><circle class="pv-text-fill" cx="20" cy="11" r="1.6"/><circle class="pv-text-fill" cx="25" cy="11" r="1.6"/>' +
     '<rect class="pv-chip" x="14" y="22" width="56" height="13" rx="3"/><rect class="pv-chip" x="14" y="39" width="26" height="13" rx="3"/><rect class="pv-chip pv-chip--accent" x="44" y="39" width="26" height="13" rx="3"/>' +
-    '<circle cx="93" cy="17" r="7" fill="#8b5cf6"/><circle cx="108" cy="17" r="7" fill="#22c55e"/>' +
+    '<circle cx="93" cy="17" r="7" style="fill:var(--ac)"/><circle cx="108" cy="17" r="7" fill="#22c55e"/>' +
     '<circle cx="93" cy="35" r="7" fill="#f59e0b"/><circle cx="108" cy="35" r="7" fill="#38bdf8"/>' +
     '<circle class="pv-ring" cx="93" cy="17" r="10"/>' +
     '<rect class="pv-chip" x="86" y="48" width="29" height="7" rx="3.5"/>',
@@ -314,7 +312,7 @@ var PRO_FEATURE_VISUALS = {
     '<line class="pv-limit" x1="96" y1="28" x2="96" y2="43"/>' +
     '<line class="pv-text" x1="50" y1="51" x2="80" y2="51"/>',
   journals:
-    '<rect class="pv-tile" x="14" y="5" width="92" height="14" rx="4"/><circle cx="23" cy="12" r="3.2" fill="#8b5cf6"/><line class="pv-text" x1="31" y1="12" x2="68" y2="12"/><rect class="pv-chip pv-chip--green" x="84" y="9" width="16" height="6" rx="3"/>' +
+    '<rect class="pv-tile" x="14" y="5" width="92" height="14" rx="4"/><circle cx="23" cy="12" r="3.2" style="fill:var(--ac)"/><line class="pv-text" x1="31" y1="12" x2="68" y2="12"/><rect class="pv-chip pv-chip--green" x="84" y="9" width="16" height="6" rx="3"/>' +
     '<rect class="pv-tile" x="14" y="24" width="92" height="14" rx="4"/><circle cx="23" cy="31" r="3.2" fill="#22c55e"/><line class="pv-text" x1="31" y1="31" x2="60" y2="31"/><rect class="pv-chip pv-chip--red" x="84" y="28" width="16" height="6" rx="3"/>' +
     '<rect class="pv-tile" x="14" y="43" width="92" height="14" rx="4"/><circle cx="23" cy="50" r="3.2" fill="#f59e0b"/><line class="pv-text" x1="31" y1="50" x2="72" y2="50"/><rect class="pv-chip pv-chip--green" x="84" y="47" width="16" height="6" rx="3"/>',
   prop_accounts:
@@ -347,7 +345,7 @@ function showMsg(message, type) {
   } else {
     wwLog.log('[' + type + ']', message);
     var toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 24px;background:' + (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#8b5cf6') + ';color:white;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;';
+    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 24px;background:' + (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : 'var(--ac)') + ';color:white;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;';
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(function() {

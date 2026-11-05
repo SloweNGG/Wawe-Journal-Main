@@ -22,8 +22,6 @@ var STRAT_PAGE = window.wwPage.current();
 
 (function initTheme() {
   var savedTheme = localStorage.getItem('ww_theme');
-  var savedFontSize = localStorage.getItem('ww_font_size');
-  var customTheme = localStorage.getItem('ww_custom_theme');
 
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
@@ -31,26 +29,9 @@ var STRAT_PAGE = window.wwPage.current();
     document.body.classList.remove('light-theme');
   }
 
-  if (savedFontSize) {
-    document.body.style.fontSize = savedFontSize + 'px';
-  }
+  if (window.WWTheme) window.WWTheme.applyFont();
 
-  if (savedTheme !== 'light' && customTheme) {
-    try {
-      var settings = JSON.parse(customTheme);
-      var root = document.documentElement;
-      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-      if (settings.surfaceColor) {
-        root.style.setProperty('--surface', settings.surfaceColor);
-        root.style.setProperty('--surface2', settings.surfaceColor);
-      }
-      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-      if (settings.fontSize) {
-        document.body.style.fontSize = settings.fontSize + 'px';
-      }
-    } catch(e) {}
-  }
+  if (window.WWTheme) window.WWTheme.apply();
 
   wwLog.log('🎨 [strategies.js] Tema ayarlandı:', savedTheme || 'dark');
 })();
@@ -70,25 +51,11 @@ var STRAT_PAGE = window.wwPage.current();
     var isLight = savedTheme === 'light';
     document.body.classList.toggle('light-theme', isLight);
 
-    var customTheme = localStorage.getItem('ww_custom_theme');
-    if (customTheme && !isLight) {
-      try {
-        var settings = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-        if (settings.surfaceColor) {
-          root.style.setProperty('--surface', settings.surfaceColor);
-          root.style.setProperty('--surface2', settings.surfaceColor);
-        }
-        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-      } catch(e) {}
-    }
+    if (window.WWTheme) window.WWTheme.apply();
   }
 
   STRAT_PAGE.on(window, 'storage', function(e) {
-    if (e.key === 'ww_theme') {
+    if (e.key === 'ww_theme' || e.key === 'ww_custom_theme') {
       wwLog.log('🔄 [Strategies] Tema değişikliği algılandı:', e.newValue);
       applyThemeFromStorage();
       // ⭐ Grafikler yeniden render EDİLMEZ
@@ -97,18 +64,6 @@ var STRAT_PAGE = window.wwPage.current();
 
   STRAT_PAGE.on(document, 'themeChanged', function(e) {
     wwLog.log('🔄 [Strategies] ThemeChanged event yakalandı');
-    if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
-      var settings = e.detail.settings;
-      var root = document.documentElement;
-      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-      if (settings.surfaceColor) {
-        root.style.setProperty('--surface', settings.surfaceColor);
-        root.style.setProperty('--surface2', settings.surfaceColor);
-      }
-      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-    }
     // ⭐ Grafikler yeniden render EDİLMEZ
   });
 

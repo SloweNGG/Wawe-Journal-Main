@@ -324,7 +324,7 @@ import Layout from '../layouts/Layout.astro';
         fab.className = 'quick-add-fab';
         fab.setAttribute('aria-label', 'Hızlı İşlem Ekle');
         fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+        fab.style.cssText = 'position:fixed;bottom:2rem;right:2rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac-l1));border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(var(--ac-rgb),0.4);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);';
         fab.addEventListener('click', function() {
           if (typeof quickAddOpen === 'function') quickAddOpen();
           else alert('Quick Add yüklenemedi. Sayfayı yenileyin.');

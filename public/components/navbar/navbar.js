@@ -1668,7 +1668,7 @@ function updateBadgeUI(isPro, expiresAt) {
     if (dot) {
       if (isPro) {
         dot.style.background = 'var(--accent2)';
-        dot.style.boxShadow = '0 0 8px rgba(139,92,246,0.4)';
+        dot.style.boxShadow = '0 0 8px rgba(var(--ac-rgb),0.4)';
       } else {
         dot.style.background = 'var(--green)';
         dot.style.boxShadow = 'none';

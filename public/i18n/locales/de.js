@@ -942,7 +942,7 @@ export default {
   "settings.studio_custom_badge": "Eigene",
   "settings.studio_contrast_ok": "Gut lesbar · Textkontrast {ratio}:1",
   "settings.studio_contrast_text": "Geringer Kontrast zwischen Text und Kartenfarbe ({ratio}:1); Text ist schwer lesbar.",
-  "settings.studio_contrast_on_accent": "Die Akzentfarbe ist zu hell; weißer Text auf Buttons ist schwer lesbar ({ratio}:1).",
+  "settings.studio_contrast_on_accent": "Die Akzentfarbe ist ein Mittelton; Button-Text ist weder hell noch dunkel gut lesbar ({ratio}:1).",
   "settings.studio_contrast_accent": "Die Akzentfarbe ist der Kartenfarbe zu ähnlich ({ratio}:1); ausgewählte Elemente und Links fallen nicht auf.",
   "settings.studio_contrast_border": "Der Rahmen hat fast die Kartenfarbe; Kartenränder sind nicht sichtbar.",
   "settings.studio_preview_btn": "Haupt-Button",

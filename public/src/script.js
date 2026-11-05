@@ -275,64 +275,12 @@ wwLog.log('🍞 showToast:', typeof window.showToast === 'function' ? '✅' : '�
 // ⭐ TEMA DEĞİŞİMİNİ DİNLE - TÜM SAYFALARDA ÇALIŞIR
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', function() {
-  wwLog.log('🎨 Tema izleyici başlatıldı...');
-  
-  // Storage değişikliklerini dinle (diğer sekmelerden gelen)
-  window.addEventListener('storage', function(e) {
-    if (e.key === 'ww_theme') {
-      wwLog.log('🔄 Tema değişikliği algılandı:', e.newValue);
-      
-      const isLight = e.newValue === 'light';
-      document.body.classList.toggle('light-theme', isLight);
-      
-      // Tema değişince custom theme ayarlarını tekrar uygula
-      const customTheme = localStorage.getItem('ww_custom_theme');
-      if (customTheme) {
-        try {
-          const settings = JSON.parse(customTheme);
-          if (!isLight) {
-            // Dark tema - tüm ayarları uygula
-            if (typeof applyThemeSettings === 'function') {
-              applyThemeSettings(settings);
-            } else {
-              // applyThemeSettings yoksa manuel uygula
-              const root = document.documentElement;
-              if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-              if (settings.surfaceColor) {
-                root.style.setProperty('--surface', settings.surfaceColor);
-                root.style.setProperty('--surface2', settings.surfaceColor);
-              }
-              if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-              if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-              if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-            }
-          } else {
-            // Light tema - sadece font size'ı uygula
-            if (settings.fontSize) {
-              document.body.style.fontSize = settings.fontSize + 'px';
-            }
-            // Light tema CSS değişkenlerini styles.css'den alır
-          }
-        } catch(e) {
-          wwLog.warn('⚠️ Custom theme uygulanamadı:', e);
-        }
-      }
-    }
-  });
-  
-  // ⭐ Custom event - aynı sayfadaki tema değişimleri için
-  document.addEventListener('themeChanged', function(e) {
-    wwLog.log('🔄 ThemeChanged event yakalandı');
-    if (e.detail && e.detail.settings) {
-      // Sadece dark tema ise uygula
-      if (!document.body.classList.contains('light-theme')) {
-        if (typeof applyThemeSettings === 'function') {
-          applyThemeSettings(e.detail.settings);
-        }
-      }
-    }
-  });
+// Başka sekmede tema / mod / yazı boyutu değişirse: tema motoru (src/scripts/theme-engine.js) kendi storage
+// dinleyicisiyle uygular. Burada yalnızca grafiklerin yeni renklerle çizilmesi tetiklenir.
+window.addEventListener('storage', function(e) {
+  if (e.key === 'ww_theme' || e.key === 'ww_custom_theme' || e.key === 'ww_font_size') {
+    try { window.dispatchEvent(new CustomEvent('chartsReset', { detail: { source: 'theme' } })); } catch (err) {}
+  }
 });
 
 wwLog.log('✅ Tema izleyici yüklendi!');

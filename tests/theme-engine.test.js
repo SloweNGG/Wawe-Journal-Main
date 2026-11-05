@@ -39,7 +39,8 @@ describe('theme engine', () => {
       const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
       assert.ok(block.includes(`--${name}-rgb:${rgb};`), name + '-rgb');
     }
-    assert.equal((block.match(/--ac[\w-]*:/g) || []).length, T.RAMP.length * 2, 'no extra tokens');
+    assert.ok(block.includes('--ac-on:#fff;--ac-on-rgb:255,255,255;'), 'button text default');
+    assert.equal((block.match(/--ac[\w-]*:/g) || []).length, T.RAMP.length * 2 + 2, 'no extra tokens');
   });
 
   it('nothing is written for the defaults (site looks exactly the same)', () => {
@@ -63,6 +64,49 @@ describe('theme engine', () => {
     const lum = (h) => parseInt(h.slice(1, 3), 16) + parseInt(h.slice(3, 5), 16) + parseInt(h.slice(5, 7), 16);
     assert.ok(lum(r['--ac-l2']) > lum(r['--ac']));
     assert.ok(lum(r['--ac-d3']) < lum(r['--ac']));
+  });
+
+  it('light mode keeps the chosen accent exactly (anchor --ac-b5, no hue shift)', () => {
+    const { T } = load();
+    const hue = (h) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+      if (!d) return 0;
+      let x = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      x *= 60; return x < 0 ? x + 360 : x;
+    };
+    for (const p of T.PRESETS.light.slice(1)) {
+      const r = T.ramp(p.accent, 'light');
+      assert.equal(r['--ac-b5'], p.accent, p.id + ': light --accent (ac-b5) is the chosen color');
+      for (const [name] of T.RAMP) {
+        const c = r['--' + name];
+        const sat = Math.max(...[1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16))) - Math.min(...[1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)));
+        if (sat < 40) continue; // near grey: hue is meaningless
+        const dh = Math.abs(hue(c) - hue(p.accent));
+        assert.ok(Math.min(dh, 360 - dh) < 4, `${p.id} ${name} hue ${hue(c)} vs ${hue(p.accent)}`);
+      }
+    }
+    assert.equal(T.vars(T.PRESETS.light.find((p) => p.id === 'paper'), 'light')['--ac-b5'], '#b45309');
+  });
+
+  it('button text turns dark only when white is unreadable on the accent', () => {
+    const { T } = load();
+    assert.equal(T.onAccent('#8b5cf6'), null);
+    assert.equal(T.onAccent('#d97706'), null);
+    assert.equal(T.onAccent('#fde047'), '#0b0b12');
+    assert.equal(T.ramp('#fde047', 'dark')['--ac-on'], '#0b0b12');
+    assert.equal(T.ramp('#3b82f6', 'dark')['--ac-on'], undefined);
+  });
+
+  it('font size: one value for <html> and <body>, 16 clears, out of range ignored', () => {
+    const { T, ls } = load({ ww_font_size: '18' });
+    assert.equal(T.fontSize(), 18);
+    assert.equal(T.setFont(20), 20);
+    assert.equal(ls.get('ww_font_size'), '20');
+    assert.equal(T.setFont(16), null);
+    assert.equal(ls.has('ww_font_size'), false);
+    assert.equal(T.setFont(40), null);
+    assert.equal(T.fontSize(), null);
   });
 
   it('dark palette: cards follow the surface, but stay black on the default surface', () => {

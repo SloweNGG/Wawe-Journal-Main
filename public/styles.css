@@ -852,7 +852,7 @@ body.light-theme h4, body.light-theme h5 {
 }
 .cal-nav-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 2px 8px var(--accent-glow);
 }
 .cal-nav-btn.month-label {
@@ -1544,7 +1544,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
 .btn:active { transform: scale(0.97); }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--ac-d1));
-  color: #fff;
+  color: var(--ac-on, #fff);
   box-shadow: 0 4px 12px rgba(var(--ac-rgb), 0.3);
 }
 .btn-primary:hover { box-shadow: 0 6px 20px rgba(var(--ac-rgb), 0.5); }
@@ -1590,7 +1590,7 @@ body.light-theme .cal-day.color-neg4 .day-bg { background: linear-gradient(135de
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
   border-radius: 8px;
-  color: #fff;
+  color: var(--ac-on, #fff);
   font-family: var(--font);
   font-size: clamp(11px, 0.9vw, 13px);
   font-weight: 600;

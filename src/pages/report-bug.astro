@@ -473,7 +473,7 @@ import Layout from '../layouts/Layout.astro';
       padding: 0.75rem 1.75rem;
       border-radius: 10px;
       background: linear-gradient(135deg, var(--ac-b1) 0%, var(--ac-i1) 50%, var(--ac-i2) 100%);
-      color: #ffffff;
+      color: var(--ac-on, #fff);
       font-size: 0.92rem;
       font-weight: 700;
       cursor: pointer;
@@ -892,7 +892,7 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 8px;
       font-size: 0.82rem;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--ac-on, #fff);
       background: var(--accent, var(--ac));
       cursor: pointer;
       transition: all 0.15s ease;
@@ -1039,7 +1039,7 @@ import Layout from '../layouts/Layout.astro';
     body.light-theme .filter-pill-btn.active {
       background: var(--ac-b1);
       border-color: var(--ac-b1);
-      color: #ffffff;
+      color: var(--ac-on, #fff);
     }
 
     body.light-theme .btn-new-ticket-shortcut {
