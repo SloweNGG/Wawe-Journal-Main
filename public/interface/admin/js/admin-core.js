@@ -250,7 +250,8 @@ var ADMIN_ICONS = {
   plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
   star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
 
 function adminSvg(name, cls, size, strokeWidth) {
@@ -271,7 +272,8 @@ var ADMIN_NAV = [
   { panel: 'panel-payouts', tab: 'payouts', glow: 'overview-glow', icon: 'wallet', label: 'Çekim Talepleri' },
   { divider: true },
   { panel: 'panel-prices', tab: 'prices', glow: 'prices-glow', icon: 'dollar', label: 'Fiyat Yönetimi' },
-  { panel: 'panel-bug-reports', tab: 'bug-reports', glow: 'users-glow', icon: 'bug', label: 'Hata Bildirimleri' }
+  { panel: 'panel-bug-reports', tab: 'bug-reports', glow: 'users-glow', icon: 'bug', label: 'Hata Bildirimleri' },
+  { panel: 'panel-push', tab: 'push', glow: 'overview-glow', icon: 'bell', label: 'Telefon Bildirimleri' }
 ];
 
 function switchPanel(panelId, clickedEl) {
@@ -322,6 +324,7 @@ function switchPanel(panelId, clickedEl) {
     if (panelId === 'panel-partner-applications') reload(window.loadPartnerApplications, window.renderPartnerApplicationsTable);
     if (panelId === 'panel-payouts') reload(window.loadPayoutRequests, window.renderPayoutsTable);
     if (panelId === 'panel-prices' && typeof renderPricesContent === 'function') renderPricesContent();
+    if (panelId === 'panel-push' && typeof renderPushSettings === 'function') renderPushSettings();
     if (panelId === 'panel-bug-reports') {
       if (typeof loadBugReports === 'function') {
         Promise.all([
@@ -450,6 +453,12 @@ function adminPanelsMarkup() {
     '<div class="admin-panel" id="panel-bug-reports">' +
       '<div id="bug-reports-admin-container">' + loading('Hata bildirimleri ve destek verileri yükleniyor...') + '</div>' +
     '</div>' +
+
+    '<div class="admin-panel" id="panel-push"><div class="s-card">' +
+      adminCardHeader('bell', 'Telefon Bildirimleri',
+        'Yeni üye, Pro satışı, hata/öneri ve para çekme isteklerinde bu cihaza anında bildirim gelir.') +
+      '<div class="s-card-body"><div id="push-settings-container"></div></div>' +
+    '</div></div>' +
   '</div>';
 }
 
@@ -654,6 +663,15 @@ function adminFailMessage(title, retryLabel) {
     '<button type="button" class="btn btn-primary" onclick="location.reload()">' + escapeHtml(retryLabel) + '</button></div>';
 }
 
+// /admin?panel=payouts gibi adresler (telefon bildirimine dokununca) ilgili paneli açar
+function openPanelFromUrl() {
+  try {
+    var tab = new URLSearchParams(window.location.search).get('panel');
+    var nav = tab && ADMIN_NAV.filter(function(n) { return n.tab === tab; })[0];
+    if (nav && nav.panel !== 'panel-overview') switchPanel(nav.panel);
+  } catch (e) {}
+}
+
 async function initAdmin() {
   try {
     var client = window.sb || (typeof sb !== 'undefined' ? sb : null);
@@ -710,6 +728,7 @@ async function initAdmin() {
 
     renderAdminPanel();
     try { if (typeof initUsersRealtime === 'function') initUsersRealtime(); } catch (e) {}
+    openPanelFromUrl();
 
     setTimeout(updatePlanBadge, 500);
 

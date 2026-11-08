@@ -1,6 +1,7 @@
 // supabase/functions/nowpayment-webhook/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { notifyAdmins } from '../_shared/admin-push.ts';
 
 // ⭐ Environment variables
 const NOWPAYMENTS_IPN_SECRET = Deno.env.get('NOWPAYMENTS_IPN_SECRET') || '';
@@ -378,6 +379,15 @@ async function processPayment(userId: string, planType: string, invoiceId: strin
 
   // ⭐ Telegram bildirimi gönder
   await sendTelegramNotification(userId, result.email || 'Bilinmiyor', planType, expiresAt);
+  // ⭐ Yöneticinin telefonuna bildirim (Web Push)
+  await notifyAdmins(supabase, {
+    title: '💎 Yeni Pro satışı',
+    body: `${result.email || userId}
+${planType === 'yearly' || planType === 'year' ? 'Yıllık' : planType === 'test' ? 'Test' : 'Aylık'} · ` +
+      `${payload.price_amount ?? '?'} ${String(payload.price_currency || 'USD').toUpperCase()} · kripto${appliedReferral ? ` · kod ${appliedReferral}` : ''}`,
+    url: '/admin?panel=analytics',
+    tag: 'premium-' + invoiceId,
+  });
 
   return { success: true, expiresAt };
 }

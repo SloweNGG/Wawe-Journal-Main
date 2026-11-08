@@ -1279,6 +1279,23 @@ body.light-theme .field input[type="date"] { color-scheme: light; }
   .ban-form-grid { grid-template-columns: 1fr; }
 }
 
+/* ============================================================
+   TELEFON BİLDİRİMLERİ (admin-push.js)
+   ============================================================ */
+.push-status { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 14px; font-weight: 600; color: var(--text); }
+.push-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.push-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+.push-dot.off { background: var(--muted); }
+.push-count { margin-left: auto; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.push-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.push-note { margin: 0.75rem 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.push-subtitle { margin: 1.4rem 0 0.6rem; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.push-events { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem; }
+.push-events li { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.75rem 0.85rem; background: var(--adm-soft); border: 1px solid var(--border); border-radius: var(--adm-radius-sm); }
+.push-events li > span { font-size: 18px; line-height: 1.2; }
+.push-events strong { display: block; font-size: 13px; color: var(--text); }
+.push-events p { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+
 @media (max-width: 767px) {
   .admin-tabs-mobile { display: flex; }
   .admin-wrap { grid-template-columns: 1fr; }

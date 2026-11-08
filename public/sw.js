@@ -166,3 +166,38 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// ⭐ Yönetici telefon bildirimleri (Web Push; gönderen: Edge Function admin-notify ve ödeme webhook'ları).
+// Yük: { title, body, url, tag }. Abonelik yalnızca admin panelinden açılır; diğer kullanıcılara push gelmez.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Wawe Journal', {
+      body: data.body || '',
+      icon: '/apple-touch-icon.png',
+      badge: '/images/brand/notification-badge.png',
+      tag: data.tag || undefined,
+      data: { url: typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/admin' },
+    })
+  );
+});
+
+// Bildirime dokununca: açık bir Wawe sekmesi varsa onu o adrese götür, yoksa yeni pencere aç
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/admin', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const win = list.find((c) => new URL(c.url).origin === self.location.origin && 'focus' in c);
+      if (!win) return self.clients.openWindow(target);
+      return win.focus()
+        .then((w) => (w || win).navigate(target))
+        .catch(() => self.clients.openWindow(target));
+    })
+  );
+});

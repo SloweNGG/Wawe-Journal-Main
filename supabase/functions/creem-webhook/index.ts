@@ -19,6 +19,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { CREEM_API_BASE, CREEM_API_KEY, codeUsable, removeCreemDiscount } from '../_shared/creem.ts';
+import { notifyAdmins, type AdminPush } from '../_shared/admin-push.ts';
 
 const CREEM_WEBHOOK_SECRET = Deno.env.get('CREEM_WEBHOOK_SECRET') || '';
 const PRODUCT_PLANS: Record<string, string> = {};
@@ -71,6 +72,16 @@ async function sendTelegram(text: string) {
   } catch (err) {
     console.error('❌ Telegram hatası:', err);
   }
+}
+
+// Yöneticiye haber: Telegram + telefon (Web Push, admin-notify / _shared/admin-push.ts).
+// push verilmezse metnin ilk satırı başlık, kalanı gövde olur.
+async function alertAdmin(text: string, push?: AdminPush) {
+  const lines = text.split('\n');
+  await Promise.all([
+    sendTelegram(text),
+    notifyAdmins(supabase, push || { title: lines[0], body: lines.slice(1).join('\n'), url: '/admin' }),
+  ]);
 }
 
 // Yinelenen abonelik: erişim ödenen dönemin sonuna (+tolerans) kadar uzar. Süre her seferinde mevcut bitişten
@@ -225,14 +236,20 @@ async function grantPro(g: Grant): Promise<'ok' | 'duplicate' | 'user_not_found'
     console.warn('⚠️ Ödeme bildirimi eklenemedi:', err);
   }
 
-  await sendTelegram(`🎉 YENİ PRO KAYDI (Kart / Creem)
+  await alertAdmin(`🎉 YENİ PRO KAYDI (Kart / Creem)
 
 👤 Kullanıcı ID: ${g.userId}
 📧 Email: ${result.email || 'Bilinmiyor'}
 📅 Plan: ${g.planType}
 💳 Tutar: ${g.paidAmount} ${g.currency}${g.referralCode ? `
 🤝 Partner kodu: ${g.referralCode}` : ''}
-🗓️ Bitiş Tarihi: ${expiresAt.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}`);
+🗓️ Bitiş Tarihi: ${expiresAt.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}`, {
+    title: '💎 Yeni Pro satışı',
+    body: `${result.email || g.userId}
+${g.planType === 'yearly' ? 'Yıllık' : 'Aylık'} · ${g.paidAmount} ${g.currency} · kart${g.referralCode ? ` · kod ${g.referralCode}` : ''}`,
+    url: '/admin?panel=analytics',
+    tag: 'premium-' + g.invoiceId,
+  });
 
   return 'ok';
 }
@@ -281,7 +298,7 @@ serve(async (req: Request) => {
       if (!userId || !planType || !ref) {
         // Yeniden denemek düzeltmez: 200 dön, yöneticiye haber ver
         console.error(`❌ Creem ödemesi eşleştirilemedi: user=${userId} product=${product.id} ref=${ref}`);
-        await sendTelegram(`⚠️ Creem ödemesi eşleştirilemedi, elle kontrol edin.
+        await alertAdmin(`⚠️ Creem ödemesi eşleştirilemedi, elle kontrol edin.
 Olay: ${type} (${event?.id})
 Ürün: ${product.id || '-'}
 Kullanıcı: ${userId || '-'}
@@ -312,20 +329,20 @@ Müşteri: ${obj.customer?.email || '-'}`);
 
       if (outcome === 'ok' && referral.code) await retireCodeIfUsedUp(referral.code);
       if (outcome === 'ok' && referral.unresolved) {
-        await sendTelegram(`⚠️ Creem ödemesinde indirim kodu var ama partneri çözülemedi; partner payını elle kontrol edin.
+        await alertAdmin(`⚠️ Creem ödemesinde indirim kodu var ama partneri çözülemedi; partner payını elle kontrol edin.
 Olay: ${type} (${event?.id})
 Kullanıcı: ${userId}
 İndirim: ${JSON.stringify(obj.discount ?? obj.order?.discount ?? null)}`);
       }
       if (outcome === 'ok' && referral.rejected) {
-        await sendTelegram(`⚠️ Kullanılamayan partner kodu (${referral.rejected}) Creem sayfasında girilmiş: müşteri indirimi aldı, partnere pay yazılmadı.
+        await alertAdmin(`⚠️ Kullanılamayan partner kodu (${referral.rejected}) Creem sayfasında girilmiş: müşteri indirimi aldı, partnere pay yazılmadı.
 Kodun Creem indirimi kaldırılıyor.
 Olay: ${type} (${event?.id})
 Kullanıcı: ${userId}`);
         await removeCreemDiscount(referral.rejected).catch(() => false);
       }
       if (outcome === 'user_not_found') {
-        await sendTelegram(`⚠️ Creem ödemesi geldi ama kullanıcı bulunamadı: ${userId} (${obj.customer?.email || '-'})`);
+        await alertAdmin(`⚠️ Creem ödemesi geldi ama kullanıcı bulunamadı: ${userId} (${obj.customer?.email || '-'})`);
       }
       return respond({ ok: true, outcome });
     }
@@ -340,7 +357,7 @@ Kullanıcı: ${userId}`);
     if (alerts[type]) {
       const sub = obj.subscription || obj;
       const refundNote = (type === 'refund.created' || type === 'dispute.created') ? '\n' + await reverseCommission(obj) : '';
-      await sendTelegram(`${alerts[type]}
+      await alertAdmin(`${alerts[type]}
 Kullanıcı: ${sub.metadata?.user_id || obj.metadata?.user_id || '-'}
 Müşteri: ${obj.customer?.email || sub.customer?.email || '-'}
 Olay: ${event?.id}${refundNote}`);
