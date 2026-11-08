@@ -38,63 +38,118 @@ import Layout from '../layouts/Layout.astro';
       margin-bottom: 0.5rem;
     }
 
-    /* Support Status Chip */
-    .support-status-chip {
+    /* Destek durumu — minimal: nokta + kısa etiket + soluk yanıt süresi */
+    .support-status {
+      --support-c: #22c55e;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 6px 13px;
-      border-radius: 999px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #4ade80;
-      background: rgba(34, 197, 94, 0.08);
-      border: 1px solid rgba(34, 197, 94, 0.25);
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1;
+      white-space: nowrap;
       flex-shrink: 0;
-      transition: all 0.2s ease;
     }
+    .support-status[data-status="busy"] { --support-c: #f59e0b; }
+    .support-status[data-status="offline"] { --support-c: #71717a; }
+    .support-status[data-status="maintenance"] { --support-c: var(--ac-l1); }
 
-    .support-pulse-dot {
-      width: 7px;
-      height: 7px;
+    .support-dot {
+      position: relative;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 8px #22c55e;
-      animation: supportPulse 2s infinite ease-in-out;
+      background: var(--support-c);
+      flex-shrink: 0;
     }
-
-    @keyframes supportPulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(0.85); }
+    /* yumuşak dışa yayılan halka (yalnız çevrim içi / yoğun) */
+    .support-dot::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: var(--support-c);
+      animation: supportRing 2.4s ease-out infinite;
     }
-
-    .support-status-chip.busy {
-      color: #fbbf24;
-      background: rgba(245, 158, 11, 0.08);
-      border-color: rgba(245, 158, 11, 0.28);
-    }
-    .support-status-chip.busy .support-pulse-dot {
-      background: #f59e0b;
-      box-shadow: 0 0 8px #f59e0b;
-    }
-    .support-status-chip.offline {
-      color: #f87171;
-      background: rgba(239, 68, 68, 0.08);
-      border-color: rgba(239, 68, 68, 0.28);
-    }
-    .support-status-chip.offline .support-pulse-dot {
-      background: #ef4444;
-      box-shadow: 0 0 8px #ef4444;
+    .support-status[data-status="offline"] .support-dot::after,
+    .support-status[data-status="maintenance"] .support-dot::after {
       animation: none;
+      display: none;
     }
-    .support-status-chip.maintenance {
-      color: var(--ac-p1);
-      background: rgba(var(--ac-p2-rgb), 0.08);
-      border-color: rgba(var(--ac-p2-rgb), 0.28);
+    @keyframes supportRing {
+      0% { transform: scale(1); opacity: 0.55; }
+      100% { transform: scale(3.2); opacity: 0; }
     }
-    .support-status-chip.maintenance .support-pulse-dot {
-      background: var(--ac-p2);
-      box-shadow: 0 0 8px var(--ac-p2);
+    @media (prefers-reduced-motion: reduce) {
+      .support-dot::after { animation: none; display: none; }
+    }
+
+    .support-label {
+      color: var(--text, #f4f4f5);
+      font-weight: 600;
+    }
+    .support-eta {
+      color: var(--muted, #8d8d96);
+      font-weight: 500;
+    }
+    .support-eta::before {
+      content: "·";
+      margin-right: 8px;
+      color: rgba(255, 255, 255, 0.25);
+    }
+    @media (max-width: 560px) {
+      .support-eta { display: none; }
+    }
+
+    /* Öncelik açıklaması + Ctrl+Enter ipucu */
+    .priority-group[hidden] { display: none !important; }
+    .priority-hint {
+      margin: 2px 0 0;
+      font-size: 11.5px;
+      color: var(--muted, #8d8d96);
+      max-width: 260px;
+      line-height: 1.4;
+    }
+    .submit-kbd-hint {
+      font-size: 11.5px;
+      color: var(--muted, #8d8d96);
+    }
+    .submit-kbd-hint kbd {
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text, #f4f4f5);
+    }
+    .bug-submit-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none !important;
+    }
+    .diag-info-icon {
+      width: 12px;
+      height: 12px;
+      opacity: 0.6;
+    }
+
+    /* Sürükle-bırak: kartın üstüne bırakma katmanı */
+    .bug-card.is-dragging::after {
+      content: attr(data-drop-text);
+      position: absolute;
+      inset: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px dashed rgba(var(--ac-l1-rgb), 0.7);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.82);
+      color: var(--ac-l2);
+      font-size: 0.95rem;
+      font-weight: 700;
+      z-index: 5;
+      pointer-events: none;
     }
 
     /* Modern Segmented Navigation Tabs */
@@ -354,7 +409,7 @@ import Layout from '../layouts/Layout.astro';
 
     .bug-textarea {
       resize: vertical;
-      min-height: 110px;
+      min-height: 172px;
       line-height: 1.5;
     }
 
@@ -904,13 +959,280 @@ import Layout from '../layouts/Layout.astro';
     }
 
     /* ============================================================
+       DAĞ SAHNESİ (yalnız koyu tema) + cam kartlar
+       ============================================================ */
+    .bug-main {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+    .bug-scene {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: url('/images/brand/hero-peak.webp') 50% 100% / max(1400px, 100%) auto no-repeat;
+      /* Üst kenar tamamen şeffaf başlar: menünün altında kesik çizgi kalmaz */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 18%, rgba(0, 0, 0, 0.45) 45%, #000 78%);
+      mask-image: linear-gradient(to bottom, transparent 0%, transparent 18%, rgba(0, 0, 0, 0.45) 45%, #000 78%);
+      opacity: 0.85;
+      animation: bugSceneIn 0.9s ease both;
+    }
+    @keyframes bugSceneIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 0.85; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bug-scene { animation: none; }
+    }
+    .bug-container {
+      position: relative;
+    }
+
+    /* ============================================================
+       KAZANÇLARIM SAYFASIYLA AYNI DİL (koyu tema)
+       Siyah yüzey, ince beyaz kenarlık, büyük harfsiz etiketler,
+       seçili öğe = var(--ac-b1) kenarlık + hafif mor zemin
+       ============================================================ */
+    body:not(.light-theme) .bug-card {
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+    }
+    body:not(.light-theme) .bug-tab-bar {
+      background: #000;
+      border-color: rgba(255, 255, 255, 0.09);
+      box-shadow: none;
+    }
+    body:not(.light-theme) .bug-tab-btn.active {
+      background: rgba(var(--ac-b1-rgb), 0.12);
+      color: #fff;
+      box-shadow: inset 0 0 0 1px var(--ac-b1);
+    }
+    body:not(.light-theme) .ticket-card {
+      background: #000;
+      border-color: rgba(255, 255, 255, 0.09);
+    }
+
+    .bug-card {
+      font-family: var(--font);
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      margin-bottom: 0.1rem;
+    }
+    .bug-input,
+    .bug-textarea {
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.7rem 0.85rem;
+      font-family: var(--font);
+      font-size: 14px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .bug-input::placeholder,
+    .bug-textarea::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+    .bug-input:focus,
+    .bug-textarea:focus {
+      background: #000;
+      border-color: var(--ac-b1);
+      box-shadow: 0 0 0 3px rgba(var(--ac-b1-rgb), 0.16);
+    }
+
+    .type-chip-pill,
+    .priority-chip {
+      padding: 0.6rem 0.85rem;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+    .type-chip-pill:hover,
+    .priority-chip:hover {
+      background: #000;
+      color: var(--text);
+      border-color: rgba(var(--ac-l1-rgb), 0.5);
+    }
+    .type-chip-pill.active {
+      color: #fff;
+      border-color: var(--ac-b1);
+      background: rgba(var(--ac-b1-rgb), 0.12);
+      box-shadow: none;
+    }
+    .type-chip-pill svg { color: var(--ac-l1); }
+    .type-chips-compact,
+    .priority-compact { gap: 0.5rem; }
+    .type-chip-pill:focus-visible,
+    .priority-chip:focus-visible,
+    .bug-tab-btn:focus-visible {
+      outline: 2px solid var(--ac-l1);
+      outline-offset: 2px;
+    }
+
+    .composer-attachment-bar {
+      background: #000;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.7rem 0.85rem;
+    }
+    .btn-attach {
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+    }
+    .btn-attach svg { color: var(--ac-l1); }
+    .btn-attach:hover {
+      background: #000;
+      border-color: rgba(var(--ac-l1-rgb), 0.5);
+      color: #fff;
+    }
+    .form-actions-bar {
+      margin: 0.15rem -1.85rem -1.65rem;
+      padding: 0.85rem 1.85rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Dikey sıkılaştırma: form + gönder butonu tek ekrana sığsın */
+    .bug-main {
+      padding-top: 1rem;
+      padding-bottom: 2.5rem;
+    }
+    .bug-container {
+      gap: 1rem;
+    }
+    .bug-main .page-header {
+      margin-bottom: 0;
+    }
+    .bug-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1.25rem;
+      flex-wrap: wrap;
+    }
+    .bug-toolbar .bug-tab-bar {
+      align-self: auto;
+    }
+    .bug-form {
+      gap: 1.05rem;
+    }
+    .bug-textarea {
+      min-height: 150px;
+    }
+
+    /* Kart başlığı: ikon kutusu + başlık + alt metin, altında çizgi */
+    .bug-card-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      margin: -0.45rem -1.85rem 1.1rem;
+      padding: 0 1.85rem 0.95rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .bug-card-head-icon {
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ac-l1);
+    }
+    .bug-card-head-icon svg { width: 18px; height: 18px; }
+    .bug-card-head-text { flex: 1; min-width: 0; }
+    .bug-card-title {
+      font-family: var(--font) !important;
+      font-size: 1.08rem;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      margin: 0 0 0.25rem;
+      color: var(--text) !important;
+      -webkit-text-fill-color: initial !important;
+      background: none !important;
+    }
+    .bug-card-sub {
+      margin: 0;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      .bug-card { padding: 1.4rem 1.1rem; }
+      .bug-card-head { margin: -0.2rem -1.1rem 1.2rem; padding: 0 1.1rem 1rem; }
+      .form-actions-bar { margin: 0.35rem -1.1rem -1.4rem; padding: 0.9rem 1.1rem 1.1rem; flex-wrap: wrap; }
+      .submit-kbd-hint { display: none; }
+    }
+
+    /* Açık tema karşılıkları */
+    body.light-theme .bug-input,
+    body.light-theme .bug-textarea,
+    body.light-theme .type-chip-pill,
+    body.light-theme .priority-chip,
+    body.light-theme .composer-attachment-bar,
+    body.light-theme .btn-attach {
+      background: #fff;
+      border-color: var(--border, #e2e8f0);
+    }
+    body.light-theme .type-chip-pill.active {
+      color: #1a1033;
+      border-color: var(--ac-d1);
+      background: rgba(var(--ac-d1-rgb), 0.06);
+    }
+    body.light-theme .type-chip-pill svg,
+    body.light-theme .btn-attach svg,
+    body.light-theme .bug-card-head-icon {
+      color: var(--ac-d1);
+    }
+    body.light-theme .bug-card-head,
+    body.light-theme .form-actions-bar,
+    body.light-theme .bug-card-head-icon {
+      border-color: var(--border, #e2e8f0);
+    }
+    body.light-theme .bug-scene {
+      display: none;
+    }
+    @media (max-width: 640px) {
+      .bug-scene {
+        background-size: auto 46%;
+        background-position: 42% 100%;
+      }
+    }
+
+    /* ============================================================
        AÇIK TEMA (LIGHT THEME) - YÜKSEK KONTRAST & UYUM
        ============================================================ */
 
-    body.light-theme .support-status-chip {
-      background: rgba(34, 197, 94, 0.12);
-      color: #15803d;
-      border-color: rgba(34, 197, 94, 0.35);
+    body.light-theme .support-label { color: #0f172a; }
+    body.light-theme .support-eta { color: #64748b; }
+    body.light-theme .support-eta::before { color: #cbd5e1; }
+    body.light-theme .priority-hint,
+    body.light-theme .submit-kbd-hint { color: #64748b; }
+    body.light-theme .submit-kbd-hint kbd {
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    body.light-theme .bug-card.is-dragging::after {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ac-d2);
+      border-color: var(--ac-b1);
     }
 
     body.light-theme .bug-tab-bar {
@@ -1123,6 +1445,8 @@ import Layout from '../layouts/Layout.astro';
 </Fragment>
 
 <main class="main bug-main">
+  <!-- Arka plan: dağ zirvesi (login ile aynı görsel), üstü siyaha erir -->
+  <div class="bug-scene" aria-hidden="true"></div>
   <div class="bug-container">
 
     <!-- PAGE HEADER -->
@@ -1133,31 +1457,40 @@ import Layout from '../layouts/Layout.astro';
           Platformda karşılaştığınız bir sorunu veya önerinizi bize iletin, geliştirici ekibimiz hızla incelesin.
         </p>
       </div>
-      <div class="header-actions">
-        <div class="support-status-chip" id="support-status-chip">
-          <span class="support-pulse-dot" id="support-pulse-dot"></span>
-          <span id="support-status-text" data-i18n="bug_report.support_online">Teknik Destek: Aktif & Çevrim İçi</span>
-        </div>
-      </div>
     </div>
 
-    <!-- MODERN SEGMENTED TAB SWITCHER -->
-    <div class="bug-tab-bar">
-      <button type="button" class="bug-tab-btn active" id="tab-btn-compose" data-tab="compose">
-        <i data-lucide="edit-3"></i>
-        <span>Yeni Bildirim Oluştur</span>
-      </button>
-      <button type="button" class="bug-tab-btn" id="tab-btn-history" data-tab="history">
-        <i data-lucide="inbox"></i>
-        <span>Bildirimlerim & Cevaplar</span>
-        <span class="bug-tab-count" id="tab-count-badge">0</span>
-      </button>
+    <!-- Sekmeler (sol) + destek durumu (sağ) tek satırda: form ekrana sığsın -->
+    <div class="bug-toolbar">
+      <div class="bug-tab-bar">
+        <button type="button" class="bug-tab-btn active" id="tab-btn-compose" data-tab="compose">
+          <i data-lucide="edit-3"></i>
+          <span data-i18n="bug_report.tab_new">Yeni Bildirim</span>
+        </button>
+        <button type="button" class="bug-tab-btn" id="tab-btn-history" data-tab="history">
+          <i data-lucide="inbox"></i>
+          <span data-i18n="bug_report.tab_history">Bildirimlerim</span>
+          <span class="bug-tab-count" id="tab-count-badge" hidden>0</span>
+        </button>
+      </div>
+      <div class="support-status" id="support-status-chip" data-status="online" role="status">
+        <span class="support-dot" aria-hidden="true"></span>
+        <span class="support-label" id="support-status-text" data-i18n="bug_report.support_s_online">Destek çevrim içi</span>
+        <span class="support-eta" id="support-status-eta" data-i18n="bug_report.support_eta_online">genelde 24 saat içinde yanıt</span>
+      </div>
     </div>
 
     <!-- TAB 1: YENİ BİLDİRİM FORMU -->
     <div class="bug-tab-pane" id="pane-compose">
       <div class="bug-card">
-        
+        <!-- Kart başlığı (partner başvuru formundaki başlıkla aynı yapı) -->
+        <div class="bug-card-head">
+          <div class="bug-card-head-icon"><i data-lucide="bug"></i></div>
+          <div class="bug-card-head-text">
+            <h3 class="bug-card-title" data-i18n="bug_report.form_title">Bildirimini anlat</h3>
+            <p class="bug-card-sub" data-i18n="bug_report.form_sub">Ne kadar net anlatırsan o kadar hızlı çözeriz.</p>
+          </div>
+        </div>
+
         <!-- Engellenen Kullanıcı Uyarısı -->
         <div class="banned-alert-box" id="banned-alert-box" style="display:none;">
           <div class="banned-alert-icon">
@@ -1207,24 +1540,25 @@ import Layout from '../layouts/Layout.astro';
               <input type="hidden" id="bug-type-input" value="ui" />
             </div>
 
-            <div class="form-group">
+            <div class="form-group priority-group" id="priority-group">
               <label class="form-label">
                 <span data-i18n="bug_report.priority_label">Öncelik</span>
               </label>
               <div class="priority-compact" id="priority-container">
-                <button type="button" class="priority-chip low" data-priority="low" title="Kozmetik / Önemsiz">
+                <button type="button" class="priority-chip low" data-priority="low" data-hint="bug_report.prio_low_hint">
                   <span class="priority-dot low"></span>
-                  <span>Düşük</span>
+                  <span data-i18n="bug_report.prio_low">Düşük</span>
                 </button>
-                <button type="button" class="priority-chip med active" data-priority="medium" title="Kullanımı Etkiliyor">
+                <button type="button" class="priority-chip med active" data-priority="medium" data-hint="bug_report.prio_med_hint">
                   <span class="priority-dot med"></span>
-                  <span>Orta</span>
+                  <span data-i18n="bug_report.prio_med">Orta</span>
                 </button>
-                <button type="button" class="priority-chip high" data-priority="high" title="Kritik / İşlem Yapılamıyor">
+                <button type="button" class="priority-chip high" data-priority="high" data-hint="bug_report.prio_high_hint">
                   <span class="priority-dot high"></span>
-                  <span>Yüksek</span>
+                  <span data-i18n="bug_report.prio_high">Yüksek</span>
                 </button>
               </div>
+              <p class="priority-hint" id="priority-hint" data-i18n="bug_report.prio_med_hint">Kullanımı etkiliyor ama devam edebiliyorum.</p>
               <input type="hidden" id="bug-priority-input" value="medium" />
             </div>
           </div>
@@ -1253,8 +1587,8 @@ import Layout from '../layouts/Layout.astro';
                 <span class="required">*</span>
               </label>
               <span class="paste-hint">
-                <i data-lucide="clipboard"></i>
-                <span>Görseli doğrudan buraya yapıştırabilirsiniz (Cmd+V)</span>
+                <i data-lucide="image-plus"></i>
+                <span id="paste-hint-text">Görseli yapıştırın (Ctrl+V) veya sürükleyin</span>
               </span>
             </div>
             <textarea
@@ -1275,26 +1609,28 @@ import Layout from '../layouts/Layout.astro';
                 <span data-i18n="bug_report.screenshot_label">Ekran Görüntüsü Ekle</span>
               </button>
               <div class="selected-file-chip" id="selected-file-preview" style="display:none;">
-                <img id="selected-file-thumb" src="" alt="Önizleme" style="width:22px;height:22px;object-fit:cover;border-radius:4px;border:1px solid rgba(255,255,255,0.2);display:none;" />
+                <img id="selected-file-thumb" src="" alt="" style="width:22px;height:22px;object-fit:cover;border-radius:4px;border:1px solid rgba(255,255,255,0.2);display:none;" />
                 <i data-lucide="image" id="selected-file-icon"></i>
                 <span id="selected-file-name">screenshot.png</span>
-                <button type="button" class="btn-remove-chip" id="btn-remove-file" title="Kaldır">
+                <button type="button" class="btn-remove-chip" id="btn-remove-file" data-i18n-title="bug_report.remove" title="Kaldır">
                   <i data-lucide="x"></i>
                 </button>
               </div>
             </div>
 
             <div class="diagnostics-subtle">
-              <label class="diag-toggle-label">
+              <label class="diag-toggle-label" id="diag-toggle-label">
                 <input type="checkbox" id="include-system-info" checked />
-                <span id="diag-summary-text">✓ Sistem Tanısı Dahil (Tarayıcı & OS)</span>
+                <span data-i18n="bug_report.diag_included">Sistem bilgisi dahil</span>
+                <i data-lucide="info" class="diag-info-icon"></i>
               </label>
             </div>
           </div>
 
           <!-- Gönder Butonu -->
           <div class="form-actions-bar">
-            <button type="submit" id="submit-bug-btn" class="bug-submit-btn">
+            <span class="submit-kbd-hint" id="submit-kbd-hint"></span>
+            <button type="submit" id="submit-bug-btn" class="bug-submit-btn" disabled>
               <i data-lucide="send" id="btn-icon"></i>
               <span id="btn-text" data-i18n="bug_report.btn_submit">Hata Raporunu Gönder</span>
             </button>
@@ -1319,13 +1655,13 @@ import Layout from '../layouts/Layout.astro';
               <span data-i18n="bug_report.filter_pending">İncelenenler</span> (<span id="count-pending">0</span>)
             </button>
             <button type="button" class="filter-pill-btn" data-filter="rejected">
-              <span>Reddedilenler</span> (<span id="count-rejected">0</span>)
+              <span data-i18n="bug_report.filter_rejected">Reddedilenler</span> (<span id="count-rejected">0</span>)
             </button>
           </div>
 
           <button type="button" class="btn-new-ticket-shortcut" id="btn-goto-compose">
             <i data-lucide="plus"></i>
-            <span>Yeni Bildirim</span>
+            <span data-i18n="bug_report.tab_new">Yeni Bildirim</span>
           </button>
         </div>
 
@@ -1333,7 +1669,7 @@ import Layout from '../layouts/Layout.astro';
         <div class="tickets-stream" id="tickets-stream">
           <div class="stream-loader">
             <div class="spinner"></div>
-            <span>Bildirimler yükleniyor...</span>
+            <span data-i18n="bug_report.loading">Bildirimler yükleniyor...</span>
           </div>
         </div>
       </div>
@@ -1352,6 +1688,27 @@ import Layout from '../layouts/Layout.astro';
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
   }
+
+  // Çeviri yardımcısı: anahtar henüz yüklenmediyse yedek metni döner
+  function T(key, fallback, params) {
+    var out = (window.i18n && window.i18n.t) ? window.i18n.t(key, params) : key;
+    if (!out || out === key) {
+      out = fallback || key;
+      if (params) {
+        Object.keys(params).forEach(function (p) {
+          out = out.replace(new RegExp('\\{+' + p + '\\}+', 'g'), params[p]);
+        });
+      }
+    }
+    return out;
+  }
+
+  function currentLocale() {
+    var lang = (window.i18n && window.i18n.getCurrentLanguage) ? window.i18n.getCurrentLanguage() : 'tr';
+    return ({ tr: 'tr-TR', en: 'en-US', de: 'de-DE' })[lang] || 'tr-TR';
+  }
+
+  var IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
   document.addEventListener('DOMContentLoaded', function () {
     // 1. Sistem Tanı Bilgilerini Tespit Et
@@ -1375,15 +1732,40 @@ import Layout from '../layouts/Layout.astro';
 
       var res = window.screen.width + 'x' + window.screen.height;
 
-      var summaryEl = document.getElementById('diag-summary-text');
-      if (summaryEl) {
-        summaryEl.textContent = '✓ Sistem Tanısı Dahil (' + os + ' • ' + browser + ')';
-      }
-
       return { browser: browser, os: os, resolution: res, url: window.location.href };
     }
 
     var sysInfo = detectSystemInfo();
+
+    // Dile bağlı, JS ile yazılan metinler (dil değişince tekrar çağrılır)
+    function applyDynamicTexts() {
+      var pasteKey = IS_MAC ? '⌘V' : 'Ctrl+V';
+      var pasteEl = document.getElementById('paste-hint-text');
+      if (pasteEl) pasteEl.textContent = T('bug_report.paste_hint', 'Görseli yapıştırın ({key}) veya sürükleyin', { key: pasteKey });
+
+      var diagLabel = document.getElementById('diag-toggle-label');
+      if (diagLabel) {
+        diagLabel.title = T('bug_report.diag_tooltip', 'Gönderilecek: {os} · {browser} · {res}', {
+          os: sysInfo.os, browser: sysInfo.browser, res: sysInfo.resolution
+        });
+      }
+
+      var kbdEl = document.getElementById('submit-kbd-hint');
+      if (kbdEl) {
+        var sendKey = IS_MAC ? '⌘ Enter' : 'Ctrl Enter';
+        var tpl = T('bug_report.submit_kbd', '{key} ile gönder', { key: '\u0000' });
+        var parts = tpl.split('\u0000');
+        kbdEl.textContent = '';
+        kbdEl.appendChild(document.createTextNode(parts[0] || ''));
+        var kbd = document.createElement('kbd');
+        kbd.textContent = sendKey;
+        kbdEl.appendChild(kbd);
+        kbdEl.appendChild(document.createTextNode(parts[1] || ''));
+      }
+
+      var card = document.querySelector('#pane-compose .bug-card');
+      if (card) card.setAttribute('data-drop-text', T('bug_report.drop_here', 'Görseli buraya bırakın'));
+    }
 
     // 2. Tab Switcher (Sekme Yönetimi)
     var tabBtnCompose = document.getElementById('tab-btn-compose');
@@ -1411,27 +1793,152 @@ import Layout from '../layouts/Layout.astro';
     if (tabBtnHistory) tabBtnHistory.addEventListener('click', function() { switchBugTab('history'); });
     if (btnGotoCompose) btnGotoCompose.addEventListener('click', function() { switchBugTab('compose'); });
 
-    // 3. Bildirim Türü Seçimi
+    // 3. Bildirim Türü Seçimi + türe göre açıklama şablonu
     var typeChips = document.querySelectorAll('.type-chip-pill');
     var typeInput = document.getElementById('bug-type-input');
+    var priorityGroup = document.getElementById('priority-group');
+    var subjectInput = document.getElementById('bug-subject');
+    var descTextarea = document.getElementById('bug-desc');
+
+    var TEMPLATE_FALLBACK = {
+      bug: 'Ne yaptım:\n1. \n\nNe bekliyordum:\n\nNe oldu:\n',
+      perf: 'Hangi sayfada / işlemde:\n\nNe kadar sürüyor (yaklaşık):\n\nNe zamandan beri:\n',
+      feature: 'Ne istiyorum:\n\nNeden işime yarar:\n'
+    };
+    function templateKind(type) {
+      return type === 'feature' ? 'feature' : (type === 'perf' ? 'perf' : 'bug');
+    }
+    function getTemplate(type) {
+      var kind = templateKind(type);
+      return T('bug_report.tpl_' + kind, TEMPLATE_FALLBACK[kind]);
+    }
+    var lastInsertedTemplate = '';
+    // Açıklama boş mu, ya da dokunulmamış bir şablon mu?
+    function isUntouchedTemplate(text) {
+      var v = (text || '').trim();
+      if (!v) return true;
+      if (lastInsertedTemplate && v === lastInsertedTemplate.trim()) return true;
+      // Yüklü tüm dillerdeki şablonlar (dil değiştiyse eski dildeki şablon da "boş" sayılır)
+      var loaded = (window.i18n && window.i18n.translations) ? window.i18n.translations : {};
+      return ['bug', 'perf', 'feature'].some(function (k) {
+        if (v === TEMPLATE_FALLBACK[k].trim()) return true;
+        return Object.keys(loaded).some(function (lang) {
+          var tpl = loaded[lang] && loaded[lang]['bug_report.tpl_' + k];
+          return typeof tpl === 'string' && v === tpl.trim();
+        });
+      });
+    }
+    function applyTemplate(force) {
+      if (!descTextarea) return;
+      if (force || isUntouchedTemplate(descTextarea.value)) {
+        lastInsertedTemplate = getTemplate(typeInput ? typeInput.value : 'ui');
+        descTextarea.value = lastInsertedTemplate;
+      }
+    }
+
+    function setType(type) {
+      typeChips.forEach(function (c) { c.classList.toggle('active', c.getAttribute('data-type') === type); });
+      if (typeInput) typeInput.value = type;
+      // Öneride öncelik sormak anlamsız: alanı gizle
+      if (priorityGroup) priorityGroup.hidden = (type === 'feature');
+      applyTemplate(false);
+      updateSubmitState();
+    }
+
     typeChips.forEach(function (chip) {
       chip.addEventListener('click', function () {
-        typeChips.forEach(function (c) { c.classList.remove('active'); });
-        chip.classList.add('active');
-        if (typeInput) typeInput.value = chip.getAttribute('data-type');
+        setType(chip.getAttribute('data-type'));
+        saveDraft();
       });
     });
 
-    // 4. Öncelik Seçimi
+    // 4. Öncelik Seçimi + açıklama satırı
     var priorityChips = document.querySelectorAll('.priority-chip');
     var priorityInput = document.getElementById('bug-priority-input');
+    var priorityHint = document.getElementById('priority-hint');
+    var HINT_FALLBACK = {
+      'bug_report.prio_low_hint': 'Kozmetik bir sorun, kullanımı etkilemiyor.',
+      'bug_report.prio_med_hint': 'Kullanımı etkiliyor ama devam edebiliyorum.',
+      'bug_report.prio_high_hint': 'Kritik — işlem yapamıyorum.'
+    };
+
+    function setPriority(value) {
+      priorityChips.forEach(function (c) {
+        var on = c.getAttribute('data-priority') === value;
+        c.classList.toggle('active', on);
+        if (on && priorityHint) {
+          var hintKey = c.getAttribute('data-hint');
+          priorityHint.setAttribute('data-i18n', hintKey);
+          priorityHint.textContent = T(hintKey, HINT_FALLBACK[hintKey]);
+        }
+      });
+      if (priorityInput) priorityInput.value = value;
+    }
+
     priorityChips.forEach(function (chip) {
       chip.addEventListener('click', function () {
-        priorityChips.forEach(function (c) { c.classList.remove('active'); });
-        chip.classList.add('active');
-        if (priorityInput) priorityInput.value = chip.getAttribute('data-priority');
+        setPriority(chip.getAttribute('data-priority'));
+        saveDraft();
       });
     });
+
+    // Gönder butonu: zorunlu alanlar dolana kadar pasif
+    var submitBtnEl = document.getElementById('submit-bug-btn');
+    function isFormFilled() {
+      var subject = (subjectInput && subjectInput.value || '').trim();
+      var desc = descTextarea ? descTextarea.value : '';
+      return subject.length > 0 && !isUntouchedTemplate(desc);
+    }
+    function updateSubmitState() {
+      if (!submitBtnEl || isUserBanned) return;
+      submitBtnEl.disabled = !isFormFilled();
+    }
+
+    // Taslak: yazılanlar sayfadan çıkınca kaybolmasın (yalnız bu tarayıcıda)
+    var DRAFT_KEY = 'ww_bug_report_draft';
+    var draftTimer = null;
+    function saveDraft() {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(function () {
+        try {
+          var subject = subjectInput ? subjectInput.value : '';
+          var desc = descTextarea ? descTextarea.value : '';
+          if (!subject.trim() && isUntouchedTemplate(desc)) {
+            localStorage.removeItem(DRAFT_KEY);
+            return;
+          }
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            type: typeInput ? typeInput.value : 'ui',
+            priority: priorityInput ? priorityInput.value : 'medium',
+            subject: subject,
+            desc: desc,
+            ts: Date.now()
+          }));
+        } catch (e) {}
+      }, 400);
+    }
+    function clearDraft() {
+      clearTimeout(draftTimer);
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    }
+    function restoreDraft() {
+      var draft = null;
+      try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) {}
+      // 7 günden eski taslakları at
+      if (!draft || !draft.ts || Date.now() - draft.ts > 7 * 864e5) {
+        clearDraft();
+        return false;
+      }
+      setType(draft.type || 'ui');
+      setPriority(draft.priority || 'medium');
+      if (subjectInput) subjectInput.value = draft.subject || '';
+      if (descTextarea && typeof draft.desc === 'string') descTextarea.value = draft.desc;
+      updateSubmitState();
+      return true;
+    }
+
+    if (subjectInput) subjectInput.addEventListener('input', function () { updateSubmitState(); saveDraft(); });
+    if (descTextarea) descTextarea.addEventListener('input', function () { updateSubmitState(); saveDraft(); });
 
     // 5. Dosya Yükleme & Pano (Paste) Desteği
     var triggerUploadBtn = document.getElementById('btn-trigger-upload');
@@ -1439,8 +1946,8 @@ import Layout from '../layouts/Layout.astro';
     var previewWrap = document.getElementById('selected-file-preview');
     var fileNameSpan = document.getElementById('selected-file-name');
     var removeFileBtn = document.getElementById('btn-remove-file');
-    var descTextarea = document.getElementById('bug-desc');
     var selectedFile = null;
+    var ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
     if (triggerUploadBtn && fileInput) {
       triggerUploadBtn.addEventListener('click', function() { fileInput.click(); });
@@ -1449,18 +1956,54 @@ import Layout from '../layouts/Layout.astro';
       });
     }
 
-    // ⭐ SÜPER SAAS DENEYİMİ: Cmd+V / Ctrl+V ile doğrudan görsel yapıştırma
-    if (descTextarea) {
-      descTextarea.addEventListener('paste', function(e) {
+    // Formun herhangi bir yerine Ctrl+V / ⌘V ile görsel yapıştırma
+    var bugFormEl = document.getElementById('bug-report-form');
+    if (bugFormEl) {
+      bugFormEl.addEventListener('paste', function(e) {
         if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
           var item = e.clipboardData.files[0];
           if (item.type.indexOf('image/') === 0) {
             e.preventDefault();
-            handleFile(item);
-            if (typeof showToast === 'function') {
-              showToast('Ekran görüntüsü eklendi!', 'info');
+            if (handleFile(item) && typeof showToast === 'function') {
+              showToast(T('bug_report.screenshot_added', 'Ekran görüntüsü eklendi'), 'info');
             }
           }
+        }
+      });
+    }
+
+    // Sürükle-bırak: görsel kartın herhangi bir yerine bırakılabilir
+    var composeCard = document.querySelector('#pane-compose .bug-card');
+    if (composeCard) {
+      var dragDepth = 0;
+      var hasFiles = function (e) {
+        return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1;
+      };
+      composeCard.addEventListener('dragenter', function (e) {
+        if (!hasFiles(e) || isUserBanned) return;
+        e.preventDefault();
+        dragDepth++;
+        composeCard.classList.add('is-dragging');
+      });
+      composeCard.addEventListener('dragover', function (e) {
+        if (!hasFiles(e) || isUserBanned) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      composeCard.addEventListener('dragleave', function (e) {
+        if (!hasFiles(e)) return;
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0) composeCard.classList.remove('is-dragging');
+      });
+      composeCard.addEventListener('drop', function (e) {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth = 0;
+        composeCard.classList.remove('is-dragging');
+        if (isUserBanned) return;
+        var file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file && handleFile(file) && typeof showToast === 'function') {
+          showToast(T('bug_report.screenshot_added', 'Ekran görüntüsü eklendi'), 'info');
         }
       });
     }
@@ -1520,12 +2063,18 @@ import Layout from '../layouts/Layout.astro';
     }
 
     function handleFile(file) {
-      if (!file) return;
+      if (!file) return false;
+      if (ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1) {
+        var typeMsg = T('bug_report.err_image_only', 'Yalnızca PNG, JPG veya WEBP görsel ekleyebilirsiniz.');
+        if (typeof showToast === 'function') showToast(typeMsg, 'error');
+        else alert(typeMsg);
+        return false;
+      }
       if (file.size > 10 * 1024 * 1024) {
-        var msg = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.err_filesize') : 'Dosya boyutu maksimum 10MB olabilir.';
+        var msg = T('bug_report.err_filesize', 'Dosya boyutu en fazla 10MB olabilir.');
         if (typeof showToast === 'function') showToast(msg, 'error');
         else alert(msg);
-        return;
+        return false;
       }
       selectedFile = file;
       if (fileNameSpan) fileNameSpan.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
@@ -1546,6 +2095,7 @@ import Layout from '../layouts/Layout.astro';
       if (previewWrap) previewWrap.style.display = 'inline-flex';
       if (triggerUploadBtn) triggerUploadBtn.style.display = 'none';
       if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+      return true;
     }
 
     if (removeFileBtn) {
@@ -1589,10 +2139,18 @@ import Layout from '../layouts/Layout.astro';
         if (data && data.value) {
           var val = data.value;
           var status = val.status || 'online';
-          var label = val.label || 'Teknik Destek: Aktif & Çevrim İçi';
+          if (['online', 'busy', 'offline', 'maintenance'].indexOf(status) === -1) status = 'online';
 
-          chip.className = 'support-status-chip ' + status;
-          text.textContent = label;
+          // Etiketler kullanıcının dilinde; admin'in yazdığı not varsa üzerine gelince görünür
+          var eta = document.getElementById('support-status-eta');
+          chip.setAttribute('data-status', status);
+          text.setAttribute('data-i18n', 'bug_report.support_s_' + status);
+          text.textContent = T('bug_report.support_s_' + status, text.textContent);
+          if (eta) {
+            eta.setAttribute('data-i18n', 'bug_report.support_eta_' + status);
+            eta.textContent = T('bug_report.support_eta_' + status, eta.textContent);
+          }
+          chip.title = val.note || '';
         }
       } catch (e) {
         console.warn('loadLiveSupportStatus hatası:', e);
@@ -1736,7 +2294,10 @@ import Layout from '../layouts/Layout.astro';
       if (countAnsweredEl) countAnsweredEl.textContent = answeredCount;
       if (countPendingEl) countPendingEl.textContent = pendingCount;
       if (countRejectedEl) countRejectedEl.textContent = rejectedCount;
-      if (tabCountBadge) tabCountBadge.textContent = userTickets.length;
+      if (tabCountBadge) {
+        tabCountBadge.textContent = userTickets.length;
+        tabCountBadge.hidden = userTickets.length === 0;
+      }
 
       stream.innerHTML = '';
 
@@ -1750,13 +2311,11 @@ import Layout from '../layouts/Layout.astro';
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
               </svg>
             </div>
-            <p class="empty-title">Henüz Bir Bildiriminiz Bulunmuyor</p>
-            <p class="empty-desc">
-              Karşılaştığınız bir hata veya iletmek istediğiniz öneri olduğunda dilediğiniz zaman bildirim oluşturabilirsiniz. Ekibimizin yanıtları buraya anında yansır.
-            </p>
+            <p class="empty-title" data-i18n="bug_report.empty_title">${escapeHtml(T('bug_report.empty_title', 'Henüz bir bildiriminiz yok'))}</p>
+            <p class="empty-desc" data-i18n="bug_report.empty_desc">${escapeHtml(T('bug_report.empty_desc', 'Bir hata veya öneri ilettiğinizde burada görünür; ekibimizin yanıtları da buraya düşer.'))}</p>
             <button type="button" class="btn-empty-compose" id="btn-empty-create">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Yeni Bildirim Oluştur</span>
+              <span data-i18n="bug_report.tab_new">${escapeHtml(T('bug_report.tab_new', 'Yeni Bildirim'))}</span>
             </button>
           </div>
         `;
@@ -1768,29 +2327,38 @@ import Layout from '../layouts/Layout.astro';
         return;
       }
 
-      var typeMap = {
+      var typeFallback = {
         ui: 'Arayüz',
         chart: 'Grafik & Hesap',
         trade: 'İşlem & Veri',
         perf: 'Performans',
         feature: 'Öneri'
       };
+      function categoryLabel(cat) {
+        return typeFallback[cat] ? T('bug_report.type_' + cat, typeFallback[cat]) : T('bug_report.category_default', 'Bildirim');
+      }
+      var locale = currentLocale();
+      var lblRejected = escapeHtml(T('bug_report.status_rejected', 'Reddedildi'));
+      var lblAnswered = escapeHtml(T('bug_report.status_answered', 'Yanıtlandı'));
+      var lblInReview = escapeHtml(T('bug_report.status_in_progress', 'İnceleniyor'));
+      var lblShot = escapeHtml(T('bug_report.view_screenshot', 'Ekran görüntüsü'));
+      var lblFull = escapeHtml(T('bug_report.view_full', 'Tam boyutta incele ↗'));
 
       userTickets.forEach(function(t) {
         var isRejected = (t.status === 'rejected');
         var isAnswered = (t.status === 'answered' || t.status === 'closed');
-        var dateStr = t.created_at ? new Date(t.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+        var dateStr = t.created_at ? new Date(t.created_at).toLocaleString(locale, { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
         var card = document.createElement('div');
         card.className = 'ticket-card';
         card.setAttribute('data-status', isRejected ? 'rejected' : (isAnswered ? 'answered' : 'pending'));
 
         var statusBadgeHtml = '';
         if (isRejected) {
-          statusBadgeHtml = `<span class="tag-status rejected"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>Reddedildi</span></span>`;
+          statusBadgeHtml = `<span class="tag-status rejected"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>${lblRejected}</span></span>`;
         } else if (isAnswered) {
-          statusBadgeHtml = `<span class="tag-status answered"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>Yanıtlandı</span></span>`;
+          statusBadgeHtml = `<span class="tag-status answered"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>${lblAnswered}</span></span>`;
         } else {
-          statusBadgeHtml = `<span class="tag-status in_progress"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>İnceleniyor</span></span>`;
+          statusBadgeHtml = `<span class="tag-status in_progress"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>${lblInReview}</span></span>`;
         }
 
         var screenshotHtml = '';
@@ -1800,14 +2368,14 @@ import Layout from '../layouts/Layout.astro';
           var safeImgUrl = escapeHtml(rawUrl);
           screenshotHtml = `
             <div class="ticket-screenshot-wrap">
-              <a href="${safeImgUrl}" target="_blank" rel="noopener noreferrer" class="ticket-screenshot-thumb" title="Tam boyutta görüntülemek için tıklayın">
-                <img src="${safeImgUrl}" alt="Ekran Görüntüsü" style="width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#000;" />
+              <a href="${safeImgUrl}" target="_blank" rel="noopener noreferrer" class="ticket-screenshot-thumb">
+                <img src="${safeImgUrl}" alt="${lblShot}" style="width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#000;" />
                 <div style="display:flex; flex-direction:column; gap:2px;">
                   <span style="font-size:11.5px; font-weight:700; color:var(--accent2, var(--ac-p1)); display:inline-flex; align-items:center; gap:4px;">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Ekran Görüntüsü
+                    ${lblShot}
                   </span>
-                  <span style="font-size:10.5px; color:var(--muted, #a0a0b8);">Tam boyutta incele ↗</span>
+                  <span style="font-size:10.5px; color:var(--muted, #a0a0b8);">${lblFull}</span>
                 </div>
               </a>
             </div>
@@ -1817,7 +2385,7 @@ import Layout from '../layouts/Layout.astro';
         var cardHtml = `
           <div class="ticket-header">
             <div class="ticket-tags">
-              <span class="tag-category">${typeMap[t.category] || 'Bildirim'}</span>
+              <span class="tag-category">${escapeHtml(categoryLabel(t.category))}</span>
               ${statusBadgeHtml}
             </div>
             <span class="ticket-date">${dateStr}</span>
@@ -1828,8 +2396,10 @@ import Layout from '../layouts/Layout.astro';
         `;
 
         if (t.admin_reply) {
-          var replyDate = t.replied_at ? new Date(t.replied_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
-          var adminLabel = isRejected ? 'Reddetme Gerekçesi (Admin)' : (t.replied_by || 'Wawe Journal Ekibi (Admin)');
+          var replyDate = t.replied_at ? new Date(t.replied_at).toLocaleString(locale, { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+          var adminLabel = isRejected
+            ? T('bug_report.reject_reason', 'Reddetme gerekçesi')
+            : (t.replied_by || T('bug_report.admin_team', 'Wawe Journal Ekibi (Admin)'));
           cardHtml += `
             <div class="admin-response-box ${isRejected ? 'rejected' : ''}">
               <div class="admin-response-top">
@@ -1890,19 +2460,21 @@ import Layout from '../layouts/Layout.astro';
         e.preventDefault();
 
         if (isUserBanned) {
-          var banMsg = 'Hata bildirme yetkiniz askıya alınmıştır. Yeni bildirim gönderemezsiniz.';
+          var banMsg = T('bug_report.banned_toast', 'Hata bildirme yetkiniz askıya alınmış. Yeni bildirim gönderemezsiniz.');
           if (typeof showToast === 'function') showToast(banMsg, 'error');
           else alert(banMsg);
           return;
         }
+        if (submitBtn && submitBtn.classList.contains('loading')) return;
 
         var subject = (document.getElementById('bug-subject')?.value || '').trim();
         var desc = (document.getElementById('bug-desc')?.value || '').trim();
         var type = typeInput ? typeInput.value : 'ui';
-        var priority = priorityInput ? priorityInput.value : 'medium';
+        // Öneride öncelik alanı gizli: aciliyeti "düşük" say
+        var priority = type === 'feature' ? 'low' : (priorityInput ? priorityInput.value : 'medium');
         var includeSys = document.getElementById('include-system-info')?.checked;
 
-        if (!subject || !desc) {
+        if (!subject || isUntouchedTemplate(desc)) {
           var reqMsg = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.err_required') : 'Lütfen konu başlığı ve açıklama alanlarını doldurunuz.';
           if (typeof showToast === 'function') showToast(reqMsg, 'error');
           else alert(reqMsg);
@@ -1924,7 +2496,7 @@ import Layout from '../layouts/Layout.astro';
         // Görsel Yükleme / Sıkıştırma İşlemi
         var screenshotUrl = null;
         if (selectedFile) {
-          if (btnText) btnText.textContent = 'Görsel Yükleniyor...';
+          if (btnText) btnText.textContent = T('bug_report.uploading_image', 'Görsel yükleniyor...');
           try {
             var compressedDataUrl = await compressImageFile(selectedFile, 1280, 0.76);
             var blobToUpload = (compressedDataUrl && dataUrlToBlob(compressedDataUrl)) || selectedFile;
@@ -2023,19 +2595,62 @@ import Layout from '../layouts/Layout.astro';
           btnText.textContent = (window.i18n && window.i18n.t) ? window.i18n.t('bug_report.btn_submit') : 'Hata Raporunu Gönder';
         }
 
-        // Formu temizle
+        // Formu temizle (tür/öncelik varsayılana döner, taslak silinir)
         form.reset();
         if (removeFileBtn) removeFileBtn.click();
+        clearDraft();
+        setType('ui');
+        setPriority('medium');
+        applyTemplate(true);
+        updateSubmitState();
 
         // Biletleri yeniden yükle
         await loadUserTickets(userId, userEmail);
 
-        // Kullanıcıyı otomatik olarak "Bildirimlerim & Cevaplar" sekmesine geçir
+        // Kullanıcıyı otomatik olarak "Bildirimlerim" sekmesine geçir
         switchBugTab('history');
 
         if (typeof showToast === 'function') {
-          showToast((window.i18n && window.i18n.t) ? window.i18n.t('bug_report.success_title') : 'Hata raporunuz iletildi!', 'success');
+          var rawId = savedReport && savedReport.id != null ? String(savedReport.id) : '';
+          var shortId = /^\d+$/.test(rawId) ? rawId : rawId.replace(/^report-/, '').replace(/-/g, '').slice(-6).toUpperCase();
+          showToast(shortId
+            ? T('bug_report.sent_id', 'Bildiriminiz iletildi · #{id}', { id: shortId })
+            : T('bug_report.success_title', 'Raporunuz başarıyla iletildi!'), 'success');
         }
+      });
+
+      // Ctrl+Enter / ⌘+Enter ile gönder
+      form.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          if (submitBtn && !submitBtn.disabled) {
+            if (form.requestSubmit) form.requestSubmit(submitBtn);
+            else submitBtn.click();
+          }
+        }
+      });
+    }
+
+    // İlk durum: taslak varsa geri yükle, yoksa türün şablonunu koy
+    applyDynamicTexts();
+    var draftRestored = restoreDraft();
+    if (!draftRestored) applyTemplate(false);
+    updateSubmitState();
+    if (draftRestored && typeof showToast === 'function') {
+      setTimeout(function () { showToast(T('bug_report.draft_restored', 'Kaydedilmemiş taslağınız geri yüklendi'), 'info'); }, 300);
+    }
+
+    // Çeviriler yüklenince / dil değişince JS metinlerini ve dokunulmamış şablonu yenile
+    function onLangReady() {
+      applyDynamicTexts();
+      applyTemplate(false);
+      updateSubmitState();
+    }
+    if (window.i18nReady && typeof window.i18nReady.then === 'function') window.i18nReady.then(onLangReady);
+    if (window.i18n && typeof window.i18n.onChange === 'function') {
+      window.i18n.onChange(function () {
+        onLangReady();
+        loadUserTickets(currentUser ? currentUser.id : null, currentUser ? currentUser.email : null);
       });
     }
 
