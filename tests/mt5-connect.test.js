@@ -26,21 +26,14 @@ function load(extra = {}) {
 const NOW = Date.UTC(2026, 10, 9, 12);
 const iso = (ms) => new Date(ms).toISOString();
 
-describe('enabled (beta anahtarı)', () => {
-  it('?mt5=1 açar ve hatırlar, ?mt5=0 kapatır', () => {
-    const st = memStorage();
+describe('enabled (yayında)', () => {
+  it('her zaman açık; eski beta anahtarı temizlenir', () => {
+    const st = memStorage({ ww_mt5_beta: '1' });
     const M = load({ localStorage: st, location: { search: '' } });
-    assert.equal(M.enabled('', st), false);
-    assert.equal(M.enabled('?mt5=1', st), true);
     assert.equal(M.enabled('', st), true);
-    assert.equal(M.enabled('?a=b&mt5=0', st), false);
-    assert.equal(M.enabled('', st), false);
-  });
-  it('depolama yoksa yalnızca adres', () => {
-    const M = load();
-    assert.equal(M.enabled('?mt5=1', null), true);
-    assert.equal(M.enabled('', null), false);
-    assert.equal(M.enabled('?mt5=12', null), false);
+    assert.equal(st.getItem('ww_mt5_beta'), null);
+    assert.equal(M.enabled('?mt5=0', st), true);
+    assert.equal(M.enabled('', null), true);
   });
 });
 

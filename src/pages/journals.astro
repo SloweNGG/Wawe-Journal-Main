@@ -416,7 +416,7 @@ import Layout from '../layouts/Layout.astro';
             </div>
 
             <!-- Seçenek C: MetaTrader (Yakında) -->
-            <div class="broker-choice-card disabled" id="choice-mt">
+            <div class="broker-choice-card disabled" id="choice-mt" hidden>
               <div class="broker-choice-icon pair">
                 <img class="broker-logo" src="/images/platforms/mt5.png" alt="MetaTrader 5" width="24" height="24" />
                 <img class="broker-logo" src="/images/platforms/mt4.png" alt="MetaTrader 4" width="24" height="24" />
@@ -428,8 +428,8 @@ import Layout from '../layouts/Layout.astro';
               <span class="broker-choice-soon" data-i18n="journal.wiz.broker_soon">Yakında</span>
             </div>
 
-            <!-- Seçenek C': MetaTrader 5 (WaweSync EA). Beta: yalnızca ?mt5=1 açılmış tarayıcılarda görünür, "Yakında" kartının yerine -->
-            <div class="broker-choice-card" id="choice-mt5" onclick="selectBrokerChoice('mt5')" hidden>
+            <!-- Seçenek C: MetaTrader 5 (WaweSync EA). Eski "Yakında" kartı (choice-mt) gizli kalır; WwMt5.enabled() artık hep true -->
+            <div class="broker-choice-card" id="choice-mt5" onclick="selectBrokerChoice('mt5')">
               <div class="broker-choice-icon">
                 <img class="broker-logo" src="/images/platforms/mt5.png" alt="MetaTrader 5" width="28" height="28" />
               </div>
@@ -1245,8 +1245,8 @@ import Layout from '../layouts/Layout.astro';
   }
 
   // ---- MetaTrader 5 (WaweSync EA) ----
-  // Beta: EA yayımlanana kadar yalnızca ?mt5=1 ile açılmış tarayıcılarda (WwMt5.enabled) görünür. MT5 hesabı olan
-  // kullanıcının kartındaki MT5 çubuğu beta kapalıyken de gösterilir.
+  // 2026-11-09'da yayına alındı (önce ?mt5=1 betasıydı): WwMt5.enabled() hep true. applyMt5Beta yalnızca broker
+  // penceresindeki MetaTrader kutusunu tıklanabilir yapar ve eski "Yakında" kartını gizli tutar.
   var mt5AccountsByJournal = {};
   var mt5Accounts = [];
 

@@ -1,7 +1,7 @@
 // ============================================================
 // WwMt5 — MetaTrader 5 connection UI for the journals page (WaweSync EA + mt5-bridge).
 //
-//   enabled()            beta switch: ?mt5=1 turns MT5 on for this browser, ?mt5=0 off (until the EA is released)
+//   enabled()            always true since the release (the old ?mt5=1 beta switch is gone)
 //   fetchStatus(sb, ms)  get_mt5_status() with a timeout; on failure the last cached list (never an empty one)
 //   mapByJournal(list)   { journalId: account }
 //   accountState(a, now) 'waiting' (code entered, EA not seen yet) | 'online' (EA seen < 3 min) | 'offline'
@@ -46,16 +46,12 @@
     });
   }
 
+  // MT5 is released (2026-11-09, EA tested end to end on a MetaQuotes demo account): always on. The beta switch
+  // (?mt5=1 -> localStorage ww_mt5_beta) is gone; its leftover key is removed.
   function enabled(search, st) {
     st = st === undefined ? store() : st;
-    var q = String(search === undefined ? (global.location && global.location.search) || '' : search);
-    var m = /[?&]mt5=([01])\b/.exec(q);
-    var fromUrl = !!(m && m[1] === '1');
-    if (!st) return fromUrl;
-    try {
-      if (m) { if (fromUrl) st.setItem(BETA_KEY, '1'); else st.removeItem(BETA_KEY); }
-      return st.getItem(BETA_KEY) === '1';
-    } catch (e) { return fromUrl; }
+    try { if (st && st.getItem(BETA_KEY) !== null) st.removeItem(BETA_KEY); } catch (e) {}
+    return true;
   }
 
   function normalizeCode(s) { return String(s == null ? '' : s).replace(/\D/g, '').slice(0, 6); }
