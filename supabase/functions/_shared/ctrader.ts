@@ -137,6 +137,30 @@ export function classifyCtraderError(err: any): { code: string; message: string 
   return { code: 'OTHER', message: 'cTrader bağlantı hatası oluştu.' };
 }
 
+// The token no longer covers this account: on the cTrader consent screen the user picks which accounts the app may
+// read, and an account left out of the latest authorization (or closed at the broker) answers this way. Reconnecting
+// alone does not help; the account has to be ticked again on that screen.
+export function isAccountAccessLost(err: any): boolean {
+  const up = (String(err?.errorCode ?? '') + ' ' + String(err?.description ?? err?.message ?? '')).toUpperCase();
+  return /CTID_TRADER_ACCOUNT_NOT_FOUND|TRADER_ACCOUNT_NOT_FOUND|UNABLE TO FIND CTID TRADER ACCOUNT|ACCOUNT_NOT_AUTHORIZED/.test(up);
+}
+
+export const ACCESS_LOST_MESSAGE =
+  'Bu cTrader hesabına erişim izni yok. cTrader ile yeniden yetkilendirirken bu hesabı da seçin.';
+
+// Message stored in ctrader_accounts.last_error and shown to the user. Known cTrader errors get their Turkish text;
+// anything else keeps its own detail (a timeout, a database error) instead of the bare "connection error", so the
+// real cause is visible. Token-like runs (20+ letters/digits) are masked in case a server echoes a credential.
+export function syncErrorMessage(err: any): string {
+  if (isAccountAccessLost(err)) return ACCESS_LOST_MESSAGE;
+  const c = classifyCtraderError(err);
+  if (c.code !== 'OTHER') return c.message;
+  const detail = String(err?.description || err?.message || '')
+    .replace(/[A-Za-z0-9_\-]{20,}/g, '***')
+    .replace(/\s+/g, ' ').trim().slice(0, 200);
+  return detail ? 'cTrader bağlantı hatası: ' + detail : c.message;
+}
+
 // ------------------------------------------------------------------ token yenileme (kilitli, ortak)
 // Neden kilit: cTrader refresh token tek kullanımlıktır. ctrader-sync ve ctrader-candles aynı anda yenilerse
 // ikincisi geçersiz refresh token ile gider, kullanıcının bağlantısı kopar. Kilit, ctrader_tokens.refreshing_since

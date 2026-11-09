@@ -2439,12 +2439,58 @@ async function updateNavbarJournal(retries) {
     }
 
     renderNavbarJournalUI(journals, activeJ, propMap, ctraderMap);
+    maybeAutoSyncCtrader(ctStatus && ctStatus.data);
   } catch(err) {
     if (typeof wwLog !== 'undefined') wwLog.error('updateNavbarJournal err', err);
   }
 }
 
 window.updateNavbarJournal = updateNavbarJournal;
+
+// ⭐ Otomatik cTrader senkronu ("Siteye girdiğimde otomatik senkronla", hesap kartındaki anahtar = ctrader_accounts.auto_sync).
+// Açık hesap deftere bağlıysa, erişimi duruyorsa ve son başarılı senkron 30 dk'dan eskiyse arka planda sessizce senkronlanır.
+// Bu tarayıcıda 30 dk içinde denenmiş hesap tekrar denenmez (sekmeler ve sayfa geçişleri dahil; WwCtSync.autoSync).
+// Bildirim yalnızca yeni işlem gelirse; bağlantı koptuysa günde en fazla bir uyarı.
+var ctAutoSyncRunning = false;
+function maybeAutoSyncCtrader(status) {
+  if (ctAutoSyncRunning || !status || !window.WwCtSync || !window.sb || !window.sb.auth) return;
+  if (/ctrader-callback/.test(window.location.pathname) || window.location.search.indexOf('test=') !== -1) return;
+  ctAutoSyncRunning = true;
+  var toastFn = window.showToast || window.showMsg || function() {};
+  window.WwCtSync.autoSync({
+    status: status,
+    getToken: async function() {
+      var r = await window.sb.auth.getSession();
+      return r && r.data && r.data.session ? r.data.session.access_token : null;
+    },
+    notify: function(code, acc) {
+      var label = window.WwCtSync.accountLabel(acc);
+      toastFn(code === 'ACCESS_REVOKED'
+        ? t('ctrader.auto.access_revoked', 'Otomatik senkron yapılamadı ({account}): cTrader bu hesaba erişim izni vermiyor. Hesaplar sayfasından yeniden yetkilendirin.', { account: label })
+        : t('ctrader.auto.reconnect', 'Otomatik senkron yapılamadı: cTrader bağlantısının süresi dolmuş. Hesaplar sayfasından yeniden bağlayın.'), 'warning');
+    }
+  }).then(function(r) {
+    if (!r || !r.ran) return;
+    if (typeof wwLog !== 'undefined') wwLog.info('[ctrader] auto sync', r.ran, 'account(s),', r.inserted, 'new trade(s)');
+    if (r.inserted > 0) {
+      toastFn(t('ctrader.auto.inserted', 'cTrader otomatik senkron: {n} yeni işlem aktarıldı', { n: r.inserted }), 'success');
+      if (window.wwCache) {
+        window.wwCache.invalidate('trades');
+        window.wwCache.invalidate('trades_dashboard');
+      }
+      window.dispatchEvent(new CustomEvent('trade-saved'));
+    }
+    // Sessiz kalmalı: document üzerindeki 'journal-changed' pano/takvim/işlemler sayfasını YENİDEN YÜKLER, gönderilmez.
+    // Yerinde tazeleme yapan sayfalar window.loadTrades sunar (İşlemler listesi; Hesaplar sayfasında kartlar, orada
+    // yeni işlem olmasa da "son senkron" zamanı değiştiği için her seferinde).
+    var onJournals = /\/journals(\.html)?$/.test(window.location.pathname);
+    if ((r.inserted > 0 || onJournals) && typeof window.loadTrades === 'function') window.loadTrades();
+  }).catch(function(e) {
+    if (typeof wwLog !== 'undefined') wwLog.warn('[ctrader] auto sync error', e);
+  }).finally(function() {
+    ctAutoSyncRunning = false;
+  });
+}
 
 // ============================================================
 // ⭐ DYNAMIC AMBIENT GLOW MANAGER (PnL Adaptive)
@@ -2550,46 +2596,36 @@ window.wwSyncCtrader = async function(e, ctid, journalId, btn) {
     var token = sessionRes?.data?.session?.access_token;
     if (!token) throw new Error('Oturum bulunamadı.');
 
-    var supabaseUrl = window.SUPABASE_URL || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_URL) || 'https://odasapyhtdopbnlfhwde.supabase.co';
-    var supabaseAnonKey = window.SUPABASE_ANON_KEY || (window.WW_CONFIG && window.WW_CONFIG.SUPABASE_ANON_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kYXNhcHlodGRvcGJubGZod2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDk0NjgsImV4cCI6MjA5NDAyNTQ2OH0.AH7V9i61pFWj33sCy51khdYHZn34BNitXY9exJySmWg';
+    if (!window.WwCtSync) throw new Error('cTrader senkron modülü yüklenemedi. Sayfayı yenileyin.');
 
-    // Sunucu tek çağrıda en fazla ~90 sn çalışır; uzun geçmişte `done:false` döner ve kaldığı yerden devam
-    // edilmesi gerekir. (Eskiden bu bayrak yok sayılıyor, "güncel" deniyor ve geçmişin kalanı alınmıyordu.)
-    var totalInserted = 0;
-    var allWarnings = [];
-    var rounds = 0;
-    var data;
-    do {
-      rounds++;
-      var res = await fetch(supabaseUrl + '/functions/v1/ctrader-sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-          'apikey': supabaseAnonKey
-        },
-        body: JSON.stringify({
-          ctidTraderAccountId: Number(ctid),
-          journalId: journalId
-        })
+    // Sunucu tek çağrıda en fazla ~90 sn çalışır; uzun geçmişte `done:false` döner, WwCtSync.runSync kaldığı yerden
+    // devam eder (en fazla 10 tur).
+    var run;
+    try {
+      run = await window.WwCtSync.runSync({
+        ctid: ctid,
+        journalId: journalId,
+        token: token,
+        onRound: function(r) { toastFn(t('ctrader.sync.rounds', 'Geçmiş işlemler alınıyor... ({n})', { n: r }), 'info'); }
       });
-
-      data = await res.json();
-      if (!res.ok || data.error) {
-        if (data.needs_reconnect) {
-          toastFn('cTrader yetkilendirme süresi dolmuş. Lütfen hesabı yeniden bağlayın.', 'warning');
+    } catch (syncErr) {
+      if (syncErr.code === 'NEEDS_RECONNECT' || syncErr.code === 'ACCESS_REVOKED') {
+        toastFn(syncErr.code === 'ACCESS_REVOKED'
+          ? t('ctrader.err.access_revoked', 'Bu cTrader hesabına erişim izni yok. cTrader ile yeniden yetkilendirirken bu hesabı da seçin.')
+          : t('ctrader.err.reconnect', 'cTrader yetkilendirme süresi dolmuş. Lütfen hesabı yeniden bağlayın.'), 'warning');
+        if (!/\/journals(\.html)?$/.test(window.location.pathname)) {
           setTimeout(function() { window.location.href = '/journals.html'; }, 1500);
-          return;
+        } else if (typeof window.loadTrades === 'function') {
+          window.loadTrades();                       // Hesaplar sayfası: kartın durumunu tazele
         }
-        throw new Error(data.error || 'Senkronizasyon başarısız.');
+        return;
       }
-
-      totalInserted += data.inserted || 0;
-      if (Array.isArray(data.warnings)) allWarnings = allWarnings.concat(data.warnings);
-      if (data.done === false && rounds < 10) {
-        toastFn('Geçmiş işlemler alınıyor... (' + rounds + ')', 'info');
-      }
-    } while (data.done === false && rounds < 10);
+      if (syncErr.inserted > 0) syncErr.message += ' (' + syncErr.inserted + ' işlem yine de aktarıldı)';
+      throw syncErr;
+    }
+    var totalInserted = run.inserted;
+    var allWarnings = run.warnings;
+    var data = run.last;
 
     // ── Sonuç bildirimleri ──
     // NOT: showToast aynı anda TEK bildirim gösterir (yenisi eskisini siler). Art arda çağırmak yalnızca SONUNCUYU

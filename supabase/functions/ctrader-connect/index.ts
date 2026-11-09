@@ -204,6 +204,9 @@ serve(async (req: Request) => {
   // Demo host üzerinden hesap listesini sorabiliriz (2149 hem live hem demo hesapları döner)
   const wsClient = new CTraderWsClient();
   let accountsList: any[] = [];
+  // true only when cTrader answered the account list request. An empty answer is a real answer (no account ticked);
+  // a network failure is not, and must not mark the user's accounts as revoked.
+  let listFetched = false;
 
   try {
     await wsClient.connect('demo.ctraderapi.com', 5036);
@@ -215,6 +218,7 @@ serve(async (req: Request) => {
     // 2149 GetAccountListByAccessTokenReq
     const accRes = await wsClient.sendRequest(2149, { accessToken });
     accountsList = accRes.payload?.ctidTraderAccount || [];
+    listFetched = true;
   } catch (wsErr: any) {
     console.error('cTrader account fetch error:', wsErr);
     // Demo başarısız olursa live üzerinden dene
@@ -225,6 +229,7 @@ serve(async (req: Request) => {
       await wsLive.sendRequest(2100, { clientId: CTRADER_CLIENT_ID, clientSecret: CTRADER_CLIENT_SECRET });
       const accRes = await wsLive.sendRequest(2149, { accessToken });
       accountsList = accRes.payload?.ctidTraderAccount || [];
+      listFetched = true;
       wsLive.close();
     } catch (liveErr) {
       console.error('cTrader live account fetch error:', liveErr);
@@ -242,13 +247,15 @@ serve(async (req: Request) => {
       is_live: !!acc.isLive,
       trader_login: acc.traderLogin || null,
       broker_name: acc.brokerTitleShort || 'cTrader Broker',
+      access_revoked_at: null,              // listed again: access is back
+      last_error: null,                     // a new authorization starts clean (old "account not found" etc.)
       updated_at: new Date().toISOString(),
     };
 
     const { data: upsertedAcc, error: accErr } = await admin
       .from('ctrader_accounts')
       .upsert(accountRow, { onConflict: 'user_id,ctid_trader_account_id' })
-      .select('id, ctid_trader_account_id, is_live, trader_login, broker_name, journal_id, last_sync_at')
+      .select('id, ctid_trader_account_id, is_live, trader_login, broker_name, journal_id, last_sync_at, auto_sync')
       .single();
 
     if (!accErr && upsertedAcc) {
@@ -256,10 +263,33 @@ serve(async (req: Request) => {
     }
   }
 
+  // 6b) Accounts the user did not tick on the consent screen this time: the new token cannot read them.
+  // They keep their journal link (the user may tick them again later) but are marked so the site stops syncing them
+  // and shows "access removed" instead of a sync error on every attempt.
+  let revokedAccounts: any[] = [];
+  if (listFetched) {
+    const listedIds = accountsList.map((a: any) => Number(a.ctidTraderAccountId)).filter((n: number) => Number.isFinite(n));
+    let q = admin.from('ctrader_accounts')
+      .update({ access_revoked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .is('access_revoked_at', null);
+    if (listedIds.length) q = q.not('ctid_trader_account_id', 'in', '(' + listedIds.join(',') + ')');
+    const { error: revErr } = await q;
+    if (revErr) console.warn('Could not mark unlisted cTrader accounts:', revErr.message);
+
+    const { data: revRows } = await admin.from('ctrader_accounts')
+      .select('id, ctid_trader_account_id, is_live, trader_login, broker_name, journal_id')
+      .eq('user_id', user.id)
+      .not('access_revoked_at', 'is', null);
+    revokedAccounts = revRows || [];
+  }
+
   // 7) Başarılı yanıt (Token asla dönülmez)
   return jsonRes({
     success: true,
     message: 'cTrader başarıyla bağlandı!',
     accounts: savedAccounts,
+    revoked_accounts: revokedAccounts,
+    list_fetched: listFetched,
   }, 200, cors);
 });

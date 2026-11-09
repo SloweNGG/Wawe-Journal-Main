@@ -433,6 +433,7 @@ import Layout from '../layouts/Layout.astro';
             <div id="wizard-existing-accounts-wrap" style="display:none;margin-bottom:0.75rem;">
               <label class="journal-ct-label" data-i18n="journal.wiz.existing_label">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
               <select id="wizard-existing-ctrader-select" class="journal-ct-select"></select>
+              <div id="wizard-ct-pick" class="ct-pick" hidden></div>
             </div>
             <div id="wizard-oauth-action-wrap">
               <div class="journal-ct-note">
@@ -511,7 +512,8 @@ import Layout from '../layouts/Layout.astro';
       <!-- Bağlı Hesaplar Varsa Listele -->
       <div id="existing-ctrader-wrap" style="display:none;margin-bottom:1.25rem;background:var(--surface2);padding:1rem;border-radius:12px;border:1px solid var(--border);">
         <label style="font-size:0.8rem;font-weight:600;color:var(--text);display:block;margin-bottom:6px;">Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:</label>
-        <select id="existing-ctrader-select" style="width:100%;padding:0.6rem 0.8rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:0.88rem;"></select>
+        <select id="existing-ctrader-select"></select>
+        <div id="broker-ct-pick" class="ct-pick" hidden></div>
         <button type="button" class="btn-save-ot" id="btn-link-existing-ctrader" style="width:100%;margin-top:10px;padding:0.6rem;background:var(--ac);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer;">Bu Hesabı Deftere Bağla</button>
         <div style="text-align:center;margin:10px 0 4px;font-size:0.75rem;color:var(--muted);">— veya yeni hesap yetkilendirin —</div>
       </div>
@@ -1209,42 +1211,169 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
+  // ---- cTrader hesap seçici (sihirbaz + "cTrader bağla" penceresi) ----
+  // Açılır liste yerine kartlar: Live/Demo, broker, numara, bakiye, son senkron ve bağlı olduğu defter.
+  // Değer gizli <select>'te tutulur (kaydetme kodu select.value okur). Başka deftere bağlı bir hesap seçilince
+  // önce sorulur: bir hesap aynı anda tek deftere bağlanabilir (uq_ctrader_accounts_journal_id), devam edilirse
+  // eski defterden ayrılır. Onaylanmadan değer değişmez.
+  // opts: { select, host, accounts, journals, journalId, includeNew, defaultValue, onChange(value) }
+  function renderCtPicker(opts) {
+    var select = opts.select, host = opts.host;
+    if (!select || !host) return;
+    var accounts = opts.accounts || [];
+    var journals = opts.journals || [];
+    var journalId = opts.journalId || null;
+    var NEW = 'new_oauth';
+
+    function journalNameOf(a) {
+      if (a.journal_name) return a.journal_name;
+      var jm = journals.find(function(x) { return x.id === a.journal_id; });
+      return jm ? jm.name : jt('journal.wiz.other_journal', 'Başka defter');
+    }
+    function isOther(a) { return !!(a && a.journal_id && a.journal_id !== journalId); }
+    function relTime(iso) {
+      var t = new Date(iso).getTime();
+      if (!isFinite(t)) return '';
+      try {
+        var rtf = new Intl.RelativeTimeFormat(uiLocale(), { numeric: 'auto', style: 'short' });
+        var sec = Math.round((t - Date.now()) / 1000), abs = Math.abs(sec);
+        if (abs < 60) return rtf.format(0, 'minute');
+        if (abs < 3600) return rtf.format(Math.round(sec / 60), 'minute');
+        if (abs < 86400) return rtf.format(Math.round(sec / 3600), 'hour');
+        return rtf.format(Math.round(sec / 86400), 'day');
+      } catch (e) { return relativeTimeTr(iso); }
+    }
+    function byId(id) { return accounts.find(function(a) { return a.id === id; }); }
+
+    // gizli select: kaydetme kodunun okuduğu değer
+    select.innerHTML = '';
+    accounts.forEach(function(a) {
+      var o = document.createElement('option');
+      o.value = a.id;
+      o.textContent = (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
+      o.disabled = a.access_revoked === true;
+      select.appendChild(o);
+    });
+    if (opts.includeNew) {
+      var on = document.createElement('option');
+      on.value = NEW;
+      on.textContent = jt('journal.wiz.new_oauth', '+ Yeni bir cTrader hesabı bağla (OAuth)');
+      select.appendChild(on);
+    }
+    select.classList.add('ct-pick-native');
+
+    var value = opts.defaultValue !== undefined ? opts.defaultValue : '';
+    var pending = null;            // başka deftere bağlı, onay bekleyen hesap
+    var confirmedMove = false;     // seçili hesap için taşıma onaylandı
+    function commit(v) {
+      value = v || '';
+      select.value = value;
+      if (typeof opts.onChange === 'function') opts.onChange(value);
+    }
+    commit(value);
+
+    function tagHtml(a) {
+      if (a.access_revoked === true) return '<span class="ct-pick-tag revoked">' + escapeHtml(jt('ctrader.card.revoked', 'Erişim izni yok')) + '</span>';
+      if (!a.journal_id) return '<span class="ct-pick-tag free">' + escapeHtml(jt('ctrader.pick.free', 'Boşta')) + '</span>';
+      if (!isOther(a)) return '<span class="ct-pick-tag here">' + escapeHtml(jt('ctrader.pick.here', 'Bu deftere bağlı')) + '</span>';
+      return '<span class="ct-pick-tag other" title="' + escapeHtml(jt('ctrader.pick.linked_to', '"{name}" defterine bağlı', { name: journalNameOf(a) })) + '">' +
+        '<i data-lucide="link-2"></i>' + escapeHtml(journalNameOf(a)) + '</span>';
+    }
+
+    function render() {
+      var html = '<div class="ct-pick-list" role="radiogroup" aria-label="' + escapeHtml(jt('journal.wiz.existing_label', 'Mevcut cTrader Hesaplarınızdan Biriyle Eşleyin:')) + '">';
+      accounts.forEach(function(a) {
+        var sel = value === a.id, dis = a.access_revoked === true, pend = pending === a.id;
+        var hasBal = a.balance !== null && a.balance !== undefined && isFinite(Number(a.balance));
+        var sub = a.last_sync_at
+          ? jt('ctrader.pick.last_sync', 'Son senkron · {time}', { time: relTime(a.last_sync_at) })
+          : jt('ctrader.pick.never', 'Henüz senkronlanmadı');
+        html += '<button type="button" role="radio" aria-checked="' + (sel ? 'true' : 'false') + '"' + (dis ? ' disabled' : '') +
+          ' class="ct-pick-item' + (sel ? ' selected' : '') + (pend ? ' pending' : '') + (dis ? ' disabled' : '') + '" data-v="' + escapeHtml(a.id) + '">' +
+          '<span class="ct-pick-radio" aria-hidden="true"></span>' +
+          '<span class="ct-pick-main">' +
+            '<span class="ct-pick-top"><em class="ct-env ' + (a.is_live ? 'live' : 'demo') + '">' + (a.is_live ? 'LIVE' : 'DEMO') + '</em>' +
+            '<b>' + escapeHtml(a.broker_name || 'cTrader') + '</b><span class="ct-pick-login">#' + escapeHtml(String(a.trader_login || a.ctid_trader_account_id)) + '</span></span>' +
+            '<span class="ct-pick-sub">' + escapeHtml(sub) + '</span>' +
+          '</span>' +
+          '<span class="ct-pick-side">' +
+            '<span class="ct-pick-bal' + (hasBal ? '' : ' muted') + '" title="' + escapeHtml(jt('ctrader.pick.balance_tip', 'Son senkrondaki bakiye (açık pozisyon K/Z dahil değil)')) + '">' +
+              (hasBal ? escapeHtml(formatAccountBalance(a.balance, a.balance_currency)) : '—') + '</span>' +
+            tagHtml(a) +
+          '</span>' +
+        '</button>';
+      });
+      if (opts.includeNew) {
+        html += '<button type="button" role="radio" aria-checked="' + (value === NEW ? 'true' : 'false') + '" class="ct-pick-item ct-pick-new' + (value === NEW ? ' selected' : '') + '" data-v="' + NEW + '">' +
+          '<span class="ct-pick-radio" aria-hidden="true"></span>' +
+          '<span class="ct-pick-main"><span class="ct-pick-top"><b>' + escapeHtml(jt('ctrader.pick.new', 'Yeni bir cTrader hesabı bağla')) + '</b></span>' +
+          '<span class="ct-pick-sub">' + escapeHtml(jt('ctrader.pick.new_sub', 'cTrader yetkilendirme ekranına gidilir; dönüşte hangi hesabın bağlanacağını seçersiniz.')) + '</span></span>' +
+          '<span class="ct-pick-side"><i data-lucide="external-link"></i></span>' +
+        '</button>';
+      }
+      html += '</div>';
+
+      // onay kutusu: başka deftere bağlı hesap
+      var pa = pending ? byId(pending) : null;
+      var sa = (!pending && confirmedMove) ? byId(value) : null;
+      if (pa) {
+        html += '<div class="ct-pick-warn" role="alertdialog" aria-live="polite">' +
+          '<div class="ct-pick-warn-title"><i data-lucide="alert-triangle"></i>' +
+            escapeHtml(jt('ctrader.pick.warn_title', 'Bu hesap zaten "{name}" defterine bağlı. Bu deftere de bağlamak istiyor musunuz?', { name: journalNameOf(pa) })) + '</div>' +
+          '<p>' + escapeHtml(jt('ctrader.pick.warn_text', 'Bir cTrader hesabı aynı anda tek deftere bağlanabilir. Devam ederseniz hesap "{name}" defterinden ayrılır; oradaki işlemler silinmez, hesabın son işlemleri bu deftere de aktarılır (iki defterde aynı işlemler olur).', { name: journalNameOf(pa) })) + '</p>' +
+          '<div class="ct-pick-warn-actions">' +
+            '<button type="button" class="ct-pick-yes">' + escapeHtml(jt('ctrader.pick.warn_yes', 'Evet, bu deftere bağla')) + '</button>' +
+            '<button type="button" class="ct-pick-no">' + escapeHtml(jt('ctrader.pick.warn_no', 'Vazgeç')) + '</button>' +
+          '</div></div>';
+      } else if (sa && isOther(sa)) {
+        html += '<div class="ct-pick-warn compact"><i data-lucide="info"></i>' +
+          escapeHtml(jt('ctrader.pick.will_move', 'Kaydettiğinizde hesap "{name}" defterinden ayrılıp bu deftere bağlanacak.', { name: journalNameOf(sa) })) + '</div>';
+      }
+      host.innerHTML = html;
+      host.hidden = false;
+
+      host.querySelectorAll('.ct-pick-item').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          if (btn.disabled) return;
+          var v = btn.getAttribute('data-v');
+          var a = byId(v);
+          if (a && isOther(a) && value !== v) { pending = v; render(); var w = host.querySelector('.ct-pick-yes'); if (w) w.focus(); return; }
+          pending = null; confirmedMove = false;
+          commit(v); render();
+        });
+      });
+      var yes = host.querySelector('.ct-pick-yes'), no = host.querySelector('.ct-pick-no');
+      if (yes) yes.addEventListener('click', function() { var v = pending; pending = null; confirmedMove = true; commit(v); render(); });
+      if (no) no.addEventListener('click', function() { pending = null; render(); });
+      if (typeof lucide !== 'undefined') try { lucide.createIcons(); } catch (e) {}
+    }
+    render();
+  }
+
+  function ctPickerDefault(accounts, journalId, fallback) {
+    var here = accounts.find(function(a) { return journalId && a.journal_id === journalId && a.access_revoked !== true; });
+    if (here) return here.id;
+    return typeof fallback === 'function' ? fallback() : fallback;
+  }
+
   function populateWizardCtraderAccounts(journalId) {
     var accounts = window._allCtraderAccounts || [];
-    var journals = window._allJournalsList || [];
     var select = document.getElementById('wizard-existing-ctrader-select');
     var wrap = document.getElementById('wizard-existing-accounts-wrap');
     if (!select || !wrap) return;
-
-    select.innerHTML = '';
-    if (accounts.length > 0) {
-      accounts.forEach(function(a) {
-        var opt = document.createElement('option');
-        opt.value = a.id;
-        var tag = a.is_live ? '[LIVE] ' : '[DEMO] ';
-        var label = tag + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
-        if (a.journal_id) {
-          if (a.journal_id === journalId) {
-            label += ' (' + jt('journal.wiz.linked_here', 'Bu deftere bağlı') + ')';
-            opt.selected = true;
-          } else {
-            var jMatch = journals.find(function(x) { return x.id === a.journal_id; });
-            label += ' (' + jt('journal.wiz.linked_other', '{name} defterine bağlı', { name: (jMatch?.name || jt('journal.wiz.other_journal', 'Başka defter')) }) + ')';
-          }
-        } else {
-          label += ' (' + jt('journal.wiz.unlinked', 'Boşta') + ')';
-        }
-        opt.textContent = label;
-        select.appendChild(opt);
-      });
-      var newOpt = document.createElement('option');
-      newOpt.value = 'new_oauth';
-      newOpt.textContent = jt('journal.wiz.new_oauth', '+ Yeni bir cTrader hesabı bağla (OAuth)');
-      select.appendChild(newOpt);
-      wrap.style.display = 'block';
-    } else {
-      wrap.style.display = 'none';
-    }
+    if (!accounts.length) { wrap.style.display = 'none'; select.innerHTML = ''; return; }
+    // varsayılan: bu deftere bağlı hesap, yoksa "yeni hesap bağla". (Eskiden listedeki İLK hesap seçili geliyordu:
+    // başka deftere bağlıysa kaydetmek onu sessizce o defterden koparıyordu.)
+    renderCtPicker({
+      select: select,
+      host: document.getElementById('wizard-ct-pick'),
+      accounts: accounts,
+      journals: window._allJournalsList || [],
+      journalId: journalId,
+      includeNew: true,
+      defaultValue: ctPickerDefault(accounts, journalId, 'new_oauth')
+    });
+    wrap.style.display = 'block';
   }
 
   window.unlinkCurrentJournalCtrader = async function() {
@@ -1592,7 +1721,7 @@ import Layout from '../layouts/Layout.astro';
       card.style.setProperty('--journal-color', j.color || '#7c6dfa');
       
       card.onclick = function(e) {
-        if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown') || e.target.closest('.btn-card-sync')) return;
+        if (e.target.closest('.journal-menu-btn') || e.target.closest('.journal-menu-dropdown') || e.target.closest('.btn-card-sync') || e.target.closest('.ct-auto')) return;
         if (typeof window.switchJournalWithAnimation === 'function') {
           window.switchJournalWithAnimation(j, '/dashboard.html');
         } else {
@@ -1678,7 +1807,10 @@ import Layout from '../layouts/Layout.astro';
 
         // Son senkron durumu: senkronlanıyor / hata / zaman / hiç yapılmadı
         var syncStateHtml;
-        if (ctAcc.is_syncing) {
+        var accessRevoked = ctAcc.access_revoked === true;
+        if (accessRevoked) {
+          syncStateHtml = '<span class="ct-sync-state error" title="' + escapeHtml(jt('ctrader.card.revoked_tip', 'cTrader son yetkilendirmede bu hesaba izin vermedi. Yetkilendir\'e basın ve cTrader ekranında bu hesabı da işaretleyin.')) + '">⚠ ' + escapeHtml(jt('ctrader.card.revoked', 'Erişim izni yok')) + '</span>';
+        } else if (ctAcc.is_syncing) {
           syncStateHtml = '<span class="ct-sync-state syncing">Senkronlanıyor…</span>';
         } else if (ctAcc.last_error) {
           // last_sync_at yalnızca BAŞARILI senkronda güncellenir; yani gösterilen zaman son başarılı olandır
@@ -1703,14 +1835,24 @@ import Layout from '../layouts/Layout.astro';
               <span class="ct-name">cTrader <em class="ct-env ${dotCls}">${typeTxt}</em></span>
               <span class="ct-login">#${loginTxt}</span>
             </div>
-            <button class="btn-card-sync" type="button" onclick="window.wwSyncCtrader(event, '${ctAcc.ctid_trader_account_id}', '${j.id}', this)" title="Son senkron: ${ctAcc.last_sync_at ? new Date(ctAcc.last_sync_at).toLocaleTimeString() : 'Henüz yapılmadı'}">
+            ${accessRevoked
+              ? `<button class="btn-card-sync reauth" type="button" data-reauth-journal="${escapeHtml(j.id)}" title="${escapeHtml(jt('ctrader.card.reauth_tip', 'cTrader yetkilendirme ekranına gider'))}">
+              <i data-lucide="key-round"></i>
+              <span>${escapeHtml(jt('ctrader.card.reauth', 'Yetkilendir'))}</span>
+            </button>`
+              : `<button class="btn-card-sync" type="button" onclick="window.wwSyncCtrader(event, '${ctAcc.ctid_trader_account_id}', '${j.id}', this)" title="Son senkron: ${ctAcc.last_sync_at ? new Date(ctAcc.last_sync_at).toLocaleTimeString() : 'Henüz yapılmadı'}">
               <i data-lucide="refresh-cw"></i>
               <span>Senkronla</span>
-            </button>
+            </button>`}
             <div class="ct-meta">
               ${balanceHtml}
               ${syncStateHtml}
             </div>
+            ${('auto_sync' in ctAcc && !accessRevoked) ? `<label class="ct-auto" title="${escapeHtml(jt('ctrader.card.auto_tip', 'Açıksa siteyi açtığınızda son senkronun üzerinden 30 dakika geçmişse yeni kapanan işlemler arka planda aktarılır.'))}">
+              <input type="checkbox" class="ct-auto-input" data-acid="${escapeHtml(ctAcc.id)}" ${ctAcc.auto_sync ? 'checked' : ''} />
+              <span class="ct-switch" aria-hidden="true"></span>
+              <span class="ct-auto-text">${escapeHtml(jt('ctrader.card.auto', 'Siteye girdiğimde otomatik senkronla'))}</span>
+            </label>` : ''}
           </div>
         `;
         ctMenuHtml = `<button class="journal-menu-item danger btn-unlink-ctrader" data-acid="${ctAcc.id}"><i data-lucide="unlink"></i> cTrader Bağlantısını Kes</button>`;
@@ -1784,6 +1926,43 @@ import Layout from '../layouts/Layout.astro';
         };
       }
       
+      // Otomatik senkron anahtarı: anında kaydedilir; hata olursa geri alınır
+      var autoInput = card.querySelector('.ct-auto-input');
+      if (autoInput) {
+        autoInput.addEventListener('change', async function() {
+          var wrap = autoInput.closest('.ct-auto');
+          var want = autoInput.checked;
+          if (wrap) wrap.classList.add('busy');
+          try {
+            var res = await window.sb.rpc('set_ctrader_auto_sync', { p_account_id: autoInput.dataset.acid, p_enabled: want });
+            if (res && res.error) throw new Error(res.error.message);
+            if (!res || !res.data || res.data.success !== true) throw new Error((res && res.data && res.data.error) || '');
+            if (ctAcc) ctAcc.auto_sync = want;
+            if (window.showToast) window.showToast(want
+              ? jt('ctrader.card.auto_on', 'Otomatik senkron açıldı. Siteyi açtığınızda yeni işlemler kendiliğinden aktarılır.')
+              : jt('ctrader.card.auto_off', 'Otomatik senkron kapatıldı.'), 'success');
+            try { var cm = JSON.parse(localStorage.getItem('ww_cached_ctrader_map') || 'null'); if (cm && cm[j.id]) { cm[j.id].auto_sync = want; localStorage.setItem('ww_cached_ctrader_map', JSON.stringify(cm)); } } catch (e2) {}
+          } catch (err) {
+            autoInput.checked = !want;
+            if (window.showToast) window.showToast(jt('ctrader.card.auto_failed', 'Ayar kaydedilemedi. Lütfen tekrar deneyin.') + (err && err.message ? ' (' + err.message + ')' : ''), 'error');
+          } finally {
+            if (wrap) wrap.classList.remove('busy');
+          }
+        });
+      }
+
+      // Erişim izni kalkmış hesap: cTrader yetkilendirmesine bu defterle git (dönüşte hesap seçimi sorulur)
+      var btnReauth = card.querySelector('[data-reauth-journal]');
+      if (btnReauth) {
+        btnReauth.onclick = function(e) {
+          e.stopPropagation();
+          try { localStorage.setItem('ww_ctrader_target_journal', j.id); } catch (e2) {}
+          if (window.CTRADER_CONFIG && typeof window.CTRADER_CONFIG.getAuthUrl === 'function') {
+            window.location.href = window.CTRADER_CONFIG.getAuthUrl();
+          }
+        };
+      }
+
       var btnEdit = card.querySelector('.btn-edit');
       if (btnEdit) {
         btnEdit.onclick = function(e) { e.stopPropagation(); dropdown.classList.remove('open'); openModal('edit', j.id); };
@@ -2281,26 +2460,23 @@ import Layout from '../layouts/Layout.astro';
       var accounts = window._allCtraderAccounts || [];
       var journals = window._allJournalsList || [];
 
-      if (accounts.length > 0 && existingSelect && existingWrap) {
-        existingSelect.innerHTML = '';
-        accounts.forEach(function(a) {
-          var opt = document.createElement('option');
-          opt.value = a.id;
-          var tag = a.is_live ? '[LIVE] ' : '[DEMO] ';
-          var label = tag + (a.broker_name || 'cTrader') + ' #' + (a.trader_login || a.ctid_trader_account_id);
-          if (a.journal_id) {
-            if (a.journal_id === journalId) {
-              label += ' (Bu deftere bağlı)';
-              opt.selected = true;
-            } else {
-              var jMatch = journals.find(function(x) { return x.id === a.journal_id; });
-              label += ' (' + (jMatch?.name || 'Başka defter') + ' defterine bağlı)';
-            }
-          } else {
-            label += ' (Boşta)';
-          }
-          opt.textContent = label;
-          existingSelect.appendChild(opt);
+      var usable = accounts.filter(function(a) { return a.access_revoked !== true; });
+      if (usable.length > 0 && existingSelect && existingWrap) {
+        var linkBtn = document.getElementById('btn-link-existing-ctrader');
+        // varsayılan: bu deftere bağlı hesap, yoksa ilk boştaki hesap; ikisi de yoksa seçim yok (başka deftere bağlı
+        // bir hesap ancak onaylanarak seçilir)
+        renderCtPicker({
+          select: existingSelect,
+          host: document.getElementById('broker-ct-pick'),
+          accounts: accounts,
+          journals: journals,
+          journalId: journalId,
+          includeNew: false,
+          defaultValue: ctPickerDefault(accounts, journalId, function() {
+            var free = usable.find(function(a) { return !a.journal_id; });
+            return free ? free.id : '';
+          }),
+          onChange: function(v) { if (linkBtn) linkBtn.disabled = !v; }
         });
         existingWrap.style.display = 'block';
       } else if (existingWrap) {

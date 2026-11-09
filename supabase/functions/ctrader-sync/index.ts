@@ -3,7 +3,9 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getAccessToken, supabaseTokenStore } from '../_shared/ctrader.ts';
+import {
+  ACCESS_LOST_MESSAGE, getAccessToken, isAccountAccessLost, supabaseTokenStore, syncErrorMessage,
+} from '../_shared/ctrader.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -148,15 +150,6 @@ class CTraderWsClient {
   }
 }
 
-// 2142 Hata Kodu Çevirisi
-function translateCtraderError(err: any): string {
-  const code = err?.errorCode ? String(err.errorCode) : '';
-  if (code === '1' || code === '104') return 'cTrader oturumunun süresi dolmuş. Lütfen hesabı yeniden bağlayın.';
-  if (code === '108') return 'İstek sıklığı aşıldı. Lütfen birkaç saniye sonra tekrar deneyin.';
-  if (code === '35') return 'Tarih aralığı sınırları aşıldı.';
-  if (code === '109') return 'cTrader sunucuları şu anda bakımda. Lütfen daha sonra deneyin.';
-  return err?.description || 'cTrader bağlantı hatası oluştu.';
-}
 
 serve(async (req: Request) => {
   const startTime = Date.now();
@@ -205,6 +198,12 @@ serve(async (req: Request) => {
 
   if (accErr || !accountRow) {
     return jsonRes({ error: 'cTrader hesabı bulunamadı veya yetkisiz.' }, 404, cors);
+  }
+
+  // The latest cTrader authorization left this account out (ctrader-connect or an earlier sync marked it).
+  // No WebSocket round trip: it would only fail again. Cleared when a new authorization lists the account.
+  if (accountRow.access_revoked_at) {
+    return jsonRes({ error: ACCESS_LOST_MESSAGE, access_revoked: true }, 403, cors);
   }
 
   // Hedef defter doğrulaması
@@ -726,17 +725,21 @@ serve(async (req: Request) => {
 
   } catch (err: any) {
     console.error('Sync execution error:', err);
-    const friendlyMsg = translateCtraderError(err);
+    const friendlyMsg = syncErrorMessage(err);
+    const accessLost = isAccountAccessLost(err);
+    const nowIso = new Date().toISOString();
     await admin.from('ctrader_accounts').update({
       syncing_since: null,
       last_error: friendlyMsg,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
+      ...(accessLost ? { access_revoked_at: nowIso } : {}),
     }).eq('id', accountRow.id);
 
     return jsonRes({
       error: friendlyMsg,
+      access_revoked: accessLost || undefined,
       rawError: err?.description || err?.message || 'Bilinmeyen hata',
-    }, 400, cors);
+    }, accessLost ? 403 : 400, cors);
 
   } finally {
     wsClient.close();

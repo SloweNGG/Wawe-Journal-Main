@@ -162,6 +162,31 @@ describe('classifyCtraderError', () => {
   });
 });
 
+describe('isAccountAccessLost / syncErrorMessage', () => {
+  it('yetkisi kalkan hesap tanınır (canlıda görülen metin dahil)', () => {
+    assert.equal(X.isAccountAccessLost({ errorCode: 'CH_CTID_TRADER_ACCOUNT_NOT_FOUND', description: 'Unable to find cTID trader account with id=49132296' }), true);
+    assert.equal(X.isAccountAccessLost({ description: 'Unable to find cTID trader account with id=1' }), true);
+    assert.equal(X.isAccountAccessLost({ errorCode: 'ACCOUNT_NOT_AUTHORIZED' }), true);
+    assert.equal(X.isAccountAccessLost({ errorCode: 'CH_ACCESS_TOKEN_INVALID' }), false);
+    assert.equal(X.isAccountAccessLost(new Error('İstek zaman aşımı (2133)')), false);
+    assert.equal(X.isAccountAccessLost(null), false);
+  });
+  it('erişim kaybı kendi mesajını alır, bilinen kodlar Türkçe metnini korur', () => {
+    assert.equal(X.syncErrorMessage({ description: 'Unable to find cTID trader account with id=5' }), X.ACCESS_LOST_MESSAGE);
+    assert.equal(X.syncErrorMessage({ errorCode: 'REQUEST_FREQUENCY_EXCEEDED' }), X.classifyCtraderError({ errorCode: '108' }).message);
+  });
+  it('bilinmeyen hata gerçek sebebini gösterir (eskiden hep "bağlantı hatası" yazıyordu)', () => {
+    assert.equal(X.syncErrorMessage(new Error('İstek zaman aşımı (2133)')), 'cTrader bağlantı hatası: İstek zaman aşımı (2133)');
+    assert.equal(X.syncErrorMessage({}), 'cTrader bağlantı hatası oluştu.');
+  });
+  it('token benzeri uzun dizi maskelenir, mesaj 200 karakteri aşmaz', () => {
+    const m = X.syncErrorMessage({ errorCode: 'X', description: 'bad value jJ8s7dHq2LmN0pQrStUvWxYz12345 here' });
+    assert.ok(!m.includes('jJ8s7dHq2LmN0pQrStUvWxYz12345'));
+    assert.ok(m.includes('***'));
+    assert.ok(X.syncErrorMessage(new Error('x '.repeat(500))).length <= 'cTrader bağlantı hatası: '.length + 200);
+  });
+});
+
 // ------------------------------------------------------------ token yenileme
 function memStore(initial) {
   const st = { row: initial ? { ...initial } : null, lease: null, reconnect: false, saves: 0, log: [] };
