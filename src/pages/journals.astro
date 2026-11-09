@@ -557,10 +557,16 @@ import Layout from '../layouts/Layout.astro';
   // Bakiye, hesabın KENDİ para biriminde gösterilir (PnL gibi tr-TR biçimi: 12.337,79). Birim bilinmiyorsa uygulama sembolü.
   // i18n yardımcıları: anahtar yoksa yedek metin; pencerenin tüm metinleri seçili dile göre gelir
   function jt(key, fallback, params) {
+    // yedek metindeki {x} yer tutucuları da doldurulur (çeviri henüz yüklenmemişken "{time}" ekrana çıkmasın)
+    function fill(s) {
+      if (typeof s !== 'string' || !params) return s;
+      for (var k in params) s = s.split('{' + k + '}').join(String(params[k]));
+      return s;
+    }
     try {
       var v = window.i18n ? window.i18n.t(key, params) : key;
-      return (v && v !== key) ? v : fallback;
-    } catch (e) { return fallback; }
+      return (v && v !== key) ? v : fill(fallback);
+    } catch (e) { return fill(fallback); }
   }
   function uiLocale() {
     var l = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'tr';
@@ -1348,6 +1354,10 @@ import Layout from '../layouts/Layout.astro';
       if (typeof lucide !== 'undefined') try { lucide.createIcons(); } catch (e) {}
     }
     render();
+    // dil sözlüğü henüz inmediyse, inince aynı seçimle yeniden çiz (yoksa yedek Türkçe metin kalır)
+    if (window.i18nReady && typeof window.i18nReady.then === 'function') {
+      window.i18nReady.then(function() { if (host.isConnected && host.firstChild) render(); }, function() {});
+    }
   }
 
   function ctPickerDefault(accounts, journalId, fallback) {
