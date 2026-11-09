@@ -13,6 +13,7 @@ import Layout from '../layouts/Layout.astro';
   <script src="/config.js" is:inline defer></script>
   <script src="/i18n.js" is:inline defer></script>
   <script type="module" src="/src/bundle.js" is:inline defer></script>
+  <script src="/interface/journals/js/mt5-connect.js" is:inline defer></script>
 </Fragment>
 
 <main class="main dashboard-main">
@@ -426,6 +427,27 @@ import Layout from '../layouts/Layout.astro';
               </div>
               <span class="broker-choice-soon" data-i18n="journal.wiz.broker_soon">Yakında</span>
             </div>
+
+            <!-- Seçenek C': MetaTrader 5 (WaweSync EA). Beta: yalnızca ?mt5=1 açılmış tarayıcılarda görünür, "Yakında" kartının yerine -->
+            <div class="broker-choice-card" id="choice-mt5" onclick="selectBrokerChoice('mt5')" hidden>
+              <div class="broker-choice-icon">
+                <img class="broker-logo" src="/images/platforms/mt5.png" alt="MetaTrader 5" width="28" height="28" />
+              </div>
+              <div class="broker-choice-info">
+                <div class="broker-choice-title" style="display:flex;align-items:center;gap:6px;">
+                  <span>MetaTrader 5</span>
+                  <span class="broker-choice-tag" data-i18n="journal.wiz.broker_ct_tag">Otomatik Senkron</span>
+                </div>
+                <div class="broker-choice-desc" data-i18n="mt5.wiz.desc">Kapanan işlemleriniz WaweSync eklentisiyle kendiliğinden aktarılır. Şifre gerekmez.</div>
+              </div>
+              <div class="broker-choice-radio"></div>
+            </div>
+          </div>
+
+          <div id="wizard-mt5-subpanel" class="journal-ct-subpanel" style="display:none;">
+            <div class="journal-ct-note">
+              🔒 <span data-i18n="mt5.wiz.note">Hesap oluşturulunca MT5 bağlama adımları açılır: WaweSync'i MT5'e ekleyip grafikte çıkan 6 haneli kodu girmeniz yeterli.</span>
+            </div>
           </div>
 
           <!-- cTrader seçildiğinde beliren hesap seçimi / yetkilendirme alanı -->
@@ -502,7 +524,7 @@ import Layout from '../layouts/Layout.astro';
           <div style="font-size:0.75rem;color:#4ade80;margin-top:2px;">● Otomatik Senkron</div>
         </div>
 
-        <div style="border:1px solid var(--border);background:var(--surface2);border-radius:12px;padding:0.9rem;opacity:0.5;text-align:center;cursor:not-allowed;">
+        <div id="broker-mt-card" style="border:1px solid var(--border);background:var(--surface2);border-radius:12px;padding:0.9rem;opacity:0.5;text-align:center;cursor:not-allowed;">
           <div style="width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;color:var(--muted);font-weight:700;font-size:0.85rem;">MT</div>
           <div style="font-weight:700;font-size:0.92rem;color:var(--muted);">MetaTrader</div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Yakında</div>
@@ -1187,8 +1209,7 @@ import Layout from '../layouts/Layout.astro';
         if (btnNext) btnNext.style.display = 'none';
         if (btnSave) {
           btnSave.style.display = 'inline-flex';
-          var saveTxt = (selectedBrokerChoice === 'ctrader') ? jt('journal.wiz.create_connect', 'Hesabı Oluştur & cTrader\'a Bağlan') : jt('journal.wiz.create', 'Hesabı Oluştur');
-          btnSave.textContent = saveTxt;
+          btnSave.textContent = createButtonText(selectedBrokerChoice);
         }
       }
     }
@@ -1208,13 +1229,87 @@ import Layout from '../layouts/Layout.astro';
     if (subpanel) {
       subpanel.style.display = (choice === 'ctrader') ? 'block' : 'none';
     }
+    var mt5Panel = document.getElementById('wizard-mt5-subpanel');
+    if (mt5Panel) mt5Panel.style.display = (choice === 'mt5') ? 'block' : 'none';
 
     if (currentModalMode === 'create' && currentWizardStep === 3) {
       var btnSave = document.getElementById('journal-modal-save');
-      if (btnSave) {
-        btnSave.textContent = (choice === 'ctrader') ? jt('journal.wiz.create_connect', 'Hesabı Oluştur & cTrader\'a Bağlan') : jt('journal.wiz.create', 'Hesabı Oluştur');
-      }
+      if (btnSave) btnSave.textContent = createButtonText(choice);
     }
+  }
+
+  function createButtonText(choice) {
+    if (choice === 'ctrader') return jt('journal.wiz.create_connect', 'Hesabı Oluştur & cTrader\'a Bağlan');
+    if (choice === 'mt5') return jt('mt5.wiz.create_connect', 'Hesabı Oluştur & MT5\'e Bağlan');
+    return jt('journal.wiz.create', 'Hesabı Oluştur');
+  }
+
+  // ---- MetaTrader 5 (WaweSync EA) ----
+  // Beta: EA yayımlanana kadar yalnızca ?mt5=1 ile açılmış tarayıcılarda (WwMt5.enabled) görünür. MT5 hesabı olan
+  // kullanıcının kartındaki MT5 çubuğu beta kapalıyken de gösterilir.
+  var mt5AccountsByJournal = {};
+  var mt5Accounts = [];
+
+  function mt5Enabled() { return !!(window.WwMt5 && window.WwMt5.enabled()); }
+
+  function applyMt5Beta() {
+    var on = mt5Enabled();
+    var soon = document.getElementById('choice-mt');
+    var card = document.getElementById('choice-mt5');
+    if (soon) soon.hidden = on;
+    if (card) card.hidden = !on;
+    var bm = document.getElementById('broker-mt-card');
+    if (bm && on && !bm.dataset.mt5) {
+      bm.dataset.mt5 = '1';
+      bm.style.opacity = '1';
+      bm.style.cursor = 'pointer';
+      bm.setAttribute('role', 'button');
+      bm.setAttribute('tabindex', '0');
+      var soonTxt = bm.lastElementChild;
+      if (soonTxt) { soonTxt.style.color = '#4ade80'; soonTxt.textContent = '● ' + jt('journal.wiz.broker_ct_tag', 'Otomatik Senkron'); }
+      bm.onclick = function() {
+        var jid = currentBrokerJournalIdForMt5();
+        if (!jid) return;
+        var jn = (document.getElementById('broker-modal-journal-name') || {}).textContent || '';
+        if (typeof window.closeBrokerModal === 'function') window.closeBrokerModal();
+        openMt5(jid, jn);
+      };
+    }
+  }
+
+  function currentBrokerJournalIdForMt5() { return window.__wwBrokerJournalId || null; }
+
+  function relTimeUi(iso) {
+    var ms = Date.parse(iso);
+    if (!isFinite(ms)) return '';
+    var sec = Math.round((ms - Date.now()) / 1000);
+    try {
+      var rtf = new Intl.RelativeTimeFormat(uiLocale(), { numeric: 'auto' });
+      var a = Math.abs(sec);
+      if (a < 60) return rtf.format(sec, 'second');
+      if (a < 3600) return rtf.format(Math.round(sec / 60), 'minute');
+      if (a < 86400) return rtf.format(Math.round(sec / 3600), 'hour');
+      return rtf.format(Math.round(sec / 86400), 'day');
+    } catch (e) { return relativeTimeTr(iso); }
+  }
+
+  function setMt5Accounts(list) {
+    mt5Accounts = Array.isArray(list) ? list : [];
+    mt5AccountsByJournal = window.WwMt5 ? window.WwMt5.mapByJournal(mt5Accounts) : {};
+  }
+
+  function openMt5(journalId, journalName) {
+    if (!window.WwMt5 || !journalId) return;
+    var ctMap = {};
+    (window._allCtraderAccounts || []).forEach(function(a) { if (a && a.journal_id) ctMap[a.journal_id] = true; });
+    window.WwMt5.open({
+      sb: window.sb,
+      journalId: journalId,
+      journalName: journalName,
+      accounts: mt5Accounts,
+      hasCtrader: !!ctMap[journalId],
+      onDone: function() { renderJournals(); }
+    });
   }
 
   // ---- cTrader hesap seçici (sihirbaz + "cTrader bağla" penceresi) ----
@@ -1425,6 +1520,7 @@ import Layout from '../layouts/Layout.astro';
     currentModalMode = mode;
     currentWizardStep = 1;
     selectedBrokerChoice = 'none';
+    applyMt5Beta();
 
     var titleEl = document.getElementById('journal-modal-title');
     var idEl = document.getElementById('journal-id');
@@ -1801,11 +1897,20 @@ import Layout from '../layouts/Layout.astro';
 
       // Hesap işareti: hesabın renginde nokta; prop firma veya broker bağlıysa yanıp söner
       var ctAcc = ctraderAccountsMap ? ctraderAccountsMap.get(j.id) : null;
+      var mt5Acc = mt5AccountsByJournal[j.id] || null;
       var topIconHtml = `
         <div class="journal-icon-wrap">
-          ${window.WwJournalMark ? window.WwJournalMark.html({ color: j.color, prop: (propAcc && propInfo) ? propInfo : null, broker: !!ctAcc, dotSize: 14 }) : ''}
+          ${window.WwJournalMark ? window.WwJournalMark.html({ color: j.color, prop: (propAcc && propInfo) ? propInfo : null, broker: !!(ctAcc || mt5Acc), dotSize: 14 }) : ''}
         </div>
       `;
+
+      // MetaTrader 5 çubuğu (WaweSync EA) + menü: bağlıysa "bağlantıyı kes", beta açıksa "MT5 bağla"
+      var mt5BarHtml = (mt5Acc && window.WwMt5)
+        ? window.WwMt5.barHtml(mt5Acc, { rel: relTimeUi, abs: absoluteTime, balance: formatAccountBalance })
+        : '';
+      var mt5MenuHtml = mt5Acc
+        ? `<button class="journal-menu-item danger btn-mt5-disconnect" data-acid="${escapeHtml(mt5Acc.id)}"><i data-lucide="unlink"></i> ${escapeHtml(jt('mt5.menu.disconnect', 'MT5 bağlantısını kes'))}</button>`
+        : (mt5Enabled() ? `<button class="journal-menu-item btn-mt5-connect"><i data-lucide="plug"></i> ${escapeHtml(jt('mt5.menu.connect', 'MetaTrader 5 bağla'))}</button>` : '');
 
       var ctBarHtml = '';
       var ctMenuHtml = '';
@@ -1884,6 +1989,7 @@ import Layout from '../layouts/Layout.astro';
                 ${!j.is_default ? `<button class="journal-menu-item btn-make-default"><i data-lucide="check-circle"></i> ${i18n.t('journal.set_default')}</button>` : ''}
                 <button class="journal-menu-item btn-edit"><i data-lucide="edit"></i> ${i18n.t('journal.edit')}</button>
                 ${ctMenuHtml}
+                ${mt5MenuHtml}
                 ${!j.is_default ? `<button class="journal-menu-item danger btn-delete"><i data-lucide="trash-2"></i> ${i18n.t('journal.delete')}</button>` : ''}
               </div>
             </div>
@@ -1898,6 +2004,7 @@ import Layout from '../layouts/Layout.astro';
         <!-- Alt blok: cTrader çubuğu (varsa) üstte, işlem sayısı + kâr/zarar HER ZAMAN en altta -->
         <div class="journal-card-bottom">
           ${ctBarHtml}
+          ${mt5BarHtml}
           <div class="journal-card-stats">
             <span class="journal-card-count">${escapeHtml(tradesTxt).replace(/\d+/, function (m) { return '<b>' + m + '</b>'; })}</span>
             <span class="journal-card-pnl ${pnlClass}">${pnlText}</span>
@@ -1936,6 +2043,30 @@ import Layout from '../layouts/Layout.astro';
         };
       }
       
+      var btnMt5Connect = card.querySelector('.btn-mt5-connect');
+      if (btnMt5Connect) {
+        btnMt5Connect.onclick = function(e) {
+          e.stopPropagation();
+          dropdown.classList.remove('open');
+          openMt5(j.id, j.name);
+        };
+      }
+      var btnMt5Disc = card.querySelector('.btn-mt5-disconnect');
+      if (btnMt5Disc) {
+        btnMt5Disc.onclick = async function(e) {
+          e.stopPropagation();
+          dropdown.classList.remove('open');
+          if (!confirm(jt('mt5.menu.disconnect_confirm', 'MT5 bağlantısı kesilsin mi? WaweSync bu hesaptan işlem göndermeyi bırakır; aktarılmış işlemler defterde kalır.'))) return;
+          try {
+            await window.WwMt5.disconnect(window.sb, btnMt5Disc.dataset.acid);
+            if (window.showToast) window.showToast(jt('mt5.menu.disconnected', 'MT5 bağlantısı kesildi.'), 'success');
+            renderJournals();
+          } catch (err) {
+            if (window.showToast) window.showToast(jt('mt5.err.generic', 'Bağlanamadı. Lütfen tekrar deneyin.') + ' (' + (err && err.message) + ')', 'error');
+          }
+        };
+      }
+
       // Otomatik senkron anahtarı: anında kaydedilir; hata olursa geri alınır
       var autoInput = card.querySelector('.ct-auto-input');
       if (autoInput) {
@@ -2037,6 +2168,7 @@ import Layout from '../layouts/Layout.astro';
             var co = JSON.parse(rawCt);
             Object.keys(co).forEach(function(k) { cMap.set(k, co[k]); });
           }
+          if (window.WwMt5 && !mt5Accounts.length) setMt5Accounts(window.WwMt5.cached() || []);
           drawJournalsGrid(parsedJ, pMap, cMap, isPro, window.__wwUserProfile || null);
         }
       }
@@ -2121,13 +2253,17 @@ import Layout from '../layouts/Layout.astro';
       })();
 
       var ctraderPromise = fetchCtraderStatusSafe(1500);
+      var mt5Promise = window.WwMt5 ? window.WwMt5.fetchStatus(window.sb, 1500) : Promise.resolve({ accounts: [] });
 
-      var [profRes, jListData, activeProps, ctRes] = await Promise.all([
+      var [profRes, jListData, activeProps, ctRes, mt5Res] = await Promise.all([
         profilePromise,
         journalsPromise,
         propPromise,
-        ctraderPromise
+        ctraderPromise,
+        mt5Promise
       ]);
+      setMt5Accounts(mt5Res && mt5Res.accounts);
+      applyMt5Beta();
 
       var profile = profRes ? profRes.data : null;
       isPro = profile?.plan === 'premium';
@@ -2389,9 +2525,11 @@ import Layout from '../layouts/Layout.astro';
             window.showToast(i18n.t(id ? 'prop.account_updated' : 'prop.account_created'), 'success');
           }
         }
-        
+
         closeModal();
         renderJournals();
+        // MT5: defter hazır, bağlama penceresi bu defterle açılır (kod girilince EA'ya teslim edilir)
+        if (selectedBrokerChoice === 'mt5' && journalId && mt5Enabled()) openMt5(journalId, name);
       } catch (err) {
         if (err.code === 'QUOTA_EXCEEDED' || err.code === 'PROP_LIMIT_EXCEEDED') {
           if (typeof window.openUpgradeModal === 'function') {
@@ -2411,7 +2549,7 @@ import Layout from '../layouts/Layout.astro';
         var btn = document.getElementById('journal-modal-save');
         if (btn) {
           btn.disabled = false;
-          btn.textContent = (currentModalMode === 'edit') ? jt('journal.wiz.save_changes', 'Değişiklikleri Kaydet') : (selectedBrokerChoice === 'ctrader' ? jt('journal.wiz.create_connect', 'Hesabı Oluştur & cTrader\'a Bağlan') : jt('journal.wiz.create', 'Hesabı Oluştur'));
+          btn.textContent = (currentModalMode === 'edit') ? jt('journal.wiz.save_changes', 'Değişiklikleri Kaydet') : createButtonText(selectedBrokerChoice);
         }
       }
     };
@@ -2461,6 +2599,8 @@ import Layout from '../layouts/Layout.astro';
 
     window.openBrokerModal = function(journalId, journalName) {
       currentBrokerJournalId = journalId;
+      window.__wwBrokerJournalId = journalId;
+      applyMt5Beta();
       var modal = document.getElementById('broker-modal');
       var nameEl = document.getElementById('broker-modal-journal-name');
       if (nameEl) nameEl.textContent = journalName || 'Seçili';

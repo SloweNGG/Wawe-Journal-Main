@@ -2039,3 +2039,103 @@ body:not(.light-theme) #journal-modal .journal-prop-alert.info { background: var
 body:not(.light-theme) #journal-modal .journal-linked-banner { background: var(--card-bg); border-color: rgba(255, 255, 255, 0.12); }
 body:not(.light-theme) #journal-modal .journal-btn-cancel { border-color: rgba(255, 255, 255, 0.14); }
 body:not(.light-theme) #journal-modal .journal-btn-cancel:hover { border-color: rgba(255, 255, 255, 0.35); }
+
+/* ============================================================
+   MetaTrader 5 (WaweSync EA): card strip + connect window (public/interface/journals/js/mt5-connect.js)
+   ============================================================ */
+.mt5-bar .mt5-state {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  height: 28px; padding: 0 11px; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border); color: var(--muted);
+}
+.mt5-bar .mt5-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }
+.mt5-bar .mt5-state.online { color: #4ade80; border-color: rgba(34, 197, 94, 0.4); }
+.mt5-bar .mt5-state.online .mt5-dot { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18); animation: mt5-pulse 2s ease-in-out infinite; }
+.mt5-bar .mt5-state.waiting { color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); }
+@keyframes mt5-pulse { 50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.05); } }
+
+.mt5-modal { max-width: 560px; }
+.mt5-title { display: flex; align-items: center; gap: 8px; }
+.mt5-title img { border-radius: 6px; }
+.mt5-lead { font-size: 0.88rem; color: var(--muted); line-height: 1.5; margin: 0 0 1rem; }
+.mt5-lead b { color: var(--text); }
+
+.mt5-note { font-size: 0.8rem; line-height: 1.45; padding: 0.65rem 0.8rem; border-radius: 10px; margin: 0 0 0.85rem; border: 1px solid var(--border); color: var(--muted); }
+.mt5-note.info { border-color: color-mix(in srgb, var(--accent, var(--ac)) 40%, transparent); background: color-mix(in srgb, var(--accent, var(--ac)) 7%, transparent); color: var(--text); }
+.mt5-note.warn { border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.07); color: #f59e0b; }
+.mt5-note.ok { border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.08); color: #4ade80; }
+.mt5-note.safe { border-color: rgba(6, 182, 212, 0.25); background: rgba(6, 182, 212, 0.06); color: #67e8f9; margin-top: 0.25rem; }
+body.light-theme .mt5-note.safe { color: #0e7490; }
+body.light-theme .mt5-note.ok { color: #15803d; }
+body.light-theme .mt5-note.warn { color: #b45309; }
+
+.mt5-steps { list-style: none; margin: 0 0 0.85rem; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.mt5-step { display: flex; gap: 0.75rem; padding: 0.8rem 0.85rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface, transparent); }
+.mt5-step-n {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; color: #fff; background: #8B5CF6;
+}
+.mt5-step-main { min-width: 0; flex: 1; }
+.mt5-step-title { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
+.mt5-step p { font-size: 0.8rem; color: var(--muted); line-height: 1.45; margin: 0 0 0.55rem; }
+
+.mt5-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 0.45rem 1rem; border-radius: 999px; cursor: pointer;
+  font-family: var(--font); font-size: 0.8rem; font-weight: 600; text-decoration: none;
+  border: 1px solid var(--border); background: transparent; color: var(--text);
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+.mt5-btn:hover { border-color: #8B5CF6; }
+.mt5-btn.primary { background: #8B5CF6; border-color: #8B5CF6; color: #fff; }
+.mt5-btn.primary:hover { opacity: 0.92; }
+.mt5-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.mt5-btn.small { min-height: 30px; padding: 0.3rem 0.8rem; font-size: 0.75rem; }
+.mt5-btn.wide { width: 100%; margin-top: 0.75rem; }
+
+.mt5-copy { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mt5-copy code {
+  flex: 1; min-width: 0; padding: 0.45rem 0.6rem; border-radius: 8px; overflow-x: auto; white-space: nowrap;
+  font-family: var(--font-mono); font-size: 0.74rem; color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.mt5-code-form { display: flex; gap: 8px; align-items: stretch; }
+.mt5-code {
+  flex: 1; min-width: 0; max-width: 220px; height: 48px; padding: 0 0.9rem; border-radius: 12px;
+  font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; letter-spacing: 0.18em; text-align: center;
+  color: var(--text); background: var(--input-bg, transparent); border: 1px solid var(--border);
+}
+.mt5-code:focus { outline: none; border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
+.mt5-code-form .mt5-btn { min-height: 48px; padding: 0 1.4rem; }
+.mt5-err { margin-top: 0.5rem; font-size: 0.78rem; color: #f87171; }
+
+.mt5-others { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); }
+.mt5-others-title { font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+.mt5-other { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.45rem 0; font-size: 0.8rem; color: var(--text); }
+.mt5-other span { color: var(--muted); margin-left: 4px; }
+.mt5-other small { display: block; color: var(--muted); font-size: 0.72rem; }
+
+.mt5-help { margin-top: 0.85rem; font-size: 0.8rem; color: var(--muted); }
+.mt5-help summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.mt5-help ul { margin: 0.5rem 0 0; padding-left: 1.1rem; line-height: 1.5; }
+
+.mt5-wait { padding: 0.25rem 0; }
+.mt5-wait-acc { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); margin-bottom: 0.85rem; }
+.mt5-wait-steps { list-style: none; margin: 0 0 0.85rem; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.mt5-wait-steps li { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--muted); }
+.mt5-wait-steps li.active { color: var(--text); font-weight: 600; }
+.mt5-wait-steps li.done { color: var(--text); }
+.mt5-wait-ic { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; position: relative; }
+.mt5-wait-steps li.active .mt5-wait-ic { border-color: #8B5CF6; border-top-color: transparent; animation: card-sync-spin 0.9s linear infinite; }
+.mt5-wait-steps li.done .mt5-wait-ic { border-color: #22c55e; background: #22c55e; }
+.mt5-wait-steps li.done .mt5-wait-ic::after {
+  content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.mt5-wait-hint { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+@media (max-width: 560px) {
+  .mt5-step { padding: 0.7rem; }
+  .mt5-code-form { flex-direction: column; }
+  .mt5-code { max-width: none; }
+}
