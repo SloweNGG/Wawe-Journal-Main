@@ -21,14 +21,22 @@
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
     image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>',
+    expand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>',
+    shrink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>',
+    layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+    brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2Z"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>'
   };
+  // [question key, question fallback, short label key, short label fallback, icon]
   var PROMPTS = [
-    ['aiCoach.prompt.strategies', 'Stratejilerimi karşılaştır. Hangisini geliştirmeli, hangisini bırakmalıyım?'],
-    ['aiCoach.prompt.month', 'Bu ayki performansımı analiz et ve önceki aylarla karşılaştır.'],
-    ['aiCoach.prompt.mistakes', 'En sık yaptığım hataları bul ve nasıl düzeltebileceğimi söyle.'],
-    ['aiCoach.prompt.psychology', 'İşlemlerimde psikolojik zayıf noktalar görüyor musun? (intikam işlemi, aşırı işlem, stop kullanmama)']
+    ['aiCoach.prompt.strategies', 'Stratejilerimi karşılaştır. Hangisini geliştirmeli, hangisini bırakmalıyım?', 'aiCoach.chip.strategies', 'Strateji karşılaştır', 'layers'],
+    ['aiCoach.prompt.month', 'Bu ayki performansımı analiz et ve önceki aylarla karşılaştır.', 'aiCoach.chip.month', 'Aylık rapor', 'calendar'],
+    ['aiCoach.prompt.mistakes', 'En sık yaptığım hataları bul ve nasıl düzeltebileceğimi söyle.', 'aiCoach.chip.mistakes', 'Hatalarım', 'alert'],
+    ['aiCoach.prompt.psychology', 'İşlemlerimde psikolojik zayıf noktalar görüyor musun? (intikam işlemi, aşırı işlem, stop kullanmama)', 'aiCoach.chip.psychology', 'Psikoloji', 'brain']
   ];
+  var WIDE_KEY = 'ww_ai_coach_wide';
 
   // ---------------------------------------------------------------- helpers
   function _t(key, fallback, params) {
@@ -90,7 +98,9 @@
   }
 
   // ---------------------------------------------------------------- state + DOM
-  var S = { open: false, view: 'chat', conversationId: null, messages: [], pending: false, image: null, usage: null, mounted: false };
+  // journalId: the journal a NEW chat analyses ('' = all journals; undefined = the active journal); convJournal: the open chat's
+  var S = { open: false, view: 'chat', conversationId: null, messages: [], pending: false, image: null, usage: null, mounted: false,
+    journalId: undefined, convJournal: undefined, journals: null, snap: {} };
   var R = {};
 
   function mount() {
@@ -104,8 +114,10 @@
     panel.innerHTML =
       '<header class="wwai-head">' +
         '<button type="button" class="wwai-icon wwai-back" data-act="back" hidden>' + ICON.back + '</button>' +
-        '<div class="wwai-title"><span class="wwai-title-icon">' + ICON.spark + '</span><span class="wwai-title-text"></span></div>' +
+        '<div class="wwai-title-wrap"><div class="wwai-title"><span class="wwai-title-icon">' + ICON.spark + '</span><span class="wwai-title-text"></span></div>' +
+          '<label class="wwai-journal" hidden><span class="wwai-journal-label"></span><select class="wwai-journal-sel"></select></label></div>' +
         '<span class="wwai-usage" hidden></span>' +
+        '<button type="button" class="wwai-icon wwai-wide-btn" data-act="wide">' + ICON.expand + '</button>' +
         '<button type="button" class="wwai-icon" data-act="history">' + ICON.list + '</button>' +
         '<button type="button" class="wwai-icon" data-act="new">' + ICON.plus + '</button>' +
         '<button type="button" class="wwai-icon" data-act="close">' + ICON.close + '</button>' +
@@ -127,6 +139,9 @@
     R.panel = panel; R.msgs = panel.querySelector('.wwai-msgs'); R.history = panel.querySelector('.wwai-history');
     R.input = panel.querySelector('.wwai-input'); R.file = panel.querySelector('.wwai-file'); R.attach = panel.querySelector('.wwai-attach');
     R.usage = panel.querySelector('.wwai-usage'); R.send = panel.querySelector('.wwai-send'); R.drop = panel.querySelector('.wwai-drop');
+    R.journal = panel.querySelector('.wwai-journal'); R.journalSel = panel.querySelector('.wwai-journal-sel');
+    R.journalSel.addEventListener('change', function () { S.journalId = R.journalSel.value; renderJournal(); if (!S.messages.length && S.view === 'chat') renderMessages(); });
+    try { if (localStorage.getItem(WIDE_KEY) === '1') panel.classList.add('is-wide'); } catch (e) { /* ignore */ }
 
     fab.addEventListener('click', function () { setOpen(!S.open); });
     panel.addEventListener('click', onClick);
@@ -143,7 +158,11 @@
     panel.addEventListener('dragover', function (e) { if (hasFile(e)) { e.preventDefault(); R.drop.hidden = false; } });
     panel.addEventListener('dragleave', function (e) { if (e.target === R.drop) R.drop.hidden = true; });
     panel.addEventListener('drop', function (e) { R.drop.hidden = true; if (hasFile(e)) { e.preventDefault(); attach(e.dataTransfer.files[0]); } });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.open && document.activeElement && R.panel.contains(document.activeElement)) setOpen(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && S.open && document.activeElement && R.panel.contains(document.activeElement)) setOpen(false);
+      // Ctrl/Cmd+K opens or closes the coach from anywhere
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === 'k') { e.preventDefault(); setOpen(!S.open); }
+    });
     try { if (global.i18n && typeof global.i18n.onChange === 'function') global.i18n.onChange(texts); } catch (e) { /* ignore */ }
     texts();
     var st = load();
@@ -155,8 +174,13 @@
 
   function texts() {
     if (!R.panel) return;
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
     R.fab.setAttribute('aria-label', _t('aiCoach.open', 'AI Koç'));
-    R.fab.title = _t('aiCoach.open', 'AI Koç');
+    R.fab.title = _t('aiCoach.open', 'AI Koç') + ' (' + (mac ? '⌘' : 'Ctrl+') + 'K)';
+    R.fab.setAttribute('aria-keyshortcuts', 'Control+K Meta+K');
+    var wide = R.panel.classList.contains('is-wide'), wb = R.panel.querySelector('[data-act="wide"]');
+    wb.innerHTML = wide ? ICON.shrink : ICON.expand; wb.title = wide ? _t('aiCoach.shrink', 'Küçült') : _t('aiCoach.expand', 'Büyüt'); wb.setAttribute('aria-label', wb.title);
+    R.panel.querySelector('.wwai-journal-label').textContent = _t('aiCoach.journal', 'Defter') + ':';
     R.panel.setAttribute('aria-label', _t('aiCoach.title', 'AI Koç'));
     R.panel.querySelector('.wwai-title-text').textContent = S.view === 'history' ? _t('aiCoach.history', 'Geçmiş sohbetler') : _t('aiCoach.title', 'AI Koç');
     [['history', 'aiCoach.history', 'Geçmiş sohbetler'], ['new', 'aiCoach.new', 'Yeni sohbet'], ['close', 'aiCoach.close', 'Kapat'], ['back', 'aiCoach.back', 'Geri'],
@@ -168,6 +192,7 @@
     R.panel.querySelector('.wwai-note').textContent = _t('aiCoach.note', 'AI hata yapabilir. Yatırım tavsiyesi değildir.');
     R.drop.textContent = _t('aiCoach.drop', 'Görseli buraya bırak');
     renderUsage();
+    renderJournal();
     if (S.view === 'chat' && !S.messages.length) renderMessages();
   }
 
@@ -178,6 +203,7 @@
     R.fab.setAttribute('aria-expanded', S.open ? 'true' : 'false');
     save({ open: S.open, conversationId: S.conversationId });
     if (S.open) {
+      loadJournals();
       if (S.conversationId && !S.messages.length) openConversation(S.conversationId);
       else renderMessages();
       loadUsage();
@@ -197,6 +223,11 @@
     else if (act === 'send') send();
     else if (act === 'prompt') { R.input.value = b.getAttribute('data-text'); send(); }
     else if (act === 'prompt-image') R.file.click();
+    else if (act === 'wide') {
+      var on = !R.panel.classList.contains('is-wide'); R.panel.classList.toggle('is-wide', on);
+      try { localStorage.setItem(WIDE_KEY, on ? '1' : '0'); } catch (e2) { /* ignore */ }
+      texts();
+    }
     else if (act === 'open-conv') openConversation(b.getAttribute('data-id'));
     else if (act === 'del-conv') { e.stopPropagation(); deleteConversation(b.getAttribute('data-id')); }
     else if (act === 'upgrade') { if (typeof global.openUpgradeModal === 'function') global.openUpgradeModal({ feature: 'aiCoach' }); else global.location.href = '/settings'; }
@@ -204,7 +235,7 @@
 
   // ---------------------------------------------------------------- chat
   function newChat() {
-    S.conversationId = null; S.messages = []; clearImage();
+    S.conversationId = null; S.convJournal = undefined; S.messages = []; clearImage();
     save({ open: S.open, conversationId: null });
     showChat();
     R.input.focus();
@@ -213,22 +244,7 @@
 
   function renderMessages() {
     var box = R.msgs; box.innerHTML = '';
-    if (!S.messages.length) {
-      var intro = el('div', 'wwai-empty');
-      intro.appendChild(el('div', 'wwai-empty-icon', ICON.spark));
-      intro.appendChild(el('p', 'wwai-empty-title', esc(_t('aiCoach.intro_title', 'Merhaba! Ben işlem koçun.'))));
-      intro.appendChild(el('p', 'wwai-empty-text', esc(_t('aiCoach.intro_text', 'Defterindeki işlemlere ve stratejilere bakarak sorularını yanıtlarım. Bir grafik görüntüsü de gönderebilirsin.'))));
-      var chips = el('div', 'wwai-chips');
-      PROMPTS.forEach(function (p) {
-        var b = el('button', 'wwai-chip'); b.type = 'button'; b.setAttribute('data-act', 'prompt');
-        var txt = _t(p[0], p[1]); b.setAttribute('data-text', txt); b.textContent = txt; chips.appendChild(b);
-      });
-      var ib = el('button', 'wwai-chip wwai-chip-img', ICON.image + '<span></span>'); ib.type = 'button'; ib.setAttribute('data-act', 'prompt-image');
-      ib.querySelector('span').textContent = _t('aiCoach.prompt.chart', 'Grafik yükle ve yorumlat'); chips.appendChild(ib);
-      intro.appendChild(chips);
-      box.appendChild(intro);
-      return;
-    }
+    if (!S.messages.length) { box.appendChild(renderEmpty()); return; }
     S.messages.forEach(function (m) { box.appendChild(bubble(m)); });
     if (S.pending === true) box.appendChild(el('div', 'wwai-msg wwai-model wwai-typing', '<span></span><span></span><span></span>'));
     box.scrollTop = box.scrollHeight;
@@ -337,7 +353,7 @@
       if (!s) throw Object.assign(new Error('session'), { code: 'UNAUTHORIZED' });
       var body = { message: text, lang: lang(), tz: tz(), stream: true };
       if (S.conversationId) body.conversationId = S.conversationId;
-      else { try { var jid = global.journal && global.journal.getActiveJournalId && global.journal.getActiveJournalId(); if (jid) body.journalId = jid; } catch (e) { /* all journals */ } }
+      else { var jid = currentJournal(); if (jid) body.journalId = jid; S.convJournal = jid || null; }
       if (img) body.image = { mimeType: img.mimeType, data: img.data };
       return fetch(endpoint() + '/functions/v1/ai-coach', {
         method: 'POST',
@@ -353,7 +369,7 @@
       var j = out.done || out.error || {};
       if (j.usage) { S.usage = j.usage; renderUsage(); }
       if (out.error || !out.done) { failWith(out.code || 'UPSTREAM', out.error); return; }
-      if (j.conversationId) { S.conversationId = j.conversationId; save({ open: S.open, conversationId: S.conversationId }); }
+      if (j.conversationId) { S.conversationId = j.conversationId; save({ open: S.open, conversationId: S.conversationId }); renderJournal(); }
       if (!reply) { reply = { role: 'model', content: '' }; S.messages.push(reply); }
       reply.content = j.reply; reply.visuals = j.visuals || null; reply.streaming = false;
     }).catch(function (e) {
@@ -547,6 +563,115 @@
     return t;
   }
 
+
+  // ---------------------------------------------------------------- journal of the analysis
+  function currentJournal() {
+    if (S.journalId !== undefined) return S.journalId;
+    try { return (global.journal && global.journal.getActiveJournalId && global.journal.getActiveJournalId()) || ''; } catch (e) { return ''; }
+  }
+  function loadJournals() {
+    if (S.journals || !global.journal || typeof global.journal.listJournals !== 'function') { renderJournal(); return; }
+    Promise.resolve().then(function () { return global.journal.listJournals(); }).then(function (list) {
+      S.journals = (list || []).filter(function (j) { return j && j.id; }).map(function (j) { return { id: j.id, name: j.name || '—' }; });
+      renderJournal();
+    }, function () { S.journals = []; renderJournal(); });
+  }
+  // a new chat picks its journal; an open chat shows the journal it was started on (fixed)
+  function renderJournal() {
+    if (!R.journalSel) return;
+    var list = S.journals || [];
+    if (!list.length || S.view !== 'chat') { R.journal.hidden = true; return; }
+    R.journal.hidden = false;
+    var locked = !!S.conversationId, cur = locked ? (S.convJournal == null ? '' : S.convJournal) : currentJournal();
+    if (locked && S.convJournal === undefined) cur = currentJournal();
+    var opts = [{ id: '', name: _t('aiCoach.journal_all', 'Tüm defterler') }].concat(list);
+    R.journalSel.innerHTML = opts.map(function (o) { return '<option value="' + esc(o.id) + '">' + esc(o.name) + '</option>'; }).join('');
+    R.journalSel.value = opts.some(function (o) { return o.id === cur; }) ? cur : '';
+    R.journalSel.disabled = locked;
+    R.journal.title = locked ? _t('aiCoach.journal_locked', 'Defter yeni sohbette değiştirilebilir.') : '';
+  }
+
+  // ---------------------------------------------------------------- opening screen: numbers + personal findings (no quota)
+  function loadSnapshot(jid) {
+    var k = jid || '*', c = S.snap[k];
+    if (c && (c.data || c.loading) && Date.now() - c.at < 120000) return;
+    S.snap[k] = { loading: true, at: Date.now() };
+    session().then(function (s) {
+      if (!s) throw new Error('session');
+      var body = { action: 'snapshot', tz: tz() }; if (jid) body.journalId = jid;
+      return fetch(endpoint() + '/functions/v1/ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json(); });
+    }).then(function (j) { S.snap[k] = { data: j && j.ok ? j.snapshot : null, at: Date.now() }; }, function () { S.snap[k] = { data: null, at: Date.now() }; })
+      .then(function () { if (S.view === 'chat' && !S.messages.length && (currentJournal() || '*') === k) renderMessages(); });
+  }
+  function insightText(ins) {
+    var p = {}, q = ins.params || {};
+    Object.keys(q).forEach(function (key) { p[key] = q[key]; });
+    ['net'].forEach(function (key) { if (key in q) p[key] = money(Number(q[key]), true); });
+    ['win_rate', 'base', 'first', 'pct'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { maximumFractionDigits: 1 }); });
+    if ('day' in q && q.day in DAYS) { try { p.day = new Intl.DateTimeFormat(lang(), { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + DAYS[q.day]))); } catch (e) { /* key */ } }
+    if ('session' in q) p.session = vt('session', q.session);
+    var T = INSIGHT_TR[ins.id] || INSIGHT_TR.general;
+    return { text: _t('aiCoach.insight.' + ins.id, T[0], p), question: _t('aiCoach.insight_q.' + ins.id, T[1], p) };
+  }
+  var INSIGHT_TR = {
+    revenge: ['Art arda 2 kayıptan sonra kazanma oranın %{win_rate} (normalde %{base}).', '2 kayıptan sonra neden daha çok kaybediyorum? Bunu nasıl önlerim?'],
+    overtrading: ['Gün ilerledikçe sonuçların kötüleşiyor: geç işlemlerde kazanma oranın %{win_rate}, ilk işlemde %{first}.', 'Gün içinde fazla mı işlem açıyorum? Bana bir günlük limit önerir misin?'],
+    no_stop: ['Stop-loss kullanılmayan işlemler: %{pct}.', 'Stop-loss kullanmadığım işlemler sonuçlarımı nasıl etkiliyor?'],
+    holding_losers: ['Kaybeden işlemleri kazananlardan daha uzun tutuyorsun ({losers} dk / {winners} dk).', 'Kaybeden işlemleri neden uzun tutuyorum, ne yapmalıyım?'],
+    weak_strategy: ['{name} stratejisi zararda ({net}, {trades} işlem).', '{name} stratejimi analiz et: bırakmalı mıyım, nasıl geliştiririm?'],
+    weak_weekday: ['{day} günleri kazanma oranın %{win_rate} ({trades} işlem).', '{day} günleri neden kötü gidiyor?'],
+    weak_session: ['{session} seansında zarardasın ({net}, {trades} işlem).', '{session} seansında neden zarar ediyorum?'],
+    weak_symbol: ['{symbol} işlemlerinde zarardasın ({net}, {trades} işlem).', '{symbol} işlemlerimi analiz et.'],
+    best_strategy: ['En iyi stratejin {name} ({net}, {trades} işlem).', '{name} stratejimden daha fazla nasıl yararlanırım?'],
+    general: ['{trades} kapanmış işlemin var, kazanma oranın %{win_rate}.', 'Genel performansımı analiz et.'],
+    no_trades: ['Henüz kapanmış işlemin yok. İşlem ekledikçe sana özel analiz yaparım.', 'Trading günlüğümü nasıl kullanmalıyım? Nereden başlamalıyım?']
+  };
+  function renderEmpty() {
+    var wrap = el('div', 'wwai-start'), jid = currentJournal(), k = jid || '*';
+    if (S.open) loadSnapshot(jid);                         // only when the member opens the panel, not on every page view
+    var c = S.snap[k], snap = c && c.data;
+    var head = el('div', 'wwai-start-head');
+    head.appendChild(el('span', 'wwai-start-icon', ICON.spark));
+    head.appendChild(el('p', 'wwai-start-text', esc(_t('aiCoach.intro_short', 'Defterindeki verilere göre analiz yaparım. Bir grafik görüntüsü de gönderebilirsin.'))));
+    wrap.appendChild(head);
+    // numbers
+    var card = el('div', 'wwai-snap' + (snap ? '' : ' is-loading'));
+    if (snap) {
+      var m = snap.month, o = snap.overall;
+      function cell(label, value, cls, sub) { var d = el('div', 'wwai-snap-cell'); d.appendChild(el('span', 'wwai-snap-label', esc(label))); d.appendChild(el('span', 'wwai-snap-value' + (cls ? ' ' + cls : ''), esc(value))); if (sub) d.appendChild(el('span', 'wwai-snap-sub', esc(sub))); return d; }
+      card.appendChild(cell(_t('aiCoach.snap.month', 'Bu ay'), m.trades ? money(m.net, true) : '—', m.trades ? (m.net > 0 ? 'is-pos' : m.net < 0 ? 'is-neg' : '') : '', _t('aiCoach.viz.trades_n', '{n} işlem', { n: m.trades })));
+      card.appendChild(cell(_t('aiCoach.viz.kpi.win_rate', 'Kazanma oranı'), o.win_rate == null ? '—' : fmt(o.win_rate, 'pct'), '', _t('aiCoach.snap.all_time', 'tüm zamanlar')));
+      card.appendChild(cell(_t('aiCoach.viz.kpi.net', 'Net sonuç'), o.trades ? money(o.net, true) : '—', o.net > 0 ? 'is-pos' : o.net < 0 ? 'is-neg' : '', _t('aiCoach.viz.trades_n', '{n} işlem', { n: o.trades })));
+    } else if (c && !c.loading) card.hidden = true;
+    else for (var i = 0; i < 3; i++) card.appendChild(el('div', 'wwai-snap-cell wwai-skel'));
+    wrap.appendChild(card);
+    // personal findings
+    if (snap && snap.insights && snap.insights.length) {
+      wrap.appendChild(el('p', 'wwai-start-label', esc(_t('aiCoach.for_you', 'Senin için'))));
+      var list = el('div', 'wwai-insights');
+      snap.insights.forEach(function (ins) {
+        var t = insightText(ins), b = el('button', 'wwai-insight wwai-insight-' + ins.id); b.type = 'button';
+        b.setAttribute('data-act', 'prompt'); b.setAttribute('data-text', t.question);
+        b.appendChild(el('span', 'wwai-insight-text', esc(t.text)));
+        b.appendChild(el('span', 'wwai-insight-ask', esc(_t('aiCoach.ask', 'Sor') + ' →')));
+        list.appendChild(b);
+      });
+      wrap.appendChild(list);
+    }
+    // quick analyses
+    wrap.appendChild(el('p', 'wwai-start-label', esc(_t('aiCoach.quick', 'Hızlı analiz'))));
+    var chips = el('div', 'wwai-chips');
+    PROMPTS.forEach(function (p) {
+      var b = el('button', 'wwai-chip', ICON[p[4]] + '<span></span>'); b.type = 'button'; b.setAttribute('data-act', 'prompt');
+      b.setAttribute('data-text', _t(p[0], p[1])); b.title = _t(p[0], p[1]); b.querySelector('span').textContent = _t(p[2], p[3]); chips.appendChild(b);
+    });
+    var ib = el('button', 'wwai-chip', ICON.image + '<span></span>'); ib.type = 'button'; ib.setAttribute('data-act', 'prompt-image');
+    ib.querySelector('span').textContent = _t('aiCoach.chip.chart', 'Grafik yorumla'); chips.appendChild(ib);
+    wrap.appendChild(chips);
+    return wrap;
+  }
+
   // ---------------------------------------------------------------- usage
   function loadUsage() {
     if (!global.sb || !global.sb.rpc) return;
@@ -558,7 +683,7 @@
     if (!u || !(u.limit > 0)) { R.usage.hidden = true; return; }
     R.usage.hidden = false;
     var left = Math.max(0, u.limit - u.used);
-    R.usage.textContent = _t('aiCoach.usage', '{left}/{limit}', { left: left, limit: u.limit });
+    R.usage.textContent = _t('aiCoach.usage', '{left} kaldı', { left: left, limit: u.limit });
     R.usage.title = _t('aiCoach.usage_title', 'Bugün kalan mesaj hakkı: {left} / {limit}', { left: left, limit: u.limit });
     R.usage.classList.toggle('is-low', left <= 1);
   }
@@ -592,8 +717,11 @@
   }
   function openConversation(id) {
     if (!id || !global.sb) return;
-    S.conversationId = id; S.messages = []; save({ open: S.open, conversationId: id });
+    S.conversationId = id; S.messages = []; S.convJournal = undefined; save({ open: S.open, conversationId: id });
     showChat();
+    global.sb.from('ai_conversations').select('journal_id').eq('id', id).maybeSingle().then(function (r) {
+      if (S.conversationId === id && r && !r.error && r.data) { S.convJournal = r.data.journal_id || null; renderJournal(); }
+    }, function () { /* the selector just stays as it is */ });
     R.msgs.innerHTML = '<p class="wwai-muted">' + esc(_t('aiCoach.loading', 'Yükleniyor…')) + '</p>';
     global.sb.from('ai_messages').select('role,content,had_image,visuals,created_at').eq('conversation_id', id).order('created_at', { ascending: true }).limit(200).then(function (r) {
       if (S.conversationId !== id) return;

@@ -108,3 +108,52 @@ describe('gemini-stream', () => {
     assert.deepEqual(b.result().error, { code: 'service_unavailable', message: 'busy' }); assert.equal(b.result().text, '');
   });
 });
+
+import { pickInsights, snapshotNumbers } from '../supabase/functions/_shared/insights.ts';
+import fs from 'node:fs';
+
+describe('insights (opening screen)', () => {
+  // a journal with revenge trading, missing stops and a losing strategy
+  const R = []; let streak = 0;
+  for (let i = 0; i < 80; i++) {
+    const d = new Date(Date.UTC(2026, 8, 1, 8) + i * 7 * 3600e3);
+    const win = streak >= 2 ? i % 5 === 0 : i % 2 === 0;
+    const sid = i % 3 === 0 ? 's2' : 's1';
+    R.push({ symbol: 'EURUSD', direction: 'BUY', lot: 1, entry_price: 1, exit_price: 1.1, stop_loss: i % 4 === 0 ? null : 0.9,
+      pnl: win ? 100 : (sid === 's2' ? -150 : -60), trade_date: d.toISOString(), exit_date: new Date(+d + (win ? 30 : 120) * 60e3).toISOString(), strategy_id: sid, platform_source: null });
+    streak = win ? 0 : streak + 1;
+  }
+  const sum = summarizeTrades(R, [{ id: 's1', name: 'Breakout' }, { id: 's2', name: 'Scalp' }], { tz: 'UTC' });
+  it('finds the strongest leaks first, at most 3', () => {
+    const ins = pickInsights(sum);
+    assert.ok(ins.length <= 3 && ins.length > 0);
+    const ids = ins.map((x) => x.id);
+    assert.ok(ids.includes('no_stop'), ids.join());
+    assert.ok(ins.every((x, i) => i === 0 || ins[i - 1].severity >= x.severity));
+    const ns = ins.find((x) => x.id === 'no_stop'); assert.equal(ns.params.pct, 25);
+  });
+  it('a journal without trades gets the starter finding', () => {
+    assert.deepEqual(pickInsights(summarizeTrades([], [])).map((x) => x.id), ['no_trades']);
+  });
+  it('small buckets are not reported', () => {
+    const few = summarizeTrades(R.slice(0, 6), [{ id: 's1', name: 'Breakout' }, { id: 's2', name: 'Scalp' }], { tz: 'UTC' });
+    const ids = pickInsights(few, 10).map((x) => x.id);
+    assert.ok(!ids.includes('revenge') && !ids.includes('weak_weekday') && !ids.includes('weak_strategy'), ids.join());
+  });
+  it('snapshot numbers: this month only when the last month bucket is the current month', () => {
+    const last = sum.by_month_last_12[sum.by_month_last_12.length - 1];
+    assert.equal(snapshotNumbers(sum, last.key).month.trades, last.trades);
+    assert.equal(snapshotNumbers(sum, '2099-01').month.trades, 0);
+    assert.equal(snapshotNumbers(sum, '2099-01').overall.trades, sum.totals.trades);
+  });
+  it('every finding the server can send has text in the panel and in all locales', async () => {
+    const src = fs.readFileSync('supabase/functions/_shared/insights.ts', 'utf8');
+    const ids = [...new Set([...src.matchAll(/id: '([a-z_]+)'/g)].map((m) => m[1]))];
+    const panel = fs.readFileSync('public/components/ai-coach/ai-coach.js', 'utf8');
+    for (const id of ids) assert.match(panel, new RegExp('\\n    ' + id + ": \\["), id + ' missing in INSIGHT_TR');
+    for (const l of ['tr', 'en', 'de']) {
+      const loc = (await import('../public/i18n/locales/' + l + '.js')).default;
+      for (const id of ids) { assert.ok(loc['aiCoach.insight.' + id], l + ' insight ' + id); assert.ok(loc['aiCoach.insight_q.' + id], l + ' question ' + id); }
+    }
+  });
+});

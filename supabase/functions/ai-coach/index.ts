@@ -9,6 +9,8 @@
 //                     (the panel clears it). Checks before the first byte (auth, limit, input) still answer JSON.
 //   visuals: { "<directive id>": chart data } for the [[viz:...]] lines of the reply, built from the app's numbers
 //   (_shared/visuals.ts), never from the model.
+//   POST { action: "snapshot", journalId?, tz? } -> { ok, snapshot: { month, overall, insights } } for the panel's opening
+//   screen: numbers and rule-based findings (_shared/insights.ts). No Gemini call, no message counted.
 // Security:
 //   - The member's JWT is required; every row is read for the caller only (journal and conversation ownership checked).
 //   - GEMINI_API_KEY lives in the function secrets and never reaches the browser or a log.
@@ -24,6 +26,7 @@ import { summarizeTrades, safeTimeZone, equityCurve } from '../_shared/trade-sum
 import { COACH_KNOWLEDGE } from '../_shared/coach-knowledge.ts';
 import { resolveVisuals } from '../_shared/visuals.ts';
 import { createStepBuilder, takeSseEvents } from '../_shared/gemini-stream.ts';
+import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -164,6 +167,27 @@ serve(async (req: Request) => {
     if (text.length > MAX_BODY_BYTES) return fail('TOO_LARGE', 'Request too large.', 413, cors);
     body = JSON.parse(text);
   } catch { return fail('BAD_REQUEST', 'Invalid JSON body.', 400, cors); }
+  if (body?.action === 'snapshot') {
+    const jid = body?.journalId == null || body.journalId === '' ? null : String(body.journalId);
+    if (jid && !UUID.test(jid)) return fail('BAD_REQUEST', 'Invalid journal.', 400, cors);
+    const tzs = safeTimeZone(body?.tz);
+    const adm = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+    if (jid) {
+      const { data } = await adm.from('journals').select('id').eq('id', jid).eq('user_id', user.id).maybeSingle();
+      if (!data) return fail('NOT_FOUND', 'Journal not found.', 404, cors);
+    }
+    let tq = adm.from('trades').select('id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source')
+      .eq('user_id', user.id).order('trade_date', { ascending: false }).limit(MAX_TRADES);
+    if (jid) tq = tq.eq('journal_id', jid);
+    let sq = adm.from('strategies').select('id, name, description').eq('user_id', user.id);
+    if (jid) sq = sq.or(`journal_id.eq.${jid},journal_id.is.null`);
+    const [{ data: trades, error: te }, { data: strategies, error: se }] = await Promise.all([tq, sq]);
+    if (te || se) return fail('SERVER', 'Could not read the journal.', 500, cors);
+    const sum = summarizeTrades(trades || [], strategies || [], { tz: tzs, recent: 0 });
+    const p = new Intl.DateTimeFormat('en-CA', { timeZone: tzs, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
+    const nowMonth = `${p.find((x) => x.type === 'year')?.value}-${p.find((x) => x.type === 'month')?.value}`;
+    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+  }
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   if (!message || message.length > MAX_MESSAGE) return fail('BAD_REQUEST', 'Message must be 1-' + MAX_MESSAGE + ' characters.', 400, cors);
   const lang = LANGS[body?.lang] ? body.lang : 'tr';
