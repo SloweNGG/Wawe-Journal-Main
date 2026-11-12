@@ -106,6 +106,13 @@ export function summarizeTrades(rows: TradeRow[], strategies: StrategyRow[], opt
 
     const top = (m: Map<string, TradeRow[]>, n: number) => [...m.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, n).map(([k, v]) => ({ key: k, ...stats(v) }));
     out.by_strategy = top(groupBy(closed, (t) => (t.strategy_id && stratName.get(t.strategy_id)) || '(no strategy)'), 15);
+    // cross-tab of the 6 most used strategies: session and direction (buckets with at least 3 trades)
+    const stratOf = (t: TradeRow) => (t.strategy_id && stratName.get(t.strategy_id)) || '(no strategy)';
+    const topStrats = new Set((out.by_strategy as { key: string }[]).slice(0, 6).map((x) => x.key));
+    const cross = (key: (t: TradeRow) => string) => [...groupBy(closed.filter((t) => topStrats.has(stratOf(t))), (t) => stratOf(t) + ' | ' + key(t)).entries()]
+      .filter(([, v]) => v.length >= 3).map(([k, v]) => { const st = stats(v); return { key: k, trades: st.trades, win_rate: st.win_rate, net: st.net }; });
+    out.strategy_by_session_utc = cross((t) => session(Date.parse(t.trade_date)).split(' ')[0]);
+    out.strategy_by_direction = cross(dir);
     out.by_symbol = top(groupBy(closed, (t) => String(t.symbol || '?').toUpperCase()), 12);
     out.by_direction = top(groupBy(closed, dir), 2);
     const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -137,5 +144,18 @@ export function summarizeTrades(rows: TradeRow[], strategies: StrategyRow[], opt
     const bc = backtest.filter(isClosed);
     out.backtest_trades = { totals: stats(bc), by_strategy: [...groupBy(bc, (t) => (t.strategy_id && stratName.get(t.strategy_id)) || '(no strategy)').entries()].slice(0, 10).map(([k, v]) => ({ key: k, ...stats(v) })) };
   }
+  return out;
+}
+
+// Cumulative result of the closed live trades over time, at most `maxPoints` points (the last trade of each step is kept,
+// the first and last trades always). For the equity chart only; not sent to the model.
+export function equityCurve(rows: TradeRow[], maxPoints = 80): { t: string; v: number }[] {
+  const closed = rows.filter((t) => t && t.platform_source !== 'backtest' && isClosed(t) && Number.isFinite(endTime(t)))
+    .sort((a, b) => endTime(a) - endTime(b));
+  let eq = 0;
+  const pts = closed.map((t) => { eq += num(t.pnl) || 0; return { t: new Date(endTime(t)).toISOString().slice(0, 10), v: Math.round(eq * 100) / 100 }; });
+  if (pts.length <= maxPoints) return pts;
+  const out: { t: string; v: number }[] = [], step = (pts.length - 1) / (maxPoints - 1);
+  for (let i = 0; i < maxPoints; i++) out.push(pts[Math.round(i * step)]);
   return out;
 }

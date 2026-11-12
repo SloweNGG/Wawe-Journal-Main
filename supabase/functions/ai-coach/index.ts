@@ -1,19 +1,29 @@
 // supabase/functions/ai-coach/index.ts
 // AI coach: the member asks about their own trading (optionally with a chart screenshot); Google Gemini answers with a
-// summary of the member's trades and strategies (_shared/trade-summary.ts) as context. Migration 202611120002.
-//   POST { message, conversationId?, journalId?, image?: { mimeType, data (base64) }, lang?, tz? }
-//     -> { ok, conversationId, reply, usage: { used, limit, premium } }
+// summary of the member's trades and strategies (_shared/trade-summary.ts) and a fixed knowledge base
+// (_shared/coach-knowledge.ts) as context. Migrations 202611120002 (tables, limits) and 202611120003 (visuals).
+//   POST { message, conversationId?, journalId?, image?: { mimeType, data (base64) }, lang?, tz?, stream? }
+//     stream false -> JSON { ok, conversationId, reply, visuals, usage: { used, limit, premium } }
+//     stream true  -> text/event-stream: "start" {usage}, "delta" {text} ..., then "done" {conversationId, reply, visuals,
+//                     usage} or "error" {code, message}; "reset" {} = the answer so far was broken and is being retried
+//                     (the panel clears it). Checks before the first byte (auth, limit, input) still answer JSON.
+//   visuals: { "<directive id>": chart data } for the [[viz:...]] lines of the reply, built from the app's numbers
+//   (_shared/visuals.ts), never from the model.
 // Security:
 //   - The member's JWT is required; every row is read for the caller only (journal and conversation ownership checked).
 //   - GEMINI_API_KEY lives in the function secrets and never reaches the browser or a log.
 //   - Daily message limit per plan (ai_take_message, refunded when Gemini fails). Images are sent to Gemini, never stored.
-// Gemini Interactions API (stateless: store=false; the model's output steps are kept in ai_messages.steps and sent back
-// unchanged to the same model, as the API requires for thought signatures; another model gets the plain text).
+// Gemini Interactions API, streamed (stateless: store=false; the model's output steps are rebuilt from the stream, kept in
+// ai_messages.steps and sent back unchanged to the same model, as the API requires for thought signatures; another model
+// gets the plain text). A model that is busy or failing before its first word hands over to the next one.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
-import { summarizeTrades, safeTimeZone } from '../_shared/trade-summary.ts';
+import { summarizeTrades, safeTimeZone, equityCurve } from '../_shared/trade-summary.ts';
+import { COACH_KNOWLEDGE } from '../_shared/coach-knowledge.ts';
+import { resolveVisuals } from '../_shared/visuals.ts';
+import { createStepBuilder, takeSseEvents } from '../_shared/gemini-stream.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -22,8 +32,11 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || '';
 // tried in order: a model that is busy (429/503) or failing (5xx) hands over to the next one
 const GEMINI_MODELS = (Deno.env.get('GEMINI_MODELS') || 'gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite')
   .split(',').map((m) => m.trim()).filter(Boolean);
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse';
 const GEMINI_REVISION = '2026-05-20';
+// a model may accept the request and then stay silent (seen on the free tier: 100 s without a word): give up on it and move on
+const FIRST_WORD_MS = 20_000;                      // request sent -> first text
+const IDLE_MS = 15_000;                            // between two chunks once text flows
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024;            // base64 image included
 const MAX_IMAGE_B64 = 7 * 1024 * 1024;             // ~5 MB of image bytes
@@ -45,15 +58,15 @@ export function systemInstruction(lang: string, context: unknown): string {
     '',
     'Rules:',
     `- Always answer in ${LANGS[lang] || 'Turkish'}, whatever language the data is in.`,
-    '- Base every claim about the trader on the JSON. Quote the concrete numbers (win rate, net P&L, trade counts) and say when a sample is too small (fewer than ~15 trades) to conclude anything.',
+    '- Base every claim about the trader on the JSON. Quote the concrete numbers and say when a sample is too small to conclude anything.',
     '- Never invent trades, numbers or strategies that are not in the data. If the data cannot answer the question, say so and say what the trader could record to make it answerable.',
-    '- Be direct and practical: lead with the finding, then 2-4 actionable suggestions. Use short paragraphs and bullet lists; markdown bold and lists are rendered. No tables, no headings above level 3.',
-    '- Strategy analysis: compare strategies by win rate, profit factor, average win vs average loss and sample size; point out which to keep, refine or drop and why.',
-    '- Chart screenshots: describe the structure you can see (trend, key levels, liquidity, the setup), what would confirm or invalidate it, and where risk would sit. You cannot see the future: never promise an outcome or give a definite buy/sell call; frame it as scenarios.',
-    '- Psychology: look for revenge trading (after_consecutive_losses), overtrading (by_trade_number_of_day), missing stop losses and holding losers longer than winners.',
+    '- Use short paragraphs and bullet lists; markdown bold and lists are rendered. No tables, no headings above level 3.',
+    '- Never show the data\'s field names, JSON keys, code or values like null/true (e.g. write "trades with a stop loss", not trades_with_stop_loss_pct); the trader only sees plain language.',
     '- You are not a licensed financial adviser; mention it only when the trader asks for direct investment advice. Do not end answers with disclaimers or risk notes (the app already shows one).',
     '- Stay on trading, risk management, trading psychology and the use of the journal. Politely decline anything else.',
     '- Money values are in the account currency of the journal; times in by_entry_hour_local are in the time_zone field.',
+    '',
+    COACH_KNOWLEDGE,
     '',
     'Trader data (JSON, generated by the app, read-only):',
     JSON.stringify(context),
@@ -73,14 +86,63 @@ export function buildHistory(msgs: { role: string; content: string; steps?: any;
   return h;
 }
 
-// text of the model output steps
-export function replyText(steps: any[]): string {
-  const parts: string[] = [];
-  for (const s of steps || []) {
-    if (s?.type !== 'model_output') continue;
-    for (const c of s.content || []) if (c?.type === 'text' && typeof c.text === 'string') parts.push(c.text);
+// One streamed Gemini call. onDelta gets the reply text as it arrives.
+// -> { ok, status, steps, text, forwarded } ; ok=false with forwarded=false means another model may be tried.
+async function streamGemini(model: string, payload: Record<string, unknown>, onDelta: (t: string) => void) {
+  const ac = new AbortController();
+  let timer = setTimeout(() => ac.abort(), FIRST_WORD_MS);
+  const arm = (ms: number) => { clearTimeout(timer); timer = setTimeout(() => ac.abort(), ms); };
+  try { return await streamGeminiInner(model, payload, onDelta, ac.signal, arm); }
+  finally { clearTimeout(timer); }
+}
+async function streamGeminiInner(model: string, payload: Record<string, unknown>, onDelta: (t: string) => void,
+  signal: AbortSignal, arm: (ms: number) => void) {
+  let res: Response;
+  try {
+    res = await fetch(GEMINI_URL, {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY, 'Api-Revision': GEMINI_REVISION },
+      body: JSON.stringify({ model, ...payload, store: false, stream: true }),
+    });
+  } catch (_) {
+    console.error('ai-coach gemini error:', model, signal.aborted ? 'timeout' : 'network');
+    return { ok: false, status: 503, steps: [], text: '', forwarded: false };
   }
-  return parts.join('').trim();
+  if (!res.ok || !res.body) {
+    let code = '-';
+    try { const j = await res.json(); code = String(j?.error?.code || '-'); } catch (_) { /* no body */ }
+    console.error('ai-coach gemini error:', model, res.status, code.slice(0, 40));
+    return { ok: false, status: res.status, steps: [], text: '', forwarded: false };
+  }
+  const b = createStepBuilder(), reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', forwarded = false;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const { events, rest } = takeSseEvents(buf);
+      buf = rest;
+      for (const ev of events) {
+        const d = b.push(ev);
+        if (d) { forwarded = true; onDelta(d); }
+      }
+      if (forwarded) arm(IDLE_MS);
+    }
+    buf += dec.decode();
+    for (const ev of takeSseEvents(buf + '\n\n').events) { const d = b.push(ev); if (d) { forwarded = true; onDelta(d); } }
+  } catch (_) {
+    console.error('ai-coach stream broken:', model, signal.aborted ? 'timeout' : 'read error');
+    return { ok: false, status: 503, steps: b.result().steps, text: b.result().text, forwarded };
+  }
+  const r = b.result();
+  if (r.error || !r.text || r.status !== 'completed') {
+    // an error event, no text, or a stream cut off before interaction.completed: not a usable answer
+    console.error('ai-coach stream error:', model, r.error ? r.error.code.slice(0, 40) : (r.text ? 'cut off' : 'empty'), r.status || '-');
+    const busy = !r.error || /unavailable|exhausted|overload|deadline|timeout|internal/i.test(r.error.code);
+    return { ok: false, status: busy ? 503 : 400, steps: r.steps, text: r.text, forwarded };
+  }
+  return { ok: true, status: 200, steps: r.steps.filter((s: any) => s && s.type !== 'user_input'), text: r.text, forwarded };
 }
 
 serve(async (req: Request) => {
@@ -106,6 +168,7 @@ serve(async (req: Request) => {
   if (!message || message.length > MAX_MESSAGE) return fail('BAD_REQUEST', 'Message must be 1-' + MAX_MESSAGE + ' characters.', 400, cors);
   const lang = LANGS[body?.lang] ? body.lang : 'tr';
   const tz = safeTimeZone(body?.tz);
+  const wantStream = body?.stream === true;
   const convId = body?.conversationId == null ? null : String(body.conversationId);
   if (convId && !UUID.test(convId)) return fail('BAD_REQUEST', 'Invalid conversation.', 400, cors);
   const journalId = body?.journalId == null || body.journalId === '' ? null : String(body.journalId);
@@ -139,86 +202,103 @@ serve(async (req: Request) => {
   if (!take.ok) return fail('LIMIT', 'Daily AI message limit reached.', 429, cors, { usage });
   const refund = () => admin.rpc('ai_refund_message', { p_user: user.id }).then(() => {}, () => {});
 
-  try {
-    // 5) context: the trader's trades and strategies
-    let tq = admin.from('trades')
-      .select('id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source')
-      .eq('user_id', user.id).order('trade_date', { ascending: false }).limit(MAX_TRADES);
-    if (scopeJournal) tq = tq.eq('journal_id', scopeJournal);
-    let sq = admin.from('strategies').select('id, name, description').eq('user_id', user.id);
-    if (scopeJournal) sq = sq.or(`journal_id.eq.${scopeJournal},journal_id.is.null`);
-    const [{ data: trades, error: te }, { data: strategies, error: se }] = await Promise.all([tq, sq]);
-    if (te || se) { await refund(); return fail('SERVER', 'Could not read the journal.', 500, cors); }
-    const context = summarizeTrades(trades || [], strategies || [], { tz });
+  // 5..8) context, Gemini, save. send() is the stream writer (a no-op in JSON mode).
+  type Outcome = { ok: true; conversationId: string | null; reply: string; visuals: Record<string, unknown> } | { ok: false; code: string; message: string; status: number };
+  async function run(send: (event: string, data: unknown) => void): Promise<Outcome> {
+    try {
+      let tq = admin.from('trades')
+        .select('id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source')
+        .eq('user_id', user!.id).order('trade_date', { ascending: false }).limit(MAX_TRADES);
+      if (scopeJournal) tq = tq.eq('journal_id', scopeJournal);
+      let sq = admin.from('strategies').select('id, name, description').eq('user_id', user!.id);
+      if (scopeJournal) sq = sq.or(`journal_id.eq.${scopeJournal},journal_id.is.null`);
+      const [{ data: trades, error: te }, { data: strategies, error: se }] = await Promise.all([tq, sq]);
+      if (te || se) { await refund(); return { ok: false, code: 'SERVER', message: 'Could not read the journal.', status: 500 }; }
+      const context = summarizeTrades(trades || [], strategies || [], { tz });
+      const equity = equityCurve(trades || []);
 
-    // 6) history
-    let msgs: any[] = [];
-    if (conversation) {
-      const { data } = await admin.from('ai_messages').select('role, content, steps, model, had_image')
-        .eq('conversation_id', conversation.id).order('created_at', { ascending: false }).limit(HISTORY_TURNS);
-      msgs = (data || []).reverse();
-    }
-    const userContent: any[] = [{ type: 'text', text: message }];
-    if (image) userContent.push({ type: 'image', data: image.data, mime_type: image.mime_type });
-    const system = systemInstruction(lang, context);
-
-    // 7) Gemini (model chain)
-    // demand spikes on the free tier are short: when every model is busy, one more round after a pause
-    let out: any = null, used = '', lastStatus = 0;
-    const chain = [...GEMINI_MODELS, ...GEMINI_MODELS];
-    for (let i = 0; i < chain.length; i++) {
-      const model = chain[i];
-      if (i === GEMINI_MODELS.length) {
-        if (!(lastStatus === 429 || lastStatus === 503)) break;
-        await new Promise((r) => setTimeout(r, 2000));
+      let msgs: any[] = [];
+      if (conversation) {
+        const { data } = await admin.from('ai_messages').select('role, content, steps, model, had_image')
+          .eq('conversation_id', conversation.id).order('created_at', { ascending: false }).limit(HISTORY_TURNS);
+        msgs = (data || []).reverse();
       }
-      const res = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY, 'Api-Revision': GEMINI_REVISION },
-        body: JSON.stringify({
-          model, store: false, system_instruction: system,
+      const userContent: any[] = [{ type: 'text', text: message }];
+      if (image) userContent.push({ type: 'image', data: image.data, mime_type: image.mime_type });
+      const system = systemInstruction(lang, context);
+
+      // model chain; demand spikes on the free tier are short, so one more round after a pause
+      let got: Awaited<ReturnType<typeof streamGemini>> | null = null, used = '', lastStatus = 0;
+      const chain = [...GEMINI_MODELS, ...GEMINI_MODELS];
+      for (let i = 0; i < chain.length; i++) {
+        const model = chain[i];
+        if (i === GEMINI_MODELS.length) {
+          if (!(lastStatus === 429 || lastStatus === 503)) break;
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        const r = await streamGemini(model, {
+          system_instruction: system,
           input: [...buildHistory(msgs, model), { type: 'user_input', content: userContent }],
           generation_config: { thinking_level: 'low', max_output_tokens: 4096 },
-        }),
-      });
-      let j: any = null;
-      try { j = await res.json(); } catch { j = null; }
-      if (res.ok) { out = j; used = model; break; }
-      lastStatus = res.status;
-      console.error('ai-coach gemini error:', model, res.status, String(j?.error?.code || '-').slice(0, 40));
-      if (!(res.status === 429 || res.status >= 500)) break;      // a request error does not get better on another model
-    }
-    if (!out) {
-      await refund();
-      if (lastStatus === 429 || lastStatus === 503) return fail('BUSY', 'The AI service is busy. Try again in a minute.', 503, cors);
-      return fail('UPSTREAM', 'The AI service could not answer. Try again shortly.', 502, cors);
-    }
-    const steps: any[] = Array.isArray(out?.steps) ? out.steps.filter((s: any) => s && s.type !== 'user_input') : [];
-    const reply = replyText(steps);
-    if (!reply) {
-      await refund();
-      console.error('ai-coach empty reply:', String(out?.status || '-').slice(0, 30));
-      return fail('EMPTY', 'The AI could not answer this message. Try rephrasing it.', 502, cors);
-    }
+        }, (t) => send('delta', { text: t }));
+        if (r.ok) { got = r; used = model; break; }
+        lastStatus = r.status;
+        if (!(r.status === 429 || r.status >= 500)) break;          // a request error does not get better on another model
+        if (r.forwarded) send('reset', {});                         // the member saw part of a broken answer: the panel clears it
+      }
+      if (!got) {
+        await refund();
+        if (lastStatus === 429 || lastStatus === 503) return { ok: false, code: 'BUSY', message: 'The AI service is busy. Try again in a minute.', status: 503 };
+        return { ok: false, code: 'UPSTREAM', message: 'The AI service could not answer. Try again shortly.', status: 502 };
+      }
+      const { text: reply, visuals } = resolveVisuals(got.text, context, equity);
 
-    // 8) save
-    let cid = conversation?.id;
-    if (!cid) {
-      const title = message.replace(/\s+/g, ' ').slice(0, 60) || 'Chat';
-      const { data: c, error: ce } = await admin.from('ai_conversations').insert({ user_id: user.id, journal_id: scopeJournal, title }).select('id').single();
-      if (ce || !c) { console.error('ai-coach: conversation insert failed'); return jsonRes({ ok: true, conversationId: null, reply, usage }, 200, { ...cors, 'Cache-Control': 'no-store' }); }
-      cid = c.id;
+      let cid = conversation?.id ?? null;
+      if (!cid) {
+        const title = message.replace(/\s+/g, ' ').slice(0, 60) || 'Chat';
+        const { data: c, error: ce } = await admin.from('ai_conversations').insert({ user_id: user!.id, journal_id: scopeJournal, title }).select('id').single();
+        if (ce || !c) console.error('ai-coach: conversation insert failed');
+        else cid = c.id;
+      }
+      if (cid) {
+        // both rows carry every column: a multi-row insert sends the union of the keys and a missing key becomes NULL
+        // (had_image is NOT NULL), which used to reject the whole insert
+        const { error: me } = await admin.from('ai_messages').insert([
+          { conversation_id: cid, user_id: user!.id, role: 'user', content: message, had_image: !!image, steps: null, model: null, visuals: null },
+          { conversation_id: cid, user_id: user!.id, role: 'model', content: reply.slice(0, 20000), had_image: false, steps: got.steps, model: used, visuals: Object.keys(visuals).length ? visuals : null },
+        ]);
+        if (me) console.error('ai-coach: message insert failed:', String(me.code || '-').slice(0, 20));
+        await admin.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', cid);
+      }
+      return { ok: true, conversationId: cid, reply, visuals };
+    } catch (e) {
+      await refund();
+      console.error('ai-coach error:', String((e as Error)?.name || 'Error'));
+      return { ok: false, code: 'SERVER', message: 'Something went wrong. Try again.', status: 500 };
     }
-    const { error: me } = await admin.from('ai_messages').insert([
-      { conversation_id: cid, user_id: user.id, role: 'user', content: message, had_image: !!image },
-      { conversation_id: cid, user_id: user.id, role: 'model', content: reply.slice(0, 20000), steps, model: used },
-    ]);
-    if (me) console.error('ai-coach: message insert failed');
-    await admin.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', cid);
-    return jsonRes({ ok: true, conversationId: cid, reply, usage }, 200, { ...cors, 'Cache-Control': 'no-store' });
-  } catch (e) {
-    await refund();
-    console.error('ai-coach error:', String((e as Error)?.name || 'Error'));
-    return fail('SERVER', 'Something went wrong. Try again.', 500, cors);
   }
+
+  if (!wantStream) {
+    const out = await run(() => {});
+    if (!out.ok) return fail(out.code, out.message, out.status, cors);
+    return jsonRes({ ok: true, conversationId: out.conversationId, reply: out.reply, visuals: out.visuals, usage }, 200, { ...cors, 'Cache-Control': 'no-store' });
+  }
+
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      let open = true;
+      const send = (event: string, data: unknown) => {
+        if (!open) return;
+        try { controller.enqueue(enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)); } catch (_) { open = false; }
+      };
+      send('start', { usage });
+      const out = await run(send);
+      if (out.ok) send('done', { conversationId: out.conversationId, reply: out.reply, visuals: out.visuals, usage });
+      else send('error', { code: out.code, message: out.message, usage: { ...usage, used: Math.max(0, usage.used - 1) } });
+      open = false;
+      try { controller.close(); } catch (_) { /* closed by the client */ }
+    },
+  });
+  return new Response(stream, { status: 200, headers: { ...cors, 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' } });
 });

@@ -230,16 +230,36 @@
       return;
     }
     S.messages.forEach(function (m) { box.appendChild(bubble(m)); });
-    if (S.pending) box.appendChild(el('div', 'wwai-msg wwai-model wwai-typing', '<span></span><span></span><span></span>'));
+    if (S.pending === true) box.appendChild(el('div', 'wwai-msg wwai-model wwai-typing', '<span></span><span></span><span></span>'));
     box.scrollTop = box.scrollHeight;
   }
+  // model text: markdown chunks with charts in place of their [[viz:...]] lines (data from the server, never the model).
+  // While streaming, a directive line shows a placeholder and a half-written one at the end is hidden.
+  var VIZ_LINE = /^\s*\[\[viz:([a-z_:]+)\]\]\s*$/;
+  function fillModel(body, m) {
+    body.innerHTML = '';
+    var lines = String(m.content || '').split('\n'), chunk = [];
+    if (m.streaming && lines.length && /^\s*\[\[/.test(lines[lines.length - 1])) lines.pop();
+    function flush() { if (chunk.length) { var d = el('div', 'wwai-md', md(chunk.join('\n'))); body.appendChild(d); chunk = []; } }
+    lines.forEach(function (ln) {
+      var v = VIZ_LINE.exec(ln);
+      if (!v) { chunk.push(ln); return; }
+      flush();
+      var data = m.visuals && m.visuals[v[1]];
+      if (data) body.appendChild(renderViz(data));
+      else if (m.streaming) body.appendChild(el('div', 'wwai-viz wwai-viz-wait'));
+    });
+    flush();
+  }
+
   function bubble(m) {
     var b = el('div', 'wwai-msg ' + (m.role === 'user' ? 'wwai-user' : 'wwai-model') + (m.error ? ' wwai-error' : ''));
     if (m.imageUrl) { var im = el('img', 'wwai-msg-img'); im.src = m.imageUrl; im.alt = ''; b.appendChild(im); }
     else if (m.hadImage) b.appendChild(el('span', 'wwai-msg-imgnote', esc(_t('aiCoach.image_sent', 'Görsel gönderildi'))));
     var body = el('div', 'wwai-msg-text');
-    if (m.role === 'user' || m.error) body.textContent = m.content; else body.innerHTML = md(m.content);
+    if (m.role === 'user' || m.error) body.textContent = m.content; else fillModel(body, m);
     b.appendChild(body);
+    if (m.note) b.appendChild(el('p', 'wwai-msg-note', esc(m.note)));
     if (m.upgrade) {
       var u = el('button', 'wwai-upgrade'); u.type = 'button'; u.setAttribute('data-act', 'upgrade'); u.textContent = _t('aiCoach.upgrade', "Premium'a geç"); b.appendChild(u);
     }
@@ -282,9 +302,40 @@
     R.input.value = ''; autosize(); clearImage();
     S.pending = true; R.send.disabled = true;
     renderMessages();
+    var reply = null;                                       // the streaming answer, once the first word arrived
+    function live() {                                       // redraw only the streaming bubble, once per frame
+      if (!reply || reply._raf) return;
+      reply._raf = (global.requestAnimationFrame || setTimeout)(function () {
+        reply._raf = 0;
+        if (!reply.el || !reply.el.isConnected) return;
+        var near = R.msgs.scrollHeight - R.msgs.scrollTop - R.msgs.clientHeight < 80;
+        fillModel(reply.el.querySelector('.wwai-msg-text'), reply);
+        if (near) R.msgs.scrollTop = R.msgs.scrollHeight;
+      });
+    }
+    function onDelta(t) {
+      if (!reply) {
+        reply = { role: 'model', content: '', streaming: true };
+        S.messages.push(reply);
+        S.pending = 'streaming';
+        renderMessages();
+        reply.el = R.msgs.lastElementChild && R.msgs.lastElementChild.classList.contains('wwai-model') ? R.msgs.lastElementChild : null;
+      }
+      reply.content += t; live();
+    }
+    function onReset() {                                    // the server retries a broken answer: back to "typing…"
+      if (!reply) return;
+      var i = S.messages.indexOf(reply); if (i >= 0) S.messages.splice(i, 1);
+      reply = null; S.pending = true; renderMessages();
+    }
+    function failWith(code, j) {
+      var msg = errorText(code, j);
+      if (reply) { reply.streaming = false; reply.note = msg; }          // keep the part already shown, say it stopped
+      else S.messages.push({ role: 'model', content: msg, error: true, upgrade: code === 'LIMIT' && j && j.usage && !j.usage.premium });
+    }
     session().then(function (s) {
       if (!s) throw Object.assign(new Error('session'), { code: 'UNAUTHORIZED' });
-      var body = { message: text, lang: lang(), tz: tz() };
+      var body = { message: text, lang: lang(), tz: tz(), stream: true };
       if (S.conversationId) body.conversationId = S.conversationId;
       else { try { var jid = global.journal && global.journal.getActiveJournalId && global.journal.getActiveJournalId(); if (jid) body.journalId = jid; } catch (e) { /* all journals */ } }
       if (img) body.image = { mimeType: img.mimeType, data: img.data };
@@ -292,25 +343,208 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() },
         body: JSON.stringify(body)
-      }).then(function (res) {
-        return res.json().then(function (j) { return { res: res, j: j }; }, function () { return { res: res, j: null }; });
-      }, function () { throw Object.assign(new Error('network'), { code: 'NETWORK' }); });
-    }).then(function (r) {
-      var j = r.j || {};
+      }).catch(function () { throw Object.assign(new Error('network'), { code: 'NETWORK' }); });
+    }).then(function (res) {
+      var ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.indexOf('text/event-stream') >= 0 && res.body && res.body.getReader) return readStream(res.body, onDelta, onReset);
+      return res.json().then(function (j) { return { status: res.status, j: j || {} }; }, function () { return { status: res.status, j: {} }; })
+        .then(function (r) { return r.j && r.j.ok ? { done: r.j } : { error: r.j, code: r.j.code || (r.status === 401 ? 'UNAUTHORIZED' : 'UPSTREAM') }; });
+    }).then(function (out) {
+      var j = out.done || out.error || {};
       if (j.usage) { S.usage = j.usage; renderUsage(); }
-      if (!r.res.ok || !j.ok) {
-        var code = j.code || (r.res.status === 401 ? 'UNAUTHORIZED' : 'UPSTREAM');
-        S.messages.push({ role: 'model', content: errorText(code, j), error: true, upgrade: code === 'LIMIT' && j.usage && !j.usage.premium });
-        return;
-      }
+      if (out.error || !out.done) { failWith(out.code || 'UPSTREAM', out.error); return; }
       if (j.conversationId) { S.conversationId = j.conversationId; save({ open: S.open, conversationId: S.conversationId }); }
-      S.messages.push({ role: 'model', content: j.reply });
+      if (!reply) { reply = { role: 'model', content: '' }; S.messages.push(reply); }
+      reply.content = j.reply; reply.visuals = j.visuals || null; reply.streaming = false;
     }).catch(function (e) {
-      S.messages.push({ role: 'model', content: errorText((e && e.code) || 'UPSTREAM'), error: true });
+      failWith((e && e.code) || 'NETWORK');
     }).then(function () {
+      if (reply) reply.streaming = false;
       S.pending = false; R.send.disabled = false;
       if (S.view === 'chat') renderMessages();
     });
+  }
+
+  // reads the ai-coach event stream: "delta" {text} ..., then "done" {...} or "error" {code}
+  function readStream(stream, onDelta, onReset) {
+    var reader = stream.getReader(), dec = new TextDecoder(), buf = '', result = null;
+    function handle(block) {
+      var ev = 'message', data = '';
+      block.split('\n').forEach(function (l) { if (l.indexOf('event:') === 0) ev = l.slice(6).trim(); else if (l.indexOf('data:') === 0) data += l.slice(5).trim(); });
+      if (!data) return;
+      var j; try { j = JSON.parse(data); } catch (e) { return; }
+      if (ev === 'delta' && j.text) onDelta(j.text);
+      else if (ev === 'done') result = { done: Object.assign({ ok: true }, j) };
+      else if (ev === 'error') result = { error: j, code: j.code || 'UPSTREAM' };
+      else if (ev === 'start' && j.usage) { S.usage = j.usage; renderUsage(); }
+      else if (ev === 'reset' && onReset) onReset();
+    }
+    function pump() {
+      return reader.read().then(function (r) {
+        if (r.value) buf += dec.decode(r.value, { stream: !r.done });
+        var parts = buf.replace(/\r\n/g, '\n').split('\n\n'); buf = parts.pop();
+        parts.forEach(handle);
+        if (r.done) { if (buf.trim()) handle(buf); return result || { error: {}, code: 'UPSTREAM' }; }
+        return pump();
+      });
+    }
+    return pump().catch(function () { return result || { error: {}, code: 'NETWORK' }; });
+  }
+
+  // ---------------------------------------------------------------- charts (drawn from the server's numbers)
+  var DAYS = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+  // Turkish fallbacks of the dynamic chart keys (aiCoach.viz.<group>.<id>), used when the locale is not loaded
+  var VIZ_TR = {
+    kpi: { win_rate: 'Kazanma oranı', net: 'Net sonuç', profit_factor: 'Kâr faktörü', max_drawdown: 'Maks. düşüş' },
+    metric: { net: 'Net kâr/zarar', win_rate: 'Kazanma oranı', trades: 'İşlem sayısı', profit_factor: 'Kâr faktörü', avg_win: 'Ortalama kazanç', avg_loss: 'Ortalama kayıp' },
+    dataset: { by_strategy: 'Strateji', by_symbol: 'Sembol', by_direction: 'Yön', by_weekday: 'Gün', by_session_utc: 'Seans', by_entry_hour_local: 'Giriş saati',
+      by_month_last_12: 'Ay', by_trade_number_of_day: 'Günün kaçıncı işlemi', after_consecutive_losses: 'Art arda kayıp sonrası' },
+    session: { asia: 'Asya', london: 'Londra', london_ny_overlap: 'Londra–NY', new_york: 'New York', late: 'Geç saat' }
+  };
+  function vt(group, id) { return _t('aiCoach.viz.' + group + '.' + id, (VIZ_TR[group] && VIZ_TR[group][id]) || id); }
+  function nf(v, opts) { try { return new Intl.NumberFormat(lang(), opts).format(v); } catch (e) { return String(v); } }
+  function money(v, signed) {
+    var cur = (typeof global.getCurrencySymbol === 'function' && global.getCurrencySymbol()) || '$';
+    var a = Math.abs(v), s = nf(a, { maximumFractionDigits: a < 100 ? 2 : 0 });
+    return (v < 0 ? '−' : signed && v > 0 ? '+' : '') + cur + s;
+  }
+  function fmt(v, unit, signed) {
+    if (v == null || !isFinite(v)) return '—';
+    if (unit === 'pct') return nf(v, { maximumFractionDigits: 1 }) + '%';
+    if (unit === 'ratio') return nf(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (unit === 'count') return nf(v, { maximumFractionDigits: 0 });
+    return money(v, signed);
+  }
+  function bucketLabel(dataset, key) {
+    if (dataset === 'by_weekday' && key in DAYS) {
+      try { return new Intl.DateTimeFormat(lang(), { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + DAYS[key]))); } catch (e) { return key; }
+    }
+    if (dataset === 'by_entry_hour_local') return key + ':00';
+    if (dataset === 'by_month_last_12' && /^\d{4}-\d{2}$/.test(key)) {
+      try { return new Intl.DateTimeFormat(lang(), { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(Date.UTC(+key.slice(0, 4), +key.slice(5) - 1, 1))); } catch (e) { return key; }
+    }
+    if (dataset === 'by_session_utc') { var sk = key.split(' ')[0]; return vt('session', sk) + ' ' + (key.slice(sk.length).trim()); }
+    if (dataset === 'after_consecutive_losses') return _t('aiCoach.viz.after_losses', '{n} kayıp sonrası', { n: key });
+    if (dataset === 'by_trade_number_of_day') return _t('aiCoach.viz.nth_trade', 'Günün {n}. işlemi', { n: key.replace(/\D+$/, '').replace(/[a-z]+/, '') + (/\+/.test(key) ? '+' : '') });
+    if (key === '(no strategy)') return _t('aiCoach.viz.no_strategy', 'Stratejisiz');
+    return key;
+  }
+  function vizTitle(v) {
+    if (v.kind === 'kpis') return _t('aiCoach.viz.kpis', 'Genel performans');
+    if (v.kind === 'equity') return _t('aiCoach.viz.equity', 'Bakiye eğrisi (kümülatif sonuç)');
+    return vt('metric', v.metric) + ' · ' + vt('dataset', v.dataset);
+  }
+  function tipFor(box) {
+    var tip = box.querySelector('.wwai-tip');
+    if (!tip) { tip = el('div', 'wwai-tip'); tip.hidden = true; box.appendChild(tip); }
+    return tip;
+  }
+  function showTip(box, html, x, y) {
+    var tip = tipFor(box); tip.innerHTML = html; tip.hidden = false;
+    var bw = box.clientWidth, tw = tip.offsetWidth;
+    tip.style.left = Math.max(4, Math.min(bw - tw - 4, x - tw / 2)) + 'px'; tip.style.top = Math.max(4, y - tip.offsetHeight - 10) + 'px';
+  }
+  function hideTip(box) { var t = box.querySelector('.wwai-tip'); if (t) t.hidden = true; }
+
+  function renderViz(v) {
+    var box = el('figure', 'wwai-viz wwai-viz-' + v.kind);
+    var cap = el('figcaption', 'wwai-viz-head');
+    cap.appendChild(el('span', 'wwai-viz-title', esc(vizTitle(v))));
+    if (v.kind === 'equity' && v.points.length) {
+      var lastV = v.points[v.points.length - 1].v, hv = el('span', 'wwai-viz-value ' + (lastV > 0 ? 'is-pos' : lastV < 0 ? 'is-neg' : ''), esc(fmt(lastV, 'money', true)));
+      cap.appendChild(hv);
+    }
+    if (v.kind !== 'kpis') {
+      var tb = el('button', 'wwai-viz-table-btn'); tb.type = 'button'; tb.textContent = _t('aiCoach.viz.table', 'Tablo');
+      tb.setAttribute('aria-expanded', 'false');
+      tb.addEventListener('click', function () { var t = box.querySelector('.wwai-viz-table'); t.hidden = !t.hidden; tb.setAttribute('aria-expanded', t.hidden ? 'false' : 'true'); });
+      cap.appendChild(tb);
+    }
+    box.appendChild(cap);
+    if (v.kind === 'kpis') box.appendChild(kpis(v));
+    else if (v.kind === 'bar') box.appendChild(bars(v, box));
+    else if (v.kind === 'equity') box.appendChild(equity(v, box));
+    if (v.kind !== 'kpis') box.appendChild(table(v));
+    return box;
+  }
+  function kpis(v) {
+    var g = el('div', 'wwai-kpis');
+    v.items.forEach(function (it) {
+      var t = el('div', 'wwai-kpi');
+      t.appendChild(el('span', 'wwai-kpi-label', esc(vt('kpi', it.id))));
+      var val = el('span', 'wwai-kpi-value', esc(it.id === 'max_drawdown' && it.value ? money(-it.value) : fmt(it.value, it.unit, it.id === 'net')));
+      if (it.id === 'net' && isFinite(it.value) && it.value !== 0) val.classList.add(it.value > 0 ? 'is-pos' : 'is-neg');
+      t.appendChild(val);
+      if (it.sub) t.appendChild(el('span', 'wwai-kpi-sub', esc(it.id === 'net' ? _t('aiCoach.viz.trades_n', '{n} işlem', { n: it.sub }) : _t('aiCoach.viz.wins_of', '{w} kazanç / {t}', { w: it.sub.split('/')[0], t: it.sub.split('/')[1] }))));
+      g.appendChild(t);
+    });
+    return g;
+  }
+  function bars(v, box) {
+    var wrap = el('div', 'wwai-bars'), pol = v.unit === 'money';
+    var max = 0, min = 0;
+    v.items.forEach(function (it) { max = Math.max(max, it.value); min = Math.min(min, it.value); });
+    var span = (max - min) || 1, zero = pol ? (-min / span) * 100 : 0;
+    v.items.forEach(function (it) {
+      var row = el('div', 'wwai-bar-row'); row.tabIndex = 0;
+      row.appendChild(el('span', 'wwai-bar-label', esc(bucketLabel(v.dataset, it.label))));
+      var track = el('span', 'wwai-bar-track'), bar = el('span', 'wwai-bar');
+      var w = Math.abs(it.value) / (pol ? span : (max || 1)) * 100;
+      if (pol && it.value < 0) { bar.classList.add('is-neg'); bar.style.right = (100 - zero) + '%'; }
+      else { if (pol) bar.classList.add('is-pos'); bar.style.left = zero + '%'; }
+      bar.style.width = Math.max(w, it.value === 0 ? 0 : 1.5) + '%';
+      track.appendChild(bar);
+      if (pol && min < 0) { var z = el('span', 'wwai-bar-zero'); z.style.left = zero + '%'; track.appendChild(z); }
+      row.appendChild(track);
+      row.appendChild(el('span', 'wwai-bar-value', esc(fmt(it.value, v.unit, pol))));
+      var tipHtml = '<strong>' + esc(bucketLabel(v.dataset, it.label)) + '</strong><br>' + esc(fmt(it.value, v.unit, pol)) + ' · ' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: it.trades }));
+      function show() { var r = row.getBoundingClientRect(), b = box.getBoundingClientRect(); showTip(box, tipHtml, r.left - b.left + r.width / 2, r.top - b.top); }
+      row.addEventListener('mouseenter', show); row.addEventListener('focus', show);
+      row.addEventListener('mouseleave', function () { hideTip(box); }); row.addEventListener('blur', function () { hideTip(box); });
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+  function equity(v, box) {
+    var W = 360, H = 140, PL = 4, PR = 6, PT = 8, PB = 20, pts = v.points;
+    var vs = pts.map(function (p) { return p.v; }), lo = Math.min(0, Math.min.apply(null, vs)), hi = Math.max(0, Math.max.apply(null, vs));
+    if (hi === lo) hi = lo + 1;
+    function X(i) { return PL + (W - PL - PR) * (pts.length === 1 ? 0.5 : i / (pts.length - 1)); }
+    function Y(val) { return PT + (H - PT - PB) * (1 - (val - lo) / (hi - lo)); }
+    var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' ');
+    var area = line + ' L' + X(pts.length - 1).toFixed(1) + ' ' + Y(Math.max(lo, 0)).toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + Y(Math.max(lo, 0)).toFixed(1) + ' Z';
+    var last = pts[pts.length - 1], up = last.v >= 0;
+    var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('class', 'wwai-eq ' + (up ? 'is-pos' : 'is-neg')); svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', vizTitle(v) + ': ' + fmt(last.v, 'money', true));
+    svg.innerHTML =
+      (lo < 0 && hi > 0 ? '<line class="wwai-eq-zero" x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '"/>' : '') +
+      '<path class="wwai-eq-area" d="' + area + '"/><path class="wwai-eq-line" d="' + line + '"/>' +
+      '<circle class="wwai-eq-dot" r="4" cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(last.v).toFixed(1) + '"/>' +
+      '<text class="wwai-eq-axis" x="' + PL + '" y="' + (H - 4) + '">' + esc(pts[0].t) + '</text>' +
+      '<text class="wwai-eq-axis" x="' + (W - PR) + '" y="' + (H - 4) + '" text-anchor="end">' + esc(last.t) + '</text>' +
+      '<line class="wwai-eq-cross" y1="' + PT + '" y2="' + (H - PB) + '" visibility="hidden"/><circle class="wwai-eq-hover" r="4" visibility="hidden"/>';
+    var cross = svg.querySelector('.wwai-eq-cross'), hov = svg.querySelector('.wwai-eq-hover');
+    svg.addEventListener('mousemove', function (e) {
+      var r = svg.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W;
+      var i = Math.max(0, Math.min(pts.length - 1, Math.round((fx - PL) / (W - PL - PR) * (pts.length - 1))));
+      cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible');
+      hov.setAttribute('cx', X(i)); hov.setAttribute('cy', Y(pts[i].v)); hov.setAttribute('visibility', 'visible');
+      var b = box.getBoundingClientRect();
+      showTip(box, esc(pts[i].t) + '<br><strong>' + esc(fmt(pts[i].v, 'money', true)) + '</strong>', r.left - b.left + X(i) / W * r.width, r.top - b.top + Y(pts[i].v) / H * r.height);
+    });
+    svg.addEventListener('mouseleave', function () { cross.setAttribute('visibility', 'hidden'); hov.setAttribute('visibility', 'hidden'); hideTip(box); });
+    return svg;
+  }
+  function table(v) {
+    var t = el('table', 'wwai-viz-table'); t.hidden = true;
+    var head = v.kind === 'equity' ? [_t('aiCoach.viz.date', 'Tarih'), _t('aiCoach.viz.cumulative', 'Kümülatif')]
+      : [vt('dataset', v.dataset), vt('metric', v.metric), _t('aiCoach.viz.trades', 'İşlem')];
+    var rows = v.kind === 'equity' ? v.points.map(function (p) { return [p.t, fmt(p.v, 'money', true)]; })
+      : v.items.map(function (it) { return [bucketLabel(v.dataset, it.label), fmt(it.value, v.unit, v.unit === 'money'), String(it.trades)]; });
+    t.innerHTML = '<thead><tr>' + head.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>';
+    return t;
   }
 
   // ---------------------------------------------------------------- usage
@@ -361,11 +595,11 @@
     S.conversationId = id; S.messages = []; save({ open: S.open, conversationId: id });
     showChat();
     R.msgs.innerHTML = '<p class="wwai-muted">' + esc(_t('aiCoach.loading', 'Yükleniyor…')) + '</p>';
-    global.sb.from('ai_messages').select('role,content,had_image,created_at').eq('conversation_id', id).order('created_at', { ascending: true }).limit(200).then(function (r) {
+    global.sb.from('ai_messages').select('role,content,had_image,visuals,created_at').eq('conversation_id', id).order('created_at', { ascending: true }).limit(200).then(function (r) {
       if (S.conversationId !== id) return;
       var rows = (r && !r.error && r.data) || [];
       if (!rows.length) { S.conversationId = null; save({ open: S.open, conversationId: null }); }
-      S.messages = rows.map(function (m) { return { role: m.role, content: m.content, hadImage: !!m.had_image }; });
+      S.messages = rows.map(function (m) { return { role: m.role, content: m.content, hadImage: !!m.had_image, visuals: m.visuals || null }; });
       renderMessages();
     });
   }
