@@ -43,6 +43,14 @@ export function pickInsights(s: any, max = 3): Insight[] {
     else out.push({ id: 'prop_odds', severity: pp.pass_pct < 30 ? 82 : 50, params: { journal: p.journal || '—', pass: Math.round(pp.pass_pct) } });
   }
 
+  // the member's own trading plan: how often it is followed (last 7 days, enough trades)
+  const tp = s.trading_plan?.last_7_days;
+  if (tp && tp.trades >= 5 && tp.score != null) {
+    const rule = s.trading_plan.most_broken_rule_7d;
+    if (tp.score < 80 && rule) out.push({ id: 'plan_discipline', severity: tp.score < 60 ? 87 : 64, params: { score: Math.round(tp.score), rule, trades: tp.trades } });
+    else if (tp.score >= 90) out.push({ id: 'plan_followed', severity: 33, params: { score: Math.round(tp.score), trades: tp.trades } });
+  }
+
   // position size grows after losses: the money version of revenge trading
   const ps = s.position_sizing;
   if (ps && ps.avg_size_after_loss != null && ps.avg_size_after_win && ps.trades_after_loss >= MIN && ps.avg_size_after_loss >= 1.25 * ps.avg_size_after_win) {

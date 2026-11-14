@@ -34,6 +34,7 @@ import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
 import { loadPropContexts } from '../_shared/prop-context.ts';
 import { readPaged } from '../_shared/paged.ts';
 import { runCoachAlerts } from '../_shared/coach-alerts.ts';
+import { cleanPlan, disciplineReport } from '../_shared/discipline.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -77,11 +78,15 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
   const btP = readPaged((a, b) => admin.from('backtest_account_trades').select(BT_TRADE_COLS).eq('user_id', userId)
     .order('entry_time', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_BT_TRADES);
   const jq = admin.from('journals').select('id, name').eq('user_id', userId);
-  const [trades, { data: strategies, error: se }, { data: btAccounts, error: bae }, btTrades, { data: js }] =
-    await Promise.all([tradesP, sq, baq, btP, jq]);
+  const cq = admin.from('coach_settings').select('plan').eq('user_id', userId).maybeSingle();     // error (no table yet): no plan
+  const [trades, { data: strategies, error: se }, { data: btAccounts, error: bae }, btTrades, { data: js }, { data: cs }] =
+    await Promise.all([tradesP, sq, baq, btP, jq, cq]);
   if (!trades || se) return null;
   const summary = summarizeTrades(trades, strategies || [], { tz, ...(recent != null ? { recent } : {}) });
   const names = new Map<string, string>((js || []).map((j: any) => [j.id, j.name]));
+  // the member's trading plan and how well the trades follow it
+  const plan = disciplineReport(cleanPlan(cs?.plan), trades, tz);
+  if (plan) summary.trading_plan = plan;
 
   // backtest accounts (a read error leaves the rest of the answer intact); their per-symbol comparison with the live trades
   // replaces the one built from journal mirrors, which only cover linked accounts

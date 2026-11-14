@@ -6,6 +6,7 @@
 // backfill raises nothing. Each kind fires at most once per journal and day (prop_failed once per account).
 // detectAlerts is pure (Node tests); runCoachAlerts does the I/O.
 import { rMultiple } from './trade-summary.ts';
+import { checkTrades, cleanPlan } from './discipline.ts';
 
 export interface AlertTrade {
   id?: string; journal_id?: string | null; symbol: string; direction: string; lot?: number | string | null;
@@ -87,7 +88,17 @@ export function detectAlerts(input: { trades: AlertTrade[]; prop?: any; plan?: a
   const r = rMultiple(newest as any);
   if (r != null && r <= -1.5) add('stop_overrun', 'warning', 74, { r: r2(r) });
 
-  // 6) prop challenge: the rules that end the account
+  // 6) the member's own plan: rules the newest trade broke (the day cap and day loss are covered above)
+  const plan = cleanPlan(input.plan);
+  if (plan) {
+    const mine = checkTrades(plan, todays, tz).find((c) => c.trade === newest);
+    const b = mine ? mine.broken : [];
+    if (b.includes('require_stop')) add('plan_stop', 'warning', 78, {});
+    if (b.includes('max_loss_per_trade')) add('plan_trade_loss', 'error', 86, { loss: r2(-num(newest.pnl)), cap: plan.max_loss_per_trade! });
+    if (b.includes('no_trading_after')) add('plan_hours', 'warning', 68, { hour: String(plan.no_trading_after).padStart(2, '0') + ':00' });
+  }
+
+  // 7) prop challenge: the rules that end the account
   const p = input.prop;
   if (p && p.status === 'failed') add('prop_failed', 'error', 110, {}, `prop_failed:${p.account_id || journalId}`);
   else if (p && p.status === 'in_progress') {

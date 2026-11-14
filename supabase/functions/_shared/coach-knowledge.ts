@@ -79,6 +79,15 @@ export const COACH_KNOWLEDGE = `
 - When the trader asks about a challenge, lead with the numbers that decide it: room left today, room to the max loss,
   distance to the target and days left. A failed account: say which rule broke and what to do differently in the next one.
 
+### Trading plan (trading_plan)
+- The trader's OWN rules (rules: max_trades_per_day, max_daily_loss, max_loss_per_trade, require_stop, no_trading_after =
+  local hour) and how well the trades follow them: score = % of trades that broke no rule (last_7_days, last_30_days),
+  broken_by_rule (how many trades broke each rule and their net result), net_following_plan vs net_breaking_plan.
+- Use it first in reviews: the gap between net_following_plan and net_breaking_plan is the cost of indiscipline in money.
+  A score under ~80 % matters more than any new strategy idea. Praise a high score briefly.
+- No trading_plan in the data: when the trader asks about discipline or rules, suggest setting a plan in the coach's settings
+  (Anna → settings → trading plan) with 2–3 rules that fit their data (e.g. a daily trade cap from by_trade_number_of_day).
+
 ### Sample size
 - < 15 trades in a bucket: anecdotal, say so and do not recommend dropping or doubling down on it.
 - 15–30: early signal. 30–100: usable. 100+: reliable. Always mention the trade count next to a percentage.

@@ -242,6 +242,8 @@
     }
     else if (act === 'delete-all') deleteAll();
     else if (act === 'alerts') setAlerts(b.getAttribute('aria-checked') !== 'true');
+    else if (act === 'plan-stop') { b.setAttribute('aria-checked', b.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); }
+    else if (act === 'plan-save') savePlan();
     else if (act === 'desktop') setDesktop(b.getAttribute('aria-checked') !== 'true');
     else if (act === 'settings') { if (S.view === 'settings') showChat(); else showSettings(); }
     else if (act === 'back') showChat();
@@ -332,13 +334,58 @@
     S.prefsLoading = true;
     session().then(function (s) {
       if (!s || !s.user) return null;
-      return global.sb.from('coach_settings').select('alerts_enabled, time_zone').eq('user_id', s.user.id).maybeSingle().then(function (r) {
+      return global.sb.from('coach_settings').select('alerts_enabled, time_zone, plan').eq('user_id', s.user.id).maybeSingle().then(function (r) {
         if (r && r.error) { S.prefs = S.prefs || {}; return; }          // table missing (before the migration): defaults
         S.prefs = (r && r.data) || {};
         // the alerts raised by the sync functions use this zone for "today"
         if (S.prefs.time_zone !== tz()) global.sb.from('coach_settings').upsert({ user_id: s.user.id, time_zone: tz() }, { onConflict: 'user_id' }).then(function () {}, function () {});
       });
     }).then(function () { S.prefsLoading = false; if (S.view === 'settings') renderSettings(); }, function () { S.prefsLoading = false; });
+  }
+  var RULE_TR = { max_trades_per_day: 'günlük işlem sınırı', max_daily_loss: 'günlük zarar sınırı', max_loss_per_trade: 'işlem başına zarar sınırı', require_stop: 'stop zorunluluğu', no_trading_after: 'işlem saati' };
+  // the plan form; empty plan: suggested from the old overtrade settings of this browser (saved only on "save")
+  function planEditor() {
+    var p = (S.prefs && S.prefs.plan) || {}, sug = {};
+    if (!Object.keys(p).length) { try { var ot = JSON.parse(localStorage.getItem('ww_overtrade_settings') || 'null'); if (ot && ot.enabled !== false) sug = { max_trades_per_day: ot.dailyLimit, max_daily_loss: ot.dailyLossLimit }; } catch (e) { /* none */ } }
+    function num(key, label, step) {
+      var v = p[key] != null ? p[key] : (sug[key] != null ? sug[key] : '');
+      return '<label class="wwai-plan-field"><span>' + esc(label) + '</span><input type="text" inputmode="' + (step === 1 ? 'numeric' : 'decimal') + '" autocomplete="off" data-plan="' + key + '" value="' + esc(v) + '" placeholder="—"></label>';
+    }
+    var hours = '<option value="">—</option>';
+    for (var i = 0; i < 24; i++) hours += '<option value="' + i + '"' + (p.no_trading_after === i ? ' selected' : '') + '>' + (i < 10 ? '0' : '') + i + ':00</option>';
+    return '<div class="wwai-group wwai-plan">' +
+      '<div class="wwai-row is-stack"><div class="wwai-row-text"><strong>' + esc(_t('aiCoach.plan.title', 'İşlem planım')) + '</strong><span>' +
+        esc(_t('aiCoach.plan.hint', 'Kendi kurallarını yaz. İşlemlerini bunlara göre puanlar, kuralı çiğnediğinde seni uyarırım. Boş bıraktığın kural kullanılmaz.')) + '</span></div>' +
+      '<div class="wwai-plan-grid">' +
+        num('max_trades_per_day', _t('aiCoach.plan.max_trades', 'Günlük en fazla işlem'), 1) +
+        num('max_daily_loss', _t('aiCoach.plan.max_daily_loss', 'Günlük en fazla zarar'), 'any') +
+        num('max_loss_per_trade', _t('aiCoach.plan.max_trade_loss', 'İşlem başına en fazla zarar'), 'any') +
+        '<label class="wwai-plan-field"><span>' + esc(_t('aiCoach.plan.no_after', 'Bu saatten sonra işlem yok')) + '</span><select data-plan="no_trading_after">' + hours + '</select></label>' +
+      '</div>' +
+      '<div class="wwai-plan-foot"><label class="wwai-plan-check"><button type="button" class="wwai-switch" role="switch" data-act="plan-stop" data-plan="require_stop" aria-checked="' + (p.require_stop ? 'true' : 'false') + '"><span></span></button>' +
+        '<span>' + esc(_t('aiCoach.plan.require_stop', 'Her işlemde stop zorunlu')) + '</span></label>' +
+        '<button type="button" class="wwai-upgrade" data-act="plan-save">' + esc(_t('aiCoach.plan.save', 'Planı kaydet')) + '</button></div>' +
+      '</div></div>';
+  }
+  function savePlan() {
+    var f = R.settings, raw = {};
+    f.querySelectorAll('[data-plan]').forEach(function (x) {
+      var k = x.getAttribute('data-plan');
+      if (k === 'require_stop') { if (x.getAttribute('aria-checked') === 'true') raw.require_stop = true; return; }
+      var v = String(x.value || '').replace(',', '.').trim(); if (v === '') return;
+      var n = Number(v); if (!isFinite(n)) return;
+      if (k === 'max_trades_per_day' || k === 'no_trading_after') { if (Math.floor(n) === n) raw[k] = n; } else if (n > 0) raw[k] = Math.round(n * 100) / 100;
+    });
+    if (raw.max_trades_per_day != null && (raw.max_trades_per_day < 1 || raw.max_trades_per_day > 50)) delete raw.max_trades_per_day;
+    if (raw.no_trading_after != null && (raw.no_trading_after < 0 || raw.no_trading_after > 23)) delete raw.no_trading_after;
+    session().then(function (s) {
+      if (!s || !s.user) throw new Error('session');
+      return global.sb.from('coach_settings').upsert({ user_id: s.user.id, plan: raw, time_zone: tz() }, { onConflict: 'user_id' });
+    }).then(function (r) {
+      if (r && r.error) throw r.error;
+      S.prefs = Object.assign({}, S.prefs || {}, { plan: raw }); S.snap = {};          // the opening screen re-reads the score
+      toast(_t('aiCoach.plan.saved', 'Planın kaydedildi.'), 'success'); renderSettings();
+    }).catch(function () { toast(_t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error'); });
   }
   function setAlerts(on) {
     var prev = S.prefs ? S.prefs.alerts_enabled : undefined;
@@ -784,10 +831,11 @@
     Object.keys(q).forEach(function (key) { p[key] = q[key]; });
     ['net'].forEach(function (key) { if (key in q) p[key] = money(Number(q[key]), true); });
     ['room', 'remaining', 'total'].forEach(function (key) { if (key in q) p[key] = money(Number(q[key])); });
-    ['win_rate', 'base', 'first', 'pct', 'live', 'backtest', 'before', 'capture', 'pass', 'better', 'cut'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { maximumFractionDigits: 1 }); });
+    ['win_rate', 'base', 'first', 'pct', 'live', 'backtest', 'before', 'capture', 'pass', 'better', 'cut', 'score'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { maximumFractionDigits: 1 }); });
     ['after_loss', 'after_win', 'avg_r'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { minimumFractionDigits: 1, maximumFractionDigits: 2 }); });
     if ('day' in q && q.day in DAYS) { try { p.day = new Intl.DateTimeFormat(lang(), { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + DAYS[q.day]))); } catch (e) { /* key */ } }
     if ('session' in q) p.session = vt('session', q.session);
+    if ('rule' in q) p.rule = _t('aiCoach.rule.' + q.rule, RULE_TR[q.rule] || q.rule);
     var T = INSIGHT_TR[ins.id] || INSIGHT_TR.general;
     return { text: _t('aiCoach.insight.' + ins.id, T[0], p), question: _t('aiCoach.insight_q.' + ins.id, T[1], p) };
   }
@@ -817,6 +865,8 @@
     prop_odds_risk: ['{journal}: geçme olasılığın %{pass}. İşlem başına riski %{cut} azaltırsan %{better}.', '{journal} hesabımda riskimi nasıl ayarlarsam challenge\'ı geçme şansım artar?'],
     prop_odds: ['{journal}: mevcut sonuçlarınla challenge\'ı geçme olasılığın yaklaşık %{pass}.', '{journal} challenge\'ını geçme olasılığımı nasıl artırırım?'],
     bt_no_edge: ['{name} backtest hesabın zararda ({net}, {trades} işlem).', '{name} backtest hesabımı analiz et: sistemim canlıya hazır mı, neyi değiştirmeliyim?'],
+    plan_discipline: ['Son 7 günde işlemlerinin %{score} kadarı planına uydu. En çok çiğnenen: {rule}.', 'Planıma neden uyamıyorum? {rule} kuralını nasıl tutarım?'],
+    plan_followed: ['Son 7 günde işlemlerinin %{score} kadarı planına uydu. Harika gidiyorsun.', 'Planıma uymak sonuçlarımı nasıl etkiliyor?'],
     form_up: ['Gelişiyorsun: son 20 işlemde kazanma oranın %{win_rate}, öncesinde %{before}.', 'Son dönemde neyi doğru yapıyorum, nasıl sürdürürüm?']
   };
   function renderEmpty() {
@@ -943,6 +993,9 @@
         opts.map(function (o) { return '<option value="' + esc(o.id) + '"' + (o.id === cur ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select>');
     }
     h += '</div>';
+
+    // trading plan (coach_settings.plan): the coach scores discipline against it and the live alerts use it
+    if (S.prefs !== undefined) h += planEditor();
 
     // live alerts (server: coach_settings.alerts_enabled; desktop notifications: this browser only)
     var al = !S.prefs || S.prefs.alerts_enabled !== false;
