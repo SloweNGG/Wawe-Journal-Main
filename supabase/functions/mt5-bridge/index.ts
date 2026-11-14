@@ -8,6 +8,8 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { runCoachAlerts } from '../_shared/coach-alerts.ts';
+import { loadPropContexts } from '../_shared/prop-context.ts';
 import {
   HISTORY_DAYS, MAX_BODY_BYTES, POLL_SECRET_RE, bearerToken, buildSyncRows, formatCode, parseAccount, roundOffset,
   sha256Hex,
@@ -151,6 +153,13 @@ async function sync(req: Request, body: any) {
     last_error: null,
     cursor_server_ts: cursor || null,
   }).eq('id', account.id).eq('journal_id', journal.id);
+
+  // live coach alerts on what just arrived (never fails the sync; nothing for a history backfill)
+  if (inserted > 0) {
+    await runCoachAlerts(admin, account.user_id, journal.id, {
+      propContextFor: async (j: string) => (await loadPropContexts(admin, account.user_id, j))[0] || null,
+    });
+  }
 
   if (built.rejected.length) {
     console.warn(`mt5 sync ${account.id}: ${built.rejected.length} pozisyon atlandı, ilk neden: ${built.rejected[0].reason}`);

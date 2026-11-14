@@ -11,6 +11,8 @@
 //                     (the panel clears it). Checks before the first byte (auth, limit, input) still answer JSON.
 //   visuals: { "<directive id>": chart data } for the [[viz:...]] lines of the reply, built from the app's numbers
 //   (_shared/visuals.ts), never from the model.
+//   POST { action: "alerts", journalId, tz? } -> { ok, alerts }: live coach checks after a manual trade (_shared/coach-alerts.ts),
+//   written to public.notifications like after a sync; saves the member's zone in coach_settings. No Gemini call.
 //   POST { action: "snapshot", journalId?, tz? } -> { ok, snapshot: { month, overall, insights } } for the panel's opening
 //   screen: numbers and rule-based findings (_shared/insights.ts). No Gemini call, no message counted.
 // Security:
@@ -29,7 +31,9 @@ import { COACH_KNOWLEDGE, answerLength, answerLengthRule, type AnswerLength } fr
 import { resolveVisuals } from '../_shared/visuals.ts';
 import { createStepBuilder, takeSseEvents } from '../_shared/gemini-stream.ts';
 import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
-import { propContext } from '../_shared/prop-context.ts';
+import { loadPropContexts } from '../_shared/prop-context.ts';
+import { readPaged } from '../_shared/paged.ts';
+import { runCoachAlerts } from '../_shared/coach-alerts.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -55,23 +59,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LANGS: Record<string, string> = { tr: 'Turkish', en: 'English', de: 'German' };
 
 const TRADE_COLS = 'id, journal_id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source, commission, swap, gross_pnl';
-const PAGE = 1000;                                 // PostgREST returns at most 1000 rows per request: read in pages
-const MAX_PROP_TRADES = 5000;
 const MAX_BT_TRADES = 5000;
 const BT_ACCOUNT_COLS = 'id, name, symbol, timeframe, starting_balance, journal_id, data_source, is_active, replay_time, section_no, created_at, updated_at';
 const BT_TRADE_COLS = 'id, backtest_account_id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, initial_stop_loss, initial_take_profit, entry_time, exit_time, pnl, commission, gross_pnl, exit_reason, exit_ambiguous, section_no';
-
-// newest first, in pages, up to `max` rows; null on a read error
-async function readPaged(build: (from: number, to: number) => any, max: number): Promise<any[] | null> {
-  const out: any[] = [];
-  for (let from = 0; from < max; from += PAGE) {
-    const { data, error } = await build(from, Math.min(from + PAGE, max) - 1);
-    if (error) return null;
-    out.push(...(data || []));
-    if (!data || data.length < PAGE) break;
-  }
-  return out;
-}
 
 // Everything the coach knows about the member: trade summary (+ prop challenge state) and the raw trades for the charts.
 // journalId null = all journals. null on a read error.
@@ -82,16 +72,13 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
   }, MAX_TRADES);
   let sq = admin.from('strategies').select('id, name, description').eq('user_id', userId);
   if (journalId) sq = sq.or(`journal_id.eq.${journalId},journal_id.is.null`);
-  let pq = admin.from('prop_accounts').select('id, journal_id, template_key, rules, starting_balance, start_date, phase_index, reset_tz, time_shift_hours')
-    .eq('user_id', userId).eq('is_active', true).limit(10);
-  if (journalId) pq = pq.eq('journal_id', journalId);
   // backtest accounts are not tied to a journal scope: the coach sees all of the member's accounts
   const baq = admin.from('backtest_accounts').select(BT_ACCOUNT_COLS).eq('user_id', userId).limit(50);
   const btP = readPaged((a, b) => admin.from('backtest_account_trades').select(BT_TRADE_COLS).eq('user_id', userId)
     .order('entry_time', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_BT_TRADES);
   const jq = admin.from('journals').select('id, name').eq('user_id', userId);
-  const [trades, { data: strategies, error: se }, { data: props, error: pe }, { data: btAccounts, error: bae }, btTrades, { data: js }] =
-    await Promise.all([tradesP, sq, pq, baq, btP, jq]);
+  const [trades, { data: strategies, error: se }, { data: btAccounts, error: bae }, btTrades, { data: js }] =
+    await Promise.all([tradesP, sq, baq, btP, jq]);
   if (!trades || se) return null;
   const summary = summarizeTrades(trades, strategies || [], { tz, ...(recent != null ? { recent } : {}) });
   const names = new Map<string, string>((js || []).map((j: any) => [j.id, j.name]));
@@ -111,20 +98,10 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
   }
 
   // prop challenges: a prop context failing to load leaves the rest of the answer intact
-  if (!pe && props && props.length) {
-    try {
-      const list = await Promise.all(props.map(async (p: any) => {
-        // the journal's trades with the columns the prop card uses: the calculator keeps the phase's own, the pass
-        // probability uses all of them as the trader's results
-        const rows = await readPaged((a, b) => admin.from('trades').select('id, trade_date, pnl, exit_price, platform_source')
-          .eq('user_id', userId).eq('journal_id', p.journal_id)
-          .order('trade_date', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_PROP_TRADES);
-        return rows ? propContext(p, names.get(p.journal_id) || null, rows) : null;
-      }));
-      const ok = list.filter(Boolean);
-      if (ok.length) summary.prop_accounts = ok;
-    } catch (_) { console.error('ai-coach: prop context failed'); }
-  }
+  try {
+    const props = await loadPropContexts(admin, userId, journalId, names);
+    if (props.length) summary.prop_accounts = props;
+  } catch (_) { console.error('ai-coach: prop context failed'); }
   return { summary, trades };
 }
 
@@ -262,6 +239,23 @@ serve(async (req: Request) => {
     const p = new Intl.DateTimeFormat('en-CA', { timeZone: tzs, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
     const nowMonth = `${p.find((x) => x.type === 'year')?.value}-${p.find((x) => x.type === 'month')?.value}`;
     return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+  }
+  if (body?.action === 'alerts') {
+    // after a manual trade: the same live checks the sync functions run; also remembers the member's zone for them
+    const jid = typeof body?.journalId === 'string' ? body.journalId : '';
+    if (!UUID.test(jid)) return fail('BAD_REQUEST', 'Invalid journal.', 400, cors);
+    const tzs = safeTimeZone(body?.tz);
+    const adm = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { data: own } = await adm.from('journals').select('id').eq('id', jid).eq('user_id', user.id).maybeSingle();
+    if (!own) return fail('NOT_FOUND', 'Journal not found.', 404, cors);
+    if (tzs !== 'UTC' || body?.tz === 'UTC') {
+      const { error: tze } = await adm.from('coach_settings').upsert({ user_id: user.id, time_zone: tzs }, { onConflict: 'user_id' });
+      if (tze) console.error('ai-coach: time zone not saved:', String(tze.code || '-'));
+    }
+    const alerts = await runCoachAlerts(adm, user.id, jid, {
+      tz: tzs, propContextFor: async (j: string) => (await loadPropContexts(adm, user.id, j))[0] || null,
+    });
+    return jsonRes({ ok: true, alerts: alerts.map((a) => ({ kind: a.kind, key: a.key, level: a.level, params: a.params })) }, 200, { ...cors, 'Cache-Control': 'no-store' });
   }
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   if (!message || message.length > MAX_MESSAGE) return fail('BAD_REQUEST', 'Message must be 1-' + MAX_MESSAGE + ' characters.', 400, cors);

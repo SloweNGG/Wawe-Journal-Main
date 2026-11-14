@@ -624,6 +624,12 @@ window.loadNotifications = async function() {
               filter: 'user_id=eq.' + user.id
             }, function(payload) {
               console.log('🔔 [loadNotifications Realtime] Veritabanından bildirim değişikliği:', payload);
+              // a new live coach alert: the coach panel shows it (toast, optional desktop notification)
+              try {
+                if (payload && payload.eventType === 'INSERT' && payload.new && /^coach\.alert\./.test(payload.new.title_key || '')) {
+                  window.dispatchEvent(new CustomEvent('ww:coach-alert', { detail: payload.new }));
+                }
+              } catch (evErr) { /* ignore */ }
               if (typeof window.loadNotifications === 'function') {
                 window.loadNotifications();
               }

@@ -3,6 +3,8 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { runCoachAlerts } from '../_shared/coach-alerts.ts';
+import { loadPropContexts } from '../_shared/prop-context.ts';
 import {
   ACCESS_LOST_MESSAGE, getAccessToken, isAccountAccessLost, supabaseTokenStore, syncErrorMessage,
 } from '../_shared/ctrader.ts';
@@ -706,6 +708,13 @@ serve(async (req: Request) => {
       // 2121 cevabında bakiye yoktu ya da istek başarısız oldu
       console.warn('cTrader bakiye bilgisi alınamadı (traderInfoOk=' + traderInfoOk + ') — ' + traderDiag);
       warnings.push('cTrader bakiye bilgisini döndürmedi; bakiye güncellenemedi.');
+    }
+
+    // live coach alerts on what just arrived (never fails the sync; nothing for a history backfill)
+    if (insertedCount > 0) {
+      await runCoachAlerts(admin, user.id, targetJournalId, {
+        propContextFor: async (j: string) => (await loadPropContexts(admin, user.id, j))[0] || null,
+      });
     }
 
     return jsonRes({

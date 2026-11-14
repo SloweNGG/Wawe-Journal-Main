@@ -5,6 +5,7 @@
 // the numbers the member sees on the card. Pure (Node tests).
 import './prop-calculator.js';
 import './prop-montecarlo.js';
+import { readPaged } from './paged.ts';
 
 const PC = (globalThis as any).PropCalculator as { calculatePropStatus: (p: Record<string, unknown>) => any };
 const MC = (globalThis as any).PropMonteCarlo as { simulate: (p: Record<string, unknown>) => any };
@@ -29,7 +30,7 @@ export function propContext(acc: PropAccountRow, journalName: string | null, row
   try { st = PC.calculatePropStatus({ account: acc, trades, ...(opts.currentDate ? { currentDate: opts.currentDate } : {}) }); } catch (_) { return null; }
   if (!st) return null;
   const rules = acc.rules || {};
-  const base = { journal: journalName || null, firm_template: acc.template_key || null, phase: rules.phase_name || null };
+  const base = { account_id: acc.id, journal: journalName || null, firm_template: acc.template_key || null, phase: rules.phase_name || null };
   if (st.overall_status === 'invalid_rules') return { ...base, status: 'invalid_rules' };
 
   // the phase's own trades (from the start date, prop-day rules) give the typical loss: how many of them the limits still allow
@@ -74,4 +75,29 @@ export function passProbability(acc: PropAccountRow, status: any, trades: { trad
     by_risk: m.by_risk.map((x: any) => ({ risk_scale: x.risk_scale, pass_pct: x.pass_pct, fail_pct: x.fail_pct })),
     best_risk_scale: m.best_risk_scale,
   };
+}
+
+const PROP_COLS = 'id, journal_id, template_key, rules, starting_balance, start_date, phase_index, reset_tz, time_shift_hours';
+const MAX_PROP_TRADES = 5000;
+
+// I/O: the active prop challenges of a member (one journal, or all when journalId is null), evaluated. A read error
+// gives [] (callers treat prop data as optional). names: journal id -> name (read here when not given).
+export async function loadPropContexts(admin: any, userId: string, journalId: string | null, names?: Map<string, string>): Promise<any[]> {
+  let pq = admin.from('prop_accounts').select(PROP_COLS).eq('user_id', userId).eq('is_active', true).limit(10);
+  if (journalId) pq = pq.eq('journal_id', journalId);
+  const { data: props, error } = await pq;
+  if (error || !props || !props.length) return [];
+  if (!names) {
+    const { data: js } = await admin.from('journals').select('id, name').eq('user_id', userId).in('id', props.map((p: any) => p.journal_id));
+    names = new Map((js || []).map((j: any) => [j.id, j.name]));
+  }
+  const list = await Promise.all(props.map(async (p: any) => {
+    // the journal's trades with the columns the prop card uses: the calculator keeps the phase's own, the pass
+    // probability uses all of them as the trader's results
+    const rows = await readPaged((a, b) => admin.from('trades').select('id, trade_date, pnl, exit_price, platform_source')
+      .eq('user_id', userId).eq('journal_id', p.journal_id)
+      .order('trade_date', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_PROP_TRADES);
+    return rows ? propContext(p, names!.get(p.journal_id) || null, rows) : null;
+  }));
+  return list.filter(Boolean);
 }

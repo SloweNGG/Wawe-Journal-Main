@@ -38,7 +38,7 @@
     ['aiCoach.prompt.psychology', 'İşlemlerimde psikolojik zayıf noktalar görüyor musun? (intikam işlemi, aşırı işlem, stop kullanmama)', 'aiCoach.chip.psychology', 'Psikoloji', 'brain']
   ];
   var COACH_NAME = 'Anna';                                              // the coach's name, the same in every language
-  var WIDE_KEY = 'ww_ai_coach_wide', DETAIL_KEY = 'ww_ai_coach_detail', JOURNAL_KEY = 'ww_ai_coach_journal';
+  var WIDE_KEY = 'ww_ai_coach_wide', DETAIL_KEY = 'ww_ai_coach_detail', JOURNAL_KEY = 'ww_ai_coach_journal', DESKTOP_KEY = 'ww_ai_coach_desktop';
   function pref(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function setPref(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
   function detail() { var v = pref(DETAIL_KEY, 'normal'); return v === 'short' || v === 'detailed' ? v : 'normal'; }
@@ -175,6 +175,8 @@
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === 'k') { e.preventDefault(); setOpen(!S.open); }
     });
     try { if (global.i18n && typeof global.i18n.onChange === 'function') global.i18n.onChange(texts); } catch (e) { /* ignore */ }
+    global.addEventListener('ww:coach-alert', function (e) { if (e && e.detail) showAlert(e.detail); });
+    global.addEventListener('trade-saved', onTradeSaved);
     texts();
     var st = load();
     if (st.conversationId) S.conversationId = st.conversationId;
@@ -223,6 +225,7 @@
       if (S.conversationId && !S.messages.length) openConversation(S.conversationId);
       else renderMessages();
       loadUsage();
+      loadPrefs();
       setTimeout(function () { R.input.focus(); }, 30);
     }
   }
@@ -238,6 +241,8 @@
       var sel = R.settings.querySelector('[data-act="detail"][aria-checked="true"]'); if (sel) sel.focus();
     }
     else if (act === 'delete-all') deleteAll();
+    else if (act === 'alerts') setAlerts(b.getAttribute('aria-checked') !== 'true');
+    else if (act === 'desktop') setDesktop(b.getAttribute('aria-checked') !== 'true');
     else if (act === 'settings') { if (S.view === 'settings') showChat(); else showSettings(); }
     else if (act === 'back') showChat();
     else if (act === 'pick') R.file.click();
@@ -315,6 +320,81 @@
     var s = D.on ? _t('aiCoach.dictate_stop', 'Dikteyi durdur') : _t('aiCoach.dictate', 'Sesle yaz');
     R.mic.title = s; R.mic.setAttribute('aria-label', s);
     R.input.placeholder = D.on ? _t('aiCoach.listening', 'Dinliyorum… konuşabilirsin') : _t('aiCoach.placeholder', 'Bir soru sor ya da grafik ekle…');
+  }
+
+  // ---------------------------------------------------------------- live alerts (_shared/coach-alerts.ts on the server)
+  // The server writes alerts to public.notifications after a sync, or after action "alerts" (a manual trade, below); the
+  // navbar's realtime listener passes each new one here (event ww:coach-alert): a toast, plus a desktop notification when
+  // the member turned it on and the tab is in the background. S.prefs: the member's coach_settings row (null = not loaded,
+  // {} = no row yet: alerts on).
+  function loadPrefs() {
+    if (!global.sb || S.prefsLoading) return;
+    S.prefsLoading = true;
+    session().then(function (s) {
+      if (!s || !s.user) return null;
+      return global.sb.from('coach_settings').select('alerts_enabled, time_zone').eq('user_id', s.user.id).maybeSingle().then(function (r) {
+        if (r && r.error) { S.prefs = S.prefs || {}; return; }          // table missing (before the migration): defaults
+        S.prefs = (r && r.data) || {};
+        // the alerts raised by the sync functions use this zone for "today"
+        if (S.prefs.time_zone !== tz()) global.sb.from('coach_settings').upsert({ user_id: s.user.id, time_zone: tz() }, { onConflict: 'user_id' }).then(function () {}, function () {});
+      });
+    }).then(function () { S.prefsLoading = false; if (S.view === 'settings') renderSettings(); }, function () { S.prefsLoading = false; });
+  }
+  function setAlerts(on) {
+    var prev = S.prefs ? S.prefs.alerts_enabled : undefined;
+    S.prefs = Object.assign({}, S.prefs || {}, { alerts_enabled: on }); renderSettings();
+    session().then(function (s) {
+      if (!s || !s.user) throw new Error('session');
+      return global.sb.from('coach_settings').upsert({ user_id: s.user.id, alerts_enabled: on, time_zone: tz() }, { onConflict: 'user_id' });
+    }).then(function (r) { if (r && r.error) throw r.error; }).catch(function () {
+      S.prefs.alerts_enabled = prev; renderSettings();
+      toast(_t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error');
+    });
+  }
+  function setDesktop(on) {
+    if (!on) { setPref(DESKTOP_KEY, '0'); renderSettings(); return; }
+    var N = global.Notification;
+    Promise.resolve(N.permission === 'granted' ? 'granted' : N.requestPermission()).then(function (p) {
+      setPref(DESKTOP_KEY, p === 'granted' ? '1' : '0'); renderSettings();
+      if (p === 'granted') try { new N(_t('aiCoach.set.desktop_test', 'Anna bildirimleri açık'), { body: _t('aiCoach.set.desktop_test_body', 'Önemli bir durum olduğunda seni buradan uyaracağım.'), tag: 'ww-coach-test' }); } catch (e) { /* ignore */ }
+    }, function () { renderSettings(); });
+  }
+  // one alert (a notifications row): shown once per key in this tab
+  function showAlert(n) {
+    var meta = (n && n.meta_data) || {}, k = meta.alert_key || n.id;
+    S.shownAlerts = S.shownAlerts || {};
+    if (!k || S.shownAlerts[k]) return;
+    S.shownAlerts[k] = 1;
+    var title = _t(n.title_key, 'Anna', meta), body = _t(n.message_key, '', meta);
+    toast(title + (body ? ': ' + body.replace(/^Anna:\s*/, '') : ''), n.type === 'error' ? 'error' : 'warning');
+    var N = global.Notification;
+    if (N && N.permission === 'granted' && pref(DESKTOP_KEY, '0') === '1' && document.hidden) {
+      try {
+        var dn = new N(title, { body: body, tag: 'ww-coach-' + k });
+        dn.onclick = function () { try { global.focus(); } catch (e) { /* ignore */ } if (S.mounted) setOpen(true); dn.close(); };
+      } catch (e) { /* ignore */ }
+    }
+  }
+  // after a manual trade: ask the server for the same checks a sync runs (debounced; backtest copies do not count)
+  function onTradeSaved(e) {
+    if (e && e.detail && e.detail.source === 'backtest') return;
+    clearTimeout(S.alertTimer);
+    S.alertTimer = setTimeout(checkAlerts, 3000);
+  }
+  function checkAlerts() {
+    var jid = '';
+    try { jid = (global.journal && global.journal.getActiveJournalId && global.journal.getActiveJournalId()) || ''; } catch (e) { /* none */ }
+    if (!jid || (S.prefs && S.prefs.alerts_enabled === false)) return;
+    session().then(function (s) {
+      if (!s) return null;
+      return fetch(endpoint() + '/functions/v1/ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() },
+        body: JSON.stringify({ action: 'alerts', journalId: jid, tz: tz() }) }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      // the realtime listener shows them too; showAlert keeps one per key
+      (j && j.ok && j.alerts || []).forEach(function (a) {
+        showAlert({ type: a.level, title_key: 'coach.alert.' + a.kind + '.title', message_key: 'coach.alert.' + a.kind + '.msg', meta_data: Object.assign({ alert_key: a.key }, a.params) });
+      });
+    }, function () { /* quiet: alerts are best effort */ });
   }
 
   // ---------------------------------------------------------------- chat
@@ -864,11 +944,24 @@
     }
     h += '</div>';
 
+    // live alerts (server: coach_settings.alerts_enabled; desktop notifications: this browser only)
+    var al = !S.prefs || S.prefs.alerts_enabled !== false;
+    h += '<div class="wwai-group">';
+    h += row(_t('aiCoach.set.alerts', 'Canlı uyarılar'), _t('aiCoach.set.alerts_hint', 'Yeni işlemlerinden sonra seri kayıp, kayıptan sonra lot büyütme, prop limitlerine yaklaşma gibi durumlarda seni uyarırım.'),
+      '<button type="button" class="wwai-switch" role="switch" data-act="alerts" aria-checked="' + (al ? 'true' : 'false') + '" aria-label="' + esc(_t('aiCoach.set.alerts', 'Canlı uyarılar')) + '"' + (S.prefs === null ? ' disabled' : '') + '><span></span></button>');
+    if ('Notification' in global) {
+      var perm = global.Notification.permission, dk = al && perm === 'granted' && pref(DESKTOP_KEY, '0') === '1';
+      h += row(_t('aiCoach.set.desktop', 'Masaüstü bildirimi'), perm === 'denied' ? _t('aiCoach.set.desktop_denied', 'Bildirimler bu tarayıcıda engellenmiş; site ayarlarından izin verebilirsin.')
+        : _t('aiCoach.set.desktop_hint', 'Sekme arka plandayken de uyarıları bildirim olarak gösterir.'),
+        '<button type="button" class="wwai-switch" role="switch" data-act="desktop" aria-checked="' + (dk ? 'true' : 'false') + '" aria-label="' + esc(_t('aiCoach.set.desktop', 'Masaüstü bildirimi')) + '"' + (!al || perm === 'denied' ? ' disabled' : '') + '><span></span></button>');
+    }
+    h += '</div>';
+
     // data
     h += '<div class="wwai-group">';
     h += row(_t('aiCoach.set.privacy', 'Veri ve gizlilik'),
       _t('aiCoach.set.privacy_text', 'Soruların ve defterinin özeti cevap üretmek için Google Gemini\'ye gönderilir; Google bu verileri hizmetlerini geliştirmek için kullanabilir. Grafik görselleri saklanmaz.'),
-      '<a class="wwai-link" href="/privacy" target="_blank" rel="noopener">' + esc(_t('aiCoach.set.privacy_link', 'Gizlilik politikası')) + ' →</a>', 'is-stack');
+      '<a class="wwai-link" href="/privacy#ai-coach" target="_blank" rel="noopener">' + esc(_t('aiCoach.set.privacy_link', 'Gizlilik politikası')) + ' →</a>', 'is-stack');
     h += row(_t('aiCoach.set.delete_all', 'Tüm sohbetleri sil'), _t('aiCoach.set.delete_all_hint', 'Geçmiş sohbetlerin kalıcı olarak silinir.'),
       '<button type="button" class="wwai-danger" data-act="delete-all">' + esc(_t('aiCoach.set.delete', 'Sil')) + '</button>');
     h += '</div>';
