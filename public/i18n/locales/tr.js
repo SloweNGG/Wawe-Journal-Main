@@ -1847,6 +1847,9 @@ export default {
   "prop.v2_max_loss": "Toplam zarar",
   "prop.v2_left": "Kalan",
   "prop.v2_to_stop": "Stop'a",
+  "prop.v2_odds": "Geçme olasılığı",
+  "prop.v2_odds_better": "İşlem başına riski {cut} azaltırsan: {better}",
+  "prop.v2_odds_tip": "Challenge'ın kalanı kendi işlemlerinle {runs} kez simüle edildi. Bir tahmindir, garanti değildir.",
   "prop.max_loss_distance": "Max Loss Mesafesi",
   "prop.stop_level": "Stop",
   "prop.total_pnl": "Toplam K/Z",
@@ -2834,4 +2837,8 @@ export default {
   "aiCoach.insight_q.form_up": "Son dönemde neyi doğru yapıyorum, nasıl sürdürürüm?",
   "aiCoach.insight.bt_no_edge": "{name} backtest hesabın zararda ({net}, {trades} işlem).",
   "aiCoach.insight_q.bt_no_edge": "{name} backtest hesabımı analiz et: sistemim canlıya hazır mı, neyi değiştirmeliyim?",
+  "aiCoach.insight.prop_odds_risk": "{journal}: geçme olasılığın %{pass}. İşlem başına riski %{cut} azaltırsan %{better}.",
+  "aiCoach.insight_q.prop_odds_risk": "{journal} hesabımda riskimi nasıl ayarlarsam challenge'ı geçme şansım artar?",
+  "aiCoach.insight.prop_odds": "{journal}: mevcut sonuçlarınla challenge'ı geçme olasılığın yaklaşık %{pass}.",
+  "aiCoach.insight_q.prop_odds": "{journal} challenge'ını geçme olasılığımı nasıl artırırım?",
 };

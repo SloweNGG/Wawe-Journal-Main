@@ -704,7 +704,7 @@
     Object.keys(q).forEach(function (key) { p[key] = q[key]; });
     ['net'].forEach(function (key) { if (key in q) p[key] = money(Number(q[key]), true); });
     ['room', 'remaining', 'total'].forEach(function (key) { if (key in q) p[key] = money(Number(q[key])); });
-    ['win_rate', 'base', 'first', 'pct', 'live', 'backtest', 'before', 'capture'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { maximumFractionDigits: 1 }); });
+    ['win_rate', 'base', 'first', 'pct', 'live', 'backtest', 'before', 'capture', 'pass', 'better', 'cut'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { maximumFractionDigits: 1 }); });
     ['after_loss', 'after_win', 'avg_r'].forEach(function (key) { if (key in q) p[key] = nf(Number(q[key]), { minimumFractionDigits: 1, maximumFractionDigits: 2 }); });
     if ('day' in q && q.day in DAYS) { try { p.day = new Intl.DateTimeFormat(lang(), { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + DAYS[q.day]))); } catch (e) { /* key */ } }
     if ('session' in q) p.session = vt('session', q.session);
@@ -734,6 +734,8 @@
     costs_high: ['Komisyon ve swap brüt kârının %{pct} kadarını götürüyor ({total}).', 'İşlem maliyetlerim sonucumu nasıl etkiliyor, nasıl azaltırım?'],
     backtest_gap: ['{name}: backtest\'te kazanma oranın %{backtest}, canlıda %{live}.', '{name} backtest\'te çalışıyor ama canlıda neden çalışmıyor?'],
     form_down: ['Son 20 işlemde kazanma oranın %{win_rate}, öncesinde %{before}.', 'Son işlemlerim neden kötü gidiyor? Ne değişti?'],
+    prop_odds_risk: ['{journal}: geçme olasılığın %{pass}. İşlem başına riski %{cut} azaltırsan %{better}.', '{journal} hesabımda riskimi nasıl ayarlarsam challenge\'ı geçme şansım artar?'],
+    prop_odds: ['{journal}: mevcut sonuçlarınla challenge\'ı geçme olasılığın yaklaşık %{pass}.', '{journal} challenge\'ını geçme olasılığımı nasıl artırırım?'],
     bt_no_edge: ['{name} backtest hesabın zararda ({net}, {trades} işlem).', '{name} backtest hesabımı analiz et: sistemim canlıya hazır mı, neyi değiştirmeliyim?'],
     form_up: ['Gelişiyorsun: son 20 işlemde kazanma oranın %{win_rate}, öncesinde %{before}.', 'Son dönemde neyi doğru yapıyorum, nasıl sürdürürüm?']
   };

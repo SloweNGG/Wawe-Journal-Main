@@ -1902,6 +1902,9 @@ export default {
   "prop.v2_max_loss": "Total loss",
   "prop.v2_left": "Left",
   "prop.v2_to_stop": "To stop",
+  "prop.v2_odds": "Chance to pass",
+  "prop.v2_odds_better": "With {cut} less risk per trade: {better}",
+  "prop.v2_odds_tip": "The rest of the challenge simulated {runs} times with your own trades. An estimate, not a promise.",
   "prop.max_loss_distance": "Max Loss Distance",
   "prop.stop_level": "Stop",
   "prop.total_pnl": "Total P&L",
@@ -2889,4 +2892,8 @@ export default {
   "aiCoach.insight_q.form_up": "What am I doing right lately and how do I keep it up?",
   "aiCoach.insight.bt_no_edge": "Your {name} backtest account is losing ({net}, {trades} trades).",
   "aiCoach.insight_q.bt_no_edge": "Analyse my {name} backtest account: is my system ready for live, what should I change?",
+  "aiCoach.insight.prop_odds_risk": "{journal}: {pass}% chance to pass. With {cut}% less risk per trade: {better}%.",
+  "aiCoach.insight_q.prop_odds_risk": "How should I set my risk on {journal} to raise my chance of passing?",
+  "aiCoach.insight.prop_odds": "{journal}: about {pass}% chance to pass the challenge with your current results.",
+  "aiCoach.insight_q.prop_odds": "How can I raise my chance of passing the {journal} challenge?",
 };

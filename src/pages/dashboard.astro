@@ -762,6 +762,16 @@ import Layout from '../layouts/Layout.astro';
             </div>
           `;
 
+          // chance to pass the rest of the challenge with the trader's own results (prop-montecarlo.js, same engine as the AI coach)
+          function propOdds(acc, stt, trades) {
+            try {
+              if (!window.PropMonteCarlo || !trades || stt.overall_status !== 'in_progress') return null;
+              var m = window.PropMonteCarlo.simulate({ account: acc, status: stt, trades: trades, runs: 1000 });
+              if (!m || m.kind !== 'challenge') return null;
+              var b = m.best_risk_scale < 1 ? m.by_risk.filter(function (x) { return x.risk_scale === m.best_risk_scale; })[0] : null;
+              return { pass: m.pass_pct, runs: m.runs, better: b ? b.pass_pct : null, cut: b ? Math.round((1 - b.risk_scale) * 100) : null };
+            } catch (e) { return null; }
+          }
           var cardCtx = {
             t: function (k, p) { return t(k, p); },
             esc: escapeHtml,
@@ -786,7 +796,8 @@ import Layout from '../layouts/Layout.astro';
             dayCount: dayCount, dayMin: dayMin,
             totalPnl: totalPnl, totalTrades: totalTrades, wrPct: wrPct,
             tradesLabel: t('journal.trades_label'),
-            scopeNote: tradeScope !== 'live' ? t('prop.scope_live_only') : ''
+            scopeNote: tradeScope !== 'live' ? t('prop.scope_live_only') : '',
+            odds: propOdds(account, status, syncRes.trades)
           };
           propCardEl.innerHTML = window.WWPropCardV2 ? window.WWPropCardV2.render(cardCtx) : legacyHtml;
 

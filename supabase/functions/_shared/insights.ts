@@ -34,6 +34,15 @@ export function pickInsights(s: any, max = 3): Insight[] {
     }
   }
 
+  // pass probability of each running challenge: with a smaller risk per trade when that clearly passes more often
+  for (const p of (s.prop_accounts || []) as any[]) {
+    const pp = p && p.status === 'in_progress' ? p.pass_probability : null;
+    if (!pp || pp.kind !== 'challenge') continue;
+    const better = pp.best_risk_scale < 1 ? (pp.by_risk || []).find((x: any) => x.risk_scale === pp.best_risk_scale) : null;
+    if (better) out.push({ id: 'prop_odds_risk', severity: 92, params: { journal: p.journal || '—', pass: Math.round(pp.pass_pct), better: Math.round(better.pass_pct), cut: Math.round((1 - pp.best_risk_scale) * 100) } });
+    else out.push({ id: 'prop_odds', severity: pp.pass_pct < 30 ? 82 : 50, params: { journal: p.journal || '—', pass: Math.round(pp.pass_pct) } });
+  }
+
   // position size grows after losses: the money version of revenge trading
   const ps = s.position_sizing;
   if (ps && ps.avg_size_after_loss != null && ps.avg_size_after_win && ps.trades_after_loss >= MIN && ps.avg_size_after_loss >= 1.25 * ps.avg_size_after_win) {

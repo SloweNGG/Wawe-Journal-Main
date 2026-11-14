@@ -4,8 +4,10 @@
 // equal) on the same input the prop card uses (live, closed trades of the journal: id, trade_date, pnl). So the coach quotes
 // the numbers the member sees on the card. Pure (Node tests).
 import './prop-calculator.js';
+import './prop-montecarlo.js';
 
 const PC = (globalThis as any).PropCalculator as { calculatePropStatus: (p: Record<string, unknown>) => any };
+const MC = (globalThis as any).PropMonteCarlo as { simulate: (p: Record<string, unknown>) => any };
 
 export interface PropAccountRow {
   id: string; journal_id: string; template_key?: string | null; rules?: Record<string, any> | null;
@@ -17,7 +19,9 @@ export interface PropTradeRow { id?: string; trade_date: string; pnl?: number | 
 const r2 = (v: number) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
 
 // -> the coach's view of one prop account, or null when it cannot be evaluated
-export function propContext(acc: PropAccountRow, journalName: string | null, rows: PropTradeRow[], opts: { currentDate?: string } = {}) {
+// rows: the journal's trades (all of them: the calculator keeps the phase's own, the pass-probability simulation uses the
+// whole history as the trader's result distribution)
+export function propContext(acc: PropAccountRow, journalName: string | null, rows: PropTradeRow[], opts: { currentDate?: string; runs?: number } = {}) {
   // same input as prop-service.js syncPropAccountStatus: live rows only, closed only (exit price set), stored pnl
   const trades = (rows || []).filter((t) => t && t.platform_source !== 'backtest' && t.exit_price !== null && t.exit_price !== undefined && t.exit_price !== '')
     .map((t) => ({ id: t.id, trade_date: t.trade_date, pnl: Number(t.pnl) || 0 }));
@@ -52,5 +56,22 @@ export function propContext(acc: PropAccountRow, journalName: string | null, row
     // how many typical losses fit before a rule breaks (null when the phase has fewer than 3 losses)
     avg_losses_until_daily_limit: fit(Number(dl.remaining_margin)),
     avg_losses_until_max_loss: fit(Number(ml.distance_to_stop)),
+    pass_probability: passProbability(acc, st, trades, opts.runs),
+  };
+}
+
+// Monte Carlo of the rest of the challenge with the trader's own results (prop-montecarlo.js), compact for the model
+export function passProbability(acc: PropAccountRow, status: any, trades: { trade_date: string; pnl: number }[], runs?: number) {
+  let m: any;
+  try { m = MC.simulate({ account: acc, status, trades, ...(runs ? { runs } : {}) }); } catch (_) { return null; }
+  if (!m || m.kind === 'failed' || m.kind === 'passed') return null;
+  if (m.kind === 'not_enough_trades') return { kind: m.kind, trades: m.trades, needed: m.needed };
+  return {
+    kind: m.kind, runs: m.runs, horizon_days: m.horizon_days, sample_trades: m.sample_trades,
+    pass_pct: m.pass_pct, fail_pct: m.fail_pct, still_open_pct: m.open_pct,
+    fail_by: { daily_loss: m.fail_daily_pct, max_loss: m.fail_max_pct, time_limit: m.fail_time_pct },
+    median_days_to_pass: m.median_days_to_pass, avg_loss_pct_of_balance: m.avg_loss_pct_of_balance,
+    by_risk: m.by_risk.map((x: any) => ({ risk_scale: x.risk_scale, pass_pct: x.pass_pct, fail_pct: x.fail_pct })),
+    best_risk_scale: m.best_risk_scale,
   };
 }

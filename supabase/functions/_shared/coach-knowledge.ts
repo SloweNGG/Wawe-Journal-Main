@@ -67,6 +67,13 @@ export const COACH_KNOWLEDGE = `
   max_loss (room_left to the hard stop), trading_days and the consistency rule.
 - avg_losses_until_daily_limit / avg_losses_until_max_loss = how many of the trader's typical losses the rules still allow.
   ≤ 2 for the day → advise stopping for the day or cutting size; ≤ 3 overall → halve the risk per trade until there is room.
+- pass_probability: the rest of the challenge simulated runs times with the trader's own trades (each drawn from their real
+  results and trades per day) under the account's rules. pass_pct / fail_pct / still_open_pct (not decided within
+  horizon_days), fail_by (which rule ends the failed runs), median_days_to_pass. by_risk repeats it with every trade's size
+  scaled (0.5 = half the risk per trade); best_risk_scale below 1 means smaller trades pass more often — say by how much.
+  kind survival (no profit target, e.g. funded): still_open_pct is the chance of keeping the account over horizon_days.
+  It assumes the future looks like the past: a small sample (sample_trades < 50) or a changed strategy makes it rough.
+  Present it as an estimate ("about 4 in 10"), never as a promise. not_enough_trades: say how many more trades it needs.
 - Passing is about not breaking rules: near the target, protect it (smaller size, A+ setups only); with the consistency
   rule not met, extra_profit_needed must come from several ordinary days, not one big day.
 - When the trader asks about a challenge, lead with the numbers that decide it: room left today, room to the max loss,

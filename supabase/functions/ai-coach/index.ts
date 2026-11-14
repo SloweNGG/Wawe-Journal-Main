@@ -114,10 +114,10 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
   if (!pe && props && props.length) {
     try {
       const list = await Promise.all(props.map(async (p: any) => {
-        // the phase's trades (a day of margin for the time shift) with the columns the prop card uses
-        const since = new Date(Date.parse(String(p.start_date).slice(0, 10) + 'T00:00:00Z') - 2 * 864e5).toISOString();
+        // the journal's trades with the columns the prop card uses: the calculator keeps the phase's own, the pass
+        // probability uses all of them as the trader's results
         const rows = await readPaged((a, b) => admin.from('trades').select('id, trade_date, pnl, exit_price, platform_source')
-          .eq('user_id', userId).eq('journal_id', p.journal_id).gte('trade_date', since)
+          .eq('user_id', userId).eq('journal_id', p.journal_id)
           .order('trade_date', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_PROP_TRADES);
         return rows ? propContext(p, names.get(p.journal_id) || null, rows) : null;
       }));
