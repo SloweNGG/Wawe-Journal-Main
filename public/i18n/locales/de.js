@@ -2709,6 +2709,7 @@ export default {
   "aiCoach.dictate_network": "Diktieren funktioniert in diesem Browser nicht oder es besteht keine Internetverbindung.",
   "aiCoach.dictate_failed": "Diktieren funktioniert gerade nicht. Versuch es gleich noch einmal.",
   "aiCoach.note": "KI kann Fehler machen. Keine Anlageberatung.",
+  "aiCoach.privacy": "Wie werden meine Daten genutzt?",
   "aiCoach.drop": "Bild hier ablegen",
   "aiCoach.prompt.strategies": "Vergleiche meine Strategien. Welche sollte ich verbessern und welche aufgeben?",
   "aiCoach.prompt.month": "Analysiere meine Performance in diesem Monat und vergleiche sie mit den Vormonaten.",

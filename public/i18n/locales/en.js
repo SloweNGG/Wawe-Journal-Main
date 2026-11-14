@@ -2743,6 +2743,7 @@ export default {
   "aiCoach.dictate_network": "Dictation does not work in this browser or there is no internet connection.",
   "aiCoach.dictate_failed": "Dictation is not working right now. Try again shortly.",
   "aiCoach.note": "AI can make mistakes. Not investment advice.",
+  "aiCoach.privacy": "How is my data used?",
   "aiCoach.drop": "Drop the image here",
   "aiCoach.prompt.strategies": "Compare my strategies. Which should I improve and which should I drop?",
   "aiCoach.prompt.month": "Analyse my performance this month and compare it with previous months.",

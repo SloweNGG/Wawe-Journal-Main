@@ -2688,6 +2688,7 @@ export default {
   "aiCoach.dictate_network": "Dikte bu tarayıcıda çalışmıyor ya da internet bağlantısı yok.",
   "aiCoach.dictate_failed": "Dikte şu an çalışmıyor. Birazdan tekrar dene.",
   "aiCoach.note": "AI hata yapabilir. Yatırım tavsiyesi değildir.",
+  "aiCoach.privacy": "Verilerin nasıl kullanılır?",
   "aiCoach.drop": "Görseli buraya bırak",
   "aiCoach.prompt.strategies": "Stratejilerimi karşılaştır. Hangisini geliştirmeli, hangisini bırakmalıyım?",
   "aiCoach.prompt.month": "Bu ayki performansımı analiz et ve önceki aylarla karşılaştır.",

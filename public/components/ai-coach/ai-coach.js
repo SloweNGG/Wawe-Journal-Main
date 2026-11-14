@@ -202,7 +202,8 @@
     });
     R.input.placeholder = _t('aiCoach.placeholder', 'Bir soru sor ya da grafik ekle…');
     autosize();
-    R.panel.querySelector('.wwai-note').textContent = _t('aiCoach.note', 'AI hata yapabilir. Yatırım tavsiyesi değildir.');
+    var note = R.panel.querySelector('.wwai-note');                       // + where the data goes (privacy policy, AI coach section)
+    note.innerHTML = esc(_t('aiCoach.note', 'AI hata yapabilir. Yatırım tavsiyesi değildir.')) + ' <a href="/privacy#ai-coach" target="_blank" rel="noopener">' + esc(_t('aiCoach.privacy', 'Verilerin nasıl kullanılır?')) + '</a>';
     R.drop.textContent = _t('aiCoach.drop', 'Görseli buraya bırak');
     renderUsage();
     renderJournal();
