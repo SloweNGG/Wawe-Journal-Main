@@ -13,6 +13,8 @@
 //   (_shared/visuals.ts), never from the model.
 //   POST { action: "alerts", journalId, tz? } -> { ok, alerts }: live coach checks after a manual trade (_shared/coach-alerts.ts),
 //   written to public.notifications like after a sync; saves the member's zone in coach_settings. No Gemini call.
+//   POST { action: "goal", goal: { kind, target } | null, tz? } -> { ok, goal }: this week's goal (_shared/weekly.ts) in coach_settings.plan.goal.
+//   snapshot / alerts also write last week's review once (notification coach.weekly, _shared/weekly.ts).
 //   POST { action: "snapshot", journalId?, tz? } -> { ok, snapshot: { month, overall, insights } } for the panel's opening
 //   screen: numbers and rule-based findings (_shared/insights.ts). No Gemini call, no message counted.
 // Security:
@@ -34,7 +36,8 @@ import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
 import { loadPropContexts } from '../_shared/prop-context.ts';
 import { readPaged } from '../_shared/paged.ts';
 import { runCoachAlerts } from '../_shared/coach-alerts.ts';
-import { cleanPlan, disciplineReport } from '../_shared/discipline.ts';
+import { cleanPlan, disciplineReport, checkTrades } from '../_shared/discipline.ts';
+import { weekStart, addDays, weeklyReview, goalProgress, cleanGoal, runWeeklyReview } from '../_shared/weekly.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -64,6 +67,28 @@ const MAX_BT_TRADES = 5000;
 const BT_ACCOUNT_COLS = 'id, name, symbol, timeframe, starting_balance, journal_id, data_source, is_active, replay_time, section_no, created_at, updated_at';
 const BT_TRADE_COLS = 'id, backtest_account_id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, initial_stop_loss, initial_take_profit, entry_time, exit_time, pnl, commission, gross_pnl, exit_reason, exit_ambiguous, section_no';
 
+// share of trades in [from, to] (local days) that broke no rule of the plan; null without a plan or trades
+function planScore(rawPlan: any, trades: any[], tz: string) {
+  const plan = cleanPlan(rawPlan);
+  if (!plan) return undefined;
+  return (from: string, to: string) => {
+    const rows = checkTrades(plan, trades, tz).filter((c) => c.day >= from && c.day <= to);
+    return rows.length ? Math.round(rows.filter((c) => !c.broken.length).length / rows.length * 1000) / 10 : null;
+  };
+}
+// the weekly review covers all journals: the last 5 weeks of trades are read for it (a journal-scoped chat does not have them)
+async function weeklyOnce(admin: any, userId: string, tz: string) {
+  const { data: cs } = await admin.from('coach_settings').select('plan').eq('user_id', userId).maybeSingle();
+  const since = new Date(Date.now() - 35 * 864e5).toISOString();
+  const rows = await readPaged((a, b) => admin.from('trades').select('symbol, lot, trade_date, exit_date, pnl, exit_price, stop_loss, platform_source')
+    .eq('user_id', userId).gte('trade_date', since).order('trade_date', { ascending: false }).range(a, b), 3000);
+  if (!rows) return null;
+  const goal = cs?.plan?.goal || null;
+  const written = await runWeeklyReview(admin, userId, rows, { tz, goal, discipline: planScore(cs?.plan, rows, tz) });
+  const lastWs = addDays(weekStart(Date.now(), tz), -7);
+  return { review: written || weeklyReview(rows, tz, lastWs, goal, planScore(cs?.plan, rows, tz)), goal: goalProgress(rows, tz, goal, Date.now()) };
+}
+
 // Everything the coach knows about the member: trade summary (+ prop challenge state) and the raw trades for the charts.
 // journalId null = all journals. null on a read error.
 async function loadContext(admin: any, userId: string, journalId: string | null, tz: string, recent?: number) {
@@ -87,6 +112,10 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
   // the member's trading plan and how well the trades follow it
   const plan = disciplineReport(cleanPlan(cs?.plan), trades, tz);
   if (plan) summary.trading_plan = plan;
+  // last week's review and this week's goal (Monday-Sunday in the member's zone)
+  const goal = cs?.plan?.goal || null, now = Date.now(), lastWs = addDays(weekStart(now, tz), -7);
+  const wk = { last_week: weeklyReview(trades, tz, lastWs, goal, planScore(cs?.plan, trades, tz)), this_week_goal: goalProgress(trades, tz, goal, now) };
+  if (wk.last_week || wk.this_week_goal) summary.weekly = wk;
 
   // backtest accounts (a read error leaves the rest of the answer intact); their per-symbol comparison with the live trades
   // replaces the one built from journal mirrors, which only cover linked accounts
@@ -243,7 +272,22 @@ serve(async (req: Request) => {
     const sum = loaded.summary;
     const p = new Intl.DateTimeFormat('en-CA', { timeZone: tzs, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
     const nowMonth = `${p.find((x) => x.type === 'year')?.value}-${p.find((x) => x.type === 'month')?.value}`;
-    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+    const weekly = await weeklyOnce(adm, user.id, tzs).catch(() => null);
+    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum), weekly } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+  }
+  if (body?.action === 'goal') {
+    // the member takes (or drops: goal null) this week's goal; stored in coach_settings.plan.goal, rules kept
+    const tzs = safeTimeZone(body?.tz);
+    const g = body?.goal == null ? null : cleanGoal(body.goal, Date.now(), tzs);
+    if (body?.goal != null && !g) return fail('BAD_REQUEST', 'Invalid goal.', 400, cors);
+    const adm = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { data: cs, error: ce } = await adm.from('coach_settings').select('plan').eq('user_id', user.id).maybeSingle();
+    if (ce) return fail('SERVER', 'Could not save the goal.', 500, cors);
+    const plan = { ...((cs && cs.plan) || {}) };
+    if (g) plan.goal = g; else delete plan.goal;
+    const { error: ue } = await adm.from('coach_settings').upsert({ user_id: user.id, plan, time_zone: tzs }, { onConflict: 'user_id' });
+    if (ue) return fail('SERVER', 'Could not save the goal.', 500, cors);
+    return jsonRes({ ok: true, goal: g }, 200, { ...cors, 'Cache-Control': 'no-store' });
   }
   if (body?.action === 'alerts') {
     // after a manual trade: the same live checks the sync functions run; also remembers the member's zone for them
@@ -257,6 +301,7 @@ serve(async (req: Request) => {
       const { error: tze } = await adm.from('coach_settings').upsert({ user_id: user.id, time_zone: tzs }, { onConflict: 'user_id' });
       if (tze) console.error('ai-coach: time zone not saved:', String(tze.code || '-'));
     }
+    await weeklyOnce(adm, user.id, tzs).catch(() => null);
     const alerts = await runCoachAlerts(adm, user.id, jid, {
       tz: tzs, propContextFor: async (j: string) => (await loadPropContexts(adm, user.id, j))[0] || null,
     });

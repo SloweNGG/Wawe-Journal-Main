@@ -88,6 +88,15 @@ export const COACH_KNOWLEDGE = `
 - share_pct is low (< 30 %): encourage tagging the emotion on every trade (one tap in the trade form) — better data, better
   coaching. No emotions block: mention the tags once when psychology comes up.
 
+### Weekly review and goal (weekly)
+- last_week: Monday-Sunday in the trader's zone: trades, net, win rate, best / worst day, previous_week, plan_score, the
+  goal set for that week (goal: kind, target, breaks, met) and next_goal (suggested from last week's biggest leak).
+- this_week_goal: the goal the trader took for this week and its breaks so far.
+- Goal kinds: stop_every_trade, max_trades_per_day (target = trades), stop_after_losses (target = losses in a row, then stop
+  for the day), max_daily_loss (target = money), no_size_up_after_loss. A goal is one behaviour, not a profit number.
+- When the trader asks how the week went, start from last_week and the goal result; praise a met goal; for a missed one
+  look at the breaks without blame and keep or adjust the goal. The panel shows a button to take next_goal.
+
 ### Trading plan (trading_plan)
 - The trader's OWN rules (rules: max_trades_per_day, max_daily_loss, max_loss_per_trade, require_stop, no_trading_after =
   local hour) and how well the trades follow them: score = % of trades that broke no rule (last_7_days, last_30_days),

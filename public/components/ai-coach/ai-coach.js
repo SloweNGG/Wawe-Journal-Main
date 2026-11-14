@@ -244,6 +244,8 @@
     else if (act === 'alerts') setAlerts(b.getAttribute('aria-checked') !== 'true');
     else if (act === 'plan-stop') { b.setAttribute('aria-checked', b.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); }
     else if (act === 'plan-save') savePlan();
+    else if (act === 'goal-take') setGoal({ kind: b.getAttribute('data-kind'), target: Number(b.getAttribute('data-target')) });
+    else if (act === 'goal-drop') setGoal(null);
     else if (act === 'desktop') setDesktop(b.getAttribute('aria-checked') !== 'true');
     else if (act === 'settings') { if (S.view === 'settings') showChat(); else showSettings(); }
     else if (act === 'back') showChat();
@@ -367,6 +369,45 @@
         '<button type="button" class="wwai-upgrade" data-act="plan-save">' + esc(_t('aiCoach.plan.save', 'Planı kaydet')) + '</button></div>' +
       '</div></div>';
   }
+  var GOAL_TR = { stop_every_trade: 'Her işlemde stop kullan', max_trades_per_day: 'Günde en fazla {target} işlem', stop_after_losses: 'Art arda {target} kayıptan sonra o gün dur',
+    max_daily_loss: 'Günlük zarar {target} olunca dur', no_size_up_after_loss: 'Kayıptan sonra lot büyütme' };
+  function goalText(g) { return _t('aiCoach.goal.' + g.kind, GOAL_TR[g.kind] || g.kind, { target: g.kind === 'max_daily_loss' ? money(g.target) : g.target }); }
+  // start screen: last week in one line, the goal's result, and this week's goal (taken: progress; else a suggestion to take)
+  function weeklyCard(w) {
+    var box = el('div', 'wwai-week'), r = w.review, g = w.goal;
+    if (r) {
+      box.appendChild(el('div', 'wwai-week-head', esc(_t('aiCoach.week.last', 'Geçen hafta')) + ' <b class="' + (r.net > 0 ? 'is-pos' : r.net < 0 ? 'is-neg' : '') + '">' + esc(money(r.net, true)) + '</b>' +
+        '<span>' + esc(_t('aiCoach.viz.trades_n', '{n} işlem', { n: r.trades })) + (r.win_rate != null ? ' · ' + esc(fmt(r.win_rate, 'pct')) : '') + (r.plan_score != null ? ' · ' + esc(_t('aiCoach.week.plan', 'plan {score}', { score: fmt(r.plan_score, 'pct') })) : '') + '</span>'));
+      if (r.goal) box.appendChild(el('p', 'wwai-week-goal ' + (r.goal.met ? 'is-pos' : 'is-neg'), esc(r.goal.met
+        ? _t('aiCoach.week.goal_met', 'Hedef tuttu: {goal}', { goal: goalText(r.goal) })
+        : _t('aiCoach.week.goal_missed', 'Hedef tutmadı ({n} ihlal): {goal}', { goal: goalText(r.goal), n: r.goal.breaks }))));
+    }
+    if (g) {
+      var row = el('div', 'wwai-week-now');
+      row.appendChild(el('span', '', esc(_t('aiCoach.week.this', 'Bu haftanın hedefi')) + ': <b>' + esc(goalText(g)) + '</b> · ' + esc(g.breaks ? _t('aiCoach.week.breaks', '{n} ihlal', { n: g.breaks }) : _t('aiCoach.week.clean', 'şimdilik temiz'))));
+      row.appendChild(el('button', 'wwai-link', esc(_t('aiCoach.week.drop', 'Bırak')))).setAttribute('data-act', 'goal-drop');
+      box.appendChild(row);
+    } else if (r && r.next_goal) {
+      var sug = el('div', 'wwai-week-now');
+      sug.appendChild(el('span', '', esc(_t('aiCoach.week.suggest', 'Bu hafta için önerim')) + ': <b>' + esc(goalText(r.next_goal)) + '</b>'));
+      var take = el('button', 'wwai-upgrade', esc(_t('aiCoach.week.take', 'Hedef olarak al')));
+      take.setAttribute('data-act', 'goal-take'); take.setAttribute('data-kind', r.next_goal.kind); take.setAttribute('data-target', String(r.next_goal.target));
+      sug.appendChild(take); box.appendChild(sug);
+    }
+    return box;
+  }
+  function setGoal(goal) {
+    session().then(function (s) {
+      if (!s) throw new Error('session');
+      return fetch(endpoint() + '/functions/v1/ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() },
+        body: JSON.stringify({ action: 'goal', goal: goal, tz: tz() }) }).then(function (r) { return r.json(); });
+    }).then(function (j) {
+      if (!j || !j.ok) throw new Error('goal');
+      S.prefs = S.prefs || {}; S.prefs.plan = Object.assign({}, S.prefs.plan || {}); if (j.goal) S.prefs.plan.goal = j.goal; else delete S.prefs.plan.goal;
+      S.snap = {}; toast(j.goal ? _t('aiCoach.week.taken', 'Hedefin kaydedildi. Hafta boyunca takip edeceğim.') : _t('aiCoach.week.dropped', 'Hedef bırakıldı.'), 'success');
+      if (S.view === 'chat' && !S.messages.length) renderMessages();
+    }).catch(function () { toast(_t('aiCoach.set.save_error', 'Ayar kaydedilemedi. Birazdan tekrar dene.'), 'error'); });
+  }
   function savePlan() {
     var f = R.settings, raw = {};
     f.querySelectorAll('[data-plan]').forEach(function (x) {
@@ -380,6 +421,8 @@
     if (raw.no_trading_after != null && (raw.no_trading_after < 0 || raw.no_trading_after > 23)) delete raw.no_trading_after;
     session().then(function (s) {
       if (!s || !s.user) throw new Error('session');
+      var keep = (S.prefs && S.prefs.plan && S.prefs.plan.goal) ? { goal: S.prefs.plan.goal } : {};          // the weekly goal lives in the plan too
+      raw = Object.assign(raw, keep);
       return global.sb.from('coach_settings').upsert({ user_id: s.user.id, plan: raw, time_zone: tz() }, { onConflict: 'user_id' });
     }).then(function (r) {
       if (r && r.error) throw r.error;
@@ -891,6 +934,7 @@
     else for (var i = 0; i < 3; i++) card.appendChild(el('div', 'wwai-snap-cell wwai-skel'));
     wrap.appendChild(card);
     // personal findings
+    if (snap && snap.weekly) wrap.appendChild(weeklyCard(snap.weekly));
     if (snap && snap.insights && snap.insights.length) {
       wrap.appendChild(el('p', 'wwai-start-label', esc(_t('aiCoach.for_you', 'Senin için'))));
       var list = el('div', 'wwai-insights');
