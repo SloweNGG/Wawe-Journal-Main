@@ -34,8 +34,11 @@ const buildId = __WW_BUILD_ID__;
     width: 1px;
     height: 1px;
   }
-  /* Navbar geçiş animasyonuna girmesin, yerinde sabit dursun */
-  #navbar-container {
+  /* Navbar geçiş animasyonuna girmesin, yerinde sabit dursun.
+     İsim yalnızca geçiş sırasında verilir (Astro, startViewTransition'dan önce <html>'e data-astro-transition
+     koyar, bitince kaldırır). Kalıcı view-transition-name navbar'ı Chrome'da "backdrop root" yapıyordu:
+     navbar camının backdrop-filter'ı arkasından kayan içeriği göremiyor, yazılar navbar'ın içinden net görünüyordu. */
+  html[data-astro-transition] #navbar-container {
     view-transition-name: ww-navbar;
   }
   /* Quick-add butonu ve penceresi body'de kalıcı; kullanmayan sayfaya SPA ile geçilince gizle.
