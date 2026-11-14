@@ -79,6 +79,15 @@ export const COACH_KNOWLEDGE = `
 - When the trader asks about a challenge, lead with the numbers that decide it: room left today, room to the max loss,
   distance to the target and days left. A failed account: say which rule broke and what to do differently in the next one.
 
+### Emotions in the notes (emotions)
+- by_emotion: trades whose note carries an emotion (tags the trader picks in the trade form, like #fomo, or words like
+  "korku", "revenge"), with their win rate, net and avg R; without_emotion is the baseline. positive = calm / confident.
+- Compare each emotion with the baseline and name the costly ones in money. Fear often shows as cut winners (low avg R),
+  FOMO / revenge / impatience as late or extra entries, tiredness as rule breaks. Suggest a concrete rule tied to the
+  emotion (e.g. "#fomo = no trade; wait for the next setup").
+- share_pct is low (< 30 %): encourage tagging the emotion on every trade (one tap in the trade form) — better data, better
+  coaching. No emotions block: mention the tags once when psychology comes up.
+
 ### Trading plan (trading_plan)
 - The trader's OWN rules (rules: max_trades_per_day, max_daily_loss, max_loss_per_trade, require_stop, no_trading_after =
   local hour) and how well the trades follow them: score = % of trades that broke no rule (last_7_days, last_30_days),

@@ -836,6 +836,7 @@
     if ('day' in q && q.day in DAYS) { try { p.day = new Intl.DateTimeFormat(lang(), { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 7 + DAYS[q.day]))); } catch (e) { /* key */ } }
     if ('session' in q) p.session = vt('session', q.session);
     if ('rule' in q) p.rule = _t('aiCoach.rule.' + q.rule, RULE_TR[q.rule] || q.rule);
+    if ('emotion' in q) p.emotion = _t('notes.emotion.' + q.emotion, q.emotion);
     var T = INSIGHT_TR[ins.id] || INSIGHT_TR.general;
     return { text: _t('aiCoach.insight.' + ins.id, T[0], p), question: _t('aiCoach.insight_q.' + ins.id, T[1], p) };
   }
@@ -867,6 +868,7 @@
     bt_no_edge: ['{name} backtest hesabın zararda ({net}, {trades} işlem).', '{name} backtest hesabımı analiz et: sistemim canlıya hazır mı, neyi değiştirmeliyim?'],
     plan_discipline: ['Son 7 günde işlemlerinin %{score} kadarı planına uydu. En çok çiğnenen: {rule}.', 'Planıma neden uyamıyorum? {rule} kuralını nasıl tutarım?'],
     plan_followed: ['Son 7 günde işlemlerinin %{score} kadarı planına uydu. Harika gidiyorsun.', 'Planıma uymak sonuçlarımı nasıl etkiliyor?'],
+    emotion_cost: ['Notlarında "{emotion}" geçen {trades} işlemin toplamda zararda ({net}).', '"{emotion}" hissettiğim işlemler neden zarar ediyor? Ne yapmalıyım?'],
     form_up: ['Gelişiyorsun: son 20 işlemde kazanma oranın %{win_rate}, öncesinde %{before}.', 'Son dönemde neyi doğru yapıyorum, nasıl sürdürürüm?']
   };
   function renderEmpty() {

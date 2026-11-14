@@ -3,6 +3,8 @@
 // Same definitions as public/interface/shared/trade-metrics.js: a trade counts only when it is closed (exit_price set) and its
 // result is the stored (net) pnl. Times are bucketed in the user's time zone (IANA name, falls back to UTC).
 
+import { emotionStats } from './emotions.ts';
+
 export interface TradeRow {
   id?: string; symbol: string; direction: string; lot?: number | string | null;
   entry_price?: number | string | null; exit_price?: number | string | null;
@@ -271,6 +273,9 @@ export function summarizeTrades(rows: TradeRow[], strategies: StrategyRow[], opt
         notes: t.notes ? String(t.notes).replace(/\s+/g, ' ').slice(0, 200) : null,
       };
     };
+    // emotions in the trader's notes (tags from the trade forms and plain words): what each one costs
+    const em = emotionStats(closed);
+    if (em) out.emotions = em;
     const byPnl = closed.filter((t) => Number.isFinite(num(t.pnl))).sort((a, b) => num(a.pnl) - num(b.pnl));
     out.largest_losses = byPnl.filter((t) => num(t.pnl) < 0).slice(0, 8).map(brief);
     out.largest_wins = byPnl.filter((t) => num(t.pnl) > 0).slice(-5).reverse().map(brief);

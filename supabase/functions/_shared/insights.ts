@@ -43,6 +43,10 @@ export function pickInsights(s: any, max = 3): Insight[] {
     else out.push({ id: 'prop_odds', severity: pp.pass_pct < 30 ? 82 : 50, params: { journal: p.journal || '—', pass: Math.round(pp.pass_pct) } });
   }
 
+  // an emotion in the trader's notes that keeps costing money
+  const em = (s.emotions?.by_emotion || []).filter((x: any) => !x.positive && x.trades >= 5 && x.net < 0).sort((a: any, b: any) => a.net - b.net)[0];
+  if (em) out.push({ id: 'emotion_cost', severity: 76, params: { emotion: em.key, net: em.net, trades: em.trades } });
+
   // the member's own trading plan: how often it is followed (last 7 days, enough trades)
   const tp = s.trading_plan?.last_7_days;
   if (tp && tp.trades >= 5 && tp.score != null) {
