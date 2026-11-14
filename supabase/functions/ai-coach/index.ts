@@ -1,8 +1,10 @@
 // supabase/functions/ai-coach/index.ts
 // AI coach: the member asks about their own trading (optionally with a chart screenshot); Google Gemini answers with a
 // summary of the member's trades and strategies (_shared/trade-summary.ts) and a fixed knowledge base
-// (_shared/coach-knowledge.ts) as context. Migrations 202611120002 (tables, limits) and 202611120003 (visuals).
-//   POST { message, conversationId?, journalId?, image?: { mimeType, data (base64) }, lang?, tz?, stream? }
+// (_shared/coach-knowledge.ts) as context, plus the state of the member's active prop challenges (_shared/prop-context.ts)
+// and their backtest accounts (_shared/backtest-context.ts).
+// Migrations 202611120002 (tables, limits) and 202611120003 (visuals).
+//   POST { message, conversationId?, journalId?, image?: { mimeType, data (base64) }, lang?, tz?, stream?, detail?: short|normal|detailed }
 //     stream false -> JSON { ok, conversationId, reply, visuals, usage: { used, limit, premium } }
 //     stream true  -> text/event-stream: "start" {usage}, "delta" {text} ..., then "done" {conversationId, reply, visuals,
 //                     usage} or "error" {code, message}; "reset" {} = the answer so far was broken and is being retried
@@ -23,10 +25,12 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
 import { summarizeTrades, safeTimeZone, equityCurve } from '../_shared/trade-summary.ts';
-import { COACH_KNOWLEDGE } from '../_shared/coach-knowledge.ts';
+import { COACH_KNOWLEDGE, answerLength, answerLengthRule, type AnswerLength } from '../_shared/coach-knowledge.ts';
 import { resolveVisuals } from '../_shared/visuals.ts';
 import { createStepBuilder, takeSseEvents } from '../_shared/gemini-stream.ts';
 import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
+import { propContext } from '../_shared/prop-context.ts';
+import { backtestContext } from '../_shared/backtest-context.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -50,13 +54,88 @@ const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LANGS: Record<string, string> = { tr: 'Turkish', en: 'English', de: 'German' };
 
+const TRADE_COLS = 'id, journal_id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source, commission, swap, gross_pnl';
+const PAGE = 1000;                                 // PostgREST returns at most 1000 rows per request: read in pages
+const MAX_PROP_TRADES = 5000;
+const MAX_BT_TRADES = 5000;
+const BT_ACCOUNT_COLS = 'id, name, symbol, timeframe, starting_balance, journal_id, data_source, is_active, replay_time, section_no, created_at, updated_at';
+const BT_TRADE_COLS = 'id, backtest_account_id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, initial_stop_loss, initial_take_profit, entry_time, exit_time, pnl, commission, gross_pnl, exit_reason, exit_ambiguous, section_no';
+
+// newest first, in pages, up to `max` rows; null on a read error
+async function readPaged(build: (from: number, to: number) => any, max: number): Promise<any[] | null> {
+  const out: any[] = [];
+  for (let from = 0; from < max; from += PAGE) {
+    const { data, error } = await build(from, Math.min(from + PAGE, max) - 1);
+    if (error) return null;
+    out.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
+}
+
+// Everything the coach knows about the member: trade summary (+ prop challenge state) and the raw trades for the charts.
+// journalId null = all journals. null on a read error.
+async function loadContext(admin: any, userId: string, journalId: string | null, tz: string, recent?: number) {
+  const tradesP = readPaged((a, b) => {
+    let q = admin.from('trades').select(TRADE_COLS).eq('user_id', userId).order('trade_date', { ascending: false }).order('id', { ascending: false }).range(a, b);
+    return journalId ? q.eq('journal_id', journalId) : q;
+  }, MAX_TRADES);
+  let sq = admin.from('strategies').select('id, name, description').eq('user_id', userId);
+  if (journalId) sq = sq.or(`journal_id.eq.${journalId},journal_id.is.null`);
+  let pq = admin.from('prop_accounts').select('id, journal_id, template_key, rules, starting_balance, start_date, phase_index, reset_tz, time_shift_hours')
+    .eq('user_id', userId).eq('is_active', true).limit(10);
+  if (journalId) pq = pq.eq('journal_id', journalId);
+  // backtest accounts are not tied to a journal scope: the coach sees all of the member's accounts
+  const baq = admin.from('backtest_accounts').select(BT_ACCOUNT_COLS).eq('user_id', userId).limit(50);
+  const btP = readPaged((a, b) => admin.from('backtest_account_trades').select(BT_TRADE_COLS).eq('user_id', userId)
+    .order('entry_time', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_BT_TRADES);
+  const jq = admin.from('journals').select('id, name').eq('user_id', userId);
+  const [trades, { data: strategies, error: se }, { data: props, error: pe }, { data: btAccounts, error: bae }, btTrades, { data: js }] =
+    await Promise.all([tradesP, sq, pq, baq, btP, jq]);
+  if (!trades || se) return null;
+  const summary = summarizeTrades(trades, strategies || [], { tz, ...(recent != null ? { recent } : {}) });
+  const names = new Map<string, string>((js || []).map((j: any) => [j.id, j.name]));
+
+  // backtest accounts (a read error leaves the rest of the answer intact); their per-symbol comparison with the live trades
+  // replaces the one built from journal mirrors, which only cover linked accounts
+  if (!bae && btTrades && btAccounts && btAccounts.length) {
+    try {
+      const bt = backtestContext(btAccounts, btTrades, trades, names);
+      if (bt) {
+        summary.backtest_accounts = bt;
+        const prev = (summary.backtest_vs_live || {}) as Record<string, unknown>;
+        summary.backtest_vs_live = { by_strategy: prev.by_strategy || [], by_symbol: bt.vs_live_by_symbol };
+        delete (bt as any).vs_live_by_symbol;
+      }
+    } catch (_) { console.error('ai-coach: backtest context failed'); }
+  }
+
+  // prop challenges: a prop context failing to load leaves the rest of the answer intact
+  if (!pe && props && props.length) {
+    try {
+      const list = await Promise.all(props.map(async (p: any) => {
+        // the phase's trades (a day of margin for the time shift) with the columns the prop card uses
+        const since = new Date(Date.parse(String(p.start_date).slice(0, 10) + 'T00:00:00Z') - 2 * 864e5).toISOString();
+        const rows = await readPaged((a, b) => admin.from('trades').select('id, trade_date, pnl, exit_price, platform_source')
+          .eq('user_id', userId).eq('journal_id', p.journal_id).gte('trade_date', since)
+          .order('trade_date', { ascending: false }).order('id', { ascending: false }).range(a, b), MAX_PROP_TRADES);
+        return rows ? propContext(p, names.get(p.journal_id) || null, rows) : null;
+      }));
+      const ok = list.filter(Boolean);
+      if (ok.length) summary.prop_accounts = ok;
+    } catch (_) { console.error('ai-coach: prop context failed'); }
+  }
+  return { summary, trades };
+}
+
 function fail(code: string, message: string, status: number, cors: Record<string, string>, extra: Record<string, unknown> = {}) {
   return jsonRes({ ok: false, code, error: message, ...extra }, status, { ...cors, 'Cache-Control': 'no-store' });
 }
 
-export function systemInstruction(lang: string, context: unknown): string {
+export function systemInstruction(lang: string, context: unknown, detail: AnswerLength = 'normal'): string {
   return [
-    'You are "Wawe AI Coach", the trading coach inside Wawe Journal, a trading journal app.',
+    'You are Anna, the AI trading coach inside Wawe Journal, a trading journal app. Introduce yourself by name only when greeted or asked who you are.',
+    'You are an AI, not a human: if the trader asks, say so plainly, and never claim feelings, a private life or a personal history.',
     'You help ONE trader improve by analysing THEIR OWN journal data, given below as JSON, and chart screenshots they share.',
     '',
     'Rules:',
@@ -71,6 +150,7 @@ export function systemInstruction(lang: string, context: unknown): string {
     '',
     COACH_KNOWLEDGE,
     '',
+    ...(answerLengthRule(detail) ? [answerLengthRule(detail), ''] : []),
     'Trader data (JSON, generated by the app, read-only):',
     JSON.stringify(context),
   ].join('\n');
@@ -176,14 +256,9 @@ serve(async (req: Request) => {
       const { data } = await adm.from('journals').select('id').eq('id', jid).eq('user_id', user.id).maybeSingle();
       if (!data) return fail('NOT_FOUND', 'Journal not found.', 404, cors);
     }
-    let tq = adm.from('trades').select('id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source')
-      .eq('user_id', user.id).order('trade_date', { ascending: false }).limit(MAX_TRADES);
-    if (jid) tq = tq.eq('journal_id', jid);
-    let sq = adm.from('strategies').select('id, name, description').eq('user_id', user.id);
-    if (jid) sq = sq.or(`journal_id.eq.${jid},journal_id.is.null`);
-    const [{ data: trades, error: te }, { data: strategies, error: se }] = await Promise.all([tq, sq]);
-    if (te || se) return fail('SERVER', 'Could not read the journal.', 500, cors);
-    const sum = summarizeTrades(trades || [], strategies || [], { tz: tzs, recent: 0 });
+    const loaded = await loadContext(adm, user.id, jid, tzs, 0);
+    if (!loaded) return fail('SERVER', 'Could not read the journal.', 500, cors);
+    const sum = loaded.summary;
     const p = new Intl.DateTimeFormat('en-CA', { timeZone: tzs, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
     const nowMonth = `${p.find((x) => x.type === 'year')?.value}-${p.find((x) => x.type === 'month')?.value}`;
     return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
@@ -193,6 +268,7 @@ serve(async (req: Request) => {
   const lang = LANGS[body?.lang] ? body.lang : 'tr';
   const tz = safeTimeZone(body?.tz);
   const wantStream = body?.stream === true;
+  const detail = answerLength(body?.detail);
   const convId = body?.conversationId == null ? null : String(body.conversationId);
   if (convId && !UUID.test(convId)) return fail('BAD_REQUEST', 'Invalid conversation.', 400, cors);
   const journalId = body?.journalId == null || body.journalId === '' ? null : String(body.journalId);
@@ -230,16 +306,10 @@ serve(async (req: Request) => {
   type Outcome = { ok: true; conversationId: string | null; reply: string; visuals: Record<string, unknown> } | { ok: false; code: string; message: string; status: number };
   async function run(send: (event: string, data: unknown) => void): Promise<Outcome> {
     try {
-      let tq = admin.from('trades')
-        .select('id, symbol, direction, lot, entry_price, exit_price, stop_loss, take_profit, pnl, rr_ratio, trade_date, exit_date, notes, strategy_id, platform_source')
-        .eq('user_id', user!.id).order('trade_date', { ascending: false }).limit(MAX_TRADES);
-      if (scopeJournal) tq = tq.eq('journal_id', scopeJournal);
-      let sq = admin.from('strategies').select('id, name, description').eq('user_id', user!.id);
-      if (scopeJournal) sq = sq.or(`journal_id.eq.${scopeJournal},journal_id.is.null`);
-      const [{ data: trades, error: te }, { data: strategies, error: se }] = await Promise.all([tq, sq]);
-      if (te || se) { await refund(); return { ok: false, code: 'SERVER', message: 'Could not read the journal.', status: 500 }; }
-      const context = summarizeTrades(trades || [], strategies || [], { tz });
-      const equity = equityCurve(trades || []);
+      const loaded = await loadContext(admin, user!.id, scopeJournal, tz);
+      if (!loaded) { await refund(); return { ok: false, code: 'SERVER', message: 'Could not read the journal.', status: 500 }; }
+      const context = loaded.summary;
+      const equity = equityCurve(loaded.trades);
 
       let msgs: any[] = [];
       if (conversation) {
@@ -249,7 +319,7 @@ serve(async (req: Request) => {
       }
       const userContent: any[] = [{ type: 'text', text: message }];
       if (image) userContent.push({ type: 'image', data: image.data, mime_type: image.mime_type });
-      const system = systemInstruction(lang, context);
+      const system = systemInstruction(lang, context, detail);
 
       // model chain; demand spikes on the free tier are short, so one more round after a pause
       let got: Awaited<ReturnType<typeof streamGemini>> | null = null, used = '', lastStatus = 0;

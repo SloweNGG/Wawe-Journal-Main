@@ -7,7 +7,7 @@ export const MAX_VISUALS = 3;
 export const DIRECTIVE_LINE = /^[ \t]*\[\[viz:([a-z_:]+)\]\][ \t]*$/gm;
 
 // buckets in their natural order (time-like) keep it; the others are sorted by value, best first
-const ORDERED = new Set(['by_weekday', 'by_entry_hour_local', 'by_month_last_12', 'by_trade_number_of_day', 'after_consecutive_losses']);
+const ORDERED = new Set(['by_weekday', 'by_entry_hour_local', 'by_month_last_12', 'by_trade_number_of_day', 'after_consecutive_losses', 'r_buckets']);
 const UNIT: Record<string, string> = { net: 'money', avg_win: 'money', avg_loss: 'money', win_rate: 'pct', trades: 'count', profit_factor: 'ratio' };
 
 export type Visual =

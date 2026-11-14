@@ -19,6 +19,56 @@ export function pickInsights(s: any, max = 3): Insight[] {
   if (!t || !t.trades) return [{ id: 'no_trades', severity: 0, params: {} }];
   const wr = Number(t.win_rate) || 0;
 
+  // prop challenges first: a rule about to break costs the whole account
+  for (const p of (s.prop_accounts || []) as any[]) {
+    if (!p || !p.status) continue;
+    const journal = p.journal || '—';
+    if (p.status === 'failed') { out.push({ id: 'prop_failed', severity: 110, params: { journal } }); continue; }
+    if (p.status !== 'in_progress') continue;
+    if (p.avg_losses_until_daily_limit != null && p.avg_losses_until_daily_limit <= 2 && p.daily_loss?.today_result < 0) {
+      out.push({ id: 'prop_daily_limit', severity: 105, params: { journal, room: p.daily_loss.room_left_today, losses: p.avg_losses_until_daily_limit } });
+    } else if (p.avg_losses_until_max_loss != null && p.avg_losses_until_max_loss <= 3) {
+      out.push({ id: 'prop_max_loss', severity: 100, params: { journal, room: p.max_loss.room_left, losses: p.avg_losses_until_max_loss } });
+    } else if (p.profit_target && !p.profit_target.reached && p.profit_target.progress_pct >= 75) {
+      out.push({ id: 'prop_target_close', severity: 45, params: { journal, remaining: p.profit_target.remaining, pct: Math.round(p.profit_target.progress_pct) } });
+    }
+  }
+
+  // position size grows after losses: the money version of revenge trading
+  const ps = s.position_sizing;
+  if (ps && ps.avg_size_after_loss != null && ps.avg_size_after_win && ps.trades_after_loss >= MIN && ps.avg_size_after_loss >= 1.25 * ps.avg_size_after_win) {
+    out.push({ id: 'size_after_loss', severity: 88, params: { after_loss: ps.avg_size_after_loss, after_win: ps.avg_size_after_win, trades: ps.trades_after_loss } });
+  } else if (ps && ps.oversized_1_5x && ps.oversized_1_5x.trades >= 5 && ps.oversized_1_5x.net < 0) {
+    out.push({ id: 'oversized', severity: 72, params: { trades: ps.oversized_1_5x.trades, net: ps.oversized_1_5x.net } });
+  }
+  // stops that do not hold, winners cut before the target
+  const rm = s.r_multiples;
+  if (rm && rm.losses_beyond_stop?.trades >= 5 && rm.losses_with_r >= MIN && rm.losses_beyond_stop.pct_of_losses >= 20) {
+    out.push({ id: 'stop_overrun', severity: 84, params: { pct: rm.losses_beyond_stop.pct_of_losses, avg_r: rm.losses_beyond_stop.avg_r, trades: rm.losses_beyond_stop.trades } });
+  }
+  if (rm && rm.winners_with_target >= MIN && rm.winners_target_capture_median_pct != null && rm.winners_target_capture_median_pct <= 60) {
+    out.push({ id: 'early_exit', severity: 58, params: { capture: rm.winners_target_capture_median_pct, trades: rm.winners_with_target } });
+  }
+  const c = s.costs;
+  if (c && c.cost_pct_of_gross_profit != null && c.cost_pct_of_gross_profit >= 20 && c.trades_with_cost_data >= MIN) {
+    out.push({ id: 'costs_high', severity: 62, params: { pct: Math.round(c.cost_pct_of_gross_profit), total: c.net_cost_total } });
+  }
+  // tested vs live: the idea works, the execution does not
+  const gap = (s.backtest_vs_live?.by_strategy || []).concat(s.backtest_vs_live?.by_symbol || [])
+    .filter((x: any) => x.live.trades >= 10 && x.backtest.trades >= 10 && x.live.win_rate != null && x.backtest.win_rate != null && x.live.win_rate <= x.backtest.win_rate - 15)
+    .sort((a: any, b: any) => (a.live.win_rate - a.backtest.win_rate) - (b.live.win_rate - b.backtest.win_rate))[0];
+  if (gap) out.push({ id: 'backtest_gap', severity: 68, params: { name: gap.key, live: gap.live.win_rate, backtest: gap.backtest.win_rate, trades: gap.live.trades } });
+  // a backtest account that loses over a real sample: the system needs work before it goes live
+  const btWeak = ((s.backtest_accounts?.accounts || []) as any[])
+    .filter((a) => a && a.totals && a.totals.trades >= 20 && a.totals.net < 0).sort((a, b) => a.totals.net - b.totals.net)[0];
+  if (btWeak) out.push({ id: 'bt_no_edge', severity: 52, params: { name: btWeak.name, net: btWeak.totals.net, trades: btWeak.totals.trades } });
+  // recent form against the trader's own history
+  const rf = s.recent_form;
+  if (rf && rf.before.trades >= 20 && rf.last_20.win_rate != null && rf.before.win_rate != null) {
+    if (rf.last_20.win_rate <= rf.before.win_rate - 15 && rf.last_20.net < 0) out.push({ id: 'form_down', severity: 66, params: { win_rate: rf.last_20.win_rate, before: rf.before.win_rate } });
+    else if (rf.last_20.win_rate >= rf.before.win_rate + 10 && rf.last_20.net > 0) out.push({ id: 'form_up', severity: 35, params: { win_rate: rf.last_20.win_rate, before: rf.before.win_rate } });
+  }
+
   const after = s.after_consecutive_losses?.['2+'], base = s.after_consecutive_losses?.['0'];
   if (after && after.trades >= MIN && after.win_rate != null && after.win_rate <= (base?.win_rate ?? wr) - 10) {
     out.push({ id: 'revenge', severity: 90 + Math.min(20, (base?.win_rate ?? wr) - after.win_rate), params: { win_rate: after.win_rate, base: base?.win_rate ?? wr, trades: after.trades } });
