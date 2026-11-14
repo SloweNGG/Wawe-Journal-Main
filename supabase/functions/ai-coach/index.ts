@@ -123,6 +123,9 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
     try {
       const bt = backtestContext(btAccounts, btTrades, trades, names);
       if (bt) {
+        // a ready system: does the member already trade its symbol live?
+        const liveSymbols = new Set(trades.filter((t: any) => t.platform_source !== 'backtest' && t.exit_price != null).map((t: any) => String(t.symbol || '').toUpperCase()));
+        for (const a of bt.accounts as any[]) a.live_readiness.trades_this_symbol_live = liveSymbols.has(a.symbol);
         summary.backtest_accounts = bt;
         const prev = (summary.backtest_vs_live || {}) as Record<string, unknown>;
         summary.backtest_vs_live = { by_strategy: prev.by_strategy || [], by_symbol: bt.vs_live_by_symbol };

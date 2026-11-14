@@ -34,6 +34,21 @@ export function asTradeRow(t: BacktestTradeRow): TradeRow & { exit_reason?: stri
   };
 }
 
+// Is the tested system ready to trade live? Every condition that is not met is a reason (empty list = ready).
+export const READY_MIN_TRADES = 30;
+export function readiness(acc: { data: string; totals: any; max_drawdown_pct: number | null; exit_reasons: any[] }) {
+  const reasons: string[] = [];
+  const t = acc.totals || {};
+  if ((t.trades || 0) < READY_MIN_TRADES) reasons.push('few_trades');
+  if (acc.data !== 'real_market_history') reasons.push('synthetic_data');
+  if (!(Number(t.expectancy) > 0)) reasons.push('no_edge');
+  if (t.avg_r != null && t.avg_r < 0.1) reasons.push('thin_edge');
+  if (acc.max_drawdown_pct != null && acc.max_drawdown_pct > 20) reasons.push('deep_drawdown');
+  const manual = (acc.exit_reasons || []).find((x: any) => x.key === 'manual');
+  if (manual && t.trades && manual.trades / t.trades > 0.3 && manual.net < 0) reasons.push('manual_exits');
+  return { ready: !reasons.length, reasons };
+}
+
 function account(a: BacktestAccountRow, rows: BacktestTradeRow[], journalName: string | null) {
   const all = rows.map(asTradeRow);
   const closed = all.filter(isClosed).sort((x, y) => Date.parse(x.exit_date || x.trade_date) - Date.parse(y.exit_date || y.trade_date));
@@ -84,7 +99,8 @@ export function backtestContext(accounts: BacktestAccountRow[], trades: Backtest
   const ordered = accounts.slice().sort((x, y) =>
     (Number(y.is_active !== false) - Number(x.is_active !== false)) || (Number(byAcc.has(y.id)) - Number(byAcc.has(x.id)))
     || String(y.updated_at || y.created_at || '').localeCompare(String(x.updated_at || x.created_at || '')));
-  const list = ordered.slice(0, MAX_ACCOUNTS).map((a) => account(a, byAcc.get(a.id) || [], a.journal_id ? journalNames.get(a.journal_id) || null : null));
+  const list = ordered.slice(0, MAX_ACCOUNTS).map((a) => account(a, byAcc.get(a.id) || [], a.journal_id ? journalNames.get(a.journal_id) || null : null))
+    .map((x) => ({ ...x, live_readiness: readiness(x) }));
 
   // every closed backtest trade (all accounts) against the live trades, per symbol and data kind
   const real = new Set(accounts.filter((a) => a.data_source === 'ctrader').map((a) => a.id));

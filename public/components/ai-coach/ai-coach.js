@@ -908,6 +908,7 @@
     form_down: ['Son 20 işlemde kazanma oranın %{win_rate}, öncesinde %{before}.', 'Son işlemlerim neden kötü gidiyor? Ne değişti?'],
     prop_odds_risk: ['{journal}: geçme olasılığın %{pass}. İşlem başına riski %{cut} azaltırsan %{better}.', '{journal} hesabımda riskimi nasıl ayarlarsam challenge\'ı geçme şansım artar?'],
     prop_odds: ['{journal}: mevcut sonuçlarınla challenge\'ı geçme olasılığın yaklaşık %{pass}.', '{journal} challenge\'ını geçme olasılığımı nasıl artırırım?'],
+    bt_ready: ['{name} backtest\'i ({symbol}, {trades} işlem) canlıya hazır görünüyor.', '{name} stratejimi canlıya nasıl taşımalıyım? Küçük bir deneme planı yapar mısın?'],
     bt_no_edge: ['{name} backtest hesabın zararda ({net}, {trades} işlem).', '{name} backtest hesabımı analiz et: sistemim canlıya hazır mı, neyi değiştirmeliyim?'],
     plan_discipline: ['Son 7 günde işlemlerinin %{score} kadarı planına uydu. En çok çiğnenen: {rule}.', 'Planıma neden uyamıyorum? {rule} kuralını nasıl tutarım?'],
     plan_followed: ['Son 7 günde işlemlerinin %{score} kadarı planına uydu. Harika gidiyorsun.', 'Planıma uymak sonuçlarımı nasıl etkiliyor?'],

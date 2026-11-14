@@ -58,6 +58,11 @@ export const COACH_KNOWLEDGE = `
   replayed real prices: valid evidence, still optimistic (no emotions, no real slippage).
 - Reading it: too few trades (< 30) = keep testing before trading it live. Many "manual" exits that do worse than tp/sl =
   the trader overrides the plan even in testing. same_bar_tp_sl > 0 = some results are uncertain (TP and SL in one bar).
+- live_readiness: ready when none of the reasons apply: few_trades (< 30 closed), synthetic_data, no_edge (expectancy ≤ 0),
+  thin_edge (avg R < 0.1), deep_drawdown (> 20 %), manual_exits (> 30 % of trades closed by hand at a loss).
+  trades_this_symbol_live tells whether the trader already trades it live. For "is it ready for live": list the reasons
+  that remain in plain words; when ready, suggest a small live trial (half size, a fixed number of trades, compare with the
+  backtest numbers through backtest_vs_live) instead of full size.
 - backtest_vs_live.by_symbol is built from these accounts; backtest_trades (journal copies of linked accounts) is a subset
   of them, never add the two together.
 

@@ -83,6 +83,10 @@ export function pickInsights(s: any, max = 3): Insight[] {
   const btWeak = ((s.backtest_accounts?.accounts || []) as any[])
     .filter((a) => a && a.totals && a.totals.trades >= 20 && a.totals.net < 0).sort((a, b) => a.totals.net - b.totals.net)[0];
   if (btWeak) out.push({ id: 'bt_no_edge', severity: 52, params: { name: btWeak.name, net: btWeak.totals.net, trades: btWeak.totals.trades } });
+  // a tested system that looks ready and is not traded live yet: the next step is a small live trial
+  const ready = ((s.backtest_accounts?.accounts || []) as any[]).find((a) => a?.live_readiness?.ready && !a.live_readiness.trades_this_symbol_live);
+  if (ready) out.push({ id: 'bt_ready', severity: 42, params: { name: ready.name, symbol: ready.symbol, trades: ready.totals.trades } });
+
   // recent form against the trader's own history
   const rf = s.recent_form;
   if (rf && rf.before.trades >= 20 && rf.last_20.win_rate != null && rf.before.win_rate != null) {

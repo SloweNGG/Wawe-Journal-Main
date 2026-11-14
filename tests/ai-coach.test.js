@@ -346,3 +346,17 @@ describe('dictation (panel)', () => {
     }
   });
 });
+
+describe('backtest -> live readiness', async () => {
+  const { readiness } = await import('../supabase/functions/_shared/backtest-context.ts');
+  it('every unmet condition is a reason; a ready system not traded live becomes a finding', () => {
+    const good = { data: 'real_market_history', totals: { trades: 40, expectancy: 30, avg_r: 0.4 }, max_drawdown_pct: 8, exit_reasons: [{ key: 'tp', trades: 20, net: 900 }] };
+    assert.deepEqual(readiness(good), { ready: true, reasons: [] });
+    assert.deepEqual(readiness({ data: 'synthetic_practice', totals: { trades: 12, expectancy: -5, avg_r: -0.2 }, max_drawdown_pct: 35, exit_reasons: [{ key: 'manual', trades: 6, net: -80 }] }).reasons,
+      ['few_trades', 'synthetic_data', 'no_edge', 'thin_edge', 'deep_drawdown', 'manual_exits']);
+    const acc = { name: 'Gold', symbol: 'XAUUSD', totals: { trades: 40 }, live_readiness: { ready: true, reasons: [], trades_this_symbol_live: false } };
+    assert.deepEqual(pickInsights({ totals: { trades: 1, win_rate: 0 }, backtest_accounts: { accounts: [acc] } }, 10).find((x) => x.id === 'bt_ready').params, { name: 'Gold', symbol: 'XAUUSD', trades: 40 });
+    acc.live_readiness.trades_this_symbol_live = true;
+    assert.ok(!pickInsights({ totals: { trades: 1, win_rate: 0 }, backtest_accounts: { accounts: [acc] } }, 10).some((x) => x.id === 'bt_ready'));
+  });
+});

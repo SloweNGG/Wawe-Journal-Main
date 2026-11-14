@@ -2946,6 +2946,8 @@ export default {
   "aiCoach.insight_q.form_up": "Was mache ich in letzter Zeit richtig und wie halte ich das bei?",
   "aiCoach.insight.bt_no_edge": "Dein Backtest-Konto {name} liegt im Minus ({net}, {trades} Trades).",
   "aiCoach.insight_q.bt_no_edge": "Analysiere mein Backtest-Konto {name}: Ist mein System bereit für live, was sollte ich ändern?",
+  "aiCoach.insight.bt_ready": "Dein Backtest {name} ({symbol}, {trades} Trades) wirkt bereit für live.",
+  "aiCoach.insight_q.bt_ready": "Wie bringe ich mein System {name} live? Kannst du einen kleinen Testlauf planen?",
   "aiCoach.insight.prop_odds_risk": "{journal}: {pass}% Chance zu bestehen. Mit {cut}% weniger Risiko pro Trade: {better}%.",
   "aiCoach.insight_q.prop_odds_risk": "Wie sollte ich mein Risiko auf {journal} einstellen, um meine Chance zu bestehen zu erhöhen?",
   "aiCoach.insight.prop_odds": "{journal}: etwa {pass}% Chance, die Challenge mit deinen bisherigen Ergebnissen zu bestehen.",

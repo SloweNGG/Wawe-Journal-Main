@@ -2980,6 +2980,8 @@ export default {
   "aiCoach.insight_q.form_up": "What am I doing right lately and how do I keep it up?",
   "aiCoach.insight.bt_no_edge": "Your {name} backtest account is losing ({net}, {trades} trades).",
   "aiCoach.insight_q.bt_no_edge": "Analyse my {name} backtest account: is my system ready for live, what should I change?",
+  "aiCoach.insight.bt_ready": "Your {name} backtest ({symbol}, {trades} trades) looks ready for live.",
+  "aiCoach.insight_q.bt_ready": "How should I take my {name} system live? Can you plan a small trial?",
   "aiCoach.insight.prop_odds_risk": "{journal}: {pass}% chance to pass. With {cut}% less risk per trade: {better}%.",
   "aiCoach.insight_q.prop_odds_risk": "How should I set my risk on {journal} to raise my chance of passing?",
   "aiCoach.insight.prop_odds": "{journal}: about {pass}% chance to pass the challenge with your current results.",
