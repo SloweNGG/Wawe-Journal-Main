@@ -195,7 +195,7 @@
     });
 
     var slider = $('#custom-font-size'), disp = $('#font-size-display');
-    if (slider) slider.value = font;
+    if (slider) { slider.value = font; slider.style.setProperty('--r', String((font - 12) / 10)); }   // dolu çubuk (settings.css)
     if (disp) disp.textContent = font + 'px';
     $$('.font-pill').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-size') === String(font)); });
 

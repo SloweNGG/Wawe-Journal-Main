@@ -1232,23 +1232,63 @@ body.light-theme .panel-glow.overtrade-glow {
   border-radius: 10px;
   padding: 10px 14px 8px;
 }
+/* Yazı boyutu kaydırıcısı: tarayıcının beyaz çubuğu yerine temalı çubuk. Dolu kısım --r (0..1) ile çizilir;
+   theme-studio.js değer değişince yazar. 16px dairesel tutamak: konum = 8px + (genişlik - 16px) * oran */
 .custom-range-slider {
+  --r: 0.4;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
   width: 100%;
-  height: 4px;
-  background: var(--border);
-  border-radius: 99px;
-  accent-color: var(--accent);
+  height: 18px;
+  margin: 0;
+  background: transparent;
   outline: none;
   cursor: pointer;
 }
+.custom-range-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 99px;
+  background: linear-gradient(to right, var(--accent) calc(8px + (100% - 16px) * var(--r)), rgba(var(--ac-rgb), 0.18) 0);
+}
+.custom-range-slider::-moz-range-track { height: 4px; border-radius: 99px; background: rgba(var(--ac-rgb), 0.18); }
+.custom-range-slider::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--accent); }
+.custom-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+  transition: box-shadow 0.15s ease;
+}
+.custom-range-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.custom-range-slider:hover::-webkit-slider-thumb,
+.custom-range-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 1px var(--accent), 0 0 0 5px rgba(var(--ac-rgb), 0.22); }
+.custom-range-slider:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 1px var(--accent), 0 0 0 5px rgba(var(--ac-rgb), 0.22); }
+/* işaretler değerin gerçek yerinde: 16px, 12-22 aralığının %40'ı (eskiden ortadaydı) */
 .slider-marks {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  height: 14px;
   font-size: 9.5px;
   color: var(--muted);
   font-family: var(--font-mono);
   margin-top: 4px;
 }
+.slider-marks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.slider-marks span:first-child { left: 0; transform: none; }
+.slider-marks span:nth-child(2) { left: calc(8px + (100% - 16px) * 0.4); }
+.slider-marks span:last-child { left: auto; right: 0; transform: none; }
 
 /* Canlı Mini Trade Kartı Önizlemesi */
 .theme-preview-box {
@@ -5028,6 +5068,7 @@ body.light-theme .wj-ambient-backdrop {
 .ts-preset {
   display: flex;
   flex-direction: column;
+  align-items: stretch;      /* genel buton kuralı flex-start veriyordu: önizleme 56px'te kalıyordu */
   gap: 8px;
   padding: 8px;
   min-width: 0;
@@ -5218,4 +5259,19 @@ body.light-theme .wj-ambient-backdrop {
 .ts-preview .mini-trade-pnl { white-space: nowrap; }
 @media (max-width: 640px) {
   .ts-share-code { flex-basis: 100%; }
+}
+
+/* ============================================================
+   KOYU TEMA: AYARLARDA GRİ YÜZEY YOK
+   Kartların içindeki kutular, alanlar, seçiciler ve düğmeler de kartla aynı renkte (--card-bg: varsayılan saf
+   siyah, özel temada temanın kutu rengi); öğeleri çerçeveleri ayırır. Değişkenler tek yerde ezilir, böylece
+   settings.css ve settings.astro'daki ~90 kural tek tek değişmez. Açık tema dokunulmaz.
+   ============================================================ */
+:root:not(.light-theme) body:not(.light-theme) :is(.settings-wrap, .settings-tabs-mobile) {
+  --surface: var(--card-bg);
+  --surface2: var(--card-bg);
+}
+/* zemini --surface2 olan üzerine gelme durumları siyahta kaybolmasın */
+:root:not(.light-theme) body:not(.light-theme) .settings-wrap :is(.nav-btn-back, .nav-btn-skip, .btn-close-extend-wizard):hover {
+  background: var(--modal-hover);
 }
