@@ -1,7 +1,7 @@
 // ============================================================
 // ADMIN-CORE.JS - STATE, UTILS, INIT
-// Tema: localStorage'daki ww_theme / ww_custom_theme okunur, storage ve
-// themeChanged olayları dinlenir; grafikler tema değişince yenilenir.
+// Tema: tema motoru uygular (window.WWTheme); storage ve themeChanged olaylarında
+// grafikler yeniden çizilir.
 // ============================================================
 
 var wwLog = window.wwLog || console;
@@ -13,32 +13,9 @@ var ADMIN_PAGE = window.wwPage.current();
 // ------------------------------------------------------------
 // TEMA
 // ------------------------------------------------------------
-function applyAdminCustomTheme(settings) {
-  if (!settings) return;
-  var root = document.documentElement;
-  if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-  if (settings.surfaceColor) {
-    root.style.setProperty('--surface', settings.surfaceColor);
-    root.style.setProperty('--surface2', settings.surfaceColor);
-  }
-  if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-  if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-  if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-}
-
+// Renkler, mod ve yazı boyutu tema motorunda (BaseHead → window.WWTheme); burada yalnızca uygula
 function applyAdminThemeFromStorage() {
-  try {
-    var isLight = localStorage.getItem('ww_theme') === 'light';
-    document.body.classList.toggle('light-theme', isLight);
-
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    if (savedFontSize) document.body.style.fontSize = savedFontSize + 'px';
-
-    var customTheme = localStorage.getItem('ww_custom_theme');
-    if (customTheme && !isLight) {
-      try { applyAdminCustomTheme(JSON.parse(customTheme)); } catch (e) {}
-    }
-  } catch (e) {}
+  if (window.WWTheme) { window.WWTheme.apply(); window.WWTheme.applyFont(); }
 }
 
 applyAdminThemeFromStorage();
@@ -62,7 +39,6 @@ applyAdminThemeFromStorage();
   });
 
   ADMIN_PAGE.on(document, 'themeChanged', function(e) {
-    if (e.detail && e.detail.settings) applyAdminCustomTheme(e.detail.settings);
     refreshChartsIfNeeded();
   });
 })();

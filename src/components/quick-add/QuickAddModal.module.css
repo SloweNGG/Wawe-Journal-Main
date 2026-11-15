@@ -4,10 +4,10 @@
    ============================================================ */
 
 .modalOverlay {
-  --qa-accent: #7c6dfa;
-  --qa-accent-light: #9b8bfa;
-  --qa-accent-tint: rgba(124, 109, 250, 0.08);
-  --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
+  --qa-accent: var(--ac-b1);
+  --qa-accent-light: var(--ac-b3);
+  --qa-accent-tint: rgba(var(--ac-b1-rgb), 0.08);
+  --qa-accent-tint-strong: rgba(var(--ac-b1-rgb), 0.16);
   --qa-surface: #111118;
   --qa-surface2: #15151d;
   --qa-border: rgba(232, 232, 240, 0.07);
@@ -40,10 +40,10 @@
 }
 
 :global(body.light-theme) .modalOverlay {
-  --qa-accent: #6d5ce0;
-  --qa-accent-light: #7c6dfa;
-  --qa-accent-tint: rgba(109, 92, 224, 0.08);
-  --qa-accent-tint-strong: rgba(109, 92, 224, 0.16);
+  --qa-accent: var(--ac-b4);
+  --qa-accent-light: var(--ac-b1);
+  --qa-accent-tint: rgba(var(--ac-b4-rgb), 0.08);
+  --qa-accent-tint-strong: rgba(var(--ac-b4-rgb), 0.16);
   --qa-surface: #ffffff;
   --qa-surface2: #f5f5f8;
   --qa-border: rgba(0, 0, 0, 0.08);
@@ -623,19 +623,19 @@
 }
 
 .quickAddFab:hover {
-  border-color: var(--qa-accent, #7c6dfa);
-  color: var(--qa-accent-light, #9b8bfa);
-  background: var(--qa-accent-tint, rgba(124, 109, 250, 0.08));
+  border-color: var(--qa-accent, var(--ac-b1));
+  color: var(--qa-accent-light, var(--ac-b3));
+  background: var(--qa-accent-tint, rgba(var(--ac-b1-rgb), 0.08));
   transform: scale(1.08);
 }
 
 .quickAddFab:active {
-  background: var(--qa-accent-tint-strong, rgba(124, 109, 250, 0.16));
+  background: var(--qa-accent-tint-strong, rgba(var(--ac-b1-rgb), 0.16));
   transform: scale(0.96);
 }
 
 .quickAddFab:focus-visible {
-  outline: 2px solid var(--qa-accent, #7c6dfa);
+  outline: 2px solid var(--qa-accent, var(--ac-b1));
   outline-offset: 3px;
 }
 

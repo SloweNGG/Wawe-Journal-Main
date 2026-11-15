@@ -273,42 +273,42 @@ function ensureCsvParsers() {
 .qa-date-input-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
 .qa-date-picker-overlay { position: fixed; inset: 0; z-index: 9999; background: transparent; display: none; }
 .qa-date-picker-overlay.open { display: block; }
-.qa-date-picker { position: fixed; z-index: 10000; background: var(--qa-surface, #111118); border: 1px solid var(--qa-border-strong, rgba(255,255,255,0.12)); border-radius: 14px; padding: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(124,109,250,0.08); width: 300px; font-family: var(--qa-font-body); color: var(--qa-text, #e8e8f0); opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.97); transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.18s; pointer-events: none; user-select: none; -webkit-user-select: none; }
+.qa-date-picker { position: fixed; z-index: 10000; background: var(--qa-surface, #111118); border: 1px solid var(--qa-border-strong, rgba(255,255,255,0.12)); border-radius: 14px; padding: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(var(--ac-b1-rgb),0.08); width: 300px; font-family: var(--qa-font-body); color: var(--qa-text, #e8e8f0); opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.97); transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.18s; pointer-events: none; user-select: none; -webkit-user-select: none; }
 .qa-date-picker.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto; }
 .qa-date-picker-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--qa-border, rgba(255,255,255,0.06)); }
 .qa-dp-nav { width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: transparent; border: 1px solid var(--qa-border, rgba(255,255,255,0.06)); color: var(--qa-muted, #6b6b80); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; padding: 0; }
 .qa-dp-nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
-.qa-dp-nav:hover { border-color: var(--qa-accent, #7c6dfa); color: var(--qa-accent, #7c6dfa); background: rgba(124,109,250,0.08); }
+.qa-dp-nav:hover { border-color: var(--qa-accent, var(--ac-b1)); color: var(--qa-accent, var(--ac-b1)); background: rgba(var(--ac-b1-rgb),0.08); }
 .qa-dp-nav:active { transform: scale(0.94); }
 .qa-dp-title { flex: 1; background: transparent; border: none; color: var(--qa-text, #e8e8f0); font-family: var(--font); font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 8px; cursor: default; text-align: center; }
 .qa-date-picker-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
 .qa-dp-weekday { text-align: center; font-size: 10px; font-weight: 600; color: var(--qa-muted, #6b6b80); padding: 6px 0; text-transform: uppercase; letter-spacing: 0.05em; }
 .qa-date-picker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .qa-dp-day { aspect-ratio: 1 / 1; min-height: 34px; border-radius: 8px; background: transparent; border: 1px solid transparent; color: var(--qa-text, #e8e8f0); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.12s ease; display: flex; align-items: center; justify-content: center; padding: 0; }
-.qa-dp-day:hover { background: rgba(124,109,250,0.12); color: var(--qa-accent-light, #a78bfa); }
+.qa-dp-day:hover { background: rgba(var(--ac-b1-rgb),0.12); color: var(--qa-accent-light, var(--ac-l1)); }
 .qa-dp-day:active { transform: scale(0.94); }
 .qa-dp-day.other-month { color: var(--qa-muted, #6b6b80); opacity: 0.4; }
-.qa-dp-day.today { border-color: var(--qa-accent, #7c6dfa); color: var(--qa-accent, #7c6dfa); font-weight: 700; }
-.qa-dp-day.selected { background: linear-gradient(135deg, #8b5cf6, #a78bfa); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(139,92,246,0.4); font-weight: 700; }
+.qa-dp-day.today { border-color: var(--qa-accent, var(--ac-b1)); color: var(--qa-accent, var(--ac-b1)); font-weight: 700; }
+.qa-dp-day.selected { background: linear-gradient(135deg, var(--ac), var(--ac-l1)); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(var(--ac-rgb),0.4); font-weight: 700; }
 .qa-dp-day.selected:hover { color: #fff; transform: scale(1.04); }
 .qa-date-picker-footer { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--qa-border, rgba(255,255,255,0.06)); }
 .qa-dp-footer-btn { flex: 1; padding: 7px 10px; border-radius: 8px; background: transparent; border: 1px solid var(--qa-border, rgba(255,255,255,0.06)); color: var(--qa-muted, #6b6b80); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
-.qa-dp-footer-btn:hover { border-color: var(--qa-accent, #7c6dfa); color: var(--qa-accent, #7c6dfa); background: rgba(124,109,250,0.06); }
+.qa-dp-footer-btn:hover { border-color: var(--qa-accent, var(--ac-b1)); color: var(--qa-accent, var(--ac-b1)); background: rgba(var(--ac-b1-rgb),0.06); }
 .qa-dp-footer-btn:active { transform: scale(0.96); }
-body.light-theme .qa-date-picker { background: #ffffff; border-color: rgba(0,0,0,0.08); box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(124,109,250,0.06); color: #1a1a2e; }
+body.light-theme .qa-date-picker { background: #ffffff; border-color: rgba(0,0,0,0.08); box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(var(--ac-b1-rgb),0.06); color: #1a1a2e; }
 body.light-theme .qa-date-picker-header { border-bottom-color: rgba(0,0,0,0.06); }
 body.light-theme .qa-dp-nav { border-color: rgba(0,0,0,0.08); color: #6b6b80; }
-body.light-theme .qa-dp-nav:hover { border-color: #7c6dfa; color: #7c6dfa; background: rgba(124,109,250,0.06); }
+body.light-theme .qa-dp-nav:hover { border-color: var(--ac-b1); color: var(--ac-b1); background: rgba(var(--ac-b1-rgb),0.06); }
 body.light-theme .qa-dp-title { color: #1a1a2e; }
 body.light-theme .qa-dp-weekday { color: #9999aa; }
 body.light-theme .qa-dp-day { color: #1a1a2e; }
-body.light-theme .qa-dp-day:hover { background: rgba(124,109,250,0.1); color: #7c6dfa; }
+body.light-theme .qa-dp-day:hover { background: rgba(var(--ac-b1-rgb),0.1); color: var(--ac-b1); }
 body.light-theme .qa-dp-day.other-month { color: #bbbbcc; }
-body.light-theme .qa-dp-day.today { border-color: #7c6dfa; color: #7c6dfa; }
-body.light-theme .qa-dp-day.selected { background: linear-gradient(135deg, #7c6dfa, #9b8bfa); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(124,109,250,0.35); }
+body.light-theme .qa-dp-day.today { border-color: var(--ac-b1); color: var(--ac-b1); }
+body.light-theme .qa-dp-day.selected { background: linear-gradient(135deg, var(--ac-b1), var(--ac-b3)); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(var(--ac-b1-rgb),0.35); }
 body.light-theme .qa-date-picker-footer { border-top-color: rgba(0,0,0,0.06); }
 body.light-theme .qa-dp-footer-btn { border-color: rgba(0,0,0,0.08); color: #6b6b80; }
-body.light-theme .qa-dp-footer-btn:hover { border-color: #7c6dfa; color: #7c6dfa; background: rgba(124,109,250,0.06); }
+body.light-theme .qa-dp-footer-btn:hover { border-color: var(--ac-b1); color: var(--ac-b1); background: rgba(var(--ac-b1-rgb),0.06); }
 @media (max-width: 480px) {
   .qa-date-picker { width: calc(100vw - 32px); max-width: 320px; }
   .qa-dp-day { min-height: 40px; font-size: 13px; }
@@ -1695,7 +1695,7 @@ async function fileToCsvText(file) {
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">';
     html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
     html += '<span style="font-size:13px;font-weight:600;">' + escapeHtml(t('quickmodal.csv_import_title') || 'İçe Aktarılacak') + '</span>';
-    html += '<span style="font-size:10px;font-family:monospace;padding:2px 8px;border-radius:12px;background:rgba(124,109,250,0.15);color:var(--accent2);border:1px solid rgba(124,109,250,0.25);letter-spacing:0.05em;">';
+    html += '<span style="font-size:10px;font-family:monospace;padding:2px 8px;border-radius:12px;background:rgba(var(--ac-b1-rgb),0.15);color:var(--accent2);border:1px solid rgba(var(--ac-b1-rgb),0.25);letter-spacing:0.05em;">';
     html += escapeHtml(String(detected || 'unknown').toUpperCase());
     html += '</span>';
     html += '<span style="font-size:11px;color:var(--muted);font-family:monospace;">' + rows.length + ' kayıt</span>';

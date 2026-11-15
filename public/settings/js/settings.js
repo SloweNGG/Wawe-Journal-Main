@@ -25,36 +25,9 @@ var SETTINGS_PAGE = window.wwPage.current();
 // ============================================================
 
 (function() {
-  var savedTheme = localStorage.getItem('ww_theme');
-  var savedFontSize = localStorage.getItem('ww_font_size');
-  var customTheme = localStorage.getItem('ww_custom_theme');
-
-  if (savedTheme === 'light') {
-    document.body.classList.add('light-theme');
-  } else {
-    document.body.classList.remove('light-theme');
-  }
-
-  if (savedFontSize) {
-    document.body.style.fontSize = savedFontSize + 'px';
-  }
-
-  if (savedTheme !== 'light' && customTheme) {
-    try {
-      var settings = JSON.parse(customTheme);
-      var root = document.documentElement;
-      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-      if (settings.surfaceColor) {
-        root.style.setProperty('--surface', settings.surfaceColor);
-        root.style.setProperty('--surface2', settings.surfaceColor);
-      }
-      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-    } catch(e) {}
-  }
-
-  wwLog.log('🎨 [settings] Tema ayarlandı:', savedTheme || 'dark');
+  // Renkler ve yazı boyutu: tema motoru (BaseHead → window.WWTheme).
+  if (window.WWTheme) { window.WWTheme.apply(); window.WWTheme.applyFont(); }
+  wwLog.log('🎨 [settings] Tema ayarlandı:', localStorage.getItem('ww_theme') || 'dark');
 })();
 
 // Aktif pro: plan 'premium' VE süresi dolmamış (bitiş tarihi boş = süresiz/manuel). DB'de süresi dolan
@@ -149,41 +122,8 @@ function themeDesc(isLight) {
       if (label) label.textContent = themeLabel(isLight);
       if (desc) desc.textContent = themeDesc(isLight);
 
-      if (!isLight) {
-        var ct = localStorage.getItem('ww_custom_theme');
-        if (ct) {
-          try {
-            var s = JSON.parse(ct);
-            var root = document.documentElement;
-            if (s.backgroundColor) root.style.setProperty('--bg', s.backgroundColor);
-            if (s.surfaceColor) {
-              root.style.setProperty('--surface', s.surfaceColor);
-              root.style.setProperty('--surface2', s.surfaceColor);
-            }
-            if (s.borderColor) root.style.setProperty('--border', s.borderColor);
-            if (s.textColor) root.style.setProperty('--text', s.textColor);
-            if (s.fontSize) document.body.style.fontSize = s.fontSize + 'px';
-          } catch(e) {}
-        }
-      }
-    }
-  });
-
-  SETTINGS_PAGE.on(document, 'themeChanged', function(e) {
-    if (e.detail && e.detail.settings) {
-      var isLight = document.body.classList.contains('light-theme');
-      if (!isLight) {
-        var s = e.detail.settings;
-        var root = document.documentElement;
-        if (s.backgroundColor) root.style.setProperty('--bg', s.backgroundColor);
-        if (s.surfaceColor) {
-          root.style.setProperty('--surface', s.surfaceColor);
-          root.style.setProperty('--surface2', s.surfaceColor);
-        }
-        if (s.borderColor) root.style.setProperty('--border', s.borderColor);
-        if (s.textColor) root.style.setProperty('--text', s.textColor);
-        if (s.fontSize) document.body.style.fontSize = s.fontSize + 'px';
-      }
+      if (window.WWTheme) window.WWTheme.apply();
+      if (typeof window.updateThemeModeCards === 'function') window.updateThemeModeCards();
     }
   });
 
@@ -213,13 +153,8 @@ window.selectThemeMode = function(mode) {
       window.toggleTheme();
     }
   } else {
-    document.body.classList.toggle('light-theme', isLight);
     localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
-    try {
-      window.dispatchEvent(new CustomEvent('themeChanged', {
-        detail: { settings: { isLight: isLight } }
-      }));
-    } catch(e) {}
+    if (window.WWTheme) window.WWTheme.apply();
   }
   window.updateThemeModeCards();
 };
@@ -230,8 +165,12 @@ window.toggleTheme = function() {
 
   var isLight = cb.checked;
 
-  document.body.classList.toggle('light-theme', isLight);
+  // Tema stüdyosunda bekleyen otomatik kayıt eski moda ait: önce tamamla
+  if (window.WWThemeStudio) window.WWThemeStudio.flush();
   localStorage.setItem('ww_theme', isLight ? 'light' : 'dark');
+  // sınıflar (<html> ve <body>) + yeni modun paleti
+  if (window.WWTheme) window.WWTheme.apply();
+  else document.body.classList.toggle('light-theme', isLight);
   window.updateThemeModeCards();
 
   var icon = document.getElementById('theme-icon');
@@ -246,28 +185,9 @@ window.toggleTheme = function() {
   if (label) label.textContent = themeLabel(isLight);
   if (desc) desc.textContent = themeDesc(isLight);
 
-  if (!isLight) {
-    var customTheme = localStorage.getItem('ww_custom_theme');
-    if (customTheme) {
-      try {
-        var settings = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-        if (settings.surfaceColor) {
-          root.style.setProperty('--surface', settings.surfaceColor);
-          root.style.setProperty('--surface2', settings.surfaceColor);
-        }
-        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-      } catch(e) {}
-    }
-  } else {
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    if (savedFontSize) {
-      document.body.style.fontSize = savedFontSize + 'px';
-    }
-  }
+  // Tema stüdyosu etkin modun paletini düzenler: yeni moda göre yeniden kur
+  var studioBox = document.getElementById('theme-customization-container');
+  if (studioBox && window.WWThemeStudio) window.WWThemeStudio.mount(studioBox);
 
   try {
     window.dispatchEvent(new CustomEvent('themeChanged', {
@@ -380,7 +300,7 @@ var PRO_FEATURE_VISUALS = {
     '<rect class="pv-swatch-bg" x="8" y="6" width="68" height="10" rx="5"/>' +
     '<circle class="pv-text-fill" cx="15" cy="11" r="1.6"/><circle class="pv-text-fill" cx="20" cy="11" r="1.6"/><circle class="pv-text-fill" cx="25" cy="11" r="1.6"/>' +
     '<rect class="pv-chip" x="14" y="22" width="56" height="13" rx="3"/><rect class="pv-chip" x="14" y="39" width="26" height="13" rx="3"/><rect class="pv-chip pv-chip--accent" x="44" y="39" width="26" height="13" rx="3"/>' +
-    '<circle cx="93" cy="17" r="7" fill="#8b5cf6"/><circle cx="108" cy="17" r="7" fill="#22c55e"/>' +
+    '<circle cx="93" cy="17" r="7" style="fill:var(--ac)"/><circle cx="108" cy="17" r="7" fill="#22c55e"/>' +
     '<circle cx="93" cy="35" r="7" fill="#f59e0b"/><circle cx="108" cy="35" r="7" fill="#38bdf8"/>' +
     '<circle class="pv-ring" cx="93" cy="17" r="10"/>' +
     '<rect class="pv-chip" x="86" y="48" width="29" height="7" rx="3.5"/>',
@@ -392,7 +312,7 @@ var PRO_FEATURE_VISUALS = {
     '<line class="pv-limit" x1="96" y1="28" x2="96" y2="43"/>' +
     '<line class="pv-text" x1="50" y1="51" x2="80" y2="51"/>',
   journals:
-    '<rect class="pv-tile" x="14" y="5" width="92" height="14" rx="4"/><circle cx="23" cy="12" r="3.2" fill="#8b5cf6"/><line class="pv-text" x1="31" y1="12" x2="68" y2="12"/><rect class="pv-chip pv-chip--green" x="84" y="9" width="16" height="6" rx="3"/>' +
+    '<rect class="pv-tile" x="14" y="5" width="92" height="14" rx="4"/><circle cx="23" cy="12" r="3.2" style="fill:var(--ac)"/><line class="pv-text" x1="31" y1="12" x2="68" y2="12"/><rect class="pv-chip pv-chip--green" x="84" y="9" width="16" height="6" rx="3"/>' +
     '<rect class="pv-tile" x="14" y="24" width="92" height="14" rx="4"/><circle cx="23" cy="31" r="3.2" fill="#22c55e"/><line class="pv-text" x1="31" y1="31" x2="60" y2="31"/><rect class="pv-chip pv-chip--red" x="84" y="28" width="16" height="6" rx="3"/>' +
     '<rect class="pv-tile" x="14" y="43" width="92" height="14" rx="4"/><circle cx="23" cy="50" r="3.2" fill="#f59e0b"/><line class="pv-text" x1="31" y1="50" x2="72" y2="50"/><rect class="pv-chip pv-chip--green" x="84" y="47" width="16" height="6" rx="3"/>',
   prop_accounts:
@@ -425,7 +345,7 @@ function showMsg(message, type) {
   } else {
     wwLog.log('[' + type + ']', message);
     var toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 24px;background:' + (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#8b5cf6') + ';color:white;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;';
+    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 24px;background:' + (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : 'var(--ac)') + ';color:white;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:slideIn 0.3s ease;';
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(function() {
@@ -591,6 +511,7 @@ async function loadPanelContent(panelId, url) {
 // ============================================================
 window.switchPanel = function(panelId) {
   wwLog.log('🔄 switchPanel: ' + panelId);
+  if (panelId !== 'panel-appearance' && window.WWThemeStudio) window.WWThemeStudio.flush();
 
   if (!panelId) {
     wwLog.warn('Panel ID boş!');
@@ -780,6 +701,35 @@ window.getPaymentMethods = function() {
 // ============================================================
 // ⭐ AVATAR FONKSİYONLARI
 // ============================================================
+// Avatar en çok ~96 px gösteriliyor; orijinal (2 MB'a kadar) yerine en uzun kenarı 256 px WebP (yoksa JPEG) yüklenir.
+// Dosya adı her yüklemede yeni olduğu için içerik hiç değişmez: 1 yıl önbellek (eskiden 1 saat, sonra yeniden iniyordu).
+var AVATAR_MAX_PX = 256;
+var AVATAR_CACHE_SECONDS = '31536000';
+
+function shrinkAvatar(file) {
+  // GIF (hareketli olabilir) ve SVG olduğu gibi kalır
+  if (!/^image\/(png|jpe?g|webp|bmp)$/i.test(file.type) || typeof document === 'undefined') return Promise.resolve(file);
+  return new Promise(function(resolve) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var scale = Math.min(1, AVATAR_MAX_PX / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      var done = function(blob) { resolve(blob && blob.size < file.size ? blob : file); };
+      canvas.toBlob(function(webp) {
+        if (webp && webp.type === 'image/webp') return done(webp);
+        canvas.toBlob(done, 'image/jpeg', 0.86);
+      }, 'image/webp', 0.86);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function uploadAvatar(file) {
   if (!file || !file.type.startsWith('image/')) {
     showMsg(t('toast.invalid_image'), 'error');
@@ -806,7 +756,9 @@ async function uploadAvatar(file) {
     return null;
   }
 
-  var ext = file.name.split('.').pop();
+  file = await shrinkAvatar(file);
+  // küçültülmüş dosya Blob'dur (adı yok): uzantı türünden; küçültülmediyse orijinal adın uzantısı
+  var ext = file.name ? file.name.split('.').pop() : (file.type === 'image/webp' ? 'webp' : 'jpg');
   var fileName = 'avatars/' + user.id + '_' + Date.now() + '.' + ext;
 
   wwLog.log('📤 Avatar yükleniyor:', fileName);
@@ -827,7 +779,8 @@ async function uploadAvatar(file) {
   }
 
   var uploadResult = await sb.storage.from('avatars').upload(fileName, file, {
-    cacheControl: '3600',
+    cacheControl: AVATAR_CACHE_SECONDS,
+    contentType: file.type || undefined,
     upsert: true
   });
 
@@ -916,7 +869,7 @@ function updateAvatarElements(url) {
   var navAvatar = safeEl('user-avatar');
   if (navAvatar) {
     if (url) {
-      navAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      navAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
       navAvatar.style.background = 'transparent';
     } else {
       navAvatar.innerHTML = '<span id="nav-avatar-text" style="font-size:13px;font-weight:600;">' + sanitizeHTML(initial) + '</span>';
@@ -927,7 +880,7 @@ function updateAvatarElements(url) {
   var sbAvatar = safeEl('sb-avatar');
   if (sbAvatar) {
     if (url) {
-      sbAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '?t=' + Date.now() + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">';
+      sbAvatar.innerHTML = '<img src="' + sanitizeHTML(url) + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">';
     } else {
       sbAvatar.innerHTML = '<span class="no-avatar" id="sb-avatar-text">' + sanitizeHTML(initial) + '</span>';
     }
@@ -941,7 +894,7 @@ function updateAvatarElements(url) {
       if (placeholder) placeholder.style.display = 'none';
       if (img) {
         img.style.display = 'block';
-        img.src = sanitizeHTML(url) + '?t=' + Date.now();
+        img.src = sanitizeHTML(url);
       }
     } else {
       if (placeholder) {
@@ -958,7 +911,7 @@ function updateAvatarElements(url) {
     if (popupPlaceholder) popupPlaceholder.style.display = 'none';
     if (popupImg) {
       popupImg.style.display = 'block';
-      popupImg.src = sanitizeHTML(url) + '?t=' + Date.now();
+      popupImg.src = sanitizeHTML(url);
     }
   } else {
     if (popupPlaceholder) {
@@ -1332,6 +1285,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
 
   var STORAGE_KEY = isExtending ? 'ww_plan_extend_state' : 'ww_plan_checkout_state';
 
+  function getWizardUserId() {
+    var u = window.SETTINGS_STATE && window.SETTINGS_STATE.currentUser;
+    return u && u.id ? u.id : null;
+  }
+
   function saveWizardState() {
     try {
       var state = {
@@ -1340,6 +1298,7 @@ function setupPlanWizard(wizardRoot, isExtending) {
         payMethod: selectedPayMethod,
         code: appliedReferralCode,
         discount: appliedDiscount,
+        userId: getWizardUserId(),
         updatedAt: Date.now()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1444,7 +1403,9 @@ function setupPlanWizard(wizardRoot, isExtending) {
     } else {
       selectedPayMethod = 'CARD';
     }
-    if (savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
+    // Kupon yalnızca onu uygulayan hesaba geri yüklenir (aynı tarayıcıda başka hesap/eski test kodu görünmesin)
+    var sameUser = !!savedState.userId && savedState.userId === getWizardUserId();
+    if (sameUser && savedState.code && typeof savedState.discount === 'number' && savedState.discount > 0) {
       appliedReferralCode = savedState.code;
       appliedDiscount = savedState.discount;
     }
@@ -1519,6 +1480,15 @@ function setupPlanWizard(wizardRoot, isExtending) {
     if (directPayTimerInterval) { clearInterval(directPayTimerInterval); directPayTimerInterval = null; }
     if (directPayPollInterval) { clearInterval(directPayPollInterval); directPayPollInterval = null; }
     closeQrModal();
+    endDirectPaymentWatch(false);
+  }
+
+  // Yoklama bitince (süre aşımı ya da adım değişimi) çağıran akışın arayüzü toparlanır (kartta: ödeme butonu)
+  var directPayWatchEnd = null;
+  function endDirectPaymentWatch(timedOut) {
+    var cb = directPayWatchEnd;
+    directPayWatchEnd = null;
+    if (cb) cb(timedOut);
   }
 
   function goToStep(step, isInitial) {
@@ -1673,6 +1643,31 @@ function setupPlanWizard(wizardRoot, isExtending) {
     }
     if (btnTo4) btnTo4.style.display = 'inline-flex';
     if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_continue_with_discount', 'İndirimle Devam Et →');
+    revalidateRestoredCoupon(appliedReferralCode);
+  }
+
+  // Geri yüklenen kodun süresi dolmuş/limiti bitmiş/kullanılmış olabilir: sessizce yeniden doğrula, geçersizse kaldır
+  async function revalidateRestoredCoupon(code) {
+    try {
+      var sb = window.sb || window.supabase;
+      var userId = getWizardUserId();
+      if (!sb || !userId) return;
+      var res = await sb.rpc('validate_referral_code', { p_code: code, p_user_id: userId });
+      if (!res || res.error || appliedReferralCode !== code) return;
+      if (res.data && res.data.valid) return;
+      appliedReferralCode = null;
+      appliedDiscount = 0;
+      saveWizardState();
+      if (couponInput) couponInput.value = '';
+      if (couponStatus) {
+        couponStatus.style.display = 'none';
+        couponStatus.className = 'coupon-status-box';
+        couponStatus.textContent = '';
+      }
+      if (btnTo4) btnTo4.style.display = 'none';
+      if (btnSkipCoupon) btnSkipCoupon.textContent = t('settings.plan_skip_coupon', 'Kuponum Yok, Bu Adımı Atla →');
+      if (currentStep === 4) renderSummary();
+    } catch (e) {}
   }
 
   if (btnBackTo2) {
@@ -2008,7 +2003,13 @@ function setupPlanWizard(wizardRoot, isExtending) {
             onComplete: function() {
               currentPaymentData = { baselineExpiryMs: baselineExpiryMs, period: selectedPeriod, payCurrency: 'CARD' };
               btnSubmitPayment.innerHTML = '<span>' + t('settings.plan_card_confirming', {}, 'Ödeme onaylanıyor, Pro birkaç saniye içinde açılacak...') + '</span>';
-              startDirectPaymentWatch();
+              // 20 dk içinde onay gelmezse buton kilitli kalmasın; Pro yine webhook ile açılır
+              startDirectPaymentWatch(function(timedOut) {
+                restoreBtn();
+                if (timedOut) {
+                  showMsg(t('settings.plan_card_confirm_timeout', {}, 'Ödeme onayı gecikiyor. Kartınızdan ücret çekildiyse Pro birkaç dakika içinde otomatik açılır; sayfayı daha sonra yenileyin. Tekrar ödeme yapmayın.'), 'info');
+                }
+              });
             },
             onClose: restoreBtn
           });
@@ -2024,6 +2025,11 @@ function setupPlanWizard(wizardRoot, isExtending) {
             currentPaymentData = result;
             saveActiveDirectPayment(result);
             goToStep(5);
+            btnSubmitPayment.disabled = false;
+            btnSubmitPayment.innerHTML = origContent;
+          } else if (!(result && result.invoiceUrl)) {
+            // upgradeToPro hata durumunda fırlatmaz, null döner (hata mesajını kendisi gösterir): buton kilitli kalmasın.
+            // invoiceUrl varsa sayfa NowPayments'a yönleniyor, buton kapalı kalabilir.
             btnSubmitPayment.disabled = false;
             btnSubmitPayment.innerHTML = origContent;
           }
@@ -2055,8 +2061,10 @@ function setupPlanWizard(wizardRoot, isExtending) {
     var timerEl = wizardRoot.querySelector('#direct-pay-countdown');
     var successBox = wizardRoot.querySelector('#direct-pay-success-box');
     var directCard = wizardRoot.querySelector('.direct-pay-card');
+    var expiredBox = wizardRoot.querySelector('#direct-pay-expired-box');
 
     if (successBox) successBox.style.display = 'none';
+    if (expiredBox) expiredBox.style.display = 'none';
     if (directCard) directCard.style.display = 'grid';
 
     var payCur = (currentPaymentData.payCurrency || 'LTC').toUpperCase();
@@ -2118,6 +2126,12 @@ function setupPlanWizard(wizardRoot, isExtending) {
         directPayTimerInterval = null;
         clearActiveDirectPayment();
         if (timerEl) timerEl.textContent = '00:00 ' + t('settings.plan_expired_time', {}, '(Süre Doldu)');
+        // Süresi geçmiş adrese para gönderilmesin: tutar/adres/QR gizlenir
+        closeQrModal();
+        if (directCard) directCard.style.display = 'none';
+        if (expiredBox) expiredBox.style.display = 'block';
+        // Son dakikada gönderilmiş transferin onayı birkaç dakika sürebilir: yoklama 20 dk daha sürer
+        startDirectPaymentWatch();
         return;
       }
       var m = Math.floor(rem / 60);
@@ -2134,20 +2148,23 @@ function setupPlanWizard(wizardRoot, isExtending) {
     startDirectPaymentWatch();
   }
 
-  function startDirectPaymentWatch() {
+  function startDirectPaymentWatch(onEnd) {
     if (directPayPollInterval) clearInterval(directPayPollInterval);
+    directPayWatchEnd = onEnd || null;
 
     var attempts = 0;
     directPayPollInterval = setInterval(async function() {
       if (!document.body.contains(wizardRoot)) {
         clearInterval(directPayPollInterval);
         directPayPollInterval = null;
+        directPayWatchEnd = null;
         return;
       }
       attempts++;
       if (attempts > 240) {
         clearInterval(directPayPollInterval);
         directPayPollInterval = null;
+        endDirectPaymentWatch(true);
         return;
       }
 
@@ -2175,15 +2192,18 @@ function setupPlanWizard(wizardRoot, isExtending) {
   }
 
   function handleDirectPaymentSuccess() {
+    directPayWatchEnd = null;   // yönlendirme beklenirken ödeme butonu yeniden açılmasın
     stopDirectPaymentWatch();
     clearActiveDirectPayment();
 
     var successBox = wizardRoot.querySelector('#direct-pay-success-box');
     var directCard = wizardRoot.querySelector('.direct-pay-card');
+    var expiredBox = wizardRoot.querySelector('#direct-pay-expired-box');
     var statusText = wizardRoot.querySelector('#direct-pay-status-text');
 
     if (statusText) statusText.textContent = t('settings.plan_status_confirmed', {}, 'Ödeme onaylandı! Pro aktif.');
     if (directCard) directCard.style.display = 'none';
+    if (expiredBox) expiredBox.style.display = 'none';
     if (successBox) successBox.style.display = 'block';
 
     showMsg(t('settings.plan_upgraded_success', {}, '💎 Tebrikler! Pro üyeliğiniz başarıyla aktif edildi.'), 'success');
@@ -2277,6 +2297,17 @@ function setupPlanWizard(wizardRoot, isExtending) {
         btnManualCheck.disabled = false;
         btnManualCheck.innerHTML = origBtn;
       }
+    });
+  }
+
+  // Süre dolunca: yeni ödeme için özet adımına dönülür (yeni adres/tutar alınır)
+  var btnNewPayment = wizardRoot.querySelector('#btn-new-payment-after-expiry');
+  if (btnNewPayment) {
+    btnNewPayment.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearActiveDirectPayment();
+      currentPaymentData = null;
+      goToStep(4);
     });
   }
 
@@ -2416,6 +2447,11 @@ function startTimer(expiresAt) {
 // ============================================================
 function initPassword() {
   wwLog.log('🔐 Şifre paneli başlatılıyor...');
+
+  // Şifre yöneticisi yeni şifreyi doğru hesaba kaydetsin diye formdaki gizli kullanıcı adı alanı
+  var usernameField = safeEl('password-username');
+  var pwUser = window.SETTINGS_STATE.currentUser;
+  if (usernameField && pwUser && pwUser.email) usernameField.value = pwUser.email;
 
   var btn = safeEl('change-password-btn');
   if (btn && !btn._passwordBound) {
@@ -2690,15 +2726,10 @@ function initAppearance() {
     return;
   }
 
-  if (typeof window.loadThemeCustomization === 'function') {
-    wwLog.log('✅ loadThemeCustomization fonksiyonu bulundu, çağrılıyor...');
-    window.loadThemeCustomization();
-  } else if (typeof loadThemeCustomization === 'function') {
-    wwLog.log('✅ loadThemeCustomization (global) çağrılıyor...');
-    loadThemeCustomization();
+  if (window.WWThemeStudio) {
+    window.WWThemeStudio.mount(container);
   } else {
-    wwLog.warn('⚠️ loadThemeCustomization fonksiyonu bulunamadı, fallback UI kullanılıyor...');
-    loadThemeCustomizationFallback();
+    wwLog.warn('⚠️ theme-studio.js yüklenmedi');
   }
 }
 
@@ -2718,290 +2749,6 @@ function initStudioDisclosure() {
   studio.addEventListener('toggle', function() {
     try { localStorage.setItem('ww_theme_studio_open', studio.open ? '1' : '0'); } catch (e) {}
   });
-}
-
-function loadThemeCustomizationFallback() {
-  var container = document.getElementById('theme-customization-container');
-  if (!container) return;
-
-  var isLight = document.body.classList.contains('light-theme');
-
-  if (isLight) {
-    var tplLight = document.getElementById('tpl-theme-light-locked');
-    if (!tplLight) return;
-    var cloneLight = tplLight.content.cloneNode(true);
-    container.innerHTML = '';
-    container.appendChild(cloneLight);
-    if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-
-    var switchBtn = container.querySelector('#theme-switch-to-dark-btn');
-    if (switchBtn) {
-      switchBtn.addEventListener('click', function() {
-        var toggle = document.getElementById('theme-toggle');
-        if (toggle && !toggle.checked) toggle.click();
-      });
-    }
-    return;
-  }
-
-  getUserPlanSilent().then(function(result) {
-    var isPro = result.plan === 'premium';
-
-    if (!isPro) {
-      var tplLocked = document.getElementById('tpl-theme-locked');
-      if (!tplLocked) return;
-      container.innerHTML = '';
-      container.appendChild(tplLocked.content.cloneNode(true));
-      if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-      return;
-    }
-
-    var tplForm = document.getElementById('tpl-theme-form');
-    if (!tplForm) return;
-    var cloneForm = tplForm.content.cloneNode(true);
-
-    var settings = typeof getThemeSettings === 'function' ? getThemeSettings() : {
-      backgroundColor: '#07070c', surfaceColor: '#0e0e16', borderColor: '#1a1a28', textColor: '#f0f0f8', fontSize: 16
-    };
-
-    var bgInput = cloneForm.querySelector('#custom-bg-color');
-    var bgText = cloneForm.querySelector('#custom-bg-color-text');
-    var surfInput = cloneForm.querySelector('#custom-surface-color');
-    var surfText = cloneForm.querySelector('#custom-surface-color-text');
-    var borderInput = cloneForm.querySelector('#custom-border-color');
-    var borderText = cloneForm.querySelector('#custom-border-color-text');
-    var textInput = cloneForm.querySelector('#custom-text-color');
-    var textText = cloneForm.querySelector('#custom-text-color-text');
-    var fontSize = cloneForm.querySelector('#custom-font-size');
-    var fontSizeDisplay = cloneForm.querySelector('#font-size-display');
-
-    if (bgInput) bgInput.value = settings.backgroundColor || '#07070c';
-    if (bgText) bgText.value = settings.backgroundColor || '#07070c';
-    if (surfInput) surfInput.value = settings.surfaceColor || '#0e0e16';
-    if (surfText) surfText.value = settings.surfaceColor || '#0e0e16';
-    if (borderInput) borderInput.value = settings.borderColor || '#1a1a28';
-    if (borderText) borderText.value = settings.borderColor || '#1a1a28';
-    if (textInput) textInput.value = settings.textColor || '#f0f0f8';
-    if (textText) textText.value = settings.textColor || '#f0f0f8';
-    if (fontSize) fontSize.value = settings.fontSize || 16;
-    if (fontSizeDisplay) fontSizeDisplay.textContent = (settings.fontSize || 16) + 'px';
-
-    cloneForm.querySelectorAll('[data-icon]').forEach(function(el) {
-      el.innerHTML = getLucideIcon(el.getAttribute('data-icon'), 14);
-    });
-
-    container.innerHTML = '';
-    container.appendChild(cloneForm);
-
-    if (window.i18n && typeof window.i18n.apply === 'function') window.i18n.apply();
-
-    setupThemeEventsFallback();
-
-  }).catch(function(err) {
-    console.error('❌ Pro kontrol hatası:', err);
-    container.innerHTML = '<div style="text-align:center;padding:1.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);"><p style="color:var(--muted);">⚠️ ' + t('settings.theme_load_error') + '</p><button onclick="location.reload()" class="btn btn-ghost" style="margin-top:0.5rem;">🔄 ' + t('overtrade.retry') + '</button></div>';
-  });
-}
-
-function setupThemeEventsFallback() {
-  var bgColor = document.getElementById('custom-bg-color');
-  var surfaceColor = document.getElementById('custom-surface-color');
-  var borderColor = document.getElementById('custom-border-color');
-  var textColor = document.getElementById('custom-text-color');
-  var fontSize = document.getElementById('custom-font-size');
-  var fontSizeDisplay = document.getElementById('font-size-display');
-  var previewBox = document.getElementById('theme-preview-box');
-
-  function updateChips() {
-    var chipBg = document.getElementById('chip-bg');
-    var chipSurf = document.getElementById('chip-surface');
-    var chipBorder = document.getElementById('chip-border');
-    var chipText = document.getElementById('chip-text');
-    if (chipBg && bgColor) chipBg.style.background = bgColor.value;
-    if (chipSurf && surfaceColor) chipSurf.style.background = surfaceColor.value;
-    if (chipBorder && borderColor) chipBorder.style.background = borderColor.value;
-    if (chipText && textColor) chipText.style.background = textColor.value;
-  }
-
-  function updateFontPills(val) {
-    document.querySelectorAll('.font-pill').forEach(function(pill) {
-      pill.classList.toggle('active', pill.dataset.size === String(val));
-    });
-  }
-
-  function updatePreview(applyToRoot) {
-    updateChips();
-    if (fontSize) updateFontPills(fontSize.value);
-
-    if (applyToRoot) {
-      var root = document.documentElement;
-      if (bgColor) root.style.setProperty('--bg', bgColor.value);
-      if (surfaceColor) {
-        root.style.setProperty('--surface', surfaceColor.value);
-        root.style.setProperty('--surface2', surfaceColor.value);
-      }
-      if (borderColor) root.style.setProperty('--border', borderColor.value);
-      if (textColor) root.style.setProperty('--text', textColor.value);
-      if (fontSize) {
-        var size = fontSize.value + 'px';
-        document.body.style.fontSize = size;
-        if (fontSizeDisplay) fontSizeDisplay.textContent = size;
-      }
-    } else {
-      if (fontSize && fontSizeDisplay) {
-        fontSizeDisplay.textContent = fontSize.value + 'px';
-      }
-    }
-    if (previewBox) {
-      if (surfaceColor) previewBox.style.background = surfaceColor.value;
-      if (borderColor) previewBox.style.borderColor = borderColor.value;
-      if (textColor) {
-        previewBox.style.color = textColor.value;
-        previewBox.querySelectorAll('.preview-text-contrast').forEach(function(el) {
-          el.style.color = textColor.value;
-        });
-      }
-    }
-  }
-
-  var PRESETS = {
-    obsidian: { bg: '#07070c', surface: '#0e0e16', border: '#1a1a28', text: '#f0f0f8' },
-    violet:   { bg: '#080612', surface: '#120e24', border: '#261e47', text: '#f0f0f8' },
-    slate:    { bg: '#090d14', surface: '#0f172a', border: '#1e293b', text: '#f1f5f9' },
-    stealth:  { bg: '#000000', surface: '#0c0c0e', border: '#242428', text: '#ffffff' }
-  };
-
-  document.querySelectorAll('.preset-card').forEach(function(btn) {
-    if (btn._presetBound) return;
-    btn._presetBound = true;
-    btn.addEventListener('click', function() {
-      var p = PRESETS[this.dataset.preset];
-      if (!p) return;
-      document.querySelectorAll('.preset-card').forEach(function(b) { b.classList.remove('active'); });
-      this.classList.add('active');
-
-      if (bgColor) bgColor.value = p.bg;
-      if (surfaceColor) surfaceColor.value = p.surface;
-      if (borderColor) borderColor.value = p.border;
-      if (textColor) textColor.value = p.text;
-
-      var bgText = document.getElementById('custom-bg-color-text');
-      var surfText = document.getElementById('custom-surface-color-text');
-      var borderText = document.getElementById('custom-border-color-text');
-      var textText = document.getElementById('custom-text-color-text');
-      if (bgText) bgText.value = p.bg;
-      if (surfText) surfText.value = p.surface;
-      if (borderText) borderText.value = p.border;
-      if (textText) textText.value = p.text;
-
-      updatePreview(true);
-    });
-  });
-
-  document.querySelectorAll('.font-pill').forEach(function(pill) {
-    if (pill._pillBound) return;
-    pill._pillBound = true;
-    pill.addEventListener('click', function() {
-      var size = parseInt(this.dataset.size, 10);
-      if (size && fontSize) {
-        fontSize.value = size;
-        updatePreview(true);
-      }
-    });
-  });
-
-  function saveTheme() {
-    var isLight = document.body.classList.contains('light-theme');
-
-    if (isLight) {
-      var fontOnly = { fontSize: parseInt(fontSize.value) };
-      if (typeof saveThemeSettings === 'function') {
-        saveThemeSettings(fontOnly);
-      } else if (typeof window.saveThemeSettings === 'function') {
-        window.saveThemeSettings(fontOnly);
-      }
-      showMsg('✅ ' + t('settings.font_updated_light'), 'success');
-      return;
-    }
-
-    var settings = {
-      backgroundColor: bgColor ? bgColor.value : '#07070c',
-      surfaceColor: surfaceColor ? surfaceColor.value : '#0e0e16',
-      borderColor: borderColor ? borderColor.value : '#1a1a28',
-      textColor: textColor ? textColor.value : '#f0f0f8',
-      fontSize: fontSize ? parseInt(fontSize.value) : 16
-    };
-    if (typeof saveThemeSettings === 'function') {
-      saveThemeSettings(settings);
-    } else if (typeof window.saveThemeSettings === 'function') {
-      window.saveThemeSettings(settings);
-    }
-    showMsg('✅ ' + t('settings.theme_saved'), 'success');
-  }
-
-  function resetTheme() {
-    var defaultSettings = {
-      backgroundColor: '#07070c',
-      surfaceColor: '#0e0e16',
-      borderColor: '#1a1a28',
-      textColor: '#f0f0f8',
-      fontSize: 16
-    };
-    if (bgColor) bgColor.value = defaultSettings.backgroundColor;
-    if (surfaceColor) surfaceColor.value = defaultSettings.surfaceColor;
-    if (borderColor) borderColor.value = defaultSettings.borderColor;
-    if (textColor) textColor.value = defaultSettings.textColor;
-    if (fontSize) fontSize.value = defaultSettings.fontSize;
-    document.querySelectorAll('.preset-card').forEach(function(b) {
-      b.classList.toggle('active', b.dataset.preset === 'obsidian');
-    });
-    updatePreview(false);
-    try { localStorage.removeItem('ww_custom_theme'); } catch(e) {}
-    var root = document.documentElement;
-    root.style.removeProperty('--bg');
-    root.style.removeProperty('--surface');
-    root.style.removeProperty('--surface2');
-    root.style.removeProperty('--border');
-    root.style.removeProperty('--text');
-    document.body.style.fontSize = '';
-    showMsg('↺ ' + t('settings.theme_reset_done'), 'success');
-  }
-
-  if (bgColor && !bgColor._themeBound) {
-    bgColor._themeBound = true;
-    bgColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (surfaceColor && !surfaceColor._themeBound) {
-    surfaceColor._themeBound = true;
-    surfaceColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (borderColor && !borderColor._themeBound) {
-    borderColor._themeBound = true;
-    borderColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (textColor && !textColor._themeBound) {
-    textColor._themeBound = true;
-    textColor.addEventListener('input', function() { updatePreview(true); });
-  }
-  if (fontSize && !fontSize._themeBound) {
-    fontSize._themeBound = true;
-    fontSize.addEventListener('input', function() { updatePreview(true); });
-  }
-
-  var saveBtn = document.getElementById('save-custom-theme-btn');
-  if (saveBtn && !saveBtn._themeBound) {
-    saveBtn._themeBound = true;
-    saveBtn.addEventListener('click', saveTheme);
-  }
-
-  var resetBtn = document.getElementById('reset-custom-theme-btn');
-  if (resetBtn && !resetBtn._themeBound) {
-    resetBtn._themeBound = true;
-    resetBtn.addEventListener('click', resetTheme);
-  }
-
-  // İlk açılışta :root'u değiştirme, sadece preview kutusunu güncelle
-  updatePreview(false);
 }
 
 // ============================================================
@@ -4022,6 +3769,8 @@ if (document.readyState === 'loading') {
 
 // Sayfadan çıkarken plan geri sayımını durdur
 SETTINGS_PAGE.onLeave(function() {
+  // Tema stüdyosunda bekleyen otomatik kaydı hemen yap (seçim diğer sayfalarda da geçerli olsun)
+  if (window.WWThemeStudio) window.WWThemeStudio.flush();
   if (window.SETTINGS_STATE && window.SETTINGS_STATE.timerInterval) {
     clearInterval(window.SETTINGS_STATE.timerInterval);
     window.SETTINGS_STATE.timerInterval = null;

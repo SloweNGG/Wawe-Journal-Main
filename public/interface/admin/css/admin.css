@@ -1192,7 +1192,7 @@ body.light-theme .field input[type="date"] { color-scheme: light; }
 
 .preview-plan-card { position: relative; padding: 1rem; background: var(--adm-soft); border: 1px solid var(--border); border-radius: var(--adm-radius-sm); }
 .preview-plan-card.featured { border-color: var(--adm-accent-line); background: var(--adm-accent-soft); }
-.preview-plan-badge { position: absolute; top: -10px; right: 10px; padding: 2px 10px; background: var(--accent); border-radius: 99px; font-size: 10.5px; font-weight: 700; color: #fff; }
+.preview-plan-badge { position: absolute; top: -10px; right: 10px; padding: 2px 10px; background: var(--accent); border-radius: 99px; font-size: 10.5px; font-weight: 700; color: var(--ac-on, #fff); }
 .preview-plan-name { margin-bottom: 0.5rem; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .preview-plan-card.featured .preview-plan-name { color: var(--accent2); }
 .preview-price-row { display: flex; align-items: baseline; gap: 4px; }

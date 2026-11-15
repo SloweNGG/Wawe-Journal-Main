@@ -67,8 +67,8 @@
   min-height: calc(var(--row-h) * 2 + var(--grid-gap));
 }
 .grid-item:hover {
-  border-color: rgba(139,92,246,0.35);
-  box-shadow: 0 6px 20px rgba(139,92,246,0.1);
+  border-color: rgba(var(--ac-rgb), 0.35);
+  box-shadow: 0 6px 20px rgba(var(--ac-rgb), 0.1);
 }
 .grid-item:active {
   cursor: grabbing;
@@ -110,7 +110,7 @@
 .grid-item.menu-open .widget-settings-btn {
   opacity: 1;
   color: var(--accent);
-  background: rgba(139,92,246,0.1);
+  background: rgba(var(--ac-rgb), 0.1);
   outline: none;
 }
 /* Dokunmatik cihazlarda hover yok: ⚙ her zaman görünsün */
@@ -118,7 +118,7 @@
   .grid-item .widget-settings-btn { opacity: 0.6; }
 }
 .grid-item.menu-open {
-  border-color: rgba(139,92,246,0.5);
+  border-color: rgba(var(--ac-rgb), 0.5);
 }
 
 .grid-item .drag-handle {
@@ -138,7 +138,7 @@
 .grid-item .drag-handle:hover {
   opacity: 1;
   color: var(--accent);
-  background: rgba(139,92,246,0.1);
+  background: rgba(var(--ac-rgb), 0.1);
 }
 
 .grid-item .grid-header {

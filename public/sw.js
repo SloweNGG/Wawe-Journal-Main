@@ -1,13 +1,42 @@
 // Derleme kimliği: scripts/asset-version.mjs derlemede bu jetonu build ID ile değiştirir (geliştirmede olduğu gibi
 // kalır; o zaman cache-first devre dışı). Her deploy'da sw.js değişir → yeni SW kurulur → activate eski önbelleği siler.
 const BUILD_ID = '__WW_BUILD_ID__';
-const CACHE_VERSION = 'wawe-v53-' + BUILD_ID; // v53: sayfalar önce ağ (3 sn / çevrimdışı → önbellek); v52: sürümlü varlıklar cache-first
+const CACHE_VERSION = 'wawe-v53-' + BUILD_ID; // v53: sayfalar önce ağ (3 sn / çevrimdışı → önbellek); v52: sürümlü varlıklar cache-first; Storage avatarları ayrı wawe-storage-v1'de (deploy'da silinmez)
 const PRECACHE_URLS = ['/'];
 const IS_BUILD = /^[0-9]+$/.test(BUILD_ID);
 // ?v=<BUILD_ID> taşıyan bu türler içerik olarak hiç değişmez (yeni deploy = yeni adres)
 const VERSIONED_EXT = /\.(?:m?js|css|json|woff2?|ttf|otf|svg|png|webp|ico)$/i;
 // Sayfa (HTML) için ağın bu süre içinde cevap vermesi beklenir; gecikirse önbellekteki kopya gösterilir
 const NAV_TIMEOUT_MS = 3000;
+
+// Supabase Storage'daki avatarlar: dosya adı her yüklemede yeni (avatars/<uid>_<zaman>.<uzantı>), içerik hiç değişmez.
+// Yüklemedeki cacheControl eskiden 1 saatti: her saat ve her tarayıcı önbelleği temizliğinde yeniden iniyordu (Storage
+// "cached egress"). Burada önce önbellek; ayrı ve deploy'da SİLİNMEYEN bir önbellekte, en çok STORAGE_MAX dosya.
+const STORAGE_CACHE = 'wawe-storage-v1';
+const STORAGE_MAX = 40;
+const AVATAR_PATH = /^\/storage\/v1\/object\/public\/avatars\/[^?#]+$/;
+
+function isStorageAvatar(url) {
+  return url.protocol === 'https:' && url.hostname.endsWith('.supabase.co') && AVATAR_PATH.test(url.pathname) && !url.search;
+}
+
+function storageCacheFirst(req) {
+  const key = req.url;
+  return caches.open(STORAGE_CACHE).then((cache) => cache.match(key).then((hit) => {
+    if (hit) return hit;
+    // CORS ile (Storage "access-control-allow-origin: *" döner): opak olmayan yanıt önbelleğe yazılabilir
+    return fetch(key, { mode: 'cors', credentials: 'omit' }).then((res) => {
+      if (res && res.status === 200) {
+        const clone = res.clone();
+        cache.put(key, clone)
+          .then(() => cache.keys())
+          .then((keys) => Promise.all(keys.slice(0, Math.max(0, keys.length - STORAGE_MAX)).map((k) => cache.delete(k))))
+          .catch(() => {});
+      }
+      return res;
+    });
+  })).catch(() => fetch(req));
+}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -22,7 +51,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))
+        keys.filter((k) => k !== CACHE_VERSION && k !== STORAGE_CACHE).map((k) => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -102,6 +131,12 @@ self.addEventListener('fetch', (event) => {
 
   // API isteklerini SW'ye sokma
   if (url.pathname.startsWith('/api/')) return;
+
+  // Supabase Storage avatarı: önce önbellek (yukarı bkz.)
+  if (isStorageAvatar(url)) {
+    event.respondWith(storageCacheFirst(req));
+    return;
+  }
 
   // Cross-origin istekleri SW'ye sokma
   if (url.origin !== self.location.origin) return;

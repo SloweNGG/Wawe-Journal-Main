@@ -15,6 +15,8 @@
 //    Supabase'e yazan her istek engellenir ve sonda listelenir. --base http://127.0.0.1:<port> de olur (yerel dist + canlı Supabase);
 //    oturum yalnızca o adres + port için geçerlidir. Profil klasörü (ör. .perf-profile/) .gitignore'da; commit'lemeyin.
 // --save <klasör>: her çalıştırmanın Lighthouse raporunu JSON olarak kaydeder.
+// Her çalıştırmada supabase.co istekleri sayılır (live-guard.mjs); --mock'ta canlıya tek istek / WebSocket bile varsa hata.
+// Her çalıştırmadan sonra tarayıcı süreçlerinin kapandığı doğrulanır.
 //    Turnstile 127.0.0.1'de geçmediği için yerel adrese giriş: --login --from https://wawejournal.com (oturum taşınır).
 // Chrome yolu: CHROME=... (varsayılan: işletim sistemine göre, scripts/perf/chrome-path.mjs)
 // ============================================================
@@ -22,7 +24,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mockSession } from './mock-session.mjs';
+import { mockSession, watchWorkers, MOCK_CHROME_ARGS } from './mock-session.mjs';
+import { watchLive, closeBrowser } from './live-guard.mjs';
 import { chromePath } from './chrome-path.mjs';
 import { guardReadOnly } from './readonly-guard.mjs';
 
@@ -81,7 +84,7 @@ if (opt('login', false)) {
       }
     }
     hasSession = await onOrigin(base, (re) => Object.keys(localStorage).some((x) => new RegExp(re).test(x)));
-    await browser.close();
+    await closeBrowser(browser, path.resolve(profile));
   }
   console.log('Oturum: ' + (hasSession ? 'var (' + base + (moved ? ', ' + from + ' adresinden taşındı' : '') + ')' : 'YOK — giriş tamamlanmadı'));
   console.log('Engellenen yazma istekleri: ' + (blocked.flat().join(', ') || 'yok'));
@@ -91,9 +94,14 @@ if (opt('login', false)) {
 console.log('sayfa | puan | LCP | CLS | TBT | transfer (Supabase hariç) | istek | son adres');
 for (const name of pages) {
   for (let i = 0; i < runs; i++) {
-    const browser = await puppeteer.launch({ executablePath: chrome, headless: 'new', userDataDir: profile ? path.resolve(profile) : undefined });
+    const mock = !!opt('mock', false);
+    // sahte modda *.supabase.co hiç çözümlenmez (güvenlik ağı); her istek live-guard.mjs ile sayılır, kaçak varsa hata
+    const browser = await puppeteer.launch({ executablePath: chrome, headless: 'new', userDataDir: profile ? path.resolve(profile) : undefined, args: mock ? MOCK_CHROME_ARGS : [] });
     const page = await browser.newPage();
-    if (opt('mock', false)) await mockSession(page);
+    const ms = mock ? await mockSession(page) : null;
+    if (ms) await watchWorkers(browser, ms.backend);
+    const live = watchLive(browser, { fulfilled: ms ? ms.backend.fulfilled : null });
+    await live.ready;
     const guard = profile ? await guardReadOnly(page) : null;
     const cdp = await page.createCDPSession();
     await cdp.send('Network.clearBrowserCache');
@@ -111,6 +119,8 @@ for (const name of pages) {
       a['cumulative-layout-shift'].numericValue.toFixed(3), Math.round(a['total-blocking-time'].numericValue) + ' ms',
       (own.reduce((s, x) => s + (x.transferSize || 0), 0) / 1024).toFixed(0) + ' KB', own.length, r.finalDisplayedUrl.replace(base, '')].join(' | ')
       + (guard && guard.blocked.length ? ' | ENGELLENEN YAZMA: ' + guard.blocked.join(', ') : ''));
-    await browser.close();
+    console.log('   ' + live.line());
+    await closeBrowser(browser);
+    if (mock) live.assertNoLive();
   }
 }

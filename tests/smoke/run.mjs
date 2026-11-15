@@ -6,6 +6,8 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { watchLive, closeBrowser } from '../../scripts/perf/live-guard.mjs';
+import { MOCK_CHROME_ARGS } from '../../scripts/perf/mock-session.mjs';
 
 const require = createRequire(process.env.PP_DIR ? path.join(process.env.PP_DIR, 'x.js') : import.meta.url);
 const puppeteer = require('puppeteer-core');
@@ -153,7 +155,10 @@ const srv = await new Promise((resolve) => {
   }).listen(0, '127.0.0.1', () => resolve(s));
 });
 const port = srv.address().port;
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
+// Canlıya kaçak olmasın: *.supabase.co hiç çözümlenmez; her istek sayılır (sayfa window.sb'yi sahteyle çalışır, 0 olmalı)
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--disable-gpu', ...MOCK_CHROME_ARGS] });
+const live = watchLive(browser);
+await live.ready;
 let failed = 0;
 for (const name of names) {
   const sc = SCENARIOS[name];
@@ -194,7 +199,11 @@ for (const name of names) {
   if (bad.length || !pass) failed++;
   await ctx.close();
 }
-await browser.close();
+const liveSummary = live.summary();
+console.log(live.line());
+await closeBrowser(browser);
+console.log('tarayıcı süreçleri kapandı');
+if (liveSummary.total > 0) { console.log('FAIL canlı Supabase\'e istek gitmemeli: ' + liveSummary.liveUrls.concat(liveSummary.wsUrls).join(', ')); failed++; }
 srv.close();
 console.log(failed ? `\nSMOKE: ${failed} scenario(s) with problems` : '\nSMOKE: all scenarios passed');
 process.exit(failed ? 1 : 0);

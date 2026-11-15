@@ -272,7 +272,7 @@ export function updateNotificationUI() {
       `;
     } else {
       body.innerHTML = notifications.map(n => {
-        const isRead = n.read ? '' : 'style="background:rgba(139,92,246,0.04);"';
+        const isRead = n.read ? '' : 'style="background:rgba(var(--ac-rgb),0.04);"';
         const timeAgo = getTimeAgoSimple(n.timestamp);
         const iconClass = n.type === NOTIFICATION_TYPES.OVERTRADE_CRITICAL ? 'danger' :
                           n.type === NOTIFICATION_TYPES.OVERTRADE_WARNING ? 'warning' :

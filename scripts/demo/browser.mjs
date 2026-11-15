@@ -4,7 +4,9 @@
 // ============================================================
 // - dist/ (npx astro build) yerel bir statik sunucudan servis edilir.
 // - *.supabase.co'ya giden HER istek backend.mjs'e yönlenir; realtime websocket yerelde cevaplanır.
-//   Canlıya hiçbir istek çıkmaz: izin listesindeki CDN'ler dışındaki tüm dış istekler iptal edilir.
+//   Canlıya hiçbir istek çıkmaz: izin listesindeki CDN'ler dışındaki tüm dış istekler iptal edilir. Güvenlik ağı: Chrome
+//   *.supabase.co'yu hiç çözümlemez; her supabase.co isteği ve gerçek WebSocket sayılır, kaçak varsa close() hata verir
+//   (fix/live-traffic 3). close() tarayıcı süreçlerinin kapandığını da doğrular.
 // - CDN dosyaları .demo-data/cdn-cache'e yazılır; sonraki çalıştırmalar internet olmadan da açılır.
 // - Tarayıcı saati demo "şimdi"sine (db.meta.now) kaydırılır: Kasım 2026 dolu ay olarak görünür.
 // Playwright repo bağımlılığı değil: PW_DIR=<node_modules/playwright içeren klasör> ile verilir.
@@ -15,7 +17,9 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { createBackend } from './backend.mjs';
+import { MOCK_CHROME_ARGS } from '../perf/mock-session.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DATA = path.join(ROOT, '.demo-data');
@@ -82,16 +86,32 @@ export async function launch({ viewport, deviceScaleFactor = 1, headless = true,
   const gpu = process.env.DEMO_GPU === '0' ? [] : process.platform === 'win32'
     ? ['--use-angle=d3d11', '--enable-gpu-rasterization', '--ignore-gpu-blocklist']
     : ['--enable-gpu-rasterization', '--ignore-gpu-blocklist'];
-  const browser = await chromium.launch({ headless, args: ['--hide-scrollbars', '--force-color-profile=srgb', ...gpu, ...args] });
+  const chromePids = () => { try { return execFileSync('pgrep', ['-f', 'playwright_chromiumdev_profile'], { encoding: 'utf8' }).split('\n').map(Number).filter(Boolean); } catch (e) { return []; } };
+  const before = new Set(chromePids());
+  const browser = await chromium.launch({ headless, executablePath: process.env.CHROME || undefined,
+    args: ['--hide-scrollbars', '--force-color-profile=srgb', ...gpu, ...MOCK_CHROME_ARGS, ...args] });
   const context = await browser.newContext({
     viewport, deviceScaleFactor, colorScheme: 'dark', locale: 'en-US', timezoneId: 'Europe/Istanbul', serviceWorkers: 'block'
   });
   const blocked = new Set();
+  // canlıya kaçak sayacı: route ile cevaplanan supabase istekleri "local"; başka yoldan ağa çıkan (ya da DNS engeline
+  // takılan) supabase isteği ve gerçek WebSocket "leak"
+  const live = { local: 0, leaks: [] };
+  const handled = new WeakSet();
+  context.on('requestfailed', (r) => { if (SUPABASE_RE.test(r.url()) && !handled.has(r)) live.leaks.push(r.method() + ' ' + r.url().slice(0, 120)); });
+  context.on('requestfinished', (r) => { if (SUPABASE_RE.test(r.url()) && !handled.has(r)) live.leaks.push(r.method() + ' ' + r.url().slice(0, 120)); });
+  context.on('page', async (pg) => {
+    const cdp = await context.newCDPSession(pg).catch(() => null);
+    if (!cdp) return;
+    cdp.on('Network.webSocketCreated', (e) => { if (/supabase\.co/.test(e.url)) live.leaks.push('WebSocket ' + e.url.replace(/apikey=[^&]+/, 'apikey=…').slice(0, 120)); });
+    await cdp.send('Network.enable').catch(() => {});
+  });
 
   await context.route('**/*', async (route) => {
     const req = route.request(), url = req.url();
     if (url.startsWith(origin)) return route.continue();
     if (SUPABASE_RE.test(url)) {
+      handled.add(req); live.local++;
       // gerçekçi ağ gecikmesi: anında cevap, sayfaların dil dosyası yüklenmeden çizmesine yol açıyordu
       if (latencyMs && req.method() !== 'OPTIONS') await new Promise((r) => setTimeout(r, latencyMs));
       const out = backend.handle({ method: req.method(), url, headers: await req.allHeaders(), body: req.postData() });
@@ -154,8 +174,16 @@ export async function launch({ viewport, deviceScaleFactor = 1, headless = true,
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
   }, { offset, uid: user.id, jid: meta.journalId, target: meta.monthlyTarget, css: CLEAN_CSS + (hideToasts ? HIDE_TOASTS_CSS : '') + (blackBg ? BLACK_BG_CSS : '') });
 
-  async function close() { await browser.close(); server.close(); }
-  return { browser, context, origin, backend, meta, user, blocked, close };
+  async function close() {
+    await browser.close(); server.close();
+    // tarayıcı süreçleri gerçekten kapandı mı (bu çalıştırmanın açtıkları)
+    let left = [];
+    for (let i = 0; i < 40; i++) { left = chromePids().filter((p) => !before.has(p)); if (!left.length) break; await new Promise((r) => setTimeout(r, 200)); }
+    if (left.length) { for (const p of left) { try { process.kill(p, 'SIGKILL'); } catch (e) {} } throw new Error('Tarayıcı süreçleri kapanmadı (öldürüldü): ' + left.join(', ')); }
+    console.log(`supabase.co istekleri: ${live.local + live.leaks.length} (yerel ${live.local}, CANLI ${live.leaks.length}) | tarayıcı süreçleri kapandı`);
+    if (live.leaks.length) throw new Error('DEMO: canlıya kaçak ' + live.leaks.length + '\n  ' + live.leaks.slice(0, 20).join('\n  '));
+  }
+  return { browser, context, origin, backend, meta, user, blocked, live, close };
 }
 
 // Demo kullanıcıyla oturum açar: uygulamanın kendi supabase istemcisiyle e-posta/şifre girişi (yerel sahte Auth'a karşı;

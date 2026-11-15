@@ -9,11 +9,14 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 // ⭐ TEMA BAŞLATMA - SAYFA YÜKLENİRKEN (EN BAŞTA ÇALIŞIR)
 // ============================================================
 
+// Grafiklerin vurgu rengi: tema stüdyosunda seçilen renk (varsayılan #8b5cf6). Canvas CSS değişkeni okuyamaz.
+function wwAccent() {
+  return (window.WWTheme && typeof window.WWTheme.accent === 'function') ? window.WWTheme.accent() : '#8b5cf6';
+}
+
 (function initTheme() {
   try {
     var savedTheme = localStorage.getItem('ww_theme');
-    var savedFontSize = localStorage.getItem('ww_font_size');
-    var customTheme = localStorage.getItem('ww_custom_theme');
 
     if (savedTheme === 'light') {
       document.body.classList.add('light-theme');
@@ -21,26 +24,9 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       document.body.classList.remove('light-theme');
     }
 
-    if (savedFontSize) {
-      document.body.style.fontSize = savedFontSize + 'px';
-    }
+    if (window.WWTheme) window.WWTheme.applyFont();
 
-    if (savedTheme !== 'light' && customTheme) {
-      try {
-        var settings = JSON.parse(customTheme);
-        var root = document.documentElement;
-        if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-        if (settings.surfaceColor) {
-          root.style.setProperty('--surface', settings.surfaceColor);
-          root.style.setProperty('--surface2', settings.surfaceColor);
-        }
-        if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-        if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-        if (settings.fontSize) {
-          document.body.style.fontSize = settings.fontSize + 'px';
-        }
-      } catch (e) { }
-    }
+    if (window.WWTheme) window.WWTheme.apply();
 
     wwLog.log('🎨 [dashboard.js] Tema ayarlandı:', savedTheme || 'dark');
   } catch (e) { }
@@ -287,7 +273,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       mutedColor: c ? c.muted : (isLight ? '#64748b' : '#a8a8c0'),
       gridColor: c ? c.grid : (isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'),
       zeroColor: c ? c.zero : (isLight ? 'rgba(100,116,139,0.35)' : 'rgba(168,168,192,0.28)'),
-      accent: '#8b5cf6',
+      accent: wwAccent(),
       green: isLight ? '#10b981' : '#22c55e',
       red: isLight ? '#dc2626' : '#ef4444',
       surface: c ? c.surface : (isLight ? '#ffffff' : '#000000')
@@ -390,26 +376,12 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
 
   // ⭐ storage event - başka sekmede tema değişirse
   PAGE.on(window, 'storage', function (e) {
-    if (e.key === 'ww_theme') {
+    if (e.key === 'ww_theme' || e.key === 'ww_custom_theme') {
       wwLog.log('🔄 [Dashboard] Tema değişikliği algılandı (storage):', e.newValue);
-      var isLight = e.newValue === 'light';
+      var isLight = localStorage.getItem('ww_theme') === 'light';
       document.body.classList.toggle('light-theme', isLight);
 
-      var customTheme = localStorage.getItem('ww_custom_theme');
-      if (customTheme && !isLight) {
-        try {
-          var settings = JSON.parse(customTheme);
-          var root = document.documentElement;
-          if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-          if (settings.surfaceColor) {
-            root.style.setProperty('--surface', settings.surfaceColor);
-            root.style.setProperty('--surface2', settings.surfaceColor);
-          }
-          if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-          if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-          if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-        } catch (e) { }
-      }
+      if (window.WWTheme) window.WWTheme.apply();
 
       setTimeout(resetChartsForTheme, 100);
     }
@@ -418,18 +390,6 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
   // ⭐ themeChanged event - settings.js bu event'i dispatch ediyor
   PAGE.on(document, 'themeChanged', function (e) {
     wwLog.log('🔄 [Dashboard] themeChanged event yakalandı');
-    if (e.detail && e.detail.settings && !document.body.classList.contains('light-theme')) {
-      var settings = e.detail.settings;
-      var root = document.documentElement;
-      if (settings.backgroundColor) root.style.setProperty('--bg', settings.backgroundColor);
-      if (settings.surfaceColor) {
-        root.style.setProperty('--surface', settings.surfaceColor);
-        root.style.setProperty('--surface2', settings.surfaceColor);
-      }
-      if (settings.borderColor) root.style.setProperty('--border', settings.borderColor);
-      if (settings.textColor) root.style.setProperty('--text', settings.textColor);
-      if (settings.fontSize) document.body.style.fontSize = settings.fontSize + 'px';
-    }
     setTimeout(resetChartsForTheme, 100);
   });
 
@@ -1393,7 +1353,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
       var reach = Math.max(dMax - dMin, 1) * 1.5;
       if (typeof lv.targetAhead === 'number' && lv.targetAhead > 0 && (series._last + lv.targetAhead) - dMax <= reach) {
         conv.target = series._last + lv.targetAhead;
-        series._lines.push(series.createPriceLine({ price: conv.target, color: '#8b5cf6', lineWidth: 1, lineStyle: 2, axisLabelVisible: false }));
+        series._lines.push(series.createPriceLine({ price: conv.target, color: wwAccent(), lineWidth: 1, lineStyle: 2, axisLabelVisible: false }));
         addChip(conv.target, lv.targetLabel, 'target');
       }
       if (typeof lv.stopBehind === 'number' && lv.stopBehind >= 0 && dMin - (series._last - lv.stopBehind) <= reach) {
@@ -1679,7 +1639,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           speed: 400
         }
       },
-      colors: ['#8b5cf6'],
+      colors: [wwAccent()],
       fill: {
         type: 'gradient',
         gradient: {
@@ -1873,7 +1833,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           speed: 400
         }
       },
-      colors: ['#8b5cf6'],
+      colors: [wwAccent()],
       plotOptions: {
         bar: {
           borderRadius: 4,
@@ -2060,7 +2020,7 @@ if (typeof window !== 'undefined' && !window.wwLog) window.wwLog = wwLog;
           speed: 400
         }
       },
-      colors: ['#8b5cf6', '#f97316'],
+      colors: [wwAccent(), '#f97316'],
       labels: [
         (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.chart.long') || 'Long') : 'Long',
         (typeof i18n !== 'undefined' && i18n.t) ? (i18n.t('dashboard.chart.short') || 'Short') : 'Short'

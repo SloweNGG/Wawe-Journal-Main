@@ -134,3 +134,22 @@ describe('render kapsam notu', () => {
     assert.doesNotMatch(load().render(propCtx({})), /pc2-scope-note/);
   });
 });
+
+describe('prop card: pass probability line', () => {
+  const card = (odds, lang = 'tr') => load().render({
+    t: (k, p) => k + (p ? JSON.stringify(p) : ''), esc, fmtPlain: (v) => String(v), fmtDelta: (v) => String(v), fmtPct: (v) => v + '%',
+    localeStr: 'tr-TR', curLang: lang, firmName: 'FTMO', phaseName: 'Phase 1', phaseIndex: 0, phaseCount: 2, warningsCount: 0,
+    st: 'in_progress', statusIcon: '', statusText: 'x', targetAmount: 1000, targetRem: 500, targetPct: 50, startBal: 10000, balNow: 10500,
+    maxStop: 9000, maxDist: 1500, maxAllowed: 1000, dailyLimit: 500, dailyRem: 500, dailyToday: 0, dayCount: 2, dayMin: 4,
+    totalPnl: 500, totalTrades: 10, wrPct: 50, tradesLabel: 'İşlem', odds,
+  });
+  it('shows the chance, colored, with the smaller-risk hint when there is one', () => {
+    const h = card({ pass: 38.4, runs: 1000, better: 61.2, cut: 50 });
+    assert.match(h, /pc2-odds warn/); assert.match(h, /<b>%38<\/b>/); assert.match(h, /prop\.v2_odds_better\{&quot;cut&quot;:&quot;%50&quot;,&quot;better&quot;:&quot;%61&quot;\}/);
+    assert.match(card({ pass: 72, runs: 1000, better: null, cut: null }, 'en'), /pc2-odds ok[^>]*><span>prop\.v2_odds<\/span><b>72%<\/b><\/div>/);
+    assert.match(card({ pass: 12, runs: 1000 }), /pc2-odds bad/);
+  });
+  it('no odds (not enough trades, passed, failed, engine missing): no line', () => {
+    assert.ok(!/pc2-odds/.test(card(null))); assert.ok(!/pc2-odds/.test(card(undefined)));
+  });
+});

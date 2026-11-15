@@ -5,8 +5,8 @@
    Mobil: Dikey bottom-sheet stili, dokunmatik uyumlu.
 
    Tema Renkleri:
-     Dark (Varsayılan): #0a0a0f, kart #111118, mor #7c6dfa / #9b8bfa
-     Light: #f4f4f9, kart #ffffff, mor #6d5ce0
+     Dark (Varsayılan): #0a0a0f, kart #111118, mor var(--ac-b1) / var(--ac-b3)
+     Light: #f4f4f9, kart #ffffff, mor var(--ac-b4)
    ============================================================ */
 
 :root {
@@ -28,10 +28,10 @@
   --z-modal-overlay: 1000;
 
   /* Renk değişkenleri — DARK (Varsayılan) */
-  --qa-accent: #7c6dfa;
-  --qa-accent-light: #9b8bfa;
-  --qa-accent-tint: rgba(124, 109, 250, 0.08);
-  --qa-accent-tint-strong: rgba(124, 109, 250, 0.16);
+  --qa-accent: var(--ac-b1);
+  --qa-accent-light: var(--ac-b3);
+  --qa-accent-tint: rgba(var(--ac-b1-rgb), 0.08);
+  --qa-accent-tint-strong: rgba(var(--ac-b1-rgb), 0.16);
   /* Panel siyah (diğer kart ve menülerle aynı); alanlar siyah zeminde seçilebilen koyu ton */
   --qa-surface: #000000;
   --qa-surface2: #0d0d14;
@@ -48,10 +48,10 @@
 
 /* ⭐ LIGHT TEMA */
 body.light-theme {
-  --qa-accent: #6d5ce0;
-  --qa-accent-light: #7c6dfa;
-  --qa-accent-tint: rgba(109, 92, 224, 0.08);
-  --qa-accent-tint-strong: rgba(109, 92, 224, 0.16);
+  --qa-accent: var(--ac-b4);
+  --qa-accent-light: var(--ac-b1);
+  --qa-accent-tint: rgba(var(--ac-b4-rgb), 0.08);
+  --qa-accent-tint-strong: rgba(var(--ac-b4-rgb), 0.16);
   --qa-surface: #ffffff;
   --qa-surface2: #f4f4f8;
   --qa-surface3: #ebebf2;
@@ -99,7 +99,7 @@ body.light-theme {
   color: #fff;
   background: linear-gradient(135deg, var(--qa-accent) 0%, var(--qa-accent-light) 100%);
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 12px 28px rgba(124, 109, 250, 0.4);
+  box-shadow: 0 12px 28px rgba(var(--ac-b1-rgb), 0.4);
 }
 .quick-add-fab:active {
   transform: translateY(0) scale(0.98);
@@ -423,7 +423,7 @@ body.light-theme {
   border-color: var(--qa-accent);
   background: var(--qa-accent-tint-strong);
   color: var(--qa-accent-light);
-  box-shadow: 0 0 12px rgba(124, 109, 250, 0.15);
+  box-shadow: 0 0 12px rgba(var(--ac-b1-rgb), 0.15);
 }
 .quick-add-instrument-btn:focus-visible {
   outline: 2px solid var(--qa-accent);
@@ -793,7 +793,7 @@ body.light-theme {
   font-weight: 600;
   color: var(--qa-accent-light);
   background: var(--qa-accent-tint);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(var(--ac-rgb), 0.2);
   padding: 1px 6px;
   border-radius: 4px;
   max-width: 140px;
@@ -856,7 +856,7 @@ body.light-theme .qa-comm-modal-overlay {
   border: 1px solid var(--qa-border-strong);
   border-top: 3px solid var(--qa-accent);
   border-radius: var(--qa-r-lg);
-  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 35px rgba(124, 109, 250, 0.16);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 35px rgba(var(--ac-b1-rgb), 0.16);
   padding: 1.35rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -970,7 +970,7 @@ body.light-theme .qa-comm-modal-dialog {
   background: var(--qa-accent-tint-strong);
   border-color: var(--qa-accent);
   color: var(--qa-accent-light);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.28);
+  box-shadow: 0 0 12px rgba(var(--ac-rgb), 0.28);
 }
 .qa-comm-chip.active::before {
   content: "";
@@ -1056,7 +1056,7 @@ body.light-theme .qa-comm-modal-dialog {
 .qa-comm-toggle-switch input:checked + .qa-comm-switch-track {
   background: var(--qa-accent);
   border-color: var(--qa-accent);
-  box-shadow: 0 0 12px rgba(124, 109, 250, 0.4);
+  box-shadow: 0 0 12px rgba(var(--ac-b1-rgb), 0.4);
 }
 .qa-comm-toggle-switch input:checked + .qa-comm-switch-track::after {
   transform: translateX(14px);
@@ -1150,7 +1150,7 @@ body.light-theme .qa-comm-modal-dialog {
   justify-content: center;
   gap: 7px;
   line-height: 1;
-  box-shadow: 0 4px 16px rgba(124, 109, 250, 0.38);
+  box-shadow: 0 4px 16px rgba(var(--ac-b1-rgb), 0.38);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .qa-comm-btn-save svg {
@@ -1160,12 +1160,12 @@ body.light-theme .qa-comm-modal-dialog {
 }
 .qa-comm-btn-save:hover {
   transform: translateY(-1.5px);
-  box-shadow: 0 6px 22px rgba(124, 109, 250, 0.55);
+  box-shadow: 0 6px 22px rgba(var(--ac-b1-rgb), 0.55);
   filter: brightness(1.08);
 }
 .qa-comm-btn-save:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(124, 109, 250, 0.35);
+  box-shadow: 0 2px 8px rgba(var(--ac-b1-rgb), 0.35);
 }
 
 body.light-theme .qa-comm-btn-cancel {
@@ -1371,7 +1371,7 @@ body.light-theme .qa-comm-btn-cancel:hover {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  box-shadow: 0 4px 14px rgba(124, 109, 250, 0.35);
+  box-shadow: 0 4px 14px rgba(var(--ac-b1-rgb), 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .quick-add-footer .btn-save svg {
@@ -1380,7 +1380,7 @@ body.light-theme .qa-comm-btn-cancel:hover {
 }
 .quick-add-footer .btn-save:hover {
   transform: translateY(-1.5px);
-  box-shadow: 0 6px 20px rgba(124, 109, 250, 0.5);
+  box-shadow: 0 6px 20px rgba(var(--ac-b1-rgb), 0.5);
 }
 .quick-add-footer .btn-save:active {
   transform: translateY(0);

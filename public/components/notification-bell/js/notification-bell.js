@@ -95,7 +95,7 @@
         }
       } else {
         body.innerHTML = notifications.map(function(n) {
-          var isRead = n.read ? '' : 'style="background:rgba(139,92,246,0.04);"';
+          var isRead = n.read ? '' : 'style="background:rgba(var(--ac-rgb),0.04);"';
           var timeAgo = getTimeAgoSimple(n.timestamp);
 
           var iconClass = 'info';

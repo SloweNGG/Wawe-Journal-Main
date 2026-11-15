@@ -51,7 +51,7 @@ import Layout from '../layouts/Layout.astro';
     }
     .support-status[data-status="busy"] { --support-c: #f59e0b; }
     .support-status[data-status="offline"] { --support-c: #71717a; }
-    .support-status[data-status="maintenance"] { --support-c: #a78bfa; }
+    .support-status[data-status="maintenance"] { --support-c: var(--ac-l1); }
 
     .support-dot {
       position: relative;
@@ -142,10 +142,10 @@ import Layout from '../layouts/Layout.astro';
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1.5px dashed rgba(167, 139, 250, 0.7);
+      border: 1.5px dashed rgba(var(--ac-l1-rgb), 0.7);
       border-radius: 12px;
       background: rgba(0, 0, 0, 0.82);
-      color: #c4b5fd;
+      color: var(--ac-l2);
       font-size: 0.95rem;
       font-weight: 700;
       z-index: 5;
@@ -158,7 +158,7 @@ import Layout from '../layouts/Layout.astro';
       background: var(--surface2, #14141e);
       padding: 4px;
       border-radius: 12px;
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.12));
       gap: 4px;
       align-self: flex-start;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -202,15 +202,15 @@ import Layout from '../layouts/Layout.astro';
       font-weight: 700;
       padding: 1px 7px;
       border-radius: 999px;
-      background: rgba(139, 92, 246, 0.18);
-      color: var(--accent3, #c084fc);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: rgba(var(--ac-rgb), 0.18);
+      color: var(--accent3, var(--ac-p1));
+      border: 1px solid rgba(var(--ac-rgb), 0.3);
     }
 
     /* Bug Card Frame */
     .bug-card {
       background: var(--surface, #0e0e16);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.14));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.14));
       border-radius: 16px;
       padding: 1.65rem 1.85rem;
       box-sizing: border-box;
@@ -282,7 +282,7 @@ import Layout from '../layouts/Layout.astro';
     .paste-hint svg {
       width: 12px;
       height: 12px;
-      color: var(--accent2, #c084fc);
+      color: var(--accent2, var(--ac-p1));
     }
 
     /* Type Chips - Compact Segmented Style */
@@ -301,7 +301,7 @@ import Layout from '../layouts/Layout.astro';
       padding: 0.42rem 0.75rem;
       border-radius: 8px;
       background: var(--surface2, #161622);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.12));
       color: var(--muted, #a0a0b8);
       font-size: 0.79rem;
       font-weight: 600;
@@ -323,10 +323,10 @@ import Layout from '../layouts/Layout.astro';
     }
 
     .type-chip-pill.active {
-      background: rgba(139, 92, 246, 0.14);
-      border-color: rgba(139, 92, 246, 0.45);
-      color: #c4b5fd;
-      box-shadow: 0 0 12px -2px rgba(139, 92, 246, 0.25);
+      background: rgba(var(--ac-rgb), 0.14);
+      border-color: rgba(var(--ac-rgb), 0.45);
+      color: var(--ac-l2);
+      box-shadow: 0 0 12px -2px rgba(var(--ac-rgb), 0.25);
     }
 
     /* Priority Compact Chips */
@@ -345,7 +345,7 @@ import Layout from '../layouts/Layout.astro';
       padding: 0.42rem 0.75rem;
       border-radius: 8px;
       background: var(--surface2, #161622);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.12));
       color: var(--muted, #a0a0b8);
       font-size: 0.79rem;
       font-weight: 600;
@@ -390,7 +390,7 @@ import Layout from '../layouts/Layout.astro';
       width: 100%;
       box-sizing: border-box;
       background: var(--surface2, #14141e);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.14));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.14));
       border-radius: 10px;
       padding: 0.75rem 1rem;
       color: var(--text, #f1f1f8);
@@ -402,8 +402,8 @@ import Layout from '../layouts/Layout.astro';
 
     .bug-input:focus,
     .bug-textarea:focus {
-      border-color: rgba(139, 92, 246, 0.65);
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+      border-color: rgba(var(--ac-rgb), 0.65);
+      box-shadow: 0 0 0 3px rgba(var(--ac-rgb), 0.15);
       background: var(--surface, #161622);
     }
 
@@ -423,7 +423,7 @@ import Layout from '../layouts/Layout.astro';
       padding: 0.65rem 0.85rem;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.015);
-      border: 1px dashed var(--border, rgba(123, 110, 246, 0.15));
+      border: 1px dashed var(--border, rgba(var(--ac-b2-rgb), 0.15));
     }
 
     .attachment-left {
@@ -443,9 +443,9 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 7px;
       font-size: 0.8rem;
       font-weight: 600;
-      color: var(--accent3, #c084fc);
-      background: rgba(139, 92, 246, 0.09);
-      border: 1px solid rgba(139, 92, 246, 0.25);
+      color: var(--accent3, var(--ac-p1));
+      background: rgba(var(--ac-rgb), 0.09);
+      border: 1px solid rgba(var(--ac-rgb), 0.25);
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -453,8 +453,8 @@ import Layout from '../layouts/Layout.astro';
     .btn-attach svg { width: 13.5px; height: 13.5px; }
 
     .btn-attach:hover {
-      background: rgba(139, 92, 246, 0.16);
-      border-color: rgba(139, 92, 246, 0.4);
+      background: rgba(var(--ac-rgb), 0.16);
+      border-color: rgba(var(--ac-rgb), 0.4);
       color: #ffffff;
     }
 
@@ -503,7 +503,7 @@ import Layout from '../layouts/Layout.astro';
     }
 
     .diag-toggle-label input[type="checkbox"] {
-      accent-color: var(--accent, #8b5cf6);
+      accent-color: var(--accent, var(--ac));
       width: 13px;
       height: 13px;
       cursor: pointer;
@@ -527,18 +527,18 @@ import Layout from '../layouts/Layout.astro';
       gap: 8px;
       padding: 0.75rem 1.75rem;
       border-radius: 10px;
-      background: linear-gradient(135deg, #7c6dfa 0%, #6366f1 50%, #4f46e5 100%);
-      color: #ffffff;
+      background: linear-gradient(135deg, var(--ac-b1) 0%, var(--ac-i1) 50%, var(--ac-i2) 100%);
+      color: var(--ac-on, #fff);
       font-size: 0.92rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 18px -2px rgba(124, 109, 250, 0.45);
+      box-shadow: 0 4px 18px -2px rgba(var(--ac-b1-rgb), 0.45);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .bug-submit-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 22px -2px rgba(124, 109, 250, 0.6);
+      box-shadow: 0 6px 22px -2px rgba(var(--ac-b1-rgb), 0.6);
       filter: brightness(1.06);
     }
 
@@ -639,7 +639,7 @@ import Layout from '../layouts/Layout.astro';
       flex-wrap: wrap;
       margin-bottom: 1.25rem;
       padding-bottom: 0.85rem;
-      border-bottom: 1px solid var(--border, rgba(123, 110, 246, 0.1));
+      border-bottom: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.1));
     }
 
     .filter-pills-wrap {
@@ -657,7 +657,7 @@ import Layout from '../layouts/Layout.astro';
       font-weight: 600;
       color: var(--muted, #a0a0b8);
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.1));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.1));
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -669,8 +669,8 @@ import Layout from '../layouts/Layout.astro';
 
     .filter-pill-btn.active {
       color: #ffffff;
-      background: rgba(139, 92, 246, 0.22);
-      border-color: rgba(139, 92, 246, 0.5);
+      background: rgba(var(--ac-rgb), 0.22);
+      border-color: rgba(var(--ac-rgb), 0.5);
     }
 
     .btn-new-ticket-shortcut {
@@ -681,16 +681,16 @@ import Layout from '../layouts/Layout.astro';
       gap: 5px;
       font-size: 11.5px;
       font-weight: 700;
-      color: var(--accent3, #c084fc);
+      color: var(--accent3, var(--ac-p1));
       padding: 4px 10px;
       border-radius: 6px;
-      background: rgba(139, 92, 246, 0.1);
+      background: rgba(var(--ac-rgb), 0.1);
       cursor: pointer;
       transition: all 0.15s ease;
     }
     .btn-new-ticket-shortcut svg { width: 13px; height: 13px; }
     .btn-new-ticket-shortcut:hover {
-      background: rgba(139, 92, 246, 0.2);
+      background: rgba(var(--ac-rgb), 0.2);
       color: #ffffff;
     }
 
@@ -713,7 +713,7 @@ import Layout from '../layouts/Layout.astro';
     /* Ticket Card */
     .ticket-card {
       background: var(--surface2, #141420);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.12));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.12));
       border-radius: 12px;
       padding: 1.15rem 1.25rem;
       box-sizing: border-box;
@@ -724,7 +724,7 @@ import Layout from '../layouts/Layout.astro';
     }
 
     .ticket-card:hover {
-      border-color: rgba(139, 92, 246, 0.35);
+      border-color: rgba(var(--ac-rgb), 0.35);
     }
 
     .ticket-header {
@@ -809,15 +809,15 @@ import Layout from '../layouts/Layout.astro';
       gap: 10px;
       padding: 6px 12px;
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border, rgba(123, 110, 246, 0.18));
+      border: 1px solid var(--border, rgba(var(--ac-b2-rgb), 0.18));
       border-radius: 8px;
       text-decoration: none;
       color: var(--text, #fff);
       transition: all 0.2s ease;
     }
     .ticket-screenshot-thumb:hover {
-      background: rgba(139, 92, 246, 0.12);
-      border-color: rgba(139, 92, 246, 0.4);
+      background: rgba(var(--ac-rgb), 0.12);
+      border-color: rgba(var(--ac-rgb), 0.4);
       transform: translateY(-1px);
     }
 
@@ -825,9 +825,9 @@ import Layout from '../layouts/Layout.astro';
     .admin-response-box {
       margin-top: 0.35rem;
       padding: 0.85rem 1rem;
-      background: rgba(139, 92, 246, 0.06);
-      border: 1px solid rgba(139, 92, 246, 0.22);
-      border-left: 3px solid #8b5cf6;
+      background: rgba(var(--ac-rgb), 0.06);
+      border: 1px solid rgba(var(--ac-rgb), 0.22);
+      border-left: 3px solid var(--ac);
       border-radius: 8px;
       display: flex;
       flex-direction: column;
@@ -847,12 +847,12 @@ import Layout from '../layouts/Layout.astro';
       gap: 5px;
       font-size: 11px;
       font-weight: 700;
-      color: #c4b5fd;
+      color: var(--ac-l2);
     }
     .admin-name-badge svg {
       width: 13px;
       height: 13px;
-      color: #a78bfa;
+      color: var(--ac-l1);
     }
 
     .admin-response-time {
@@ -890,7 +890,7 @@ import Layout from '../layouts/Layout.astro';
       justify-content: center;
       gap: 0.75rem;
       background: rgba(255, 255, 255, 0.015);
-      border: 1px dashed var(--border, rgba(123, 110, 246, 0.15));
+      border: 1px dashed var(--border, rgba(var(--ac-b2-rgb), 0.15));
       border-radius: 12px;
       box-sizing: border-box;
       width: 100%;
@@ -902,8 +902,8 @@ import Layout from '../layouts/Layout.astro';
       max-width: 48px !important;
       max-height: 48px !important;
       border-radius: 50%;
-      background: rgba(139, 92, 246, 0.12);
-      color: var(--accent3, #c084fc);
+      background: rgba(var(--ac-rgb), 0.12);
+      color: var(--accent3, var(--ac-p1));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -947,8 +947,8 @@ import Layout from '../layouts/Layout.astro';
       border-radius: 8px;
       font-size: 0.82rem;
       font-weight: 700;
-      color: #ffffff;
-      background: var(--accent, #8b5cf6);
+      color: var(--ac-on, #fff);
+      background: var(--accent, var(--ac));
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -992,7 +992,7 @@ import Layout from '../layouts/Layout.astro';
     /* ============================================================
        KAZANÇLARIM SAYFASIYLA AYNI DİL (koyu tema)
        Siyah yüzey, ince beyaz kenarlık, büyük harfsiz etiketler,
-       seçili öğe = #7c6dfa kenarlık + hafif mor zemin
+       seçili öğe = var(--ac-b1) kenarlık + hafif mor zemin
        ============================================================ */
     body:not(.light-theme) .bug-card {
       background: #000;
@@ -1006,9 +1006,9 @@ import Layout from '../layouts/Layout.astro';
       box-shadow: none;
     }
     body:not(.light-theme) .bug-tab-btn.active {
-      background: rgba(124, 109, 250, 0.12);
+      background: rgba(var(--ac-b1-rgb), 0.12);
       color: #fff;
-      box-shadow: inset 0 0 0 1px #7c6dfa;
+      box-shadow: inset 0 0 0 1px var(--ac-b1);
     }
     body:not(.light-theme) .ticket-card {
       background: #000;
@@ -1042,8 +1042,8 @@ import Layout from '../layouts/Layout.astro';
     .bug-input:focus,
     .bug-textarea:focus {
       background: #000;
-      border-color: #7c6dfa;
-      box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.16);
+      border-color: var(--ac-b1);
+      box-shadow: 0 0 0 3px rgba(var(--ac-b1-rgb), 0.16);
     }
 
     .type-chip-pill,
@@ -1062,21 +1062,21 @@ import Layout from '../layouts/Layout.astro';
     .priority-chip:hover {
       background: #000;
       color: var(--text);
-      border-color: rgba(167, 139, 250, 0.5);
+      border-color: rgba(var(--ac-l1-rgb), 0.5);
     }
     .type-chip-pill.active {
       color: #fff;
-      border-color: #7c6dfa;
-      background: rgba(124, 109, 250, 0.12);
+      border-color: var(--ac-b1);
+      background: rgba(var(--ac-b1-rgb), 0.12);
       box-shadow: none;
     }
-    .type-chip-pill svg { color: #a78bfa; }
+    .type-chip-pill svg { color: var(--ac-l1); }
     .type-chips-compact,
     .priority-compact { gap: 0.5rem; }
     .type-chip-pill:focus-visible,
     .priority-chip:focus-visible,
     .bug-tab-btn:focus-visible {
-      outline: 2px solid #a78bfa;
+      outline: 2px solid var(--ac-l1);
       outline-offset: 2px;
     }
 
@@ -1094,10 +1094,10 @@ import Layout from '../layouts/Layout.astro';
       font-family: var(--font);
       font-size: 13px;
     }
-    .btn-attach svg { color: #a78bfa; }
+    .btn-attach svg { color: var(--ac-l1); }
     .btn-attach:hover {
       background: #000;
-      border-color: rgba(167, 139, 250, 0.5);
+      border-color: rgba(var(--ac-l1-rgb), 0.5);
       color: #fff;
     }
     .form-actions-bar {
@@ -1152,7 +1152,7 @@ import Layout from '../layouts/Layout.astro';
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #a78bfa;
+      color: var(--ac-l1);
     }
     .bug-card-head-icon svg { width: 18px; height: 18px; }
     .bug-card-head-text { flex: 1; min-width: 0; }
@@ -1192,13 +1192,13 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .type-chip-pill.active {
       color: #1a1033;
-      border-color: #7c3aed;
-      background: rgba(124, 58, 237, 0.06);
+      border-color: var(--ac-d1);
+      background: rgba(var(--ac-d1-rgb), 0.06);
     }
     body.light-theme .type-chip-pill svg,
     body.light-theme .btn-attach svg,
     body.light-theme .bug-card-head-icon {
-      color: #7c3aed;
+      color: var(--ac-d1);
     }
     body.light-theme .bug-card-head,
     body.light-theme .form-actions-bar,
@@ -1231,8 +1231,8 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .bug-card.is-dragging::after {
       background: rgba(255, 255, 255, 0.9);
-      color: #6d28d9;
-      border-color: #7c6dfa;
+      color: var(--ac-d2);
+      border-color: var(--ac-b1);
     }
 
     body.light-theme .bug-tab-bar {
@@ -1254,8 +1254,8 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .bug-tab-count {
       background: #f5f3ff;
-      color: #6d28d9;
-      border-color: #ddd6fe;
+      color: var(--ac-d2);
+      border-color: var(--ac-l3);
     }
 
     body.light-theme .bug-card {
@@ -1282,10 +1282,10 @@ import Layout from '../layouts/Layout.astro';
       color: #0f172a;
     }
     body.light-theme .type-chip-pill.active {
-      background: rgba(124, 109, 250, 0.12);
-      border-color: #7c6dfa;
-      color: #5b21b6;
-      box-shadow: 0 2px 8px rgba(124, 109, 250, 0.15);
+      background: rgba(var(--ac-b1-rgb), 0.12);
+      border-color: var(--ac-b1);
+      color: var(--ac-d3);
+      box-shadow: 0 2px 8px rgba(var(--ac-b1-rgb), 0.15);
     }
 
     body.light-theme .priority-chip {
@@ -1328,8 +1328,8 @@ import Layout from '../layouts/Layout.astro';
     }
     body.light-theme .bug-input:focus,
     body.light-theme .bug-textarea:focus {
-      border-color: #7c6dfa;
-      box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.15);
+      border-color: var(--ac-b1);
+      box-shadow: 0 0 0 3px rgba(var(--ac-b1-rgb), 0.15);
       background: #ffffff;
     }
 
@@ -1340,7 +1340,7 @@ import Layout from '../layouts/Layout.astro';
     body.light-theme .btn-attach {
       background: #f1f5f9;
       border-color: #cbd5e1;
-      color: #4338ca;
+      color: var(--ac-i3);
     }
     body.light-theme .diag-toggle-label {
       color: #475569;
@@ -1359,14 +1359,14 @@ import Layout from '../layouts/Layout.astro';
       color: #0f172a;
     }
     body.light-theme .filter-pill-btn.active {
-      background: #7c6dfa;
-      border-color: #7c6dfa;
-      color: #ffffff;
+      background: var(--ac-b1);
+      border-color: var(--ac-b1);
+      color: var(--ac-on, #fff);
     }
 
     body.light-theme .btn-new-ticket-shortcut {
       background: #f5f3ff;
-      color: #6d28d9;
+      color: var(--ac-d2);
     }
 
     body.light-theme .ticket-card {
@@ -1394,14 +1394,14 @@ import Layout from '../layouts/Layout.astro';
 
     body.light-theme .admin-response-box {
       background: #f5f3ff;
-      border-color: #ddd6fe;
-      border-left: 3px solid #7c6dfa;
+      border-color: var(--ac-l3);
+      border-left: 3px solid var(--ac-b1);
     }
     body.light-theme .admin-name-badge {
-      color: #5b21b6;
+      color: var(--ac-d3);
     }
     body.light-theme .admin-name-badge svg {
-      color: #7c6dfa;
+      color: var(--ac-b1);
     }
     body.light-theme .admin-response-time {
       color: #64748b;
@@ -1432,8 +1432,8 @@ import Layout from '../layouts/Layout.astro';
       border-color: #e2e8f0 !important;
     }
     body.light-theme .tickets-empty .empty-icon-wrap {
-      background: rgba(124, 109, 250, 0.12) !important;
-      color: #6366f1 !important;
+      background: rgba(var(--ac-b1-rgb), 0.12) !important;
+      color: var(--ac-i1) !important;
     }
     body.light-theme .tickets-empty .empty-title {
       color: #0f172a !important;
@@ -2371,7 +2371,7 @@ import Layout from '../layouts/Layout.astro';
               <a href="${safeImgUrl}" target="_blank" rel="noopener noreferrer" class="ticket-screenshot-thumb">
                 <img src="${safeImgUrl}" alt="${lblShot}" style="width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#000;" />
                 <div style="display:flex; flex-direction:column; gap:2px;">
-                  <span style="font-size:11.5px; font-weight:700; color:var(--accent2, #c084fc); display:inline-flex; align-items:center; gap:4px;">
+                  <span style="font-size:11.5px; font-weight:700; color:var(--accent2, var(--ac-p1)); display:inline-flex; align-items:center; gap:4px;">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     ${lblShot}
                   </span>
@@ -2512,7 +2512,7 @@ import Layout from '../layouts/Layout.astro';
                   var bucket = buckets[b];
                   var { error: upErr } = await sb.storage.from(bucket).upload(storagePath, blobToUpload, {
                     contentType: 'image/jpeg',
-                    cacheControl: '3600',
+                    cacheControl: '31536000',   // adı benzersiz, içerik değişmez: 1 yıl (eskiden 1 saat)
                     upsert: true
                   });
                   if (!upErr) {

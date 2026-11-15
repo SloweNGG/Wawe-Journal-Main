@@ -3,7 +3,8 @@ import re, sys
 html = open('dist/backtest.html', encoding='utf-8').read()
 head = html[:html.index('<body')]
 # the page's own scripts in production order (the shared ones are loaded by BaseHead in production, listed here by hand)
-own = re.findall(r'<script src="(/interface/backtest/js/[^"?]+)[^"]*"', head)
+# (the build may place them in <head> or <body>: the whole page is searched)
+own = re.findall(r'<script src="(/interface/backtest/js/[^"?]+)[^"]*"', html)
 shared = ['https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js',
           '/interface/shared/time-settings.js', '/interface/shared/trade-metrics.js', '/interface/shared/chart-theme.js', '/interface/shared/chart-viewer.js', '/interface/shared/trades-source.js',
           'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js']

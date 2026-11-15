@@ -34,8 +34,11 @@ const buildId = __WW_BUILD_ID__;
     width: 1px;
     height: 1px;
   }
-  /* Navbar geçiş animasyonuna girmesin, yerinde sabit dursun */
-  #navbar-container {
+  /* Navbar geçiş animasyonuna girmesin, yerinde sabit dursun.
+     İsim yalnızca geçiş sırasında verilir (Astro, startViewTransition'dan önce <html>'e data-astro-transition
+     koyar, bitince kaldırır). Kalıcı view-transition-name navbar'ı Chrome'da "backdrop root" yapıyordu:
+     navbar camının backdrop-filter'ı arkasından kayan içeriği göremiyor, yazılar navbar'ın içinden net görünüyordu. */
+  html[data-astro-transition] #navbar-container {
     view-transition-name: ww-navbar;
   }
   /* Quick-add butonu ve penceresi body'de kalıcı; kullanmayan sayfaya SPA ile geçilince gizle.
@@ -491,8 +494,11 @@ const buildId = __WW_BUILD_ID__;
           ev.preventDefault(); // tam sayfa yüklemesi
           return;
         }
+        // Süresi geçmiş kopya da anında kullanılır (HTML statik; başka derlemeden geldiyse isNewDeploy tam
+        // yükler), arka planda tazelenir. Ağı beklemek her tıklamaya 200-650 ms ekliyordu.
         const hit = htmlCache.get(cacheKey(ev.to));
-        const html = hit && Date.now() - hit.at < HTML_CACHE_TTL_MS ? await hit.html : null;
+        if (hit && Date.now() - hit.at >= HTML_CACHE_TTL_MS) prefetch(ev.to.href);
+        const html = hit ? await hit.html : null;
         if (!html) {
           await defaultLoader();
           if (!ev.defaultPrevented && ev.newDocument !== document) {
@@ -539,6 +545,44 @@ const buildId = __WW_BUILD_ID__;
       pendingScripts = null;
       if (scripts) runPageScripts(scripts);
     });
+
+    // Navbar'daki sayfaların HTML'i ve yerel stil dosyaları boşta önceden çekilir: üzerine gelince başlayan
+    // çekme çoğu zaman tıklamaya yetişmiyordu (SW sayfaları önce ağdan alıyor) ve geçiş, preloadStyles'ta
+    // sayfanın CSS'ini ağdan bekliyordu. Stiller SW'nin sürümlü önbelleğine düşer.
+    const warmedEntries = new WeakSet<object>();
+    const warmedStyles = new Set<string>();
+    function warmStyles(html: string | null) {
+      if (!html) return;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      for (const el of Array.from(doc.querySelectorAll('head link[rel=stylesheet]'))) {
+        const href = el.getAttribute('href');
+        const url = href ? toUrl(href) : null;
+        if (!href || !url || url.origin !== location.origin || warmedStyles.has(href)) continue;
+        if (document.querySelector(`link[rel=stylesheet][href="${CSS.escape(href)}"]`)) continue;
+        warmedStyles.add(href);
+        fetch(href, { credentials: 'same-origin' }).catch(() => {});
+      }
+    }
+    function warmNavLinks() {
+      const here = pathKey(new URL(location.href));
+      for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>('.nav-links a[href]'))) {
+        const url = toUrl(a.href);
+        if (!url || pathKey(url) === here) continue;
+        prefetch(a.href);
+        const entry = htmlCache.get(cacheKey(url));
+        if (entry && !warmedEntries.has(entry)) {
+          warmedEntries.add(entry);
+          entry.html.then(warmStyles);
+        }
+      }
+    }
+    function warmWhenIdle() {
+      if ('requestIdleCallback' in window) requestIdleCallback(warmNavLinks, { timeout: 3000 });
+      else setTimeout(warmNavLinks, 1500);
+    }
+    if (document.readyState === 'complete') warmWhenIdle();
+    else window.addEventListener('load', warmWhenIdle, { once: true });
+    document.addEventListener('ww:page-load', warmWhenIdle);
 
     w.wwSpa = {
       canHandle,

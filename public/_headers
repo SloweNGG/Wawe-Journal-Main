@@ -104,3 +104,9 @@
 
 /styles.css
   Cache-Control: public, max-age=31536000, immutable
+
+# MetaTrader 5 eklentisi (WaweSync EA, integrations/mt5/WaweSync.mq5 derlemesi). Aynı adreste güncellenir:
+# Cache-Control kuralı YOK (varsayılan yeniden doğrulama). Tarayıcı açmaya çalışmasın, indirsin.
+/downloads/*
+  Content-Type: application/octet-stream
+  Content-Disposition: attachment

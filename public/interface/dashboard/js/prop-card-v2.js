@@ -83,6 +83,17 @@
         t('prop.stop_level') + ': ' + c.fmtPlain(maxStop) + '  |  ' + t('prop.v2_to_stop') + ': ' + c.fmtPlain(Math.max(0, dist || 0)));
     }
 
+    /* pass probability (Monte Carlo of the rest of the challenge with the trader's own trades), when there is enough data */
+    var odds = '';
+    if (c.odds && isFinite(Number(c.odds.pass))) {
+      var pct = function (v) { var n = Math.round(Number(v)); return c.curLang === 'tr' ? '%' + n : n + '%'; };
+      var oc = c.odds.pass >= 60 ? 'ok' : (c.odds.pass >= 30 ? 'warn' : 'bad');
+      odds = '<div class="pc2-odds ' + oc + '" title="' + esc(t('prop.v2_odds_tip', { runs: c.odds.runs })) + '">' +
+        '<span>' + esc(t('prop.v2_odds')) + '</span><b>' + esc(pct(c.odds.pass)) + '</b>' +
+        (c.odds.better != null ? '<em>' + esc(t('prop.v2_odds_better', { cut: pct(c.odds.cut), better: pct(c.odds.better) })) + '</em>' : '') +
+      '</div>';
+    }
+
     /* footer: three small facts */
     var dayMin = Number(c.dayMin) || 0, dayCount = Number(c.dayCount) || 0;
     var foot =
@@ -105,6 +116,7 @@
           '<span class="pc2-delta ' + deltaCls + '">' + esc(c.fmtDelta(delta)) + ' <i>' + esc(signedPct(deltaPct)) + '</i></span></div>' +
         goal +
         (meters ? '<div class="pc2-meters">' + meters + '</div>' : '') +
+        odds +
         foot +
       '</div>';
   }
