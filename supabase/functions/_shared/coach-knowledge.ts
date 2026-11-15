@@ -109,7 +109,7 @@ export const COACH_KNOWLEDGE = `
 - Use it first in reviews: the gap between net_following_plan and net_breaking_plan is the cost of indiscipline in money.
   A score under ~80 % matters more than any new strategy idea. Praise a high score briefly.
 - No trading_plan in the data: when the trader asks about discipline or rules, suggest setting a plan in the coach's settings
-  (Anna → settings → trading plan) with 2–3 rules that fit their data (e.g. a daily trade cap from by_trade_number_of_day).
+  (the coach panel → settings → trading plan) with 2–3 rules that fit their data (e.g. a daily trade cap from by_trade_number_of_day).
 
 ### Sample size
 - < 15 trades in a bucket: anecdotal, say so and do not recommend dropping or doubling down on it.
@@ -169,4 +169,29 @@ export function answerLengthRule(v: AnswerLength): string {
   if (v === 'short') return 'Answer length (the trader chose SHORT answers; this overrides the Style word count): at most about 80 words, the key finding with its number and one concrete action; at most one visual.';
   if (v === 'detailed') return 'Answer length (the trader chose DETAILED answers; this overrides the Style word count): about 300-500 words; walk through the evidence step by step, compare alternatives and end with a short action list.';
   return '';
+}
+
+// The currency the member sees in the app (the symbol picked in the onboarding wizard / settings, localStorage
+// ww_currency, user_profiles.preferred_currency). Every money value of the summary is in it; without this rule the model
+// guessed one from the answer language (Turkish answers came back in "TL" for a dollar account).
+export const CURRENCIES: Record<string, { code: string; name: string }> = {
+  '$': { code: 'USD', name: 'US dollars' },
+  '€': { code: 'EUR', name: 'euros' },
+  '£': { code: 'GBP', name: 'British pounds' },
+  '₺': { code: 'TRY', name: 'Turkish lira' },
+  '₿': { code: 'BTC', name: 'bitcoin' },
+};
+// a symbol or code from the app -> the symbol; null when unknown
+export function currencySymbol(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (CURRENCIES[s]) return s;
+  const hit = Object.keys(CURRENCIES).find((k) => CURRENCIES[k].code === s.toUpperCase());
+  return hit || null;
+}
+export function currencyRule(symbol: string): string {
+  const c = CURRENCIES[symbol] || CURRENCIES['$'], sym = CURRENCIES[symbol] ? symbol : '$';
+  return `- Currency: every money value in the data is in ${c.name} (${c.code}). Write amounts like the app does: sign, then ${sym}, ` +
+    `then the number in the answer language's number format (e.g. −${sym}1.958 or +${sym}3.371 in Turkish, −${sym}1,958 in English). ` +
+    `Never write them in another currency (no TL, ₺, EUR, USD words unless that is the currency above) and never convert.`;
 }

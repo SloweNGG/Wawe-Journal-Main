@@ -28,6 +28,9 @@
     brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2Z"/></svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
     lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    gauge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+    target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>'
   };
   // [question key, question fallback, short label key, short label fallback, icon]
@@ -37,11 +40,49 @@
     ['aiCoach.prompt.mistakes', 'En sık yaptığım hataları bul ve nasıl düzeltebileceğimi söyle.', 'aiCoach.chip.mistakes', 'Hatalarım', 'alert'],
     ['aiCoach.prompt.psychology', 'İşlemlerimde psikolojik zayıf noktalar görüyor musun? (intikam işlemi, aşırı işlem, stop kullanmama)', 'aiCoach.chip.psychology', 'Psikoloji', 'brain']
   ];
-  var COACH_NAME = 'Anna';                                              // the coach's name, the same in every language
+  // The coach the member picks by what they struggle with most (supabase/functions/_shared/coach-personas.ts: focus and tone
+  // of the answers). Names are the same in every language. Kai = general, the default. chip: [label, question] of its quick prompt.
+  var COACHES = [
+    { id: 'mira', name: 'Mira', icon: 'brain', tone: 'soft', problem: 'Psikoloji', desc: 'Korku, FOMO, intikam işlemi, tilt',
+      intro: 'Merhaba, ben Mira. İşlemlerinin arkasındaki duygulara bakarım: korku, FOMO, kayıptan sonra intikam işlemi.',
+      chip: ['Duygularım', 'Hangi duygular bana para kaybettiriyor? Kayıplardan sonra nasıl davranıyorum?'] },
+    { id: 'rex', name: 'Rex', icon: 'gauge', tone: 'strict', problem: 'Açgözlülük ve overtrade', desc: 'Fazla işlem, "bir tane daha", kârlı günü geri verme',
+      intro: 'Ben Rex. Fazla işleme ve açgözlülüğe odaklanırım: günün kaçıncı işleminden sonra kaybetmeye başladığını bulur, seni orada durdururum.',
+      chip: ['Fazla işlem', 'Günün kaçıncı işleminden sonra sonuçlarım bozuluyor? Bana bir günlük işlem sınırı koy.'] },
+    { id: 'atlas', name: 'Atlas', icon: 'shield', tone: 'strict', problem: 'Disiplinsizlik', desc: 'Plana uymama, stopsuz işlem, kural çiğneme',
+      intro: 'Ben Atlas. Kendi kurallarına uyup uymadığına bakarım: plan, stop, işlem saatleri. Kural çiğnemenin sana kaça mal olduğunu gösteririm.',
+      chip: ['Planıma uyuyor muyum?', 'Planıma ve kurallarıma ne kadar uyuyorum? Kuralları çiğnemek bana kaça mal oluyor?'] },
+    { id: 'nova', name: 'Nova', icon: 'target', tone: 'balanced', problem: 'Risk yönetimi', desc: 'Lot tutarsızlığı, stop kaydırma, büyük düşüşler',
+      intro: 'Ben Nova. Riskine bakarım: lot büyüklüğü, stop, düşüşler ve prop limitleri. Rakamlarla konuşurum.',
+      chip: ['Riskim', 'Riskimi analiz et: işlem başına ne kadar risk almalıyım, lotum tutarlı mı?'] },
+    { id: 'kai', name: 'Kai', icon: 'spark', tone: 'balanced', problem: 'Emin değilim / genel', desc: 'Her konuda dengeli analiz',
+      intro: 'Merhaba, ben Kai. Defterindeki verilere göre analiz yaparım; bir grafik görüntüsü de gönderebilirsin.', chip: null }
+  ];
+  var TONES = [['soft', 'Yumuşak', 'Cesaretlendirir, önce iyi gideni söyler.'], ['balanced', 'Dengeli', 'Doğrudan ama dostça.'], ['strict', 'Sert', 'Lafı dolandırmaz, net kurallar koyar.']];
   var WIDE_KEY = 'ww_ai_coach_wide', DETAIL_KEY = 'ww_ai_coach_detail', JOURNAL_KEY = 'ww_ai_coach_journal', DESKTOP_KEY = 'ww_ai_coach_desktop';
+  var ASKED_KEY = 'ww_ai_coach_asked';              // the picker opened by itself once in this browser
+  var COACH_KEY = 'ww_ai_coach_persona';            // the last choice in this browser (names before the settings load); the truth is coach_settings.plan.coach
   function pref(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function setPref(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
   function detail() { var v = pref(DETAIL_KEY, 'normal'); return v === 'short' || v === 'detailed' ? v : 'normal'; }
+  function coachDef(id) { for (var i = 0; i < COACHES.length; i++) if (COACHES[i].id === id) return COACHES[i]; return COACHES[COACHES.length - 1]; }
+  function storedCoach() {
+    var c = S.prefs && S.prefs.plan && S.prefs.plan.coach;
+    if (!c) { try { c = JSON.parse(pref(COACH_KEY, 'null')); } catch (e) { c = null; } }
+    return c && typeof c === 'object' ? c : null;
+  }
+  // -> { id, tone, def }; nothing chosen yet: Kai
+  function coach() {
+    var c = storedCoach(), d = coachDef(c && c.id);
+    var t = c && c.id === d.id && TONES.some(function (x) { return x[0] === c.tone; }) ? c.tone : d.tone;
+    return { id: d.id, tone: t, def: d };
+  }
+  function coachName() { return coach().def.name; }
+  function coachText(d, part) { return _t('aiCoach.coach.' + d.id + '.' + part, d[part]); }
+  // the coach's avatar: a glossy orb with blinking eyes in its colour (CSS .wwc-av in ai-coach.css); px = diameter
+  function coachAv(d, px) {
+    return '<span class="wwc-av wwc-av-' + d.id + '" style="--av:' + (px || 48) + 'px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span>';
+  }
 
   // ---------------------------------------------------------------- helpers
   function _t(key, fallback, params) {
@@ -126,16 +167,18 @@
         '<button type="button" class="wwai-icon" data-act="new">' + ICON.plus + '</button>' +
         '<button type="button" class="wwai-icon" data-act="close">' + ICON.close + '</button>' +
       '</header>' +
-      '<div class="wwai-body"><div class="wwai-msgs" aria-live="polite"></div><div class="wwai-history" hidden></div><div class="wwai-settings" hidden></div></div>' +
+      '<div class="wwai-body"><div class="wwai-msgs" aria-live="polite"></div><div class="wwai-history" hidden></div><div class="wwai-settings" hidden></div><div class="wwai-coach" hidden></div></div>' +
       '<footer class="wwai-foot">' +
         '<div class="wwai-attach" hidden><img alt=""><span class="wwai-attach-name"></span><button type="button" class="wwai-icon" data-act="unattach">' + ICON.close + '</button></div>' +
-        '<div class="wwai-compose">' +
-          '<button type="button" class="wwai-icon wwai-img-btn" data-act="pick">' + ICON.image + '</button>' +
+        '<div class="wwai-orb" hidden aria-hidden="true"><div class="wwai-orb-gl"></div><span class="wwai-orb-face"></span></div>' +   // while dictating
+        '<div class="wwai-compose">' +                                   // one box: text on top, tools left + send right below
           '<textarea class="wwai-input" rows="1" maxlength="' + MAX_MESSAGE + '"></textarea>' +
-          '<button type="button" class="wwai-icon wwai-mic" data-act="mic" aria-pressed="false" hidden>' + ICON.mic + '</button>' +
-          '<button type="button" class="wwai-send" data-act="send">' + ICON.send + '</button>' +
+          '<div class="wwai-compose-bar">' +
+            '<button type="button" class="wwai-icon wwai-img-btn" data-act="pick">' + ICON.image + '</button>' +
+            '<button type="button" class="wwai-icon wwai-mic" data-act="mic" aria-pressed="false" hidden>' + ICON.mic + '</button>' +
+            '<button type="button" class="wwai-send" data-act="send">' + ICON.send + '</button>' +
+          '</div>' +
         '</div>' +
-        '<p class="wwai-note"></p>' +
         '<input type="file" class="wwai-file" accept="image/png,image/jpeg,image/webp" hidden>' +
       '</footer>' +
       '<div class="wwai-drop" hidden></div>';
@@ -143,8 +186,9 @@
     document.body.appendChild(panel);
     R.panel = panel; R.msgs = panel.querySelector('.wwai-msgs'); R.history = panel.querySelector('.wwai-history');
     R.input = panel.querySelector('.wwai-input'); R.file = panel.querySelector('.wwai-file'); R.attach = panel.querySelector('.wwai-attach');
-    R.settings = panel.querySelector('.wwai-settings'); R.gear = panel.querySelector('.wwai-gear'); R.send = panel.querySelector('.wwai-send'); R.drop = panel.querySelector('.wwai-drop');
+    R.settings = panel.querySelector('.wwai-settings'); R.coach = panel.querySelector('.wwai-coach'); R.gear = panel.querySelector('.wwai-gear'); R.send = panel.querySelector('.wwai-send'); R.drop = panel.querySelector('.wwai-drop');
     R.journal = panel.querySelector('.wwai-journal'); R.journalSel = panel.querySelector('.wwai-journal-sel');
+    R.orb = panel.querySelector('.wwai-orb');
     R.mic = panel.querySelector('.wwai-mic'); R.mic.hidden = !speechApi();          // no Web Speech API (Firefox): no button
     R.journalSel.addEventListener('change', function () { S.journalId = R.journalSel.value; renderJournal(); if (!S.messages.length && S.view === 'chat') renderMessages(); });
     try { if (localStorage.getItem(WIDE_KEY) === '1') panel.classList.add('is-wide'); } catch (e) { /* ignore */ }
@@ -161,6 +205,9 @@
       if (e.key === 'Escape') setOpen(false);
     });
     R.input.addEventListener('input', function () { if (D.on) stopDictation(true); autosize(); });
+    panel.querySelector('.wwai-compose').addEventListener('mousedown', function (e) {   // a click on the box's empty space types
+      if (e.target === e.currentTarget || e.target.classList.contains('wwai-compose-bar')) { e.preventDefault(); R.input.focus(); }
+    });
     R.input.addEventListener('paste', function (e) {
       var items = (e.clipboardData && e.clipboardData.items) || [];
       for (var i = 0; i < items.length; i++) if (items[i].kind === 'file' && /^image\//.test(items[i].type)) { e.preventDefault(); attach(items[i].getAsFile()); return; }
@@ -189,13 +236,16 @@
   function texts() {
     if (!R.panel) return;
     var mac = isMac();
-    R.fab.setAttribute('aria-label', _t('aiCoach.open', 'Anna · AI Koç'));
-    R.fab.title = _t('aiCoach.open', 'Anna · AI Koç') + ' (' + (mac ? '⌘' : 'Ctrl+') + 'K)';
+    var cur = coach(), open = _t('aiCoach.open', '{coach} · AI Koç', { coach: cur.def.name });
+    R.fab.setAttribute('aria-label', open);
+    R.fab.title = open + ' (' + (mac ? '⌘' : 'Ctrl+') + 'K)';
     R.fab.setAttribute('aria-keyshortcuts', 'Control+K Meta+K');
     R.panel.querySelector('.wwai-journal-label').textContent = _t('aiCoach.journal', 'Defter') + ':';
-    R.panel.setAttribute('aria-label', _t('aiCoach.open', 'Anna · AI Koç'));
+    R.panel.setAttribute('aria-label', open);
     R.panel.querySelector('.wwai-title-text').textContent = S.view === 'history' ? _t('aiCoach.history', 'Geçmiş sohbetler')
-      : S.view === 'settings' ? _t('aiCoach.settings', 'Ayarlar') : COACH_NAME;
+      : S.view === 'settings' ? _t('aiCoach.settings', 'Ayarlar') : S.view === 'coach' ? _t('aiCoach.coach.title', 'Koçunu seç') : cur.def.name;
+    R.panel.querySelector('.wwai-title-icon').innerHTML = coachAv(cur.def, 24);
+    COACHES.forEach(function (d) { R.panel.classList.toggle('wwai-c-' + d.id, d.id === cur.id); });
     var sub = R.panel.querySelector('.wwai-title-sub');                    // "AI Koç" next to the name, only on the chat view
     sub.textContent = _t('aiCoach.title', 'AI Koç'); sub.hidden = S.view !== 'chat';
     [['history', 'aiCoach.history', 'Geçmiş sohbetler'], ['settings', 'aiCoach.settings', 'Ayarlar'], ['new', 'aiCoach.new', 'Yeni sohbet'], ['close', 'aiCoach.close', 'Kapat'], ['back', 'aiCoach.back', 'Geri'],
@@ -204,8 +254,6 @@
     });
     R.input.placeholder = _t('aiCoach.placeholder', 'Bir soru sor ya da grafik ekle…');
     autosize();
-    var note = R.panel.querySelector('.wwai-note');                       // + where the data goes (privacy policy, AI coach section)
-    note.innerHTML = esc(_t('aiCoach.note', 'AI hata yapabilir. Yatırım tavsiyesi değildir.')) + ' <a href="/privacy#ai-coach" target="_blank" rel="noopener">' + esc(_t('aiCoach.privacy', 'Verilerin nasıl kullanılır?')) + '</a>';
     R.drop.textContent = _t('aiCoach.drop', 'Görseli buraya bırak');
     renderUsage();
     renderJournal();
@@ -240,6 +288,10 @@
       setPref(DETAIL_KEY, b.getAttribute('data-v')); renderSettings();
       var sel = R.settings.querySelector('[data-act="detail"][aria-checked="true"]'); if (sel) sel.focus();
     }
+    else if (act === 'coach-open') showCoach();
+    else if (act === 'coach-pick') setCoach(b.getAttribute('data-id'));
+    else if (act === 'coach-tone') { setCoach(coach().id, b.getAttribute('data-v')); var ts = R.panel.querySelector('[data-act="coach-tone"][aria-checked="true"]'); if (ts) ts.focus(); }
+    else if (act === 'coach-done') showChat();
     else if (act === 'delete-all') deleteAll();
     else if (act === 'alerts') setAlerts(b.getAttribute('aria-checked') !== 'true');
     else if (act === 'plan-stop') { b.setAttribute('aria-checked', b.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); }
@@ -324,7 +376,55 @@
     var s = D.on ? _t('aiCoach.dictate_stop', 'Dikteyi durdur') : _t('aiCoach.dictate', 'Sesle yaz');
     R.mic.title = s; R.mic.setAttribute('aria-label', s);
     R.input.placeholder = D.on ? _t('aiCoach.listening', 'Dinliyorum… konuşabilirsin') : _t('aiCoach.placeholder', 'Bir soru sor ya da grafik ekle…');
+    renderOrb();
   }
+  // voice-orb.js (window.WwVoiceOrb), loaded once on first need: the dictation orb and the coach avatars.
+  // cb(true) once it is there, cb(false) when it cannot load.
+  var ORB_LIB = { state: '', waiting: [] };               // state: '' | 'loading' | 'ready' | 'off'
+  function withOrbLib(cb) {
+    if (ORB_LIB.state === 'ready' || ORB_LIB.state === 'off') return cb(ORB_LIB.state === 'ready');
+    ORB_LIB.waiting.push(cb);
+    if (ORB_LIB.state === 'loading') return;
+    ORB_LIB.state = 'loading';
+    var url = '/components/ai-coach/voice-orb.js?v=__WW_BUILD_ID__';
+    function fin(ok) {
+      ORB_LIB.state = ok && global.WwVoiceOrb ? 'ready' : 'off';
+      var w = ORB_LIB.waiting; ORB_LIB.waiting = [];
+      w.forEach(function (f) { f(ORB_LIB.state === 'ready'); });
+    }
+    if (global.WwVoiceOrb) return fin(true);
+    if (global.WwLazy && global.WwLazy.loadScriptOnce) { global.WwLazy.loadScriptOnce(url, { test: function () { return !!global.WwVoiceOrb; } }).then(function () { fin(true); }, function () { fin(false); }); return; }
+    var sc = document.createElement('script'); sc.src = url; sc.async = true;
+    sc.onload = function () { fin(true); }; sc.onerror = function () { fin(false); }; document.head.appendChild(sc);
+  }
+  function orbHue(id) { return (global.WwVoiceOrb && global.WwVoiceOrb.HUES && global.WwVoiceOrb.HUES[id]) || 0; }
+
+  // The dictation orb: a glow in the coach's colour that follows the member's voice, the coach's avatar in the middle. No WebGL: no orb, dictation as before.
+  var O = { orb: null, state: '' };                       // state: '' | 'loading' | 'ready' | 'off'
+  function renderOrb() {
+    if (!R.orb) return;
+    if (D.on && !O.state) {
+      O.state = 'loading';
+      withOrbLib(function (ok) {
+        O.orb = ok ? global.WwVoiceOrb.create(R.orb.querySelector('.wwai-orb-gl')) : null;
+        O.state = O.orb ? 'ready' : 'off';
+        renderOrb();
+      });
+    }
+    var show = D.on && O.state === 'ready';
+    if (show) {
+      var cd = coach().def;
+      R.orb.querySelector('.wwai-orb-face').innerHTML = coachAv(cd, 52);
+      O.orb.setHue(orbHue(cd.id));
+      if (R.orb.hidden) { R.orb.hidden = false; O.orb.start(); }
+    } else if (!R.orb.hidden) {
+      R.orb.hidden = true;
+      if (O.orb) O.orb.stop();                            // releases the microphone
+    }
+  }
+
+  // the coach's avatar in the start screen and the coach picker (cls: wwai-ava-md | wwai-ava-lg)
+  function avaHtml(d, cls) { return coachAv(d, cls === 'wwai-ava-lg' ? 64 : 48); }
 
   // ---------------------------------------------------------------- live alerts (_shared/coach-alerts.ts on the server)
   // The server writes alerts to public.notifications after a sync, or after action "alerts" (a manual trade, below); the
@@ -339,16 +439,77 @@
       return global.sb.from('coach_settings').select('alerts_enabled, time_zone, plan').eq('user_id', s.user.id).maybeSingle().then(function (r) {
         if (r && r.error) { S.prefs = S.prefs || {}; return; }          // table missing (before the migration): defaults
         S.prefs = (r && r.data) || {};
+        var pc = S.prefs.plan && S.prefs.plan.coach;
+        if (pc) setPref(COACH_KEY, JSON.stringify(pc)); else if (storedCoach()) syncCoach(storedCoach());   // chosen before the row existed
         // the alerts raised by the sync functions use this zone for "today"
         if (S.prefs.time_zone !== tz()) global.sb.from('coach_settings').upsert({ user_id: s.user.id, time_zone: tz() }, { onConflict: 'user_id' }).then(function () {}, function () {});
       });
-    }).then(function () { S.prefsLoading = false; if (S.view === 'settings') renderSettings(); }, function () { S.prefsLoading = false; });
+    }).then(function () {
+      S.prefsLoading = false; texts();
+      if (S.view === 'settings') renderSettings();
+      // first time: "what do you struggle with most?" before the first chat
+      if (S.open && S.view === 'chat' && !S.messages.length && !S.conversationId && !storedCoach() && pref(ASKED_KEY, '0') !== '1') { setPref(ASKED_KEY, '1'); showCoach(); }
+    }, function () { S.prefsLoading = false; });
+  }
+  // the coach choice: applied at once (this browser), then merged into coach_settings.plan (read first: never drops the rules)
+  function setCoach(id, t) {
+    var d = coachDef(id), cur = coach();
+    var tone = TONES.some(function (x) { return x[0] === t; }) ? t : (d.id === cur.id ? cur.tone : d.tone);
+    var c = { id: d.id, tone: tone };
+    setPref(COACH_KEY, JSON.stringify(c));
+    if (S.prefs) { S.prefs = Object.assign({}, S.prefs); S.prefs.plan = Object.assign({}, S.prefs.plan || {}, { coach: c }); }
+    texts();
+    if (S.view === 'coach') renderCoach(); else if (S.view === 'settings') renderSettings();
+    syncCoach(c);
+  }
+  function syncCoach(c) {
+    if (!global.sb) return;
+    session().then(function (s) {
+      if (!s || !s.user) return;
+      return global.sb.from('coach_settings').select('plan').eq('user_id', s.user.id).maybeSingle().then(function (r) {
+        if (r && r.error) return;                                     // no table: the choice stays in this browser
+        var plan = Object.assign({}, (r && r.data && r.data.plan) || {}, { coach: c });
+        return global.sb.from('coach_settings').upsert({ user_id: s.user.id, plan: plan, time_zone: tz() }, { onConflict: 'user_id' }).then(function (u) {
+          if (u && !u.error && S.prefs) S.prefs = Object.assign({}, S.prefs, { plan: plan });
+        });
+      });
+    }).catch(function () { /* kept in this browser */ });
+  }
+  function toneSeg(cur) {
+    return '<div class="wwai-seg" role="radiogroup" aria-label="' + esc(_t('aiCoach.coach.tone', 'Üslup')) + '">' + TONES.map(function (o) {
+      return '<button type="button" role="radio" data-act="coach-tone" data-v="' + o[0] + '" aria-checked="' + (cur === o[0] ? 'true' : 'false') + '">' + esc(_t('aiCoach.coach.tone_' + o[0], o[1])) + '</button>';
+    }).join('') + '</div>';
+  }
+  function toneHint(cur) { var o = TONES.filter(function (x) { return x[0] === cur; })[0] || TONES[1]; return _t('aiCoach.coach.tone_' + o[0] + '_hint', o[2]); }
+  function showCoach() { setView('coach'); texts(); renderCoach(); loadSnapshot(currentJournal()); }
+  // "what do you struggle with most?": one card per problem, the data's suggestion on top, the tone below
+  function renderCoach() {
+    var cur = coach(), c = S.snap[currentJournal() || '*'], sg = c && c.data && c.data.coach_suggestion, h = '';
+    h += '<p class="wwai-coach-q">' + esc(_t('aiCoach.coach.question', 'Seni en çok ne zorluyor?')) + '</p>';
+    h += '<p class="wwai-coach-hint">' + esc(_t('aiCoach.coach.hint', 'Seçtiğin koç bu konuya odaklanır. İstediğin zaman ayarlardan değiştirebilirsin.')) + '</p>';
+    if (sg && sg.insight && coachDef(sg.coach).id === sg.coach) {
+      var sd = coachDef(sg.coach);
+      h += '<div class="wwai-coach-sug wwai-c-' + sd.id + '">' + avaHtml(sd, 'wwai-ava-md') + '<div class="wwai-coach-text">' +
+        '<span class="wwai-coach-sug-label">' + esc(_t('aiCoach.coach.suggest', 'Verilerine göre önerim')) + '</span>' +
+        '<strong>' + esc(sd.name) + ' · ' + esc(coachText(sd, 'problem')) + '</strong><span>' + esc(insightText(sg.insight).text) + '</span></div>' +
+        (sd.id !== cur.id ? '<button type="button" class="wwai-upgrade" data-act="coach-pick" data-id="' + sd.id + '">' + esc(_t('aiCoach.coach.take', 'Bunu seç')) + '</button>' : '') + '</div>';
+    }
+    h += '<div class="wwai-coach-list" role="radiogroup" aria-label="' + esc(_t('aiCoach.coach.question', 'Seni en çok ne zorluyor?')) + '">';
+    COACHES.forEach(function (d) {
+      h += '<button type="button" role="radio" class="wwai-coach-card wwai-c-' + d.id + '" data-act="coach-pick" data-id="' + d.id + '" aria-checked="' + (d.id === cur.id ? 'true' : 'false') + '">' +
+        avaHtml(d, 'wwai-ava-md') + '<span class="wwai-coach-text"><strong>' + esc(coachText(d, 'problem')) + '</strong><span>' + esc(coachText(d, 'desc')) + '</span></span>' +
+        '<span class="wwai-coach-name">' + esc(d.name) + '</span></button>';
+    });
+    h += '</div>';
+    h += '<div class="wwai-group">' + row(_t('aiCoach.coach.tone', 'Üslup'), toneHint(cur.tone), toneSeg(cur.tone), 'is-stack') + '</div>';
+    h += '<button type="button" class="wwai-upgrade wwai-coach-done" data-act="coach-done">' + esc(_t('aiCoach.coach.done', '{coach} ile başla', { coach: cur.def.name })) + '</button>';
+    R.coach.innerHTML = h;
   }
   var RULE_TR = { max_trades_per_day: 'günlük işlem sınırı', max_daily_loss: 'günlük zarar sınırı', max_loss_per_trade: 'işlem başına zarar sınırı', require_stop: 'stop zorunluluğu', no_trading_after: 'işlem saati' };
   // the plan form; empty plan: suggested from the old overtrade settings of this browser (saved only on "save")
   function planEditor() {
     var p = (S.prefs && S.prefs.plan) || {}, sug = {};
-    if (!Object.keys(p).length) { try { var ot = JSON.parse(localStorage.getItem('ww_overtrade_settings') || 'null'); if (ot && ot.enabled !== false) sug = { max_trades_per_day: ot.dailyLimit, max_daily_loss: ot.dailyLossLimit }; } catch (e) { /* none */ } }
+    if (!Object.keys(p).filter(function (k) { return k !== 'goal' && k !== 'coach'; }).length) { try { var ot = JSON.parse(localStorage.getItem('ww_overtrade_settings') || 'null'); if (ot && ot.enabled !== false) sug = { max_trades_per_day: ot.dailyLimit, max_daily_loss: ot.dailyLossLimit }; } catch (e) { /* none */ } }
     function num(key, label, step) {
       var v = p[key] != null ? p[key] : (sug[key] != null ? sug[key] : '');
       return '<label class="wwai-plan-field"><span>' + esc(label) + '</span><input type="text" inputmode="' + (step === 1 ? 'numeric' : 'decimal') + '" autocomplete="off" data-plan="' + key + '" value="' + esc(v) + '" placeholder="—"></label>';
@@ -421,7 +582,9 @@
     if (raw.no_trading_after != null && (raw.no_trading_after < 0 || raw.no_trading_after > 23)) delete raw.no_trading_after;
     session().then(function (s) {
       if (!s || !s.user) throw new Error('session');
-      var keep = (S.prefs && S.prefs.plan && S.prefs.plan.goal) ? { goal: S.prefs.plan.goal } : {};          // the weekly goal lives in the plan too
+      var old = (S.prefs && S.prefs.plan) || {}, keep = {};                     // the weekly goal and the coach choice live in the plan too
+      if (old.goal) keep.goal = old.goal;
+      if (old.coach || storedCoach()) keep.coach = old.coach || storedCoach();
       raw = Object.assign(raw, keep);
       return global.sb.from('coach_settings').upsert({ user_id: s.user.id, plan: raw, time_zone: tz() }, { onConflict: 'user_id' });
     }).then(function (r) {
@@ -446,17 +609,17 @@
     var N = global.Notification;
     Promise.resolve(N.permission === 'granted' ? 'granted' : N.requestPermission()).then(function (p) {
       setPref(DESKTOP_KEY, p === 'granted' ? '1' : '0'); renderSettings();
-      if (p === 'granted') try { new N(_t('aiCoach.set.desktop_test', 'Anna bildirimleri açık'), { body: _t('aiCoach.set.desktop_test_body', 'Önemli bir durum olduğunda seni buradan uyaracağım.'), tag: 'ww-coach-test' }); } catch (e) { /* ignore */ }
+      if (p === 'granted') try { new N(_t('aiCoach.set.desktop_test', '{coach} bildirimleri açık', { coach: coachName() }), { body: _t('aiCoach.set.desktop_test_body', 'Önemli bir durum olduğunda seni buradan uyaracağım.'), tag: 'ww-coach-test' }); } catch (e) { /* ignore */ }
     }, function () { renderSettings(); });
   }
   // one alert (a notifications row): shown once per key in this tab
   function showAlert(n) {
-    var meta = (n && n.meta_data) || {}, k = meta.alert_key || n.id;
+    var meta = Object.assign({ coach: coachName() }, (n && n.meta_data) || {}), k = meta.alert_key || n.id;
     S.shownAlerts = S.shownAlerts || {};
     if (!k || S.shownAlerts[k]) return;
     S.shownAlerts[k] = 1;
-    var title = _t(n.title_key, 'Anna', meta), body = _t(n.message_key, '', meta);
-    toast(title + (body ? ': ' + body.replace(/^Anna:\s*/, '') : ''), n.type === 'error' ? 'error' : 'warning');
+    var title = _t(n.title_key, meta.coach, meta), body = _t(n.message_key, '', meta);
+    toast(title + (body ? ': ' + body : ''), n.type === 'error' ? 'error' : 'warning');
     var N = global.Notification;
     if (N && N.permission === 'granted' && pref(DESKTOP_KEY, '0') === '1' && document.hidden) {
       try {
@@ -496,7 +659,7 @@
   }
   function setView(v) {
     if (v !== 'chat') stopDictation(true);
-    S.view = v; R.msgs.hidden = v !== 'chat'; R.history.hidden = v !== 'history'; R.settings.hidden = v !== 'settings';
+    S.view = v; R.msgs.hidden = v !== 'chat'; R.history.hidden = v !== 'history'; R.settings.hidden = v !== 'settings'; R.coach.hidden = v !== 'coach';
     R.panel.querySelector('.wwai-foot').hidden = v !== 'chat'; R.panel.querySelector('.wwai-back').hidden = v === 'chat';
     R.gear.classList.toggle('is-active', v === 'settings'); R.gear.setAttribute('aria-pressed', v === 'settings' ? 'true' : 'false');
   }
@@ -506,7 +669,7 @@
     var box = R.msgs; box.innerHTML = '';
     if (!S.messages.length) { box.appendChild(renderEmpty()); return; }
     S.messages.forEach(function (m) { box.appendChild(bubble(m)); });
-    if (S.pending === true) box.appendChild(el('div', 'wwai-msg wwai-model wwai-typing', '<span></span><span></span><span></span>'));
+    if (S.pending === true) box.appendChild(el('div', 'wwai-msg wwai-model wwai-typing', whoHtml() + '<div class="wwai-dots"><span></span><span></span><span></span></div>'));
     box.scrollTop = box.scrollHeight;
   }
   // model text: markdown chunks with charts in place of their [[viz:...]] lines (data from the server, never the model).
@@ -528,8 +691,11 @@
     flush();
   }
 
+  // the coach's answers are plain full-width text (no bubble) under a small label with the coach's name; the user's stay bubbles
+  function whoHtml() { var d = coach().def; return '<div class="wwai-who"><span class="wwai-who-icon">' + coachAv(d, 20) + '</span>' + esc(d.name) + '</div>'; }
   function bubble(m) {
     var b = el('div', 'wwai-msg ' + (m.role === 'user' ? 'wwai-user' : 'wwai-model') + (m.error ? ' wwai-error' : ''));
+    if (m.role !== 'user' && !m.error) b.innerHTML = whoHtml();
     if (m.imageUrl) { var im = el('img', 'wwai-msg-img'); im.src = m.imageUrl; im.alt = ''; b.appendChild(im); }
     else if (m.hadImage) b.appendChild(el('span', 'wwai-msg-imgnote', esc(_t('aiCoach.image_sent', 'Görsel gönderildi'))));
     var body = el('div', 'wwai-msg-text');
@@ -562,7 +728,7 @@
     if (code === 'BUSY') return _t('aiCoach.err.busy', 'AI şu an çok yoğun. Bir dakika sonra tekrar dene.');
     if (code === 'UNAUTHORIZED') return _t('aiCoach.err.session', 'Oturumun sona ermiş. Sayfayı yenileyip tekrar giriş yap.');
     if (code === 'BAD_IMAGE' || code === 'TOO_LARGE') return _t('aiCoach.err.image', 'Bu görsel kullanılamıyor. PNG, JPEG ya da WEBP dene.');
-    if (code === 'NOT_CONFIGURED') return _t('aiCoach.err.off', 'Anna şu an kullanılamıyor.');
+    if (code === 'NOT_CONFIGURED') return _t('aiCoach.err.off', '{coach} şu an kullanılamıyor.', { coach: coachName() });
     if (code === 'NETWORK') return _t('aiCoach.err.network', 'Bağlantı hatası. İnternetini kontrol edip tekrar dene.');
     return _t('aiCoach.err.generic', 'AI şu an cevap veremedi. Birazdan tekrar dene.');
   }
@@ -579,40 +745,76 @@
     R.input.value = ''; autosize(); clearImage();
     S.pending = true; R.send.disabled = true;
     renderMessages();
+    // The answer is typed out word by word: what the server sent so far is reply.full, what is on screen reply.content.
+    // Gemini sends uneven chunks (sometimes a whole paragraph at once); a typer reveals them at a steady pace and speeds
+    // up when a big chunk is waiting, so the text never lags far behind (typeStep). The server's final text and charts
+    // replace it once the typing has caught up.
     var reply = null;                                       // the streaming answer, once the first word arrived
-    function live() {                                       // redraw only the streaming bubble, once per frame
+    function paint() {                                      // redraw only the streaming bubble
+      if (!reply || !reply.el || !reply.el.isConnected) return;
+      var near = R.msgs.scrollHeight - R.msgs.scrollTop - R.msgs.clientHeight < 80;
+      fillModel(reply.el.querySelector('.wwai-msg-text'), reply);
+      if (near) R.msgs.scrollTop = R.msgs.scrollHeight;
+    }
+    function ensureReply() {
+      if (reply) return;
+      reply = { role: 'model', content: '', full: '', streaming: true };
+      S.messages.push(reply);
+      S.pending = 'streaming';
+      renderMessages();
+      reply.el = R.msgs.lastElementChild && R.msgs.lastElementChild.classList.contains('wwai-model') ? R.msgs.lastElementChild : null;
+    }
+    function schedule() {
       if (!reply || reply._raf) return;
-      reply._raf = (global.requestAnimationFrame || setTimeout)(function () {
-        reply._raf = 0;
-        if (!reply.el || !reply.el.isConnected) return;
-        var near = R.msgs.scrollHeight - R.msgs.scrollTop - R.msgs.clientHeight < 80;
-        fillModel(reply.el.querySelector('.wwai-msg-text'), reply);
-        if (near) R.msgs.scrollTop = R.msgs.scrollHeight;
+      reply._raf = (global.requestAnimationFrame || function (f) { return setTimeout(function () { f(Date.now()); }, 16); })(typeStep);
+    }
+    function typeStep(ts) {
+      if (!reply) return;
+      reply._raf = 0;
+      var full = reply.full, shown = reply.content.length;
+      if (shown < full.length) {
+        if (document.hidden) shown = full.length;                         // background tab: no point in typing
+        else {
+          var dt = reply._ts ? Math.min(ts - reply._ts, 100) : 16;
+          var backlog = (full.length - shown) / 6;                        // words still waiting (about 6 characters each)
+          reply._carry = (reply._carry || 0) + (TYPE_WPS + backlog * TYPE_CATCH_UP) * dt / 1000;
+          var n = Math.floor(reply._carry);
+          reply._carry -= n;
+          while (n-- > 0 && shown < full.length) shown = nextWordEnd(full, shown);
+        }
+        reply._ts = ts;
+        if (shown > reply.content.length) { reply.content = full.slice(0, shown); paint(); }
+      }
+      if (reply.content.length < reply.full.length) schedule();
+      else {
+        reply._ts = 0; reply._carry = 0;
+        if (reply._drained) { var f = reply._drained; reply._drained = null; f(); }
+      }
+    }
+    function drained() {                                    // resolves once everything received is on screen
+      return new Promise(function (resolve) {
+        if (!reply || reply.content.length >= reply.full.length) return resolve();
+        reply._drained = resolve; schedule();
       });
     }
     function onDelta(t) {
-      if (!reply) {
-        reply = { role: 'model', content: '', streaming: true };
-        S.messages.push(reply);
-        S.pending = 'streaming';
-        renderMessages();
-        reply.el = R.msgs.lastElementChild && R.msgs.lastElementChild.classList.contains('wwai-model') ? R.msgs.lastElementChild : null;
-      }
-      reply.content += t; live();
+      ensureReply();
+      reply.full += t; schedule();
     }
     function onReset() {                                    // the server retries a broken answer: back to "typing…"
       if (!reply) return;
+      if (reply._raf) (global.cancelAnimationFrame || clearTimeout)(reply._raf);
       var i = S.messages.indexOf(reply); if (i >= 0) S.messages.splice(i, 1);
       reply = null; S.pending = true; renderMessages();
     }
     function failWith(code, j) {
       var msg = errorText(code, j);
-      if (reply) { reply.streaming = false; reply.note = msg; }          // keep the part already shown, say it stopped
+      if (reply) { reply.content = reply.full; reply.streaming = false; reply.note = msg; }   // keep what arrived, say it stopped
       else S.messages.push({ role: 'model', content: msg, error: true, upgrade: code === 'LIMIT' && j && j.usage && !j.usage.premium });
     }
     session().then(function (s) {
       if (!s) throw Object.assign(new Error('session'), { code: 'UNAUTHORIZED' });
-      var body = { message: text, lang: lang(), tz: tz(), stream: true, detail: detail() };
+      var cc = coach(), body = { message: text, lang: lang(), tz: tz(), stream: true, detail: detail(), coach: cc.id, tone: cc.tone, currency: currency() };
       if (S.conversationId) body.conversationId = S.conversationId;
       else { var jid = currentJournal(); if (jid) body.journalId = jid; S.convJournal = jid || null; }
       if (img) body.image = { mimeType: img.mimeType, data: img.data };
@@ -631,15 +833,28 @@
       if (j.usage) { S.usage = j.usage; renderUsage(); }
       if (out.error || !out.done) { failWith(out.code || 'UPSTREAM', out.error); return; }
       if (j.conversationId) { S.conversationId = j.conversationId; save({ open: S.open, conversationId: S.conversationId }); renderJournal(); }
-      if (!reply) { reply = { role: 'model', content: '' }; S.messages.push(reply); }
-      reply.content = j.reply; reply.visuals = j.visuals || null; reply.streaming = false;
+      ensureReply();
+      if (!reply.full) { reply.full = String(j.reply || ''); schedule(); }   // a non-streamed answer is typed out too
+      return drained().then(function () {
+        reply.content = j.reply; reply.visuals = j.visuals || null; reply.streaming = false;
+      });
     }).catch(function (e) {
       failWith((e && e.code) || 'NETWORK');
     }).then(function () {
-      if (reply) reply.streaming = false;
+      if (reply) { reply.streaming = false; if (reply._raf) (global.cancelAnimationFrame || clearTimeout)(reply._raf); reply._raf = 0; }
       S.pending = false; R.send.disabled = false;
       if (S.view === 'chat') renderMessages();
     });
+  }
+  // typing pace: words per second at rest, plus this much per word still waiting (80 words arriving at once take ~1.5 s)
+  var TYPE_WPS = 32, TYPE_CATCH_UP = 0.7;
+  // the end of the next word after position i (spaces, then the word); a [[viz:...]] line comes in one piece
+  function nextWordEnd(text, i) {
+    var n = text.length;
+    while (i < n && /\s/.test(text.charAt(i))) i++;
+    if (text.charAt(i) === '[' && text.charAt(i + 1) === '[') { var e = text.indexOf(']]', i); return e < 0 ? n : e + 2; }
+    while (i < n && !/\s/.test(text.charAt(i))) i++;
+    return i;
   }
 
   // reads the ai-coach event stream: "delta" {text} ..., then "done" {...} or "error" {code}
@@ -681,8 +896,10 @@
   };
   function vt(group, id) { return _t('aiCoach.viz.' + group + '.' + id, (VIZ_TR[group] && VIZ_TR[group][id]) || id); }
   function nf(v, opts) { try { return new Intl.NumberFormat(lang(), opts).format(v); } catch (e) { return String(v); } }
+  // the currency symbol the app shows (settings / onboarding); the coach writes its amounts in it too
+  function currency() { try { return (typeof global.getCurrencySymbol === 'function' && global.getCurrencySymbol()) || localStorage.getItem('ww_currency') || '$'; } catch (e) { return '$'; } }
   function money(v, signed) {
-    var cur = (typeof global.getCurrencySymbol === 'function' && global.getCurrencySymbol()) || '$';
+    var cur = currency();
     var a = Math.abs(v), s = nf(a, { maximumFractionDigits: a < 100 ? 2 : 0 });
     return (v < 0 ? '−' : signed && v > 0 ? '+' : '') + cur + s;
   }
@@ -867,7 +1084,10 @@
       return fetch(endpoint() + '/functions/v1/ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token, 'apikey': anonKey() }, body: JSON.stringify(body) })
         .then(function (r) { return r.json(); });
     }).then(function (j) { S.snap[k] = { data: j && j.ok ? j.snapshot : null, at: Date.now() }; }, function () { S.snap[k] = { data: null, at: Date.now() }; })
-      .then(function () { if (S.view === 'chat' && !S.messages.length && (currentJournal() || '*') === k) renderMessages(); });
+      .then(function () {
+        if ((currentJournal() || '*') !== k) return;
+        if (S.view === 'chat' && !S.messages.length) renderMessages(); else if (S.view === 'coach') renderCoach();
+      });
   }
   function insightText(ins) {
     var p = {}, q = ins.params || {};
@@ -919,9 +1139,12 @@
     var wrap = el('div', 'wwai-start'), jid = currentJournal(), k = jid || '*';
     if (S.open) loadSnapshot(jid);                         // only when the member opens the panel, not on every page view
     var c = S.snap[k], snap = c && c.data;
-    var head = el('div', 'wwai-start-head');
-    head.appendChild(el('span', 'wwai-start-icon', ICON.spark));
-    head.appendChild(el('p', 'wwai-start-text', esc(_t('aiCoach.intro_short', 'Merhaba, ben Anna. Defterindeki verilere göre analiz yaparım; bir grafik görüntüsü de gönderebilirsin.'))));
+    var cd = coach().def, head = el('div', 'wwai-start-head');
+    head.insertAdjacentHTML('beforeend', avaHtml(cd, 'wwai-ava-lg'));
+    var intro = el('div', 'wwai-start-intro');
+    intro.appendChild(el('p', 'wwai-start-text', esc(cd.id === 'kai' ? _t('aiCoach.intro_short', cd.intro) : coachText(cd, 'intro'))));
+    var sw = el('button', 'wwai-link wwai-coach-switch', esc(_t('aiCoach.coach.change', 'Koçu değiştir')) + ' →'); sw.type = 'button'; sw.setAttribute('data-act', 'coach-open');
+    intro.appendChild(sw); head.appendChild(intro);
     wrap.appendChild(head);
     // numbers
     var card = el('div', 'wwai-snap' + (snap ? '' : ' is-loading'));
@@ -951,6 +1174,11 @@
     // quick analyses
     wrap.appendChild(el('p', 'wwai-start-label', esc(_t('aiCoach.quick', 'Hızlı analiz'))));
     var chips = el('div', 'wwai-chips');
+    if (cd.chip) {                                         // the coach's own topic first
+      var fc = el('button', 'wwai-chip wwai-chip-coach', ICON[cd.icon] + '<span></span>'); fc.type = 'button'; fc.setAttribute('data-act', 'prompt');
+      var fq = _t('aiCoach.coach.' + cd.id + '.chip_q', cd.chip[1]); fc.setAttribute('data-text', fq); fc.title = fq;
+      fc.querySelector('span').textContent = _t('aiCoach.coach.' + cd.id + '.chip', cd.chip[0]); chips.appendChild(fc);
+    }
     PROMPTS.forEach(function (p) {
       var b = el('button', 'wwai-chip', ICON[p[4]] + '<span></span>'); b.type = 'button'; b.setAttribute('data-act', 'prompt');
       b.setAttribute('data-text', _t(p[0], p[1])); b.title = _t(p[0], p[1]); b.querySelector('span').textContent = _t(p[2], p[3]); chips.appendChild(b);
@@ -1021,6 +1249,14 @@
     }
     h += '</div>';
 
+    // the coach (by the member's main problem) and its tone
+    var cs = coach();
+    h += '<div class="wwai-group">';
+    h += row(_t('aiCoach.coach.yours', 'Koçun') + ': ' + cs.def.name, coachText(cs.def, 'problem') + ' · ' + coachText(cs.def, 'desc'),
+      '<button type="button" class="wwai-link" data-act="coach-open">' + esc(_t('aiCoach.coach.change', 'Koçu değiştir')) + ' →</button>');
+    h += row(_t('aiCoach.coach.tone', 'Üslup'), toneHint(cs.tone), toneSeg(cs.tone), 'is-stack');
+    h += '</div>';
+
     // preferences
     var d = detail();
     var seg = '<div class="wwai-seg" role="radiogroup" aria-label="' + esc(_t('aiCoach.set.detail', 'Cevap uzunluğu')) + '">' +
@@ -1067,7 +1303,7 @@
     h += '</div>';
 
     var keys = '<kbd>' + (isMac() ? '⌘' : 'Ctrl') + '</kbd><kbd>K</kbd>';
-    h += '<p class="wwai-hint">' + esc(_t('aiCoach.set.tip', 'İpucu: {keys} ile Anna\'yı aç / kapat')).split('{keys}').join(keys) + '</p>';
+    h += '<p class="wwai-hint">' + esc(_t('aiCoach.set.tip', 'İpucu: {keys} ile koçu aç / kapat')).split('{keys}').join(keys) + '</p>';
     R.settings.innerHTML = h;
   }
   function deleteAll() {
@@ -1145,6 +1381,6 @@
     } catch (e) { /* ignore */ }
   }
 
-  global.WwAiCoach = { open: function () { if (S.mounted) setOpen(true); }, close: function () { if (S.mounted) setOpen(false); }, _md: md, _joinDictation: joinDictation };
+  global.WwAiCoach = { open: function () { if (S.mounted) setOpen(true); }, close: function () { if (S.mounted) setOpen(false); }, coachName: coachName, setCoach: function (id) { setCoach(id); }, _md: md, _joinDictation: joinDictation };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { start(0); }); else start(0);
 })(typeof window !== 'undefined' ? window : globalThis);

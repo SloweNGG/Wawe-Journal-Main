@@ -5,6 +5,8 @@
 // and their backtest accounts (_shared/backtest-context.ts).
 // Migrations 202611120002 (tables, limits) and 202611120003 (visuals).
 //   POST { message, conversationId?, journalId?, image?: { mimeType, data (base64) }, lang?, tz?, stream?, detail?: short|normal|detailed }
+//     coach?: kai|mira|rex|atlas|nova, tone?: soft|balanced|strict (_shared/coach-personas.ts; else coach_settings.plan.coach)
+//     currency?: $|€|£|₺|₿ (or USD/EUR/...): the currency the panel shows; else user_profiles.preferred_currency, else $
 //     stream false -> JSON { ok, conversationId, reply, visuals, usage: { used, limit, premium } }
 //     stream true  -> text/event-stream: "start" {usage}, "delta" {text} ..., then "done" {conversationId, reply, visuals,
 //                     usage} or "error" {code, message}; "reset" {} = the answer so far was broken and is being retried
@@ -15,8 +17,9 @@
 //   written to public.notifications like after a sync; saves the member's zone in coach_settings. No Gemini call.
 //   POST { action: "goal", goal: { kind, target } | null, tz? } -> { ok, goal }: this week's goal (_shared/weekly.ts) in coach_settings.plan.goal.
 //   snapshot / alerts also write last week's review once (notification coach.weekly, _shared/weekly.ts).
-//   POST { action: "snapshot", journalId?, tz? } -> { ok, snapshot: { month, overall, insights } } for the panel's opening
-//   screen: numbers and rule-based findings (_shared/insights.ts). No Gemini call, no message counted.
+//   POST { action: "snapshot", journalId?, tz? } -> { ok, snapshot: { month, overall, insights, coach_suggestion } } for the panel's
+//   opening screen: numbers and rule-based findings (_shared/insights.ts), and the coach that fits the strongest finding
+//   (the coach picker's "pick for me"). No Gemini call, no message counted.
 // Security:
 //   - The member's JWT is required; every row is read for the caller only (journal and conversation ownership checked).
 //   - GEMINI_API_KEY lives in the function secrets and never reaches the browser or a log.
@@ -29,7 +32,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, jsonRes } from '../_shared/ctrader.ts';
 import { summarizeTrades, safeTimeZone, equityCurve } from '../_shared/trade-summary.ts';
-import { COACH_KNOWLEDGE, answerLength, answerLengthRule, type AnswerLength } from '../_shared/coach-knowledge.ts';
+import { COACH_KNOWLEDGE, answerLength, answerLengthRule, currencySymbol, currencyRule, type AnswerLength } from '../_shared/coach-knowledge.ts';
 import { resolveVisuals } from '../_shared/visuals.ts';
 import { createStepBuilder, takeSseEvents } from '../_shared/gemini-stream.ts';
 import { pickInsights, snapshotNumbers } from '../_shared/insights.ts';
@@ -39,6 +42,8 @@ import { runCoachAlerts } from '../_shared/coach-alerts.ts';
 import { cleanPlan, disciplineReport, checkTrades } from '../_shared/discipline.ts';
 import { weekStart, addDays, weeklyReview, goalProgress, cleanGoal, runWeeklyReview } from '../_shared/weekly.ts';
 import { backtestContext } from '../_shared/backtest-context.ts';
+import { resolveCoach, coachIntro, suggestCoach, type Coach } from '../_shared/coach-personas.ts';
+import { runChain, modelHealth } from '../_shared/model-chain.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -49,9 +54,10 @@ const GEMINI_MODELS = (Deno.env.get('GEMINI_MODELS') || 'gemini-3.8-flash,gemini
   .split(',').map((m) => m.trim()).filter(Boolean);
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse';
 const GEMINI_REVISION = '2026-05-20';
-// a model may accept the request and then stay silent (seen on the free tier: 100 s without a word): give up on it and move on
-const FIRST_WORD_MS = 20_000;                      // request sent -> first text
+// a model may accept the request and then stay silent (seen on the free tier: 100 s without a word): give up on it and
+// move on. The wait for the first word and the order of the models: _shared/model-chain.ts (busy models go last for a while).
 const IDLE_MS = 15_000;                            // between two chunks once text flows
+const HEALTH = modelHealth();                      // lives as long as this function instance
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024;            // base64 image included
 const MAX_IMAGE_B64 = 7 * 1024 * 1024;             // ~5 MB of image bytes
@@ -139,17 +145,16 @@ async function loadContext(admin: any, userId: string, journalId: string | null,
     const props = await loadPropContexts(admin, userId, journalId, names);
     if (props.length) summary.prop_accounts = props;
   } catch (_) { console.error('ai-coach: prop context failed'); }
-  return { summary, trades };
+  return { summary, trades, coach: cs?.plan?.coach };
 }
 
 function fail(code: string, message: string, status: number, cors: Record<string, string>, extra: Record<string, unknown> = {}) {
   return jsonRes({ ok: false, code, error: message, ...extra }, status, { ...cors, 'Cache-Control': 'no-store' });
 }
 
-export function systemInstruction(lang: string, context: unknown, detail: AnswerLength = 'normal'): string {
+export function systemInstruction(lang: string, context: unknown, detail: AnswerLength = 'normal', coach: Coach = resolveCoach(null, null), currency = '$'): string {
   return [
-    'You are Anna, the AI trading coach inside Wawe Journal, a trading journal app. Introduce yourself by name only when greeted or asked who you are.',
-    'You are an AI, not a human: if the trader asks, say so plainly, and never claim feelings, a private life or a personal history.',
+    ...coachIntro(coach),
     'You help ONE trader improve by analysing THEIR OWN journal data, given below as JSON, and chart screenshots they share.',
     '',
     'Rules:',
@@ -160,7 +165,8 @@ export function systemInstruction(lang: string, context: unknown, detail: Answer
     '- Never show the data\'s field names, JSON keys, code or values like null/true (e.g. write "trades with a stop loss", not trades_with_stop_loss_pct); the trader only sees plain language.',
     '- You are not a licensed financial adviser; mention it only when the trader asks for direct investment advice. Do not end answers with disclaimers or risk notes (the app already shows one).',
     '- Stay on trading, risk management, trading psychology and the use of the journal. Politely decline anything else.',
-    '- Money values are in the account currency of the journal; times in by_entry_hour_local are in the time_zone field.',
+    currencyRule(currency),
+    '- Times in by_entry_hour_local are in the time_zone field.',
     '',
     COACH_KNOWLEDGE,
     '',
@@ -185,9 +191,9 @@ export function buildHistory(msgs: { role: string; content: string; steps?: any;
 
 // One streamed Gemini call. onDelta gets the reply text as it arrives.
 // -> { ok, status, steps, text, forwarded } ; ok=false with forwarded=false means another model may be tried.
-async function streamGemini(model: string, payload: Record<string, unknown>, onDelta: (t: string) => void) {
+async function streamGemini(model: string, payload: Record<string, unknown>, onDelta: (t: string) => void, firstWordMs: number) {
   const ac = new AbortController();
-  let timer = setTimeout(() => ac.abort(), FIRST_WORD_MS);
+  let timer = setTimeout(() => ac.abort(), firstWordMs);
   const arm = (ms: number) => { clearTimeout(timer); timer = setTimeout(() => ac.abort(), ms); };
   try { return await streamGeminiInner(model, payload, onDelta, ac.signal, arm); }
   finally { clearTimeout(timer); }
@@ -276,7 +282,7 @@ serve(async (req: Request) => {
     const p = new Intl.DateTimeFormat('en-CA', { timeZone: tzs, year: 'numeric', month: '2-digit' }).formatToParts(new Date());
     const nowMonth = `${p.find((x) => x.type === 'year')?.value}-${p.find((x) => x.type === 'month')?.value}`;
     const weekly = await weeklyOnce(adm, user.id, tzs).catch(() => null);
-    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum), weekly } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+    return jsonRes({ ok: true, snapshot: { ...snapshotNumbers(sum, nowMonth), insights: pickInsights(sum), weekly, coach_suggestion: suggestCoach(pickInsights(sum, 50)) } }, 200, { ...cors, 'Cache-Control': 'no-store' });
   }
   if (body?.action === 'goal') {
     // the member takes (or drops: goal null) this week's goal; stored in coach_settings.plan.goal, rules kept
@@ -316,6 +322,7 @@ serve(async (req: Request) => {
   const tz = safeTimeZone(body?.tz);
   const wantStream = body?.stream === true;
   const detail = answerLength(body?.detail);
+  const bodyCurrency = currencySymbol(body?.currency);           // the symbol the panel shows; else the profile's (below)
   const convId = body?.conversationId == null ? null : String(body.conversationId);
   if (convId && !UUID.test(convId)) return fail('BAD_REQUEST', 'Invalid conversation.', 400, cors);
   const journalId = body?.journalId == null || body.journalId === '' ? null : String(body.journalId);
@@ -353,7 +360,9 @@ serve(async (req: Request) => {
   type Outcome = { ok: true; conversationId: string | null; reply: string; visuals: Record<string, unknown> } | { ok: false; code: string; message: string; status: number };
   async function run(send: (event: string, data: unknown) => void): Promise<Outcome> {
     try {
+      const t0 = Date.now();
       const loaded = await loadContext(admin, user!.id, scopeJournal, tz);
+      const tCtx = Date.now();
       if (!loaded) { await refund(); return { ok: false, code: 'SERVER', message: 'Could not read the journal.', status: 500 }; }
       const context = loaded.summary;
       const equity = equityCurve(loaded.trades);
@@ -366,27 +375,27 @@ serve(async (req: Request) => {
       }
       const userContent: any[] = [{ type: 'text', text: message }];
       if (image) userContent.push({ type: 'image', data: image.data, mime_type: image.mime_type });
-      const system = systemInstruction(lang, context, detail);
-
-      // model chain; demand spikes on the free tier are short, so one more round after a pause
-      let got: Awaited<ReturnType<typeof streamGemini>> | null = null, used = '', lastStatus = 0;
-      const chain = [...GEMINI_MODELS, ...GEMINI_MODELS];
-      for (let i = 0; i < chain.length; i++) {
-        const model = chain[i];
-        if (i === GEMINI_MODELS.length) {
-          if (!(lastStatus === 429 || lastStatus === 503)) break;
-          await new Promise((r) => setTimeout(r, 2000));
-        }
-        const r = await streamGemini(model, {
-          system_instruction: system,
-          input: [...buildHistory(msgs, model), { type: 'user_input', content: userContent }],
-          generation_config: { thinking_level: 'low', max_output_tokens: 4096 },
-        }, (t) => send('delta', { text: t }));
-        if (r.ok) { got = r; used = model; break; }
-        lastStatus = r.status;
-        if (!(r.status === 429 || r.status >= 500)) break;          // a request error does not get better on another model
-        if (r.forwarded) send('reset', {});                         // the member saw part of a broken answer: the panel clears it
+      let currency = bodyCurrency;
+      if (!currency) {
+        const { data: prof } = await admin.from('user_profiles').select('preferred_currency').eq('id', user!.id).maybeSingle();
+        currency = currencySymbol(prof?.preferred_currency) || '$';
       }
+      const system = systemInstruction(lang, context, detail, resolveCoach(body, loaded.coach), currency);
+
+      // model chain (_shared/model-chain.ts): busy models last, one more round after a pause on a short demand spike
+      let tFirst = 0;
+      const chained = await runChain(GEMINI_MODELS, (model, firstWordMs) => streamGemini(model, {
+        system_instruction: system,
+        input: [...buildHistory(msgs, model), { type: 'user_input', content: userContent }],
+        generation_config: { thinking_level: 'low', max_output_tokens: 4096 },
+      }, (t) => { if (!tFirst) tFirst = Date.now(); send('delta', { text: t }); }, firstWordMs), {
+        health: HEALTH,
+        onReset: () => { tFirst = 0; send('reset', {}); },   // the member saw part of a broken answer: the panel clears it
+      });
+      const { got, used, lastStatus } = chained;
+      // timings only (no content, no user id): where the wait goes
+      console.log('ai-coach timing ' + JSON.stringify({ ctx_ms: tCtx - t0, first_word_ms: tFirst ? tFirst - tCtx : null,
+        total_ms: Date.now() - t0, model: used || null, attempts: chained.attempts, cooling: HEALTH.cooling() }));
       if (!got) {
         await refund();
         if (lastStatus === 429 || lastStatus === 503) return { ok: false, code: 'BUSY', message: 'The AI service is busy. Try again in a minute.', status: 503 };

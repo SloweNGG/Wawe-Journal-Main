@@ -796,6 +796,8 @@ window.loadNotifications = async function() {
 
           var helperT = typeof t === 'function' ? t : function(k, f, p) { return f || k; };
           var metaData = Object.assign({}, n.meta_data || {});
+          // coach notifications start with the name of the coach the member picked (AI coach panel)
+          if (n.title_key && n.title_key.indexOf('coach.') === 0 && !metaData.coach) metaData.coach = (window.WwAiCoach && typeof window.WwAiCoach.coachName === 'function') ? window.WwAiCoach.coachName() : 'Kai';
           if (!metaData.plan) {
             var curLangCode = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) ? i18n.getCurrentLanguage() : 'tr';
             metaData.plan = curLangCode === 'en' ? '1-month' : (curLangCode === 'de' ? '1-monatiges' : '1 aylık');

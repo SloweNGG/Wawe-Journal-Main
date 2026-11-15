@@ -18,9 +18,12 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
   position: fixed; right: 2rem; bottom: 2rem; z-index: calc(var(--z-fab, 999) + 1);
   width: 410px; height: min(700px, calc(100vh - 4rem)); display: flex; flex-direction: column;
   background: var(--modal-bg, var(--surface)); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-lg, 20px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45); overflow: hidden; font-family: var(--font, inherit);
+  box-shadow: none; overflow: hidden; font-family: var(--font, inherit);   /* dark: a shadow is invisible on black, the border does the work */
+  transform-origin: bottom right; animation: wwai-pop .16s ease-out;
 }
+body.light-theme .wwai-panel { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18); }
 .wwai-panel[hidden] { display: none; }
+@keyframes wwai-pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
 .wwai-panel.is-wide { width: min(880px, calc(100vw - 4rem)); height: calc(100vh - 4rem); }
 .wwai-panel.is-wide .wwai-model, .wwai-panel.is-wide .wwai-user { max-width: 760px; }
 
@@ -45,8 +48,8 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-icon[hidden] { display: none; }
 
 .wwai-body { flex: 1; min-height: 0; position: relative; }
-.wwai-msgs, .wwai-history, .wwai-settings { position: absolute; inset: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-.wwai-msgs[hidden], .wwai-history[hidden], .wwai-settings[hidden] { display: none; }
+.wwai-msgs, .wwai-history, .wwai-settings, .wwai-coach { position: absolute; inset: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.wwai-msgs[hidden], .wwai-history[hidden], .wwai-settings[hidden], .wwai-coach[hidden] { display: none; }
 
 /* settings view */
 .wwai-gear { position: relative; }
@@ -95,7 +98,7 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-hint { margin: 2px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
 .wwai-hint kbd { display: inline-block; min-width: 20px; margin: 0 1px; padding: 1px 5px; font: inherit; font-size: 11px; text-align: center; color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; }
 /* views fade in when they are switched (display: none -> shown restarts the animation) */
-.wwai-msgs, .wwai-history, .wwai-settings { animation: wwai-view-in .18s ease-out; }
+.wwai-msgs, .wwai-history, .wwai-settings, .wwai-coach { animation: wwai-view-in .18s ease-out; }
 @keyframes wwai-view-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .wwai-muted { color: var(--muted); font-size: 13px; text-align: center; margin: 24px 0; }
 
@@ -130,8 +133,12 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 
 .wwai-msg { max-width: 88%; padding: 10px 13px; border-radius: 14px; font-size: 14px; line-height: 1.55; word-wrap: break-word; overflow-wrap: anywhere; }
 .wwai-user { align-self: flex-end; background: var(--accent); color: var(--ac-on, #fff); border-bottom-right-radius: 4px; white-space: pre-wrap; }
-.wwai-model { align-self: flex-start; background: var(--modal-bg, var(--surface)); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-.wwai-error { border-color: var(--red, #ef4444); }
+/* coach answers: no bubble, full width, under a small "Kai" label (easier to read long analyses and charts) */
+.wwai-model { align-self: stretch; max-width: 100%; padding: 2px 2px 4px; border-radius: 0; background: transparent; }
+.wwai-who { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+.wwai-who-icon { width: 22px; height: 22px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); background: rgba(var(--ac-rgb, 124, 109, 250), 0.14); }
+.wwai-who-icon svg { width: 13px; height: 13px; }
+.wwai-model.wwai-error { align-self: flex-start; max-width: 88%; padding: 10px 13px; border: 1px solid var(--red, #ef4444); border-radius: 14px; border-bottom-left-radius: 4px; background: rgba(239, 68, 68, .06); }
 .wwai-msg-text p { margin: 0 0 8px; }
 .wwai-msg-text p:last-child { margin-bottom: 0; }
 .wwai-msg-text .wwai-h { font-weight: 700; }
@@ -141,12 +148,12 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-msg-img { display: block; max-width: 100%; max-height: 220px; border-radius: 10px; margin-bottom: 8px; }
 .wwai-msg-imgnote { display: block; font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
 .wwai-upgrade { margin-top: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ac-on, #fff); background: var(--accent); border: 0; border-radius: var(--radius-sm, 8px); padding: 7px 12px; cursor: pointer; }
-.wwai-typing { display: flex; gap: 4px; padding: 14px; }
-.wwai-typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: wwai-dot 1.2s infinite ease-in-out; }
-.wwai-typing span:nth-child(2) { animation-delay: .15s; }
-.wwai-typing span:nth-child(3) { animation-delay: .3s; }
+.wwai-dots { display: flex; gap: 4px; padding: 8px 0 4px 29px; }
+.wwai-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: wwai-dot 1.2s infinite ease-in-out; }
+.wwai-dots span:nth-child(2) { animation-delay: .15s; }
+.wwai-dots span:nth-child(3) { animation-delay: .3s; }
 @keyframes wwai-dot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
-@media (prefers-reduced-motion: reduce) { .wwai-typing span { animation: none; } .wwai-fab { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .wwai-dots span { animation: none; } .wwai-fab { transition: none; } .wwai-panel { animation: none; } }
 
 .wwai-conv { display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 12px; border: 1px solid var(--border); border-radius: var(--radius, 12px); cursor: pointer; }
 .wwai-conv:hover, .wwai-conv:focus-visible { border-color: var(--accent); outline: none; }
@@ -155,26 +162,31 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-conv-title { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wwai-conv-date { font-size: 12px; color: var(--muted); }
 
-.wwai-foot { border-top: 1px solid var(--border); padding: 10px 12px 8px; }
+.wwai-foot { padding: 4px 12px 12px; }
 .wwai-foot[hidden] { display: none; }
 .wwai-attach { display: flex; align-items: center; gap: 8px; padding: 6px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); }
 .wwai-attach[hidden] { display: none; }
 .wwai-attach img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 .wwai-attach-name { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wwai-compose { display: flex; align-items: flex-end; gap: 6px; }
-.wwai-input { flex: 1; resize: none; min-height: 40px; max-height: 140px; font: inherit; font-size: 14px; line-height: 1.45; color: var(--text); background: var(--modal-bg, var(--surface)); border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 9px 12px; }
-.wwai-input:focus { outline: none; border-color: var(--accent); }
-.wwai-img-btn { height: 40px; width: 40px; }
-.wwai-mic { height: 40px; width: 40px; position: relative; }
+/* compose: one rounded box; the text area on top, image/mic on the left and send on the right below it */
+.wwai-compose { display: flex; flex-direction: column; background: var(--surface2); border: 1px solid var(--border); border-radius: 18px; padding: 4px 6px 6px; cursor: text; transition: border-color .15s ease; }
+.wwai-compose:focus-within { border-color: rgba(var(--ac-rgb, 124, 109, 250), 0.6); }
+.wwai-compose-bar { display: flex; align-items: center; gap: 2px; }
+.wwai-input { width: 100%; resize: none; min-height: 36px; max-height: 140px; font: inherit; font-size: 14px; line-height: 1.45; color: var(--text); background: transparent; border: 0; padding: 8px 8px 2px; }
+.wwai-input:focus { outline: none; }
+.wwai-input::placeholder { color: var(--muted); }
+.wwai-img-btn, .wwai-mic { height: 34px; width: 34px; border-radius: 50%; }
+.wwai-mic { position: relative; }
 .wwai-mic.is-on, .wwai-mic.is-on:hover { color: #fff; background: var(--red, #ef4444); animation: wwai-mic-pulse 1.4s ease-in-out infinite; }
 @keyframes wwai-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, .45); } 50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } }
 @media (prefers-reduced-motion: reduce) { .wwai-mic.is-on { animation: none; } }
-.wwai-send { width: 40px; height: 40px; flex: none; border: 0; border-radius: var(--radius, 12px); background: var(--accent); color: var(--ac-on, #fff); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-.wwai-send:disabled { opacity: .5; cursor: default; }
-.wwai-send svg { width: 18px; height: 18px; }
-.wwai-note { margin: 6px 2px 0; font-size: 11px; color: var(--muted); text-align: center; }
-.wwai-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.wwai-note a:hover { color: var(--text); }
+.wwai-send { width: 34px; height: 34px; flex: none; margin-left: auto; border: 0; border-radius: 50%; background: var(--accent); color: var(--ac-on, #fff); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: opacity .15s ease, transform .15s ease; }
+.wwai-send:hover:not(:disabled) { transform: scale(1.06); }
+.wwai-send:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* empty box: send is dimmed until there is text (an attached image always fills the text) */
+.wwai-compose:has(.wwai-input:placeholder-shown) .wwai-send, .wwai-send:disabled { opacity: .35; transform: none; }
+.wwai-send:disabled { cursor: default; }
+.wwai-send svg { width: 17px; height: 17px; }
 .wwai-drop { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--accent); background: rgba(var(--ac-rgb, 124, 109, 250), 0.12); border: 2px dashed var(--accent); border-radius: inherit; }
 .wwai-drop[hidden] { display: none; }
 
@@ -228,14 +240,17 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-viz-table th { color: var(--muted); font-weight: 500; }
 .wwai-viz-table td:not(:first-child), .wwai-viz-table th:not(:first-child) { text-align: right; }
 .wwai-msg-note { margin: 8px 0 0; font-size: 12px; color: var(--red, #ef4444); }
-@media (prefers-reduced-motion: reduce) { .wwai-viz-wait, .wwai-skel { animation: none; } .wwai-switch, .wwai-switch span, .wwai-quota .wwai-ring { transition: none; } .wwai-msgs, .wwai-history, .wwai-settings { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wwai-viz-wait, .wwai-skel { animation: none; } .wwai-switch, .wwai-switch span, .wwai-quota .wwai-ring { transition: none; } .wwai-msgs, .wwai-history, .wwai-settings, .wwai-coach { animation: none; } }
 
 @media (max-width: 768px) {
   .wwai-fab { right: 1.25rem; bottom: 1.25rem; width: 48px; height: 48px; }
   body[data-quick-add] .wwai-fab { bottom: calc(1.25rem + 48px + 10px); }
-  .wwai-panel, .wwai-panel.is-wide { inset: 0; width: auto; height: auto; border-radius: 0; border: 0; }
+  .wwai-panel, .wwai-panel.is-wide { inset: 0; width: auto; height: auto; border-radius: 0; border: 0; transform-origin: bottom center; }
+  /* full screen with viewport-fit=cover: keep the header below the notch and the box above the iPhone home bar */
+  .wwai-head { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+  .wwai-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
   .wwai-row-wide, .wwai-hint { display: none; }   /* no wide mode / keyboard on phones */
-  .wwai-msg { max-width: 92%; }
+  .wwai-user, .wwai-model.wwai-error { max-width: 92%; }   /* coach answers stay full width */
   .wwai-input { font-size: 16px; }            /* iOS zooms into inputs under 16px */
 }
 
@@ -258,3 +273,79 @@ body[data-quick-add] .wwai-fab { bottom: calc(2rem + 54px + 12px); }
 .wwai-week-goal { margin: 0; font-size: 12.5px; }
 .wwai-week-now { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; color: var(--muted); }
 .wwai-week-now b { color: var(--text); font-weight: 600; }
+
+/* ---------------------------------------------------------------- coaches (by the member's main problem)
+   each coach tints its icon; the rest of the panel keeps the app accent */
+.wwai-panel { --wwai-cc: var(--accent, #7c6dfa); --wwai-cc-rgb: var(--ac-rgb, 124, 109, 250); }
+.wwai-c-kai { --wwai-cc: var(--accent, #7c6dfa); --wwai-cc-rgb: var(--ac-rgb, 124, 109, 250); }
+.wwai-c-mira { --wwai-cc: #e2559b; --wwai-cc-rgb: 226, 85, 155; }
+.wwai-c-rex { --wwai-cc: #e8902a; --wwai-cc-rgb: 232, 144, 42; }
+.wwai-c-atlas { --wwai-cc: #3d8bfd; --wwai-cc-rgb: 61, 139, 253; }
+.wwai-c-nova { --wwai-cc: #1fb57f; --wwai-cc-rgb: 31, 181, 127; }
+.wwai-title-icon, .wwai-start-icon, .wwai-who-icon, .wwai-chip-coach svg { color: var(--wwai-cc); }
+.wwai-start-icon { background: rgba(var(--wwai-cc-rgb), 0.12); }
+.wwai-who-icon { background: rgba(var(--wwai-cc-rgb), 0.14); }
+.wwai-chip-coach { border-color: rgba(var(--wwai-cc-rgb), 0.45); }
+.wwai-start-intro { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+
+.wwai-coach { gap: 12px; }
+.wwai-coach-q { margin: 0; font-size: 16px; font-weight: 600; color: var(--text); }
+.wwai-coach-hint { margin: -6px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.wwai-coach-list { display: flex; flex-direction: column; gap: 8px; }
+.wwai-coach-card { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--modal-bg, var(--surface));
+  border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 11px 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+.wwai-coach-card:hover, .wwai-coach-card:focus-visible { border-color: var(--wwai-cc); outline: none; }
+.wwai-coach-card[aria-checked="true"] { border-color: var(--wwai-cc); background: rgba(var(--wwai-cc-rgb), 0.08); box-shadow: inset 0 0 0 1px var(--wwai-cc); }
+.wwai-coach-icon { width: 34px; height: 34px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--wwai-cc); background: rgba(var(--wwai-cc-rgb), 0.13); }
+.wwai-coach-icon svg { width: 18px; height: 18px; }
+.wwai-coach-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wwai-coach-text strong { font-size: 14px; font-weight: 600; }
+.wwai-coach-text span { font-size: 12px; line-height: 1.4; color: var(--muted); }
+.wwai-coach-name { flex: none; padding: 2px 8px; font-size: 11px; font-weight: 600; color: var(--wwai-cc); background: rgba(var(--wwai-cc-rgb), 0.12); border-radius: 999px; }
+.wwai-coach-sug { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; padding: 12px; border: 1px dashed rgba(var(--wwai-cc-rgb), 0.6); border-radius: var(--radius, 12px); background: rgba(var(--wwai-cc-rgb), 0.06); }
+.wwai-coach-sug .wwai-coach-text { flex: 1 1 180px; }
+.wwai-coach-sug .wwai-upgrade { margin-top: 0; }
+.wwai-coach-sug-label { font-size: 11px !important; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--wwai-cc) !important; }
+.wwai-coach-done { align-self: stretch; margin-top: 0; padding: 10px 12px; }
+@media (prefers-reduced-motion: reduce) { .wwai-coach-card { transition: none; } }
+
+/* ---------------------------------------------------------------- coach avatars
+   A glossy orb with two blinking eyes in the coach's colour (CSS port of the "AI Avatar" primitive: same gradients,
+   noise, shine and blink). Markup: <span class="wwc-av wwc-av-<id>" style="--av:48px"><span class="wwc-av-eyes">
+   <i></i><i></i></span></span>. Also used by the onboarding wizard (public/interface/dashboard/js/onboarding.js). */
+.wwc-av { --av: 48px; position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center;
+  width: var(--av); height: var(--av); border-radius: 50%; overflow: hidden; isolation: isolate; vertical-align: middle;
+  background: var(--av-grad); box-shadow: var(--av-shadow); transition: transform .8s cubic-bezier(.34, 1.56, .64, 1); }
+.wwc-av::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .2; mix-blend-mode: overlay;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3.2' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 48px 48px, cover; }
+.wwc-av::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 30% 24%, rgba(255, 255, 255, .75) 0%, rgba(255, 255, 255, .1) 50%, transparent 70%),
+    radial-gradient(circle at 62% 68%, rgba(0, 0, 0, .18) 0%, transparent 55%); }
+.wwc-av:active { transform: scale(1.15, 1.3); }
+.wwc-av-eyes { position: relative; z-index: 1; display: flex; align-items: center; gap: calc(var(--av) * .21); transform: translateY(calc(var(--av) * -.045)); }
+.wwc-av-eyes i { display: block; width: calc(var(--av) * .125); height: calc(var(--av) * .21); min-width: 2px; min-height: 3px; border-radius: 999px;
+  background: var(--av-iris); animation: wwc-blink 3.6s ease-in-out var(--av-delay, 0s) infinite; }
+.wwc-av-eyes i + i { animation-delay: calc(var(--av-delay, 0s) + 60ms); }
+@keyframes wwc-blink { 0%, 88%, 100% { transform: scaleY(1); } 93%, 97% { transform: scaleY(.07); } }
+.wwc-av-mira { --av-delay: 0s; --av-grad: radial-gradient(circle at 50% 45%, #7a0055 0%, #d63384 40%, #ff6bb3 68%, #ffe5f5 100%);
+  --av-shadow: 0 0 4px 0 rgba(214, 51, 132, .35), 0 0 16px 6px rgba(214, 51, 132, .18), inset 0 0 0 1px rgba(255, 255, 255, .05); --av-iris: linear-gradient(135deg, #fff 0%, #ffd6ed 100%); }
+.wwc-av-rex { --av-delay: .9s; --av-grad: radial-gradient(circle at 50% 45%, #a63e10 0%, #e27a2a 40%, #ffb46a 68%, #ffe8cc 100%);
+  --av-shadow: 0 0 4px 0 rgba(232, 100, 0, .35), 0 0 16px 6px rgba(232, 100, 0, .18), inset 0 0 0 1px rgba(255, 255, 255, .05); --av-iris: linear-gradient(135deg, #fff 0%, #ffd9b8 100%); }
+.wwc-av-atlas { --av-delay: 1.7s; --av-grad: radial-gradient(circle at 50% 45%, #0d4d9a 0%, #3d7dd8 40%, #6fb3ff 68%, #e0eeff 100%);
+  --av-shadow: 0 0 4px 0 rgba(20, 102, 216, .35), 0 0 16px 6px rgba(20, 102, 216, .18), inset 0 0 0 1px rgba(255, 255, 255, .05); --av-iris: linear-gradient(135deg, #fff 0%, #d4ecff 100%); }
+.wwc-av-nova { --av-delay: 2.4s; --av-grad: radial-gradient(circle at 50% 45%, #0d6632 0%, #2a9d5f 40%, #6dd187 68%, #d1fadd 100%);
+  --av-shadow: 0 0 4px 0 rgba(12, 168, 82, .35), 0 0 16px 6px rgba(12, 168, 82, .18), inset 0 0 0 1px rgba(255, 255, 255, .05); --av-iris: linear-gradient(135deg, #fff 0%, #c5f5d8 100%); }
+.wwc-av-kai { --av-delay: 1.2s; --av-grad: radial-gradient(circle at 50% 45%, #2d157a 0%, #4f46e5 40%, #8b7eff 68%, #ddd6ff 100%);
+  --av-shadow: 0 0 4px 0 rgba(79, 70, 229, .35), 0 0 16px 6px rgba(79, 70, 229, .18), inset 0 0 0 1px rgba(255, 255, 255, .05); --av-iris: linear-gradient(135deg, #fff 0%, #e0d9ff 100%); }
+@media (prefers-reduced-motion: reduce) { .wwc-av-eyes i { animation: none; } .wwc-av { transition: none; } .wwc-av:active { transform: none; } }
+
+/* small places (title, answer label) just hold an avatar */
+.wwai-title-icon, .wwai-who-icon { background: none; overflow: visible; width: auto; height: auto; }
+
+/* voice orb while dictating (voice-orb.js): a glow in the coach's colour that follows the member's voice, the coach in the middle */
+.wwai-orb { position: relative; width: 116px; height: 116px; margin: 2px auto 6px; animation: wwai-orb-in .25s ease-out; }
+.wwai-orb[hidden] { display: none; }
+.wwai-orb-gl { position: absolute; inset: 0; pointer-events: none; }
+.wwai-orb-face { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; }
+@keyframes wwai-orb-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .wwai-orb { animation: none; } }

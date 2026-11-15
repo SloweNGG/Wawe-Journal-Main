@@ -1,7 +1,7 @@
 // ============================================================
 // WAWE JOURNAL - ONBOARDING WIZARD, SPOTLIGHT TOUR & TASKS
 // Sequential Flow:
-// 1. Welcome Wizard & Setup (Language, Currency, Theme, Journal)
+// 1. Welcome Wizard & Setup (Language, Currency, Time zone, Theme, Journal, AI coach)
 // 2. Guided Interactive Spotlight Tour
 // 3. Floating Bottom-Right Tasks Checklist
 // ============================================================
@@ -39,7 +39,7 @@
   var state = {
     user: null,
     currentStep: 0,
-    totalSteps: 5,
+    totalSteps: 6,
     selectedLang: 'tr',
     selectedCurrency: '$',
     selectedTheme: 'dark',
@@ -48,11 +48,23 @@
     hasCustomJournalName: false,
     journalIcon: 'trending-up',
     journalColor: '#7c6dfa',
+    selectedCoach: 'mira',                 // the coach slide in view on step 6 (the first one until the member swipes)
     tourIndex: 0,
     tradesCount: 0,
     strategiesCount: 0,
     isTourActive: false
   };
+
+  // AI coaches by the trader's main problem; the same list as public/components/ai-coach/ai-coach.js (COACHES) and
+  // supabase/functions/_shared/coach-personas.ts. [id, name, lucide icon, default tone, problem, description, sample line]
+  // Each coach is an avatar (glossy orb with blinking eyes, CSS .wwc-av in public/components/ai-coach/ai-coach.css).
+  var ONB_COACHES = [
+    ['mira', 'Mira', 'brain', 'soft', 'Psikoloji', 'Korku, FOMO, intikam işlemi, tilt', 'İki kayıptan sonra hemen yeni işlem açıyorsun. Önce 10 dakika mola.'],
+    ['rex', 'Rex', 'gauge', 'strict', 'Açgözlülük ve overtrade', 'Fazla işlem, "bir tane daha", kârlı günü geri verme', 'Günün 4. işleminden sonra kaybediyorsun. Bugün 3\'te kapat.'],
+    ['atlas', 'Atlas', 'shield-check', 'strict', 'Disiplinsizlik', 'Plana uymama, stopsuz işlem, kural çiğneme', 'Bu hafta 6 işlemin stopsuz. Kural net: her işlemde stop.'],
+    ['nova', 'Nova', 'target', 'balanced', 'Risk yönetimi', 'Lot tutarsızlığı, stop kaydırma, büyük düşüşler', 'Bu lotla 10 kayıp hesabının %25\'i. Riski %1\'e indir.'],
+    ['kai', 'Kai', 'sparkles', 'balanced', 'Emin değilim / genel', 'Her konuda dengeli analiz', 'Önce büyük resme bakalım: ne işe yarıyor, ne yaramıyor?']
+  ];
 
   // Safe i18n translation helper
   function t(key, fallback) {
@@ -141,6 +153,7 @@
                   <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="clock"></i></span><span>${t('onboarding.preview_tz', 'Saat dilimi')}</span></li>
                   <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="sun-moon"></i></span><span>${t('onboarding.preview_theme', 'Tema')}</span></li>
                   <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="notebook-pen"></i></span><span>${t('onboarding.preview_journal', 'Defter')}</span></li>
+                  <li class="wj-welcome-step"><span class="wj-welcome-step-icon"><i data-lucide="sparkles"></i></span><span data-i18n="onboarding.preview_coach">${t('onboarding.preview_coach', 'AI koç')}</span></li>
                 </ol>
 
                 <button class="wj-btn-primary" id="wj-hero-start-btn">
@@ -398,8 +411,43 @@
 
               <div class="wj-wizard-footer">
                 <button class="wj-btn-back" data-goto="4">${t('onboarding.btn_back', '← Geri')}</button>
+                <button class="wj-btn-primary" data-goto="6">${t('onboarding.btn_next', 'Devam Et →')}</button>
+              </div>
+            </div>
+
+            <!-- STEP 6: AI KOÇ (kullanıcının en çok zorlandığı konuya göre) -->
+            <div class="wj-wizard-step" id="wj-step-6">
+              <div class="wj-step-meta">
+                <span class="wj-step-count">${t('onboarding.step_indicator', 'Adım {step} / {total}').replace('{step}', '6').replace('{total}', state.totalSteps)}</span>
+              </div>
+              <h2 class="wj-step-title" data-i18n="aiCoach.coach.question">${t('aiCoach.coach.question', 'Seni en çok ne zorluyor?')}</h2>
+              <p class="wj-step-desc" data-i18n="onboarding.step_coach_desc">${t('onboarding.step_coach_desc', 'AI koçun bu konuya odaklanır. İstediğin zaman koçun ayarlarından değiştirebilirsin.')}</p>
+
+              <div class="wj-coach-carousel">
+                <button type="button" class="wj-coach-nav wj-coach-prev" data-coach-step="-1" aria-label="${t('onboarding.coach_prev', 'Önceki koç')}"><i data-lucide="chevron-left"></i></button>
+                <div class="wj-coach-track" id="wj-coach-track" tabindex="0" role="listbox" aria-label="${t('aiCoach.coach.question', 'Seni en çok ne zorluyor?')}">
+                  ${ONB_COACHES.map(function (c) {
+                    return '<div class="wj-coach-slide wj-coach-' + c[0] + '" data-coach="' + c[0] + '" role="option" aria-selected="false">' +
+                      '<span class="wwc-av wwc-av-' + c[0] + '" style="--av:112px" aria-hidden="true"><span class="wwc-av-eyes"><i></i><i></i></span></span>' +
+                      '<span class="wj-coach-name">' + c[1] + '</span>' +
+                      '<span class="wj-coach-problem" data-i18n="aiCoach.coach.' + c[0] + '.problem">' + t('aiCoach.coach.' + c[0] + '.problem', c[4]) + '</span>' +
+                      '<span class="wj-coach-desc" data-i18n="aiCoach.coach.' + c[0] + '.desc">' + t('aiCoach.coach.' + c[0] + '.desc', c[5]) + '</span>' +
+                      '<span class="wj-coach-quote" data-i18n="aiCoach.coach.' + c[0] + '.quote">' + t('aiCoach.coach.' + c[0] + '.quote', c[6]) + '</span>' +
+                    '</div>';
+                  }).join('')}
+                </div>
+                <button type="button" class="wj-coach-nav wj-coach-next" data-coach-step="1" aria-label="${t('onboarding.coach_next', 'Sonraki koç')}"><i data-lucide="chevron-right"></i></button>
+              </div>
+              <div class="wj-coach-dots">
+                ${ONB_COACHES.map(function (c, i) {
+                  return '<button type="button" class="wj-coach-dot wj-coach-' + c[0] + '" data-coach-go="' + i + '" aria-label="' + c[1] + '"></button>';
+                }).join('')}
+              </div>
+
+              <div class="wj-wizard-footer">
+                <button class="wj-btn-back" data-goto="5">${t('onboarding.btn_back', '← Geri')}</button>
                 <button class="wj-btn-primary" id="wj-wizard-finish-btn">
-                  <span data-i18n="onboarding.btn_finish">${t('onboarding.btn_finish', 'Kurulumu Tamamla')}</span>
+                  <span class="wj-coach-finish-label">${t('aiCoach.coach.done', '{coach} ile başla').replace('{coach}', 'Mira')}</span>
                 </button>
               </div>
             </div>
@@ -869,6 +917,34 @@
     }
   }
 
+  // Step 6: one coach per slide; swipe (native scroll snapping), the arrows, the dots or the arrow keys move between
+  // them. The slide in view is the member's choice; the finish button names it ("Rex ile başla").
+  function coachIndex() {
+    for (var i = 0; i < ONB_COACHES.length; i++) if (ONB_COACHES[i][0] === state.selectedCoach) return i;
+    return 0;
+  }
+  function setCoachSlide(i, scroll) {
+    i = Math.max(0, Math.min(ONB_COACHES.length - 1, i));
+    var c = ONB_COACHES[i];
+    state.selectedCoach = c[0];
+    var track = document.getElementById('wj-coach-track');
+    if (!track) return;
+    if (scroll) {
+      var instant = scroll === 'instant' || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      track.scrollTo({ left: i * track.clientWidth, behavior: instant ? 'auto' : 'smooth' });
+    }
+    track.querySelectorAll('.wj-coach-slide').forEach(function (sl, k) { sl.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
+    document.querySelectorAll('#wj-step-6 .wj-coach-dot').forEach(function (d, k) {
+      d.classList.toggle('active', k === i);
+      if (k === i) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current');
+    });
+    var prev = document.querySelector('#wj-step-6 .wj-coach-prev'), next = document.querySelector('#wj-step-6 .wj-coach-next');
+    if (prev) prev.disabled = i === 0;
+    if (next) next.disabled = i === ONB_COACHES.length - 1;
+    var label = document.querySelector('#wj-wizard-finish-btn .wj-coach-finish-label');
+    if (label) label.textContent = t('aiCoach.coach.done', '{coach} ile başla').replace('{coach}', c[1]);
+  }
+
   function goToStep(stepIndex) {
     state.currentStep = stepIndex;
     var steps = document.querySelectorAll('.wj-wizard-step');
@@ -901,6 +977,10 @@
     } else {
       stopTzClock();
       closeTzPanel(false);
+    }
+
+    if (stepIndex === 6) {
+      requestAnimationFrame(function () { setCoachSlide(coachIndex(), 'instant'); });
     }
 
     if (stepIndex === 5 && !state.hasCustomJournalName) {
@@ -994,6 +1074,31 @@
       });
     });
 
+    // AI koç seçimi (kaydırmalı, tek koç)
+    var coachTrack = document.getElementById('wj-coach-track');
+    if (coachTrack) {
+      var coachScrollTimer = null;
+      coachTrack.addEventListener('scroll', function () {
+        clearTimeout(coachScrollTimer);
+        coachScrollTimer = setTimeout(function () {
+          if (coachTrack.clientWidth) setCoachSlide(Math.round(coachTrack.scrollLeft / coachTrack.clientWidth), false);
+        }, 80);
+      }, { passive: true });
+      overlay.querySelectorAll('[data-coach-step]').forEach(function (btn) {
+        btn.addEventListener('click', function () { setCoachSlide(coachIndex() + Number(btn.getAttribute('data-coach-step')), true); });
+      });
+      overlay.querySelectorAll('[data-coach-go]').forEach(function (dot) {
+        dot.addEventListener('click', function () { setCoachSlide(Number(dot.getAttribute('data-coach-go')), true); });
+      });
+      overlay.addEventListener('keydown', function (e) {
+        if (state.currentStep !== 6 || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); setCoachSlide(coachIndex() + 1, true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); setCoachSlide(coachIndex() - 1, true); }
+      });
+      window.addEventListener('resize', function () { if (state.currentStep === 6) setCoachSlide(coachIndex(), 'instant'); });
+    }
+
     // Saat dilimi seçimi
     var tzAuto = document.getElementById('wj-tz-auto');
     if (tzAuto) {
@@ -1074,8 +1179,9 @@
           state.journalName = nameInput.value.trim();
         }
 
-        // Defteri kaydet ve sihirbazı tamamlandı yap
+        // Defteri kaydet, koç seçimini kaydet ve sihirbazı tamamlandı yap
         await saveFirstJournal();
+        saveCoachChoice();
         await markWizardDone();
 
         closeWizardModal();
@@ -1111,6 +1217,19 @@
     stopPolyglotCycle();
     stopTzClock();
     closeTzPanel(false);
+  }
+
+  // The coach picked in the wizard: through the coach panel when it is loaded (this browser + coach_settings.plan.coach),
+  // otherwise this browser only; the panel copies it to coach_settings when it loads the member's settings.
+  // Either way the panel does not ask "what do you struggle with most?" again.
+  function saveCoachChoice() {
+    var id = state.selectedCoach || 'kai';
+    var def = ONB_COACHES.filter(function (c) { return c[0] === id; })[0] || ONB_COACHES[ONB_COACHES.length - 1];
+    try { localStorage.setItem('ww_ai_coach_asked', '1'); } catch (e) { }
+    try {
+      if (window.WwAiCoach && typeof window.WwAiCoach.setCoach === 'function') { window.WwAiCoach.setCoach(def[0]); return; }
+    } catch (e) { wwLog.warn('AI koç seçimi panele iletilemedi:', e); }
+    try { localStorage.setItem('ww_ai_coach_persona', JSON.stringify({ id: def[0], tone: def[3] })); } catch (e) { }
   }
 
   // Sihirbaz tamamlandığında hem localStorage'a hem DB'ye yaz

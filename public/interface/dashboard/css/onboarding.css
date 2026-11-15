@@ -2215,3 +2215,120 @@ body.light-theme .wj-tasks-success-desc {
   color: #64748b;
 }
 
+
+/* ------------------------------------------------------------
+   STEP 6: AI COACH (by the trader's main problem) - one coach per slide: avatar (.wwc-av, ai-coach.css), name,
+   problem, symptoms and a line in the coach's voice. Native horizontal scroll snapping (swipe), arrows and dots.
+   ------------------------------------------------------------ */
+.wj-coach-slide, .wj-coach-dot { --wj-cc: #6d5ce8; --wj-cc-rgb: 109, 92, 232; }
+.wj-coach-mira { --wj-cc: #d63384; --wj-cc-rgb: 214, 51, 132; }
+.wj-coach-rex { --wj-cc: #e27a2a; --wj-cc-rgb: 226, 122, 42; }
+.wj-coach-atlas { --wj-cc: #3d7dd8; --wj-cc-rgb: 61, 125, 216; }
+.wj-coach-nova { --wj-cc: #2a9d5f; --wj-cc-rgb: 42, 157, 95; }
+.wj-coach-kai { --wj-cc: #4f46e5; --wj-cc-rgb: 79, 70, 229; }
+
+.wj-coach-carousel { position: relative; margin-bottom: 0.9rem; }
+.wj-coach-track {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  border-radius: 22px;
+  outline: none;
+}
+.wj-coach-track::-webkit-scrollbar { display: none; }
+.wj-coach-track:focus-visible { box-shadow: 0 0 0 2px var(--ac-b1); }
+.wj-coach-slide {
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 3.75rem 1.6rem;
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 75% at 50% 0%, rgba(var(--wj-cc-rgb), 0.2) 0%, transparent 62%),
+    rgba(255, 255, 255, 0.02);
+  border: 1.5px solid rgba(var(--wj-cc-rgb), 0.35);
+}
+.wj-coach-slide .wwc-av { margin-bottom: 1.1rem; }
+.wj-coach-slide[aria-selected="true"] .wwc-av { animation: wj-coach-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes wj-coach-pop { 0% { transform: scale(0.85); } 100% { transform: scale(1); } }
+.wj-coach-name { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+.wj-coach-problem { margin-top: 0.35rem; font-size: 0.9rem; font-weight: 600; color: var(--wj-cc); }
+.wj-coach-desc { margin-top: 0.3rem; font-size: 0.82rem; line-height: 1.45; color: rgba(255, 255, 255, 0.55); }
+.wj-coach-quote {
+  margin-top: 1.1rem;
+  max-width: 26rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 14px;
+}
+.wj-coach-quote::before { content: '\201C'; }
+.wj-coach-quote::after { content: '\201D'; }
+
+.wj-coach-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  margin-top: -19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+}
+.wj-coach-nav:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); transform: scale(1.06); }
+.wj-coach-nav:disabled { opacity: 0.25; cursor: default; }
+.wj-coach-nav:focus-visible { outline: 2px solid var(--ac-b1); outline-offset: 2px; }
+.wj-coach-nav svg, .wj-coach-nav i { width: 18px; height: 18px; }
+.wj-coach-prev { left: 10px; }
+.wj-coach-next { right: 10px; }
+
+.wj-coach-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 1.5rem; }
+.wj-coach-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--wj-cc-rgb), 0.35);
+  cursor: pointer;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+}
+.wj-coach-dot.active { width: 24px; background: var(--wj-cc); }
+.wj-coach-dot:focus-visible { outline: 2px solid var(--wj-cc); outline-offset: 2px; }
+
+body.light-theme .wj-coach-slide { background: radial-gradient(120% 75% at 50% 0%, rgba(var(--wj-cc-rgb), 0.14) 0%, transparent 62%), #f8fafc; }
+body.light-theme .wj-coach-desc { color: rgba(15, 23, 42, 0.55); }
+body.light-theme .wj-coach-quote { color: rgba(15, 23, 42, 0.75); background: rgba(15, 23, 42, 0.05); }
+body.light-theme .wj-coach-nav { background: #fff; border-color: rgba(0, 0, 0, 0.1); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+body.light-theme .wj-coach-nav:hover:not(:disabled) { background: #f1f5f9; }
+
+@media (max-width: 560px) {
+  .wj-coach-slide { padding: 1.5rem 2.75rem 1.25rem; }
+  .wj-coach-slide .wwc-av { --av: 92px !important; margin-bottom: 0.9rem; }
+  .wj-coach-name { font-size: 1.45rem; }
+  .wj-coach-nav { width: 32px; height: 32px; margin-top: -16px; }
+  .wj-coach-prev { left: 6px; }
+  .wj-coach-next { right: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wj-coach-slide[aria-selected="true"] .wwc-av { animation: none; }
+  .wj-coach-dot, .wj-coach-nav { transition: none; }
+}
